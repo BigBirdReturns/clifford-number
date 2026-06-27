@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="The Clifford Number maps evidenced institutional adjacency across UK AI policy, founder networks, consultancy pathways, procurement, and public-sector operating layers.">
+  <meta property="og:title" content="The Clifford Number">
+  <meta property="og:description" content="Seven degrees of UK AI state capture, with receipts. Not conspiracy. Topology.">
+  <meta property="og:type" content="website">
+  <title>The Clifford Number</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero">
+    <nav class="topbar" aria-label="Site">
+      <a class="brand" href="./">clifford-number</a>
+      <div class="navlinks">
+        <a href="docs/methodology.md">Method</a>
+        <a href="docs/redaction-policy.md">Redaction</a>
+        <a href="docs/edge-schema.md">Schema</a>
+      </div>
+    </nav>
+
+    <section class="hero-grid">
+      <div>
+        <p class="eyebrow">AXM Labs experiment, not AXM core</p>
+        <h1>The Clifford Number</h1>
+        <p class="subtitle">Seven degrees of UK AI state capture, with receipts.</p>
+        <p class="tagline">Not conspiracy. Topology.</p>
+      </div>
+      <div class="control-card" aria-label="Search control">
+        <label for="search">Enter a person, company, office, policy object, or forum.</label>
+        <div class="search-row">
+          <input id="search" type="search" autocomplete="off" placeholder="Try: Peter Thiel, Palantir, Dialog, OpenAI, AI Growth Zones">
+          <button id="go" type="button">Compute</button>
+        </div>
+        <div id="suggestions" class="suggestions" aria-live="polite"></div>
+      </div>
+    </section>
+  </header>
+
+  <main>
+    <section id="result" class="result empty" aria-live="polite">
+      <div class="empty-state">
+        <h2>Pick a node.</h2>
+        <p>The app returns the shortest evidenced path to the Clifford policy machine. Every hop has a claim, an evidence class, a status, and receipts.</p>
+      </div>
+    </section>
+
+    <section class="panel-grid" aria-label="Controls and method">
+      <article class="panel">
+        <h2>What counts</h2>
+        <p>A node can be a person, company, policy object, office, forum, government unit, or infrastructure layer. An edge is a typed public relationship. The graph does not score ideology, intent, character, private life, or guilt.</p>
+      </article>
+      <article class="panel">
+        <h2>What does not count</h2>
+        <p>Private contact data, intimate disclosures, raw registrant files, psychological claims, and per-person treatment of private attendees are excluded. Listed, registered, and attended are separate states.</p>
+      </article>
+      <article class="panel">
+        <h2>The control question</h2>
+        <p>Can every laugh survive a receipts click? If the answer is no, the edge does not ship.</p>
+      </article>
+    </section>
+
+    <section class="graph-browser">
+      <div class="section-title">
+        <h2>Graph browser</h2>
+        <p>Searchable seed graph. Use it as the public demo, then add receipts.</p>
+      </div>
+      <div id="node-list" class="node-list"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>No wrongdoing is alleged. This project maps public-role adjacency and evidenced institutional topology. It is a civic graph experiment, not a personnel file.</p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
