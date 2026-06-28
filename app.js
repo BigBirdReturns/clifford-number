@@ -11,7 +11,8 @@ const els = {
   go: document.querySelector('#go'),
   suggestions: document.querySelector('#suggestions'),
   result: document.querySelector('#result'),
-  nodeList: document.querySelector('#node-list')
+  nodeList: document.querySelector('#node-list'),
+  graphStats: document.querySelector('#graph-stats')
 };
 
 init().catch((error) => {
@@ -25,6 +26,7 @@ async function init() {
   if (!response.ok) throw new Error(`Could not load graph.json: ${response.status}`);
   state.graph = await response.json();
   renderSuggestions('');
+  renderGraphStats();
   renderNodeList(state.graph.nodes);
   wireEvents();
 }
@@ -68,6 +70,13 @@ function renderSuggestions(query) {
   }
 }
 
+function renderGraphStats() {
+  const nodes = state.graph.nodes?.length ?? 0;
+  const edges = state.graph.edges?.length ?? 0;
+  const listed = (state.graph.edges ?? []).filter((edge) => edge.status === 'listed').length;
+  els.graphStats.textContent = `${nodes} public nodes, ${edges} sourced edges, and ${listed} listing-only edges are searchable. Type a name to see whether it has a sourced path to the Clifford policy machine.`;
+}
+
 function renderNodeList(nodes) {
   const sorted = [...nodes].sort((a, b) => a.label.localeCompare(b.label));
   els.nodeList.innerHTML = sorted.map((node) => `
@@ -90,7 +99,7 @@ function renderNoMatch(query) {
   els.result.innerHTML = `
     <div class="empty-state">
       <h2>No node found.</h2>
-      <p>No current graph node matches “${escapeHtml(query)}”. Add it to graph.json with at least one sourced edge, then run <code>npm run check</code>.</p>
+      <p>No current public graph node matches “${escapeHtml(query)}”, so the app cannot claim adjacency. Add a public-role node and at least one sourced edge to <code>graph.json</code>, then run <code>npm run check</code>.</p>
     </div>
   `;
 }

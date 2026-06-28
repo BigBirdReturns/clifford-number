@@ -141,6 +141,7 @@ All spacing uses a base unit of 4px with the following multiplier scale:
 
 **Pill Variants**:
 - `.pill.confirmed`: background ok, text ok color
+- `.pill.primary_public`: background ok, text ok color
 - `.pill.reported`: background wash, text ink-2
 - `.pill.derived`: background golden (consider: rgba(217, 162, 47, 0.15)), text golden-dark
 - `.pill.judgment`: background golden, text golden-dark
