@@ -1,5 +1,6 @@
 export const EVIDENCE_CLASSES = {
   confirmed: 'Primary source or tier-one reporting supports the claim directly.',
+  primary_public: 'Primary public material supports the claim directly, such as a public directory extract or source HTML.',
   reported: 'Credible reporting or public profile supports the claim, but not primary-source confirmed in this graph.',
   derived: 'Analytical inference from sourced structure. The receipts support the ingredients, not necessarily the frame.',
   judgment: 'Interpretive classification. Useful for navigation, not a factual assertion by itself.',

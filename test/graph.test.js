@@ -4,6 +4,7 @@ import { findNode, pathToText, shortestPath } from '../src/graph.js';
 import { computePathScore, confidenceLabel } from '../src/scoring.js';
 
 const graph = JSON.parse(fs.readFileSync(new URL('../graph.json', import.meta.url), 'utf8'));
+const masterDoc = fs.readFileSync(new URL('../docs/clifford-number-master.md', import.meta.url), 'utf8');
 
 const target = graph.target_node_id;
 assert.equal(target, 'clifford-policy-machine');
@@ -22,6 +23,12 @@ const palantirPath = shortestPath(graph, palantir.id);
 assert.ok(palantirPath, 'Expected Palantir to have a path.');
 assert.ok(palantirPath.number >= 2, 'Expected Palantir path to have at least two hops.');
 
+const karp = findNode(graph, 'Alex Karp');
+assert.equal(karp.id, 'alex-karp');
+const karpPath = shortestPath(graph, karp.id);
+assert.ok(karpPath, 'Expected Alex Karp to have a path through Palantir.');
+assert.match(pathToText(karpPath), /Alex Karp -> Palantir/);
+
 const zones = findNode(graph, 'AI Growth Zones');
 const zonesPath = shortestPath(graph, zones.id);
 assert.equal(zonesPath.number, 2);
@@ -32,5 +39,27 @@ assert.ok(['high', 'medium', 'low', 'audit first'].includes(confidenceLabel(scor
 
 const unknown = findNode(graph, 'zzzzqqqqnonexistent');
 assert.equal(unknown, null);
+
+const dialogDirectoryRows = masterDoc
+  .split('\n')
+  .map((line) => line.match(/^\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|$/))
+  .filter((match) => match && Number(match[1]) >= 1 && Number(match[1]) <= 113)
+  .map((match) => ({ name: match[2].trim(), title: match[3].trim() }));
+
+assert.equal(dialogDirectoryRows.length, 113, 'Expected the master docs to contain 113 Dialog directory rows.');
+
+for (const row of dialogDirectoryRows) {
+  const node = findNode(graph, row.name);
+  assert.ok(node, `Expected Dialog directory node for ${row.name}.`);
+  const listingEdge = graph.edges.find((edge) => (
+    edge.status === 'listed'
+    && edge.evidence_class === 'primary_public'
+    && edge.source_ids.includes('dialog-html-source')
+    && ((edge.from === node.id && edge.to === 'dialog') || (edge.from === 'dialog' && edge.to === node.id))
+  ));
+  assert.ok(listingEdge, `Expected primary_public listing edge for ${row.name}.`);
+  assert.match(listingEdge.notes, /does not prove attendance/i);
+  assert.ok(shortestPath(graph, node.id), `Expected ${row.name} to have a Clifford path.`);
+}
 
 console.log('Tests OK.');
