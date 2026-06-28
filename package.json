@@ -5,10 +5,11 @@
   "type": "module",
   "private": false,
   "scripts": {
-    "test": "node test/graph.test.js",
+    "test": "node test/graph.test.js && node test/mcp-server.test.js",
     "validate": "node src/validate.js graph.json",
     "check": "npm run validate && npm test",
-    "serve": "python3 -m http.server 8080"
+    "serve": "python3 -m http.server 8080",
+    "mcp": "node src/mcp-server.js"
   },
   "keywords": [
     "graph",
@@ -21,5 +22,8 @@
   "license": "MIT",
   "engines": {
     "node": ">=18"
+  },
+  "bin": {
+    "clifford-number-mcp": "src/mcp-server.js"
   }
 }

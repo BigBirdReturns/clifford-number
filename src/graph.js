@@ -118,7 +118,7 @@ export function pathToText(path) {
 }
 
 export function classRank(evidenceClass) {
-  const ranks = { confirmed: 1, reported: 2, derived: 3, judgment: 4, open: 5 };
+  const ranks = { confirmed: 1, primary_public: 1, reported: 2, derived: 3, judgment: 4, open: 5 };
   return ranks[evidenceClass] ?? 9;
 }
 

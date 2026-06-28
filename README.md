@@ -31,7 +31,17 @@ npm run serve
 
 Then open `http://localhost:8080`.
 
-No build step is required. GitHub Pages can serve the repo root.
+No build step is required for local development. The GitHub Pages workflow validates the graph, assembles a static `dist/` artifact with `index.html`, `app.js`, `styles.css`, `graph.json`, `src/`, `assets/`, `docs/`, and `receipts/`, then deploys it. After the Pages action succeeds, open the Pages URL, type a name, and the browser computes the path from the deployed `graph.json`.
+
+## MCP tool server
+
+You can expose the graph to MCP-capable LLM hosts with the bundled stdio server:
+
+```bash
+npm run mcp
+```
+
+The server provides `clifford_number`, `search_clifford_nodes`, and `get_clifford_node` tools. It does not make the graph available to every LLM by itself; the LLM host must support MCP and be configured to launch this server. See `docs/mcp.md` for client configuration examples.
 
 ## Repo layout
 
@@ -53,6 +63,7 @@ clifford-number/
   docs/
     methodology.md
     redaction-policy.md
+    mcp.md
     definitions.md
     edge-schema.md
   receipts/
@@ -66,6 +77,8 @@ clifford-number/
 ## Evidence classes
 
 `confirmed` means primary source or tier-one reporting supports the claim directly.
+
+`primary_public` means public source material, such as a public directory extract or source HTML, supports the claim directly.
 
 `reported` means credible reporting or a public profile supports the claim, but the repo has not independently confirmed the primary record.
 

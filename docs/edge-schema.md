@@ -29,7 +29,7 @@ Each edge in `graph.json` follows this shape:
 
 `source_ids` must reference existing sources in `graph.json`.
 
-`evidence_class` must be one of `confirmed`, `reported`, `derived`, `judgment`, or `open`.
+`evidence_class` must be one of `confirmed`, `primary_public`, `reported`, `derived`, `judgment`, or `open`.
 
 `status` must be one of `published`, `reported`, `listed`, `registered`, `attended`, `appointed`, `contracted`, `derived`, or `public-role`.
 
