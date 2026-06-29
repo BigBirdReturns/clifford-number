@@ -40,8 +40,26 @@ async function init() {
   state.orgScores = new Map(scores.organizations.map(o => [o.organization_id, o]));
   state.legacyNodes = new Map((legacyGraph.nodes ?? []).map(n => [n.id, n]));
   state.chains = new Map((scores.chains ?? []).map(c => [c.chain_id, c]));
-  renderHome();
+  const examples = ['ben-warner', 'simon-case', 'matt-clifford'].filter(id => state.actors.has(id));
+  $('#try-examples').innerHTML = examples.map(id => `<button data-kind="actor" data-id="${id}">${esc(labelActor(id))}</button>`).join('');
+  for (const btn of $('#try-examples').querySelectorAll('button')) btn.addEventListener('click', () => go(btn.dataset.kind, btn.dataset.id));
+
   $('#search').addEventListener('input', onSearch);
+  window.addEventListener('hashchange', route);
+  route();
+}
+
+function go(kind, id) {
+  const target = `#${kind}/${id}`;
+  if (location.hash === target) renderEntity(kind, id);
+  else location.hash = target;
+}
+
+function route() {
+  const hash = location.hash.replace(/^#/, '');
+  const [kind, id] = hash.split('/');
+  if (kind && id) renderEntity(kind, id);
+  else renderHome();
 }
 
 function renderHome() {
@@ -51,15 +69,21 @@ function renderHome() {
     <div class="panel"><div class="metric">${state.scores.actors.length}</div><div class="metric-label">actors scored</div></div>
     <div class="panel"><div class="metric">${state.chains.size}</div><div class="metric-label">laundering chains</div></div>
   `;
+  const topActors = [...state.actorScores.values()]
+    .sort((a, b) => b.machine_score - a.machine_score)
+    .slice(0, 8)
+    .map(s => `<button class="result" data-kind="actor" data-id="${s.actor_id}"><span class="kind-glyph">A</span><span class="result-label">${esc(labelActor(s.actor_id))}<small>machine score ${Math.round(s.machine_score * 100)}%</small></span></button>`)
+    .join('');
   const chainList = [...state.chains.values()]
     .sort((a, b) => b.machine_score - a.machine_score)
-    .map(c => `<button class="result" data-kind="chain" data-id="${c.chain_id}">${esc(c.chain_label)}<small>chain · score ${c.laundering_chain_score}/${c.laundering_chain_max}</small></button>`)
+    .map(c => `<button class="result" data-kind="chain" data-id="${c.chain_id}"><span class="kind-glyph">C</span><span class="result-label">${esc(c.chain_label)}<small>chain · score ${c.laundering_chain_score}/${c.laundering_chain_max}</small></span></button>`)
     .join('');
   $('#detail').innerHTML = `
     <div class="panel"><h2>Two readings, both true</h2>
       <p><strong>The Clifford Number</strong> is computed only from Actor ↔ Actor co-participation on bounded surfaces. Broad institutions, offices, agencies, policy areas, directory listings, and generic organizations do not create hops by themselves.</p>
       <p><strong>Laundering chains and surface-type recurrence</strong> capture what the hop cannot: outcomes that flow from policy creation to procurement to personnel to commercialization without any two people sharing a surface. A high chain or machine score with <em>no</em> Clifford hop is structural position, not guilt by association.</p>
     </div>
+    <div class="panel"><h3>Most structurally embedded actors</h3><div class="results">${topActors || '<p>None.</p>'}</div></div>
     <div class="panel"><h3>Laundering chains</h3><div class="results">${chainList || '<p>None.</p>'}</div></div>`;
   bindResults();
 }
@@ -88,8 +112,12 @@ function onSearch(e) {
       }
     }
   }
-  $('#results').innerHTML = results.slice(0, 12).map(r => `<button class="result" data-kind="${r.kind}" data-id="${r.id}">${esc(r.label)}<small>${r.kind}</small></button>`).join('');
-  for (const btn of document.querySelectorAll('.result')) btn.addEventListener('click', () => renderEntity(btn.dataset.kind, btn.dataset.id));
+  $('#results').innerHTML = results.slice(0, 12).map(r => `<button class="result" data-kind="${r.kind}" data-id="${r.id}"><span class="kind-glyph">${kindGlyph(r.kind)}</span><span class="result-label">${esc(r.label)}<small>${r.kind}</small></span></button>`).join('');
+  for (const btn of $('#results').querySelectorAll('.result')) btn.addEventListener('click', () => go(btn.dataset.kind, btn.dataset.id));
+}
+
+function kindGlyph(kind) {
+  return { actor: 'A', organization: 'O', surface: 'S', chain: 'C', candidate: '?' }[kind] || '•';
 }
 
 function renderEntity(kind, id) {
@@ -101,6 +129,12 @@ function renderEntity(kind, id) {
 }
 
 function metricPanel(label, value) { return `<div class="panel"><div class="metric">${esc(value ?? '—')}</div><div class="metric-label">${esc(label)}</div></div>`; }
+
+function metricPanelRatio(label, value, max) {
+  if (value == null) return metricPanel(label, 'N/A');
+  const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
+  return `<div class="panel"><div class="metric">${pct}%</div><div class="metric-bar"><div class="metric-bar-fill" style="width:${pct}%"></div></div><div class="metric-label">${esc(label)} · relative to most embedded entity</div></div>`;
+}
 
 function legacyIsTopology(edge) {
   return edge?.topology === true
@@ -141,8 +175,12 @@ function legacyShortestPath(startId, targetId = state.legacyGraph?.target_node_i
 
 function renderLegacyPath(path) {
   if (!path) return '<p class="why-no-hop"><strong>Legacy edge graph: no path found.</strong></p>';
-  const labels = path.node_ids.map(id => state.legacyNodes.get(id)?.label ?? id);
-  return `<div class="path-chain">${labels.map(esc).map(label => `<span class="path-node">${label}</span>`).join('')}</div>`
+  const steps = [`<div class="path-step"><span class="path-node">${esc(state.legacyNodes.get(path.node_ids[0])?.label ?? path.node_ids[0])}</span></div>`];
+  for (const h of path.hops) {
+    steps.push(`<div class="path-step path-connector"><span class="path-surface">${esc(h.edge.type || 'edge')} · ${esc(h.edge.evidence_class || 'unknown')}</span></div>`);
+    steps.push(`<div class="path-step"><span class="path-node">${esc(state.legacyNodes.get(h.to)?.label ?? h.to)}</span></div>`);
+  }
+  return `<div class="path-timeline">${steps.join('')}</div>`
     + path.hops.map(h => `<div class="receipts">${esc(state.legacyNodes.get(h.from)?.label ?? h.from)} ↔ ${esc(state.legacyNodes.get(h.to)?.label ?? h.to)}: ${esc(h.edge.type || 'edge')} · ${esc(h.edge.evidence_class || 'unknown')}</div>`).join('');
 }
 
@@ -157,7 +195,7 @@ function renderActor(id) {
     $('#summary').innerHTML = [
       metricPanel('Legacy Edge Number', legacyPath?.number ?? 'N/A'),
       metricPanel('Surface-Hop Number', 'N/A'),
-      metricPanel('Machine Score', 0),
+      metricPanelRatio('Machine Score', 0, 1),
       metricPanel('Source', 'legacy graph'),
     ].join('');
     $('#detail').innerHTML = `
@@ -171,7 +209,7 @@ function renderActor(id) {
   $('#summary').innerHTML = [
     metricPanel('Clifford Number', score?.clifford_number ?? 'N/A'),
     metricPanel('Laundering Chain', `${score?.laundering_chain_score ?? 0}/${score?.laundering_chain_max ?? 5}`),
-    metricPanel('Machine Score', score?.machine_score ?? 0),
+    metricPanelRatio('Machine Score', score?.machine_score ?? 0, 1),
     metricPanel('Surface-Type Recurrence', score?.surface_type_recurrence_score ?? 0),
   ].join('');
 
@@ -186,7 +224,7 @@ function renderActor(id) {
     : '';
 
   const chainsHtml = (score?.chains ?? []).length
-    ? `<div class="panel"><h3>Laundering chains</h3><div class="results">${(score.chains).map(cid => { const c = state.chains.get(cid); return `<button class="result" data-kind="chain" data-id="${cid}">${esc(c?.chain_label || cid)}<small>chain · score ${c?.laundering_chain_score}/${c?.laundering_chain_max}</small></button>`; }).join('')}</div></div>`
+    ? `<div class="panel"><h3>Laundering chains</h3><div class="results">${(score.chains).map(cid => { const c = state.chains.get(cid); return `<button class="result" data-kind="chain" data-id="${cid}"><span class="kind-glyph">C</span><span class="result-label">${esc(c?.chain_label || cid)}<small>chain · score ${c?.laundering_chain_score}/${c?.laundering_chain_max}</small></span></button>`; }).join('')}</div></div>`
     : '';
 
   $('#detail').innerHTML = `
@@ -200,7 +238,7 @@ function renderActor(id) {
 }
 
 function bindResults() {
-  for (const btn of document.querySelectorAll('#detail .result')) btn.addEventListener('click', () => renderEntity(btn.dataset.kind, btn.dataset.id));
+  for (const btn of document.querySelectorAll('#detail .result')) btn.addEventListener('click', () => go(btn.dataset.kind, btn.dataset.id));
 }
 
 function renderChain(id) {
@@ -209,7 +247,7 @@ function renderChain(id) {
   $('#summary').innerHTML = [
     metricPanel('Clifford Number', 'N/A'),
     metricPanel('Laundering Chain', `${c.laundering_chain_score}/${c.laundering_chain_max}`),
-    metricPanel('Machine Score', c.machine_score),
+    metricPanelRatio('Machine Score', c.machine_score, 1),
     metricPanel('Stages', c.chain_length),
   ].join('');
   const stages = (c.stages ?? []).map(s => `
@@ -227,13 +265,13 @@ function renderChain(id) {
 }
 
 function renderPath(path) {
-  const chunks = [];
+  const steps = [];
   for (let i = 0; i < path.actor_path.length; i++) {
-    chunks.push(`<span class="path-node">${esc(labelActor(path.actor_path[i]))}</span>`);
+    steps.push(`<div class="path-step"><span class="path-node">${esc(labelActor(path.actor_path[i]))}</span></div>`);
     const hop = path.hops[i];
-    if (hop) chunks.push(`<span class="path-surface">via ${esc(hop.shared_surfaces[0]?.surface_label || hop.shared_surfaces[0]?.surface_id)}</span>`);
+    if (hop) steps.push(`<div class="path-step path-connector"><span class="path-surface">via ${esc(hop.shared_surfaces[0]?.surface_label || hop.shared_surfaces[0]?.surface_id)}</span></div>`);
   }
-  return `<div class="path-chain">${chunks.join('')}</div>` + path.hops.map(h => `<div class="receipts">${esc(labelActor(h.from))} ↔ ${esc(labelActor(h.to))}: ${h.shared_surfaces.map(s => esc(s.surface_label)).join('; ')}</div>`).join('');
+  return `<div class="path-timeline">${steps.join('')}</div>` + path.hops.map(h => `<div class="receipts">${esc(labelActor(h.from))} ↔ ${esc(labelActor(h.to))}: ${h.shared_surfaces.map(s => esc(s.surface_label)).join('; ')}</div>`).join('');
 }
 
 function renderSurfaceCard(id) {
