@@ -95,6 +95,30 @@ for (const edge of hopGraph.edges) {
   }
 }
 
+// Laundering-chain / machine-score dimension: must be present, must NOT create hops.
+const hopEdgeKeys = new Set(hopGraph.edges.flatMap(e => [`${e.actor_a}||${e.actor_b}`, `${e.actor_b}||${e.actor_a}`]));
+for (const chain of (scores.chains ?? [])) {
+  assert(chain.clifford_number === null, `chain ${chain.chain_id} must not carry a Clifford Number`);
+  assert(typeof chain.why_no_hop === 'string' && chain.why_no_hop.length > 0, `chain ${chain.chain_id} must explain why_no_hop`);
+  assert(chain.connector_surfaces_all_non_hop === true, `chain ${chain.chain_id} connector surfaces must be non-hop`);
+  assert(chain.laundering_chain_score >= 1 && chain.laundering_chain_score <= chain.laundering_chain_max, `chain ${chain.chain_id} laundering_chain_score out of range`);
+  for (const sid of chain.surfaces) assert(surfaceById.has(sid), `chain ${chain.chain_id} references missing surface ${sid}`);
+  // The chain's dedicated connector surfaces must never appear as a hop basis.
+  for (const sid of chain.surfaces) {
+    const surface = surfaceById.get(sid);
+    if (surface?.surface_type === 'laundering_chain_connector') {
+      const isHopBasis = hopGraph.edges.some(e => e.surfaces.some(b => b.surface_id === sid));
+      assert(!isHopBasis, `laundering_chain_connector ${sid} must never be a hop basis`);
+    }
+  }
+}
+// machine_score must be a normalized 0..1 figure on every scored entity.
+for (const a of scores.actors) assert(a.machine_score >= 0 && a.machine_score <= 1, `actor ${a.actor_id} machine_score out of range`);
+for (const c of (scores.chains ?? [])) assert(c.machine_score >= 0 && c.machine_score <= 1, `chain ${c.chain_id} machine_score out of range`);
+// A high chain score must be expressible without a hop: at least one entity with chain score >= 3
+// and no Clifford hop, OR the chain itself (which never hops). This is the whole point of the dimension.
+assert((scores.chains ?? []).some(c => c.laundering_chain_score >= 3), 'expected at least one laundering chain with score >= 3');
+
 // Full-database migration is required, not optional.
 assert(migration.total_rows > 200, `migration parsed too few master rows: ${migration.total_rows}`);
 assert(migration.bucket_counts?.participation_claim > 50, 'migration did not classify enough participation claims from master doc');

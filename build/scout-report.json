@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-29T16:09:02.549Z",
+  "generated": "2026-06-29T17:11:35.377Z",
   "graph_effect": "none",
   "findings": [
     {
@@ -204,6 +204,21 @@
     },
     {
       "id": "finding-017",
+      "type": "laundering_chain",
+      "priority": "high",
+      "title": "Policy creation → procurement corridor → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop",
+      "observed": "Chain spans 4/5 stage categories (policy_creation, procurement_capture, personnel_continuity, commercial_deployment); machine_score 0.52; weakest evidence judgment. It does not create a Clifford hop.",
+      "action": "Strengthen the weakest stage receipts (e.g. confirm procurement award IDs/amounts/dates) before any UI weight upgrade. Never convert a chain into a hop without a bounded shared-participation surface.",
+      "graph_effect": "none",
+      "refs": [
+        "ai-opportunities-action-plan-2025",
+        "detachment-201-commissioning-2025",
+        "no10-digital-data-advisory-2019-2021",
+        "electric-twin-newsuk-synthetic-audience"
+      ]
+    },
+    {
+      "id": "finding-018",
       "type": "migration_queue",
       "priority": "high",
       "title": "Full master doc has been classified, not blindly migrated",

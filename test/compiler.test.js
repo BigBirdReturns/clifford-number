@@ -41,4 +41,19 @@ for (const edge of hop.edges) {
   }
 }
 assert.ok(migration.total_rows > 200, 'full master doc must be classified');
+
+// Laundering-chain dimension: scored, high, and provably NOT a hop.
+const chain = id => (scores.chains ?? []).find(c => c.chain_id === id);
+const synthChain = chain('policy-to-deployment-synthetic-population');
+assert.ok(synthChain, 'synthetic-population laundering chain must be scored');
+assert.equal(synthChain.clifford_number, null, 'a laundering chain must not carry a Clifford Number');
+assert.ok(synthChain.laundering_chain_score >= 4, 'synthetic-population chain must span >= 4 stage categories');
+assert.equal(synthChain.connector_surfaces_all_non_hop, true, 'chain connector surfaces must be non-hop');
+// The Detachment 201 connector surface exists, is non-hop, and never becomes a hop basis.
+assert.equal(surf('detachment-201-commissioning-2025').hop_eligible, false, 'Detachment 201 surface must be non-hop');
+assert.ok(!hop.edges.some(e => e.surfaces.some(b => b.surface_id === 'detachment-201-commissioning-2025')), 'Detachment 201 must never be a hop basis');
+// machine_score and surface_type_recurrence are real, separate dimensions.
+assert.ok(actor('ben-warner').machine_score > 0, 'Ben Warner must have a machine_score');
+assert.ok(Object.keys(actor('ben-warner').surface_type_recurrence).length > 0, 'Ben Warner must show surface-type recurrence');
+assert.ok(actor('matt-clifford').laundering_chain_score >= 4, 'Matt Clifford must anchor the laundering chain');
 console.log('compiler.test: OK');
