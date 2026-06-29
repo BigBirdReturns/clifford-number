@@ -13,7 +13,11 @@
     "validate:cases": "node src/validate.js cases/uk-ai-policy.json && node src/validate.js cases/template.json",
     "build": "node tools/build-graph.mjs",
     "sweep": "node tools/update-sweep.mjs",
-    "import:master:v3": "node tools/import-master-v3.mjs"
+    "import:master:v3": "node tools/import-master-v3.mjs",
+    "research:lda": "node tools/research/lda-pull.mjs",
+    "research:sec:formd": "node tools/research/sec-formd.mjs",
+    "research:usaspending": "node tools/research/usaspending-bulk-request.mjs",
+    "research:irs:schedule-i": "python3 tools/research/extract-schedule-i.py"
   },
   "keywords": [
     "graph",
