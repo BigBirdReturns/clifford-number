@@ -6,12 +6,13 @@
   "private": false,
   "scripts": {
     "test": "node test/graph.test.js && node test/mcp-server.test.js && node test/update-sweep.test.js",
-    "validate": "node src/validate.js graph.json",
+    "validate": "node src/validate.js",
     "check": "npm run validate && npm test",
     "serve": "python3 -m http.server 8080",
     "mcp": "node src/mcp-server.js",
     "sweep": "node tools/update-sweep.mjs",
-    "sweep:check": "node tools/update-sweep.mjs --check-only --json"
+    "sweep:check": "node tools/update-sweep.mjs --check-only --json",
+    "import:master:v3": "node tools/import-master-v3.mjs"
   },
   "keywords": [
     "graph",
