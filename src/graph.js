@@ -19,8 +19,21 @@ export function indexGraph(graph) {
   return { nodesById, sourcesById, edgesById };
 }
 
+export function isTopologyEdge(edge) {
+  const type = normalizeText(edge?.type);
+  const scope = normalizeText(edge?.scope);
+  return Boolean(
+    edge?.topology === true
+    || scope === 'topology'
+    || type.includes('topology')
+    || type.includes('umbrella')
+    || type.includes('co presence')
+    || type.includes('structural overlap')
+  );
+}
+
 export function buildAdjacency(graph, options = {}) {
-  const { directed = false } = options;
+  const { directed = false, includeTopology = false } = options;
   const adjacency = new Map();
 
   function add(from, to, edge, reversed = false) {
@@ -29,6 +42,7 @@ export function buildAdjacency(graph, options = {}) {
   }
 
   for (const edge of graph.edges ?? []) {
+    if (!includeTopology && isTopologyEdge(edge)) continue;
     add(edge.from, edge.to, edge, false);
     if (!directed) add(edge.to, edge.from, edge, true);
   }
@@ -80,13 +94,13 @@ export function searchNodes(graph, query, limit = 12) {
 }
 
 export function shortestPath(graph, startId, targetId = graph.target_node_id, options = {}) {
-  const { directed = false, maxDepth = 12 } = options;
+  const { directed = false, maxDepth = 12, includeTopology = false } = options;
   const { nodesById } = indexGraph(graph);
   if (!nodesById.has(startId)) throw new Error(`Unknown start node: ${startId}`);
   if (!nodesById.has(targetId)) throw new Error(`Unknown target node: ${targetId}`);
   if (startId === targetId) return { number: 0, nodes: [nodesById.get(startId)], hops: [] };
 
-  const adjacency = buildAdjacency(graph, { directed });
+  const adjacency = buildAdjacency(graph, { directed, includeTopology });
   const queue = [{ id: startId, path: [] }];
   const seen = new Set([startId]);
 
