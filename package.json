@@ -1,44 +1,33 @@
 {
   "name": "clifford-number",
-  "version": "0.1.0",
-  "description": "The Clifford Number: evidenced institutional adjacency across UK AI policy, founder networks, procurement pathways, and public-sector operating layers.",
+  "version": "0.2.0-surface-hop",
+  "description": "The Clifford Number: a surface-hop topology compiler for mapping bounded legitimate surfaces, plausible deniability, and recurring public-private AI policy machinery.",
   "type": "module",
   "private": false,
   "scripts": {
-    "test": "node test/graph.test.js && node test/mcp-server.test.js && node test/update-sweep.test.js",
-    "validate": "node src/validate.js graph.json",
-    "check": "npm run compile && npm run validate:compiled",
+    "compile": "node tools/compile.mjs",
+    "ingest:master": "node tools/ingest-master.mjs",
+    "build:hops": "node tools/build-hop-graph.mjs",
+    "score": "node tools/score-deniability.mjs",
+    "scout": "node tools/scout-surfaces.mjs",
+    "validate:release": "node tools/validate-release.mjs",
+    "test": "node test/compiler.test.js",
+    "check": "npm run compile && npm run validate:release && npm test",
+    "release:check": "npm run check",
     "serve": "python3 -m http.server 8080",
-    "mcp": "node src/mcp-server.js",
-    "validate:cases": "node src/validate.js cases/uk-ai-policy.json && node src/validate.js cases/template.json",
-    "build": "node tools/build-graph.mjs",
-    "sweep": "node tools/update-sweep.mjs",
-    "import:master:v3": "node tools/import-master-v3.mjs",
-    "research:lda": "node tools/research/lda-pull.mjs",
-    "research:sec:formd": "node tools/research/sec-formd.mjs",
-    "research:usaspending": "node tools/research/usaspending-bulk-request.mjs",
-    "research:irs:schedule-i": "python3 tools/research/extract-schedule-i.py",
-    "import:master:v4": "node tools/import-master-v4.mjs",
-    "compile": "node tools/compile-master.mjs",
-    "scout": "node tools/scout-graph.mjs",
-    "compile:scout": "npm run compile && npm run scout",
-    "release:check": "npm run check && npm run scout",
-    "promote:legacy": "node tools/promote-queue.mjs",
-    "validate:compiled": "npm run validate && npm run validate:cases && npm test"
+    "legacy:test": "node test/graph.test.js && node test/mcp-server.test.js && node test/update-sweep.test.js"
   },
   "keywords": [
+    "surface-hop",
     "graph",
     "topology",
     "policy",
     "ai-policy",
     "receipts",
-    "civic-tech"
+    "plausible-deniability"
   ],
   "license": "MIT",
   "engines": {
-    "node": ">=18"
-  },
-  "bin": {
-    "clifford-number-mcp": "src/mcp-server.js"
+    "node": ">=20"
   }
 }

@@ -7,6 +7,16 @@
 
 ---
 
+## Surface-Hop Compiler Law
+
+This document remains the raw research master. It is not itself the hop graph. The surface-hop compiler parses it into review artifacts, then the maintainer promotes bounded surfaces and participation rows into `data/ledger/`.
+
+A Clifford Number hop requires a bounded surface with explicit actor participation. Broad institutions, offices, agencies, policy areas, organizations, or concepts do not create hops by themselves. No. 10, Cabinet Office, DSIT, ARIA, News UK, Faculty, and Electric Twin are venues or organizations unless a named surface inside them is defined.
+
+Surface-type recurrence is a first-class discovery object. The compiler tracks when the same bounded logic recurs across policy, commercial, media, procurement, category, board, funding, or advisory venues.
+
+---
+
 ## How to read this document
 
 Every entity, edge, and umbrella membership is written as a discrete, falsifiable claim. Three fields matter for every row:
