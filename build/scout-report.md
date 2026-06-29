@@ -1,6 +1,6 @@
 # Scout Report
 
-Generated: 2026-06-29T17:11:35.376Z
+Generated: 2026-06-29T17:50:18.458Z
 
 > graph_effect: none. This is a research queue, not graph data.
 
@@ -60,7 +60,7 @@ Review whether each surface is correctly bounded. Add missing customer, investor
 
 ---
 
-## finding-004: Dialog is marked as a surface factory but has not been decomposed yet
+## finding-004: Dialog behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -68,13 +68,13 @@ Review whether each surface is correctly bounded. Add missing customer, investor
 
 **Observed**
 
-Dialog is a known factory candidate in canonical data, but no bounded surfaces have been added to the ledger yet.
+Dialog appears across 1 surface(s): dialog-society-membership. Secondary types: governance_continuity_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-
+Refs: `dialog-society-membership`
 
 ---
 

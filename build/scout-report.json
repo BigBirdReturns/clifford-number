@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-29T17:11:35.377Z",
+  "generated": "2026-06-29T17:50:18.458Z",
   "graph_effect": "none",
   "findings": [
     {
@@ -42,11 +42,13 @@
       "id": "finding-004",
       "type": "surface_factory",
       "priority": "medium",
-      "title": "Dialog is marked as a surface factory but has not been decomposed yet",
-      "observed": "Dialog is a known factory candidate in canonical data, but no bounded surfaces have been added to the ledger yet.",
+      "title": "Dialog behaves as a surface factory",
+      "observed": "Dialog appears across 1 surface(s): dialog-society-membership. Secondary types: governance_continuity_surface.",
       "action": "Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.",
       "graph_effect": "none",
-      "refs": []
+      "refs": [
+        "dialog-society-membership"
+      ]
     },
     {
       "id": "finding-005",
