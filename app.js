@@ -2,11 +2,19 @@ import { findNode, searchNodes, shortestPath, weakestEvidence } from './src/grap
 import { computePathScore, confidenceLabel } from './src/scoring.js';
 
 const state = {
+  manifest: null,
+  currentCase: null,
   graph: null,
   selectedNode: null
 };
 
 const els = {
+  title: document.querySelector('#case-title'),
+  subtitle: document.querySelector('#case-subtitle'),
+  tagline: document.querySelector('#case-tagline'),
+  status: document.querySelector('#case-status'),
+  casePicker: document.querySelector('#case-picker'),
+  caseSelect: document.querySelector('#case-select'),
   search: document.querySelector('#search'),
   go: document.querySelector('#go'),
   suggestions: document.querySelector('#suggestions'),
@@ -27,15 +35,60 @@ init().catch((error) => {
 });
 
 async function init() {
-  const response = await fetch('./graph.json');
-  if (!response.ok) throw new Error(`Could not load graph.json: ${response.status}`);
+  state.manifest = await loadManifest();
+  renderCasePicker();
+  const initialCase = state.manifest.cases.find((item) => item.id === state.manifest.default_case_id) ?? state.manifest.cases[0];
+  await loadCase(initialCase);
+  wireEvents();
+}
+
+async function loadManifest() {
+  try {
+    const response = await fetch('./cases.json');
+    if (!response.ok) throw new Error(`Could not load cases.json: ${response.status}`);
+    return response.json();
+  } catch (error) {
+    console.warn(error);
+    return {
+      default_case_id: 'graph',
+      cases: [{ id: 'graph', label: 'The Clifford Number', path: './graph.json' }]
+    };
+  }
+}
+
+async function loadCase(caseMeta) {
+  const response = await fetch(caseMeta.path);
+  if (!response.ok) throw new Error(`Could not load ${caseMeta.path}: ${response.status}`);
+  state.currentCase = caseMeta;
   state.graph = await response.json();
+  state.selectedNode = null;
+  els.search.value = '';
+  renderCaseHeader();
   renderSuggestions('');
   renderGraphStats();
   renderForensicDashboard();
   renderSourceLedger();
-  renderNodeList(state.graph.nodes);
-  wireEvents();
+  renderNodeList(state.graph.nodes ?? []);
+  els.result.className = 'result empty';
+  els.result.innerHTML = `
+    <div class="empty-state">
+      <h2>Pick a node.</h2>
+      <p>The app returns the shortest evidenced path to the target node for this case. Type a name; if it is in the public graph, you will see whether it is adjacent and exactly which receipts support the path.</p>
+    </div>
+  `;
+}
+
+function renderCasePicker() {
+  if (!els.casePicker || !els.caseSelect || (state.manifest.cases ?? []).length < 2) return;
+  els.casePicker.hidden = false;
+  els.caseSelect.innerHTML = state.manifest.cases.map((item) => `<option value="${escapeAttr(item.id)}">${escapeHtml(item.label)}</option>`).join('');
+}
+
+function renderCaseHeader() {
+  els.title.textContent = state.graph.title ?? state.currentCase?.label ?? 'The Clifford Number';
+  els.subtitle.textContent = state.graph.subtitle ?? state.currentCase?.description ?? 'Public-role topology with receipts.';
+  els.tagline.textContent = state.graph.tagline ?? 'Not conspiracy. Topology.';
+  els.status.textContent = state.graph.status ? `${state.graph.status} case file` : 'Public graph case file';
 }
 
 function wireEvents() {
@@ -44,6 +97,10 @@ function wireEvents() {
     if (event.key === 'Enter') computeFromSearch();
   });
   els.go.addEventListener('click', computeFromSearch);
+  els.caseSelect?.addEventListener('change', async () => {
+    const nextCase = state.manifest.cases.find((item) => item.id === els.caseSelect.value);
+    if (nextCase) await loadCase(nextCase);
+  });
 }
 
 function computeFromSearch() {

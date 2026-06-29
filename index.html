@@ -25,13 +25,17 @@
 
     <section class="hero-grid">
       <div>
-        <p class="eyebrow">AXM Labs experiment, not AXM core</p>
-        <h1>The Clifford Number</h1>
-        <p class="subtitle">Seven degrees of UK AI state capture, with receipts.</p>
-        <p class="tagline">Not conspiracy. Topology. A game-trail map for the machinery underneath the public story.</p>
+        <p class="eyebrow" id="case-status">AXM Labs experiment, not AXM core</p>
+        <h1 id="case-title">The Clifford Number</h1>
+        <p class="subtitle" id="case-subtitle">Seven degrees of UK AI state capture, with receipts.</p>
+        <p class="tagline" id="case-tagline">Not conspiracy. Topology. A game-trail map for the machinery underneath the public story.</p>
         <div class="hero-metrics" id="hero-metrics" aria-label="Graph metrics"></div>
       </div>
       <div class="control-card" aria-label="Search control">
+        <div id="case-picker" class="case-picker" hidden>
+          <label for="case-select">Case file</label>
+          <select id="case-select"></select>
+        </div>
         <label for="search">Enter a person, company, office, policy object, or forum.</label>
         <div class="search-row">
           <input id="search" type="search" autocomplete="off" placeholder="Try: Peter Thiel, Palantir, Dialog, OpenAI, AI Growth Zones">

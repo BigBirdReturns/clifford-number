@@ -7,11 +7,28 @@ import { findNode, pathToText, searchNodes, shortestPath, weakestEvidence } from
 import { computePathScore, confidenceLabel } from './scoring.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const graphPath = process.env.CLIFFORD_GRAPH_PATH
-  ? path.resolve(process.env.CLIFFORD_GRAPH_PATH)
-  : path.resolve(__dirname, '../graph.json');
+const manifestPath = process.env.CLIFFORD_CASES_PATH
+  ? path.resolve(process.env.CLIFFORD_CASES_PATH)
+  : path.resolve(__dirname, '../cases.json');
 
-const graph = JSON.parse(fs.readFileSync(graphPath, 'utf8'));
+function loadGraph() {
+  if (process.env.CLIFFORD_GRAPH_PATH) {
+    const graphPath = path.resolve(process.env.CLIFFORD_GRAPH_PATH);
+    return JSON.parse(fs.readFileSync(graphPath, 'utf8'));
+  }
+  if (fs.existsSync(manifestPath)) {
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    const caseId = process.env.CLIFFORD_CASE_ID ?? manifest.default_case_id;
+    const caseMeta = manifest.cases?.find((item) => item.id === caseId) ?? manifest.cases?.[0];
+    if (caseMeta?.path) {
+      const casePath = path.resolve(path.dirname(manifestPath), caseMeta.path);
+      return JSON.parse(fs.readFileSync(casePath, 'utf8'));
+    }
+  }
+  return JSON.parse(fs.readFileSync(path.resolve(__dirname, '../graph.json'), 'utf8'));
+}
+
+const graph = loadGraph();
 
 const serverInfo = {
   name: 'clifford-number',

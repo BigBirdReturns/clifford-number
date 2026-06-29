@@ -731,3 +731,30 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+
+.case-picker {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.case-picker label {
+  margin: 0;
+}
+
+.case-picker select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+}
+
+.case-picker select:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+  border-color: var(--line);
+}
