@@ -295,14 +295,16 @@ function renderOrg(id) {
   `;
 }
 
+function humanLabel(s) { return String(s || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
+
 function renderCandidate(id) {
   const candidate = state.candidates.get(id);
   if (!candidate) return;
   $('#summary').innerHTML = [
-    metricPanel('Status', candidate.status ?? 'intake_only'),
-    metricPanel('Kind', candidate.kind ?? 'candidate'),
+    metricPanel('Status', humanLabel(candidate.status ?? 'intake only')),
+    metricPanel('Kind', humanLabel(candidate.kind ?? 'candidate')),
     metricPanel('Clifford Number', 'N/A'),
-    metricPanel('Graph Effect', 'none'),
+    metricPanel('Graph Effect', 'None'),
   ].join('');
   $('#detail').innerHTML = `
     <div class="panel"><h2>${esc(candidate.label)}</h2><div class="badge-row"><span class="badge">intake candidate</span><span class="badge">${esc(candidate.kind)}</span></div></div>
