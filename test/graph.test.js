@@ -40,6 +40,24 @@ assert.ok(['high', 'medium', 'low', 'audit first'].includes(confidenceLabel(scor
 const unknown = findNode(graph, 'zzzzqqqqnonexistent');
 assert.equal(unknown, null);
 
+const topologyFixture = {
+  target_node_id: 'target',
+  nodes: [
+    { id: 'target', label: 'Target', type: 'target' },
+    { id: 'start', label: 'Start', type: 'person' },
+    { id: 'bridge', label: 'Bridge', type: 'office' },
+    { id: 'umbrella', label: 'Umbrella', type: 'forum' }
+  ],
+  edges: [
+    { id: 'e-direct-topology', from: 'start', to: 'target', type: 'topology-overlap', topology: true, claim: 'Topology-only shortcut.', evidence_class: 'derived', status: 'derived', source_ids: ['s'] },
+    { id: 'e-start-bridge', from: 'start', to: 'bridge', type: 'public-role', claim: 'Public role.', evidence_class: 'confirmed', status: 'public-role', source_ids: ['s'] },
+    { id: 'e-bridge-target', from: 'bridge', to: 'target', type: 'appointed', claim: 'Appointed role.', evidence_class: 'confirmed', status: 'appointed', source_ids: ['s'] }
+  ],
+  sources: [{ id: 's', label: 'Fixture source', url: 'docs/methodology.md' }]
+};
+assert.equal(shortestPath(topologyFixture, 'start').number, 2, 'Topology-only edge must not shorten the default path.');
+assert.equal(shortestPath(topologyFixture, 'start', 'target', { includeTopology: true }).number, 1, 'Topology-only edge is available only when explicitly requested.');
+
 const dialogDirectoryRows = masterDoc
   .split('\n')
   .map((line) => line.match(/^\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|$/))
