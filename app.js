@@ -1,5 +1,6 @@
 import { findNode, searchNodes, shortestPath, weakestEvidence } from './src/graph.js';
 import { computePathScore, confidenceLabel } from './src/scoring.js';
+import { parseScheduleIReviewCsv, scheduleIRowToAddEdgeCommand, validateScheduleIRows } from './src/import-review.js';
 
 const state = {
   manifest: null,
@@ -25,7 +26,11 @@ const els = {
   evidenceBreakdown: document.querySelector('#evidence-breakdown'),
   typeBreakdown: document.querySelector('#type-breakdown'),
   auditBreakdown: document.querySelector('#audit-breakdown'),
-  sourceLedger: document.querySelector('#source-ledger')
+  sourceLedger: document.querySelector('#source-ledger'),
+  scheduleICsv: document.querySelector('#schedule-i-csv'),
+  reviewScheduleI: document.querySelector('#review-schedule-i'),
+  importReviewStatus: document.querySelector('#import-review-status'),
+  scheduleIReviewOutput: document.querySelector('#schedule-i-review-output')
 };
 
 init().catch((error) => {
@@ -97,6 +102,7 @@ function wireEvents() {
     if (event.key === 'Enter') computeFromSearch();
   });
   els.go.addEventListener('click', computeFromSearch);
+  els.reviewScheduleI?.addEventListener('click', renderScheduleIReview);
   els.caseSelect?.addEventListener('change', async () => {
     const nextCase = state.manifest.cases.find((item) => item.id === els.caseSelect.value);
     if (nextCase) await loadCase(nextCase);
@@ -240,6 +246,37 @@ function auditItem(label, value, note) {
       <div><span>${escapeHtml(label)}</span><small>${escapeHtml(note)}</small></div>
     </div>
   `;
+}
+
+function renderScheduleIReview() {
+  try {
+    const rows = validateScheduleIRows(parseScheduleIReviewCsv(els.scheduleICsv?.value ?? ''), state.graph);
+    if (!rows.length) {
+      els.importReviewStatus.textContent = 'No importable rows found.';
+      els.scheduleIReviewOutput.innerHTML = '';
+      return;
+    }
+    const validRows = rows.filter((row) => row.valid);
+    els.importReviewStatus.textContent = `${validRows.length}/${rows.length} row${rows.length === 1 ? '' : 's'} ready for review.`;
+    els.scheduleIReviewOutput.innerHTML = rows.map((row, index) => {
+      const command = row.valid ? scheduleIRowToAddEdgeCommand(row) : '';
+      return `
+        <article class="review-row">
+          <div>
+            <h3>${escapeHtml(row.node_label)} → ${escapeHtml(row.recipient_name)}</h3>
+            <p><strong>${escapeHtml(row.amount || 'amount n/a')}</strong> ${escapeHtml(row.purpose || 'No purpose text')}</p>
+            <small>${escapeHtml(row.source_zip || 'source zip n/a')} ${escapeHtml(row.source_xml || '')}</small>
+            ${row.valid ? '<span class="pill primary_public">valid</span>' : `<span class="pill open">hold: ${escapeHtml(row.errors.join('; '))}</span>`}
+          </div>
+          ${row.valid ? `<label for="review-command-${index}">Proposed command</label>
+          <textarea id="review-command-${index}" rows="4" readonly>${escapeHtml(command)}</textarea>` : ''}
+        </article>
+      `;
+    }).join('');
+  } catch (error) {
+    els.importReviewStatus.textContent = error.message;
+    els.scheduleIReviewOutput.innerHTML = '';
+  }
 }
 
 function renderNoMatch(query) {

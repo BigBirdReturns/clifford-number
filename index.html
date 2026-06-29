@@ -20,6 +20,7 @@
         <a href="docs/redaction-policy.md">Redaction</a>
         <a href="docs/edge-schema.md">Schema</a>
         <a href="#ledger">Ledger</a>
+        <a href="#import-review">Import review</a>
       </div>
     </nav>
 
@@ -94,6 +95,23 @@
         <p>Primary pages, reporting, and local receipt notes that anchor the public graph.</p>
       </div>
       <div id="source-ledger" class="source-list"></div>
+    </section>
+
+
+
+    <section id="import-review" class="import-review panel" aria-label="Schedule I import review">
+      <div class="section-title">
+        <p class="eyebrow">Import review</p>
+        <h2>Schedule I CSV → graph-safe commands</h2>
+        <p>Paste reviewed Schedule I CSV rows. The browser does not mutate <code>graph.json</code>; it renders proposed <code>tools/add-edge.mjs</code> commands for analyst review.</p>
+      </div>
+      <label for="schedule-i-csv">Schedule I CSV</label>
+      <textarea id="schedule-i-csv" rows="8" spellcheck="false" placeholder="graph_node_id,node_label,normalized_ein,recipient_name,amount,purpose,source_zip,source_xml"></textarea>
+      <div class="import-actions">
+        <button id="review-schedule-i" type="button">Review CSV</button>
+        <span id="import-review-status" aria-live="polite"></span>
+      </div>
+      <div id="schedule-i-review-output" class="review-output"></div>
     </section>
 
     <section class="graph-browser">
