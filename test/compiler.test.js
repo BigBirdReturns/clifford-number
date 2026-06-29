@@ -19,6 +19,7 @@ const hop = JSON.parse(fs.readFileSync('build/hop-graph.json', 'utf8'));
 const surface = JSON.parse(fs.readFileSync('build/surface-graph.json', 'utf8'));
 const scores = JSON.parse(fs.readFileSync('build/scores.json', 'utf8'));
 const migration = JSON.parse(fs.readFileSync('build/migration-summary.json', 'utf8'));
+const legacyGraph = JSON.parse(fs.readFileSync('graph.json', 'utf8'));
 
 const actor = id => scores.actors.find(a => a.actor_id === id);
 const org = id => scores.organizations.find(o => o.organization_id === id);
@@ -33,6 +34,11 @@ assert.equal(org('electric-twin').surface_factory, true);
 assert.ok(actor('simon-case').surfaces.includes('simon-case-cabinet-secretary-2020-2024'));
 assert.ok(actor('simon-case').surfaces.includes('electric-twin-ethics-board-2026'));
 assert.ok(actor('simon-case').surfaces.includes('team-barrow-public-private-fund-2026'));
+const surfaceActorIds = new Set(surface.actors.map(a => a.id));
+for (const node of legacyGraph.nodes.filter(n => n.type === 'person')) {
+  assert.ok(surfaceActorIds.has(node.id), `${node.label} must be present in the surface app actor index`);
+}
+assert.ok(surfaceActorIds.has('alex-karp'), 'Alex Karp must be present through the legacy graph bridge, not a one-off ledger patch');
 
 for (const edge of hop.edges) {
   for (const basis of edge.surfaces) {
