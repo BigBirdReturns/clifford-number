@@ -7,11 +7,8 @@ import { findNode, pathToText, searchNodes, shortestPath, weakestEvidence } from
 import { computePathScore, confidenceLabel } from './scoring.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const graphPath = process.env.CLIFFORD_GRAPH_PATH
-  ? path.resolve(process.env.CLIFFORD_GRAPH_PATH)
-  : path.resolve(__dirname, '../graph.json');
-
-const graph = JSON.parse(fs.readFileSync(graphPath, 'utf8'));
+const repoRoot = path.resolve(__dirname, '..');
+const graph = loadGraph();
 
 const serverInfo = {
   name: 'clifford-number',
@@ -21,7 +18,7 @@ const serverInfo = {
 const tools = [
   {
     name: 'clifford_number',
-    description: 'Compute the shortest evidenced path from a public graph node to the Clifford Policy Machine. Returns no adjacency claim when the name is absent.',
+    description: 'Compute the shortest evidenced path from a public graph node to the case target. Returns no adjacency claim when the name is absent.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -35,6 +32,11 @@ const tools = [
           maximum: 20,
           default: 12,
           description: 'Maximum path depth to search.'
+        },
+        includeTopology: {
+          type: 'boolean',
+          default: false,
+          description: 'Include topology-only edges in pathfinding. Defaults to false so umbrella/co-presence edges do not shorten the Clifford Number.'
         }
       },
       required: ['query'],
@@ -65,11 +67,60 @@ const tools = [
       required: ['query'],
       additionalProperties: false
     }
+  },
+  {
+    name: 'get_clifford_case',
+    description: 'Return metadata for the currently loaded Clifford case.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      additionalProperties: false
+    }
   }
 ];
 
+function loadGraph() {
+  if (process.env.CLIFFORD_GRAPH_PATH) {
+    return readJson(path.resolve(process.env.CLIFFORD_GRAPH_PATH));
+  }
+
+  const manifestPath = process.env.CLIFFORD_CASES_MANIFEST
+    ? path.resolve(process.env.CLIFFORD_CASES_MANIFEST)
+    : path.resolve(repoRoot, 'cases.json');
+
+  if (fs.existsSync(manifestPath)) {
+    const manifest = readJson(manifestPath);
+    const caseId = process.env.CLIFFORD_CASE_ID ?? manifest.default_case_id;
+    const selected = (manifest.cases ?? []).find((item) => item.id === caseId)
+      ?? (manifest.cases ?? [])[0];
+    if (selected?.data_path) {
+      const graphPath = path.resolve(path.dirname(manifestPath), selected.data_path);
+      const graph = readJson(graphPath);
+      graph.case_id = selected.id;
+      graph.case_title = selected.title;
+      graph.case_description = selected.description;
+      return graph;
+    }
+  }
+
+  return readJson(path.resolve(repoRoot, 'graph.json'));
+}
+
+function readJson(file) {
+  return JSON.parse(fs.readFileSync(file, 'utf8'));
+}
+
+function receiptUrl(source) {
+  if (source.receipt_url) return source.receipt_url;
+  if (source.id === 'dialog-html-source') {
+    return 'docs/clifford-number-master.md#part-3-dialog-public-directory-import-safe-subset';
+  }
+  return source.url;
+}
+
 function sourceFor(id) {
-  return graph.sources?.find((source) => source.id === id) ?? { id };
+  const source = graph.sources?.find((source) => source.id === id) ?? { id };
+  return { ...source, receipt_url: receiptUrl(source) };
 }
 
 function nodeSummary(node) {
@@ -88,7 +139,8 @@ function pathPayload(node, pathResult) {
     return {
       query_node: nodeSummary(node),
       adjacent: false,
-      claim: `The public graph contains ${node.label}, but no evidenced path to the Clifford Policy Machine was found.`
+      target: graph.target_node_id,
+      claim: `The public graph contains ${node.label}, but no evidenced path to the case target was found.`
     };
   }
 
@@ -96,6 +148,9 @@ function pathPayload(node, pathResult) {
   return {
     query_node: nodeSummary(node),
     adjacent: true,
+    case_id: graph.case_id,
+    case_title: graph.case_title ?? graph.title,
+    target: graph.target_node_id,
     clifford_number: pathResult.number,
     path_text: pathToText(pathResult),
     confidence: confidenceLabel(score),
@@ -133,12 +188,16 @@ function callTool(name, args = {}) {
         suggestions: searchNodes(graph, query, 5).map(nodeSummary)
       };
     }
-    return pathPayload(node, shortestPath(graph, node.id, graph.target_node_id, { maxDepth: args.maxDepth ?? 12 }));
+    return pathPayload(node, shortestPath(graph, node.id, graph.target_node_id, {
+      maxDepth: args.maxDepth ?? 12,
+      includeTopology: args.includeTopology === true
+    }));
   }
 
   if (name === 'search_clifford_nodes') {
     const limit = Math.min(Math.max(Number(args.limit ?? 8), 1), 25);
     return {
+      case_id: graph.case_id,
       query: String(args.query ?? ''),
       results: searchNodes(graph, args.query ?? '', limit).map(nodeSummary)
     };
@@ -149,8 +208,20 @@ function callTool(name, args = {}) {
     if (!query) throw new Error('query is required');
     const node = findNode(graph, query);
     return node
-      ? { found: true, node: nodeSummary(node) }
+      ? { found: true, case_id: graph.case_id, node: nodeSummary(node) }
       : { found: false, query, claim: `No current public graph node matches “${query}”.` };
+  }
+
+  if (name === 'get_clifford_case') {
+    return {
+      case_id: graph.case_id,
+      title: graph.case_title ?? graph.title,
+      description: graph.case_description,
+      target_node_id: graph.target_node_id,
+      nodes: graph.nodes?.length ?? 0,
+      edges: graph.edges?.length ?? 0,
+      sources: graph.sources?.length ?? 0
+    };
   }
 
   throw new Error(`Unknown tool: ${name}`);
