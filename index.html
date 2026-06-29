@@ -24,10 +24,14 @@
 
     <section class="hero-grid">
       <div>
-        <p class="eyebrow">AXM Labs experiment, not AXM core</p>
-        <h1>The Clifford Number</h1>
-        <p class="subtitle">Seven degrees of UK AI state capture, with receipts.</p>
-        <p class="tagline">Not conspiracy. Topology.</p>
+        <p id="case-status" class="eyebrow">AXM Labs experiment, not AXM core</p>
+        <h1 id="case-title">The Clifford Number</h1>
+        <p id="case-subtitle" class="subtitle">Seven degrees of UK AI state capture, with receipts.</p>
+        <p id="case-tagline" class="tagline">Not conspiracy. Topology.</p>
+        <div id="case-picker" class="case-picker" hidden>
+          <label for="case-select">Case</label>
+          <select id="case-select"></select>
+        </div>
       </div>
       <div class="control-card" aria-label="Search control">
         <label for="search">Enter a person, company, office, policy object, or forum.</label>
@@ -44,7 +48,7 @@
     <section id="result" class="result empty" aria-live="polite">
       <div class="empty-state">
         <h2>Pick a node.</h2>
-        <p>The app returns the shortest evidenced path to the Clifford policy machine. Type a name; if it is in the public graph, you will see whether it is adjacent and exactly which receipts support the path.</p>
+        <p>The app returns the shortest evidenced path to the selected case target. Type a name; if it is in the public graph, you will see whether it is adjacent and exactly which receipts support the path.</p>
       </div>
     </section>
 
