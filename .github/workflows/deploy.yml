@@ -30,6 +30,9 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Promote master doc into graph
+        run: node tools/promote-queue.mjs
+
       - name: Validate graph and tests
         run: npm run check
 
