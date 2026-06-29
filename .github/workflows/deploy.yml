@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Validate and deploy static site
+    name: Compile, validate, deploy
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -30,11 +30,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Promote master doc into graph
-        run: node tools/promote-queue.mjs
-
-      - name: Validate graph and tests
+      - name: Compile, validate, and run tests
         run: npm run check
+
+      - name: Run scout analysis
+        run: npm run scout
 
       - name: Build Pages artifact
         run: |
@@ -42,6 +42,8 @@ jobs:
           mkdir -p dist
           cp index.html app.js styles.css graph.json cases.json dist/
           cp -R assets cases docs receipts src dist/
+          if [ -d findings ]; then cp -R findings dist/; fi
+          if [ -d build ]; then cp -R build dist/; fi
           touch dist/.nojekyll
 
       - name: Upload pages artifact

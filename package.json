@@ -7,7 +7,7 @@
   "scripts": {
     "test": "node test/graph.test.js && node test/mcp-server.test.js && node test/update-sweep.test.js",
     "validate": "node src/validate.js graph.json",
-    "check": "npm run validate && npm run validate:cases && npm test",
+    "check": "npm run compile && npm run validate:compiled",
     "serve": "python3 -m http.server 8080",
     "mcp": "node src/mcp-server.js",
     "validate:cases": "node src/validate.js cases/uk-ai-policy.json && node src/validate.js cases/template.json",
@@ -19,7 +19,12 @@
     "research:usaspending": "node tools/research/usaspending-bulk-request.mjs",
     "research:irs:schedule-i": "python3 tools/research/extract-schedule-i.py",
     "import:master:v4": "node tools/import-master-v4.mjs",
-    "promote": "node tools/promote-queue.mjs"
+    "compile": "node tools/compile-master.mjs",
+    "scout": "node tools/scout-graph.mjs",
+    "compile:scout": "npm run compile && npm run scout",
+    "release:check": "npm run check && npm run scout",
+    "promote:legacy": "node tools/promote-queue.mjs",
+    "validate:compiled": "npm run validate && npm run validate:cases && npm test"
   },
   "keywords": [
     "graph",
