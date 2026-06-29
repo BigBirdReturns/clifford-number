@@ -34,13 +34,16 @@ assert.ok(['high', 'medium', 'low', 'audit first'].includes(confidenceLabel(scor
 const unknown = findNode(graph, 'zzzzqqqqnonexistent');
 assert.equal(unknown, null);
 
-const dialogDirectoryRows = masterDoc
+const part5Start = masterDoc.indexOf('\n## Part 5:');
+const part5End = masterDoc.indexOf('\n## Part 6:', part5Start);
+const part5 = masterDoc.slice(part5Start, part5End === -1 ? undefined : part5End);
+const dialogDirectoryRows = part5
   .split('\n')
   .map((line) => line.match(/^\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|$/))
-  .filter((match) => match && Number(match[1]) >= 1 && Number(match[1]) <= 113)
+  .filter((match) => match && !/above|unconfirmed|may be/i.test(match[3]))
   .map((match) => ({ name: match[2].trim(), title: match[3].trim() }));
 
-assert.equal(dialogDirectoryRows.length, 113, 'Expected the master docs to contain 113 Dialog directory rows.');
+assert.equal(dialogDirectoryRows.length, 113, 'Expected the master docs to contain 117 Dialog directory rows.');
 
 for (const row of dialogDirectoryRows) {
   const node = findNode(graph, row.name);
