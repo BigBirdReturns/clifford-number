@@ -168,6 +168,39 @@ h1 {
   font-weight: 800;
 }
 
+.case-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  max-width: 520px;
+}
+
+.case-picker[hidden] {
+  display: none;
+}
+
+.case-picker label {
+  font-weight: 800;
+}
+
+.case-picker select {
+  min-width: 240px;
+  padding: 10px 12px;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 750;
+}
+
+.case-picker select:focus {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+  border-color: var(--line);
+}
+
 .control-card,
 .panel,
 .result,
@@ -488,8 +521,14 @@ footer {
     margin-bottom: 36px;
   }
 
-  .search-row {
+  .search-row,
+  .case-picker {
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .case-picker select {
+    width: 100%;
   }
 
   .number-badge {
