@@ -27,6 +27,12 @@ async function init() {
   state.actors = new Map(surfaceGraph.actors.map(a => [a.id, a]));
   state.orgs = new Map(surfaceGraph.organizations.map(o => [o.id, o]));
   state.surfaces = new Map(surfaceGraph.surfaces.map(s => [s.surface_id, s]));
+  state.aliasesByKey = new Map();
+  for (const alias of surfaceGraph.aliases ?? []) {
+    const key = `${alias.kind}:${alias.canonical_id}`;
+    if (!state.aliasesByKey.has(key)) state.aliasesByKey.set(key, []);
+    state.aliasesByKey.get(key).push(alias.alias);
+  }
   state.actorScores = new Map(scores.actors.map(a => [a.actor_id, a]));
   state.orgScores = new Map(scores.organizations.map(o => [o.organization_id, o]));
   state.chains = new Map((scores.chains ?? []).map(c => [c.chain_id, c]));
@@ -58,8 +64,18 @@ function onSearch(e) {
   const q = norm(e.target.value).trim();
   const results = [];
   if (q.length >= 2) {
-    for (const a of state.surfaceGraph.actors) if (norm(a.label).includes(q) || norm(a.id).includes(q)) results.push({ kind: 'actor', id: a.id, label: a.label });
-    for (const o of state.surfaceGraph.organizations) if (norm(o.label).includes(q) || norm(o.id).includes(q)) results.push({ kind: 'organization', id: o.id, label: o.label });
+    for (const a of state.surfaceGraph.actors) {
+      const aliases = state.aliasesByKey.get(`actor:${a.id}`) ?? [];
+      if (norm(a.label).includes(q) || norm(a.id).includes(q) || aliases.some(alias => norm(alias).includes(q))) {
+        results.push({ kind: 'actor', id: a.id, label: a.label });
+      }
+    }
+    for (const o of state.surfaceGraph.organizations) {
+      const aliases = state.aliasesByKey.get(`organization:${o.id}`) ?? [];
+      if (norm(o.label).includes(q) || norm(o.id).includes(q) || aliases.some(alias => norm(alias).includes(q))) {
+        results.push({ kind: 'organization', id: o.id, label: o.label });
+      }
+    }
     for (const s of state.surfaceGraph.surfaces) if (norm(s.surface_label).includes(q) || norm(s.surface_id).includes(q)) results.push({ kind: 'surface', id: s.surface_id, label: s.surface_label });
     for (const c of state.chains.values()) if (norm(c.chain_label).includes(q) || norm(c.chain_id).includes(q)) results.push({ kind: 'chain', id: c.chain_id, label: c.chain_label });
   }

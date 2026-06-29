@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { loadAll, writeJson, combinations, indexBy, uniq, evidenceWeight } from './lib/ledger.mjs';
+import { loadAll, readJson, writeJson, combinations, indexBy, uniq, evidenceWeight } from './lib/ledger.mjs';
 
 function weakestEvidence(classes) {
   const vals = classes.filter(Boolean);
@@ -8,6 +8,7 @@ function weakestEvidence(classes) {
 }
 
 const data = loadAll();
+const legacyGraph = readJson('graph.json');
 const actorById = indexBy(data.actors, 'id');
 const orgById = indexBy(data.organizations, 'id');
 const receiptById = indexBy(data.receipts, 'receipt_id');
@@ -147,14 +148,51 @@ function shortestPath(start, target = 'matt-clifford') {
 const shortestPaths = {};
 for (const actor of data.actors) shortestPaths[actor.id] = shortestPath(actor.id);
 
+const actorIds = new Set(data.actors.map(actor => actor.id));
+const orgIds = new Set(data.organizations.map(org => org.id));
+const aliases = [...data.aliases];
+const legacyActors = [];
+const legacyOrganizations = [];
+const organizationTypes = new Set(['agency', 'company', 'document', 'forum', 'government', 'infrastructure', 'nonprofit', 'organization', 'policy']);
+
+for (const node of legacyGraph.nodes ?? []) {
+  if (node.type === 'person' && !actorIds.has(node.id)) {
+    legacyActors.push({
+      id: node.id,
+      label: node.label,
+      kind: 'person',
+      source: 'legacy_graph',
+    });
+    actorIds.add(node.id);
+  } else if (organizationTypes.has(node.type) && !orgIds.has(node.id)) {
+    legacyOrganizations.push({
+      id: node.id,
+      label: node.label,
+      kind: node.type,
+      source: 'legacy_graph',
+    });
+    orgIds.add(node.id);
+  }
+
+  for (const alias of node.aliases ?? []) {
+    aliases.push({
+      alias,
+      canonical_id: node.id,
+      kind: node.type === 'person' ? 'actor' : 'organization',
+      source: 'legacy_graph',
+    });
+  }
+}
+
 const surfaceGraph = {
   generated: new Date().toISOString(),
   surfaces: data.surfaces.map(surface => ({
     ...surface,
     participants: participationBySurface.get(surface.surface_id) ?? [],
   })),
-  actors: data.actors,
-  organizations: data.organizations,
+  actors: [...data.actors, ...legacyActors],
+  organizations: [...data.organizations, ...legacyOrganizations],
+  aliases,
 };
 
 const hopGraph = {
