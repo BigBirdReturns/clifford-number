@@ -20,7 +20,7 @@ const args = parseArgs(process.argv.slice(2));
 const file = args._[0] ?? 'graph.json';
 const graph = JSON.parse(fs.readFileSync(file, 'utf8'));
 
-const required = ['from', 'from-label', 'from-type', 'to', 'type', 'claim', 'source', 'evidence', 'status'];
+const required = ['from', 'to', 'type', 'claim', 'source', 'evidence', 'status'];
 for (const key of required) {
   if (!args[key]) {
     console.error(`Missing --${key}`);
@@ -28,21 +28,27 @@ for (const key of required) {
   }
 }
 
-if (!graph.nodes.some((node) => node.id === args.from)) {
+ensureNode('from');
+ensureNode('to');
+
+function ensureNode(side) {
+  const id = args[side];
+  if (graph.nodes.some((node) => node.id === id)) return;
+  const label = args[`${side}-label`];
+  const type = args[`${side}-type`];
+  if (!label || !type) {
+    console.error(`Unknown --${side} node: ${id}. Provide --${side}-label and --${side}-type to create it.`);
+    process.exit(1);
+  }
   graph.nodes.push({
-    id: args.from,
-    label: args['from-label'],
-    type: args['from-type'],
-    description: args['from-description'] ?? '',
+    id,
+    label,
+    type,
+    description: args[`${side}-description`] ?? '',
     aliases: [],
     tags: [],
     privacy: 'public-role-only'
   });
-}
-
-if (!graph.nodes.some((node) => node.id === args.to)) {
-  console.error(`Unknown --to node: ${args.to}`);
-  process.exit(1);
 }
 
 const id = args.id ?? `e-${args.from}-to-${args.to}-${args.type}`.replace(/[^a-z0-9-]+/gi, '-').toLowerCase();

@@ -629,19 +629,22 @@ Umbrella nodes are **contexts**, not accusations. A topology match is not a dire
 
 ## Part 13: What's Still Open (Do Not Import Without Further Sourcing)
 
+See `docs/research-gap-audit.md` for the reconciled graph audit, corrected EIN table, LDA migration deadline, CIK-resolution workflow, publication readiness sequence, and MCP note.
+
+
 These items exist as leads in the research passes but are not yet backed by row-level primary sources. Import as `evidence_class: open`, `ui_weight: 4`, `public: false` until resolved.
 
 | Item | What's Missing | Source to Pull |
 |---|---|---|
-| Senate LDA filings — Palantir, SpaceX, Meta, Google, Walmart | Row-level registration records, lobbyist names, agencies contacted, spend amounts | lda.senate.gov API (API key required) |
+| Senate LDA filings — Palantir, SpaceX, Meta, Google, Walmart | Row-level registration records, lobbyist names, agencies contacted, spend amounts | lda.senate.gov API (API key required); use `LDA_API_KEY=... npm run research:lda` |
 | FARA registrations | Foreign agent filings for any relevant registrants | DOJ FARA public search (no API documented) |
-| SEC Form D — 8VC, Ribbit, Greylock, Fortress, Benchmark, Social Capital, Affinity (detailed) | Issuer entities, fund names, first sale dates, offering amounts, related persons/GP names | data.sec.gov submissions API (no auth, 10 req/sec) |
-| 990 Schedule I — grant recipients | Who Koch Foundation, Berggruen, New America, ADL, Mercatus, Federalist Society gave money to | IRS bulk download / ProPublica Schedule I |
+| SEC Form D — 8VC, Ribbit, Greylock, Fortress, Benchmark, Social Capital, Affinity (detailed) | Issuer entities, fund names, first sale dates, offering amounts, related persons/GP names | SEC browse-edgar Atom and data.sec.gov submissions API (no auth, 10 req/sec); use `SEC_USER_AGENT="name email" npm run research:sec:formd` |
+| 990 Schedule I — grant recipients | Who Koch Foundation, Berggruen, New America, ADL, Mercatus, Federalist Society gave money to. Target EINs for extraction: Charles Koch Foundation `48-0918408`; Berggruen Institute `46-5602320`; New America Foundation `52-2096845`; ADL `13-1818723`; Mercatus Center `54-1436224`; Federalist Society `36-3235550`. | IRS bulk download / ProPublica Schedule I; use `npm run research:irs:download -- 2023 2024` then `npm run research:irs:schedule-i -- <zipfiles> --output schedule_i_grants.csv` |
 | Jain Family Institute | Financials, officers, EIN | IRS / ProPublica |
 | Arnold Ventures LLC | Current legal container vs Laura and John Arnold Foundation 990 history | IRS + entity registry |
 | Companies House — Clifford, EF, ARIA-adjacent | Director-of, PSC-of, filing history | Companies House Developer API (auth required) |
 | Find a Tender / Contracts Finder | UK procurement notices, suppliers, buyers | Find a Tender OCDS API / data.gov.uk |
-| USAspending / SAM — Palantir, SpaceX, Groq, PsiQuantum, Oklo, Neuralink | Award IDs, amounts, agencies, dates | USAspending API (no auth) / SAM API (API key required) |
+| USAspending / SAM — Palantir, SpaceX, Groq, PsiQuantum, Oklo, Neuralink | Award IDs, amounts, agencies, dates | USAspending bulk-download API (no auth) / SAM API (API key required); use `npm run research:usaspending` |
 | Cradle Infrastructure / Joseph Mayhew | No public registry or procurement trail confirmed; only uploaded profile material in hand | Companies House search; UK procurement transparency |
 | Kallas EU Commission portfolio detail | Portfolio specifics beyond defence/cyber/neighbourhood | EC website (official) |
 | Non-US lobbying / government contacts | UK Register of Consultant Lobbyists; TED (EU procurement) | UK Gov / TED API |
