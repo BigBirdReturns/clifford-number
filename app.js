@@ -14,19 +14,22 @@ function surface(id) { return state.surfaces.get(id); }
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 async function init() {
-  const [surfaceGraph, hopGraph, scores, scout] = await Promise.all([
+  const [surfaceGraph, hopGraph, scores, legacyGraph, scout] = await Promise.all([
     loadJson('build/surface-graph.json'),
     loadJson('build/hop-graph.json'),
     loadJson('build/scores.json'),
+    loadJson('graph.json'),
     loadJson('build/scout-report.json').catch(() => ({ findings: [] }))
   ]);
   state.surfaceGraph = surfaceGraph;
   state.hopGraph = hopGraph;
   state.scores = scores;
+  state.legacyGraph = legacyGraph;
   state.scout = scout;
   state.actors = new Map(surfaceGraph.actors.map(a => [a.id, a]));
   state.orgs = new Map(surfaceGraph.organizations.map(o => [o.id, o]));
   state.surfaces = new Map(surfaceGraph.surfaces.map(s => [s.surface_id, s]));
+  state.candidates = new Map((surfaceGraph.candidates ?? []).map(c => [c.id, c]));
   state.aliasesByKey = new Map();
   for (const alias of surfaceGraph.aliases ?? []) {
     const key = `${alias.kind}:${alias.canonical_id}`;
@@ -35,6 +38,7 @@ async function init() {
   }
   state.actorScores = new Map(scores.actors.map(a => [a.actor_id, a]));
   state.orgScores = new Map(scores.organizations.map(o => [o.organization_id, o]));
+  state.legacyNodes = new Map((legacyGraph.nodes ?? []).map(n => [n.id, n]));
   state.chains = new Map((scores.chains ?? []).map(c => [c.chain_id, c]));
   renderHome();
   $('#search').addEventListener('input', onSearch);
@@ -78,6 +82,11 @@ function onSearch(e) {
     }
     for (const s of state.surfaceGraph.surfaces) if (norm(s.surface_label).includes(q) || norm(s.surface_id).includes(q)) results.push({ kind: 'surface', id: s.surface_id, label: s.surface_label });
     for (const c of state.chains.values()) if (norm(c.chain_label).includes(q) || norm(c.chain_id).includes(q)) results.push({ kind: 'chain', id: c.chain_id, label: c.chain_label });
+    for (const c of state.candidates.values()) {
+      if (norm(c.label).includes(q) || norm(c.id).includes(q) || (c.aliases ?? []).some(alias => norm(alias).includes(q))) {
+        results.push({ kind: 'candidate', id: c.id, label: c.label });
+      }
+    }
   }
   $('#results').innerHTML = results.slice(0, 12).map(r => `<button class="result" data-kind="${r.kind}" data-id="${r.id}">${esc(r.label)}<small>${r.kind}</small></button>`).join('');
   for (const btn of document.querySelectorAll('.result')) btn.addEventListener('click', () => renderEntity(btn.dataset.kind, btn.dataset.id));
@@ -87,15 +96,78 @@ function renderEntity(kind, id) {
   if (kind === 'actor') renderActor(id);
   else if (kind === 'organization') renderOrg(id);
   else if (kind === 'chain') renderChain(id);
+  else if (kind === 'candidate') renderCandidate(id);
   else renderSurface(id);
 }
 
 function metricPanel(label, value) { return `<div class="panel"><div class="metric">${esc(value ?? '—')}</div><div class="metric-label">${esc(label)}</div></div>`; }
 
+function legacyIsTopology(edge) {
+  return edge?.topology === true
+    || edge?.topology_only === true
+    || edge?.type === 'topology'
+    || edge?.type === 'umbrella-membership'
+    || edge?.status === 'topology'
+    || edge?.status === 'topology-membership';
+}
+
+function legacyShortestPath(startId, targetId = state.legacyGraph?.target_node_id) {
+  if (!startId || !targetId || startId === targetId) return null;
+  const nodes = state.legacyNodes;
+  if (!nodes?.has(startId) || !nodes.has(targetId)) return null;
+  const adjacency = new Map();
+  for (const edge of state.legacyGraph.edges ?? []) {
+    if (legacyIsTopology(edge)) continue;
+    if (!adjacency.has(edge.from)) adjacency.set(edge.from, []);
+    if (!adjacency.has(edge.to)) adjacency.set(edge.to, []);
+    adjacency.get(edge.from).push({ from: edge.from, to: edge.to, edge, reversed: false });
+    adjacency.get(edge.to).push({ from: edge.to, to: edge.from, edge, reversed: true });
+  }
+  const queue = [{ id: startId, hops: [] }];
+  const seen = new Set([startId]);
+  while (queue.length) {
+    const current = queue.shift();
+    if (current.hops.length >= 12) continue;
+    for (const hop of adjacency.get(current.id) ?? []) {
+      if (seen.has(hop.to)) continue;
+      const hops = [...current.hops, hop];
+      if (hop.to === targetId) return { number: hops.length, hops, node_ids: [startId, ...hops.map(h => h.to)] };
+      seen.add(hop.to);
+      queue.push({ id: hop.to, hops });
+    }
+  }
+  return null;
+}
+
+function renderLegacyPath(path) {
+  if (!path) return '<p class="why-no-hop"><strong>Legacy edge graph: no path found.</strong></p>';
+  const labels = path.node_ids.map(id => state.legacyNodes.get(id)?.label ?? id);
+  return `<div class="path-chain">${labels.map(esc).map(label => `<span class="path-node">${label}</span>`).join('')}</div>`
+    + path.hops.map(h => `<div class="receipts">${esc(state.legacyNodes.get(h.from)?.label ?? h.from)} ↔ ${esc(state.legacyNodes.get(h.to)?.label ?? h.to)}: ${esc(h.edge.type || 'edge')} · ${esc(h.edge.evidence_class || 'unknown')}</div>`).join('');
+}
+
 function renderActor(id) {
   const actor = state.actors.get(id);
   const score = state.actorScores.get(id);
   const path = state.hopGraph.shortest_paths[id];
+  const legacyNode = state.legacyNodes.get(id);
+  const legacyPath = !score && legacyNode ? legacyShortestPath(id) : null;
+  if (!score && legacyNode) {
+    const related = (state.legacyGraph.edges ?? []).filter(edge => edge.from === id || edge.to === id).slice(0, 10);
+    $('#summary').innerHTML = [
+      metricPanel('Legacy Edge Number', legacyPath?.number ?? 'N/A'),
+      metricPanel('Surface-Hop Number', 'N/A'),
+      metricPanel('Machine Score', 0),
+      metricPanel('Source', 'legacy graph'),
+    ].join('');
+    $('#detail').innerHTML = `
+      <div class="panel"><h2>${esc(actor.label)}</h2><p>${esc(legacyNode.description || 'Legacy graph node imported for search continuity.')}</p><div class="badge-row">${(legacyNode.tags ?? []).map(t => `<span class="badge">${esc(t)}</span>`).join('')}</div></div>
+      <div class="panel why-no-hop"><h3>Surface-hop status</h3><p>This actor is search-visible through the legacy edge graph bridge, but has not yet been promoted into bounded surface-hop ledgers. The path below is legacy edge-graph context, not a newly manufactured surface hop.</p></div>
+      <div class="panel"><h3>Legacy edge-graph path</h3>${renderLegacyPath(legacyPath)}</div>
+      <div class="panel"><h3>Legacy public edges</h3>${related.length ? related.map(edge => `<div class="receipts">${esc(state.legacyNodes.get(edge.from)?.label ?? edge.from)} → ${esc(state.legacyNodes.get(edge.to)?.label ?? edge.to)}: ${esc(edge.claim || edge.type || edge.id)}</div>`).join('') : '<p>None.</p>'}</div>
+    `;
+    return;
+  }
   $('#summary').innerHTML = [
     metricPanel('Clifford Number', score?.clifford_number ?? 'N/A'),
     metricPanel('Laundering Chain', `${score?.laundering_chain_score ?? 0}/${score?.laundering_chain_max ?? 5}`),
@@ -182,6 +254,23 @@ function renderOrg(id) {
   $('#detail').innerHTML = `
     <div class="panel"><h2>${esc(org.label)}</h2><p>${score?.surface_factory ? 'This organization behaves as a surface factory. It must be decomposed into bounded surfaces, not used as a generic hop node.' : 'Organization context. It does not create Clifford hops by itself.'}</p></div>
     <div class="panel"><h3>Surfaces</h3><div class="surface-list">${(score?.surfaces ?? []).map(renderSurfaceCard).join('')}</div></div>
+  `;
+}
+
+function renderCandidate(id) {
+  const candidate = state.candidates.get(id);
+  if (!candidate) return;
+  $('#summary').innerHTML = [
+    metricPanel('Status', candidate.status ?? 'intake_only'),
+    metricPanel('Kind', candidate.kind ?? 'candidate'),
+    metricPanel('Clifford Number', 'N/A'),
+    metricPanel('Graph Effect', 'none'),
+  ].join('');
+  $('#detail').innerHTML = `
+    <div class="panel"><h2>${esc(candidate.label)}</h2><div class="badge-row"><span class="badge">intake candidate</span><span class="badge">${esc(candidate.kind)}</span></div></div>
+    <div class="panel why-no-hop"><h3>Not a graph claim yet</h3><p>${esc(candidate.why_visible || 'Visible for intake only. This is not a Clifford hop, score, or relationship claim.')}</p></div>
+    <div class="panel"><h3>Promotion path</h3><p>${esc(candidate.next_step || 'Promote only after a bounded public surface and receipt are available.')}</p><p class="meta">Source to review: ${candidate.source_url ? `<a href="${esc(candidate.source_url)}" target="_blank" rel="noreferrer">${esc(candidate.source_url)}</a>` : 'none'}</p></div>
+    ${(candidate.aliases ?? []).length ? `<div class="panel"><h3>Search aliases</h3><p>${candidate.aliases.map(esc).join(', ')}</p></div>` : ''}
   `;
 }
 

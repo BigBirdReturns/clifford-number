@@ -9,6 +9,7 @@ function weakestEvidence(classes) {
 
 const data = loadAll();
 const legacyGraph = readJson('graph.json');
+const intakeCandidates = readJson('data/intake/defense-industrial-candidates.json').candidates ?? [];
 const actorById = indexBy(data.actors, 'id');
 const orgById = indexBy(data.organizations, 'id');
 const receiptById = indexBy(data.receipts, 'receipt_id');
@@ -153,7 +154,6 @@ const orgIds = new Set(data.organizations.map(org => org.id));
 const aliases = [...data.aliases];
 const legacyActors = [];
 const legacyOrganizations = [];
-const organizationTypes = new Set(['agency', 'company', 'document', 'forum', 'government', 'infrastructure', 'nonprofit', 'organization', 'policy']);
 
 for (const node of legacyGraph.nodes ?? []) {
   if (node.type === 'person' && !actorIds.has(node.id)) {
@@ -162,14 +162,20 @@ for (const node of legacyGraph.nodes ?? []) {
       label: node.label,
       kind: 'person',
       source: 'legacy_graph',
+      legacy_type: node.type,
+      description: node.description,
+      tags: node.tags ?? [],
     });
     actorIds.add(node.id);
-  } else if (organizationTypes.has(node.type) && !orgIds.has(node.id)) {
+  } else if (node.type !== 'person' && !orgIds.has(node.id)) {
     legacyOrganizations.push({
       id: node.id,
       label: node.label,
       kind: node.type,
       source: 'legacy_graph',
+      legacy_type: node.type,
+      description: node.description,
+      tags: node.tags ?? [],
     });
     orgIds.add(node.id);
   }
@@ -193,6 +199,7 @@ const surfaceGraph = {
   actors: [...data.actors, ...legacyActors],
   organizations: [...data.organizations, ...legacyOrganizations],
   aliases,
+  candidates: intakeCandidates,
 };
 
 const hopGraph = {

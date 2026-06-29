@@ -39,6 +39,11 @@ for (const node of legacyGraph.nodes.filter(n => n.type === 'person')) {
   assert.ok(surfaceActorIds.has(node.id), `${node.label} must be present in the surface app actor index`);
 }
 assert.ok(surfaceActorIds.has('alex-karp'), 'Alex Karp must be present through the legacy graph bridge, not a one-off ledger patch');
+assert.match(surface.actors.find(a => a.id === 'alex-karp')?.description ?? '', /Palantir/, 'legacy bridged actors must carry descriptions for UI context');
+const candidates = new Set((surface.candidates ?? []).map(c => c.id));
+for (const id of ['candidate-palmer-luckey', 'candidate-jackson-moses', 'candidate-alex-miller', 'candidate-silicon-valley-defense-group']) {
+  assert.ok(candidates.has(id), `${id} must be visible as a defense-industrial intake candidate`);
+}
 
 for (const edge of hop.edges) {
   for (const basis of edge.surfaces) {
