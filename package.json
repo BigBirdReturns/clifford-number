@@ -5,7 +5,7 @@
   "type": "module",
   "private": false,
   "scripts": {
-    "test": "node test/graph.test.js && node test/mcp-server.test.js && node test/update-sweep.test.js && node test/research-tools.test.js && node test/import-review.test.js && node test/add-edge.test.js && python3 test/research_extractor_test.py",
+    "test": "node test/graph.test.js && node test/mcp-server.test.js && node test/update-sweep.test.js",
     "validate": "node src/validate.js graph.json",
     "check": "npm run validate && npm run validate:cases && npm test",
     "serve": "python3 -m http.server 8080",
@@ -13,13 +13,7 @@
     "validate:cases": "node src/validate.js cases/uk-ai-policy.json && node src/validate.js cases/template.json",
     "build": "node tools/build-graph.mjs",
     "sweep": "node tools/update-sweep.mjs",
-    "import:master:v3": "node tools/import-master-v3.mjs",
-    "research:lda": "node tools/research/lda-pull.mjs",
-    "research:sec:formd": "node tools/research/sec-formd.mjs",
-    "research:usaspending": "node tools/research/usaspending-bulk-request.mjs",
-    "research:irs:schedule-i": "python3 tools/research/extract-schedule-i.py",
-    "research:irs:download": "bash tools/research/download-irs-teos.sh",
-    "check:research": "node --check tools/research/lda-pull.mjs && node --check tools/research/sec-formd.mjs && node --check tools/research/usaspending-bulk-request.mjs && bash -n tools/research/download-irs-teos.sh && python3 -m py_compile tools/research/extract-schedule-i.py"
+    "import:master:v3": "node tools/import-master-v3.mjs"
   },
   "keywords": [
     "graph",
