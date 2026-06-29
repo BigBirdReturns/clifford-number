@@ -2,11 +2,19 @@ import { findNode, searchNodes, shortestPath, weakestEvidence } from './src/grap
 import { computePathScore, confidenceLabel } from './src/scoring.js';
 
 const state = {
+  manifest: null,
+  currentCase: null,
   graph: null,
   selectedNode: null
 };
 
 const els = {
+  title: document.querySelector('#case-title'),
+  subtitle: document.querySelector('#case-subtitle'),
+  tagline: document.querySelector('#case-tagline'),
+  status: document.querySelector('#case-status'),
+  casePicker: document.querySelector('#case-picker'),
+  caseSelect: document.querySelector('#case-select'),
   search: document.querySelector('#search'),
   go: document.querySelector('#go'),
   suggestions: document.querySelector('#suggestions'),
@@ -22,13 +30,50 @@ init().catch((error) => {
 });
 
 async function init() {
-  const response = await fetch('./graph.json');
-  if (!response.ok) throw new Error(`Could not load graph.json: ${response.status}`);
+  state.manifest = await loadManifest();
+  const requested = new URLSearchParams(window.location.search).get('case');
+  await loadCase(requested || state.manifest.default_case_id, { updateUrl: false });
+  renderCasePicker();
+  wireEvents();
+}
+
+async function loadManifest() {
+  const response = await fetch('./cases.json');
+  if (!response.ok) {
+    return {
+      default_case_id: 'default',
+      cases: [{ id: 'default', title: 'The Clifford Number', data_path: 'graph.json', root_graph_path: 'graph.json' }]
+    };
+  }
+  return response.json();
+}
+
+async function loadCase(caseId, options = {}) {
+  const fallbackId = state.manifest.default_case_id ?? state.manifest.cases?.[0]?.id;
+  const selectedCase = state.manifest.cases.find((item) => item.id === caseId)
+    ?? state.manifest.cases.find((item) => item.id === fallbackId);
+  if (!selectedCase) throw new Error('No registered case is available.');
+
+  const response = await fetch(selectedCase.data_path);
+  if (!response.ok) throw new Error(`Could not load ${selectedCase.data_path}: ${response.status}`);
+
+  state.currentCase = selectedCase;
   state.graph = await response.json();
+  state.selectedNode = null;
+  els.search.value = '';
+
+  renderHero();
   renderSuggestions('');
   renderGraphStats();
   renderNodeList(state.graph.nodes);
-  wireEvents();
+  renderEmptyState();
+
+  if (options.updateUrl !== false) {
+    const url = new URL(window.location.href);
+    if (selectedCase.id === state.manifest.default_case_id) url.searchParams.delete('case');
+    else url.searchParams.set('case', selectedCase.id);
+    window.history.replaceState({}, '', url);
+  }
 }
 
 function wireEvents() {
@@ -37,6 +82,37 @@ function wireEvents() {
     if (event.key === 'Enter') computeFromSearch();
   });
   els.go.addEventListener('click', computeFromSearch);
+  els.caseSelect?.addEventListener('change', () => loadCase(els.caseSelect.value));
+}
+
+function renderCasePicker() {
+  const visibleCases = (state.manifest.cases ?? []).filter((item) => !item.hidden);
+  if (!els.casePicker || !els.caseSelect || visibleCases.length <= 1) return;
+  els.casePicker.hidden = false;
+  els.caseSelect.innerHTML = visibleCases.map((item) => (
+    `<option value="${escapeAttr(item.id)}">${escapeHtml(item.title ?? item.id)}</option>`
+  )).join('');
+  els.caseSelect.value = state.currentCase.id;
+}
+
+function renderHero() {
+  const graph = state.graph;
+  document.title = graph.title ?? state.currentCase.title ?? 'Clifford Number';
+  if (els.title) els.title.textContent = graph.title ?? state.currentCase.title ?? 'Clifford Number';
+  if (els.subtitle) els.subtitle.textContent = graph.subtitle ?? state.currentCase.description ?? '';
+  if (els.tagline) els.tagline.textContent = graph.tagline ?? 'Receipts first.';
+  if (els.status) els.status.textContent = graph.status ?? state.currentCase.description ?? '';
+  if (els.caseSelect) els.caseSelect.value = state.currentCase.id;
+}
+
+function renderEmptyState() {
+  els.result.className = 'result empty';
+  els.result.innerHTML = `
+    <div class="empty-state">
+      <h2>Pick a node.</h2>
+      <p>The app returns the shortest evidenced path to ${escapeHtml(targetNode().label)}. Type a name; if it is in this case, you will see whether it is adjacent and exactly which receipts support the path.</p>
+    </div>
+  `;
 }
 
 function computeFromSearch() {
@@ -74,7 +150,7 @@ function renderGraphStats() {
   const nodes = state.graph.nodes?.length ?? 0;
   const edges = state.graph.edges?.length ?? 0;
   const listed = (state.graph.edges ?? []).filter((edge) => edge.status === 'listed').length;
-  els.graphStats.textContent = `${nodes} public nodes, ${edges} sourced edges, and ${listed} listing-only edges are searchable. Type a name to see whether it has a sourced path to the Clifford policy machine.`;
+  els.graphStats.textContent = `${nodes} public nodes, ${edges} sourced edges, and ${listed} listing-only edges are searchable in ${state.currentCase.title}. Type a name to see whether it has a sourced path to ${targetNode().label}.`;
 }
 
 function renderNodeList(nodes) {
@@ -99,7 +175,7 @@ function renderNoMatch(query) {
   els.result.innerHTML = `
     <div class="empty-state">
       <h2>No node found.</h2>
-      <p>No current public graph node matches “${escapeHtml(query)}”, so the app cannot claim adjacency. Add a public-role node and at least one sourced edge to <code>graph.json</code>, then run <code>npm run check</code>.</p>
+      <p>No current public graph node matches “${escapeHtml(query)}” in ${escapeHtml(state.currentCase.title)}, so the app cannot claim adjacency. Add a public-role node and at least one sourced edge to ${escapeHtml(state.currentCase.data_path)}, then run <code>npm run check</code>.</p>
     </div>
   `;
 }
@@ -110,7 +186,7 @@ function renderPath(node, path) {
     els.result.innerHTML = `
       <div class="empty-state">
         <h2>No path found for ${escapeHtml(node.label)}.</h2>
-        <p>The node exists, but there is no evidenced path to ${escapeHtml(targetNode().label)} under the current graph.</p>
+        <p>The node exists, but there is no evidenced path to ${escapeHtml(targetNode().label)} under the current case.</p>
       </div>
     `;
     return;
@@ -173,11 +249,19 @@ function renderHop(hop, index) {
       <div class="receipts">
         <h3>Receipts</h3>
         <ul>
-          ${sources.map((source) => `<li><a href="${escapeAttr(source.url)}" target="_blank" rel="noreferrer">${escapeHtml(source.label)}</a> <small>${escapeHtml(source.source_type)}</small></li>`).join('')}
+          ${sources.map((source) => `<li><a href="${escapeAttr(receiptUrl(source))}">${escapeHtml(source.label)}</a> <small>${escapeHtml(source.source_type)}</small></li>`).join('')}
         </ul>
       </div>
     </article>
   `;
+}
+
+function receiptUrl(source) {
+  if (source.receipt_url) return source.receipt_url;
+  if (source.id === 'dialog-html-source') {
+    return 'docs/clifford-number-master.md#part-3-dialog-public-directory-import-safe-subset';
+  }
+  return source.url;
 }
 
 function targetNode() {
