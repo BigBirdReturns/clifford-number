@@ -43,6 +43,23 @@ npm run mcp
 
 The server provides `clifford_number`, `search_clifford_nodes`, and `get_clifford_node` tools. It does not make the graph available to every LLM by itself; the LLM host must support MCP and be configured to launch this server. See `docs/mcp.md` for client configuration examples.
 
+
+## Case manifest and update gates
+
+The static app can load multiple public graph cases through `cases.json`. The default case is the UK AI policy graph; `cases/template.json` is a safe shell for future public-interest topology maps.
+
+Use the update sweep to generate an audit report of evidence classes, statuses, watchlist items, and edges that need stronger notes:
+
+```bash
+npm run sweep
+```
+
+Use the v3 master importer only as a queue generator. It does not mutate `graph.json`; it sorts candidate rows into ready, review, verify, hold, and reject buckets before any public promotion:
+
+```bash
+npm run import:master:v3 -- path/to/clifford-number-master-v3.md data/import-queues/master-v3.import-queue.json
+```
+
 ## Repo layout
 
 ```txt
@@ -51,6 +68,7 @@ clifford-number/
   styles.css              # Visual language
   app.js                  # Browser UI
   graph.json              # Public seed graph
+  cases.json              # Browser/MCP case manifest
   src/
     graph.js              # Search and shortest-path logic
     scoring.js            # Path score and confidence labels
@@ -60,6 +78,7 @@ clifford-number/
     graph.test.js         # Node test suite
   cases/
     uk-ai-policy.json     # Same seed graph, saved as case data
+    template.json         # Reusable safe case shell
   docs/
     methodology.md
     redaction-policy.md
@@ -72,6 +91,8 @@ clifford-number/
   tools/
     add-edge.mjs
     import-dialog-public-directory.mjs
+    import-master-v3.mjs
+    update-sweep.mjs
 ```
 
 ## Evidence classes

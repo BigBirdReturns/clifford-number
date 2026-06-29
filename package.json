@@ -5,11 +5,15 @@
   "type": "module",
   "private": false,
   "scripts": {
-    "test": "node test/graph.test.js && node test/mcp-server.test.js",
+    "test": "node test/graph.test.js && node test/mcp-server.test.js && node test/update-sweep.test.js",
     "validate": "node src/validate.js graph.json",
-    "check": "npm run validate && npm test",
+    "check": "npm run validate && npm run validate:cases && npm test",
     "serve": "python3 -m http.server 8080",
-    "mcp": "node src/mcp-server.js"
+    "mcp": "node src/mcp-server.js",
+    "validate:cases": "node src/validate.js cases/uk-ai-policy.json && node src/validate.js cases/template.json",
+    "build": "node tools/build-graph.mjs",
+    "sweep": "node tools/update-sweep.mjs",
+    "import:master:v3": "node tools/import-master-v3.mjs"
   },
   "keywords": [
     "graph",

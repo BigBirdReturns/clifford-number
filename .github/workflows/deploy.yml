@@ -37,8 +37,8 @@ jobs:
         run: |
           rm -rf dist
           mkdir -p dist
-          cp index.html app.js styles.css graph.json dist/
-          cp -R assets docs receipts src dist/
+          cp index.html app.js styles.css graph.json cases.json dist/
+          cp -R assets cases docs receipts src dist/
           touch dist/.nojekyll
 
       - name: Upload pages artifact

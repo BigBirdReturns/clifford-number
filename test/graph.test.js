@@ -57,3 +57,19 @@ for (const row of dialogDirectoryRows) {
 }
 
 console.log('Tests OK.');
+
+const topologyGraph = {
+  target_node_id: 'target',
+  nodes: [
+    { id: 'source', label: 'Source', type: 'person' },
+    { id: 'umbrella', label: 'Umbrella', type: 'context' },
+    { id: 'target', label: 'Target', type: 'control-plane' }
+  ],
+  sources: [{ id: 's', label: 'S', url: 'https://example.com' }],
+  edges: [
+    { id: 't1', from: 'source', to: 'umbrella', type: 'topology', claim: 'Context only.', source_ids: ['s'], evidence_class: 'derived', status: 'derived' },
+    { id: 't2', from: 'umbrella', to: 'target', type: 'topology', claim: 'Context only.', source_ids: ['s'], evidence_class: 'derived', status: 'derived' }
+  ]
+};
+assert.equal(shortestPath(topologyGraph, 'source'), null, 'Topology-only edges should not produce default adjacency paths.');
+assert.equal(shortestPath(topologyGraph, 'source', 'target', { includeTopology: true }).number, 2, 'Topology paths can be included explicitly.');

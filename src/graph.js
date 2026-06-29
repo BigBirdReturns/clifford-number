@@ -20,7 +20,7 @@ export function indexGraph(graph) {
 }
 
 export function buildAdjacency(graph, options = {}) {
-  const { directed = false } = options;
+  const { directed = false, includeTopology = false } = options;
   const adjacency = new Map();
 
   function add(from, to, edge, reversed = false) {
@@ -29,6 +29,7 @@ export function buildAdjacency(graph, options = {}) {
   }
 
   for (const edge of graph.edges ?? []) {
+    if (!includeTopology && isTopologyOnly(edge)) continue;
     add(edge.from, edge.to, edge, false);
     if (!directed) add(edge.to, edge.from, edge, true);
   }
@@ -80,13 +81,13 @@ export function searchNodes(graph, query, limit = 12) {
 }
 
 export function shortestPath(graph, startId, targetId = graph.target_node_id, options = {}) {
-  const { directed = false, maxDepth = 12 } = options;
+  const { directed = false, maxDepth = 12, includeTopology = false } = options;
   const { nodesById } = indexGraph(graph);
   if (!nodesById.has(startId)) throw new Error(`Unknown start node: ${startId}`);
   if (!nodesById.has(targetId)) throw new Error(`Unknown target node: ${targetId}`);
   if (startId === targetId) return { number: 0, nodes: [nodesById.get(startId)], hops: [] };
 
-  const adjacency = buildAdjacency(graph, { directed });
+  const adjacency = buildAdjacency(graph, { directed, includeTopology });
   const queue = [{ id: startId, path: [] }];
   const seen = new Set([startId]);
 
@@ -118,7 +119,7 @@ export function pathToText(path) {
 }
 
 export function classRank(evidenceClass) {
-  const ranks = { confirmed: 1, primary_public: 1, reported: 2, derived: 3, judgment: 4, open: 5 };
+  const ranks = { official: 1, confirmed: 1, primary_public: 2, reported: 3, derived: 4, judgment: 5, open: 6 };
   return ranks[evidenceClass] ?? 9;
 }
 
@@ -127,4 +128,16 @@ export function weakestEvidence(path) {
   return path.hops
     .map((hop) => hop.edge.evidence_class)
     .sort((a, b) => classRank(b) - classRank(a))[0];
+}
+
+export function isTopologyOnly(edge) {
+  // Co-presence / umbrella groupings are contexts, not direct relationship
+  // claims, so they must never shorten a Clifford Number. Recognise both
+  // marker conventions used in the data.
+  return edge?.topology === true
+    || edge?.topology_only === true
+    || edge?.type === 'topology'
+    || edge?.type === 'umbrella-membership'
+    || edge?.status === 'topology'
+    || edge?.status === 'topology-membership';
 }
