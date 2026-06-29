@@ -1,4 +1,5 @@
 export const EVIDENCE_CLASSES = {
+  official: 'Direct official sourcing: government, court, regulator, or primary institutional record (GOV.UK, US Army public affairs, SEC, IRS).',
   confirmed: 'Primary source or tier-one reporting supports the claim directly.',
   primary_public: 'Primary public material supports the claim directly, such as a public directory extract or source HTML.',
   reported: 'Credible reporting or public profile supports the claim, but not primary-source confirmed in this graph.',
@@ -15,6 +16,7 @@ export const EDGE_STATUS = {
   attended: 'The person or entity is reported as having attended.',
   appointed: 'The person was formally appointed or commissioned into a role.',
   contracted: 'The entity appears in a contract or procurement relationship.',
+  'topology-membership': 'The entity is grouped under an umbrella context. This is a topology match, NOT a direct relationship claim between members.',
   derived: 'The status is analytic and must remain connected to its source notes.',
   'public-role': 'The relationship is limited to public professional role information.'
 };

@@ -119,7 +119,7 @@ export function pathToText(path) {
 }
 
 export function classRank(evidenceClass) {
-  const ranks = { confirmed: 1, primary_public: 1, reported: 2, derived: 3, judgment: 4, open: 5 };
+  const ranks = { official: 1, confirmed: 1, primary_public: 2, reported: 3, derived: 4, judgment: 5, open: 6 };
   return ranks[evidenceClass] ?? 9;
 }
 
@@ -131,5 +131,13 @@ export function weakestEvidence(path) {
 }
 
 export function isTopologyOnly(edge) {
-  return edge?.topology_only === true || edge?.type === 'topology' || edge?.status === 'topology';
+  // Co-presence / umbrella groupings are contexts, not direct relationship
+  // claims, so they must never shorten a Clifford Number. Recognise both
+  // marker conventions used in the data.
+  return edge?.topology === true
+    || edge?.topology_only === true
+    || edge?.type === 'topology'
+    || edge?.type === 'umbrella-membership'
+    || edge?.status === 'topology'
+    || edge?.status === 'topology-membership';
 }
