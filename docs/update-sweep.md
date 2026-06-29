@@ -1,35 +1,34 @@
 # Update sweep
 
-Generated: 2026-06-29T09:32:25.711Z
+Generated: 2026-06-29T08:13:30.018Z
 
 ## Graph inventory
 
-- Nodes: 371
-- Edges: 452
-- Sources: 15
+- Nodes: 194
+- Edges: 223
+- Sources: 14
 
 ## Evidence classes
 
 | Value | Count |
 |---|---:|
-| primary_public | 243 |
-| confirmed | 90 |
-| reported | 88 |
+| primary_public | 144 |
+| confirmed | 27 |
 | derived | 22 |
+| reported | 21 |
 | official | 9 |
 
 ## Edge statuses
 
 | Value | Count |
 |---|---:|
-| public-role | 153 |
-| listed | 120 |
-| reported | 113 |
+| listed | 119 |
+| public-role | 44 |
 | topology-membership | 21 |
-| published | 19 |
-| appointed | 13 |
-| contracted | 10 |
-| attended | 2 |
+| published | 15 |
+| reported | 10 |
+| appointed | 7 |
+| contracted | 6 |
 | derived | 1 |
 
 ## Watchlist entries not yet modeled as sources

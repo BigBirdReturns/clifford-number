@@ -1,39 +1,39 @@
-# Release Architecture
+# Surface-Hop Release Architecture
 
-The first-release architecture separates the research ledger, compiler, scout, and public app.
+The old edge graph stored claims as node-to-node relationships. That was useful for preserving facts, but it could not compute the project thesis. The new system separates claims, surfaces, participation, receipts, generated hops, and generated scores.
 
-## Authority model
+## The bug
 
-`docs/clifford-number-master.md` is the research ledger. It is the only place approved research rows live.
+The software tracked edges. The research problem requires surfaces.
 
-`data/graph.base.json` is the base seed graph. It contains the stable hand-built graph that existed before the master-doc compiler layer.
+An edge can say `Ben Warner co-founded Electric Twin`. A surface says `Electric Twin founder/officer surface, 2023-present` and lists the participants, roles, receipts, dates, and surface types that make it meaningful.
 
-`tools/compile-master.mjs` is the clerk. It rebuilds `graph.json` from `data/graph.base.json` plus the master doc. It does not read yesterday's `graph.json` as input. If a row is removed from the master doc, the generated edge disappears on the next compile.
+## The compiler law
 
-`tools/scout-graph.mjs` is the analyst. It reads the graph and produces candidate findings in `findings/scout-inbox/`. It never writes graph data and every finding has `graph_effect: none`.
+The app never computes Clifford Number from `claims.jsonl`. It computes Clifford Number only from `build/hop-graph.json`, which is generated from explicit participation in valid bounded surfaces.
 
-`graph.json` is generated release data for the app. It should be reproducible from the base graph and master doc.
+Every hop must have:
 
-## Normal workflow
-
-```bash
-npm run compile
-npm run scout
-npm run check
+```text
+actor_a
+actor_b
+shared_surface_id
+surface_type
+participation row for actor_a
+participation row for actor_b
+receipt_ids
 ```
 
-For the full release gate:
+## Surface-type recurrence
 
-```bash
-npm run release:check
-```
+Surface-type recurrence is the discovery mechanism. The compiler tracks when the same surface logic recurs across different venues, such as government advisory work, commercial customer infrastructure, category formation, procurement, board/advisory positions, and policy documents.
 
-## Ingesting more research
+Example: Ben Warner recurs across No. 10 population-level data machinery, Electric Twin synthetic audience infrastructure, News UK audience substitution, and Gartner category formation. The point is not one secret relationship. The point is a repeated surface logic becoming infrastructure.
 
-Add approved rows to `docs/clifford-number-master.md` using typed-edge tables. Then run `npm run compile`. If the new nodes do not connect to the Clifford spine, run `npm run scout` and inspect `findings/scout-inbox/` for islands, alias collisions, corridor gaps, and source questions.
+## Non-hop surfaces still matter
 
-Do not patch paths into the compiler. If a bridge exists, write the bridge as a sourced row in the master doc. If a bridge does not exist yet, the node should remain an island.
+A non-hop surface can still be scorable. The Electric Twin / News UK synthetic audience surface is not hop-eligible because News UK is an organization and the surface does not create an actor-to-actor co-participation hop. It is still scorable because it contributes to democratic-input replacement, model governance, and plausible-deniability analysis.
 
-## Contributor intake
+## Migration rule
 
-External contributions go into `contributions/inbox/` using `contributions/templates/candidate-edge.md`. They are not graph data until the maintainer screens them and moves accepted rows into the master doc.
+The current master document is parsed into `build/migrated-claims.jsonl` and `build/migration-review.md`. That does not automatically create hop graph data. Rows must be promoted into source ledgers only when they define bounded surfaces and explicit participation.

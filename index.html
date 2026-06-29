@@ -3,130 +3,26 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A forensic public graph of evidenced institutional adjacency across UK AI policy, founder networks, consultancy pathways, procurement, and public-sector operating layers.">
-  <meta property="og:title" content="The Clifford Number">
-  <meta property="og:description" content="Forensic topology of the UK AI policy machine: paths, receipts, weak links, and public evidence classes.">
-  <meta property="og:type" content="website">
   <title>The Clifford Number</title>
-  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="hero">
-    <nav class="topbar" aria-label="Site">
-      <a class="brand" href="./">clifford-number</a>
-      <div class="navlinks">
-        <a href="docs/methodology.md">Method</a>
-        <a href="docs/redaction-policy.md">Redaction</a>
-        <a href="docs/edge-schema.md">Schema</a>
-        <a href="#ledger">Ledger</a>
-        <a href="#import-review">Import review</a>
-      </div>
-    </nav>
+  <main class="shell">
+    <header class="hero">
+      <p class="eyebrow">Surface-hop topology compiler</p>
+      <h1>The Clifford Number</h1>
+      <p class="dek">A map of how bounded legitimate surfaces carry actors, policies, companies, advisory roles, and outcomes through plausible-deniability corridors.</p>
+    </header>
 
-    <section class="hero-grid">
-      <div>
-        <p class="eyebrow" id="case-status">AXM Labs experiment, not AXM core</p>
-        <h1 id="case-title">The Clifford Number</h1>
-        <p class="subtitle" id="case-subtitle">Seven degrees of UK AI state capture, with receipts.</p>
-        <p class="tagline" id="case-tagline">Not conspiracy. Topology. A game-trail map for the machinery underneath the public story.</p>
-        <div class="hero-metrics" id="hero-metrics" aria-label="Graph metrics"></div>
-      </div>
-      <div class="control-card" aria-label="Search control">
-        <div id="case-picker" class="case-picker" hidden>
-          <label for="case-select">Case file</label>
-          <select id="case-select"></select>
-        </div>
-        <label for="search">Enter a person, company, office, policy object, or forum.</label>
-        <div class="search-row">
-          <input id="search" type="search" autocomplete="off" placeholder="Try: Peter Thiel, Palantir, Dialog, OpenAI, AI Growth Zones">
-          <button id="go" type="button">Compute</button>
-        </div>
-        <div id="suggestions" class="suggestions" aria-live="polite"></div>
-        <p class="control-note">Every result is a route through public evidence. Missing names produce no adjacency claim.</p>
-      </div>
-    </section>
-  </header>
-
-  <main>
-    <section id="result" class="result empty" aria-live="polite">
-      <div class="empty-state">
-        <h2>Pick a node.</h2>
-        <p>The app returns the shortest evidenced path to the Clifford policy machine. Type a name; if it is in the public graph, you will see whether it is adjacent and exactly which receipts support the path.</p>
-      </div>
+    <section class="search-card">
+      <label for="search">Search actor, organization, or surface</label>
+      <input id="search" type="search" placeholder="Ben Warner, Electric Twin, Simon Case, Faculty..." autocomplete="off">
+      <div id="results" class="results"></div>
     </section>
 
-    <section class="forensic-grid" aria-label="Forensic graph dashboard">
-      <article class="forensic-panel">
-        <p class="eyebrow">Forensic readout</p>
-        <h2>Evidence, not vibes</h2>
-        <div id="evidence-breakdown" class="breakdown"></div>
-      </article>
-      <article class="forensic-panel">
-        <p class="eyebrow">Institutional surface</p>
-        <h2>What kinds of actors are mapped?</h2>
-        <div id="type-breakdown" class="breakdown"></div>
-      </article>
-      <article class="forensic-panel">
-        <p class="eyebrow">Audit pressure</p>
-        <h2>Weak links stay visible</h2>
-        <div id="audit-breakdown" class="audit-list"></div>
-      </article>
-    </section>
-
-    <section class="panel-grid" aria-label="Controls and method">
-      <article class="panel">
-        <h2>What counts</h2>
-        <p>A node can be a person, company, policy object, office, forum, government unit, or infrastructure layer. An edge is a typed public relationship. The graph does not score ideology, intent, character, private life, or guilt.</p>
-      </article>
-      <article class="panel">
-        <h2>What does not count</h2>
-        <p>Private contact data, intimate disclosures, raw registrant files, psychological claims, and per-person treatment of private attendees are excluded. Listed, registered, and attended are separate states.</p>
-      </article>
-      <article class="panel">
-        <h2>The control question</h2>
-        <p>Can every laugh survive a receipts click? If the answer is no, the edge does not ship.</p>
-      </article>
-    </section>
-
-    <section id="ledger" class="source-ledger" aria-label="Public receipt ledger">
-      <div class="section-title">
-        <h2>Receipt ledger</h2>
-        <p>Primary pages, reporting, and local receipt notes that anchor the public graph.</p>
-      </div>
-      <div id="source-ledger" class="source-list"></div>
-    </section>
-
-
-
-    <section id="import-review" class="import-review panel" aria-label="Schedule I import review">
-      <div class="section-title">
-        <p class="eyebrow">Import review</p>
-        <h2>Schedule I CSV → graph-safe commands</h2>
-        <p>Paste reviewed Schedule I CSV rows. The browser does not mutate <code>graph.json</code>; it renders proposed <code>tools/add-edge.mjs</code> commands for analyst review.</p>
-      </div>
-      <label for="schedule-i-csv">Schedule I CSV</label>
-      <textarea id="schedule-i-csv" rows="8" spellcheck="false" placeholder="graph_node_id,node_label,normalized_ein,recipient_name,amount,purpose,source_zip,source_xml"></textarea>
-      <div class="import-actions">
-        <button id="review-schedule-i" type="button">Review CSV</button>
-        <span id="import-review-status" aria-live="polite"></span>
-      </div>
-      <div id="schedule-i-review-output" class="review-output"></div>
-    </section>
-
-    <section class="graph-browser">
-      <div class="section-title">
-        <h2>Graph browser</h2>
-        <p id="graph-stats">Searchable seed graph. Load the app, type a name, and compute whether that node has a sourced path.</p>
-      </div>
-      <div id="node-list" class="node-list"></div>
-    </section>
+    <section id="summary" class="summary-grid"></section>
+    <section id="detail" class="detail"></section>
   </main>
-
-  <footer>
-    <p>No wrongdoing is alleged. This project maps public-role adjacency and evidenced institutional topology. It is a civic graph experiment, not a personnel file.</p>
-  </footer>
-
-  <script type="module" src="app.js"></script>
+  <script src="app.js" type="module"></script>
 </body>
 </html>

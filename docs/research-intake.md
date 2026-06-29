@@ -1,45 +1,31 @@
-# Research Intake Guide
+# Research Intake
 
-Use this guide when adding new material to the database.
+Contributions enter as candidate surface packets. A contribution does not edit generated artifacts and does not create Clifford Number hops automatically.
 
-## Step 1: Capture the candidate
+## What to submit
 
-Put outside contributions or your own raw candidate notes into `contributions/inbox/` first when they are not ready for the master doc. Use the template. Keep each proposed edge narrow.
+Use `contributions/templates/candidate-surface.md` and include:
 
-## Step 2: Screen the edge
+- surface label
+- surface type
+- bounded-by evidence
+- participant list
+- roles
+- dates
+- receipts
+- evidence class
+- whether it is hop-eligible, scorable, or context-only
 
-Ask five questions:
+## Review rule
 
-1. Who are the actors?
-2. What exact public relationship is being claimed?
-3. What source supports that exact relationship?
-4. Is this personnel, policy, funding, governance, advisory, access, document, or topology context?
-5. Does this create a path, explain a corridor, or only create an island for later work?
+A broad institution is not enough. `No. 10`, `Cabinet Office`, `DSIT`, `News UK`, `Faculty`, or `Electric Twin` by itself is not a hop. Name the bounded surface: roster, board, filing, funding round, report, contract, programme, appointment record, event, customer deployment, or policy document.
 
-## Step 3: Move accepted rows into the master doc
+## Maintainer merge path
 
-Accepted rows go into `docs/clifford-number-master.md`. Use a typed-edge table with `Subject`, `Predicate`, `Object`, `Date / Status`, `Evidence Class`, `Source`, and optional notes when useful.
-
-## Step 4: Compile
-
-```bash
-npm run compile
-```
-
-This rebuilds `graph.json` from the clean base and master doc. The compiler does not infer missing bridge edges.
-
-## Step 5: Scout
-
-```bash
-npm run scout
-```
-
-Review `findings/scout-inbox/`. The scout is allowed to say what looks missing, duplicated, aliased, or structurally interesting. Scout output is not graph data.
-
-## Step 6: Release check
-
-```bash
-npm run release:check
-```
-
-This compiles, validates, runs tests, and generates a scout run.
+1. Screen the packet.
+2. Add or update canonical actors and organizations.
+3. Add receipts to `data/ledger/receipts.jsonl`.
+4. Add the surface to `data/ledger/surfaces.jsonl`.
+5. Add participation rows to `data/ledger/participation.jsonl`.
+6. Add supporting claims to `data/ledger/claims.jsonl`.
+7. Run `npm run release:check`.
