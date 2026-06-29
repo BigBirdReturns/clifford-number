@@ -1,6 +1,32 @@
 const state = {};
 const $ = sel => document.querySelector(sel);
 
+function initTheme() {
+  const stored = localStorage.getItem('theme');
+  const dark = stored === 'dark' || (!stored && matchMedia('(prefers-color-scheme: dark)').matches);
+  setTheme(dark ? 'dark' : 'light');
+  $('#theme-toggle').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+}
+function setTheme(t) {
+  document.documentElement.dataset.theme = t;
+  localStorage.setItem('theme', t);
+  $('#theme-toggle').textContent = t === 'dark' ? 'Light' : 'Dark';
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(location.href).then(() => {
+    const btn = $('.copy-link');
+    if (!btn) return;
+    btn.textContent = 'Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy link'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+function entityHeading(label) {
+  return `<div class="entity-heading"><h2>${esc(label)}</h2><button class="copy-link" onclick="copyLink()">Copy link</button></div>`;
+}
+
 async function loadJson(path) {
   const res = await fetch(path);
   if (!res.ok) throw new Error(`failed to load ${path}`);
@@ -46,6 +72,20 @@ async function init() {
 
   $('#search').addEventListener('input', onSearch);
   window.addEventListener('hashchange', route);
+
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement !== $('#search')) {
+      e.preventDefault();
+      $('#search').focus();
+      $('#search').select();
+    } else if (e.key === 'Escape') {
+      $('#search').value = '';
+      $('#results').innerHTML = '';
+      if (location.hash) { location.hash = ''; } else { renderHome(); }
+    }
+  });
+
+  initTheme();
   route();
 }
 
@@ -53,7 +93,10 @@ function go(kind, id) {
   const target = `#${kind}/${id}`;
   if (location.hash === target) renderEntity(kind, id);
   else location.hash = target;
+  if (window.innerWidth < 820) $('#summary').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+window.copyLink = copyLink;
 
 function route() {
   const hash = location.hash.replace(/^#/, '');
@@ -199,7 +242,7 @@ function renderActor(id) {
       metricPanel('Source', 'legacy graph'),
     ].join('');
     $('#detail').innerHTML = `
-      <div class="panel"><h2>${esc(actor.label)}</h2><p>${esc(legacyNode.description || 'Legacy graph node imported for search continuity.')}</p><div class="badge-row">${(legacyNode.tags ?? []).map(t => `<span class="badge">${esc(t)}</span>`).join('')}</div></div>
+      <div class="panel">${entityHeading(actor.label)}<p>${esc(legacyNode.description || 'Legacy graph node imported for search continuity.')}</p><div class="badge-row">${(legacyNode.tags ?? []).map(t => `<span class="badge">${esc(t)}</span>`).join('')}</div></div>
       <div class="panel why-no-hop"><h3>Surface-hop status</h3><p>This actor is search-visible through the legacy edge graph bridge, but has not yet been promoted into bounded surface-hop ledgers. The path below is legacy edge-graph context, not a newly manufactured surface hop.</p></div>
       <div class="panel"><h3>Legacy edge-graph path</h3>${renderLegacyPath(legacyPath)}</div>
       <div class="panel"><h3>Legacy public edges</h3>${related.length ? related.map(edge => `<div class="receipts">${esc(state.legacyNodes.get(edge.from)?.label ?? edge.from)} → ${esc(state.legacyNodes.get(edge.to)?.label ?? edge.to)}: ${esc(edge.claim || edge.type || edge.id)}</div>`).join('') : '<p>None.</p>'}</div>
@@ -228,7 +271,7 @@ function renderActor(id) {
     : '';
 
   $('#detail').innerHTML = `
-    <div class="panel"><h2>${esc(actor.label)}</h2><div class="badge-row">${(score?.secondary_surface_types ?? []).map(t => `<span class="badge">${esc(t)}</span>`).join('')}</div></div>
+    <div class="panel">${entityHeading(actor.label)}<div class="badge-row">${(score?.secondary_surface_types ?? []).map(t => `<span class="badge">${esc(t)}</span>`).join('')}</div></div>
     <div class="panel"><h3>Shortest surface path</h3>${pathHtml}</div>
     ${chainsHtml}
     ${recurHtml}
@@ -258,7 +301,7 @@ function renderChain(id) {
       <p class="meta">Receipts: ${(s.receipt_ids ?? []).map(esc).join(', ')}</p>
     </div>`).join('<div class="chain-arrow">↓</div>');
   $('#detail').innerHTML = `
-    <div class="panel"><h2>${esc(c.chain_label)}</h2><div class="badge-row"><span class="badge">${esc(c.pattern)}</span><span class="badge">evidence: ${esc(c.evidence_class)}</span></div></div>
+    <div class="panel">${entityHeading(c.chain_label)}<div class="badge-row"><span class="badge">${esc(c.pattern)}</span><span class="badge">evidence: ${esc(c.evidence_class)}</span></div></div>
     <div class="panel why-no-hop"><h3>Why this is not a hop</h3><p>${esc(c.why_no_hop)}</p></div>
     <div class="panel"><h3>Chain stages</h3><div class="surface-list">${stages}</div></div>
   `;
@@ -290,7 +333,7 @@ function renderOrg(id) {
     metricPanel('Types', score?.surface_types?.length ?? 0),
   ].join('');
   $('#detail').innerHTML = `
-    <div class="panel"><h2>${esc(org.label)}</h2><p>${score?.surface_factory ? 'This organization behaves as a surface factory. It must be decomposed into bounded surfaces, not used as a generic hop node.' : 'Organization context. It does not create Clifford hops by itself.'}</p></div>
+    <div class="panel">${entityHeading(org.label)}<p>${score?.surface_factory ? 'This organization behaves as a surface factory. It must be decomposed into bounded surfaces, not used as a generic hop node.' : 'Organization context. It does not create Clifford hops by itself.'}</p></div>
     <div class="panel"><h3>Surfaces</h3><div class="surface-list">${(score?.surfaces ?? []).map(renderSurfaceCard).join('')}</div></div>
   `;
 }
@@ -307,7 +350,7 @@ function renderCandidate(id) {
     metricPanel('Graph Effect', 'None'),
   ].join('');
   $('#detail').innerHTML = `
-    <div class="panel"><h2>${esc(candidate.label)}</h2><div class="badge-row"><span class="badge">intake candidate</span><span class="badge">${esc(candidate.kind)}</span></div></div>
+    <div class="panel">${entityHeading(candidate.label)}<div class="badge-row"><span class="badge">intake candidate</span><span class="badge">${esc(candidate.kind)}</span></div></div>
     <div class="panel why-no-hop"><h3>Not a graph claim yet</h3><p>${esc(candidate.why_visible || 'Visible for intake only. This is not a Clifford hop, score, or relationship claim.')}</p></div>
     <div class="panel"><h3>Promotion path</h3><p>${esc(candidate.next_step || 'Promote only after a bounded public surface and receipt are available.')}</p><p class="meta">Source to review: ${candidate.source_url ? `<a href="${esc(candidate.source_url)}" target="_blank" rel="noreferrer">${esc(candidate.source_url)}</a>` : 'none'}</p></div>
     ${(candidate.aliases ?? []).length ? `<div class="panel"><h3>Search aliases</h3><p>${candidate.aliases.map(esc).join(', ')}</p></div>` : ''}
@@ -324,7 +367,7 @@ function renderSurface(id) {
   ].join('');
   const parts = (s.participants ?? []).map(p => `<li>${p.participant_type === 'actor' ? esc(labelActor(p.actor_id)) : esc(labelOrg(p.organization_id))}: ${esc(p.role)} <span class="meta">${esc(p.participation_type)}</span></li>`).join('');
   $('#detail').innerHTML = `
-    <div class="panel"><h2>${esc(s.surface_label)}</h2><div class="badge-row"><span class="badge">${esc(s.surface_type)}</span>${(s.secondary_surface_types ?? []).map(t => `<span class="badge">${esc(t)}</span>`).join('')}</div><p>${esc(s.notes || '')}</p></div>
+    <div class="panel">${entityHeading(s.surface_label)}<div class="badge-row"><span class="badge">${esc(s.surface_type)}</span>${(s.secondary_surface_types ?? []).map(t => `<span class="badge">${esc(t)}</span>`).join('')}</div><p>${esc(s.notes || '')}</p></div>
     <div class="panel"><h3>Participants</h3><ul>${parts}</ul></div>
     <div class="panel"><h3>Bounded by</h3><p>${(s.bounded_by ?? []).map(esc).join(', ')}</p><p class="meta">Receipts: ${(s.receipt_ids ?? []).map(esc).join(', ')}</p></div>
   `;
