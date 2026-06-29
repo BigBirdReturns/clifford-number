@@ -82,7 +82,8 @@ export function loadAll() {
   const claims = readJsonl('data/ledger/claims.jsonl', { optional: true });
   const surfaces = readJsonl('data/ledger/surfaces.jsonl');
   const participation = readJsonl('data/ledger/participation.jsonl');
-  return { actors, organizations, aliases, predicates, surfaceTypes, receipts, claims, surfaces, participation };
+  const chains = readJsonl('data/ledger/chains.jsonl', { optional: true });
+  return { actors, organizations, aliases, predicates, surfaceTypes, receipts, claims, surfaces, participation, chains };
 }
 
 export function evidenceWeight(evidenceClass) {

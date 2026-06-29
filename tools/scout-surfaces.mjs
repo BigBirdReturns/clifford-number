@@ -72,6 +72,17 @@ for (const surface of surfaceGraph.surfaces) {
   }
 }
 
+for (const chain of (scores.chains ?? [])) {
+  add(
+    'laundering_chain',
+    'high',
+    `${chain.chain_label} is a scored laundering chain with no Clifford hop`,
+    `Chain spans ${chain.laundering_chain_score}/${chain.laundering_chain_max} stage categories (${chain.stage_categories.join(', ')}); machine_score ${chain.machine_score}; weakest evidence ${chain.evidence_class}. It does not create a Clifford hop.`,
+    'Strengthen the weakest stage receipts (e.g. confirm procurement award IDs/amounts/dates) before any UI weight upgrade. Never convert a chain into a hop without a bounded shared-participation surface.',
+    chain.surfaces,
+  );
+}
+
 if (migration) {
   add(
     'migration_queue',

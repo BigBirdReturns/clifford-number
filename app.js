@@ -29,6 +29,7 @@ async function init() {
   state.surfaces = new Map(surfaceGraph.surfaces.map(s => [s.surface_id, s]));
   state.actorScores = new Map(scores.actors.map(a => [a.actor_id, a]));
   state.orgScores = new Map(scores.organizations.map(o => [o.organization_id, o]));
+  state.chains = new Map((scores.chains ?? []).map(c => [c.chain_id, c]));
   renderHome();
   $('#search').addEventListener('input', onSearch);
 }
@@ -38,9 +39,19 @@ function renderHome() {
     <div class="panel"><div class="metric">${state.surfaceGraph.surfaces.length}</div><div class="metric-label">bounded surfaces</div></div>
     <div class="panel"><div class="metric">${state.hopGraph.edges.length}</div><div class="metric-label">surface-derived actor hops</div></div>
     <div class="panel"><div class="metric">${state.scores.actors.length}</div><div class="metric-label">actors scored</div></div>
-    <div class="panel"><div class="metric">${state.scout.findings.length}</div><div class="metric-label">scout findings</div></div>
+    <div class="panel"><div class="metric">${state.chains.size}</div><div class="metric-label">laundering chains</div></div>
   `;
-  $('#detail').innerHTML = `<div class="panel"><h2>Rule</h2><p>Clifford Numbers are computed only from Actor ↔ Actor co-participation on bounded surfaces. Broad institutions, offices, agencies, policy areas, and generic organizations do not create hops by themselves.</p></div>`;
+  const chainList = [...state.chains.values()]
+    .sort((a, b) => b.machine_score - a.machine_score)
+    .map(c => `<button class="result" data-kind="chain" data-id="${c.chain_id}">${esc(c.chain_label)}<small>chain · score ${c.laundering_chain_score}/${c.laundering_chain_max}</small></button>`)
+    .join('');
+  $('#detail').innerHTML = `
+    <div class="panel"><h2>Two readings, both true</h2>
+      <p><strong>The Clifford Number</strong> is computed only from Actor ↔ Actor co-participation on bounded surfaces. Broad institutions, offices, agencies, policy areas, directory listings, and generic organizations do not create hops by themselves.</p>
+      <p><strong>Laundering chains and surface-type recurrence</strong> capture what the hop cannot: outcomes that flow from policy creation to procurement to personnel to commercialization without any two people sharing a surface. A high chain or machine score with <em>no</em> Clifford hop is structural position, not guilt by association.</p>
+    </div>
+    <div class="panel"><h3>Laundering chains</h3><div class="results">${chainList || '<p>None.</p>'}</div></div>`;
+  bindResults();
 }
 
 function onSearch(e) {
@@ -50,6 +61,7 @@ function onSearch(e) {
     for (const a of state.surfaceGraph.actors) if (norm(a.label).includes(q) || norm(a.id).includes(q)) results.push({ kind: 'actor', id: a.id, label: a.label });
     for (const o of state.surfaceGraph.organizations) if (norm(o.label).includes(q) || norm(o.id).includes(q)) results.push({ kind: 'organization', id: o.id, label: o.label });
     for (const s of state.surfaceGraph.surfaces) if (norm(s.surface_label).includes(q) || norm(s.surface_id).includes(q)) results.push({ kind: 'surface', id: s.surface_id, label: s.surface_label });
+    for (const c of state.chains.values()) if (norm(c.chain_label).includes(q) || norm(c.chain_id).includes(q)) results.push({ kind: 'chain', id: c.chain_id, label: c.chain_label });
   }
   $('#results').innerHTML = results.slice(0, 12).map(r => `<button class="result" data-kind="${r.kind}" data-id="${r.id}">${esc(r.label)}<small>${r.kind}</small></button>`).join('');
   for (const btn of document.querySelectorAll('.result')) btn.addEventListener('click', () => renderEntity(btn.dataset.kind, btn.dataset.id));
@@ -58,6 +70,7 @@ function onSearch(e) {
 function renderEntity(kind, id) {
   if (kind === 'actor') renderActor(id);
   else if (kind === 'organization') renderOrg(id);
+  else if (kind === 'chain') renderChain(id);
   else renderSurface(id);
 }
 
@@ -68,16 +81,60 @@ function renderActor(id) {
   const score = state.actorScores.get(id);
   const path = state.hopGraph.shortest_paths[id];
   $('#summary').innerHTML = [
-    metricPanel('Clifford Number', score?.clifford_number ?? 'none'),
-    metricPanel('Surface Density', score?.surface_density),
-    metricPanel('Deniability', score?.deniability_score),
-    metricPanel('Governance Replacement', score?.governance_replacement_score),
+    metricPanel('Clifford Number', score?.clifford_number ?? 'N/A'),
+    metricPanel('Laundering Chain', `${score?.laundering_chain_score ?? 0}/${score?.laundering_chain_max ?? 5}`),
+    metricPanel('Machine Score', score?.machine_score ?? 0),
+    metricPanel('Surface-Type Recurrence', score?.surface_type_recurrence_score ?? 0),
   ].join('');
-  const pathHtml = path?.number === null ? `<p>No valid surface-hop path to Matt Clifford. The actor can still have surfaces, scores, and scout leads.</p>` : renderPath(path);
+
+  const noHop = path?.number === null || path?.number === undefined;
+  const pathHtml = noHop
+    ? `<p class="why-no-hop"><strong>Clifford Number: N/A.</strong> ${esc(score?.why_no_hop || 'No valid surface-hop path to Matt Clifford.')}</p>`
+    : renderPath(path);
+
+  const recur = score?.surface_type_recurrence ?? {};
+  const recurHtml = Object.keys(recur).length
+    ? `<div class="panel"><h3>Surface-type recurrence</h3><p class="meta">The same surface logic appearing across unrelated venues. This is a pattern signal, not a hop.</p>${Object.entries(recur).map(([t, sids]) => `<div class="receipts"><span class="badge">${esc(t)}</span> across ${sids.length}: ${sids.map(s => esc(surface(s)?.surface_label || s)).join('; ')}</div>`).join('')}</div>`
+    : '';
+
+  const chainsHtml = (score?.chains ?? []).length
+    ? `<div class="panel"><h3>Laundering chains</h3><div class="results">${(score.chains).map(cid => { const c = state.chains.get(cid); return `<button class="result" data-kind="chain" data-id="${cid}">${esc(c?.chain_label || cid)}<small>chain · score ${c?.laundering_chain_score}/${c?.laundering_chain_max}</small></button>`; }).join('')}</div></div>`
+    : '';
+
   $('#detail').innerHTML = `
     <div class="panel"><h2>${esc(actor.label)}</h2><div class="badge-row">${(score?.secondary_surface_types ?? []).map(t => `<span class="badge">${esc(t)}</span>`).join('')}</div></div>
     <div class="panel"><h3>Shortest surface path</h3>${pathHtml}</div>
+    ${chainsHtml}
+    ${recurHtml}
     <div class="panel"><h3>Bounded surfaces</h3><div class="surface-list">${(score?.surfaces ?? []).map(renderSurfaceCard).join('')}</div></div>
+  `;
+  bindResults();
+}
+
+function bindResults() {
+  for (const btn of document.querySelectorAll('#detail .result')) btn.addEventListener('click', () => renderEntity(btn.dataset.kind, btn.dataset.id));
+}
+
+function renderChain(id) {
+  const c = state.chains.get(id);
+  if (!c) return;
+  $('#summary').innerHTML = [
+    metricPanel('Clifford Number', 'N/A'),
+    metricPanel('Laundering Chain', `${c.laundering_chain_score}/${c.laundering_chain_max}`),
+    metricPanel('Machine Score', c.machine_score),
+    metricPanel('Stages', c.chain_length),
+  ].join('');
+  const stages = (c.stages ?? []).map(s => `
+    <div class="surface-card">
+      <h4>${esc(s.order)}. ${esc(s.stage_category.replace(/_/g, ' '))}</h4>
+      <div class="meta">${esc(s.surface_label)}${s.actor_id ? ' · ' + esc(labelActor(s.actor_id)) : ''}${s.organization_id ? ' · ' + esc(labelOrg(s.organization_id)) : ''}</div>
+      <p>${esc(s.note)}</p>
+      <p class="meta">Receipts: ${(s.receipt_ids ?? []).map(esc).join(', ')}</p>
+    </div>`).join('<div class="chain-arrow">↓</div>');
+  $('#detail').innerHTML = `
+    <div class="panel"><h2>${esc(c.chain_label)}</h2><div class="badge-row"><span class="badge">${esc(c.pattern)}</span><span class="badge">evidence: ${esc(c.evidence_class)}</span></div></div>
+    <div class="panel why-no-hop"><h3>Why this is not a hop</h3><p>${esc(c.why_no_hop)}</p></div>
+    <div class="panel"><h3>Chain stages</h3><div class="surface-list">${stages}</div></div>
   `;
 }
 

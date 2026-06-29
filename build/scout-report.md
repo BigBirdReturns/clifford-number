@@ -1,10 +1,10 @@
 # Scout Report
 
-Generated: 2026-06-29T16:09:02.548Z
+Generated: 2026-06-29T17:11:35.376Z
 
 > graph_effect: none. This is a research queue, not graph data.
 
-Findings: 17
+Findings: 18
 
 ## finding-001: Electric Twin behaves as a surface factory
 
@@ -294,7 +294,25 @@ Refs: `ai-opportunities-action-plan-2025`
 
 ---
 
-## finding-017: Full master doc has been classified, not blindly migrated
+## finding-017: Policy creation → procurement corridor → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
+
+- Type: laundering_chain
+- Priority: high
+- graph_effect: none
+
+**Observed**
+
+Chain spans 4/5 stage categories (policy_creation, procurement_capture, personnel_continuity, commercial_deployment); machine_score 0.52; weakest evidence judgment. It does not create a Clifford hop.
+
+**Required action**
+
+Strengthen the weakest stage receipts (e.g. confirm procurement award IDs/amounts/dates) before any UI weight upgrade. Never convert a chain into a hop without a bounded shared-participation surface.
+
+Refs: `ai-opportunities-action-plan-2025`, `detachment-201-commissioning-2025`, `no10-digital-data-advisory-2019-2021`, `electric-twin-newsuk-synthetic-audience`
+
+---
+
+## finding-018: Full master doc has been classified, not blindly migrated
 
 - Type: migration_queue
 - Priority: high
