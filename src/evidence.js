@@ -33,7 +33,11 @@ export const BANNED_PRIVATE_FIELDS = [
   'home city',
   'address',
   'token',
-  'assistant email'
+  'assistant email',
+  'verified_contact',
+  'verified contact',
+  'leaked number',
+  'voicemail'
 ];
 
 export function assertPublicOnly(record) {
