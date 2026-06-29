@@ -20,7 +20,6 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -37,8 +36,8 @@ jobs:
         run: |
           rm -rf dist
           mkdir -p dist
-          cp index.html app.js styles.css graph.json dist/
-          cp -R assets docs receipts src dist/
+          cp index.html app.js styles.css graph.json cases.json dist/
+          cp -R assets cases docs receipts src dist/
           touch dist/.nojekyll
 
       - name: Upload pages artifact
