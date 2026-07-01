@@ -12,6 +12,15 @@ participated in what surface, and verify it against evidence?** Call this the
 **cold-copy test**. Everything in this plan either helps pass it or handles an
 endstate in which it is the only thing left.
 
+> **Scope note.** This document analyzes the durability of the *curated artifact*
+> and assumes a hand-authored, bus-factor-1 project. The intended operating model
+> is a **self-assembling map where humans prune rather than author** — see
+> `docs/self-assembling-architecture.md`. That inversion changes the labor and
+> bus-factor analysis (§2, E1) but *strengthens* every evidence, removal, and
+> succession requirement here; the two documents are meant to be read together.
+> The self-assembling architecture adds one durable artifact to the list below:
+> the human **prune-decision log**, which automation can never regenerate.
+
 ## 1. What actually has to survive
 
 Not everything in the repository has equal replacement cost. Ranked:
