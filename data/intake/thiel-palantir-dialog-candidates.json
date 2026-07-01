@@ -1,0 +1,74 @@
+{
+  "generated": "2026-07-01",
+  "description": "Search-visible intake queue for the Thiel / Palantir / Dialog cluster and its candidate adjacency to the Clifford spine. These are QUESTIONS for public registries, not claims. Each entry names a specific bounded surface to look for and where its receipt would live. A candidate becomes a hop ONLY if a bounded, dated, co-participation surface is found in a public source; absence of a surface is a finding too (it locates the actual deniability corridor). No wrongdoing is alleged; a listing proves only a listing.",
+  "spine_target": "matt-clifford",
+  "candidates": [
+    {
+      "id": "candidate-thiel-palantir-founder-surface",
+      "label": "Peter Thiel / Palantir founder-officer surface",
+      "kind": "surface_probe",
+      "surface_type": "founder_officer_surface",
+      "hop_eligible": true,
+      "status": "intake_only",
+      "why_visible": "Highest-confidence, fully public adjacency in the cluster; likely already promotable.",
+      "candidate_participants": ["peter-thiel", "palantir"],
+      "next_step": "Confirm officer/founder record and dates from SEC EDGAR (Palantir S-1/10-K, CIK) and Companies House for any UK entity. Promote as a bounded founder/officer surface with primary receipts.",
+      "registries": ["SEC EDGAR", "Companies House"],
+      "source_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&company=palantir"
+    },
+    {
+      "id": "candidate-thiel-dialog-roster-surface",
+      "label": "Peter Thiel / Dialog society directory-roster surface",
+      "kind": "surface_probe",
+      "surface_type": "directory_roster_surface",
+      "hop_eligible": false,
+      "status": "intake_only",
+      "why_visible": "Reported founder/convener link to Dialog; already partly in the ledger via Wired reporting.",
+      "candidate_participants": ["peter-thiel", "dialog"],
+      "listing_caveat": "A roster/convener listing proves a listing, not attendance, membership, endorsement, agreement, knowledge, or wrongdoing.",
+      "next_step": "Confirm the bounded roster surface from the existing Wired receipts; keep as scorable context, NOT an actor-to-actor hop, unless a named co-participation event with dates is sourced.",
+      "registries": ["published reporting (Wired)", "archived roster"],
+      "source_url": "https://www.wired.com/story/leak-exposes-members-of-peter-thiels-secretive-dialog-society"
+    },
+    {
+      "id": "candidate-clifford-ef-portfolio-surface",
+      "label": "Matt Clifford / Entrepreneur First founder-officer surface and portfolio adjacency",
+      "kind": "surface_probe",
+      "surface_type": "founder_officer_surface",
+      "hop_eligible": true,
+      "status": "intake_only",
+      "why_visible": "Clifford's primary public role is EF co-founder; EF's investor base and portfolio are the most likely real bridge toward the Thiel/Palantir capital layer, if one exists.",
+      "candidate_participants": ["matt-clifford", "entrepreneur-first"],
+      "next_step": "Pull EF Companies House officer records; then check EF's disclosed investors and any Founders Fund / Thiel-linked capital participation. A hop requires a NAMED bounded co-investment/board surface with a specific EF entity, not shared sector prominence.",
+      "registries": ["Companies House", "SEC Form D", "Crunchbase (as pointer only)"],
+      "source_url": "https://find-and-update.company-information.service.gov.uk/"
+    },
+    {
+      "id": "candidate-clifford-dialog-adjacency",
+      "label": "Matt Clifford / Dialog co-participation probe",
+      "kind": "surface_probe",
+      "surface_type": "directory_roster_surface",
+      "hop_eligible": false,
+      "status": "needs_disambiguation",
+      "why_visible": "The core open question in the cluster: is there any bounded surface placing Clifford in a Dialog-adjacent venue? This is currently a hypothesis, not a link.",
+      "candidate_participants": ["matt-clifford", "dialog"],
+      "listing_caveat": "This entry asserts NOTHING. It records that the adjacency is unverified. If no bounded co-participation surface is found in public records, that absence is the finding.",
+      "next_step": "Search archived Dialog rosters and reported attendee lists for Clifford or EF. If absent, record as island_with_surfaces (surfaces exist, no valid Clifford path) rather than forcing a bridge through a broad institution.",
+      "registries": ["archived rosters", "published reporting"],
+      "source_url": "https://www.wired.com/story/dialog-hack-website-misconfiguration"
+    },
+    {
+      "id": "candidate-thiel-capital-uk-ai-probe",
+      "label": "Thiel-linked capital / UK AI policy machinery co-participation probe",
+      "kind": "surface_probe",
+      "surface_type": "public_private_fund_surface",
+      "hop_eligible": false,
+      "status": "intake_only",
+      "why_visible": "If a Clifford path exists, the likeliest deterministic route is capital + advisory co-participation, not social proximity. This probes whether Thiel/Palantir-linked capital and the UK AI advisory surfaces (where Clifford sits) share any bounded venue.",
+      "candidate_participants": ["peter-thiel", "palantir", "matt-clifford"],
+      "next_step": "Cross US Senate LDA (Palantir lobbying), USASpending / UK Find-a-Tender (Palantir public contracts), and UK register-of-interests / advisory appointment records. A hop requires a named bounded surface with actor co-participation and dates. Prominence in the same sector is NOT a surface.",
+      "registries": ["US Senate LDA", "USASpending", "UK Find-a-Tender", "UK appointment/interest registers"],
+      "source_url": "https://www.find-tender.service.gov.uk/Search"
+    }
+  ]
+}
