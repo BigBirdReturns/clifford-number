@@ -8,9 +8,13 @@
 // --as-of accepts a year, month, or day and means "at any point during that
 // period". Time-sliced paths traverse only fully dated hop bases whose
 // overlap window intersects the period.
+// --from/--to also accept a provisional AXM entity id (e_… from
+// build/axm-identity.json, canonical or alias-derived), resolved to the
+// local actor id before traversal.
 import { readJson } from './lib/ledger.mjs';
 import { buildAdjacency, shortestPath } from './lib/hops.mjs';
 import { formatWindow } from './lib/temporal.mjs';
+import { resolveLocalId } from './lib/axm-identity.mjs';
 
 function parseArgs(argv) {
   const args = { json: false };
@@ -35,12 +39,14 @@ if (!args.from) {
 }
 
 const hopGraph = readJson('build/hop-graph.json');
-const target = args.to ?? hopGraph.anchor_actor_id;
+const identity = readJson('build/axm-identity.json');
+const from = resolveLocalId(identity, args.from);
+const target = resolveLocalId(identity, args.to ?? hopGraph.anchor_actor_id);
 const adjacency = buildAdjacency(hopGraph.edges);
-const result = shortestPath(adjacency, args.from, target, { asOf: args.asOf ?? null });
+const result = shortestPath(adjacency, from, target, { asOf: args.asOf ?? null });
 
 const output = {
-  from: args.from,
+  from,
   to: target,
   as_of: args.asOf ?? null,
   number: result.number,
@@ -53,10 +59,10 @@ if (args.json) {
 } else {
   const slice = args.asOf ? ` as of ${args.asOf}` : '';
   if (result.number === null) {
-    console.log(`${args.from} → ${target}${slice}: no surface-hop path.`);
+    console.log(`${from} → ${target}${slice}: no surface-hop path.`);
     if (args.asOf) console.log('(undated hop bases never support time-sliced paths; try without --as-of for all-time topology)');
   } else {
-    console.log(`${args.from} → ${target}${slice}: ${result.number} hop${result.number === 1 ? '' : 's'}`);
+    console.log(`${from} → ${target}${slice}: ${result.number} hop${result.number === 1 ? '' : 's'}`);
     for (const hop of result.hops) {
       console.log(`  ${hop.from} ↔ ${hop.to}`);
       for (const s of hop.shared_surfaces) {

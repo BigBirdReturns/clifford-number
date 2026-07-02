@@ -57,6 +57,7 @@ Canonical files control identities and vocabularies. Do not solve ambiguity in g
 build/receipt-graph.json
 build/surface-graph.json
 build/hop-graph.json
+build/axm-identity.json
 build/scores.json
 build/migration-review.md
 build/scout-report.md
@@ -87,7 +88,19 @@ This release must pass five fixtures before the full database can be trusted:
 5. Broad institutions never create Clifford Number hops.
 6. Hop bases carry validity windows; disjoint dated participations on a shared surface create no hop (e.g. Rosenfield and Cummings, who were in No. 10 in non-overlapping windows).
 
-## Interoperability (provisional)
+## Temporal identity layer (provisional)
 
-`tools/lib/axm-id.mjs` vendors the AXM content-addressed identity envelope (axm-core `IDENTITY.md`: SHA-256 → first 15 bytes → base32 lowercase, no padding, type prefix) so that, in future, two independently built cases mentioning the same entity can produce the same ID — the precondition for cross-case joins and dark-network deltas. The envelope is authoritative; the namespace/label input serialization is **provisional** and must be reconciled byte-for-byte against `axm-genesis` (`axm_verify.identity`) before these IDs are used as cross-system join keys. The module is not wired into any generated artifact yet.
+`tools/lib/axm-id.mjs` vendors the AXM content-addressed identity envelope (axm-core `IDENTITY.md`: SHA-256 → first 15 bytes → base32 lowercase, no padding, type prefix) so that two independently built cases mentioning the same entity can produce the same ID — the precondition for cross-case joins and dark-network deltas. The envelope is authoritative; the namespace/label input serialization is **provisional** and must be reconciled byte-for-byte against `axm-genesis` (`axm_verify.identity`) before these IDs are used as cross-system join keys.
+
+`tools/lib/axm-identity.mjs` wires that envelope into exactly one artifact, `build/axm-identity.json`, so the provisional IDs stay quarantined from the hop/surface/receipt graphs:
+
+- **Entities.** Every canonical actor, organization, and surface gets a provisional AXM entity ID derived from `(case namespace, label)`. Registry aliases yield additional alias-derived IDs on the same entity — a corpus that says "Sir Simon Case" and one that says "Simon Case" still join.
+- **Time-qualified claims.** Each participation row becomes a `participates_in` claim. The claim ID is content-addressed over `(subject, predicate, object)` only — **identity is time-stable** — while temporal validity attaches as windows in the `temporal@1` vocabulary. Multiple stints of the same participant on the same surface are one claim with several windows, never several claims. An undated participation is preserved as `dated: false` with open bounds, not invented.
+- **Honesty markers.** The artifact's `scheme` block carries the provisional status and the reconciliation obligation; `validate:release` recomputes the whole layer from the ledger and fails on any drift, staleness, or a stripped caveat.
+
+`query:hops --from` / `--to` also accept a provisional AXM entity ID (canonical or alias-derived) and resolve it to the local actor before traversal:
+
+```bash
+npm run query:hops -- --from e_cxoy37udrurtowdj47suemrw   # "Ben Warner" (alias-derived)
+```
 

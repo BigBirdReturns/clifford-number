@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { loadAll, readJson, indexBy } from './lib/ledger.mjs';
 import { windowOf, intersectAll, UNBOUNDED } from './lib/temporal.mjs';
+import { buildIdentityLayer } from './lib/axm-identity.mjs';
 
 const data = loadAll();
 const scores = readJson('build/scores.json');
@@ -140,6 +141,38 @@ for (const c of (scores.chains ?? [])) assert(c.machine_score >= 0 && c.machine_
 // A high chain score must be expressible without a hop: at least one entity with chain score >= 3
 // and no Clifford hop, OR the chain itself (which never hops). This is the whole point of the dimension.
 assert((scores.chains ?? []).some(c => c.laundering_chain_score >= 3), 'expected at least one laundering chain with score >= 3');
+
+// Temporal identity layer (provisional AXM ids). The artifact must be a
+// deterministic function of the ledger — recompute it and require exact
+// agreement — and must carry its provisional caveat, so a stale or hand-edited
+// artifact, or one silently stripped of the caveat, fails the release.
+{
+  const identity = readJson('build/axm-identity.json');
+  assert(identity.scheme?.status === 'provisional', 'axm-identity scheme.status must remain "provisional" until reconciled against axm-genesis');
+  assert(identity.scheme?.namespace === readJson('cases.json').default_case_id, `axm-identity namespace ${identity.scheme?.namespace} does not match the default case id`);
+  const recomputed = buildIdentityLayer({
+    namespace: readJson('cases.json').default_case_id,
+    actors: data.actors,
+    organizations: data.organizations,
+    surfaces: data.surfaces,
+    participation: data.participation,
+    aliases: data.aliases,
+  });
+  assert(JSON.stringify({ scheme: identity.scheme, entities: identity.entities, claims: identity.claims }) === JSON.stringify(recomputed),
+    'build/axm-identity.json does not match the identity layer recomputed from the ledger — rebuild (npm run build:hops)');
+  const idRe = /^e_[a-z2-7]{24}$/;
+  for (const e of identity.entities) assert(idRe.test(e.axm_entity_id), `entity ${e.local_id} has malformed axm id ${e.axm_entity_id}`);
+  for (const c of identity.claims) {
+    assert(/^c_[a-z2-7]{24}$/.test(c.claim_id), `claim ${c.claim_id} is malformed`);
+    assert(c.windows.length > 0, `claim ${c.claim_id} carries no temporal windows`);
+    for (const w of c.windows) {
+      assert(w.dated === Boolean(w.valid_from || w.valid_until), `claim ${c.claim_id} window dated flag disagrees with its bounds`);
+    }
+  }
+  // Identity is time-stable: one claim per (subj, obj), stints as windows.
+  const pairs = new Set(identity.claims.map(c => `${c.subj}||${c.obj}`));
+  assert(pairs.size === identity.claims.length, 'duplicate (subj, obj) participates_in claims — stints must be windows on one claim');
+}
 
 // Full-database migration is required, not optional.
 assert(migration.total_rows > 200, `migration parsed too few master rows: ${migration.total_rows}`);

@@ -29,7 +29,10 @@
 //   cross-system join key. Until then these IDs are stable and useful WITHIN
 //   this repo, but are not guaranteed to equal genesis-sealed IDs.
 //
-// This module is intentionally NOT wired into any generated artifact yet.
+// These ids are wired into exactly one artifact — build/axm-identity.json,
+// via tools/lib/axm-identity.mjs — which carries the provisional caveat in
+// its `scheme` block. They stay out of the hop/surface/receipt graphs so the
+// provisional serialization cannot silently become a de-facto join key.
 import { createHash } from 'node:crypto';
 
 // RFC 4648 base32, lowercased. 15 bytes = 120 bits = exactly 24 chars, so no

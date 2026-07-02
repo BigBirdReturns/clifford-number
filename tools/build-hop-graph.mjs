@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { loadAll, readJson, writeJson, indexBy } from './lib/ledger.mjs';
 import { deriveHopEdges, buildAdjacency, shortestPath } from './lib/hops.mjs';
+import { buildIdentityLayer } from './lib/axm-identity.mjs';
 
 const ANCHOR_ACTOR_ID = 'matt-clifford';
 
@@ -125,6 +126,18 @@ const hopGraph = {
   rejected_hop_pairs: rejectedHopPairs,
 };
 
+// Provisional temporal identity layer: content-addressed entity ids for the
+// canonical registries plus time-qualified participates_in claims. Kept in
+// its own artifact so the provisional ids stay quarantined from the graphs.
+const identityLayer = buildIdentityLayer({
+  namespace: readJson('cases.json').default_case_id,
+  actors: data.actors,
+  organizations: data.organizations,
+  surfaces: data.surfaces,
+  participation: data.participation,
+  aliases: data.aliases,
+});
+
 const receiptGraph = {
   generated: new Date().toISOString(),
   receipts: data.receipts,
@@ -136,6 +149,7 @@ const receiptGraph = {
 writeJson('build/surface-graph.json', surfaceGraph);
 writeJson('build/hop-graph.json', hopGraph);
 writeJson('build/receipt-graph.json', receiptGraph);
+writeJson('build/axm-identity.json', { generated: new Date().toISOString(), ...identityLayer });
 writeJson('build/build-hop-report.json', { generated: new Date().toISOString(), errors, warnings, hop_edges: hopEdges.length, rejected_hop_surfaces: rejectedHopSurfaces, rejected_hop_pairs: rejectedHopPairs });
 
 if (errors.length) {
@@ -143,4 +157,5 @@ if (errors.length) {
   process.exit(1);
 }
 console.log(`build-hop-graph: ${data.surfaces.length} surfaces, ${hopEdges.length} actor-hop edges.`);
+console.log(`axm identity (provisional): ${identityLayer.entities.length} entities, ${identityLayer.claims.length} participates_in claims.`);
 console.log(`rejected hop surfaces: ${rejectedHopSurfaces.length}, rejected hop pairs (no temporal overlap): ${rejectedHopPairs.length}`);
