@@ -67,4 +67,38 @@ assert.ok(!hop.edges.some(e => e.surfaces.some(b => b.surface_id === 'detachment
 assert.ok(actor('ben-warner').machine_score > 0, 'Ben Warner must have a machine_score');
 assert.ok(Object.keys(actor('ben-warner').surface_type_recurrence).length > 0, 'Ben Warner must show surface-type recurrence');
 assert.ok(actor('matt-clifford').laundering_chain_score >= 4, 'Matt Clifford must anchor the laundering chain');
+
+// Temporal hop regression.
+// Every dated hop basis carries a window; the graph declares a temporal rule.
+assert.ok(hop.temporal_rule, 'hop graph must declare its temporal rule');
+for (const edge of hop.edges) {
+  assert.ok(typeof edge.temporal_status === 'string', 'edge must carry temporal_status');
+  for (const basis of edge.surfaces) {
+    assert.ok(typeof basis.temporal_status === 'string', 'basis must carry temporal_status');
+    if (basis.temporal_status === 'dated') {
+      // A dated basis has a concrete start; the end may be open (ongoing).
+      assert.ok(basis.valid_from || basis.valid_until, `dated basis ${basis.surface_id} must have at least one concrete bound`);
+    }
+  }
+}
+// Disjoint dated participations on the same surface must NOT hop. Rosenfield
+// (No.10, 2021) and Cummings (No.10, 2019-2020) shared the surface in
+// different windows, so there is no direct Rosenfield↔Cummings hop.
+const directRosenfieldCummings = hop.edges.some(e =>
+  (e.actor_a === 'dan-rosenfield' && e.actor_b === 'dominic-cummings') ||
+  (e.actor_a === 'dominic-cummings' && e.actor_b === 'dan-rosenfield'));
+assert.ok(!directRosenfieldCummings, 'Rosenfield and Cummings must not hop: disjoint windows on the shared surface');
+assert.ok((hop.rejected_hop_pairs ?? []).some(p =>
+  [p.actor_a, p.actor_b].sort().join('|') === 'dan-rosenfield|dominic-cummings' && p.reason === 'no_temporal_overlap'),
+  'the disjoint Rosenfield/Cummings pair must be recorded in rejected_hop_pairs');
+// Overlap window is the intersection, not a union: Warner/Cummings on No.10
+// overlaps only where both were present (Warner 2019-12→2021-05, Cummings
+// 2019→2020) → 2019-12 through 2020-12.
+const wc = hop.edges.find(e =>
+  [e.actor_a, e.actor_b].sort().join('|') === 'ben-warner|dominic-cummings');
+const no10 = wc?.surfaces.find(s => s.surface_id === 'no10-digital-data-advisory-2019-2021');
+assert.ok(no10, 'Warner/Cummings must share the No.10 surface');
+assert.equal(no10.valid_from, '2019-12-01', 'Warner/Cummings overlap starts at the later of the two start dates');
+assert.equal(no10.valid_until, '2020-12-31', 'Warner/Cummings overlap ends at the earlier of the two end dates');
+
 console.log('compiler.test: OK');

@@ -1,10 +1,10 @@
 # Scout Report
 
-Generated: 2026-06-29T22:16:41.967Z
+Generated: 2026-07-02T05:28:26.164Z
 
 > graph_effect: none. This is a research queue, not graph data.
 
-Findings: 18
+Findings: 19
 
 ## finding-001: Electric Twin behaves as a surface factory
 
@@ -294,7 +294,25 @@ Refs: `ai-opportunities-action-plan-2025`
 
 ---
 
-## finding-017: Policy creation → procurement corridor → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
+## finding-017: Strategic Defence Review, externally led review, 2024-2025 contains broad institution context
+
+- Type: broad_institution_guard
+- Priority: high
+- graph_effect: none
+
+**Observed**
+
+Broad venues present: Ministry of Defence (MoD). This is acceptable only because hops are generated from actor co-participation, not from the broad institution itself.
+
+**Required action**
+
+Verify this surface is tightly named and bounded. If it is merely an office or agency, mark it hop_eligible=false.
+
+Refs: `strategic-defence-review-2024-2025`
+
+---
+
+## finding-018: Policy creation → procurement corridor → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
 
 - Type: laundering_chain
 - Priority: high
@@ -312,7 +330,7 @@ Refs: `ai-opportunities-action-plan-2025`, `detachment-201-commissioning-2025`, 
 
 ---
 
-## finding-018: Full master doc has been classified, not blindly migrated
+## finding-019: Full master doc has been classified, not blindly migrated
 
 - Type: migration_queue
 - Priority: high
