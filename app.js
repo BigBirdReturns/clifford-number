@@ -40,18 +40,20 @@ function surface(id) { return state.surfaces.get(id); }
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 async function init() {
-  const [surfaceGraph, hopGraph, scores, legacyGraph, scout] = await Promise.all([
+  const [surfaceGraph, hopGraph, scores, legacyGraph, scout, receiptGraph] = await Promise.all([
     loadJson('build/surface-graph.json'),
     loadJson('build/hop-graph.json'),
     loadJson('build/scores.json'),
     loadJson('graph.json'),
-    loadJson('build/scout-report.json').catch(() => ({ findings: [] }))
+    loadJson('build/scout-report.json').catch(() => ({ findings: [] })),
+    loadJson('build/receipt-graph.json').catch(() => ({ receipts: [] }))
   ]);
   state.surfaceGraph = surfaceGraph;
   state.hopGraph = hopGraph;
   state.scores = scores;
   state.legacyGraph = legacyGraph;
   state.scout = scout;
+  state.receipts = new Map((receiptGraph.receipts ?? []).map(r => [r.receipt_id, r]));
   state.actors = new Map(surfaceGraph.actors.map(a => [a.id, a]));
   state.orgs = new Map(surfaceGraph.organizations.map(o => [o.id, o]));
   state.surfaces = new Map(surfaceGraph.surfaces.map(s => [s.surface_id, s]));
@@ -73,7 +75,16 @@ async function init() {
   $('#search').addEventListener('input', onSearch);
   window.addEventListener('hashchange', route);
 
+  for (const btn of document.querySelectorAll('.tabs .tab')) {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.view === 'desk') { if (!location.hash.startsWith('#desk')) location.hash = '#desk'; else showView('desk'); }
+      else { location.hash = ''; }
+    });
+  }
+  initDesk();
+
   document.addEventListener('keydown', e => {
+    if (e.key === '/' && !$('#view-desk').hidden) return;
     if (e.key === '/' && document.activeElement !== $('#search')) {
       e.preventDefault();
       $('#search').focus();
@@ -98,8 +109,27 @@ function go(kind, id) {
 
 window.copyLink = copyLink;
 
+function showView(view) {
+  $('#view-map').hidden = view !== 'map';
+  $('#view-desk').hidden = view !== 'desk';
+  for (const btn of document.querySelectorAll('.tabs .tab')) btn.classList.toggle('active', btn.dataset.view === view);
+}
+
 function route() {
   const hash = location.hash.replace(/^#/, '');
+  if (hash === 'desk' || hash.startsWith('desk/')) {
+    showView('desk');
+    if (state.deskSkipRoute) return;
+    const [, from, to, asOf] = hash.split('/');
+    if (from) {
+      $('#desk-from').value = labelActor(decodeURIComponent(from));
+      $('#desk-to').value = to ? labelActor(decodeURIComponent(to)) : '';
+      $('#desk-asof').value = asOf ? decodeURIComponent(asOf) : '';
+      runDeskCheck({ updateHash: false });
+    }
+    return;
+  }
+  showView('map');
   const [kind, id] = hash.split('/');
   if (kind && id) renderEntity(kind, id);
   else renderHome();
@@ -379,6 +409,251 @@ function renderSurface(id) {
     <div class="panel"><h3>Participants</h3><ul>${parts}</ul></div>
     <div class="panel"><h3>Bounded by</h3><p>${(s.bounded_by ?? []).map(esc).join(', ')}</p><p class="meta">Receipts: ${(s.receipt_ids ?? []).map(esc).join(', ')}</p></div>
   `;
+}
+
+/* ---------------- Claims Desk ----------------
+   Editor-facing verification: two names in, a verdict out — documented or
+   not, for which dates, on what class of source — plus copy-ready standards
+   language and the map's standing refusals. All checks run client-side on
+   the same built artifacts the map uses. */
+
+const EVIDENCE_RANK = { official: 1, primary_public: 2, reported: 3, derived: 4, judgment: 5, open: 6 };
+const EVIDENCE_LABEL = {
+  official: 'official document', primary_public: 'primary public source', reported: 'news reporting',
+  derived: 'derived inference', judgment: 'editorial judgment', open: 'open/unverified',
+};
+
+function periodStart(v) { if (!v) return null; v = String(v).trim(); if (/^\d{4}$/.test(v)) return `${v}-01-01`; if (/^\d{4}-\d{2}$/.test(v)) return `${v}-01`; return v; }
+function periodEnd(v) {
+  if (!v) return null; v = String(v).trim();
+  if (/^\d{4}$/.test(v)) return `${v}-12-31`;
+  if (/^\d{4}-\d{2}$/.test(v)) { const [y, m] = v.split('-').map(Number); return `${v}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, '0')}`; }
+  return v;
+}
+function validAsOf(v) { return /^\d{4}(-\d{2}){0,2}$/.test(String(v).trim()); }
+function basisOverlapsPeriod(basis, asOf) {
+  const qf = periodStart(asOf), qu = periodEnd(asOf);
+  const from = basis.valid_from, until = basis.valid_until;
+  if (from !== null && qu !== null && from > qu) return false;
+  if (until !== null && qf !== null && until < qf) return false;
+  return true;
+}
+function basisTimeSliceable(basis) { return basis.temporal_status === 'dated'; }
+
+function deskAdjacency() {
+  if (state.deskAdj) return state.deskAdj;
+  const adj = new Map();
+  for (const e of state.hopGraph.edges) {
+    if (!adj.has(e.actor_a)) adj.set(e.actor_a, []);
+    if (!adj.has(e.actor_b)) adj.set(e.actor_b, []);
+    adj.get(e.actor_a).push({ to: e.actor_b, edge: e });
+    adj.get(e.actor_b).push({ to: e.actor_a, edge: e });
+  }
+  state.deskAdj = adj;
+  return adj;
+}
+
+function deskPath(start, target, asOf) {
+  if (start === target) return { number: 0, hops: [] };
+  const adj = deskAdjacency();
+  const q = [{ actor: start, hops: [] }];
+  const seen = new Set([start]);
+  while (q.length) {
+    const cur = q.shift();
+    for (const next of adj.get(cur.actor) ?? []) {
+      if (seen.has(next.to)) continue;
+      const bases = asOf
+        ? next.edge.surfaces.filter(b => basisTimeSliceable(b) && basisOverlapsPeriod(b, asOf))
+        : next.edge.surfaces;
+      if (!bases.length) continue;
+      const hops = [...cur.hops, { from: cur.actor, to: next.to, edge: next.edge, bases }];
+      if (next.to === target) return { number: hops.length, hops };
+      seen.add(next.to);
+      q.push({ actor: next.to, hops });
+    }
+  }
+  return null;
+}
+
+function resolveActorInput(text) {
+  const q = norm(text).trim();
+  if (!q) return null;
+  if (state.actors.has(q)) return q;
+  for (const a of state.surfaceGraph.actors) if (norm(a.label) === q) return a.id;
+  for (const alias of state.surfaceGraph.aliases ?? []) if (alias.kind === 'actor' && norm(alias.alias) === q) return alias.canonical_id;
+  const partial = state.surfaceGraph.actors.filter(a => {
+    const aliases = state.aliasesByKey.get(`actor:${a.id}`) ?? [];
+    return norm(a.label).includes(q) || norm(a.id).includes(q) || aliases.some(al => norm(al).includes(q));
+  });
+  return partial.length === 1 ? partial[0].id : { ambiguous: partial.slice(0, 5) };
+}
+
+function roleOnBasis(basis, edge, actorId) {
+  return actorId === edge.actor_a ? basis.actor_a_role : basis.actor_b_role;
+}
+function deskWindowText(basis) {
+  if (basis.temporal_status === 'undated') return 'dates not documented';
+  if (basis.temporal_status !== 'dated') return `${basis.valid_from ?? 'start undocumented'} → ${basis.valid_until ?? 'end undocumented'} (partially dated)`;
+  return `${basis.valid_from ?? '…'} → ${basis.valid_until ?? 'ongoing'}`;
+}
+function chainWeakest(hops) {
+  let worst = 'official';
+  for (const h of hops) {
+    const best = h.bases.reduce((acc, b) => (EVIDENCE_RANK[b.evidence_class] ?? 5) < (EVIDENCE_RANK[acc] ?? 5) ? b.evidence_class : acc, h.bases[0]?.evidence_class ?? 'judgment');
+    if ((EVIDENCE_RANK[best] ?? 5) > (EVIDENCE_RANK[worst] ?? 5)) worst = best;
+  }
+  return worst;
+}
+function receiptRefs(ids) {
+  return (ids ?? []).map(id => {
+    const r = state.receipts.get(id);
+    if (!r) return { label: id, url: null };
+    return { label: r.label || id, url: String(r.path || '').startsWith('http') ? r.path : null };
+  });
+}
+function evidenceBadge(cls) { return `<span class="badge ev ev-${esc(cls)}">${esc(EVIDENCE_LABEL[cls] || cls)}</span>`; }
+
+function deskRejectionsFor(a, b) {
+  return (state.hopGraph.rejected_hop_pairs ?? []).filter(p =>
+    (!a && !b) || ((p.actor_a === a && p.actor_b === b) || (p.actor_a === b && p.actor_b === a)));
+}
+
+function copyDeskText(btnId, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.textContent = 'Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy text'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+window.copyDeskText = copyDeskText;
+
+function buildPrintableText(fromId, toId, asOf, path) {
+  const lines = [];
+  const when = asOf ? ` during ${asOf}` : '';
+  lines.push(`${labelActor(fromId)} is ${path.number} documented step${path.number === 1 ? '' : 's'} from ${labelActor(toId)} in the Clifford Number map${when}.`);
+  lines.push('');
+  path.hops.forEach((h, i) => {
+    const b = h.bases[0];
+    const win = b.temporal_status === 'dated' ? ` between ${b.valid_from} and ${b.valid_until ?? 'the present'}` : ' (dates not fully documented)';
+    const roles = [`${labelActor(h.from)} as ${roleOnBasis(b, h.edge, h.from) || 'named participant'}`, `${labelActor(h.to)} as ${roleOnBasis(b, h.edge, h.to) || 'named participant'}`].join('; ');
+    const refs = receiptRefs(b.receipt_ids).map(r => r.url ? `${r.label} — ${r.url}` : r.label).join(' · ');
+    lines.push(`${i + 1}. ${labelActor(h.from)} and ${labelActor(h.to)} were both named participants in ${b.surface_label}${win} (${roles}). Source: ${refs}`);
+  });
+  lines.push('');
+  lines.push(`Sourcing floor for this chain: ${EVIDENCE_LABEL[chainWeakest(path.hops)]}.`);
+  lines.push('This asserts documented shared context only. It is not a claim of influence, coordination, or wrongdoing.');
+  return lines.join('\n');
+}
+
+function renderDeskHop(h) {
+  const bases = h.bases.map(b => `
+    <div class="surface-card">
+      <h4>${esc(b.surface_label)}</h4>
+      <div class="meta">${esc(deskWindowText(b))}</div>
+      <div class="badge-row">${evidenceBadge(b.evidence_class)}${b.temporal_status !== 'dated' ? '<span class="badge">not time-sliceable</span>' : ''}</div>
+      <p class="meta">${esc(labelActor(h.from))}: ${esc(roleOnBasis(b, h.edge, h.from) || 'named participant')}<br>${esc(labelActor(h.to))}: ${esc(roleOnBasis(b, h.edge, h.to) || 'named participant')}</p>
+      <p class="meta">${receiptRefs(b.receipt_ids).map(r => r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noreferrer">${esc(r.label)}</a>` : esc(r.label)).join('<br>')}</p>
+    </div>`).join('');
+  return `<div class="panel"><h3>${esc(labelActor(h.from))} ↔ ${esc(labelActor(h.to))}</h3><p class="meta">Both named in:</p><div class="surface-list">${bases}</div></div>`;
+}
+
+function renderStandingRefusals() {
+  const rejected = state.hopGraph.rejected_hop_pairs ?? [];
+  const items = rejected.map(p => `
+    <div class="receipts">${esc(labelActor(p.actor_a))} × ${esc(labelActor(p.actor_b))} — both touched ${esc(surface(p.surface_id)?.surface_label || p.surface_id)}, but in non-overlapping documented windows (${esc(p.actor_a_window?.valid_from ?? '?')} → ${esc(p.actor_a_window?.valid_until ?? 'ongoing')} vs ${esc(p.actor_b_window?.valid_from ?? '?')} → ${esc(p.actor_b_window?.valid_until ?? 'ongoing')}). No connection asserted.</div>`).join('');
+  return `<div class="panel why-no-hop"><h3>What this map declines to say</h3>
+    <p>Connections the compiler rejected because the documents do not support co-presence. A refusal here is a checked fact, not an omission.</p>
+    ${items || '<p class="meta">No standing rejections.</p>'}
+    <p class="meta">Undated participation is never placed in time: a person whose stint carries no documented dates can appear in all-time results but never in an "as of" answer.</p></div>`;
+}
+
+function initDesk() {
+  $('#desk-actors').innerHTML = state.surfaceGraph.actors
+    .filter(a => state.actorScores.has(a.id))
+    .map(a => `<option value="${esc(a.label)}"></option>`).join('');
+  const examples = [
+    { from: 'fiona-hill', to: '', asOf: '', label: 'Fiona Hill × Clifford' },
+    { from: 'dominic-cummings', to: '', asOf: '2020', label: 'Cummings × Clifford, as of 2020' },
+  ];
+  const rej = (state.hopGraph.rejected_hop_pairs ?? [])[0];
+  if (rej) examples.push({ from: rej.actor_a, to: rej.actor_b, asOf: '', label: `${labelActor(rej.actor_a)} × ${labelActor(rej.actor_b)} (a refusal)` });
+  $('#desk-examples').innerHTML = examples.map((x, i) => `<button data-i="${i}">${esc(x.label)}</button>`).join('');
+  for (const btn of $('#desk-examples').querySelectorAll('button')) {
+    btn.addEventListener('click', () => {
+      const x = examples[Number(btn.dataset.i)];
+      $('#desk-from').value = labelActor(x.from);
+      $('#desk-to').value = x.to ? labelActor(x.to) : '';
+      $('#desk-asof').value = x.asOf;
+      runDeskCheck({ updateHash: true });
+    });
+  }
+  $('#desk-check').addEventListener('click', () => runDeskCheck({ updateHash: true }));
+  for (const id of ['desk-from', 'desk-to', 'desk-asof']) {
+    document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') runDeskCheck({ updateHash: true }); });
+  }
+  $('#desk-out').innerHTML = renderStandingRefusals();
+}
+
+function deskVerdict(kind, title, body) {
+  return `<div class="panel verdict verdict-${kind}"><h2>${esc(title)}</h2>${body}</div>`;
+}
+
+function runDeskCheck({ updateHash }) {
+  const out = $('#desk-out');
+  const fromText = $('#desk-from').value;
+  const toText = $('#desk-to').value;
+  const asOfRaw = $('#desk-asof').value.trim();
+  if (!fromText.trim()) { out.innerHTML = renderStandingRefusals(); return; }
+  const fromRes = resolveActorInput(fromText);
+  const toRes = toText.trim() ? resolveActorInput(toText) : state.hopGraph.anchor_actor_id;
+  const problems = [];
+  for (const [text, res] of [[fromText, fromRes], [toText, toRes]]) {
+    if (res && res.ambiguous) problems.push(`"${esc(text)}" matches several people: ${res.ambiguous.map(a => esc(a.label)).join(', ')}. Use a full name.`);
+    else if (res === null || res === undefined) problems.push(`"${esc(text)}" is not in the map. Names only enter the map through receipted surfaces — absence here is absence of documentation, not a claim about the person.`);
+  }
+  if (asOfRaw && !validAsOf(asOfRaw)) problems.push(`"${esc(asOfRaw)}" is not a date. Use a year (2020), month (2020-03), or day (2020-03-14).`);
+  if (problems.length) { out.innerHTML = deskVerdict('warn', 'Cannot check yet', problems.map(p => `<p>${p}</p>`).join('')); return; }
+  const fromId = fromRes, toId = toRes;
+  const asOf = asOfRaw || null;
+  if (updateHash) {
+    const target = `#desk/${encodeURIComponent(fromId)}/${encodeURIComponent(toId)}${asOf ? '/' + encodeURIComponent(asOf) : ''}`;
+    if (location.hash !== target) { state.deskSkipRoute = true; location.hash = target; setTimeout(() => { state.deskSkipRoute = false; }, 0); }
+  }
+
+  const allTime = deskPath(fromId, toId, null);
+  const sliced = asOf ? deskPath(fromId, toId, asOf) : null;
+  const path = asOf ? sliced : allTime;
+  const directRejections = deskRejectionsFor(fromId, toId);
+  const parts = [];
+
+  if (fromId === toId) {
+    parts.push(deskVerdict('warn', 'Same person', '<p>Both names resolve to the same entry.</p>'));
+  } else if (path) {
+    const floor = chainWeakest(path.hops);
+    parts.push(deskVerdict('ok', `Documented: ${path.number} step${path.number === 1 ? '' : 's'}${asOf ? ` as of ${asOf}` : ''}`,
+      `<p>${esc(labelActor(fromId))} connects to ${esc(labelActor(toId))} through ${path.number === 1 ? 'a shared bounded surface' : `${path.number} shared bounded surfaces`}${asOf ? `, with every link's documented window overlapping ${esc(asOf)}` : ''}.</p>
+       <div class="badge-row"><span class="badge">sourcing floor:</span>${evidenceBadge(floor)}</div>
+       ${floor !== 'official' ? `<p class="meta">At least one link rests on ${esc(EVIDENCE_LABEL[floor])} rather than an official document. Flag before print.</p>` : '<p class="meta">Every link in this chain carries official-class sourcing.</p>'}`));
+    parts.push(...path.hops.map(renderDeskHop));
+    const printable = buildPrintableText(fromId, toId, asOf, path);
+    parts.push(`<div class="panel"><div class="entity-heading"><h3>What you can print</h3><button id="desk-copy-btn" class="copy-link" onclick="copyDeskText('desk-copy-btn', this.dataset.text)" data-text="${esc(printable)}">Copy text</button></div><pre class="printable">${esc(printable)}</pre></div>`);
+  } else if (asOf && allTime) {
+    parts.push(deskVerdict('warn', `Not documented for ${asOf}`,
+      `<p>A documented all-time connection exists (${allTime.number} step${allTime.number === 1 ? '' : 's'}), but it cannot be placed at ${esc(asOf)}: either the documented windows do not overlap that period, or a link in the chain involves a stint with no documented dates — and this map never asserts co-presence it cannot date.</p>
+       <p class="meta">You can report the connection without the date, or find a document that dates the undated stint. Clear the "as of" field to see the all-time chain.</p>`));
+  } else {
+    parts.push(deskVerdict('no', 'No documented connection',
+      `<p>No chain of shared bounded surfaces connects ${esc(labelActor(fromId))} and ${esc(labelActor(toId))}${asOf ? ` during ${esc(asOf)}` : ''} in this corpus. That is a statement about the documentation gathered here, not proof of absence.</p>`));
+  }
+
+  if (directRejections.length) {
+    parts.push(`<div class="panel why-no-hop"><h3>Checked and declined</h3>${directRejections.map(p => `
+      <p>These two both touched <strong>${esc(surface(p.surface_id)?.surface_label || p.surface_id)}</strong>, but their documented windows do not overlap (${esc(labelActor(p.actor_a))}: ${esc(p.actor_a_window?.valid_from ?? '?')} → ${esc(p.actor_a_window?.valid_until ?? 'ongoing')}; ${esc(labelActor(p.actor_b))}: ${esc(p.actor_b_window?.valid_from ?? '?')} → ${esc(p.actor_b_window?.valid_until ?? 'ongoing')}). The compiler refused to connect them through it.</p>`).join('')}</div>`);
+  }
+  parts.push(renderStandingRefusals());
+  out.innerHTML = parts.join('');
 }
 
 init().catch(err => {

@@ -20,15 +20,39 @@
       <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">Dark</button>
     </header>
 
-    <section class="search-card">
-      <label for="search">Search actor, organization, or surface</label>
-      <input id="search" type="search" placeholder="Ben Warner, Electric Twin, Simon Case, Faculty..." autocomplete="off">
-      <p class="try-row">Try: <span id="try-examples"></span></p>
-      <div id="results" class="results"></div>
-    </section>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-view="map" role="tab">The Map</button>
+      <button class="tab" data-view="desk" role="tab">Claims Desk</button>
+    </nav>
 
-    <section id="summary" class="summary-grid"></section>
-    <section id="detail" class="detail"></section>
+    <div id="view-map">
+      <section class="search-card">
+        <label for="search">Search actor, organization, or surface</label>
+        <input id="search" type="search" placeholder="Ben Warner, Electric Twin, Simon Case, Faculty..." autocomplete="off">
+        <p class="try-row">Try: <span id="try-examples"></span></p>
+        <div id="results" class="results"></div>
+      </section>
+
+      <section id="summary" class="summary-grid"></section>
+      <section id="detail" class="detail"></section>
+    </div>
+
+    <div id="view-desk" hidden>
+      <section class="search-card">
+        <label for="desk-from">Check a connection before it prints</label>
+        <div class="desk-row">
+          <input id="desk-from" list="desk-actors" placeholder="First name — e.g. Fiona Hill" autocomplete="off">
+          <span class="desk-x" aria-hidden="true">×</span>
+          <input id="desk-to" list="desk-actors" placeholder="Second name — blank checks against Matt Clifford" autocomplete="off">
+          <input id="desk-asof" placeholder="As of (optional) — 2020 or 2025-01" autocomplete="off">
+          <button id="desk-check">Check</button>
+        </div>
+        <datalist id="desk-actors"></datalist>
+        <p class="try-row">Try: <span id="desk-examples"></span></p>
+        <p class="meta">A connection is asserted only where two people are named in the same bounded, receipted surface during overlapping documented windows. This desk answers: is it documented, when, and on what class of source.</p>
+      </section>
+      <section id="desk-out" class="detail"></section>
+    </div>
   </main>
   <script src="app.js" type="module"></script>
 </body>
