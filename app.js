@@ -307,14 +307,22 @@ function renderChain(id) {
   `;
 }
 
+function hopWindow(basis) {
+  if (!basis || basis.temporal_status === 'undated' || (!basis.valid_from && !basis.valid_until)) return '';
+  return ` [${basis.valid_from ?? '…'} → ${basis.valid_until ?? 'ongoing'}]`;
+}
+
 function renderPath(path) {
   const steps = [];
   for (let i = 0; i < path.actor_path.length; i++) {
     steps.push(`<div class="path-step"><span class="path-node">${esc(labelActor(path.actor_path[i]))}</span></div>`);
     const hop = path.hops[i];
-    if (hop) steps.push(`<div class="path-step path-connector"><span class="path-surface">via ${esc(hop.shared_surfaces[0]?.surface_label || hop.shared_surfaces[0]?.surface_id)}</span></div>`);
+    if (hop) {
+      const basis = hop.shared_surfaces[0];
+      steps.push(`<div class="path-step path-connector"><span class="path-surface">via ${esc(basis?.surface_label || basis?.surface_id)}${esc(hopWindow(basis))}</span></div>`);
+    }
   }
-  return `<div class="path-timeline">${steps.join('')}</div>` + path.hops.map(h => `<div class="receipts">${esc(labelActor(h.from))} ↔ ${esc(labelActor(h.to))}: ${h.shared_surfaces.map(s => esc(s.surface_label)).join('; ')}</div>`).join('');
+  return `<div class="path-timeline">${steps.join('')}</div>` + path.hops.map(h => `<div class="receipts">${esc(labelActor(h.from))} ↔ ${esc(labelActor(h.to))}: ${h.shared_surfaces.map(s => esc(s.surface_label) + esc(hopWindow(s))).join('; ')}</div>`).join('');
 }
 
 function renderSurfaceCard(id) {

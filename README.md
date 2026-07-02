@@ -10,6 +10,24 @@ A Clifford Number path may only move from Actor to Actor through a shared bounde
 
 A broad institution is not a hop. No. 10, Cabinet Office, DSIT, ARIA, News UK, Faculty, and Electric Twin can appear as venues or organizations, but they do not create Clifford Number hops by themselves. A named bounded surface inside them can.
 
+## Temporal rule
+
+A hop is not timeless. Two actors only shared a bounded surface during the window where their participations *and* the surface overlap. So every hop basis carries a validity window — the intersection of the surface window and both participation windows — and if two dated participations on the same surface do not overlap, that surface creates **no** hop between them (recorded in `rejected_hop_pairs`).
+
+Ledger dates may be year (`2016`), month (`2019-12`), or day (`2019-12-15`) precision; each is widened to the full period it names. Field vocabulary follows the AXM `temporal@1` extension: `valid_from` / `valid_until`, ISO 8601, with `null` for an open end (ongoing / until superseded).
+
+A participation with no dates cannot be placed in time. Such a hop basis still counts for all-time topology but never supports a time-sliced query.
+
+Query the graph on demand, optionally as of a point in time:
+
+```bash
+npm run query:hops -- --from ben-warner
+npm run query:hops -- --from dominic-cummings --as-of 2020
+npm run query:hops -- --from simon-case --to ben-warner --as-of 2026-06 --json
+```
+
+`--to` defaults to the anchor actor. `--as-of` accepts a year, month, or day and means "at any point during that period"; time-sliced paths traverse only fully dated hop bases whose window intersects it.
+
 ## Source ledgers
 
 ```text
@@ -67,4 +85,9 @@ This release must pass five fixtures before the full database can be trusted:
 3. Simon Case is represented through governance continuity surfaces.
 4. Surface types distinguish hop-eligible, non-hop scorable, context-only, and scout-only surfaces.
 5. Broad institutions never create Clifford Number hops.
+6. Hop bases carry validity windows; disjoint dated participations on a shared surface create no hop (e.g. Rosenfield and Cummings, who were in No. 10 in non-overlapping windows).
+
+## Interoperability (provisional)
+
+`tools/lib/axm-id.mjs` vendors the AXM content-addressed identity envelope (axm-core `IDENTITY.md`: SHA-256 → first 15 bytes → base32 lowercase, no padding, type prefix) so that, in future, two independently built cases mentioning the same entity can produce the same ID — the precondition for cross-case joins and dark-network deltas. The envelope is authoritative; the namespace/label input serialization is **provisional** and must be reconciled byte-for-byte against `axm-genesis` (`axm_verify.identity`) before these IDs are used as cross-system join keys. The module is not wired into any generated artifact yet.
 

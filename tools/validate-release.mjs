@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { loadAll, readJson, indexBy } from './lib/ledger.mjs';
+import { windowOf, intersectAll, UNBOUNDED } from './lib/temporal.mjs';
 
 const data = loadAll();
 const scores = readJson('build/scores.json');
@@ -42,7 +43,28 @@ for (const edge of hopGraph.edges) {
     assert(parts.some(p => p.participant_type === 'actor' && p.actor_id === edge.actor_a), `hop basis ${basis.surface_id} lacks participant ${edge.actor_a}`);
     assert(parts.some(p => p.participant_type === 'actor' && p.actor_id === edge.actor_b), `hop basis ${basis.surface_id} lacks participant ${edge.actor_b}`);
     assert(basis.receipt_ids?.length > 0, `hop basis ${basis.surface_id} lacks receipts`);
+
+    // Temporal integrity: every basis carries a status, and a dated basis
+    // must fall within the intersection of the surface and both participation
+    // windows — never assert co-presence outside every source's own window.
+    assert(typeof basis.temporal_status === 'string', `hop basis ${basis.surface_id} lacks temporal_status`);
+    const partA = (surface?.participants ?? []).find(p => p.participant_type === 'actor' && p.actor_id === edge.actor_a);
+    const partB = (surface?.participants ?? []).find(p => p.participant_type === 'actor' && p.actor_id === edge.actor_b);
+    const expected = intersectAll([
+      windowOf(surface).dated ? windowOf(surface) : UNBOUNDED,
+      windowOf(partA).dated ? windowOf(partA) : UNBOUNDED,
+      windowOf(partB).dated ? windowOf(partB) : UNBOUNDED,
+    ]);
+    assert(expected !== null, `hop basis ${basis.surface_id} for ${edge.actor_a}/${edge.actor_b} has disjoint windows and must not exist`);
+    assert((basis.valid_from ?? null) === (expected?.valid_from ?? null), `hop basis ${basis.surface_id} valid_from ${basis.valid_from} != expected ${expected?.valid_from}`);
+    assert((basis.valid_until ?? null) === (expected?.valid_until ?? null), `hop basis ${basis.surface_id} valid_until ${basis.valid_until} != expected ${expected?.valid_until}`);
   }
+}
+
+// No hop basis may assert co-presence across disjoint dated windows: every
+// rejected pair the builder recorded must genuinely have an empty intersection.
+for (const pair of hopGraph.rejected_hop_pairs ?? []) {
+  assert(pair.reason?.startsWith('no_temporal_overlap'), `rejected pair ${pair.surface_id} has unexpected reason ${pair.reason}`);
 }
 
 // Regression fixture 1: Ben Warner.
