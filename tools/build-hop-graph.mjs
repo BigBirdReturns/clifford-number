@@ -1,13 +1,39 @@
 #!/usr/bin/env node
-import { loadAll, readJson, writeJson, indexBy } from './lib/ledger.mjs';
+import { loadCase, loadCases, readJson, writeJson, indexBy } from './lib/ledger.mjs';
 import { deriveHopEdges, buildAdjacency, shortestPath } from './lib/hops.mjs';
 import { buildIdentityLayer } from './lib/axm-identity.mjs';
 
-const ANCHOR_ACTOR_ID = 'matt-clifford';
+// Per-case hop-graph build. `--case <id>` selects the case (default: the
+// cases.json default_case_id). Outputs land under build/cases/<id>/; for the
+// DEFAULT case the same artifacts are additionally written to the legacy
+// top-level build/*.json paths (site / app.js / mcp / query-hops compatibility).
 
-const data = loadAll();
-const legacyGraph = readJson('graph.json');
-const intakeCandidates = readJson('data/intake/defense-industrial-candidates.json').candidates ?? [];
+function parseArgs(argv) {
+  const args = {};
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === '--case') args.caseId = argv[++i];
+    else { console.error(`unknown argument: ${argv[i]}`); process.exit(2); }
+  }
+  return args;
+}
+
+const args = parseArgs(process.argv.slice(2));
+const { defaultId, cases } = loadCases();
+const caseId = args.caseId ?? defaultId;
+const isDefault = caseId === defaultId;
+const caseCfg = cases.find(c => c.id === caseId);
+if (!caseCfg) { console.error(`unknown case: ${caseId}`); process.exit(2); }
+
+const data = loadCase(caseCfg);
+const ANCHOR_ACTOR_ID = caseCfg.anchor_actor_id ?? null;
+
+// UK-specific inputs (legacy graph bridge + defense-industrial intake
+// candidates) are default-case-only; other cases do not read them.
+const legacyGraph = isDefault ? readJson('graph.json') : { nodes: [] };
+const intakeCandidates = isDefault
+  ? (readJson('data/intake/defense-industrial-candidates.json').candidates ?? [])
+  : [];
+
 const actorById = indexBy(data.actors, 'id');
 const orgById = indexBy(data.organizations, 'id');
 const receiptById = indexBy(data.receipts, 'receipt_id');
@@ -59,9 +85,13 @@ const { edges: hopEdges, rejectedHopSurfaces, rejectedHopPairs } = deriveHopEdge
   broadSurfaceThreshold: data.densityRule?.broad_surface_threshold ?? Infinity,
 });
 
+// An anchorless case (e.g. natsec before portfolio surfaces exist) has no
+// shortest-path target — leave the map empty rather than erroring.
 const adjacency = buildAdjacency(hopEdges);
 const shortestPaths = {};
-for (const actor of data.actors) shortestPaths[actor.id] = shortestPath(adjacency, actor.id, ANCHOR_ACTOR_ID);
+if (ANCHOR_ACTOR_ID) {
+  for (const actor of data.actors) shortestPaths[actor.id] = shortestPath(adjacency, actor.id, ANCHOR_ACTOR_ID);
+}
 
 const actorIds = new Set(data.actors.map(actor => actor.id));
 const orgIds = new Set(data.organizations.map(org => org.id));
@@ -106,6 +136,7 @@ for (const node of legacyGraph.nodes ?? []) {
 
 const surfaceGraph = {
   generated: new Date().toISOString(),
+  case: caseId,
   surfaces: data.surfaces.map(surface => ({
     ...surface,
     participants: participationBySurface.get(surface.surface_id) ?? [],
@@ -118,6 +149,7 @@ const surfaceGraph = {
 
 const hopGraph = {
   generated: new Date().toISOString(),
+  case: caseId,
   anchor_actor_id: ANCHOR_ACTOR_ID,
   rule: 'Actor-to-actor hops are generated only from shared valid bounded surfaces with explicit participation rows.',
   temporal_rule: 'A hop basis exists only for the window where both participations and the surface overlap. Disjoint dated participations create no hop (rejected_hop_pairs). Bases with an undated participation never support time-sliced claims.',
@@ -128,11 +160,11 @@ const hopGraph = {
   rejected_hop_pairs: rejectedHopPairs,
 };
 
-// Temporal identity layer: canonical AXM Genesis entity ids for the canonical
+// Temporal identity layer: kind-based AXM Genesis entity ids for the case's
 // registries plus time-qualified participates_in claims. Kept in its own
 // artifact, separate from the hop/surface/receipt graphs.
 const identityLayer = buildIdentityLayer({
-  namespace: readJson('cases.json').default_case_id,
+  caseId,
   actors: data.actors,
   organizations: data.organizations,
   surfaces: data.surfaces,
@@ -142,22 +174,37 @@ const identityLayer = buildIdentityLayer({
 
 const receiptGraph = {
   generated: new Date().toISOString(),
+  case: caseId,
   receipts: data.receipts,
   claims: data.claims,
   surface_receipt_links: data.surfaces.map(s => ({ surface_id: s.surface_id, receipt_ids: s.receipt_ids ?? [] })),
   participation_receipt_links: data.participation.map(p => ({ surface_id: p.surface_id, participant_id: p.actor_id ?? p.organization_id, receipt_ids: p.receipt_ids ?? [] })),
 };
 
-writeJson('build/surface-graph.json', surfaceGraph);
-writeJson('build/hop-graph.json', hopGraph);
-writeJson('build/receipt-graph.json', receiptGraph);
-writeJson('build/axm-identity.json', { generated: new Date().toISOString(), ...identityLayer });
-writeJson('build/build-hop-report.json', { generated: new Date().toISOString(), errors, warnings, hop_edges: hopEdges.length, rejected_hop_surfaces: rejectedHopSurfaces, rejected_hop_pairs: rejectedHopPairs });
+const buildReport = { generated: new Date().toISOString(), case: caseId, errors, warnings, hop_edges: hopEdges.length, rejected_hop_surfaces: rejectedHopSurfaces, rejected_hop_pairs: rejectedHopPairs };
+
+// Per-case outputs.
+const caseDir = `build/cases/${caseId}`;
+writeJson(`${caseDir}/surface-graph.json`, surfaceGraph);
+writeJson(`${caseDir}/hop-graph.json`, hopGraph);
+writeJson(`${caseDir}/receipt-graph.json`, receiptGraph);
+writeJson(`${caseDir}/axm-identity.json`, { generated: new Date().toISOString(), ...identityLayer });
+writeJson(`${caseDir}/build-hop-report.json`, buildReport);
+
+// The default case also writes the legacy top-level paths with identical
+// content, so the site, app.js, mcp server, and query-hops keep working.
+if (isDefault) {
+  writeJson('build/surface-graph.json', surfaceGraph);
+  writeJson('build/hop-graph.json', hopGraph);
+  writeJson('build/receipt-graph.json', receiptGraph);
+  writeJson('build/axm-identity.json', { generated: new Date().toISOString(), ...identityLayer });
+  writeJson('build/build-hop-report.json', buildReport);
+}
 
 if (errors.length) {
   console.error(errors.join('\n'));
   process.exit(1);
 }
-console.log(`build-hop-graph: ${data.surfaces.length} surfaces, ${hopEdges.length} actor-hop edges.`);
-console.log(`axm identity (genesis section 10): ${identityLayer.entities.length} entities, ${identityLayer.claims.length} participates_in claims.`);
+console.log(`build-hop-graph [${caseId}]: ${data.surfaces.length} surfaces, ${hopEdges.length} actor-hop edges${ANCHOR_ACTOR_ID ? '' : ' (no anchor — shortest paths skipped)'}.`);
+console.log(`axm identity (genesis section 10, kind-based): ${identityLayer.entities.length} entities, ${identityLayer.claims.length} participates_in claims.`);
 console.log(`rejected hop surfaces: ${rejectedHopSurfaces.length}, rejected hop pairs (no temporal overlap): ${rejectedHopPairs.length}`);

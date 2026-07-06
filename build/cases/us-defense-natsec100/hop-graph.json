@@ -1,0 +1,29 @@
+{
+  "generated": "2026-07-06T23:58:41.702Z",
+  "case": "us-defense-natsec100",
+  "anchor_actor_id": null,
+  "rule": "Actor-to-actor hops are generated only from shared valid bounded surfaces with explicit participation rows.",
+  "temporal_rule": "A hop basis exists only for the window where both participations and the surface overlap. Disjoint dated participations create no hop (rejected_hop_pairs). Bases with an undated participation never support time-sliced claims.",
+  "density_rule": "A surface with 20 or more distinct documented actor participants never creates hops, regardless of its per-row flag (rejected_hop_surfaces, reason population_exceeds_density_threshold). Large-N rosters and rankings are scorable or context-only. Threshold declared in data/canonical/surface-types.json density_rule.",
+  "edges": [],
+  "shortest_paths": {},
+  "rejected_hop_surfaces": [
+    {
+      "surface_id": "natsec100-2023",
+      "reason": "surface_not_hop_eligible"
+    },
+    {
+      "surface_id": "natsec100-2024",
+      "reason": "surface_not_hop_eligible"
+    },
+    {
+      "surface_id": "natsec100-2025",
+      "reason": "surface_not_hop_eligible"
+    },
+    {
+      "surface_id": "natsec100-2026",
+      "reason": "surface_not_hop_eligible"
+    }
+  ],
+  "rejected_hop_pairs": []
+}

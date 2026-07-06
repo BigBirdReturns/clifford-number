@@ -72,20 +72,55 @@ export function indexBy(rows, key) {
   return m;
 }
 
-export function loadAll() {
-  const actors = readJson('data/canonical/actors.json').actors;
-  const organizations = readJson('data/canonical/organizations.json').organizations;
-  const aliases = readJson('data/canonical/aliases.json').aliases;
+// Load a single case. Cases share canonical vocabularies but own their ledgers
+// and registries (BUILD-INSTRUCTIONS 5.1). A case config carries:
+//   registries_dir — dir holding actors.json + organizations.json (and an
+//     OPTIONAL aliases.json; a case may instead carry per-row "aliases" arrays).
+//   ledger_dir — dir holding receipts / surfaces / participation (.jsonl) plus
+//     OPTIONAL claims / chains.
+// Shared vocabulary (surface-types.json incl. density_rule, predicates.json) is
+// ALWAYS read from data/canonical, regardless of case.
+export function loadCase(caseCfg) {
+  if (!caseCfg?.registries_dir || !caseCfg?.ledger_dir) {
+    throw new Error(`case ${caseCfg?.id ?? '?'} is missing registries_dir/ledger_dir`);
+  }
+  const reg = caseCfg.registries_dir;
+  const led = caseCfg.ledger_dir;
+
+  const actors = readJson(path.join(reg, 'actors.json')).actors;
+  const organizations = readJson(path.join(reg, 'organizations.json')).organizations;
+  const aliasPath = path.join(reg, 'aliases.json');
+  const aliases = fs.existsSync(path.join(root, aliasPath)) ? readJson(aliasPath).aliases : [];
+
+  // Shared canonical vocabulary — always from data/canonical.
   const predicates = readJson('data/canonical/predicates.json').predicates;
   const surfaceTypeRegistry = readJson('data/canonical/surface-types.json');
   const surfaceTypes = surfaceTypeRegistry.surface_types;
   const densityRule = surfaceTypeRegistry.density_rule ?? null;
-  const receipts = readJsonl('data/ledger/receipts.jsonl');
-  const claims = readJsonl('data/ledger/claims.jsonl', { optional: true });
-  const surfaces = readJsonl('data/ledger/surfaces.jsonl');
-  const participation = readJsonl('data/ledger/participation.jsonl');
-  const chains = readJsonl('data/ledger/chains.jsonl', { optional: true });
+
+  const receipts = readJsonl(path.join(led, 'receipts.jsonl'));
+  const claims = readJsonl(path.join(led, 'claims.jsonl'), { optional: true });
+  const surfaces = readJsonl(path.join(led, 'surfaces.jsonl'));
+  const participation = readJsonl(path.join(led, 'participation.jsonl'));
+  const chains = readJsonl(path.join(led, 'chains.jsonl'), { optional: true });
+
   return { actors, organizations, aliases, predicates, surfaceTypes, densityRule, receipts, claims, surfaces, participation, chains };
+}
+
+// Backwards-compatible loader for existing callers: the UK default case.
+export function loadAll() {
+  return loadCase({ id: 'uk-ai-policy', registries_dir: 'data/canonical', ledger_dir: 'data/ledger' });
+}
+
+// Read cases.json and return the case list with the default case first. Only
+// cases that own a ledger (registries_dir + ledger_dir) are pipeline cases;
+// shell cases (e.g. the template) are skipped.
+export function loadCases() {
+  const cfg = readJson('cases.json');
+  const defaultId = cfg.default_case_id;
+  const cases = (cfg.cases ?? []).filter(c => c.registries_dir && c.ledger_dir);
+  cases.sort((a, b) => (a.id === defaultId ? -1 : b.id === defaultId ? 1 : 0));
+  return { defaultId, cases };
 }
 
 export function evidenceWeight(evidenceClass) {

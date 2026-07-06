@@ -4,9 +4,12 @@
 // the participation ledger:
 //
 //   entities: every actor, organization, and surface gets an AXM entity id
-//     derived from (namespace, label). Aliases yield additional alias-derived
-//     ids pointing at the same entity, so a corpus that says "Sir Simon Case"
-//     and one that says "Simon Case" can still join.
+//     derived kind-based from (kind, label), where kind is exactly
+//     "actor" | "organization" | "surface" — NOT the case id. Identical labels
+//     of the same kind converge across cases, which is the cross-case join
+//     precondition (BUILD-INSTRUCTIONS 3.2). Aliases yield additional
+//     alias-derived ids pointing at the same entity, so a corpus that says "Sir
+//     Simon Case" and one that says "Simon Case" can still join.
 //
 //   claims: participation rows become `participates_in` claims. The claim id
 //     is content-addressed over (subject, predicate, object, obj_type) ONLY —
@@ -25,6 +28,16 @@ import { entityId, claimId } from './axm-id.mjs';
 import { windowOf } from './temporal.mjs';
 
 export const PARTICIPATES_IN = 'participates_in';
+
+// Kind-based identity namespace convention (BUILD-INSTRUCTIONS 3.2 join
+// precondition). Entities derive from (kind, label) where kind is one of
+// "actor" | "organization" | "surface" — NOT the case id. Identical labels of
+// the same kind therefore converge to the same AXM entity id across cases,
+// which is exactly what makes a cross-case join possible by construction. A
+// case-scoped namespace made that join impossible (the same organization in two
+// cases produced two different ids).
+export const NAMESPACE_CONVENTION =
+  'kind-based: actor | organization | surface — identical labels of the same kind converge across cases (BUILD-INSTRUCTIONS 3.2 join precondition)';
 
 export const SCHEME = Object.freeze({
   status: 'reconciled',
@@ -50,18 +63,19 @@ function claimWindow(row) {
   };
 }
 
-export function buildIdentityLayer({ namespace, actors, organizations, surfaces, participation, aliases = [] }) {
-  if (!namespace) throw new Error('identity layer requires a namespace');
+export function buildIdentityLayer({ caseId, actors, organizations, surfaces, participation, aliases = [] }) {
+  if (!caseId) throw new Error('identity layer requires a caseId (informational; ids are kind-based, not case-scoped)');
 
   const entities = [];
   const byLocalId = new Map();
   const byAxmId = new Map();
 
+  // Kind-based derivation: entityId(kind, label), NOT entityId(caseId, label).
   function addEntity(localId, kind, label) {
-    const axmId = entityId(namespace, label);
+    const axmId = entityId(kind, label);
     const clash = byAxmId.get(axmId);
     if (clash && clash.local_id !== localId) {
-      throw new Error(`axm entity id collision: ${clash.local_id} and ${localId} both derive ${axmId} (label ${JSON.stringify(label)})`);
+      throw new Error(`axm entity id collision: ${clash.local_id} and ${localId} both derive ${axmId} (kind ${kind}, label ${JSON.stringify(label)})`);
     }
     const entity = { local_id: localId, kind, label, axm_entity_id: axmId, alias_axm_ids: [] };
     entities.push(entity);
@@ -74,16 +88,25 @@ export function buildIdentityLayer({ namespace, actors, organizations, surfaces,
   for (const o of organizations) addEntity(o.id, 'organization', o.label);
   for (const s of surfaces) addEntity(s.surface_id, 'surface', s.surface_label);
 
-  // Alias-derived ids join to the canonical entity. An alias whose derived id
-  // collides with a different entity's id is the same data error as above.
-  for (const alias of aliases) {
-    const entity = byLocalId.get(alias.canonical_id);
-    if (!entity) continue; // legacy-graph aliases have no canonical registry entry
-    const aliasId = entityId(namespace, alias.alias);
+  // Alias sources are BOTH the aliases registry (where present) AND each
+  // registry row's own "aliases" array (some cases only carry the latter).
+  const aliasTuples = [];
+  for (const alias of aliases) aliasTuples.push({ alias: alias.alias, canonical_id: alias.canonical_id });
+  for (const a of actors) for (const al of a.aliases ?? []) aliasTuples.push({ alias: al, canonical_id: a.id });
+  for (const o of organizations) for (const al of o.aliases ?? []) aliasTuples.push({ alias: al, canonical_id: o.id });
+  for (const s of surfaces) for (const al of s.aliases ?? []) aliasTuples.push({ alias: al, canonical_id: s.surface_id });
+
+  // Alias-derived ids join to the canonical entity, derived kind-based from the
+  // entity's own kind. An alias whose derived id collides with a different
+  // entity's id is a data error, as above.
+  for (const { alias, canonical_id } of aliasTuples) {
+    const entity = byLocalId.get(canonical_id);
+    if (!entity) continue; // aliases with no canonical registry entry are skipped
+    const aliasId = entityId(entity.kind, alias);
     if (aliasId === entity.axm_entity_id) continue;
     const clash = byAxmId.get(aliasId);
     if (clash && clash.local_id !== entity.local_id) {
-      throw new Error(`axm alias id collision: alias ${JSON.stringify(alias.alias)} of ${entity.local_id} derives ${clash.local_id}'s id ${aliasId}`);
+      throw new Error(`axm alias id collision: alias ${JSON.stringify(alias)} of ${entity.local_id} derives ${clash.local_id}'s id ${aliasId}`);
     }
     if (!entity.alias_axm_ids.includes(aliasId)) entity.alias_axm_ids.push(aliasId);
     byAxmId.set(aliasId, entity);
@@ -120,7 +143,7 @@ export function buildIdentityLayer({ namespace, actors, organizations, surfaces,
   claims.sort((a, b) => a.claim_id.localeCompare(b.claim_id));
   entities.sort((a, b) => a.local_id.localeCompare(b.local_id));
 
-  return { scheme: { ...SCHEME, namespace }, entities, claims };
+  return { scheme: { ...SCHEME, namespace_convention: NAMESPACE_CONVENTION, case: caseId }, entities, claims };
 }
 
 // Resolve a --from/--to style token: a local id passes through; a canonical AXM

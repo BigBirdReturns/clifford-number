@@ -96,15 +96,15 @@ This release must pass five fixtures before the full database can be trusted:
 
 This derivation is **reconciled** byte-for-byte against `axm-genesis` (`axm_verify.identity`). The shared conformance vectors are pinned in `test/vectors/identity.json` (source: axm-genesis commit `a73335d`) and `test/axm-id-conformance.test.js` asserts every canonicalization, entity-id, and claim-id vector against this port, so any drift from the canonical derivation fails `npm test`.
 
-`tools/lib/axm-identity.mjs` wires that derivation into exactly one artifact, `build/axm-identity.json`, kept separate from the hop/surface/receipt graphs:
+`tools/lib/axm-identity.mjs` wires that derivation into one artifact per case, `build/cases/<id>/axm-identity.json` (the default case also mirrors to `build/axm-identity.json`), kept separate from the hop/surface/receipt graphs:
 
-- **Entities.** Every canonical actor, organization, and surface gets an AXM entity ID derived from `(case namespace, label)`. Registry aliases yield additional alias-derived IDs on the same entity — a corpus that says "Sir Simon Case" and one that says "Simon Case" still join.
+- **Entities.** Every canonical actor, organization, and surface gets an AXM entity ID derived **kind-based** from `(kind, label)`, where `kind` is exactly `actor | organization | surface` — **not** the case id. Identical labels of the same kind therefore converge to the same ID across cases (e.g. "Andreessen Horowitz" as an organization resolves to the same ID in the UK and US cases), which is the join precondition from BUILD-INSTRUCTIONS 3.2: a case-scoped namespace made that join impossible by construction. The `scheme` block records this as `namespace_convention` and carries the case id as an informational `case` field. Aliases — from a `data/canonical/aliases.json`-style registry and/or each registry row's own `aliases` array — yield additional alias-derived IDs on the same entity, so a corpus that says "Sir Simon Case" and one that says "Simon Case" still join.
 - **Time-qualified claims.** Each participation row becomes a `participates_in` claim. The claim ID is content-addressed over `(subject, predicate, object, object_type)` only — **identity is time-stable** — while temporal validity attaches as windows in the `temporal@1` vocabulary. Multiple stints of the same participant on the same surface are one claim with several windows, never several claims. An undated participation is preserved as `dated: false` with open bounds, not invented.
 - **Honesty markers.** The artifact's `scheme` block records the reconciled status and cites the shared vectors and conformance test; `validate:release` recomputes the whole layer from the ledger and fails on any drift, staleness, or a stripped or weakened reconciliation statement.
 
 `query:hops --from` / `--to` also accept a canonical AXM entity ID (canonical or alias-derived) and resolve it to the local actor before traversal:
 
 ```bash
-npm run query:hops -- --from e1_g4hfdlwct4rudhgh2kp5fnyv5ryh54lbf7d66celq6mtxa3xlcpq   # "Ben Warner" (alias-derived)
+npm run query:hops -- --from e1_2bikqdoe6zfiy7kjoezph6p7ucdoiqwalxlg2xqgrf34hem5ypgq   # "Ben Warner" (kind-based alias-derived)
 ```
 
