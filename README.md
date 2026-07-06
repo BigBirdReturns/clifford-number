@@ -2,6 +2,8 @@
 
 The Clifford Number is a surface-hop topology compiler. It maps how bounded legitimate surfaces carry actors, companies, policy machinery, advisory roles, capital, and outcomes through plausible-deniability corridors.
 
+Governance: [BUILD-INSTRUCTIONS.md](BUILD-INSTRUCTIONS.md) is the governing document — the constitutional invariants (Section 1) and the phased build plan through 2037. Agents and maintainers read it before executing work in this repository.
+
 This release abandons the generic shortest-path edge graph. The old graph is preserved under `legacy/`, but it is no longer the product.
 
 ## Core rule
