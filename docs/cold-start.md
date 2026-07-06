@@ -69,12 +69,12 @@ validates every Section 1 invariant, and runs the compiler test suite.
      master rows classified: <n>
    ```
 
-2. Six test files, each ending in its own `OK` line, in this order (the
-   `test` script in `package.json`): `temporal.test`, `axm-id.test`,
-   `axm-id-conformance.test`, `axm-identity.test`, `compiler.test`,
-   `receipt-archival.test`.
+2. Seven test files, each ending in its own `OK` line, in this order (the
+   `test` script in `package.json`): `temporal.test`, `density.test`,
+   `axm-id.test`, `axm-id-conformance.test`, `axm-identity.test`,
+   `compiler.test`, `receipt-archival.test`.
 
-If any of these seven lines is missing, or the process exits non-zero, the
+If any of these eight lines is missing, or the process exits non-zero, the
 cold start has failed; treat the failure as the next release's work, not
 something to patch around by hand-editing `build/`.
 

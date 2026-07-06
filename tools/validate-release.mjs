@@ -34,6 +34,34 @@ for (const surface of data.surfaces) {
   for (const secondary of surface.secondary_surface_types ?? []) assert(surfaceTypeById.has(secondary), `surface ${surface.surface_id} uses unknown secondary type ${secondary}`);
 }
 
+// Density discipline (constitution 1.7, BUILD-INSTRUCTIONS 2.2). The density
+// rule must exist and declare a numeric threshold — it must not be silently
+// deletable, or the population guard becomes a no-op.
+assert(data.densityRule && typeof data.densityRule.broad_surface_threshold === 'number',
+  'data/canonical/surface-types.json must declare density_rule.broad_surface_threshold as a number (constitution 1.7 density discipline)');
+
+// Defense in depth: recompute each hop basis surface's distinct actor population
+// straight from the participation ledger and fail (error, not warning) if any
+// surface appearing in a hop edge is at or above the declared threshold. The
+// graph builder already rejects these; this catches a stale or hand-edited
+// build/hop-graph.json that smuggled a large-N roster in as a silent hop machine.
+{
+  const threshold = data.densityRule?.broad_surface_threshold;
+  if (typeof threshold === 'number') {
+    const actorPopBySurface = new Map();
+    for (const p of data.participation) {
+      if (p.participant_type !== 'actor') continue;
+      if (!actorPopBySurface.has(p.surface_id)) actorPopBySurface.set(p.surface_id, new Set());
+      actorPopBySurface.get(p.surface_id).add(p.actor_id);
+    }
+    const hopBasisSurfaceIds = new Set(hopGraph.edges.flatMap(e => (e.surfaces ?? []).map(b => b.surface_id)));
+    for (const sid of hopBasisSurfaceIds) {
+      const pop = actorPopBySurface.get(sid)?.size ?? 0;
+      assert(pop < threshold, `hop basis surface ${sid} has distinct actor population ${pop} >= density threshold ${threshold} — large-N surfaces are never silent hop machines (constitution 1.7)`);
+    }
+  }
+}
+
 // Every hop must carry its surface basis.
 for (const edge of hopGraph.edges) {
   assert(edge.actor_a && edge.actor_b, `hop edge missing actor ids: ${JSON.stringify(edge)}`);
