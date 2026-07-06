@@ -1,5 +1,17 @@
 # NatSec100 Pathways Database (intake stage)
 
+## Conversion status
+
+- **`chunk1/` converted to `cases/us-defense-natsec100/` on 2026-07-06**
+  (BUILD-INSTRUCTIONS gate 3.1a): receipts, surfaces, company_years, companies,
+  conversion_events, and the receipt-backed operator/sponsor/partner actors are
+  now in ledger-quartet form under the case directory. This intake copy is
+  retained unchanged as provenance.
+- **`seed/` is blocked and stays in intake.** Its `claims.jsonl` cites 18
+  distinct `r-*` receipt ids, but no `receipts.jsonl` was ever delivered for the
+  seed batch. Per constitution 1.1 it cannot be promoted until those receipts
+  arrive.
+
 US defense-tech ecosystem dataset centered on the SVDG NatSec100 ranking
 surface and the Capital Factory / Silent Ventures / Jackson Moses routing
 layer. Intake stage: receipt-backed base tables only. No overlap analysis has
