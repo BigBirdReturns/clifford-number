@@ -56,6 +56,7 @@ const { edges: hopEdges, rejectedHopSurfaces, rejectedHopPairs } = deriveHopEdge
   surfaces: data.surfaces,
   participationBySurface,
   broadOrgIds: BROAD_ORGS,
+  broadSurfaceThreshold: data.densityRule?.broad_surface_threshold ?? Infinity,
 });
 
 const adjacency = buildAdjacency(hopEdges);
@@ -120,6 +121,7 @@ const hopGraph = {
   anchor_actor_id: ANCHOR_ACTOR_ID,
   rule: 'Actor-to-actor hops are generated only from shared valid bounded surfaces with explicit participation rows.',
   temporal_rule: 'A hop basis exists only for the window where both participations and the surface overlap. Disjoint dated participations create no hop (rejected_hop_pairs). Bases with an undated participation never support time-sliced claims.',
+  density_rule: `A surface with ${data.densityRule?.broad_surface_threshold ?? 'N'} or more distinct documented actor participants never creates hops, regardless of its per-row flag (rejected_hop_surfaces, reason population_exceeds_density_threshold). Large-N rosters and rankings are scorable or context-only. Threshold declared in data/canonical/surface-types.json density_rule.`,
   edges: hopEdges,
   shortest_paths: shortestPaths,
   rejected_hop_surfaces: rejectedHopSurfaces,

@@ -33,7 +33,7 @@ export function basisWindow(basis) {
   return { valid_from: basis.valid_from ?? null, valid_until: basis.valid_until ?? null, dated: basis.temporal_status !== 'undated' };
 }
 
-export function deriveHopEdges({ surfaces, participationBySurface, broadOrgIds }) {
+export function deriveHopEdges({ surfaces, participationBySurface, broadOrgIds, broadSurfaceThreshold = Infinity }) {
   const hopEdgeMap = new Map();
   const rejectedHopSurfaces = [];
   const rejectedHopPairs = [];
@@ -48,6 +48,21 @@ export function deriveHopEdges({ surfaces, participationBySurface, broadOrgIds }
 
     if (!surface.hop_eligible) {
       rejectedHopSurfaces.push({ surface_id: surface.surface_id, reason: 'surface_not_hop_eligible' });
+      continue;
+    }
+    // Density discipline (constitution 1.7, gate 2.2): the information value of
+    // a shared surface falls with its population. A surface at or above the
+    // declared threshold never creates hops, regardless of its per-row flag —
+    // large-N rosters and rankings are scorable or context-only, never silent
+    // hop machines. Threshold source: data/canonical/surface-types.json density_rule.
+    const distinctActors = new Set(actorParts.map(p => p.actor_id)).size;
+    if (distinctActors >= broadSurfaceThreshold) {
+      rejectedHopSurfaces.push({
+        surface_id: surface.surface_id,
+        reason: 'population_exceeds_density_threshold',
+        population: distinctActors,
+        threshold: broadSurfaceThreshold,
+      });
       continue;
     }
     if (onlyBroadOrgContext) {

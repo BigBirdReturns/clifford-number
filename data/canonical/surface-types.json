@@ -73,8 +73,8 @@
     {
       "id": "directory_roster_surface",
       "label": "Directory / Roster Surface",
-      "description": "A bounded roster, directory, cohort, or listed-membership surface.",
-      "hop_eligible_default": true,
+      "description": "A bounded roster, directory, cohort, or listed-membership surface. Scorable and context-visible, never a silent hop machine: roster co-presence is stated as such (constitution 1.7).",
+      "hop_eligible_default": false,
       "scorable": true
     },
     {
@@ -140,5 +140,11 @@
       "hop_eligible_default": false,
       "scorable": true
     }
-  ]
+  ],
+  "density_rule": {
+    "broad_surface_threshold": 20,
+    "hop_rule": "A surface whose distinct documented actor population reaches broad_surface_threshold is not hop-eligible regardless of its per-row flag; the graph builder rejects it visibly (reason population_exceeds_density_threshold).",
+    "narration_rule": "The narrator flags any hop basis at or above the same threshold as broad-surface / low individual signal.",
+    "rationale": "The information value of a shared surface falls with its population (constitution 1.7). 20 is the threshold the narration layer already used for the broad-surface flag; one declared constant, two consumers."
+  }
 }

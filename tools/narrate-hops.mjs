@@ -54,6 +54,9 @@ const hopGraph = readJson('build/hop-graph.json');
 const identity = readJson('build/axm-identity.json');
 const actorsReg = readJson('data/canonical/actors.json');
 const participation = readJsonl('data/ledger/participation.jsonl');
+// One declared density constant, two consumers: the graph builder rejects
+// hop surfaces at/above it, the narrator flags any surviving basis near it.
+const BROAD_SURFACE_THRESHOLD = readJson('data/canonical/surface-types.json').density_rule?.broad_surface_threshold ?? 20;
 
 const actors = new Map((actorsReg.actors ?? actorsReg).map(a => [a.id, a]));
 
@@ -133,7 +136,7 @@ function narrateBasis(aId, bId, s) {
   const flags = [];
   if (s.temporal_status !== 'dated') flags.push(`temporal status: ${s.temporal_status}`);
   const p = pop(s.surface_id);
-  if (p >= 20) flags.push(`broad surface: ${p} documented participants - low individual signal`);
+  if (p >= BROAD_SURFACE_THRESHOLD) flags.push(`broad surface: ${p} documented participants - low individual signal`);
   flags.push(`evidence: ${s.evidence_class}`);
   return `${sentence} [${flags.join(' | ')}] (receipts: ${(s.receipt_ids ?? []).join(', ')})`;
 }
