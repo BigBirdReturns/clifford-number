@@ -2,6 +2,7 @@
 import { loadAll, readJson, indexBy } from './lib/ledger.mjs';
 import { windowOf, intersectAll, UNBOUNDED } from './lib/temporal.mjs';
 import { buildIdentityLayer } from './lib/axm-identity.mjs';
+import { checkReceiptArchival, todayString } from './lib/receipt-archival.mjs';
 
 const data = loadAll();
 const scores = readJson('build/scores.json');
@@ -14,6 +15,7 @@ const actorScore = new Map(scores.actors.map(a => [a.actor_id, a]));
 const orgScore = new Map(scores.organizations.map(o => [o.organization_id, o]));
 
 const errors = [];
+const warnings = [];
 function assert(cond, msg) { if (!cond) errors.push(msg); }
 function hasSurface(actorId, surfaceId) {
   return actorScore.get(actorId)?.surfaces.includes(surfaceId);
@@ -178,10 +180,24 @@ assert((scores.chains ?? []).some(c => c.laundering_chain_score >= 3), 'expected
 assert(migration.total_rows > 200, `migration parsed too few master rows: ${migration.total_rows}`);
 assert(migration.bucket_counts?.participation_claim > 50, 'migration did not classify enough participation claims from master doc');
 
+// Receipt archival gate (BUILD-INSTRUCTIONS 2.5). Missing archive references
+// warn before the cutoff and fail on/after it; a stale in-repo content hash
+// fails immediately.
+{
+  const { errors: archivalErrors, warnings: archivalWarnings } = checkReceiptArchival(data.receipts, { today: todayString() });
+  for (const err of archivalErrors) errors.push(err);
+  for (const warn of archivalWarnings) warnings.push(warn);
+}
+
 if (errors.length) {
   console.error('validate-release failed:');
   for (const err of errors) console.error(`- ${err}`);
   process.exit(1);
+}
+
+if (warnings.length) {
+  console.warn(`validate-release: ${warnings.length} warning(s):`);
+  for (const warn of warnings) console.warn(`- ${warn}`);
 }
 
 console.log('validate-release: OK');
