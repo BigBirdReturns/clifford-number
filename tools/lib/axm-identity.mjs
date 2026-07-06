@@ -1,12 +1,12 @@
-// Temporal identity layer — provisional AXM integration.
+// Temporal identity layer — canonical AXM Genesis integration.
 //
 // Builds a content-addressed identity view of the canonical registries and
 // the participation ledger:
 //
-//   entities: every actor, organization, and surface gets a provisional AXM
-//     entity id derived from (namespace, label). Aliases yield additional
-//     alias-derived ids pointing at the same entity, so a corpus that says
-//     "Sir Simon Case" and one that says "Simon Case" can still join.
+//   entities: every actor, organization, and surface gets an AXM entity id
+//     derived from (namespace, label). Aliases yield additional alias-derived
+//     ids pointing at the same entity, so a corpus that says "Sir Simon Case"
+//     and one that says "Simon Case" can still join.
 //
 //   claims: participation rows become `participates_in` claims. The claim id
 //     is content-addressed over (subject, predicate, object, obj_type) ONLY —
@@ -16,21 +16,25 @@
 //     all). Multiple stints of the same participant on the same surface are
 //     one claim with several windows, not several claims.
 //
-// PROVISIONAL: the hash envelope is authoritative (axm-core IDENTITY.md) but
-// the (namespace, label) / (subj, pred, obj, obj_type) input serialization is
-// this repo's best effort and must be reconciled byte-for-byte against
-// axm-genesis `axm_verify.identity` before any id here is used as a
-// cross-system join key. See tools/lib/axm-id.mjs. Every artifact this module
-// produces carries that caveat in its `scheme` block.
+// RECONCILED: the entity_id / claim_id derivation is the AXM Genesis v1 spec
+// (section 10), reconciled byte-for-byte against axm-genesis
+// `axm_verify.identity` and pinned by the shared vector file
+// test/vectors/identity.json (asserted in test/axm-id-conformance.test.js). See
+// tools/lib/axm-id.mjs. IDs produced here are valid cross-system join keys.
 import { entityId, claimId } from './axm-id.mjs';
 import { windowOf } from './temporal.mjs';
 
 export const PARTICIPATES_IN = 'participates_in';
 
 export const SCHEME = Object.freeze({
-  status: 'provisional',
-  envelope: 'sha256 → first 15 bytes → base32 lowercase no padding, type prefix (axm-core IDENTITY.md — authoritative)',
-  serialization: 'provisional — reconcile byte-for-byte against axm-genesis axm_verify.identity before cross-system use',
+  status: 'reconciled',
+  spec: 'AXM Genesis v1 spec section 10 — canonicalize (NFC, ASCII-only lowering, strip Cc, collapse frozen whitespace) + versioned base32 SHA-256 envelope',
+  envelope: 'sha256(utf8) → full 32-byte digest → base32 lowercase (RFC 4648) no padding, versioned prefix e1_ / c1_: 52 base32 chars',
+  serialization: 'reconciled byte-for-byte against axm-genesis axm_verify.identity; pinned by the shared vectors test/vectors/identity.json and asserted in test/axm-id-conformance.test.js',
+  vectors: {
+    source: 'axm-genesis commit a73335d',
+    sha256: '0104c9492c41a16f19e893f2d7be3b24f79456b49325a55c1885c6324fcc171e',
+  },
   temporal: 'axm temporal@1: valid_from / valid_until, ISO 8601, null = open end; windows qualify claims, they are not part of claim identity',
 });
 
@@ -119,10 +123,11 @@ export function buildIdentityLayer({ namespace, actors, organizations, surfaces,
   return { scheme: { ...SCHEME, namespace }, entities, claims };
 }
 
-// Resolve a --from/--to style token: a local id passes through; a provisional
-// AXM entity id (canonical or alias-derived) resolves to its local id.
+// Resolve a --from/--to style token: a local id passes through; a canonical AXM
+// entity id (canonical or alias-derived, e1_ + 52 base32 chars) resolves to its
+// local id.
 export function resolveLocalId(identity, token) {
-  if (!/^e_[a-z2-7]{24}$/.test(token)) return token;
+  if (!/^e1_[a-z2-7]{52}$/.test(token)) return token;
   const entity = identity.entities.find(e => e.axm_entity_id === token || e.alias_axm_ids.includes(token));
   return entity ? entity.local_id : token;
 }

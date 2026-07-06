@@ -126,9 +126,9 @@ const hopGraph = {
   rejected_hop_pairs: rejectedHopPairs,
 };
 
-// Provisional temporal identity layer: content-addressed entity ids for the
-// canonical registries plus time-qualified participates_in claims. Kept in
-// its own artifact so the provisional ids stay quarantined from the graphs.
+// Temporal identity layer: canonical AXM Genesis entity ids for the canonical
+// registries plus time-qualified participates_in claims. Kept in its own
+// artifact, separate from the hop/surface/receipt graphs.
 const identityLayer = buildIdentityLayer({
   namespace: readJson('cases.json').default_case_id,
   actors: data.actors,
@@ -157,5 +157,5 @@ if (errors.length) {
   process.exit(1);
 }
 console.log(`build-hop-graph: ${data.surfaces.length} surfaces, ${hopEdges.length} actor-hop edges.`);
-console.log(`axm identity (provisional): ${identityLayer.entities.length} entities, ${identityLayer.claims.length} participates_in claims.`);
+console.log(`axm identity (genesis section 10): ${identityLayer.entities.length} entities, ${identityLayer.claims.length} participates_in claims.`);
 console.log(`rejected hop surfaces: ${rejectedHopSurfaces.length}, rejected hop pairs (no temporal overlap): ${rejectedHopPairs.length}`);

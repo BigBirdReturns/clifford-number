@@ -8,7 +8,7 @@
 // --as-of accepts a year, month, or day and means "at any point during that
 // period". Time-sliced paths traverse only fully dated hop bases whose
 // overlap window intersects the period.
-// --from/--to also accept a provisional AXM entity id (e_… from
+// --from/--to also accept a canonical AXM entity id (e1_… from
 // build/axm-identity.json, canonical or alias-derived), resolved to the
 // local actor id before traversal.
 import { readJson } from './lib/ledger.mjs';

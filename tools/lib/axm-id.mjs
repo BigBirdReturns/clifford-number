@@ -1,4 +1,4 @@
-// AXM content-addressed identity — PROVISIONAL vendored implementation.
+// AXM content-addressed identity — canonical genesis derivation.
 //
 // Why this exists
 // ---------------
@@ -6,38 +6,54 @@
 // content-addressed IDs so that two independently built corpora that mention
 // the same entity produce the same entity_id. Adopting that scheme in this
 // Node pipeline is the precondition for cross-case joins, a union graph, and
-// dark-network deltas across cases (see README "Generalization").
+// dark-network deltas across cases (see README "Temporal identity layer").
 //
-// What is authoritative vs. what is provisional here
-// --------------------------------------------------
-// AUTHORITATIVE (fully specified in axm-core IDENTITY.md, reproduced exactly):
-//   The hash ENVELOPE — "All _b32_id hashes: SHA-256 of UTF-8 input, first 15
-//   bytes, base32 lowercase no padding, type prefix." `b32Id()` implements
-//   precisely this and is safe to rely on.
+// Provenance of this port
+// -----------------------
+// This is the AXM Genesis v1 identifier derivation (genesis spec section 10),
+// no longer a provisional best effort. It was reconciled byte-for-byte against
+// the reference kernel `axm_verify.identity` and pinned by the shared vector
+// file test/vectors/identity.json (source: axm-genesis commit a73335d,
+// sha256 0104c9492c41a16f19e893f2d7be3b24f79456b49325a55c1885c6324fcc171e).
+// test/axm-id-conformance.test.js asserts every vector in that file; any drift
+// from the canonical derivation fails the suite.
 //
-// PROVISIONAL (NOT verifiable from the four in-scope repos):
-//   The exact INPUT SERIALIZATION for entity_id / claim_id — how (namespace,
-//   label) and (subj, pred, obj, obj_type) are joined into the bytes fed to
-//   the envelope — lives in axm-genesis (`axm_verify.identity`), which is out
-//   of scope here and is a git-only dependency. axm-core forbids
-//   reimplementing it ("Genesis owns identity, forge delegates" — INV-7/27),
-//   and the local forge `make_entity_id` is explicitly a non-canonical
-//   working ID. So `entityId()` / `claimId()` below use a DOCUMENTED,
-//   BEST-EFFORT serialization that MUST be reconciled byte-for-byte against
-//   axm-genesis `axm_verify.identity.recompute_entity_id` /
-//   `recompute_claim_id` before any ID produced here is used as a
-//   cross-system join key. Until then these IDs are stable and useful WITHIN
-//   this repo, but are not guaranteed to equal genesis-sealed IDs.
+// The derivation (spec section 10)
+// --------------------------------
+// canonicalize(text):
+//   1. reject NUL (it is the preimage field separator);
+//   2. NFC-normalize;
+//   3. ASCII-only lowercasing (A-Z -> a-z; deliberately NOT toLowerCase, which
+//      would wrongly lower non-ASCII letters such as U+0130 İ);
+//   4. strip Unicode category-Cc control characters (tabs/newlines included);
+//   5. collapse runs of the frozen whitespace set to one ASCII space and trim.
 //
-// These ids are wired into exactly one artifact — build/axm-identity.json,
-// via tools/lib/axm-identity.mjs — which carries the provisional caveat in
-// its `scheme` block. They stay out of the hop/surface/receipt graphs so the
-// provisional serialization cannot silently become a de-facto join key.
+// id = prefix + base32lower( SHA-256( preimage_utf8 ) ) over the FULL 32-byte
+// digest (never truncated), RFC 4648 alphabet, no padding -> exactly 52 base32
+// characters after the versioned prefix (e1_ / c1_).
+//
+//   entity_id = e1_ + b32( SHA-256( canon(namespace) 00 canon(label) ) )
+//   claim_id  = c1_ + b32( SHA-256( subject 00 canon(pred) 00 objType 00 objVal ) )
+//
+// where objVal is the object verbatim when objType === "entity", else canon(obj).
 import { createHash } from 'node:crypto';
 
-// RFC 4648 base32, lowercased. 15 bytes = 120 bits = exactly 24 chars, so no
-// padding is ever required — which is why the spec fixes 15 bytes.
+// RFC 4648 base32 alphabet, lowercased. The full 32-byte SHA-256 digest encodes
+// to 52 characters (256 bits / 5, rounded up), so no padding is ever emitted.
 const B32_ALPHABET = 'abcdefghijklmnopqrstuvwxyz234567';
+
+// NUL is the preimage field separator: it must never appear inside a field.
+const NUL = String.fromCharCode(0);
+
+// The frozen whitespace set WS (spec section 10.1): the non-Cc Unicode
+// whitespace characters, enumerated by code point so canonicalize() is
+// independent of future Unicode changes and of source-file encoding. Tabs and
+// newlines are category Cc and are removed before this set is applied.
+const _WS = new Set([
+  0x0020, 0x00a0, 0x1680,
+  0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200a,
+  0x2028, 0x2029, 0x202f, 0x205f, 0x3000,
+].map(cp => String.fromCodePoint(cp)));
 
 function base32LowerNoPad(bytes) {
   let bits = 0;
@@ -55,21 +71,53 @@ function base32LowerNoPad(bytes) {
   return out;
 }
 
-// AUTHORITATIVE envelope (IDENTITY.md): SHA-256(utf8) → first 15 bytes →
-// base32 lowercase no padding → "<prefix>_" + digest.
+// Frozen text canonicalization (spec section 10.1). Ported from
+// axm_verify.identity.canonicalize; see test/axm-id-conformance.test.js.
+export function canonicalize(text) {
+  const s = String(text);
+  if (s.includes(NUL)) throw new Error('Input contains illegal NUL byte');
+  let t = s.normalize('NFC');
+  // ASCII-only lowercasing: map A-Z to a-z and nothing else.
+  t = t.replace(/[A-Z]/g, c => String.fromCharCode(c.charCodeAt(0) + 32));
+  // Strip Unicode category-Cc control characters (tabs, newlines, BEL, ...).
+  t = t.replace(/\p{Cc}/gu, '');
+  // Collapse frozen-set whitespace runs to a single ASCII space; a run at the
+  // start emits no leading space (out is still empty), and a trailing run emits
+  // no space because no non-WS char follows it — so the result is also trimmed.
+  let out = '';
+  let inWs = false;
+  for (const c of t) {
+    if (_WS.has(c)) { inWs = true; continue; }
+    if (inWs && out) out += ' ';
+    inWs = false;
+    out += c;
+  }
+  return out;
+}
+
+// prefix + base32lower(SHA-256(preimage)) over the full 32-byte digest.
+function deriveId(prefix, preimage) {
+  const digest = createHash('sha256').update(preimage, 'utf8').digest();
+  return prefix + base32LowerNoPad(digest);
+}
+
+// The versioned hash envelope, exposed for callers that need a raw derivation.
+// `prefix` is the full versioned prefix including its separator, e.g. "e1_".
 export function b32Id(prefix, input) {
-  const digest = createHash('sha256').update(input, 'utf8').digest().subarray(0, 15);
-  return `${prefix}_${base32LowerNoPad(digest)}`;
+  return deriveId(prefix, input);
 }
 
-// PROVISIONAL serialization — see header. Reconcile against axm-genesis
-// before using as a cross-system join key.
+// entity_id = e1_ + b32(SHA-256(canon(namespace) 00 canon(label))).
 export function entityId(namespace, label) {
-  return b32Id('e', `${namespace}${String(label).trim().toLowerCase()}`);
+  return deriveId('e1_', canonicalize(namespace) + NUL + canonicalize(label));
 }
 
+// claim_id over subject-id, canonical predicate, object_type, and object value.
+// NOTE the field order: object_type precedes the object value. The object value
+// is the entity_id verbatim when object_type is "entity", else canon(object).
 export function claimId(subjId, predicate, obj, objType) {
-  return b32Id('c', [subjId, String(predicate).trim().toLowerCase(), String(obj), objType].join(''));
+  const objValue = objType === 'entity' ? String(obj) : canonicalize(obj);
+  return deriveId('c1_', subjId + NUL + canonicalize(predicate) + NUL + objType + NUL + objValue);
 }
 
-export const _internal = { base32LowerNoPad };
+export const _internal = { base32LowerNoPad, canonicalize };
