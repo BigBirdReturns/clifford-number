@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-06T23:13:27.159Z",
+  "generated": "2026-07-06T23:29:57.450Z",
   "anchor_actor_id": "matt-clifford",
   "rule": "Actor-to-actor hops are generated only from shared valid bounded surfaces with explicit participation rows.",
   "temporal_rule": "A hop basis exists only for the window where both participations and the surface overlap. Disjoint dated participations create no hop (rejected_hop_pairs). Bases with an undated participation never support time-sliced claims.",
@@ -224,10 +224,11 @@
           ],
           "actor_a_role": "Data scientist",
           "actor_b_role": "Vote Leave director",
-          "evidence_class": "reported",
+          "evidence_class": "official",
           "receipt_ids": [
             "warner-surface-audit-2026-06-29",
-            "master-doc-v3"
+            "master-doc-v3",
+            "covid-inquiry-ben-warner-INQ000269182"
           ],
           "valid_from": "2016-01-01",
           "valid_until": "2016-12-31",
@@ -290,7 +291,9 @@
           "receipt_ids": [
             "warner-surface-audit-2026-06-29",
             "guardian-faculty-sage",
-            "master-doc-v3"
+            "covid-inquiry-ben-warner-INQ000269182",
+            "master-doc-v3",
+            "companies-house-faculty-science"
           ],
           "valid_from": "2015-01-01",
           "valid_until": "2019-12-31",
@@ -308,7 +311,9 @@
           "evidence_class": "reported",
           "receipt_ids": [
             "warner-surface-audit-2026-06-29",
-            "master-doc-v3"
+            "master-doc-v3",
+            "covid-inquiry-ben-warner-INQ000269182",
+            "ico-democracy-disrupted-2018"
           ],
           "valid_from": "2016-01-01",
           "valid_until": "2016-12-31",
@@ -336,17 +341,20 @@
           ],
           "actor_a_role": "Principal / data scientist",
           "actor_b_role": "reported personal investor",
-          "evidence_class": "reported",
+          "evidence_class": "official",
           "receipt_ids": [
             "warner-surface-audit-2026-06-29",
-            "guardian-faculty-sage"
+            "guardian-faculty-sage",
+            "covid-inquiry-ben-warner-INQ000269182",
+            "gov-clifford-declared-interests",
+            "dsit-foi-2024-00388"
           ],
           "valid_from": "2015-01-01",
           "valid_until": "2019-12-31",
           "temporal_status": "partially_dated"
         }
       ],
-      "evidence_weight": 2,
+      "evidence_weight": 1,
       "surface_count": 1,
       "temporal_envelope": {
         "valid_from": "2015-01-01",
@@ -367,23 +375,56 @@
           ],
           "actor_a_role": "Principal / data scientist",
           "actor_b_role": "reported personal investor",
-          "evidence_class": "reported",
+          "evidence_class": "official",
           "receipt_ids": [
             "warner-surface-audit-2026-06-29",
-            "guardian-faculty-sage"
+            "guardian-faculty-sage",
+            "covid-inquiry-ben-warner-INQ000269182",
+            "dsit-foi-2024-00388"
           ],
           "valid_from": "2015-01-01",
           "valid_until": "2019-12-31",
           "temporal_status": "partially_dated"
         }
       ],
-      "evidence_weight": 2,
+      "evidence_weight": 1,
       "surface_count": 1,
       "temporal_envelope": {
         "valid_from": "2015-01-01",
         "valid_until": "2019-12-31"
       },
       "temporal_status": "undated"
+    },
+    {
+      "actor_a": "cal-henderson",
+      "actor_b": "eric-salama",
+      "surfaces": [
+        {
+          "surface_id": "electric-twin-funding-surface-2023-2026",
+          "surface_label": "Electric Twin funding / angel investor surface",
+          "surface_type": "employment_investment_surface",
+          "secondary_surface_types": [
+            "surface_factory_capital_layer"
+          ],
+          "actor_a_role": "angel investor",
+          "actor_b_role": "angel investor / registered shareholder",
+          "evidence_class": "government_record",
+          "receipt_ids": [
+            "master-doc-v3",
+            "companies-house-electric-twin-cs01-2025"
+          ],
+          "valid_from": "2026-01-01",
+          "valid_until": "2026-12-31",
+          "temporal_status": "dated"
+        }
+      ],
+      "evidence_weight": 4,
+      "surface_count": 1,
+      "temporal_envelope": {
+        "valid_from": "2026-01-01",
+        "valid_until": "2026-12-31"
+      },
+      "temporal_status": "dated"
     },
     {
       "actor_a": "cal-henderson",
@@ -430,7 +471,8 @@
           "actor_b_role": "angel investor",
           "evidence_class": "reported",
           "receipt_ids": [
-            "master-doc-v3"
+            "master-doc-v3",
+            "electric-twin-funding-post-2026"
           ],
           "valid_from": "2026-01-01",
           "valid_until": "2026-12-31",
@@ -553,7 +595,8 @@
           "evidence_class": "reported",
           "receipt_ids": [
             "warner-surface-audit-2026-06-29",
-            "master-doc-v3"
+            "master-doc-v3",
+            "ico-democracy-disrupted-2018"
           ],
           "valid_from": "2016-01-01",
           "valid_until": "2016-12-31",
@@ -565,6 +608,100 @@
       "temporal_envelope": {
         "valid_from": "2016-01-01",
         "valid_until": "2016-12-31"
+      },
+      "temporal_status": "dated"
+    },
+    {
+      "actor_a": "eric-salama",
+      "actor_b": "louis-mosley",
+      "surfaces": [
+        {
+          "surface_id": "electric-twin-funding-surface-2023-2026",
+          "surface_label": "Electric Twin funding / angel investor surface",
+          "surface_type": "employment_investment_surface",
+          "secondary_surface_types": [
+            "surface_factory_capital_layer"
+          ],
+          "actor_a_role": "angel investor / registered shareholder",
+          "actor_b_role": "angel investor, Palantir EVP",
+          "evidence_class": "government_record",
+          "receipt_ids": [
+            "master-doc-v3",
+            "companies-house-electric-twin-cs01-2025"
+          ],
+          "valid_from": "2026-01-01",
+          "valid_until": "2026-12-31",
+          "temporal_status": "dated"
+        }
+      ],
+      "evidence_weight": 4,
+      "surface_count": 1,
+      "temporal_envelope": {
+        "valid_from": "2026-01-01",
+        "valid_until": "2026-12-31"
+      },
+      "temporal_status": "dated"
+    },
+    {
+      "actor_a": "eric-salama",
+      "actor_b": "marc-andreessen",
+      "surfaces": [
+        {
+          "surface_id": "electric-twin-funding-surface-2023-2026",
+          "surface_label": "Electric Twin funding / angel investor surface",
+          "surface_type": "employment_investment_surface",
+          "secondary_surface_types": [
+            "surface_factory_capital_layer"
+          ],
+          "actor_a_role": "angel investor / registered shareholder",
+          "actor_b_role": "angel investor",
+          "evidence_class": "government_record",
+          "receipt_ids": [
+            "master-doc-v3",
+            "electric-twin-funding-post-2026",
+            "companies-house-electric-twin-cs01-2025"
+          ],
+          "valid_from": "2026-01-01",
+          "valid_until": "2026-12-31",
+          "temporal_status": "dated"
+        }
+      ],
+      "evidence_weight": 4,
+      "surface_count": 1,
+      "temporal_envelope": {
+        "valid_from": "2026-01-01",
+        "valid_until": "2026-12-31"
+      },
+      "temporal_status": "dated"
+    },
+    {
+      "actor_a": "eric-salama",
+      "actor_b": "tom-shinner",
+      "surfaces": [
+        {
+          "surface_id": "electric-twin-funding-surface-2023-2026",
+          "surface_label": "Electric Twin funding / angel investor surface",
+          "surface_type": "employment_investment_surface",
+          "secondary_surface_types": [
+            "surface_factory_capital_layer"
+          ],
+          "actor_a_role": "angel investor / registered shareholder",
+          "actor_b_role": "angel investor, EF-linked",
+          "evidence_class": "government_record",
+          "receipt_ids": [
+            "master-doc-v3",
+            "companies-house-electric-twin-cs01-2025"
+          ],
+          "valid_from": "2026-01-01",
+          "valid_until": "2026-12-31",
+          "temporal_status": "dated"
+        }
+      ],
+      "evidence_weight": 4,
+      "surface_count": 1,
+      "temporal_envelope": {
+        "valid_from": "2026-01-01",
+        "valid_until": "2026-12-31"
       },
       "temporal_status": "dated"
     },
@@ -935,7 +1072,8 @@
           "actor_b_role": "angel investor",
           "evidence_class": "reported",
           "receipt_ids": [
-            "master-doc-v3"
+            "master-doc-v3",
+            "electric-twin-funding-post-2026"
           ],
           "valid_from": "2026-01-01",
           "valid_until": "2026-12-31",
@@ -995,7 +1133,8 @@
           "actor_b_role": "angel investor, EF-linked",
           "evidence_class": "reported",
           "receipt_ids": [
-            "master-doc-v3"
+            "master-doc-v3",
+            "electric-twin-funding-post-2026"
           ],
           "valid_from": "2026-01-01",
           "valid_until": "2026-12-31",
@@ -1023,18 +1162,21 @@
           ],
           "actor_a_role": "CEO / co-founder",
           "actor_b_role": "reported personal investor",
-          "evidence_class": "reported",
+          "evidence_class": "primary_public",
           "receipt_ids": [
             "warner-surface-audit-2026-06-29",
             "guardian-faculty-sage",
-            "master-doc-v3"
+            "master-doc-v3",
+            "companies-house-faculty-science",
+            "gov-clifford-declared-interests",
+            "dsit-foi-2024-00388"
           ],
           "valid_from": "2015-01-01",
           "valid_until": "2019-12-31",
           "temporal_status": "partially_dated"
         }
       ],
-      "evidence_weight": 2,
+      "evidence_weight": 1.25,
       "surface_count": 1,
       "temporal_envelope": {
         "valid_from": "2015-01-01",
@@ -1055,18 +1197,20 @@
           ],
           "actor_a_role": "CEO / co-founder",
           "actor_b_role": "reported personal investor",
-          "evidence_class": "reported",
+          "evidence_class": "primary_public",
           "receipt_ids": [
             "warner-surface-audit-2026-06-29",
             "guardian-faculty-sage",
-            "master-doc-v3"
+            "master-doc-v3",
+            "companies-house-faculty-science",
+            "dsit-foi-2024-00388"
           ],
           "valid_from": "2015-01-01",
           "valid_until": "2019-12-31",
           "temporal_status": "partially_dated"
         }
       ],
-      "evidence_weight": 2,
+      "evidence_weight": 1.25,
       "surface_count": 1,
       "temporal_envelope": {
         "valid_from": "2015-01-01",
@@ -1087,17 +1231,19 @@
           ],
           "actor_a_role": "reported personal investor",
           "actor_b_role": "reported personal investor",
-          "evidence_class": "reported",
+          "evidence_class": "official",
           "receipt_ids": [
             "warner-surface-audit-2026-06-29",
-            "guardian-faculty-sage"
+            "guardian-faculty-sage",
+            "gov-clifford-declared-interests",
+            "dsit-foi-2024-00388"
           ],
           "valid_from": "2015-01-01",
           "valid_until": "2019-12-31",
           "temporal_status": "surface_window_only"
         }
       ],
-      "evidence_weight": 2,
+      "evidence_weight": 1,
       "surface_count": 1,
       "temporal_envelope": {
         "valid_from": "2015-01-01",
@@ -1134,10 +1280,13 @@
               ],
               "actor_a_role": "Principal / data scientist",
               "actor_b_role": "reported personal investor",
-              "evidence_class": "reported",
+              "evidence_class": "official",
               "receipt_ids": [
                 "warner-surface-audit-2026-06-29",
-                "guardian-faculty-sage"
+                "guardian-faculty-sage",
+                "covid-inquiry-ben-warner-INQ000269182",
+                "gov-clifford-declared-interests",
+                "dsit-foi-2024-00388"
               ],
               "valid_from": "2015-01-01",
               "valid_until": "2019-12-31",
@@ -1167,11 +1316,14 @@
               ],
               "actor_a_role": "CEO / co-founder",
               "actor_b_role": "reported personal investor",
-              "evidence_class": "reported",
+              "evidence_class": "primary_public",
               "receipt_ids": [
                 "warner-surface-audit-2026-06-29",
                 "guardian-faculty-sage",
-                "master-doc-v3"
+                "master-doc-v3",
+                "companies-house-faculty-science",
+                "gov-clifford-declared-interests",
+                "dsit-foi-2024-00388"
               ],
               "valid_from": "2015-01-01",
               "valid_until": "2019-12-31",
@@ -1228,10 +1380,13 @@
               ],
               "actor_a_role": "Principal / data scientist",
               "actor_b_role": "reported personal investor",
-              "evidence_class": "reported",
+              "evidence_class": "official",
               "receipt_ids": [
                 "warner-surface-audit-2026-06-29",
-                "guardian-faculty-sage"
+                "guardian-faculty-sage",
+                "covid-inquiry-ben-warner-INQ000269182",
+                "gov-clifford-declared-interests",
+                "dsit-foi-2024-00388"
               ],
               "valid_from": "2015-01-01",
               "valid_until": "2019-12-31",
@@ -1285,10 +1440,11 @@
               ],
               "actor_a_role": "Data scientist",
               "actor_b_role": "Vote Leave director",
-              "evidence_class": "reported",
+              "evidence_class": "official",
               "receipt_ids": [
                 "warner-surface-audit-2026-06-29",
-                "master-doc-v3"
+                "master-doc-v3",
+                "covid-inquiry-ben-warner-INQ000269182"
               ],
               "valid_from": "2016-01-01",
               "valid_until": "2016-12-31",
@@ -1309,10 +1465,13 @@
               ],
               "actor_a_role": "Principal / data scientist",
               "actor_b_role": "reported personal investor",
-              "evidence_class": "reported",
+              "evidence_class": "official",
               "receipt_ids": [
                 "warner-surface-audit-2026-06-29",
-                "guardian-faculty-sage"
+                "guardian-faculty-sage",
+                "covid-inquiry-ben-warner-INQ000269182",
+                "gov-clifford-declared-interests",
+                "dsit-foi-2024-00388"
               ],
               "valid_from": "2015-01-01",
               "valid_until": "2019-12-31",
@@ -1367,10 +1526,13 @@
               ],
               "actor_a_role": "Principal / data scientist",
               "actor_b_role": "reported personal investor",
-              "evidence_class": "reported",
+              "evidence_class": "official",
               "receipt_ids": [
                 "warner-surface-audit-2026-06-29",
-                "guardian-faculty-sage"
+                "guardian-faculty-sage",
+                "covid-inquiry-ben-warner-INQ000269182",
+                "gov-clifford-declared-interests",
+                "dsit-foi-2024-00388"
               ],
               "valid_from": "2015-01-01",
               "valid_until": "2019-12-31",
@@ -1425,10 +1587,13 @@
               ],
               "actor_a_role": "Principal / data scientist",
               "actor_b_role": "reported personal investor",
-              "evidence_class": "reported",
+              "evidence_class": "official",
               "receipt_ids": [
                 "warner-surface-audit-2026-06-29",
-                "guardian-faculty-sage"
+                "guardian-faculty-sage",
+                "covid-inquiry-ben-warner-INQ000269182",
+                "gov-clifford-declared-interests",
+                "dsit-foi-2024-00388"
               ],
               "valid_from": "2015-01-01",
               "valid_until": "2019-12-31",
@@ -1483,10 +1648,13 @@
               ],
               "actor_a_role": "Principal / data scientist",
               "actor_b_role": "reported personal investor",
-              "evidence_class": "reported",
+              "evidence_class": "official",
               "receipt_ids": [
                 "warner-surface-audit-2026-06-29",
-                "guardian-faculty-sage"
+                "guardian-faculty-sage",
+                "covid-inquiry-ben-warner-INQ000269182",
+                "gov-clifford-declared-interests",
+                "dsit-foi-2024-00388"
               ],
               "valid_from": "2015-01-01",
               "valid_until": "2019-12-31",
@@ -1516,10 +1684,12 @@
               ],
               "actor_a_role": "reported personal investor",
               "actor_b_role": "reported personal investor",
-              "evidence_class": "reported",
+              "evidence_class": "official",
               "receipt_ids": [
                 "warner-surface-audit-2026-06-29",
-                "guardian-faculty-sage"
+                "guardian-faculty-sage",
+                "gov-clifford-declared-interests",
+                "dsit-foi-2024-00388"
               ],
               "valid_from": "2015-01-01",
               "valid_until": "2019-12-31",
@@ -2412,6 +2582,11 @@
           ]
         }
       ]
+    },
+    "eric-salama": {
+      "number": null,
+      "actor_path": [],
+      "hops": []
     }
   },
   "rejected_hop_surfaces": [

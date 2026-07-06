@@ -1,10 +1,10 @@
 # Scout Report
 
-Generated: 2026-07-06T23:13:27.285Z
+Generated: 2026-07-06T23:29:57.578Z
 
 > graph_effect: none. This is a research queue, not graph data.
 
-Findings: 133
+Findings: 134
 
 ## finding-001: Electric Twin behaves as a surface factory
 
@@ -2292,7 +2292,25 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-128: Simon Case Cabinet Secretary / Head of Civil Service surface, 2020-2024 contains broad institution context
+## finding-128: Eric Salama has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Eric Salama participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `electric-twin-funding-surface-2023-2026`
+
+---
+
+## finding-129: Simon Case Cabinet Secretary / Head of Civil Service surface, 2020-2024 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -2310,7 +2328,7 @@ Refs: `simon-case-cabinet-secretary-2020-2024`
 
 ---
 
-## finding-129: Team Barrow public-private development fund surface contains broad institution context
+## finding-130: Team Barrow public-private development fund surface contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -2328,7 +2346,7 @@ Refs: `team-barrow-public-private-fund-2026`
 
 ---
 
-## finding-130: AI Opportunities Action Plan surface, 2025 contains broad institution context
+## finding-131: AI Opportunities Action Plan surface, 2025 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -2346,7 +2364,7 @@ Refs: `ai-opportunities-action-plan-2025`
 
 ---
 
-## finding-131: Strategic Defence Review, externally led review, 2024-2025 contains broad institution context
+## finding-132: Strategic Defence Review, externally led review, 2024-2025 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -2364,7 +2382,7 @@ Refs: `strategic-defence-review-2024-2025`
 
 ---
 
-## finding-132: Policy creation → procurement corridor → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
+## finding-133: Policy creation → procurement corridor → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
 
 - Type: laundering_chain
 - Priority: high
@@ -2382,7 +2400,7 @@ Refs: `ai-opportunities-action-plan-2025`, `detachment-201-commissioning-2025`, 
 
 ---
 
-## finding-133: Full master doc has been classified, not blindly migrated
+## finding-134: Full master doc has been classified, not blindly migrated
 
 - Type: migration_queue
 - Priority: high
