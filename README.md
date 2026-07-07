@@ -4,6 +4,8 @@ The Clifford Number is a surface-hop topology compiler. It maps how bounded legi
 
 Governance: [BUILD-INSTRUCTIONS.md](BUILD-INSTRUCTIONS.md) is the governing document — the constitutional invariants (Section 1) and the phased build plan through 2037. Agents and maintainers read it before executing work in this repository.
 
+Succession: [SUCCESSION.md](SUCCESSION.md) is the driver's handover — state of the build, adjudications and their reasoning, and how any future model or human picks up the wheel.
+
 This release abandons the generic shortest-path edge graph. The old graph is preserved under `legacy/`, but it is no longer the product.
 
 ## Core rule
