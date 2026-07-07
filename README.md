@@ -161,3 +161,42 @@ no cross-case path: it is an organization (hops are actor-to-actor) and the
 NatSec100 case has no hop edges yet — the honest state of a join layer whose
 second case is still organizations-only.
 
+## Deltas
+
+A **delta** is the diff of two compiles of the same case, rendered as a narrated
+changelog with receipts. Deltas are the **publishable unit** (BUILD-INSTRUCTIONS
+3.3): the compiler builds graphs, the delta reports what moved between two of
+them, and downstream writing consumes the delta, not the raw graph. Because the
+build artifacts are committed, **git refs ARE the compile history** — a delta
+across time needs no snapshot infrastructure, only two refs.
+
+`tools/delta.mjs` (`npm run delta`) computes the diff at hop-basis granularity —
+edges keyed by the sorted actor pair, bases by `surface_id` within the pair — and
+reports new/removed surfaces, new/removed hop pairs, new/removed bases, window
+changes (closed / opened / widened / narrowed / temporal-status), evidence-class
+changes (with direction up or down the ladder per `evidenceWeight`), receipt
+gains and losses, and surfaces entering or leaving `rejected_hop_surfaces` (a
+surface that leaves because of the density rule is a story, not noise). Every
+rendered sentence carries the receipt ids in effect and the temporal/evidence
+honesty flags, in the style of `narrate-hops`; an empty delta prints
+`no changes between these compiles`, never an error.
+
+```bash
+# Across time: two git refs (each resolves via git show; refs predating the
+# multi-case layout fall back to the legacy top-level build/hop-graph.json).
+npm run delta -- --case uk-ai-policy --from 91596cc --to HEAD --md
+
+# --to defaults to the working-tree build/cases/<id>/.
+npm run delta -- --case uk-ai-policy --from HEAD~1
+
+# Across directories: two compile output dirs (reads <dir>/hop-graph.json).
+npm run delta -- --case uk-ai-policy --from build/cases/uk-ai-policy --to /tmp/old-compile
+
+npm run delta -- --case uk-ai-policy --from <ref> --to <ref> --json   # for tooling
+```
+
+`--from`/`--to` each resolve a compile state: a **directory** is read from disk,
+anything else is a **git ref** read via `git show <ref>:build/cases/<id>/…`.
+Deltas across cases are, today, just two `--case` runs — a cross-case delta of
+the join layer itself can come later.
+
