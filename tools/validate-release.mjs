@@ -3,6 +3,7 @@ import { loadCase, loadCases, readJson, indexBy } from './lib/ledger.mjs';
 import { windowOf, intersectAll, UNBOUNDED } from './lib/temporal.mjs';
 import { buildIdentityLayer, NAMESPACE_CONVENTION } from './lib/axm-identity.mjs';
 import { checkReceiptArchival, todayString } from './lib/receipt-archival.mjs';
+import { checkJoins, loadCaseIdentities, loadExclusions } from './build-joins.mjs';
 
 const EXPECTED_VECTOR_SHA = '0104c9492c41a16f19e893f2d7be3b24f79456b49325a55c1885c6324fcc171e';
 
@@ -226,12 +227,29 @@ function validateUkFixtures({ data, hopGraph, surfaceById }) {
   assert(migration.bucket_counts?.participation_claim > 50, 'migration did not classify enough participation claims from master doc');
 }
 
+// ---- Cross-case join validation (BUILD-INSTRUCTIONS 3.2) -------------------
+// Recompute the join layer from the per-case identity artifacts and fail on any
+// drift against build/joins.json, and fail on any dangling exclusion (an
+// exclusion whose id has no multi-case match — a denial that denies nothing).
+function validateJoins() {
+  const before = errors.length;
+  const built = readJson('build/joins.json');
+  assert(built.rule && typeof built.rule === 'string', 'build/joins.json must carry a one-sentence join rule');
+  const caseIdentities = loadCaseIdentities();
+  const exclusions = loadExclusions();
+  const { errors: joinErrors } = checkJoins({ built, caseIdentities, exclusions });
+  for (const e of joinErrors) errors.push(e);
+  const joined = errors.length - before;
+  console.log(`  joins: ${built.joins.length} cross-case join(s), ${built.excluded.length} excluded${joined ? ` — ${joined} error(s)` : ' — OK'}`);
+}
+
 // ---- Run --------------------------------------------------------------------
 console.log('validate-release: per-case checks');
 for (const caseCfg of cases) {
   const ctx = validateCase(caseCfg);
   if (caseCfg.id === defaultId) validateUkFixtures(ctx);
 }
+validateJoins();
 
 if (errors.length) {
   console.error('validate-release failed:');

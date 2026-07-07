@@ -20,6 +20,10 @@ for (const c of cases) {
   run(`build-hop-graph:${c.id}`, 'tools/build-hop-graph.mjs', ['--case', c.id]);
 }
 
+// Cross-case join layer (BUILD-INSTRUCTIONS 3.2): group entities across cases by
+// shared kind-based AXM id. Runs after every case's identity artifact exists.
+run('build-joins', 'tools/build-joins.mjs');
+
 // Scoring and scouting are default-case-only for now (they read the top-level
 // build artifacts and UK-specific inputs). Other cases compile to hop graphs
 // only until the scoring/scout layer is made case-aware.

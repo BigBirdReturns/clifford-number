@@ -60,6 +60,7 @@ build/receipt-graph.json
 build/surface-graph.json
 build/hop-graph.json
 build/axm-identity.json
+build/joins.json
 build/scores.json
 build/migration-review.md
 build/scout-report.md
@@ -107,4 +108,56 @@ This derivation is **reconciled** byte-for-byte against `axm-genesis` (`axm_veri
 ```bash
 npm run query:hops -- --from e1_2bikqdoe6zfiy7kjoezph6p7ucdoiqwalxlg2xqgrf34hem5ypgq   # "Ben Warner" (kind-based alias-derived)
 ```
+
+## Cross-case joins
+
+Because identity is kind-based, the same entity mentioned in two independently
+built cases derives the same AXM id. `tools/build-joins.mjs` reads every pipeline
+case's `build/cases/<id>/axm-identity.json` and groups entities across cases into
+`build/joins.json` (also `npm run build:joins`).
+
+- **Join rule.** Two entities in different cases are the same entity when any of
+  their kind-based AXM ids (canonical label or alias-derived) coincide. Only an
+  entity present in **≥ 2 cases** becomes a join. Each join records the matching
+  `axm_entity_id`, its `kind`, `via` (`canonical_label` or `alias`), and the
+  case-qualified `members`. Joins are **mechanical** — a deterministic function of
+  the identity layer; nothing is decided here.
+- **Exclusions (denials are canonical).** Denials never live in generated
+  artifacts (constitution 1.4). The OPTIONAL `data/canonical/join-exclusions.json`
+  (`{"exclusions":[{"axm_entity_id","reason","decided_by","date"}]}`) suppresses a
+  match — but the match is **moved to the `excluded` array with its members and
+  reason, never silently dropped**, so every denial stays visible and checkable.
+  The file's absence is normal; do not create it to disable a join you merely
+  dislike. `validate:release` recomputes the whole layer from the per-case
+  identity artifacts and fails on any drift, and fails on a **dangling
+  exclusion** — one whose id has no multi-case match, i.e. a denial that no longer
+  denies anything.
+- **What the layer contains today.** Two organic joins, both organizations, both
+  on the canonical label: **Andreessen Horowitz**
+  (`uk-ai-policy:andreessen-horowitz + us-defense-natsec100:andreessen-horowitz`)
+  and **OpenAI** (`uk-ai-policy:openai + us-defense-natsec100:openai`). Both are
+  genuine same-entity matches — the same firm named in both the UK AI-policy and
+  US defense-tech corridors — not false collisions, so neither is excluded. No
+  person joins yet: the NatSec100 case carries only ranked organizations (zero
+  person actors, zero hop edges) until its chunk-2 actor rows land.
+
+### `query:hops --case all`
+
+```bash
+# Merged graph: nodes are <case_id>:<local_id> except joined entities, which
+# collapse into one node; every hop line is labelled with the case its receipts
+# live in ([case: <id>]); traversal crosses cases only through joined nodes.
+npm run query:hops -- --case all --from ben-warner
+npm run query:hops -- --case all --from andreessen-horowitz --to matt-clifford
+npm run query:hops -- --case <id> --from <local|e1_…>   # one specific case
+```
+
+`--from`/`--to` accept a local id (resolved across cases; if it is ambiguous
+between cases and not joined, the default case is preferred and a note is
+printed) or a canonical/alias-derived `e1_…` id. `--as-of` composes unchanged. A
+joined node renders as `Andreessen Horowitz (joined: uk-ai-policy:andreessen-horowitz + us-defense-natsec100:andreessen-horowitz)`.
+Today a `--from andreessen-horowitz` query resolves to that joined node but finds
+no cross-case path: it is an organization (hops are actor-to-actor) and the
+NatSec100 case has no hop edges yet — the honest state of a join layer whose
+second case is still organizations-only.
 
