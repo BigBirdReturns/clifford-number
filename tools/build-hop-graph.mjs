@@ -56,7 +56,11 @@ const { edges: hopEdges, rejectedHopSurfaces, rejectedHopPairs } = deriveHopEdge
   surfaces: data.surfaces,
   participationBySurface,
   broadOrgIds: BROAD_ORGS,
+  densityPolicy: data.densityPolicy,
 });
+for (const rejected of rejectedHopSurfaces.filter(s => s.reason === 'density_limit_exceeded')) {
+  errors.push(`surface ${rejected.surface_id} has ${rejected.actor_count} actors, exceeding the hop density limit of ${rejected.max_hop_actor_count}`);
+}
 
 const adjacency = buildAdjacency(hopEdges);
 const shortestPaths = {};

@@ -28,6 +28,7 @@ import { readJson, readJsonl } from './lib/ledger.mjs';
 import { buildAdjacency, shortestPath, basisSupportsTimeSlice } from './lib/hops.mjs';
 import { formatWindow, windowOf, overlapsPeriod } from './lib/temporal.mjs';
 import { resolveLocalId } from './lib/axm-identity.mjs';
+import { narrationBasesForSlice, narrationWindowText, selectNarrationBasis } from './lib/narration.mjs';
 
 function parseArgs(argv) {
   const args = { md: false, legible: false, json: false };
@@ -120,11 +121,10 @@ function fillTemplate(tpl, ctx) {
 }
 
 function narrateBasis(aId, bId, s) {
-  const w = formatWindow({ valid_from: s.valid_from ?? null, valid_until: s.valid_until ?? null, dated: s.temporal_status !== 'undated' });
   const ctx = {
     A: label(aId), B: label(bId),
     SURFACE: s.surface_label,
-    WINDOW: w ? `during ${w}` : '(window not fully dated)',
+    WINDOW: narrationWindowText(s),
     ROLE_A: s.actor_a_role ?? 'participant',
     ROLE_B: s.actor_b_role ?? 'participant',
   };
@@ -169,20 +169,11 @@ function edgeBetween(adjacency, a, b) {
   return null;
 }
 
-function bestBasis(edge) {
-  // For narration pick the most legible basis on the edge: smallest surface,
-  // dated first, strongest evidence weight.
-  return edge.surfaces.slice().sort((x, y) =>
-    (pop(x.surface_id) - pop(y.surface_id)) ||
-    ((y.temporal_status === 'dated' ? 1 : 0) - (x.temporal_status === 'dated' ? 1 : 0))
-  )[0];
-}
-
-function legibilityScore(adjacency, path) {
+function legibilityScore(adjacency, path, asOf = null) {
   let score = 0;
   for (let i = 0; i < path.length - 1; i++) {
     const e = edgeBetween(adjacency, path[i], path[i + 1]);
-    const b = bestBasis(e);
+    const b = selectNarrationBasis(e, { asOf, populationOf: pop });
     score += Math.min(pop(b.surface_id), 50);            // small surfaces read better
     score += b.temporal_status === 'dated' ? 0 : 10;      // undated costs
     score += (TEMPLATES[b.surface_type] ? 0 : 2);          // known type reads better
@@ -204,7 +195,8 @@ if (base.number === null || base.number === Infinity || !base.actor_path?.length
 let path = base.actor_path;
 if (args.legible && base.number >= 1) {
   const all = enumerateShortestPaths(adjacency, from, target, base.number, args.asOf ?? null);
-  if (all.length > 1) path = all.sort((p, q) => legibilityScore(adjacency, p) - legibilityScore(adjacency, q))[0];
+  if (all.length > 1) path = all.sort((p, q) =>
+    legibilityScore(adjacency, p, args.asOf ?? null) - legibilityScore(adjacency, q, args.asOf ?? null))[0];
 }
 
 const introSeen = new Set();
@@ -226,8 +218,9 @@ lines.push(args.md ? '### The connection, step by step' : 'THE CONNECTION, STEP 
 for (let i = 0; i < path.length - 1; i++) {
   const a = path[i], b = path[i + 1];
   const edge = edgeBetween(adjacency, a, b);
-  const basis = orientBasis(edge, a, bestBasis(edge));
-  const extra = edge.surfaces.length > 1 ? ` They additionally share ${edge.surfaces.length - 1} other documented surface${edge.surfaces.length - 1 === 1 ? '' : 's'}.` : '';
+  const sliceBases = narrationBasesForSlice(edge, args.asOf ?? null);
+  const basis = orientBasis(edge, a, selectNarrationBasis(edge, { asOf: args.asOf ?? null, populationOf: pop }));
+  const extra = sliceBases.length > 1 ? ` They additionally share ${sliceBases.length - 1} other documented surface${sliceBases.length - 1 === 1 ? '' : 's'}${args.asOf ? ' in this time slice' : ''}.` : '';
   lines.push((args.md ? `${i + 1}. ` : `  ${i + 1}. `) + narrateBasis(a, b, basis) + extra);
 }
 lines.push('');

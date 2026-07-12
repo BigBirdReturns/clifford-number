@@ -77,13 +77,15 @@ export function loadAll() {
   const organizations = readJson('data/canonical/organizations.json').organizations;
   const aliases = readJson('data/canonical/aliases.json').aliases;
   const predicates = readJson('data/canonical/predicates.json').predicates;
-  const surfaceTypes = readJson('data/canonical/surface-types.json').surface_types;
+  const surfaceTypeRegistry = readJson('data/canonical/surface-types.json');
+  const surfaceTypes = surfaceTypeRegistry.surface_types;
+  const densityPolicy = surfaceTypeRegistry.density_policy;
   const receipts = readJsonl('data/ledger/receipts.jsonl');
   const claims = readJsonl('data/ledger/claims.jsonl', { optional: true });
   const surfaces = readJsonl('data/ledger/surfaces.jsonl');
   const participation = readJsonl('data/ledger/participation.jsonl');
   const chains = readJsonl('data/ledger/chains.jsonl', { optional: true });
-  return { actors, organizations, aliases, predicates, surfaceTypes, receipts, claims, surfaces, participation, chains };
+  return { actors, organizations, aliases, predicates, surfaceTypes, densityPolicy, receipts, claims, surfaces, participation, chains };
 }
 
 export function evidenceWeight(evidenceClass) {
