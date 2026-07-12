@@ -9,6 +9,7 @@ import { checkReceiptArchival, todayString, ARCHIVAL_CUTOFF } from '../tools/lib
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'receipt-archival-'));
 fs.writeFileSync(path.join(root, 'good.txt'), 'hello archived world\n');
 const goodHash = crypto.createHash('sha256').update(fs.readFileSync(path.join(root, 'good.txt'))).digest('hex');
+fs.writeFileSync(path.join(root, 'crlf.txt'), 'hello archived world\r\n');
 
 const withRef = { receipt_id: 'has-ref', path: 'https://x/', archive: { method: 'internet_archive', ref: 'https://web.archive.org/web/2026/https://x/' } };
 const localPaste = { receipt_id: 'local-paste', path: '/mnt/data/Pasted text.txt', archive: { method: 'unrecoverable_local_paste', ref: null } };
@@ -16,6 +17,7 @@ const noArchive = { receipt_id: 'no-archive', path: 'https://z/' };
 const emptyRef = { receipt_id: 'empty-ref', path: 'https://q/', archive: { method: 'internet_archive', ref: '   ' } };
 const hashGood = { receipt_id: 'hash-good', path: 'good.txt', archive: { method: 'in_repo_content_hash', ref: `sha256:${goodHash}` } };
 const hashBad = { receipt_id: 'hash-bad', path: 'good.txt', archive: { method: 'in_repo_content_hash', ref: 'sha256:' + '0'.repeat(64) } };
+const hashCrlf = { receipt_id: 'hash-crlf', path: 'crlf.txt', archive: { method: 'in_repo_content_hash', ref: `sha256:${goodHash}` } };
 
 const PRE = '2026-07-06';
 const POST = '2027-06-01';
@@ -47,7 +49,7 @@ for (const today of [PRE, POST]) {
 // (d) Rows with a valid ref (URL snapshot or matching content hash) pass cleanly,
 // even after the cutoff.
 {
-  const { errors, warnings } = checkReceiptArchival([withRef, hashGood], { today: POST, root });
+  const { errors, warnings } = checkReceiptArchival([withRef, hashGood, hashCrlf], { today: POST, root });
   assert.equal(errors.length, 0, 'rows with valid refs must pass');
   assert.equal(warnings.length, 0);
 }

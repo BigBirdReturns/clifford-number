@@ -8,11 +8,18 @@ assert.equal(periodStart('2019-12'), '2019-12-01');
 assert.equal(periodEnd('2019-12'), '2019-12-31');
 assert.equal(periodEnd('2024-02'), '2024-02-29'); // leap year
 assert.equal(periodEnd('2023-02'), '2023-02-28');
+assert.equal(periodEnd('2000-02'), '2000-02-29'); // divisible by 400: leap year
+assert.equal(periodEnd('1900-02'), '1900-02-28'); // divisible by 100 only: not leap
 assert.equal(periodStart('2021-05-17'), '2021-05-17');
 assert.equal(periodEnd('2021-05-17'), '2021-05-17');
+assert.equal(periodStart('2024-02-29'), '2024-02-29');
 assert.equal(periodStart(''), null);
 assert.equal(periodEnd(null), null);
 assert.throws(() => periodStart('May 2021'), /unparseable/);
+for (const invalid of ['0000', '2024-00', '2024-13', '2024-01-00', '2023-02-29', '1900-02-29', '2024-02-30', '2024-04-31']) {
+  assert.throws(() => periodStart(invalid), /unparseable/, `${invalid} must be rejected as an impossible date`);
+  assert.throws(() => periodEnd(invalid), /unparseable/, `${invalid} must be rejected as an impossible date`);
+}
 
 // windowOf: ledger rows at mixed precision, open ends, undated rows.
 assert.deepEqual(windowOf({ time_start: '2019-12', time_end: '2021-05' }),
@@ -50,6 +57,7 @@ assert.equal(overlapsPeriod(UNBOUNDED, '1990'), true);
 
 assert.equal(formatWindow(w('2019-12-01', '2021-05-31')), '2019-12-01 → 2021-05-31');
 assert.equal(formatWindow(w('2023-09-01', null)), '2023-09-01 → ongoing');
+assert.equal(formatWindow(UNBOUNDED), 'date unknown', 'undated is not the same as ongoing');
 assert.equal(formatWindow(null), 'no overlap');
 
 console.log('temporal.test: OK');

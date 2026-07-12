@@ -1,4 +1,13 @@
-# AXM Clifford Number Design System
+# AXM Clifford Number Design System — Foundation Proposal
+
+> **Status: partially superseded.** The navy / cream / gold foundations and
+> accessibility requirements below remain useful, but the shipped public
+> interface deliberately uses an editorial public-record cartography direction:
+> Lora, Barlow Condensed, and IBM Plex Mono; restrained 8–20px radii; explicit
+> actor → surface → actor route diagrams; receipt-health cards; and visible
+> inference boundaries. `styles.css` is the implementation authority. This file
+> is retained as the original proposal and should not be used to overwrite the
+> shipped type, shape, or evidence hierarchy without a reviewed design change.
 
 A professional, accessible design system aligned with AXM house style standards for the clifford-number topology project.
 

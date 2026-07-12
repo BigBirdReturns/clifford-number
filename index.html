@@ -3,57 +3,201 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>The Clifford Number</title>
+  <meta name="description" content="Check the shortest documented chain of shared public-role surfaces between public actors, with dates, evidence classes, and receipts for every step.">
+  <meta name="theme-color" content="#071e4a">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="The Clifford Number">
+  <meta property="og:title" content="The Clifford Number — connections you can check">
+  <meta property="og:description" content="Evidence-first public-institution topology. Every hop is a shared bounded surface. Every step carries receipts.">
+  <meta property="og:url" content="https://bigbirdreturns.github.io/clifford-number/">
+  <meta property="og:image" content="https://bigbirdreturns.github.io/clifford-number/assets/social-card.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The Clifford Number — connections you can check. Inferences we won’t make.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://bigbirdreturns.github.io/clifford-number/">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <title>The Clifford Number — connections you can check</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main class="shell">
-    <header class="hero">
-      <div class="hero-text">
-        <p class="eyebrow">Surface-hop topology compiler</p>
-        <h1>The Clifford Number</h1>
-        <p class="dek">A map of how bounded legitimate surfaces carry actors, policies, companies, advisory roles, and outcomes through plausible-deniability corridors.</p>
+  <a class="skip-link" href="#main-content">Skip to the explorer</a>
+
+  <header class="site-header">
+    <div class="topbar shell-wide">
+      <a class="brand" href="#" aria-label="The Clifford Number, home">
+        <span class="brand-mark" aria-hidden="true">CN</span>
+        <span class="brand-name">The Clifford Number</span>
+      </a>
+      <div class="topbar-actions">
+        <span class="release-status"><span class="status-pulse" aria-hidden="true"></span>Public research instrument</span>
+        <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/docs/methodology.md" target="_blank" rel="noreferrer">Method</a>
+        <a href="https://github.com/BigBirdReturns/clifford-number" target="_blank" rel="noreferrer">Source</a>
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark theme">
+          <span class="theme-icon" aria-hidden="true">◐</span><span class="theme-label">Dark</span>
+        </button>
       </div>
-      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">Dark</button>
-    </header>
-
-    <nav class="tabs" role="tablist">
-      <button class="tab active" data-view="map" role="tab">The Map</button>
-      <button class="tab" data-view="desk" role="tab">Claims Desk</button>
-    </nav>
-
-    <div id="view-map">
-      <section class="search-card">
-        <label for="search">Search actor, organization, or surface</label>
-        <input id="search" type="search" placeholder="Ben Warner, Electric Twin, Simon Case, Faculty..." autocomplete="off">
-        <p class="try-row">Try: <span id="try-examples"></span></p>
-        <div id="results" class="results"></div>
-      </section>
-
-      <section id="summary" class="summary-grid"></section>
-      <section id="detail" class="detail"></section>
     </div>
 
-    <div id="view-desk" hidden>
-      <section class="search-card">
-        <label for="desk-from">Check a connection before it prints</label>
-        <div class="desk-row">
-          <input id="desk-from" list="desk-actors" placeholder="First name — e.g. Fiona Hill" autocomplete="off">
-          <span class="desk-x" aria-hidden="true">×</span>
-          <input id="desk-to" list="desk-actors" placeholder="Second name — blank checks against Matt Clifford" autocomplete="off">
-          <input id="desk-asof" placeholder="As of (optional) — 2020 or 2025-01" autocomplete="off">
-          <button id="desk-check">Check</button>
+    <div class="hero shell-wide">
+      <div class="hero-copy">
+        <p class="eyebrow"><span>Public-role connections</span><span class="eyebrow-rule" aria-hidden="true"></span><span>With receipts</span></p>
+        <h1>The Clifford<br><em>Number.</em></h1>
+        <p class="hero-dek">Check how public actors are documented to connect through named, bounded surfaces—then inspect the dates, roles, and receipts behind every step.</p>
+        <div class="hero-actions">
+          <button class="primary-action" id="hero-check" type="button">Check a connection <span aria-hidden="true">→</span></button>
+          <a class="text-action" href="#explorer">Explore the topology <span aria-hidden="true">↓</span></a>
         </div>
-        <datalist id="desk-actors"></datalist>
-        <p class="try-row">Try: <span id="desk-examples"></span></p>
-        <p class="meta">A connection is asserted only where two people are named in the same bounded, receipted surface during overlapping documented windows. This desk answers: is it documented, when, and on what class of source.</p>
-      </section>
-      <section id="desk-out" class="detail"></section>
+        <p class="inference-boundary"><strong>Connections you can check. Inferences we won’t make.</strong> Shared context is not influence, coordination, agreement, or wrongdoing.</p>
+      </div>
+
+      <figure class="topology-card" aria-labelledby="topology-title topology-caption">
+        <div class="topology-toolbar">
+          <span id="topology-title"><span class="status-pulse" aria-hidden="true"></span>Live topology</span>
+          <span id="topology-edge-count">Loading graph</span>
+        </div>
+        <svg id="hero-network" viewBox="0 0 620 390" role="img" aria-label="A sample actor-to-surface route from the current corpus">
+          <defs>
+            <pattern id="topology-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+              <path d="M 32 0 L 0 0 0 32" fill="none" class="topology-grid-line"/>
+            </pattern>
+            <filter id="node-glow" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="7" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <rect width="620" height="390" fill="url(#topology-grid)"/>
+          <g id="hero-network-content" aria-hidden="true">
+            <path class="network-line network-line--ghost" d="M95 275 C205 72 400 70 525 180"/>
+            <circle class="network-node network-node--actor" cx="95" cy="275" r="17"/>
+            <rect class="network-node network-node--surface" x="288" y="82" width="34" height="34" rx="4" transform="rotate(45 305 99)"/>
+            <circle class="network-node network-node--anchor" cx="525" cy="180" r="21"/>
+          </g>
+        </svg>
+        <figcaption id="topology-caption">
+          <span class="topology-legend"><i class="legend-actor"></i>Actor</span>
+          <span class="topology-legend"><i class="legend-surface"></i>Bounded surface</span>
+          <span class="topology-legend"><i class="legend-anchor"></i>Anchor</span>
+        </figcaption>
+      </figure>
     </div>
+  </header>
+
+  <main id="main-content" class="shell-wide">
+    <div id="app-status" class="app-status" role="status">
+      <span class="loading-mark" aria-hidden="true"></span>
+      <span>Compiling the public view…</span>
+    </div>
+
+    <section class="explorer" id="explorer" aria-labelledby="explorer-title">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">Interrogate the corpus</p>
+          <h2 id="explorer-title">Follow the evidence.</h2>
+        </div>
+        <p>Search the topology or open the newsroom desk for a two-person, date-aware verification.</p>
+      </div>
+
+      <nav class="view-nav" aria-label="Explorer views">
+        <div class="tabs" role="tablist" aria-label="Choose a view">
+          <button class="tab active" id="tab-map" data-view="map" role="tab" aria-selected="true" aria-controls="view-map" tabindex="0">
+            <span class="tab-index" aria-hidden="true">01</span>Topology explorer
+          </button>
+          <button class="tab" id="tab-desk" data-view="desk" role="tab" aria-selected="false" aria-controls="view-desk" tabindex="-1">
+            <span class="tab-index" aria-hidden="true">02</span>Connection checker
+          </button>
+        </div>
+      </nav>
+
+      <div id="view-status" class="sr-only" role="status" aria-live="polite"></div>
+      <div id="view-map" role="tabpanel" aria-labelledby="tab-map">
+        <section class="search-card search-card--hero" aria-labelledby="search-label">
+          <div class="search-label-row">
+            <label id="search-label" for="search">Search actor, organization, or surface</label>
+            <span class="key-hint" aria-hidden="true">Press / to focus</span>
+          </div>
+          <div class="search-input-wrap">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input id="search" type="search" role="combobox" placeholder="Try Ben Warner, Electric Twin, Simon Case…" autocomplete="off" aria-controls="results" aria-autocomplete="list" aria-expanded="false" aria-describedby="search-help">
+            <span class="search-shortcut" aria-hidden="true">/</span>
+          </div>
+          <p class="try-row" id="search-help">Start with: <span id="try-examples"></span></p>
+          <div id="results" class="results search-results" role="listbox" aria-label="Search results" aria-live="polite"></div>
+        </section>
+
+        <section id="summary" class="summary-grid" aria-label="Corpus summary"></section>
+        <section id="detail" class="detail"></section>
+      </div>
+
+      <div id="view-desk" role="tabpanel" aria-labelledby="tab-desk" hidden>
+        <section class="search-card desk-card" aria-labelledby="desk-title">
+          <div class="desk-intro">
+            <div>
+              <p class="section-kicker">Newsroom mode</p>
+              <h3 id="desk-title">Check a connection before it prints.</h3>
+            </div>
+            <span class="desk-rule">Every step must carry a receipt.</span>
+          </div>
+          <div class="desk-row">
+            <div class="desk-field">
+              <label for="desk-from">From</label>
+              <input id="desk-from" list="desk-actors" placeholder="e.g. Fiona Hill" autocomplete="off">
+            </div>
+            <span class="desk-arrow" aria-hidden="true">→</span>
+            <div class="desk-field">
+              <label for="desk-to">To</label>
+              <input id="desk-to" list="desk-actors" placeholder="Blank defaults to Matt Clifford" autocomplete="off">
+            </div>
+            <div class="desk-field desk-field--date">
+              <label for="desk-asof">As of <span>(optional)</span></label>
+              <input id="desk-asof" inputmode="numeric" placeholder="2020 or 2025-01" autocomplete="off" aria-describedby="desk-date-help">
+            </div>
+            <button id="desk-check" type="button">Check path <span aria-hidden="true">→</span></button>
+          </div>
+          <datalist id="desk-actors"></datalist>
+          <p class="try-row">Try a verified example: <span id="desk-examples"></span></p>
+          <p class="meta" id="desk-date-help">The checker only asserts a connection where two people share a bounded, receipted surface during overlapping documented windows. Listed, registered, and attended remain separate states.</p>
+        </section>
+        <section id="desk-out" class="detail"></section>
+      </div>
+    </section>
   </main>
+
+  <footer class="site-footer">
+    <div class="shell-wide footer-grid">
+      <div>
+        <span class="brand-mark brand-mark--footer" aria-hidden="true">CN</span>
+        <p class="footer-claim">No edge without a receipt.<br>No dated claim without overlap.</p>
+      </div>
+      <div>
+        <h2>Understand</h2>
+        <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/docs/methodology.md" target="_blank" rel="noreferrer">Methodology</a>
+        <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/docs/definitions.md" target="_blank" rel="noreferrer">Definitions</a>
+        <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/docs/redaction-policy.md" target="_blank" rel="noreferrer">Redaction policy</a>
+      </div>
+      <div>
+        <h2>Verify</h2>
+        <a href="https://github.com/BigBirdReturns/clifford-number/tree/main/receipts" target="_blank" rel="noreferrer">Receipt archive</a>
+        <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/BUILD-INSTRUCTIONS.md" target="_blank" rel="noreferrer">Build constitution</a>
+        <a href="https://github.com/BigBirdReturns/clifford-number" target="_blank" rel="noreferrer">Source on GitHub</a>
+      </div>
+      <div>
+        <h2>Contribute</h2>
+        <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/CONTRIBUTING.md" target="_blank" rel="noreferrer">Submit a surface</a>
+        <a href="https://github.com/BigBirdReturns/clifford-number/issues" target="_blank" rel="noreferrer">Corrections &amp; issues</a>
+        <p class="footer-meta"><span id="footer-corpus-meta">Current public corpus</span><br>Static, inspectable, MIT licensed.</p>
+      </div>
+    </div>
+    <div class="footer-bottom shell-wide">
+      <span>AXM Labs topology experiment</span>
+      <span>Not conspiracy. Topology.</span>
+    </div>
+  </footer>
+
   <script src="app.js" type="module"></script>
 </body>
 </html>

@@ -1,4 +1,8 @@
 {
+  "density_policy": {
+    "max_hop_actor_count": 19,
+    "rationale": "Surfaces with 20 or more distinct actors are broad contexts, not pairwise hop machines. They remain scorable/contextual until a population-weighted eligibility rule is implemented."
+  },
   "surface_types": [
     {
       "id": "government_advisory_surface",
@@ -74,7 +78,7 @@
       "id": "directory_roster_surface",
       "label": "Directory / Roster Surface",
       "description": "A bounded roster, directory, cohort, or listed-membership surface.",
-      "hop_eligible_default": true,
+      "hop_eligible_default": false,
       "scorable": true
     },
     {

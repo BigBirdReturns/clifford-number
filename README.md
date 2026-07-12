@@ -6,6 +6,17 @@ Governance: [BUILD-INSTRUCTIONS.md](BUILD-INSTRUCTIONS.md) is the governing docu
 
 This release abandons the generic shortest-path edge graph. The old graph is preserved under `legacy/`, but it is no longer the product.
 
+## Public app
+
+The static app has two complementary views:
+
+- **Topology explorer:** search public actors, organizations, and bounded surfaces; inspect an actor → surface → actor route; open every receipt and archival reference behind it.
+- **Connection checker:** enter two public actors and an optional year, month, or day; get the shortest defensible route, its evidence floor, copy-ready caveat language, and the connections the compiler refused to make.
+
+The public interface treats receipt health, temporal precision, dense-surface exclusions, and inference boundaries as first-class output. Structural context is displayed separately from Clifford hops and is never presented as probability, guilt, or motive.
+
+Start with the audience-based [documentation index](docs/README.md), then read the current [methodology](docs/methodology.md) and [definitions](docs/definitions.md).
+
 ## Core rule
 
 A Clifford Number path may only move from Actor to Actor through a shared bounded Surface.

@@ -9,6 +9,7 @@
 // kept for all-time topology but never support a time-sliced (asOf) claim.
 import { combinations, uniq, evidenceWeight } from './ledger.mjs';
 import { windowOf, intersect, intersectAll, overlapsPeriod, UNBOUNDED } from './temporal.mjs';
+import { assessHopDensity } from './density.mjs';
 
 export function weakestEvidence(classes) {
   const vals = classes.filter(Boolean);
@@ -33,7 +34,7 @@ export function basisWindow(basis) {
   return { valid_from: basis.valid_from ?? null, valid_until: basis.valid_until ?? null, dated: basis.temporal_status !== 'undated' };
 }
 
-export function deriveHopEdges({ surfaces, participationBySurface, broadOrgIds }) {
+export function deriveHopEdges({ surfaces, participationBySurface, broadOrgIds, densityPolicy }) {
   const hopEdgeMap = new Map();
   const rejectedHopSurfaces = [];
   const rejectedHopPairs = [];
@@ -43,18 +44,30 @@ export function deriveHopEdges({ surfaces, participationBySurface, broadOrgIds }
     const actorParts = participants.filter(p => p.participant_type === 'actor');
     const orgParts = participants.filter(p => p.participant_type === 'organization');
 
-    // Broad institutions can be participants in receipts, but never create actor hops by themselves.
-    const onlyBroadOrgContext = actorParts.length < 2 && orgParts.some(p => broadOrgIds.has(p.organization_id));
-
     if (!surface.hop_eligible) {
       rejectedHopSurfaces.push({ surface_id: surface.surface_id, reason: 'surface_not_hop_eligible' });
       continue;
     }
+    const density = assessHopDensity(surface, participants, densityPolicy);
+    if (density.exceeds_limit) {
+      rejectedHopSurfaces.push({
+        surface_id: surface.surface_id,
+        reason: 'density_limit_exceeded',
+        actor_count: density.actor_count,
+        max_hop_actor_count: density.max_hop_actor_count,
+      });
+      continue;
+    }
+    // Count actor identities, not participation rows: one actor may have
+    // several legitimate stints on the same surface.
+    const actorCount = density.actor_count;
+    // Broad institutions can be participants in receipts, but never create actor hops by themselves.
+    const onlyBroadOrgContext = actorCount < 2 && orgParts.some(p => broadOrgIds.has(p.organization_id));
     if (onlyBroadOrgContext) {
       rejectedHopSurfaces.push({ surface_id: surface.surface_id, reason: 'broad_institution_context_only' });
       continue;
     }
-    if (actorParts.length < 2) {
+    if (actorCount < 2) {
       rejectedHopSurfaces.push({ surface_id: surface.surface_id, reason: 'fewer_than_two_actor_participants' });
       continue;
     }
@@ -62,6 +75,10 @@ export function deriveHopEdges({ surfaces, participationBySurface, broadOrgIds }
     const surfaceWin = windowOf(surface);
 
     for (const [a, b] of combinations(actorParts)) {
+      // Multiple stints for one actor are separate temporal rows, not two
+      // participants. Never turn their cartesian pairing into a self-hop or a
+      // rejected self-pair. Pair each stint only with a different actor.
+      if (a.actor_id === b.actor_id) continue;
       const ids = [a.actor_id, b.actor_id].sort();
       const aWin = windowOf(a);
       const bWin = windowOf(b);

@@ -66,7 +66,10 @@ if (args.json) {
     for (const hop of result.hops) {
       console.log(`  ${hop.from} ↔ ${hop.to}`);
       for (const s of hop.shared_surfaces) {
-        console.log(`    ${s.surface_label} [${formatWindow({ valid_from: s.valid_from, valid_until: s.valid_until })}] (${s.evidence_class})`);
+        const windowText = s.temporal_status === 'dated'
+          ? formatWindow({ valid_from: s.valid_from, valid_until: s.valid_until, dated: true })
+          : 'co-presence dates not fully documented';
+        console.log(`    ${s.surface_label} [${windowText}] (${s.evidence_class})`);
       }
     }
   }

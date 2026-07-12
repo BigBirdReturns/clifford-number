@@ -3,6 +3,7 @@ import { loadAll, readJson, indexBy } from './lib/ledger.mjs';
 import { windowOf, intersectAll, UNBOUNDED } from './lib/temporal.mjs';
 import { buildIdentityLayer } from './lib/axm-identity.mjs';
 import { checkReceiptArchival, todayString } from './lib/receipt-archival.mjs';
+import { assessHopDensity, validateDensityPolicy } from './lib/density.mjs';
 
 const data = loadAll();
 const scores = readJson('build/scores.json');
@@ -28,15 +29,50 @@ function hasSecondary(actorId, typeId) {
 }
 
 // Ledger integrity.
+let densityPolicyValid = true;
+try {
+  validateDensityPolicy(data.densityPolicy);
+} catch (error) {
+  densityPolicyValid = false;
+  errors.push(error.message);
+}
+
+const sourcePartsBySurface = new Map();
+for (const p of data.participation) {
+  if (!sourcePartsBySurface.has(p.surface_id)) sourcePartsBySurface.set(p.surface_id, []);
+  sourcePartsBySurface.get(p.surface_id).push(p);
+}
+
+function checkDensity(surface, participants, origin) {
+  if (!densityPolicyValid) return;
+  const density = assessHopDensity(surface, participants, data.densityPolicy);
+  assert(!density.exceeds_limit,
+    `${origin} surface ${surface.surface_id} is hop eligible with ${density.actor_count} distinct actors; maximum is ${density.max_hop_actor_count}`);
+}
+
 for (const surface of data.surfaces) {
   assert(surface.surface_id && surface.surface_label && surface.surface_type, `surface missing required fields: ${JSON.stringify(surface)}`);
+  assert(typeof surface.hop_eligible === 'boolean', `surface ${surface.surface_id} hop_eligible must be boolean`);
   assert(surfaceTypeById.has(surface.surface_type), `surface ${surface.surface_id} uses unknown type ${surface.surface_type}`);
   for (const secondary of surface.secondary_surface_types ?? []) assert(surfaceTypeById.has(secondary), `surface ${surface.surface_id} uses unknown secondary type ${secondary}`);
+  checkDensity(surface, sourcePartsBySurface.get(surface.surface_id) ?? [], 'ledger');
+}
+
+// Generated surface data must retain the source eligibility decision and the
+// same density invariant. This also prevents validate:release from accepting a
+// stale hop artifact after a roster has been downgraded to non-hop.
+for (const surface of surfaceGraph.surfaces) {
+  const source = data.surfaces.find(s => s.surface_id === surface.surface_id);
+  assert(source, `compiled surface ${surface.surface_id} is missing from the ledger`);
+  assert(surface.hop_eligible === source?.hop_eligible,
+    `compiled surface ${surface.surface_id} hop_eligible is stale (${surface.hop_eligible} != ledger ${source?.hop_eligible})`);
+  checkDensity(surface, surface.participants ?? [], 'compiled');
 }
 
 // Every hop must carry its surface basis.
 for (const edge of hopGraph.edges) {
   assert(edge.actor_a && edge.actor_b, `hop edge missing actor ids: ${JSON.stringify(edge)}`);
+  assert(edge.actor_a !== edge.actor_b, `hop edge must connect two distinct actors, got self-hop ${edge.actor_a}`);
   assert(edge.surfaces?.length > 0, `hop ${edge.actor_a}/${edge.actor_b} lacks shared surfaces`);
   for (const basis of edge.surfaces) {
     const surface = surfaceById.get(basis.surface_id);
@@ -51,16 +87,33 @@ for (const edge of hopGraph.edges) {
     // must fall within the intersection of the surface and both participation
     // windows — never assert co-presence outside every source's own window.
     assert(typeof basis.temporal_status === 'string', `hop basis ${basis.surface_id} lacks temporal_status`);
-    const partA = (surface?.participants ?? []).find(p => p.participant_type === 'actor' && p.actor_id === edge.actor_a);
-    const partB = (surface?.participants ?? []).find(p => p.participant_type === 'actor' && p.actor_id === edge.actor_b);
-    const expected = intersectAll([
-      windowOf(surface).dated ? windowOf(surface) : UNBOUNDED,
-      windowOf(partA).dated ? windowOf(partA) : UNBOUNDED,
-      windowOf(partB).dated ? windowOf(partB) : UNBOUNDED,
-    ]);
-    assert(expected !== null, `hop basis ${basis.surface_id} for ${edge.actor_a}/${edge.actor_b} has disjoint windows and must not exist`);
-    assert((basis.valid_from ?? null) === (expected?.valid_from ?? null), `hop basis ${basis.surface_id} valid_from ${basis.valid_from} != expected ${expected?.valid_from}`);
-    assert((basis.valid_until ?? null) === (expected?.valid_until ?? null), `hop basis ${basis.surface_id} valid_until ${basis.valid_until} != expected ${expected?.valid_until}`);
+    const partsA = (surface?.participants ?? []).filter(p => p.participant_type === 'actor' && p.actor_id === edge.actor_a);
+    const partsB = (surface?.participants ?? []).filter(p => p.participant_type === 'actor' && p.actor_id === edge.actor_b);
+    const surfaceWindow = windowOf(surface);
+    const expectedWindows = [];
+    for (const partA of partsA) {
+      for (const partB of partsB) {
+        const aWindow = windowOf(partA);
+        const bWindow = windowOf(partB);
+        const expected = intersectAll([
+          surfaceWindow.dated ? surfaceWindow : UNBOUNDED,
+          aWindow.dated ? aWindow : UNBOUNDED,
+          bWindow.dated ? bWindow : UNBOUNDED,
+        ]);
+        if (expected !== null) expectedWindows.push({
+          ...expected,
+          temporal_status: aWindow.dated && bWindow.dated ? 'dated'
+            : aWindow.dated || bWindow.dated ? 'partially_dated'
+            : surfaceWindow.dated ? 'surface_window_only' : 'undated',
+        });
+      }
+    }
+    const matchesAStintPair = expectedWindows.some(expected =>
+      (basis.valid_from ?? null) === (expected.valid_from ?? null)
+      && (basis.valid_until ?? null) === (expected.valid_until ?? null)
+      && basis.temporal_status === expected.temporal_status);
+    assert(matchesAStintPair,
+      `hop basis ${basis.surface_id} window/status does not match any participation-stint pair for ${edge.actor_a}/${edge.actor_b}`);
   }
 }
 
@@ -68,6 +121,7 @@ for (const edge of hopGraph.edges) {
 // rejected pair the builder recorded must genuinely have an empty intersection.
 for (const pair of hopGraph.rejected_hop_pairs ?? []) {
   assert(pair.reason?.startsWith('no_temporal_overlap'), `rejected pair ${pair.surface_id} has unexpected reason ${pair.reason}`);
+  assert(pair.actor_a !== pair.actor_b, `rejected hop pair must name distinct actors, got ${pair.actor_a}/${pair.actor_b}`);
 }
 
 // Regression fixture 1: Ben Warner.

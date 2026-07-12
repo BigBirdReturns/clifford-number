@@ -9,6 +9,25 @@ import { root } from './ledger.mjs';
 // on or after it, a hard failure.
 export const ARCHIVAL_CUTOFF = '2027-01-01';
 
+const TEXT_RECEIPT_EXTENSIONS = new Set([
+  '.css', '.csv', '.htm', '.html', '.js', '.json', '.jsonl', '.md', '.mjs',
+  '.txt', '.tsv', '.xml', '.yaml', '.yml',
+]);
+
+// Git may materialize text files with CRLF on Windows even when the archived
+// source bytes and ledger hash use LF. Hash a canonical UTF-8/LF form for
+// text receipts, while preserving byte-exact hashing for binary formats.
+export function canonicalReceiptBytes(fullPath) {
+  const bytes = fs.readFileSync(fullPath);
+  if (!TEXT_RECEIPT_EXTENSIONS.has(path.extname(fullPath).toLowerCase())) return bytes;
+  const text = bytes.toString('utf8').replace(/\r\n?/g, '\n');
+  return Buffer.from(text, 'utf8');
+}
+
+export function canonicalReceiptHash(fullPath) {
+  return crypto.createHash('sha256').update(canonicalReceiptBytes(fullPath)).digest('hex');
+}
+
 // "Now" is overridable for tests via CLIFFORD_VALIDATE_TODAY (YYYY-MM-DD);
 // otherwise the real current date. Comparison is lexicographic on YYYY-MM-DD.
 export function todayString(env = process.env) {
@@ -40,7 +59,7 @@ export function checkReceiptArchival(receipts, { today = todayString(), root: ba
         errors.push(`receipt ${r.receipt_id} in_repo_content_hash references missing file ${r.path}`);
         continue;
       }
-      const actual = crypto.createHash('sha256').update(fs.readFileSync(full)).digest('hex');
+      const actual = canonicalReceiptHash(full);
       if (actual.toLowerCase() !== m[1].toLowerCase()) {
         errors.push(`receipt ${r.receipt_id} in_repo_content_hash mismatch: ${r.path} now hashes to sha256:${actual}, not ${ref}`);
       }
