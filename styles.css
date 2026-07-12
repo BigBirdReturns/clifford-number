@@ -927,6 +927,26 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 76%, transparent); }
 .receipt-link:hover { border-color: var(--ink); background: var(--wash); }
 .evidence-note { margin-top: 14px; padding: 13px 15px; border-left: 3px solid var(--gold); background: var(--wash); color: var(--muted-strong); font-size: 14px; }
 
+/* Compiled case files */
+.case-entry { border-top: 4px solid var(--gold); }
+.case-subtitle { color: var(--gold-text); font-family: var(--font-mono); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+.case-section { display: grid; gap: 16px; }
+.case-event { padding: 18px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-raised); }
+.case-event-head, .case-claim-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.case-event-head h3 { margin: 0; }
+.case-claim { margin-top: 14px; padding: 15px; border-left: 4px solid var(--warning); background: var(--wash); }
+.case-claim--verified { border-left-color: var(--ok); }
+.case-claim--disputed, .case-claim--rejected { border-left-color: var(--danger); }
+.case-claim p { margin: 9px 0 0; }
+.case-value { color: var(--ink); font-family: var(--font-mono); font-size: 15px; font-weight: 700; }
+.case-receipt { display: flex; flex-direction: column; gap: 3px; margin-top: 12px; color: var(--muted); font-family: var(--font-mono); font-size: 10px; overflow-wrap: anywhere; }
+.beacon-panel { border-top: 4px solid var(--ink); }
+.beacon-meter { height: 12px; margin: 18px 0 8px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--wash); }
+.beacon-meter span { display: block; height: 100%; background: var(--ok); }
+.beacon-dimensions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 0; list-style: none; }
+.beacon-dimensions li { display: flex; flex-direction: column; gap: 6px; padding: 13px; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.beacon-dimensions span { color: var(--muted); font-family: var(--font-mono); font-size: 10px; }
+
 .why-no-hop { border-left: 4px solid var(--gold); background: color-mix(in srgb, var(--wash) 76%, var(--panel)); }
 .why-no-hop p { margin: 6px 0 0; }
 .chain-arrow { color: var(--gold-text); font-family: var(--font-mono); font-size: 19px; font-weight: 700; text-align: center; }
@@ -1040,6 +1060,7 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 76%, transparent); }
   .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .home-grid, .profile-intro { grid-template-columns: 1fr; }
   .receipt-grid { grid-template-columns: 1fr; }
+  .beacon-dimensions { grid-template-columns: 1fr; }
   .desk-intro { align-items: start; flex-direction: column; }
   .desk-rule { max-width: none; text-align: left; }
   .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

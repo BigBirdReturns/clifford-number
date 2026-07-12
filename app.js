@@ -205,13 +205,14 @@ function announce(message) { const status = $('#view-status'); if (status) statu
 
 async function init() {
   initPreferences();
-  const [surfaceGraph, hopGraph, scores, legacyGraph, scout, receiptGraph] = await Promise.all([
+  const [surfaceGraph, hopGraph, scores, legacyGraph, scout, receiptGraph, caseIndex] = await Promise.all([
     loadJson('build/surface-graph.json'),
     loadJson('build/hop-graph.json'),
     loadJson('build/scores.json'),
     loadJson('graph.json'),
     loadJson('build/scout-report.json').catch(() => ({ findings: [] })),
-    loadJson('build/receipt-graph.json').catch(() => ({ receipts: [] }))
+    loadJson('build/receipt-graph.json').catch(() => ({ receipts: [] })),
+    loadJson('build/cases/index.json').catch(() => ({ cases: [] }))
   ]);
   state.surfaceGraph = surfaceGraph;
   state.hopGraph = hopGraph;
@@ -233,6 +234,8 @@ async function init() {
   state.orgScores = new Map(scores.organizations.map(o => [o.organization_id, o]));
   state.legacyNodes = new Map((legacyGraph.nodes ?? []).map(n => [n.id, n]));
   state.chains = new Map((scores.chains ?? []).map(c => [c.chain_id, c]));
+  const caseFiles = await Promise.all((caseIndex.cases ?? []).map(entry => loadJson(entry.href)));
+  state.cases = new Map(caseFiles.map(item => [item.case_id, item]));
   state.hopEdgeByPair = new Map();
   for (const edge of hopGraph.edges ?? []) {
     state.hopEdgeByPair.set(`${edge.actor_a}||${edge.actor_b}`, edge);
@@ -405,6 +408,7 @@ function renderHome() {
     .sort((a, b) => b.machine_score - a.machine_score)
     .map(c => `<button class="result" data-kind="chain" data-id="${esc(c.chain_id)}"><span class="kind-glyph">C</span><span class="result-label">${esc(c.chain_label)}<small>${c.chain_length} documented stages · context only, never a hop</small></span></button>`)
     .join('');
+  const caseList = [...state.cases.values()].map(item => `<button class="result" data-kind="case" data-id="${esc(item.case_id)}"><span class="kind-glyph">F</span><span class="result-label">${esc(item.title)}<small>${esc(item.tracking_id)} · ${item.counts.events} typed events · ${item.claim_status_counts.verified} verified claims</small></span></button>`).join('');
   const sampleId = routeIds[0];
   const samplePath = sampleId ? state.hopGraph.shortest_paths[sampleId] : null;
   $('#detail').innerHTML = `
@@ -429,7 +433,8 @@ function renderHome() {
     <div class="home-grid">
       <div class="panel why-no-hop"><span class="panel-label">Refusal is a feature</span><h3>What the graph declines to connect</h3><p>${rejected} actor pair${rejected === 1 ? '' : 's'} currently fail the documented time-overlap test. ${denseContext} large roster surface${denseContext === 1 ? ' is' : 's are'} preserved as context without manufacturing thousands of person-to-person hops.</p></div>
       <div class="panel"><span class="panel-label">Structural context, not adjacency</span><h3>Multi-stage pathways</h3><div class="results">${chainList || '<p class="meta">None in this release.</p>'}</div></div>
-    </div>`;
+    </div>
+    <div class="panel case-entry"><span class="panel-label">Compiled case files</span><h3>From topology to outcomes</h3><p>Case files join program events, typed money, public-role transitions, capability observations, and reported outcomes without converting sequence into causation.</p><div class="results">${caseList || '<p class="meta">No compiled case files in this release.</p>'}</div></div>`;
   bindResults();
   announce(`Explorer loaded: ${state.surfaceGraph.surfaces.length} surfaces, ${state.hopGraph.edges.length} valid hops, and ${state.receipts.size} receipts.`);
 }
@@ -468,8 +473,12 @@ function onSearch(e) {
       const match = rankMatch(q, c.label, c.id, c.aliases ?? []);
       if (match) results.push({ kind: 'candidate', id: c.id, label: c.label, ...match });
     }
+    for (const c of state.cases.values()) {
+      const match = rankMatch(q, c.title, c.case_id, [c.tracking_id, c.subtitle]);
+      if (match) results.push({ kind: 'case', id: c.case_id, label: c.title, ...match });
+    }
   }
-  const kindOrder = { actor: 0, organization: 1, surface: 2, chain: 3, candidate: 4 };
+  const kindOrder = { actor: 0, organization: 1, surface: 2, chain: 3, case: 4, candidate: 5 };
   state.searchResults = results.sort((a, b) => a.score - b.score || kindOrder[a.kind] - kindOrder[b.kind] || a.label.localeCompare(b.label)).slice(0, 12);
   state.searchActiveIndex = -1;
   const box = $('#results');
@@ -486,7 +495,8 @@ function browseAll() {
     ...state.surfaceGraph.actors.map(item => ({ kind: 'actor', id: item.id, label: item.label })),
     ...state.surfaceGraph.organizations.map(item => ({ kind: 'organization', id: item.id, label: item.label })),
     ...state.surfaceGraph.surfaces.map(item => ({ kind: 'surface', id: item.surface_id, label: item.surface_label })),
-    ...[...state.chains.values()].map(item => ({ kind: 'chain', id: item.chain_id, label: item.chain_label }))
+    ...[...state.chains.values()].map(item => ({ kind: 'chain', id: item.chain_id, label: item.chain_label })),
+    ...[...state.cases.values()].map(item => ({ kind: 'case', id: item.case_id, label: item.title }))
   ].sort((a, b) => a.label.localeCompare(b.label)).slice(0, 80);
   state.searchResults = items;
   state.searchActiveIndex = -1;
@@ -533,7 +543,7 @@ function clearSearchResults() {
 }
 
 function kindGlyph(kind) {
-  return { actor: 'A', organization: 'O', surface: 'S', chain: 'C', candidate: '?' }[kind] || '•';
+  return { actor: 'A', organization: 'O', surface: 'S', chain: 'C', case: 'F', candidate: '?' }[kind] || '•';
 }
 
 function renderEntity(kind, id) {
@@ -542,6 +552,7 @@ function renderEntity(kind, id) {
   else if (kind === 'chain') renderChain(id);
   else if (kind === 'candidate') renderCandidate(id);
   else if (kind === 'surface') renderSurface(id);
+  else if (kind === 'case') renderCase(id);
   else renderNotFound(kind, id);
   announce(`${document.title.replace(' — The Clifford Number', '')} loaded.`);
 }
@@ -554,6 +565,38 @@ function renderNotFound(kind, id) {
 }
 
 function metricPanel(label, value) { return `<div class="panel"><div class="metric">${esc(value ?? '—')}</div><div class="metric-label">${esc(label)}</div></div>`; }
+
+function formatCaseValue(value) {
+  if (value == null) return '';
+  if (typeof value !== 'object') return String(value);
+  if (value.currency && Number.isFinite(value.amount)) return `${value.amount_kind}: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: value.currency, maximumFractionDigits: 0 }).format(value.amount)}${value.fiscal_year ? ` · FY${value.fiscal_year}` : ''}`;
+  if (Number.isFinite(value.value) && Object.keys(value).length <= 2) return `${Math.round(value.value * 100)}%`;
+  return Object.entries(value).map(([key, item]) => `${humanLabel(key)}: ${item}`).join(' · ');
+}
+
+function renderCaseClaim(claim) {
+  const receipts = (claim.receipts ?? []).map(receipt => `<div class="case-receipt"><strong>${esc(receipt.label)}</strong><span>${esc(receipt.locator_status || receipt.source_type)} · SHA-256 ${esc(receipt.content_sha256?.slice(0, 12) || 'not recorded')}…</span></div>`).join('');
+  return `<article class="case-claim case-claim--${esc(claim.claim_status)}"><div class="case-claim-head"><span class="badge">${esc(humanLabel(claim.claim_status))}</span><span class="meta">${esc(humanLabel(claim.evidence_class))} · causality: ${esc(humanLabel(claim.causal_status))}</span></div><p>${esc(claim.plain)}</p>${claim.value != null ? `<p class="case-value">${esc(formatCaseValue(claim.value))}</p>` : ''}${claim.qualification ? `<p class="evidence-note">${esc(claim.qualification)}</p>` : ''}${receipts}</article>`;
+}
+
+function renderCase(id) {
+  const item = state.cases.get(id);
+  if (!item) return renderNotFound('case', id);
+  setDocumentTitle(item.title);
+  $('#summary').innerHTML = [
+    metricPanel('Typed events', item.counts.events),
+    metricPanel('Claims', item.counts.claims),
+    metricPanel('Verified', item.claim_status_counts.verified),
+    metricPanel('Review required', item.claim_status_counts.review_required)
+  ].join('');
+  const sections = item.sections.map(section => `<section class="panel case-section"><span class="panel-label">${esc(section.label)}</span>${section.records.map(event => `<article class="case-event"><div class="case-event-head"><h3>${esc(event.label)}</h3><span class="badge">${esc(humanLabel(event.event_type))}</span></div><p class="meta">Observed or asserted: ${esc(event.occurred_at)}</p>${event.claims.map(renderCaseClaim).join('')}</article>`).join('')}</section>`).join('');
+  const beacon = item.beacons[0];
+  const dimensions = (beacon?.dimensions ?? []).map(dimension => `<li><strong>${esc(humanLabel(dimension.id))}</strong><span>${esc(dimension.formula)}</span></li>`).join('');
+  $('#detail').innerHTML = `
+    <div class="panel case-hero">${entityHeading(item.title, [])}<p class="case-subtitle">${esc(item.subtitle)} · ${esc(item.tracking_id)} · as known ${esc(item.as_of)}</p><p>${esc(item.scope)}</p><div class="evidence-note"><strong>Publication boundary.</strong> ${esc(item.boundary)}</div><p class="meta">${esc(item.disclaimer)}</p></div>
+    <div class="panel beacon-panel"><span class="panel-label">Explainable beacon · ${esc(beacon?.version || '')}</span><h3>${esc(beacon?.label || 'No beacon')}</h3><div class="beacon-meter"><span style="width:${Math.round((beacon?.evidence_coverage?.ratio || 0) * 100)}%"></span></div><p><strong>${beacon?.evidence_coverage?.verified || 0} of ${beacon?.evidence_coverage?.total || 0}</strong> beacon inputs are independently verified in this ledger.</p><ol class="beacon-dimensions">${dimensions}</ol><p class="evidence-note">${esc(beacon?.prohibited_interpretation || '')}</p></div>
+    ${sections}`;
+}
 
 function metricPanelRatio(label, value, max) {
   if (value == null) return metricPanel(label, 'N/A');

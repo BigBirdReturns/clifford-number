@@ -51,6 +51,8 @@ assert.match(css, /\[data-contrast="high"\]/);
 // Evidence is the primary UI object, and confirmed evidence is ranked explicitly.
 assert.match(app, /function renderReceiptGrid/);
 assert.match(app, /function renderTopologyMap/);
+assert.match(app, /function renderCase/);
+assert.match(app, /build\/cases\/index\.json/);
 assert.match(app, /confirmed:\s*0/);
 assert.match(app, /Shared context is not influence|does not establish contact/);
 

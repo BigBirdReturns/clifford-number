@@ -15,6 +15,8 @@ The static app has two complementary views:
 
 The public interface treats receipt health, temporal precision, dense-surface exclusions, and inference boundaries as first-class output. Structural context is displayed separately from Clifford hops and is never presented as probability, guilt, or motive.
 
+Compiled case files extend that discipline from topology into programs, typed capital flows, public-role transitions, capability observations, and outcomes. The first golden case, FA-03, is intentionally review-gated: the prototype's assertions are preserved without being mislabeled as independently verified. See [the case-ledger contract](docs/case-ledger.md).
+
 Start with the audience-based [documentation index](docs/README.md), then read the current [methodology](docs/methodology.md) and [definitions](docs/definitions.md).
 
 ## Core rule

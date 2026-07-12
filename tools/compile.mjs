@@ -6,6 +6,7 @@ const steps = [
   ['build-hop-graph', 'tools/build-hop-graph.mjs'],
   ['score-deniability', 'tools/score-deniability.mjs'],
   ['scout-surfaces', 'tools/scout-surfaces.mjs'],
+  ['compile-cases', 'tools/compile-cases.mjs'],
 ];
 
 for (const [name, script] of steps) {
