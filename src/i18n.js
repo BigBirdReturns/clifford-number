@@ -1,12 +1,18 @@
 export const SUPPORTED_LOCALES = ['en', 'es', 'fr'];
 
+/* AXM chrome-only translation law, inherited from axm-tools/pta-tracker:
+ * - curate menus, controls, status labels, and accessibility text here;
+ * - never translate names, source titles, receipts, or evidence prose in code;
+ * - unsupported languages and full-content translation belong to the browser's
+ *   built-in “Translate page” capability. English is the deterministic fallback. */
+
 const messages = {
   en: {
     skip: 'Skip to the explorer', status: 'Public research instrument', method: 'Method', source: 'Source',
     view: 'View', preferences: 'Display & language', theme: 'Theme', themeSystem: 'System', themeLight: 'Light', themeDark: 'Dark',
     language: 'Language', reading: 'Reading size', readingStandard: 'Standard', readingLarge: 'Large / squint test',
     density: 'Density', densityComfortable: 'Comfortable', densityCompact: 'Compact', highContrast: 'High contrast', reset: 'Reset view',
-    interfaceNote: 'Interface labels are translated. Source titles and evidence remain in their recorded language.',
+    interfaceNote: 'Menus and controls are hand-translated. Evidence prose and source titles stay in their recorded language; use your browser’s “Translate page” for those or any other language.',
     themeToLight: 'Switch to light theme', themeToDark: 'Switch to dark theme',
     publicRole: 'Public-role connections', withReceipts: 'With receipts',
     heroDek: 'Check how public actors are documented to connect through named, bounded surfaces—then inspect the dates, roles, and receipts behind every step.',
@@ -23,7 +29,7 @@ const messages = {
     from: 'From', to: 'To', asOf: 'As of', optional: '(optional)', checkPath: 'Check path', verifiedExample: 'Try a verified example:',
     deskHelp: 'The checker only asserts a connection where two people share a bounded, receipted surface during overlapping documented windows. Listed, registered, and attended remain separate states.',
     understand: 'Understand', verify: 'Verify', contribute: 'Contribute',
-    copyCite: 'Copy / cite', copyLink: 'Copy link', copyCitation: 'Plain citation', copyMarkdown: 'Markdown', copyBibtex: 'BibTeX', copyJson: 'Evidence JSON', copied: 'Copied', generatedCitation: 'Generated citation',
+    copyCite: 'Copy / cite', copyLink: 'Copy link', copyCitation: 'Plain citation', copyMarkdown: 'Markdown', copyBibtex: 'BibTeX', copyJson: 'Evidence JSON', shareCitation: 'Share citation', copied: 'Copied', generatedCitation: 'Generated citation',
     boundedSurfaces: 'bounded surfaces', validHops: 'valid actor-to-actor hops', releaseReceipts: 'receipts in the release', refusedConnections: 'time-overlap connections refused',
     compilerRule: 'The compiler rule', whatCounts: 'What counts as a connection?',
     browseShowing: 'Browse index: showing {count} public records.', noRecords: 'No public records are available in this release.'
@@ -33,7 +39,7 @@ const messages = {
     view: 'Vista', preferences: 'Pantalla e idioma', theme: 'Tema', themeSystem: 'Sistema', themeLight: 'Claro', themeDark: 'Oscuro',
     language: 'Idioma', reading: 'Tamaño de lectura', readingStandard: 'Estándar', readingLarge: 'Grande / prueba de entrecerrar',
     density: 'Densidad', densityComfortable: 'Cómoda', densityCompact: 'Compacta', highContrast: 'Alto contraste', reset: 'Restablecer vista',
-    interfaceNote: 'Las etiquetas de la interfaz están traducidas. Los títulos de las fuentes y la evidencia permanecen en su idioma registrado.',
+    interfaceNote: 'Los menús y controles están traducidos manualmente. La evidencia y los títulos de las fuentes conservan su idioma; use «Traducir página» del navegador para esos textos u otros idiomas.',
     themeToLight: 'Cambiar al tema claro', themeToDark: 'Cambiar al tema oscuro',
     publicRole: 'Conexiones de función pública', withReceipts: 'Con comprobantes',
     heroDek: 'Comprueba cómo se documentan las conexiones entre actores públicos mediante superficies delimitadas, y revisa las fechas, funciones y comprobantes de cada paso.',
@@ -50,7 +56,7 @@ const messages = {
     from: 'Desde', to: 'Hasta', asOf: 'A fecha de', optional: '(opcional)', checkPath: 'Comprobar ruta', verifiedExample: 'Prueba un ejemplo verificado:',
     deskHelp: 'El verificador solo afirma una conexión cuando dos personas comparten una superficie delimitada y documentada durante periodos que se solapan.',
     understand: 'Comprender', verify: 'Verificar', contribute: 'Contribuir',
-    copyCite: 'Copiar / citar', copyLink: 'Copiar enlace', copyCitation: 'Cita simple', copyMarkdown: 'Markdown', copyBibtex: 'BibTeX', copyJson: 'JSON de evidencia', copied: 'Copiado', generatedCitation: 'Cita generada',
+    copyCite: 'Copiar / citar', copyLink: 'Copiar enlace', copyCitation: 'Cita simple', copyMarkdown: 'Markdown', copyBibtex: 'BibTeX', copyJson: 'JSON de evidencia', shareCitation: 'Compartir cita', copied: 'Copiado', generatedCitation: 'Cita generada',
     boundedSurfaces: 'superficies delimitadas', validHops: 'saltos válidos entre actores', releaseReceipts: 'comprobantes de la versión', refusedConnections: 'conexiones rechazadas por fechas',
     compilerRule: 'La regla del compilador', whatCounts: '¿Qué cuenta como conexión?',
     browseShowing: 'Índice: se muestran {count} registros públicos.', noRecords: 'No hay registros públicos disponibles en esta versión.'
@@ -60,7 +66,7 @@ const messages = {
     view: 'Affichage', preferences: 'Affichage et langue', theme: 'Thème', themeSystem: 'Système', themeLight: 'Clair', themeDark: 'Sombre',
     language: 'Langue', reading: 'Taille de lecture', readingStandard: 'Standard', readingLarge: 'Grande / test de plissement',
     density: 'Densité', densityComfortable: 'Confortable', densityCompact: 'Compacte', highContrast: 'Contraste élevé', reset: 'Réinitialiser l’affichage',
-    interfaceNote: 'Les libellés de l’interface sont traduits. Les titres des sources et les preuves restent dans leur langue d’origine.',
+    interfaceNote: 'Les menus et contrôles sont traduits manuellement. Les preuves et titres des sources gardent leur langue ; utilisez « Traduire la page » du navigateur pour ces textes ou toute autre langue.',
     themeToLight: 'Passer au thème clair', themeToDark: 'Passer au thème sombre',
     publicRole: 'Connexions de rôle public', withReceipts: 'Avec justificatifs',
     heroDek: 'Vérifiez comment les acteurs publics sont reliés par des surfaces nommées et délimitées, puis examinez les dates, rôles et justificatifs de chaque étape.',
@@ -77,7 +83,7 @@ const messages = {
     from: 'De', to: 'À', asOf: 'À la date du', optional: '(facultatif)', checkPath: 'Vérifier le chemin', verifiedExample: 'Essayez un exemple vérifié :',
     deskHelp: 'Le vérificateur n’affirme une connexion que lorsque deux personnes partagent une surface délimitée et documentée pendant des périodes qui se chevauchent.',
     understand: 'Comprendre', verify: 'Vérifier', contribute: 'Contribuer',
-    copyCite: 'Copier / citer', copyLink: 'Copier le lien', copyCitation: 'Citation simple', copyMarkdown: 'Markdown', copyBibtex: 'BibTeX', copyJson: 'JSON des preuves', copied: 'Copié', generatedCitation: 'Citation générée',
+    copyCite: 'Copier / citer', copyLink: 'Copier le lien', copyCitation: 'Citation simple', copyMarkdown: 'Markdown', copyBibtex: 'BibTeX', copyJson: 'JSON des preuves', shareCitation: 'Partager la citation', copied: 'Copié', generatedCitation: 'Citation générée',
     boundedSurfaces: 'surfaces délimitées', validHops: 'sauts valides entre acteurs', releaseReceipts: 'justificatifs de la version', refusedConnections: 'connexions refusées pour chevauchement temporel',
     compilerRule: 'La règle du compilateur', whatCounts: 'Qu’est-ce qui constitue une connexion ?',
     browseShowing: 'Index : {count} dossiers publics affichés.', noRecords: 'Aucun dossier public n’est disponible dans cette version.'

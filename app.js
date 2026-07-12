@@ -147,8 +147,22 @@ async function copyCitation(button, format) {
   }
 }
 
+async function shareCitation() {
+  if (!state.citation || !navigator.share) return;
+  try {
+    await navigator.share({
+      title: state.citation.title,
+      text: formatCitation(state.citation, 'plain'),
+      url: state.citation.url
+    });
+  } catch (err) {
+    if (err?.name !== 'AbortError') console.warn('Could not share citation', err);
+  }
+}
+
 function citationActions() {
-  return `<button class="copy-link" type="button" onclick="copyLink(this)">${esc(translate(state.locale, 'copyLink'))}</button><details class="citation-menu"><summary>${esc(translate(state.locale, 'copyCite'))}</summary><div class="citation-actions"><button type="button" onclick="copyCitation(this, 'plain')">${esc(translate(state.locale, 'copyCitation'))}</button><button type="button" onclick="copyCitation(this, 'markdown')">${esc(translate(state.locale, 'copyMarkdown'))}</button><button type="button" onclick="copyCitation(this, 'bibtex')">${esc(translate(state.locale, 'copyBibtex'))}</button><button type="button" onclick="copyCitation(this, 'json')">${esc(translate(state.locale, 'copyJson'))}</button><label class="citation-preview-wrap" hidden><span>${esc(translate(state.locale, 'generatedCitation'))}</span><textarea class="citation-preview" readonly rows="7"></textarea></label></div></details>`;
+  const share = navigator.share ? `<button type="button" onclick="shareCitation()">${esc(translate(state.locale, 'shareCitation'))}</button>` : '';
+  return `<button class="copy-link" type="button" onclick="copyLink(this)">${esc(translate(state.locale, 'copyLink'))}</button><details class="citation-menu"><summary>${esc(translate(state.locale, 'copyCite'))}</summary><div class="citation-actions"><button type="button" onclick="copyCitation(this, 'plain')">${esc(translate(state.locale, 'copyCitation'))}</button><button type="button" onclick="copyCitation(this, 'markdown')">${esc(translate(state.locale, 'copyMarkdown'))}</button><button type="button" onclick="copyCitation(this, 'bibtex')">${esc(translate(state.locale, 'copyBibtex'))}</button><button type="button" onclick="copyCitation(this, 'json')">${esc(translate(state.locale, 'copyJson'))}</button>${share}<label class="citation-preview-wrap" hidden><span>${esc(translate(state.locale, 'generatedCitation'))}</span><textarea class="citation-preview" readonly rows="7"></textarea></label></div></details>`;
 }
 
 function entityHeading(label, receiptIds = []) {
@@ -292,6 +306,7 @@ function go(kind, id) {
 
 window.copyLink = copyLink;
 window.copyCitation = copyCitation;
+window.shareCitation = shareCitation;
 
 function showView(view) {
   $('#view-map').hidden = view !== 'map';

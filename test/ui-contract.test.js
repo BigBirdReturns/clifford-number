@@ -42,6 +42,9 @@ assert.match(app, /aria-activedescendant/);
 assert.match(app, /function browseAll/);
 assert.match(app, /function copyCitation/);
 assert.match(app, /formatCitation/);
+assert.match(app, /navigator\.share/);
+assert.match(app, /function shareCitation/);
+assert.match(html, /Translate page/);
 assert.match(css, /\[data-reading="large"\]/);
 assert.match(css, /\[data-contrast="high"\]/);
 
