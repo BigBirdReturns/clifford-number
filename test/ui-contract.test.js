@@ -6,6 +6,8 @@ const css = readFileSync('styles.css', 'utf8');
 const app = readFileSync('app.js', 'utf8');
 const socialCard = readFileSync('assets/social-card.svg', 'utf8');
 const deployWorkflow = readFileSync('.github/workflows/deploy.yml', 'utf8');
+const ciWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8');
+const pagesBuilder = readFileSync('tools/build-pages.mjs', 'utf8');
 
 // Durable metadata and first-run semantics.
 assert.match(html, /<meta name="description"/);
@@ -20,6 +22,8 @@ for (const id of ['theme-select', 'language-select', 'reading-select', 'density-
   assert.match(html, new RegExp(`id="${id}"`), `${id} must ship in the display menu`);
 }
 assert.match(html, /data-i18n="heroDek"/);
+assert.match(html, /id="purpose-title"/);
+for (const key of ['purposeSurfaceTitle', 'purposeFlowTitle', 'purposeOutcomeTitle']) assert.match(html, new RegExp(`data-i18n="${key}"`));
 assert.match(html, /id="browse-all"/);
 assert.match(html, /clifford-preferences/);
 
@@ -63,9 +67,11 @@ assert.match(socialCard, /EVERY HOP IS A SHARED BOUNDED SURFACE/);
 assert.ok(statSync('assets/social-card.png').size > 10_000, 'raster social card must be present and non-empty');
 
 // Every runtime dependency and local receipt link must ship in the Pages artifact.
-const recursiveCopy = deployWorkflow.split(/\r?\n/).find(line => line.includes('cp -R')) ?? '';
 for (const directory of ['assets', 'docs', 'data', 'build', 'src', 'receipts']) {
-  assert.match(recursiveCopy, new RegExp(`(?:^|\\s)${directory}(?:\\s|$)`), `Pages artifact must include ${directory}/`);
+  assert.match(pagesBuilder, new RegExp(`['"]${directory}['"]`), `Pages artifact must include ${directory}/`);
 }
+assert.match(deployWorkflow, /npm run release:check/);
+assert.match(ciWorkflow, /pull_request:/);
+assert.match(ciWorkflow, /npm run release:check/);
 
 console.log('ui-contract.test.js: OK');

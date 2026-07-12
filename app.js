@@ -590,10 +590,13 @@ function renderCase(id) {
     metricPanel('Review required', item.claim_status_counts.review_required)
   ].join('');
   const sections = item.sections.map(section => `<section class="panel case-section"><span class="panel-label">${esc(section.label)}</span>${section.records.map(event => `<article class="case-event"><div class="case-event-head"><h3>${esc(event.label)}</h3><span class="badge">${esc(humanLabel(event.event_type))}</span></div><p class="meta">Observed or asserted: ${esc(event.occurred_at)}</p>${event.claims.map(renderCaseClaim).join('')}</article>`).join('')}</section>`).join('');
+  const eventById = new Map(item.events.map(event => [event.event_id, event]));
+  const relationFlow = item.relations.map(relation => `<article class="relation-row"><div><span class="meta">${esc(eventById.get(relation.from_event_id)?.occurred_at || '')}</span><strong>${esc(eventById.get(relation.from_event_id)?.label || relation.from_event_id)}</strong></div><span class="relation-arrow" aria-hidden="true">→</span><div><span class="meta">${esc(eventById.get(relation.to_event_id)?.occurred_at || '')}</span><strong>${esc(eventById.get(relation.to_event_id)?.label || relation.to_event_id)}</strong></div><aside><span class="badge">${esc(humanLabel(relation.relation_type))}</span><span class="causal-status">Causality: ${esc(humanLabel(relation.causal_status))}</span></aside></article>`).join('');
   const beacon = item.beacons[0];
   const dimensions = (beacon?.dimensions ?? []).map(dimension => `<li><strong>${esc(humanLabel(dimension.id))}</strong><span>${esc(dimension.formula)}</span></li>`).join('');
   $('#detail').innerHTML = `
     <div class="panel case-hero">${entityHeading(item.title, [])}<p class="case-subtitle">${esc(item.subtitle)} · ${esc(item.tracking_id)} · as known ${esc(item.as_of)}</p><p>${esc(item.scope)}</p><div class="evidence-note"><strong>Publication boundary.</strong> ${esc(item.boundary)}</div><p class="meta">${esc(item.disclaimer)}</p></div>
+    <div class="panel relation-panel"><span class="panel-label">Decision-to-outcome map</span><h3>What is linked—and how strongly</h3><p>Each arrow is typed. It can preserve a long time gap without upgrading sequence into causation.</p><div class="relation-list">${relationFlow}</div></div>
     <div class="panel beacon-panel"><span class="panel-label">Explainable beacon · ${esc(beacon?.version || '')}</span><h3>${esc(beacon?.label || 'No beacon')}</h3><div class="beacon-meter"><span style="width:${Math.round((beacon?.evidence_coverage?.ratio || 0) * 100)}%"></span></div><p><strong>${beacon?.evidence_coverage?.verified || 0} of ${beacon?.evidence_coverage?.total || 0}</strong> beacon inputs are independently verified in this ledger.</p><ol class="beacon-dimensions">${dimensions}</ol><p class="evidence-note">${esc(beacon?.prohibited_interpretation || '')}</p></div>
     ${sections}`;
 }
@@ -1072,8 +1075,8 @@ function initDesk() {
     .filter(a => state.actorScores.has(a.id))
     .map(a => `<option value="${esc(a.label)}"></option>`).join('');
   const examples = [
-    { from: 'fiona-hill', to: '', asOf: '2025', label: 'Fiona Hill × Clifford, as of 2025' },
-    { from: 'ben-warner', to: '', asOf: '', label: 'Ben Warner × Clifford (evidence warning)' },
+    { from: 'keir-starmer', to: 'matt-clifford', asOf: '2025', label: 'Starmer × Clifford, as of 2025' },
+    { from: 'ben-warner', to: 'dominic-cummings', asOf: '2020', label: 'Ben Warner × Dominic Cummings, as of 2020' },
   ];
   const rej = (state.hopGraph.rejected_hop_pairs ?? [])[0];
   if (rej) examples.push({ from: rej.actor_a, to: rej.actor_b, asOf: '', label: `${labelActor(rej.actor_a)} × ${labelActor(rej.actor_b)} (a refusal)` });

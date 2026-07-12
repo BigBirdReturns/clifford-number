@@ -33,14 +33,6 @@ jobs:
       - name: Release check
         run: npm run release:check
 
-      - name: Build Pages artifact
-        run: |
-          rm -rf dist
-          mkdir -p dist
-          cp index.html app.js styles.css package.json graph.json dist/
-          cp -R assets docs data build contributions legacy src receipts dist/
-          touch dist/.nojekyll
-
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
