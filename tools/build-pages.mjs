@@ -11,5 +11,9 @@ fs.rmSync(destination, { recursive: true, force: true });
 fs.mkdirSync(destination, { recursive: true });
 for (const file of files) fs.copyFileSync(path.join(root, file), path.join(destination, file));
 for (const directory of directories) fs.cpSync(path.join(root, directory), path.join(destination, directory), { recursive: true });
+// Intake is public-record research material in the repository, but it is not
+// part of the published corpus until separately promoted into canonical truth.
+fs.rmSync(path.join(destination, 'data', 'crawl'), { recursive: true, force: true });
+fs.rmSync(path.join(destination, 'receipts', 'crawl'), { recursive: true, force: true });
 fs.writeFileSync(path.join(destination, '.nojekyll'), '');
 console.log(`build-pages: ${files.length} files and ${directories.length} directories copied`);

@@ -16,6 +16,12 @@ if (missing.length) {
   console.error(`validate-pages failed: missing ${missing.join(', ')}`);
   process.exit(1);
 }
+for (const forbidden of ['data/crawl', 'receipts/crawl']) {
+  if (fs.existsSync(path.join(destination, forbidden))) {
+    console.error(`validate-pages failed: intake path ${forbidden} must not be published`);
+    process.exit(1);
+  }
+}
 const html = fs.readFileSync(path.join(destination, 'index.html'), 'utf8');
 const app = fs.readFileSync(path.join(destination, 'app.js'), 'utf8');
 if (!html.includes('id="main-content"') || !app.includes('build/cases/index.json')) {

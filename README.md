@@ -17,6 +17,8 @@ The public interface treats receipt health, temporal precision, dense-surface ex
 
 Compiled case files extend that discipline from topology into programs, typed capital flows, public-role transitions, capability observations, and outcomes. The first golden case, FA-03, is intentionally review-gated: the prototype's assertions are preserved without being mislabeled as independently verified. See [the case-ledger contract](docs/case-ledger.md).
 
+Official-record growth follows an observation-first crawler contract modeled on Undercast: scheduled adapters harvest bounded public records into a non-publishing candidate queue; only a separate reviewed change can promote them into canonical truth. See [the official-record crawler](docs/official-record-crawler.md).
+
 Start with the audience-based [documentation index](docs/README.md), then read the current [methodology](docs/methodology.md) and [definitions](docs/definitions.md).
 
 ## Core rule
