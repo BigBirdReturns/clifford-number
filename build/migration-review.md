@@ -461,5 +461,3 @@ _Only first 80 shown of 236._
 - L715: **EU / Kaja Kallas** `responsible-for` neighbourhood policy (official)
 - L716: **EU / Kaja Kallas** `responsible-for` foreign and foreign-economic policy (official)
 - L717: **EU / Kaja Kallas** `fmr-PM-of` Estonia (official)
-
-

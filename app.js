@@ -1,22 +1,101 @@
-import { decodeHashPart, safeExternalUrl, safeLocalReceiptPath, validAsOf } from './src/ui-utils.js';
+import { decodeHashPart, formatCitation, safeExternalUrl, safeLocalReceiptPath, validAsOf } from './src/ui-utils.js';
+import { applyTranslations, normalizeLocale, translate } from './src/i18n.js';
 
-const state = { searchResults: [], searchActiveIndex: -1 };
+const PREFERENCES_KEY = 'clifford-preferences';
+const state = { searchResults: [], searchActiveIndex: -1, locale: 'en', preferences: {}, citation: null };
 const $ = sel => document.querySelector(sel);
 
-function initTheme() {
-  const stored = localStorage.getItem('theme');
-  const dark = stored === 'dark' || (!stored && matchMedia('(prefers-color-scheme: dark)').matches);
-  setTheme(dark ? 'dark' : 'light');
-  $('#theme-toggle').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+function readPreferences() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || '{}');
+    const legacyTheme = localStorage.getItem('theme');
+    return {
+      theme: ['system', 'light', 'dark'].includes(saved.theme) ? saved.theme : (['light', 'dark'].includes(legacyTheme) ? legacyTheme : 'system'),
+      language: normalizeLocale(saved.language || navigator.language),
+      reading: saved.reading === 'large' ? 'large' : 'standard',
+      density: saved.density === 'compact' ? 'compact' : 'comfortable',
+      contrast: saved.contrast === 'high' ? 'high' : 'standard'
+    };
+  } catch {
+    return { theme: 'system', language: 'en', reading: 'standard', density: 'comfortable', contrast: 'standard' };
+  }
 }
-function setTheme(t) {
-  document.documentElement.dataset.theme = t;
-  localStorage.setItem('theme', t);
-  const next = t === 'dark' ? 'light' : 'dark';
+
+function savePreferences() {
+  localStorage.setItem(PREFERENCES_KEY, JSON.stringify(state.preferences));
+}
+
+function applyThemeChoice(choice) {
+  const actual = choice === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : choice;
+  document.documentElement.dataset.themeChoice = choice;
+  document.documentElement.dataset.theme = actual;
+  localStorage.setItem('theme', actual);
+  const next = actual === 'dark' ? 'light' : 'dark';
   const label = $('#theme-toggle .theme-label');
-  if (label) label.textContent = next === 'dark' ? 'Dark' : 'Light';
-  $('#theme-toggle').setAttribute('aria-label', `Switch to ${next} theme`);
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t === 'dark' ? '#030d1d' : '#071e4a');
+  if (label) label.textContent = translate(state.locale, next === 'dark' ? 'themeDark' : 'themeLight');
+  const icon = $('#theme-toggle .theme-icon');
+  if (icon) icon.textContent = next === 'dark' ? '☾' : '☀';
+  $('#theme-toggle').setAttribute('aria-label', translate(state.locale, next === 'dark' ? 'themeToDark' : 'themeToLight'));
+  $('#theme-toggle').setAttribute('aria-pressed', String(actual === 'dark'));
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', actual === 'dark' ? '#030d1d' : '#e9e1d0');
+  if ($('#theme-select')) $('#theme-select').value = choice;
+}
+
+function applyPreferenceState({ rerender = false } = {}) {
+  const prefs = state.preferences;
+  state.locale = applyTranslations(document, prefs.language);
+  document.documentElement.dataset.reading = prefs.reading;
+  document.documentElement.dataset.density = prefs.density;
+  document.documentElement.dataset.contrast = prefs.contrast;
+  applyThemeChoice(prefs.theme);
+  $('#language-select').value = prefs.language;
+  $('#reading-select').value = prefs.reading;
+  $('#density-select').value = prefs.density;
+  $('#contrast-toggle').checked = prefs.contrast === 'high';
+  if (rerender && state.surfaceGraph) route();
+}
+
+function initPreferences() {
+  state.preferences = readPreferences();
+  applyPreferenceState();
+  $('#theme-toggle').addEventListener('click', () => {
+    state.preferences.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    savePreferences();
+    applyPreferenceState();
+  });
+  $('#theme-select').addEventListener('change', event => {
+    state.preferences.theme = event.target.value;
+    savePreferences();
+    applyPreferenceState();
+  });
+  $('#language-select').addEventListener('change', event => {
+    state.preferences.language = normalizeLocale(event.target.value);
+    savePreferences();
+    applyPreferenceState({ rerender: true });
+  });
+  $('#reading-select').addEventListener('change', event => {
+    state.preferences.reading = event.target.value === 'large' ? 'large' : 'standard';
+    savePreferences();
+    applyPreferenceState();
+  });
+  $('#density-select').addEventListener('change', event => {
+    state.preferences.density = event.target.value === 'compact' ? 'compact' : 'comfortable';
+    savePreferences();
+    applyPreferenceState();
+  });
+  $('#contrast-toggle').addEventListener('change', event => {
+    state.preferences.contrast = event.target.checked ? 'high' : 'standard';
+    savePreferences();
+    applyPreferenceState();
+  });
+  $('#preferences-reset').addEventListener('click', () => {
+    state.preferences = { theme: 'system', language: 'en', reading: 'standard', density: 'comfortable', contrast: 'standard' };
+    savePreferences();
+    applyPreferenceState({ rerender: true });
+  });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => {
+    if (state.preferences.theme === 'system') applyThemeChoice('system');
+  });
 }
 
 async function writeClipboard(text) {
@@ -33,22 +112,80 @@ async function writeClipboard(text) {
   if (!copied) throw new Error('Browser copy command was rejected');
 }
 
-async function copyLink() {
+async function copyFeedback(button, text) {
+  await writeClipboard(text);
+  if (!button) return;
+  const original = button.textContent;
+  button.textContent = translate(state.locale, 'copied');
+  button.classList.add('copied');
+  setTimeout(() => { button.textContent = original; button.classList.remove('copied'); }, 1800);
+}
+
+async function copyLink(button) {
   try {
-    await writeClipboard(location.href);
-    const btn = $('.copy-link');
-    if (!btn) return;
-    const original = btn.textContent;
-    btn.textContent = 'Copied';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1800);
+    await copyFeedback(button || $('.copy-link'), location.href);
   } catch (err) {
     console.warn('Could not copy link', err);
   }
 }
 
-function entityHeading(label) {
-  return `<div class="entity-heading"><h2>${esc(label)}</h2><button class="copy-link" onclick="copyLink()">Copy link</button></div>`;
+async function copyCitation(button, format) {
+  const text = state.citation ? formatCitation(state.citation, format) : '';
+  const previewWrap = button?.closest('.citation-menu')?.querySelector('.citation-preview-wrap');
+  const preview = previewWrap?.querySelector('textarea');
+  if (previewWrap && preview) {
+    preview.value = text;
+    previewWrap.hidden = false;
+    preview.focus();
+    preview.select();
+  }
+  try {
+    if (!text) return;
+    await copyFeedback(button, text);
+  } catch (err) {
+    console.warn('Could not copy citation', err);
+  }
+}
+
+async function shareCitation() {
+  if (!state.citation || !navigator.share) return;
+  try {
+    await navigator.share({
+      title: state.citation.title,
+      text: formatCitation(state.citation, 'plain'),
+      url: state.citation.url
+    });
+  } catch (err) {
+    if (err?.name !== 'AbortError') console.warn('Could not share citation', err);
+  }
+}
+
+function citationActions() {
+  const share = navigator.share ? `<button type="button" onclick="shareCitation()">${esc(translate(state.locale, 'shareCitation'))}</button>` : '';
+  return `<button class="copy-link" type="button" onclick="copyLink(this)">${esc(translate(state.locale, 'copyLink'))}</button><details class="citation-menu"><summary>${esc(translate(state.locale, 'copyCite'))}</summary><div class="citation-actions"><button type="button" onclick="copyCitation(this, 'plain')">${esc(translate(state.locale, 'copyCitation'))}</button><button type="button" onclick="copyCitation(this, 'markdown')">${esc(translate(state.locale, 'copyMarkdown'))}</button><button type="button" onclick="copyCitation(this, 'bibtex')">${esc(translate(state.locale, 'copyBibtex'))}</button><button type="button" onclick="copyCitation(this, 'json')">${esc(translate(state.locale, 'copyJson'))}</button>${share}<label class="citation-preview-wrap" hidden><span>${esc(translate(state.locale, 'generatedCitation'))}</span><textarea class="citation-preview" readonly rows="7"></textarea></label></div></details>`;
+}
+
+function entityHeading(label, receiptIds = []) {
+  state.citation = citationContext(label, receiptIds);
+  return `<div class="entity-heading"><h2>${esc(label)}</h2><div class="entity-actions">${citationActions()}</div></div>`;
+}
+
+function entityReceiptIds(kind, id) {
+  if (kind === 'surface') return state.surfaces.get(id)?.receipt_ids ?? [];
+  if (kind === 'chain') return state.chains.get(id)?.receipt_ids ?? [];
+  if (kind === 'candidate') return state.candidates.get(id)?.receipt_ids ?? [];
+  const ids = new Set();
+  for (const item of state.surfaceGraph?.surfaces ?? []) {
+    const participates = (item.participants ?? []).some(participant =>
+      kind === 'actor' ? participant.actor_id === id : participant.organization_id === id);
+    if (!participates) continue;
+    for (const receiptId of item.receipt_ids ?? []) ids.add(receiptId);
+    for (const participant of item.participants ?? []) {
+      const matches = kind === 'actor' ? participant.actor_id === id : participant.organization_id === id;
+      if (matches) for (const receiptId of participant.receipt_ids ?? []) ids.add(receiptId);
+    }
+  }
+  return [...ids];
 }
 
 async function loadJson(path) {
@@ -67,13 +204,15 @@ function setDocumentTitle(label) { document.title = label ? `${label} — The Cl
 function announce(message) { const status = $('#view-status'); if (status) status.textContent = message; }
 
 async function init() {
-  const [surfaceGraph, hopGraph, scores, legacyGraph, scout, receiptGraph] = await Promise.all([
+  initPreferences();
+  const [surfaceGraph, hopGraph, scores, legacyGraph, scout, receiptGraph, caseIndex] = await Promise.all([
     loadJson('build/surface-graph.json'),
     loadJson('build/hop-graph.json'),
     loadJson('build/scores.json'),
     loadJson('graph.json'),
     loadJson('build/scout-report.json').catch(() => ({ findings: [] })),
-    loadJson('build/receipt-graph.json').catch(() => ({ receipts: [] }))
+    loadJson('build/receipt-graph.json').catch(() => ({ receipts: [] })),
+    loadJson('build/cases/index.json').catch(() => ({ cases: [] }))
   ]);
   state.surfaceGraph = surfaceGraph;
   state.hopGraph = hopGraph;
@@ -95,6 +234,8 @@ async function init() {
   state.orgScores = new Map(scores.organizations.map(o => [o.organization_id, o]));
   state.legacyNodes = new Map((legacyGraph.nodes ?? []).map(n => [n.id, n]));
   state.chains = new Map((scores.chains ?? []).map(c => [c.chain_id, c]));
+  const caseFiles = await Promise.all((caseIndex.cases ?? []).map(entry => loadJson(entry.href)));
+  state.cases = new Map(caseFiles.map(item => [item.case_id, item]));
   state.hopEdgeByPair = new Map();
   for (const edge of hopGraph.edges ?? []) {
     state.hopEdgeByPair.set(`${edge.actor_a}||${edge.actor_b}`, edge);
@@ -106,6 +247,7 @@ async function init() {
 
   $('#search').addEventListener('input', onSearch);
   $('#search').addEventListener('keydown', onSearchKeydown);
+  $('#browse-all').addEventListener('click', browseAll);
   window.addEventListener('hashchange', route);
 
   const tabs = [...document.querySelectorAll('.tabs .tab')];
@@ -150,7 +292,6 @@ async function init() {
     }
   });
 
-  initTheme();
   renderHeroNetwork();
   const nonHop = state.surfaceGraph.surfaces.filter(s => !s.hop_eligible).length;
   $('#footer-corpus-meta').textContent = `${state.surfaceGraph.surfaces.length} surfaces · ${state.receipts.size} receipts · ${nonHop} context-only surfaces`;
@@ -167,6 +308,8 @@ function go(kind, id) {
 }
 
 window.copyLink = copyLink;
+window.copyCitation = copyCitation;
+window.shareCitation = shareCitation;
 
 function showView(view) {
   $('#view-map').hidden = view !== 'map';
@@ -214,7 +357,7 @@ function renderHeroNetwork() {
   const sampleId = ['ben-warner', 'fiona-hill', 'simon-case'].find(id => state.hopGraph.shortest_paths[id]?.number > 0)
     ?? Object.keys(state.hopGraph.shortest_paths).find(id => state.hopGraph.shortest_paths[id]?.number > 0);
   const path = sampleId ? state.hopGraph.shortest_paths[sampleId] : null;
-  $('#topology-edge-count').textContent = `${state.hopGraph.edges.length.toLocaleString()} valid hops · ${state.receipts.size} receipts`;
+  $('#topology-edge-count').textContent = `${state.hopGraph.edges.length.toLocaleString()} ${translate(state.locale, 'validHops')} · ${state.receipts.size} ${translate(state.locale, 'releaseReceipts')}`;
   if (!path?.actor_path?.length) return;
   const items = [];
   path.actor_path.forEach((actorId, i) => {
@@ -239,14 +382,15 @@ function renderHeroNetwork() {
 }
 
 function renderHome() {
+  state.citation = null;
   setDocumentTitle();
   const rejected = state.hopGraph.rejected_hop_pairs?.length ?? 0;
   const denseContext = state.surfaceGraph.surfaces.filter(s => !s.hop_eligible && (s.participants ?? []).filter(p => p.participant_type === 'actor').length >= 20).length;
   $('#summary').innerHTML = `
-    <div class="panel"><div class="metric">${state.surfaceGraph.surfaces.length}</div><div class="metric-label">bounded surfaces</div></div>
-    <div class="panel"><div class="metric">${state.hopGraph.edges.length.toLocaleString()}</div><div class="metric-label">valid actor-to-actor hops</div></div>
-    <div class="panel"><div class="metric">${state.receipts.size}</div><div class="metric-label">receipts in the release</div></div>
-    <div class="panel"><div class="metric">${rejected}</div><div class="metric-label">time-overlap connections refused</div></div>
+    <div class="panel"><div class="metric">${state.surfaceGraph.surfaces.length}</div><div class="metric-label">${esc(translate(state.locale, 'boundedSurfaces'))}</div></div>
+    <div class="panel"><div class="metric">${state.hopGraph.edges.length.toLocaleString()}</div><div class="metric-label">${esc(translate(state.locale, 'validHops'))}</div></div>
+    <div class="panel"><div class="metric">${state.receipts.size}</div><div class="metric-label">${esc(translate(state.locale, 'releaseReceipts'))}</div></div>
+    <div class="panel"><div class="metric">${rejected}</div><div class="metric-label">${esc(translate(state.locale, 'refusedConnections'))}</div></div>
   `;
   const preferred = ['fiona-hill', 'ben-warner', 'simon-case', 'dominic-cummings', 'keir-starmer'];
   const fallback = [...state.actorScores.values()]
@@ -264,13 +408,14 @@ function renderHome() {
     .sort((a, b) => b.machine_score - a.machine_score)
     .map(c => `<button class="result" data-kind="chain" data-id="${esc(c.chain_id)}"><span class="kind-glyph">C</span><span class="result-label">${esc(c.chain_label)}<small>${c.chain_length} documented stages · context only, never a hop</small></span></button>`)
     .join('');
+  const caseList = [...state.cases.values()].map(item => `<button class="result" data-kind="case" data-id="${esc(item.case_id)}"><span class="kind-glyph">F</span><span class="result-label">${esc(item.title)}<small>${esc(item.tracking_id)} · ${item.counts.events} typed events · ${item.claim_status_counts.verified} verified claims</small></span></button>`).join('');
   const sampleId = routeIds[0];
   const samplePath = sampleId ? state.hopGraph.shortest_paths[sampleId] : null;
   $('#detail').innerHTML = `
     <div class="home-grid">
       <div class="panel">
-        <span class="panel-label">The compiler rule</span>
-        <h2>What counts as a connection?</h2>
+        <span class="panel-label">${esc(translate(state.locale, 'compilerRule'))}</span>
+        <h2>${esc(translate(state.locale, 'whatCounts'))}</h2>
         <p>A Clifford Number moves from one public actor to another only when both are documented on the same named, bounded surface. Every basis carries roles, dates, an evidence class, and receipt IDs.</p>
         <div class="home-principles">
           <div class="principle"><span class="principle-index">01</span><p><strong>Bounded, not broad.</strong> A taskforce, board, policy authorship, or small named cohort can qualify. “Same institution” cannot.</p></div>
@@ -288,7 +433,8 @@ function renderHome() {
     <div class="home-grid">
       <div class="panel why-no-hop"><span class="panel-label">Refusal is a feature</span><h3>What the graph declines to connect</h3><p>${rejected} actor pair${rejected === 1 ? '' : 's'} currently fail the documented time-overlap test. ${denseContext} large roster surface${denseContext === 1 ? ' is' : 's are'} preserved as context without manufacturing thousands of person-to-person hops.</p></div>
       <div class="panel"><span class="panel-label">Structural context, not adjacency</span><h3>Multi-stage pathways</h3><div class="results">${chainList || '<p class="meta">None in this release.</p>'}</div></div>
-    </div>`;
+    </div>
+    <div class="panel case-entry"><span class="panel-label">Compiled case files</span><h3>From topology to outcomes</h3><p>Case files join program events, typed money, public-role transitions, capability observations, and reported outcomes without converting sequence into causation.</p><div class="results">${caseList || '<p class="meta">No compiled case files in this release.</p>'}</div></div>`;
   bindResults();
   announce(`Explorer loaded: ${state.surfaceGraph.surfaces.length} surfaces, ${state.hopGraph.edges.length} valid hops, and ${state.receipts.size} receipts.`);
 }
@@ -327,8 +473,12 @@ function onSearch(e) {
       const match = rankMatch(q, c.label, c.id, c.aliases ?? []);
       if (match) results.push({ kind: 'candidate', id: c.id, label: c.label, ...match });
     }
+    for (const c of state.cases.values()) {
+      const match = rankMatch(q, c.title, c.case_id, [c.tracking_id, c.subtitle]);
+      if (match) results.push({ kind: 'case', id: c.case_id, label: c.title, ...match });
+    }
   }
-  const kindOrder = { actor: 0, organization: 1, surface: 2, chain: 3, candidate: 4 };
+  const kindOrder = { actor: 0, organization: 1, surface: 2, chain: 3, case: 4, candidate: 5 };
   state.searchResults = results.sort((a, b) => a.score - b.score || kindOrder[a.kind] - kindOrder[b.kind] || a.label.localeCompare(b.label)).slice(0, 12);
   state.searchActiveIndex = -1;
   const box = $('#results');
@@ -338,6 +488,28 @@ function onSearch(e) {
   $('#search').setAttribute('aria-expanded', String(q.length >= 2));
   $('#search').removeAttribute('aria-activedescendant');
   for (const btn of box.querySelectorAll('.result')) btn.addEventListener('click', () => go(btn.dataset.kind, btn.dataset.id));
+}
+
+function browseAll() {
+  const items = [
+    ...state.surfaceGraph.actors.map(item => ({ kind: 'actor', id: item.id, label: item.label })),
+    ...state.surfaceGraph.organizations.map(item => ({ kind: 'organization', id: item.id, label: item.label })),
+    ...state.surfaceGraph.surfaces.map(item => ({ kind: 'surface', id: item.surface_id, label: item.surface_label })),
+    ...[...state.chains.values()].map(item => ({ kind: 'chain', id: item.chain_id, label: item.chain_label })),
+    ...[...state.cases.values()].map(item => ({ kind: 'case', id: item.case_id, label: item.title }))
+  ].sort((a, b) => a.label.localeCompare(b.label)).slice(0, 80);
+  state.searchResults = items;
+  state.searchActiveIndex = -1;
+  $('#search').value = '';
+  $('#search').setAttribute('aria-expanded', 'true');
+  $('#search').removeAttribute('aria-activedescendant');
+  const box = $('#results');
+  box.innerHTML = items.length
+    ? items.map((item, i) => `<button id="search-option-${i}" class="result" role="option" tabindex="0" aria-selected="false" data-kind="${esc(item.kind)}" data-id="${esc(item.id)}"><span class="kind-glyph">${kindGlyph(item.kind)}</span><span class="result-label">${esc(item.label)}<small>${esc(item.kind)}</small></span></button>`).join('')
+    : `<div class="meta" role="option" aria-disabled="true">${esc(translate(state.locale, 'noRecords'))}</div>`;
+  for (const btn of box.querySelectorAll('.result')) btn.addEventListener('click', () => go(btn.dataset.kind, btn.dataset.id));
+  announce(translate(state.locale, 'browseShowing', { count: items.length }));
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function onSearchKeydown(e) {
@@ -371,7 +543,7 @@ function clearSearchResults() {
 }
 
 function kindGlyph(kind) {
-  return { actor: 'A', organization: 'O', surface: 'S', chain: 'C', candidate: '?' }[kind] || '•';
+  return { actor: 'A', organization: 'O', surface: 'S', chain: 'C', case: 'F', candidate: '?' }[kind] || '•';
 }
 
 function renderEntity(kind, id) {
@@ -380,17 +552,54 @@ function renderEntity(kind, id) {
   else if (kind === 'chain') renderChain(id);
   else if (kind === 'candidate') renderCandidate(id);
   else if (kind === 'surface') renderSurface(id);
+  else if (kind === 'case') renderCase(id);
   else renderNotFound(kind, id);
   announce(`${document.title.replace(' — The Clifford Number', '')} loaded.`);
 }
 
 function renderNotFound(kind, id) {
+  state.citation = null;
   setDocumentTitle('Not found');
   $('#summary').innerHTML = '';
   $('#detail').innerHTML = `<div class="panel why-no-hop"><span class="panel-label">Stale or unknown link</span><h2>Not found in this release.</h2><p>The ${esc(kind || 'item')} “${esc(id || '')}” is not present in the current public corpus. It may have been renamed, withheld, or never promoted from intake.</p><p><button class="copy-link" type="button" onclick="location.hash=''">Return to the explorer</button></p></div>`;
 }
 
 function metricPanel(label, value) { return `<div class="panel"><div class="metric">${esc(value ?? '—')}</div><div class="metric-label">${esc(label)}</div></div>`; }
+
+function formatCaseValue(value) {
+  if (value == null) return '';
+  if (typeof value !== 'object') return String(value);
+  if (value.currency && Number.isFinite(value.amount)) return `${value.amount_kind}: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: value.currency, maximumFractionDigits: 0 }).format(value.amount)}${value.fiscal_year ? ` · FY${value.fiscal_year}` : ''}`;
+  if (Number.isFinite(value.value) && Object.keys(value).length <= 2) return `${Math.round(value.value * 100)}%`;
+  return Object.entries(value).map(([key, item]) => `${humanLabel(key)}: ${item}`).join(' · ');
+}
+
+function renderCaseClaim(claim) {
+  const receipts = (claim.receipts ?? []).map(receipt => `<div class="case-receipt"><strong>${esc(receipt.label)}</strong><span>${esc(receipt.locator_status || receipt.source_type)} · SHA-256 ${esc(receipt.content_sha256?.slice(0, 12) || 'not recorded')}…</span></div>`).join('');
+  return `<article class="case-claim case-claim--${esc(claim.claim_status)}"><div class="case-claim-head"><span class="badge">${esc(humanLabel(claim.claim_status))}</span><span class="meta">${esc(humanLabel(claim.evidence_class))} · causality: ${esc(humanLabel(claim.causal_status))}</span></div><p>${esc(claim.plain)}</p>${claim.value != null ? `<p class="case-value">${esc(formatCaseValue(claim.value))}</p>` : ''}${claim.qualification ? `<p class="evidence-note">${esc(claim.qualification)}</p>` : ''}${receipts}</article>`;
+}
+
+function renderCase(id) {
+  const item = state.cases.get(id);
+  if (!item) return renderNotFound('case', id);
+  setDocumentTitle(item.title);
+  $('#summary').innerHTML = [
+    metricPanel('Typed events', item.counts.events),
+    metricPanel('Claims', item.counts.claims),
+    metricPanel('Verified', item.claim_status_counts.verified),
+    metricPanel('Review required', item.claim_status_counts.review_required)
+  ].join('');
+  const sections = item.sections.map(section => `<section class="panel case-section"><span class="panel-label">${esc(section.label)}</span>${section.records.map(event => `<article class="case-event"><div class="case-event-head"><h3>${esc(event.label)}</h3><span class="badge">${esc(humanLabel(event.event_type))}</span></div><p class="meta">Observed or asserted: ${esc(event.occurred_at)}</p>${event.claims.map(renderCaseClaim).join('')}</article>`).join('')}</section>`).join('');
+  const eventById = new Map(item.events.map(event => [event.event_id, event]));
+  const relationFlow = item.relations.map(relation => `<article class="relation-row"><div><span class="meta">${esc(eventById.get(relation.from_event_id)?.occurred_at || '')}</span><strong>${esc(eventById.get(relation.from_event_id)?.label || relation.from_event_id)}</strong></div><span class="relation-arrow" aria-hidden="true">→</span><div><span class="meta">${esc(eventById.get(relation.to_event_id)?.occurred_at || '')}</span><strong>${esc(eventById.get(relation.to_event_id)?.label || relation.to_event_id)}</strong></div><aside><span class="badge">${esc(humanLabel(relation.relation_type))}</span><span class="causal-status">Causality: ${esc(humanLabel(relation.causal_status))}</span></aside></article>`).join('');
+  const beacon = item.beacons[0];
+  const dimensions = (beacon?.dimensions ?? []).map(dimension => `<li><strong>${esc(humanLabel(dimension.id))}</strong><span>${esc(dimension.formula)}</span></li>`).join('');
+  $('#detail').innerHTML = `
+    <div class="panel case-hero">${entityHeading(item.title, [])}<p class="case-subtitle">${esc(item.subtitle)} · ${esc(item.tracking_id)} · as known ${esc(item.as_of)}</p><p>${esc(item.scope)}</p><div class="evidence-note"><strong>Publication boundary.</strong> ${esc(item.boundary)}</div><p class="meta">${esc(item.disclaimer)}</p></div>
+    <div class="panel relation-panel"><span class="panel-label">Decision-to-outcome map</span><h3>What is linked—and how strongly</h3><p>Each arrow is typed. It can preserve a long time gap without upgrading sequence into causation.</p><div class="relation-list">${relationFlow}</div></div>
+    <div class="panel beacon-panel"><span class="panel-label">Explainable beacon · ${esc(beacon?.version || '')}</span><h3>${esc(beacon?.label || 'No beacon')}</h3><div class="beacon-meter"><span style="width:${Math.round((beacon?.evidence_coverage?.ratio || 0) * 100)}%"></span></div><p><strong>${beacon?.evidence_coverage?.verified || 0} of ${beacon?.evidence_coverage?.total || 0}</strong> beacon inputs are independently verified in this ledger.</p><ol class="beacon-dimensions">${dimensions}</ol><p class="evidence-note">${esc(beacon?.prohibited_interpretation || '')}</p></div>
+    ${sections}`;
+}
 
 function metricPanelRatio(label, value, max) {
   if (value == null) return metricPanel(label, 'N/A');
@@ -483,7 +692,7 @@ function renderActor(id) {
       metricPanel('Source', 'legacy graph'),
     ].join('');
     $('#detail').innerHTML = `
-      <div class="panel">${entityHeading(actor?.label ?? legacyNode.label)}<p>${esc(legacyNode.description || 'Legacy graph node imported for search continuity.')}</p><div class="badge-row">${(legacyNode.tags ?? []).map(t => `<span class="badge">${esc(t)}</span>`).join('')}</div></div>
+      <div class="panel">${entityHeading(actor?.label ?? legacyNode.label, actor ? entityReceiptIds('actor', id) : [])}<p>${esc(legacyNode.description || 'Legacy graph node imported for search continuity.')}</p><div class="badge-row">${(legacyNode.tags ?? []).map(t => `<span class="badge">${esc(t)}</span>`).join('')}</div></div>
       <div class="panel why-no-hop"><h3>Surface-hop status</h3><p>This actor is search-visible through the legacy edge graph bridge, but has not yet been promoted into bounded surface-hop ledgers. The path below is legacy edge-graph context, not a newly manufactured surface hop.</p></div>
       <div class="panel"><h3>Legacy edge-graph path</h3>${renderLegacyPath(legacyPath)}</div>
       <div class="panel"><h3>Legacy public edges</h3>${related.length ? related.map(edge => `<div class="receipts">${esc(state.legacyNodes.get(edge.from)?.label ?? edge.from)} → ${esc(state.legacyNodes.get(edge.to)?.label ?? edge.to)}: ${esc(edge.claim || edge.type || edge.id)}</div>`).join('') : '<p>None.</p>'}</div>
@@ -517,7 +726,7 @@ function renderActor(id) {
     : `<div class="profile-copy"><p><strong>Editorial profile pending.</strong> This entry is visible because it participates in receipted surfaces, but no human-written plain-language profile has been promoted yet.</p></div>`;
 
   $('#detail').innerHTML = `
-    <div class="panel">${entityHeading(actor.label)}<div class="profile-intro"><div>${profileHtml}<div class="badge-row">${(score?.secondary_surface_types ?? []).map(t => `<span class="badge">${esc(humanLabel(t))}</span>`).join('')}</div></div><aside class="profile-boundary"><strong>What this entry supports</strong><br>Documented participation on named public-role surfaces.<br><br><strong>What it does not support</strong><br>Claims about motive, agreement, influence, coordination, character, or wrongdoing.</aside></div></div>
+    <div class="panel">${entityHeading(actor.label, entityReceiptIds('actor', id))}<div class="profile-intro"><div>${profileHtml}<div class="badge-row">${(score?.secondary_surface_types ?? []).map(t => `<span class="badge">${esc(humanLabel(t))}</span>`).join('')}</div></div><aside class="profile-boundary"><strong>What this entry supports</strong><br>Documented participation on named public-role surfaces.<br><br><strong>What it does not support</strong><br>Claims about motive, agreement, influence, coordination, character, or wrongdoing.</aside></div></div>
     <div class="panel"><span class="panel-label">Shortest defensible route</span><h3>Documented surface path</h3>${noHop ? pathHtml : `${renderTopologyMap(path)}${pathHtml}`}</div>
     ${chainsHtml}
     ${recurHtml}
@@ -548,7 +757,7 @@ function renderChain(id) {
       ${renderReceiptGrid(s.receipt_ids, 'Stage receipts')}
     </div>`).join('<div class="chain-arrow">↓</div>');
   $('#detail').innerHTML = `
-    <div class="panel">${entityHeading(c.chain_label)}<div class="badge-row"><span class="badge">${esc(humanLabel(c.pattern))}</span>${evidenceBadge(c.evidence_class)}</div></div>
+    <div class="panel">${entityHeading(c.chain_label, entityReceiptIds('chain', id))}<div class="badge-row"><span class="badge">${esc(humanLabel(c.pattern))}</span>${evidenceBadge(c.evidence_class)}</div></div>
     <div class="panel why-no-hop"><span class="panel-label">Inference boundary</span><h3>Why this is context, not a hop</h3><p>${esc(c.why_no_hop)}</p></div>
     <div class="panel"><span class="panel-label">Documented sequence</span><h3>Pathway stages</h3><div class="surface-list">${stages}</div></div>
   `;
@@ -620,7 +829,7 @@ function renderOrg(id) {
     metricPanel('Types', score?.surface_types?.length ?? 0),
   ].join('');
   $('#detail').innerHTML = `
-    <div class="panel">${entityHeading(org.label)}<p>${score?.surface_factory ? 'This organization behaves as a surface factory. It must be decomposed into bounded surfaces, not used as a generic hop node.' : 'Organization context. It does not create Clifford hops by itself.'}</p></div>
+    <div class="panel">${entityHeading(org.label, entityReceiptIds('organization', id))}<p>${score?.surface_factory ? 'This organization behaves as a surface factory. It must be decomposed into bounded surfaces, not used as a generic hop node.' : 'Organization context. It does not create Clifford hops by itself.'}</p></div>
     <div class="panel"><h3>Surfaces</h3><div class="surface-list">${(score?.surfaces ?? []).map(renderSurfaceCard).join('')}</div></div>
   `;
 }
@@ -639,7 +848,7 @@ function renderCandidate(id) {
     metricPanel('Graph Effect', 'None'),
   ].join('');
   $('#detail').innerHTML = `
-    <div class="panel">${entityHeading(candidate.label)}<div class="badge-row"><span class="badge">intake candidate</span><span class="badge">${esc(candidate.kind)}</span></div></div>
+    <div class="panel">${entityHeading(candidate.label, entityReceiptIds('candidate', id))}<div class="badge-row"><span class="badge">intake candidate</span><span class="badge">${esc(candidate.kind)}</span></div></div>
     <div class="panel why-no-hop"><h3>Not a graph claim yet</h3><p>${esc(candidate.why_visible || 'Visible for intake only. This is not a Clifford hop, score, or relationship claim.')}</p></div>
     <div class="panel"><h3>Promotion path</h3><p>${esc(candidate.next_step || 'Promote only after a bounded public surface and receipt are available.')}</p><p class="meta">Source to review: ${sourceUrl ? `<a href="${esc(sourceUrl)}" target="_blank" rel="noreferrer">${esc(sourceUrl)}</a>` : candidate.source_url ? `${esc(candidate.source_url)} (unsafe or unsupported URL)` : 'none'}</p></div>
     ${(candidate.aliases ?? []).length ? `<div class="panel"><h3>Search aliases</h3><p>${candidate.aliases.map(esc).join(', ')}</p></div>` : ''}
@@ -658,7 +867,7 @@ function renderSurface(id) {
   ].join('');
   const parts = (s.participants ?? []).map(p => `<li>${p.participant_type === 'actor' ? esc(labelActor(p.actor_id)) : esc(labelOrg(p.organization_id))}: ${esc(p.role)} <span class="meta">${esc(p.participation_type)}</span></li>`).join('');
   $('#detail').innerHTML = `
-    <div class="panel">${entityHeading(s.surface_label)}<div class="badge-row"><span class="badge">${esc(s.surface_type)}</span>${(s.secondary_surface_types ?? []).map(t => `<span class="badge">${esc(t)}</span>`).join('')}</div><p>${esc(s.notes || '')}</p></div>
+    <div class="panel">${entityHeading(s.surface_label, entityReceiptIds('surface', id))}<div class="badge-row"><span class="badge">${esc(s.surface_type)}</span>${(s.secondary_surface_types ?? []).map(t => `<span class="badge">${esc(t)}</span>`).join('')}</div><p>${esc(s.notes || '')}</p></div>
     <div class="panel"><h3>Participants</h3><ul>${parts}</ul></div>
     <div class="panel"><h3>Bounded by</h3><p>${(s.bounded_by ?? []).map(esc).join(', ')}</p>${renderReceiptGrid(s.receipt_ids, 'Surface receipts')}</div>
   `;
@@ -759,7 +968,7 @@ function chainWeakest(hops) {
 function receiptRefs(ids) {
   return (ids ?? []).map(id => {
     const r = state.receipts.get(id);
-    if (!r) return { label: id, url: null, archiveUrl: null, health: 'warning', healthLabel: 'Receipt record missing' };
+    if (!r) return { id, label: id, url: null, archiveUrl: null, health: 'warning', healthLabel: 'Receipt record missing' };
     const path = String(r.path || '');
     const localPath = safeLocalReceiptPath(path);
     const externalUrl = safeExternalUrl(path);
@@ -769,6 +978,7 @@ function receiptRefs(ids) {
     const lost = r.archive?.method === 'unrecoverable_local_paste';
     const warning = !lost && !r.archive?.ref;
     return {
+      id,
       label: r.label || id,
       url,
       local,
@@ -781,6 +991,21 @@ function receiptRefs(ids) {
     };
   });
 }
+
+function citationContext(label, receiptIds = []) {
+  const receipts = receiptRefs([...new Set(receiptIds)]).map(receipt => ({
+    id: receipt.id,
+    label: receipt.label,
+    url: receipt.url ? new URL(receipt.url, location.href).href : null,
+    archive_url: receipt.archiveUrl || null
+  }));
+  return {
+    title: label,
+    url: location.href,
+    accessed: new Date().toISOString().slice(0, 10),
+    receipts
+  };
+}
 function evidenceBadge(cls) { return `<span class="badge ev ev-${esc(cls)}">${esc(EVIDENCE_LABEL[cls] || cls)}</span>`; }
 
 function deskRejectionsFor(a, b) {
@@ -790,12 +1015,8 @@ function deskRejectionsFor(a, b) {
 
 async function copyDeskText(btnId, text) {
   try {
-    await writeClipboard(text);
     const btn = document.getElementById(btnId);
-    if (!btn) return;
-    btn.textContent = 'Copied';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'Copy text'; btn.classList.remove('copied'); }, 1800);
+    await copyFeedback(btn, text);
   } catch (err) {
     console.warn('Could not copy desk text', err);
   }
@@ -854,8 +1075,8 @@ function initDesk() {
     .filter(a => state.actorScores.has(a.id))
     .map(a => `<option value="${esc(a.label)}"></option>`).join('');
   const examples = [
-    { from: 'fiona-hill', to: '', asOf: '2025', label: 'Fiona Hill × Clifford, as of 2025' },
-    { from: 'ben-warner', to: '', asOf: '', label: 'Ben Warner × Clifford (evidence warning)' },
+    { from: 'keir-starmer', to: 'matt-clifford', asOf: '2025', label: 'Starmer × Clifford, as of 2025' },
+    { from: 'ben-warner', to: 'dominic-cummings', asOf: '2020', label: 'Ben Warner × Dominic Cummings, as of 2020' },
   ];
   const rej = (state.hopGraph.rejected_hop_pairs ?? [])[0];
   if (rej) examples.push({ from: rej.actor_a, to: rej.actor_b, asOf: '', label: `${labelActor(rej.actor_a)} × ${labelActor(rej.actor_b)} (a refusal)` });
@@ -907,11 +1128,14 @@ function runDeskCheck({ updateHash }) {
   const path = asOf ? sliced : allTime;
   const directRejections = deskRejectionsFor(fromId, toId);
   const parts = [];
+  state.citation = null;
 
   if (fromId === toId) {
     parts.push(deskVerdict('warn', 'Same person', '<p>Both names resolve to the same entry.</p>'));
   } else if (path) {
     setDocumentTitle(`${labelActor(fromId)} → ${labelActor(toId)}`);
+    const pathReceiptIds = [...new Set(path.hops.flatMap(hop => hop.bases.flatMap(basis => basis.receipt_ids ?? [])))];
+    state.citation = citationContext(`${labelActor(fromId)} → ${labelActor(toId)}${asOf ? `, as of ${asOf}` : ''}`, pathReceiptIds);
     const floor = chainWeakest(path.hops);
     const officialClass = (EVIDENCE_RANK[floor] ?? 9) <= 1;
     parts.push(deskVerdict('ok', `Documented: ${path.number} step${path.number === 1 ? '' : 's'}${asOf ? ` as of ${asOf}` : ''}`,
@@ -922,7 +1146,7 @@ function runDeskCheck({ updateHash }) {
     parts.push(`<div class="panel"><span class="panel-label">Route overview</span><h3>${esc(labelActor(fromId))} → ${esc(labelActor(toId))}</h3>${renderTopologyMap(topologyPath)}</div>`);
     parts.push(...path.hops.map(renderDeskHop));
     const printable = buildPrintableText(fromId, toId, asOf, path);
-    parts.push(`<div class="panel"><div class="entity-heading"><h3>What you can print</h3><button id="desk-copy-btn" class="copy-link" onclick="copyDeskText('desk-copy-btn', this.dataset.text)" data-text="${esc(printable)}">Copy text</button></div><pre class="printable">${esc(printable)}</pre></div>`);
+    parts.push(`<div class="panel"><div class="entity-heading"><h3>What you can print</h3><div class="entity-actions"><button id="desk-copy-btn" class="copy-link" onclick="copyDeskText('desk-copy-btn', this.dataset.text)" data-text="${esc(printable)}">Copy text</button>${citationActions()}</div></div><pre class="printable">${esc(printable)}</pre></div>`);
   } else if (asOf && allTime) {
     parts.push(deskVerdict('warn', `Not documented for ${asOf}`,
       `<p>A documented all-time connection exists (${allTime.number} step${allTime.number === 1 ? '' : 's'}), but it cannot be placed at ${esc(asOf)}: either the documented windows do not overlap that period, or a link in the chain involves a stint with no documented dates — and this map never asserts co-presence it cannot date.</p>

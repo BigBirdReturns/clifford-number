@@ -19,13 +19,31 @@
   <link rel="canonical" href="https://bigbirdreturns.github.io/clifford-number/">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <title>The Clifford Number — connections you can check</title>
+  <script>
+    (() => {
+      try {
+        const root = document.documentElement;
+        const saved = localStorage.getItem('clifford-preferences');
+        const prefs = saved ? JSON.parse(saved) : {};
+        const legacyTheme = localStorage.getItem('theme');
+        const choice = ['system', 'light', 'dark'].includes(prefs.theme) ? prefs.theme : (['light', 'dark'].includes(legacyTheme) ? legacyTheme : 'system');
+        const actual = choice === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : choice;
+        root.dataset.theme = actual;
+        root.dataset.themeChoice = choice;
+        root.dataset.reading = prefs.reading === 'large' ? 'large' : 'standard';
+        root.dataset.density = prefs.density === 'compact' ? 'compact' : 'comfortable';
+        root.dataset.contrast = prefs.contrast === 'high' ? 'high' : 'standard';
+        root.lang = ['en', 'es', 'fr'].includes(prefs.language) ? prefs.language : 'en';
+      } catch {}
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <a class="skip-link" href="#main-content">Skip to the explorer</a>
+  <a class="skip-link" href="#main-content" data-i18n="skip">Skip to the explorer</a>
 
   <header class="site-header">
     <div class="topbar shell-wide">
@@ -34,9 +52,44 @@
         <span class="brand-name">The Clifford Number</span>
       </a>
       <div class="topbar-actions">
-        <span class="release-status"><span class="status-pulse" aria-hidden="true"></span>Public research instrument</span>
-        <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/docs/methodology.md" target="_blank" rel="noreferrer">Method</a>
-        <a href="https://github.com/BigBirdReturns/clifford-number" target="_blank" rel="noreferrer">Source</a>
+        <span class="release-status"><span class="status-pulse" aria-hidden="true"></span><span data-i18n="status">Public research instrument</span></span>
+        <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/docs/methodology.md" target="_blank" rel="noreferrer" data-i18n="method">Method</a>
+        <a href="https://github.com/BigBirdReturns/clifford-number" target="_blank" rel="noreferrer" data-i18n="source">Source</a>
+        <details class="preferences-menu" id="preferences-menu">
+          <summary><span aria-hidden="true">Aa</span><span data-i18n="view">View</span></summary>
+          <div class="preferences-panel" role="group" aria-labelledby="preferences-title">
+            <strong id="preferences-title" data-i18n="preferences">Display &amp; language</strong>
+            <label><span data-i18n="theme">Theme</span>
+              <select id="theme-select">
+                <option value="system" data-i18n="themeSystem">System</option>
+                <option value="light" data-i18n="themeLight">Light</option>
+                <option value="dark" data-i18n="themeDark">Dark</option>
+              </select>
+            </label>
+            <label><span data-i18n="language">Language</span>
+              <select id="language-select">
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+              </select>
+            </label>
+            <label><span data-i18n="reading">Reading size</span>
+              <select id="reading-select">
+                <option value="standard" data-i18n="readingStandard">Standard</option>
+                <option value="large" data-i18n="readingLarge">Large / squint test</option>
+              </select>
+            </label>
+            <label><span data-i18n="density">Density</span>
+              <select id="density-select">
+                <option value="comfortable" data-i18n="densityComfortable">Comfortable</option>
+                <option value="compact" data-i18n="densityCompact">Compact</option>
+              </select>
+            </label>
+            <label class="check-control"><input id="contrast-toggle" type="checkbox"> <span data-i18n="highContrast">High contrast</span></label>
+            <button id="preferences-reset" type="button" data-i18n="reset">Reset view</button>
+            <small data-i18n="interfaceNote">Menus and controls are hand-translated. Evidence prose and source titles stay in their recorded language; use your browser’s “Translate page” for those or any other language.</small>
+          </div>
+        </details>
         <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark theme">
           <span class="theme-icon" aria-hidden="true">◐</span><span class="theme-label">Dark</span>
         </button>
@@ -45,20 +98,20 @@
 
     <div class="hero shell-wide">
       <div class="hero-copy">
-        <p class="eyebrow"><span>Public-role connections</span><span class="eyebrow-rule" aria-hidden="true"></span><span>With receipts</span></p>
+        <p class="eyebrow"><span data-i18n="publicRole">Public decisions to outcomes</span><span class="eyebrow-rule" aria-hidden="true"></span><span data-i18n="withReceipts">With receipts</span></p>
         <h1>The Clifford<br><em>Number.</em></h1>
-        <p class="hero-dek">Check how public actors are documented to connect through named, bounded surfaces—then inspect the dates, roles, and receipts behind every step.</p>
+        <p class="hero-dek" data-i18n="heroDek">Trace documented public decisions through people, programs, money, and companies—then inspect what happened later, with every step timestamped and receipted.</p>
         <div class="hero-actions">
-          <button class="primary-action" id="hero-check" type="button">Check a connection <span aria-hidden="true">→</span></button>
-          <a class="text-action" href="#explorer">Explore the topology <span aria-hidden="true">↓</span></a>
+          <button class="primary-action" id="hero-check" type="button"><span data-i18n="checkConnection">Check a connection</span> <span aria-hidden="true">→</span></button>
+          <a class="text-action" href="#explorer"><span data-i18n="exploreTopology">Explore the topology</span> <span aria-hidden="true">↓</span></a>
         </div>
-        <p class="inference-boundary"><strong>Connections you can check. Inferences we won’t make.</strong> Shared context is not influence, coordination, agreement, or wrongdoing.</p>
+        <p class="inference-boundary"><strong data-i18n="boundaryStrong">A timeline is not a causal verdict.</strong> <span data-i18n="boundaryText">The instrument distinguishes source-explicit causation from attribution, temporal association, and causation not established.</span></p>
       </div>
 
       <figure class="topology-card" aria-labelledby="topology-title topology-caption">
         <div class="topology-toolbar">
-          <span id="topology-title"><span class="status-pulse" aria-hidden="true"></span>Live topology</span>
-          <span id="topology-edge-count">Loading graph</span>
+          <span id="topology-title"><span class="status-pulse" aria-hidden="true"></span><span data-i18n="liveTopology">Live topology</span></span>
+          <span id="topology-edge-count" data-i18n="loadingGraph">Loading graph</span>
         </div>
         <svg id="hero-network" viewBox="0 0 620 390" role="img" aria-label="A sample actor-to-surface route from the current corpus">
           <defs>
@@ -79,36 +132,47 @@
           </g>
         </svg>
         <figcaption id="topology-caption">
-          <span class="topology-legend"><i class="legend-actor"></i>Actor</span>
-          <span class="topology-legend"><i class="legend-surface"></i>Bounded surface</span>
-          <span class="topology-legend"><i class="legend-anchor"></i>Anchor</span>
+          <span class="topology-legend"><i class="legend-actor"></i><span data-i18n="actor">Actor</span></span>
+          <span class="topology-legend"><i class="legend-surface"></i><span data-i18n="boundedSurface">Bounded surface</span></span>
+          <span class="topology-legend"><i class="legend-anchor"></i><span data-i18n="anchor">Anchor</span></span>
         </figcaption>
       </figure>
     </div>
   </header>
 
   <main id="main-content" class="shell-wide">
+    <section class="purpose-map" aria-labelledby="purpose-title">
+      <div class="purpose-heading">
+        <p class="section-kicker" data-i18n="purposeKicker">What this instrument traces</p>
+        <h2 id="purpose-title" data-i18n="purposeTitle">From a public decision to its later consequences.</h2>
+      </div>
+      <div class="purpose-steps">
+        <article><span>01</span><h3 data-i18n="purposeSurfaceTitle">Decision surfaces</h3><p data-i18n="purposeSurfaceText">Who authored, commissioned, accepted, funded, advised, or joined a bounded public process.</p></article>
+        <article><span>02</span><h3 data-i18n="purposeFlowTitle">Programs and flows</h3><p data-i18n="purposeFlowText">How commitments, contracts, capital, public roles, and claimed capabilities move across time.</p></article>
+        <article><span>03</span><h3 data-i18n="purposeOutcomeTitle">Later outcomes</h3><p data-i18n="purposeOutcomeText">What happened later, which receipts support it, and whether a causal link is established or merely temporal.</p></article>
+      </div>
+    </section>
     <div id="app-status" class="app-status" role="status">
       <span class="loading-mark" aria-hidden="true"></span>
-      <span>Compiling the public view…</span>
+      <span data-i18n="compiling">Compiling the public view…</span>
     </div>
 
     <section class="explorer" id="explorer" aria-labelledby="explorer-title">
       <div class="section-heading">
         <div>
-          <p class="section-kicker">Interrogate the corpus</p>
-          <h2 id="explorer-title">Follow the evidence.</h2>
+          <p class="section-kicker" data-i18n="interrogate">Interrogate the corpus</p>
+          <h2 id="explorer-title" data-i18n="followEvidence">Follow the evidence.</h2>
         </div>
-        <p>Search the topology or open the newsroom desk for a two-person, date-aware verification.</p>
+        <p data-i18n="explorerIntro">Search people, organizations, bounded surfaces, and compiled cases—or verify a two-person connection as of a specific date.</p>
       </div>
 
       <nav class="view-nav" aria-label="Explorer views">
         <div class="tabs" role="tablist" aria-label="Choose a view">
           <button class="tab active" id="tab-map" data-view="map" role="tab" aria-selected="true" aria-controls="view-map" tabindex="0">
-            <span class="tab-index" aria-hidden="true">01</span>Topology explorer
+            <span class="tab-index" aria-hidden="true">01</span><span data-i18n="topologyExplorer">Topology explorer</span>
           </button>
           <button class="tab" id="tab-desk" data-view="desk" role="tab" aria-selected="false" aria-controls="view-desk" tabindex="-1">
-            <span class="tab-index" aria-hidden="true">02</span>Connection checker
+            <span class="tab-index" aria-hidden="true">02</span><span data-i18n="connectionChecker">Connection checker</span>
           </button>
         </div>
       </nav>
@@ -117,15 +181,15 @@
       <div id="view-map" role="tabpanel" aria-labelledby="tab-map">
         <section class="search-card search-card--hero" aria-labelledby="search-label">
           <div class="search-label-row">
-            <label id="search-label" for="search">Search actor, organization, or surface</label>
-            <span class="key-hint" aria-hidden="true">Press / to focus</span>
+            <label id="search-label" for="search" data-i18n="searchLabel">Search person, organization, surface, or case</label>
+            <span class="key-hint" aria-hidden="true" data-i18n="pressFocus">Press / to focus</span>
           </div>
           <div class="search-input-wrap">
             <span class="search-icon" aria-hidden="true">⌕</span>
-            <input id="search" type="search" role="combobox" placeholder="Try Ben Warner, Electric Twin, Simon Case…" autocomplete="off" aria-controls="results" aria-autocomplete="list" aria-expanded="false" aria-describedby="search-help">
+            <input id="search" type="search" role="combobox" placeholder="Try Ben Warner, Electric Twin, Simon Case…" data-i18n-placeholder="searchPlaceholder" autocomplete="off" aria-controls="results" aria-autocomplete="list" aria-expanded="false" aria-describedby="search-help">
             <span class="search-shortcut" aria-hidden="true">/</span>
           </div>
-          <p class="try-row" id="search-help">Start with: <span id="try-examples"></span></p>
+          <p class="try-row" id="search-help"><span data-i18n="startWith">Start with:</span> <span id="try-examples"></span> <button id="browse-all" type="button" data-i18n="browseIndex">Browse index</button></p>
           <div id="results" class="results search-results" role="listbox" aria-label="Search results" aria-live="polite"></div>
         </section>
 
@@ -137,30 +201,31 @@
         <section class="search-card desk-card" aria-labelledby="desk-title">
           <div class="desk-intro">
             <div>
-              <p class="section-kicker">Newsroom mode</p>
-              <h3 id="desk-title">Check a connection before it prints.</h3>
+              <p class="section-kicker" data-i18n="newsroomMode">Newsroom mode</p>
+              <h3 id="desk-title" data-i18n="deskTitle">Check a connection before it prints.</h3>
             </div>
-            <span class="desk-rule">Every step must carry a receipt.</span>
+            <span class="desk-rule" data-i18n="deskRule">Every step must carry a receipt.</span>
           </div>
           <div class="desk-row">
             <div class="desk-field">
-              <label for="desk-from">From</label>
+              <label for="desk-from" data-i18n="from">From</label>
               <input id="desk-from" list="desk-actors" placeholder="e.g. Fiona Hill" autocomplete="off">
             </div>
             <span class="desk-arrow" aria-hidden="true">→</span>
             <div class="desk-field">
-              <label for="desk-to">To</label>
-              <input id="desk-to" list="desk-actors" placeholder="Blank defaults to Matt Clifford" autocomplete="off">
+              <label for="desk-to" data-i18n="to">To</label>
+              <input id="desk-to" list="desk-actors" placeholder="Matt Clifford (default), or any public actor" autocomplete="off">
             </div>
             <div class="desk-field desk-field--date">
-              <label for="desk-asof">As of <span>(optional)</span></label>
+              <label for="desk-asof"><span data-i18n="asOf">As of</span> <span data-i18n="optional">(optional)</span></label>
               <input id="desk-asof" inputmode="numeric" placeholder="2020 or 2025-01" autocomplete="off" aria-describedby="desk-date-help">
             </div>
-            <button id="desk-check" type="button">Check path <span aria-hidden="true">→</span></button>
+            <button id="desk-check" type="button"><span data-i18n="checkPath">Check path</span> <span aria-hidden="true">→</span></button>
           </div>
           <datalist id="desk-actors"></datalist>
-          <p class="try-row">Try a verified example: <span id="desk-examples"></span></p>
-          <p class="meta" id="desk-date-help">The checker only asserts a connection where two people share a bounded, receipted surface during overlapping documented windows. Listed, registered, and attended remain separate states.</p>
+          <p class="try-row"><span data-i18n="verifiedExample">Try a verified example:</span> <span id="desk-examples"></span></p>
+          <p class="meta" data-i18n="deskScope">Use any two people in the corpus. Leave “To” blank only when you want the classic Clifford Number to Matt Clifford.</p>
+          <p class="meta" id="desk-date-help" data-i18n="deskHelp">The checker only asserts a connection where two people share a bounded, receipted surface during overlapping documented windows. Listed, registered, and attended remain separate states.</p>
         </section>
         <section id="desk-out" class="detail"></section>
       </div>
@@ -174,19 +239,19 @@
         <p class="footer-claim">No edge without a receipt.<br>No dated claim without overlap.</p>
       </div>
       <div>
-        <h2>Understand</h2>
+        <h2 data-i18n="understand">Understand</h2>
         <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/docs/methodology.md" target="_blank" rel="noreferrer">Methodology</a>
         <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/docs/definitions.md" target="_blank" rel="noreferrer">Definitions</a>
         <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/docs/redaction-policy.md" target="_blank" rel="noreferrer">Redaction policy</a>
       </div>
       <div>
-        <h2>Verify</h2>
+        <h2 data-i18n="verify">Verify</h2>
         <a href="https://github.com/BigBirdReturns/clifford-number/tree/main/receipts" target="_blank" rel="noreferrer">Receipt archive</a>
         <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/BUILD-INSTRUCTIONS.md" target="_blank" rel="noreferrer">Build constitution</a>
         <a href="https://github.com/BigBirdReturns/clifford-number" target="_blank" rel="noreferrer">Source on GitHub</a>
       </div>
       <div>
-        <h2>Contribute</h2>
+        <h2 data-i18n="contribute">Contribute</h2>
         <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/CONTRIBUTING.md" target="_blank" rel="noreferrer">Submit a surface</a>
         <a href="https://github.com/BigBirdReturns/clifford-number/issues" target="_blank" rel="noreferrer">Corrections &amp; issues</a>
         <p class="footer-meta"><span id="footer-corpus-meta">Current public corpus</span><br>Static, inspectable, MIT licensed.</p>

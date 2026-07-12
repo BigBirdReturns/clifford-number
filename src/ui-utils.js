@@ -31,3 +31,56 @@ export function decodeHashPart(value) {
   if (value === undefined) return undefined;
   try { return decodeURIComponent(value); } catch { return null; }
 }
+
+function citationKey(value) {
+  const key = String(value ?? 'clifford-number')
+    .normalize('NFKD')
+    .replace(/[^\w\s-]/g, '')
+    .trim()
+    .replace(/[\s_]+/g, '-')
+    .toLowerCase();
+  return key || 'clifford-number';
+}
+
+/** Format a stable citation for a client-side route. Receipt labels and URLs are
+ * carried through as supporting sources; no new factual prose is invented. */
+export function formatCitation({ title, url, accessed, receipts = [] }, format = 'plain') {
+  const safeTitle = String(title || 'The Clifford Number').trim();
+  const safeUrl = String(url || '').trim();
+  const safeDate = /^\d{4}-\d{2}-\d{2}$/.test(String(accessed || ''))
+    ? String(accessed)
+    : new Date().toISOString().slice(0, 10);
+  const safeReceipts = receipts.map(receipt => ({
+    id: String(receipt?.id || receipt?.receipt_id || '').trim(),
+    label: String(receipt?.label || receipt?.id || receipt?.receipt_id || '').trim(),
+    url: String(receipt?.url || '').trim() || null,
+    archive_url: String(receipt?.archive_url || '').trim() || null
+  })).filter(receipt => receipt.id || receipt.label);
+  const sourceText = safeReceipts.length
+    ? ` Supporting receipts: ${safeReceipts.map(receipt => receipt.url ? `${receipt.label} (${receipt.url})` : receipt.label).join('; ')}.`
+    : '';
+
+  if (format === 'markdown') {
+    const sources = safeReceipts.length
+      ? `\n\nSupporting receipts:\n${safeReceipts.map(receipt => `- ${receipt.url ? `[${receipt.label}](${receipt.url})` : receipt.label}`).join('\n')}`
+      : '';
+    return `The Clifford Number. “${safeTitle}.” Accessed ${safeDate}. [${safeUrl}](${safeUrl}).${sources}`;
+  }
+  if (format === 'bibtex') {
+    const year = safeDate.slice(0, 4);
+    const key = `${citationKey(safeTitle).slice(0, 36)}-${year}`;
+    const escapedTitle = safeTitle.replace(/[{}]/g, '');
+    return `@misc{${key},\n  author = {{The Clifford Number}},\n  title = {${escapedTitle}},\n  year = {${year}},\n  url = {${safeUrl}},\n  note = {Accessed ${safeDate}; ${safeReceipts.length} supporting receipt${safeReceipts.length === 1 ? '' : 's'}}\n}`;
+  }
+  if (format === 'json') {
+    return JSON.stringify({
+      type: 'webpage',
+      publisher: 'The Clifford Number',
+      title: safeTitle,
+      url: safeUrl,
+      accessed: safeDate,
+      receipts: safeReceipts
+    }, null, 2);
+  }
+  return `The Clifford Number. “${safeTitle}.” Accessed ${safeDate}. ${safeUrl}.${sourceText}`;
+}
