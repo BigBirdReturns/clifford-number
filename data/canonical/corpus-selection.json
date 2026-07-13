@@ -1,0 +1,226 @@
+{
+  "schema_version": "corpus-selection@1",
+  "invariant": {
+    "authority": "BUILD-INSTRUCTIONS.md#1-the-constitution-never-changes",
+    "validator": "tools/validate-corpus-selection.mjs",
+    "forbidden_selection_bases": [
+      "party_or_ideology",
+      "nationality_or_protected_identity",
+      "fame_or_dislike",
+      "unsupported_suspicion",
+      "anticipated_news_value_alone"
+    ],
+    "required_rule": "An analogous actor or institution must enter under the same sourced facts regardless of party, ideology, nationality, or affiliation."
+  },
+  "lanes": [
+    {
+      "lane_id": "ai-policy-public-private-topology",
+      "label": "UK/US AI-policy public-private topology",
+      "lane_kind": "case",
+      "status": "active",
+      "public_interest_question": "Which documented bounded surfaces connect public policy formation, implementation authority, technology vendors, and capital actors across the AI-policy corridor?",
+      "selection_unit": "receipt-backed public-role participation on a bounded policy, advisory, capital, procurement, or convening surface",
+      "selection_universe": "all actors and institutions recoverable from the declared case sources under the same surface and receipt rules",
+      "inclusion_rules": [
+        "public actor or institution appears on a dated bounded surface relevant to the case question",
+        "the source supports a typed public-role, participation, capital, policy, or procurement predicate"
+      ],
+      "exclusion_rules": [
+        "identity-adjacent traits and private-life facts",
+        "name-only proximity without a bounded predicate or receipt"
+      ],
+      "comparison": {
+        "method": "matched_comparator",
+        "comparator_class": "US defense-tech public-private topology under the NatSec100 case",
+        "symmetry_rule": "Apply the same bounded-surface, temporal, density, receipt, and public-role criteria across jurisdictions and institutions."
+      },
+      "sources": [
+        { "source_id": "canonical-ledgers", "source_class": "receipt_backed_case_ledgers", "url": "data/ledger/" }
+      ],
+      "privacy": { "risk": "low", "controls": ["public_role_only", "no_protected_trait_aggregation"] },
+      "replicability": { "public_reproducible": true, "counts_toward_public_coverage": true, "commands": ["npm run release:check"] },
+      "review": { "last_reviewed_at": "2026-07-13", "review_by": "2027-01-13", "sunset_condition": "Suspend new ingestion if the same rules cannot be applied to the declared comparator case." },
+      "graph_effect": "none"
+    },
+    {
+      "lane_id": "us-defense-natsec100",
+      "label": "US defense-tech NatSec100 corridor",
+      "lane_kind": "case",
+      "status": "staged",
+      "public_interest_question": "Which documented capital, ranking, procurement, advisory, and contracting surfaces convert venture-backed defense companies into public-sector implementation capacity?",
+      "selection_unit": "company-year or actor participation recoverable from the complete declared NatSec100 editions and bounded companion sources",
+      "selection_universe": "every recoverable company in the 2023 through 2026 NatSec100 editions plus actors and institutions introduced by declared receipts",
+      "inclusion_rules": [
+        "company appears in a declared NatSec100 edition or a receipt-backed bounded companion surface",
+        "actor or institution has a typed role in a selected company, capital vehicle, ranking, advisory body, contract, or procurement event"
+      ],
+      "exclusion_rules": [
+        "company selected only because it overlaps the AI-policy case",
+        "ranking inclusion treated as technical merit, coordination, influence, or wrongdoing"
+      ],
+      "comparison": {
+        "method": "source_complete",
+        "comparator_class": "all recoverable rows in each declared edition, including exits and unresolved 2025 rows",
+        "symmetry_rule": "Ingest full edition-defined universes before examining cross-case overlap, and preserve all non-matches and unresolved rows."
+      },
+      "sources": [
+        { "source_id": "natsec100-intake", "source_class": "staged_receipt_backed_case_data", "url": "data/intake/natsec100-pathways/" }
+      ],
+      "privacy": { "risk": "low", "controls": ["public_companies_and_roles_only", "no_identity_adjacent_scoring"] },
+      "replicability": { "public_reproducible": true, "counts_toward_public_coverage": true, "commands": ["npm run release:check"] },
+      "review": { "last_reviewed_at": "2026-07-13", "review_by": "2027-01-13", "sunset_condition": "Remain staged until AXM identity reconciliation and the ledger-quartet acceptance tests pass." },
+      "graph_effect": "none"
+    },
+    {
+      "lane_id": "official-record-cross-cutting",
+      "label": "Cross-cutting official-record crawl",
+      "lane_kind": "source_plane",
+      "status": "active",
+      "public_interest_question": "Which configured public records contain dated transactions, filings, awards, notices, or procurement observations relevant to declared case universes?",
+      "selection_unit": "record returned by a configured source adapter and query term",
+      "selection_universe": "all results returned by every enabled source and declared query window, including held and rejected observations",
+      "inclusion_rules": [
+        "source adapter and query term are checked in",
+        "every returned record is counted as accepted, held, rejected, or failed coverage"
+      ],
+      "exclusion_rules": [
+        "silent dropping of adapter failures or rejected results",
+        "treating a zero-result or failed query as evidence of absence"
+      ],
+      "comparison": {
+        "method": "rule_based_universe",
+        "comparator_class": "complete configured query/source matrix",
+        "symmetry_rule": "The adapter applies the same query, date, relevance, privacy, and rejection rules to every result in its configured universe."
+      },
+      "sources": [
+        { "source_id": "official-crawl-config", "source_class": "configured_public_api_plane", "url": "data/crawl/sources.json" }
+      ],
+      "privacy": { "risk": "medium", "controls": ["privacy_guard_rejections", "public_record_projection", "no_contact_or_address_republication"] },
+      "replicability": { "public_reproducible": true, "counts_toward_public_coverage": true, "commands": ["npm run crawl:official", "npm run validate:crawl"] },
+      "review": { "last_reviewed_at": "2026-07-13", "review_by": "2027-01-13", "sunset_condition": "Disable an adapter that cannot expose its query universe, rejection ledger, or coverage state." },
+      "graph_effect": "none"
+    },
+    {
+      "lane_id": "linkedin-private-attention",
+      "label": "Private retrospective LinkedIn attention",
+      "lane_kind": "support_only",
+      "status": "support_only",
+      "public_interest_question": "Which previously preserved public-profile or attention artifacts should be resolved against public sources without treating private attention history as public evidence?",
+      "selection_unit": "one private member-data observation or preserved profile capture",
+      "selection_universe": "the local archive supplied by its owner; not a population sample or public corpus",
+      "inclusion_rules": [
+        "owner-supplied observation has a stable local identifier and timestamp",
+        "public assertions require a separate public receipt"
+      ],
+      "exclusion_rules": [
+        "private query prose or sensitive activity copied into public artifacts",
+        "private observation counted as public corpus coverage or relationship evidence"
+      ],
+      "comparison": {
+        "method": "support_only",
+        "comparator_class": "not applicable; egocentric archive is not an inferential population",
+        "symmetry_rule": "The archive may prioritize public-source review but cannot select public claims, establish absence, or count toward public progress."
+      },
+      "sources": [
+        { "source_id": "linkedin-local", "source_class": "private_local_archive", "url": "data/local/" }
+      ],
+      "privacy": { "risk": "high", "controls": ["gitignored", "private_intake", "no_query_prose_in_fanout", "public_receipt_required_for_assertion"] },
+      "replicability": { "public_reproducible": false, "counts_toward_public_coverage": false, "commands": [] },
+      "review": { "last_reviewed_at": "2026-07-13", "review_by": "2027-01-13", "sunset_condition": "Delete or suspend the lane if privacy minimization or the separation from public evidence fails." },
+      "graph_effect": "none"
+    },
+    {
+      "lane_id": "epstein-public-corpus",
+      "label": "Epstein public institutional and financial corpus",
+      "lane_kind": "corpus",
+      "status": "proposed",
+      "seed_topics": ["epstein"],
+      "public_interest_question": "How do officially published case, finance, institutional, travel, and justice records document institutional handling, capital flows, and public-role crossings without converting mention or proximity into culpability?",
+      "selection_unit": "one source-addressable artifact or typed observation from the declared public corpus",
+      "selection_universe": "the complete declared DOJ and congressional release indexes plus bounded institutional and regulatory source families",
+      "inclusion_rules": [
+        "artifact is enumerated from a declared public index or bounded institutional source",
+        "every person or institution is processed under the same artifact-type predicate rules"
+      ],
+      "exclusion_rules": [
+        "celebrity-first name selection without source-complete artifact processing",
+        "victim-identifying, intimate, or inadvertently exposed private data"
+      ],
+      "comparison": {
+        "method": "source_complete",
+        "comparator_class": "all public-interest actors and institutions encountered in the declared artifact universe",
+        "symmetry_rule": "Apply identical contact, travel, communication, meeting, payment, allegation, and disposition predicates regardless of party, status, or prior suspicion."
+      },
+      "sources": [
+        { "source_id": "doj-epstein-library", "source_class": "official_government_corpus", "url": "https://www.justice.gov/epstein/doj-disclosures" }
+      ],
+      "privacy": { "risk": "high", "controls": ["victim_nondeanonymization", "pii_quarantine", "artifact_level_redaction", "public_interest_minimization"] },
+      "replicability": { "public_reproducible": true, "counts_toward_public_coverage": true, "commands": ["npm run fanout"] },
+      "review": { "last_reviewed_at": "2026-07-13", "review_by": "2026-10-13", "sunset_condition": "Do not activate until privacy/redaction fixtures and source-complete corpus hashing exist." },
+      "graph_effect": "none"
+    },
+    {
+      "lane_id": "trump-office-business-capital",
+      "label": "Officeholder-business-capital crossings: Trump reference case",
+      "lane_kind": "corpus",
+      "status": "proposed",
+      "seed_topics": ["trump"],
+      "public_interest_question": "Which official filings and transactions document crossings among an officeholder, campaign committees, trusts, private businesses, public companies, properties, and public policy?",
+      "selection_unit": "one identifier-resolved public filing, transaction, legal disposition, or time-bounded office/business role",
+      "selection_universe": "the declared candidate, committee, trust, entity, issuer, property, court, spending, and policy identifiers plus all counterparties returned under fixed queries",
+      "inclusion_rules": [
+        "record matches a declared official identifier or an independently resolved counterparty",
+        "the same predicate and threshold would include any analogous officeholder or entity"
+      ],
+      "exclusion_rules": [
+        "substring matching on a famous surname",
+        "selection based on party, ideology, allegation volume, or expected scandal value"
+      ],
+      "comparison": {
+        "method": "matched_comparator",
+        "comparator_class": "officeholders whose disclosed private interests intersect campaign, contracting, property, securities, or policy records under the same threshold",
+        "symmetry_rule": "Any officeholder meeting the same identifier-resolved public/private crossing rule earns the same lane treatment regardless of party or ideology."
+      },
+      "sources": [
+        { "source_id": "openfec", "source_class": "official_campaign_finance_registry", "url": "https://api.open.fec.gov/developers/" },
+        { "source_id": "usaspending", "source_class": "official_spending_api", "url": "https://api.usaspending.gov/docs/" },
+        { "source_id": "sec-edgar", "source_class": "official_securities_api", "url": "https://www.sec.gov/search-filings/edgar-application-programming-interfaces" }
+      ],
+      "privacy": { "risk": "medium", "controls": ["public_entities_and_roles_only", "no_donor_address_republication", "defendant_specific_legal_status"] },
+      "replicability": { "public_reproducible": true, "counts_toward_public_coverage": true, "commands": ["npm run fanout"] },
+      "review": { "last_reviewed_at": "2026-07-13", "review_by": "2026-10-13", "sunset_condition": "Do not activate without a checked-in comparator rule and the missing OpenFEC/entity-resolution adapter." },
+      "graph_effect": "none"
+    },
+    {
+      "lane_id": "panama-offshore-service-providers",
+      "label": "Panama Papers offshore service-provider topology",
+      "lane_kind": "corpus",
+      "status": "proposed",
+      "seed_topics": ["panama-papers"],
+      "public_interest_question": "Which source-complete offshore entities, intermediaries, registered agents, and official registry records create identifier-valid public-authority or capital crossings?",
+      "selection_unit": "one ICIJ node or relationship retained in its source-dataset context and independently validated where required",
+      "selection_universe": "the full declared Panama Papers dataset snapshot, beginning with service-provider and address hubs rather than a famous-name list",
+      "inclusion_rules": [
+        "all records in the frozen dataset snapshot are counted before person-level filtering",
+        "person or public-authority joins require official identifiers or at least two independent lawful attributes"
+      ],
+      "exclusion_rules": [
+        "celebrity-name search as the ingestion universe",
+        "offshore appearance, nominee role, or shared address treated as illegality"
+      ],
+      "comparison": {
+        "method": "source_complete",
+        "comparator_class": "all entities and service-provider relationships in the frozen Panama Papers snapshot",
+        "symmetry_rule": "Rank and validate hubs using the same degree, jurisdiction, temporal, registry, and role rules before inspecting named public actors."
+      },
+      "sources": [
+        { "source_id": "icij-offshore-leaks", "source_class": "investigative_graph_dataset", "url": "https://offshoreleaks.icij.org/pages/database" }
+      ],
+      "privacy": { "risk": "high", "controls": ["public_database_fields_only", "no_raw_leak_pii", "registry_validation", "minimum_public_interest_predicate"] },
+      "replicability": { "public_reproducible": true, "counts_toward_public_coverage": true, "commands": ["npm run fanout"] },
+      "review": { "last_reviewed_at": "2026-07-13", "review_by": "2026-10-13", "sunset_condition": "Do not activate until the snapshot, license, hashes, importer, and privacy fixtures are checked in." },
+      "graph_effect": "none"
+    }
+  ]
+}
+
