@@ -29,7 +29,7 @@ const userAgent = process.env.CRAWL_USER_AGENT ?? 'clifford-number/0.3 OpenFEC S
 if (!Number.isInteger(perPage) || perPage < 1 || perPage > 100) throw new Error('--per-page must be an integer from 1 through 100');
 if (!Number.isInteger(maxPages) || maxPages < 1) throw new Error('--max-pages must be a positive integer');
 if (!apiKey) {
-  console.error('OpenFEC Schedule B intake blocked: set FEC_API_KEY for a reproducible run, or pass --allow-demo-key for a non-release trial.');
+  console.error('OpenFEC API route unavailable: set FEC_API_KEY for this paginated route, pass --allow-demo-key for a non-release trial, or use npm run ingest:fec-bulk-disbursements with the official no-key bulk files.');
   process.exit(2);
 }
 

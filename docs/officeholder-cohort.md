@@ -1,8 +1,9 @@
 # Presidential officeholder cohort
 
 Status: proposed, source-complete selection universe with source-resolved FEC
-  candidate and authorized presidential campaign-committee identifiers; live transaction ingestion remains
-blocked. This document replaces the target-first construction previously used
+candidate and authorized presidential campaign-committee identifiers. Discovery
+and intake are active; review and source limitations label the resulting rows
+instead of stopping the work. This document replaces the target-first construction previously used
 by the `trump-office-business-capital` discovery lane.
 
 ## Verdict on the prior universe
@@ -71,7 +72,7 @@ payment, equity, chronology, or an outlier into illegality, self-dealing,
 causation, motive, or policy exchange without the additional evidence and legal
 status those claims require.
 
-## Honest blockers
+## Honest state and active routes
 
 - The official FEC candidate profiles now source-resolve all eight cohort
   members to one presidential candidate ID each and enumerate 37 authorized
@@ -79,10 +80,12 @@ status those claims require.
   `data/research/openfec-presidential-identifiers.json`; it remains
   `source_resolved_pending_canonical_promotion` and has no graph effect.
 - OpenFEC is live and documents programmatic access, but its public documentation
-  distinguishes `DEMO_KEY` from a provisioned key. No cohort-wide Schedule B
-  transaction query has run with a reproducible credential, so transaction
-  coverage remains `0 / 37` committees. Sponsored leadership PACs and joint
-  fundraising committees are explicitly outside this first bounded subset.
+  distinguishes `DEMO_KEY` from a provisioned key. No cohort-wide API Schedule B
+  transaction query has run, so API coverage remains `0 / 37` committees.
+  This does not block intake: the FEC's official no-key database dumps contain
+  Schedule A, B, and E plus committee history from 1975 forward, and official
+  no-key operating-expenditure cycle files provide a narrower route from 2003
+  forward. The API is an efficient paginated route, not the evidence gate.
 - Electronic campaign-finance, disclosure, spending, registry, and policy
   coverage attenuates for earlier administrations. A modern member's richer
   digital footprint cannot be ranked against an older member without a
@@ -93,11 +96,35 @@ status those claims require.
   anchor the Schedule B adapter; canonical identity and beneficial-interest
   entity resolution still do not exist.
 - A genuinely independent challenger has not reviewed the replacement boundary.
+  That keeps the lane `pending_second_party` and prevents it from being called
+  independently cleared. It does not prevent source discovery, preservation,
+  extraction, rejected matches, nulls, or analysis from being recorded with
+  their actual review status.
+
+The source-route matrix at
+`data/research/presidential-disclosure-source-coverage.json` applies four
+official source families across all eight members (32 explicit member/source
+cells). It records the FEC no-key routes, OGE's online and retention windows,
+and NARA archive routing. A missing current OGE record is therefore preserved
+as a retention or archive-search state, never silently converted into “no
+interest existed.”
+
+The first no-key live acquisition is preserved at
+`data/research/fec-bulk-oppexp-2004-manifest.json`. The official 2004 file was
+24,734,364 bytes compressed and 168,173,606 bytes extracted; the extracted file
+hash is pinned. A complete scan of 954,706 source rows retained 27,862 reported
+rows from six George W. Bush committees. Of those rows, 26,115 carry amendment
+indicator `A`, 1,746 `N`, and one `T`, so the system explicitly refuses to call
+27,862 a unique-payment count. The matrix still reports zero normalized
+beneficial-interest rows and zero crossings.
 
 Accordingly, the design layer is complete—eight members and five predicates—and
 the official identifier spine is present—eight candidate IDs and 37 authorized
-committee IDs. Live Schedule B transaction queries and crossing matches remain
-zero. Identifiers do not narrate transaction ingestion.
+committee IDs. API Schedule B queries remain zero, but no-key bulk transaction
+intake is now nonzero: one cycle, six committees, 27,862 reported rows before
+amendment resolution. Normalized disclosure rows and crossing matches remain
+zero. Identifiers and source availability do not narrate beneficial-interest
+ingestion.
 
 Run the live candidate search with a provisioned key:
 
@@ -139,3 +166,14 @@ becomes member-specific or target-shaped, the named discovery seed gains
 selection power, AI assistance is represented as independent clearance,
 historical coverage or Schedule B credential gaps disappear, or the 8/37
 identifier spine is narrated as live transaction ingestion.
+
+The disclosure source gate is separate and executable:
+
+```bash
+npm run validate:disclosures
+```
+
+It fails if either pending review or a missing API key is rewritten as a reason
+to stop discovery, if any source family silently drops a cohort member, if an
+invalid coverage state appears, or if planned availability is narrated as
+ingested documents or crossings.

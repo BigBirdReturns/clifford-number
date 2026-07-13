@@ -37,6 +37,7 @@ export function validateOfficeholderCohort({
   cohortFile = 'data/canonical/us-presidential-officeholder-cohort.json',
   predicatesFile = 'data/canonical/officeholder-crossing-predicates.json',
   identifiersFile = 'data/research/openfec-presidential-identifiers.json',
+  disclosuresFile = 'data/research/presidential-disclosure-source-coverage.json',
   selectionFile = 'data/canonical/corpus-selection.json',
   coverageFile = 'data/research/corpus-coverage.json',
   reviewsFile = 'data/research/selection-adversarial-reviews.json',
@@ -45,10 +46,11 @@ export function validateOfficeholderCohort({
   const cohort = readJson(root, cohortFile, errors);
   const registry = readJson(root, predicatesFile, errors);
   const identifiers = readJson(root, identifiersFile, errors);
+  const disclosures = readJson(root, disclosuresFile, errors);
   const selection = readJson(root, selectionFile, errors);
   const coverage = readJson(root, coverageFile, errors);
   const reviews = readJson(root, reviewsFile, errors);
-  if (!cohort || !registry || !identifiers || !selection || !coverage || !reviews) return { ok: false, errors };
+  if (!cohort || !registry || !identifiers || !disclosures || !selection || !coverage || !reviews) return { ok: false, errors };
 
   if (cohort.schema_version !== 'officeholder-cohort@1'
     || cohort.cohort_id !== 'us-presidents-eiga-era-1979-present'
@@ -127,6 +129,21 @@ export function validateOfficeholderCohort({
     errors.push(issue('dishonest-openfec-identifier-coverage', identifiersFile, 'Identifier coverage must report 8 candidates, 37 authorized presidential campaign committees, zero Schedule B queries, and the public consumption contract.'));
   }
 
+  if (disclosures.schema_version !== 'presidential-disclosure-source-coverage@1'
+    || disclosures.cohort_id !== cohort.cohort_id
+    || disclosures.source_families?.length !== 4
+    || disclosures.coverage?.member_source_cells !== 32
+    || disclosures.coverage?.hashed_source_artifacts !== 1
+    || disclosures.coverage?.bulk_cycle_files_ingested !== 1
+    || disclosures.coverage?.normalized_transaction_records !== 27862
+    || disclosures.coverage?.normalized_beneficial_interest_records !== 0
+    || disclosures.coverage?.crossing_matches !== 0
+    || disclosures.workflow_contract?.discovery_may_continue_with_pending_selection_review !== true
+    || disclosures.workflow_contract?.intake_may_continue_without_openfec_api_key !== true
+    || !disclosures.source_families?.some(source => source.source_id === 'fec-schedule-database-dumps' && source.access_mode === 'public_bulk_download_no_api_key')) {
+    errors.push(issue('invalid-disclosure-source-spine', disclosuresFile, 'The 4-family/32-cell source matrix must preserve the hash-pinned 2004 bulk intake, honest zero beneficial-interest/crossing counts, and keep discovery open when review or an API key is absent.'));
+  }
+
   const lane = selection.lanes?.find(item => item.lane_id === LANE_ID);
   if (!lane || lane.neutral_universe?.cohort_id !== cohort.cohort_id
     || lane.neutral_universe?.predicate_registry_id !== registry.registry_id
@@ -158,12 +175,22 @@ export function validateOfficeholderCohort({
     || metric('source_resolved_candidate_identifiers')?.expected !== 8
     || metric('source_resolved_authorized_committees')?.observed !== 37
     || metric('openfec_schedule_b_queries')?.observed !== 0
-    || metric('openfec_schedule_b_queries')?.expected !== 37) {
+    || metric('openfec_schedule_b_queries')?.expected !== 37
+    || metric('no_key_fec_bulk_source_routes')?.observed !== 2
+    || metric('fec_bulk_cycle_files_ingested')?.observed !== 1
+    || metric('fec_bulk_reported_rows_observed')?.observed !== 27862
+    || metric('fec_bulk_cohort_committees_observed')?.observed !== 6
+    || metric('disclosure_source_member_cells')?.observed !== 32
+    || metric('normalized_beneficial_interest_records')?.observed !== 0) {
     errors.push(issue('dishonest-officeholder-coverage', coverageFile, 'Coverage must distinguish 8 source-resolved candidates and 37 authorized presidential campaign committees from zero Schedule B transaction queries.'));
   }
   const gapIds = new Set((coverageRow?.known_gaps ?? []).map(gap => gap.gap_id));
   for (const required of ['selection-gap-trump-schedule-b-api-key', 'selection-gap-trump-historical-digitization']) {
     if (!gapIds.has(required)) errors.push(issue('missing-officeholder-source-gap', coverageFile, `Required gap ${required} is missing.`));
+  }
+  const credentialGap = coverageRow?.known_gaps?.find(gap => gap.gap_id === 'selection-gap-trump-schedule-b-api-key');
+  if (credentialGap?.status === 'blocking' || !/not a discovery blocker/i.test(credentialGap?.description ?? '')) {
+    errors.push(issue('credential-misrepresented-as-discovery-blocker', coverageFile, 'The missing OpenFEC API key must route intake to official bulk data, not stop discovery.'));
   }
 
   return { ok: errors.length === 0, errors };

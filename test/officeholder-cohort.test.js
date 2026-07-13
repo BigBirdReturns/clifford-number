@@ -9,6 +9,7 @@ const files = {
   cohort: 'data/canonical/us-presidential-officeholder-cohort.json',
   predicates: 'data/canonical/officeholder-crossing-predicates.json',
   identifiers: 'data/research/openfec-presidential-identifiers.json',
+  disclosures: 'data/research/presidential-disclosure-source-coverage.json',
   selection: 'data/canonical/corpus-selection.json',
   coverage: 'data/research/corpus-coverage.json',
   reviews: 'data/research/selection-adversarial-reviews.json',
@@ -66,6 +67,16 @@ assert.equal(validateOfficeholderCohort({ root: sourceRoot }).ok, true);
 {
   const root = fixture({ coverage(value) { const row = value.lanes.find(item => item.lane_id === 'trump-office-business-capital'); row.known_gaps = row.known_gaps.filter(gap => gap.gap_id !== 'selection-gap-trump-historical-digitization'); } });
   assert.ok(codes(validateOfficeholderCohort({ root })).has('missing-officeholder-source-gap'));
+}
+
+{
+  const root = fixture({ disclosures(value) { value.workflow_contract.intake_may_continue_without_openfec_api_key = false; } });
+  assert.ok(codes(validateOfficeholderCohort({ root })).has('invalid-disclosure-source-spine'));
+}
+
+{
+  const root = fixture({ coverage(value) { const row = value.lanes.find(item => item.lane_id === 'trump-office-business-capital'); row.known_gaps.find(gap => gap.gap_id === 'selection-gap-trump-schedule-b-api-key').status = 'blocking'; } });
+  assert.ok(codes(validateOfficeholderCohort({ root })).has('credential-misrepresented-as-discovery-blocker'));
 }
 
 console.log('officeholder-cohort.test.js: OK');
