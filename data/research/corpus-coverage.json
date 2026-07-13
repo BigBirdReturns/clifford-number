@@ -1,0 +1,111 @@
+{
+  "schema_version": "corpus-coverage@1",
+  "captured_at": "2026-07-13",
+  "interpretation": "Coverage records what the reproducible repository has actually observed. Planned seeds, private local mass, and source potential do not count as public ingestion.",
+  "lanes": [
+    {
+      "lane_id": "ai-policy-public-private-topology",
+      "coverage_state": "active_partial",
+      "counts_toward_public_progress": true,
+      "metrics": [
+        { "metric_id": "compiled_actors", "unit": "actors", "expected": null, "observed": 137, "denominator_kind": "open", "publicly_reproducible": true, "source": "build/scores.json" },
+        { "metric_id": "compiled_organizations", "unit": "organizations", "expected": null, "observed": 25, "denominator_kind": "open", "publicly_reproducible": true, "source": "build/scores.json" },
+        { "metric_id": "bounded_surfaces", "unit": "surfaces", "expected": null, "observed": 14, "denominator_kind": "open", "publicly_reproducible": true, "source": "build/surface-graph.json" },
+        { "metric_id": "compiled_hop_edges", "unit": "hop_edges", "expected": null, "observed": 34, "denominator_kind": "open", "publicly_reproducible": true, "source": "build/hop-graph.json" },
+        { "metric_id": "cross_case_joins", "unit": "joins", "expected": null, "observed": 0, "denominator_kind": "open", "publicly_reproducible": true, "source": "Phase 1 acceptance state" }
+      ],
+      "known_gaps": [
+        { "gap_id": "selection-gap-axm-identity-lock", "description": "AXM identity reconciliation remains open, so no cross-case join may ship.", "status": "blocking", "next_action": "Complete BUILD-INSTRUCTIONS 2.1 before cross-case promotion." }
+      ]
+    },
+    {
+      "lane_id": "us-defense-natsec100",
+      "coverage_state": "staged_partial",
+      "counts_toward_public_progress": true,
+      "metrics": [
+        { "metric_id": "edition_company_year_rows", "unit": "company_year_rows", "expected": 400, "observed": 342, "denominator_kind": "exact", "publicly_reproducible": true, "source": "data/intake/natsec100-pathways/chunk1/company_years.jsonl" },
+        { "metric_id": "declared_receipts", "unit": "receipts", "expected": null, "observed": 16, "denominator_kind": "open", "publicly_reproducible": true, "source": "data/intake/natsec100-pathways/chunk1/receipts.jsonl" },
+        { "metric_id": "compiled_case_ledgers", "unit": "ledger_quartets", "expected": 1, "observed": 0, "denominator_kind": "exact", "publicly_reproducible": true, "source": "cases/us-defense-natsec100/" },
+        { "metric_id": "cross_case_joins", "unit": "joins", "expected": null, "observed": 0, "denominator_kind": "open", "publicly_reproducible": true, "source": "Phase 1 acceptance state" }
+      ],
+      "known_gaps": [
+        { "gap_id": "selection-gap-natsec100-2025-roster", "description": "Fifty-eight 2025 company-year rows remain unrecovered because the official roster is image-rendered.", "status": "open", "next_action": "Preserve the partial rows and pursue a bounded image-table recovery pass." },
+        { "gap_id": "selection-gap-natsec100-ledger-quartet", "description": "Staged NatSec100 data has not been converted into the case ledger quartet.", "status": "blocking", "next_action": "Implement BUILD-INSTRUCTIONS 3.1 with chunk-level count fixtures." }
+      ]
+    },
+    {
+      "lane_id": "official-record-cross-cutting",
+      "coverage_state": "active_partial",
+      "counts_toward_public_progress": true,
+      "metrics": [
+        { "metric_id": "configured_sources", "unit": "sources", "expected": 5, "observed": 5, "denominator_kind": "exact", "publicly_reproducible": true, "source": "data/crawl/sources.json" },
+        { "metric_id": "sources_with_ok_status", "unit": "sources", "expected": 5, "observed": 4, "denominator_kind": "exact", "publicly_reproducible": true, "source": "data/crawl/state.json" },
+        { "metric_id": "accepted_candidates", "unit": "records", "expected": null, "observed": 6, "denominator_kind": "open", "publicly_reproducible": true, "source": "data/crawl/candidates.jsonl" },
+        { "metric_id": "held_rejections", "unit": "records", "expected": null, "observed": 61, "denominator_kind": "open", "publicly_reproducible": true, "source": "data/crawl/rejections.jsonl" }
+      ],
+      "known_gaps": [
+        { "gap_id": "selection-gap-sam-credential", "description": "The SAM.gov adapter is configured but not observed because its credential is unavailable.", "status": "open", "next_action": "Run the adapter when the configured credential is available; do not treat the gap as a negative result." }
+      ]
+    },
+    {
+      "lane_id": "linkedin-private-attention",
+      "coverage_state": "private_support_only",
+      "counts_toward_public_progress": false,
+      "metrics": [
+        { "metric_id": "public_reproducible_attention_rows", "unit": "observations", "expected": null, "observed": 0, "denominator_kind": "not_applicable", "publicly_reproducible": true, "source": "public repository" },
+        { "metric_id": "local_private_attention_rows", "unit": "observations", "expected": null, "observed": 12603, "denominator_kind": "open", "publicly_reproducible": false, "counts_toward_public_progress": false, "source": "gitignored data/local snapshot observed 2026-07-13" },
+        { "metric_id": "local_private_profile_captures", "unit": "captures", "expected": null, "observed": 78, "denominator_kind": "open", "publicly_reproducible": false, "counts_toward_public_progress": false, "source": "gitignored data/local snapshot observed 2026-07-13" }
+      ],
+      "known_gaps": [
+        { "gap_id": "selection-gap-linkedin-nonpublic", "description": "The local archive is not publicly reproducible and cannot narrate public corpus progress.", "status": "permanent_boundary", "next_action": "Use only as a private lead queue; resolve every public claim against separate public receipts." }
+      ]
+    },
+    {
+      "lane_id": "epstein-public-corpus",
+      "coverage_state": "proposed_uningested",
+      "counts_toward_public_progress": true,
+      "metrics": [
+        { "metric_id": "estimated_pages", "unit": "pages", "expected": 3500000, "observed": 0, "denominator_kind": "approximate", "publicly_reproducible": true, "source": "DOJ release notice" },
+        { "metric_id": "estimated_videos", "unit": "videos", "expected": 2000, "observed": 0, "denominator_kind": "approximate", "publicly_reproducible": true, "source": "DOJ release notice" },
+        { "metric_id": "estimated_images", "unit": "images", "expected": 180000, "observed": 0, "denominator_kind": "approximate", "publicly_reproducible": true, "source": "DOJ release notice" },
+        { "metric_id": "hashed_artifacts", "unit": "artifacts", "expected": null, "observed": 0, "denominator_kind": "open", "publicly_reproducible": true, "source": "no checked-in corpus manifest" }
+      ],
+      "known_gaps": [
+        { "gap_id": "selection-gap-epstein-manifest", "description": "Zero DOJ or House artifacts have been enumerated, hashed, deduplicated, or assigned artifact-level provenance in the repository.", "status": "blocking", "next_action": "Build a privacy-tested corpus manifest before parsing names or relationships." },
+        { "gap_id": "selection-gap-epstein-privacy-fixtures", "description": "Victim-adjacent redaction and inadvertent-PII quarantine have not been exercised against live corpus material.", "status": "blocking", "next_action": "Add fixtures that fail on victim identifiers and unnecessary private data before activation." }
+      ]
+    },
+    {
+      "lane_id": "trump-office-business-capital",
+      "coverage_state": "proposed_uningested",
+      "counts_toward_public_progress": true,
+      "metrics": [
+        { "metric_id": "bounded_source_queries", "unit": "queries", "expected": 8, "observed": 0, "denominator_kind": "exact", "publicly_reproducible": true, "source": "data/research/public-interest-discovery-seeds.jsonl" },
+        { "metric_id": "required_machine_adapters", "unit": "adapters", "expected": 3, "observed": 1, "denominator_kind": "exact", "publicly_reproducible": true, "source": "OpenFEC, USAspending, and SEC submissions requirements versus data/crawl/sources.json" },
+        { "metric_id": "resolved_mission_entities", "unit": "entities", "expected": null, "observed": 0, "denominator_kind": "open", "publicly_reproducible": true, "source": "canonical registries" },
+        { "metric_id": "receipted_mission_records", "unit": "records", "expected": null, "observed": 0, "denominator_kind": "open", "publicly_reproducible": true, "source": "canonical ledgers" }
+      ],
+      "known_gaps": [
+        { "gap_id": "selection-gap-trump-openfec-adapter", "description": "The repository has no OpenFEC adapter despite the seed pointing to FEC Schedule B data.", "status": "blocking", "next_action": "Implement a source-complete candidate and committee query adapter with stable FEC IDs." },
+        { "gap_id": "selection-gap-trump-entity-resolution", "description": "The person, offices, committees, trust, businesses, properties, issuer, and foundation are not resolved as separate canonical nodes.", "status": "blocking", "next_action": "Check in the neutral officeholder/entity schema and matched-comparator rule before ingestion." },
+        { "gap_id": "selection-gap-trump-sec-adapter", "description": "The live SEC adapter covers Form D searches, not the required issuer submissions and ownership filings.", "status": "open", "next_action": "Add accession-number-based SEC submissions retrieval without treating issuer events as personal conduct." }
+      ]
+    },
+    {
+      "lane_id": "panama-offshore-service-providers",
+      "coverage_state": "proposed_uningested",
+      "counts_toward_public_progress": true,
+      "metrics": [
+        { "metric_id": "estimated_panama_entities", "unit": "entities", "expected": 210000, "observed": 0, "denominator_kind": "approximate", "publicly_reproducible": true, "source": "ICIJ Panama Papers key figures" },
+        { "metric_id": "imported_nodes", "unit": "nodes", "expected": null, "observed": 0, "denominator_kind": "open", "publicly_reproducible": true, "source": "no checked-in ICIJ snapshot" },
+        { "metric_id": "hashed_dataset_snapshots", "unit": "snapshots", "expected": 1, "observed": 0, "denominator_kind": "exact", "publicly_reproducible": true, "source": "no checked-in ICIJ snapshot" },
+        { "metric_id": "official_registry_validations", "unit": "entities", "expected": null, "observed": 0, "denominator_kind": "open", "publicly_reproducible": true, "source": "canonical ledgers" }
+      ],
+      "known_gaps": [
+        { "gap_id": "selection-gap-panama-importer", "description": "No licensed ICIJ dataset snapshot, hash manifest, importer, or node/relationship rows exist in the repository.", "status": "blocking", "next_action": "Freeze a licensed snapshot and test source-complete import before famous-name lookup." },
+        { "gap_id": "selection-gap-panama-privacy-fixtures", "description": "No live fixtures test suppression of leaked passport, account, signature, email, or residential data.", "status": "blocking", "next_action": "Exercise minimum-public-interest projection before activation." }
+      ]
+    }
+  ]
+}
+
