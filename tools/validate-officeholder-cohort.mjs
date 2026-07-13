@@ -180,6 +180,7 @@ export function validateOfficeholderCohort({
     || metric('fec_bulk_cycle_files_ingested')?.observed !== 1
     || metric('fec_bulk_reported_rows_observed')?.observed !== 27862
     || metric('fec_bulk_cohort_committees_observed')?.observed !== 6
+    || metric('fec_bulk_transaction_report_keys_spanning_files')?.observed !== 0
     || metric('disclosure_source_member_cells')?.observed !== 32
     || metric('normalized_beneficial_interest_records')?.observed !== 0) {
     errors.push(issue('dishonest-officeholder-coverage', coverageFile, 'Coverage must distinguish 8 source-resolved candidates and 37 authorized presidential campaign committees from zero Schedule B transaction queries.'));

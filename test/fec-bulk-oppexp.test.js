@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { normalizeBulkOperatingExpenditure, operatingExpenditureUrl, parseOperatingExpenditureLine } from '../tools/lib/fec-bulk-oppexp.mjs';
+import { createReportAmendmentAudit, normalizeBulkOperatingExpenditure, operatingExpenditureUrl, parseOperatingExpenditureLine } from '../tools/lib/fec-bulk-oppexp.mjs';
 
 const line = [
   'C00431445', 'A', '2012', 'M2', '12345678901', '23', '3P', 'SB',
@@ -23,9 +23,21 @@ assert.equal(normalized.disbursement_date, '2012-01-02');
 assert.equal(normalized.disbursement_amount, 123.45);
 assert.equal(normalized.payee_name_as_reported, 'FIXTURE VENDOR LLC');
 assert.equal(normalized.source_line, 42);
+assert.equal(normalized.report_amendment_indicator, 'A');
+assert.equal('amendment_indicator' in normalized, false);
 assert.equal(normalized.graph_effect, 'none');
 for (const excluded of ['CITY', 'STATE', 'ZIP_CODE', 'city', 'state', 'zip_code']) assert.equal(excluded in normalized, false);
 assert.equal(operatingExpenditureUrl(2020), 'https://www.fec.gov/files/bulk-downloads/2020/oppexp20.zip');
 assert.throws(() => operatingExpenditureUrl(2003));
+
+const audit = createReportAmendmentAudit();
+audit.observe({ ...row, AMNDT_IND: 'N', FILE_NUM: '1', TRAN_ID: 'CHAIN-1' });
+audit.observe({ ...row, AMNDT_IND: 'A', FILE_NUM: '2', TRAN_ID: 'CHAIN-1' });
+audit.observe({ ...row, AMNDT_IND: 'A', FILE_NUM: '2', TRAN_ID: 'CHAIN-1' });
+const summary = audit.summarize();
+assert.deepEqual(summary.report_filing_indicator_counts, { A: 2, N: 1, T: 0, other: 0 });
+assert.equal(summary.distinct_transaction_report_keys, 1);
+assert.equal(summary.transaction_report_keys_spanning_multiple_file_numbers, 1);
+assert.equal(summary.duplicate_transaction_report_file_keys, 1);
 
 console.log('fec-bulk-oppexp.test.js: OK');

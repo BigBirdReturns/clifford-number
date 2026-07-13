@@ -2,19 +2,26 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { validateDisclosureSourceCoverage } from './lib/disclosure-spine.mjs';
+import { validateDisclosureSourceCoverage, validateFecBulkManifest } from './lib/disclosure-spine.mjs';
 
 export function validateDisclosureSpine({
   root = process.cwd(),
   matrixFile = 'data/research/presidential-disclosure-source-coverage.json',
+  bulkManifestFile = 'data/research/fec-bulk-oppexp-2004-manifest.json',
 } = {}) {
   try {
     const matrix = JSON.parse(fs.readFileSync(path.join(root, matrixFile), 'utf8'));
+    const bulkManifest = JSON.parse(fs.readFileSync(path.join(root, bulkManifestFile), 'utf8'));
     const errors = validateDisclosureSourceCoverage(matrix).map(message => ({
       code: 'invalid-disclosure-spine',
       file: matrixFile,
       message,
     }));
+    errors.push(...validateFecBulkManifest(bulkManifest).map(message => ({
+      code: 'invalid-fec-bulk-manifest',
+      file: bulkManifestFile,
+      message,
+    })));
     return { ok: errors.length === 0, errors };
   } catch (error) {
     return { ok: false, errors: [{ code: 'unreadable-disclosure-spine', file: matrixFile, message: error.message }] };

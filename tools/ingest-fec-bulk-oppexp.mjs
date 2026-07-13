@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
 import { stableJson } from './lib/openfec-cohort.mjs';
-import { normalizeBulkOperatingExpenditure, operatingExpenditureUrl, parseOperatingExpenditureLine } from './lib/fec-bulk-oppexp.mjs';
+import { createReportAmendmentAudit, normalizeBulkOperatingExpenditure, operatingExpenditureUrl, parseOperatingExpenditureLine } from './lib/fec-bulk-oppexp.mjs';
 
 const args = process.argv.slice(2);
 const value = (flag, fallback) => {
@@ -48,6 +48,7 @@ fs.writeFileSync(recordsFile, '');
 let sourceRows = 0;
 let matchedRows = 0;
 const committeesObserved = new Set();
+const amendmentAudit = createReportAmendmentAudit();
 const stream = readline.createInterface({ input: fs.createReadStream(inputFile), crlfDelay: Infinity });
 for await (const line of stream) {
   sourceRows += 1;
@@ -55,6 +56,7 @@ for await (const line of stream) {
   const row = parseOperatingExpenditureLine(line);
   const committee = committees.get(row.CMTE_ID);
   if (!committee) continue;
+  amendmentAudit.observe(row);
   const normalized = normalizeBulkOperatingExpenditure(row, {
     ...committee,
     source_url: sourceUrl,
@@ -78,8 +80,9 @@ const manifest = {
   matched_records_observed: matchedRows,
   cohort_committees_observed: [...committeesObserved].sort(),
   cohort_committees_expected_across_all_cycles: committees.size,
+  amendment_audit: amendmentAudit.summarize(),
   coverage_status: 'one_cycle_file_complete_input_scan',
-  interpretation: 'This manifest covers one supplied official FEC cycle file. It does not establish complete Schedule B coverage across other cycles, resolve payee identity, or establish beneficial ownership.',
+  interpretation: 'This manifest covers one supplied official FEC cycle file. AMNDT_IND is a report-filing status, not a duplicate-row flag. Reported itemizations are not unique-payment claims. The file does not establish complete Schedule B coverage across other cycles, resolve payee identity, or establish beneficial ownership.',
   consumption: identifiers.consumption,
   graph_effect: 'none',
 };

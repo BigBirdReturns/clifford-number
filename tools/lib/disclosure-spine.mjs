@@ -51,6 +51,29 @@ export function validateDisclosureSourceCoverage(matrix) {
   return errors;
 }
 
+export function validateFecBulkManifest(manifest) {
+  const errors = [];
+  if (manifest?.schema_version !== 'fec-bulk-operating-expenditure-manifest@1') errors.push('invalid FEC bulk manifest schema');
+  if (manifest?.source_zip_bytes !== 25734364 || manifest?.extracted_source_bytes !== 168173606) errors.push('incorrect FEC bulk byte counts');
+  if (manifest?.extracted_source_sha256 !== '315ed8d44164bbcb889788f7cbe48d7116f38a8385c104f93e76619775cc7008') errors.push('incorrect FEC bulk source hash');
+  if (manifest?.source_rows_scanned !== 954706 || manifest?.matched_reported_rows_observed !== 27862) errors.push('incorrect FEC bulk row counts');
+  if (manifest?.cohort_committees_observed?.length !== 6) errors.push('incorrect FEC bulk committee count');
+  const indicators = manifest?.report_filing_indicator_counts;
+  if (indicators?.A !== 26115 || indicators?.N !== 1746 || indicators?.T !== 1 || indicators?.other !== 0) errors.push('incorrect report filing indicator counts');
+  const audit = manifest?.amendment_audit;
+  if (audit?.rows_with_transaction_id !== 27862
+    || audit?.distinct_transaction_report_keys !== 27862
+    || audit?.transaction_report_keys_spanning_multiple_file_numbers !== 0
+    || audit?.duplicate_transaction_report_file_keys !== 0) {
+    errors.push('incorrect amendment audit counts');
+  }
+  if (!manifest?.forbidden_inferences?.includes('report_amendment_indicator_is_duplicate_row_flag')
+    || !manifest?.forbidden_inferences?.includes('amended_report_row_ratio_is_overcount_ratio')) {
+    errors.push('missing amendment interpretation guardrails');
+  }
+  return errors;
+}
+
 export function normalizeBeneficialInterestRecord(record, context) {
   if (!MEMBER_IDS.includes(context?.person_id)) throw new Error(`unknown cohort person_id: ${context?.person_id}`);
   const interestHolderScope = text(record?.interest_holder_scope) ?? 'unknown';

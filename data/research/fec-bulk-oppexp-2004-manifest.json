@@ -21,17 +21,27 @@
     { "committee_id": "C00343509", "committee_name": "BUSH FOR PRESIDENT INC.", "reported_rows": 59 },
     { "committee_id": "C00360503", "committee_name": "BUSH-CHENEY 2000 INC.", "reported_rows": 22 }
   ],
-  "amendment_states": {
-    "amended_rows": 26115,
-    "new_rows": 1746,
-    "termination_rows": 1
+  "report_filing_indicator_counts": {
+    "A": 26115,
+    "N": 1746,
+    "T": 1,
+    "other": 0
+  },
+  "amendment_audit": {
+    "rows_with_transaction_id": 27862,
+    "distinct_transaction_report_keys": 27862,
+    "transaction_report_keys_spanning_multiple_file_numbers": 0,
+    "duplicate_transaction_report_file_keys": 0,
+    "status": "no_amendment_chain_versions_observed_in_filtered_projection"
   },
   "coverage_status": "one_cycle_file_complete_input_scan",
   "records_artifact": "build/fec-bulk-oppexp/2004/records.jsonl (gitignored and reproducible from the source URL, hash, identifiers, and checked-in parser)",
-  "interpretation": "These are 27,862 reported rows, not 27,862 deduplicated payments. The 2004 file contains original, amended, and termination-report rows. Amendment-chain resolution, payee identity, beneficial ownership, and temporal overlap remain separate operations.",
-  "allowed_language": "The official FEC 2004 operating-expenditure file contained 27,862 reported rows from six source-resolved George W. Bush presidential campaign committees under the checked-in cohort filter.",
+  "interpretation": "These are 27,862 reported itemization rows, not 27,862 unique payments. AMNDT_IND describes whether the containing report was filed as new, amended, or terminating; it does not label the row as a duplicate. All 27,862 committee/report-year/report-type/transaction-ID keys are distinct in the filtered projection, and none spans multiple file numbers. That rules out the claimed 16x amendment-row deduplication within this projection, but does not establish one itemization per underlying payment because memo items, subitemizations, reimbursements, and other reporting structures remain.",
+  "allowed_language": "The official FEC 2004 operating-expenditure file contained 27,862 reported itemization rows from six source-resolved George W. Bush presidential campaign committees under the checked-in cohort filter. Of those rows, 26,115 came from reports marked amended, 1,746 from reports marked new, and one from a termination report; those indicators are not duplicate-row classifications.",
   "forbidden_inferences": [
-    "reported_row_count_is_unique_payment_count",
+    "reported_itemization_count_is_unique_payment_count",
+    "report_amendment_indicator_is_duplicate_row_flag",
+    "amended_report_row_ratio_is_overcount_ratio",
     "payee_text_is_resolved_legal_entity",
     "payee_name_establishes_beneficial_ownership",
     "one_cycle_is_complete_cohort_coverage",
@@ -43,7 +53,7 @@
     "selection_review_status": "pending_second_party",
     "what_this_is": "A reproducible, hash-pinned manifest of one official no-key FEC cycle-file scan against the complete pre-resolved cohort committee set.",
     "what_this_is_not": "A deduplicated transaction ledger, beneficial-interest match, crossing, or finding of wrongdoing.",
-    "copy_ready_caveat": "The source includes amendment chains. Reported-row counts are not unique-payment counts, payee text is not resolved identity, and one cycle does not establish complete cohort coverage."
+    "copy_ready_caveat": "AMNDT_IND describes the containing report, not whether a row is a duplicate. Reported-itemization counts are not unique-payment counts, payee text is not resolved identity, and one cycle does not establish complete cohort coverage."
   },
   "graph_effect": "none"
 }

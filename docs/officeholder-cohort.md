@@ -111,18 +111,23 @@ interest existed.”
 
 The first no-key live acquisition is preserved at
 `data/research/fec-bulk-oppexp-2004-manifest.json`. The official 2004 file was
-24,734,364 bytes compressed and 168,173,606 bytes extracted; the extracted file
+25,734,364 bytes compressed and 168,173,606 bytes extracted; the extracted file
 hash is pinned. A complete scan of 954,706 source rows retained 27,862 reported
-rows from six George W. Bush committees. Of those rows, 26,115 carry amendment
-indicator `A`, 1,746 `N`, and one `T`, so the system explicitly refuses to call
-27,862 a unique-payment count. The matrix still reports zero normalized
-beneficial-interest rows and zero crossings.
+itemization rows from six George W. Bush committees. Of those rows, 26,115 came
+from reports marked `A`, 1,746 from reports marked `N`, and one from a report
+marked `T`. The indicator describes the containing report; it is not a duplicate-
+row label. All 27,862 committee/report-year/report-type/transaction-ID keys are
+distinct in this filtered projection, none spans multiple file numbers, and no
+same-file key is repeated. This refutes the proposed “94% duplicates” or “16x
+overcount” interpretation while still refusing to call itemizations unique
+underlying payments. The matrix reports zero normalized beneficial-interest
+rows and zero crossings.
 
 Accordingly, the design layer is complete—eight members and five predicates—and
 the official identifier spine is present—eight candidate IDs and 37 authorized
 committee IDs. API Schedule B queries remain zero, but no-key bulk transaction
-intake is now nonzero: one cycle, six committees, 27,862 reported rows before
-amendment resolution. Normalized disclosure rows and crossing matches remain
+intake is now nonzero: one cycle, six committees, 27,862 reported itemization
+rows with an explicit report-amendment audit. Normalized disclosure rows and crossing matches remain
 zero. Identifiers and source availability do not narrate beneficial-interest
 ingestion.
 

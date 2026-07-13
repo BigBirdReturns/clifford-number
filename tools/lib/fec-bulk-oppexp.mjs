@@ -46,7 +46,7 @@ export function normalizeBulkOperatingExpenditure(row, context) {
     memo_code: text(row.MEMO_CD),
     memo_text: text(row.MEMO_TEXT),
     entity_type_as_reported: text(row.ENTITY_TP),
-    amendment_indicator: text(row.AMNDT_IND),
+    report_amendment_indicator: text(row.AMNDT_IND),
     report_year: amount(row.RPT_YR),
     report_type: text(row.RPT_TP),
     image_number: text(row.IMAGE_NUM),
@@ -67,11 +67,49 @@ export function normalizeBulkOperatingExpenditure(row, context) {
     forbidden_inferences: [
       'payee_identity_resolved_from_name_alone',
       'beneficial_ownership_from_payee_name',
-      'amendment_duplicates_are_distinct_payments_without_review',
+      'report_amendment_indicator_means_duplicate_transaction',
+      'reported_itemization_is_unique_payment',
       'wrongdoing_from_disbursement',
     ],
     privacy_projection: 'City, state, ZIP code, street address, and private contact fields are not retained.',
     graph_effect: 'none',
+  };
+}
+
+export function createReportAmendmentAudit() {
+  let rowsObserved = 0;
+  let rowsWithTransactionId = 0;
+  const indicatorCounts = { A: 0, N: 0, T: 0, other: 0 };
+  const filesByTransactionReportKey = new Map();
+  const occurrencesByTransactionReportFileKey = new Map();
+
+  return {
+    observe(row) {
+      rowsObserved += 1;
+      const indicator = text(row.AMNDT_IND);
+      if (indicator in indicatorCounts && indicator !== 'other') indicatorCounts[indicator] += 1;
+      else indicatorCounts.other += 1;
+      const transactionId = text(row.TRAN_ID);
+      if (!transactionId) return;
+      rowsWithTransactionId += 1;
+      const transactionReportKey = [row.CMTE_ID, row.RPT_YR, row.RPT_TP, transactionId].join('|');
+      const fileNumber = text(row.FILE_NUM) ?? '[missing-file-number]';
+      if (!filesByTransactionReportKey.has(transactionReportKey)) filesByTransactionReportKey.set(transactionReportKey, new Set());
+      filesByTransactionReportKey.get(transactionReportKey).add(fileNumber);
+      const transactionReportFileKey = `${transactionReportKey}|${fileNumber}`;
+      occurrencesByTransactionReportFileKey.set(transactionReportFileKey, (occurrencesByTransactionReportFileKey.get(transactionReportFileKey) ?? 0) + 1);
+    },
+    summarize() {
+      return {
+        rows_observed: rowsObserved,
+        report_filing_indicator_counts: indicatorCounts,
+        rows_with_transaction_id: rowsWithTransactionId,
+        distinct_transaction_report_keys: filesByTransactionReportKey.size,
+        transaction_report_keys_spanning_multiple_file_numbers: [...filesByTransactionReportKey.values()].filter(files => files.size > 1).length,
+        duplicate_transaction_report_file_keys: [...occurrencesByTransactionReportFileKey.values()].filter(count => count > 1).length,
+        interpretation: 'AMNDT_IND describes the filing status of the report containing a row. It is not a duplicate-row flag. Repeated transaction/report keys across file numbers would indicate observable amendment-chain versions in this projection; their absence does not make each itemization a unique underlying payment.',
+      };
+    },
   };
 }
 

@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { normalizeBeneficialInterestRecord, validateDisclosureSourceCoverage } from '../tools/lib/disclosure-spine.mjs';
+import { normalizeBeneficialInterestRecord, validateDisclosureSourceCoverage, validateFecBulkManifest } from '../tools/lib/disclosure-spine.mjs';
 import { validateDisclosureSpine } from '../tools/validate-disclosure-spine.mjs';
 
 const matrix = JSON.parse(fs.readFileSync('data/research/presidential-disclosure-source-coverage.json', 'utf8'));
+const bulkManifest = JSON.parse(fs.readFileSync('data/research/fec-bulk-oppexp-2004-manifest.json', 'utf8'));
 assert.deepEqual(validateDisclosureSourceCoverage(matrix), []);
+assert.deepEqual(validateFecBulkManifest(bulkManifest), []);
 assert.equal(validateDisclosureSpine().ok, true);
 
 const normalized = normalizeBeneficialInterestRecord({
