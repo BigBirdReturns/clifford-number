@@ -80,12 +80,27 @@ status those claims require.
   coverage attenuates for earlier administrations. A modern member's richer
   digital footprint cannot be ranked against an older member without a
   source-family coverage matrix.
-- The OpenFEC adapter and cohort-wide entity resolver do not exist yet.
+- The OpenFEC candidate-search resolver now exists and is fixture-tested. The
+  cohort-wide canonical identity and entity resolver does not exist yet.
 - A genuinely independent challenger has not reviewed the replacement boundary.
 
 Accordingly, the design layer is complete—eight members and five predicates—
 while live cohort candidate resolutions remain `0 / 8`. Potential and design do
 not narrate ingestion.
+
+Run the live candidate search with a provisioned key:
+
+```bash
+FEC_API_KEY=... npm run resolve:openfec
+```
+
+For a non-release connectivity trial only, `npm run resolve:openfec --
+--allow-demo-key` uses OpenFEC's shared demo credential. Both modes query every
+cohort member sequentially, retry `429` and `503` responses, preserve source
+failures and nulls, strip credentials from saved URLs, attach the consumption
+contract, and write disposable results to `build/openfec-cohort/`. Candidate
+search records remain unresolved intake; they are not crossings or canonical
+identity assertions.
 
 ## Gate
 
