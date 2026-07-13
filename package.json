@@ -18,14 +18,15 @@
     "validate:pages": "node tools/validate-pages.mjs",
     "validate:release": "node tools/validate-release.mjs",
     "query:hops": "node tools/query-hops.mjs",
-    "test": "node test/temporal.test.js && node test/axm-id.test.js && node test/axm-identity.test.js && node test/density.test.js && node test/hop-stints.test.js && node test/narrate-hops.test.js && node test/compiler.test.js && node test/case-ledger.test.js && node test/official-crawl.test.js && node test/receipt-archival.test.js && node test/public-interest-discovery.test.js && node test/research-fanout.test.js && node test/ui-utils.test.js && node test/ui-contract.test.js",
-    "check": "npm run compile && npm run fanout && npm run validate:fanout && npm run validate:release && npm run validate:crawl && npm test && npm run build:pages && npm run validate:pages",
+    "test": "node test/temporal.test.js && node test/axm-id.test.js && node test/axm-identity.test.js && node test/density.test.js && node test/hop-stints.test.js && node test/narrate-hops.test.js && node test/compiler.test.js && node test/case-ledger.test.js && node test/official-crawl.test.js && node test/receipt-archival.test.js && node test/public-interest-discovery.test.js && node test/research-fanout.test.js && node test/corpus-selection.test.js && node test/ui-utils.test.js && node test/ui-contract.test.js",
+    "check": "npm run compile && npm run fanout && npm run validate:fanout && npm run validate:selection && npm run validate:release && npm run validate:crawl && npm test && npm run build:pages && npm run validate:pages",
     "release:check": "npm run check",
     "serve": "node tools/serve-static.mjs 8080",
     "legacy:test": "node test/graph.test.js && node test/mcp-server.test.js && node test/update-sweep.test.js",
     "narrate": "node tools/narrate-hops.mjs",
     "fanout": "node tools/build-research-fanout.mjs",
-    "validate:fanout": "node tools/validate-research-fanout.mjs"
+    "validate:fanout": "node tools/validate-research-fanout.mjs",
+    "validate:selection": "node tools/validate-corpus-selection.mjs"
   },
   "keywords": [
     "surface-hop",
