@@ -18,25 +18,28 @@ Current Clifford Numbers come from bounded surfaces and participation rows compi
 
 Read these first:
 
+- [`evidence-model.md`](evidence-model.md) — the whole knowledge model: receipts, evidence layers, source attrition, discovery topology, and known-positive motifs.
 - [`methodology.md`](methodology.md) — what creates a hop, how dates work, evidence boundaries, density discipline, and publication behavior.
 - [`definitions.md`](definitions.md) — the current vocabulary in one place.
 - [`redaction-policy.md`](redaction-policy.md) — public-role-only scope and material the project excludes.
 - [`plain-language.md`](plain-language.md) — how narration is generated without adding facts.
 
-The essential reading rule is: a hop means documented shared context on a bounded surface, nothing more. Co-presence is never coordination, and absence from the corpus is not proof of absence.
+The essential reading rules are: a hop means documented shared context on a bounded surface, nothing more; and **no hop does not mean no relationship**. Co-presence is never coordination, a missing live source does not erase a preserved observation, and absence from the corpus is not proof of absence. The hop graph is a conservative projection of a larger, typed evidence model.
 
 ## Researchers and contributors
 
 - [`research-intake.md`](research-intake.md) — the candidate-surface packet and promotion path.
-- [`public-interest-discovery.md`](public-interest-discovery.md) — bounded Epstein, Trump, and Panama Papers source/crossing lanes.
+- [`research-fanout.md`](research-fanout.md) — exhaustive scan-to-batch orchestration and its safety boundary.
+- [`public-interest-discovery.md`](public-interest-discovery.md) — the bounded Epstein, Trump, and Panama Papers source/crossing spine.
 - [`corpus-selection.md`](corpus-selection.md) — constitutional lane-selection symmetry and measured corpus coverage.
+- [`consumption-contract.md`](consumption-contract.md) — copy-ready interpretation caveats and adversarial neutral-universe review.
 - [`../CONTRIBUTING.md`](../CONTRIBUTING.md) — contribution expectations and examples.
 - [`../contributions/templates/candidate-surface.md`](../contributions/templates/candidate-surface.md) — submission template.
 - [`redaction-policy.md`](redaction-policy.md) — required exclusions and listing caveats.
 - [`research-gap-audit.md`](research-gap-audit.md) — operator-oriented source gaps and pull plan; not a publication claim.
 - [`update-sweep.md`](update-sweep.md) — generated or operator review material whose snapshot date must be checked before use.
 
-A candidate is a research question. It has no graph effect until it passes canonical, receipt, participation, temporal, density, and release review.
+A candidate is a research question. It may preserve a non-hop fact, pattern, sequence, attrition event, or hypothesis without affecting a Clifford Number. It has no verified graph effect until it passes the applicable canonical, receipt, participation, temporal, density, causal-language, and release review.
 
 ## Maintainers and developers
 
@@ -57,12 +60,13 @@ Generated files under `build/` must not be edited by hand.
 
 ## Evidence and stewardship
 
+- [`evidence-model.md`](evidence-model.md) — receipts as provenance objects and the five evidence layers.
 - [`durability-plan.md`](durability-plan.md) — archival threats, receipt durability, mirrors, and long-term cold-copy goals. Its audit counts are a dated snapshot, not live metrics.
 - [`master-v3-import-gate.md`](master-v3-import-gate.md) — why the master research document does not automatically enter the public graph.
 - [`research-gap-audit.md`](research-gap-audit.md) — known evidence gaps and source-upgrade work.
 - [`redaction-policy.md`](redaction-policy.md) — privacy boundary for collection and publication.
 
-Receipts are the evidentiary asset. A generated score, attractive path, or local analysis note cannot substitute for source material a stranger can check.
+Receipts are the evidentiary asset. They include preserved archived or vanished material, transactions, dated observations, independent reporting, and reproducible derivations—not only currently live official pages. A generated score or attractive path cannot substitute for receipted inputs, but non-hop evidence must not be discarded merely because it cannot create an actor adjacency.
 
 ## Current, planning, and legacy status
 
@@ -70,6 +74,7 @@ Receipts are the evidentiary asset. A generated score, attractive path, or local
 
 These documents describe the bounded surface-hop release:
 
+- [`evidence-model.md`](evidence-model.md)
 - [`methodology.md`](methodology.md)
 - [`definitions.md`](definitions.md)
 - [`release-architecture.md`](release-architecture.md)
@@ -102,10 +107,13 @@ Legacy material can preserve useful sourced facts, but it must pass the current 
 
 Before publishing or sharing a result, confirm:
 
+- the evidence layer and allowed language are explicit;
 - every hop names a bounded surface;
 - both actor participation rows are visible;
 - the relevant date windows overlap;
 - evidence class and receipts are shown;
 - dense roster logic has not silently collapsed the path;
 - listing, registration, and attendance remain distinct; and
+- source attrition is preserved without inferring a remover or motive;
+- motif matches remain discovery leads rather than guilt claims; and
 - the output states that shared context is not influence, coordination, or wrongdoing.

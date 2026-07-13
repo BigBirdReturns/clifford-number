@@ -5,6 +5,7 @@ import { buildIdentityLayer } from './lib/axm-identity.mjs';
 import { checkReceiptArchival, todayString } from './lib/receipt-archival.mjs';
 import { assessHopDensity, validateDensityPolicy } from './lib/density.mjs';
 import { validateCorpusSelection } from './validate-corpus-selection.mjs';
+import { validateConsumptionContract } from './validate-consumption-contract.mjs';
 
 const data = loadAll();
 const scores = readJson('build/scores.json');
@@ -24,6 +25,9 @@ function assert(cond, msg) { if (!cond) errors.push(msg); }
 // careful at the edge while silently choosing asymmetric or unmeasured corpora.
 for (const error of validateCorpusSelection({ root: process.cwd() }).errors) {
   errors.push(`selection ${error.code} (${error.file}): ${error.message}`);
+}
+for (const error of validateConsumptionContract({ root: process.cwd() }).errors) {
+  errors.push(`consumption ${error.code} (${error.file}): ${error.message}`);
 }
 function hasSurface(actorId, surfaceId) {
   return actorScore.get(actorId)?.surfaces.includes(surfaceId);

@@ -16,9 +16,15 @@ makes any one case feel urgent. Build accordingly.
 These invariants are enforced by `validate:release`. Any phase below that cannot
 be built without violating one of these is not built.
 
-1.1 **No edge without a receipt.** Every hop basis, participation, claim, and
-plain-language sentence traces to receipt IDs. A receipt names a source that a
-stranger can check.
+1.1 **No asserted, verified, or hop edge without a receipt.** Every hop basis,
+participation, published claim, and publication-ready plain-language sentence
+traces to receipt IDs. This rule governs graph assertion; it must never suppress
+a non-graph-effect discovery observation, candidate, rejection, or unavailable-
+source record. Those intake objects remain preserved with the provenance and
+limitations actually available, `graph_effect: none`, and an explicit evidence
+state until review. A receipt names a source or preserved artifact that a
+stranger can inspect; an unavailable source stays recorded as a limitation
+rather than being silently deleted.
 
 1.2 **A hop is a shared bounded surface, nothing more.** Broad institutions are
 never hops. Co-presence is never coordination. The forbidden-inference note
@@ -68,6 +74,21 @@ review leads, but it cannot count toward public coverage, serve as the sole
 basis of a public assertion, or narrate public progress. `validate:selection`
 fails on undeclared lanes, unmeasured corpus voids, asymmetric selection rules,
 or private-support material represented as public evidence.
+
+1.11 **The interpretation contract travels with the data.** Every exported
+selection lane and coverage row carries a machine-checked, copy-ready statement
+of what it is, what it is not, and which inferences its evidence and denominator
+do not support. A coverage denominator describes the declared search universe
+or source potential; it is not evidence that responsive, incriminating, or even
+relevant material exists. Removing the caveat, review status, or contract
+identifier is a lossy transformation and cannot be represented as a conforming
+export. Every neutral-universe definition also has a checked-in adversarial
+review record. A universe may remain pending or provisional, but it cannot be
+called cleared until a second party, distinct from its author, records boundary
+attacks, plausible alternative universes, comparator tests, and a disposition.
+`validate:consumption` fails on detached caveats, denominator laundering,
+missing review records, self-review represented as independent review, or a
+pending lane represented as cleared.
 
 ---
 
@@ -259,10 +280,14 @@ inconvenient. Silence is not consent; unreviewed drift is reverted.
   conclusions against receipts, in their own names.
 - Not an identity-clustering instrument, per 1.6, under any framing.
 - Not a subscription oracle whose facts are checkable only by customers.
-- Not dependent on any single AI vendor: agents accelerate intake and
-  narration, but every pipeline must be executable by a human with a text
-  editor and the documented commands.
+- Not dependent m½ß¿m¢G§²ÚîÆ­yØ]\İXÛ\™HHØ[YH[™HQË‰ÊJNÂˆB‚ˆ™]\›ˆÈÚÎˆ\œ›ÜœË›[™İOOH\œ›ÜœÈNÂŸB‚™^Ü[˜İ[Ûˆ›Ü›X]ÛÛœİ[\[Û‘\œ›ÜœÊ\œ›ÜœÊHÂˆ™]\›ˆ\œ›ÜœË›X\
+\œ›ÜˆOˆHÉÙ\œ›Ü‹˜ÛÙ_WH	Ù\œ›Ü‹™š[_Nˆ	Ù\œ›Ü‹›Y\ÜØYÙ_X
+Kš›Ú[Š	×‰ÊNÂŸB‚˜ÛÛœİ[›ÚÙYH›ØÙ\ÜË˜\™İ–ÌWHÈ]œ™\ÛÛ™J›ØÙ\ÜË˜\™İ–ÌWJHˆ	ÉÎÂšYˆ
+[›ÚÙYOOHš[UT“Ô]
+[\Ü›Y]K\›
+JHÂˆÛÛœİ›ÛİH›ØÙ\ÜË˜\™İ–Ì—HÈ]œ™\ÛÛ™J›ØÙ\ÜË˜\™İ–Ì—JHˆ›ØÙ\ÜË˜İÙ
 
-The instrument's authority comes from one property and one property only:
-anyone can check it. Protect that property and the rest survives to 2037.
-Lose it and nothing else here matters.
+NÂˆÛÛœİ™\İ[H˜[Y]PÛÛœİ[\[ÛÛÛ˜Xİ
+È›ÛİJNÂˆYˆ
+\™\İ[›ÚÊHÂˆÛÛœÛÛK™\œ›ÜŠÛÛœİ[\[ÛˆÛÛ˜Xİ˜Z[YÚ]	Ü™\İ[™\œ›ÜœË›[™İH\œ›ÜŠÊN—‰Ù›Ü›X]ÛÛœİ[\[Û‘\œ›ÜœÊ™\İ[™\œ›ÜœÊ_X
+NÂˆ›ØÙ\ÜË™^]ÛÙHHNÂˆH[ÙHÂˆÛÛœÛÛK›ÙÊ	ĞÛÛœİ[\[ÛˆÛÛ˜XİˆÒÉÊNÂˆBŸB

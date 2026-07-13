@@ -105,3 +105,7 @@ The selection gate does not decide whether a public allegation is true. It
 ensures the project can explain, in advance and under a general rule, why it is
 looking there at all.
 
+Selection declarations and coverage rows also carry the interpretation and
+review fields defined in [`consumption-contract.md`](consumption-contract.md).
+This makes pending adversarial review and denominator limits survive export
+instead of depending on nearby prose.
