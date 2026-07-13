@@ -6,6 +6,7 @@ import { checkReceiptArchival, todayString } from './lib/receipt-archival.mjs';
 import { assessHopDensity, validateDensityPolicy } from './lib/density.mjs';
 import { validateCorpusSelection } from './validate-corpus-selection.mjs';
 import { validateConsumptionContract } from './validate-consumption-contract.mjs';
+import { validateOfficeholderCohort } from './validate-officeholder-cohort.mjs';
 
 const data = loadAll();
 const scores = readJson('build/scores.json');
@@ -28,6 +29,9 @@ for (const error of validateCorpusSelection({ root: process.cwd() }).errors) {
 }
 for (const error of validateConsumptionContract({ root: process.cwd() }).errors) {
   errors.push(`consumption ${error.code} (${error.file}): ${error.message}`);
+}
+for (const error of validateOfficeholderCohort({ root: process.cwd() }).errors) {
+  errors.push(`officeholder ${error.code} (${error.file}): ${error.message}`);
 }
 function hasSurface(actorId, surfaceId) {
   return actorScore.get(actorId)?.surfaces.includes(surfaceId);

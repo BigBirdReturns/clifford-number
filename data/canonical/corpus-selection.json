@@ -201,34 +201,44 @@
     },
     {
       "lane_id": "trump-office-business-capital",
-      "label": "Officeholder-business-capital crossings: Trump reference case",
+      "label": "U.S. presidential office-business-capital crossings, 1979 to present",
       "lane_kind": "corpus",
       "status": "proposed",
       "seed_topics": ["trump"],
-      "public_interest_question": "Which official filings and transactions document crossings among an officeholder, campaign committees, trusts, private businesses, public companies, properties, and public policy?",
-      "selection_unit": "one identifier-resolved public filing, transaction, legal disposition, or time-bounded office/business role",
-      "selection_universe": "the declared candidate, committee, trust, entity, issuer, property, court, spending, and policy identifiers plus all counterparties returned under fixed queries",
+      "public_interest_question": "How do identifier-resolved public records document office, committee, beneficial-interest, business, payment, issuer, and policy crossings for every U.S. president serving during the federal financial-disclosure era under one frozen predicate battery?",
+      "selection_unit": "one distinct cohort member and each identifier-resolved filing, transaction, disposition, beneficial-interest record, or time-bounded office and business role returned under the common battery",
+      "selection_universe": "every distinct person whose service as President of the United States intersects 1979-01-01 through the dated cohort capture, enumerated before entity or transaction queries, with the same five role-neutral predicates applied to every member",
+      "neutral_universe": {
+        "cohort_id": "us-presidents-eiga-era-1979-present",
+        "cohort_file": "data/canonical/us-presidential-officeholder-cohort.json",
+        "predicate_registry_id": "us-presidential-office-business-crossings@1",
+        "predicate_file": "data/canonical/officeholder-crossing-predicates.json",
+        "target_seed_effect": "routing_only",
+        "null_result_policy": "preserve_as_control_outcome"
+      },
       "inclusion_rules": [
-        "record matches a declared official identifier or an independently resolved counterparty",
-        "the same predicate and threshold would include any analogous officeholder or entity"
+        "include every distinct president whose service intersects the frozen 1979-to-capture window before resolving any business or transaction identifier",
+        "include every record meeting one of the five frozen predicates under the same identifier, evidence, temporal, and beneficial-interest tests for all cohort members"
       ],
       "exclusion_rules": [
-        "substring matching on a famous surname",
-        "selection based on party, ideology, allegation volume, or expected scandal value"
+        "no person enters or leaves because of party, wealth, business structure, allegation volume, expected scandal value, or expected null result",
+        "no target-specific asset, product, property type, policy topic, surname substring, or ad hoc dollar threshold may define the common predicate battery"
       ],
       "comparison": {
         "method": "matched_comparator",
-        "comparator_class": "officeholders whose disclosed private interests intersect campaign, contracting, property, securities, or policy records under the same threshold",
-        "symmetry_rule": "Any officeholder meeting the same identifier-resolved public/private crossing rule earns the same lane treatment regardless of party or ideology."
+        "comparator_class": "all eight distinct U.S. presidents whose service intersects the dated 1979-to-present federal financial-disclosure-era window",
+        "symmetry_rule": "Enumerate the office-defined cohort before entity queries, then apply the frozen five-predicate battery to every member and preserve nulls, failures, and coverage differences regardless of party or expected result."
       },
       "sources": [
+        { "source_id": "presidential-cohort", "source_class": "canonical_officially_enumerated_cohort", "url": "data/canonical/us-presidential-officeholder-cohort.json" },
+        { "source_id": "officeholder-predicates", "source_class": "canonical_role_neutral_predicate_registry", "url": "data/canonical/officeholder-crossing-predicates.json" },
         { "source_id": "openfec", "source_class": "official_campaign_finance_registry", "url": "https://api.open.fec.gov/developers/" },
         { "source_id": "usaspending", "source_class": "official_spending_api", "url": "https://api.usaspending.gov/docs/" },
         { "source_id": "sec-edgar", "source_class": "official_securities_api", "url": "https://www.sec.gov/search-filings/edgar-application-programming-interfaces" }
       ],
       "privacy": { "risk": "medium", "controls": ["public_entities_and_roles_only", "no_donor_address_republication", "defendant_specific_legal_status"] },
       "replicability": { "public_reproducible": true, "counts_toward_public_coverage": true, "commands": ["npm run fanout"] },
-      "review": { "last_reviewed_at": "2026-07-13", "review_by": "2026-10-13", "sunset_condition": "Do not activate without a checked-in comparator rule and the missing OpenFEC/entity-resolution adapter." },
+      "review": { "last_reviewed_at": "2026-07-13", "review_by": "2026-10-13", "sunset_condition": "Do not activate if the office-defined cohort, frozen predicate battery, historical-coverage accounting, independent adversarial review, OpenFEC key gate, or entity-resolution adapter is absent." },
       "consumption": {
         "contract_id": "public-topology-map@1",
         "selection_review_id": "selection-review-trump-office-business-capital",

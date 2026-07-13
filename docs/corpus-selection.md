@@ -71,10 +71,11 @@ list. It requires a rule that would admit analogous facts wherever they occur.
 
 Examples:
 
-- The Trump reference lane is selected by identifier-resolved crossings among
-  an officeholder, campaign, trust, private businesses, public issuer,
-  properties, public spending, and policy. The comparator class is any
-  officeholder meeting the same threshold, regardless of party.
+- The presidential office/business/capital lane first enumerates every distinct
+  president serving in the dated 1979-to-present window, then runs the same
+  frozen five-predicate battery for all eight members. The Trump topic is a
+  discovery router, not a membership rule. See
+  [`officeholder-cohort.md`](officeholder-cohort.md).
 - The Epstein lane is source-complete at the artifact level. Every public actor
   encountered receives the same contact, travel, communication, meeting,
   financial, allegation, and disposition predicates.

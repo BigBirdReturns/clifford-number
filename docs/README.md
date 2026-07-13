@@ -33,6 +33,7 @@ The essential reading rules are: a hop means documented shared context on a boun
 - [`public-interest-discovery.md`](public-interest-discovery.md) — the bounded Epstein, Trump, and Panama Papers source/crossing spine.
 - [`corpus-selection.md`](corpus-selection.md) — constitutional lane-selection symmetry and measured corpus coverage.
 - [`consumption-contract.md`](consumption-contract.md) — copy-ready interpretation caveats and adversarial neutral-universe review.
+- [`officeholder-cohort.md`](officeholder-cohort.md) — the office-defined 1979-present presidential cohort and frozen role-neutral crossing battery.
 - [`../CONTRIBUTING.md`](../CONTRIBUTING.md) — contribution expectations and examples.
 - [`../contributions/templates/candidate-surface.md`](../contributions/templates/candidate-surface.md) — submission template.
 - [`redaction-policy.md`](redaction-policy.md) — required exclusions and listing caveats.

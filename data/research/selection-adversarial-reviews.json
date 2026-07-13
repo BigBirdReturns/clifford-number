@@ -91,11 +91,44 @@
       "status": "pending_second_party",
       "publication_status": "blocked",
       "review_due": "2026-10-13",
-      "known_boundary_risks": ["A named reference case can silently become target-first even when its predicates are written symmetrically.", "Different officeholders disclose different entity structures, making comparator availability uneven."],
-      "boundary_attacks": [],
-      "alternative_universes": [],
-      "comparator_tests": [],
-      "disposition": "Lane remains proposed and publication-blocked until identifiers, adapters, matched comparators, and independent review exist."
+      "known_boundary_risks": ["A named reference case can silently become target-first even when its predicates are written symmetrically.", "Target-shaped predicates can force structural nulls for comparators even after an entity cohort is added.", "Historical digitization and disclosure access vary sharply across the cohort and can masquerade as conduct differences."],
+      "review_assistance": {
+        "assistant_id": "ai-red-team-assist-2026-07-13",
+        "role": "adversarial_analysis_support",
+        "independence_effect": "does_not_satisfy_second_party_clearance",
+        "live_probe_status": "OpenFEC reachable; full cohort resolution not run because DEMO_KEY did not support reproducible batch access"
+      },
+      "boundary_attacks": [
+        {
+          "attack_id": "entity-universe-target-first",
+          "status": "failed_current_definition",
+          "method": "Expand the declared identifier set literally and identify which people can enter before counterparty traversal.",
+          "finding": "The prior universe began with one named person's candidate, committee, trust, business, issuer, property, and policy identifiers, so it enumerated the target and the target's counterparties while admitting comparators only counterfactually."
+        },
+        {
+          "attack_id": "predicate-battery-target-shaped",
+          "status": "failed_current_definition",
+          "method": "Apply the prior crossing descriptions to office-matched comparators and inspect whether the types were defined independently of known target-specific assets and policy topics.",
+          "finding": "The prior descriptions encoded singular target instances as search predicates, allowing structurally forced comparator nulls even if the same query text were run for every person."
+        }
+      ],
+      "alternative_universes": [
+        {
+          "alternative_id": "office-defined-eiga-era-presidents",
+          "status": "adopted_pending_independent_review",
+          "definition": "Every distinct person whose service as President of the United States intersects 1979-01-01 through the dated capture, enumerated from the official service roster before entity queries.",
+          "why_stronger": "Office, service date, and a fixed disclosure-era cutoff determine membership; party, wealth, business form, suspicion, and expected findings do not."
+        }
+      ],
+      "comparator_tests": [
+        {
+          "test_id": "five-role-neutral-predicates-all-eight-members",
+          "status": "specified_not_executed",
+          "method": "Run the frozen five-predicate registry against all eight cohort members and preserve positive, null, unavailable, rejected, and source-failure outcomes.",
+          "blocking_conditions": ["FEC_API_KEY unavailable", "OpenFEC adapter absent", "cohort-wide entity resolution absent", "historical coverage matrix absent"]
+        }
+      ],
+      "disposition": "The prior target-first universe failed two attacks and has been replaced by an office-defined cohort and frozen role-neutral battery. The lane remains publication-blocked and pending a genuinely independent second-party challenge plus live comparator execution."
     },
     {
       "review_id": "selection-review-panama-offshore-service-providers",
