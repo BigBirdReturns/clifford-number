@@ -53,6 +53,22 @@ survive that, it is marked, downgraded, or removed.
 registries, no undisclosed sponsor influence on canonical decisions, no private
 forks with divergent facts presented as this instrument.
 
+1.10 **Selection-layer neutrality is constitutional.** The same discipline
+that constrains an edge constrains which cases, corpora, actors, institutions,
+and jurisdictions the project chooses to investigate. No lane activates
+because a named actor is famous, disliked, politically convenient, or already
+suspected. Before ingestion or lane-specific code ships, a checked-in selection
+declaration states the public-interest question, neutral selection unit and
+universe, inclusion and exclusion rules, source-complete or symmetric
+comparison strategy, coverage baseline and gaps, privacy exposure, public
+reproducibility, review date, and sunset condition. The rule must admit an
+analogous actor or institution under the same facts regardless of party,
+ideology, nationality, or affiliation. Private local material may generate
+review leads, but it cannot count toward public coverage, serve as the sole
+basis of a public assertion, or narrate public progress. `validate:selection`
+fails on undeclared lanes, unmeasured corpus voids, asymmetric selection rules,
+or private-support material represented as public evidence.
+
 ---
 
 ## 2. Phase 0: Foundation Lock (now through end of 2026)
