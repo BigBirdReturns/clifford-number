@@ -36,6 +36,7 @@ export function validateOfficeholderCohort({
   root = process.cwd(),
   cohortFile = 'data/canonical/us-presidential-officeholder-cohort.json',
   predicatesFile = 'data/canonical/officeholder-crossing-predicates.json',
+  identifiersFile = 'data/research/openfec-presidential-identifiers.json',
   selectionFile = 'data/canonical/corpus-selection.json',
   coverageFile = 'data/research/corpus-coverage.json',
   reviewsFile = 'data/research/selection-adversarial-reviews.json',
@@ -43,10 +44,11 @@ export function validateOfficeholderCohort({
   const errors = [];
   const cohort = readJson(root, cohortFile, errors);
   const registry = readJson(root, predicatesFile, errors);
+  const identifiers = readJson(root, identifiersFile, errors);
   const selection = readJson(root, selectionFile, errors);
   const coverage = readJson(root, coverageFile, errors);
   const reviews = readJson(root, reviewsFile, errors);
-  if (!cohort || !registry || !selection || !coverage || !reviews) return { ok: false, errors };
+  if (!cohort || !registry || !identifiers || !selection || !coverage || !reviews) return { ok: false, errors };
 
   if (cohort.schema_version !== 'officeholder-cohort@1'
     || cohort.cohort_id !== 'us-presidents-eiga-era-1979-present'
@@ -94,6 +96,37 @@ export function validateOfficeholderCohort({
     if (!Array.isArray(predicate.forbidden_inferences) || predicate.forbidden_inferences.length < 3) errors.push(issue('weak-officeholder-predicate-boundary', predicatesFile, `${predicate.predicate_id}: at least three forbidden inferences are required.`));
   }
 
+  const resolvedPersonIds = (identifiers.identities ?? []).map(identity => identity.person_id);
+  const candidateIds = (identifiers.identities ?? []).map(identity => identity.candidate_id);
+  const committees = (identifiers.identities ?? []).flatMap(identity => identity.authorized_committees ?? []);
+  const committeeIds = committees.map(committee => committee.committee_id);
+  if (identifiers.schema_version !== 'openfec-presidential-identifiers@1'
+    || identifiers.cohort_id !== cohort.cohort_id
+    || identifiers.resolution_status !== 'source_resolved_pending_canonical_promotion'
+    || identifiers.graph_effect !== 'none'
+    || identifiers.evidence_state !== 'observed') {
+    errors.push(issue('invalid-openfec-identifier-spine', identifiersFile, 'FEC identifier intake must remain observed, non-graph, and pending canonical promotion.'));
+  }
+  if (!sameMembers(resolvedPersonIds) || resolvedPersonIds.length !== 8
+    || new Set(candidateIds).size !== 8 || !candidateIds.every(id => /^P\d{8}$/.test(id))) {
+    errors.push(issue('incomplete-openfec-candidate-identifiers', identifiersFile, 'Exactly one official presidential candidate ID is required for every cohort member.'));
+  }
+  if (committees.length !== 37 || new Set(committeeIds).size !== 37 || !committeeIds.every(id => /^C\d{8}$/.test(id))) {
+    errors.push(issue('incomplete-openfec-committee-identifiers', identifiersFile, 'The dated identifier snapshot must preserve all 37 authorized presidential campaign committee IDs observed on the cycle-specific official profiles.'));
+  }
+  for (const identity of identifiers.identities ?? []) {
+    if (identity.official_profile_url !== `https://www.fec.gov/data/candidate/${identity.candidate_id}/`
+      || !identity.authorized_committees?.length) {
+      errors.push(issue('unreceipted-openfec-identity', identifiersFile, `${identity.person_id}: official candidate profile and at least one authorized committee are required.`));
+    }
+  }
+  if (identifiers.coverage?.candidate_ids_observed !== 8
+    || identifiers.coverage?.authorized_committee_ids_observed !== 37
+    || identifiers.coverage?.schedule_b_queries_executed !== 0
+    || identifiers.consumption?.contract_id !== 'public-topology-map@1') {
+    errors.push(issue('dishonest-openfec-identifier-coverage', identifiersFile, 'Identifier coverage must report 8 candidates, 37 authorized presidential campaign committees, zero Schedule B queries, and the public consumption contract.'));
+  }
+
   const lane = selection.lanes?.find(item => item.lane_id === LANE_ID);
   if (!lane || lane.neutral_universe?.cohort_id !== cohort.cohort_id
     || lane.neutral_universe?.predicate_registry_id !== registry.registry_id
@@ -121,12 +154,15 @@ export function validateOfficeholderCohort({
   const metric = id => coverageRow?.metrics?.find(item => item.metric_id === id);
   if (metric('neutral_presidential_cohort')?.observed !== 8
     || metric('role_neutral_crossing_predicates')?.observed !== 5
-    || metric('live_cohort_candidate_resolutions')?.observed !== 0
-    || metric('live_cohort_candidate_resolutions')?.expected !== 8) {
-    errors.push(issue('dishonest-officeholder-coverage', coverageFile, 'Coverage must distinguish the complete design (8 members, 5 predicates) from zero live cohort resolutions.'));
+    || metric('source_resolved_candidate_identifiers')?.observed !== 8
+    || metric('source_resolved_candidate_identifiers')?.expected !== 8
+    || metric('source_resolved_authorized_committees')?.observed !== 37
+    || metric('openfec_schedule_b_queries')?.observed !== 0
+    || metric('openfec_schedule_b_queries')?.expected !== 37) {
+    errors.push(issue('dishonest-officeholder-coverage', coverageFile, 'Coverage must distinguish 8 source-resolved candidates and 37 authorized presidential campaign committees from zero Schedule B transaction queries.'));
   }
   const gapIds = new Set((coverageRow?.known_gaps ?? []).map(gap => gap.gap_id));
-  for (const required of ['selection-gap-trump-fec-api-key', 'selection-gap-trump-historical-digitization']) {
+  for (const required of ['selection-gap-trump-schedule-b-api-key', 'selection-gap-trump-historical-digitization']) {
     if (!gapIds.has(required)) errors.push(issue('missing-officeholder-source-gap', coverageFile, `Required gap ${required} is missing.`));
   }
 

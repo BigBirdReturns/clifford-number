@@ -1,6 +1,7 @@
 # Presidential officeholder cohort
 
-Status: proposed, source-complete selection universe; live record ingestion is
+Status: proposed, source-complete selection universe with source-resolved FEC
+  candidate and authorized presidential campaign-committee identifiers; live transaction ingestion remains
 blocked. This document replaces the target-first construction previously used
 by the `trump-office-business-capital` discovery lane.
 
@@ -72,21 +73,31 @@ status those claims require.
 
 ## Honest blockers
 
+- The official FEC candidate profiles now source-resolve all eight cohort
+  members to one presidential candidate ID each and enumerate 37 authorized
+  presidential campaign committee IDs. The intake is checked in at
+  `data/research/openfec-presidential-identifiers.json`; it remains
+  `source_resolved_pending_canonical_promotion` and has no graph effect.
 - OpenFEC is live and documents programmatic access, but its public documentation
-  distinguishes `DEMO_KEY` from a provisioned key and states the normal key's
-  hourly allowance. The eight-member live resolution battery remains at zero
-  until `FEC_API_KEY` is provisioned.
+  distinguishes `DEMO_KEY` from a provisioned key. No cohort-wide Schedule B
+  transaction query has run with a reproducible credential, so transaction
+  coverage remains `0 / 37` committees. Sponsored leadership PACs and joint
+  fundraising committees are explicitly outside this first bounded subset.
 - Electronic campaign-finance, disclosure, spending, registry, and policy
   coverage attenuates for earlier administrations. A modern member's richer
   digital footprint cannot be ranked against an older member without a
   source-family coverage matrix.
-- The OpenFEC candidate-search resolver now exists and is fixture-tested. The
-  cohort-wide canonical identity and entity resolver does not exist yet.
+- The OpenFEC candidate-search resolver is retained as a discovery tool, but a
+  live trial showed why it cannot adjudicate identity: exact-name searches can
+  return false positives and miss historical records. Official profile IDs now
+  anchor the Schedule B adapter; canonical identity and beneficial-interest
+  entity resolution still do not exist.
 - A genuinely independent challenger has not reviewed the replacement boundary.
 
-Accordingly, the design layer is complete—eight members and five predicates—
-while live cohort candidate resolutions remain `0 / 8`. Potential and design do
-not narrate ingestion.
+Accordingly, the design layer is complete—eight members and five predicates—and
+the official identifier spine is present—eight candidate IDs and 37 authorized
+committee IDs. Live Schedule B transaction queries and crossing matches remain
+zero. Identifiers do not narrate transaction ingestion.
 
 Run the live candidate search with a provisioned key:
 
@@ -102,13 +113,29 @@ contract, and write disposable results to `build/openfec-cohort/`. Candidate
 search records remain unresolved intake; they are not crossings or canonical
 identity assertions.
 
+Run the bounded Schedule B intake with a provisioned key:
+
+```bash
+FEC_API_KEY=... npm run ingest:openfec-disbursements
+```
+
+The default queries one page for every one of the 37 authorized presidential
+campaign committees. It preserves source pagination and labels incomplete
+ranges `bounded_partial`, keeps public filing payee text and transaction fields
+needed for later entity review, and drops street, city, state, ZIP, employer,
+occupation, and contact fields. Output is disposable under
+`build/openfec-schedule-b/`. No row becomes a crossing until a later review
+resolves the payee, attaches a contemporaneous beneficial-interest source, and
+passes the predicate's time-overlap test.
+
 ## Gate
 
 ```bash
 npm run validate:officeholder
 ```
 
-The validator fails if a member disappears, a predicate becomes member-specific
-or target-shaped, the named discovery seed gains selection power, AI assistance
-is represented as independent clearance, historical coverage or API-key gaps
-disappear, or zero live resolutions are narrated as completed cohort work.
+The validator fails if a member or official identifier disappears, a predicate
+becomes member-specific or target-shaped, the named discovery seed gains
+selection power, AI assistance is represented as independent clearance,
+historical coverage or Schedule B credential gaps disappear, or the 8/37
+identifier spine is narrated as live transaction ingestion.

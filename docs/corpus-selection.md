@@ -37,7 +37,7 @@ happened.
 | Official-record source plane | active partial | 4 of 5 configured sources in `ok`; 6 candidates; 61 held observations | SAM credential gap |
 | Private LinkedIn support | support only | **zero public rows** | 12,603 local observations and 78 captures are explicitly nonpublic and do not count toward public progress |
 | Epstein public corpus | proposed, un-ingested | **zero hashed artifacts** | approximately 3.5M pages, 2,000 videos, and 180,000 images remain unmanifested; privacy fixtures absent |
-| Trump office/business/capital | proposed, un-ingested | **zero resolved mission entities or records** | 0 of 8 seed queries executed; OpenFEC and SEC-submissions adapters absent |
+| U.S. presidential office/business/capital | proposed, identifier spine staged | 8 official candidate IDs and 37 authorized presidential campaign committee IDs; **zero transaction rows or crossing matches** | 0 of 37 Schedule B committee queries executed; leadership/JFC, beneficial-interest, and SEC-submissions resolution absent |
 | Panama service-provider topology | proposed, un-ingested | **zero imported nodes** | no licensed snapshot, hashes, importer, registry validations, or privacy fixtures |
 
 The counts above are a dated snapshot, not a permanent claim. The validator

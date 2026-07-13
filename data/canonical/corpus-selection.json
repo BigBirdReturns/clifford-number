@@ -232,13 +232,14 @@
       "sources": [
         { "source_id": "presidential-cohort", "source_class": "canonical_officially_enumerated_cohort", "url": "data/canonical/us-presidential-officeholder-cohort.json" },
         { "source_id": "officeholder-predicates", "source_class": "canonical_role_neutral_predicate_registry", "url": "data/canonical/officeholder-crossing-predicates.json" },
+        { "source_id": "openfec-presidential-identifiers", "source_class": "official_registry_identifier_intake", "url": "data/research/openfec-presidential-identifiers.json" },
         { "source_id": "openfec", "source_class": "official_campaign_finance_registry", "url": "https://api.open.fec.gov/developers/" },
         { "source_id": "usaspending", "source_class": "official_spending_api", "url": "https://api.usaspending.gov/docs/" },
         { "source_id": "sec-edgar", "source_class": "official_securities_api", "url": "https://www.sec.gov/search-filings/edgar-application-programming-interfaces" }
       ],
       "privacy": { "risk": "medium", "controls": ["public_entities_and_roles_only", "no_donor_address_republication", "defendant_specific_legal_status"] },
-      "replicability": { "public_reproducible": true, "counts_toward_public_coverage": true, "commands": ["npm run fanout"] },
-      "review": { "last_reviewed_at": "2026-07-13", "review_by": "2026-10-13", "sunset_condition": "Do not activate if the office-defined cohort, frozen predicate battery, historical-coverage accounting, independent adversarial review, OpenFEC key gate, or entity-resolution adapter is absent." },
+      "replicability": { "public_reproducible": true, "counts_toward_public_coverage": true, "commands": ["npm run validate:officeholder", "npm run ingest:openfec-disbursements"] },
+      "review": { "last_reviewed_at": "2026-07-13", "review_by": "2026-10-13", "sunset_condition": "Do not activate if the office-defined cohort, frozen predicate battery, historical-coverage accounting, independent adversarial review, provisioned-key Schedule B run, or entity-resolution adapter is absent." },
       "consumption": {
         "contract_id": "public-topology-map@1",
         "selection_review_id": "selection-review-trump-office-business-capital",

@@ -8,6 +8,7 @@ const sourceRoot = process.cwd();
 const files = {
   cohort: 'data/canonical/us-presidential-officeholder-cohort.json',
   predicates: 'data/canonical/officeholder-crossing-predicates.json',
+  identifiers: 'data/research/openfec-presidential-identifiers.json',
   selection: 'data/canonical/corpus-selection.json',
   coverage: 'data/research/corpus-coverage.json',
   reviews: 'data/research/selection-adversarial-reviews.json',
@@ -45,6 +46,16 @@ assert.equal(validateOfficeholderCohort({ root: sourceRoot }).ok, true);
 {
   const root = fixture({ predicates(value) { value.predicates[0].subject = 'A Trump committee pays a Trump property.'; } });
   assert.ok(codes(validateOfficeholderCohort({ root })).has('target-shaped-officeholder-predicate'));
+}
+
+{
+  const root = fixture({ identifiers(value) { value.identities.pop(); } });
+  assert.ok(codes(validateOfficeholderCohort({ root })).has('incomplete-openfec-candidate-identifiers'));
+}
+
+{
+  const root = fixture({ identifiers(value) { value.coverage.schedule_b_queries_executed = 37; } });
+  assert.ok(codes(validateOfficeholderCohort({ root })).has('dishonest-openfec-identifier-coverage'));
 }
 
 {
