@@ -4,6 +4,7 @@ import { windowOf, intersectAll, UNBOUNDED } from './lib/temporal.mjs';
 import { buildIdentityLayer } from './lib/axm-identity.mjs';
 import { checkReceiptArchival, todayString } from './lib/receipt-archival.mjs';
 import { assessHopDensity, validateDensityPolicy } from './lib/density.mjs';
+import { validateCorpusSelection } from './validate-corpus-selection.mjs';
 
 const data = loadAll();
 const scores = readJson('build/scores.json');
@@ -18,6 +19,12 @@ const orgScore = new Map(scores.organizations.map(o => [o.organization_id, o]));
 const errors = [];
 const warnings = [];
 function assert(cond, msg) { if (!cond) errors.push(msg); }
+
+// Constitutional selection-layer gate. A release cannot be individually
+// careful at the edge while silently choosing asymmetric or unmeasured corpora.
+for (const error of validateCorpusSelection({ root: process.cwd() }).errors) {
+  errors.push(`selection ${error.code} (${error.file}): ${error.message}`);
+}
 function hasSurface(actorId, surfaceId) {
   return actorScore.get(actorId)?.surfaces.includes(surfaceId);
 }
