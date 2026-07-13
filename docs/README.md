@@ -28,6 +28,7 @@ The essential reading rule is: a hop means documented shared context on a bounde
 ## Researchers and contributors
 
 - [`research-intake.md`](research-intake.md) — the candidate-surface packet and promotion path.
+- [`public-interest-discovery.md`](public-interest-discovery.md) — bounded Epstein, Trump, and Panama Papers source/crossing lanes.
 - [`../CONTRIBUTING.md`](../CONTRIBUTING.md) — contribution expectations and examples.
 - [`../contributions/templates/candidate-surface.md`](../contributions/templates/candidate-surface.md) — submission template.
 - [`redaction-policy.md`](redaction-policy.md) — required exclusions and listing caveats.
