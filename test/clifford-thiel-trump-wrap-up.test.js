@@ -43,6 +43,18 @@ expectFailure('the matrix cannot promote a crossing', bundle => {
   bundle.dispositionMatrix.positive_crossing_count = 1;
 }, /cannot promote a crossing/);
 
+expectFailure('the wrap-up cannot erase the Clifford-Starmer outcome', bundle => {
+  bundle.wrap.surviving_outcomes = bundle.wrap.surviving_outcomes.filter(row => row.outcome_id !== 'clifford-starmer-action-plan');
+}, /must preserve surviving outcome clifford-starmer-action-plan/);
+
+expectFailure('the compiled graph cannot erase the Clifford-Starmer hop', bundle => {
+  bundle.hopGraph.edges = bundle.hopGraph.edges.filter(edge => !([edge.actor_a, edge.actor_b].includes('matt-clifford') && [edge.actor_a, edge.actor_b].includes('keir-starmer')));
+}, /compiled Clifford-Starmer Action Plan hop is missing/);
+
+expectFailure('the policy-to-procurement corridor must retain its open join', bundle => {
+  bundle.wrap.composite_trails.find(row => row.trail_id === 'policy-to-state-capacity-to-procurement-market').status = 'proven_causal_chain';
+}, /must preserve both the structural corridor and its open join/);
+
 expectFailure('stale intake cannot overrule the authoritative Dialog surface', bundle => {
   bundle.candidates.candidates.find(row => row.id === 'candidate-dialog-roster-hop-weighting-audit').hop_eligible = true;
 }, /topology-audit candidate contradicts/);

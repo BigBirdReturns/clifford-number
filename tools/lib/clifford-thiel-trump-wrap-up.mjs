@@ -35,6 +35,16 @@ export function validateCliffordThielTrumpWrapUp(bundle) {
   if (!participation.some(row => row.surface_id === 'ai-opportunities-action-plan-2025' && row.actor_id === 'matt-clifford')) {
     errors.push('official Matt Clifford Action Plan participation is missing');
   }
+  if (!participation.some(row => row.surface_id === 'ai-opportunities-action-plan-2025' && row.actor_id === 'keir-starmer')) {
+    errors.push('official Keir Starmer Action Plan participation is missing');
+  }
+  if (!(hopGraph.edges ?? []).some(edge =>
+    new Set([edge.actor_a, edge.actor_b]).has('matt-clifford')
+    && new Set([edge.actor_a, edge.actor_b]).has('keir-starmer')
+    && edge.surfaces?.some(surface => surface.surface_id === 'ai-opportunities-action-plan-2025')
+  )) {
+    errors.push('compiled Clifford-Starmer Action Plan hop is missing');
+  }
 
   const peterScore = scores.actors?.find(row => row.actor_id === 'peter-thiel');
   if (!peterScore) errors.push('Peter Thiel score missing');
@@ -75,6 +85,24 @@ export function validateCliffordThielTrumpWrapUp(bundle) {
   }
 
   const dispositions = new Map((wrap.evaluated_paths ?? []).map(row => [row.path_id, row.disposition]));
+  const outcomes = new Map((wrap.surviving_outcomes ?? []).map(row => [row.outcome_id, row]));
+  for (const outcomeId of [
+    'clifford-starmer-action-plan',
+    'action-plan-state-capacity-program',
+    'thiel-palantir-governance',
+    'palantir-state-procurement-footprint',
+    'palantir-detachment-201',
+    'palantir-electric-twin-capital',
+    'clifford-thiel-dialog-context',
+  ]) {
+    if (!outcomes.has(outcomeId)) errors.push(`wrap-up must preserve surviving outcome ${outcomeId}`);
+  }
+  const cliffordStarmer = outcomes.get('clifford-starmer-action-plan');
+  if (cliffordStarmer?.status !== 'official_direct_policy_hop') errors.push('Clifford-Starmer Action Plan outcome must remain an official direct policy hop');
+  const compositeTrails = new Map((wrap.composite_trails ?? []).map(row => [row.trail_id, row]));
+  if (compositeTrails.get('policy-to-state-capacity-to-procurement-market')?.status !== 'structural_corridor_with_open_join') {
+    errors.push('policy-to-procurement trail must preserve both the structural corridor and its open join');
+  }
   const required = {
     'clifford-faculty-investor': 'blocked_unrecoverable_receipt',
     'clifford-thiel-dialog-roster': 'context_only_no_hop',
@@ -87,6 +115,8 @@ export function validateCliffordThielTrumpWrapUp(bundle) {
     if (dispositions.get(id) !== disposition) errors.push(`wrap-up path ${id} must remain ${disposition}`);
   }
   if (wrap.bottom_line?.graph_effect !== 'none') errors.push('wrap-up synthesis must remain graph-inert');
-  if (!/not establish a material/i.test(wrap.bottom_line?.finding ?? '')) errors.push('wrap-up bottom line is overbroad or missing');
+  if (!/establishes consequential/i.test(wrap.bottom_line?.finding ?? '') || !/does not establish one source-explicit coordinated/i.test(wrap.bottom_line?.finding ?? '')) {
+    errors.push('wrap-up bottom line must preserve both the outcomes and the unproven coordinated chain');
+  }
   return errors;
 }

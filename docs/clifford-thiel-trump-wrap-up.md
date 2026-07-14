@@ -3,10 +3,50 @@
 This is the repository-grounded conclusion after applying the Arcadia game-trail
 lessons to the data already present. It adds no new external research.
 
-## The answer
+## What the trail actually found
 
-The current corpus does **not** establish a material Matt Clifford–Peter
-Thiel–Donald Trump path.
+The corpus establishes a consequential layered topology. It contains one
+official direct policy hop, several documented organizational and deployment
+outcomes, and a real convening context:
+
+1. **Matt Clifford → AI Opportunities Action Plan → Keir Starmer.** Clifford
+   was commissioned to author the plan. Starmer agreed to take forward all 50
+   recommendations, and Clifford was named the Prime Minister's AI
+   Opportunities Adviser. This is an official, hop-eligible policy surface.
+2. **The plan → state AI capacity and procurement.** Its program includes
+   sovereign compute, AI Growth Zones, a National Data Library, procurement
+   reform, government acting as a strategic AI customer, domestic AI
+   champions, and deeper national-security collaboration. Those are actual
+   policy outcomes and commitments, although each later contract or beneficiary
+   still needs its own receipt.
+3. **Peter Thiel → Palantir.** The research layer records Thiel as Palantir
+   co-founder and chair. This is a documented organizational relationship, not
+   proof that he personally directed every Palantir transaction.
+4. **Palantir → government procurement and deployment.** The corpus records a
+   reported $480 million Maven prototype, Maven becoming a program of record,
+   an Army enterprise agreement worth up to $10 billion over ten years, and
+   NATO supply. These are material state-facing outcomes.
+5. **Palantir → Army personnel channel.** Palantir CTO and EVP Shyam Sankar was
+   officially commissioned into Detachment 201, placing Palantir leadership in
+   a formal Army technology-modernization surface.
+6. **Palantir-adjacent capital → Electric Twin.** Louis Mosley, identified as a
+   Palantir EVP, is a reported Electric Twin angel investor. Electric Twin was
+   founded by former No. 10 personnel and commercializes synthetic-audience
+   infrastructure. This is a real cross-surface lead, but not Palantir corporate
+   investment or Thiel control.
+7. **Clifford ↔ Dialog ↔ Thiel.** Clifford is listed in Dialog's directory;
+   Thiel is reported as a co-founder. That is a real shared institutional
+   context, though not proof of a bilateral meeting or transaction.
+
+The important open join is between the lanes: the repository has not yet found
+a named Action Plan implementation contract, board, investment, appointment,
+or decision that specifically makes Clifford or Starmer responsible for a
+Palantir outcome. The topology exists; the causal bridge remains unproven.
+
+## What the trail does not establish
+
+The current corpus does **not** establish a single coordinated Matt
+Clifford–Peter Thiel–Donald Trump chain.
 
 - Matt Clifford is the graph anchor. The authoritative ledger supports his
   official AI Opportunities Action Plan role. A prior Faculty-investor row was
@@ -27,7 +67,7 @@ The companion `data/research/officeholder-predicate-disposition-matrix.json`
 spells out all 40 president-by-predicate cells so coverage gaps and unexecuted
 predicates cannot be mistaken for negative findings.
 
-## What survives
+## Additional bounded observations
 
 The repository supports three separate observations:
 

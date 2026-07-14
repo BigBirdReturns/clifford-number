@@ -7,5 +7,4 @@ if (errors.length) {
   for (const error of errors) console.error(`- ${error}`);
   process.exit(1);
 }
-console.log('validate-clifford-thiel-trump-wrap-up: OK (no material three-person path in existing corpus)');
-
+console.log('validate-clifford-thiel-trump-wrap-up: OK (surviving outcomes preserved; coordinated-chain claims remain bounded)');
