@@ -38,8 +38,9 @@ node test/jackson-moses-preservation.test.js
 `funding-rounds.jsonl` · `co-investor-edges.jsonl` · `government-programs.jsonl` ·
 `government-awards.jsonl` · `validation-surfaces.jsonl` · `follow-on-capital.jsonl` · `exits.jsonl` ·
 `router-source-universe.jsonl` (the roster-derived denominator) · `router-candidates.jsonl` ·
-`router-signatures.jsonl` · `game-trails.jsonl` · `trail-frontier.jsonl` · `rejected-joins.jsonl` ·
-`coverage-gaps.jsonl` · `receipts.jsonl` · `analysis.md` ·
+`router-signatures.jsonl` · `roster-coverage.jsonl` · `portfolio-coverage.jsonl` (per-source
+source_total/enumerated_total/coverage_state) · `game-trails.jsonl` · `trail-frontier.jsonl` ·
+`rejected-joins.jsonl` · `coverage-gaps.jsonl` · `receipts.jsonl` · `analysis.md` ·
 `sources/` (`jackson-portfolio.json`, `counterpart-searches.jsonl`, `fund-portfolio-census.json`,
 `fund-team-rosters.json`, `government-awards.json`)
 

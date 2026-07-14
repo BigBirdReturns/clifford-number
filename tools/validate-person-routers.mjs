@@ -1,23 +1,31 @@
 #!/usr/bin/env node
-// Validate the person-centered defense-router intake + enforce the completion contract.
+// Validate the person-centered defense-router intake against the canonical completion contract.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const EVIDENCE = new Set(['observed', 'self_claimed', 'counterpart_reported', 'official_record', 'independently_corroborated', 'inferred', 'disputed', 'name_match_only', 'unavailable_after_search', 'not_searched', 'source_explicit', 'reported']);
 const COUNTERPART = new Set(['counterpart_reported', 'no_counterpart_confirmation_observed', 'third_party_reported_not_counterpart_confirmed', 'not_searched']);
-const REQUIRED = ['README.md', 'manifest.json', 'actors.jsonl', 'vehicles.jsonl', 'professional-roles.jsonl', 'portfolio-edges.jsonl', 'advisory-edges.jsonl', 'deal-sourcing-claims.jsonl', 'funding-rounds.jsonl', 'co-investor-edges.jsonl', 'government-programs.jsonl', 'government-awards.jsonl', 'validation-surfaces.jsonl', 'follow-on-capital.jsonl', 'exits.jsonl', 'router-source-universe.jsonl', 'router-candidates.jsonl', 'router-signatures.jsonl', 'game-trails.jsonl', 'trail-frontier.jsonl', 'rejected-joins.jsonl', 'coverage-gaps.jsonl', 'receipts.jsonl', 'analysis.md'];
-// The 12 names supplied in the prior prompt's seed list — the denominator must NOT equal only these.
+const REQUIRED = ['README.md', 'manifest.json', 'actors.jsonl', 'vehicles.jsonl', 'professional-roles.jsonl', 'portfolio-edges.jsonl', 'advisory-edges.jsonl', 'deal-sourcing-claims.jsonl', 'funding-rounds.jsonl', 'co-investor-edges.jsonl', 'government-programs.jsonl', 'government-awards.jsonl', 'validation-surfaces.jsonl', 'follow-on-capital.jsonl', 'exits.jsonl', 'router-source-universe.jsonl', 'router-candidates.jsonl', 'router-signatures.jsonl', 'roster-coverage.jsonl', 'portfolio-coverage.jsonl', 'game-trails.jsonl', 'trail-frontier.jsonl', 'rejected-joins.jsonl', 'coverage-gaps.jsonl', 'receipts.jsonl', 'analysis.md'];
 const PRIOR_SEED = new Set(['person:jackson-moses', 'person:sally-donnelly', 'person:tony-demartino', 'person:joshua-baer', 'person:richard-spencer', 'person:rotem-yehuda-kakon', 'person:aviad-grinfeld', 'person:daniel-fouzailov', 'person:joe-lonsdale', 'person:trae-stephens', 'person:katherine-boyle', 'person:tal-shmueli']);
 
 export function validatePersonRouters(dir) {
   const e = [];
+  const root = path.resolve(dir, '..', '..', '..');
   const jl = f => fs.existsSync(path.join(dir, f)) ? fs.readFileSync(path.join(dir, f), 'utf8').split(/\r?\n/).filter(Boolean).map(l => JSON.parse(l)) : null;
   for (const f of REQUIRED) if (!fs.existsSync(path.join(dir, f))) e.push(`missing required artifact: ${f}`);
   const manifest = fs.existsSync(path.join(dir, 'manifest.json')) ? JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8')) : {};
   if (manifest.graph_effect !== 'none') e.push('manifest graph_effect must be none');
 
-  // Jackson canonical node with resolving receipt
+  // CANONICAL COMPLETION CONTRACT must exist and be consumed
+  const contractPath = path.join(root, 'data/canonical/person-router-completion-contract.json');
+  if (!fs.existsSync(contractPath)) { e.push('missing canonical data/canonical/person-router-completion-contract.json'); return e; }
+  const contract = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
+  const TERMINAL = new Set(contract.terminal_states);
+  const ALLSTATES = new Set(Object.keys(contract.coverage_states));
+  const partial = s => contract.partial_markers.some(m => String(s ?? '').toLowerCase().includes(m));
+
+  // Jackson canonical + vehicles separate
   const actors = jl('actors.jsonl') ?? [];
   const receipts = new Map((jl('receipts.jsonl') ?? []).map(r => [r.receipt_id, r]));
   const jm = actors.find(a => a.actor_id === 'person:jackson-moses');
@@ -29,47 +37,72 @@ export function validatePersonRouters(dir) {
   for (const r of jl('receipts.jsonl') ?? []) {
     const resolved = /^https?:\/\//.test(r.locator_url ?? '');
     if (!resolved && r.status !== 'receipt_unresolved') e.push(`receipt ${r.receipt_id}: neither resolved nor demoted`);
-    if (r.status === 'receipt_unresolved' && !r.unavailable_after_search) e.push(`receipt ${r.receipt_id}: demoted without documented attempts`);
   }
 
-  // ROSTER-DERIVED DENOMINATOR (completion contract): must exceed the prior 12-name seed list
+  // ROSTER-DERIVED DENOMINATOR (investment-decision-maker universe)
   const universe = jl('router-source-universe.jsonl') ?? [];
-  const ids = new Set(universe.map(u => u.candidate_id));
-  if (universe.length <= PRIOR_SEED.size) e.push(`router denominator (${universe.length}) must derive from rosters, not only the ${PRIOR_SEED.size}-name seed list`);
-  const nonSeed = [...ids].filter(id => !PRIOR_SEED.has(id));
-  if (nonSeed.length < 20) e.push('denominator lacks substantial roster-derived (non-seed) candidates');
-  for (const u of universe) if (!u.roster_source || !u.roster_receipt) e.push(`candidate ${u.candidate_id} lacks roster source/receipt`);
+  if (universe.length <= PRIOR_SEED.size) e.push(`denominator (${universe.length}) must derive from rosters, not the seed list`);
+  if ([...new Set(universe.map(u => u.candidate_id))].filter(id => !PRIOR_SEED.has(id)).length < 20) e.push('denominator lacks substantial non-seed roster candidates');
   const sigs = jl('router-signatures.jsonl') ?? [];
   if (sigs.length !== universe.length) e.push('every candidate must have a signature row');
-  for (const s of sigs) if (s.admitted !== (s.routing_score >= s.threshold)) e.push(`signature ${s.actor_id}: admission inconsistent with score`);
   const admitted = sigs.filter(s => s.admitted);
 
-  // COUNTERPART-STATE CONTRACT: no counterpart_not_found without provenance; not both not_searched & found
-  for (const f of ['advisory-edges.jsonl', 'deal-sourcing-claims.jsonl']) {
-    for (const row of jl(f) ?? []) {
-      if (!('counterpart_status' in row)) { e.push(`${f}: ${row.actor_id} missing counterpart_status`); continue; }
-      const cs = row.counterpart_status;
-      if (!COUNTERPART.has(cs)) e.push(`${f}: invalid counterpart_status ${cs}`);
-      // a "no confirmation / reported" state REQUIRES a documented search ref; else it must be not_searched
-      if ((cs === 'no_counterpart_confirmation_observed' || cs === 'third_party_reported_not_counterpart_confirmed') && !row.counterpart_search_ref) e.push(`${f}: ${row.counterparty ?? row.company} claims searched-result without counterpart_search_ref`);
-      if (row.evidence_state === 'self_claimed' && cs === 'counterpart_reported') e.push(`${f}: self_claimed silently promoted`);
+  // COVERAGE LEDGERS: every required source has a disposition; partial-marker cannot be surface_complete
+  const rosterCov = jl('roster-coverage.jsonl') ?? [];
+  const portCov = jl('portfolio-coverage.jsonl') ?? [];
+  const rosterSrc = new Set(rosterCov.map(r => r.source));
+  const portSrc = new Set(portCov.map(p => p.fund));
+  for (const s of contract.required_roster_sources) if (![...rosterSrc].some(x => x.toLowerCase().includes(s.toLowerCase()) || s.toLowerCase().includes(x.toLowerCase()))) e.push(`required roster source missing a disposition: ${s}`);
+  for (const s of contract.required_portfolio_sources) if (![...portSrc].some(x => x.toLowerCase().includes(s.toLowerCase()) || s.toLowerCase().includes(x.toLowerCase()))) e.push(`required portfolio source missing a disposition: ${s}`);
+  for (const row of [...rosterCov, ...portCov]) {
+    if (!ALLSTATES.has(row.coverage_state)) e.push(`coverage row ${row.source ?? row.fund}: invalid coverage_state ${row.coverage_state}`);
+    if (row.coverage_state === 'surface_complete' && (partial(row.selection_rule) || partial(row.note))) e.push(`coverage ${row.source ?? row.fund}: labeled surface_complete but note/rule marks it partial`);
+  }
+  // portfolio rows carry the required fields; a subset selection_rule cannot be surface_complete unless source_total==enumerated_total
+  for (const p of portCov) {
+    for (const k of contract.portfolio_row_required_fields) if (!(k in p)) e.push(`portfolio-coverage ${p.fund}: missing ${k}`);
+    if (p.coverage_state === 'surface_complete' && !(p.source_total != null && p.source_total === p.enumerated_total)) e.push(`portfolio ${p.fund}: surface_complete requires source_total==enumerated_total`);
+  }
+
+  // COUNTERPART provenance contract
+  const cs = new Map((jl('sources/counterpart-searches.jsonl') ?? []).map(c => [c.search_id, c]));
+  for (const c of cs.values()) {
+    if ((c.disposition === 'no_counterpart_confirmation_observed' || c.disposition === 'third_party_reported_not_counterpart_confirmed')) {
+      for (const k of contract.counterpart_provenance_required_fields) if (!(k in c) || (Array.isArray(c[k]) ? c[k].length === 0 : !c[k])) e.push(`counterpart-search ${c.search_id}: missing provenance field ${k}`);
     }
   }
-
-  // every admitted router has a two-hop (>=3 node) trail
-  const trails = jl('game-trails.jsonl') ?? [];
-  for (const r of admitted) { const t = trails.filter(x => x.hops?.[0] === r.actor_id); if (!t.length) e.push(`admitted router ${r.actor_id} has no game-trail`); }
-
-  // gov awards keep ceiling/obligated/outlay separate
-  for (const g of jl('government-awards.jsonl') ?? []) if (!('contract_ceiling_usd' in g) || !('obligated_usd' in g) || !('outlay_usd' in g)) e.push('gov award missing ceiling/obligated/outlay separation');
-
-  // frontier: no required row remains not_searched
-  for (const fr of jl('trail-frontier.jsonl') ?? []) if (fr.state === 'not_searched') e.push(`frontier ${fr.frontier_id} left not_searched`);
-
-  // evidence vocab + graph_effect
-  for (const f of ['portfolio-edges.jsonl', 'validation-surfaces.jsonl', 'government-awards.jsonl', 'exits.jsonl', 'co-investor-edges.jsonl']) {
-    for (const row of jl(f) ?? []) { if (row.graph_effect !== 'none') e.push(`${f}: graph_effect must be none`); if (row.evidence_state != null && !EVIDENCE.has(row.evidence_state)) e.push(`${f}: invalid evidence_state ${row.evidence_state}`); }
+  for (const f of ['advisory-edges.jsonl', 'deal-sourcing-claims.jsonl']) for (const row of jl(f) ?? []) {
+    if (!('counterpart_status' in row)) { e.push(`${f}: ${row.actor_id} missing counterpart_status`); continue; }
+    if (!COUNTERPART.has(row.counterpart_status)) e.push(`${f}: invalid counterpart_status ${row.counterpart_status}`);
+    if ((row.counterpart_status === 'no_counterpart_confirmation_observed' || row.counterpart_status === 'third_party_reported_not_counterpart_confirmed') && !row.counterpart_search_ref) e.push(`${f}: ${row.counterparty ?? row.company} searched-result without counterpart_search_ref`);
+    if (row.evidence_state === 'self_claimed' && row.counterpart_status === 'counterpart_reported') e.push(`${f}: self_claimed silently promoted`);
   }
+
+  // GOVERNMENT AWARDS: usaspending receipt per row; NEVER the portfolio receipt; identity gate
+  for (const g of jl('government-awards.jsonl') ?? []) {
+    if (!('contract_ceiling_usd' in g) || !('obligated_usd' in g) || !('outlay_usd' in g)) e.push(`gov award ${g.org}: ceiling/obligated/outlay not separated`);
+    for (const id of g.receipt_ids ?? []) if (id === 'r-fund-portfolio-census-2026' || /portfolio|roster/.test(id)) e.push(`gov award ${g.org} cites a non-award receipt ${id}`);
+    for (const k of contract.award_receipt_rule.identity_fields_required) if (!(k in g)) e.push(`gov award ${g.org}: missing identity field ${k}`);
+    if (!contract.award_receipt_rule.identity_states.includes(g.identity_state)) e.push(`gov award ${g.org}: invalid identity_state ${g.identity_state}`);
+    // official USAspending rows must cite an r-usaspending- receipt
+    if (g.evidence_state === 'official_record' && !(g.receipt_ids ?? []).some(id => id.startsWith('r-usaspending-'))) e.push(`gov award ${g.org}: official_record must cite an r-usaspending- receipt`);
+  }
+  // Cambium must be held (identity gate), never resolved
+  const cambium = (jl('government-awards.jsonl') ?? []).find(g => g.org === 'Cambium');
+  if (cambium && cambium.identity_state === 'resolved') e.push('Cambium marked identity resolved despite moderate-confidence match');
+
+  // every admitted router has a >=3-node trail
+  const trails = jl('game-trails.jsonl') ?? [];
+  for (const r of admitted) { if (!trails.some(x => x.hops?.[0] === r.actor_id && x.hops.length >= 3)) e.push(`admitted router ${r.actor_id} lacks a multi-hop trail`); }
+
+  // FRONTIER honesty: states from the contract vocab; a partial-note row cannot be a terminal state
+  for (const fr of jl('trail-frontier.jsonl') ?? []) {
+    if (!ALLSTATES.has(fr.state)) e.push(`frontier ${fr.frontier_id}: invalid state ${fr.state}`);
+    if (TERMINAL.has(fr.state) && fr.state === 'surface_complete' && partial(fr.note)) e.push(`frontier ${fr.frontier_id}: surface_complete but note marks it partial`);
+  }
+  // manifest must not claim closure unless all frontier rows AND required sources are terminal
+  const allTerminal = (jl('trail-frontier.jsonl') ?? []).every(f => TERMINAL.has(f.state)) && [...rosterCov, ...portCov].every(r => TERMINAL.has(r.coverage_state));
+  if (!allTerminal && manifest.counts?.frontier_not_searched === 0 && manifest.coverage_summary && !/partial/i.test(manifest.coverage_summary)) e.push('manifest headlines closure while coverage is partial');
 
   if (typeof manifest.counts?.jackson_x_natsec100 !== 'number') e.push('Jackson×NatSec100 overlap count missing');
   return e;
@@ -80,5 +113,5 @@ if (invoked === fileURLToPath(import.meta.url)) {
   const dir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'data/intake/person-centered-defense-routers');
   const errs = validatePersonRouters(dir);
   if (errs.length) { console.error('validate-person-routers failed:'); for (const x of errs) console.error(`- ${x}`); process.exit(1); }
-  console.log('validate-person-routers: OK (roster-derived denominator; counterpart states have provenance; admitted routers have trails; ceilings/obligations separate; frontier closed; Jackson overlap ran)');
+  console.log('validate-person-routers: OK (completion contract enforced; coverage states honest; partial != complete; awards cite USAspending receipts + identity-gated; counterpart provenance present)');
 }

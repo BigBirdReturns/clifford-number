@@ -26,6 +26,11 @@ const core = s => norm(s).split(' ').filter(t => t && !['inc', 'llc', 'corp', 't
 const pid = s => 'person:' + norm(s).replace(/ /g, '-');
 const G = 'none';
 
+// ---- canonical completion contract (builder + validator both consume it) ----
+const contract = rjson(path.join(root, 'data/canonical/person-router-completion-contract.json'));
+const PARTIAL_MARKERS = contract.partial_markers;
+const hasPartialMarker = s => PARTIAL_MARKERS.some(m => String(s ?? '').toLowerCase().includes(m));
+
 // ================= overlap universes =================
 const nsByCore = new Map();
 for (const c of rjl(path.join(N, 'chunk1/companies.jsonl'))) for (const nm of [c.canonical_name, ...(c.aliases ?? [])]) { const k = core(nm); if (k) nsByCore.set(k, c); }
@@ -50,6 +55,9 @@ const receipts = [
   { receipt_id: 'r-linkedin-projection-2026', evidence_class: 'derived_projection', locator_url: 'https://www.linkedin.com/', retrieved_at: '2026-07-14', content_sha256: null, note: 'Committed portable LinkedIn projection (data/intake/linkedin-targeted-review): 30 people, 359 role-claims; per-capture sha256 receipts. Router signatures computed from role-claims.' },
   { receipt_id: 'r-traysar-prnewswire-2026', evidence_class: 'reported', locator_url: 'https://www.prnewswire.com/news-releases/traysar-raises-25m-seed-emerges-from-stealth-at-reindustrialize-as-the-worlds-first-subterranean-defense-tech-company-302802698.html', retrieved_at: '2026-07-14', content_sha256: null, note: 'Traysar $25M seed led by Silent Ventures.' },
   { receipt_id: 'r-raft-ussocom-2026', evidence_class: 'reported', locator_url: 'https://www.govconwire.com/articles/raft-ussocom-contract-ai-data-delivery', retrieved_at: '2026-07-14', content_sha256: null, note: 'Raft $349M USSOCOM IDIQ ceiling (not spend).' },
+  { receipt_id: 'r-fund-team-rosters-2026', evidence_class: 'primary_public', locator_url: 'https://8vc.com/team', retrieved_at: '2026-07-14', content_sha256: null, note: 'Fund team-roster ledger (sources/fund-team-rosters.json): 11 fund team pages fetched; investment-decision-maker subset enumerated (see roster-coverage.jsonl for per-source gross/enumerated).' },
+  { receipt_id: 'r-stratos-ctech-portfolio-2026', evidence_class: 'reported', locator_url: 'https://www.calcalistech.com/ctechnews/article/r14hmskzzg', retrieved_at: '2026-07-14', content_sha256: null, note: 'Press names Stratos portfolio (Particle/Tenna/Skapion); site is logos-only. Cross-ref to corridor.' },
+  { receipt_id: 'r-capital-factory-portfolio-2026', evidence_class: 'primary_public', locator_url: 'https://www.capitalfactory.com/portfolio', retrieved_at: '2026-07-14', content_sha256: null, note: 'Capital Factory public portfolio index (hash-pinned in corridor universe); full 837-company surface.' },
 ];
 const demotedRefs = [
   { receipt_id: 'r-linkedin-jacksonmoses-2026', reason: 'LinkedIn auth-gated; not fetchable.', attempted: ['https://www.linkedin.com/in/jacksonmoses (auth wall)'] },
@@ -277,15 +285,28 @@ writeJsonl('validation-surfaces.jsonl', [
   ...fundNs.map(f => ({ join_id: `join-fund-ns-${norm(f.fund).replace(/ /g, '-')}`, kind: 'fund_portfolio_x_natsec100', ...f })),
 ]);
 
-// ================= government awards (Lane D — from agent census, ceiling/obligation/outlay separate) =================
+// ================= government awards (Lane D) — per-row USAspending receipt + structured identity gate =================
 const govSrc = rjson(path.join(dir, 'sources/government-awards.json'));
+// recipient legal names observed in the USAspending records (from the award agent); identity gate per contract.
+const recipLegal = { 'Hadrian': 'HADRIAN AUTOMATION, INC.', 'Firehawk Aerospace': 'FIREHAWK AEROSPACE INC.', 'Orbit Fab': 'ORBIT FAB, INC', 'CHAOS Industries': 'CHAOS INDUSTRIES, INC.', 'Raft': 'RAFT LLC', 'Overland AI': 'OVERLAND AI INC', 'Starfish Space': 'STARFISH SPACE INC.', 'Privateer': 'PRIVATEER SPACE, INC.', 'Firestorm': 'FIRESTORM LABS, INC.', 'Cambium': 'CAMBIUM BIOMATERIALS INC', 'Anduril': 'ANDURIL INDUSTRIES, INC.', 'Saronic': 'SARONIC TECHNOLOGIES, INC.', 'Impulse Space': 'IMPULSE SPACE, INC.', 'Axiom Space': 'AXIOM SPACE, INC.', 'Firefly Aerospace': 'FIREFLY AEROSPACE INC.', 'Castelion': 'CASTELION CORPORATION' };
+const idState = (company) => {
+  if (company === 'Cambium') return { identity_confidence: 'moderate', identity_state: 'held', identity_basis: 'Recipient CAMBIUM BIOMATERIALS INC matched to NatSec100 Cambium by business-description only; other unrelated Cambium entities exist. HELD (not counted resolved) until an exact-entity gate passes.' };
+  return { identity_confidence: 'high', identity_state: 'resolved', identity_basis: 'Recipient legal name + UEI resolve to a single SAM entity matching the queried defense-tech company.' };
+};
 const govAwards = [];
+const usaspendingReceipts = [];
 if (govSrc && Array.isArray(govSrc.awards)) {
-  for (const a of govSrc.awards) govAwards.push({ org: a.company, uei: a.uei ?? null, cage: a.cage ?? null, award_id: a.award_id ?? null, awarding_agency: a.awarding_agency ?? null, program_or_vehicle: a.program_or_vehicle ?? null, contract_ceiling_usd: a.contract_ceiling_usd ?? null, obligated_usd: a.obligated_usd ?? null, outlay_usd: a.outlay_usd ?? null, recipient_type: a.recipient_type ?? null, source_url: a.source_url ?? null, receipt_ids: ['r-fund-portfolio-census-2026'], evidence_state: a.evidence_state ?? 'reported', note: 'ceiling/obligated/outlay kept separate; ceiling != spend.', discovery_admission_state: 'admitted', graph_effect: G });
+  for (const a of govSrc.awards) {
+    const rid = `r-usaspending-${String(a.award_id ?? 'na').toLowerCase().replace(/[^a-z0-9]+/g, '')}`;
+    usaspendingReceipts.push({ receipt_id: rid, evidence_class: 'official_record', locator_url: a.source_url, retrieved_at: '2026-07-14', content_sha256: null, note: `USAspending award ${a.award_id} for ${a.company} (${a.awarding_agency}).` });
+    const idf = idState(a.company);
+    govAwards.push({ org: a.company, queried_name: a.company, recipient_legal_name: recipLegal[a.company] ?? null, uei: a.uei ?? null, cage: a.cage ?? null, award_id: a.award_id ?? null, awarding_agency: a.awarding_agency ?? null, program_or_vehicle: a.program_or_vehicle ?? null, contract_ceiling_usd: a.contract_ceiling_usd ?? null, obligated_usd: a.obligated_usd ?? null, outlay_usd: a.outlay_usd ?? null, recipient_type: a.recipient_type ?? null, source_url: a.source_url ?? null, receipt_ids: [rid], evidence_state: 'official_record', ...idf, note: 'ceiling/obligated/outlay kept separate; ceiling != spend. Award identity gated by identity_state.', discovery_admission_state: 'admitted', graph_effect: G });
+  }
 }
-// always include the anchor Raft ceiling
-govAwards.push({ org: 'Raft', uei: null, cage: null, award_id: null, awarding_agency: 'USSOCOM', program_or_vehicle: 'IDIQ (edge-to-enterprise data/AI)', contract_ceiling_usd: 349_000_000, obligated_usd: null, outlay_usd: null, recipient_type: 'prime', source_url: 'https://www.govconwire.com/articles/raft-ussocom-contract-ai-data-delivery', receipt_ids: ['r-raft-ussocom-2026'], evidence_state: 'reported', note: 'IDIQ CEILING only; NOT spend/obligation/outlay.', discovery_admission_state: 'admitted', graph_effect: G });
+// anchor Raft USSOCOM IDIQ ceiling (reported press, separate receipt — NOT a USAspending row)
+govAwards.push({ org: 'Raft', queried_name: 'Raft', recipient_legal_name: 'RAFT LLC', uei: null, cage: null, award_id: 'USSOCOM-IDIQ-reported', awarding_agency: 'USSOCOM', program_or_vehicle: 'IDIQ (edge-to-enterprise data/AI)', contract_ceiling_usd: 349_000_000, obligated_usd: null, outlay_usd: null, recipient_type: 'prime', source_url: 'https://www.govconwire.com/articles/raft-ussocom-contract-ai-data-delivery', receipt_ids: ['r-raft-ussocom-2026'], evidence_state: 'reported', identity_confidence: 'high', identity_state: 'resolved', identity_basis: 'Press names Raft (RAFT LLC) as the USSOCOM IDIQ awardee.', note: 'IDIQ CEILING only (press-reported); NOT spend/obligation/outlay; NOT a USAspending row.', discovery_admission_state: 'admitted', graph_effect: G });
 const govUnavailable = (govSrc?.unavailable ?? []).map(u => ({ org: u.company, state: 'unavailable_after_search', attempted: u.attempted ?? [], source_url: u.source_url ?? null, discovery_admission_state: 'admitted', graph_effect: G }));
+receipts.push(...usaspendingReceipts); // per-award USAspending receipts; awards never cite the portfolio receipt
 writeJsonl('government-awards.jsonl', govAwards);
 writeJsonl('government-programs.jsonl', [
   { org: 'Raft', program: 'USSOCOM data/AI', evidence_state: 'reported', receipt_ids: ['r-raft-ussocom-2026'], discovery_admission_state: 'admitted', graph_effect: G },
@@ -304,6 +325,33 @@ writeJsonl('follow-on-capital.jsonl', [
 const exits = [['Voyager Technologies', 'IPO', 'NYSE: VOYG', 'r-jacksonmoses-portfolio-2026'], ['MainStreet', 'acquired', 'Employer.com', 'r-jacksonmoses-about-2026'], ['Spectrum AI', 'acquired', 'ActiveFence', 'r-jacksonmoses-about-2026'], ['GameOn', 'acquired', 'Victory Games', 'r-jacksonmoses-portfolio-2026'], ['Capiche', 'acquired', 'Vendr', 'r-jacksonmoses-portfolio-2026'], ['Daylight', 'acquired', 'Atlas', 'r-jacksonmoses-portfolio-2026']];
 writeJsonl('exits.jsonl', exits.map(([co, t, d, rc]) => ({ company: co, exit_type: t, detail: d, exit_value_usd: null, receipt_ids: [rc], evidence_state: 'self_claimed', note: 'exit value undisclosed; not conflated with funding/valuation.', discovery_admission_state: 'admitted', graph_effect: G })));
 
+// ================= coverage ledgers (per contract): every required roster + portfolio source has a disposition =================
+// gross_observed for fund rosters (approximate totals reported by the roster fetch; decision-maker subset enumerated)
+const rosterGross = { '8VC': 48, 'Founders Fund': 28, 'a16z American Dynamism': 15, 'Valor Equity Partners': 18, 'Lux Capital': 33, 'DCVC': 47, 'Shield Capital': 27, 'Washington Harbour Partners': 25, 'Pallas Advisors': 58, 'Stratos Ventures': 9, 'Texas Venture Partners': 3 };
+const rosterEnum = new Map();
+for (const p of (teamRosters?.people ?? [])) rosterEnum.set(p.fund, (rosterEnum.get(p.fund) ?? 0) + 1);
+const rosterCoverage = [];
+const RT = '2026-07-14';
+rosterCoverage.push({ source: 'linkedin-projection', gross_observed: captures.size, enumerated: captures.size, selection_rule: 'all projection people', coverage_state: 'surface_complete', retrieved_at: RT, receipt: 'r-linkedin-projection-2026' });
+for (const fund of ['8VC', 'Founders Fund', 'a16z American Dynamism', 'Valor Equity Partners', 'Lux Capital', 'DCVC', 'Shield Capital', 'Washington Harbour Partners', 'Pallas Advisors', 'Stratos Ventures']) {
+  rosterCoverage.push({ source: fund, gross_observed: rosterGross[fund] ?? null, enumerated: rosterEnum.get(fund) ?? 0, selection_rule: 'investment-decision-maker subset (partners/founders/GPs/MDs/principals/advisors); ops/finance/EA excluded by contract', coverage_state: 'partially_searched', retrieved_at: RT, receipt: 'r-fund-team-rosters-2026' });
+}
+rosterCoverage.push({ source: 'Texas Venture Partners', gross_observed: 3, enumerated: rosterEnum.get('Texas Venture Partners') ?? 0, selection_rule: 'third-party aggregation only (no reachable primary team page)', coverage_state: 'partially_searched', retrieved_at: RT, note: 'primary team page unavailable; names from Tracxn/startupintros (lower confidence)', receipt: 'r-fund-team-rosters-2026' });
+rosterCoverage.push({ source: 'Silent Ventures', gross_observed: 1, enumerated: 1, selection_rule: 'silentvc.com Team section names only the founder (Jackson Moses, canonical)', coverage_state: 'surface_complete', retrieved_at: RT, note: 'FOUNDER_ONLY confirmed on silentvc.com; the sole listed principal is already canonical.', receipt: 'r-silent-home-2026' });
+rosterCoverage.push({ source: 'Capital Factory', gross_observed: null, enumerated: 1, selection_rule: 'only founder (Joshua Baer, canonical) detailed on capitalfactory.com/team excerpt', coverage_state: 'partially_searched', retrieved_at: RT, note: 'Full CF roster exists but was not enumerated this correction pass; founder is canonical.', receipt: 'r-capitalfactory-about-2026' });
+rosterCoverage.push({ source: 'In-Q-Tel', gross_observed: 0, enumerated: 0, selection_rule: 'n/a', coverage_state: 'unavailable_after_search', retrieved_at: RT, attempted: ['https://www.iqt.org/team (404)', 'https://www.iqt.org/leadership (404)'], note: 'No reachable IQT team roster page; iqt.org/portfolio used for the portfolio census only.', receipt: 'r-fund-team-rosters-2026' });
+writeJsonl('roster-coverage.jsonl', rosterCoverage.map(r => ({ ...r, discovery_admission_state: 'admitted', graph_effect: G })));
+
+// portfolio coverage: per required portfolio source, with source_total / enumerated_total / selection_rule / coverage_state
+const portfolioCoverage = [];
+for (const [fund, cos] of perFund) portfolioCoverage.push({ fund, source_total: null, enumerated_total: cos.size, selection_rule: 'defense-relevant companies from the fetched portfolio page (diversified funds filtered)', coverage_state: 'partially_searched', retrieved_at: RT, receipt: 'r-fund-portfolio-census-2026' });
+// required portfolio sources NOT in the census fetch — accounted from existing corridor data (no new research)
+portfolioCoverage.push({ fund: 'Capital Factory', source_total: cfUniverse.distinct_company_names, enumerated_total: cfUniverse.distinct_company_names, selection_rule: 'full public portfolio index (hash-pinned corridor universe)', coverage_state: 'surface_complete', retrieved_at: '2026-07-14', receipt: 'r-capital-factory-portfolio-2026' });
+portfolioCoverage.push({ fund: 'Stratos Ventures', source_total: 5, enumerated_total: 3, selection_rule: 'press-named only (Particle/Tenna/Skapion); site portfolio is logos-only', coverage_state: 'partially_searched', retrieved_at: '2026-07-14', receipt: 'r-stratos-ctech-portfolio-2026' });
+portfolioCoverage.push({ fund: 'Texas Venture Partners', source_total: null, enumerated_total: 0, selection_rule: 'no portfolio page reachable', coverage_state: 'unavailable_after_search', retrieved_at: '2026-07-14', attempted: ['texasventurepartners.com (no portfolio names)'], receipt: 'r-fund-team-rosters-2026' });
+writeJsonl('portfolio-coverage.jsonl', portfolioCoverage.map(p => ({ ...p, discovery_admission_state: 'admitted', graph_effect: G })));
+const portfolioCoverageState = new Map(portfolioCoverage.map(p => [p.fund, p.coverage_state]));
+
 // ================= game trails (from structured edges) for EVERY admitted router =================
 const trails = [], frontier = [];
 const nsYearsFor = nm => { const c = nsByCore.get(core(nm)); return c ? c.natsec100_years_documented : null; };
@@ -320,7 +368,8 @@ for (const r of admittedList) {
     const hit = [...cos].find(c => nsByCore.has(core(c)));
     if (hit) trails.push({ trail_id: `trail-${norm(r.label).replace(/ /g, '-')}-validation`, hops: [a, veh, hit, `NatSec100 ${JSON.stringify(nsYearsFor(hit))}`], terminates: 'validation_surface_reached', surfaces_reached: ['company', 'validation'], receipt_ids: ['r-fund-portfolio-census-2026'], evidence_state: 'source_explicit', graph_effect: G });
     else trails.push({ trail_id: `trail-${norm(r.label).replace(/ /g, '-')}-vehicle`, hops: [a, veh, 'portfolio (no NatSec100 hit on searched surfaces)', 'frontier'], terminates: 'no_source_explicit_next_edge', surfaces_reached: ['company'], receipt_ids: [r.roster_receipt], evidence_state: 'observed', graph_effect: G });
-    frontier.push({ frontier_id: `frontier-${norm(r.label).replace(/ /g, '-')}`, from: veh, next: `enumerate full ${fundName} portfolio for gov/validation overlaps`, state: 'surface_reached', note: 'Census subset processed; full portfolio census remains a continuation lane.', graph_effect: G });
+    const covState = portfolioCoverageState.get(fundName) ?? 'partially_searched';
+    frontier.push({ frontier_id: `frontier-${norm(r.label).replace(/ /g, '-')}`, from: veh, next: `enumerate full ${fundName} portfolio for gov/validation overlaps`, state: covState, note: covState === 'surface_complete' ? 'Full portfolio surface enumerated.' : 'Only the defense-relevant portfolio subset was processed; full census remains a continuation lane (NON-terminal).', graph_effect: G });
   } else {
     // projection-admitted routers (senior officials): public-service -> board/advisor trail
     trails.push({ trail_id: `trail-${norm(r.label).replace(/ /g, '-')}-service`, hops: [a, 'government/board roles (projection role-claims)', 'multiple companies advised', 'defense-tech surface'], terminates: 'two_hop_boundary', surfaces_reached: ['government', 'advisory'], receipt_ids: [r.roster_receipt], evidence_state: 'observed', note: 'Trail from committed projection role-claims (public-service -> adviser/board).', graph_effect: G });
@@ -339,13 +388,14 @@ writeJsonl('coverage-gaps.jsonl', [
   { gap_id: 'gap-jackson-dates', state: 'unavailable_after_search', detail: 'about page lists roles without dates (Weekend Fund role dated via third-party DB).', timestamp: '2026-07-14', graph_effect: G },
   { gap_id: 'gap-sourcing-counterparts', state: 'searched_no_confirmation', detail: 'All 6 named funds + 4 advisory companies searched (sources/counterpart-searches.jsonl); none confirmed on counterpart surfaces. Weekend Fund + Afore Capital third-party-reported.', timestamp: '2026-07-14', graph_effect: G },
   { gap_id: 'gap-government-award-ids', state: govSrc ? 'searched_partial' : 'not_searched', detail: 'Government award UEIs/IDs/obligations resolved where the award agent found official records; unresolved companies recorded unavailable_after_search.', unavailable: govUnavailable, timestamp: '2026-07-14', graph_effect: G },
-  { gap_id: 'gap-fund-census', state: 'searched_nonexhaustive', detail: '11 fund portfolios enumerated (defense-relevant subset); diversified funds not fully dumped.', timestamp: '2026-07-14', graph_effect: G },
-  { gap_id: 'gap-roster-expansion', state: teamRosters ? 'searched_nonexhaustive' : 'searched_projection_only', detail: `Denominator from ${captures.size}-person committed LinkedIn projection${teamRosters ? ' + fund team rosters' : ''}; broader roster expansion is a continuation lane.`, timestamp: '2026-07-14', graph_effect: G },
+  { gap_id: 'gap-fund-census', state: 'partially_searched', detail: '11 fund portfolios enumerated (defense-relevant SUBSET); diversified funds not fully dumped. See portfolio-coverage.jsonl for per-source coverage_state.', timestamp: '2026-07-14', graph_effect: G },
+  { gap_id: 'gap-roster-expansion', state: 'partially_searched', detail: `Denominator = investment-decision-maker universe: ${captures.size}-person committed projection (surface_complete) + fund decision-maker subset (partially_searched, ~250 gross). Long-tail ops/finance/EA staff excluded by contract rule. See roster-coverage.jsonl.`, timestamp: '2026-07-14', graph_effect: G },
+  { gap_id: 'gap-cambium-identity', state: 'identity_unresolved_after_search', detail: 'Cambium USAspending recipient CAMBIUM BIOMATERIALS INC matched by business-description only; identity_state=held, not counted as resolved.', timestamp: '2026-07-14', graph_effect: G },
 ]);
 
 // ================= manifest =================
 const manifest = {
-  schema_version: 'person-centered-defense-routers@2',
+  schema_version: 'person-centered-defense-routers@3',
   built_at: '2026-07-14',
   purpose: 'Source-addressed map of person-centered defense-tech routers. Denominator DERIVED FROM ROSTERS (committed LinkedIn projection + fund rosters), signatures computed from role-claims. Evidence per-predicate; discovery admission separate from corroboration; graph_effect none. No private intent/coordination/influence/wrongdoing inferred.',
   counts: {
@@ -364,14 +414,28 @@ const manifest = {
     fund_natsec100_overlaps: fundNs.reduce((s, f) => s + f.natsec100_overlap, 0),
     counterpart_searches: csById.size,
     government_awards: govAwards.length,
+    government_awards_identity_resolved: govAwards.filter(g => g.identity_state === 'resolved').length,
+    government_awards_identity_held: govAwards.filter(g => g.identity_state === 'held').length,
     government_awards_unavailable: govUnavailable.length,
     game_trails: trails.length,
-    trail_frontier_open: frontier.filter(f => f.state === 'not_searched').length,
+    // HONEST frontier accounting: terminal vs non-terminal (partial). Do NOT report "closed" unless all terminal.
+    frontier_total: frontier.length,
+    frontier_terminal: frontier.filter(f => contract.terminal_states.includes(f.state)).length,
+    frontier_partial_or_not_searched: frontier.filter(f => !contract.terminal_states.includes(f.state)).length,
+    frontier_not_searched: frontier.filter(f => f.state === 'not_searched').length,
+    roster_sources_surface_complete: rosterCoverage.filter(r => r.coverage_state === 'surface_complete').length,
+    roster_sources_partial: rosterCoverage.filter(r => r.coverage_state === 'partially_searched').length,
+    roster_sources_unavailable: rosterCoverage.filter(r => r.coverage_state === 'unavailable_after_search').length,
+    portfolio_sources_surface_complete: portfolioCoverage.filter(p => p.coverage_state === 'surface_complete').length,
+    portfolio_sources_partial: portfolioCoverage.filter(p => p.coverage_state === 'partially_searched').length,
+    portfolio_sources_unavailable: portfolioCoverage.filter(p => p.coverage_state === 'unavailable_after_search').length,
     receipts_total: receipts.length,
     receipts_resolved: receipts.filter(r => /^https?:\/\//.test(r.locator_url ?? '')).length,
     receipts_unresolved: receipts.filter(r => r.status === 'receipt_unresolved').length,
     rejected_name_only: rejected.length,
   },
+  coverage_summary: 'PARTIAL. Roster + portfolio coverage is a bounded investment-decision-maker subset; only the LinkedIn projection, Silent (founder-only), and Capital Factory portfolio index are surface_complete. In-Q-Tel roster and TVP portfolio are unavailable_after_search. Cambium award identity is held. See roster-coverage.jsonl + portfolio-coverage.jsonl.',
+  completion_contract: 'data/canonical/person-router-completion-contract.json',
   admitted_router_ids: admittedList.map(u => u.candidate_id),
   evidence_states: ['observed', 'self_claimed', 'counterpart_reported', 'official_record', 'independently_corroborated', 'inferred', 'disputed', 'name_match_only', 'unavailable_after_search', 'not_searched', 'reported', 'source_explicit'],
   counterpart_states: ['counterpart_reported', 'no_counterpart_confirmation_observed', 'third_party_reported_not_counterpart_confirmed', 'not_searched'],
@@ -381,4 +445,4 @@ const manifest = {
 };
 writeJsonl('receipts.jsonl', receipts);
 fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
-console.log(`person-routers@2: denominator ${universe.length} (${captures.size} projection + seed${teamRosters ? '+rosters' : ''}) -> ${admittedList.length} admitted; Jackson 61->NS ${validation.length}/CF ${jmCf.length}/Pallas ${jmPallas.length}; census ${perFund.size} funds/${byCompany.size} cos, ${coInvest.filter(c => c.fund_count >= 2).length} cross-fund; ${csById.size} counterpart-searches; ${govAwards.length} gov awards; ${trails.length} trails; frontier not_searched=${manifest.counts.trail_frontier_open}`);
+console.log(`person-routers@3: denominator ${universe.length} decision-makers -> ${admittedList.length} admitted; frontier ${manifest.counts.frontier_terminal} terminal / ${manifest.counts.frontier_partial_or_not_searched} partial; roster coverage complete=${manifest.counts.roster_sources_surface_complete}/partial=${manifest.counts.roster_sources_partial}/unavail=${manifest.counts.roster_sources_unavailable}; portfolio complete=${manifest.counts.portfolio_sources_surface_complete}/partial=${manifest.counts.portfolio_sources_partial}/unavail=${manifest.counts.portfolio_sources_unavailable}; gov awards resolved=${manifest.counts.government_awards_identity_resolved}/held=${manifest.counts.government_awards_identity_held}/unavail=${manifest.counts.government_awards_unavailable}`);

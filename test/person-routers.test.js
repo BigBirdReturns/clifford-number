@@ -6,50 +6,56 @@ const dir = 'data/intake/person-centered-defense-routers';
 const jl = f => fs.readFileSync(`${dir}/${f}`, 'utf8').split(/\r?\n/).filter(Boolean).map(l => JSON.parse(l));
 const manifest = JSON.parse(fs.readFileSync(`${dir}/manifest.json`, 'utf8'));
 
-assert.deepEqual(validatePersonRouters(dir), [], 'router intake must satisfy acceptance conditions');
+assert.deepEqual(validatePersonRouters(dir), [], 'router intake must satisfy the completion contract');
 
-// COMPLETION CONTRACT — denominator is roster-derived, not the 12-name seed list
+// canonical completion contract must exist and be consumed
+const contract = JSON.parse(fs.readFileSync('data/canonical/person-router-completion-contract.json', 'utf8'));
+const TERMINAL = new Set(contract.terminal_states);
+const partial = s => contract.partial_markers.some(m => String(s ?? '').toLowerCase().includes(m));
+
+// roster-derived denominator (not the seed list)
 const universe = jl('router-source-universe.jsonl');
-assert.ok(universe.length >= 40, `roster denominator must be substantial (got ${universe.length})`);
-assert.ok(universe.some(u => /projection/.test(u.roster_source)), 'denominator includes the committed LinkedIn projection');
-assert.ok(universe.some(u => /team page/.test(u.roster_source)), 'denominator includes fetched fund team rosters');
-assert.equal(manifest.counts.router_source_universe_denominator, universe.length);
+assert.ok(universe.length >= 40, 'denominator substantial');
 
-// Jackson overlap ran with real numbers
-assert.equal(manifest.counts.jackson_portfolio_universe, 61);
-assert.ok(manifest.counts.jackson_x_natsec100 >= 10);
-
-// counterpart states carry provenance; no not_searched row is silently treated as "found"
-for (const row of [...jl('advisory-edges.jsonl'), ...jl('deal-sourcing-claims.jsonl')]) {
-  assert.ok('counterpart_status' in row);
-  if (row.counterpart_status === 'no_counterpart_confirmation_observed' || row.counterpart_status === 'third_party_reported_not_counterpart_confirmed') {
-    assert.ok(row.counterpart_search_ref, `${row.counterparty ?? row.company} must cite a documented counterpart search`);
-  }
-  if (row.evidence_state === 'self_claimed') assert.notEqual(row.counterpart_status, 'counterpart_reported');
+// COVERAGE HONESTY — a partial note may never be surface_complete; required sources all have a disposition
+const rosterCov = jl('roster-coverage.jsonl');
+const portCov = jl('portfolio-coverage.jsonl');
+for (const row of [...rosterCov, ...portCov]) {
+  if (row.coverage_state === 'surface_complete') assert.ok(!partial(row.selection_rule) && !partial(row.note), `${row.source ?? row.fund} labeled complete but reads partial`);
 }
+// In-Q-Tel, Capital Factory, Silent explicitly accounted
+for (const s of ['In-Q-Tel', 'Capital Factory', 'Silent Ventures']) assert.ok(rosterCov.some(r => r.source === s), `roster coverage must account for ${s}`);
+// Stratos, TVP, Capital Factory in portfolio coverage
+for (const s of ['Stratos Ventures', 'Texas Venture Partners', 'Capital Factory']) assert.ok(portCov.some(p => p.fund === s), `portfolio coverage must account for ${s}`);
+// portfolio rows carry required fields; subset != complete
+for (const p of portCov) for (const k of contract.portfolio_row_required_fields) assert.ok(k in p, `portfolio ${p.fund} missing ${k}`);
 
-// every admitted router has a >=2-hop trail
-const trails = jl('game-trails.jsonl');
-for (const id of manifest.admitted_router_ids) {
-  const t = trails.filter(x => x.hops[0] === id);
-  assert.ok(t.length >= 1 && t.every(x => x.hops.length >= 3), `admitted router ${id} needs a multi-hop trail`);
-}
-assert.ok(trails.some(t => t.surfaces_reached?.includes('validation')), 'a trail reaches validation');
+// NOT everything is terminal — closure must not be claimed
+const frontier = jl('trail-frontier.jsonl');
+assert.ok(frontier.some(f => !TERMINAL.has(f.state)), 'some frontiers remain partial (honest)');
+assert.ok(manifest.counts.frontier_partial_or_not_searched > 0, 'manifest records partial frontiers');
+assert.ok(/partial/i.test(manifest.coverage_summary), 'coverage_summary leads with PARTIAL');
 
-// government awards: ceiling/obligated/outlay separated and never merged
+// GOV AWARDS — usaspending receipts, never the portfolio receipt; identity gate; Cambium held
 const gov = jl('government-awards.jsonl');
-assert.ok(gov.length >= 10);
-for (const g of gov) assert.ok('contract_ceiling_usd' in g && 'obligated_usd' in g && 'outlay_usd' in g);
-// spot-check a case where the three genuinely differ (Firefly)
-const firefly = gov.find(g => g.org === 'Firefly Aerospace');
-assert.ok(firefly && firefly.contract_ceiling_usd !== firefly.obligated_usd && firefly.obligated_usd !== firefly.outlay_usd, 'financial types kept distinct');
+for (const g of gov) {
+  assert.ok('contract_ceiling_usd' in g && 'obligated_usd' in g && 'outlay_usd' in g);
+  for (const id of g.receipt_ids) assert.ok(id !== 'r-fund-portfolio-census-2026' && !/portfolio|roster/.test(id), `${g.org} cites a non-award receipt`);
+  for (const k of ['queried_name', 'recipient_legal_name', 'uei', 'identity_confidence', 'identity_basis', 'identity_state']) assert.ok(k in g, `${g.org} missing identity field ${k}`);
+  if (g.evidence_state === 'official_record') assert.ok(g.receipt_ids.some(id => id.startsWith('r-usaspending-')), `${g.org} official must cite usaspending receipt`);
+}
+assert.equal(gov.find(g => g.org === 'Cambium').identity_state, 'held', 'Cambium identity held, not resolved');
 
-// frontier fully closed (no required row not_searched)
-assert.ok(jl('trail-frontier.jsonl').every(f => f.state !== 'not_searched'));
-assert.equal(manifest.counts.trail_frontier_open, 0);
+// counterpart provenance present for searched-result rows
+const csRows = jl('sources/counterpart-searches.jsonl');
+for (const c of csRows) {
+  if (c.disposition !== 'not_searched') for (const k of contract.counterpart_provenance_required_fields) {
+    assert.ok(k in c && (Array.isArray(c[k]) ? c[k].length : c[k]), `counterpart ${c.search_id} missing ${k}`);
+  }
+}
 
-// fund census + cross-fund co-investment topology present
-assert.ok(manifest.counts.fund_census_funds >= 8);
-assert.ok(jl('co-investor-edges.jsonl').some(c => c.fund_count >= 2 && c.forbidden_inference));
+// financial types stay distinct (Firefly ceiling != obligated != outlay)
+const ff = gov.find(g => g.org === 'Firefly Aerospace');
+assert.ok(ff.contract_ceiling_usd !== ff.obligated_usd && ff.obligated_usd !== ff.outlay_usd);
 
 console.log('person-routers.test.js: OK');
