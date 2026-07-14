@@ -24,6 +24,22 @@
     "trump_office_business_pipeline": ["data/canonical/us-presidential-officeholder-cohort.json", "data/research/presidential-disclosure-source-coverage.json", "data/research/trump-2016-candidate-disclosure-manifest.json"],
     "excluded_as_findings": ["legacy graph exports", "import queues", "intake-only probes", "name-only overlap candidates", "dense roster co-listing"]
   },
+  "cross_corpus_board": {
+    "path": "data/research/clifford-cross-corpus-game-board.json",
+    "purpose": "Expose the full playable discovery corpus that surrounds this principal-focused trail, including staged and intake-only defense, capital, award, personnel, and disclosure lanes.",
+    "required_lane_ids": [
+      "clifford-policy-dialog-core",
+      "natsec100-defense-companies",
+      "austin-israel-defense-vc-corridor",
+      "person-centered-defense-routers",
+      "usaspending-defense-awards",
+      "sam-gov-defense-opportunities",
+      "linkedin-public-private-crossings",
+      "trump-presidential-disclosures",
+      "official-research-fanout"
+    ],
+    "visibility_rule": "A lane cannot disappear because its graph_effect is none, its promotion gate is held, or its acquisition state is incomplete."
+  },
   "gates": [
     "exact_person_or_legal_entity_identity",
     "source_explicit_material_predicate",

@@ -15,6 +15,11 @@ expectFailure('dense Dialog roster cannot become a hop', bundle => {
   bundle.surfaces.find(row => row.surface_id === 'dialog-society-membership').hop_eligible = true;
 }, /Dialog dense roster must remain non-hop context/);
 
+expectFailure('the principal trail cannot drop the Austin-Israel corpus', bundle => {
+  bundle.wrap.cross_corpus_board.required_lane_ids = bundle.wrap.cross_corpus_board.required_lane_ids
+    .filter(id => id !== 'austin-israel-defense-vc-corridor');
+}, /must link cross-corpus lane austin-israel-defense-vc-corridor/);
+
 expectFailure('unsupported Faculty shortcut cannot return', bundle => {
   bundle.participation.push({
     surface_id: 'faculty-investor-employee-2015-2019',

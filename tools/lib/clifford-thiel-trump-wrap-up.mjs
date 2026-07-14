@@ -26,6 +26,27 @@ export function validateCliffordThielTrumpWrapUp(bundle) {
   if (!/never makes the edge invisible/i.test(wrap.discovery_contract?.rule ?? '')) {
     errors.push('game trail must state that uncertainty cannot hide a signal');
   }
+  if (wrap.cross_corpus_board?.path !== 'data/research/clifford-cross-corpus-game-board.json') {
+    errors.push('principal trail must link the cross-corpus discovery board');
+  }
+  const requiredCrossCorpusLanes = [
+    'clifford-policy-dialog-core',
+    'natsec100-defense-companies',
+    'austin-israel-defense-vc-corridor',
+    'person-centered-defense-routers',
+    'usaspending-defense-awards',
+    'sam-gov-defense-opportunities',
+    'linkedin-public-private-crossings',
+    'trump-presidential-disclosures',
+    'official-research-fanout',
+  ];
+  const linkedLanes = new Set(wrap.cross_corpus_board?.required_lane_ids ?? []);
+  for (const laneId of requiredCrossCorpusLanes) {
+    if (!linkedLanes.has(laneId)) errors.push(`principal trail must link cross-corpus lane ${laneId}`);
+  }
+  if (!/cannot disappear/i.test(wrap.cross_corpus_board?.visibility_rule ?? '')) {
+    errors.push('principal trail must forbid cross-corpus lane erasure');
+  }
   const legend = new Map((wrap.rendering_legend ?? []).map(row => [row.evidence_state, row]));
   for (const evidenceState of ['official', 'primary_public', 'reported', 'self_claimed', 'inferred', 'disputed_or_contradicted', 'unavailable_or_not_searched']) {
     if (legend.get(evidenceState)?.visible !== true) errors.push(`rendering legend must keep ${evidenceState} signals visible`);

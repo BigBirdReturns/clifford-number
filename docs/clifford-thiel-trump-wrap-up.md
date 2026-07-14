@@ -10,6 +10,19 @@ allowed to show.
 
 ## The board
 
+This principal-focused trail is one view into a much larger board. The full
+cross-corpus inventory is
+`data/research/clifford-cross-corpus-game-board.json`. It keeps nine lanes
+visible at once: the Clifford/Starmer/Dialog/Thiel/Palantir core, NatSec100,
+the Austin-Israel defense and venture corridor, person-centered defense
+routers, USAspending awards, the unexecuted SAM.gov route, LinkedIn role
+crossings, presidential disclosures, and the research fanout.
+
+That distinction matters. The canonical hop graph contains 31 compiled edges;
+it is not the complete research corpus. Intake, staged data, held joins,
+rejections, and explicit source gaps are playable evidence states—not deleted
+work.
+
 ### Policy formation and state adoption
 
 - **Matt Clifford → AI Opportunities Action Plan → Keir Starmer** is an
@@ -113,6 +126,7 @@ Locked doors are objectives. They are not permission to delete the corridors
 that lead to them.
 
 The machine-readable board is
-`data/research/clifford-thiel-trump-wrap-up.json`. Its validator fails if a
-signal is hidden merely because it is inferred, reported, dense, non-hop, or
-still waiting on a stronger receipt.
+`data/research/clifford-thiel-trump-wrap-up.json`, with the full inventory in
+`data/research/clifford-cross-corpus-game-board.json`. Their validators fail if
+a signal or entire corpus lane is hidden merely because it is inferred,
+reported, dense, non-hop, staged, held, or still waiting on a stronger receipt.
