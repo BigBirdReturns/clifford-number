@@ -1,6 +1,9 @@
 #!/usr/bin/env node
-import { loadAll, readJson, indexBy } from './lib/ledger.mjs';
+import fs from 'node:fs';
+import path from 'node:path';
+import { loadAll, readJson, indexBy, root } from './lib/ledger.mjs';
 import { windowOf, intersectAll, UNBOUNDED } from './lib/temporal.mjs';
+import { isFieldAutopsyCase, loadFieldAutopsy, validateFieldAutopsy } from './lib/field-autopsy.mjs';
 import { buildIdentityLayer } from './lib/axm-identity.mjs';
 import { checkReceiptArchival, todayString } from './lib/receipt-archival.mjs';
 import { assessHopDensity, validateDensityPolicy } from './lib/density.mjs';
@@ -256,6 +259,20 @@ assert(migration.bucket_counts?.participation_claim > 50, 'migration did not cla
   const { errors: archivalErrors, warnings: archivalWarnings } = checkReceiptArchival(data.receipts, { today: todayString() });
   for (const err of archivalErrors) errors.push(err);
   for (const warn of archivalWarnings) warnings.push(warn);
+}
+
+// Place-centered field-autopsy bundles preserve untrusted intake as expression
+// only, keep hypotheses graph-inert, and require provenance for searched states.
+{
+  const caseRoot = path.join(root, 'cases');
+  for (const entry of fs.readdirSync(caseRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const dir = path.join(caseRoot, entry.name);
+    if (!isFieldAutopsyCase(dir)) continue;
+    for (const err of validateFieldAutopsy(loadFieldAutopsy(dir))) {
+      errors.push(`field-autopsy ${entry.name}: ${err}`);
+    }
+  }
 }
 
 if (errors.length) {
