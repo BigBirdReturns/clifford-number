@@ -16,7 +16,7 @@ expectFailure('dense Dialog roster cannot become a hop', bundle => {
 }, /Dialog dense roster must remain non-hop context/);
 
 expectFailure('the principal trail cannot drop the Austin-Israel corpus', bundle => {
-  bundle.wrap.cross_corpus_board.required_lane_ids = bundle.wrap.cross_corpus_board.required_lane_ids
+  bundle.wrap.cross_corpus_infrastructure.required_lane_ids = bundle.wrap.cross_corpus_infrastructure.required_lane_ids
     .filter(id => id !== 'austin-israel-defense-vc-corridor');
 }, /must link cross-corpus lane austin-israel-defense-vc-corridor/);
 
@@ -68,11 +68,11 @@ expectFailure('the legend cannot erase inferred edges', bundle => {
   bundle.wrap.rendering_legend.find(row => row.evidence_state === 'inferred').visible = false;
 }, /must keep inferred signals visible/);
 
-expectFailure('the machine cannot generate the player conclusion', bundle => {
-  bundle.wrap.player_contract.conclusion_generated = true;
-}, /must leave conclusions to the player/);
+expectFailure('the machine cannot generate a public conclusion', bundle => {
+  bundle.wrap.public_interpretation_contract.conclusion_generated = true;
+}, /must leave conclusions open to public evaluation/);
 
-expectFailure('the game trail cannot restore a bottom-line verdict', bundle => {
+expectFailure('the evidence trail cannot restore a bottom-line verdict', bundle => {
   bundle.wrap.bottom_line = { finding: 'case closed' };
 }, /must not emit a bottom-line verdict/);
 

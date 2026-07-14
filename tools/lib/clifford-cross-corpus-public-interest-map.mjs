@@ -7,9 +7,9 @@ const optionalJson = file => {
   return fs.existsSync(full) ? readJson(file) : null;
 };
 
-export function loadCliffordCrossCorpusGameBoard() {
+export function loadCliffordCrossCorpusPublicInterestMap() {
   return {
-    board: readJson('data/research/clifford-cross-corpus-game-board.json'),
+    map: readJson('data/research/clifford-cross-corpus-public-interest-map.json'),
     wrap: readJson('data/research/clifford-thiel-trump-wrap-up.json'),
     actors: readJson('data/canonical/actors.json').actors,
     organizations: readJson('data/canonical/organizations.json').organizations,
@@ -47,14 +47,14 @@ export function loadCliffordCrossCorpusGameBoard() {
   };
 }
 
-export function validateCliffordCrossCorpusGameBoard(bundle) {
+export function validateCliffordCrossCorpusPublicInterestMap(bundle) {
   const errors = [];
   const {
-    board, wrap, actors, organizations, surfaces, participation, receipts, hopGraph,
+    map, wrap, actors, organizations, surfaces, participation, receipts, hopGraph,
     scout, crawlCandidates, crawlObservations, crawlRejections, crawlSources, crawlState,
     publicInterestSeeds, fanout, natsec, corridor, routers, linkedin, natsecAwards, presidential,
   } = bundle;
-  const lanes = new Map((board.lanes ?? []).map(lane => [lane.lane_id, lane]));
+  const lanes = new Map((map.lanes ?? []).map(lane => [lane.lane_id, lane]));
   const requiredLaneIds = [
     'clifford-policy-dialog-core',
     'natsec100-defense-companies',
@@ -75,34 +75,34 @@ export function validateCliffordCrossCorpusGameBoard(bundle) {
   };
   const count = (laneId, field) => lanes.get(laneId)?.counts?.[field];
 
-  if (board.schema_version !== 'clifford-cross-corpus-game-board@1') errors.push('cross-corpus board schema mismatch');
-  if (board.scope !== 'Repository evidence only; no new external acquisition.') errors.push('cross-corpus board must remain repository-only');
-  if (board.board_contract?.mode !== 'discovery_not_adjudication' || board.board_contract?.conclusion_generated !== false) {
-    errors.push('cross-corpus board must operate in discovery mode without generating a conclusion');
+  if (map.schema_version !== 'clifford-cross-corpus-public-interest-map@1') errors.push('cross-corpus public-interest map schema mismatch');
+  if (map.scope !== 'Repository evidence only; no new external acquisition.') errors.push('cross-corpus public-interest map must remain repository-only');
+  if (map.infrastructure_contract?.mode !== 'discovery_not_adjudication' || map.infrastructure_contract?.conclusion_generated !== false) {
+    errors.push('public-interest infrastructure must operate in discovery mode without generating a conclusion');
   }
-  if (board.board_contract?.canonical_hop_graph_is_total_corpus !== false || board.board_contract?.intake_and_staged_data_are_playable !== true) {
-    errors.push('cross-corpus board must distinguish the canonical hop graph from the playable discovery corpus');
+  if (map.infrastructure_contract?.canonical_hop_graph_is_total_corpus !== false || map.infrastructure_contract?.intake_and_staged_data_are_publicly_inspectable !== true) {
+    errors.push('public-interest infrastructure must distinguish the canonical hop graph from the publicly inspectable discovery corpus');
   }
-  if (!/does not delete the data/i.test(board.board_contract?.rule ?? '')) errors.push('cross-corpus board must forbid promotion-state erasure');
-  expect(board.inventory?.lane_count, requiredLaneIds.length, 'inventory lane_count');
-  expect(lanes.size, requiredLaneIds.length, 'board lane count');
+  if (!/does not delete the data/i.test(map.infrastructure_contract?.rule ?? '')) errors.push('public-interest infrastructure must forbid promotion-state erasure');
+  expect(map.inventory?.lane_count, requiredLaneIds.length, 'inventory lane_count');
+  expect(lanes.size, requiredLaneIds.length, 'public-interest map lane count');
   for (const laneId of requiredLaneIds) {
     const lane = lanes.get(laneId);
-    if (!lane) errors.push(`cross-corpus board must preserve lane ${laneId}`);
+    if (!lane) errors.push(`public-interest map must preserve lane ${laneId}`);
     else if (!String(lane.visibility).startsWith('visible')) errors.push(`cross-corpus lane ${laneId} must remain visible`);
   }
 
-  expect(board.inventory?.canonical?.actors, actors.length, 'canonical actors');
-  expect(board.inventory?.canonical?.organizations, organizations.length, 'canonical organizations');
-  expect(board.inventory?.canonical?.surfaces, surfaces.length, 'canonical surfaces');
-  expect(board.inventory?.canonical?.participations, participation.length, 'canonical participations');
-  expect(board.inventory?.canonical?.receipts, receipts.length, 'canonical receipts');
-  expect(board.inventory?.canonical?.compiled_hop_edges, hopGraph.edges?.length, 'compiled hop edges');
-  expect(board.inventory?.discovery_queue?.scout_findings, scout.findings?.length, 'scout findings');
-  expectAtLeast(crawlCandidates.length, board.inventory?.discovery_queue?.crawl_candidates_minimum, 'crawl candidates');
-  expectAtLeast(crawlObservations.length, board.inventory?.discovery_queue?.crawl_observations_minimum, 'crawl observations');
-  expectAtLeast(crawlRejections.length, board.inventory?.discovery_queue?.crawl_rejections_preserved_minimum, 'crawl rejections');
-  expect(board.inventory?.discovery_queue?.public_interest_seeds, publicInterestSeeds.length, 'public-interest seeds');
+  expect(map.inventory?.canonical?.actors, actors.length, 'canonical actors');
+  expect(map.inventory?.canonical?.organizations, organizations.length, 'canonical organizations');
+  expect(map.inventory?.canonical?.surfaces, surfaces.length, 'canonical surfaces');
+  expect(map.inventory?.canonical?.participations, participation.length, 'canonical participations');
+  expect(map.inventory?.canonical?.receipts, receipts.length, 'canonical receipts');
+  expect(map.inventory?.canonical?.compiled_hop_edges, hopGraph.edges?.length, 'compiled hop edges');
+  expect(map.inventory?.discovery_queue?.scout_findings, scout.findings?.length, 'scout findings');
+  expectAtLeast(crawlCandidates.length, map.inventory?.discovery_queue?.crawl_candidates_minimum, 'crawl candidates');
+  expectAtLeast(crawlObservations.length, map.inventory?.discovery_queue?.crawl_observations_minimum, 'crawl observations');
+  expectAtLeast(crawlRejections.length, map.inventory?.discovery_queue?.crawl_rejections_preserved_minimum, 'crawl rejections');
+  expect(map.inventory?.discovery_queue?.public_interest_seeds, publicInterestSeeds.length, 'public-interest seeds');
 
   expect(count('clifford-policy-dialog-core', 'surviving_outcomes'), wrap.surviving_outcomes?.length, 'core surviving outcomes');
   expect(count('clifford-policy-dialog-core', 'structural_signals_outside_hop_graph'), wrap.signals_outside_hop_graph?.length, 'core structural signals');
@@ -117,7 +117,7 @@ export function validateCliffordCrossCorpusGameBoard(bundle) {
   expect(count('natsec100-defense-companies', 'known_missing_2025_roster_rows'), 400 - natsec.companyYears.length, 'NatSec100 known missing rows');
 
   const cm = corridor.manifest.counts;
-  for (const [boardField, manifestField] of Object.entries({
+  for (const [mapField, manifestField] of Object.entries({
     capital_factory_portfolio_universe: 'capital_factory_portfolio_universe',
     natsec100_universe: 'natsec100_universe',
     cf_natsec100_colistings: 'cf_natsec100_confirmed_colistings',
@@ -129,11 +129,11 @@ export function validateCliffordCrossCorpusGameBoard(bundle) {
     receipts_total: 'receipts_total',
     receipts_resolved: 'receipts_resolved',
     receipts_unresolved: 'receipts_unresolved',
-  })) expect(count('austin-israel-defense-vc-corridor', boardField), cm[manifestField], `Austin-Israel ${boardField}`);
+  })) expect(count('austin-israel-defense-vc-corridor', mapField), cm[manifestField], `Austin-Israel ${mapField}`);
   expect(count('austin-israel-defense-vc-corridor', 'portfolio_edges'), corridor.portfolioEdges.length, 'Austin-Israel portfolio edges');
 
   const rm = routers.counts;
-  for (const [boardField, manifestField] of Object.entries({
+  for (const [mapField, manifestField] of Object.entries({
     router_source_universe: 'router_source_universe_denominator',
     admitted_routers: 'admitted_routers',
     vehicles: 'vehicles',
@@ -144,11 +144,11 @@ export function validateCliffordCrossCorpusGameBoard(bundle) {
     fund_companies: 'fund_census_companies',
     cross_fund_coinvestments: 'cross_fund_co_investments',
     fund_natsec100_overlaps: 'fund_natsec100_overlaps',
-    game_trails: 'game_trails',
+    evidence_trails: 'evidence_trails',
     frontier_partial_or_not_searched: 'frontier_partial_or_not_searched',
     receipts_total: 'receipts_total',
     receipts_resolved: 'receipts_resolved',
-  })) expect(count('person-centered-defense-routers', boardField), rm[manifestField], `person-router ${boardField}`);
+  })) expect(count('person-centered-defense-routers', mapField), rm[manifestField], `person-router ${mapField}`);
 
   const usaLane = lanes.get('usaspending-defense-awards');
   expect(usaLane?.acquisition_state, 'acquired_official_rows_with_identity_gates', 'USAspending acquisition state');
@@ -167,14 +167,14 @@ export function validateCliffordCrossCorpusGameBoard(bundle) {
   const samSource = crawlSources.sources?.find(source => source.id === 'sam-opportunities');
   if (!samSource || samSource.auth?.env !== 'SAM_API_KEY') errors.push('SAM configured credential route is missing');
   if (crawlState.sources?.['sam-opportunities']?.status !== 'skipped_missing_credential') errors.push('SAM source state must preserve skipped_missing_credential');
-  if (samLane?.acquisition_state !== 'not_acquired_missing_credential') errors.push('SAM board lane must describe a missing-credential acquisition gap');
+  if (samLane?.acquisition_state !== 'not_acquired_missing_credential') errors.push('SAM public-interest map lane must describe a missing-credential acquisition gap');
   expect(count('sam-gov-defense-opportunities', 'queries_executed'), 0, 'SAM queries executed');
   if (count('sam-gov-defense-opportunities', 'records_seen') !== null) errors.push('SAM records_seen must remain null rather than being rewritten as zero');
   if (!/neither zero responsive opportunities nor evidence of absence/i.test(samLane?.open_join ?? '')) errors.push('SAM lane must prohibit false zero-result interpretation');
 
   const lm = linkedin.manifest.counts;
   const la = linkedin.analysis;
-  for (const [boardField, expected] of Object.entries({
+  for (const [mapField, expected] of Object.entries({
     captures: lm.captures,
     displayed_subjects: lm.displayed_subject_labels,
     role_claims: lm.role_claims,
@@ -187,10 +187,10 @@ export function validateCliffordCrossCorpusGameBoard(bundle) {
     undated: la.chronological_adjacency?.classes?.undated,
     canonical_gate_passed: la.source_explicit_classification?.gate_passed,
     canonical_gate_held: la.source_explicit_classification?.gate_held,
-  })) expect(count('linkedin-public-private-crossings', boardField), expected, `LinkedIn ${boardField}`);
+  })) expect(count('linkedin-public-private-crossings', mapField), expected, `LinkedIn ${mapField}`);
 
   const pc = presidential.coverage;
-  for (const [boardField, coverageField] of Object.entries({
+  for (const [mapField, coverageField] of Object.entries({
     hashed_fec_cycle_archives: 'hashed_fec_cycle_archives',
     normalized_transaction_records: 'normalized_transaction_records',
     unresolved_payee_candidates: 'unresolved_payee_candidates',
@@ -202,7 +202,7 @@ export function validateCliffordCrossCorpusGameBoard(bundle) {
     sec_identifier_candidate_rows: 'sec_identifier_candidate_rows',
     resolved_cross_source_legal_entities: 'resolved_cross_source_legal_entities',
     promoted_crossings: 'crossing_matches',
-  })) expect(count('trump-presidential-disclosures', boardField), pc[coverageField], `presidential ${boardField}`);
+  })) expect(count('trump-presidential-disclosures', mapField), pc[coverageField], `presidential ${mapField}`);
 
   expect(count('official-research-fanout', 'scout_findings'), scout.findings?.length, 'fanout scout findings');
   expectAtLeast(crawlCandidates.length, count('official-research-fanout', 'crawl_candidates_minimum'), 'fanout crawl candidates');
@@ -216,7 +216,7 @@ export function validateCliffordCrossCorpusGameBoard(bundle) {
   }
 
   const requiredTrailCoverage = new Set(requiredLaneIds.filter(id => id !== 'sam-gov-defense-opportunities'));
-  for (const trail of board.cross_lane_trails ?? []) {
+  for (const trail of map.cross_lane_trails ?? []) {
     for (const laneId of trail.lane_ids ?? []) {
       if (!lanes.has(laneId)) errors.push(`cross-lane trail ${trail.trail_id} references missing lane ${laneId}`);
       requiredTrailCoverage.delete(laneId);
@@ -228,9 +228,9 @@ export function validateCliffordCrossCorpusGameBoard(bundle) {
       if (!fs.existsSync(path.join(root, sourcePath))) errors.push(`cross-corpus lane ${lane.lane_id} references missing source path ${sourcePath}`);
     }
   }
-  if (board.bottom_line !== undefined) errors.push('cross-corpus board must not emit a bottom-line verdict');
-  if (board.player_contract?.conclusion_generated !== false || board.player_contract?.graph_effect !== 'none') {
-    errors.push('cross-corpus player contract must leave conclusions to the player and remain graph-inert');
+  if (map.bottom_line !== undefined) errors.push('public-interest map must not emit a bottom-line verdict');
+  if (map.public_interpretation_contract?.conclusion_generated !== false || map.public_interpretation_contract?.graph_effect !== 'none') {
+    errors.push('public-interpretation contract must leave conclusions open to public evaluation and remain graph-inert');
   }
   return errors;
 }

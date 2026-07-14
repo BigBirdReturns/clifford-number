@@ -21,13 +21,13 @@ export function validateCliffordThielTrumpWrapUp(bundle) {
   if (wrap.schema_version !== 'clifford-thiel-trump-wrap-up@1') errors.push('wrap-up schema mismatch');
   if (wrap.scope !== 'Repository evidence only; no new external acquisition.') errors.push('wrap-up must remain repository-only');
   if (wrap.discovery_contract?.mode !== 'discovery_not_adjudication' || wrap.discovery_contract?.conclusion_generated !== false) {
-    errors.push('game trail must operate in discovery mode without generating a conclusion');
+    errors.push('public-interest evidence trail must operate in discovery mode without generating a conclusion');
   }
   if (!/never makes the edge invisible/i.test(wrap.discovery_contract?.rule ?? '')) {
-    errors.push('game trail must state that uncertainty cannot hide a signal');
+    errors.push('public-interest evidence trail must state that uncertainty cannot hide a signal');
   }
-  if (wrap.cross_corpus_board?.path !== 'data/research/clifford-cross-corpus-game-board.json') {
-    errors.push('principal trail must link the cross-corpus discovery board');
+  if (wrap.cross_corpus_infrastructure?.path !== 'data/research/clifford-cross-corpus-public-interest-map.json') {
+    errors.push('principal trail must link the cross-corpus public-interest infrastructure');
   }
   const requiredCrossCorpusLanes = [
     'clifford-policy-dialog-core',
@@ -40,11 +40,11 @@ export function validateCliffordThielTrumpWrapUp(bundle) {
     'trump-presidential-disclosures',
     'official-research-fanout',
   ];
-  const linkedLanes = new Set(wrap.cross_corpus_board?.required_lane_ids ?? []);
+  const linkedLanes = new Set(wrap.cross_corpus_infrastructure?.required_lane_ids ?? []);
   for (const laneId of requiredCrossCorpusLanes) {
     if (!linkedLanes.has(laneId)) errors.push(`principal trail must link cross-corpus lane ${laneId}`);
   }
-  if (!/cannot disappear/i.test(wrap.cross_corpus_board?.visibility_rule ?? '')) {
+  if (!/cannot disappear/i.test(wrap.cross_corpus_infrastructure?.visibility_rule ?? '')) {
     errors.push('principal trail must forbid cross-corpus lane erasure');
   }
   const legend = new Map((wrap.rendering_legend ?? []).map(row => [row.evidence_state, row]));
@@ -143,10 +143,10 @@ export function validateCliffordThielTrumpWrapUp(bundle) {
     'trump-administration-adjacent-dialog-cluster',
   ]) {
     const signal = discoverySignals.get(signalId);
-    if (!signal) errors.push(`game trail must preserve discovery signal ${signalId}`);
+    if (!signal) errors.push(`public-interest evidence trail must preserve discovery signal ${signalId}`);
     else if (signal.visible !== true || signal.graph_effect !== 'none') errors.push(`discovery signal ${signalId} must stay visible and graph-inert`);
   }
-  if (![...discoverySignals.values()].some(signal => signal.evidence_state === 'inferred')) errors.push('game trail must visibly preserve inferred structural signals');
+  if (![...discoverySignals.values()].some(signal => signal.evidence_state === 'inferred')) errors.push('public-interest evidence trail must visibly preserve inferred structural signals');
   const required = {
     'clifford-faculty-investor': 'blocked_unrecoverable_receipt',
     'clifford-thiel-dialog-roster': 'context_only_no_hop',
@@ -158,8 +158,8 @@ export function validateCliffordThielTrumpWrapUp(bundle) {
   for (const [id, disposition] of Object.entries(required)) {
     if (dispositions.get(id) !== disposition) errors.push(`wrap-up path ${id} must remain ${disposition}`);
   }
-  if (wrap.bottom_line !== undefined) errors.push('game trail must not emit a bottom-line verdict');
-  if (wrap.player_contract?.conclusion_generated !== false || wrap.player_contract?.graph_effect !== 'none') errors.push('player contract must leave conclusions to the player and remain graph-inert');
-  if (!/no final verdict/i.test(wrap.player_contract?.instruction ?? '')) errors.push('player contract must explicitly refuse a final verdict');
+  if (wrap.bottom_line !== undefined) errors.push('public-interest evidence trail must not emit a bottom-line verdict');
+  if (wrap.public_interpretation_contract?.conclusion_generated !== false || wrap.public_interpretation_contract?.graph_effect !== 'none') errors.push('public-interpretation contract must leave conclusions open to public evaluation and remain graph-inert');
+  if (!/no final verdict/i.test(wrap.public_interpretation_contract?.instruction ?? '')) errors.push('public-interpretation contract must explicitly refuse a final verdict');
   return errors;
 }

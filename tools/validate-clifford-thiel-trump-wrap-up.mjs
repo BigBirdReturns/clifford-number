@@ -7,4 +7,4 @@ if (errors.length) {
   for (const error of errors) console.error(`- ${error}`);
   process.exit(1);
 }
-console.log('validate-clifford-thiel-trump-wrap-up: OK (all signal states visible; no machine-generated verdict)');
+console.log('validate-clifford-thiel-trump-wrap-up: OK (public-interest evidence infrastructure; all signal states visible; no machine-generated verdict)');

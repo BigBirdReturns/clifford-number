@@ -184,7 +184,7 @@ and City membership in that district. The racetrack feeds back
 into public capital via pari-mutuel revenue to the city's Capital Outlay
 Fund — a documented spectacle-to-infrastructure loop.
 
-## 10. The reusable formation signature and the new game trails
+## 10. The reusable formation signature and the new evidence trails
 
 `sig-place-formation-v1` (data/signatures/formation-signatures.json): public
 infrastructure → entitlement expansion → assessment/intermediary governance →

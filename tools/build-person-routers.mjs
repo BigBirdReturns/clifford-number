@@ -365,7 +365,7 @@ const portfolioCoverageState = new Map(portfolioCoverage.map(p => [p.fund, p.cov
 const portfolioAttempts = new Map(portfolioCoverage.filter(p => p.attempted_urls).map(p => [p.fund, { query: p.query, attempted_urls: p.attempted_urls, timestamp: p.timestamp, result: p.result }]));
 receipts.push(...coverageReceipts);
 
-// ================= game trails (from structured edges) for EVERY admitted router =================
+// ================= evidence trails (from structured edges) for EVERY admitted router =================
 const trails = [], frontier = [];
 const nsYearsFor = nm => { const c = nsByCore.get(core(nm)); return c ? c.natsec100_years_documented : null; };
 // build a per-person structured edge set: for admitted routers with a vehicle + a portfolio company that hits NatSec100/gov
@@ -397,7 +397,7 @@ for (const r of admittedList) {
 }
 // second explicit hop for Jackson (advisory shared-company convergence)
 trails.push({ trail_id: 'trail-jackson-moses-shared-company', hops: ['person:jackson-moses', 'advisory:Castelion (self_claimed)', 'Katherine Boyle board-observer (separate person)', 'a16z American Dynamism'], terminates: 'no_source_explicit_next_edge', surfaces_reached: ['company', 'co-adviser'], receipt_ids: ['r-jacksonmoses-about-2026', 'r-a16z-boyle-2026'], evidence_state: 'observed', note: 'Shared COMPANY node (Castelion), not a Jackson<->Boyle relationship.', graph_effect: G });
-writeJsonl('game-trails.jsonl', trails);
+writeJsonl('evidence-trails.jsonl', trails);
 writeJsonl('trail-frontier.jsonl', frontier);
 writeJsonl('rejected-joins.jsonl', rejected);
 
@@ -436,7 +436,7 @@ const manifest = {
     government_awards_identity_resolved: govAwards.filter(g => g.identity_state === 'resolved').length,
     government_awards_identity_held: govAwards.filter(g => g.identity_state === 'held').length,
     government_awards_unavailable: govUnavailable.length,
-    game_trails: trails.length,
+    evidence_trails: trails.length,
     // HONEST frontier accounting: terminal vs non-terminal (partial). Do NOT report "closed" unless all terminal.
     frontier_total: frontier.length,
     frontier_terminal: frontier.filter(f => contract.terminal_states.includes(f.state)).length,
