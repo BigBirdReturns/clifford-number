@@ -20,6 +20,16 @@ export function validateCliffordThielTrumpWrapUp(bundle) {
   const { wrap, surfaces, participation, hopGraph, scores, cohort, coverage, dispositionMatrix, predicateRegistry, candidates } = bundle;
   if (wrap.schema_version !== 'clifford-thiel-trump-wrap-up@1') errors.push('wrap-up schema mismatch');
   if (wrap.scope !== 'Repository evidence only; no new external acquisition.') errors.push('wrap-up must remain repository-only');
+  if (wrap.discovery_contract?.mode !== 'discovery_not_adjudication' || wrap.discovery_contract?.conclusion_generated !== false) {
+    errors.push('game trail must operate in discovery mode without generating a conclusion');
+  }
+  if (!/never makes the edge invisible/i.test(wrap.discovery_contract?.rule ?? '')) {
+    errors.push('game trail must state that uncertainty cannot hide a signal');
+  }
+  const legend = new Map((wrap.rendering_legend ?? []).map(row => [row.evidence_state, row]));
+  for (const evidenceState of ['official', 'primary_public', 'reported', 'self_claimed', 'inferred', 'disputed_or_contradicted', 'unavailable_or_not_searched']) {
+    if (legend.get(evidenceState)?.visible !== true) errors.push(`rendering legend must keep ${evidenceState} signals visible`);
+  }
 
   const dialog = surfaces.find(row => row.surface_id === 'dialog-society-membership');
   if (!dialog) errors.push('Dialog surface missing');
@@ -103,6 +113,19 @@ export function validateCliffordThielTrumpWrapUp(bundle) {
   if (compositeTrails.get('policy-to-state-capacity-to-procurement-market')?.status !== 'structural_corridor_with_open_join') {
     errors.push('policy-to-procurement trail must preserve both the structural corridor and its open join');
   }
+  const discoverySignals = new Map((wrap.signals_outside_hop_graph ?? []).map(row => [row.signal_id, row]));
+  for (const signalId of [
+    'policy-market-convergence',
+    'public-private-personnel-capital-relay',
+    'sovereign-capital-defense-tech-loop',
+    'dialog-convening-density',
+    'trump-administration-adjacent-dialog-cluster',
+  ]) {
+    const signal = discoverySignals.get(signalId);
+    if (!signal) errors.push(`game trail must preserve discovery signal ${signalId}`);
+    else if (signal.visible !== true || signal.graph_effect !== 'none') errors.push(`discovery signal ${signalId} must stay visible and graph-inert`);
+  }
+  if (![...discoverySignals.values()].some(signal => signal.evidence_state === 'inferred')) errors.push('game trail must visibly preserve inferred structural signals');
   const required = {
     'clifford-faculty-investor': 'blocked_unrecoverable_receipt',
     'clifford-thiel-dialog-roster': 'context_only_no_hop',
@@ -114,9 +137,8 @@ export function validateCliffordThielTrumpWrapUp(bundle) {
   for (const [id, disposition] of Object.entries(required)) {
     if (dispositions.get(id) !== disposition) errors.push(`wrap-up path ${id} must remain ${disposition}`);
   }
-  if (wrap.bottom_line?.graph_effect !== 'none') errors.push('wrap-up synthesis must remain graph-inert');
-  if (!/establishes consequential/i.test(wrap.bottom_line?.finding ?? '') || !/does not establish one source-explicit coordinated/i.test(wrap.bottom_line?.finding ?? '')) {
-    errors.push('wrap-up bottom line must preserve both the outcomes and the unproven coordinated chain');
-  }
+  if (wrap.bottom_line !== undefined) errors.push('game trail must not emit a bottom-line verdict');
+  if (wrap.player_contract?.conclusion_generated !== false || wrap.player_contract?.graph_effect !== 'none') errors.push('player contract must leave conclusions to the player and remain graph-inert');
+  if (!/no final verdict/i.test(wrap.player_contract?.instruction ?? '')) errors.push('player contract must explicitly refuse a final verdict');
   return errors;
 }

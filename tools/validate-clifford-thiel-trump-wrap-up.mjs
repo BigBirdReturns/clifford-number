@@ -7,4 +7,4 @@ if (errors.length) {
   for (const error of errors) console.error(`- ${error}`);
   process.exit(1);
 }
-console.log('validate-clifford-thiel-trump-wrap-up: OK (surviving outcomes preserved; coordinated-chain claims remain bounded)');
+console.log('validate-clifford-thiel-trump-wrap-up: OK (all signal states visible; no machine-generated verdict)');

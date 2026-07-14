@@ -31,7 +31,7 @@ expectFailure('Trump cannot be silently inserted into the surface ledger', bundl
   bundle.participation.push({ surface_id: 'dialog-society-membership', actor_id: 'donald-trump' });
 }, /cannot be claimed as a surface-ledger participant/);
 
-expectFailure('crossing count cannot be promoted without changing the conclusion', bundle => {
+expectFailure('crossing count cannot be promoted without changing the recorded state', bundle => {
   bundle.coverage.coverage.crossing_matches = 1;
 }, /expects zero promoted office-business crossings/);
 
@@ -54,6 +54,22 @@ expectFailure('the compiled graph cannot erase the Clifford-Starmer hop', bundle
 expectFailure('the policy-to-procurement corridor must retain its open join', bundle => {
   bundle.wrap.composite_trails.find(row => row.trail_id === 'policy-to-state-capacity-to-procurement-market').status = 'proven_causal_chain';
 }, /must preserve both the structural corridor and its open join/);
+
+expectFailure('uncertainty cannot hide an inferred signal', bundle => {
+  bundle.wrap.signals_outside_hop_graph.find(row => row.signal_id === 'policy-market-convergence').visible = false;
+}, /must stay visible and graph-inert/);
+
+expectFailure('the legend cannot erase inferred edges', bundle => {
+  bundle.wrap.rendering_legend.find(row => row.evidence_state === 'inferred').visible = false;
+}, /must keep inferred signals visible/);
+
+expectFailure('the machine cannot generate the player conclusion', bundle => {
+  bundle.wrap.player_contract.conclusion_generated = true;
+}, /must leave conclusions to the player/);
+
+expectFailure('the game trail cannot restore a bottom-line verdict', bundle => {
+  bundle.wrap.bottom_line = { finding: 'case closed' };
+}, /must not emit a bottom-line verdict/);
 
 expectFailure('stale intake cannot overrule the authoritative Dialog surface', bundle => {
   bundle.candidates.candidates.find(row => row.id === 'candidate-dialog-roster-hop-weighting-audit').hop_eligible = true;
