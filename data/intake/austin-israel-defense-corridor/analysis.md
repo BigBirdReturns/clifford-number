@@ -1,46 +1,66 @@
 # Austin–Israel defense corridor — what joined, what did not, what changed
 
+**Recovery increment (2026-07-14, corridor@2).** This pass executes the lanes the prior pass left
+open (Lane B, Stratos portfolio, Pallas), runs new overlaps, relabels the CF↔Stratos test, and
+folds in three requested deep dives. Every edge still carries a dual state and `graph_effect: none`.
+
 ## What joined
-- **Capital Factory ↔ NatSec100 (the overlap that was never run, now run).** 837 companies listed
-  on Capital Factory's own public portfolio page × 196 NatSec100 companies →
-  **12 exact-normalized-core co-listings**, `source_explicit` (both are independent curated public
-  lists naming the same company): **Firefly Aerospace, Firehawk Aerospace, ICON, Orbit Fab, Phantom
-  Space, RED 6, Saronic, Slingshot Aerospace, SpaceX, Venus Aerospace, Voyager Space, X-Bow
-  Systems.** Co-listing is *not* legal-identity resolution or an ownership/relationship finding.
-- **Stratos Ventures as a multi-node system**, from its own site + press: 3 general partners
-  (Kakon, Grinfeld, Fouzailov) and 6 named partners — including **LTG (Ret.) Michael Barbero,
-  President of SAAB USA** — offices in **Tel Aviv (HQ) and Miami**, and a strategic partnership with
-  **The LAB Miami**. All `source_explicit` (Stratos's self-representation).
+- **Capital Factory ↔ NatSec100.** 837 CF public-portfolio companies × 196 NatSec100 →
+  **12 co-listings** (Firefly, Firehawk, ICON, Orbit Fab, Phantom Space, RED 6, Saronic, Slingshot,
+  SpaceX, Venus, Voyager, X-Bow). **4 are now `independently_corroborated`** beyond bare co-listing —
+  **ICON, Saronic, Firefly, Venus** — with **ICON's generic-word homonym disambiguated** to the
+  Austin construction-3D-printing company (DoD contracts). Portfolio-index listing is explicitly
+  **not** equity investment (`portfolio_listing_is_not_equity_investment: true`).
+- **Lane B (Austin–Israel) — EXECUTED.** Two `source_explicit` Austin members:
+  **Traysar** (subterranean defense; founders self/press-identified as Israeli-military/origin —
+  never name-inferred; **Silent Ventures-led** $25M seed) and **Texas Venture Partners** (Austin
+  $50M fund with an explicit Israeli-defense-tech mandate; lead Tal Shmueli, ex-IDF). Traysar's
+  Silent Ventures edge ties Lane B into the existing corridor.
+- **Pallas — integrated as three separate arms.** Pallas Advisors (advisory, 2018, Donnelly +
+  DeMartino, ex-OSD/CENTCOM), Pallas Ventures (2020), and Pallas Foundation (nav-named). **Pallas
+  Ventures × NatSec100 → 5 co-listings** (Morpheus Space, Rebellion Defense, Interos, Second Front
+  Systems, Hermeus).
+- **Silent Ventures × NatSec100 → 2** (Firestorm, Hadrian; **Armada held as `name_match_only`** —
+  generic token, identity unconfirmed).
+- **Deep dives — CHAOS Industries, Raft, Overland AI.** All **3 are NatSec100 members**
+  (`source_explicit`); none are in the CF universe. Shared-investor topology: **8VC and Valor Equity
+  co-invest in CHAOS and Overland** — recorded as co-investment, with the explicit forbidden
+  inference that shared investor ≠ coordination.
+- **Stratos portfolio — partly resolved.** 3 companies now **press-named** (Particle, Tenna,
+  Skapion) via CTech, upgrading part of the logos-only gap from `source_unavailable` to `reported`.
 
 ## What did NOT join
-- **Capital Factory ↔ Stratos: REJECTED — no source-explicit edge.** Stratos is Tel Aviv + Miami,
-  routes US access through The LAB Miami, and never mentions Austin or Capital Factory. The premise
-  that these two corridors connect is **not supported**; the edge was tested and rejected, not
-  manufactured.
-- **Stratos ↔ NatSec100: not joinable.** Stratos's portfolio is logos-only; it cannot be tested
-  against NatSec100 without visual review (`source_unavailable`).
-- **Austin–Israel cohort (Lane B): not searched.** No members are asserted. The only Israel-explicit
-  node found (Stratos) is Miami/Tel Aviv, not Austin. No Israel linkage was inferred from any name.
-- **Stratos government partnerships (Israeli MOD / U.S. DoD / NATO DIANA): self-claimed only.**
-  Stated on Stratos's own site; no counterpart (MOD/DoD/DIANA) corroboration was searched or found.
-- **Pallas:** named in scope, no source acquired (`not_searched`).
+- **Capital Factory ↔ Stratos — relabeled.** No longer a proven "rejected"; now
+  **`no_source_explicit_join_observed_on_searched_surfaces`**: on the surfaces searched
+  (stratos-vc.com, CTech/jpost/refreshmiami, capitalfactory.com), no source-explicit edge appears —
+  Stratos is Tel Aviv + Miami and never mentions Austin/CF. Absence on searched surfaces is **not**
+  a proof of no relationship.
+- **Stratos ↔ NatSec100** — the 3 press-named companies match no NatSec100 core; remainder logos-only.
+- **Pallas ↔ Capital Factory** — no Pallas Ventures company in the CF 837-universe on searched surfaces.
+- **Stratos government partnerships** (Israeli MOD / U.S. DoD / NATO DIANA) — `self_claimed` only.
 
 ## What changed in the map
-- The Capital Factory overlap moved from README's *"not yet run, by design"* to a real result with
-  an honest denominator (837 × 196 → 12).
-- Receipt integrity repaired: **4 receipts resolved** (Capital Factory portfolio page hash-pinned;
-  Stratos site + 2 press), **21 seed `r-*` references demoted** to `receipt_unresolved`.
-- Stratos entered the map for the first time — as a **separate Miami/Tel-Aviv router**, explicitly
-  *not* wired to Austin.
-- 15 fuzzy CF↔NatSec100 name-only near-matches were rejected with their reason, not admitted.
+- Receipt integrity: **17 receipts resolved** (up from 4), **4 now carry a `content_sha256`**
+  (Stratos, Pallas ×2, Traysar) — closing the prior hashing gap the critique flagged. The seed
+  denominator is stated explicitly as **22 distinct `r-*` ids** across all seed files + both fields;
+  **21 demoted** to `receipt_unresolved` (the one resolved is `r-capital-factory-portfolio-2026`).
+- CF↔Stratos moved from proven-rejection to absence-on-searched-surfaces.
+- Lane B moved from `not_searched` to `searched_nonexhaustive` (2 members recorded; a 5W Research
+  report cites 80+ Israeli tech firms entering Texas since 2020 — full census not run).
 
 ## Motifs (by distinct institutions/people, not pair counts)
-- `capital → accelerator → validation`: **12 distinct companies** on both CF portfolio and NatSec100.
-- `israeli fund → US market access`: **1 institution** (Stratos, self-claimed via The LAB Miami).
-- `public service → adviser/fund`: **1 person** (LTG (Ret.) Barbero, SAAB USA → Stratos partner).
+- `capital → accelerator → validation`: **12** distinct CF∩NatSec100 companies.
+- `dc advisory fund → validation`: **5** Pallas Ventures companies on NatSec100.
+- `austin–israel defense company`: **1** (Traysar).
+- `israeli defense-tech capital routers`: **2** (Stratos [Tel Aviv/Miami], Texas Venture Partners [Austin]).
+- `public service → adviser/fund`: **3** people (Barbero → Stratos; Donnelly, DeMartino → Pallas).
+- `shared investor across deep dives`: co-investment topology only (8VC, Valor), never coordination.
 
 ## Direct vs inferred
-Every edge is separately countable by `independent_corroboration_state`. Direct/source-explicit:
-the 12 co-listings, Stratos team roster, CF portfolio memberships. Self-claimed: Stratos gov
-partnerships. Rejected: CF↔Stratos, 15 name-only. Unavailable/not-searched: Stratos portfolio,
-Austin-Israel cohort, Pallas. Nothing self-claimed or rejected is counted as established.
+Every edge is separately countable by `independent_corroboration_state`. Source-explicit: the 12 CF
+co-listings, 5 Pallas×NatSec, 3 deep-dive×NatSec, 2 Lane B members, Stratos/Pallas team rosters.
+Independently corroborated: 4 CF edges. Reported: Silent×NatSec (2), Stratos press-named portfolio,
+shared-investor edges. Self-claimed: Stratos gov partnerships. name_match_only: Armada, 15 CF
+fuzzy near-matches. No-edge-observed: CF↔Stratos, Stratos↔NatSec100, CF↔Pallas. Unavailable/
+not-searched: Stratos portfolio remainder, Pallas Foundation detail, Stratos-gov corroboration.
+Nothing self-claimed, name-matched, no-edge-observed, or unresolved is counted as established.

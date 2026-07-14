@@ -8,7 +8,8 @@ Every edge carries a **dual state**, because discovery and verification are sepa
 - `discovery_admission_state` — `admitted` when some source represents the claim (preserved even
   when uncertain), else `not_admitted`.
 - `independent_corroboration_state` — one of `source_explicit`, `independently_corroborated`,
-  `self_claimed`, `name_match_only`, `rejected`, `not_searched`, `source_unavailable`.
+  `reported`, `self_claimed`, `name_match_only`, `not_searched`, `source_unavailable`,
+  `receipt_unresolved`, `no_source_explicit_join_observed_on_searched_surfaces`.
 
 Uncertainty changes the **label**, not whether the observable claim is preserved. A self-authored
 profile or company page establishes only that an actor/org **publicly represented** a role — never
@@ -31,16 +32,20 @@ overlap reproduces without a re-fetch.
 `manifest.json` · `receipts.jsonl` · `organizations.jsonl` · `actors.jsonl` ·
 `professional-claims.jsonl` · `portfolio-edges.jsonl` · `government-surfaces.jsonl` ·
 `join-candidates.jsonl` · `confirmed-joins.jsonl` · `rejected-joins.jsonl` · `coverage-gaps.jsonl` ·
-`motifs.jsonl` · `capital-factory-portfolio-universe.json` · `analysis.md`
+`motifs.jsonl` · `austin-israel-cohort.jsonl` · `deep-dives.jsonl` ·
+`capital-factory-portfolio-universe.json` · `analysis.md`
 
 ## Known boundaries (explicit)
 
 - **Israel linkage** is only ever from explicit self-identification / official history — never a
   name, surname, ethnicity, or assumed citizenship. Lane B (Austin-headquartered Israeli-linked
-  companies) was **not searched** this pass; **no members are asserted**.
-- **Stratos portfolio** is shown only as logos on its site; it is **not** OCR-promoted to named
-  entities (`source_unavailable`, pending visual review).
-- **Joshua Baer**'s private LinkedIn captures are **not** in the portable 31-profile projection and
-  were **not** inspected.
-- 21 natsec100 seed receipt references have no source-addressable record and are demoted to
-  `receipt_unresolved`. A string containing a receipt ID is not a receipt.
+  companies) is now **`searched_nonexhaustive`**: 2 source-explicit members recorded (Traysar,
+  Texas Venture Partners); a full census (80+ Israeli firms cited entering Texas since 2020) was not run.
+- **Stratos portfolio**: 3 companies are now press-named (Particle, Tenna, Skapion); the remaining
+  logos-only companies stay `source_unavailable`, pending visual review.
+- **Pallas Foundation** is named as a distinct arm in site nav; no detail page acquired (`source_unavailable`).
+- **CF↔Stratos** is `no_source_explicit_join_observed_on_searched_surfaces` — absence on searched
+  surfaces, not a proven negative.
+- **Joshua Baer**'s private LinkedIn captures are **not** in the portable projection and were **not** inspected.
+- 21 of the 22 distinct natsec100 seed `r-*` references have no source-addressable record and are
+  demoted to `receipt_unresolved`. A string containing a receipt ID is not a receipt.
