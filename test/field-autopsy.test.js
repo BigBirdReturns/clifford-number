@@ -79,6 +79,14 @@ expectFailure('after-search-gutted-search', bundle => {
   const search = bundle.searches.find(s => s.search_id === row.search_ids[0]);
   search.query = '';
 }, /lacks full provenance|lacks query/);
+expectFailure('found-without-inspected-evidence', bundle => {
+  const search = bundle.searches.find(s => s.result === 'found' && s.inspected?.length);
+  search.inspected = [];
+}, /marked found lacks inspected locator or record evidence/);
+expectFailure('not-found-without-inspected-evidence', bundle => {
+  const search = bundle.searches.find(s => s.result === 'not_found' && s.inspected?.length);
+  search.inspected = [];
+}, /marked not_found lacks inspected locator or record evidence/);
 
 // 7. A partial surface must never be labeled complete.
 expectFailure('partial-labeled-complete', bundle => {
@@ -112,6 +120,10 @@ expectFailure('terminal-with-found-search', bundle => {
   const trail = makeTerminal(bundle);
   trail.search_ids = ['af-s01'];
 }, /cites non-terminal search result/);
+expectFailure('in-progress-without-search-ids', bundle => {
+  const trail = bundle.trails.find(t => t.status === 'in_progress');
+  trail.search_ids = [];
+}, /in_progress trail .* lacks structured search_ids/);
 
 // 9. A source-specific count must carry its own source's receipt.
 expectFailure('count-borrowed-receipt', bundle => {
@@ -185,10 +197,35 @@ expectFailure('record-unavailable-with-partial-search', bundle => {
   row.evidence_state = 'unavailable_after_search';
   row.search_ids = ['cf-s07'];
 }, /unavailable_after_search but cites search .* marked partial/);
+expectFailure('edge-unavailable-with-found-search', bundle => {
+  const row = bundle.edges[0];
+  row.evidence_state = 'unavailable_after_search';
+  row.search_ids = ['af-s01'];
+}, /unavailable_after_search but cites search .* marked found/);
+expectFailure('claim-unavailable-with-partial-search', bundle => {
+  const row = bundle.claims.find(c => c.claim_kind === 'external_fact');
+  row.evidence_state = 'unavailable_after_search';
+  row.search_ids = ['cf-s07'];
+}, /unavailable_after_search but cites search .* marked partial/);
 expectFailure('blocked-search-cannot-close-trail', bundle => {
   const trail = makeTerminal(bundle);
   trail.search_ids = ['gm-s23'];
 }, /cites non-terminal search result .*:unavailable/);
+expectFailure('rejected-join-must-stay-preserved', bundle => {
+  bundle.rejectedJoins.find(r => r.rejected_id === 'rj-02').preserved = false;
+}, /rejected join rj-02 must remain preserved/);
+expectFailure('resolution-needs-reciprocal-link', bundle => {
+  bundle.rejectedJoins.find(r => r.rejected_id === 'rj-02').superseded_by_claim_ids = [];
+}, /lacks superseding claim linkage|does not reciprocally name/);
+expectFailure('resolution-scope-cannot-broaden', bundle => {
+  bundle.claims.find(c => c.claim_id === 'clm-ben-zhang-identity-resolution').resolution_scope = 'person_and_entities';
+}, /must remain person_identity_only/);
+expectFailure('resolution-needs-official-corroboration', bundle => {
+  bundle.claims.find(c => c.claim_id === 'clm-ben-zhang-identity-resolution').receipt_ids = ['pl-r12', 'af-r08'];
+}, /requires multiple receipts including official evidence/);
+expectFailure('resolution-retains-active-boundaries', bundle => {
+  bundle.rejectedJoins.find(r => r.rejected_id === 'rj-02').retained_boundary_ids = [];
+}, /lacks retained boundary joins/);
 
 // Formation-signature machinery: bounded, graph-inert, candidate-only.
 {

@@ -34,7 +34,7 @@ research later supported or narrowed:
 
 ## 2. What was independently re-derived
 
-Every principal historical fact was re-derived against public receipts:
+The following principal historical facts were re-derived against public receipts:
 the rancho grant chain; the 1875 Baldwin purchase ($200,000); the 1885 rail
 right-of-way; the 1903 incorporation; both racetracks with day-precision
 opening dates; the 1936 Chandler-syndicate sale; the assembly center and Camp
@@ -98,7 +98,7 @@ energy reading (hyp-02), orientation intent behind the First Avenue works
 material record adjacent to hyp-01 is real but scoped: LA Times-reported feng
 shui-informed siting with named designers in the mansion market; peer-reviewed
 4/8 address premia in a comparable market (Vancouver); one feng-shui-master
-groundbreaking date in Tacoma. Nothing connects geomantic advice to the named
+groundbreaking date in Tacoma. No inspected receipt connects geomantic advice to the named
 downtown projects (con-14, a coverage absence, not a disproof). Ley lines are
 a Western esoteric tradition, not part of the practices documented in this
 market. None of this becomes ethnic command, conspiracy, or a supernatural
@@ -124,7 +124,7 @@ scope under the redaction policy.
 
 Thirteen distinct regimes (chronology.json), never collapsed: Tongva
 landscape → mission/rancho → **Baldwin's consolidated control (1875–1909, the
-only single-actor era)** → inheritance and subdivision (1909–1947) → Turf
+only single-actor era represented in this reconstruction)** → inheritance and subdivision (1909–1947) → Turf
 Club and successor private track operation (1933–present, Stronach from 1998)
 → wartime federal control (1942–1945) → adjudicated-water suburbanization and
 postwar channelization (1944–) → redevelopment and rail planning (1968–2016)
@@ -141,8 +141,13 @@ both inspected TCR projects; the reported TCR/Positive Investments JV connects
 the development parties; and Erik Wahl has two source-explicit roles—DAIA
 president and Positive Investments Asset Manager at least in December 2023.
 The City's planning/redevelopment apparatus is the recurring institution.
-The current sample neither establishes nor excludes a cross-developer
-professional repeat.
+The person-level Ben Zhang join is now specifically corroborated across the
+Town Center/New World applicant interface and bounded DAIA filings (FY2022–
+FY2025). That correction does not collapse the organizations: Arcadia Town
+Center, LLC and the New World variants remain distinct labels pending a legal
+crosswalk. Nor does the join establish who authored, authorized, or caused
+DAIA's Town Center support letter. The current sample neither establishes nor
+excludes a broader cross-developer professional repeat.
 
 ## 8. Whether private positioning preceded or followed public de-risking
 
@@ -165,7 +170,8 @@ parking reductions), housing-element rezonings, and current Prop C/ARPA
 street and streetscape work. Positioned to capture the uplift: owners of
 station-adjacent land at entitlement time — documented instances are the
 TCR/Positive Investments JV (319 units), Elite Real Estate Holdings (Derby,
-with a zone change), Arcadia Town Center LLC (five-parcel assembly), DPP
+with a zone change), distinct official Arcadia Town Center and New World
+applicant interfaces (five-parcel assembly; not legally joined), DPP
 Arcadia (57 Wheeler), and the Chateau Group hotel. Capture through lawful
 channels — buying, entitling, building — with the value-capture asymmetry
 itself being a control question, not a settled finding: public works and
@@ -195,7 +201,7 @@ rather than ornamental.
 
 ## Closing note
 
-The evidence supports a formation, not a mastermind: thirteen control
+The current bounded record supports a multi-regime formation reading, not a mastermind: thirteen control
 regimes, one man who held every documented layer concurrently — a century
 ago — and several core stages that recur in the bounded Monrovia and Pasadena
 comparisons with different actors. The incomplete Monrovia, Duarte, and Azusa

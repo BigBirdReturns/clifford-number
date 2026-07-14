@@ -81,6 +81,11 @@ export const CLAIM_KINDS = new Set(['external_fact', 'expression']);
 
 export const CONTRADICTION_STATUSES = new Set(['confirmed', 'corrected', 'rejected', 'unresolved']);
 
+export const REJECTED_JOIN_DISPOSITIONS = new Set([
+  'active_rejection',
+  'superseded_by_evidence',
+]);
+
 export const TRAIL_STATUSES = new Set([
   'open',
   'in_progress',
@@ -185,7 +190,7 @@ export function validateFieldAutopsy(bundle) {
   const entities = index(bundle.entities, 'entity_id', errors, 'entities');
   index(bundle.edges, 'edge_id', errors, 'edges');
   const searches = index(bundle.searches, 'search_id', errors, 'searches');
-  index(bundle.rejectedJoins, 'rejected_id', errors, 'rejected-joins');
+  const rejectedJoins = index(bundle.rejectedJoins, 'rejected_id', errors, 'rejected-joins');
   const contradictions = index(bundle.contradictions, 'contradiction_id', errors, 'contradictions');
   index(bundle.coverage, 'coverage_id', errors, 'coverage');
   const trails = index(bundle.trails, 'trail_id', errors, 'trails');
@@ -371,6 +376,9 @@ export function validateFieldAutopsy(bundle) {
     }
     if (!Array.isArray(row.inspected)) errors.push(`search ${row.search_id} must list inspected URLs or record identifiers`);
     if (!SEARCH_RESULTS.has(row.result)) errors.push(`search ${row.search_id} has unknown result ${row.result}`);
+    if (['found', 'not_found'].includes(row.result) && !(row.inspected?.length > 0)) {
+      errors.push(`search ${row.search_id} marked ${row.result} lacks inspected locator or record evidence`);
+    }
     if (!Array.isArray(row.alternatives_attempted)) errors.push(`search ${row.search_id} must record alternatives_attempted (may be empty)`);
   }
   // receipt-v2 is the forward contract for newly acquired web evidence. It
@@ -452,6 +460,61 @@ export function validateFieldAutopsy(bundle) {
         .find(search => !['not_found', 'unavailable'].includes(search.result));
       if (inconsistent) {
         errors.push(`record ${owner} is unavailable_after_search but cites search ${inconsistent.search_id} marked ${inconsistent.result}`);
+      }
+    }
+  }
+
+  // --- Rejected joins: corrections supersede uncertainty without deleting
+  // the historical refusal or broadening a person join into entity identity.
+  for (const row of bundle.rejectedJoins ?? []) {
+    if (!row.candidate || !row.reason) errors.push(`rejected join ${row.rejected_id} lacks candidate or reason`);
+    if (row.preserved !== true) errors.push(`rejected join ${row.rejected_id} must remain preserved`);
+    if (!REJECTED_JOIN_DISPOSITIONS.has(row.disposition)) {
+      errors.push(`rejected join ${row.rejected_id} has invalid disposition ${row.disposition}`);
+    }
+    for (const id of row.receipt_ids ?? []) if (!receipts.has(id)) errors.push(`rejected join ${row.rejected_id} references missing receipt ${id}`);
+    for (const id of row.search_ids ?? []) if (!searches.has(id)) errors.push(`rejected join ${row.rejected_id} references missing search ${id}`);
+    if (row.disposition === 'superseded_by_evidence') {
+      if (row.resolution_scope !== 'person_identity_only') {
+        errors.push(`superseded rejected join ${row.rejected_id} must remain scoped to person_identity_only`);
+      }
+      if (!(row.superseded_by_claim_ids?.length > 0)) {
+        errors.push(`superseded rejected join ${row.rejected_id} lacks superseding claim linkage`);
+      }
+      for (const id of row.superseded_by_claim_ids ?? []) {
+        const claim = claims.get(id);
+        if (!claim) errors.push(`superseded rejected join ${row.rejected_id} references missing resolution claim ${id}`);
+        else if (!(claim.rejected_join_ids ?? []).includes(row.rejected_id)) {
+          errors.push(`resolution claim ${id} does not point back to rejected join ${row.rejected_id}`);
+        }
+      }
+      if (!(row.retained_boundary_ids?.length > 0)) {
+        errors.push(`superseded rejected join ${row.rejected_id} lacks retained boundary joins`);
+      }
+      for (const id of row.retained_boundary_ids ?? []) {
+        const boundary = rejectedJoins.get(id);
+        if (!boundary) errors.push(`superseded rejected join ${row.rejected_id} references missing retained boundary ${id}`);
+        else if (boundary.disposition !== 'active_rejection') errors.push(`retained boundary ${id} must remain an active_rejection`);
+      }
+    }
+  }
+  for (const claim of bundle.claims ?? []) {
+    if (claim.predicate !== 'identity_resolution') continue;
+    if (!(claim.rejected_join_ids?.length > 0)) errors.push(`identity resolution claim ${claim.claim_id} lacks rejected_join_ids`);
+    if (claim.resolution_method !== 'specific_corroboration') errors.push(`identity resolution claim ${claim.claim_id} must use specific_corroboration`);
+    if (claim.resolution_scope !== 'person_identity_only') errors.push(`identity resolution claim ${claim.claim_id} must remain person_identity_only`);
+    if (claim.evidence_state !== 'corroborated' || claim.claim_status !== 'review_required') {
+      errors.push(`identity resolution claim ${claim.claim_id} must remain corroborated and review_required`);
+    }
+    const support = (claim.receipt_ids ?? []).map(id => receipts.get(id)).filter(Boolean);
+    if (support.length < 2 || !support.some(receipt => receipt.evidence_class === 'official')) {
+      errors.push(`identity resolution claim ${claim.claim_id} requires multiple receipts including official evidence`);
+    }
+    for (const id of claim.rejected_join_ids ?? []) {
+      const rejected = rejectedJoins.get(id);
+      if (!rejected) errors.push(`identity resolution claim ${claim.claim_id} references missing rejected join ${id}`);
+      else if (!(rejected.superseded_by_claim_ids ?? []).includes(claim.claim_id)) {
+        errors.push(`rejected join ${id} does not reciprocally name resolution claim ${claim.claim_id}`);
       }
     }
   }
@@ -539,6 +602,12 @@ export function validateFieldAutopsy(bundle) {
           else if (search.result !== 'not_found') errors.push(`terminal trail ${row.trail_id} cites non-terminal search result ${id}:${search.result}`);
         }
       }
+    }
+    if (row.status === 'in_progress' && !(row.search_ids?.length > 0)) {
+      errors.push(`in_progress trail ${row.trail_id} lacks structured search_ids`);
+    }
+    for (const id of row.search_ids ?? []) {
+      if (!searches.has(id)) errors.push(`trail ${row.trail_id} references missing search ${id}`);
     }
     for (const search of row.bounded_searches ?? []) {
       if (!search.query || !search.target_domain) errors.push(`trail ${row.trail_id} has an unbounded search entry`);
