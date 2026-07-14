@@ -1,0 +1,106 @@
+{
+  "schema_version": "clifford-thiel-trump-wrap-up@1",
+  "generated_at": "2026-07-14",
+  "scope": "Repository evidence only; no new external acquisition.",
+  "authoritative_boundary": {
+    "surface_ledger": ["data/ledger/surfaces.jsonl", "data/ledger/participation.jsonl"],
+    "compiled_topology": ["build/hop-graph.json", "build/scores.json"],
+    "trump_office_business_pipeline": ["data/canonical/us-presidential-officeholder-cohort.json", "data/research/presidential-disclosure-source-coverage.json", "data/research/trump-2016-candidate-disclosure-manifest.json"],
+    "excluded_as_findings": ["legacy graph exports", "import queues", "intake-only probes", "name-only overlap candidates", "dense roster co-listing"]
+  },
+  "gates": [
+    "exact_person_or_legal_entity_identity",
+    "source_explicit_material_predicate",
+    "compatible_dated_interval",
+    "independent_receipt_support",
+    "eligible_bounded_surface_or_transaction",
+    "ordinary_market_or_institutional_null_considered"
+  ],
+  "principals": {
+    "matt-clifford": {
+      "corpus_role": "surface-ledger anchor",
+      "scorable_surface_count": 2,
+      "hop_eligible_surface_count": 1,
+      "supported_summary": "The ledger supports Clifford's official AI Opportunities Action Plan role. His Dialog listing is scorable context but not hop-eligible; a prior unsupported Faculty-investor participation has been removed.",
+      "prohibited_extension": "Policy authorship or roster listing does not transfer participation into unrelated procurement, capital, or political surfaces."
+    },
+    "peter-thiel": {
+      "corpus_role": "canonical actor with one scorable context surface",
+      "scorable_surface_count": 1,
+      "clifford_number": null,
+      "supported_summary": "The authoritative surface ledger places Thiel on the dense Dialog roster as co-founder; the compiled topology documents no eligible shared-surface path to Clifford.",
+      "prohibited_extension": "Dialog co-listing, sector prominence, Founders Fund affiliation, or Palantir association does not create a Clifford hop or policy/procurement coordination edge."
+    },
+    "donald-trump": {
+      "corpus_role": "officeholder/disclosure cohort member, not a surface-ledger participant",
+      "surface_ledger_present": false,
+      "official_oge_documents_parsed": 21,
+      "secondary_2016_report_explicit_legal_names": 3,
+      "resolved_cross_source_legal_entities": 0,
+      "crossing_matches": 0,
+      "supported_summary": "The repository has substantial Trump disclosure and campaign-finance intake, but its identity, beneficial-interest, and temporal gates currently promote no office-business crossing.",
+      "prohibited_extension": "A brand, property, payee-name, committee, business, or family-company reference cannot be transferred to Donald Trump personally without the required predicate and identity evidence."
+    }
+  },
+  "evaluated_paths": [
+    {
+      "path_id": "clifford-faculty-investor",
+      "candidate_path": ["matt-clifford", "faculty-investor-employee-2015-2019"],
+      "disposition": "blocked_unrecoverable_receipt",
+      "surviving_fact": "The repository formerly encoded Clifford as a reported Faculty investor.",
+      "failed_gate": "independent_receipt_support",
+      "reason": "The participation rested on an unrecoverable analysis note, carries no participant dates, and is not supported by the master investor list. It has been removed from authoritative hop computation and preserved here as a blocked candidate."
+    },
+    {
+      "path_id": "clifford-thiel-dialog-roster",
+      "candidate_path": ["matt-clifford", "dialog-society-membership", "peter-thiel"],
+      "disposition": "context_only_no_hop",
+      "surviving_fact": "Both actors are listed on the bounded Dialog roster surface, with different stated roles.",
+      "failed_gate": "eligible_bounded_surface_or_transaction",
+      "reason": "The 116-name directory roster exceeds the density limit and proves listing only, not attendance, agreement, transaction, or coordination."
+    },
+    {
+      "path_id": "clifford-thiel-capital-policy",
+      "candidate_path": ["matt-clifford", "UK AI policy or Entrepreneur First", "Thiel-linked fund or company", "peter-thiel"],
+      "disposition": "not_established_in_existing_corpus",
+      "surviving_fact": "Separate Clifford policy/venture roles and Thiel fund/company roles are represented in repository materials.",
+      "failed_gate": "source_explicit_material_predicate",
+      "reason": "No named co-investment, board, contract, advisory, procurement, or other eligible shared surface joins the two men."
+    },
+    {
+      "path_id": "thiel-trump-material-crossing",
+      "candidate_path": ["peter-thiel", "capital, company, campaign, appointment, or contract", "donald-trump"],
+      "disposition": "not_established_in_existing_corpus",
+      "surviving_fact": "The repository contains separate Thiel topology material and Trump officeholder/disclosure pipelines.",
+      "failed_gate": "exact_person_or_legal_entity_identity",
+      "reason": "No surface-ledger participation or identity-resolved transaction in the existing corpus supplies a material Thiel-Trump crossing."
+    },
+    {
+      "path_id": "clifford-trump-material-crossing",
+      "candidate_path": ["matt-clifford", "policy, capital, campaign, appointment, or contract", "donald-trump"],
+      "disposition": "not_established_in_existing_corpus",
+      "surviving_fact": "Both principals have separately bounded public-interest records in different corpus lanes.",
+      "failed_gate": "eligible_bounded_surface_or_transaction",
+      "reason": "Trump is not a participant in the authoritative surface ledger and no existing transaction or appointment record joins him to Clifford."
+    },
+    {
+      "path_id": "clifford-thiel-trump-triple",
+      "candidate_path": ["matt-clifford", "peter-thiel", "donald-trump"],
+      "disposition": "no_material_three_person_path_in_existing_corpus",
+      "surviving_fact": "The corpus supports separate public roles, a Clifford-Thiel roster co-listing, and a Trump disclosure pipeline.",
+      "failed_gate": "source_explicit_material_predicate",
+      "reason": "No eligible, dated, source-explicit chain connects all three. Combining separate corpus lanes would be guilt by adjacency."
+    }
+  ],
+  "bottom_line": {
+    "finding": "The existing repository does not establish a material Clifford-Thiel-Trump path.",
+    "what_is_clearer": "Clifford is an evidenced UK policy anchor; Thiel is a contextually adjacent but topologically disconnected actor under the current hop rules; Trump remains in a separate, heavily screened officeholder/disclosure pipeline with zero promoted crossings. The prior Faculty-investor shortcut was unsupported and has been removed.",
+    "remaining_frontier": [
+      "A named and dated Clifford-Thiel co-investment, board, contract, or advisory surface",
+      "An identifier-resolved Thiel- or Clifford-linked legal entity in a Trump campaign, disclosure, appointment, or procurement record",
+      "A transaction-level receipt with compatible ownership and public-role intervals"
+    ],
+    "interpretation_limit": "No path means no eligible path is documented in this corpus. It is not proof that no relationship, political alignment, social contact, or structural relevance exists.",
+    "graph_effect": "none"
+  }
+}

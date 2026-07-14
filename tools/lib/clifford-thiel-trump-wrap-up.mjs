@@ -1,0 +1,92 @@
+import { readJson, readJsonl } from './ledger.mjs';
+
+export function loadCliffordThielTrumpWrapUp() {
+  return {
+    wrap: readJson('data/research/clifford-thiel-trump-wrap-up.json'),
+    surfaces: readJsonl('data/ledger/surfaces.jsonl'),
+    participation: readJsonl('data/ledger/participation.jsonl'),
+    hopGraph: readJson('build/hop-graph.json'),
+    scores: readJson('build/scores.json'),
+    cohort: readJson('data/canonical/us-presidential-officeholder-cohort.json'),
+    coverage: readJson('data/research/presidential-disclosure-source-coverage.json'),
+    dispositionMatrix: readJson('data/research/officeholder-predicate-disposition-matrix.json'),
+    predicateRegistry: readJson('data/canonical/officeholder-crossing-predicates.json'),
+    candidates: readJson('data/intake/thiel-palantir-dialog-candidates.json'),
+  };
+}
+
+export function validateCliffordThielTrumpWrapUp(bundle) {
+  const errors = [];
+  const { wrap, surfaces, participation, hopGraph, scores, cohort, coverage, dispositionMatrix, predicateRegistry, candidates } = bundle;
+  if (wrap.schema_version !== 'clifford-thiel-trump-wrap-up@1') errors.push('wrap-up schema mismatch');
+  if (wrap.scope !== 'Repository evidence only; no new external acquisition.') errors.push('wrap-up must remain repository-only');
+
+  const dialog = surfaces.find(row => row.surface_id === 'dialog-society-membership');
+  if (!dialog) errors.push('Dialog surface missing');
+  else if (dialog.hop_eligible !== false) errors.push('Dialog dense roster must remain non-hop context');
+  for (const actorId of ['matt-clifford', 'peter-thiel']) {
+    if (!participation.some(row => row.surface_id === 'dialog-society-membership' && row.actor_id === actorId)) {
+      errors.push(`Dialog participation missing for ${actorId}`);
+    }
+  }
+  if (participation.some(row => row.surface_id === 'faculty-investor-employee-2015-2019' && row.actor_id === 'matt-clifford')) {
+    errors.push('unsupported Matt Clifford Faculty participation must remain excluded from the authoritative ledger');
+  }
+  if (!participation.some(row => row.surface_id === 'ai-opportunities-action-plan-2025' && row.actor_id === 'matt-clifford')) {
+    errors.push('official Matt Clifford Action Plan participation is missing');
+  }
+
+  const peterScore = scores.actors?.find(row => row.actor_id === 'peter-thiel');
+  if (!peterScore) errors.push('Peter Thiel score missing');
+  else if (peterScore.clifford_number !== null || peterScore.shortest_path?.number !== null) {
+    errors.push('Peter Thiel must not be assigned a Clifford path without an eligible surface');
+  }
+  if ((hopGraph.edges ?? []).some(edge => [edge.actor_a, edge.actor_b].includes('peter-thiel'))) {
+    errors.push('Peter Thiel unexpectedly appears on a compiled hop edge');
+  }
+
+  if (!cohort.members?.some(row => row.person_id === 'donald-trump')) errors.push('Donald Trump officeholder cohort row missing');
+  if (participation.some(row => row.actor_id === 'donald-trump')) errors.push('Donald Trump cannot be claimed as a surface-ledger participant by this wrap-up');
+  if (coverage.coverage?.resolved_cross_source_legal_entities !== 0) errors.push('wrap-up expects zero resolved cross-source legal entities');
+  if (coverage.coverage?.crossing_matches !== 0) errors.push('wrap-up expects zero promoted office-business crossings');
+
+  const cohortIds = new Set((cohort.members ?? []).map(row => row.person_id));
+  const predicateIds = predicateRegistry.predicates?.map(row => row.predicate_id) ?? [];
+  const matrixRows = dispositionMatrix.rows ?? [];
+  const matrixCellCount = matrixRows.reduce((sum, row) => sum + (row.cells?.length ?? 0), 0);
+  if (dispositionMatrix.schema_version !== 'officeholder-predicate-disposition-matrix@1') errors.push('officeholder disposition matrix schema mismatch');
+  if (matrixRows.length !== cohortIds.size || matrixCellCount !== cohortIds.size * predicateIds.length || dispositionMatrix.cell_count !== matrixCellCount) {
+    errors.push('officeholder disposition matrix must contain all 8 x 5 cells');
+  }
+  if (new Set(matrixRows.map(row => row.person_id)).size !== cohortIds.size || matrixRows.some(row => !cohortIds.has(row.person_id))) {
+    errors.push('officeholder disposition matrix member set must match the canonical cohort');
+  }
+  if (JSON.stringify(dispositionMatrix.columns) !== JSON.stringify(predicateIds)) errors.push('officeholder disposition matrix columns must match the frozen predicate order');
+  if (matrixRows.some(row => row.cells?.length !== predicateIds.length)) errors.push('each officeholder disposition matrix row must cover all five predicates');
+  if (dispositionMatrix.positive_crossing_count !== 0 || dispositionMatrix.graph_effect !== 'none') errors.push('officeholder disposition matrix cannot promote a crossing under current evidence');
+  if (!matrixRows.flatMap(row => row.cells ?? []).some(cell => cell.evidence_state === 'coverage_gap')) errors.push('officeholder disposition matrix must expose asymmetric coverage gaps');
+  if (!matrixRows.flatMap(row => row.cells ?? []).some(cell => cell.evidence_state === 'not_executed')) errors.push('officeholder disposition matrix must expose unexecuted predicates');
+
+  const dialogCandidate = candidates.candidates?.find(row => row.id === 'candidate-dialog-roster-hop-weighting-audit');
+  if (!dialogCandidate) errors.push('Dialog topology-audit candidate missing');
+  else {
+    if (dialogCandidate.hop_eligible !== false) errors.push('Dialog topology-audit candidate contradicts the authoritative non-hop surface');
+    if (dialogCandidate.status !== 'resolved_context_only') errors.push('Dialog topology-audit candidate must be resolved_context_only');
+  }
+
+  const dispositions = new Map((wrap.evaluated_paths ?? []).map(row => [row.path_id, row.disposition]));
+  const required = {
+    'clifford-faculty-investor': 'blocked_unrecoverable_receipt',
+    'clifford-thiel-dialog-roster': 'context_only_no_hop',
+    'clifford-thiel-capital-policy': 'not_established_in_existing_corpus',
+    'thiel-trump-material-crossing': 'not_established_in_existing_corpus',
+    'clifford-trump-material-crossing': 'not_established_in_existing_corpus',
+    'clifford-thiel-trump-triple': 'no_material_three_person_path_in_existing_corpus',
+  };
+  for (const [id, disposition] of Object.entries(required)) {
+    if (dispositions.get(id) !== disposition) errors.push(`wrap-up path ${id} must remain ${disposition}`);
+  }
+  if (wrap.bottom_line?.graph_effect !== 'none') errors.push('wrap-up synthesis must remain graph-inert');
+  if (!/not establish a material/i.test(wrap.bottom_line?.finding ?? '')) errors.push('wrap-up bottom line is overbroad or missing');
+  return errors;
+}

@@ -19,7 +19,7 @@
         { "metric_id": "compiled_actors", "unit": "actors", "expected": null, "observed": 137, "denominator_kind": "open", "publicly_reproducible": true, "source": "build/scores.json" },
         { "metric_id": "compiled_organizations", "unit": "organizations", "expected": null, "observed": 25, "denominator_kind": "open", "publicly_reproducible": true, "source": "build/scores.json" },
         { "metric_id": "bounded_surfaces", "unit": "surfaces", "expected": null, "observed": 14, "denominator_kind": "open", "publicly_reproducible": true, "source": "build/surface-graph.json" },
-        { "metric_id": "compiled_hop_edges", "unit": "hop_edges", "expected": null, "observed": 34, "denominator_kind": "open", "publicly_reproducible": true, "source": "build/hop-graph.json" },
+        { "metric_id": "compiled_hop_edges", "unit": "hop_edges", "expected": null, "observed": 31, "denominator_kind": "open", "publicly_reproducible": true, "source": "build/hop-graph.json" },
         { "metric_id": "cross_case_joins", "unit": "joins", "expected": null, "observed": 0, "denominator_kind": "open", "publicly_reproducible": true, "source": "Phase 1 acceptance state" }
       ],
       "known_gaps": [
@@ -117,7 +117,7 @@
     },
     {
       "lane_id": "trump-office-business-capital",
-      "coverage_state": "proposed_uningested",
+      "coverage_state": "active_partial",
       "counts_toward_public_progress": true,
       "consumption": {
         "contract_id": "public-topology-map@1",
@@ -169,7 +169,7 @@
         { "gap_id": "selection-gap-trump-noncampaign-committees", "description": "Sponsored leadership PACs and joint fundraising committees are outside the first authorized-presidential-campaign-committee subset and must not be narrated as searched.", "status": "open", "next_action": "Define and source-resolve a second symmetric committee class before querying those committees." },
         { "gap_id": "selection-gap-trump-historical-digitization", "description": "Electronic campaign-finance, disclosure, spending, registry, and policy coverage attenuates across earlier administrations, so raw footprint counts are not temporally comparable. The initial four-family, 32-cell source matrix now makes that asymmetry explicit.", "status": "measured_ongoing", "next_action": "Refine each cell with artifact-level searches, preserve null versus unavailable states, and prohibit unadjusted cross-era ranking." },
         { "gap_id": "selection-gap-presidential-disclosure-artifacts", "description": "Twenty-six current-window OGE PDFs are hash-verified and yield 5,945 machine-extracted intake rows, but older-era NARA disclosure artifacts remain unresolved search hits with zero durable hash-bearing documents.", "status": "active_discovery_work", "next_action": "Review the 551 OGE normalization rejections, pursue artifact-level NARA locators for earlier administrations, and preserve request-gated or unavailable material without converting it into absence." },
-        { "gap_id": "selection-gap-trump-entity-resolution", "description": "The FEC corpus now contains 46,926 unresolved normalized payee candidates and the OGE corpus 5,945 unresolved reported-interest rows. A lexical pass produced 1,172 candidate pairs, but strict temporal screening found 0 overlapping, 132 non-overlapping, and 1,040 temporally unknown; none entered identity review.", "status": "blocking", "next_action": "Improve missing temporal coverage before legal-entity resolution. Preserve the 1,040 unknowns without treating them as matches or absences; require receipted official identifiers and independent provenance chains for any candidate that later becomes temporally eligible." },
+        { "gap_id": "selection-gap-trump-entity-resolution", "description": "The FEC corpus now contains 46,926 unresolved normalized payee candidates and the OGE corpus 5,945 unresolved reported-interest rows. A lexical pass produced 1,172 candidate pairs; after source-page visual correction, strict temporal screening found 0 overlapping, 177 non-overlapping, and 995 temporally unknown. None entered identity review.", "status": "blocking", "next_action": "Improve missing temporal coverage before legal-entity resolution. Preserve the 995 unknowns without treating them as matches or absences; require receipted official identifiers and independent provenance chains for any candidate that later becomes temporally eligible." },
         { "gap_id": "selection-gap-trump-sec-adapter", "description": "The live SEC adapter covers Form D searches, not the required issuer submissions and ownership filings.", "status": "open", "next_action": "Add accession-number-based SEC submissions retrieval without treating issuer events as personal conduct." }
       ]
     },
