@@ -19,7 +19,8 @@ research later supported or narrowed:
   matches the record exactly (con-01).
 - The wartime layer: Santa Anita Assembly Center (1942, peak 18,719, horse
   stalls) followed by Army use (con-02).
-- Baldwin as the one actor who genuinely held every control layer at once —
+- Baldwin as the one actor among the documented regimes in this reconstruction
+  who held every listed control layer at once —
   land, water endowment, rail access, townsite, mayoralty, vice licensing —
   for 1903–1909 (con-03).
 - The physical substrate: alluvial-fan aquifers, mountain-stream recharge,
@@ -195,8 +196,9 @@ rather than ornamental.
 ## Closing note
 
 The evidence supports a formation, not a mastermind: thirteen control
-regimes, one man who really did hold every layer at once — a century ago —
-and a modern shape that recurs wherever California builds a station,
-upzones around it, and lets patient capital do the rest. The hypotheses that
+regimes, one man who held every documented layer concurrently — a century
+ago — and several core stages that recur in the bounded Monrovia and Pasadena
+comparisons with different actors. The incomplete Monrovia, Duarte, and Azusa
+control stages remain open rather than being generalized statewide. The hypotheses that
 would make it more than that are preserved, searchable, and graph-inert
 until receipts say otherwise.

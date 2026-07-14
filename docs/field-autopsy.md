@@ -34,7 +34,9 @@ extension bundle validated by `tools/lib/field-autopsy.mjs`:
   coincidence can only ever be context.
 - `searches.jsonl`: the search ledger. Exact query, domain or database, the
   URLs or record identifiers actually inspected, timestamp, result, and the
-  alternatives attempted.
+  alternatives attempted. Search results distinguish `not_found` (a bounded
+  negative search) from `unavailable` (a locator or endpoint was found but
+  could not be inspected). An unavailable result cannot close a trail.
 - New web receipts use `provenance_contract: "receipt-v2"`, carry exact
   `search_ids`, and declare `durability_status` as `captured`, `archived`, or
   `url_only`. A captured receipt requires a content hash; an archived receipt
@@ -43,8 +45,9 @@ extension bundle validated by `tools/lib/field-autopsy.mjs`:
   silently described as captured.
 - `coverage.jsonl`: coverage gaps. `unavailable_after_search` and
   `partially_searched` require search provenance; `not_searched` is an honest
-  default. Partial surfaces are never labeled complete; absence of evidence is
-  a coverage result, not proof of absence.
+  default and cannot cite executed searches. Partial surfaces are never
+  labeled complete; absence of evidence is a coverage result, not proof of
+  absence.
 - `rejected-joins.jsonl`: identity joins the compiler refused, preserved.
 - `contradictions.jsonl`: every confirmation, correction, and rejection of
   the source's claims, pointing back to the preserved observations. Corrected

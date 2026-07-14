@@ -165,7 +165,30 @@ expectFailure('found-labeled-unavailable', bundle => {
   const row = bundle.coverage.find(c => c.state === 'partially_searched' && c.search_ids?.length);
   row.state = 'unavailable_after_search';
   row.search_ids = ['af-s01'];
-}, /unavailable_after_search but cites a search result marked found/);
+}, /unavailable_after_search but cites search .* marked found/);
+expectFailure('partial-labeled-unavailable', bundle => {
+  const row = bundle.coverage.find(c => c.state === 'partially_searched' && c.search_ids?.length);
+  row.state = 'unavailable_after_search';
+  row.search_ids = ['cf-s07'];
+}, /unavailable_after_search but cites search .* marked partial/);
+expectFailure('not-searched-with-executed-search', bundle => {
+  const row = bundle.coverage.find(c => c.state === 'not_searched');
+  row.search_ids = ['arc-s01'];
+}, /not_searched but cites executed search provenance/);
+expectFailure('record-not-searched-with-executed-search', bundle => {
+  const row = bundle.entities.find(e => e.entity_type === 'person');
+  row.evidence_state = 'not_searched';
+  row.search_ids = ['arc-s01'];
+}, /not_searched but cites executed search provenance/);
+expectFailure('record-unavailable-with-partial-search', bundle => {
+  const row = bundle.entities.find(e => e.entity_type === 'person');
+  row.evidence_state = 'unavailable_after_search';
+  row.search_ids = ['cf-s07'];
+}, /unavailable_after_search but cites search .* marked partial/);
+expectFailure('blocked-search-cannot-close-trail', bundle => {
+  const trail = makeTerminal(bundle);
+  trail.search_ids = ['gm-s23'];
+}, /cites non-terminal search result .*:unavailable/);
 
 // Formation-signature machinery: bounded, graph-inert, candidate-only.
 {

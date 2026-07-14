@@ -95,6 +95,13 @@ export const RECEIPT_V2_DURABILITY = new Set([
   'url_only',
 ]);
 
+export const SEARCH_RESULTS = new Set([
+  'found',
+  'not_found',
+  'partial',
+  'unavailable',
+]);
+
 // Language that has no business inside a terminal state or a completeness
 // label. Terminal means terminal; partial means partial.
 export const CONTINUATION_LANGUAGE = /\b(next step|follow[- ]?up|to ?do|continue|continuing|pending|will (search|check|verify|revisit)|remaining work)\b/i;
@@ -363,7 +370,7 @@ export function validateFieldAutopsy(bundle) {
       errors.push(`search ${row.search_id} lacks query, domain_or_database, or timestamp`);
     }
     if (!Array.isArray(row.inspected)) errors.push(`search ${row.search_id} must list inspected URLs or record identifiers`);
-    if (!['found', 'not_found', 'partial'].includes(row.result)) errors.push(`search ${row.search_id} has unknown result ${row.result}`);
+    if (!SEARCH_RESULTS.has(row.result)) errors.push(`search ${row.search_id} has unknown result ${row.result}`);
     if (!Array.isArray(row.alternatives_attempted)) errors.push(`search ${row.search_id} must record alternatives_attempted (may be empty)`);
   }
   // receipt-v2 is the forward contract for newly acquired web evidence. It
@@ -416,9 +423,17 @@ export function validateFieldAutopsy(bundle) {
       errors.push(`coverage ${row.coverage_id} has invalid state ${row.state}`);
     }
     requireSearchProvenance(`coverage ${row.coverage_id}`, row.state, row.search_ids);
+    if (row.state === 'not_searched' && (row.search_ids?.length ?? 0) > 0) {
+      errors.push(`coverage ${row.coverage_id} is not_searched but cites executed search provenance`);
+    }
     if (row.state === 'unavailable_after_search') {
-      const found = (row.search_ids ?? []).map(id => searches.get(id)).filter(Boolean).some(search => search.result === 'found');
-      if (found) errors.push(`coverage ${row.coverage_id} is unavailable_after_search but cites a search result marked found`);
+      const inconsistent = (row.search_ids ?? [])
+        .map(id => searches.get(id))
+        .filter(Boolean)
+        .find(search => !['not_found', 'unavailable'].includes(search.result));
+      if (inconsistent) {
+        errors.push(`coverage ${row.coverage_id} is unavailable_after_search but cites search ${inconsistent.search_id} marked ${inconsistent.result}`);
+      }
     }
     if (['partially_searched', 'not_searched'].includes(row.state) && COMPLETION_LANGUAGE.test(row.notes ?? '')) {
       errors.push(`coverage ${row.coverage_id} labels a partial surface with completion language`);
@@ -427,6 +442,18 @@ export function validateFieldAutopsy(bundle) {
   for (const row of [...(bundle.entities ?? []), ...(bundle.edges ?? []), ...(bundle.claims ?? [])]) {
     const owner = row.entity_id ?? row.edge_id ?? row.claim_id;
     requireSearchProvenance(`record ${owner}`, row.evidence_state, row.search_ids);
+    if (row.evidence_state === 'not_searched' && (row.search_ids?.length ?? 0) > 0) {
+      errors.push(`record ${owner} is not_searched but cites executed search provenance`);
+    }
+    if (row.evidence_state === 'unavailable_after_search') {
+      const inconsistent = (row.search_ids ?? [])
+        .map(id => searches.get(id))
+        .filter(Boolean)
+        .find(search => !['not_found', 'unavailable'].includes(search.result));
+      if (inconsistent) {
+        errors.push(`record ${owner} is unavailable_after_search but cites search ${inconsistent.search_id} marked ${inconsistent.result}`);
+      }
+    }
   }
 
   // --- Contradictions: corrected and rejected material never disappears. ---
