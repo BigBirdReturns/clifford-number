@@ -22,12 +22,12 @@
     },
     "discovery_queue": {
       "scout_findings": 141,
-      "crawl_candidates": 6,
-      "crawl_observations": 6,
-      "crawl_rejections_preserved": 61,
+      "crawl_candidates_minimum": 6,
+      "crawl_observations_minimum": 6,
+      "crawl_rejections_preserved_minimum": 61,
       "public_interest_seeds": 24
     },
-    "interpretation": "These counts describe different record types and universes. They are displayed side by side, never collapsed into one misleading total."
+    "interpretation": "These counts describe different record types and universes. They are displayed side by side, never collapsed into one misleading total. Live crawl and fanout counts are monotonic lower bounds because the official-record intake on the target branch may advance independently."
   },
   "lanes": [
     {
@@ -147,10 +147,9 @@
         "natsec100_leads_queried": 5,
         "natsec100_official_award_rows_observed": 31,
         "natsec100_leads_with_official_rows": 5,
-        "natsec100_trade_summaries_exactly_verified": 0,
-        "bounded_crawler_window_records_seen": 0
+        "natsec100_trade_summaries_exactly_verified": 0
       },
-      "what_the_data_shows": "USAspending did return official award material in two targeted workflows: 17 router award rows and 31 official rows across five NatSec100 control queries. A separate eight-day generic crawler window saw zero rows; that narrow-window result cannot erase the targeted acquisitions.",
+      "what_the_data_shows": "USAspending did return official award material in two targeted workflows: 17 router award rows and 31 official rows across five NatSec100 control queries. The generic crawler maintains a separate rolling-window state; whatever that window currently contains cannot erase the targeted acquisitions.",
       "open_join": "NatSec100 company-name rows and USAspending UEIs still require source-native identity resolution before cross-corpus promotion; one router award identity is held.",
       "source_paths": [
         "data/intake/person-centered-defense-routers/government-awards.jsonl",
@@ -238,16 +237,16 @@
       "visibility": "visible",
       "graph_effect": "none",
       "counts": {
-        "fanout_items": 316,
+        "fanout_items_minimum": 316,
         "scout_findings": 141,
-        "crawl_candidates": 6,
-        "crawl_rejections_preserved": 61,
+        "crawl_candidates_minimum": 6,
+        "crawl_rejections_preserved_minimum": 61,
         "crawl_source_gaps": 1,
         "public_interest_seeds": 24,
         "field_autopsy_searches": 17,
         "formation_signature_searches": 66
       },
-      "what_the_data_shows": "The repository generated 316 inspectable research tasks. Their batch count varies with the configured batch size and is presentation geometry, not a research-data count. Rejections, failed routes, source gaps, and inferred scout findings remain part of the discovery map rather than disappearing from it.",
+      "what_the_data_shows": "The repository generated at least 316 inspectable research tasks; the live target branch may contain more as official-record intake advances. Batch count varies with the configured batch size and is presentation geometry, not a research-data count. Rejections, failed routes, source gaps, and inferred scout findings remain part of the discovery map rather than disappearing from it.",
       "open_join": "A fanout item is a research lead or coverage state, not a verified finding; each item retains its evidence and availability labels.",
       "source_paths": [
         "tools/build-research-fanout.mjs",

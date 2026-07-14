@@ -4,6 +4,19 @@ import { loadCliffordCrossCorpusGameBoard, validateCliffordCrossCorpusGameBoard 
 const baseline = loadCliffordCrossCorpusGameBoard();
 assert.deepEqual(validateCliffordCrossCorpusGameBoard(baseline), []);
 
+const advancedTargetBranch = structuredClone(baseline);
+for (let i = 0; i < 9; i++) {
+  advancedTargetBranch.crawlCandidates.push({ candidate_id: `future-${i}` });
+  advancedTargetBranch.crawlObservations.push({ observation_id: `future-${i}` });
+}
+for (let i = 0; i < 28; i++) advancedTargetBranch.crawlRejections.push({ rejection_id: `future-${i}` });
+if (advancedTargetBranch.fanout) advancedTargetBranch.fanout.source_counts.total += 37;
+assert.deepEqual(
+  validateCliffordCrossCorpusGameBoard(advancedTargetBranch),
+  [],
+  'live official-record intake may grow beyond the board snapshot without erasing the preserved minimum',
+);
+
 function expectFailure(label, mutate, pattern) {
   const bundle = structuredClone(baseline);
   mutate(bundle);
@@ -14,6 +27,10 @@ function expectFailure(label, mutate, pattern) {
 expectFailure('Austin-Israel cannot disappear because it is intake-only', bundle => {
   bundle.board.lanes = bundle.board.lanes.filter(lane => lane.lane_id !== 'austin-israel-defense-vc-corridor');
 }, /must preserve lane austin-israel-defense-vc-corridor/);
+
+expectFailure('the board cannot claim a crawl minimum larger than the checked corpus', bundle => {
+  bundle.board.inventory.discovery_queue.crawl_candidates_minimum = 999;
+}, /crawl candidates: expected at least 999/);
 
 expectFailure('staged NatSec100 data cannot be hidden', bundle => {
   bundle.board.lanes.find(lane => lane.lane_id === 'natsec100-defense-companies').visibility = 'hidden_until_promoted';

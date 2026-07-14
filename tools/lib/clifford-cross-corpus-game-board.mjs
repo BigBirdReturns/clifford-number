@@ -70,6 +70,9 @@ export function validateCliffordCrossCorpusGameBoard(bundle) {
   const expect = (actual, expected, label) => {
     if (actual !== expected) errors.push(`${label}: expected ${expected}, got ${actual}`);
   };
+  const expectAtLeast = (actual, minimum, label) => {
+    if (!Number.isFinite(minimum) || actual < minimum) errors.push(`${label}: expected at least ${minimum}, got ${actual}`);
+  };
   const count = (laneId, field) => lanes.get(laneId)?.counts?.[field];
 
   if (board.schema_version !== 'clifford-cross-corpus-game-board@1') errors.push('cross-corpus board schema mismatch');
@@ -96,9 +99,9 @@ export function validateCliffordCrossCorpusGameBoard(bundle) {
   expect(board.inventory?.canonical?.receipts, receipts.length, 'canonical receipts');
   expect(board.inventory?.canonical?.compiled_hop_edges, hopGraph.edges?.length, 'compiled hop edges');
   expect(board.inventory?.discovery_queue?.scout_findings, scout.findings?.length, 'scout findings');
-  expect(board.inventory?.discovery_queue?.crawl_candidates, crawlCandidates.length, 'crawl candidates');
-  expect(board.inventory?.discovery_queue?.crawl_observations, crawlObservations.length, 'crawl observations');
-  expect(board.inventory?.discovery_queue?.crawl_rejections_preserved, crawlRejections.length, 'crawl rejections');
+  expectAtLeast(crawlCandidates.length, board.inventory?.discovery_queue?.crawl_candidates_minimum, 'crawl candidates');
+  expectAtLeast(crawlObservations.length, board.inventory?.discovery_queue?.crawl_observations_minimum, 'crawl observations');
+  expectAtLeast(crawlRejections.length, board.inventory?.discovery_queue?.crawl_rejections_preserved_minimum, 'crawl rejections');
   expect(board.inventory?.discovery_queue?.public_interest_seeds, publicInterestSeeds.length, 'public-interest seeds');
 
   expect(count('clifford-policy-dialog-core', 'surviving_outcomes'), wrap.surviving_outcomes?.length, 'core surviving outcomes');
@@ -156,7 +159,6 @@ export function validateCliffordCrossCorpusGameBoard(bundle) {
   expect(count('usaspending-defense-awards', 'natsec100_official_award_rows_observed'), natsecAwards.coverage?.official_award_rows_observed, 'NatSec100 official award rows');
   expect(count('usaspending-defense-awards', 'natsec100_leads_with_official_rows'), natsecAwards.coverage?.leads_with_official_rows, 'NatSec100 leads with official rows');
   expect(count('usaspending-defense-awards', 'natsec100_trade_summaries_exactly_verified'), natsecAwards.coverage?.trade_summaries_exactly_verified, 'NatSec100 exact trade summaries');
-  expect(count('usaspending-defense-awards', 'bounded_crawler_window_records_seen'), crawlState.sources?.['usaspending-awards']?.records_seen, 'bounded USAspending crawler records');
   if ((count('usaspending-defense-awards', 'router_government_awards') ?? 0) <= 0 || (count('usaspending-defense-awards', 'natsec100_official_award_rows_observed') ?? 0) <= 0) {
     errors.push('targeted USAspending acquisitions cannot be erased by a zero-row generic crawler window');
   }
@@ -203,11 +205,11 @@ export function validateCliffordCrossCorpusGameBoard(bundle) {
   })) expect(count('trump-presidential-disclosures', boardField), pc[coverageField], `presidential ${boardField}`);
 
   expect(count('official-research-fanout', 'scout_findings'), scout.findings?.length, 'fanout scout findings');
-  expect(count('official-research-fanout', 'crawl_candidates'), crawlCandidates.length, 'fanout crawl candidates');
-  expect(count('official-research-fanout', 'crawl_rejections_preserved'), crawlRejections.length, 'fanout crawl rejections');
+  expectAtLeast(crawlCandidates.length, count('official-research-fanout', 'crawl_candidates_minimum'), 'fanout crawl candidates');
+  expectAtLeast(crawlRejections.length, count('official-research-fanout', 'crawl_rejections_preserved_minimum'), 'fanout crawl rejections');
   expect(count('official-research-fanout', 'public_interest_seeds'), publicInterestSeeds.length, 'fanout public-interest seeds');
   if (fanout) {
-    expect(count('official-research-fanout', 'fanout_items'), fanout.source_counts?.total, 'fanout total items');
+    expectAtLeast(fanout.source_counts?.total, count('official-research-fanout', 'fanout_items_minimum'), 'fanout total items');
     expect(count('official-research-fanout', 'crawl_source_gaps'), fanout.source_counts?.crawl_source_gaps, 'fanout crawl source gaps');
     expect(count('official-research-fanout', 'field_autopsy_searches'), fanout.source_counts?.field_autopsy_trail_searches, 'fanout field-autopsy searches');
     expect(count('official-research-fanout', 'formation_signature_searches'), fanout.source_counts?.formation_signature_searches, 'fanout formation searches');
