@@ -10,6 +10,7 @@ assert.equal(isIndependentReceipt({ content_sha256: HASH, locator: 'x', provenan
 // FA-03's actual receipt shape: open evidence class + private artifact => not independent
 assert.equal(isIndependentReceipt({ content_sha256: HASH, locator: 'x', provenance_chain_id: 'p', evidence_class: 'open', locator_status: 'private_local_artifact' }, [HASH]).independent, false);
 assert.equal(isIndependentReceipt({ content_sha256: HASH, locator: 'x', provenance_chain_id: 'p', evidence_class: 'primary_public' }, ['b'.repeat(64)]).independent, false, 'must be in manifest');
+assert.ok(isIndependentReceipt({ content_sha256: HASH, locator: 'x', provenance_chain_id: 'p', evidence_class: 'primary_public' }, []).reasons.includes('manifest_not_declared'));
 
 // --- generic gate: passes a fully-satisfied crossing (proves it is NOT a zero-only filter) ---
 const good = {
@@ -24,6 +25,14 @@ assert.ok(evaluateGenericCrossing({ ...good, receipts: [] }).failures.includes('
 assert.ok(evaluateGenericCrossing({ ...good, endpoints: [{ role: 'from', resolution: { disposition: 'unresolved' } }, good.endpoints[1]] }).failures.some(f => f.startsWith('endpoint_not_resolved')));
 assert.ok(evaluateGenericCrossing({ ...good, interval_b: { valid_from: '2019-01-01', valid_until: '2019-12-31' } }).failures.includes('non_overlapping_intervals'));
 assert.ok(evaluateGenericCrossing({ ...good, predicate: 'linked_to' }).failures.some(f => f.startsWith('vague_predicate')));
+const roleBound = evaluateGenericCrossing({
+  ...good,
+  receipts: [{ ...good.receipts[0], role: 'relationship' }],
+  required_receipt_roles: ['relationship', 'subject_node', 'object_node'],
+});
+assert.deepEqual(roleBound.receipt_roles_satisfied, ['relationship']);
+assert.ok(roleBound.failures.includes('missing_independent_receipt:subject_node'));
+assert.ok(roleBound.failures.includes('missing_independent_receipt:object_node'));
 
 // --- FA-03 audit: disciplined-instrument signature, not zero-only ---
 const a = JSON.parse(fs.readFileSync('test/audits/fa03-positive-control.json', 'utf8'));

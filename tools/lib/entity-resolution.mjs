@@ -11,6 +11,10 @@
 //    addresses are WEAK signals and can never resolve identity by themselves.
 //  - Temporal unknown never becomes permanent overlap.
 
+import { evaluateGenericCrossing } from './generic-crossing.mjs';
+import { temporalRelation } from './temporal-interval.mjs';
+export { temporalRelation } from './temporal-interval.mjs';
+
 export const NODE_TYPES = new Set([
   'person', 'committee', 'organization', 'trust', 'fund', 'legal_entity', 'brand', 'property', 'financial_interest',
 ]);
@@ -138,63 +142,66 @@ export function resolveIdentity({ source_text, candidates = [] }) {
   };
 }
 
-function parseInterval(interval) {
-  if (!interval) return null;
-  const from = interval.valid_from ? Date.parse(interval.valid_from) : null;
-  const until = interval.valid_until ? Date.parse(interval.valid_until) : null;
-  return { from: Number.isNaN(from) ? null : from, until: Number.isNaN(until) ? null : until };
-}
-
-// A completely unknown interval (no bounds at all) yields temporally_unknown, never overlap.
-export function temporalRelation(a, b) {
-  const ia = parseInterval(a);
-  const ib = parseInterval(b);
-  if (!ia || !ib) return 'temporally_unknown';
-  const aOpen = ia.from === null && ia.until === null;
-  const bOpen = ib.from === null && ib.until === null;
-  if (aOpen || bOpen) return 'temporally_unknown';
-  const aStart = ia.from ?? -Infinity, aEnd = ia.until ?? Infinity;
-  const bStart = ib.from ?? -Infinity, bEnd = ib.until ?? Infinity;
-  if (aEnd < bStart || bEnd < aStart) return 'non_overlapping';
-  // one side open-ended on the relevant edge -> overlap is possible but not certain
-  if (ia.until === null || ib.until === null || ia.from === null || ib.from === null) return 'possibly_overlapping';
-  return 'overlapping';
-}
-
 // A crossing candidate requires: receipted itemization, resolved committee + payee, separately
 // receipted interest, explicit holder scope, compatible temporal intervals, and a visible path.
 export function evaluateCrossingGate(input) {
-  const failures = [];
+  const preconditionFailures = [];
   const item = input.itemization ?? {};
   const interest = input.interest ?? {};
   const itemHashValid = SHA256_RE.test(item.source_sha256 ?? '');
   if (!itemHashValid || !Number.isInteger(item.source_line) || item.source_line < 1 || !hasText(item.transaction_id) || !hasText(item.committee_id)) {
-    failures.push('missing_or_invalid_receipted_itemization');
+    preconditionFailures.push('missing_or_invalid_receipted_itemization');
   }
   if (!itemHashValid || !Array.isArray(input.source_manifest_hashes) || !input.source_manifest_hashes.includes(item.source_sha256)) {
-    failures.push('itemization_source_not_in_manifest');
+    preconditionFailures.push('itemization_source_not_in_manifest');
   }
-  if (input.committee_resolution?.disposition !== 'accepted' || !hasText(input.committee_resolution?.accepted_entity_id)) failures.push('committee_not_resolved');
-  if (input.payee_resolution?.disposition !== 'accepted' || !hasText(input.payee_resolution?.accepted_entity_id)) failures.push('payee_not_resolved');
+  if (input.committee_resolution?.disposition !== 'accepted' || !hasText(input.committee_resolution?.accepted_entity_id)) preconditionFailures.push('committee_not_resolved');
+  if (input.payee_resolution?.disposition !== 'accepted' || !hasText(input.payee_resolution?.accepted_entity_id)) preconditionFailures.push('payee_not_resolved');
   const interestHashValid = SHA256_RE.test(interest.source_sha256 ?? '');
-  if (!interestHashValid || !hasText(interest.source_locator)) failures.push('missing_or_invalid_receipted_interest');
+  if (!interestHashValid || !hasText(interest.source_locator)) preconditionFailures.push('missing_or_invalid_receipted_interest');
   if (!interestHashValid || !Array.isArray(input.disclosure_document_hashes) || !input.disclosure_document_hashes.includes(interest.source_sha256)) {
-    failures.push('interest_source_not_in_manifest');
+    preconditionFailures.push('interest_source_not_in_manifest');
   }
-  if (!HOLDER_SCOPES.has(interest.holder_scope)) failures.push('missing_or_invalid_holder_scope');
-  const temporal = temporalRelation(input.itemization_interval, input.interest_interval);
-  if (temporal === 'non_overlapping') failures.push('non_overlapping_intervals');
-  if (temporal === 'temporally_unknown') failures.push('temporally_unknown_intervals');
-  if (temporal === 'possibly_overlapping') failures.push('temporal_overlap_not_definite');
-  if (!hasText(input.predicate)) failures.push('missing_predicate');
-  else if (!ALLOWED_EDGE_PREDICATES.has(input.predicate)) failures.push(`disallowed_predicate:${input.predicate}`);
+  if (!HOLDER_SCOPES.has(interest.holder_scope)) preconditionFailures.push('missing_or_invalid_holder_scope');
+  if (hasText(input.predicate) && !ALLOWED_EDGE_PREDICATES.has(input.predicate)) preconditionFailures.push(`disallowed_predicate:${input.predicate}`);
+  const manifestHashes = [...new Set([...(input.source_manifest_hashes ?? []), ...(input.disclosure_document_hashes ?? [])])];
+  const generic = evaluateGenericCrossing({
+    predicate: input.predicate,
+    allowed_predicates: ALLOWED_EDGE_PREDICATES,
+    endpoints: [
+      { role: 'committee', resolution: input.committee_resolution },
+      { role: 'payee', resolution: input.payee_resolution },
+    ],
+    receipts: [
+      {
+        role: 'itemization', content_sha256: item.source_sha256,
+        locator: itemHashValid && Number.isInteger(item.source_line) ? `manifest:${item.source_sha256}#line=${item.source_line}` : null,
+        provenance_chain_id: itemHashValid ? `fec-itemization:${item.source_sha256}` : null,
+        evidence_class: 'official', locator_status: 'public',
+      },
+      {
+        role: 'interest', content_sha256: interest.source_sha256, locator: interest.source_locator,
+        provenance_chain_id: interestHashValid ? `disclosure-interest:${interest.source_sha256}` : null,
+        evidence_class: 'reported', locator_status: 'public',
+      },
+    ],
+    required_receipt_roles: ['itemization', 'interest'],
+    manifest_hashes: manifestHashes,
+    interval_a: input.itemization_interval,
+    interval_b: input.interest_interval,
+    precondition_failures: preconditionFailures,
+  });
+  const failures = [...new Set(generic.failures.map(failure => failure.startsWith('predicate_not_in_registry:')
+    ? `disallowed_predicate:${failure.split(':').slice(1).join(':')}` : failure))];
   const passed = failures.length === 0;
+  const temporal = generic.temporal_relation;
   return {
     gate: passed ? 'pass' : 'fail',
     temporal_relation: temporal,
     failures,
     candidate: {
       schema_version: 'bounded-crossing-candidate@1',
+      generic_core_version: generic.candidate.core_version,
       verification_status: 'machine_proposed_unverified',
       causal_status: 'not_established',
       graph_effect: 'none',

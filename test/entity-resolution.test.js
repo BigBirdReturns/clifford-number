@@ -122,6 +122,7 @@ const crossingBase = {
 {
   assert.equal(temporalRelation({ valid_from: null, valid_until: null }, { valid_from: '2019-01-01', valid_until: '2019-12-31' }), 'temporally_unknown');
   assert.equal(temporalRelation({ valid_from: '2019-01-01', valid_until: null }, { valid_from: '2019-06-01', valid_until: null }), 'possibly_overlapping');
+  assert.equal(temporalRelation({ valid_from: '2019-02-30', valid_until: '2019-03-02' }, { valid_from: '2019-03-02', valid_until: '2019-03-02' }), 'temporally_unknown');
 }
 
 // --- fixture: passing crossing gate emits a bounded candidate with firewall ---
@@ -135,6 +136,7 @@ const crossingBase = {
   assert.equal(g.temporal_relation, 'overlapping');
   assert.equal(g.candidate.graph_effect, 'none');
   assert.equal(g.candidate.verification_status, 'machine_proposed_unverified');
+  assert.equal(g.candidate.generic_core_version, 'generic-crossing-core@2');
   assert.deepEqual(g.candidate.does_not_establish.includes('wrongdoing'), true);
 }
 

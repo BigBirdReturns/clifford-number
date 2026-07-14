@@ -2,12 +2,15 @@
 // this discipline welded to finance vocabulary; this core carries the SAME rules with no
 // corpus-specific fields, so a positive control can run any corpus through it without exceptions:
 //   - every endpoint must be a resolved identity (disposition 'accepted');
-//   - at least one INDEPENDENT public receipt (official/primary_public/reported evidence class with a
-//     public locator + valid content hash + provenance), present in the declared manifest — a single
-//     private/open self-supplied artifact does NOT qualify;
+//   - every corpus-declared receipt role must have an external public receipt
+//     (official/primary_public/reported evidence class with a public locator + valid content hash +
+//     provenance) present in the declared manifest — a private/open self-supplied artifact does not
+//     qualify, and one convenient receipt cannot satisfy several required evidence roles;
 //   - definite temporal overlap (possibly/unknown never passes);
 //   - a typed predicate drawn from a supplied corpus-appropriate registry (never a vague edge).
-import { temporalRelation } from './entity-resolution.mjs';
+import { temporalRelation } from './temporal-interval.mjs';
+
+export const GENERIC_CROSSING_CORE_VERSION = 'generic-crossing-core@2';
 
 const SHA256_RE = /^[a-f0-9]{64}$/i;
 const INDEPENDENT_EVIDENCE_CLASSES = new Set(['official', 'primary_public', 'reported']);
@@ -22,14 +25,15 @@ export function isIndependentReceipt(receipt = {}, manifestHashes = []) {
   if (!hasText(receipt.provenance_chain_id)) reasons.push('missing_provenance_chain');
   if (!INDEPENDENT_EVIDENCE_CLASSES.has(receipt.evidence_class)) reasons.push(`non_independent_evidence_class:${receipt.evidence_class ?? 'none'}`);
   if (PRIVATE_LOCATOR_STATES.has(receipt.locator_status)) reasons.push(`private_locator:${receipt.locator_status}`);
-  if (Array.isArray(manifestHashes) && manifestHashes.length && !manifestHashes.includes(receipt.content_sha256)) reasons.push('receipt_not_in_manifest');
+  if (!Array.isArray(manifestHashes) || manifestHashes.length === 0) reasons.push('manifest_not_declared');
+  else if (!manifestHashes.includes(receipt.content_sha256)) reasons.push('receipt_not_in_manifest');
   return { independent: reasons.length === 0, reasons };
 }
 
 // input: { predicate, allowed_predicates:Set|Array, endpoints:[{role, resolution:{disposition}}],
 //          receipts:[...], manifest_hashes:[...], interval_a, interval_b }
 export function evaluateGenericCrossing(input) {
-  const failures = [];
+  const failures = [...new Set(input.precondition_failures ?? [])];
   const allowed = input.allowed_predicates instanceof Set ? input.allowed_predicates : new Set(input.allowed_predicates ?? []);
 
   for (const ep of input.endpoints ?? []) {
@@ -37,10 +41,15 @@ export function evaluateGenericCrossing(input) {
       failures.push(`endpoint_not_resolved:${ep?.role ?? 'unknown'}`);
     }
   }
-  if (!(input.endpoints ?? []).length) failures.push('no_endpoints');
+  if ((input.endpoints ?? []).length < (input.minimum_endpoints ?? 2)) failures.push('insufficient_endpoints');
 
   const independentReceipts = (input.receipts ?? []).filter(r => isIndependentReceipt(r, input.manifest_hashes).independent);
-  if (independentReceipts.length === 0) failures.push('no_independent_receipt');
+  const requiredReceiptRoles = [...new Set(input.required_receipt_roles ?? [])];
+  if (requiredReceiptRoles.length) {
+    for (const role of requiredReceiptRoles) {
+      if (!independentReceipts.some(receipt => receipt.role === role)) failures.push(`missing_independent_receipt:${role}`);
+    }
+  } else if (independentReceipts.length === 0) failures.push('no_independent_receipt');
 
   const temporal = temporalRelation(input.interval_a, input.interval_b);
   if (temporal === 'non_overlapping') failures.push('non_overlapping_intervals');
@@ -59,6 +68,7 @@ export function evaluateGenericCrossing(input) {
     independent_receipt_count: independentReceipts.length,
     candidate: {
       schema_version: 'generic-crossing-candidate@1',
+      core_version: GENERIC_CROSSING_CORE_VERSION,
       predicate: input.predicate ?? null,
       endpoint_ids: (input.endpoints ?? []).map(e => e?.resolution?.accepted_entity_id ?? null),
       temporal_relation: temporal,
@@ -68,5 +78,6 @@ export function evaluateGenericCrossing(input) {
       causal_status: 'not_established',
       graph_effect: 'none',
     },
+    receipt_roles_satisfied: requiredReceiptRoles.filter(role => independentReceipts.some(receipt => receipt.role === role)),
   };
 }

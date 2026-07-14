@@ -44,9 +44,10 @@ beneficial-ownership finding and no crossing**; every derived record remains non
 - `data/research/oge-fec-overlap-manifest.json` — a bounded lexical candidate pass over 5,945 OGE
   rows and 46,926 FEC payee candidates. It emits 1,172 unresolved candidate pairs across 221
   interests while preserving 5,721 no-candidate outcomes and all source/output hashes.
-- `data/research/oge-fec-temporal-screen-manifest.json` — disposition ledger for all 1,172 lexical
-  pairs: 0 definitely overlapping, 132 definitely non-overlapping, and 1,040 temporally unknown.
-  Zero pairs are eligible for legal-entity identity review.
+- `data/research/oge-fec-temporal-screen-manifest.json` — baseline disposition ledger for all 1,172
+  lexical pairs: 0 definitely overlapping, 132 definitely non-overlapping, and 1,040 temporally
+  unknown. The source-page visual correction layer then moves 45 OCR-damaged pairs to non-overlap,
+  producing the current 0 / 177 / 995 frontier. Zero pairs are eligible for legal-entity review.
 - `data/research/nara-disclosure-locators.json` — conservative unresolved catalog search hits;
   zero durable hash-bearing NARA artifacts.
 - `tools/lib/entity-resolution.mjs` — resolution + temporal-join + crossing-gate primitives.
@@ -81,9 +82,9 @@ separately receipted interest with an explicit holder scope, a required typed pr
 membership for both source hashes, and definite temporal overlap. Possible or unknown overlap
 remains held. It emits a bounded candidate with `graph_effect: none` and an explicit
 "does not establish intent/legality/control/coordination/enrichment/wrongdoing." Crossings today: 0.
-The temporal screen accounts for every lexical candidate: 0 overlap, 132 non-overlap, and 1,040
-unknown. None enters identity review; unknown timing is preserved as uncertainty rather than
-silently promoted to a match or demoted to absence.
+The temporal screen and visual audit account for every lexical candidate: 0 overlap, 177
+non-overlap, and 995 structurally undated unknown pairs. None enters identity review; unknown timing
+is preserved as uncertainty rather than silently promoted to a match or demoted to absence.
 
 ## Predicate #1 frozen; predicate #2 (government→property) started symmetrically
 
@@ -110,3 +111,31 @@ below-threshold / non-contract and would require GSA lease records, inspector-ge
 purchase-card releases, or House Oversight compilations to establish bounded relationships. Those
 remain open source routes. `pending_second_party` labels clearance/publication only; it did not
 block this discovery or intake.
+
+## Portfolio calibration: synthetic discrimination and real source positives
+
+The crossing core is now structurally shared: the FEC/OGE wrapper delegates to
+`tools/lib/generic-crossing.mjs` while retaining its itemization, interest, holder-scope, predicate,
+manifest, and temporal preconditions. Receipt roles are explicit, so a corpus cannot satisfy a
+multi-source predicate with one convenient receipt. Calendar-invalid and reversed intervals remain
+unknown rather than being normalized into a pass.
+
+Three controls now distinguish different claims about the instrument:
+
+- **FA-03** remains a synthetic evidence-discrimination control: blind 5/5 held; counterfactual
+  receipted 2/5 passed. It proves the gate responds to evidence but is not a real-world positive.
+- **ICIJ Panama Papers bulk data** is the first real public-dataset reported-relation positive. The
+  hash-pinned 73,043,531-byte archive yielded 559,600 Panama nodes and 674,102 typed relationships.
+  The deterministic first dated `officer_of` row passed with source-native node IDs, three required
+  receipt roles, and temporal overlap. The pass establishes what ICIJ's dataset reports; it does not
+  independently verify the leaked record or imply illegality.
+- **NatSec100/USAspending** upgraded the five frozen FY2025 award leads to 31 official award rows
+  across all five companies. A source-native Department of Defense→UEI award edge passed. None of
+  the five summarized trade-press amount/program pairs was exactly verified by these award rows,
+  and NatSec100-name→UEI identity remains held because no shared identifier has been acquired.
+
+`data/research/portfolio-provenance.json` states the enterprise frame directly: this is a
+deliberately curated public-interest portfolio using a reusable method, not a random sample or a
+claim of neutral arrival. FEC ran first because it was the first tractable no-key bulk source.
+Pending human review blocks promotion of concrete claims; it does not block discovery or intake,
+and pending status may not be narrated as completed rigor.
