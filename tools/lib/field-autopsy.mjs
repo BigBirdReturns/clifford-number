@@ -89,6 +89,12 @@ export const TRAIL_STATUSES = new Set([
   'terminal_unavailable',
 ]);
 
+export const RECEIPT_V2_DURABILITY = new Set([
+  'captured',
+  'archived',
+  'url_only',
+]);
+
 // Language that has no business inside a terminal state or a completeness
 // label. Terminal means terminal; partial means partial.
 export const CONTINUATION_LANGUAGE = /\b(next step|follow[- ]?up|to ?do|continue|continuing|pending|will (search|check|verify|revisit)|remaining work)\b/i;
@@ -177,6 +183,19 @@ export function validateFieldAutopsy(bundle) {
   index(bundle.coverage, 'coverage_id', errors, 'coverage');
   const trails = index(bundle.trails, 'trail_id', errors, 'trails');
 
+  // One source artifact gets one canonical receipt ID. Reusing a locator
+  // under multiple IDs inflates receipt counts and lets contradictory metadata
+  // coexist for the same bytes. Aliases must be removed, not silently counted.
+  const receiptByUrl = new Map();
+  for (const receipt of bundle.receipts ?? []) {
+    if (!receipt.url) continue;
+    if (receiptByUrl.has(receipt.url)) {
+      errors.push(`duplicate receipt locator ${receipt.url} on ${receiptByUrl.get(receipt.url)} and ${receipt.receipt_id}`);
+    } else {
+      receiptByUrl.set(receipt.url, receipt.receipt_id);
+    }
+  }
+
   // --- Intake: the conversation is provenance for expressions, never an
   // external-fact receipt. -------------------------------------------------
   const intake = bundle.intake ?? {};
@@ -198,6 +217,7 @@ export function validateFieldAutopsy(bundle) {
       continue;
     }
     const ids = claim.receipt_ids ?? [];
+    for (const id of ids) if (!receipts.has(id)) errors.push(`claim ${claim.claim_id} references missing receipt ${id}`);
     const nonConversation = ids.filter(id => !conversationReceiptIds.has(id));
     if (claim.claim_kind === 'external_fact') {
       if (nonConversation.length === 0) {
@@ -346,6 +366,37 @@ export function validateFieldAutopsy(bundle) {
     if (!['found', 'not_found', 'partial'].includes(row.result)) errors.push(`search ${row.search_id} has unknown result ${row.result}`);
     if (!Array.isArray(row.alternatives_attempted)) errors.push(`search ${row.search_id} must record alternatives_attempted (may be empty)`);
   }
+  // receipt-v2 is the forward contract for newly acquired web evidence. It
+  // requires an explicit durability state and an exact receipt-to-search link.
+  // Legacy receipts remain visible debt rather than being silently rewritten.
+  for (const row of bundle.receipts ?? []) {
+    if (row.provenance_contract !== 'receipt-v2') continue;
+    if (!RECEIPT_V2_DURABILITY.has(row.durability_status)) {
+      errors.push(`receipt-v2 ${row.receipt_id} lacks an explicit durability_status`);
+    }
+    if (!(row.search_ids?.length > 0)) {
+      errors.push(`receipt-v2 ${row.receipt_id} lacks search linkage`);
+      continue;
+    }
+    let exactLink = false;
+    for (const id of row.search_ids) {
+      const search = searches.get(id);
+      if (!search) {
+        errors.push(`receipt-v2 ${row.receipt_id} references missing search ${id}`);
+        continue;
+      }
+      if (row.url && search.inspected?.includes(row.url)) exactLink = true;
+    }
+    if (row.url && !exactLink) {
+      errors.push(`receipt-v2 ${row.receipt_id} is not exactly linked to a search that inspected its locator`);
+    }
+    if (row.durability_status === 'captured' && !row.content_sha256) {
+      errors.push(`captured receipt-v2 ${row.receipt_id} lacks content_sha256`);
+    }
+    if (row.durability_status === 'archived' && !row.archive_url) {
+      errors.push(`archived receipt-v2 ${row.receipt_id} lacks archive_url`);
+    }
+  }
   const requireSearchProvenance = (owner, state, searchIds) => {
     if (!SEARCH_DEPENDENT_STATES.has(state)) return;
     if (!(searchIds?.length > 0)) {
@@ -365,6 +416,10 @@ export function validateFieldAutopsy(bundle) {
       errors.push(`coverage ${row.coverage_id} has invalid state ${row.state}`);
     }
     requireSearchProvenance(`coverage ${row.coverage_id}`, row.state, row.search_ids);
+    if (row.state === 'unavailable_after_search') {
+      const found = (row.search_ids ?? []).map(id => searches.get(id)).filter(Boolean).some(search => search.result === 'found');
+      if (found) errors.push(`coverage ${row.coverage_id} is unavailable_after_search but cites a search result marked found`);
+    }
     if (['partially_searched', 'not_searched'].includes(row.state) && COMPLETION_LANGUAGE.test(row.notes ?? '')) {
       errors.push(`coverage ${row.coverage_id} labels a partial surface with completion language`);
     }
@@ -389,6 +444,9 @@ export function validateFieldAutopsy(bundle) {
       if (!row.correction) errors.push(`contradiction ${row.contradiction_id} lacks correction text`);
       const ids = (row.receipt_ids ?? []).filter(id => !conversationReceiptIds.has(id));
       if (ids.length === 0) errors.push(`contradiction ${row.contradiction_id} corrects a claim without an independent receipt`);
+    }
+    for (const id of row.receipt_ids ?? []) {
+      if (!receipts.has(id)) errors.push(`contradiction ${row.contradiction_id} references missing receipt ${id}`);
     }
   }
   for (const row of bundle.observations ?? []) {
@@ -444,6 +502,17 @@ export function validateFieldAutopsy(bundle) {
     if (row.status.startsWith('terminal') && CONTINUATION_LANGUAGE.test(prose)) {
       errors.push(`terminal trail ${row.trail_id} contains continuation language`);
     }
+    if (row.status.startsWith('terminal')) {
+      if (!(row.search_ids?.length > 0)) {
+        errors.push(`terminal trail ${row.trail_id} lacks structured search_ids`);
+      } else {
+        for (const id of row.search_ids) {
+          const search = searches.get(id);
+          if (!search) errors.push(`terminal trail ${row.trail_id} references missing search ${id}`);
+          else if (search.result !== 'not_found') errors.push(`terminal trail ${row.trail_id} cites non-terminal search result ${id}:${search.result}`);
+        }
+      }
+    }
     for (const search of row.bounded_searches ?? []) {
       if (!search.query || !search.target_domain) errors.push(`trail ${row.trail_id} has an unbounded search entry`);
       if (search.claim_status || search.verdict) errors.push(`trail ${row.trail_id} search entry carries finding fields — candidates must stay candidates`);
@@ -451,6 +520,7 @@ export function validateFieldAutopsy(bundle) {
   }
   const frontier = bundle.frontier ?? {};
   const openIds = new Set(frontier.open_trail_ids ?? []);
+  const terminalIds = new Set(frontier.terminal_trail_ids ?? []);
   for (const id of openIds) {
     const trail = trails.get(id);
     if (!trail) errors.push(`frontier lists missing trail ${id}`);
@@ -460,6 +530,14 @@ export function validateFieldAutopsy(bundle) {
     if (!row.status.startsWith('terminal') && !openIds.has(row.trail_id)) {
       errors.push(`non-terminal trail ${row.trail_id} is missing from the frontier`);
     }
+    if (row.status.startsWith('terminal') && !terminalIds.has(row.trail_id)) {
+      errors.push(`terminal trail ${row.trail_id} is missing from frontier terminal_trail_ids`);
+    }
+  }
+  for (const id of terminalIds) {
+    const trail = trails.get(id);
+    if (!trail) errors.push(`frontier lists missing terminal trail ${id}`);
+    else if (!trail.status.startsWith('terminal')) errors.push(`frontier lists non-terminal trail ${id} as terminal`);
   }
   if (CONTINUATION_LANGUAGE.test(frontier.terminal_note ?? '')) {
     errors.push('frontier terminal_note contains continuation language');

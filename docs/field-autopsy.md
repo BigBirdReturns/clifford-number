@@ -10,9 +10,11 @@ A field-autopsy case is a normal `case-ledger@1` case (see
 `claims.jsonl`, `events.jsonl`, `relations.jsonl`, `beacons.jsonl` — plus an
 extension bundle validated by `tools/lib/field-autopsy.mjs`:
 
-- `intake.json` + `intake-artifact.md`: the conversation-intake record. It
-  `establishes: "expression_only"`. The artifact is hashed and preserved; it
-  is provenance for what was said, never a receipt for an external fact.
+- `intake.json` + `intake-artifact.md`: the received conversation-intake
+  record. It `establishes: "expression_only"`. The bytes actually received
+  are hashed and preserved; a relayed inventory is not mislabeled as an exact
+  transcript. Intake provenance records what was attributed to the source,
+  never an external fact.
 - `observations.jsonl`: the field-observations ledger. Every observation the
   source expressed, preserved with `graph_effect: none` and a disposition
   (`confirmed`, `corrected`, `rejected`, `unresolved`, `interpretive`).
@@ -33,6 +35,12 @@ extension bundle validated by `tools/lib/field-autopsy.mjs`:
 - `searches.jsonl`: the search ledger. Exact query, domain or database, the
   URLs or record identifiers actually inspected, timestamp, result, and the
   alternatives attempted.
+- New web receipts use `provenance_contract: "receipt-v2"`, carry exact
+  `search_ids`, and declare `durability_status` as `captured`, `archived`, or
+  `url_only`. A captured receipt requires a content hash; an archived receipt
+  requires an archive locator. Duplicate source locators are invalid. Legacy
+  receipts remain visible provenance debt until upgraded rather than being
+  silently described as captured.
 - `coverage.jsonl`: coverage gaps. `unavailable_after_search` and
   `partially_searched` require search provenance; `not_searched` is an honest
   default. Partial surfaces are never labeled complete; absence of evidence is
@@ -46,7 +54,9 @@ extension bundle validated by `tools/lib/field-autopsy.mjs`:
 - `trails.jsonl` + `frontier.json`: game trails generated from formation
   signatures, and the open frontier. Trails are bounded candidate searches
   with `graph_effect: none` that can only ever promote to candidates.
-  Terminal trail states contain no continuation language.
+  Terminal trail states contain no continuation language, cite structured
+  searches whose results are terminal, and agree with the frontier in both
+  directions.
 - `analysis.md`: the human-readable autopsy.
 
 ## Evidence states
@@ -70,7 +80,11 @@ discovery shapes (spine stages plus optional signals).
 bounded candidate searches. A signature match licenses questions, never
 conclusions: no coordination, wrongdoing, geomancy, or identity inference may
 be derived from a match, and generated candidates can never enter a ledger
-without a separate human-reviewed change.
+without a separate reviewed change. `npm run fanout` consumes every open or
+in-progress field-autopsy trail plus the neutral target universe in
+`data/research/place-formation-targets.jsonl`; the validator independently
+recomputes the expected tasks and fails on missing trails, extra targets,
+query drift, or any finding field on a candidate.
 
 ## Prohibited inferences
 

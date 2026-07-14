@@ -32,17 +32,33 @@ export function validateSignature(signature) {
   return errors;
 }
 
+export function validateSignatureRegistry(registry) {
+  const errors = [];
+  const domains = registry?.target_domains ?? {};
+  for (const signature of registry?.signatures ?? []) {
+    errors.push(...validateSignature(signature));
+    for (const row of [...(signature.spine ?? []), ...(signature.optional_signals ?? [])]) {
+      if (!domains[row.target_domain]) {
+        errors.push(`signature ${signature.signature_id} target domain ${row.target_domain ?? '?'} lacks an execution mode`);
+      }
+    }
+  }
+  return errors;
+}
+
 function fill(template, place) {
-  return template
+  const filled = template
     .replaceAll('{place}', place.place_name)
     .replaceAll('{region}', place.region ?? place.place_name)
-    .replaceAll('{transit}', place.transit_project ?? 'transit project');
+    .replaceAll('{transit}', place.transit_project ?? '{transit}');
+  if (/\{[^}]+\}/.test(filled)) throw new Error(`unresolved formation-signature template token in: ${filled}`);
+  return filled;
 }
 
 // Expand a signature over a place descriptor into bounded candidate searches.
 // Every emitted row is a candidate: graph_effect none, no claim fields, no
 // verdicts. Promotion into any ledger is a separate, human-reviewed change.
-export function generateTrailSearches(signature, place) {
+export function generateTrailSearches(signature, place, { targetDomains = null } = {}) {
   const errors = validateSignature(signature);
   if (errors.length) throw new Error(errors.join('\n'));
   if (!place?.place_name) throw new Error('place descriptor requires place_name');
@@ -56,6 +72,7 @@ export function generateTrailSearches(signature, place) {
         stage_id: stage.stage_id,
         query: fill(template, place),
         target_domain: stage.target_domain ?? 'public_records',
+        execution_mode: targetDomains?.[stage.target_domain] ?? null,
         bounded: true,
       });
     }
@@ -69,6 +86,7 @@ export function generateTrailSearches(signature, place) {
         stage_id: `signal:${signal.signal_id}`,
         query: fill(template, place),
         target_domain: signal.target_domain ?? 'public_records',
+        execution_mode: targetDomains?.[signal.target_domain] ?? null,
         bounded: true,
         optional_signal: true,
       });

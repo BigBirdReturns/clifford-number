@@ -71,11 +71,11 @@ expectFailure('person-without-receipt', bundle => {
 
 // 6. Any _after_search state requires exact search provenance.
 expectFailure('after-search-without-provenance', bundle => {
-  const row = bundle.coverage.find(c => c.state === 'unavailable_after_search');
+  const row = bundle.coverage.find(c => c.state === 'partially_searched');
   row.search_ids = [];
 }, /without search provenance/);
 expectFailure('after-search-gutted-search', bundle => {
-  const row = bundle.coverage.find(c => c.state === 'unavailable_after_search');
+  const row = bundle.coverage.find(c => c.state === 'partially_searched');
   const search = bundle.searches.find(s => s.search_id === row.search_ids[0]);
   search.query = '';
 }, /lacks full provenance|lacks query/);
@@ -86,15 +86,32 @@ expectFailure('partial-labeled-complete', bundle => {
   row.notes = 'Search closed; coverage complete.';
 }, /completion language/);
 
-// 8. A terminal state must not contain continuation language.
+// 8. A terminal state must carry structured, terminal search provenance and
+// must agree with the frontier in both directions.
+function makeTerminal(bundle) {
+  const trail = bundle.trails[0];
+  trail.status = 'terminal_unavailable';
+  trail.search_ids = ['arc-s01'];
+  bundle.frontier.open_trail_ids = bundle.frontier.open_trail_ids.filter(id => id !== trail.trail_id);
+  bundle.frontier.terminal_trail_ids = [trail.trail_id];
+  return trail;
+}
 expectFailure('terminal-with-continuation', bundle => {
-  const trail = bundle.trails.find(t => t.status.startsWith('terminal'));
+  const trail = makeTerminal(bundle);
   trail.notes = 'Terminal, but follow-up pending next step.';
 }, /continuation language/);
 expectFailure('terminal-listed-open', bundle => {
-  const trail = bundle.trails.find(t => t.status.startsWith('terminal'));
+  const trail = makeTerminal(bundle);
   bundle.frontier.open_trail_ids = [...bundle.frontier.open_trail_ids, trail.trail_id];
 }, /lists terminal trail/);
+expectFailure('terminal-without-search-ids', bundle => {
+  const trail = makeTerminal(bundle);
+  trail.search_ids = [];
+}, /lacks structured search_ids/);
+expectFailure('terminal-with-found-search', bundle => {
+  const trail = makeTerminal(bundle);
+  trail.search_ids = ['af-s01'];
+}, /cites non-terminal search result/);
 
 // 9. A source-specific count must carry its own source's receipt.
 expectFailure('count-borrowed-receipt', bundle => {
@@ -128,6 +145,27 @@ expectFailure('trail-promotes-findings', bundle => {
 expectFailure('trail-search-carries-verdict', bundle => {
   bundle.trails[0].bounded_searches[0].verdict = 'confirmed';
 }, /candidates must stay candidates/);
+
+// 13. Receipt identity and receipt-v2 provenance are fail-closed.
+expectFailure('duplicate-receipt-locator', bundle => {
+  const source = bundle.receipts.find(r => r.url);
+  bundle.receipts.push({ ...structuredClone(source), receipt_id: 'duplicate-artifact-id' });
+}, /duplicate receipt locator/);
+expectFailure('receipt-v2-without-search-link', bundle => {
+  const receipt = bundle.receipts.find(r => r.provenance_contract === 'receipt-v2');
+  receipt.search_ids = [];
+}, /lacks search linkage/);
+expectFailure('receipt-v2-with-wrong-search-link', bundle => {
+  const receipt = bundle.receipts.find(r => r.provenance_contract === 'receipt-v2');
+  receipt.search_ids = ['arc-s01'];
+}, /not exactly linked/);
+
+// 14. A source found on one of the cited searches is not unavailable.
+expectFailure('found-labeled-unavailable', bundle => {
+  const row = bundle.coverage.find(c => c.state === 'partially_searched' && c.search_ids?.length);
+  row.state = 'unavailable_after_search';
+  row.search_ids = ['af-s01'];
+}, /unavailable_after_search but cites a search result marked found/);
 
 // Formation-signature machinery: bounded, graph-inert, candidate-only.
 {
