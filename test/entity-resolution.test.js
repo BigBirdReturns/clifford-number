@@ -6,6 +6,22 @@ import {
 import { shouldResumeSkip, classifyEnumeration, classifySearchResult } from '../tools/lib/acquisition-state.mjs';
 import { parseOperatingExpenditureLine, normalizeBulkOperatingExpenditure, createReportAmendmentAudit } from '../tools/lib/fec-bulk-oppexp.mjs';
 
+const HASH_A = 'a'.repeat(64);
+const HASH_B = 'b'.repeat(64);
+const receipt = (hash, chain, locator = 'record:1') => ({ content_sha256: hash, provenance_chain_id: chain, locator });
+const strong = (kind, value, issuer, hash, chain) => ({ kind, value, issuer, source: receipt(hash, chain) });
+const accepted = id => ({ disposition: 'accepted', accepted_entity_id: id });
+const itemization = { source_sha256: HASH_A, source_line: 1, transaction_id: 'TX-1', committee_id: 'C00000001' };
+const interest = { source_sha256: HASH_B, source_locator: 'pdf:page:1:row:1', holder_scope: 'filer' };
+const crossingBase = {
+  itemization,
+  source_manifest_hashes: [HASH_A],
+  committee_resolution: accepted('committee:C00000001'),
+  payee_resolution: accepted('entity:payee'),
+  interest,
+  disclosure_document_hashes: [HASH_B],
+};
+
 // --- fixture: same name, different entity ---------------------------------
 // Two vendors share a name but each carries only name-similarity (weak). Name alone cannot resolve.
 {
@@ -26,8 +42,8 @@ import { parseOperatingExpenditureLine, normalizeBulkOperatingExpenditure, creat
   const r = resolveIdentity({
     source_text: 'BUSH-CHENEY',
     candidates: [
-      { candidate_entity_id: 'cik-1', node_type: 'legal_entity', rule: 'sec', anchors: [{ kind: 'sec_cik', value: '0000001' }] },
-      { candidate_entity_id: 'cik-2', node_type: 'legal_entity', rule: 'sec', anchors: [{ kind: 'sec_cik', value: '0000002' }] },
+      { candidate_entity_id: 'cik-1', node_type: 'legal_entity', rule: 'sec', anchors: [strong('sec_cik', '0000001', 'SEC', HASH_A, 'sec-1')] },
+      { candidate_entity_id: 'cik-2', node_type: 'legal_entity', rule: 'sec', anchors: [strong('sec_cik', '0000002', 'SEC', HASH_B, 'sec-2')] },
     ],
   });
   assert.equal(r.disposition, 'ambiguous', 'two accepted-equivalent candidates must not be silently merged');
@@ -38,8 +54,8 @@ import { parseOperatingExpenditureLine, normalizeBulkOperatingExpenditure, creat
 {
   assert.ok(RELATIONSHIP_TYPES.has('parent_of') && RELATIONSHIP_TYPES.has('subsidiary_of'));
   assert.ok(NODE_TYPES.has('legal_entity'));
-  const parent = resolveIdentity({ source_text: 'ACME HOLDINGS', candidates: [{ candidate_entity_id: 'p', node_type: 'legal_entity', rule: 'id', anchors: [{ kind: 'sec_cik', value: '10' }] }] });
-  const sub = resolveIdentity({ source_text: 'ACME PRINTING', candidates: [{ candidate_entity_id: 's', node_type: 'legal_entity', rule: 'id', anchors: [{ kind: 'sec_cik', value: '11' }] }] });
+  const parent = resolveIdentity({ source_text: 'ACME HOLDINGS', candidates: [{ candidate_entity_id: 'p', node_type: 'legal_entity', rule: 'id', anchors: [strong('sec_cik', '10', 'SEC', HASH_A, 'sec-parent')] }] });
+  const sub = resolveIdentity({ source_text: 'ACME PRINTING', candidates: [{ candidate_entity_id: 's', node_type: 'legal_entity', rule: 'id', anchors: [strong('sec_cik', '11', 'SEC', HASH_B, 'sec-sub')] }] });
   assert.notEqual(parent.accepted_entity_id, sub.accepted_entity_id, 'parent and subsidiary resolve to distinct entities');
 }
 
@@ -54,16 +70,14 @@ import { parseOperatingExpenditureLine, normalizeBulkOperatingExpenditure, creat
 {
   assert.ok(ALLOWED_EDGE_PREDICATES.has('spouse_interest_in') && ALLOWED_EDGE_PREDICATES.has('owns_interest_in'));
   const g = evaluateCrossingGate({
-    itemization: { source_sha256: 'abc' },
-    committee_resolution: { disposition: 'accepted' },
-    payee_resolution: { disposition: 'accepted' },
-    interest: { source_locator: 'oge:x' /* no holder_scope */ },
+    ...crossingBase,
+    interest: { ...interest, holder_scope: null },
     itemization_interval: { valid_from: '2019-01-01', valid_until: '2019-12-31' },
     interest_interval: { valid_from: '2019-01-01', valid_until: '2020-01-01' },
     predicate: 'paid',
   });
   assert.equal(g.gate, 'fail');
-  assert.ok(g.failures.includes('missing_holder_scope'));
+  assert.ok(g.failures.includes('missing_or_invalid_holder_scope'));
 }
 
 // --- fixture: trust/fund indirect interest node + relationship types ---
@@ -77,7 +91,7 @@ import { parseOperatingExpenditureLine, normalizeBulkOperatingExpenditure, creat
   assert.equal(classifyAnchorStrength('temporally_valid_dba_registration'), 'strong');
   const r = resolveIdentity({
     source_text: 'OLD NAME CORP',
-    candidates: [{ candidate_entity_id: 'e', node_type: 'legal_entity', rule: 'dba', anchors: [{ kind: 'temporally_valid_dba_registration', value: 'OLD->NEW 2011' }, { kind: 'state_filing_id', value: 'X1' }] }],
+    candidates: [{ candidate_entity_id: 'e', node_type: 'legal_entity', rule: 'dba', anchors: [strong('temporally_valid_dba_registration', 'OLD->NEW 2011', 'State registry', HASH_A, 'dba'), strong('state_filing_id', 'X1', 'State registry mirror', HASH_B, 'filing')] }],
   });
   assert.equal(r.disposition, 'accepted', 'two independent strong anchors resolve');
 }
@@ -96,8 +110,7 @@ import { parseOperatingExpenditureLine, normalizeBulkOperatingExpenditure, creat
 {
   assert.equal(temporalRelation({ valid_from: '2005-01-01', valid_until: '2005-12-31' }, { valid_from: '2019-01-01', valid_until: '2019-12-31' }), 'non_overlapping');
   const g = evaluateCrossingGate({
-    itemization: { source_sha256: 'h' }, committee_resolution: { disposition: 'accepted' }, payee_resolution: { disposition: 'accepted' },
-    interest: { source_locator: 'oge:y', holder_scope: 'filer' },
+    ...crossingBase,
     itemization_interval: { valid_from: '2005-01-01', valid_until: '2005-12-31' },
     interest_interval: { valid_from: '2019-01-01', valid_until: '2019-12-31' }, predicate: 'paid',
   });
@@ -114,8 +127,7 @@ import { parseOperatingExpenditureLine, normalizeBulkOperatingExpenditure, creat
 // --- fixture: passing crossing gate emits a bounded candidate with firewall ---
 {
   const g = evaluateCrossingGate({
-    itemization: { source_sha256: 'h' }, committee_resolution: { disposition: 'accepted' }, payee_resolution: { disposition: 'accepted' },
-    interest: { source_locator: 'oge:z', holder_scope: 'filer' },
+    ...crossingBase,
     itemization_interval: { valid_from: '2019-03-01', valid_until: '2019-03-31' },
     interest_interval: { valid_from: '2018-01-01', valid_until: '2020-01-01' }, predicate: 'paid',
   });
@@ -130,12 +142,46 @@ import { parseOperatingExpenditureLine, normalizeBulkOperatingExpenditure, creat
 {
   for (const p of ['linked_to', 'tied_to', 'associated_with', 'involved_in']) assert.ok(FORBIDDEN_EDGE_PREDICATES.has(p));
   const g = evaluateCrossingGate({
-    itemization: { source_sha256: 'h' }, committee_resolution: { disposition: 'accepted' }, payee_resolution: { disposition: 'accepted' },
-    interest: { source_locator: 'l', holder_scope: 'filer' },
+    ...crossingBase,
     itemization_interval: { valid_from: '2019-01-01', valid_until: '2019-12-31' },
     interest_interval: { valid_from: '2019-01-01', valid_until: '2019-12-31' }, predicate: 'linked_to',
   });
   assert.ok(g.failures.some(f => f.startsWith('disallowed_predicate')));
+}
+
+// --- fixture: invented or unreceipted identifiers cannot resolve identity ---
+{
+  for (const anchor of [
+    { kind: 'official_identifier', value: '', issuer: 'Registry', source: receipt(HASH_A, 'r1') },
+    { kind: 'sec_cik', value: '123', issuer: '', source: receipt(HASH_A, 'r1') },
+    { kind: 'sec_cik', value: '123', issuer: 'SEC', source: { locator: 'row:1', provenance_chain_id: 'r1', content_sha256: 'x' } },
+  ]) {
+    const r = resolveIdentity({ source_text: 'INVENTED', candidates: [{ candidate_entity_id: 'entity:x', node_type: 'legal_entity', rule: 'id', anchors: [anchor] }] });
+    assert.equal(r.disposition, 'unresolved');
+  }
+}
+
+// --- fixture: fabricated receipts, missing predicates, and possible overlap stay held ---
+{
+  const fake = evaluateCrossingGate({
+    itemization: { source_sha256: 'x', source_line: 1, transaction_id: 'TX', committee_id: 'C00000001' },
+    source_manifest_hashes: ['x'], committee_resolution: accepted('committee:x'), payee_resolution: accepted('entity:x'),
+    interest: { source_sha256: 'y', source_locator: 'x', holder_scope: 'filer' }, disclosure_document_hashes: ['y'],
+    itemization_interval: { valid_from: '2019-01-01', valid_until: '2019-12-31' },
+    interest_interval: { valid_from: '2019-01-01', valid_until: '2019-12-31' },
+  });
+  assert.equal(fake.gate, 'fail');
+  assert.ok(fake.failures.includes('missing_or_invalid_receipted_itemization'));
+  assert.ok(fake.failures.includes('missing_or_invalid_receipted_interest'));
+  assert.ok(fake.failures.includes('missing_predicate'));
+
+  const possible = evaluateCrossingGate({
+    ...crossingBase, predicate: 'paid',
+    itemization_interval: { valid_from: '2019-01-01', valid_until: null },
+    interest_interval: { valid_from: '2019-06-01', valid_until: '2020-01-01' },
+  });
+  assert.equal(possible.gate, 'fail');
+  assert.ok(possible.failures.includes('temporal_overlap_not_definite'));
 }
 
 // --- fixture: FEC memo / subitemized rows preserve memo fields + forbidden inferences ---

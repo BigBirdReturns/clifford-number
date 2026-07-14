@@ -69,6 +69,22 @@ const sha256File = file => {
 };
 const log = msg => console.log(`[${now()}] ${msg}`);
 
+function extractZip(zipFile, destination) {
+  const attempts = process.platform === 'win32'
+    ? [['tar', ['-xf', zipFile, '-C', destination]], ['unzip', ['-o', '-d', destination, zipFile]]]
+    : [['unzip', ['-o', '-d', destination, zipFile]], ['tar', ['-xf', zipFile, '-C', destination]]];
+  const failures = [];
+  for (const [command, args] of attempts) {
+    try {
+      execFileSync(command, args, { stdio: 'ignore' });
+      return command;
+    } catch (err) {
+      failures.push(`${command}: ${err?.code ?? err?.message ?? err}`);
+    }
+  }
+  throw new Error(`no working ZIP extractor (${failures.join('; ')})`);
+}
+
 function runJson(patch) {
   const file = path.join(runDir, 'run.json');
   const base = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {
@@ -172,7 +188,7 @@ async function processCycle(cycle) {
 
     fs.rmSync(extractDir, { recursive: true, force: true });
     fs.mkdirSync(extractDir, { recursive: true });
-    execFileSync('unzip', ['-o', '-d', extractDir, rawZip], { stdio: 'ignore' });
+    const extractor = extractZip(rawZip, extractDir);
     const txt = fs.readdirSync(extractDir).find(f => f.toLowerCase().endsWith('.txt'));
     if (!txt) throw new Error('no .txt member in zip');
     const extractedFile = path.join(extractDir, txt);
@@ -188,7 +204,7 @@ async function processCycle(cycle) {
       access_mode: 'public_bulk_download_no_api_key', enumeration_method: 'confirmed_by_head_against_documented_pattern',
       source_pattern_url: enumeration.patternUrl, resolved_url: enumeration.resolvedUrl,
       zip_bytes: zipBytes, zip_sha256: zipSha, extracted_bytes: extractedBytes, extracted_sha256: extractedSha,
-      parser_version: PARSER_VERSION, retrieved_at: now(), terminal_state: 'scanned',
+      parser_version: PARSER_VERSION, archive_extractor: extractor, retrieved_at: now(), terminal_state: 'scanned',
       cohort_committees_expected: committees.size, ...scan,
       interpretation: 'Matched rows are reported itemization rows filtered by official committee ID, not deduplicated unique payments. AMNDT_IND is a containing-report filing status, not a duplicate-row flag.',
       verification_status: 'machine_proposed_unverified', causal_status: 'not_established', graph_effect: 'none',

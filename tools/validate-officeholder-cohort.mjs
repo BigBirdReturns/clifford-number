@@ -133,15 +133,24 @@ export function validateOfficeholderCohort({
     || disclosures.cohort_id !== cohort.cohort_id
     || disclosures.source_families?.length !== 4
     || disclosures.coverage?.member_source_cells !== 32
-    || disclosures.coverage?.hashed_source_artifacts !== 1
-    || disclosures.coverage?.bulk_cycle_files_ingested !== 1
-    || disclosures.coverage?.normalized_transaction_records !== 27862
-    || disclosures.coverage?.normalized_beneficial_interest_records !== 0
+    || disclosures.coverage?.hashed_fec_cycle_archives !== 11
+    || disclosures.coverage?.hashed_oge_documents !== 26
+    || disclosures.coverage?.bulk_cycle_files_ingested !== 11
+    || disclosures.coverage?.normalized_transaction_records !== 588535
+    || disclosures.coverage?.unresolved_payee_candidates !== 46926
+    || disclosures.coverage?.normalized_beneficial_interest_records !== 5945
+    || disclosures.coverage?.transaction_dates_ocr_ambiguous !== 400
+    || disclosures.coverage?.transaction_types_ocr_ambiguous !== 1107
+    || disclosures.coverage?.unresolved_lexical_overlap_candidates !== 1172
+    || disclosures.coverage?.temporal_candidates_overlapping !== 0
+    || disclosures.coverage?.temporal_candidates_non_overlapping !== 132
+    || disclosures.coverage?.temporal_candidates_unknown !== 1040
+    || disclosures.coverage?.identity_review_queue !== 0
     || disclosures.coverage?.crossing_matches !== 0
     || disclosures.workflow_contract?.discovery_may_continue_with_pending_selection_review !== true
     || disclosures.workflow_contract?.intake_may_continue_without_openfec_api_key !== true
     || !disclosures.source_families?.some(source => source.source_id === 'fec-schedule-database-dumps' && source.access_mode === 'public_bulk_download_no_api_key')) {
-    errors.push(issue('invalid-disclosure-source-spine', disclosuresFile, 'The 4-family/32-cell source matrix must preserve the hash-pinned 2004 bulk intake, honest zero beneficial-interest/crossing counts, and keep discovery open when review or an API key is absent.'));
+    errors.push(issue('invalid-disclosure-source-spine', disclosuresFile, 'The 4-family/32-cell source matrix must preserve current FEC, OGE, payee, overlap, and zero-crossing counts while keeping discovery open when review or an API key is absent.'));
   }
 
   const lane = selection.lanes?.find(item => item.lane_id === LANE_ID);
@@ -177,12 +186,21 @@ export function validateOfficeholderCohort({
     || metric('openfec_schedule_b_queries')?.observed !== 0
     || metric('openfec_schedule_b_queries')?.expected !== 37
     || metric('no_key_fec_bulk_source_routes')?.observed !== 2
-    || metric('fec_bulk_cycle_files_ingested')?.observed !== 1
-    || metric('fec_bulk_reported_rows_observed')?.observed !== 27862
-    || metric('fec_bulk_cohort_committees_observed')?.observed !== 6
+    || metric('fec_bulk_cycle_files_ingested')?.observed !== 11
+    || metric('fec_bulk_reported_rows_observed')?.observed !== 588535
+    || metric('fec_bulk_cohort_committees_observed')?.observed !== 11
     || metric('fec_bulk_transaction_report_keys_spanning_files')?.observed !== 0
     || metric('disclosure_source_member_cells')?.observed !== 32
-    || metric('normalized_beneficial_interest_records')?.observed !== 0) {
+    || metric('unresolved_fec_payee_candidates')?.observed !== 46926
+    || metric('normalized_beneficial_interest_records')?.observed !== 5945
+    || metric('oge_transaction_dates_ocr_ambiguous')?.observed !== 400
+    || metric('oge_transaction_types_ocr_ambiguous')?.observed !== 1107
+    || metric('unresolved_oge_fec_lexical_overlap_candidates')?.observed !== 1172
+    || metric('oge_fec_temporal_candidates_overlapping')?.observed !== 0
+    || metric('oge_fec_temporal_candidates_non_overlapping')?.observed !== 132
+    || metric('oge_fec_temporal_candidates_unknown')?.observed !== 1040
+    || metric('oge_fec_identity_review_queue')?.observed !== 0
+    || metric('resolved_officeholder_crossings')?.observed !== 0) {
     errors.push(issue('dishonest-officeholder-coverage', coverageFile, 'Coverage must distinguish 8 source-resolved candidates and 37 authorized presidential campaign committees from zero Schedule B transaction queries.'));
   }
   const gapIds = new Set((coverageRow?.known_gaps ?? []).map(gap => gap.gap_id));

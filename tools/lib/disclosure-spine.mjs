@@ -41,10 +41,21 @@ export function validateDisclosureSourceCoverage(matrix) {
   if (matrix?.coverage?.cohort_members !== 8
     || matrix?.coverage?.source_families !== 4
     || matrix?.coverage?.member_source_cells !== 32
-    || matrix?.coverage?.hashed_source_artifacts !== 1
-    || matrix?.coverage?.bulk_cycle_files_ingested !== 1
-    || matrix?.coverage?.normalized_transaction_records !== 27862
-    || matrix?.coverage?.normalized_beneficial_interest_records !== 0
+    || matrix?.coverage?.hashed_fec_cycle_archives !== 11
+    || matrix?.coverage?.hashed_oge_documents !== 26
+    || matrix?.coverage?.bulk_cycle_files_ingested !== 11
+    || matrix?.coverage?.normalized_transaction_records !== 588535
+    || matrix?.coverage?.unresolved_payee_candidates !== 46926
+    || matrix?.coverage?.normalized_beneficial_interest_records !== 5945
+    || matrix?.coverage?.normalization_rejections !== 551
+    || matrix?.coverage?.transaction_dates_ocr_ambiguous !== 400
+    || matrix?.coverage?.transaction_types_ocr_ambiguous !== 1107
+    || matrix?.coverage?.unresolved_lexical_overlap_candidates !== 1172
+    || matrix?.coverage?.interests_with_lexical_candidates !== 221
+    || matrix?.coverage?.temporal_candidates_overlapping !== 0
+    || matrix?.coverage?.temporal_candidates_non_overlapping !== 132
+    || matrix?.coverage?.temporal_candidates_unknown !== 1040
+    || matrix?.coverage?.identity_review_queue !== 0
     || matrix?.coverage?.crossing_matches !== 0) {
     errors.push('dishonest disclosure coverage counts');
   }

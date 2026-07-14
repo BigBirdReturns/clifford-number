@@ -62,10 +62,10 @@
         { "person_id": "ronald-reagan", "state": "outside_source_window" },
         { "person_id": "george-h-w-bush", "state": "outside_source_window" },
         { "person_id": "bill-clinton", "state": "outside_source_window" },
-        { "person_id": "george-w-bush", "state": "ingested_partial", "note": "The 2004 official cycle file was hash-pinned and completely scanned against the cohort committee filter; 27,862 reported itemization rows across six committees were retained. AMNDT_IND is a containing-report status, not a duplicate-row flag; no repeated transaction/report key across file numbers was observed in the filtered projection." },
-        { "person_id": "barack-obama", "state": "available_not_ingested" },
-        { "person_id": "donald-trump", "state": "available_not_ingested" },
-        { "person_id": "joe-biden", "state": "available_not_ingested" }
+        { "person_id": "george-w-bush", "state": "ingested_partial" },
+        { "person_id": "barack-obama", "state": "ingested_partial" },
+        { "person_id": "donald-trump", "state": "ingested_partial" },
+        { "person_id": "joe-biden", "state": "ingested_partial", "note": "All 11 completed operating-expenditure cycles from 2004 through 2024 were hash-pinned and scanned against the 37-committee cohort filter. The retained 588,535 itemization rows remain reported rows rather than unique-payment claims." }
       ],
       "limitations": [
         "This narrower file family is not a replacement for the full historical Schedule B dump.",
@@ -81,16 +81,16 @@
       "access_mode": "public_index_or_statutory_request",
       "coverage_basis": "OGE states that President and Vice President reports in its online collection date back to 2015, that most 278e reports are generally retained six years, most 278-T reports seven years, and candidate reports one year after candidacy ends.",
       "date_coverage": { "valid_from": "2015-01-01", "valid_until": null, "precision": "year", "retention_limited": true },
-      "acquisition_status": "official_index_query_required",
+      "acquisition_status": "ingested_partial",
       "member_coverage": [
         { "person_id": "jimmy-carter", "state": "archive_locator_required" },
         { "person_id": "ronald-reagan", "state": "archive_locator_required" },
         { "person_id": "george-h-w-bush", "state": "archive_locator_required" },
         { "person_id": "bill-clinton", "state": "archive_locator_required" },
         { "person_id": "george-w-bush", "state": "archive_locator_required" },
-        { "person_id": "barack-obama", "state": "official_index_query_required", "note": "Only the portion intersecting the documented online window can be expected in the current index; retention may have removed older reports." },
-        { "person_id": "donald-trump", "state": "official_index_query_required" },
-        { "person_id": "joe-biden", "state": "official_index_query_required" }
+        { "person_id": "barack-obama", "state": "archive_locator_required", "note": "No current online document was acquired; retention may have removed older reports, so absence is not a negative finding." },
+        { "person_id": "donald-trump", "state": "ingested_partial", "note": "Twenty-one hash-verified PDFs were parsed into machine-extracted, source-addressable intake rows; three request-gated candidate reports remain unacquired." },
+        { "person_id": "joe-biden", "state": "ingested_partial", "note": "Five hash-verified PDFs were parsed into machine-extracted, source-addressable intake rows." }
       ],
       "limitations": [
         "An absent current OGE result may reflect statutory retention or destruction and is not a negative finding.",
@@ -128,10 +128,21 @@
     "cohort_members": 8,
     "source_families": 4,
     "member_source_cells": 32,
-    "hashed_source_artifacts": 1,
-    "bulk_cycle_files_ingested": 1,
-    "normalized_transaction_records": 27862,
-    "normalized_beneficial_interest_records": 0,
+    "hashed_fec_cycle_archives": 11,
+    "hashed_oge_documents": 26,
+    "bulk_cycle_files_ingested": 11,
+    "normalized_transaction_records": 588535,
+    "unresolved_payee_candidates": 46926,
+    "normalized_beneficial_interest_records": 5945,
+    "normalization_rejections": 551,
+    "transaction_dates_ocr_ambiguous": 400,
+    "transaction_types_ocr_ambiguous": 1107,
+    "unresolved_lexical_overlap_candidates": 1172,
+    "interests_with_lexical_candidates": 221,
+    "temporal_candidates_overlapping": 0,
+    "temporal_candidates_non_overlapping": 132,
+    "temporal_candidates_unknown": 1040,
+    "identity_review_queue": 0,
     "crossing_matches": 0
   },
   "consumption": {

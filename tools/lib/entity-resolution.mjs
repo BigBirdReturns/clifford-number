@@ -40,6 +40,8 @@ const GENERIC_VENDOR_TOKENS = new Set([
   'llc', 'inc', 'incorporated', 'corp', 'corporation', 'co', 'company', 'the', 'services', 'group',
   'consulting', 'media', 'printing', 'catering', 'associates', 'partners', 'enterprises', 'solutions',
 ]);
+const SHA256_RE = /^[a-f0-9]{64}$/i;
+const HOLDER_SCOPES = new Set(['filer', 'spouse', 'joint', 'dependent_child', 'trust', 'unknown']);
 
 export function normalizePayee(rawText) {
   const source_text = typeof rawText === 'string' ? rawText : '';
@@ -62,19 +64,58 @@ export function classifyAnchorStrength(kind) {
   return 'unknown';
 }
 
+function hasText(value) {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function validIdentifierValue(kind, value) {
+  if (!hasText(value)) return false;
+  const text = value.trim();
+  if (kind === 'sec_cik') return /^\d{1,10}$/.test(text);
+  if (kind === 'fec_committee_id') return /^C\d{8}$/.test(text);
+  if (kind === 'lei') return /^[A-Z0-9]{20}$/i.test(text);
+  return true;
+}
+
+function evaluateAnchor(anchor = {}) {
+  const strength = classifyAnchorStrength(anchor.kind);
+  const source = anchor.source ?? {};
+  const receiptValid = SHA256_RE.test(source.content_sha256 ?? '')
+    && hasText(source.locator)
+    && hasText(source.provenance_chain_id);
+  const valid = strength !== 'unknown'
+    && hasText(anchor.issuer)
+    && validIdentifierValue(anchor.kind, anchor.value)
+    && receiptValid;
+  return {
+    ...anchor,
+    strength,
+    valid,
+    invalid_reasons: [
+      strength === 'unknown' ? 'unknown_anchor_kind' : null,
+      hasText(anchor.issuer) ? null : 'missing_issuer',
+      validIdentifierValue(anchor.kind, anchor.value) ? null : 'invalid_or_empty_value',
+      receiptValid ? null : 'missing_or_invalid_receipt',
+    ].filter(Boolean),
+  };
+}
+
 // candidates: [{ candidate_entity_id, node_type, rule, anchors: [{kind, value}] }]
 export function resolveIdentity({ source_text, candidates = [] }) {
   const evaluated = candidates.map(c => {
-    const anchors = (c.anchors ?? []).map(a => ({ ...a, strength: classifyAnchorStrength(a.kind) }));
-    const strong = anchors.filter(a => a.strength === 'strong');
-    const hasUniqueOfficialId = strong.some(a => a.kind === 'official_identifier' || a.kind === 'sec_cik' || a.kind === 'state_filing_id' || a.kind === 'fec_committee_id' || a.kind === 'lei' || a.kind === 'property_parcel_id');
-    const independentStrong = new Set(strong.map(a => a.kind)).size;
+    const anchors = (c.anchors ?? []).map(evaluateAnchor);
+    const candidateValid = hasText(c.candidate_entity_id) && NODE_TYPES.has(c.node_type);
+    const strong = anchors.filter(a => a.strength === 'strong' && a.valid);
+    const uniqueKinds = new Set(['official_identifier', 'sec_cik', 'state_filing_id', 'fec_committee_id', 'lei', 'property_parcel_id']);
+    const hasUniqueOfficialId = strong.some(a => uniqueKinds.has(a.kind));
+    const independentStrong = new Set(strong.map(a => a.source.provenance_chain_id)).size;
     let disposition;
-    if (hasUniqueOfficialId) disposition = 'accepted';
+    if (!candidateValid) disposition = 'unresolved';
+    else if (hasUniqueOfficialId) disposition = 'accepted';
     else if (independentStrong >= 2) disposition = 'accepted';
     else if (independentStrong === 1) disposition = 'provisional';
     else disposition = 'unresolved';
-    return { ...c, anchors, strong_anchor_kinds: independentStrong, disposition };
+    return { ...c, anchors, independent_strong_provenance_chains: independentStrong, candidate_valid: candidateValid, disposition };
   });
   const accepted = evaluated.filter(c => c.disposition === 'accepted');
   let disposition;
@@ -124,15 +165,29 @@ export function temporalRelation(a, b) {
 // receipted interest, explicit holder scope, compatible temporal intervals, and a visible path.
 export function evaluateCrossingGate(input) {
   const failures = [];
-  if (!input.itemization?.source_sha256) failures.push('missing_receipted_itemization');
-  if (input.committee_resolution?.disposition !== 'accepted') failures.push('committee_not_resolved');
-  if (input.payee_resolution?.disposition !== 'accepted') failures.push('payee_not_resolved');
-  if (!input.interest?.source_locator) failures.push('missing_receipted_interest');
-  if (!input.interest?.holder_scope) failures.push('missing_holder_scope');
+  const item = input.itemization ?? {};
+  const interest = input.interest ?? {};
+  const itemHashValid = SHA256_RE.test(item.source_sha256 ?? '');
+  if (!itemHashValid || !Number.isInteger(item.source_line) || item.source_line < 1 || !hasText(item.transaction_id) || !hasText(item.committee_id)) {
+    failures.push('missing_or_invalid_receipted_itemization');
+  }
+  if (!itemHashValid || !Array.isArray(input.source_manifest_hashes) || !input.source_manifest_hashes.includes(item.source_sha256)) {
+    failures.push('itemization_source_not_in_manifest');
+  }
+  if (input.committee_resolution?.disposition !== 'accepted' || !hasText(input.committee_resolution?.accepted_entity_id)) failures.push('committee_not_resolved');
+  if (input.payee_resolution?.disposition !== 'accepted' || !hasText(input.payee_resolution?.accepted_entity_id)) failures.push('payee_not_resolved');
+  const interestHashValid = SHA256_RE.test(interest.source_sha256 ?? '');
+  if (!interestHashValid || !hasText(interest.source_locator)) failures.push('missing_or_invalid_receipted_interest');
+  if (!interestHashValid || !Array.isArray(input.disclosure_document_hashes) || !input.disclosure_document_hashes.includes(interest.source_sha256)) {
+    failures.push('interest_source_not_in_manifest');
+  }
+  if (!HOLDER_SCOPES.has(interest.holder_scope)) failures.push('missing_or_invalid_holder_scope');
   const temporal = temporalRelation(input.itemization_interval, input.interest_interval);
   if (temporal === 'non_overlapping') failures.push('non_overlapping_intervals');
   if (temporal === 'temporally_unknown') failures.push('temporally_unknown_intervals');
-  if (input.predicate && !ALLOWED_EDGE_PREDICATES.has(input.predicate)) failures.push(`disallowed_predicate:${input.predicate}`);
+  if (temporal === 'possibly_overlapping') failures.push('temporal_overlap_not_definite');
+  if (!hasText(input.predicate)) failures.push('missing_predicate');
+  else if (!ALLOWED_EDGE_PREDICATES.has(input.predicate)) failures.push(`disallowed_predicate:${input.predicate}`);
   const passed = failures.length === 0;
   return {
     gate: passed ? 'pass' : 'fail',
@@ -143,9 +198,17 @@ export function evaluateCrossingGate(input) {
       verification_status: 'machine_proposed_unverified',
       causal_status: 'not_established',
       graph_effect: 'none',
+      subject_id: input.committee_resolution?.accepted_entity_id ?? null,
+      object_id: input.payee_resolution?.accepted_entity_id ?? null,
+      predicate: input.predicate ?? null,
+      transaction_id: item.transaction_id ?? null,
+      committee_id: item.committee_id ?? null,
+      itemization_source_sha256: item.source_sha256 ?? null,
+      interest_source_sha256: interest.source_sha256 ?? null,
+      interest_source_locator: interest.source_locator ?? null,
       temporal_relation: temporal,
       establishes: passed
-        ? 'A receipted committee disbursement to a resolved payee whose separately receipted interest overlaps in time.'
+        ? 'An official FEC itemization reports a committee disbursement to a resolved payee whose separately receipted disclosed interest definitely overlaps the itemization interval.'
         : null,
       does_not_establish: ['intent', 'legality', 'control', 'coordination', 'personal_enrichment', 'self_dealing', 'wrongdoing'],
       forbidden_inferences: ['crossing_implies_wrongdoing', 'overlap_implies_causation', 'payment_implies_beneficial_ownership'],

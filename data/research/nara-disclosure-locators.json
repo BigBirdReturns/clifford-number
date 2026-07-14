@@ -1,17 +1,25 @@
 {
-  "schema_version": "nara-disclosure-locators@1",
+  "schema_version": "nara-disclosure-locators@2",
   "cohort_id": "us-presidents-eiga-era-1979-present",
   "source_id": "nara-presidential-records",
   "official_url": "https://www.archives.gov/presidential-libraries",
   "catalog_endpoint": "https://catalog.archives.gov/proxy/records/search",
   "access_mode": "public_catalog_and_archival_request",
   "generated_at": "2026-07-14T00:13:53.665Z",
+  "relevance_vocabulary": [
+    "verified_on_topic",
+    "candidate",
+    "unrelated",
+    "unresolved"
+  ],
+  "default_search_hit_relevance": "unresolved",
+  "classification_status": "not_reconstructed_from_unavailable_run",
   "members": [
     {
       "person_id": "jimmy-carter",
       "coverage_state": "archive_locator_required",
       "documents_hashed": 0,
-      "strongest_locators": [
+      "search_hits": [
         {
           "person_id": "jimmy-carter",
           "query": "\"Jimmy Carter\" public financial disclosure",
@@ -91,13 +99,13 @@
           "note": "Belin, David - Strategy Papers | LOD=fileUnit | dObj=1 | page1-3 of 4580 | ctx=member-term"
         }
       ],
-      "on_topic_null": false
+      "no_classified_on_topic_hit": true
     },
     {
       "person_id": "ronald-reagan",
       "coverage_state": "archive_locator_required",
       "documents_hashed": 0,
-      "strongest_locators": [
+      "search_hits": [
         {
           "person_id": "ronald-reagan",
           "query": "\"Ronald Reagan\" public financial disclosure",
@@ -177,13 +185,13 @@
           "note": "The Right Report | LOD=fileUnit | dObj=1 | page1-3 of 8077 | ctx=member-term"
         }
       ],
-      "on_topic_null": false
+      "no_classified_on_topic_hit": true
     },
     {
       "person_id": "george-h-w-bush",
-      "coverage_state": "ingested_partial",
-      "documents_hashed": 1,
-      "strongest_locators": [
+      "coverage_state": "archive_locator_required",
+      "documents_hashed": 0,
+      "search_hits": [
         {
           "person_id": "george-h-w-bush",
           "query": "\"George H. W. Bush\" public financial disclosure",
@@ -263,13 +271,13 @@
           "note": "Personnel - Ambassadorial Status Report | LOD=fileUnit | dObj=1 | page1-3 of 4419 | ctx=member-term"
         }
       ],
-      "on_topic_null": false
+      "no_classified_on_topic_hit": true
     },
     {
       "person_id": "bill-clinton",
       "coverage_state": "archive_locator_required",
       "documents_hashed": 0,
-      "strongest_locators": [
+      "search_hits": [
         {
           "person_id": "bill-clinton",
           "query": "\"Bill Clinton\" public financial disclosure",
@@ -349,13 +357,13 @@
           "note": "103rd Congress, Manassas National Battlefield Park Termination of Easements Northeast Region - Senate Resolution 2280 | LOD=item | dObj=1 | page1-3 of 2655 | ctx=member-term"
         }
       ],
-      "on_topic_null": true
+      "no_classified_on_topic_hit": true
     },
     {
       "person_id": "george-w-bush",
       "coverage_state": "archive_locator_required",
       "documents_hashed": 0,
-      "strongest_locators": [
+      "search_hits": [
         {
           "person_id": "george-w-bush",
           "query": "\"George W. Bush\" public financial disclosure",
@@ -435,13 +443,13 @@
           "note": "[Candidate Report Hon. James C. Mahan] | LOD=fileUnit | dObj=1 | page1-3 of 3190 | ctx=member-term"
         }
       ],
-      "on_topic_null": false
+      "no_classified_on_topic_hit": true
     },
     {
       "person_id": "barack-obama",
       "coverage_state": "archive_locator_required",
       "documents_hashed": 0,
-      "strongest_locators": [
+      "search_hits": [
         {
           "person_id": "barack-obama",
           "query": "\"Barack Obama\" public financial disclosure",
@@ -521,13 +529,13 @@
           "note": "OGE (Office of Government Ethics) Form 278e | LOD=item | dObj=1 | page1-3 of 394 | ctx=member-term"
         }
       ],
-      "on_topic_null": false
+      "no_classified_on_topic_hit": true
     },
     {
       "person_id": "donald-trump",
       "coverage_state": "archive_locator_required",
       "documents_hashed": 0,
-      "strongest_locators": [
+      "search_hits": [
         {
           "person_id": "donald-trump",
           "query": "\"Donald Trump\" public financial disclosure",
@@ -607,13 +615,13 @@
           "note": "HC [Health Care]: Doctor Salaries | LOD=fileUnit | dObj=15 | page1-3 of 120 | ctx=member-term"
         }
       ],
-      "on_topic_null": true
+      "no_classified_on_topic_hit": true
     },
     {
       "person_id": "joe-biden",
       "coverage_state": "archive_locator_required",
       "documents_hashed": 0,
-      "strongest_locators": [
+      "search_hits": [
         {
           "person_id": "joe-biden",
           "query": "\"Joseph R. Biden\" public financial disclosure",
@@ -693,10 +701,10 @@
           "note": "FBI – Senate [6] | LOD=fileUnit | dObj=1 | page1-3 of 391 | ctx=member-term"
         }
       ],
-      "on_topic_null": true
+      "no_classified_on_topic_hit": true
     }
   ],
-  "cross_member_queries": [
+  "cross_member_search_hits": [
     {
       "person_id": null,
       "query": "public financial disclosure president",
@@ -830,10 +838,18 @@
       "note": "NULL: no digitized on-topic personal/public financial-disclosure record for Jimmy Carter located across 9 term variants. Closest hits were Ford-era Cheney fileUnit NAID 1561646 'President - Financial Disclosure' 1976, and 1976 Carter campaign material NAID 574324 - neither is a Carter personal SF-278. DRAFT REQUEST (NOT SENT): To Jimmy Carter Presidential Library, carter.library@nara.gov, 441 John Lewis Freedom Pkwy NE, Atlanta GA 30307. Subject: Reference request - public financial disclosure statements (SF-278/OGE Form 278) of President Jimmy Carter, 1977-1981. Body: I am conducting public-records research and seek any publicly releasable financial-disclosure statements (SF-278/OGE Form 278) filed by or on behalf of President James Earl Carter Jr. during 1977-1981, or the finding-aid/box-folder locator for the series containing them. Please advise NAID(s), series title, box/folder, reproduction fees, and whether digitized copies exist. Public records only - no FOIA or nonpublic access requested."
     }
   ],
+  "downloaded_artifacts": [],
+  "unavailable_run_claims": {
+    "queries_reported": 94,
+    "digitized_items_reported_downloaded_and_hashed": 1,
+    "status": "not_durably_reproducible",
+    "note": "The ignored acquisition input and its claimed hashed artifact are unavailable. These historical run totals are preserved as unverified claims and do not count as durable receipts."
+  },
   "totals": {
-    "queries_recorded": 94,
-    "digitized_items_downloaded_and_hashed": 1,
-    "members_with_archive_locators": [
+    "search_hits_durably_emitted": 57,
+    "blocked_requests_durably_emitted": 1,
+    "digitized_items_downloaded_and_hashed": 0,
+    "members_with_search_hits": [
       "jimmy-carter",
       "ronald-reagan",
       "george-h-w-bush",
@@ -843,24 +859,32 @@
       "donald-trump",
       "joe-biden"
     ],
-    "members_with_on_topic_null": [
+    "members_with_verified_on_topic_hits": [],
+    "members_with_candidate_hits": [],
+    "members_without_classified_on_topic_hits": [
+      "jimmy-carter",
+      "ronald-reagan",
+      "george-h-w-bush",
       "bill-clinton",
+      "george-w-bush",
+      "barack-obama",
       "donald-trump",
       "joe-biden"
     ],
     "blocked_requires_request": 1
   },
   "interpretation": [
-    "A catalog hit (NAID) is a LOCATOR, not an ingested disclosure; only downloaded + hashed items count as acquired.",
+    "A catalog search hit (NAID) is not a verified disclosure locator; relevance is explicit and defaults conservatively to unresolved.",
+    "Only artifacts whose direct artifact URL and SHA-256 are emitted in downloaded_artifacts count as acquired; this durable artifact currently emits zero.",
     "keyword_result_count is a loose OR-keyword denominator over the whole catalog, NOT a count of disclosure records; top hits can be unrelated collections.",
-    "Zero on-topic results are preserved as unavailable_after_search with the exact query, never rewritten as \"no record existed.\"",
-    "Modern presidents (Trump, Biden, and most personal SF-278 for Obama/G.W. Bush) are not in NARA as presidential financial-disclosure records; that material lives in OGE's online window."
+    "An unavailable_after_search record is a bounded search null with the exact query, never evidence that no record existed.",
+    "The presidential disclosure source plan routes current-window material to OGE; this NARA search-hit artifact does not establish absence from NARA."
   ],
   "consumption": {
     "contract_id": "public-topology-map@1",
-    "what_this_is": "A catalog locator index (NAIDs, URLs, keyword denominators) plus one hashed digitized disclosure, for the archival route to older-era records.",
+    "what_this_is": "A catalog search-hit index (queries, NAIDs, URLs, keyword denominators, and conservative unresolved relevance) for the archival route to older-era records.",
     "what_this_is_not": "A verified disclosure set, a holdings extract, a crossing, or evidence of absence.",
-    "copy_ready_caveat": "A NAID locates candidate material; it does not verify a disclosure, and a keyword denominator is not evidence that responsive records exist."
+    "copy_ready_caveat": "A search result with a NAID is not a verified disclosure locator; only a verified_on_topic classification supports that narrower description, and a keyword denominator is not evidence that responsive records exist."
   },
   "normalized_beneficial_interest_records": 0,
   "verification_status": "machine_proposed_unverified",
