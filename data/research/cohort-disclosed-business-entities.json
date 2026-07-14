@@ -1,0 +1,37 @@
+{
+  "schema_version": "cohort-disclosed-business-entities@1",
+  "cohort_id": "us-presidents-eiga-era-1979-present",
+  "generated_note": "Symmetric input for the government-to-property predicate: the resolved operating-business entities available per cohort member. Coverage is asymmetric by source availability, NOT a substantive claim that a member had no businesses. An empty set is a coverage gap to be filled by disclosure extraction, not a null finding.",
+  "resolution_basis": "New York State Department of State registry (data.ny.gov filing-history dataset 63wc-4exh; active dataset n9v6-gdp6), reached via the FEC-embedded-name -> NY-registry chain in ny-registry-embedded-entity-manifest.json.",
+  "members": [
+    {
+      "person_id": "donald-trump",
+      "coverage_state": "resolved_registry_entities_present",
+      "entities": [
+        { "registry": "ny-dos", "corpid_num": "642339", "legal_name": "THE TRUMP CORPORATION", "entity_type": "DOMESTIC BUSINESS CORPORATION" },
+        { "registry": "ny-dos", "corpid_num": "2082174", "legal_name": "TRUMP CPS LLC", "entity_type": "DOMESTIC LIMITED LIABILITY COMPANY" },
+        { "registry": "ny-dos", "corpid_num": "2193478", "legal_name": "TRUMP PLAZA LLC", "entity_type": "DOMESTIC LIMITED LIABILITY COMPANY" },
+        { "registry": "ny-dos", "corpid_num": "2210786", "legal_name": "TRUMP TOWER COMMERCIAL LLC", "entity_type": "DOMESTIC LIMITED LIABILITY COMPANY" },
+        { "registry": "ny-dos", "corpid_num": "2722181", "legal_name": "TRUMP PARK AVENUE LLC", "entity_type": "FOREIGN LIMITED LIABILITY COMPANY" },
+        { "registry": "ny-dos", "corpid_num": "2967275", "legal_name": "TRUMP RESTAURANTS LLC", "entity_type": "DOMESTIC LIMITED LIABILITY COMPANY" }
+      ]
+    },
+    { "person_id": "joe-biden", "coverage_state": "disclosed_business_entities_not_yet_extracted", "entities": [], "note": "OGE disclosure PDFs acquired; operating-business entities not yet extracted and registry-resolved." },
+    { "person_id": "barack-obama", "coverage_state": "disclosed_business_entities_not_yet_extracted", "entities": [], "note": "Outside current OGE online window for President-title reports; archive route (NARA) pending; no resolved operating-business entities in repo." },
+    { "person_id": "george-w-bush", "coverage_state": "disclosed_business_entities_not_yet_extracted", "entities": [], "note": "Archive-route pending; no resolved operating-business entities in repo." },
+    { "person_id": "bill-clinton", "coverage_state": "disclosed_business_entities_not_yet_extracted", "entities": [], "note": "Archive-route pending; no resolved operating-business entities in repo." },
+    { "person_id": "george-h-w-bush", "coverage_state": "disclosed_business_entities_not_yet_extracted", "entities": [], "note": "Archive-route pending; no resolved operating-business entities in repo." },
+    { "person_id": "ronald-reagan", "coverage_state": "disclosed_business_entities_not_yet_extracted", "entities": [], "note": "Archive-route pending; no resolved operating-business entities in repo." },
+    { "person_id": "jimmy-carter", "coverage_state": "disclosed_business_entities_not_yet_extracted", "entities": [], "note": "Archive-route pending; no resolved operating-business entities in repo." }
+  ],
+  "consumption": {
+    "contract_id": "public-topology-map@1",
+    "selection_review_id": "selection-review-trump-office-business-capital",
+    "selection_review_status": "pending_second_party",
+    "what_this_is": "The resolved operating-business entity set available per cohort member, with explicit coverage state.",
+    "what_this_is_not": "A claim that members with an empty set had no businesses; empty is a source-coverage gap, not a finding."
+  },
+  "verification_status": "machine_proposed_unverified",
+  "causal_status": "not_established",
+  "graph_effect": "none"
+}

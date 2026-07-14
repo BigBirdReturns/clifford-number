@@ -84,3 +84,29 @@ remains held. It emits a bounded candidate with `graph_effect: none` and an expl
 The temporal screen accounts for every lexical candidate: 0 overlap, 132 non-overlap, and 1,040
 unknown. None enters identity review; unknown timing is preserved as uncertainty rather than
 silently promoted to a match or demoted to absence.
+
+## Predicate #1 frozen; predicate #2 (government→property) started symmetrically
+
+**Campaign→business (predicate 1) is frozen as an honest source-limited v1** in
+`data/research/campaign-to-business-v1-result.json`: every record was assembled (588,535 FEC
+itemizations, 46,926 payee candidates, the 2016 disclosure listing three Trump LLCs as filer
+interests contemporaneous with FEC windows), yet 0 resolved identities and 0 crossings — because the
+**current OGE 278 evidence** carries no per-entity holding interval, aggregate FEC bounds cannot
+establish event overlap, and name equality is not identity. This is a limit of the current evidence,
+**not** a claim that no relationship exists; other contemporaneous records could reopen it.
+
+**Government→property (predicate 2) now runs symmetrically across all eight presidents** via the
+no-key USAspending award API (`tools/acquire-gov-property-awards.mjs`,
+`data/research/government-to-property-manifest.json`). Identical query logic per member; members
+without registry-resolved disclosed businesses are recorded as a coverage gap, not a null finding.
+Result: 6 NY-registry-resolved Trump entities → 0 contract awards; the operating-property names
+(Mar-a-Lago, Trump National Golf Club, Old Post Office, Trump International Hotel) → 0; and the
+entire "TRUMP" federal-contract recipient universe is unrelated firms (TRUMPF, TRUMPLER) — a live
+demonstration that name search alone is a trap. 0 resolved identities, 0 crossings.
+
+This is a **scope limit of contract-award itemization, not a universal claim**: documented
+federal-property spending (protective-detail lodging, event costs) is largely purchase-card /
+below-threshold / non-contract and would require GSA lease records, inspector-general reports,
+purchase-card releases, or House Oversight compilations to establish bounded relationships. Those
+remain open source routes. `pending_second_party` labels clearance/publication only; it did not
+block this discovery or intake.
