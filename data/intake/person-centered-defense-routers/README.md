@@ -37,9 +37,18 @@ node test/jackson-moses-preservation.test.js
 `portfolio-edges.jsonl` · `advisory-edges.jsonl` · `deal-sourcing-claims.jsonl` ·
 `funding-rounds.jsonl` · `co-investor-edges.jsonl` · `government-programs.jsonl` ·
 `government-awards.jsonl` · `validation-surfaces.jsonl` · `follow-on-capital.jsonl` · `exits.jsonl` ·
-`router-candidates.jsonl` · `router-signatures.jsonl` · `game-trails.jsonl` · `trail-frontier.jsonl` ·
-`rejected-joins.jsonl` · `coverage-gaps.jsonl` · `receipts.jsonl` · `sources/jackson-portfolio.json` ·
-`analysis.md`
+`router-source-universe.jsonl` (the roster-derived denominator) · `router-candidates.jsonl` ·
+`router-signatures.jsonl` · `game-trails.jsonl` · `trail-frontier.jsonl` · `rejected-joins.jsonl` ·
+`coverage-gaps.jsonl` · `receipts.jsonl` · `analysis.md` ·
+`sources/` (`jackson-portfolio.json`, `counterpart-searches.jsonl`, `fund-portfolio-census.json`,
+`fund-team-rosters.json`, `government-awards.json`)
+
+## Completion contract (enforced by validate:routers + tests)
+Fails if: the denominator equals only the 12-name seed list; a counterpart status claims a searched
+result without provenance; a required frontier row stays `not_searched`; an admitted router lacks a
+two-hop trail; government awards conflate ceiling/obligated/outlay; or Jackson's overlap reverts to
+`not_searched`. The neutral denominator derives from the committed LinkedIn projection + fetched fund
+team rosters — never a hard-coded seed array.
 
 ## Router signatures (score = discovery-routing, NOT suspicion)
 A person is admitted after ≥3 of 8 independently observable signature predicates: multiple vehicles;

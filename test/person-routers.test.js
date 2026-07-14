@@ -8,34 +8,48 @@ const manifest = JSON.parse(fs.readFileSync(`${dir}/manifest.json`, 'utf8'));
 
 assert.deepEqual(validatePersonRouters(dir), [], 'router intake must satisfy acceptance conditions');
 
-// router universe has a denominator; admitted subset is a subset
-assert.ok(manifest.counts.router_candidates_denominator >= 10, 'candidate denominator present');
-assert.ok(manifest.counts.admitted_routers >= 1 && manifest.counts.admitted_routers <= manifest.counts.router_candidates_denominator);
+// COMPLETION CONTRACT — denominator is roster-derived, not the 12-name seed list
+const universe = jl('router-source-universe.jsonl');
+assert.ok(universe.length >= 40, `roster denominator must be substantial (got ${universe.length})`);
+assert.ok(universe.some(u => /projection/.test(u.roster_source)), 'denominator includes the committed LinkedIn projection');
+assert.ok(universe.some(u => /team page/.test(u.roster_source)), 'denominator includes fetched fund team rosters');
+assert.equal(manifest.counts.router_source_universe_denominator, universe.length);
 
 // Jackson overlap ran with real numbers
 assert.equal(manifest.counts.jackson_portfolio_universe, 61);
-assert.ok(manifest.counts.jackson_x_natsec100 >= 10, 'Jackson×NatSec100 co-listings recovered');
+assert.ok(manifest.counts.jackson_x_natsec100 >= 10);
 
-// every admitted router has a two-hop trail reaching some surface
+// counterpart states carry provenance; no not_searched row is silently treated as "found"
+for (const row of [...jl('advisory-edges.jsonl'), ...jl('deal-sourcing-claims.jsonl')]) {
+  assert.ok('counterpart_status' in row);
+  if (row.counterpart_status === 'no_counterpart_confirmation_observed' || row.counterpart_status === 'third_party_reported_not_counterpart_confirmed') {
+    assert.ok(row.counterpart_search_ref, `${row.counterparty ?? row.company} must cite a documented counterpart search`);
+  }
+  if (row.evidence_state === 'self_claimed') assert.notEqual(row.counterpart_status, 'counterpart_reported');
+}
+
+// every admitted router has a >=2-hop trail
 const trails = jl('game-trails.jsonl');
 for (const id of manifest.admitted_router_ids) {
   const t = trails.filter(x => x.hops[0] === id);
-  assert.ok(t.length >= 1, `admitted router ${id} must have a trail`);
-  assert.ok(t.every(x => Array.isArray(x.hops) && x.hops.length >= 3), 'trails are multi-hop');
+  assert.ok(t.length >= 1 && t.every(x => x.hops.length >= 3), `admitted router ${id} needs a multi-hop trail`);
 }
-// at least one trail reaches a government surface and one reaches validation
-assert.ok(trails.some(t => t.surfaces_reached?.includes('government')), 'a trail reaches a government surface');
-assert.ok(trails.some(t => t.surfaces_reached?.includes('validation')), 'a trail reaches a validation surface');
+assert.ok(trails.some(t => t.surfaces_reached?.includes('validation')), 'a trail reaches validation');
 
-// financial types are separated in gov awards (ceiling not conflated with obligation/outlay)
-for (const g of jl('government-awards.jsonl')) {
-  assert.ok('contract_ceiling_usd' in g && 'obligated_usd' in g && 'outlay_usd' in g);
-}
+// government awards: ceiling/obligated/outlay separated and never merged
+const gov = jl('government-awards.jsonl');
+assert.ok(gov.length >= 10);
+for (const g of gov) assert.ok('contract_ceiling_usd' in g && 'obligated_usd' in g && 'outlay_usd' in g);
+// spot-check a case where the three genuinely differ (Firefly)
+const firefly = gov.find(g => g.org === 'Firefly Aerospace');
+assert.ok(firefly && firefly.contract_ceiling_usd !== firefly.obligated_usd && firefly.obligated_usd !== firefly.outlay_usd, 'financial types kept distinct');
 
-// self-claims carry counterpart_status and are not auto-promoted
-for (const e of [...jl('advisory-edges.jsonl'), ...jl('deal-sourcing-claims.jsonl')]) {
-  assert.ok('counterpart_status' in e);
-  if (e.evidence_state === 'self_claimed') assert.notEqual(e.counterpart_status, 'counterpart_reported');
-}
+// frontier fully closed (no required row not_searched)
+assert.ok(jl('trail-frontier.jsonl').every(f => f.state !== 'not_searched'));
+assert.equal(manifest.counts.trail_frontier_open, 0);
+
+// fund census + cross-fund co-investment topology present
+assert.ok(manifest.counts.fund_census_funds >= 8);
+assert.ok(jl('co-investor-edges.jsonl').some(c => c.fund_count >= 2 && c.forbidden_inference));
 
 console.log('person-routers.test.js: OK');

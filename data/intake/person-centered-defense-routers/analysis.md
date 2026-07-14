@@ -1,64 +1,73 @@
-# Person-centered defense-technology routers — analysis
+# Person-centered defense-technology routers — analysis (@2, recovery increment)
 
-## 1. Jackson Moses — complete functional topology
-`person:jackson-moses` is modeled as a router, not "Founder, Silent Ventures":
-- **Three separate vehicles**: **Silent Ventures** (venture fund, Dallas), **Silent Capital** (SEC
-  506(b) private syndicate, fully owned/managed by Jackson), and his **personal investment surface**
-  (`jacksonmoses.com/portfolio`, 61 named companies). Never merged.
-- **Operator→investor chronology** (ordered, undated on source): Cisco → LinkedIn → Lynda.com →
-  **Spectrum AI/Labs** (Chairman & CEO, founder; acq. ActiveFence) → **MainStreet** (VP Partnerships,
-  founder; acq. Employer.com) → **Silent Ventures** → **Silent Capital**.
-- **Advisory (all `self_claimed`)**: senior advisor to **Castelion, Privateer, Long Wall, Thor
-  Dynamics** — each with `counterpart_status: counterpart_not_found_on_searched_surfaces`.
-- **Deal-sourcing (all `self_claimed`)**: sources deals for **8VC, Founders Fund, a16z, Bessemer,
-  Lightspeed, NEA** (+ family offices / defense primes / university endowments); "venture partner to
-  several large firms." No counterpart fund surface corroborated the specific claims this pass.
-- **Portfolio reach (source-explicit co-listings)**: of 61 portfolio companies, **14 are NatSec100**
-  (Starfish, Impulse, CHAOS, Firestorm, Firehawk, Saronic, Castelion, Cambium, Privateer, Morpheus,
-  Anduril, Hadrian, Axiom, Orbit Fab), **5 are Capital Factory-listed** (Allen Control Systems,
-  Firehawk, Saronic, Proteus, Orbit Fab), **1 is Pallas Ventures** (Morpheus Space). "Armada" is
-  held `name_match_only` (generic token).
-- **Exits (self_claimed)**: Voyager Technologies (IPO, NYSE: VOYG); MainStreet, Spectrum AI, GameOn,
-  Capiche, Daylight acquired; several shut down. Exit **value** is not disclosed and not conflated
-  with funding/valuation.
+This increment closes the falsely-completed search states from @1: the denominator is now
+**roster-derived**, counterpart states carry **documented search provenance**, fund censuses and
+government awards were **actually run**, and the trail frontier is **closed**.
 
-Routing score **6/8** → admitted router.
+## 1. Full roster denominator by source
+**100 candidates** (`router-source-universe.jsonl`), derived from committed/fetched rosters — NOT the
+12-name seed list:
+- **LinkedIn projection** (committed, `data/intake/linkedin-targeted-review`): **30 people**, signatures
+  computed from 359 role-claims; each backed by a per-capture sha256 receipt.
+- **Fund team rosters** (fetched from 11 primary team pages): 8VC, Founders Fund, a16z American
+  Dynamism, Valor, Lux, DCVC, Shield, Washington Harbour, Pallas, Stratos, (Texas Venture Partners
+  third-party, flagged) — investment-decision-maker subset enumerated; ~250 gross recorded as
+  `searched_nonexhaustive`.
+- **Seed overlay**: the 12 prompt names get source-addressed deep-research signatures merged in.
 
-## 2. Other router candidates found by the same neutral test
-Denominator: **12 candidates** from committed source-addressed rosters. **8 admitted** (≥3/8):
-Jackson Moses (6), **Joe Lonsdale** (6; 8VC + Cicero Institute; Palantir/Addepar/OpenGov/Epirus),
-**Joshua Baer** (5; Capital Factory + funds + STATION Austin; died June 2026 — node preserved),
-**Trae Stephens** (5; Founders Fund + Anduril exec chairman), **Katherine Boyle** (5; a16z American
-Dynamism; boards Apex/Hadrian, observer Saronic/Castelion), **Sally Donnelly** (3; Pallas Advisors +
-Ventures, ex-SecDef advisor), **Tony DeMartino** (3; Pallas), **Tal Shmueli** (3; Texas Venture
-Partners). **Below threshold**: Richard Spencer (2), Rotem Kakon (2), Aviad Grinfeld (2), Daniel
-Fouzailov (1) — recorded, not discarded. Seed inclusion was authorization to test, not a conclusion.
+## 2. Admitted routers and scores (≥3 of 8 signatures)
+**17 admitted** — including **9 the seed did NOT name**, surfaced purely by the computed test:
+Jackson Moses (6); **Heidi Shyu** (5), Trae Stephens (5), Katherine Boyle (5), Joshua Baer (5);
+**Will Roper** (4), **Raj Shah** (4), **Michael A. Brown** (4), **Lauren Knausenberger** (4);
+**Christopher Kirchhoff** (3), **Kevin Weil** (3), **Dr. Laura Gilbert** (3), **Doug Beck** (3),
+Joe Lonsdale (3), Sally Donnelly (3), Tony DeMartino (3), Tal Shmueli (3). 83 below threshold
+(recorded, not discarded). The score is a **discovery-routing** score, never suspicion/influence.
 
-## 3. Repeated game-trail motifs
-- **person → fund → portfolio company → NatSec100** (validation): Jackson→Silent/personal→Saronic;
-  Lonsdale→8VC→Overland; Stephens→Founders Fund→Anduril; Boyle→a16z→Hadrian; Baer→Capital Factory→Saronic.
-- **founder/operator → own company → government surface**: Lonsdale→OpenGov→gov budgeting;
-  Stephens→Anduril→DoD.
-- **shared-company convergence, NOT person-to-person**: Jackson (self_claimed advisor) and Boyle
-  (counterpart_reported observer) both attach to **Castelion** — a shared company node, not a
-  Jackson↔Boyle edge.
+## 3. Jackson counterpart-search results (the @1 contradiction, fixed)
+All 10 counterpart surfaces + 1 new lead were **actually searched** with provenance
+(`sources/counterpart-searches.jsonl`; query, domain, timestamp, result):
+- **Sourcing** (8VC, Founders Fund, a16z, Bessemer, Lightspeed, NEA): every claim traces only to
+  Jackson's own surfaces (jacksonmoses.com; Crunchbase/vcsheet mirror it). 8VC and Founders Fund team
+  pages were inspected and do **not** name him → **`no_counterpart_confirmation_observed`**.
+- **Advisory** (Castelion, Privateer, Long Wall, Thor Dynamics): asserted only on Jackson's surfaces;
+  no counterpart page found → **`no_counterpart_confirmation_observed`**. (Boyle is separately a
+  Castelion board-observer — a different person, not a Jackson confirmation.)
+- **New third-party lead**: a dated **Weekend Fund** venture-scout role (Jan 2022–Apr 2023) and an
+  **Afore Capital** venture-partner role appear in third-party databases (Signal/NFX, Crunchbase) →
+  **`third_party_reported_not_counterpart_confirmed`** (aggregators, not the fund's own page).
+No row is `counterpart_not_found` without provenance; none is both `not_searched` and found — the
+validator now prohibits both.
 
-## 4. Which trails reached which surfaces
-- **Validation (NatSec100)**: Jackson, Lonsdale, Stephens, Boyle, Baer trails all reach it.
-- **Government/procurement**: Lonsdale (OpenGov), Stephens (Anduril→DoD).
-- **Follow-on**: Traysar (Silent seed → Lux + angels same round).
-- **Exit**: Jackson (Voyager IPO; acquisitions).
-- **Convening**: Baer→STATION Austin.
+## 4. Fund portfolio denominators and NatSec100 overlaps
+`sources/fund-portfolio-census.json` (11 fund portfolio pages fetched; defense-relevant subset):
+Silent Ventures 23→**11** NatSec100; Washington Harbour 5→**5**; Valor 5→**5**; Pallas Ventures 5→**5**;
+8VC 8→**5**; Founders Fund 6→**4**; a16z American Dynamism 6→**4**; Lux 4→**3**; DCVC 3→**2**;
+Shield 2→1; In-Q-Tel 2→1. **Cross-fund co-investment** (co-listing, NOT coordination): **Anduril in
+8 funds**, Hadrian and Impulse Space in 5 each, Saronic/Epirus/Firestorm/SpaceX/Palantir in 2+.
+Jackson's own 61-company portfolio → 14 NatSec100 / 5 Capital Factory / 1 Pallas.
 
-## 5. Claims that remain self-authored / unresolved / unavailable
-- **Self-authored (self_claimed)**: all Jackson advisory + deal-sourcing edges; his exits.
-- **Not searched (frontier preserved)**: counterpart confirmation of Jackson's fund-sourcing claims;
-  full portfolios of 8VC / Founders Fund / a16z AD / Silent Ventures; USAspending/FPDS/SBIR award
-  IDs, obligated and outlay amounts (only reported **ceilings** recorded — Raft USSOCOM $349M IDIQ
-  ceiling ≠ spend).
-- **Unavailable after search**: Jackson LinkedIn (auth-gated); role dates (absent on source); some
-  Joshua Baer personal surfaces (post-death) — node preserved, evidence downgraded, edges not deleted.
-- **Rejected**: "Armada" (name_match_only).
+## 5. Government-award results (Lane D — ceilings ≠ obligations ≠ outlays)
+`sources/government-awards.json`, live from USAspending.gov: **16 of 17 companies resolved** to a real
+prime award with a confirmed **UEI** and award ID; ceiling/obligated/outlay recorded **separately**
+(e.g. Firefly ceiling $113.5M / obligated $112.8M / outlay $76.6M; Axiom $449M / $391.7M / $269M).
+Honest caveats preserved: **Saronic**'s only USAspending record is a **$500** order (larger work
+likely OTA outside FPDS — not its footprint); **Cambium** identity is moderate-confidence; **CAGE**
+codes null (API doesn't expose them — not fabricated); **Morpheus Space** `unavailable_after_search`
+(documented attempts). The Raft **$349M USSOCOM IDIQ is a CEILING**, kept distinct from its separate
+$60.8M-ceiling Cloud CITI award.
 
-Every one of these is labeled, not hidden; the discovery map stays visible even where independent
-corroboration is absent.
+## 6. Closed-frontier disposition
+All **17 frontier rows** are closed — **0 remain `not_searched`**. Dispositions: `surface_reached`
+(fund-portfolio census processed), `identity_unresolved_after_search` (projection board/advisor roles
+whose company identities weren't resolved), `source_unavailable` (TVP portfolio names).
+
+## 7. Remaining unavailable / unresolved (labeled, not hidden)
+- Jackson LinkedIn (auth-gated) and role **dates** (absent on source; Weekend Fund role dated via 3rd-party DB).
+- Full long-tail fund portfolios beyond the defense subset; ~250 gross roster people vs the
+  decision-maker subset enumerated (`searched_nonexhaustive`).
+- Morpheus Space federal award; CAGE codes; Cambium exact identity.
+- Some projection admits (e.g. "Raj S." vs Shield's "Raj Shah", "Michael A. Brown" vs Shield's
+  "Michael Brown") are likely the same person but are **kept separate** rather than force-merged — an
+  identity join is a claim, and this mission does not fabricate one.
+
+Reproduce: `npm run build:routers && npm run validate:routers && node test/person-routers.test.js`.
