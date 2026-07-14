@@ -106,18 +106,21 @@ claim.
 
 ## 5. What remains unsearched, partial, unavailable, or unresolved
 
-Nineteen coverage entries (coverage.jsonl): 18 partially searched and one
+Twenty-one coverage entries (coverage.jsonl): 20 partially searched and one
 intentionally not searched. Access blocks are preserved inside the partial
 rows rather than being laundered into whole-topic unavailability.
 The load-bearing open surfaces are:
-parcel-level deed chronology (cov-02) and the identity of the 2024 Alexan-site
-seller (cov-10) — the live facts under the pre-positioning question; the
+recorder deed-party images and pre-2016 parcel chronology (cov-02/cov-10) —
+the live facts under the pre-positioning question; the
 DAIA's original enabling and renewal instruments (cov-08); the direct CA SOS
-record for Positive Investments (cov-03); Erik Wahl's title tenure beyond the
-dated filing; and the original conversation transcript (cov-01, open because
+record for Positive Investments is now resolved, while its self-claimed 1976
+founding and broader officer history remain partial (cov-03); Erik Wahl's title
+tenure beyond the dated filing; and the original conversation transcript (cov-01, open because
 only the repo and GitHub issues were searched). Santa Anita Wash completion
 dates are now bounded to January 1959 and January 1960 by official reports;
-EB-5-specific reporting remains open. "Mary's"/"René" referents remain out of
+Le Méridien now has bounded evidence of an EB-5 component, while legal vehicles,
+amounts, petition status, Hilton corroboration, and other projects remain open.
+"Mary's"/"René" referents remain out of
 scope under the redaction policy.
 
 ## 6. The actual temporal control structure
@@ -154,11 +157,12 @@ excludes a broader cross-developer professional repeat.
 In the currently dated sample, documented private transactions follow public
 de-risking:
 planning (1968/1973/2010) → funding (2008) → construction (2010) → opening
-(2016) → construction of 57 Wheeler (2017) → institutional entitlements
+(2016) → the earliest retrieved Alexan owner snapshot (2018) → institutional entitlements
 (2022–2025) → reported JV land purchase (2024). Comparable corridors show the
 same broad stages with different actors, and California policy actively
-promotes station-area development. Arcadia's pre-opening ownership sequence
-remains unresolved because county deed records are incomplete; the sample
+promotes station-area development. Assessor histories now bound post-opening
+transaction chronology but do not name parties; Arcadia's pre-opening ownership
+sequence remains unresolved because recorder deed images are incomplete. The sample
 cannot support a universal timing claim.
 
 ## 9. What public value was created and who appears positioned to capture it
@@ -203,8 +207,10 @@ rather than ornamental.
 
 The current bounded record supports a multi-regime formation reading, not a mastermind: thirteen control
 regimes, one man who held every documented layer concurrently — a century
-ago — and several core stages that recur in the bounded Monrovia and Pasadena
-comparisons with different actors. The incomplete Monrovia, Duarte, and Azusa
-control stages remain open rather than being generalized statewide. The hypotheses that
+ago — and several core stages that recur in Monrovia, Pasadena, and Azusa with
+different actors and different governance mechanisms. Pasadena's PBID overlaps
+its station neighborhood; Monrovia's Old Town BID does not cover Station Square;
+Azusa's inspected record centers planning and development agreements. Deed-level
+and statewide-denominator gaps remain open rather than being generalized. The hypotheses that
 would make it more than that are preserved, searchable, and graph-inert
 until receipts say otherwise.
