@@ -53,8 +53,20 @@ export function validateDisclosureSourceCoverage(matrix) {
     || matrix?.coverage?.unresolved_lexical_overlap_candidates !== 1172
     || matrix?.coverage?.interests_with_lexical_candidates !== 221
     || matrix?.coverage?.temporal_candidates_overlapping !== 0
-    || matrix?.coverage?.temporal_candidates_non_overlapping !== 132
-    || matrix?.coverage?.temporal_candidates_unknown !== 1040
+    || matrix?.coverage?.temporal_candidates_non_overlapping !== 177
+    || matrix?.coverage?.temporal_candidates_unknown !== 995
+    || matrix?.coverage?.temporally_unknown_structurally_undated_pairs !== 995
+    || matrix?.coverage?.visually_corrected_oge_source_rows !== 23
+    || matrix?.coverage?.visually_reclassified_candidate_pairs !== 45
+    || matrix?.coverage?.embedded_name_candidate_pairs !== 398
+    || matrix?.coverage?.embedded_name_trump_token_candidate_pairs !== 96
+    || matrix?.coverage?.official_ny_registry_nodes_observed !== 6
+    || matrix?.coverage?.sec_identifier_candidate_rows !== 88
+    || matrix?.coverage?.resolved_cross_source_legal_entities !== 0
+    || matrix?.coverage?.secondary_hosted_candidate_reports_acquired !== 1
+    || matrix?.coverage?.candidate_report_explicit_filer_legal_name_rows !== 3
+    || matrix?.coverage?.candidate_report_names_contemporaneous_with_fec_range !== 3
+    || matrix?.coverage?.candidate_report_names_with_closed_holding_interval !== 0
     || matrix?.coverage?.identity_review_queue !== 0
     || matrix?.coverage?.crossing_matches !== 0) {
     errors.push('dishonest disclosure coverage counts');

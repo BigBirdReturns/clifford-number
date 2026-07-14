@@ -2,10 +2,14 @@ import crypto from 'node:crypto';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-function strictDate(value) {
+export function strictDate(value) {
   if (typeof value !== 'string' || !ISO_DATE.test(value)) return null;
-  const time = Date.parse(`${value}T00:00:00Z`);
-  return Number.isFinite(time) ? time : null;
+  const [year, month, day] = value.split('-').map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (parsed.getUTCFullYear() !== year
+    || parsed.getUTCMonth() !== month - 1
+    || parsed.getUTCDate() !== day) return null;
+  return parsed.getTime();
 }
 
 export function classifyTemporalCandidate(candidate) {
@@ -22,8 +26,7 @@ export function classifyTemporalCandidate(candidate) {
       temporal_relation = 'non_overlapping';
       reason = 'strict_intervals_do_not_overlap';
     } else {
-      temporal_relation = 'overlapping';
-      reason = 'strict_intervals_overlap';
+      reason = 'aggregate_fec_range_intersects_interest_requires_itemization_dates';
     }
   }
   return {
@@ -37,7 +40,7 @@ export function classifyTemporalCandidate(candidate) {
     oge_source_sha256: candidate?.oge_interest_ref?.source_sha256 ?? null,
     oge_source_page: candidate?.oge_interest_ref?.source_page ?? null,
     fec_candidate_id: candidate?.fec_payee_ref?.candidate_id ?? null,
-    interpretation: 'This screen compares only the bounded dates preserved on the unresolved lexical candidate; it does not resolve identity, ownership, payment semantics, or causation.',
+    interpretation: 'This routing screen may establish non-overlap from disjoint bounds. An aggregate FEC payee range cannot establish event overlap; actual receipted itemization dates, identity, ownership scope, and payment semantics remain required.',
     graph_effect: 'none',
   };
 }

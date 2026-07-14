@@ -33,7 +33,7 @@ const manifest = {
   dispositions: counts,
   identity_review_queue: counts.overlapping,
   crossing_matches: 0,
-  interpretation: 'Only lexical candidates with strict bounded date overlap can proceed to legal-entity identity review. Overlap would still not establish identity, beneficial ownership, payment semantics, causation, or wrongdoing.',
+  interpretation: 'Disjoint strict bounds may establish non-overlap. Aggregate FEC earliest/latest payee bounds cannot establish event overlap or eligibility for identity review; actual receipted itemization dates are required.',
   verification_status: 'machine_generated_unreviewed',
   graph_effect: 'none',
 };

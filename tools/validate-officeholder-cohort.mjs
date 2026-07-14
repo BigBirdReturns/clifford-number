@@ -143,8 +143,20 @@ export function validateOfficeholderCohort({
     || disclosures.coverage?.transaction_types_ocr_ambiguous !== 1107
     || disclosures.coverage?.unresolved_lexical_overlap_candidates !== 1172
     || disclosures.coverage?.temporal_candidates_overlapping !== 0
-    || disclosures.coverage?.temporal_candidates_non_overlapping !== 132
-    || disclosures.coverage?.temporal_candidates_unknown !== 1040
+    || disclosures.coverage?.temporal_candidates_non_overlapping !== 177
+    || disclosures.coverage?.temporal_candidates_unknown !== 995
+    || disclosures.coverage?.temporally_unknown_structurally_undated_pairs !== 995
+    || disclosures.coverage?.visually_corrected_oge_source_rows !== 23
+    || disclosures.coverage?.visually_reclassified_candidate_pairs !== 45
+    || disclosures.coverage?.embedded_name_candidate_pairs !== 398
+    || disclosures.coverage?.embedded_name_trump_token_candidate_pairs !== 96
+    || disclosures.coverage?.official_ny_registry_nodes_observed !== 6
+    || disclosures.coverage?.sec_identifier_candidate_rows !== 88
+    || disclosures.coverage?.resolved_cross_source_legal_entities !== 0
+    || disclosures.coverage?.secondary_hosted_candidate_reports_acquired !== 1
+    || disclosures.coverage?.candidate_report_explicit_filer_legal_name_rows !== 3
+    || disclosures.coverage?.candidate_report_names_contemporaneous_with_fec_range !== 3
+    || disclosures.coverage?.candidate_report_names_with_closed_holding_interval !== 0
     || disclosures.coverage?.identity_review_queue !== 0
     || disclosures.coverage?.crossing_matches !== 0
     || disclosures.workflow_contract?.discovery_may_continue_with_pending_selection_review !== true
@@ -197,8 +209,18 @@ export function validateOfficeholderCohort({
     || metric('oge_transaction_types_ocr_ambiguous')?.observed !== 1107
     || metric('unresolved_oge_fec_lexical_overlap_candidates')?.observed !== 1172
     || metric('oge_fec_temporal_candidates_overlapping')?.observed !== 0
-    || metric('oge_fec_temporal_candidates_non_overlapping')?.observed !== 132
-    || metric('oge_fec_temporal_candidates_unknown')?.observed !== 1040
+    || metric('oge_fec_temporal_candidates_non_overlapping')?.observed !== 177
+    || metric('oge_fec_temporal_candidates_unknown')?.observed !== 995
+    || metric('oge_fec_visual_date_source_rows_corrected')?.observed !== 23
+    || metric('oge_fec_visual_date_candidate_pairs_reclassified')?.observed !== 45
+    || metric('oge_fec_structurally_undated_candidate_pairs')?.observed !== 995
+    || metric('oge_fec_embedded_name_candidate_pairs')?.observed !== 398
+    || metric('oge_fec_embedded_name_trump_token_pairs')?.observed !== 96
+    || metric('ny_registry_official_nodes_observed')?.observed !== 6
+    || metric('sec_identifier_candidate_rows')?.observed !== 88
+    || metric('resolved_cross_source_legal_entities')?.observed !== 0
+    || metric('trump_2016_candidate_report_explicit_legal_names')?.observed !== 3
+    || metric('trump_2016_candidate_report_closed_intervals')?.observed !== 0
     || metric('oge_fec_identity_review_queue')?.observed !== 0
     || metric('resolved_officeholder_crossings')?.observed !== 0) {
     errors.push(issue('dishonest-officeholder-coverage', coverageFile, 'Coverage must distinguish 8 source-resolved candidates and 37 authorized presidential campaign committees from zero Schedule B transaction queries.'));
