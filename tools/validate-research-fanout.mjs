@@ -22,6 +22,9 @@ const linkedinAttention = readOptionalJsonl(process.env.LINKEDIN_ATTENTION_PATH 
 const linkedinProfileCaptures = readOptionalJsonl(
   process.env.LINKEDIN_PROFILE_CAPTURES_PATH ?? 'data/local/linkedin-profile-captures.jsonl',
 );
+const linkedinRoleCrossings = readOptionalJsonl(
+  process.env.LINKEDIN_ROLE_CROSSINGS_PATH ?? 'data/local/linkedin-role-crossing-candidates.jsonl',
+);
 const publicInterestSeeds = readOptionalJsonl(
   process.env.PUBLIC_INTEREST_SEEDS_PATH ?? 'data/research/public-interest-discovery-seeds.jsonl',
 );
@@ -36,6 +39,7 @@ const expectedIds = new Set([
   ...sourceGapIds,
   ...linkedinAttention.map(observation => `linkedin:${observation.attention_id}`),
   ...linkedinProfileCaptures.map(capture => `linkedin-profile:${capture.capture_id}`),
+  ...linkedinRoleCrossings.map(crossing => `linkedin-crossing:${crossing.candidate_id}`),
   ...publicInterestSeeds.map(seed => `public-interest:${seed.seed_id}`),
 ]);
 const seen = new Set();
@@ -99,6 +103,13 @@ for (const descriptor of manifest.batches ?? []) {
       assert(item.publication_status === 'private_intake', `${item.task_id}: profile capture must remain private intake`);
       assert(item.type === 'retrospective_profile_capture_candidate', `${item.task_id}: unsafe profile-capture candidate type`);
     }
+    if (item.origin === 'linkedin-self-claimed-role-crossing') {
+      assert(item.publication_status === 'private_intake', `${item.task_id}: role crossing must remain private intake`);
+      assert(item.type === 'self_claimed_role_crossing_candidate', `${item.task_id}: unsafe role-crossing candidate type`);
+      assert(item.evidence_layer === 'structural_signal', `${item.task_id}: role crossing must remain a structural signal`);
+      assert(Array.isArray(item.receipt_roles_satisfied) && item.receipt_roles_satisfied.length === 2, `${item.task_id}: missing role receipts`);
+      assert(Array.isArray(item.forbidden_inferences) && item.forbidden_inferences.includes('crossing_proves_wrongdoing'), `${item.task_id}: missing inference firewall`);
+    }
     if (item.origin === 'public-interest-source-seed') {
       assert(item.type === 'bounded_public_interest_source_query', `${item.task_id}: unsafe public-interest task type`);
       assert(item.candidate_status === 'intake_only', `${item.task_id}: source seed cannot self-promote`);
@@ -124,6 +135,7 @@ assert(
   manifest.source_counts.linkedin_profile_captures === linkedinProfileCaptures.length,
   'LinkedIn profile-capture source count mismatch',
 );
+assert(manifest.source_counts.linkedin_role_crossings === linkedinRoleCrossings.length, 'LinkedIn role-crossing source count mismatch');
 assert(manifest.source_counts.public_interest_seeds === publicInterestSeeds.length, 'public-interest seed count mismatch');
 assert(manifest.source_counts.total === expectedIds.size, 'total source count mismatch');
 

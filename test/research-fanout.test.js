@@ -9,6 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'clifford-fanout-'));
 const attentionPath = path.join(fixture, 'linkedin-attention.jsonl');
 const profileCapturePath = path.join(fixture, 'linkedin-profile-captures.jsonl');
+const roleCrossingsPath = path.join(fixture, 'linkedin-role-crossings.jsonl');
 const candidatesPath = path.join(fixture, 'candidates.jsonl');
 const rejectionsPath = path.join(fixture, 'rejections.jsonl');
 const crawlSourcesPath = path.join(fixture, 'sources.json');
@@ -36,6 +37,17 @@ fs.writeFileSync(profileCapturePath, `${JSON.stringify({
   publication_status: 'private_intake',
   graph_effect: 'none',
   verification_status: 'machine_proposed_unverified',
+})}\n`);
+fs.writeFileSync(roleCrossingsPath, `${JSON.stringify({
+  schema_version: 'linkedin-role-crossing-candidate@1',
+  candidate_id: 'licross_testfixture',
+  subject: { label: 'Example Public Actor', profile_url: 'https://www.linkedin.com/in/example-public-actor' },
+  public_role: { organization: 'United States Department of Defense', title: 'Program Manager', claim_id: 'lirole_public' },
+  private_role: { organization: 'Example Defense Systems', title: 'Vice President', claim_id: 'lirole_private' },
+  temporal_state: 'public_to_private_sequence',
+  receipt_roles_satisfied: ['self_claimed_public_role', 'self_claimed_private_role'],
+  forbidden_inferences: ['crossing_proves_influence', 'crossing_proves_wrongdoing'],
+  graph_effect: 'none',
 })}\n`);
 fs.writeFileSync(candidatesPath, `${JSON.stringify({
   candidate_id: 'cand_testfixture',
@@ -107,6 +119,7 @@ const env = {
   ...process.env,
   LINKEDIN_ATTENTION_PATH: attentionPath,
   LINKEDIN_PROFILE_CAPTURES_PATH: profileCapturePath,
+  LINKEDIN_ROLE_CROSSINGS_PATH: roleCrossingsPath,
   CRAWL_CANDIDATES_PATH: candidatesPath,
   CRAWL_REJECTIONS_PATH: rejectionsPath,
   CRAWL_SOURCES_PATH: crawlSourcesPath,
@@ -126,10 +139,12 @@ assert.equal(
     + manifest.source_counts.crawl_source_gaps
     + manifest.source_counts.linkedin_attention
     + manifest.source_counts.linkedin_profile_captures
+    + manifest.source_counts.linkedin_role_crossings
     + manifest.source_counts.public_interest_seeds,
 );
 assert.equal(manifest.source_counts.linkedin_attention, 1);
 assert.equal(manifest.source_counts.linkedin_profile_captures, 1);
+assert.equal(manifest.source_counts.linkedin_role_crossings, 1);
 assert.equal(manifest.source_counts.crawl_candidates, 1);
 assert.equal(manifest.source_counts.crawl_rejections, 2);
 assert.equal(manifest.source_counts.crawl_source_gaps, 3);
@@ -140,6 +155,7 @@ assert.equal(manifest.matrix.include.length, manifest.batches.length);
 const items = manifest.batches.flatMap(batch => JSON.parse(fs.readFileSync(path.join(root, batch.json_path), 'utf8')).items);
 assert.ok(items.some(item => item.task_id === 'linkedin:liattn_testfixture'));
 assert.ok(items.some(item => item.task_id === 'linkedin-profile:liprof_testfixture'));
+assert.ok(items.some(item => item.task_id === 'linkedin-crossing:licross_testfixture'));
 assert.ok(items.some(item => item.task_id === 'crawl-rejection:reject_relevance_fixture'));
 assert.ok(items.some(item => item.task_id === 'crawl-rejection:reject_privacy_fixture'));
 assert.ok(items.some(item => item.task_id === 'crawl-source-gap:fixture-unavailable'));

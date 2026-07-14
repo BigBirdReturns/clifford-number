@@ -45,11 +45,15 @@ const linkedinAttentionInput = readOptionalJsonl(process.env.LINKEDIN_ATTENTION_
 const linkedinProfileCapturesInput = readOptionalJsonl(
   process.env.LINKEDIN_PROFILE_CAPTURES_PATH ?? 'data/local/linkedin-profile-captures.jsonl',
 );
+const linkedinRoleCrossingsInput = readOptionalJsonl(
+  process.env.LINKEDIN_ROLE_CROSSINGS_PATH ?? 'data/local/linkedin-role-crossing-candidates.jsonl',
+);
 const publicInterestSeedsInput = readOptionalJsonl(
   process.env.PUBLIC_INTEREST_SEEDS_PATH ?? 'data/research/public-interest-discovery-seeds.jsonl',
 );
 const linkedinAttention = linkedinAttentionInput.rows;
 const linkedinProfileCaptures = linkedinProfileCapturesInput.rows;
+const linkedinRoleCrossings = linkedinRoleCrossingsInput.rows;
 const publicInterestSeeds = publicInterestSeedsInput.rows;
 
 const sourceGapStatus = source => crawlState.sources?.[source.id]?.status ?? 'not_run';
@@ -289,6 +293,44 @@ const items = [
     };
     return { ...core, fingerprint: hash(core) };
   }),
+  ...linkedinRoleCrossings.map(crossing => {
+    const label = clean(crossing.subject?.label) || crossing.candidate_id;
+    const core = {
+      task_id: `linkedin-crossing:${crossing.candidate_id}`,
+      origin: 'linkedin-self-claimed-role-crossing',
+      lane: 'linkedin-role-crossing',
+      source_id: crossing.candidate_id,
+      type: 'self_claimed_role_crossing_candidate',
+      priority: crossing.temporal_state === 'temporally_unknown' ? 'medium' : 'high',
+      title: clean(`LinkedIn role crossing candidate: ${label}`).slice(0, 180),
+      observed: clean(
+        `Two preserved LinkedIn role tuples for ${label} produce a ${crossing.temporal_state} candidate between `
+        + `${crossing.public_role?.organization} and ${crossing.private_role?.organization}. `
+        + 'This preserves the profile-reported role structure; it does not establish influence, procurement responsibility, coordination, or wrongdoing.',
+      ),
+      requested_action: clean(
+        'Open both hash-addressed role receipts, verify the displayed organization, title, and stated dates, resolve the person and organizations, preserve contradictory captures, and seek independent public corroboration. Keep the crossing visible if unresolved; change its status and weight rather than deleting it.',
+      ),
+      refs: [
+        crossing.candidate_id,
+        crossing.public_role?.claim_id,
+        crossing.private_role?.claim_id,
+        crossing.subject?.profile_url,
+      ].filter(Boolean),
+      temporal_state: crossing.temporal_state,
+      receipt_roles_satisfied: crossing.receipt_roles_satisfied,
+      forbidden_inferences: crossing.forbidden_inferences,
+      publication_status: 'private_intake',
+      evidence_layer: 'structural_signal',
+      evidence_state: 'inferred',
+      discovery_status: 'preserved_intake',
+      certainty_grade: 'primary_observation_limited',
+      source_availability: 'private_preserved',
+      graph_effect: 'none',
+      verification_status: 'machine_proposed_unverified',
+    };
+    return { ...core, fingerprint: hash(core) };
+  }),
 ].sort((a, b) =>
   (priorityRank[a.priority] ?? 9) - (priorityRank[b.priority] ?? 9)
   || a.lane.localeCompare(b.lane)
@@ -351,6 +393,7 @@ const manifest = {
     crawl_source_gaps: crawlSourceGaps.length,
     linkedin_attention: linkedinAttention.length,
     linkedin_profile_captures: linkedinProfileCaptures.length,
+    linkedin_role_crossings: linkedinRoleCrossings.length,
     public_interest_seeds: publicInterestSeeds.length,
     total: items.length,
   },
@@ -364,6 +407,7 @@ const manifest = {
   input_coverage: {
     linkedin_attention: linkedinAttentionInput.availability,
     linkedin_profile_captures: linkedinProfileCapturesInput.availability,
+    linkedin_role_crossings: linkedinRoleCrossingsInput.availability,
     public_interest_seeds: publicInterestSeedsInput.availability,
   },
   batch_size: batchSize,
@@ -376,6 +420,7 @@ console.log(`  ${scout.findings.length} scout findings; ${candidates.length} cra
 if (crawlSourceGaps.length) console.log(`  ${crawlSourceGaps.length} official source coverage gaps`);
 if (linkedinAttention.length) console.log(`  ${linkedinAttention.length} retrospective LinkedIn attention observations`);
 if (linkedinProfileCaptures.length) console.log(`  ${linkedinProfileCaptures.length} retrospective LinkedIn profile captures`);
+if (linkedinRoleCrossings.length) console.log(`  ${linkedinRoleCrossings.length} LinkedIn self-claimed role crossing candidates`);
 if (publicInterestSeeds.length) console.log(`  ${publicInterestSeeds.length} public-interest source seeds`);
 
 function renderBatch(batch) {
