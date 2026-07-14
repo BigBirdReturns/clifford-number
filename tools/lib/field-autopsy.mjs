@@ -361,12 +361,31 @@ export function validateFieldAutopsy(bundle) {
     }
   };
   for (const row of bundle.coverage ?? []) {
-    if (!EVIDENCE_STATES.has(row.state) || !['unavailable_after_search', 'partially_searched', 'not_searched'].includes(row.state)) {
+    if (!['unavailable_after_search', 'partially_searched', 'not_searched', 'resolved_after_search'].includes(row.state)) {
       errors.push(`coverage ${row.coverage_id} has invalid state ${row.state}`);
     }
     requireSearchProvenance(`coverage ${row.coverage_id}`, row.state, row.search_ids);
     if (['partially_searched', 'not_searched'].includes(row.state) && COMPLETION_LANGUAGE.test(row.notes ?? '')) {
       errors.push(`coverage ${row.coverage_id} labels a partial surface with completion language`);
+    }
+    // A gap may close, but only with the same rigor it was opened: full search
+    // provenance plus the receipts that resolved it, and the original gap
+    // history preserved in the row. Resolution is terminal — no continuation.
+    if (row.state === 'resolved_after_search') {
+      if (!(row.search_ids?.length > 0)) errors.push(`coverage ${row.coverage_id} resolved without search provenance`);
+      for (const id of row.search_ids ?? []) {
+        const search = searches.get(id);
+        if (!search) errors.push(`coverage ${row.coverage_id} references missing search ${id}`);
+      }
+      if (!(row.receipt_ids?.length > 0)) {
+        errors.push(`coverage ${row.coverage_id} resolved without resolving receipts`);
+      }
+      for (const id of row.receipt_ids ?? []) if (!receipts.has(id)) errors.push(`coverage ${row.coverage_id} references missing receipt ${id}`);
+      if (!row.resolution) errors.push(`coverage ${row.coverage_id} resolved without resolution text`);
+      if (!row.prior_state) errors.push(`coverage ${row.coverage_id} resolved without preserving its prior_state`);
+      if (CONTINUATION_LANGUAGE.test(row.resolution ?? '')) {
+        errors.push(`coverage ${row.coverage_id} resolution contains continuation language`);
+      }
     }
   }
   for (const row of [...(bundle.entities ?? []), ...(bundle.edges ?? []), ...(bundle.claims ?? [])]) {

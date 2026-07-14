@@ -80,6 +80,20 @@ expectFailure('after-search-gutted-search', bundle => {
   search.query = '';
 }, /lacks full provenance|lacks query/);
 
+// 6b. A resolved gap must preserve its history and its resolving evidence.
+{
+  const bundle = clean();
+  const resolved = bundle.coverage.find(c => c.state === 'resolved_after_search');
+  if (resolved) {
+    expectFailure('resolution-without-receipts', b => {
+      b.coverage.find(c => c.coverage_id === resolved.coverage_id).receipt_ids = [];
+    }, /resolved without resolving receipts/);
+    expectFailure('resolution-without-history', b => {
+      delete b.coverage.find(c => c.coverage_id === resolved.coverage_id).prior_state;
+    }, /resolved without preserving its prior_state/);
+  }
+}
+
 // 7. A partial surface must never be labeled complete.
 expectFailure('partial-labeled-complete', bundle => {
   const row = bundle.coverage.find(c => c.state === 'partially_searched');

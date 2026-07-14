@@ -36,7 +36,10 @@ extension bundle validated by `tools/lib/field-autopsy.mjs`:
 - `coverage.jsonl`: coverage gaps. `unavailable_after_search` and
   `partially_searched` require search provenance; `not_searched` is an honest
   default. Partial surfaces are never labeled complete; absence of evidence is
-  a coverage result, not proof of absence.
+  a coverage result, not proof of absence. A later increment may close a gap
+  with `resolved_after_search`, which demands the same rigor in reverse:
+  search provenance, the resolving receipts, resolution text with no
+  continuation language, and the row's `prior_state` preserved.
 - `rejected-joins.jsonl`: identity joins the compiler refused, preserved.
 - `contradictions.jsonl`: every confirmation, correction, and rejection of
   the source's claims, pointing back to the preserved observations. Corrected
