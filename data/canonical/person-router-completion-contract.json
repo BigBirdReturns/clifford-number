@@ -12,8 +12,11 @@
   },
   "terminal_states": ["surface_complete", "unavailable_after_search", "identity_unresolved_after_search"],
   "non_terminal_states": ["not_searched", "partially_searched"],
-  "partial_markers": ["subset", "nonexhaustive", "non-exhaustive", "partial", "continuation lane", "decision-maker", "defense-relevant", "not fully"],
-  "rule_partial_cannot_be_complete": "A coverage/frontier row whose note or linked coverage-gap contains any partial_marker MUST NOT be surface_complete. It is at best partially_searched.",
+  "partial_markers": ["subset", "nonexhaustive", "non-exhaustive", "partial", "continuation", "non-terminal", "decision-maker", "defense-relevant", "not fully"],
+  "rule_partial_cannot_be_complete": "A coverage/frontier row in ANY terminal state (surface_complete, unavailable_after_search, identity_unresolved_after_search) whose note/selection_rule contains any partial_marker MUST fail. Terminal means terminal.",
+  "rule_after_search_needs_provenance": "Any state ending in '_after_search' (unavailable_after_search, identity_unresolved_after_search) MUST carry either a search_ref resolving to a search-ledger row, OR the tuple (query, attempted_urls, timestamp, result). The mere existence of role-claims/affiliations does NOT constitute a search. Otherwise the row must be not_searched.",
+  "rule_coverage_receipt_source_specific": "Each roster/portfolio coverage row MUST carry a source_url and a receipt whose locator_url equals that source_url. A receipt pointing at a different fund (e.g. an 8VC receipt on a Pallas row) is a failure.",
+  "rule_gross_count_support": "A numeric gross_observed is allowed only when gross_basis=='exact' AND every name was preserved (gross_observed==enumerated). Otherwise gross_observed MUST be null with gross_basis in ['estimated','unknown'] and any approximate figure in gross_estimated.",
 
   "denominator_rule": {
     "name": "investment-decision-maker universe",

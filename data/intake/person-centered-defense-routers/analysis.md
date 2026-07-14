@@ -6,8 +6,11 @@
 vocabulary, per-source coverage ledgers, USAspending-specific award receipts, and an identity gate.
 
 ## What remains PARTIAL (lead)
-- **Frontier: 11 terminal / 6 partial** — NOT "17 closed." The 6 fund-portfolio frontiers (Silent,
-  8VC, Founders Fund, a16z AD, Pallas ×2) are `partially_searched` (defense-relevant subset only).
+- **Frontier: 2 terminal / 6 partially_searched / 9 not_searched** — NOT "17 closed." The 9 person
+  frontiers (senior-official admits) are **`not_searched`**: no identity-resolution search was run —
+  role-claims are not a search. The 6 fund-portfolio frontiers are `partially_searched` (defense subset).
+  Only 2 are terminal: Capital Factory (portfolio surface_complete) and TVP (unavailable_after_search,
+  with attempted URLs).
 - **Roster coverage** (`roster-coverage.jsonl`): 2 `surface_complete` (LinkedIn projection; Silent =
   founder-only), 12 `partially_searched` (fund decision-maker subsets; ~250 gross vs enumerated),
   1 `unavailable_after_search` (In-Q-Tel team page — /team + /leadership both 404).
@@ -50,8 +53,12 @@ obligations ≠ outlays (Firefly $113.5M/$112.8M/$76.6M; Axiom $449M/$392M/$269M
 IDIQ is a press-reported **ceiling**, kept separate from its $60.8M USAspending Cloud CITI award.
 
 ## Honest terminal accounting
-Complete (surface_complete): 2 roster + 1 portfolio sources. Partial: 12 roster + 12 portfolio + 6
-frontiers. Unavailable_after_search: In-Q-Tel roster, TVP portfolio, Morpheus award. Identity-held:
-Cambium. Not_searched: 0 (every required source has a disposition). Nothing here is called "closed."
+Frontiers (17): **2 terminal**, **6 partially_searched**, **9 not_searched** (the person identity
+frontiers — never searched). Roster sources: 2 surface_complete, 12 partially_searched, 1
+unavailable_after_search. Portfolio sources: 1 surface_complete, 12 partially_searched, 1
+unavailable_after_search. Awards: 16 identity-resolved, 1 held (Cambium), 1 unavailable (Morpheus).
+Every `_after_search` row carries query+attempted_urls+timestamp+result or a search_ref; every
+coverage row carries a source-specific receipt (locator == its own fund URL); exact gross counts
+exist only where all names were preserved (else null/estimated). Nothing here is called "closed."
 
 Reproduce: `npm run build:routers && npm run validate:routers && node test/person-routers.test.js`.

@@ -9,7 +9,7 @@ const COUNTERPART = new Set(['counterpart_reported', 'no_counterpart_confirmatio
 const REQUIRED = ['README.md', 'manifest.json', 'actors.jsonl', 'vehicles.jsonl', 'professional-roles.jsonl', 'portfolio-edges.jsonl', 'advisory-edges.jsonl', 'deal-sourcing-claims.jsonl', 'funding-rounds.jsonl', 'co-investor-edges.jsonl', 'government-programs.jsonl', 'government-awards.jsonl', 'validation-surfaces.jsonl', 'follow-on-capital.jsonl', 'exits.jsonl', 'router-source-universe.jsonl', 'router-candidates.jsonl', 'router-signatures.jsonl', 'roster-coverage.jsonl', 'portfolio-coverage.jsonl', 'game-trails.jsonl', 'trail-frontier.jsonl', 'rejected-joins.jsonl', 'coverage-gaps.jsonl', 'receipts.jsonl', 'analysis.md'];
 const PRIOR_SEED = new Set(['person:jackson-moses', 'person:sally-donnelly', 'person:tony-demartino', 'person:joshua-baer', 'person:richard-spencer', 'person:rotem-yehuda-kakon', 'person:aviad-grinfeld', 'person:daniel-fouzailov', 'person:joe-lonsdale', 'person:trae-stephens', 'person:katherine-boyle', 'person:tal-shmueli']);
 
-export function validatePersonRouters(dir) {
+export function validatePersonRouters(dir, contractPathArg) {
   const e = [];
   const root = path.resolve(dir, '..', '..', '..');
   const jl = f => fs.existsSync(path.join(dir, f)) ? fs.readFileSync(path.join(dir, f), 'utf8').split(/\r?\n/).filter(Boolean).map(l => JSON.parse(l)) : null;
@@ -18,12 +18,23 @@ export function validatePersonRouters(dir) {
   if (manifest.graph_effect !== 'none') e.push('manifest graph_effect must be none');
 
   // CANONICAL COMPLETION CONTRACT must exist and be consumed
-  const contractPath = path.join(root, 'data/canonical/person-router-completion-contract.json');
+  const contractPath = contractPathArg ?? path.join(root, 'data/canonical/person-router-completion-contract.json');
   if (!fs.existsSync(contractPath)) { e.push('missing canonical data/canonical/person-router-completion-contract.json'); return e; }
   const contract = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
   const TERMINAL = new Set(contract.terminal_states);
   const ALLSTATES = new Set(Object.keys(contract.coverage_states));
   const partial = s => contract.partial_markers.some(m => String(s ?? '').toLowerCase().includes(m));
+  const receiptsAll = new Map((jl('receipts.jsonl') ?? []).map(r => [r.receipt_id, r]));
+  // GENERIC checks reused across frontier + coverage rows:
+  // (a) a terminal row may not contain partial language; (b) an _after_search state needs provenance.
+  const hasSearchProvenance = row => row.search_ref || (row.query && Array.isArray(row.attempted_urls) && row.attempted_urls.length && row.timestamp && row.result);
+  const checkTerminalAndSearch = (row, label, textFields) => {
+    const st = row.state ?? row.coverage_state;
+    if (st == null) return;
+    if (!ALLSTATES.has(st)) { e.push(`${label}: invalid state ${st}`); return; }
+    if (TERMINAL.has(st) && textFields.some(t => partial(t))) e.push(`${label}: terminal state ${st} but text contains partial/non-terminal language`);
+    if (String(st).endsWith('_after_search') && !hasSearchProvenance(row)) e.push(`${label}: ${st} without search provenance (need search_ref OR query+attempted_urls+timestamp+result)`);
+  };
 
   // Jackson canonical + vehicles separate
   const actors = jl('actors.jsonl') ?? [];
@@ -55,10 +66,20 @@ export function validatePersonRouters(dir) {
   for (const s of contract.required_roster_sources) if (![...rosterSrc].some(x => x.toLowerCase().includes(s.toLowerCase()) || s.toLowerCase().includes(x.toLowerCase()))) e.push(`required roster source missing a disposition: ${s}`);
   for (const s of contract.required_portfolio_sources) if (![...portSrc].some(x => x.toLowerCase().includes(s.toLowerCase()) || s.toLowerCase().includes(x.toLowerCase()))) e.push(`required portfolio source missing a disposition: ${s}`);
   for (const row of [...rosterCov, ...portCov]) {
-    if (!ALLSTATES.has(row.coverage_state)) e.push(`coverage row ${row.source ?? row.fund}: invalid coverage_state ${row.coverage_state}`);
-    if (row.coverage_state === 'surface_complete' && (partial(row.selection_rule) || partial(row.note))) e.push(`coverage ${row.source ?? row.fund}: labeled surface_complete but note/rule marks it partial`);
+    const lbl = `coverage ${row.source ?? row.fund}`;
+    checkTerminalAndSearch(row, lbl, [row.selection_rule, row.note]);
+    // (c) source-specific receipt: locator MUST equal this row's source_url
+    if (!row.source_url) e.push(`${lbl}: missing source_url`);
+    const rc = receiptsAll.get(row.receipt);
+    if (!rc) e.push(`${lbl}: receipt ${row.receipt} not in receipts.jsonl`);
+    else if (rc.locator_url !== row.source_url) e.push(`${lbl}: receipt locator ${rc.locator_url} != source_url ${row.source_url} (shared/mismatched receipt)`);
+    // (d) exact gross count must be reproducible
+    if (typeof row.gross_observed === 'number') {
+      if (row.gross_basis !== 'exact') e.push(`${lbl}: numeric gross_observed requires gross_basis=exact`);
+      else if (row.gross_observed !== row.enumerated) e.push(`${lbl}: exact gross_observed must equal enumerated (all names preserved)`);
+    }
   }
-  // portfolio rows carry the required fields; a subset selection_rule cannot be surface_complete unless source_total==enumerated_total
+  // portfolio rows carry required fields; a subset cannot be surface_complete unless source_total==enumerated_total
   for (const p of portCov) {
     for (const k of contract.portfolio_row_required_fields) if (!(k in p)) e.push(`portfolio-coverage ${p.fund}: missing ${k}`);
     if (p.coverage_state === 'surface_complete' && !(p.source_total != null && p.source_total === p.enumerated_total)) e.push(`portfolio ${p.fund}: surface_complete requires source_total==enumerated_total`);
@@ -95,14 +116,14 @@ export function validatePersonRouters(dir) {
   const trails = jl('game-trails.jsonl') ?? [];
   for (const r of admitted) { if (!trails.some(x => x.hops?.[0] === r.actor_id && x.hops.length >= 3)) e.push(`admitted router ${r.actor_id} lacks a multi-hop trail`); }
 
-  // FRONTIER honesty: states from the contract vocab; a partial-note row cannot be a terminal state
-  for (const fr of jl('trail-frontier.jsonl') ?? []) {
-    if (!ALLSTATES.has(fr.state)) e.push(`frontier ${fr.frontier_id}: invalid state ${fr.state}`);
-    if (TERMINAL.has(fr.state) && fr.state === 'surface_complete' && partial(fr.note)) e.push(`frontier ${fr.frontier_id}: surface_complete but note marks it partial`);
-  }
-  // manifest must not claim closure unless all frontier rows AND required sources are terminal
-  const allTerminal = (jl('trail-frontier.jsonl') ?? []).every(f => TERMINAL.has(f.state)) && [...rosterCov, ...portCov].every(r => TERMINAL.has(r.coverage_state));
-  if (!allTerminal && manifest.counts?.frontier_not_searched === 0 && manifest.coverage_summary && !/partial/i.test(manifest.coverage_summary)) e.push('manifest headlines closure while coverage is partial');
+  // FRONTIER honesty: generic terminal-contradiction + _after_search-provenance (same rules as coverage)
+  const frontierRows = jl('trail-frontier.jsonl') ?? [];
+  for (const fr of frontierRows) checkTerminalAndSearch(fr, `frontier ${fr.frontier_id}`, [fr.note, fr.next]);
+  // coverage-gaps: any _after_search row must also carry provenance
+  for (const g of jl('coverage-gaps.jsonl') ?? []) if (String(g.state).endsWith('_after_search')) checkTerminalAndSearch(g, `coverage-gap ${g.gap_id}`, [g.detail]);
+  // manifest must not headline closure unless EVERY frontier row + required source is terminal
+  const allTerminal = frontierRows.every(f => TERMINAL.has(f.state)) && [...rosterCov, ...portCov].every(r => TERMINAL.has(r.coverage_state));
+  if (!allTerminal && !/partial/i.test(manifest.coverage_summary ?? '')) e.push('manifest coverage_summary must state PARTIAL while any frontier/source is non-terminal');
 
   if (typeof manifest.counts?.jackson_x_natsec100 !== 'number') e.push('Jackson×NatSec100 overlap count missing');
   return e;

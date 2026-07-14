@@ -325,32 +325,45 @@ writeJsonl('follow-on-capital.jsonl', [
 const exits = [['Voyager Technologies', 'IPO', 'NYSE: VOYG', 'r-jacksonmoses-portfolio-2026'], ['MainStreet', 'acquired', 'Employer.com', 'r-jacksonmoses-about-2026'], ['Spectrum AI', 'acquired', 'ActiveFence', 'r-jacksonmoses-about-2026'], ['GameOn', 'acquired', 'Victory Games', 'r-jacksonmoses-portfolio-2026'], ['Capiche', 'acquired', 'Vendr', 'r-jacksonmoses-portfolio-2026'], ['Daylight', 'acquired', 'Atlas', 'r-jacksonmoses-portfolio-2026']];
 writeJsonl('exits.jsonl', exits.map(([co, t, d, rc]) => ({ company: co, exit_type: t, detail: d, exit_value_usd: null, receipt_ids: [rc], evidence_state: 'self_claimed', note: 'exit value undisclosed; not conflated with funding/valuation.', discovery_admission_state: 'admitted', graph_effect: G })));
 
-// ================= coverage ledgers (per contract): every required roster + portfolio source has a disposition =================
-// gross_observed for fund rosters (approximate totals reported by the roster fetch; decision-maker subset enumerated)
-const rosterGross = { '8VC': 48, 'Founders Fund': 28, 'a16z American Dynamism': 15, 'Valor Equity Partners': 18, 'Lux Capital': 33, 'DCVC': 47, 'Shield Capital': 27, 'Washington Harbour Partners': 25, 'Pallas Advisors': 58, 'Stratos Ventures': 9, 'Texas Venture Partners': 3 };
+// ================= coverage ledgers (per contract): every required source has a disposition + a source-specific receipt =================
+const RT = '2026-07-14';
+// per-fund source URLs (the actual fetched surface for that fund); receipt.locator MUST equal these.
+const rosterUrl = { 'linkedin-projection': 'https://www.linkedin.com/', '8VC': 'https://8vc.com/team', 'Founders Fund': 'https://foundersfund.com/our_team/', 'a16z American Dynamism': 'https://a16z.com/american-dynamism/', 'Valor Equity Partners': 'https://valorep.com/team/', 'Lux Capital': 'https://www.luxcapital.com/team', 'DCVC': 'https://www.dcvc.com/team/', 'Shield Capital': 'https://www.shieldcap.com/team', 'Washington Harbour Partners': 'https://washingtonharbour.com/our-team/', 'Pallas Advisors': 'https://www.pallasadvisors.com/our-team', 'Stratos Ventures': 'https://www.stratos-vc.com/', 'Texas Venture Partners': 'https://www.texasventurepartners.com/', 'Silent Ventures': 'https://silentvc.com/', 'Capital Factory': 'https://capitalfactory.com/team', 'In-Q-Tel': 'https://www.iqt.org/team' };
+const portfolioUrl = { 'Silent Ventures': 'https://silentvc.com/', '8VC': 'https://8vc.com/companies', 'Founders Fund': 'https://foundersfund.com/portfolio/', 'a16z American Dynamism': 'https://a16z.com/american-dynamism/', 'Pallas Ventures': 'https://www.pallasadvisors.com/ventures', 'Shield Capital': 'https://www.shieldcap.com/portfolio', 'Lux Capital': 'https://www.luxcapital.com/companies', 'DCVC': 'https://www.dcvc.com/companies/', 'In-Q-Tel': 'https://www.iqt.org/portfolio', 'Washington Harbour Partners': 'https://washingtonharbour.com/investments/', 'Valor Equity Partners': 'https://valorep.com/portfolio/', 'Capital Factory': 'https://www.capitalfactory.com/portfolio', 'Stratos Ventures': 'https://www.calcalistech.com/ctechnews/article/r14hmskzzg', 'Texas Venture Partners': 'https://www.texasventurepartners.com/' };
+const knownHash = { 'https://silentvc.com/': '47d26f1a93433a2947cd9d61643c5118c54bdeb03507533970b4904f5ef2e0a7', 'https://www.stratos-vc.com/': '50e4b4a437ff7fc0ba9721bfaae962d2518357d1c7c00936854664dffa4d072d' };
+const coverageReceipts = [];
+const mkCovReceipt = (kind, fund, url, state) => {
+  const rid = `r-${kind}-${norm(fund).replace(/ /g, '-')}`;
+  coverageReceipts.push({ receipt_id: rid, evidence_class: 'coverage_source', locator_url: url, retrieved_at: RT, content_sha256: knownHash[url] ?? null, hash_status: knownHash[url] ? 'hashed' : 'unresolved_no_byte_capture', note: `${kind} source page for ${fund} (coverage_state=${state}).` });
+  return rid;
+};
 const rosterEnum = new Map();
 for (const p of (teamRosters?.people ?? [])) rosterEnum.set(p.fund, (rosterEnum.get(p.fund) ?? 0) + 1);
+const rosterGrossEst = { '8VC': 48, 'Founders Fund': 28, 'a16z American Dynamism': 15, 'Valor Equity Partners': 18, 'Lux Capital': 33, 'DCVC': 47, 'Shield Capital': 27, 'Washington Harbour Partners': 25, 'Pallas Advisors': 58, 'Stratos Ventures': 9, 'Texas Venture Partners': 3 };
 const rosterCoverage = [];
-const RT = '2026-07-14';
-rosterCoverage.push({ source: 'linkedin-projection', gross_observed: captures.size, enumerated: captures.size, selection_rule: 'all projection people', coverage_state: 'surface_complete', retrieved_at: RT, receipt: 'r-linkedin-projection-2026' });
+const pushRoster = (source, o) => { const url = rosterUrl[source]; rosterCoverage.push({ source, source_url: url, receipt: mkCovReceipt('roster', source, url, o.coverage_state), ...o }); };
+// exact gross only where every name is preserved (projection, founder-only, zero); else estimated/null.
+pushRoster('linkedin-projection', { gross_observed: captures.size, gross_basis: 'exact', enumerated: captures.size, selection_rule: 'all projection people enumerated', coverage_state: 'surface_complete' });
 for (const fund of ['8VC', 'Founders Fund', 'a16z American Dynamism', 'Valor Equity Partners', 'Lux Capital', 'DCVC', 'Shield Capital', 'Washington Harbour Partners', 'Pallas Advisors', 'Stratos Ventures']) {
-  rosterCoverage.push({ source: fund, gross_observed: rosterGross[fund] ?? null, enumerated: rosterEnum.get(fund) ?? 0, selection_rule: 'investment-decision-maker subset (partners/founders/GPs/MDs/principals/advisors); ops/finance/EA excluded by contract', coverage_state: 'partially_searched', retrieved_at: RT, receipt: 'r-fund-team-rosters-2026' });
+  pushRoster(fund, { gross_observed: null, gross_basis: 'estimated', gross_estimated: rosterGrossEst[fund] ?? null, enumerated: rosterEnum.get(fund) ?? 0, selection_rule: 'investment-decision-maker subset; ops/finance/EA excluded by contract', coverage_state: 'partially_searched' });
 }
-rosterCoverage.push({ source: 'Texas Venture Partners', gross_observed: 3, enumerated: rosterEnum.get('Texas Venture Partners') ?? 0, selection_rule: 'third-party aggregation only (no reachable primary team page)', coverage_state: 'partially_searched', retrieved_at: RT, note: 'primary team page unavailable; names from Tracxn/startupintros (lower confidence)', receipt: 'r-fund-team-rosters-2026' });
-rosterCoverage.push({ source: 'Silent Ventures', gross_observed: 1, enumerated: 1, selection_rule: 'silentvc.com Team section names only the founder (Jackson Moses, canonical)', coverage_state: 'surface_complete', retrieved_at: RT, note: 'FOUNDER_ONLY confirmed on silentvc.com; the sole listed principal is already canonical.', receipt: 'r-silent-home-2026' });
-rosterCoverage.push({ source: 'Capital Factory', gross_observed: null, enumerated: 1, selection_rule: 'only founder (Joshua Baer, canonical) detailed on capitalfactory.com/team excerpt', coverage_state: 'partially_searched', retrieved_at: RT, note: 'Full CF roster exists but was not enumerated this correction pass; founder is canonical.', receipt: 'r-capitalfactory-about-2026' });
-rosterCoverage.push({ source: 'In-Q-Tel', gross_observed: 0, enumerated: 0, selection_rule: 'n/a', coverage_state: 'unavailable_after_search', retrieved_at: RT, attempted: ['https://www.iqt.org/team (404)', 'https://www.iqt.org/leadership (404)'], note: 'No reachable IQT team roster page; iqt.org/portfolio used for the portfolio census only.', receipt: 'r-fund-team-rosters-2026' });
+pushRoster('Texas Venture Partners', { gross_observed: null, gross_basis: 'estimated', gross_estimated: 3, enumerated: rosterEnum.get('Texas Venture Partners') ?? 0, selection_rule: 'third-party aggregation only (no reachable primary team page)', coverage_state: 'partially_searched', note: 'names from Tracxn/startupintros (lower confidence)' });
+pushRoster('Silent Ventures', { gross_observed: 1, gross_basis: 'exact', enumerated: 1, selection_rule: 'silentvc.com Team section names only the founder (Jackson Moses, canonical)', coverage_state: 'surface_complete', note: 'FOUNDER_ONLY confirmed on silentvc.com; the sole listed principal is already canonical.' });
+pushRoster('Capital Factory', { gross_observed: null, gross_basis: 'unknown', enumerated: 1, selection_rule: 'only founder (Joshua Baer, canonical) detailed on capitalfactory.com/team excerpt', coverage_state: 'partially_searched' });
+pushRoster('In-Q-Tel', { gross_observed: 0, gross_basis: 'exact', enumerated: 0, selection_rule: 'no reachable IQT team roster page', coverage_state: 'unavailable_after_search', query: 'In-Q-Tel team/leadership roster', attempted_urls: ['https://www.iqt.org/team', 'https://www.iqt.org/leadership'], timestamp: RT, result: 'both HTTP 404' });
 writeJsonl('roster-coverage.jsonl', rosterCoverage.map(r => ({ ...r, discovery_admission_state: 'admitted', graph_effect: G })));
 
-// portfolio coverage: per required portfolio source, with source_total / enumerated_total / selection_rule / coverage_state
+// portfolio coverage: per required source with source_total / enumerated_total / selection_rule / coverage_state / retrieved_at + source-specific receipt
 const portfolioCoverage = [];
-for (const [fund, cos] of perFund) portfolioCoverage.push({ fund, source_total: null, enumerated_total: cos.size, selection_rule: 'defense-relevant companies from the fetched portfolio page (diversified funds filtered)', coverage_state: 'partially_searched', retrieved_at: RT, receipt: 'r-fund-portfolio-census-2026' });
-// required portfolio sources NOT in the census fetch — accounted from existing corridor data (no new research)
-portfolioCoverage.push({ fund: 'Capital Factory', source_total: cfUniverse.distinct_company_names, enumerated_total: cfUniverse.distinct_company_names, selection_rule: 'full public portfolio index (hash-pinned corridor universe)', coverage_state: 'surface_complete', retrieved_at: '2026-07-14', receipt: 'r-capital-factory-portfolio-2026' });
-portfolioCoverage.push({ fund: 'Stratos Ventures', source_total: 5, enumerated_total: 3, selection_rule: 'press-named only (Particle/Tenna/Skapion); site portfolio is logos-only', coverage_state: 'partially_searched', retrieved_at: '2026-07-14', receipt: 'r-stratos-ctech-portfolio-2026' });
-portfolioCoverage.push({ fund: 'Texas Venture Partners', source_total: null, enumerated_total: 0, selection_rule: 'no portfolio page reachable', coverage_state: 'unavailable_after_search', retrieved_at: '2026-07-14', attempted: ['texasventurepartners.com (no portfolio names)'], receipt: 'r-fund-team-rosters-2026' });
+const pushPort = (fund, o) => { const url = portfolioUrl[fund]; portfolioCoverage.push({ fund, source_url: url, receipt: mkCovReceipt('portfolio', fund, url, o.coverage_state), ...o }); };
+for (const [fund, cos] of perFund) pushPort(fund, { source_total: null, enumerated_total: cos.size, selection_rule: 'defense-relevant companies from the fetched portfolio page (diversified funds filtered)', coverage_state: 'partially_searched', retrieved_at: RT });
+pushPort('Capital Factory', { source_total: cfUniverse.distinct_company_names, enumerated_total: cfUniverse.distinct_company_names, selection_rule: 'full public portfolio index (hash-pinned corridor universe); source_total==enumerated_total', coverage_state: 'surface_complete', retrieved_at: RT });
+pushPort('Stratos Ventures', { source_total: 5, enumerated_total: 3, selection_rule: 'press-named only (Particle/Tenna/Skapion); site portfolio is logos-only', coverage_state: 'partially_searched', retrieved_at: RT });
+pushPort('Texas Venture Partners', { source_total: null, enumerated_total: 0, selection_rule: 'no portfolio page reachable', coverage_state: 'unavailable_after_search', retrieved_at: RT, query: 'Texas Venture Partners portfolio', attempted_urls: ['https://www.texasventurepartners.com/', 'https://www.texasventurepartners.com/portfolio'], timestamp: RT, result: 'homepage lists no portfolio companies; /portfolio not present' });
 writeJsonl('portfolio-coverage.jsonl', portfolioCoverage.map(p => ({ ...p, discovery_admission_state: 'admitted', graph_effect: G })));
 const portfolioCoverageState = new Map(portfolioCoverage.map(p => [p.fund, p.coverage_state]));
+const portfolioAttempts = new Map(portfolioCoverage.filter(p => p.attempted_urls).map(p => [p.fund, { query: p.query, attempted_urls: p.attempted_urls, timestamp: p.timestamp, result: p.result }]));
+receipts.push(...coverageReceipts);
 
 // ================= game trails (from structured edges) for EVERY admitted router =================
 const trails = [], frontier = [];
@@ -369,11 +382,17 @@ for (const r of admittedList) {
     if (hit) trails.push({ trail_id: `trail-${norm(r.label).replace(/ /g, '-')}-validation`, hops: [a, veh, hit, `NatSec100 ${JSON.stringify(nsYearsFor(hit))}`], terminates: 'validation_surface_reached', surfaces_reached: ['company', 'validation'], receipt_ids: ['r-fund-portfolio-census-2026'], evidence_state: 'source_explicit', graph_effect: G });
     else trails.push({ trail_id: `trail-${norm(r.label).replace(/ /g, '-')}-vehicle`, hops: [a, veh, 'portfolio (no NatSec100 hit on searched surfaces)', 'frontier'], terminates: 'no_source_explicit_next_edge', surfaces_reached: ['company'], receipt_ids: [r.roster_receipt], evidence_state: 'observed', graph_effect: G });
     const covState = portfolioCoverageState.get(fundName) ?? 'partially_searched';
-    frontier.push({ frontier_id: `frontier-${norm(r.label).replace(/ /g, '-')}`, from: veh, next: `enumerate full ${fundName} portfolio for gov/validation overlaps`, state: covState, note: covState === 'surface_complete' ? 'Full portfolio surface enumerated.' : 'Only the defense-relevant portfolio subset was processed; full census remains a continuation lane (NON-terminal).', graph_effect: G });
+    const fr = { frontier_id: `frontier-${norm(r.label).replace(/ /g, '-')}`, from: veh, next: `enumerate full ${fundName} portfolio for gov/validation overlaps`, state: covState, graph_effect: G };
+    if (covState === 'surface_complete') fr.note = 'Full portfolio surface enumerated.';
+    else if (covState === 'unavailable_after_search') { const at = portfolioAttempts.get(fundName); fr.note = 'No reachable portfolio page.'; if (at) { fr.query = at.query; fr.attempted_urls = at.attempted_urls; fr.timestamp = at.timestamp; fr.result = at.result; } }
+    else fr.note = 'Only the defense-relevant portfolio subset was enumerated; the full portfolio remains to be inventoried.';
+    frontier.push(fr);
   } else {
-    // projection-admitted routers (senior officials): public-service -> board/advisor trail
+    // projection-admitted routers (senior officials): the trail is preserved, but the identity-resolution
+    // search behind their projection board/advisor role-claims WAS NOT RUN. Do not launder that as
+    // "unresolved_after_search" — no query/URLs/receipt exist. It is not_searched.
     trails.push({ trail_id: `trail-${norm(r.label).replace(/ /g, '-')}-service`, hops: [a, 'government/board roles (projection role-claims)', 'multiple companies advised', 'defense-tech surface'], terminates: 'two_hop_boundary', surfaces_reached: ['government', 'advisory'], receipt_ids: [r.roster_receipt], evidence_state: 'observed', note: 'Trail from committed projection role-claims (public-service -> adviser/board).', graph_effect: G });
-    frontier.push({ frontier_id: `frontier-${norm(r.label).replace(/ /g, '-')}`, from: a, next: 'resolve specific company/fund identities behind projection board/advisor roles', state: 'identity_unresolved_after_search', graph_effect: G });
+    frontier.push({ frontier_id: `frontier-${norm(r.label).replace(/ /g, '-')}`, from: a, next: 'search-and-resolve the specific company/fund identities behind this person\'s projection board/advisor role-claims', state: 'not_searched', note: 'No identity-resolution search has been run for this person; role-claims alone are not a search.', graph_effect: G });
   }
 }
 // second explicit hop for Jackson (advisory shared-company convergence)
@@ -384,13 +403,13 @@ writeJsonl('rejected-joins.jsonl', rejected);
 
 // ================= coverage gaps (documented) =================
 writeJsonl('coverage-gaps.jsonl', [
-  { gap_id: 'gap-jackson-linkedin', state: 'unavailable_after_search', url: 'https://www.linkedin.com/in/jacksonmoses', timestamp: '2026-07-14', query: 'jackson moses linkedin', attempted_alternatives: ['jacksonmoses.com/about'], graph_effect: G },
-  { gap_id: 'gap-jackson-dates', state: 'unavailable_after_search', detail: 'about page lists roles without dates (Weekend Fund role dated via third-party DB).', timestamp: '2026-07-14', graph_effect: G },
-  { gap_id: 'gap-sourcing-counterparts', state: 'searched_no_confirmation', detail: 'All 6 named funds + 4 advisory companies searched (sources/counterpart-searches.jsonl); none confirmed on counterpart surfaces. Weekend Fund + Afore Capital third-party-reported.', timestamp: '2026-07-14', graph_effect: G },
-  { gap_id: 'gap-government-award-ids', state: govSrc ? 'searched_partial' : 'not_searched', detail: 'Government award UEIs/IDs/obligations resolved where the award agent found official records; unresolved companies recorded unavailable_after_search.', unavailable: govUnavailable, timestamp: '2026-07-14', graph_effect: G },
+  { gap_id: 'gap-jackson-linkedin', state: 'unavailable_after_search', query: 'jackson moses linkedin profile', attempted_urls: ['https://www.linkedin.com/in/jacksonmoses'], timestamp: '2026-07-14', result: 'auth-gated; not fetchable; substituted jacksonmoses.com/about', graph_effect: G },
+  { gap_id: 'gap-jackson-dates', state: 'unavailable_after_search', query: 'jackson moses role dates', attempted_urls: ['https://www.jacksonmoses.com/about'], timestamp: '2026-07-14', result: 'about page lists roles WITHOUT dates (Weekend Fund role dated only via third-party DB)', graph_effect: G },
+  { gap_id: 'gap-sourcing-counterparts', state: 'partially_searched', detail: 'All 6 named funds + 4 advisory companies searched (sources/counterpart-searches.jsonl); none confirmed on counterpart surfaces; 8 rows are query_only provenance. Weekend Fund + Afore third-party-reported.', timestamp: '2026-07-14', graph_effect: G },
+  { gap_id: 'gap-government-award-ids', state: 'partially_searched', detail: 'Government award UEIs/IDs/obligations resolved via USAspending where found; Morpheus recorded unavailable_after_search.', unavailable: govUnavailable, timestamp: '2026-07-14', graph_effect: G },
   { gap_id: 'gap-fund-census', state: 'partially_searched', detail: '11 fund portfolios enumerated (defense-relevant SUBSET); diversified funds not fully dumped. See portfolio-coverage.jsonl for per-source coverage_state.', timestamp: '2026-07-14', graph_effect: G },
   { gap_id: 'gap-roster-expansion', state: 'partially_searched', detail: `Denominator = investment-decision-maker universe: ${captures.size}-person committed projection (surface_complete) + fund decision-maker subset (partially_searched, ~250 gross). Long-tail ops/finance/EA staff excluded by contract rule. See roster-coverage.jsonl.`, timestamp: '2026-07-14', graph_effect: G },
-  { gap_id: 'gap-cambium-identity', state: 'identity_unresolved_after_search', detail: 'Cambium USAspending recipient CAMBIUM BIOMATERIALS INC matched by business-description only; identity_state=held, not counted as resolved.', timestamp: '2026-07-14', graph_effect: G },
+  { gap_id: 'gap-cambium-identity', state: 'identity_unresolved_after_search', search_ref: 'government-awards.jsonl#Cambium', query: 'Cambium USAspending recipient', attempted_urls: ['https://www.usaspending.gov/award/CONT_AWD_N0001424C1329_9700_-NONE-_-NONE-'], timestamp: '2026-07-14', result: 'recipient CAMBIUM BIOMATERIALS INC matched by business-description only; identity_state=held (not resolved).', graph_effect: G },
 ]);
 
 // ================= manifest =================
