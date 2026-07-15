@@ -29,6 +29,7 @@ The essential reading rules are: a hop means documented shared context on a boun
 ## Researchers and contributors
 
 - [`research-intake.md`](research-intake.md) — the candidate-surface packet and promotion path.
+- [`field-autopsy.md`](field-autopsy.md) — place-centered case bundles that re-derive an untrusted conversation's claims, plus formation signatures and game trails.
 - [`research-fanout.md`](research-fanout.md) — exhaustive scan-to-batch orchestration and its safety boundary.
 - [`public-interest-discovery.md`](public-interest-discovery.md) — the bounded Epstein, Trump, and Panama Papers source/crossing spine.
 - [`corpus-selection.md`](corpus-selection.md) — constitutional lane-selection symmetry and measured corpus coverage.

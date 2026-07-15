@@ -1,7 +1,9 @@
 #!/usr/bin/env node
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { root } from './lib/ledger.mjs';
+import { generateTrailSearches, loadSignatures, validateSignatureRegistry } from './lib/formation-signature.mjs';
 
 const resolveLocation = location => path.isAbsolute(location) ? location : path.join(root, location);
 const readJson = location => JSON.parse(fs.readFileSync(resolveLocation(location), 'utf8'));
@@ -11,6 +13,28 @@ const readOptionalJsonl = location => {
   return fs.existsSync(resolved)
     ? fs.readFileSync(resolved, 'utf8').split(/\r?\n/).filter(Boolean).map(JSON.parse)
     : [];
+};
+const hash = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex').slice(0, 20);
+const slug = value => String(value ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const readFieldAutopsyTrailInputs = location => {
+  const resolved = resolveLocation(location);
+  if (!fs.existsSync(resolved)) return [];
+  const rows = [];
+  for (const entry of fs.readdirSync(resolved, { withFileTypes: true }).filter(item => item.isDirectory())) {
+    const caseDir = path.join(resolved, entry.name);
+    const casePath = path.join(caseDir, 'case.json');
+    const trailsPath = path.join(caseDir, 'trails.jsonl');
+    if (!fs.existsSync(casePath) || !fs.existsSync(trailsPath)) continue;
+    const caseRecord = JSON.parse(fs.readFileSync(casePath, 'utf8'));
+    if (caseRecord.extension !== 'field-autopsy@1') continue;
+    const trails = fs.readFileSync(trailsPath, 'utf8').split(/\r?\n/).filter(Boolean).map(JSON.parse);
+    for (const trail of trails.filter(row => ['open', 'in_progress'].includes(row.status))) {
+      for (const [searchIndex, search] of (trail.bounded_searches ?? []).entries()) {
+        rows.push({ case_id: caseRecord.case_id, trail, search, search_index: searchIndex + 1 });
+      }
+    }
+  }
+  return rows;
 };
 const manifest = readJson('build/research-fanout/manifest.json');
 const scout = readJson(process.env.SCOUT_REPORT_PATH ?? 'build/scout-report.json');
@@ -28,6 +52,43 @@ const linkedinRoleCrossings = readOptionalJsonl(
 const publicInterestSeeds = readOptionalJsonl(
   process.env.PUBLIC_INTEREST_SEEDS_PATH ?? 'data/research/public-interest-discovery-seeds.jsonl',
 );
+const formationTargets = readOptionalJsonl(
+  process.env.FORMATION_TARGETS_PATH ?? 'data/research/place-formation-targets.jsonl',
+);
+const fieldAutopsyTrailSearches = readFieldAutopsyTrailInputs(
+  process.env.FIELD_AUTOPSY_CASES_PATH ?? 'cases',
+);
+const signatureRegistry = loadSignatures();
+const signatureRegistryErrors = validateSignatureRegistry(signatureRegistry);
+const signaturesById = new Map(signatureRegistry.signatures.map(signature => [signature.signature_id, signature]));
+const formationSearchesByKey = new Map();
+for (const target of [...formationTargets].sort((a, b) => a.target_id.localeCompare(b.target_id))) {
+  const signature = signaturesById.get(target.signature_id);
+  if (!signature) continue;
+  const stageAllowlist = new Set(target.stage_allowlist ?? []);
+  const signalAllowlist = new Set(target.optional_signal_allowlist ?? []);
+  for (const search of generateTrailSearches(signature, target, { targetDomains: signatureRegistry.target_domains })) {
+    const allowed = search.optional_signal
+      ? signalAllowlist.has(search.stage_id.replace(/^signal:/, ''))
+      : stageAllowlist.has(search.stage_id);
+    if (!allowed) continue;
+    const key = search.optional_signal
+      ? `${target.signature_id}|${search.stage_id}|${search.query}|${search.target_domain}`
+      : `${target.signature_id}|${target.target_id}|${search.stage_id}|${search.query}`;
+    const existing = formationSearchesByKey.get(key);
+    if (existing) existing.target_ids.push(target.target_id);
+    else formationSearchesByKey.set(key, { target_ids: [target.target_id], target, search });
+  }
+}
+const formationSignatureSearches = [...formationSearchesByKey.values()].map(row => {
+  const target_ids = [...new Set(row.target_ids)].sort();
+  const stableId = hash({ signature_id: row.target.signature_id, target_ids, stage_id: row.search.stage_id, query: row.search.query });
+  return {
+    ...row,
+    target_ids,
+    task_id: `formation:${row.target.signature_id}:${slug(row.search.stage_id)}:${stableId}`,
+  };
+});
 const sourceGapIds = (crawlSources.sources ?? [])
   .filter(source => source.enabled)
   .filter(source => (crawlState.sources?.[source.id]?.status ?? 'not_run') !== 'ok')
@@ -41,6 +102,8 @@ const expectedIds = new Set([
   ...linkedinProfileCaptures.map(capture => `linkedin-profile:${capture.capture_id}`),
   ...linkedinRoleCrossings.map(crossing => `linkedin-crossing:${crossing.candidate_id}`),
   ...publicInterestSeeds.map(seed => `public-interest:${seed.seed_id}`),
+  ...fieldAutopsyTrailSearches.map(({ case_id, trail, search_index }) => `field-autopsy:${case_id}:${trail.trail_id}:${search_index}`),
+  ...formationSignatureSearches.map(row => row.task_id),
 ]);
 const seen = new Set();
 const errors = [];
@@ -57,6 +120,13 @@ const allowedSourceAvailability = new Set(['available', 'unknown', 'partial', 'u
 const allowedEvidenceStates = new Set(['observed', 'self_claimed', 'inferred']);
 const evidenceLayerIds = new Set(readJson('data/canonical/evidence-layers.json').layers.map(layer => layer.id));
 const attentionById = new Map(linkedinAttention.map(observation => [`linkedin:${observation.attention_id}`, observation]));
+const fieldAutopsyById = new Map(fieldAutopsyTrailSearches.map(row => [
+  `field-autopsy:${row.case_id}:${row.trail.trail_id}:${row.search_index}`,
+  row,
+]));
+const formationById = new Map(formationSignatureSearches.map(row => [row.task_id, row]));
+
+for (const error of signatureRegistryErrors) errors.push(`formation signature: ${error}`);
 
 for (const descriptor of manifest.batches ?? []) {
   const batch = readJson(descriptor.json_path);
@@ -120,6 +190,36 @@ for (const descriptor of manifest.batches ?? []) {
       assert(Array.isArray(item.forbidden_inferences) && item.forbidden_inferences.length > 0, `${item.task_id}: missing inference boundary`);
       assert(item.privacy_handling, `${item.task_id}: missing privacy handling`);
     }
+    if (item.origin === 'field-autopsy-trail') {
+      const source = fieldAutopsyById.get(item.task_id);
+      assert(source, `${item.task_id}: missing source trail`);
+      assert(item.type === 'bounded_field_autopsy_trail_query', `${item.task_id}: unsafe field-autopsy task type`);
+      assert(item.candidate_status === 'intake_only', `${item.task_id}: field-autopsy trail cannot self-promote`);
+      assert(item.causal_status === 'not_established', `${item.task_id}: field-autopsy trail cannot assert causation`);
+      assert(item.publication_status === 'internal_intake', `${item.task_id}: field-autopsy trail must remain internal intake`);
+      assert(item.evidence_layer === 'investigative_hypothesis', `${item.task_id}: field-autopsy trail must remain a hypothesis`);
+      assert(item.promotes_to === 'candidate_only', `${item.task_id}: field-autopsy trail cannot promote to a finding`);
+      assert(item.bounded === true, `${item.task_id}: field-autopsy trail must remain bounded`);
+      assert(item.query === source?.search?.query, `${item.task_id}: field-autopsy query drifted from its case ledger`);
+      assert(item.target_domain === source?.search?.target_domain, `${item.task_id}: field-autopsy target domain drifted`);
+      assert(Array.isArray(item.forbidden_inferences) && item.forbidden_inferences.includes('wrongdoing'), `${item.task_id}: missing inference firewall`);
+    }
+    if (item.origin === 'formation-signature') {
+      const source = formationById.get(item.task_id);
+      assert(source, `${item.task_id}: missing source signature expansion`);
+      assert(item.type === 'bounded_formation_signature_query', `${item.task_id}: unsafe formation task type`);
+      assert(item.candidate_status === 'intake_only', `${item.task_id}: formation task cannot self-promote`);
+      assert(item.causal_status === 'not_established', `${item.task_id}: formation task cannot assert causation`);
+      assert(item.publication_status === 'internal_intake', `${item.task_id}: formation task must remain internal intake`);
+      assert(item.evidence_layer === 'investigative_hypothesis', `${item.task_id}: formation task must remain a hypothesis`);
+      assert(item.promotes_to === 'candidate_only', `${item.task_id}: formation task cannot promote to a finding`);
+      assert(item.bounded === true, `${item.task_id}: formation task must remain bounded`);
+      assert(item.query === source?.search?.query, `${item.task_id}: formation query drifted`);
+      assert(item.execution_mode === source?.search?.execution_mode, `${item.task_id}: formation execution mode drifted`);
+      assert(item.execution_mode === signatureRegistry.target_domains[item.target_domain], `${item.task_id}: target domain lacks declared execution mode`);
+      assert(JSON.stringify(item.target_ids) === JSON.stringify(source?.target_ids), `${item.task_id}: target provenance drifted`);
+      assert(Array.isArray(item.forbidden_inferences) && item.forbidden_inferences.includes('geomantic_causation'), `${item.task_id}: missing formation inference firewall`);
+    }
     seen.add(item.task_id);
   }
 }
@@ -137,6 +237,8 @@ assert(
 );
 assert(manifest.source_counts.linkedin_role_crossings === linkedinRoleCrossings.length, 'LinkedIn role-crossing source count mismatch');
 assert(manifest.source_counts.public_interest_seeds === publicInterestSeeds.length, 'public-interest seed count mismatch');
+assert(manifest.source_counts.field_autopsy_trail_searches === fieldAutopsyTrailSearches.length, 'field-autopsy trail-search count mismatch');
+assert(manifest.source_counts.formation_signature_searches === formationSignatureSearches.length, 'formation-signature search count mismatch');
 assert(manifest.source_counts.total === expectedIds.size, 'total source count mismatch');
 
 if (errors.length) {

@@ -15,6 +15,9 @@ const rejectionsPath = path.join(fixture, 'rejections.jsonl');
 const crawlSourcesPath = path.join(fixture, 'sources.json');
 const crawlStatePath = path.join(fixture, 'state.json');
 const publicInterestSeedsPath = path.join(fixture, 'public-interest-seeds.jsonl');
+const fieldAutopsyCasesPath = path.join(fixture, 'cases');
+const fieldAutopsyCasePath = path.join(fieldAutopsyCasesPath, 'fixture-field-autopsy');
+const formationTargetsPath = path.join(fixture, 'formation-targets.jsonl');
 fs.writeFileSync(attentionPath, `${JSON.stringify({
   schema_version: 'linkedin-attention@1',
   attention_id: 'liattn_testfixture',
@@ -115,6 +118,52 @@ fs.writeFileSync(publicInterestSeedsPath, `${JSON.stringify({
   privacy_handling: 'Exclude private contact data and protected-person information.',
   graph_effect: 'none',
 })}\n`);
+fs.mkdirSync(fieldAutopsyCasePath, { recursive: true });
+fs.writeFileSync(path.join(fieldAutopsyCasePath, 'case.json'), `${JSON.stringify({
+  schema_version: 'case-ledger@1',
+  case_id: 'fixture-field-autopsy',
+  title: 'Fixture Formation',
+  extension: 'field-autopsy@1',
+}, null, 2)}\n`);
+fs.writeFileSync(path.join(fieldAutopsyCasePath, 'trails.jsonl'), [
+  {
+    trail_id: 'trail-open-fixture',
+    label: 'Open fixture trail',
+    signature_id: 'sig-place-formation-v1',
+    stage_id: 'patient-ownership',
+    place: 'Fixture CA',
+    status: 'open',
+    graph_effect: 'none',
+    promotes_to: 'candidate_only',
+    bounded_searches: [
+      { query: 'Fixture CA recorder parcel chronology', target_domain: 'county_recorder_records' },
+      { query: 'Fixture CA assessor parcel history', target_domain: 'assessor_records' },
+    ],
+  },
+  {
+    trail_id: 'trail-terminal-fixture',
+    label: 'Terminal fixture trail',
+    signature_id: 'sig-place-formation-v1',
+    stage_id: 'public-infrastructure',
+    place: 'Fixture CA',
+    status: 'terminal_unavailable',
+    graph_effect: 'none',
+    promotes_to: 'candidate_only',
+    bounded_searches: [{ query: 'must not emit', target_domain: 'municipal_records' }],
+  },
+].map(row => JSON.stringify(row)).join('\n') + '\n');
+fs.writeFileSync(formationTargetsPath, `${JSON.stringify({
+  schema_version: 'place-formation-target@1',
+  target_id: 'fixture-station-area',
+  place_name: 'Fixture CA',
+  region: 'Fixture Region',
+  transit_project: 'Fixture Rail',
+  signature_id: 'sig-place-formation-v1',
+  stage_allowlist: ['public-infrastructure'],
+  optional_signal_allowlist: [],
+  selection_basis: 'Neutral fixture selected before evaluating whether the formation matches.',
+  graph_effect: 'none',
+})}\n`);
 const env = {
   ...process.env,
   LINKEDIN_ATTENTION_PATH: attentionPath,
@@ -125,6 +174,8 @@ const env = {
   CRAWL_SOURCES_PATH: crawlSourcesPath,
   CRAWL_STATE_PATH: crawlStatePath,
   PUBLIC_INTEREST_SEEDS_PATH: publicInterestSeedsPath,
+  FIELD_AUTOPSY_CASES_PATH: fieldAutopsyCasesPath,
+  FORMATION_TARGETS_PATH: formationTargetsPath,
 };
 execFileSync(process.execPath, ['tools/build-research-fanout.mjs', '--batch-size', '20'], { cwd: root, stdio: 'pipe', env });
 execFileSync(process.execPath, ['tools/validate-research-fanout.mjs'], { cwd: root, stdio: 'pipe', env });
@@ -140,7 +191,9 @@ assert.equal(
     + manifest.source_counts.linkedin_attention
     + manifest.source_counts.linkedin_profile_captures
     + manifest.source_counts.linkedin_role_crossings
-    + manifest.source_counts.public_interest_seeds,
+    + manifest.source_counts.public_interest_seeds
+    + manifest.source_counts.field_autopsy_trail_searches
+    + manifest.source_counts.formation_signature_searches,
 );
 assert.equal(manifest.source_counts.linkedin_attention, 1);
 assert.equal(manifest.source_counts.linkedin_profile_captures, 1);
@@ -149,6 +202,8 @@ assert.equal(manifest.source_counts.crawl_candidates, 1);
 assert.equal(manifest.source_counts.crawl_rejections, 2);
 assert.equal(manifest.source_counts.crawl_source_gaps, 3);
 assert.equal(manifest.source_counts.public_interest_seeds, 1);
+assert.equal(manifest.source_counts.field_autopsy_trail_searches, 2);
+assert.equal(manifest.source_counts.formation_signature_searches, 3);
 assert.ok(manifest.batches.length > 1, 'fan-out must create multiple bounded batches');
 assert.ok(manifest.batches.every(batch => batch.item_count <= 20));
 assert.equal(manifest.matrix.include.length, manifest.batches.length);
@@ -162,6 +217,10 @@ assert.ok(items.some(item => item.task_id === 'crawl-source-gap:fixture-unavaila
 assert.ok(items.some(item => item.task_id === 'crawl-source-gap:fixture-partial'));
 assert.ok(items.some(item => item.task_id === 'crawl-source-gap:fixture-never-run'));
 assert.ok(items.some(item => item.task_id === 'public-interest:fixture-public-interest-source'));
+assert.ok(items.some(item => item.task_id === 'field-autopsy:fixture-field-autopsy:trail-open-fixture:1'));
+assert.ok(items.some(item => item.task_id === 'field-autopsy:fixture-field-autopsy:trail-open-fixture:2'));
+assert.ok(!items.some(item => item.task_id.includes('trail-terminal-fixture')), 'terminal field-autopsy trail emitted into fan-out');
+assert.equal(items.filter(item => item.origin === 'formation-signature').length, 3);
 assert.ok(!items.some(item => item.task_id === 'crawl-source-gap:fixture-ok'), 'zero results from a completed scan is not a source gap');
 assert.ok(!items.some(item => item.task_id === 'crawl-source-gap:fixture-disabled'), 'disabled sources are outside scan coverage');
 assert.ok(items.every(item => ['observed', 'self_claimed', 'inferred'].includes(item.evidence_state)));
@@ -169,6 +228,12 @@ const publicInterestItem = items.find(item => item.task_id === 'public-interest:
 assert.equal(publicInterestItem.graph_effect, 'none');
 assert.deepEqual(publicInterestItem.allowed_predicates, ['listed_in_registry']);
 assert.deepEqual(publicInterestItem.forbidden_inferences, ['wrongdoing', 'coordination']);
+const fieldAutopsyItem = items.find(item => item.task_id === 'field-autopsy:fixture-field-autopsy:trail-open-fixture:1');
+assert.equal(fieldAutopsyItem.promotes_to, 'candidate_only');
+assert.equal(fieldAutopsyItem.query, 'Fixture CA recorder parcel chronology');
+const formationItems = items.filter(item => item.origin === 'formation-signature');
+assert.ok(formationItems.every(item => item.promotes_to === 'candidate_only' && item.graph_effect === 'none'));
+assert.ok(formationItems.every(item => item.execution_mode === 'bounded_public_record_research'));
 const renderedFanout = [
   JSON.stringify(items),
   ...manifest.batches.map(batch => fs.readFileSync(path.join(root, batch.markdown_path), 'utf8')),

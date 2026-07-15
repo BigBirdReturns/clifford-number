@@ -1,6 +1,6 @@
 # Scout Report
 
-Generated: 2026-07-12T20:19:59.624Z
+Generated: 2026-07-14T21:18:43.102Z
 
 > graph_effect: none. This is a research queue, not graph data.
 
@@ -2399,3 +2399,4 @@ Review build/migration-review.md and promote rows into surfaces/participation le
 Refs: `build/migration-review.md`
 
 ---
+

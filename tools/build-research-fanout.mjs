@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { root } from './lib/ledger.mjs';
+import { generateTrailSearches, loadSignatures, validateSignatureRegistry } from './lib/formation-signature.mjs';
 
 const args = process.argv.slice(2);
 const value = (name, fallback) => {
@@ -31,6 +32,33 @@ const readOptionalJsonl = location => {
     availability: available ? 'available' : 'not_configured',
   };
 };
+const readFieldAutopsyTrailInputs = location => {
+  const resolved = resolveLocation(location);
+  if (!fs.existsSync(resolved)) return { rows: [], availability: 'not_configured' };
+  const rows = [];
+  for (const entry of fs.readdirSync(resolved, { withFileTypes: true }).filter(item => item.isDirectory())) {
+    const caseDir = path.join(resolved, entry.name);
+    const casePath = path.join(caseDir, 'case.json');
+    const trailsPath = path.join(caseDir, 'trails.jsonl');
+    if (!fs.existsSync(casePath) || !fs.existsSync(trailsPath)) continue;
+    const caseRecord = JSON.parse(fs.readFileSync(casePath, 'utf8'));
+    if (caseRecord.extension !== 'field-autopsy@1') continue;
+    const trails = fs.readFileSync(trailsPath, 'utf8').split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
+    for (const trail of trails.filter(row => ['open', 'in_progress'].includes(row.status))) {
+      for (const [searchIndex, search] of (trail.bounded_searches ?? []).entries()) {
+        rows.push({
+          case_id: caseRecord.case_id,
+          case_title: caseRecord.title,
+          case_path: path.relative(root, caseDir).replaceAll('\\', '/'),
+          trail,
+          search,
+          search_index: searchIndex + 1,
+        });
+      }
+    }
+  }
+  return { rows, availability: 'available' };
+};
 const clean = value => String(value ?? '').replace(/\s+/g, ' ').trim();
 const slug = value => clean(value).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const hash = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex').slice(0, 20);
@@ -51,10 +79,49 @@ const linkedinRoleCrossingsInput = readOptionalJsonl(
 const publicInterestSeedsInput = readOptionalJsonl(
   process.env.PUBLIC_INTEREST_SEEDS_PATH ?? 'data/research/public-interest-discovery-seeds.jsonl',
 );
+const formationTargetsInput = readOptionalJsonl(
+  process.env.FORMATION_TARGETS_PATH ?? 'data/research/place-formation-targets.jsonl',
+);
+const fieldAutopsyTrailInput = readFieldAutopsyTrailInputs(
+  process.env.FIELD_AUTOPSY_CASES_PATH ?? 'cases',
+);
 const linkedinAttention = linkedinAttentionInput.rows;
 const linkedinProfileCaptures = linkedinProfileCapturesInput.rows;
 const linkedinRoleCrossings = linkedinRoleCrossingsInput.rows;
 const publicInterestSeeds = publicInterestSeedsInput.rows;
+const formationTargets = formationTargetsInput.rows;
+const fieldAutopsyTrailSearches = fieldAutopsyTrailInput.rows;
+
+const signatureRegistry = loadSignatures();
+const signatureErrors = validateSignatureRegistry(signatureRegistry);
+if (signatureErrors.length) throw new Error(signatureErrors.join('\n'));
+const signaturesById = new Map(signatureRegistry.signatures.map(signature => [signature.signature_id, signature]));
+const formationSearchesByKey = new Map();
+for (const target of [...formationTargets].sort((a, b) => a.target_id.localeCompare(b.target_id))) {
+  if (target.graph_effect !== 'none') throw new Error(`formation target ${target.target_id} must carry graph_effect none`);
+  if (!target.selection_basis) throw new Error(`formation target ${target.target_id} lacks a selection basis`);
+  const signature = signaturesById.get(target.signature_id);
+  if (!signature) throw new Error(`formation target ${target.target_id} references unknown signature ${target.signature_id}`);
+  const stageAllowlist = new Set(target.stage_allowlist ?? []);
+  const signalAllowlist = new Set(target.optional_signal_allowlist ?? []);
+  const searches = generateTrailSearches(signature, target, { targetDomains: signatureRegistry.target_domains })
+    .filter(search => search.optional_signal
+      ? signalAllowlist.has(search.stage_id.replace(/^signal:/, ''))
+      : stageAllowlist.has(search.stage_id));
+  for (const search of searches) {
+    if (!search.execution_mode) throw new Error(`formation search ${target.target_id}/${search.stage_id} lacks an execution mode`);
+    const dedupeKey = search.optional_signal
+      ? `${target.signature_id}|${search.stage_id}|${search.query}|${search.target_domain}`
+      : `${target.signature_id}|${target.target_id}|${search.stage_id}|${search.query}`;
+    const existing = formationSearchesByKey.get(dedupeKey);
+    if (existing) existing.target_ids.push(target.target_id);
+    else formationSearchesByKey.set(dedupeKey, { target_ids: [target.target_id], target, search });
+  }
+}
+const formationSignatureSearches = [...formationSearchesByKey.values()].map(row => ({
+  ...row,
+  target_ids: [...new Set(row.target_ids)].sort(),
+}));
 
 const sourceGapStatus = source => crawlState.sources?.[source.id]?.status ?? 'not_run';
 const sourceGapAvailability = status => status === 'partial' ? 'partial' : status === 'not_run' ? 'not_observed' : 'unavailable';
@@ -233,6 +300,88 @@ const items = [
     };
     return { ...core, fingerprint: hash(core) };
   }),
+  ...fieldAutopsyTrailSearches.map(({ case_id, case_title, case_path, trail, search, search_index }) => {
+    const core = {
+      task_id: `field-autopsy:${case_id}:${trail.trail_id}:${search_index}`,
+      origin: 'field-autopsy-trail',
+      lane: `field-autopsy-${slug(case_id)}-${slug(trail.stage_id)}`,
+      source_id: trail.trail_id,
+      type: 'bounded_field_autopsy_trail_query',
+      priority: trail.status === 'in_progress' ? 'high' : 'medium',
+      title: clean(`${case_title}: ${trail.label} (${search_index}/${trail.bounded_searches.length})`).slice(0, 180),
+      observed: clean(
+        `The ${case_id} field autopsy preserves ${trail.trail_id} as a ${trail.status} candidate trail at stage ${trail.stage_id}. `
+        + 'This is a bounded research instruction, not a finding about the place, actors, coordination, causation, wrongdoing, or geomancy.',
+      ),
+      requested_action: clean(
+        `Run the exact query "${search.query}" against ${search.target_domain}. Preserve inspected sources, record identifiers, dates, negative results, and access failures. Return candidates only; do not promote the trail from the search result.`,
+      ),
+      refs: [`${case_path}/trails.jsonl`, trail.trail_id, trail.signature_id].filter(Boolean),
+      case_id,
+      trail_id: trail.trail_id,
+      signature_id: trail.signature_id,
+      stage_id: trail.stage_id,
+      place: trail.place,
+      query: clean(search.query),
+      target_domain: search.target_domain,
+      trail_status: trail.status,
+      promotes_to: trail.promotes_to,
+      bounded: true,
+      forbidden_inferences: ['coordination', 'causation', 'wrongdoing', 'geomantic_causation', 'ethnic_direction'],
+      candidate_status: 'intake_only',
+      causal_status: 'not_established',
+      publication_status: 'internal_intake',
+      evidence_layer: 'investigative_hypothesis',
+      evidence_state: 'inferred',
+      discovery_status: 'preserved_intake',
+      certainty_grade: 'machine_derived_unverified',
+      source_availability: 'unknown',
+      graph_effect: 'none',
+      verification_status: 'machine_proposed_unverified',
+    };
+    return { ...core, fingerprint: hash(core) };
+  }),
+  ...formationSignatureSearches.map(({ target_ids, target, search }) => {
+    const stableId = hash({ signature_id: target.signature_id, target_ids, stage_id: search.stage_id, query: search.query });
+    const core = {
+      task_id: `formation:${target.signature_id}:${slug(search.stage_id)}:${stableId}`,
+      origin: 'formation-signature',
+      lane: `formation-${target_ids.join('-')}-${slug(search.stage_id)}`,
+      source_id: target.signature_id,
+      type: 'bounded_formation_signature_query',
+      priority: 'medium',
+      title: clean(`Formation control: ${target_ids.join(', ')} — ${search.stage_id}`).slice(0, 180),
+      observed: clean(
+        `The checked-in neutral target universe selected ${target_ids.join(', ')} for ${target.signature_id} before evaluating whether the formation matches. `
+        + 'This task is a generated comparison query, not an assertion that any stage, coordination, causation, wrongdoing, or geomantic mechanism exists.',
+      ),
+      requested_action: clean(
+        `Run the exact query "${search.query}" using ${search.execution_mode} against ${search.target_domain}. Preserve sources inspected, record identifiers, dates, negative results, and access failures. Return candidate observations only.`,
+      ),
+      refs: ['data/research/place-formation-targets.jsonl', 'data/signatures/formation-signatures.json'],
+      signature_id: target.signature_id,
+      target_ids,
+      stage_id: search.stage_id,
+      query: search.query,
+      target_domain: search.target_domain,
+      execution_mode: search.execution_mode,
+      bounded: true,
+      promotes_to: 'candidate_only',
+      selection_basis: target.selection_basis,
+      forbidden_inferences: ['coordination', 'causation', 'wrongdoing', 'geomantic_causation', 'ethnic_direction'],
+      candidate_status: 'intake_only',
+      causal_status: 'not_established',
+      publication_status: 'internal_intake',
+      evidence_layer: 'investigative_hypothesis',
+      evidence_state: 'inferred',
+      discovery_status: 'preserved_intake',
+      certainty_grade: 'machine_derived_unverified',
+      source_availability: 'unknown',
+      graph_effect: 'none',
+      verification_status: 'machine_proposed_unverified',
+    };
+    return { ...core, fingerprint: hash(core) };
+  }),
   ...linkedinAttention.map(observation => {
     const hasUrl = /^https?:\/\//i.test(observation.url ?? '');
     const core = {
@@ -395,6 +544,8 @@ const manifest = {
     linkedin_profile_captures: linkedinProfileCaptures.length,
     linkedin_role_crossings: linkedinRoleCrossings.length,
     public_interest_seeds: publicInterestSeeds.length,
+    field_autopsy_trail_searches: fieldAutopsyTrailSearches.length,
+    formation_signature_searches: formationSignatureSearches.length,
     total: items.length,
   },
   counts_by_origin: countBy(items, 'origin'),
@@ -409,6 +560,8 @@ const manifest = {
     linkedin_profile_captures: linkedinProfileCapturesInput.availability,
     linkedin_role_crossings: linkedinRoleCrossingsInput.availability,
     public_interest_seeds: publicInterestSeedsInput.availability,
+    field_autopsy_cases: fieldAutopsyTrailInput.availability,
+    formation_targets: formationTargetsInput.availability,
   },
   batch_size: batchSize,
   batches,
@@ -422,6 +575,8 @@ if (linkedinAttention.length) console.log(`  ${linkedinAttention.length} retrosp
 if (linkedinProfileCaptures.length) console.log(`  ${linkedinProfileCaptures.length} retrospective LinkedIn profile captures`);
 if (linkedinRoleCrossings.length) console.log(`  ${linkedinRoleCrossings.length} LinkedIn self-claimed role crossing candidates`);
 if (publicInterestSeeds.length) console.log(`  ${publicInterestSeeds.length} public-interest source seeds`);
+if (fieldAutopsyTrailSearches.length) console.log(`  ${fieldAutopsyTrailSearches.length} field-autopsy trail searches`);
+if (formationSignatureSearches.length) console.log(`  ${formationSignatureSearches.length} formation-signature control searches`);
 
 function renderBatch(batch) {
   return [
