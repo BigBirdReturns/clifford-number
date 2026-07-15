@@ -1,0 +1,51 @@
+{
+  "_fixture": {
+    "name": "roster membership is incorrectly converted into a connection",
+    "expected_status": "FAIL"
+  },
+  "schema_version": "comprehension-session@1",
+  "session_id": "fixture-semantic-failure",
+  "route_id": "dialog-structural-context",
+  "route_contract_version": "dialog-structural-context@1",
+  "prediction": {
+    "recorded_at": "2026-07-15T09:00:00Z",
+    "exposure_started_at": "2026-07-15T09:01:00Z",
+    "recorded_before_exposure": true,
+    "expected_terminal_class": "bounded_structural_context_no_pairwise_hop"
+  },
+  "independence": {
+    "assessor_is_builder": false,
+    "prior_route_exposure": false,
+    "answer_key_access": false,
+    "coordination_with_builder": false,
+    "conflicts_disclosed": []
+  },
+  "presentation": {
+    "terminal_result": "Dialog membership connects the selected actors.",
+    "pathfinding_output": [
+      "actor-a",
+      "dialog-society-membership",
+      "actor-b"
+    ],
+    "score_delta": -1,
+    "printable_output_generated": false,
+    "newsroom_narration_generated": false,
+    "quotable_narrative_generated": false,
+    "generalized_connection_claimed": true,
+    "pairwise_hop_claimed": true,
+    "neighboring_hop_ids": [],
+    "neighboring_control_ids": []
+  },
+  "semantic_assessment": {
+    "recognized_context_only": false,
+    "rejected_pairwise_hop": false,
+    "rejected_roster_as_path": false,
+    "rejected_attendance_inference": true,
+    "rejected_agreement_inference": true,
+    "rejected_wrongdoing_inference": true
+  },
+  "completeness": {
+    "response_captured": true,
+    "assessor_confidence": "sufficient"
+  }
+}

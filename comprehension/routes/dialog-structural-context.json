@@ -1,0 +1,73 @@
+{
+  "schema_version": "comprehension-route@1",
+  "route_id": "dialog-structural-context",
+  "contract_version": "dialog-structural-context@1",
+  "phase": "phase-0",
+  "classification": "comprehension_harness",
+  "visibility": "local_or_limited",
+  "public_facing": false,
+  "source_surface_id": "dialog-society-membership",
+  "terminal_result": "bounded structural context; no pairwise hop.",
+  "rendering": {
+    "allowed_output_types": [
+      "bounded_surface_metadata",
+      "receipt_metadata",
+      "terminal_result"
+    ],
+    "quotable_narrative_paragraphs": false,
+    "generalized_connection_output": false
+  },
+  "blocked_capabilities": {
+    "pathfinding": true,
+    "clifford_score_changes": true,
+    "printable_output": true,
+    "newsroom_narration": true,
+    "quotable_narrative": true,
+    "public_ui_linkage": true
+  },
+  "selection": {
+    "strategy": "all_actor_participations",
+    "source_surface_id": "dialog-society-membership",
+    "ordering": [
+      "actor_id",
+      "participation_type",
+      "role"
+    ],
+    "randomness": "none",
+    "manual_override": false
+  },
+  "neighboring_hop_control_audit": {
+    "status": "empty_by_design",
+    "referenced_hop_ids": [],
+    "referenced_control_ids": [],
+    "reason": "The route renders only the Dialog surface and its own receipt metadata; it does not invoke or summarize neighboring hops or controls."
+  },
+  "evidence_requirements": [
+    {
+      "receipt_id": "wired-dialog-leak",
+      "required_evidence_class": "reported"
+    },
+    {
+      "receipt_id": "dialog-directory-extract",
+      "required_evidence_class": "primary_public"
+    }
+  ],
+  "semantic_constraints": [
+    "Roster membership is bounded structural context only.",
+    "Roster membership cannot create, complete, shorten, or imply a pairwise Clifford Number hop.",
+    "Membership does not establish attendance at a specific event, agreement, coordination, motive, or wrongdoing.",
+    "The route must terminate with the exact terminal result and no generalized connection claim."
+  ],
+  "session_requirements": {
+    "pre_exposure_prediction_required": true,
+    "independent_assessor_required": true,
+    "contamination_disqualifies": true,
+    "automatic_pass_forbidden": true,
+    "allowed_validator_states": [
+      "READY_FOR_ADJUDICATION",
+      "FAIL",
+      "INCONCLUSIVE",
+      "INADMISSIBLE"
+    ]
+  }
+}
