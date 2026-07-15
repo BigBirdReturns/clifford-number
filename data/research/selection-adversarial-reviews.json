@@ -123,9 +123,9 @@
       "comparator_tests": [
         {
           "test_id": "five-role-neutral-predicates-all-eight-members",
-          "status": "specified_not_executed",
-          "method": "Run the frozen five-predicate registry against all eight cohort members and preserve positive, null, unavailable, rejected, and source-failure outcomes.",
-          "blocking_conditions": ["FEC_API_KEY unavailable", "cohort-wide entity resolution absent", "historical coverage matrix absent"]
+          "status": "partial_two_of_five_predicates",
+          "method": "Run the frozen five-predicate registry against all eight cohort members and preserve candidate, observation, finding, unavailable, rejected, and source-failure outcomes. Predicate 1 has cohort-wide FEC/OGE screening with zero crossings; predicate 2 has a provisional contract-award query for one member's six registry candidates and explicit seven-member entity-coverage gaps; predicates 3–5 remain unexecuted.",
+          "blocking_conditions": ["cohort-wide entity resolution absent", "historical coverage remains asymmetric", "predicates 3 through 5 have no result artifact"]
         }
       ],
       "disposition": "The prior target-first universe failed two attacks and has been replaced by an office-defined cohort and frozen role-neutral battery. The lane remains publication-blocked and pending a genuinely independent second-party challenge plus live comparator execution."

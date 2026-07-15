@@ -184,8 +184,8 @@ export function validateOfficeholderCohort({
     || review?.boundary_attacks?.length < 2
     || !review.boundary_attacks.every(attack => attack.status === 'failed_current_definition')
     || !review?.alternative_universes?.some(alternative => alternative.alternative_id === 'office-defined-eiga-era-presidents')
-    || !review?.comparator_tests?.some(test => test.status === 'specified_not_executed')) {
-    errors.push(issue('incomplete-target-first-audit', reviewsFile, 'The two failed attacks, adopted alternative, unexecuted comparator test, and non-independence label must remain explicit.'));
+    || !review?.comparator_tests?.some(test => test.status === 'partial_two_of_five_predicates')) {
+    errors.push(issue('incomplete-target-first-audit', reviewsFile, 'The two failed attacks, adopted alternative, partial two-of-five comparator test, and non-independence label must remain explicit.'));
   }
 
   const coverageRow = coverage.lanes?.find(item => item.lane_id === LANE_ID);

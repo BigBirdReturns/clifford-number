@@ -34,7 +34,7 @@ research later supported or narrowed:
 
 ## 2. What was independently re-derived
 
-Every principal historical fact was re-derived against public receipts:
+The following principal historical facts were re-derived against public receipts:
 the rancho grant chain; the 1875 Baldwin purchase ($200,000); the 1885 rail
 right-of-way; the 1903 incorporation; both racetracks with day-precision
 opening dates; the 1936 Chandler-syndicate sale; the assembly center and Camp
@@ -98,7 +98,7 @@ energy reading (hyp-02), orientation intent behind the First Avenue works
 material record adjacent to hyp-01 is real but scoped: LA Times-reported feng
 shui-informed siting with named designers in the mansion market; peer-reviewed
 4/8 address premia in a comparable market (Vancouver); one feng-shui-master
-groundbreaking date in Tacoma. Nothing connects geomantic advice to the named
+groundbreaking date in Tacoma. No inspected receipt connects geomantic advice to the named
 downtown projects (con-14, a coverage absence, not a disproof). Ley lines are
 a Western esoteric tradition, not part of the practices documented in this
 market. None of this becomes ethnic command, conspiracy, or a supernatural
@@ -106,25 +106,28 @@ claim.
 
 ## 5. What remains unsearched, partial, unavailable, or unresolved
 
-Nineteen coverage entries (coverage.jsonl): 18 partially searched and one
+Twenty-one coverage entries (coverage.jsonl): 20 partially searched and one
 intentionally not searched. Access blocks are preserved inside the partial
 rows rather than being laundered into whole-topic unavailability.
 The load-bearing open surfaces are:
-parcel-level deed chronology (cov-02) and the identity of the 2024 Alexan-site
-seller (cov-10) — the live facts under the pre-positioning question; the
+recorder deed-party images and pre-2016 parcel chronology (cov-02/cov-10) —
+the live facts under the pre-positioning question; the
 DAIA's original enabling and renewal instruments (cov-08); the direct CA SOS
-record for Positive Investments (cov-03); Erik Wahl's title tenure beyond the
-dated filing; and the original conversation transcript (cov-01, open because
+record for Positive Investments is now resolved, while its self-claimed 1976
+founding and broader officer history remain partial (cov-03); Erik Wahl's title
+tenure beyond the dated filing; and the original conversation transcript (cov-01, open because
 only the repo and GitHub issues were searched). Santa Anita Wash completion
 dates are now bounded to January 1959 and January 1960 by official reports;
-EB-5-specific reporting remains open. "Mary's"/"René" referents remain out of
+Le Méridien now has bounded evidence of an EB-5 component, while legal vehicles,
+amounts, petition status, Hilton corroboration, and other projects remain open.
+"Mary's"/"René" referents remain out of
 scope under the redaction policy.
 
 ## 6. The actual temporal control structure
 
 Thirteen distinct regimes (chronology.json), never collapsed: Tongva
 landscape → mission/rancho → **Baldwin's consolidated control (1875–1909, the
-only single-actor era)** → inheritance and subdivision (1909–1947) → Turf
+only single-actor era represented in this reconstruction)** → inheritance and subdivision (1909–1947) → Turf
 Club and successor private track operation (1933–present, Stronach from 1998)
 → wartime federal control (1942–1945) → adjudicated-water suburbanization and
 postwar channelization (1944–) → redevelopment and rail planning (1968–2016)
@@ -141,19 +144,25 @@ both inspected TCR projects; the reported TCR/Positive Investments JV connects
 the development parties; and Erik Wahl has two source-explicit roles—DAIA
 president and Positive Investments Asset Manager at least in December 2023.
 The City's planning/redevelopment apparatus is the recurring institution.
-The current sample neither establishes nor excludes a cross-developer
-professional repeat.
+The person-level Ben Zhang join is now specifically corroborated across the
+Town Center/New World applicant interface and bounded DAIA filings (FY2022–
+FY2025). That correction does not collapse the organizations: Arcadia Town
+Center, LLC and the New World variants remain distinct labels pending a legal
+crosswalk. Nor does the join establish who authored, authorized, or caused
+DAIA's Town Center support letter. The current sample neither establishes nor
+excludes a broader cross-developer professional repeat.
 
 ## 8. Whether private positioning preceded or followed public de-risking
 
 In the currently dated sample, documented private transactions follow public
 de-risking:
 planning (1968/1973/2010) → funding (2008) → construction (2010) → opening
-(2016) → construction of 57 Wheeler (2017) → institutional entitlements
+(2016) → the earliest retrieved Alexan owner snapshot (2018) → institutional entitlements
 (2022–2025) → reported JV land purchase (2024). Comparable corridors show the
 same broad stages with different actors, and California policy actively
-promotes station-area development. Arcadia's pre-opening ownership sequence
-remains unresolved because county deed records are incomplete; the sample
+promotes station-area development. Assessor histories now bound post-opening
+transaction chronology but do not name parties; Arcadia's pre-opening ownership
+sequence remains unresolved because recorder deed images are incomplete. The sample
 cannot support a universal timing claim.
 
 ## 9. What public value was created and who appears positioned to capture it
@@ -165,7 +174,8 @@ parking reductions), housing-element rezonings, and current Prop C/ARPA
 street and streetscape work. Positioned to capture the uplift: owners of
 station-adjacent land at entitlement time — documented instances are the
 TCR/Positive Investments JV (319 units), Elite Real Estate Holdings (Derby,
-with a zone change), Arcadia Town Center LLC (five-parcel assembly), DPP
+with a zone change), distinct official Arcadia Town Center and New World
+applicant interfaces (five-parcel assembly; not legally joined), DPP
 Arcadia (57 Wheeler), and the Chateau Group hotel. Capture through lawful
 channels — buying, entitling, building — with the value-capture asymmetry
 itself being a control question, not a settled finding: public works and
@@ -174,7 +184,7 @@ and City membership in that district. The racetrack feeds back
 into public capital via pari-mutuel revenue to the city's Capital Outlay
 Fund — a documented spectacle-to-infrastructure loop.
 
-## 10. The reusable formation signature and the new game trails
+## 10. The reusable formation signature and the new evidence trails
 
 `sig-place-formation-v1` (data/signatures/formation-signatures.json): public
 infrastructure → entitlement expansion → assessment/intermediary governance →
@@ -195,10 +205,12 @@ rather than ornamental.
 
 ## Closing note
 
-The evidence supports a formation, not a mastermind: thirteen control
+The current bounded record supports a multi-regime formation reading, not a mastermind: thirteen control
 regimes, one man who held every documented layer concurrently — a century
-ago — and several core stages that recur in the bounded Monrovia and Pasadena
-comparisons with different actors. The incomplete Monrovia, Duarte, and Azusa
-control stages remain open rather than being generalized statewide. The hypotheses that
+ago — and several core stages that recur in Monrovia, Pasadena, and Azusa with
+different actors and different governance mechanisms. Pasadena's PBID overlaps
+its station neighborhood; Monrovia's Old Town BID does not cover Station Square;
+Azusa's inspected record centers planning and development agreements. Deed-level
+and statewide-denominator gaps remain open rather than being generalized. The hypotheses that
 would make it more than that are preserved, searchable, and graph-inert
 until receipts say otherwise.

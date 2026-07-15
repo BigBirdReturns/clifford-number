@@ -1,12 +1,12 @@
 {
   "schema_version": "cohort-disclosed-business-entities@1",
   "cohort_id": "us-presidents-eiga-era-1979-present",
-  "generated_note": "Symmetric input for the government-to-property predicate: the resolved operating-business entities available per cohort member. Coverage is asymmetric by source availability, NOT a substantive claim that a member had no businesses. An empty set is a coverage gap to be filled by disclosure extraction, not a null finding.",
-  "resolution_basis": "New York State Department of State registry (data.ny.gov filing-history dataset 63wc-4exh; active dataset n9v6-gdp6), reached via the FEC-embedded-name -> NY-registry chain in ny-registry-embedded-entity-manifest.json.",
+  "generated_note": "Symmetric candidate input for the government-to-property predicate: registry-resolved legal names reached from embedded-name leads. These are not yet resolved as businesses disclosed or beneficially owned by a cohort member. Coverage is asymmetric by source availability, and an empty set is a coverage gap rather than a null finding.",
+  "resolution_basis": "New York State Department of State registry (data.ny.gov filing-history dataset 63wc-4exh; active dataset n9v6-gdp6), reached via the FEC-embedded-name -> NY-registry chain in ny-registry-embedded-entity-manifest.json. Registry identity does not establish FEC-payee identity, disclosure status, or beneficial ownership.",
   "members": [
     {
       "person_id": "donald-trump",
-      "coverage_state": "resolved_registry_entities_present",
+      "coverage_state": "registry_candidate_entities_present_ownership_unresolved",
       "entities": [
         { "registry": "ny-dos", "corpid_num": "642339", "legal_name": "THE TRUMP CORPORATION", "entity_type": "DOMESTIC BUSINESS CORPORATION" },
         { "registry": "ny-dos", "corpid_num": "2082174", "legal_name": "TRUMP CPS LLC", "entity_type": "DOMESTIC LIMITED LIABILITY COMPANY" },
@@ -28,8 +28,8 @@
     "contract_id": "public-topology-map@1",
     "selection_review_id": "selection-review-trump-office-business-capital",
     "selection_review_status": "pending_second_party",
-    "what_this_is": "The resolved operating-business entity set available per cohort member, with explicit coverage state.",
-    "what_this_is_not": "A claim that members with an empty set had no businesses; empty is a source-coverage gap, not a finding."
+    "what_this_is": "A registry-resolved candidate legal-name set available per cohort member, with explicit coverage state.",
+    "what_this_is_not": "A disclosed-business, beneficial-ownership, FEC-payee-identity, or crossing finding; an empty set is a source-coverage gap, not a finding."
   },
   "verification_status": "machine_proposed_unverified",
   "causal_status": "not_established",

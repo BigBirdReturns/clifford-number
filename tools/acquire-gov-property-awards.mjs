@@ -2,7 +2,8 @@
 // Symmetric government-to-property acquisition: for every cohort member, query the official no-key
 // USAspending award API for each resolved disclosed-business entity, classify recipients, and
 // preserve every award, counterparty, false positive, and null. Emits a durable manifest; full
-// award rows go to a git-ignored run cache reproducible from the recorded queries + hashes.
+// award rows go to a git-ignored provisional run cache. The checked-in manifest records scope,
+// but does not claim exhaustive pagination or a hash-pinned response archive.
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -73,7 +74,7 @@ for (const member of cohort.members) {
 }
 
 // Source-scope probe: the operating-property recipient names that documented federal-property
-// spending would use, plus the whole "TRUMP" recipient universe, to record precisely what this
+// spending would use, plus the first returned page for a "TRUMP" recipient query, to record what this
 // source does and does not itemize (evidence for the source-scope limit, not a universal claim).
 const OPERATING_PROBE = ['TRUMP OLD POST OFFICE LLC', 'MAR-A-LAGO CLUB', 'TRUMP NATIONAL GOLF CLUB', 'TRUMP INTERNATIONAL HOTEL'];
 const operatingProbe = [];
@@ -105,9 +106,9 @@ const manifest = {
   source_scope_probe: {
     operating_property_names: operatingProbe,
     trump_recipient_universe: universe,
-    finding: 'USAspending itemized CONTRACT-award data contains no genuine cohort disclosed-business recipient; the whole "TRUMP" contract-recipient universe is unrelated firms (TRUMPF/TRUMPLER). This is a scope limit of contract-award itemization, not a universal claim about government-to-property: documented federal-property spending (e.g. protective-detail lodging) is largely purchase-card / below-threshold / non-contract and would require GSA lease records, inspector-general reports, purchase-card releases, or House Oversight compilations to establish bounded relationships.',
+    finding: 'In the six exact-name contract-award queries and the first 100 rows returned for the "TRUMP" token query, USAspending itemized contract-award data produced no resolved cohort recipient. The token sample contained unrelated firms (TRUMPF/TRUMPLER). This is a provisional, non-exhaustive source-scope observation—not a universal government-to-property null—and it does not establish that the six registry candidates were disclosed or beneficially owned. Other payment families require separate sources and receipts.',
   },
-  awards_artifact: { path: 'build/source-acquisition/gov-property-v1/awards.jsonl', note: 'git-ignored; reproducible from the recorded per-entity queries.' },
+  awards_artifact: { path: 'build/source-acquisition/gov-property-v1/awards.jsonl', note: 'git-ignored provisional cache; the current manifest does not preserve response hashes or pagination proof and is insufficient for an exhaustive or independent-receipt claim.' },
   identity_ceiling: 'A USAspending recipient UEI and an NY-registry corpid_num are different identifier namespaces; exact recipient-name matches are name candidates, never resolved identities. Zero cross-source identities are resolved here.',
   temporal_note: 'Award period-of-performance dates are exact and preserved, but a disclosure holding interval is still required before any temporal crossing; this lane asserts none.',
   interpretation: [
@@ -121,7 +122,7 @@ const manifest = {
     selection_review_status: 'pending_second_party',
     publication_status: 'blocked_pending_independent_review',
     review_effect: 'labels_clearance_only_does_not_block_discovery_or_intake',
-    what_this_is: 'A symmetric, reproducible record of federal awards whose recipient names match cohort members’ resolved disclosed-business entities, with identity and false-positive dispositions.',
+    what_this_is: 'A symmetric provisional query log for contract awards searched by registry-resolved candidate legal names, with identity and false-positive dispositions.',
     what_this_is_not: 'A resolved beneficial-interest finding, a crossing, a completeness claim, or evidence of absence.',
     copy_ready_caveat: 'A recipient-name match is not a resolved entity, and a federal award is not a crossing; both identity resolution and a disclosure holding interval are required and are absent here.',
   },

@@ -25,11 +25,13 @@ export function validateGovProperty(manifest, cohortEntities, v1) {
   if (manifest?.consumption?.selection_review_status !== 'pending_second_party') e.push('manifest: review status must be attached');
   if (manifest?.consumption?.review_effect !== 'labels_clearance_only_does_not_block_discovery_or_intake') e.push('manifest: review must not be described as blocking discovery/intake');
   if (manifest?.consumption?.publication_status !== 'blocked_pending_independent_review') e.push('manifest: publication must remain blocked pending review');
-  // source-scope honesty (false-positive universe recorded, not overclaimed)
+  // source-scope honesty (first-page false-positive sample recorded, not overclaimed)
   const probe = manifest?.source_scope_probe;
-  if (!probe || probe.trump_recipient_universe?.all_false_positive !== true) e.push('manifest: must record the false-positive contract-recipient universe');
+  if (!probe || probe.trump_recipient_universe?.all_false_positive !== true) e.push('manifest: must record the false-positive contract-recipient sample');
   if ((probe?.trump_recipient_universe?.genuine_cohort_entity_recipients ?? ['x']).length !== 0) e.push('manifest: no genuine cohort recipient expected in contract awards');
-  if (!/scope limit .*not a universal claim/i.test(probe?.finding ?? '')) e.push('manifest: source-scope finding must avoid a universal "cannot close" claim');
+  if (!/first 100 rows returned/i.test(probe?.finding ?? '') || !/provisional, non-exhaustive source-scope observation/i.test(probe?.finding ?? '')) {
+    e.push('manifest: source-scope finding must identify the first-page sample and remain non-exhaustive');
+  }
 
   // frozen v1
   if (v1?.status !== 'frozen_v1_source_limited') e.push('v1: must be frozen source-limited');

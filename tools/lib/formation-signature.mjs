@@ -2,7 +2,7 @@ import { readJson } from './ledger.mjs';
 
 // Place-centered formation signatures. A signature is a reusable discovery
 // shape: an ordered spine of stages plus optional signals. Expanding a
-// signature over a place produces BOUNDED CANDIDATE SEARCHES (game trails),
+// signature over a place produces BOUNDED CANDIDATE SEARCHES (evidence trails),
 // never findings. A match means "this place is worth the same bounded
 // questions" — it never asserts coordination, wrongdoing, or geomancy.
 

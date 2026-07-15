@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const EVIDENCE = new Set(['observed', 'self_claimed', 'counterpart_reported', 'official_record', 'independently_corroborated', 'inferred', 'disputed', 'name_match_only', 'unavailable_after_search', 'not_searched', 'source_explicit', 'reported']);
 const COUNTERPART = new Set(['counterpart_reported', 'no_counterpart_confirmation_observed', 'third_party_reported_not_counterpart_confirmed', 'not_searched']);
-const REQUIRED = ['README.md', 'manifest.json', 'actors.jsonl', 'vehicles.jsonl', 'professional-roles.jsonl', 'portfolio-edges.jsonl', 'advisory-edges.jsonl', 'deal-sourcing-claims.jsonl', 'funding-rounds.jsonl', 'co-investor-edges.jsonl', 'government-programs.jsonl', 'government-awards.jsonl', 'validation-surfaces.jsonl', 'follow-on-capital.jsonl', 'exits.jsonl', 'router-source-universe.jsonl', 'router-candidates.jsonl', 'router-signatures.jsonl', 'roster-coverage.jsonl', 'portfolio-coverage.jsonl', 'game-trails.jsonl', 'trail-frontier.jsonl', 'rejected-joins.jsonl', 'coverage-gaps.jsonl', 'receipts.jsonl', 'analysis.md'];
+const REQUIRED = ['README.md', 'manifest.json', 'actors.jsonl', 'vehicles.jsonl', 'professional-roles.jsonl', 'portfolio-edges.jsonl', 'advisory-edges.jsonl', 'deal-sourcing-claims.jsonl', 'funding-rounds.jsonl', 'co-investor-edges.jsonl', 'government-programs.jsonl', 'government-awards.jsonl', 'validation-surfaces.jsonl', 'follow-on-capital.jsonl', 'exits.jsonl', 'router-source-universe.jsonl', 'router-candidates.jsonl', 'router-signatures.jsonl', 'roster-coverage.jsonl', 'portfolio-coverage.jsonl', 'evidence-trails.jsonl', 'trail-frontier.jsonl', 'rejected-joins.jsonl', 'coverage-gaps.jsonl', 'receipts.jsonl', 'analysis.md'];
 const PRIOR_SEED = new Set(['person:jackson-moses', 'person:sally-donnelly', 'person:tony-demartino', 'person:joshua-baer', 'person:richard-spencer', 'person:rotem-yehuda-kakon', 'person:aviad-grinfeld', 'person:daniel-fouzailov', 'person:joe-lonsdale', 'person:trae-stephens', 'person:katherine-boyle', 'person:tal-shmueli']);
 
 export function validatePersonRouters(dir, contractPathArg) {
@@ -113,7 +113,7 @@ export function validatePersonRouters(dir, contractPathArg) {
   if (cambium && cambium.identity_state === 'resolved') e.push('Cambium marked identity resolved despite moderate-confidence match');
 
   // every admitted router has a >=3-node trail
-  const trails = jl('game-trails.jsonl') ?? [];
+  const trails = jl('evidence-trails.jsonl') ?? [];
   for (const r of admitted) { if (!trails.some(x => x.hops?.[0] === r.actor_id && x.hops.length >= 3)) e.push(`admitted router ${r.actor_id} lacks a multi-hop trail`); }
 
   // FRONTIER honesty: generic terminal-contradiction + _after_search-provenance (same rules as coverage)

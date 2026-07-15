@@ -83,8 +83,9 @@ The minimum identity spine keeps these node families distinct:
 - Donald J. Trump as a person;
 - the 45th and 47th presidential offices;
 - presidential candidate `P80001571`;
-- campaign, joint-fundraising, and PAC committees, including `C00580100`,
-  `C00618371`, `C00618389`, and `C00762591`;
+- source-resolved authorized presidential campaign committees `C00580100`,
+  `C00828541`, and `C00867275`; leadership PACs, joint-fundraising committees,
+  and other affiliates remain a separately typed expansion;
 - the Donald J. Trump Revocable Trust;
 - each operating, payroll, property, licensing, and digital-asset entity;
 - Trump Media & Technology Group, SEC CIK `0001849635`;

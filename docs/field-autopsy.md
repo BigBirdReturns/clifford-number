@@ -54,7 +54,7 @@ extension bundle validated by `tools/lib/field-autopsy.mjs`:
   material never disappears from the record.
 - `chronology.json`: the temporal control map. Successive control regimes are
   never collapsed into one network; every event and role names its regime.
-- `trails.jsonl` + `frontier.json`: game trails generated from formation
+- `trails.jsonl` + `frontier.json`: evidence trails generated from formation
   signatures, and the open frontier. Trails are bounded candidate searches
   with `graph_effect: none` that can only ever promote to candidates.
   Terminal trail states contain no continuation language, cite structured
