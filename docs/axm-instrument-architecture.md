@@ -121,3 +121,44 @@ the honest state, and validated by `tools/validate-research-tracks.mjs`.
 The reason the pattern can point at *so many* places is precisely this stack: once layers 0
 and 1 are fused, every new instrument instance inherits custody and intake for free, and the
 only marginal cost is one photonic adapter per new jurisdiction.
+
+## 6. Retrieval tiering — the Tier-Bench lesson
+
+The heavy lifting in every harness is retrieval, and retrieval is cheap. This is not a hope;
+it is measured in the sibling project **Tier-Bench** (`D:\Projects\Tier-Bench`):
+
+- **H1 (commodity-markup): SUPPORTED.** Haiku (~$0.037/trial) and Fable@low (~$0.48/trial)
+  produced *identical outcomes on every shared cell* — a ~13× price gap for equal results.
+- **H2 (the tier ladder): CHALLENGED — "the axis is wrong, not the ruler."** Hidden-graded,
+  Haiku 4.5 cleared T0–T4 3/3 including the T4 semantic judge. Difficulty does not separate
+  2026 models. **Work separates on _settled-vs-derived_, not junior-vs-staff.**
+- **H3 (uplift): SUPPORTED.** "What a cheap model lacks is carried state and selection, not
+  judgment; a harness supplies both."
+
+The load-bearing alignment: **Tier-Bench's settled-vs-derived line is Clifford's
+`candidate_only` boundary.** Retrieval — photonic extraction, structured parsing, denominator
+enumeration, running the spine's search templates, pulling receipt fields — is settled work
+with a deterministic validation surface (fields extract, receipt hashes, record parses), and
+it has `graph_effect: none` by contract. So putting cheap models on retrieval is not only
+cost-optimal, it is *epistemically safe*: cheap models run exactly where no judgment is
+permitted anyway. The expensive residue is the one thing retrieval may not do — promote a
+candidate to a finding.
+
+Each harness therefore carries a `retrieval_tiering` block (policy:
+`data/research-tracks/retrieval-tiering.json`):
+
+| rung | model | work |
+|---|---|---|
+| retrieval | **Haiku** | photonic/structured extraction, enumeration, template execution, dedup, coverage bookkeeping — almost all the token volume |
+| derivation-with-a-check | **Sonnet** | entity resolution, exact-overlap join, temporal screen, predicate-threshold evaluation, coverage prose |
+| promotion (frontier residue) | **Fable + human** | candidate→finding promotion, forbidden-inference gate, coincidence-vs-structure adjudication, admission to review |
+
+Two rules enforce it (`validate-research-tracks.mjs`): escalation is **effort-first**
+(start on Haiku, escalate only on measured failure of the validation surface, never
+preemptively — Tier-Bench `escalate.py`/`rungs.py`), and **no operation that promotes a
+candidate to a finding may run below the Fable+human rung.** Acquisition adapters are tagged
+`haiku` by default and `sonnet` only where their job is resolution/join/screen. Route on
+`cost_per_success = average_cost / success_rate`, per adapter per tier — measured rows, not
+brand. Execution runs keyless via Claude Code subagents (Tier-Bench's cheap-prepares /
+top-adjudicates pattern): Haiku/Sonnet subagents do acquisition and resolution; the top rung
+and a human own promotion.

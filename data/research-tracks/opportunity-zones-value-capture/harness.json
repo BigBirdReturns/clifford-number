@@ -93,6 +93,7 @@
       "mode": "structured",
       "status": "new",
       "intake_layer": "direct",
+      "tier": "haiku",
       "note": "Bulk CSV of designated tracts; a one-time fetcher, then static."
     },
     {
@@ -101,6 +102,7 @@
       "mode": "structured",
       "status": "reuse",
       "intake_layer": "direct",
+      "tier": "haiku",
       "note": "",
       "reuses": "tools/research/sec-formd.mjs"
     },
@@ -110,6 +112,7 @@
       "mode": "photonic",
       "status": "new",
       "intake_layer": "screenghost",
+      "tier": "haiku",
       "note": "No uniform API; ScreenGhost drives the recorder portal → structured deed rows."
     },
     {
@@ -118,6 +121,7 @@
       "mode": "structured",
       "status": "new",
       "intake_layer": "ghostbox",
+      "tier": "haiku",
       "note": "Structured adapter into GhostBox; keyed by tract/place."
     }
   ],
@@ -145,6 +149,53 @@
     "forbidden_inference": "A signature or crossing match never establishes coordination, influence, wrongdoing, or intent. Structural convergence on shared incentives is the null hypothesis; only document-level receipts can upgrade any candidate, and only a human reviewer can admit it.",
     "coverage_honesty": "not_searched is the honest default and may not cite executed searches. unavailable_after_search requires search provenance. A partial surface is never labeled complete; absence of evidence is a coverage result, not proof of absence.",
     "denominator_discipline": "Every score is over a declared, bounded universe. The denominator and its source are named; below-threshold members are retained, not dropped."
+  },
+  "retrieval_tiering": {
+    "policy_ref": "data/research-tracks/retrieval-tiering.json",
+    "principle": "Tier-Bench H2: work separates on settled-vs-derived, not difficulty. That line IS the candidate_only boundary — retrieval has graph_effect none, so cheap models are both cost-optimal and epistemically safe there.",
+    "rungs": [
+      {
+        "tier": "haiku",
+        "work": "settled/high-volume retrieval",
+        "operations": [
+          "photonic extraction (screen->JSON)",
+          "structured parse",
+          "denominator enumeration",
+          "search-template execution",
+          "receipt-field extraction",
+          "dedup",
+          "coverage-state bookkeeping"
+        ],
+        "validation_surface": "deterministic: fields present, receipt hashes, record parses",
+        "escalate_when": "extraction fails its schema check or a hash mismatches"
+      },
+      {
+        "tier": "sonnet",
+        "work": "derivation-with-a-check",
+        "operations": [
+          "stage disposition (does a search close a trail)",
+          "recurring-intermediary resolution",
+          "plain-language coverage notes"
+        ],
+        "validation_surface": "structured: a closed stage cites the search_ids that cover its named surfaces",
+        "escalate_when": "a stage's surfaces are only partially searched or an intermediary is name-only"
+      },
+      {
+        "tier": "fable+human",
+        "work": "derived/judgment (the frontier residue)",
+        "operations": [
+          "candidate->finding promotion",
+          "forbidden-inference gate",
+          "coincidence-vs-structure adjudication",
+          "admission to review queue"
+        ],
+        "validation_surface": "human review; no automatic PASS",
+        "note": "Small, nameable, scarce. This is the only work retrieval may not do (graph_effect none)."
+      }
+    ],
+    "escalation": "effort-first: start at the cheapest rung whose validation surface covers the op; escalate only on measured failure, never preemptively.",
+    "measurement": "cost_per_success = average_cost / success_rate, per adapter per tier (Tier-Bench).",
+    "invariant": "No operation that promotes candidate->finding runs below fable+human."
   },
   "custody": {
     "seals_into": "axm-genesis",

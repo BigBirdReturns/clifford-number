@@ -15,6 +15,8 @@ const AXES = new Set(['place-formation', 'person-router', 'disclosure-crossing']
 const MODES = new Set(['structured', 'photonic']);
 const INTAKE = new Set(['screenghost', 'ghostbox', 'direct']);
 const CONTRACT_KEYS = ['graph_effect', 'promotes_to', 'forbidden_inference', 'coverage_honesty', 'denominator_discipline'];
+const RETRIEVAL_TIERS = new Set(['haiku', 'sonnet']); // adapters never sit on the promotion rung
+const TOP_RUNG = 'fable+human';
 
 const errors = [];
 const fail = (id, msg) => errors.push(`${id}: ${msg}`);
@@ -24,6 +26,17 @@ function readJson(p) {
 }
 
 const index = readJson(path.join(dir, 'index.json'));
+
+// shared retrieval-tiering policy (the Tier-Bench mapping)
+const policyPath = path.join(dir, 'retrieval-tiering.json');
+if (!fs.existsSync(policyPath)) fail('policy', 'missing retrieval-tiering.json');
+else {
+  const pol = readJson(policyPath);
+  for (const r of ['haiku', 'sonnet', 'fable+human'])
+    if (!pol.rungs || !pol.rungs[r]) fail('policy', `retrieval-tiering.json missing rung '${r}'`);
+  if (!/candidate->finding/.test(pol.invariant || '')) fail('policy', 'policy invariant must guard candidate->finding promotion');
+}
+
 const trackDirs = fs.readdirSync(dir, { withFileTypes: true })
   .filter((e) => e.isDirectory())
   .map((e) => e.name)
@@ -76,6 +89,9 @@ for (const id of trackDirs) {
         fail(id, `adapter '${a.adapter_id}' is structured but routed through screenghost`);
       if (a.status === 'reuse' && !a.reuses)
         fail(id, `adapter '${a.adapter_id}' status reuse but names no tool`);
+      // tiering invariant: an acquisition adapter never sits on the promotion rung
+      if (!RETRIEVAL_TIERS.has(a.tier))
+        fail(id, `adapter '${a.adapter_id}' tier '${a.tier}' must be haiku or sonnet (retrieval never promotes)`);
       if (a.mode === 'photonic') photonic++; else structured++;
     }
     const ie = index.tracks.find((t) => t.track_id === id);
@@ -89,6 +105,33 @@ for (const id of trackDirs) {
     for (const k of CONTRACT_KEYS) if (!h.epistemic_contract[k]) fail(id, `contract missing '${k}'`);
     if (h.epistemic_contract.graph_effect !== 'none') fail(id, `graph_effect must be 'none'`);
     if (h.epistemic_contract.promotes_to !== 'candidate_only') fail(id, `promotes_to must be 'candidate_only'`);
+  }
+
+  // 3b. retrieval tiering — the Tier-Bench settled-vs-derived mapping
+  if (!h.retrieval_tiering) fail(id, 'missing retrieval_tiering');
+  else {
+    const rt = h.retrieval_tiering;
+    if (!Array.isArray(rt.rungs) || rt.rungs.length < 3) fail(id, 'retrieval_tiering needs >=3 rungs');
+    else {
+      const tiers = rt.rungs.map((r) => r.tier);
+      if (tiers[0] !== 'haiku') fail(id, 'cheapest retrieval rung must be haiku');
+      const top = rt.rungs[rt.rungs.length - 1];
+      if (top.tier !== TOP_RUNG) fail(id, `top rung must be '${TOP_RUNG}', got '${top.tier}'`);
+      // the promotion decision must live only on the top rung
+      const promotes = (r) => (r.operations || []).some((o) => /promot|admission to review|finding/i.test(o));
+      if (!promotes(top)) fail(id, 'top rung must own the promotion/admission operation');
+      for (const r of rt.rungs.slice(0, -1))
+        if (promotes(r)) fail(id, `rung '${r.tier}' must not carry a promotion operation`);
+    }
+    if (!/candidate_only|graph_effect none|settled-vs-derived/i.test(rt.principle || ''))
+      fail(id, 'retrieval_tiering.principle must state the settled-vs-derived / candidate_only alignment');
+    const ie = index.tracks.find((t) => t.track_id === id);
+    if (ie && ie.adapter_tiers) {
+      const h_haiku = h.source_adapters.filter((a) => (a.tier || 'haiku') === 'haiku').length;
+      const h_sonnet = h.source_adapters.filter((a) => a.tier === 'sonnet').length;
+      if (ie.adapter_tiers.haiku !== h_haiku || ie.adapter_tiers.sonnet !== h_sonnet)
+        fail(id, `index adapter_tiers (${ie.adapter_tiers.haiku}/${ie.adapter_tiers.sonnet}) != disk (${h_haiku}/${h_sonnet})`);
+    }
   }
 
   // 4. custody target (layer-0 seal)
@@ -114,4 +157,4 @@ if (errors.length) {
   for (const e of errors) console.error('  FAIL: ' + e);
   process.exit(1);
 }
-console.log(`validate-research-tracks: OK — 10 tracks (5 place / 3 router / 2 crossing), every harness carries scan + adapters + contract + custody; index reconciled.`);
+console.log(`validate-research-tracks: OK — 10 tracks (5 place / 3 router / 2 crossing), every harness carries scan + adapters + contract + retrieval-tiering + custody; promotion stays on the top rung; index reconciled.`);

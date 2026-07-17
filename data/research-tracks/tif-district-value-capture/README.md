@@ -41,6 +41,18 @@ The signature is free to move; the acquisition is not. These are the adapters th
 - [ ] pre-adoption ownership inside boundary
 - [ ] developer entitlement dates
 
+## Retrieval tiering (Tier-Bench)
+
+Tier-Bench measured that work separates on **settled-vs-derived, not difficulty** — and that line is the `candidate_only` boundary. So the heavy lifting is cheap:
+
+| rung | model | work |
+|---|---|---|
+| settled | `haiku` | photonic extraction (screen->JSON), structured parse, denominator enumeration… |
+| derivation-with-a-check | `sonnet` | stage disposition (does a search close a trail), recurring-intermediary resolution, plain-language coverage notes… |
+| derived | `fable+human` | candidate->finding promotion, forbidden-inference gate, coincidence-vs-structure adjudication… |
+
+Escalation is **effort-first**: start on Haiku, escalate only when the validation surface actually fails. Retrieval has `graph_effect: none`, so the cheap rungs are epistemically safe — only Fable+human may promote a candidate.
+
 ## Custody
 
 Seals into **axm-genesis** as `place-formation-shard@1`, feeding the **field-autopsy** publication layer. Status: **declared_not_wired**.
