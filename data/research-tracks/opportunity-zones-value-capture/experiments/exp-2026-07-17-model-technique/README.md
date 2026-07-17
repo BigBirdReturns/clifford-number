@@ -16,10 +16,10 @@ June 14 2018 final OZ designation, and what is the earliest such fund Form-D dat
 |---|---|---|---|---|---|---|---|---|---|
 | e7 | haiku | adapter+framing | **CORRECT_CLEAN** | ✅ | 2018-06-21 ✅ | 2 | 29k | 35s | **0.064** |
 | e8 | sonnet | adapter+framing | **CORRECT_CLEAN** | ✅ | 2018-06-21 ✅ | 3 | 39k | 28s | 0.282 |
-| e9 | opus | adapter+framing | **CORRECT_CLEAN** | ✅ | 2018-06-21 ✅ | 2 | 33k | 20s | 1.175 |
+| e9 | opus | adapter+framing | **CORRECT_CLEAN** | ✅ | 2018-06-21 ✅ | 2 | 33k | 20s | 1.176 |
 | e2 | sonnet | adapter | CORRECT | ✅ | 2018-06-21 ✅ | 4 | 40k | 44s | 0.286 |
 | e1 | haiku | adapter | PARTIAL | ✅ | null | 9 | 33k | 79s | 0.072 |
-| e3 | opus | adapter | CORRECT+RIGOR | ✅ | null | 3 | 33k | 32s | 1.196 |
+| e3 | opus | adapter | CORRECT+RIGOR | ✅ | null | 3 | 33k | 32s | 1.197 |
 | e4 | haiku | web-only | CORRECT_COSTLY | ✅ | 2018-06-21 ✅ | 45 | 61k | 354s | 0.159 |
 | e6 | opus | web-only | Q1_OK_Q2_WRONG | ✅ | 2018-08-17 ❌ | 14 | 44k | 118s | 1.714 |
 | e5 | sonnet | web-only | HONEST_INCONCLUSIVE | — | none | 37 | 82k | 349s | 0.641 |
@@ -29,7 +29,7 @@ June 14 2018 final OZ designation, and what is the earliest such fund Form-D dat
 ## What the data says
 
 **1. The crate + the framing dominate the model choice.** With adapter+framing, *all three models
-were correct, clean, and cheap* (2–3 tool calls, 20–35 s). Haiku (e7, $0.064) and Opus (e9, $1.175)
+were correct, clean, and cheap* (2–3 tool calls, 20–35 s). Haiku (e7, $0.064) and Opus (e9, $1.176)
 produced the **identical answer** — an **~18× price gap for the same result**. This is Tier-Bench H1
 (commodity-markup) and H3 (framing/harness lifts the cheap model) reproduced on a brand-new task.
 
