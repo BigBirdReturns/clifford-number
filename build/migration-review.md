@@ -1,6 +1,6 @@
 # Migration Review
 
-Generated: 2026-07-12T20:19:58.631Z
+Generated: 2026-07-14T21:18:42.885Z
 
 This file is generated from `docs/clifford-number-master.md`. It is not graph data. It is the review queue for moving existing claims into the surface-hop ledgers.
 
@@ -461,3 +461,5 @@ _Only first 80 shown of 236._
 - L715: **EU / Kaja Kallas** `responsible-for` neighbourhood policy (official)
 - L716: **EU / Kaja Kallas** `responsible-for` foreign and foreign-economic policy (official)
 - L717: **EU / Kaja Kallas** `fmr-PM-of` Estonia (official)
+
+

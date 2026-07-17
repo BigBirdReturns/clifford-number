@@ -1,9 +1,15 @@
 #!/usr/bin/env node
-import { loadAll, readJson, indexBy } from './lib/ledger.mjs';
+import fs from 'node:fs';
+import path from 'node:path';
+import { loadAll, readJson, indexBy, root } from './lib/ledger.mjs';
 import { windowOf, intersectAll, UNBOUNDED } from './lib/temporal.mjs';
+import { isFieldAutopsyCase, loadFieldAutopsy, validateFieldAutopsy } from './lib/field-autopsy.mjs';
 import { buildIdentityLayer } from './lib/axm-identity.mjs';
 import { checkReceiptArchival, todayString } from './lib/receipt-archival.mjs';
 import { assessHopDensity, validateDensityPolicy } from './lib/density.mjs';
+import { validateCorpusSelection } from './validate-corpus-selection.mjs';
+import { validateConsumptionContract } from './validate-consumption-contract.mjs';
+import { validateOfficeholderCohort } from './validate-officeholder-cohort.mjs';
 
 const data = loadAll();
 const scores = readJson('build/scores.json');
@@ -18,6 +24,18 @@ const orgScore = new Map(scores.organizations.map(o => [o.organization_id, o]));
 const errors = [];
 const warnings = [];
 function assert(cond, msg) { if (!cond) errors.push(msg); }
+
+// Constitutional selection-layer gate. A release cannot be individually
+// careful at the edge while silently choosing asymmetric or unmeasured corpora.
+for (const error of validateCorpusSelection({ root: process.cwd() }).errors) {
+  errors.push(`selection ${error.code} (${error.file}): ${error.message}`);
+}
+for (const error of validateConsumptionContract({ root: process.cwd() }).errors) {
+  errors.push(`consumption ${error.code} (${error.file}): ${error.message}`);
+}
+for (const error of validateOfficeholderCohort({ root: process.cwd() }).errors) {
+  errors.push(`officeholder ${error.code} (${error.file}): ${error.message}`);
+}
 function hasSurface(actorId, surfaceId) {
   return actorScore.get(actorId)?.surfaces.includes(surfaceId);
 }
@@ -241,6 +259,20 @@ assert(migration.bucket_counts?.participation_claim > 50, 'migration did not cla
   const { errors: archivalErrors, warnings: archivalWarnings } = checkReceiptArchival(data.receipts, { today: todayString() });
   for (const err of archivalErrors) errors.push(err);
   for (const warn of archivalWarnings) warnings.push(warn);
+}
+
+// Place-centered field-autopsy bundles preserve untrusted intake as expression
+// only, keep hypotheses graph-inert, and require provenance for searched states.
+{
+  const caseRoot = path.join(root, 'cases');
+  for (const entry of fs.readdirSync(caseRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const dir = path.join(caseRoot, entry.name);
+    if (!isFieldAutopsyCase(dir)) continue;
+    for (const err of validateFieldAutopsy(loadFieldAutopsy(dir))) {
+      errors.push(`field-autopsy ${entry.name}: ${err}`);
+    }
+  }
 }
 
 if (errors.length) {

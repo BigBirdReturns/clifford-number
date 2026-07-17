@@ -1,10 +1,10 @@
 # Scout Report
 
-Generated: 2026-07-12T20:19:59.624Z
+Generated: 2026-07-14T22:37:46.417Z
 
 > graph_effect: none. This is a research queue, not graph data.
 
-Findings: 133
+Findings: 141
 
 ## finding-001: Electric Twin behaves as a surface factory
 
@@ -150,7 +150,61 @@ Refs: `no10-digital-data-advisory-2019-2021`, `vote-leave-data-science-2016`
 
 ---
 
-## finding-009: Sir Simon Case / Lord Case has surfaces but no Clifford path
+## finding-009: Dr. Ben Warner has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Dr. Ben Warner participates in 6 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `no10-digital-data-advisory-2019-2021`, `faculty-investor-employee-2015-2019`, `vote-leave-data-science-2016`, `electric-twin-founder-2023`, `electric-twin-newsuk-synthetic-audience`, `gartner-synthetic-population-category-2026`
+
+---
+
+## finding-010: Dr. Marc Warner has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Dr. Marc Warner participates in 2 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `faculty-investor-employee-2015-2019`, `vote-leave-data-science-2016`
+
+---
+
+## finding-011: Alex Cooper has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Alex Cooper participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `electric-twin-founder-2023`
+
+---
+
+## finding-012: Sir Simon Case / Lord Case has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -168,7 +222,97 @@ Refs: `electric-twin-ethics-board-2026`, `simon-case-cabinet-secretary-2020-2024
 
 ---
 
-## finding-010: Louis Mosley has surfaces but no Clifford path
+## finding-013: Dominic Cummings has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Dominic Cummings participates in 2 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `no10-digital-data-advisory-2019-2021`, `vote-leave-data-science-2016`
+
+---
+
+## finding-014: Dan Rosenfield has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Dan Rosenfield participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `no10-digital-data-advisory-2019-2021`
+
+---
+
+## finding-015: Dr. Laura Gilbert CBE has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Dr. Laura Gilbert CBE participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `no10-digital-data-advisory-2019-2021`
+
+---
+
+## finding-016: Ben Henshall has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Ben Henshall participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `no10-digital-data-advisory-2019-2021`
+
+---
+
+## finding-017: Saul Klein has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Saul Klein participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `faculty-investor-employee-2015-2019`
+
+---
+
+## finding-018: Louis Mosley has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -186,7 +330,7 @@ Refs: `electric-twin-funding-surface-2023-2026`
 
 ---
 
-## finding-011: Marc Andreessen has surfaces but no Clifford path
+## finding-019: Marc Andreessen has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -204,7 +348,7 @@ Refs: `electric-twin-funding-surface-2023-2026`
 
 ---
 
-## finding-012: Cal Henderson has surfaces but no Clifford path
+## finding-020: Cal Henderson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -222,7 +366,7 @@ Refs: `electric-twin-funding-surface-2023-2026`
 
 ---
 
-## finding-013: Tom Shinner has surfaces but no Clifford path
+## finding-021: Tom Shinner has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -240,7 +384,7 @@ Refs: `electric-twin-funding-surface-2023-2026`
 
 ---
 
-## finding-014: Peter Thiel has surfaces but no Clifford path
+## finding-022: Peter Thiel has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -258,7 +402,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-015: Auren Hoffman has surfaces but no Clifford path
+## finding-023: Auren Hoffman has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -276,7 +420,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-016: Raffi Grinberg has surfaces but no Clifford path
+## finding-024: Raffi Grinberg has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -294,7 +438,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-017: Joe Lonsdale has surfaces but no Clifford path
+## finding-025: Joe Lonsdale has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -312,7 +456,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-018: Ted Cruz has surfaces but no Clifford path
+## finding-026: Ted Cruz has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -330,7 +474,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-019: Jim Himes has surfaces but no Clifford path
+## finding-027: Jim Himes has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -348,7 +492,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-020: Dan Driscoll has surfaces but no Clifford path
+## finding-028: Dan Driscoll has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -366,7 +510,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-021: Alexus Grynkewich has surfaces but no Clifford path
+## finding-029: Alexus Grynkewich has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -384,7 +528,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-022: Randy Kroszner has surfaces but no Clifford path
+## finding-030: Randy Kroszner has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -402,7 +546,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-023: Scott Bessent has surfaces but no Clifford path
+## finding-031: Scott Bessent has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -420,7 +564,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-024: Cory Booker has surfaces but no Clifford path
+## finding-032: Cory Booker has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -438,7 +582,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-025: Elon Musk has surfaces but no Clifford path
+## finding-033: Elon Musk has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -456,7 +600,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-026: Joseph Gordon-Levitt has surfaces but no Clifford path
+## finding-034: Joseph Gordon-Levitt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -474,7 +618,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-027: Sophia Bush has surfaces but no Clifford path
+## finding-035: Sophia Bush has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -492,7 +636,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-028: Ezra Klein has surfaces but no Clifford path
+## finding-036: Ezra Klein has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -510,7 +654,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-029: Jonathan Levin has surfaces but no Clifford path
+## finding-037: Jonathan Levin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -528,7 +672,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-030: Sam Harris has surfaces but no Clifford path
+## finding-038: Sam Harris has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -546,7 +690,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-031: Bryan Johnson has surfaces but no Clifford path
+## finding-039: Bryan Johnson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -564,7 +708,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-032: Sarah Bond has surfaces but no Clifford path
+## finding-040: Sarah Bond has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -582,7 +726,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-033: Scott Cook has surfaces but no Clifford path
+## finding-041: Scott Cook has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -600,7 +744,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-034: Lisa Gevelber has surfaces but no Clifford path
+## finding-042: Lisa Gevelber has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -618,7 +762,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-035: Shmuel Abramzon has surfaces but no Clifford path
+## finding-043: Shmuel Abramzon has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -636,7 +780,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-036: Josh Brolin has surfaces but no Clifford path
+## finding-044: Josh Brolin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -654,7 +798,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-037: Reid Hoffman has surfaces but no Clifford path
+## finding-045: Reid Hoffman has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -672,7 +816,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-038: Wes Moore has surfaces but no Clifford path
+## finding-046: Wes Moore has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -690,7 +834,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-039: Jared Polis has surfaces but no Clifford path
+## finding-047: Jared Polis has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -708,7 +852,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-040: Lisa Monaco has surfaces but no Clifford path
+## finding-048: Lisa Monaco has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -726,7 +870,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-041: Robert Hur has surfaces but no Clifford path
+## finding-049: Robert Hur has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -744,7 +888,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-042: Preet Bharara has surfaces but no Clifford path
+## finding-050: Preet Bharara has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -762,7 +906,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-043: Rachel Brand has surfaces but no Clifford path
+## finding-051: Rachel Brand has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -780,7 +924,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-044: Mitch Daniels has surfaces but no Clifford path
+## finding-052: Mitch Daniels has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -798,7 +942,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-045: Julian Castro has surfaces but no Clifford path
+## finding-053: Julian Castro has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -816,7 +960,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-046: Peggy Hamburg has surfaces but no Clifford path
+## finding-054: Peggy Hamburg has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -834,7 +978,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-047: Reema Al-Saud has surfaces but no Clifford path
+## finding-055: Reema Al-Saud has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -852,7 +996,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-048: Turki Al Faisal Al Saud has surfaces but no Clifford path
+## finding-056: Turki Al Faisal Al Saud has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -870,7 +1014,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-049: Sheikh Nawaf Saud Nasir Al-Sabah has surfaces but no Clifford path
+## finding-057: Sheikh Nawaf Saud Nasir Al-Sabah has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -888,7 +1032,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-050: Kaja Kallas has surfaces but no Clifford path
+## finding-058: Kaja Kallas has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -906,7 +1050,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-051: Tarō Kōno has surfaces but no Clifford path
+## finding-059: Tarō Kōno has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -924,7 +1068,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-052: Jens Spahn has surfaces but no Clifford path
+## finding-060: Jens Spahn has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -942,7 +1086,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-053: Tom Tugendhat has surfaces but no Clifford path
+## finding-061: Tom Tugendhat has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -960,7 +1104,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-054: Shahid Khaqan Abbasi has surfaces but no Clifford path
+## finding-062: Shahid Khaqan Abbasi has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -978,7 +1122,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-055: Ali Jehangir Siddiqui has surfaces but no Clifford path
+## finding-063: Ali Jehangir Siddiqui has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -996,7 +1140,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-056: Shivon Zilis has surfaces but no Clifford path
+## finding-064: Shivon Zilis has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1014,7 +1158,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-057: Stan McChrystal has surfaces but no Clifford path
+## finding-065: Stan McChrystal has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1032,7 +1176,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-058: Jonathan Ross has surfaces but no Clifford path
+## finding-066: Jonathan Ross has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1050,7 +1194,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-059: Pete Shadbolt has surfaces but no Clifford path
+## finding-067: Pete Shadbolt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1068,7 +1212,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-060: Scott Stephenson has surfaces but no Clifford path
+## finding-068: Scott Stephenson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1086,7 +1230,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-061: Barry Silbert has surfaces but no Clifford path
+## finding-069: Barry Silbert has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1104,7 +1248,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-062: Charlie Songhurst has surfaces but no Clifford path
+## finding-070: Charlie Songhurst has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1122,7 +1266,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-063: Tom Lue has surfaces but no Clifford path
+## finding-071: Tom Lue has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1140,7 +1284,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-064: Fatima Kardar has surfaces but no Clifford path
+## finding-072: Fatima Kardar has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1158,7 +1302,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-065: Neal Mohan has surfaces but no Clifford path
+## finding-073: Neal Mohan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1176,7 +1320,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-066: Greg Brockman has surfaces but no Clifford path
+## finding-074: Greg Brockman has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1194,7 +1338,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-067: Jason Kwon has surfaces but no Clifford path
+## finding-075: Jason Kwon has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1212,7 +1356,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-068: Adam D'Angelo has surfaces but no Clifford path
+## finding-076: Adam D'Angelo has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1230,7 +1374,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-069: Manuel Bronstein has surfaces but no Clifford path
+## finding-077: Manuel Bronstein has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1248,7 +1392,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-070: Severin Hacker has surfaces but no Clifford path
+## finding-078: Severin Hacker has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1266,7 +1410,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-071: Wences Casares has surfaces but no Clifford path
+## finding-079: Wences Casares has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1284,7 +1428,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-072: Immad Akhund has surfaces but no Clifford path
+## finding-080: Immad Akhund has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1302,7 +1446,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-073: Henry Kravis has surfaces but no Clifford path
+## finding-081: Henry Kravis has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1320,7 +1464,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-074: Pete Briger has surfaces but no Clifford path
+## finding-082: Pete Briger has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1338,7 +1482,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-075: Peter Brown has surfaces but no Clifford path
+## finding-083: Peter Brown has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1356,7 +1500,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-076: Karen Karniol-Tambour has surfaces but no Clifford path
+## finding-084: Karen Karniol-Tambour has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1374,7 +1518,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-077: Mike Novogratz has surfaces but no Clifford path
+## finding-085: Mike Novogratz has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1392,7 +1536,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-078: Bob Jain has surfaces but no Clifford path
+## finding-086: Bob Jain has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1410,7 +1554,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-079: Gaurva Kapadia has surfaces but no Clifford path
+## finding-087: Gaurva Kapadia has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1428,7 +1572,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-080: Micky Malka has surfaces but no Clifford path
+## finding-088: Micky Malka has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1446,7 +1590,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-081: Chamath Palihapitiya has surfaces but no Clifford path
+## finding-089: Chamath Palihapitiya has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1464,7 +1608,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-082: Jared Kushner has surfaces but no Clifford path
+## finding-090: Jared Kushner has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1482,7 +1626,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-083: John Arnold has surfaces but no Clifford path
+## finding-091: John Arnold has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1500,7 +1644,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-084: Robert Rubin has surfaces but no Clifford path
+## finding-092: Robert Rubin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1518,7 +1662,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-085: Lawrence Summers has surfaces but no Clifford path
+## finding-093: Lawrence Summers has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1536,7 +1680,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-086: Eric Schmidt has surfaces but no Clifford path
+## finding-094: Eric Schmidt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1554,7 +1698,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-087: Susan Athey has surfaces but no Clifford path
+## finding-095: Susan Athey has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1572,7 +1716,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-088: Steven Pinker has surfaces but no Clifford path
+## finding-096: Steven Pinker has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1590,7 +1734,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-089: Tyler Cowen has surfaces but no Clifford path
+## finding-097: Tyler Cowen has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1608,7 +1752,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-090: Adam Grant has surfaces but no Clifford path
+## finding-098: Adam Grant has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1626,7 +1770,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-091: Jonathan Haidt has surfaces but no Clifford path
+## finding-099: Jonathan Haidt has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1644,7 +1788,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-092: Anne-Marie Slaughter has surfaces but no Clifford path
+## finding-100: Anne-Marie Slaughter has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1662,7 +1806,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-093: Leonard Leo has surfaces but no Clifford path
+## finding-101: Leonard Leo has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1680,7 +1824,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-094: Grover Norquist has surfaces but no Clifford path
+## finding-102: Grover Norquist has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1698,7 +1842,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-095: Nick Thompson has surfaces but no Clifford path
+## finding-103: Nick Thompson has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1716,7 +1860,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-096: Bret Stephens has surfaces but no Clifford path
+## finding-104: Bret Stephens has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1734,7 +1878,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-097: Tim Ferriss has surfaces but no Clifford path
+## finding-105: Tim Ferriss has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1752,7 +1896,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-098: Mike Cannon-Brookes has surfaces but no Clifford path
+## finding-106: Mike Cannon-Brookes has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1770,7 +1914,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-099: Marcos Galperin has surfaces but no Clifford path
+## finding-107: Marcos Galperin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1788,7 +1932,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-100: Demet Mutlu has surfaces but no Clifford path
+## finding-108: Demet Mutlu has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1806,7 +1950,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-101: Cesar Carvalho has surfaces but no Clifford path
+## finding-109: Cesar Carvalho has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1824,7 +1968,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-102: Howie Liu has surfaces but no Clifford path
+## finding-110: Howie Liu has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1842,7 +1986,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-103: Scott Belsky has surfaces but no Clifford path
+## finding-111: Scott Belsky has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1860,7 +2004,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-104: Steve Ells has surfaces but no Clifford path
+## finding-112: Steve Ells has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1878,7 +2022,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-105: Nicolas Berggruen has surfaces but no Clifford path
+## finding-113: Nicolas Berggruen has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1896,7 +2040,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-106: Matt Cohler has surfaces but no Clifford path
+## finding-114: Matt Cohler has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1914,7 +2058,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-107: Will Scharf has surfaces but no Clifford path
+## finding-115: Will Scharf has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1932,7 +2076,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-108: Mario Schlosser has surfaces but no Clifford path
+## finding-116: Mario Schlosser has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1950,7 +2094,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-109: Astro Teller has surfaces but no Clifford path
+## finding-117: Astro Teller has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1968,7 +2112,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-110: Strauss Zelnick has surfaces but no Clifford path
+## finding-118: Strauss Zelnick has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -1986,7 +2130,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-111: Benj Pasek has surfaces but no Clifford path
+## finding-119: Benj Pasek has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -2004,7 +2148,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-112: Drew Scott has surfaces but no Clifford path
+## finding-120: Drew Scott has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -2022,7 +2166,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-113: Kim Scott has surfaces but no Clifford path
+## finding-121: Kim Scott has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -2040,7 +2184,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-114: Rick Warren has surfaces but no Clifford path
+## finding-122: Rick Warren has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -2058,7 +2202,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-115: Gretchen Rubin has surfaces but no Clifford path
+## finding-123: Gretchen Rubin has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -2076,7 +2220,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-116: Charles Duhigg has surfaces but no Clifford path
+## finding-124: Charles Duhigg has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -2094,7 +2238,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-117: Daniel Pink has surfaces but no Clifford path
+## finding-125: Daniel Pink has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -2112,7 +2256,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-118: Tom Goldstein has surfaces but no Clifford path
+## finding-126: Tom Goldstein has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -2130,7 +2274,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-119: Neal Katyal has surfaces but no Clifford path
+## finding-127: Neal Katyal has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -2148,7 +2292,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-120: Garry Kasparov has surfaces but no Clifford path
+## finding-128: Garry Kasparov has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -2166,7 +2310,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-121: Atul Gawande has surfaces but no Clifford path
+## finding-129: Atul Gawande has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -2184,7 +2328,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-122: Bob Cialdini has surfaces but no Clifford path
+## finding-130: Bob Cialdini has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -2202,7 +2346,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-123: John Townsend has surfaces but no Clifford path
+## finding-131: John Townsend has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -2220,7 +2364,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-124: Tim Urban has surfaces but no Clifford path
+## finding-132: Tim Urban has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -2238,7 +2382,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-125: Thasunda Brown Duckett has surfaces but no Clifford path
+## finding-133: Thasunda Brown Duckett has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -2256,7 +2400,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-126: Vas Narasimhan has surfaces but no Clifford path
+## finding-134: Vas Narasimhan has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -2274,7 +2418,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-127: Elizabeth Blackburn has surfaces but no Clifford path
+## finding-135: Elizabeth Blackburn has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -2292,7 +2436,7 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-128: Simon Case Cabinet Secretary / Head of Civil Service surface, 2020-2024 contains broad institution context
+## finding-136: Simon Case Cabinet Secretary / Head of Civil Service surface, 2020-2024 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -2310,7 +2454,7 @@ Refs: `simon-case-cabinet-secretary-2020-2024`
 
 ---
 
-## finding-129: Team Barrow public-private development fund surface contains broad institution context
+## finding-137: Team Barrow public-private development fund surface contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -2328,7 +2472,7 @@ Refs: `team-barrow-public-private-fund-2026`
 
 ---
 
-## finding-130: AI Opportunities Action Plan surface, 2025 contains broad institution context
+## finding-138: AI Opportunities Action Plan surface, 2025 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -2346,7 +2490,7 @@ Refs: `ai-opportunities-action-plan-2025`
 
 ---
 
-## finding-131: Strategic Defence Review, externally led review, 2024-2025 contains broad institution context
+## finding-139: Strategic Defence Review, externally led review, 2024-2025 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -2364,7 +2508,7 @@ Refs: `strategic-defence-review-2024-2025`
 
 ---
 
-## finding-132: Policy creation → procurement corridor → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
+## finding-140: Policy creation → procurement corridor → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
 
 - Type: laundering_chain
 - Priority: high
@@ -2382,7 +2526,7 @@ Refs: `ai-opportunities-action-plan-2025`, `detachment-201-commissioning-2025`, 
 
 ---
 
-## finding-133: Full master doc has been classified, not blindly migrated
+## finding-141: Full master doc has been classified, not blindly migrated
 
 - Type: migration_queue
 - Priority: high
@@ -2399,3 +2543,4 @@ Review build/migration-review.md and promote rows into surfaces/participation le
 Refs: `build/migration-review.md`
 
 ---
+
