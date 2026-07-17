@@ -16,7 +16,7 @@ if (missing.length) {
   console.error(`validate-pages failed: missing ${missing.join(', ')}`);
   process.exit(1);
 }
-for (const forbidden of ['data/crawl', 'receipts/crawl']) {
+for (const forbidden of ['data/crawl', 'data/intake', 'data/local', 'receipts/crawl']) {
   if (fs.existsSync(path.join(destination, forbidden))) {
     console.error(`validate-pages failed: intake path ${forbidden} must not be published`);
     process.exit(1);
