@@ -35,6 +35,7 @@ The essential reading rules are: a hop means documented shared context on a boun
 - [`corpus-selection.md`](corpus-selection.md) — constitutional lane-selection symmetry and measured corpus coverage.
 - [`consumption-contract.md`](consumption-contract.md) — copy-ready interpretation caveats and adversarial neutral-universe review.
 - [`officeholder-cohort.md`](officeholder-cohort.md) — the office-defined 1979-present presidential cohort and frozen role-neutral crossing battery.
+- [`axm-instrument-architecture.md`](axm-instrument-architecture.md) — how Clifford sits as a layer-2 instrument in the AXM sovereign-evidence stack, the custody/intake seams, the "conform late" principle, and the ten parallel research-track harnesses.
 - [`../CONTRIBUTING.md`](../CONTRIBUTING.md) — contribution expectations and examples.
 - [`../contributions/templates/candidate-surface.md`](../contributions/templates/candidate-surface.md) — submission template.
 - [`redaction-policy.md`](redaction-policy.md) — required exclusions and listing caveats.

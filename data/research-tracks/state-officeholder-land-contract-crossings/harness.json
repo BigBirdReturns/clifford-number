@@ -1,0 +1,140 @@
+{
+  "schema_version": "research-track-harness@1",
+  "track_id": "state-officeholder-land-contract-crossings",
+  "axis": "disclosure-crossing",
+  "label": "State officeholder × land / contract crossings",
+  "question": "At the state level, which legislators or agency heads have disclosed entities that overlap state contracts or land actions, and did the disclosure precede or follow the action?",
+  "derived_from": [
+    "oge-fec-overlap",
+    "arcadia-field-autopsy"
+  ],
+  "scan": {
+    "kind": "crossing",
+    "stages": [
+      {
+        "stage_id": "enumerate-cohort",
+        "label": "Enumerate the state legislators and agency heads cohort (denominator)",
+        "search_templates": [
+          "state legislators and agency heads roster official list term"
+        ],
+        "target_domain": "official_roster_records"
+      },
+      {
+        "stage_id": "resolve-entities",
+        "label": "Resolve each member's disclosed business entities",
+        "search_templates": [
+          "{member} financial disclosure reported entities",
+          "{member} {entity} state registration officers"
+        ],
+        "target_domain": "disclosure_and_registry_records"
+      },
+      {
+        "stage_id": "money-stream",
+        "label": "Enumerate the state contracts and land dispositions money stream",
+        "search_templates": [
+          "state contracts and land dispositions recipient award amount date"
+        ],
+        "target_domain": "federal_spending_records"
+      },
+      {
+        "stage_id": "exact-overlap",
+        "label": "Exact-name / entity overlap between entity set and money stream",
+        "search_templates": [
+          "{entity} exact match award recipient"
+        ],
+        "target_domain": "join_records"
+      },
+      {
+        "stage_id": "temporal-screen",
+        "label": "Temporal screen: order of disclosure vs. award vs. tenure",
+        "search_templates": [
+          "{entity} award date {member} tenure dates"
+        ],
+        "target_domain": "temporal_records"
+      }
+    ]
+  },
+  "denominator": {
+    "definition": "The legislature/agency roster for the state and term in scope.",
+    "source": "State legislative roster + agency leadership",
+    "discipline": "Full roster enumerated per state; per-state adapters required."
+  },
+  "source_adapters": [
+    {
+      "adapter_id": "state-legislative-roster",
+      "surface": "State legislature / agency roster",
+      "mode": "structured",
+      "status": "new",
+      "intake_layer": "direct",
+      "note": ""
+    },
+    {
+      "adapter_id": "state-ethics-disclosure",
+      "surface": "State ethics / financial-disclosure portal",
+      "mode": "photonic",
+      "status": "new",
+      "intake_layer": "screenghost",
+      "note": "Every state's portal differs; ScreenGhost is the per-state adapter."
+    },
+    {
+      "adapter_id": "state-sos-registry",
+      "surface": "State Secretary-of-State business registry",
+      "mode": "photonic",
+      "status": "reuse",
+      "intake_layer": "screenghost",
+      "note": "NY adapter exists; other states via ScreenGhost.",
+      "reuses": "tools/acquire-ny-registry-embedded-entities.mjs"
+    },
+    {
+      "adapter_id": "county-recorder-deeds",
+      "surface": "County recorder land actions",
+      "mode": "photonic",
+      "status": "new",
+      "intake_layer": "screenghost",
+      "note": ""
+    },
+    {
+      "adapter_id": "state-procurement",
+      "surface": "State procurement / contract awards",
+      "mode": "photonic",
+      "status": "new",
+      "intake_layer": "screenghost",
+      "note": ""
+    }
+  ],
+  "coverage_seed": [
+    {
+      "topic": "state roster per term",
+      "state": "not_searched"
+    },
+    {
+      "topic": "disclosed entities per officeholder",
+      "state": "not_searched"
+    },
+    {
+      "topic": "state contract/land overlap per entity",
+      "state": "not_searched"
+    },
+    {
+      "topic": "temporal order per overlap",
+      "state": "not_searched"
+    }
+  ],
+  "epistemic_contract": {
+    "graph_effect": "none",
+    "promotes_to": "candidate_only",
+    "forbidden_inference": "A signature or crossing match never establishes coordination, influence, wrongdoing, or intent. Structural convergence on shared incentives is the null hypothesis; only document-level receipts can upgrade any candidate, and only a human reviewer can admit it.",
+    "coverage_honesty": "not_searched is the honest default and may not cite executed searches. unavailable_after_search requires search provenance. A partial surface is never labeled complete; absence of evidence is a coverage result, not proof of absence.",
+    "denominator_discipline": "Every score is over a declared, bounded universe. The denominator and its source are named; below-threshold members are retained, not dropped."
+  },
+  "custody": {
+    "seals_into": "axm-genesis",
+    "layer": "instrument (watershed layer 2)",
+    "shard_profile": "crossing-shard@1",
+    "publication_layer": "field-autopsy",
+    "status": "declared_not_wired",
+    "note": "State crossings seal with disclosure + contract/deed receipts; per-state adapter is the cost unit.",
+    "acceptance": "A track corpus is custody-ready when every admitted candidate's receipts compile into a genesis shard that passes `axm-verify` DETACHED (bytes + out-of-band key only). Until then receipts remain receipt-v2 provenance, honestly labeled."
+  },
+  "status": "scaffold"
+}
