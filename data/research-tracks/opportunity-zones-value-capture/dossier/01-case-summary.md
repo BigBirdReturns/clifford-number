@@ -27,9 +27,13 @@ at the correct layer.
 
 ## Verification status of the documented instances
 
-- **Port Covington, Baltimore (Plank / Sagamore)** — VERIFIED verbatim. Land-buying began **2012**; a
-  Hogan aide wrote **"Port Covington does not qualify"** before a Feb 5, 2018 developer meeting;
-  Hogan selected it in April 2018. The cleanest instance of the pattern.
+- **Port Covington, Baltimore (Plank / Sagamore)** — VERIFIED verbatim **and now DEED-DATED**. Primary
+  Maryland SDAT records show the assemblage transferred **2014–2016** (the ~60-acre Sun Park for $46.5M
+  on 2014-12-23; City Garage on 2015-05-05; a $70.3M cluster on 2016-07-01 that matches the Baltimore
+  Sun's reported figure to the dollar) — two to four years before the June 2018 designation. A Hogan
+  aide wrote **"Port Covington does not qualify"** before a Feb 5, 2018 developer meeting; Hogan
+  selected it in April 2018. The cleanest instance of the pattern, now anchored in the county record
+  (see the Deed Layer section).
 - **West Palm Beach superyacht marina (Huizenga)** — VERIFIED. The state "had not originally intended
   to pick the census tract containing the superyacht marina"; owner lobbied Gov. Scott ~April 2018.
 - **Detroit riverfront (Gilbert / Bedrock)** — VERIFIED verbatim: **"Gilbert owns more than 10
