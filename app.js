@@ -1,11 +1,12 @@
-import { decodeHashPart, formatCitation, safeExternalUrl, safeLocalReceiptPath, validAsOf } from './src/ui-utils.js';
+import { decodeHashPart, formatCitation, safeExternalUrl, validAsOf } from './src/ui-utils.js';
 import { applyTranslations, normalizeLocale, translate } from './src/i18n.js';
 
 const PREFERENCES_KEY = 'clifford-preferences';
 const state = {
   searchResults: [], searchActiveIndex: -1, locale: 'en', preferences: {}, citation: null,
   tracks: new Map(), trackHarnesses: new Map(), cases: new Map(), caseIndex: new Map(),
-  claims: new Map(), caseReceipts: new Map(), claimCatalog: new Map(), receiptCatalog: new Map(), catalogCounts: {}
+  claims: new Map(), caseReceipts: new Map(), claimCatalog: new Map(), receiptCatalog: new Map(), claimKeyById: new Map(), catalogCounts: {},
+  networkMode: 'research', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null
 };
 const $ = sel => document.querySelector(sel);
 
@@ -256,14 +257,16 @@ function initEvidenceDialog() {
   dialog?.addEventListener('click', event => {
     if (event.target === dialog) dialog.close();
   });
+  document.addEventListener('click', event => {
+    const claimButton = event.target.closest?.('[data-open-claim]');
+    if (claimButton) { event.preventDefault(); openClaimDialog(claimButton.dataset.openClaim); return; }
+    const receiptButton = event.target.closest?.('[data-open-receipt]');
+    if (receiptButton) { event.preventDefault(); openReceiptDialog(receiptButton.dataset.openReceipt); }
+  });
 }
 
 function receiptTitle(receipt) {
   return receipt?.label || receipt?.title || receipt?.source_title || receipt?.receipt_id || 'Untitled receipt';
-}
-
-function isPortableRelease() {
-  return document.body?.dataset.portableRelease === 'true';
 }
 
 function mergeReceiptRecords(...records) {
@@ -295,11 +298,9 @@ function receiptInspector(receipt) {
   if (!receipt) return '<p class="evidence-note">This receipt is not present in the current public release.</p>';
   const sourceUrl = safeExternalUrl(receipt.url || receipt.source_url || '');
   const archiveUrl = safeExternalUrl(receipt.archive_url || receipt.archive?.url || '');
-  const localPath = isPortableRelease() ? null : safeLocalReceiptPath(receipt.path || receipt.local_path || '');
   const links = [
     sourceUrl ? `<a class="receipt-link" href="${esc(sourceUrl)}" target="_blank" rel="noreferrer">Open original source ↗</a>` : '',
-    archiveUrl ? `<a class="receipt-link" href="${esc(archiveUrl)}" target="_blank" rel="noreferrer">Open archived copy ↗</a>` : '',
-    localPath ? `<a class="receipt-link" href="${esc(localPath)}">Open repository record →</a>` : ''
+    archiveUrl ? `<a class="receipt-link" href="${esc(archiveUrl)}" target="_blank" rel="noreferrer">Open archived copy ↗</a>` : ''
   ].filter(Boolean).join('');
   const claimLinks = (receipt.claim_ids ?? []).map(id => {
     const claim = state.claims.get(id) ?? state.claimCatalog.get(id);
@@ -313,8 +314,8 @@ function receiptInspector(receipt) {
       ${receipt.published_at ? `<div><dt>Published</dt><dd>${esc(receipt.published_at)}</dd></div>` : ''}
       ${receipt.retrieved_at ? `<div><dt>Retrieved</dt><dd>${esc(receipt.retrieved_at)}</dd></div>` : ''}
     </dl>
-    ${receipt.extract ? `<div class="receipt-locator"><strong>Relevant locator or excerpt</strong><p>${esc(receipt.extract)}</p></div>` : '<p class="meta">No excerpt is stored in this public projection.</p>'}
-    ${receipt.notes ? `<p class="evidence-note"><strong>Qualification.</strong> ${esc(receipt.notes)}</p>` : ''}
+    ${receipt.extract ? `<div class="receipt-locator"><strong>Relevant locator or excerpt</strong><p>${esc(receipt.extract)}</p></div>` : receipt.notes ? `<div class="receipt-locator"><strong>What this receipt supports</strong><p>${esc(receipt.notes)}</p></div>` : '<p class="meta">The public record has source metadata but no stored excerpt.</p>'}
+    ${receipt.extract && receipt.notes ? `<p class="evidence-note"><strong>Qualification.</strong> ${esc(receipt.notes)}</p>` : ''}
     ${links ? `<div class="receipt-actions">${links}</div>` : '<p class="evidence-note">No safe public URL is available for this receipt.</p>'}
     ${claimLinks ? `<div class="related-claims"><strong>Claims using this receipt</strong>${claimLinks}</div>` : ''}
   </article>`;
@@ -360,8 +361,7 @@ async function openReceiptDialog(id) {
 }
 
 function bindEvidenceActions(root = document) {
-  for (const button of root.querySelectorAll('[data-open-claim]')) button.addEventListener('click', () => openClaimDialog(button.dataset.openClaim));
-  for (const button of root.querySelectorAll('[data-open-receipt]')) button.addEventListener('click', () => openReceiptDialog(button.dataset.openReceipt));
+  return root;
 }
 
 function activateResult(kind, id) {
@@ -399,7 +399,7 @@ function labelOrg(id) { return state.orgs.get(id)?.label || id; }
 function surface(id) { return state.surfaces.get(id); }
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function shortLabel(s, max = 26) { const value = String(s ?? ''); return value.length > max ? `${value.slice(0, max - 1)}…` : value; }
-function setDocumentTitle(label) { document.title = label ? `${label} — The Clifford Number` : 'The Clifford Number — public records kept together'; }
+function setDocumentTitle(label) { document.title = label ? `${label} — The Clifford Number` : 'The Clifford Number — map the machine, open every receipt'; }
 function announce(message) { const status = $('#view-status'); if (status) status.textContent = message; }
 
 async function init() {
@@ -438,14 +438,18 @@ async function init() {
   state.tracks = new Map((publicCatalog.tracks ?? []).map(item => [item.track_id, item]));
   state.claimCatalog = new Map((publicCatalog.claims ?? []).map(item => [item.key, item]));
   state.receiptCatalog = new Map((publicCatalog.receipts ?? []).map(item => [item.receipt_id, item]));
+  state.claimKeyById = new Map((publicCatalog.claims ?? []).map(item => [item.claim_id, item.key]));
   state.hopEdgeByPair = new Map();
   for (const edge of hopGraph.edges ?? []) {
     state.hopEdgeByPair.set(`${edge.actor_a}||${edge.actor_b}`, edge);
     state.hopEdgeByPair.set(`${edge.actor_b}||${edge.actor_a}`, edge);
   }
-  const examples = ['opportunity-zones-value-capture', 'stadium-arena-public-finance', 'oge278-revolving-door-routers'].filter(id => state.tracks.has(id));
-  $('#try-examples').innerHTML = examples.map(id => `<button data-kind="track" data-id="${esc(id)}">${esc(shortLabel(state.tracks.get(id).label, 32))}</button>`).join('');
-  for (const btn of $('#try-examples').querySelectorAll('button')) btn.addEventListener('click', () => go(btn.dataset.kind, btn.dataset.id));
+  const flagshipCase = [...state.caseIndex.values()].sort((a, b) => (b.featured_priority ?? 0) - (a.featured_priority ?? 0))[0];
+  $('#try-examples').innerHTML = `
+    <button data-network-focus="dialog">Dialog · 124 edges</button>
+    ${flagshipCase ? `<button data-kind="case" data-id="${esc(flagshipCase.case_id)}">Clifford → Starmer · official</button>` : ''}
+    ${state.actors.has('ben-warner') ? '<button data-kind="actor" data-id="ben-warner">Ben Warner → Clifford · hops</button>' : ''}`;
+  for (const btn of $('#try-examples').querySelectorAll('[data-kind]')) btn.addEventListener('click', () => go(btn.dataset.kind, btn.dataset.id));
 
   $('#search').addEventListener('input', onSearch);
   $('#search').addEventListener('keydown', onSearchKeydown);
@@ -496,6 +500,7 @@ async function init() {
   });
 
   renderHeroNetwork();
+  initNetworkAtlas();
   renderTrackDirectory();
   const nonHop = state.surfaceGraph.surfaces.filter(s => !s.hop_eligible).length;
   $('#footer-corpus-meta').textContent = `${state.surfaceGraph.surfaces.length} surfaces · ${state.receipts.size} receipts · ${nonHop} context-only surfaces`;
@@ -712,6 +717,319 @@ function renderHomeV2() {
   announce(`Public record loaded: ${state.catalogCounts.tracks ?? state.tracks.size} research tracks, ${state.catalogCounts.cases ?? state.caseIndex.size} cases, ${state.catalogCounts.claims ?? state.claimCatalog.size} public-indexed claims, and ${publicReceiptCount()} unique receipt records.`);
 }
 
+const NETWORK_FULL_VIEW = { x: 0, y: 0, width: 1400, height: 900 };
+
+function evidenceBand(value) {
+  const evidence = norm(value);
+  if (['official', 'confirmed'].includes(evidence)) return 'confirmed';
+  if (evidence === 'primary_public') return 'primary';
+  if (evidence === 'reported') return 'reported';
+  return 'derived';
+}
+
+function clusterForNode(node) {
+  const text = norm([node.id, node.type, ...(node.tags ?? [])].join(' '));
+  if (text.includes('dialog') || text.includes('private-forum')) return 'dialog';
+  if (text.includes('government') || text.includes('policy') || text.includes('uk-ai') || text.includes('public-sector')) return 'policy';
+  if (text.includes('defen') || text.includes('military') || text.includes('army') || text.includes('palantir')) return 'defense';
+  if (text.includes('capital') || text.includes('fund') || text.includes('venture') || text.includes('invest')) return 'capital';
+  if (text.includes('company') || text.includes('technology') || text.includes('frontier-ai') || text.includes('data')) return 'technology';
+  return 'other';
+}
+
+function researchNetworkModel() {
+  const graph = state.legacyGraph;
+  const degree = new Map((graph.nodes ?? []).map(node => [node.id, 0]));
+  const adjacency = new Map((graph.nodes ?? []).map(node => [node.id, []]));
+  for (const edge of graph.edges ?? []) {
+    degree.set(edge.from, (degree.get(edge.from) ?? 0) + 1);
+    degree.set(edge.to, (degree.get(edge.to) ?? 0) + 1);
+    adjacency.get(edge.from)?.push(edge.to);
+    adjacency.get(edge.to)?.push(edge.from);
+  }
+  const fixed = new Map(Object.entries({
+    dialog: [300, 440],
+    'matt-clifford': [690, 415],
+    'clifford-policy-machine': [835, 415],
+    'ai-opportunities-action-plan': [790, 235],
+    palantir: [1080, 570],
+    'entrepreneur-first': [700, 700],
+    'detachment-201': [1130, 285]
+  }));
+  const centers = {
+    dialog: [300, 440], policy: [805, 365], defense: [1110, 520],
+    capital: [700, 690], technology: [1080, 190], other: [505, 745]
+  };
+  const raw = (graph.nodes ?? []).map(node => {
+    let cluster = clusterForNode(node);
+    if ((adjacency.get(node.id) ?? []).includes('dialog') && !fixed.has(node.id)) cluster = 'dialog';
+    return { ...node, degree: degree.get(node.id) ?? 0, cluster };
+  });
+  const groups = new Map();
+  for (const node of raw.filter(node => !fixed.has(node.id))) {
+    if (!groups.has(node.cluster)) groups.set(node.cluster, []);
+    groups.get(node.cluster).push(node);
+  }
+  const positions = new Map();
+  for (const [id, point] of fixed) positions.set(id, { x: point[0], y: point[1] });
+  for (const [cluster, nodes] of groups) {
+    const [cx, cy] = centers[cluster] ?? centers.other;
+    nodes.sort((a, b) => b.degree - a.degree || a.label.localeCompare(b.label));
+    nodes.forEach((node, index) => {
+      const angle = index * 2.3999632297;
+      const spread = cluster === 'dialog' ? 27 : 34;
+      const radius = 62 + Math.sqrt(index + 1) * spread;
+      positions.set(node.id, {
+        x: Math.max(28, Math.min(1372, cx + Math.cos(angle) * radius)),
+        y: Math.max(28, Math.min(872, cy + Math.sin(angle) * radius))
+      });
+    });
+  }
+  const nodes = raw.map(node => ({ ...node, ...(positions.get(node.id) ?? { x: 700, y: 450 }) }));
+  return {
+    mode: 'research', nodes, edges: graph.edges ?? [], nodeById: new Map(nodes.map(node => [node.id, node])),
+    defaultNode: 'dialog', fullView: { ...NETWORK_FULL_VIEW }
+  };
+}
+
+function hopNetworkModel() {
+  const actorIds = new Set();
+  const degree = new Map();
+  for (const edge of state.hopGraph.edges ?? []) {
+    actorIds.add(edge.actor_a); actorIds.add(edge.actor_b);
+    degree.set(edge.actor_a, (degree.get(edge.actor_a) ?? 0) + 1);
+    degree.set(edge.actor_b, (degree.get(edge.actor_b) ?? 0) + 1);
+  }
+  const levels = new Map();
+  for (const id of actorIds) {
+    const score = state.actorScores.get(id);
+    levels.set(id, Number.isInteger(score?.clifford_number) ? score.clifford_number : 3);
+  }
+  levels.set(state.hopGraph.anchor_actor_id, 0);
+  const byLevel = new Map();
+  for (const id of actorIds) {
+    const level = Math.max(0, Math.min(4, levels.get(id) ?? 3));
+    if (!byLevel.has(level)) byLevel.set(level, []);
+    byLevel.get(level).push(id);
+  }
+  const positions = new Map([[state.hopGraph.anchor_actor_id, { x: 700, y: 450 }]]);
+  for (const [level, ids] of byLevel) {
+    if (level === 0) continue;
+    ids.sort((a, b) => (degree.get(b) ?? 0) - (degree.get(a) ?? 0) || labelActor(a).localeCompare(labelActor(b)));
+    const radiusX = Math.min(600, 180 + level * 115);
+    const radiusY = Math.min(370, 120 + level * 70);
+    ids.forEach((id, index) => {
+      const angle = -Math.PI / 2 + (index / Math.max(1, ids.length)) * Math.PI * 2 + level * .22;
+      positions.set(id, { x: 700 + Math.cos(angle) * radiusX, y: 450 + Math.sin(angle) * radiusY });
+    });
+  }
+  const nodes = [...actorIds].map(id => ({
+    id, label: labelActor(id), type: 'person', cluster: 'hop', degree: degree.get(id) ?? 0,
+    ...(positions.get(id) ?? { x: 700, y: 450 })
+  }));
+  const edges = (state.hopGraph.edges ?? []).map((edge, index) => ({
+    ...edge, id: `hop-${index}-${edge.actor_a}-${edge.actor_b}`, from: edge.actor_a, to: edge.actor_b,
+    evidence_class: [...(edge.surfaces ?? [])].sort((a, b) => (EVIDENCE_RANK[a.evidence_class] ?? 9) - (EVIDENCE_RANK[b.evidence_class] ?? 9))[0]?.evidence_class ?? 'judgment'
+  }));
+  return {
+    mode: 'hops', nodes, edges, nodeById: new Map(nodes.map(node => [node.id, node])),
+    defaultNode: state.hopGraph.anchor_actor_id, fullView: { ...NETWORK_FULL_VIEW }
+  };
+}
+
+function applyNetworkView() {
+  const svg = $('#network-svg');
+  if (!svg) return;
+  const view = state.networkView;
+  svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.width} ${view.height}`);
+}
+
+function zoomNetwork(factor, center = null) {
+  const current = state.networkView;
+  const nextWidth = Math.max(260, Math.min(1400, current.width * factor));
+  const nextHeight = nextWidth * (900 / 1400);
+  const cx = center?.x ?? current.x + current.width / 2;
+  const cy = center?.y ?? current.y + current.height / 2;
+  state.networkView = {
+    x: Math.max(0, Math.min(1400 - nextWidth, cx - nextWidth / 2)),
+    y: Math.max(0, Math.min(900 - nextHeight, cy - nextHeight / 2)),
+    width: nextWidth, height: nextHeight
+  };
+  applyNetworkView();
+}
+
+function resetNetworkView() {
+  state.networkView = { ...NETWORK_FULL_VIEW };
+  applyNetworkView();
+}
+
+function networkNodeRadius(node) {
+  return Math.max(5, Math.min(31, 4 + Math.sqrt(node.degree || 1) * 2.35));
+}
+
+function renderNetworkAtlas(mode = state.networkMode, selectedId = null) {
+  const layer = $('#network-layer');
+  if (!layer) return;
+  state.networkMode = mode;
+  state.networkModel = mode === 'hops' ? hopNetworkModel() : researchNetworkModel();
+  const model = state.networkModel;
+  const edgeMarkup = model.edges.map(edge => {
+    const from = model.nodeById.get(edge.from);
+    const to = model.nodeById.get(edge.to);
+    if (!from || !to) return '';
+    const band = evidenceBand(edge.evidence_class);
+    const topology = model.mode === 'research' && legacyIsTopology(edge) ? ' network-edge--topology' : '';
+    return `<line class="network-edge network-edge--${band}${topology}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"/><line class="network-edge-hit" data-network-edge="${esc(edge.id)}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"/>`;
+  }).join('');
+  const nodeMarkup = model.nodes.map(node => {
+    const radius = networkNodeRadius(node);
+    const hot = node.degree >= 5 || node.id === model.defaultNode;
+    const showLabel = hot || model.mode === 'hops';
+    return `<g class="atlas-node atlas-node--${esc(node.cluster)}${hot ? ' atlas-node--hot' : ''}" data-network-node="${esc(node.id)}" transform="translate(${node.x} ${node.y})" tabindex="0" role="button" aria-label="${esc(`${node.label}, ${node.degree} documented edges`)}">
+      ${hot ? `<circle class="atlas-node-halo" r="${radius + 12}"/>` : ''}
+      <circle class="atlas-node-core" r="${radius}"/>
+      ${showLabel ? `<text class="atlas-node-label" y="${-(radius + 10)}" text-anchor="middle">${esc(shortLabel(node.label, 28))}</text><text class="atlas-node-degree" y="4" text-anchor="middle">${node.degree}</text>` : ''}
+      <title>${esc(node.label)} · ${node.degree} documented edge${node.degree === 1 ? '' : 's'}</title>
+    </g>`;
+  }).join('');
+  layer.innerHTML = `<g class="network-edges">${edgeMarkup}</g><g class="network-nodes">${nodeMarkup}</g>`;
+  const uniqueSurfaces = new Set((state.hopGraph.edges ?? []).flatMap(edge => (edge.surfaces ?? []).map(surfaceItem => surfaceItem.surface_id)));
+  $('#atlas-stats').innerHTML = model.mode === 'research'
+    ? `<strong>${model.nodes.length}</strong> public nodes <span>·</span> <strong>${model.edges.length}</strong> sourced edges <span>·</span> <strong>${model.nodeById.get('dialog')?.degree ?? 0}</strong> edges at Dialog`
+    : `<strong>${model.nodes.length}</strong> admitted actors <span>·</span> <strong>${model.edges.length}</strong> valid hops <span>·</span> <strong>${uniqueSurfaces.size}</strong> bounded surfaces`;
+  for (const button of document.querySelectorAll('[data-network-mode]')) {
+    const active = button.dataset.networkMode === mode;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', String(active));
+  }
+  for (const nodeEl of layer.querySelectorAll('[data-network-node]')) {
+    const select = () => selectNetworkNode(nodeEl.dataset.networkNode);
+    nodeEl.addEventListener('click', select);
+    nodeEl.addEventListener('keydown', event => {
+      if (!['Enter', ' '].includes(event.key)) return;
+      event.preventDefault(); select();
+    });
+  }
+  for (const edgeEl of layer.querySelectorAll('[data-network-edge]')) {
+    edgeEl.addEventListener('click', () => openNetworkEdge(edgeEl.dataset.networkEdge));
+  }
+  resetNetworkView();
+  selectNetworkNode(selectedId && model.nodeById.has(selectedId) ? selectedId : model.defaultNode);
+}
+
+function selectNetworkNode(id) {
+  const model = state.networkModel;
+  const node = model?.nodeById.get(id);
+  const inspector = $('#network-inspector');
+  if (!node || !inspector) return;
+  for (const element of $('#network-layer').querySelectorAll('[data-network-node]')) element.classList.toggle('is-selected', element.dataset.networkNode === id);
+  const related = model.edges.filter(edge => edge.from === id || edge.to === id)
+    .sort((a, b) => (EVIDENCE_RANK[a.evidence_class] ?? 9) - (EVIDENCE_RANK[b.evidence_class] ?? 9))
+    .slice(0, 12);
+  const cards = related.map(edge => {
+    const otherId = edge.from === id ? edge.to : edge.from;
+    const other = model.nodeById.get(otherId);
+    if (model.mode === 'hops') {
+      const surfaces = edge.surfaces ?? [];
+      return `<article class="network-edge-card"><div><span class="badge">${esc(humanLabel(edge.evidence_class))}</span><strong>${esc(other?.label ?? otherId)}</strong></div>${surfaces.map(surfaceItem => `<p><b>${esc(surfaceItem.surface_label)}</b><br><span>${esc(surfaceItem.actor_a_role || '')} ↔ ${esc(surfaceItem.actor_b_role || '')}</span></p><div class="network-receipt-buttons">${(surfaceItem.receipt_ids ?? []).slice(0, 3).map(receiptId => `<button type="button" data-open-receipt="${esc(receiptId)}">Receipt · ${esc(shortLabel(receiptId, 28))}</button>`).join('')}</div>`).join('')}</article>`;
+    }
+    const claimKey = state.claimKeyById.get(`clm-${edge.id}`);
+    return `<article class="network-edge-card"><div><span class="badge">${esc(humanLabel(edge.evidence_class || 'context'))}</span><strong>${esc(other?.label ?? otherId)}</strong></div><p>${esc(edge.claim || humanLabel(edge.type))}</p>${claimKey ? `<button type="button" class="edge-evidence-button" data-open-claim="${esc(claimKey)}">Open claim + ${(edge.source_ids ?? []).length} receipt${(edge.source_ids ?? []).length === 1 ? '' : 's'} →</button>` : ''}</article>`;
+  }).join('');
+  inspector.innerHTML = `<p class="section-kicker">${esc(model.mode === 'hops' ? 'Verified surface-hop node' : humanLabel(node.cluster) + ' cluster')}</p><h3>${esc(node.label)}</h3><div class="network-node-metric"><strong>${node.degree}</strong><span>documented edge${node.degree === 1 ? '' : 's'}</span></div>${node.description ? `<p>${esc(node.description)}</p>` : ''}<button class="result network-profile-link" data-kind="actor" data-id="${esc(node.id)}"><span class="kind-glyph">A</span><span class="result-label">Open the full record<small>routes, roles, windows, and receipts</small></span></button><h4>Strongest visible edges</h4><div class="network-edge-list">${cards || '<p>No edge is visible in this view.</p>'}</div>`;
+  bindEvidenceActions(inspector);
+  for (const button of inspector.querySelectorAll('.result')) button.addEventListener('click', () => activateResult(button.dataset.kind, button.dataset.id));
+}
+
+function openNetworkEdge(id) {
+  if (state.networkMode === 'research') {
+    const claimKey = state.claimKeyById.get(`clm-${id}`);
+    if (claimKey) openClaimDialog(claimKey);
+    return;
+  }
+  const edge = state.networkModel?.edges.find(item => item.id === id);
+  if (edge) selectNetworkNode(edge.from);
+}
+
+function focusNetworkNode(id) {
+  if (state.networkMode !== 'research' || !state.networkModel?.nodeById.has(id)) renderNetworkAtlas('research', id);
+  else selectNetworkNode(id);
+  const node = state.networkModel?.nodeById.get(id);
+  if (node) {
+    state.networkView = { x: Math.max(0, Math.min(960, node.x - 220)), y: Math.max(0, Math.min(617, node.y - 142)), width: 440, height: 283 };
+    applyNetworkView();
+  }
+  $('#network-atlas')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderHopSpine() {
+  const root = $('#hop-spine-routes');
+  if (!root) return;
+  const preferred = ['ben-warner', 'fiona-hill', 'simon-case', 'keir-starmer', 'dominic-cummings'];
+  const ids = preferred.filter(id => state.hopGraph.shortest_paths[id]?.number > 0).slice(0, 4);
+  root.innerHTML = ids.map(id => {
+    const path = state.hopGraph.shortest_paths[id];
+    const route = [];
+    path.actor_path.forEach((actorId, index) => {
+      route.push(labelActor(actorId));
+      const basis = path.hops[index]?.shared_surfaces?.[0];
+      if (basis) route.push(basis.surface_label);
+    });
+    return `<button class="hop-route" type="button" data-kind="actor" data-id="${esc(id)}"><span><strong>Clifford Number ${path.number}</strong>${esc(labelActor(id))}</span><small>${route.map(item => esc(shortLabel(item, 34))).join(' → ')}</small></button>`;
+  }).join('');
+  for (const button of root.querySelectorAll('[data-kind]')) button.addEventListener('click', () => go(button.dataset.kind, button.dataset.id));
+}
+
+function initNetworkAtlas() {
+  renderNetworkAtlas('research');
+  renderHopSpine();
+  const model = state.networkModel;
+  if (model) {
+    const degree = id => model.nodeById.get(id)?.degree || 0;
+    const setText = (selector, value) => { const node = $(selector); if (node) node.textContent = value; };
+    setText('#hero-node-count', `${model.nodes.length} public nodes`);
+    setText('#hero-edge-count', `${model.edges.length} sourced edges`);
+    setText('#hotspot-dialog-count', `${degree('dialog')} public graph edges`);
+    setText('#hotspot-action-plan-count', `${degree('ai-opportunities-action-plan')} public graph edges`);
+    setText('#hotspot-palantir-count', `${degree('palantir')} public graph edges`);
+    const dialogExample = document.querySelector('#try-examples [data-network-focus="dialog"]');
+    if (dialogExample) dialogExample.textContent = `Dialog · ${degree('dialog')} edges`;
+  }
+  for (const button of document.querySelectorAll('[data-network-mode]')) button.addEventListener('click', () => renderNetworkAtlas(button.dataset.networkMode));
+  for (const button of document.querySelectorAll('[data-network-focus]')) button.addEventListener('click', () => focusNetworkNode(button.dataset.networkFocus));
+  for (const button of document.querySelectorAll('[data-network-zoom]')) button.addEventListener('click', () => {
+    if (button.dataset.networkZoom === 'reset') resetNetworkView();
+    else zoomNetwork(button.dataset.networkZoom === 'in' ? .72 : 1.28);
+  });
+  const svg = $('#network-svg');
+  if (!svg) return;
+  svg.addEventListener('wheel', event => {
+    event.preventDefault();
+    zoomNetwork(event.deltaY > 0 ? 1.12 : .88);
+  }, { passive: false });
+  let drag = null;
+  svg.addEventListener('pointerdown', event => {
+    if (event.target.closest?.('[data-network-node], [data-network-edge]')) return;
+    drag = { x: event.clientX, y: event.clientY, view: { ...state.networkView } };
+    svg.setPointerCapture?.(event.pointerId);
+    svg.classList.add('is-panning');
+  });
+  svg.addEventListener('pointermove', event => {
+    if (!drag) return;
+    const dx = (event.clientX - drag.x) * drag.view.width / Math.max(1, svg.clientWidth);
+    const dy = (event.clientY - drag.y) * drag.view.height / Math.max(1, svg.clientHeight);
+    state.networkView = {
+      ...drag.view,
+      x: Math.max(0, Math.min(1400 - drag.view.width, drag.view.x - dx)),
+      y: Math.max(0, Math.min(900 - drag.view.height, drag.view.y - dy))
+    };
+    applyNetworkView();
+  });
+  const endDrag = () => { drag = null; svg.classList.remove('is-panning'); };
+  svg.addEventListener('pointerup', endDrag);
+  svg.addEventListener('pointercancel', endDrag);
+}
+
 function rankMatch(q, label, id, aliases = []) {
   const values = [{ value: norm(label), context: 'name' }, ...aliases.map(value => ({ value: norm(value), context: `alias: ${value}` })), { value: norm(id), context: 'canonical ID' }];
   let best = null;
@@ -834,6 +1152,40 @@ function kindGlyph(kind) {
   return { actor: 'A', organization: 'O', surface: 'S', chain: 'C', case: 'F', track: 'T', claim: 'K', receipt: 'R', candidate: '?' }[kind] || '•';
 }
 
+function renderMethod(section = 'overview') {
+  setDocumentTitle('Method');
+  const tabs = [
+    ['overview', 'How a hop works'], ['definitions', 'Definitions'],
+    ['redaction', 'Publication boundaries'], ['rules', 'Compiler rules']
+  ];
+  $('#summary').innerHTML = [
+    metricPanel('Admitted hops', state.hopGraph.edges.length),
+    metricPanel('Bounded surfaces', state.surfaceGraph.surfaces.length),
+    metricPanel('Public graph edges', state.legacyGraph.edges.length),
+    metricPanel('Unique receipts', publicReceiptCount())
+  ].join('');
+  const methodNav = `<nav class="method-nav" aria-label="Method sections">${tabs.map(([id, label]) => `<a class="${section === id ? 'is-active' : ''}" href="#method/${id}">${esc(label)}</a>`).join('')}</nav>`;
+  const sections = {
+    overview: `<div class="panel method-panel"><span class="panel-label">The shortest honest explanation</span><h2>Actor → named surface → actor.</h2><p>A Clifford Number is not a generic social-network edge. Two people become adjacent only when public records place both on the same named, bounded surface during compatible dates.</p><div class="method-equation"><span>Person</span><b>→</b><span>Bounded surface</span><b>→</b><span>Person</span></div><p>Examples of qualifying surfaces include a named board, authorship group, taskforce, commissioned review, or small documented cohort. “Both worked near government” is not a hop.</p><a class="primary-action" href="#desk">Run the connection checker →</a></div>`,
+    definitions: `<div class="panel method-panel"><span class="panel-label">Terms used everywhere</span><h2>Do not collapse distinct predicates.</h2><dl class="definition-grid"><div><dt>Listed</dt><dd>A name appears in a directory. It does not prove membership or attendance.</dd></div><div><dt>Registered</dt><dd>A registration record exists. It does not prove attendance.</dd></div><div><dt>Attended</dt><dd>A source specifically supports presence at an event.</dd></div><div><dt>Surface</dt><dd>A named, bounded public process or cohort that can support an actor-to-actor hop.</dd></div><div><dt>Research edge</dt><dd>A sourced relationship in the wider public graph. It may be context rather than a valid hop.</dd></div><div><dt>Receipt</dt><dd>The source record, archive, locator, and qualification attached to a claim.</dd></div></dl></div>`,
+    redaction: `<div class="panel method-panel"><span class="panel-label">Publication boundary</span><h2>Publish the record. Preserve the limit.</h2><p>Public pages include published claims, graph edges, bounded surfaces, and receipt metadata. Intake queues, crawler state, private or local material, and unreviewed promotion candidates stay outside the Pages artifact.</p><div class="boundary-grid"><article><strong>Shown</strong><p>Exact sourced claim, evidence class, date window, qualification, source, archive, and publication status.</p></article><article><strong>Not manufactured</strong><p>Contact, coordination, influence, intent, benefit, wrongdoing, or causation not established by the source.</p></article></div></div>`,
+    rules: `<div class="panel method-panel"><span class="panel-label">Compiler contract</span><h2>No edge without a receipt. No dated hop without overlap.</h2><ol class="rule-list"><li><strong>Bound the surface.</strong> Broad institutions do not create hops.</li><li><strong>Type the predicate.</strong> Listed, registered, attended, appointed, funded, and reported remain distinct.</li><li><strong>Intersect the dates.</strong> Disjoint windows produce a compiler refusal, not a connection.</li><li><strong>Carry the evidence floor.</strong> A route cannot be stronger than its weakest admitted basis.</li><li><strong>Show the receipt.</strong> Every material claim opens inside the instrument before linking outward.</li></ol></div>`
+  };
+  $('#detail').innerHTML = `${methodNav}${sections[section] ?? sections.overview}`;
+}
+
+function renderReceiptArchive() {
+  setDocumentTitle('Evidence archive');
+  const receipts = [...publicReceiptRecords().values()].sort((a, b) => receiptTitle(a).localeCompare(receiptTitle(b)));
+  const archived = receipts.filter(receipt => receipt.archive_url || receipt.archive?.url || receipt.archive?.ref).length;
+  const official = receipts.filter(receipt => ['official', 'official_reference'].includes(norm(receipt.source_type))).length;
+  $('#summary').innerHTML = [
+    metricPanel('Unique receipts', receipts.length), metricPanel('Archived', archived),
+    metricPanel('Official sources', official), metricPanel('Claims indexed', state.claimCatalog.size)
+  ].join('');
+  $('#detail').innerHTML = `<section class="panel receipt-archive"><span class="panel-label">Public evidence archive</span><h2>The receipts, inside the instrument.</h2><p>Open a receipt here to see what it supports, its evidence class, publisher, dates, qualification, original source, archive, and every indexed claim that uses it.</p><div class="receipt-archive-grid">${receipts.map(receipt => `<article><span class="badge">${esc(humanLabel(receipt.source_type || receipt.evidence_class || 'source'))}</span><h3>${esc(receiptTitle(receipt))}</h3><p>${esc(receipt.notes || receipt.extract || receipt.publisher || 'Source metadata is available in this release.')}</p><button type="button" data-open-receipt="${esc(receipt.receipt_id)}">Inspect receipt →</button></article>`).join('')}</div></section>`;
+}
+
 async function renderEntity(kind, id) {
   if (kind === 'actor') renderActor(id);
   else if (kind === 'organization') renderOrg(id);
@@ -842,6 +1194,8 @@ async function renderEntity(kind, id) {
   else if (kind === 'surface') renderSurface(id);
   else if (kind === 'case') await renderCase(id);
   else if (kind === 'track') await renderTrack(id);
+  else if (kind === 'method') renderMethod(id);
+  else if (kind === 'receipts') renderReceiptArchive();
   else renderNotFound(kind, id);
   announce(`${document.title.replace(' — The Clifford Number', '')} loaded.`);
 }
@@ -923,12 +1277,15 @@ async function renderCase(id) {
   const relationFlow = item.relations.map(relation => `<article class="relation-row"><div><span class="meta">${esc(eventById.get(relation.from_event_id)?.occurred_at || '')}</span><strong>${esc(eventById.get(relation.from_event_id)?.label || relation.from_event_id)}</strong></div><span class="relation-arrow" aria-hidden="true">→</span><div><span class="meta">${esc(eventById.get(relation.to_event_id)?.occurred_at || '')}</span><strong>${esc(eventById.get(relation.to_event_id)?.label || relation.to_event_id)}</strong></div><aside><span class="badge">${esc(humanLabel(relation.relation_type))}</span><span class="causal-status">Causality: ${esc(humanLabel(relation.causal_status))}</span></aside></article>`).join('');
   const beacon = item.beacons[0];
   const dimensions = (beacon?.dimensions ?? []).map(dimension => `<li><strong>${esc(humanLabel(dimension.id))}</strong><span>${esc(dimension.formula)}</span></li>`).join('');
+  const graphBridge = item.presentation === 'research_graph_projection' ? `<section class="panel case-network-bridge"><span class="panel-label">The graph this case was hiding</span><h3>${item.source_counts?.nodes ?? state.legacyGraph.nodes.length} nodes · ${item.source_counts?.edges ?? state.legacyGraph.edges.length} sourced edges</h3><p>The case ladder is the ledger view. The network atlas is the whole-machine view. Dialog is the largest public cluster; the Action Plan is the policy spine; each edge opens the exact claim and receipts.</p><div class="case-policy-spine" aria-label="Official policy spine"><span>Matt Clifford</span><b>commissioned to lead</b><span>AI Opportunities Action Plan</span><b>adopted by</b><span>Starmer government</span></div><div class="case-network-actions"><button type="button" data-network-focus="dialog">Open the Dialog spine · ${state.networkModel?.nodeById.get('dialog')?.degree ?? 124} edges</button><button type="button" data-network-focus="ai-opportunities-action-plan">Open the policy spine · ${state.networkModel?.nodeById.get('ai-opportunities-action-plan')?.degree ?? 16} edges</button><button type="button" data-network-focus="palantir">Open the Palantir cluster · ${state.networkModel?.nodeById.get('palantir')?.degree ?? 10} edges</button></div></section>` : '';
   $('#detail').innerHTML = `
     <div class="panel case-hero">${entityHeading(item.title, [])}<div class="case-print-row"><p class="case-subtitle">${esc(item.subtitle)} · ${esc(item.tracking_id)} · as known ${esc(item.as_of)}</p><button class="copy-link print-dossier" type="button" onclick="window.print()">Print dossier</button></div><p>${esc(item.scope)}</p><div class="evidence-note"><strong>Publication boundary.</strong> ${esc(item.boundary)}</div><p class="meta">${esc(item.disclaimer)}</p></div>
+    ${graphBridge}
     ${relationFlow ? `<div class="panel relation-panel"><span class="panel-label">Decision-to-outcome map</span><h3>What is linked—and how strongly</h3><p>Each arrow is typed. It can preserve a long time gap without upgrading sequence into causation.</p><div class="relation-list">${relationFlow}</div></div>` : ''}
     ${beacon ? `<div class="panel beacon-panel"><span class="panel-label">Explainable beacon · ${esc(beacon.version || '')}</span><h3>${esc(beacon.label || 'No beacon')}</h3><div class="beacon-meter"><span style="width:${Math.round((beacon.evidence_coverage?.ratio || 0) * 100)}%"></span></div><p><strong>${beacon.evidence_coverage?.verified || 0} of ${beacon.evidence_coverage?.total || 0}</strong> beacon inputs are independently verified in this ledger.</p><ol class="beacon-dimensions">${dimensions}</ol><p class="evidence-note">${esc(beacon.prohibited_interpretation || '')}</p></div>` : ''}
     ${sections}`;
   bindEvidenceActions($('#detail'));
+  for (const button of $('#detail').querySelectorAll('[data-network-focus]')) button.addEventListener('click', () => focusNetworkNode(button.dataset.networkFocus));
 }
 
 function metricPanelRatio(label, value, max) {
@@ -1133,6 +1490,7 @@ function renderReceiptGrid(ids, label = 'Receipts') {
   return `<div class="receipt-grid" role="list" aria-label="${esc(label)}">${refs.map(ref => {
     const healthClass = ref.health === 'lost' ? 'receipt-health--lost' : ref.health === 'warning' ? 'receipt-health--warn' : '';
     const actions = [
+      `<button class="receipt-link receipt-link--internal" type="button" data-open-receipt="${esc(ref.id)}">Inspect receipt</button>`,
       ref.url ? `<a class="receipt-link" href="${esc(ref.url)}" target="_blank" rel="noreferrer">${ref.local ? 'Open record' : 'Original source'} ↗</a>` : '',
       ref.archiveUrl ? `<a class="receipt-link" href="${esc(ref.archiveUrl)}" target="_blank" rel="noreferrer">Archived copy ↗</a>` : '',
     ].filter(Boolean).join('');
@@ -1297,14 +1655,13 @@ function chainWeakest(hops) {
 }
 function receiptRefs(ids) {
   return (ids ?? []).map(id => {
-    const r = state.receipts.get(id);
+    const r = mergeReceiptRecords(state.receiptCatalog.get(id), state.receipts.get(id), state.caseReceipts.get(id));
     if (!r) return { id, label: id, url: null, archiveUrl: null, health: 'warning', healthLabel: 'Receipt record missing' };
     const path = String(r.path || '');
-    const localPath = isPortableRelease() ? null : safeLocalReceiptPath(path);
-    const externalUrl = safeExternalUrl(path);
-    const local = Boolean(localPath);
-    const url = externalUrl || localPath;
-    const archiveUrl = safeExternalUrl(r.archive?.ref);
+    const externalUrl = safeExternalUrl(r.url || r.source_url || path);
+    const local = false;
+    const url = externalUrl;
+    const archiveUrl = safeExternalUrl(r.archive_url || r.archive?.url || r.archive?.ref);
     const lost = r.archive?.method === 'unrecoverable_local_paste';
     const warning = !lost && !r.archive?.ref;
     return {

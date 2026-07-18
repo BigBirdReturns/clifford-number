@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#faf6ec">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="The Clifford Number">
-  <meta property="og:title" content="The Clifford Number — public records kept together">
+  <meta property="og:title" content="The Clifford Number — map the machine, open every receipt">
   <meta property="og:description" content="A public research instrument for following documented decisions, claims, connections, and source receipts.">
   <meta property="og:url" content="https://bigbirdreturns.github.io/clifford-number/">
   <meta property="og:image" content="https://bigbirdreturns.github.io/clifford-number/assets/social-card.png">
@@ -18,7 +18,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="canonical" href="https://bigbirdreturns.github.io/clifford-number/">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <title>The Clifford Number — public records kept together</title>
+  <title>The Clifford Number — map the machine, open every receipt</title>
   <script>
     (() => {
       try {
@@ -56,8 +56,8 @@
         <a href="#research-tracks">Research</a>
         <a href="#explorer">Explore</a>
         <a href="#desk">Check a connection</a>
-        <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/docs/methodology.md" target="_blank" rel="noreferrer" data-i18n="method">Method</a>
-        <a href="https://github.com/BigBirdReturns/clifford-number" target="_blank" rel="noreferrer" data-i18n="source">Source</a>
+        <a href="#method/overview" data-i18n="method">Method</a>
+        <a href="#receipts/all">Evidence</a>
         <details class="preferences-menu" id="preferences-menu">
           <summary><span aria-hidden="true">Aa</span><span data-i18n="view">View</span></summary>
           <div class="preferences-panel" role="group" aria-labelledby="preferences-title">
@@ -101,9 +101,9 @@
 
     <div class="hero hero--civic shell-wide">
       <div class="hero-copy">
-        <p class="eyebrow"><span>Documented public research</span><span class="eyebrow-rule" aria-hidden="true"></span><span data-i18n="withReceipts">With receipts</span></p>
-        <h1>Public decisions leave records.<br><em>We keep them together.</em></h1>
-        <p class="hero-dek" data-i18n="heroDek">Trace documented public decisions through people, programs, money, and companies—then inspect what happened later, with every step timestamped and receipted.</p>
+        <p class="eyebrow"><span id="hero-node-count">Public research network</span><span class="eyebrow-rule" aria-hidden="true"></span><span id="hero-edge-count">Sourced topology</span></p>
+        <h1>The machine is already in the records.<br><em>Zoom out.</em></h1>
+        <p class="hero-dek">See the policy spine, the Dialog directory, capital, government, defence, and technology clusters at once. Then touch any edge and read the exact claim and receipts underneath it.</p>
 
         <section class="search-card search-card--hero civic-search" aria-labelledby="search-label">
           <div class="search-label-row">
@@ -120,36 +120,87 @@
         </section>
 
         <div class="hero-actions">
-          <a class="primary-action" href="#research-tracks">Browse research <span aria-hidden="true">→</span></a>
+          <a class="primary-action" href="#network-atlas">Open the whole network <span aria-hidden="true">→</span></a>
           <button class="text-action" id="hero-check" type="button"><span data-i18n="checkConnection">Check a connection</span> <span aria-hidden="true">→</span></button>
         </div>
         <p class="inference-boundary"><strong data-i18n="boundaryStrong">A timeline is not a causal verdict.</strong> <span data-i18n="boundaryText">The instrument distinguishes source-explicit causation from attribution, temporal association, and causation not established.</span></p>
       </div>
 
-      <aside class="civic-boundary" aria-labelledby="boundary-title">
-        <p class="section-kicker">How to read this record</p>
-        <h2 id="boundary-title">What appearing here does not mean</h2>
-        <p>Being named in a public record is not an accusation. A documented connection means the published rules found a qualifying shared surface—not contact, influence, coordination, intent, benefit, or wrongdoing.</p>
-        <div class="civic-boundary-rule">
-          <strong>Refusals are findings.</strong>
-          <span>When the evidence does not support a connection, Clifford Number publishes the failed rule instead of manufacturing an edge.</span>
-        </div>
+      <aside class="hero-hotspots" aria-labelledby="hotspots-title">
+        <p class="section-kicker">Highest-density public clusters</p>
+        <h2 id="hotspots-title">Start where the record burns hottest.</h2>
+        <button class="hotspot-jump hotspot-jump--dialog" type="button" data-network-focus="dialog"><strong>Dialog</strong><span id="hotspot-dialog-count">Highest-density public cluster</span></button>
+        <button class="hotspot-jump" type="button" data-network-focus="ai-opportunities-action-plan"><strong>AI Opportunities Action Plan</strong><span id="hotspot-action-plan-count">Public policy surface</span></button>
+        <button class="hotspot-jump" type="button" data-network-focus="palantir"><strong>Palantir</strong><span id="hotspot-palantir-count">Public organization cluster</span></button>
+        <p class="hotspot-boundary"><strong>Edge ≠ allegation.</strong> Color shows evidence class. The claim and receipt stay attached all the way down.</p>
         <div class="release-strip" id="release-strip">Loading the current public release…</div>
       </aside>
     </div>
   </header>
 
   <main id="main-content" class="shell-wide">
-    <section class="track-directory" id="research-tracks" aria-labelledby="tracks-title">
+    <section class="network-atlas" id="network-atlas" aria-labelledby="network-title">
+      <div class="atlas-heading">
+        <div>
+          <p class="section-kicker">The public topology</p>
+          <h2 id="network-title">One machine. Two honest views.</h2>
+          <p>Research network shows every published sourced edge. Verified surface hops shows only actor-to-actor routes admitted by the bounded-surface compiler.</p>
+        </div>
+        <div class="atlas-mode" role="group" aria-label="Choose network view">
+          <button type="button" class="atlas-mode-button is-active" data-network-mode="research" aria-pressed="true">Research network</button>
+          <button type="button" class="atlas-mode-button" data-network-mode="hops" aria-pressed="false">Verified surface hops</button>
+        </div>
+      </div>
+      <div class="atlas-stats" id="atlas-stats" aria-live="polite"></div>
+      <div class="atlas-layout">
+        <div class="atlas-canvas-wrap">
+          <div class="atlas-toolbar" aria-label="Network controls">
+            <button type="button" data-network-zoom="in" aria-label="Zoom in">+</button>
+            <button type="button" data-network-zoom="out" aria-label="Zoom out">−</button>
+            <button type="button" data-network-zoom="reset">Whole map</button>
+          </div>
+          <svg id="network-svg" class="network-svg" viewBox="0 0 1400 900" role="img" aria-labelledby="network-svg-title network-svg-desc">
+            <title id="network-svg-title">Interactive Clifford research network</title>
+            <desc id="network-svg-desc">A zoomable map of documented public nodes and sourced edges. Larger glowing nodes are high-degree public clusters.</desc>
+            <g id="network-layer"></g>
+          </svg>
+          <div class="atlas-legend" aria-label="Evidence legend">
+            <span><i class="legend-line legend-line--confirmed"></i>Official / confirmed</span>
+            <span><i class="legend-line legend-line--primary"></i>Primary public</span>
+            <span><i class="legend-line legend-line--reported"></i>Reported</span>
+            <span><i class="legend-line legend-line--derived"></i>Derived / context</span>
+          </div>
+        </div>
+        <aside class="network-inspector" id="network-inspector" aria-live="polite">
+          <p class="section-kicker">Touch the map</p>
+          <h3>Select a hot spot or node.</h3>
+          <p>Its strongest public edges, evidence classes, claims, and receipts will appear here without leaving the site.</p>
+        </aside>
+      </div>
+      <section class="hop-spine" aria-labelledby="hop-spine-title">
+        <div>
+          <p class="section-kicker">The admitted hop spine</p>
+          <h3 id="hop-spine-title">Actual Clifford Numbers, already computed.</h3>
+          <p>Every step below is an actor → bounded surface → actor transition. Open one to inspect roles, overlap windows, and receipts.</p>
+        </div>
+        <div class="hop-spine-routes" id="hop-spine-routes"></div>
+      </section>
+    </section>
+
+    <details class="track-directory research-queue" id="research-tracks">
+      <summary>
+        <span><strong>Research queue</strong> · declared tracks and visible coverage gaps</span>
+        <span>Open the unfinished work →</span>
+      </summary>
       <div class="section-heading section-heading--tracks">
         <div>
-          <p class="section-kicker">Published and exploratory research</p>
-          <h2 id="tracks-title">Choose a body of research.</h2>
+          <p class="section-kicker">Exploratory by default</p>
+          <h2>Questions still being wired.</h2>
         </div>
-        <p>Tracks state what was examined, what the current evidence can support, and where coverage remains incomplete. Exploratory work is labeled before you open it.</p>
+        <p>These are research commitments, not flagship examples and not findings. Their missing coverage is shown deliberately.</p>
       </div>
       <div id="track-directory-list" class="track-grid" aria-live="polite"></div>
-    </section>
+    </details>
 
     <section class="purpose-map" aria-labelledby="purpose-title">
       <div class="purpose-heading">
@@ -246,14 +297,14 @@
       </div>
       <div>
         <h2 data-i18n="understand">Understand</h2>
-        <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/docs/methodology.md" target="_blank" rel="noreferrer">Methodology</a>
-        <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/docs/definitions.md" target="_blank" rel="noreferrer">Definitions</a>
-        <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/docs/redaction-policy.md" target="_blank" rel="noreferrer">Redaction policy</a>
+        <a href="#method/overview">Methodology</a>
+        <a href="#method/definitions">Definitions</a>
+        <a href="#method/redaction">Publication boundaries</a>
       </div>
       <div>
         <h2 data-i18n="verify">Verify</h2>
-        <a href="https://github.com/BigBirdReturns/clifford-number/tree/main/receipts" target="_blank" rel="noreferrer">Receipt archive</a>
-        <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/BUILD-INSTRUCTIONS.md" target="_blank" rel="noreferrer">Build constitution</a>
+        <a href="#receipts/all">Receipt archive</a>
+        <a href="#method/rules">Compiler rules</a>
         <a href="https://github.com/BigBirdReturns/clifford-number" target="_blank" rel="noreferrer">Source on GitHub</a>
       </div>
       <div>
