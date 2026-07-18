@@ -2,7 +2,11 @@ import { decodeHashPart, formatCitation, safeExternalUrl, safeLocalReceiptPath, 
 import { applyTranslations, normalizeLocale, translate } from './src/i18n.js';
 
 const PREFERENCES_KEY = 'clifford-preferences';
-const state = { searchResults: [], searchActiveIndex: -1, locale: 'en', preferences: {}, citation: null };
+const state = {
+  searchResults: [], searchActiveIndex: -1, locale: 'en', preferences: {}, citation: null,
+  tracks: new Map(), trackHarnesses: new Map(), cases: new Map(), caseIndex: new Map(),
+  claims: new Map(), caseReceipts: new Map(), claimCatalog: new Map(), receiptCatalog: new Map(), catalogCounts: {}
+};
 const $ = sel => document.querySelector(sel);
 
 function readPreferences() {
@@ -10,14 +14,14 @@ function readPreferences() {
     const saved = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || '{}');
     const legacyTheme = localStorage.getItem('theme');
     return {
-      theme: ['system', 'light', 'dark'].includes(saved.theme) ? saved.theme : (['light', 'dark'].includes(legacyTheme) ? legacyTheme : 'system'),
+      theme: ['system', 'light', 'dark'].includes(saved.theme) ? saved.theme : (['light', 'dark'].includes(legacyTheme) ? legacyTheme : 'light'),
       language: normalizeLocale(saved.language || navigator.language),
       reading: saved.reading === 'large' ? 'large' : 'standard',
       density: saved.density === 'compact' ? 'compact' : 'comfortable',
       contrast: saved.contrast === 'high' ? 'high' : 'standard'
     };
   } catch {
-    return { theme: 'system', language: 'en', reading: 'standard', density: 'comfortable', contrast: 'standard' };
+    return { theme: 'light', language: 'en', reading: 'standard', density: 'comfortable', contrast: 'standard' };
   }
 }
 
@@ -194,25 +198,220 @@ async function loadJson(path) {
   return res.json();
 }
 
+function registerCaseEvidence(caseFiles) {
+  for (const caseItem of caseFiles) {
+    for (const section of caseItem.sections ?? []) {
+      for (const event of section.records ?? []) {
+        for (const claim of event.claims ?? []) {
+          const claimRecord = {
+            ...claim,
+            case_id: caseItem.case_id,
+            case_title: caseItem.title,
+            event_id: event.event_id,
+            event_label: event.label,
+            occurred_at: event.occurred_at
+          };
+          const claimKey = `${caseItem.case_id}::${claim.claim_id}`;
+          state.claims.set(claimKey, { ...claimRecord, key: claimKey });
+          for (const receipt of claim.receipts ?? []) {
+            const receiptKey = receipt.receipt_id;
+            const existing = state.caseReceipts.get(receiptKey);
+            const claimIds = new Set(existing?.claim_ids ?? []);
+            claimIds.add(claimKey);
+            state.caseReceipts.set(receiptKey, {
+              ...(existing ?? {}), ...receipt,
+              key: receiptKey,
+              claim_ids: [...claimIds],
+              case_ids: [...new Set([...(existing?.case_ids ?? []), caseItem.case_id])]
+            });
+          }
+        }
+      }
+    }
+  }
+}
+
+async function loadCase(id) {
+  if (state.cases.has(id)) return state.cases.get(id);
+  const entry = state.caseIndex.get(id);
+  if (!entry?.href) return null;
+  const item = await loadJson(entry.href);
+  state.cases.set(id, item);
+  registerCaseEvidence([item]);
+  return item;
+}
+
+async function loadTrackHarness(id) {
+  if (state.trackHarnesses.has(id)) return state.trackHarnesses.get(id);
+  const track = state.tracks.get(id);
+  if (!track?.href) return null;
+  const harness = await loadJson(track.href);
+  state.trackHarnesses.set(id, harness);
+  return harness;
+}
+
+function initEvidenceDialog() {
+  const dialog = $('#evidence-dialog');
+  $('#evidence-dialog-close')?.addEventListener('click', () => dialog.close());
+  dialog?.addEventListener('click', event => {
+    if (event.target === dialog) dialog.close();
+  });
+}
+
+function receiptTitle(receipt) {
+  return receipt?.label || receipt?.title || receipt?.source_title || receipt?.receipt_id || 'Untitled receipt';
+}
+
+function isPortableRelease() {
+  return document.body?.dataset.portableRelease === 'true';
+}
+
+function mergeReceiptRecords(...records) {
+  const present = records.filter(Boolean);
+  if (!present.length) return null;
+  const merged = {};
+  for (const record of present) {
+    for (const [key, value] of Object.entries(record)) {
+      if (value !== undefined && value !== null && value !== '') merged[key] = value;
+    }
+  }
+  merged.receipt_id = present.find(record => record.receipt_id)?.receipt_id;
+  merged.key = merged.receipt_id;
+  merged.claim_ids = [...new Set(present.flatMap(record => record.claim_ids ?? []))];
+  merged.case_ids = [...new Set(present.flatMap(record => record.case_ids ?? (record.case_id ? [record.case_id] : [])))];
+  return merged;
+}
+
+function publicReceiptRecords() {
+  const ids = new Set([...state.receiptCatalog.keys(), ...state.receipts.keys()]);
+  return new Map([...ids].map(id => [id, mergeReceiptRecords(state.receiptCatalog.get(id), state.receipts.get(id))]));
+}
+
+function publicReceiptCount() {
+  return new Set([...state.receiptCatalog.keys(), ...state.receipts.keys()]).size;
+}
+
+function receiptInspector(receipt) {
+  if (!receipt) return '<p class="evidence-note">This receipt is not present in the current public release.</p>';
+  const sourceUrl = safeExternalUrl(receipt.url || receipt.source_url || '');
+  const archiveUrl = safeExternalUrl(receipt.archive_url || receipt.archive?.url || '');
+  const localPath = isPortableRelease() ? null : safeLocalReceiptPath(receipt.path || receipt.local_path || '');
+  const links = [
+    sourceUrl ? `<a class="receipt-link" href="${esc(sourceUrl)}" target="_blank" rel="noreferrer">Open original source ↗</a>` : '',
+    archiveUrl ? `<a class="receipt-link" href="${esc(archiveUrl)}" target="_blank" rel="noreferrer">Open archived copy ↗</a>` : '',
+    localPath ? `<a class="receipt-link" href="${esc(localPath)}">Open repository record →</a>` : ''
+  ].filter(Boolean).join('');
+  const claimLinks = (receipt.claim_ids ?? []).map(id => {
+    const claim = state.claims.get(id) ?? state.claimCatalog.get(id);
+    return claim ? `<button class="evidence-related" type="button" data-open-claim="${esc(id)}">${esc(shortLabel(claim.plain, 120))}</button>` : '';
+  }).join('');
+  return `<article class="receipt-inspector">
+    <div class="receipt-inspector-head"><div><span class="panel-label">Receipt · ${esc(receipt.receipt_id || receipt.id || '')}</span><h3>${esc(receiptTitle(receipt))}</h3></div><span class="badge">${esc(humanLabel(receipt.locator_status || receipt.availability || receipt.source_type || 'source'))}</span></div>
+    <dl class="evidence-facts">
+      ${receipt.publisher ? `<div><dt>Publisher</dt><dd>${esc(receipt.publisher)}</dd></div>` : ''}
+      ${receipt.source_type ? `<div><dt>Source type</dt><dd>${esc(humanLabel(receipt.source_type))}</dd></div>` : ''}
+      ${receipt.published_at ? `<div><dt>Published</dt><dd>${esc(receipt.published_at)}</dd></div>` : ''}
+      ${receipt.retrieved_at ? `<div><dt>Retrieved</dt><dd>${esc(receipt.retrieved_at)}</dd></div>` : ''}
+    </dl>
+    ${receipt.extract ? `<div class="receipt-locator"><strong>Relevant locator or excerpt</strong><p>${esc(receipt.extract)}</p></div>` : '<p class="meta">No excerpt is stored in this public projection.</p>'}
+    ${receipt.notes ? `<p class="evidence-note"><strong>Qualification.</strong> ${esc(receipt.notes)}</p>` : ''}
+    ${links ? `<div class="receipt-actions">${links}</div>` : '<p class="evidence-note">No safe public URL is available for this receipt.</p>'}
+    ${claimLinks ? `<div class="related-claims"><strong>Claims using this receipt</strong>${claimLinks}</div>` : ''}
+  </article>`;
+}
+
+async function openClaimDialog(id) {
+  const catalogItem = state.claimCatalog.get(id);
+  if (catalogItem && !state.claims.has(id)) await loadCase(catalogItem.case_id);
+  const claim = state.claims.get(id) ?? catalogItem;
+  const dialog = $('#evidence-dialog');
+  const content = $('#evidence-dialog-content');
+  if (!claim || !dialog || !content) return;
+  content.innerHTML = `<article class="claim-inspector">
+    <span class="panel-label">Claim · ${esc(claim.claim_id)}</span>
+    <h2 id="evidence-dialog-title">${esc(claim.plain)}</h2>
+    <div class="claim-status-line"><span class="badge">${esc(humanLabel(claim.claim_status))}</span><span>${esc(humanLabel(claim.evidence_class || claim.evidence_state))} evidence</span><span>Causality: ${esc(humanLabel(claim.causal_status))}</span></div>
+    <dl class="evidence-facts">
+      <div><dt>Case</dt><dd>${esc(claim.case_title)}</dd></div>
+      <div><dt>Observed or asserted</dt><dd>${esc(claim.occurred_at || 'Date not recorded')}</dd></div>
+      <div><dt>Context</dt><dd>${esc(claim.event_label)}</dd></div>
+    </dl>
+    ${claim.qualification ? `<p class="evidence-note"><strong>Qualification.</strong> ${esc(claim.qualification)}</p>` : ''}
+    <p class="claim-boundary"><strong>What this establishes:</strong> only the exact assertion above, at its displayed evidence and review status. Sequence, proximity, or shared context does not establish intent, coordination, influence, benefit, wrongdoing, or causation.</p>
+    <div class="claim-receipts"><h3>Supporting receipts</h3>${(claim.receipts ?? []).map(receipt => receiptInspector({ ...receipt, claim_ids: [id], case_ids: [claim.case_id] })).join('') || '<p class="evidence-note">No receipt record is available.</p>'}</div>
+  </article>`;
+  bindEvidenceActions(content);
+  if (!dialog.open) dialog.showModal();
+}
+
+async function openReceiptDialog(id) {
+  const receiptId = id.includes('::') ? id.split('::').at(-1) : id;
+  const catalogItem = state.receiptCatalog.get(receiptId);
+  if (catalogItem && !state.caseReceipts.has(receiptId)) await loadCase(catalogItem.case_id);
+  const raw = state.caseReceipts.get(receiptId);
+  const graphReceipt = state.receipts.get(receiptId);
+  const dialog = $('#evidence-dialog');
+  const content = $('#evidence-dialog-content');
+  const receipt = mergeReceiptRecords(catalogItem, graphReceipt, raw);
+  if (!dialog || !content || !receipt) return;
+  content.innerHTML = `<div><h2 id="evidence-dialog-title">Evidence receipt</h2>${receiptInspector(receipt)}</div>`;
+  bindEvidenceActions(content);
+  if (!dialog.open) dialog.showModal();
+}
+
+function bindEvidenceActions(root = document) {
+  for (const button of root.querySelectorAll('[data-open-claim]')) button.addEventListener('click', () => openClaimDialog(button.dataset.openClaim));
+  for (const button of root.querySelectorAll('[data-open-receipt]')) button.addEventListener('click', () => openReceiptDialog(button.dataset.openReceipt));
+}
+
+function activateResult(kind, id) {
+  if (kind === 'claim') openClaimDialog(id);
+  else if (kind === 'receipt') openReceiptDialog(id);
+  else go(kind, id);
+}
+
+function trackStatus(track) {
+  return track?.custody_status === 'declared_not_wired' ? 'Exploratory' : humanLabel(track?.custody_status || 'Incomplete');
+}
+
+function trackAxisLabel(axis) {
+  return ({ 'place-formation': 'Place and value formation', 'person-router': 'Public-to-private role pathways', 'disclosure-crossing': 'Disclosure and money crossings' })[axis] || humanLabel(axis);
+}
+
+function renderTrackDirectory() {
+  const list = $('#track-directory-list');
+  if (!list) return;
+  list.innerHTML = [...state.tracks.values()].map(track => {
+    const gaps = track.coverage_gap_count ?? 0;
+    return `<article class="track-card">
+      <div class="track-card-status"><span class="badge badge--exploratory">${esc(trackStatus(track))}</span><span>${esc(trackAxisLabel(track.axis))}</span></div>
+      <h3>${esc(track.label)}</h3>
+      <p>${esc(track.question || 'The public question for this track has not yet been promoted.')}</p>
+      <div class="track-card-foot"><span>${gaps} visible coverage gap${gaps === 1 ? '' : 's'}</span><button class="track-open" type="button" data-kind="track" data-id="${esc(track.track_id)}">Open track →</button></div>
+    </article>`;
+  }).join('');
+  for (const button of list.querySelectorAll('.track-open')) button.addEventListener('click', () => go('track', button.dataset.id));
+}
+
 function norm(s) { return String(s || '').toLowerCase(); }
 function labelActor(id) { return state.actors.get(id)?.label || id; }
 function labelOrg(id) { return state.orgs.get(id)?.label || id; }
 function surface(id) { return state.surfaces.get(id); }
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function shortLabel(s, max = 26) { const value = String(s ?? ''); return value.length > max ? `${value.slice(0, max - 1)}…` : value; }
-function setDocumentTitle(label) { document.title = label ? `${label} — The Clifford Number` : 'The Clifford Number — connections you can check'; }
+function setDocumentTitle(label) { document.title = label ? `${label} — The Clifford Number` : 'The Clifford Number — public records kept together'; }
 function announce(message) { const status = $('#view-status'); if (status) status.textContent = message; }
 
 async function init() {
   initPreferences();
-  const [surfaceGraph, hopGraph, scores, legacyGraph, scout, receiptGraph, caseIndex] = await Promise.all([
+  const [surfaceGraph, hopGraph, scores, legacyGraph, scout, receiptGraph, publicCatalog] = await Promise.all([
     loadJson('build/surface-graph.json'),
     loadJson('build/hop-graph.json'),
     loadJson('build/scores.json'),
     loadJson('graph.json'),
     loadJson('build/scout-report.json').catch(() => ({ findings: [] })),
     loadJson('build/receipt-graph.json').catch(() => ({ receipts: [] })),
-    loadJson('build/cases/index.json').catch(() => ({ cases: [] }))
+    loadJson('build/public-catalog.json').catch(() => ({ counts: {}, tracks: [], cases: [], claims: [], receipts: [] }))
   ]);
   state.surfaceGraph = surfaceGraph;
   state.hopGraph = hopGraph;
@@ -234,20 +433,24 @@ async function init() {
   state.orgScores = new Map(scores.organizations.map(o => [o.organization_id, o]));
   state.legacyNodes = new Map((legacyGraph.nodes ?? []).map(n => [n.id, n]));
   state.chains = new Map((scores.chains ?? []).map(c => [c.chain_id, c]));
-  const caseFiles = await Promise.all((caseIndex.cases ?? []).map(entry => loadJson(entry.href)));
-  state.cases = new Map(caseFiles.map(item => [item.case_id, item]));
+  state.catalogCounts = publicCatalog.counts ?? {};
+  state.caseIndex = new Map((publicCatalog.cases ?? []).map(item => [item.case_id, item]));
+  state.tracks = new Map((publicCatalog.tracks ?? []).map(item => [item.track_id, item]));
+  state.claimCatalog = new Map((publicCatalog.claims ?? []).map(item => [item.key, item]));
+  state.receiptCatalog = new Map((publicCatalog.receipts ?? []).map(item => [item.receipt_id, item]));
   state.hopEdgeByPair = new Map();
   for (const edge of hopGraph.edges ?? []) {
     state.hopEdgeByPair.set(`${edge.actor_a}||${edge.actor_b}`, edge);
     state.hopEdgeByPair.set(`${edge.actor_b}||${edge.actor_a}`, edge);
   }
-  const examples = ['ben-warner', 'simon-case', 'matt-clifford'].filter(id => state.actors.has(id));
-  $('#try-examples').innerHTML = examples.map(id => `<button data-kind="actor" data-id="${esc(id)}">${esc(labelActor(id))}</button>`).join('');
+  const examples = ['opportunity-zones-value-capture', 'stadium-arena-public-finance', 'oge278-revolving-door-routers'].filter(id => state.tracks.has(id));
+  $('#try-examples').innerHTML = examples.map(id => `<button data-kind="track" data-id="${esc(id)}">${esc(shortLabel(state.tracks.get(id).label, 32))}</button>`).join('');
   for (const btn of $('#try-examples').querySelectorAll('button')) btn.addEventListener('click', () => go(btn.dataset.kind, btn.dataset.id));
 
   $('#search').addEventListener('input', onSearch);
   $('#search').addEventListener('keydown', onSearchKeydown);
   $('#browse-all').addEventListener('click', browseAll);
+  initEvidenceDialog();
   window.addEventListener('hashchange', route);
 
   const tabs = [...document.querySelectorAll('.tabs .tab')];
@@ -293,9 +496,11 @@ async function init() {
   });
 
   renderHeroNetwork();
+  renderTrackDirectory();
   const nonHop = state.surfaceGraph.surfaces.filter(s => !s.hop_eligible).length;
   $('#footer-corpus-meta').textContent = `${state.surfaceGraph.surfaces.length} surfaces · ${state.receipts.size} receipts · ${nonHop} context-only surfaces`;
-  route();
+  $('#release-strip').textContent = `${state.catalogCounts.tracks ?? state.tracks.size} research tracks · ${state.catalogCounts.cases ?? state.caseIndex.size} compiled cases · ${state.catalogCounts.claims ?? state.claimCatalog.size} public-indexed claims · ${publicReceiptCount()} unique receipt records`;
+  await route();
   $('#app-status').classList.add('is-ready');
 }
 
@@ -304,7 +509,7 @@ function go(kind, id) {
   if (location.hash === target) renderEntity(kind, id);
   else location.hash = target;
   clearSearchResults();
-  if (window.innerWidth < 820) $('#summary').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  setTimeout(() => $('#explorer')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
 }
 
 window.copyLink = copyLink;
@@ -322,9 +527,10 @@ function showView(view) {
   }
 }
 
-function route() {
+async function route() {
   const hash = location.hash.replace(/^#/, '');
   if (hash === 'desk' || hash.startsWith('desk/')) {
+    document.body.dataset.page = 'desk';
     showView('desk');
     if (state.deskSkipRoute) return;
     const [, from, to, asOf] = hash.split('/');
@@ -346,14 +552,19 @@ function route() {
   showView('map');
   const [kind, rawId] = hash.split('/');
   if (kind && rawId) {
+    document.body.dataset.page = 'detail';
     const id = decodeHashPart(rawId);
     if (id === null) renderNotFound(kind, rawId);
-    else renderEntity(kind, id);
+    else await renderEntity(kind, id);
   }
-  else renderHome();
+  else {
+    document.body.dataset.page = 'home';
+    renderHomeV2();
+  }
 }
 
 function renderHeroNetwork() {
+  if (!$('#topology-edge-count') || !$('#hero-network-content')) return;
   const sampleId = ['ben-warner', 'fiona-hill', 'simon-case'].find(id => state.hopGraph.shortest_paths[id]?.number > 0)
     ?? Object.keys(state.hopGraph.shortest_paths).find(id => state.hopGraph.shortest_paths[id]?.number > 0);
   const path = sampleId ? state.hopGraph.shortest_paths[sampleId] : null;
@@ -431,12 +642,74 @@ function renderHome() {
     </div>
     ${samplePath ? `<div class="panel"><span class="panel-label">A route, rendered honestly</span><h3>${esc(labelActor(sampleId))} → ${esc(labelActor(state.hopGraph.anchor_actor_id))}</h3>${renderTopologyMap(samplePath)}<p class="evidence-note">Circles are public actors. Diamonds are the shared bounded surfaces that permit a hop. Open the actor to inspect roles, time windows, and receipts.</p></div>` : ''}
     <div class="home-grid">
-      <div class="panel why-no-hop"><span class="panel-label">Refusal is a feature</span><h3>What the graph declines to connect</h3><p>${rejected} actor pair${rejected === 1 ? '' : 's'} currently fail the documented time-overlap test. ${denseContext} large roster surface${denseContext === 1 ? ' is' : 's are'} preserved as context without manufacturing thousands of person-to-person hops.</p></div>
+      <div class="panel why-no-hop"><span class="panel-label">Refusal is a feature</span><h3>What the graph declines to connect</h3><p>${rejected} compiler rejection${rejected === 1 ? ' is' : 's are'} preserved with an explicit publication status; review-required records are not presented as checked findings. ${denseContext} large roster surface${denseContext === 1 ? ' is' : 's are'} preserved as context without manufacturing thousands of person-to-person hops.</p></div>
       <div class="panel"><span class="panel-label">Structural context, not adjacency</span><h3>Multi-stage pathways</h3><div class="results">${chainList || '<p class="meta">None in this release.</p>'}</div></div>
     </div>
     <div class="panel case-entry"><span class="panel-label">Compiled case files</span><h3>From topology to outcomes</h3><p>Case files join program events, typed money, public-role transitions, capability observations, and reported outcomes without converting sequence into causation.</p><div class="results">${caseList || '<p class="meta">No compiled case files in this release.</p>'}</div></div>`;
   bindResults();
   announce(`Explorer loaded: ${state.surfaceGraph.surfaces.length} surfaces, ${state.hopGraph.edges.length} valid hops, and ${state.receipts.size} receipts.`);
+}
+
+function renderHomeV2() {
+  state.citation = null;
+  setDocumentTitle();
+  const rejectionRecords = state.hopGraph.rejected_hop_pairs ?? [];
+  const verifiedRefusals = rejectionRecords.filter(item => item.publication_status === 'verified').length;
+  const reviewRefusals = rejectionRecords.length - verifiedRefusals;
+  const rejected = rejectionRecords.length;
+  const denseContext = state.surfaceGraph.surfaces.filter(surfaceItem => !surfaceItem.hop_eligible && (surfaceItem.participants ?? []).filter(participant => participant.participant_type === 'actor').length >= 20).length;
+  $('#summary').innerHTML = `
+    <div class="panel"><div class="metric">${state.tracks.size}</div><div class="metric-label">research tracks · exploratory labeled</div></div>
+    <div class="panel"><div class="metric">${state.catalogCounts.cases ?? state.caseIndex.size}</div><div class="metric-label">compiled case files</div></div>
+    <div class="panel"><div class="metric">${state.catalogCounts.claims ?? state.claimCatalog.size}</div><div class="metric-label">public-indexed claims</div></div>
+    <div class="panel"><div class="metric">${rejected}</div><div class="metric-label">${verifiedRefusals} verified · ${reviewRefusals} review-required refusals</div></div>`;
+  const preferred = ['fiona-hill', 'ben-warner', 'simon-case', 'dominic-cummings', 'keir-starmer'];
+  const fallback = [...state.actorScores.values()]
+    .filter(score => Number.isInteger(score.clifford_number) && score.clifford_number > 0)
+    .sort((a, b) => a.clifford_number - b.clifford_number || b.surface_density - a.surface_density)
+    .map(score => score.actor_id);
+  const routeIds = [...new Set([...preferred, ...fallback])]
+    .filter(id => Number.isInteger(state.actorScores.get(id)?.clifford_number) && state.actorScores.get(id).clifford_number > 0)
+    .slice(0, 5);
+  const routeList = routeIds.map(id => {
+    const score = state.actorScores.get(id);
+    return `<button class="result" data-kind="actor" data-id="${esc(id)}"><span class="kind-glyph">A</span><span class="result-label">${esc(labelActor(id))}<small>Clifford Number ${score.clifford_number} · ${score.surfaces.length} documented surface${score.surfaces.length === 1 ? '' : 's'}</small></span></button>`;
+  }).join('');
+  const caseList = [...state.caseIndex.values()].map(item => `<button class="result" data-kind="case" data-id="${esc(item.case_id)}"><span class="kind-glyph">F</span><span class="result-label">${esc(item.title)}<small>${esc(item.tracking_id)} · ${esc(humanLabel(item.status))} · ${item.counts.events} typed events · ${item.claim_status_counts.verified} verified claims</small></span></button>`).join('');
+  const sampleId = routeIds[0];
+  const samplePath = sampleId ? state.hopGraph.shortest_paths[sampleId] : null;
+  const featuredCase = [...state.caseIndex.values()].sort((a, b) =>
+    (b.featured_priority ?? 0) - (a.featured_priority ?? 0)
+    || (b.claim_status_counts.verified ?? 0) - (a.claim_status_counts.verified ?? 0)
+  )[0];
+  const featuredClaim = featuredCase?.featured_claim ?? null;
+  $('#detail').innerHTML = `
+    <div class="home-grid home-grid--evidence">
+      <article class="panel featured-case">
+        <span class="panel-label">Representative compiled case · ${esc(humanLabel(featuredCase?.status || 'unavailable'))}</span>
+        <h2>${esc(featuredCase?.title || 'No compiled case is available')}</h2>
+        <p>${esc(featuredCase?.subtitle || 'This release does not yet contain a compiled case.')}</p>
+        ${featuredClaim ? `<div class="featured-claim"><div class="claim-status-line"><span class="badge">Verified</span><span>${esc(humanLabel(featuredClaim.evidence_class || featuredClaim.evidence_state))} evidence</span></div><p>${esc(featuredClaim.plain)}</p><button class="claim-open" type="button" data-open-claim="${esc(featuredClaim.key)}">Open the claim and ${featuredClaim.receipt_count ?? 0} supporting receipt${featuredClaim.receipt_count === 1 ? '' : 's'} →</button></div>` : '<p class="evidence-note">No verified claim has been promoted in this case.</p>'}
+        ${featuredCase ? `<button class="result result--case" data-kind="case" data-id="${esc(featuredCase.case_id)}"><span class="kind-glyph">F</span><span class="result-label">Read the case ladder<small>${featuredCase.counts.events} typed events · ${featuredCase.counts.claims} claims</small></span></button>` : ''}
+      </article>
+      <aside class="panel evidence-standard">
+        <span class="panel-label">How Clifford Number decides</span>
+        <h2>Records first. Limits in plain language.</h2>
+        <div class="home-principles">
+          <div class="principle"><span class="principle-index">01</span><p><strong>Bounded, not broad.</strong> A named taskforce, board, authorship group, or small cohort can qualify. “Same institution” cannot.</p></div>
+          <div class="principle"><span class="principle-index">02</span><p><strong>Overlapping, not timeless.</strong> Dated roles must overlap. Unknown dates remain unknown.</p></div>
+          <div class="principle"><span class="principle-index">03</span><p><strong>Receipted, not inferred.</strong> Shared context does not establish contact, influence, coordination, intent, or wrongdoing.</p></div>
+        </div>
+      </aside>
+    </div>
+    <div class="home-grid">
+      <div class="panel why-no-hop"><span class="panel-label">${verifiedRefusals ? 'Checked negative findings' : 'Refusal evidence under review'}</span><h3>No documented connection can be a result</h3><p>${verifiedRefusals} refusal${verifiedRefusals === 1 ? '' : 's'} currently meet the public evidence standard; ${reviewRefusals} compiler rejection${reviewRefusals === 1 ? ' is' : 's are'} preserved as review-required because decisive window receipts are not publicly re-verifiable. ${denseContext} large roster surface${denseContext === 1 ? ' is' : 's are'} preserved as context without manufacturing thousands of person-to-person hops.</p><button class="result" data-kind="desk" data-id=""><span class="kind-glyph">×</span><span class="result-label">Open the connection checker<small>Every accepted step carries receipts; every refusal exposes its publication status and evidence limit.</small></span></button></div>
+      <div class="panel case-entry"><span class="panel-label">Compiled case files</span><h3>Follow decisions to later outcomes</h3><p>Cases keep verified, review-required, unresolved, disputed, and rejected claims visibly distinct.</p><div class="results">${caseList || '<p class="meta">No compiled case files in this release.</p>'}</div></div>
+    </div>
+    ${samplePath ? `<details class="panel advanced-record"><summary>Advanced research view: inspect one documented route</summary><div class="advanced-record-body"><h3>${esc(labelActor(sampleId))} → ${esc(labelActor(state.hopGraph.anchor_actor_id))}</h3>${renderTopologyMap(samplePath)}<p class="evidence-note">The diagram is optional. The actor page carries the readable route, roles, overlap windows, and receipts.</p><div class="results">${routeList}</div></div></details>` : ''}`;
+  bindResults();
+  bindEvidenceActions($('#detail'));
+  announce(`Public record loaded: ${state.catalogCounts.tracks ?? state.tracks.size} research tracks, ${state.catalogCounts.cases ?? state.caseIndex.size} cases, ${state.catalogCounts.claims ?? state.claimCatalog.size} public-indexed claims, and ${publicReceiptCount()} unique receipt records.`);
 }
 
 function rankMatch(q, label, id, aliases = []) {
@@ -473,12 +746,24 @@ function onSearch(e) {
       const match = rankMatch(q, c.label, c.id, c.aliases ?? []);
       if (match) results.push({ kind: 'candidate', id: c.id, label: c.label, ...match });
     }
-    for (const c of state.cases.values()) {
+    for (const c of state.caseIndex.values()) {
       const match = rankMatch(q, c.title, c.case_id, [c.tracking_id, c.subtitle]);
       if (match) results.push({ kind: 'case', id: c.case_id, label: c.title, ...match });
     }
+    for (const track of state.tracks.values()) {
+      const match = rankMatch(q, track.label, track.track_id, [track.question]);
+      if (match) results.push({ kind: 'track', id: track.track_id, label: track.label, ...match });
+    }
+    for (const claim of state.claimCatalog.values()) {
+      const match = rankMatch(q, claim.plain, claim.claim_id, [claim.case_title, claim.event_label]);
+      if (match) results.push({ kind: 'claim', id: claim.key, label: claim.plain, ...match });
+    }
+    for (const receipt of publicReceiptRecords().values()) {
+      const match = rankMatch(q, receiptTitle(receipt), receipt.receipt_id, [receipt.publisher, receipt.extract, receipt.notes, receipt.path]);
+      if (match) results.push({ kind: 'receipt', id: receipt.receipt_id, label: receiptTitle(receipt), ...match });
+    }
   }
-  const kindOrder = { actor: 0, organization: 1, surface: 2, chain: 3, case: 4, candidate: 5 };
+  const kindOrder = { track: 0, case: 1, actor: 2, organization: 3, claim: 4, receipt: 5, surface: 6, chain: 7, candidate: 8 };
   state.searchResults = results.sort((a, b) => a.score - b.score || kindOrder[a.kind] - kindOrder[b.kind] || a.label.localeCompare(b.label)).slice(0, 12);
   state.searchActiveIndex = -1;
   const box = $('#results');
@@ -487,7 +772,7 @@ function onSearch(e) {
     : q.length >= 2 ? `<div class="meta" role="option" aria-disabled="true">No public record in this release matches “${esc(e.target.value.trim())}”. Absence here is not evidence of absence.</div>` : '';
   $('#search').setAttribute('aria-expanded', String(q.length >= 2));
   $('#search').removeAttribute('aria-activedescendant');
-  for (const btn of box.querySelectorAll('.result')) btn.addEventListener('click', () => go(btn.dataset.kind, btn.dataset.id));
+  for (const btn of box.querySelectorAll('.result')) btn.addEventListener('click', () => activateResult(btn.dataset.kind, btn.dataset.id));
 }
 
 function browseAll() {
@@ -496,7 +781,10 @@ function browseAll() {
     ...state.surfaceGraph.organizations.map(item => ({ kind: 'organization', id: item.id, label: item.label })),
     ...state.surfaceGraph.surfaces.map(item => ({ kind: 'surface', id: item.surface_id, label: item.surface_label })),
     ...[...state.chains.values()].map(item => ({ kind: 'chain', id: item.chain_id, label: item.chain_label })),
-    ...[...state.cases.values()].map(item => ({ kind: 'case', id: item.case_id, label: item.title }))
+    ...[...state.caseIndex.values()].map(item => ({ kind: 'case', id: item.case_id, label: item.title })),
+    ...[...state.tracks.values()].map(item => ({ kind: 'track', id: item.track_id, label: item.label })),
+    ...[...state.claimCatalog.values()].map(item => ({ kind: 'claim', id: item.key, label: item.plain })),
+    ...[...publicReceiptRecords().values()].map(item => ({ kind: 'receipt', id: item.receipt_id, label: receiptTitle(item) }))
   ].sort((a, b) => a.label.localeCompare(b.label)).slice(0, 80);
   state.searchResults = items;
   state.searchActiveIndex = -1;
@@ -507,7 +795,7 @@ function browseAll() {
   box.innerHTML = items.length
     ? items.map((item, i) => `<button id="search-option-${i}" class="result" role="option" tabindex="0" aria-selected="false" data-kind="${esc(item.kind)}" data-id="${esc(item.id)}"><span class="kind-glyph">${kindGlyph(item.kind)}</span><span class="result-label">${esc(item.label)}<small>${esc(item.kind)}</small></span></button>`).join('')
     : `<div class="meta" role="option" aria-disabled="true">${esc(translate(state.locale, 'noRecords'))}</div>`;
-  for (const btn of box.querySelectorAll('.result')) btn.addEventListener('click', () => go(btn.dataset.kind, btn.dataset.id));
+  for (const btn of box.querySelectorAll('.result')) btn.addEventListener('click', () => activateResult(btn.dataset.kind, btn.dataset.id));
   announce(translate(state.locale, 'browseShowing', { count: items.length }));
   box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -526,7 +814,7 @@ function onSearchKeydown(e) {
   } else if (e.key === 'Enter') {
     e.preventDefault();
     const selected = state.searchResults[Math.max(0, state.searchActiveIndex)];
-    go(selected.kind, selected.id);
+    activateResult(selected.kind, selected.id);
   } else if (e.key === 'Escape') {
     e.preventDefault();
     e.stopPropagation();
@@ -543,16 +831,17 @@ function clearSearchResults() {
 }
 
 function kindGlyph(kind) {
-  return { actor: 'A', organization: 'O', surface: 'S', chain: 'C', case: 'F', candidate: '?' }[kind] || '•';
+  return { actor: 'A', organization: 'O', surface: 'S', chain: 'C', case: 'F', track: 'T', claim: 'K', receipt: 'R', candidate: '?' }[kind] || '•';
 }
 
-function renderEntity(kind, id) {
+async function renderEntity(kind, id) {
   if (kind === 'actor') renderActor(id);
   else if (kind === 'organization') renderOrg(id);
   else if (kind === 'chain') renderChain(id);
   else if (kind === 'candidate') renderCandidate(id);
   else if (kind === 'surface') renderSurface(id);
-  else if (kind === 'case') renderCase(id);
+  else if (kind === 'case') await renderCase(id);
+  else if (kind === 'track') await renderTrack(id);
   else renderNotFound(kind, id);
   announce(`${document.title.replace(' — The Clifford Number', '')} loaded.`);
 }
@@ -566,6 +855,40 @@ function renderNotFound(kind, id) {
 
 function metricPanel(label, value) { return `<div class="panel"><div class="metric">${esc(value ?? '—')}</div><div class="metric-label">${esc(label)}</div></div>`; }
 
+async function renderTrack(id) {
+  const track = state.tracks.get(id);
+  if (!track) return renderNotFound('research track', id);
+  const harness = await loadTrackHarness(id);
+  setDocumentTitle(track.label);
+  const coverage = harness?.coverage_seed ?? [];
+  const openCoverage = coverage.filter(item => item.state !== 'complete');
+  const stages = harness?.scan?.spine ?? [];
+  const relatedCases = (harness?.derived_from ?? []).map(caseId => state.caseIndex.get(caseId)).filter(Boolean);
+  $('#summary').innerHTML = [
+    metricPanel('Research state', trackStatus(track)),
+    metricPanel('Research axis', trackAxisLabel(track.axis)),
+    metricPanel('Declared stages', stages.length),
+    metricPanel('Visible coverage gaps', openCoverage.length)
+  ].join('');
+  const ladder = stages.map((stage, index) => `<li class="track-ladder-step"><span class="track-ladder-index">${String(index + 1).padStart(2, '0')}</span><div><strong>${esc(stage.label)}</strong><span>${esc(humanLabel(stage.target_domain || 'source domain'))}</span></div></li>`).join('');
+  const gaps = openCoverage.map(item => `<li><strong>${esc(humanLabel(item.state))}</strong><span>${esc(item.topic)}</span></li>`).join('');
+  const caseLinks = relatedCases.map(item => `<button class="result" data-kind="case" data-id="${esc(item.case_id)}"><span class="kind-glyph">F</span><span class="result-label">${esc(item.title)}<small>${esc(humanLabel(item.status))} · ${item.counts.claims} typed claims · ${item.claim_status_counts.verified} verified</small></span></button>`).join('');
+  $('#detail').innerHTML = `
+    <article class="panel track-hero">
+      <div class="entity-heading"><h2>${esc(track.label)}</h2><div class="entity-actions"><button class="copy-link" type="button" onclick="copyLink(this)">Copy link</button></div></div>
+      <div class="track-status-line"><span class="badge badge--exploratory">${esc(trackStatus(track))}</span><span>${esc(trackAxisLabel(track.axis))}</span></div>
+      <p class="track-question">${esc(harness?.question || 'The public research question has not yet been promoted.')}</p>
+      <p class="evidence-note"><strong>Publication state.</strong> This track is visible as a bounded research program, not as a published finding. Its current custody state is ${esc(humanLabel(track.custody_status || 'incomplete'))}.</p>
+    </article>
+    <div class="home-grid track-explainer">
+      <section class="panel"><span class="panel-label">What is being examined</span><h3>The public-record sequence</h3><ol class="track-ladder">${ladder || '<li>No research stages are published.</li>'}</ol></section>
+      <section class="panel"><span class="panel-label">What the current evidence can say</span><h3>No finding has been admitted by this harness.</h3><p>The track defines a question, a bounded denominator, source surfaces, and visible coverage states. Those are research commitments—not proof of a relationship or outcome.</p><div class="claim-boundary"><strong>What it cannot say.</strong> ${esc(harness?.epistemic_contract?.forbidden_inference || 'No inference may be strengthened beyond the published evidence.')}</div></section>
+    </div>
+    <section class="panel coverage-panel"><span class="panel-label">Coverage gaps</span><h3>What remains unsearched or incomplete</h3><ul class="coverage-list">${gaps || '<li><span>No coverage gaps are declared.</span></li>'}</ul></section>
+    ${caseLinks ? `<section class="panel"><span class="panel-label">Related compiled case</span><h3>Enter the receipted record</h3><p>This case is a separate public object with its own statuses, claims, and receipts. Opening it does not promote this track to a finding.</p><div class="results">${caseLinks}</div></section>` : ''}`;
+  bindResults();
+}
+
 function formatCaseValue(value) {
   if (value == null) return '';
   if (typeof value !== 'object') return String(value);
@@ -574,13 +897,13 @@ function formatCaseValue(value) {
   return Object.entries(value).map(([key, item]) => `${humanLabel(key)}: ${item}`).join(' · ');
 }
 
-function renderCaseClaim(claim) {
-  const receipts = (claim.receipts ?? []).map(receipt => `<div class="case-receipt"><strong>${esc(receipt.label)}</strong><span>${esc(receipt.locator_status || receipt.source_type)} · SHA-256 ${esc(receipt.content_sha256?.slice(0, 12) || 'not recorded')}…</span></div>`).join('');
-  return `<article class="case-claim case-claim--${esc(claim.claim_status)}"><div class="case-claim-head"><span class="badge">${esc(humanLabel(claim.claim_status))}</span><span class="meta">${esc(humanLabel(claim.evidence_class))} · causality: ${esc(humanLabel(claim.causal_status))}</span></div><p>${esc(claim.plain)}</p>${claim.value != null ? `<p class="case-value">${esc(formatCaseValue(claim.value))}</p>` : ''}${claim.qualification ? `<p class="evidence-note">${esc(claim.qualification)}</p>` : ''}${receipts}</article>`;
+function renderCaseClaim(claim, caseId) {
+  const receiptCount = claim.receipts?.length ?? 0;
+  return `<article class="case-claim case-claim--${esc(claim.claim_status)}"><div class="case-claim-head"><span class="badge">${esc(humanLabel(claim.claim_status))}</span><span class="meta">${esc(humanLabel(claim.evidence_class || claim.evidence_state))} · causality: ${esc(humanLabel(claim.causal_status))}</span></div><p>${esc(claim.plain)}</p>${claim.value != null ? `<p class="case-value">${esc(formatCaseValue(claim.value))}</p>` : ''}${claim.qualification ? `<p class="evidence-note">${esc(claim.qualification)}</p>` : ''}<button class="claim-open" type="button" data-open-claim="${esc(`${caseId}::${claim.claim_id}`)}">Open claim and ${receiptCount} receipt${receiptCount === 1 ? '' : 's'} →</button></article>`;
 }
 
-function renderCase(id) {
-  const item = state.cases.get(id);
+async function renderCase(id) {
+  const item = await loadCase(id);
   if (!item) return renderNotFound('case', id);
   setDocumentTitle(item.title);
   $('#summary').innerHTML = [
@@ -589,16 +912,23 @@ function renderCase(id) {
     metricPanel('Verified', item.claim_status_counts.verified),
     metricPanel('Review required', item.claim_status_counts.review_required)
   ].join('');
-  const sections = item.sections.map(section => `<section class="panel case-section"><span class="panel-label">${esc(section.label)}</span>${section.records.map(event => `<article class="case-event"><div class="case-event-head"><h3>${esc(event.label)}</h3><span class="badge">${esc(humanLabel(event.event_type))}</span></div><p class="meta">Observed or asserted: ${esc(event.occurred_at)}</p>${event.claims.map(renderCaseClaim).join('')}</article>`).join('')}</section>`).join('');
+  const sections = item.sections.map((section, index) => {
+    const records = section.records.map(event => `<article class="case-event"><div class="case-event-marker" aria-hidden="true"></div><div class="case-event-body"><div class="case-event-head"><h3>${esc(event.label)}</h3><span class="badge">${esc(humanLabel(event.event_type))}</span></div><p class="meta">Observed or asserted: ${esc(event.occurred_at)}</p>${event.claims.map(claim => renderCaseClaim(claim, item.case_id)).join('')}</div></article>`).join('');
+    if (item.presentation === 'research_graph_projection' && index > 0) {
+      return `<details class="panel case-section case-ladder advanced-record"><summary>${esc(section.label)} · ${section.records.length} record${section.records.length === 1 ? '' : 's'}</summary><div class="advanced-record-body">${records}</div></details>`;
+    }
+    return `<section class="panel case-section case-ladder"><span class="panel-label">${esc(section.label)}</span>${records}</section>`;
+  }).join('');
   const eventById = new Map(item.events.map(event => [event.event_id, event]));
   const relationFlow = item.relations.map(relation => `<article class="relation-row"><div><span class="meta">${esc(eventById.get(relation.from_event_id)?.occurred_at || '')}</span><strong>${esc(eventById.get(relation.from_event_id)?.label || relation.from_event_id)}</strong></div><span class="relation-arrow" aria-hidden="true">→</span><div><span class="meta">${esc(eventById.get(relation.to_event_id)?.occurred_at || '')}</span><strong>${esc(eventById.get(relation.to_event_id)?.label || relation.to_event_id)}</strong></div><aside><span class="badge">${esc(humanLabel(relation.relation_type))}</span><span class="causal-status">Causality: ${esc(humanLabel(relation.causal_status))}</span></aside></article>`).join('');
   const beacon = item.beacons[0];
   const dimensions = (beacon?.dimensions ?? []).map(dimension => `<li><strong>${esc(humanLabel(dimension.id))}</strong><span>${esc(dimension.formula)}</span></li>`).join('');
   $('#detail').innerHTML = `
-    <div class="panel case-hero">${entityHeading(item.title, [])}<p class="case-subtitle">${esc(item.subtitle)} · ${esc(item.tracking_id)} · as known ${esc(item.as_of)}</p><p>${esc(item.scope)}</p><div class="evidence-note"><strong>Publication boundary.</strong> ${esc(item.boundary)}</div><p class="meta">${esc(item.disclaimer)}</p></div>
-    <div class="panel relation-panel"><span class="panel-label">Decision-to-outcome map</span><h3>What is linked—and how strongly</h3><p>Each arrow is typed. It can preserve a long time gap without upgrading sequence into causation.</p><div class="relation-list">${relationFlow}</div></div>
-    <div class="panel beacon-panel"><span class="panel-label">Explainable beacon · ${esc(beacon?.version || '')}</span><h3>${esc(beacon?.label || 'No beacon')}</h3><div class="beacon-meter"><span style="width:${Math.round((beacon?.evidence_coverage?.ratio || 0) * 100)}%"></span></div><p><strong>${beacon?.evidence_coverage?.verified || 0} of ${beacon?.evidence_coverage?.total || 0}</strong> beacon inputs are independently verified in this ledger.</p><ol class="beacon-dimensions">${dimensions}</ol><p class="evidence-note">${esc(beacon?.prohibited_interpretation || '')}</p></div>
+    <div class="panel case-hero">${entityHeading(item.title, [])}<div class="case-print-row"><p class="case-subtitle">${esc(item.subtitle)} · ${esc(item.tracking_id)} · as known ${esc(item.as_of)}</p><button class="copy-link print-dossier" type="button" onclick="window.print()">Print dossier</button></div><p>${esc(item.scope)}</p><div class="evidence-note"><strong>Publication boundary.</strong> ${esc(item.boundary)}</div><p class="meta">${esc(item.disclaimer)}</p></div>
+    ${relationFlow ? `<div class="panel relation-panel"><span class="panel-label">Decision-to-outcome map</span><h3>What is linked—and how strongly</h3><p>Each arrow is typed. It can preserve a long time gap without upgrading sequence into causation.</p><div class="relation-list">${relationFlow}</div></div>` : ''}
+    ${beacon ? `<div class="panel beacon-panel"><span class="panel-label">Explainable beacon · ${esc(beacon.version || '')}</span><h3>${esc(beacon.label || 'No beacon')}</h3><div class="beacon-meter"><span style="width:${Math.round((beacon.evidence_coverage?.ratio || 0) * 100)}%"></span></div><p><strong>${beacon.evidence_coverage?.verified || 0} of ${beacon.evidence_coverage?.total || 0}</strong> beacon inputs are independently verified in this ledger.</p><ol class="beacon-dimensions">${dimensions}</ol><p class="evidence-note">${esc(beacon.prohibited_interpretation || '')}</p></div>` : ''}
     ${sections}`;
+  bindEvidenceActions($('#detail'));
 }
 
 function metricPanelRatio(label, value, max) {
@@ -736,7 +1066,7 @@ function renderActor(id) {
 }
 
 function bindResults() {
-  for (const btn of document.querySelectorAll('#detail .result')) btn.addEventListener('click', () => go(btn.dataset.kind, btn.dataset.id));
+  for (const btn of document.querySelectorAll('#detail .result')) btn.addEventListener('click', () => activateResult(btn.dataset.kind, btn.dataset.id));
 }
 
 function renderChain(id) {
@@ -970,7 +1300,7 @@ function receiptRefs(ids) {
     const r = state.receipts.get(id);
     if (!r) return { id, label: id, url: null, archiveUrl: null, health: 'warning', healthLabel: 'Receipt record missing' };
     const path = String(r.path || '');
-    const localPath = safeLocalReceiptPath(path);
+    const localPath = isPortableRelease() ? null : safeLocalReceiptPath(path);
     const externalUrl = safeExternalUrl(path);
     const local = Boolean(localPath);
     const url = externalUrl || localPath;
@@ -1061,10 +1391,16 @@ function renderDeskHop(h) {
 function renderStandingRefusals() {
   const rejected = state.hopGraph.rejected_hop_pairs ?? [];
   const dense = state.surfaceGraph.surfaces.filter(s => !s.hop_eligible && (s.participants ?? []).filter(p => p.participant_type === 'actor').length >= 20);
-  const items = rejected.map(p => `
-    <div class="receipts">${esc(labelActor(p.actor_a))} × ${esc(labelActor(p.actor_b))} — both touched ${esc(surface(p.surface_id)?.surface_label || p.surface_id)}, but in non-overlapping documented windows (${esc(p.actor_a_window?.valid_from ?? '?')} → ${esc(p.actor_a_window?.valid_until ?? 'ongoing')} vs ${esc(p.actor_b_window?.valid_from ?? '?')} → ${esc(p.actor_b_window?.valid_until ?? 'ongoing')}). No connection asserted.</div>`).join('');
+  const items = rejected.map(p => {
+    const verified = p.publication_status === 'verified';
+    const status = verified ? 'Verified refusal' : 'Review required';
+    const finding = verified
+      ? `The directly supported actor windows do not overlap. No connection is asserted through this surface.`
+      : `The ledger windows do not overlap, but the decisive actor-window receipts are not publicly re-verifiable. This compiler rejection is not published as a checked negative finding.`;
+    return `<div class="receipts"><div class="badge-row"><span class="badge">${status}</span>${evidenceBadge(p.evidence_class || 'judgment')}</div><p>${esc(labelActor(p.actor_a))} × ${esc(labelActor(p.actor_b))} — both appear on ${esc(surface(p.surface_id)?.surface_label || p.surface_id)} (${esc(p.actor_a_window?.valid_from ?? '?')} → ${esc(p.actor_a_window?.valid_until ?? 'ongoing')} vs ${esc(p.actor_b_window?.valid_from ?? '?')} → ${esc(p.actor_b_window?.valid_until ?? 'ongoing')}). ${esc(finding)}</p>${renderReceiptGrid(p.receipt_ids, 'Window and surface receipts')}</div>`;
+  }).join('');
   return `<div class="panel why-no-hop"><h3>What this map declines to say</h3>
-    <p>Connections the compiler rejected because the documents do not support co-presence. A refusal here is a checked fact, not an omission.</p>
+    <p>Compiler refusals remain visible with their publication status. Only refusals whose two actor windows have direct, publicly re-verifiable receipts qualify as checked findings.</p>
     ${items || '<p class="meta">No standing rejections.</p>'}
     ${dense.length ? `<p class="meta"><strong>Dense-surface guard:</strong> ${dense.map(s => `${esc(s.surface_label)} (${(s.participants ?? []).filter(p => p.participant_type === 'actor').length} actors)`).join('; ')} remain visible context but create no person-to-person hops.</p>` : ''}
     <p class="meta">Undated participation is never placed in time: a person whose stint carries no documented dates can appear in all-time results but never in an "as of" answer.</p></div>`;
@@ -1157,8 +1493,14 @@ function runDeskCheck({ updateHash }) {
   }
 
   if (directRejections.length) {
-    parts.push(`<div class="panel why-no-hop"><h3>Checked and declined</h3>${directRejections.map(p => `
-      <p>These two both touched <strong>${esc(surface(p.surface_id)?.surface_label || p.surface_id)}</strong>, but their documented windows do not overlap (${esc(labelActor(p.actor_a))}: ${esc(p.actor_a_window?.valid_from ?? '?')} → ${esc(p.actor_a_window?.valid_until ?? 'ongoing')}; ${esc(labelActor(p.actor_b))}: ${esc(p.actor_b_window?.valid_from ?? '?')} → ${esc(p.actor_b_window?.valid_until ?? 'ongoing')}). The compiler refused to connect them through it.</p>`).join('')}</div>`);
+    const verifiedDirect = directRejections.filter(p => p.publication_status === 'verified').length;
+    parts.push(`<div class="panel why-no-hop"><h3>${verifiedDirect === directRejections.length ? 'Checked and declined' : 'Compiler refusal · review required'}</h3>${directRejections.map(p => {
+      const verified = p.publication_status === 'verified';
+      const finding = verified
+        ? 'The direct actor-window receipts support the non-overlap, so the compiler declined this connection.'
+        : 'The ledger windows do not overlap, but their decisive receipts are judgment-class and unrecoverable. This remains review-required and is not a verified negative finding.';
+      return `<div class="receipts"><div class="badge-row"><span class="badge">${verified ? 'Verified refusal' : 'Review required'}</span>${evidenceBadge(p.evidence_class || 'judgment')}</div><p>These two both appear on <strong>${esc(surface(p.surface_id)?.surface_label || p.surface_id)}</strong> (${esc(labelActor(p.actor_a))}: ${esc(p.actor_a_window?.valid_from ?? '?')} → ${esc(p.actor_a_window?.valid_until ?? 'ongoing')}; ${esc(labelActor(p.actor_b))}: ${esc(p.actor_b_window?.valid_from ?? '?')} → ${esc(p.actor_b_window?.valid_until ?? 'ongoing')}). ${esc(finding)}</p>${renderReceiptGrid(p.receipt_ids, 'Window and surface receipts')}</div>`;
+    }).join('')}</div>`);
   }
   parts.push(renderStandingRefusals());
   out.innerHTML = parts.join('');

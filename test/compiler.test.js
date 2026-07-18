@@ -20,6 +20,7 @@ const surface = JSON.parse(fs.readFileSync('build/surface-graph.json', 'utf8'));
 const scores = JSON.parse(fs.readFileSync('build/scores.json', 'utf8'));
 const migration = JSON.parse(fs.readFileSync('build/migration-summary.json', 'utf8'));
 const legacyGraph = JSON.parse(fs.readFileSync('graph.json', 'utf8'));
+assert.equal(legacyGraph.subtitle, 'Seven degrees of UK AI policy topology, with receipts.');
 
 const actor = id => scores.actors.find(a => a.actor_id === id);
 const org = id => scores.organizations.find(o => o.organization_id === id);
@@ -91,6 +92,26 @@ assert.ok(!directRosenfieldCummings, 'Rosenfield and Cummings must not hop: disj
 assert.ok((hop.rejected_hop_pairs ?? []).some(p =>
   [p.actor_a, p.actor_b].sort().join('|') === 'dan-rosenfield|dominic-cummings' && p.reason === 'no_temporal_overlap'),
   'the disjoint Rosenfield/Cummings pair must be recorded in rejected_hop_pairs');
+const rosenfieldCummingsRejection = hop.rejected_hop_pairs.find(p =>
+  p.actor_a === 'dan-rosenfield' && p.actor_b === 'dominic-cummings');
+assert.deepEqual(rosenfieldCummingsRejection.actor_a_window, {
+  valid_from: '2021-01-01', valid_until: '2021-12-31', dated: true
+}, 'Dan Rosenfield must retain his own 2021 participant window after actor IDs are sorted');
+assert.deepEqual(rosenfieldCummingsRejection.actor_b_window, {
+  valid_from: '2019-01-01', valid_until: '2020-12-31', dated: true
+}, 'Dominic Cummings must retain his own 2019-2020 participant window after actor IDs are sorted');
+assert.deepEqual(rosenfieldCummingsRejection.actor_a_receipt_ids, ['warner-surface-audit-2026-06-29']);
+assert.deepEqual(rosenfieldCummingsRejection.actor_b_receipt_ids, ['warner-surface-audit-2026-06-29']);
+assert.deepEqual(rosenfieldCummingsRejection.surface_receipt_ids, ['official-no10-ben-warner', 'warner-surface-audit-2026-06-29']);
+assert.deepEqual(rosenfieldCummingsRejection.receipt_ids, ['official-no10-ben-warner', 'warner-surface-audit-2026-06-29']);
+assert.equal(rosenfieldCummingsRejection.actor_a_window_reverifiable, false);
+assert.equal(rosenfieldCummingsRejection.actor_b_window_reverifiable, false);
+assert.equal(rosenfieldCummingsRejection.evidence_class, 'judgment');
+assert.equal(rosenfieldCummingsRejection.publication_status, 'review_required');
+assert.equal(rosenfieldCummingsRejection.publication_reason, 'actor_window_receipts_not_publicly_reverifiable');
+const no10Participants = surf('no10-digital-data-advisory-2019-2021').participants;
+assert.equal(no10Participants.find(part => part.actor_id === 'dan-rosenfield').evidence_class, 'judgment');
+assert.equal(no10Participants.find(part => part.actor_id === 'dominic-cummings').evidence_class, 'judgment');
 // Overlap window is the intersection, not a union: Warner/Cummings on No.10
 // overlaps only where both were present (Warner 2019-12→2021-05, Cummings
 // 2019→2020) → 2019-12 through 2020-12.

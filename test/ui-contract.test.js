@@ -56,9 +56,35 @@ assert.match(css, /\[data-contrast="high"\]/);
 assert.match(app, /function renderReceiptGrid/);
 assert.match(app, /function renderTopologyMap/);
 assert.match(app, /function renderCase/);
-assert.match(app, /build\/cases\/index\.json/);
+assert.match(app, /build\/public-catalog\.json/);
+assert.match(app, /async function loadCase/);
+assert.match(app, /async function loadTrackHarness/);
 assert.match(app, /confirmed:\s*0/);
 assert.match(app, /Shared context is not influence|does not establish contact/);
+
+// The public shell must expose real research objects without upgrading exploratory work.
+assert.match(html, /id="research-tracks"/);
+assert.match(html, /id="evidence-dialog"/);
+assert.match(app, /state\.catalogCounts/);
+assert.match(app, /function renderTrackDirectory/);
+assert.match(app, /function renderTrack/);
+assert.match(app, /function openClaimDialog/);
+assert.match(app, /public-indexed claims/);
+assert.match(app, /function publicReceiptRecords/);
+assert.match(app, /function publicReceiptCount/);
+assert.match(app, /function isPortableRelease/);
+assert.match(app, /isPortableRelease\(\) \? null : safeLocalReceiptPath/);
+assert.match(app, /Window and surface receipts/);
+assert.match(app, /Refusal evidence under review/);
+assert.match(app, /not published as a checked negative finding/);
+assert.match(app, /publication_status === 'verified'/);
+assert.doesNotMatch(app, /A refusal here is a checked fact/);
+assert.doesNotMatch(app, /state\.receipts\.size \+ \(state\.catalogCounts\.receipts/);
+assert.match(app, /No finding has been admitted by this harness/);
+assert.match(app, /Sequence, proximity, or shared context does not establish intent/);
+assert.match(css, /\[data-page="detail"\]/);
+assert.match(css, /\.track-grid\s*\{/);
+assert.match(css, /\.evidence-dialog\s*\{/);
 
 // Editable social artwork keeps the expected large-card aspect and brand boundary language;
 // metadata points at its rasterized PNG counterpart for crawler compatibility.

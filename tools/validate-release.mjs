@@ -7,6 +7,7 @@ import { isFieldAutopsyCase, loadFieldAutopsy, validateFieldAutopsy } from './li
 import { buildIdentityLayer } from './lib/axm-identity.mjs';
 import { checkReceiptArchival, todayString } from './lib/receipt-archival.mjs';
 import { assessHopDensity, validateDensityPolicy } from './lib/density.mjs';
+import { receiptSupportsPublishedWindow } from './lib/hops.mjs';
 import { validateCorpusSelection } from './validate-corpus-selection.mjs';
 import { validateConsumptionContract } from './validate-consumption-contract.mjs';
 import { validateOfficeholderCohort } from './validate-officeholder-cohort.mjs';
@@ -20,10 +21,19 @@ const surfaceById = indexBy(surfaceGraph.surfaces, 'surface_id');
 const surfaceTypeById = indexBy(data.surfaceTypes, 'id');
 const actorScore = new Map(scores.actors.map(a => [a.actor_id, a]));
 const orgScore = new Map(scores.organizations.map(o => [o.organization_id, o]));
+const receiptById = indexBy(data.receipts, 'receipt_id');
 
 const errors = [];
 const warnings = [];
 function assert(cond, msg) { if (!cond) errors.push(msg); }
+function sameWindow(left, right) {
+  return (left?.valid_from ?? null) === (right?.valid_from ?? null)
+    && (left?.valid_until ?? null) === (right?.valid_until ?? null)
+    && Boolean(left?.dated) === Boolean(right?.dated);
+}
+function sameIdSet(left = [], right = []) {
+  return JSON.stringify([...new Set(left)].sort()) === JSON.stringify([...new Set(right)].sort());
+}
 
 // Constitutional selection-layer gate. A release cannot be individually
 // careful at the edge while silently choosing asymmetric or unmeasured corpora.
@@ -140,6 +150,54 @@ for (const edge of hopGraph.edges) {
 for (const pair of hopGraph.rejected_hop_pairs ?? []) {
   assert(pair.reason?.startsWith('no_temporal_overlap'), `rejected pair ${pair.surface_id} has unexpected reason ${pair.reason}`);
   assert(pair.actor_a !== pair.actor_b, `rejected hop pair must name distinct actors, got ${pair.actor_a}/${pair.actor_b}`);
+  const sourceSurface = surfaceById.get(pair.surface_id);
+  assert(sourceSurface, `rejected pair references missing surface ${pair.surface_id}`);
+  const actorAParts = (sourceSurface?.participants ?? []).filter(part => part.participant_type === 'actor' && part.actor_id === pair.actor_a);
+  const actorBParts = (sourceSurface?.participants ?? []).filter(part => part.participant_type === 'actor' && part.actor_id === pair.actor_b);
+  const sourceSurfaceWindow = sourceSurface ? windowOf(sourceSurface) : null;
+  const matchingSource = actorAParts.flatMap(actorAPart => actorBParts.map(actorBPart => ({ actorAPart, actorBPart }))).find(({ actorAPart, actorBPart }) => {
+    const actorAWindow = windowOf(actorAPart);
+    const actorBWindow = windowOf(actorBPart);
+    const overlap = intersectAll([
+      sourceSurfaceWindow?.dated ? sourceSurfaceWindow : UNBOUNDED,
+      actorAWindow.dated ? actorAWindow : UNBOUNDED,
+      actorBWindow.dated ? actorBWindow : UNBOUNDED,
+    ]);
+    return overlap === null
+      && sameWindow(pair.actor_a_window, actorAWindow)
+      && sameWindow(pair.actor_b_window, actorBWindow)
+      && sameWindow(pair.surface_window, sourceSurfaceWindow);
+  });
+  assert(matchingSource,
+    `rejected pair ${pair.actor_a}/${pair.actor_b} on ${pair.surface_id} disagrees with its source participant windows`);
+  if (matchingSource) {
+    assert(sameIdSet(pair.actor_a_receipt_ids, matchingSource.actorAPart.receipt_ids),
+      `rejected pair ${pair.actor_a}/${pair.actor_b} actor_a receipts disagree with source participant ${pair.actor_a}`);
+    assert(sameIdSet(pair.actor_b_receipt_ids, matchingSource.actorBPart.receipt_ids),
+      `rejected pair ${pair.actor_a}/${pair.actor_b} actor_b receipts disagree with source participant ${pair.actor_b}`);
+    assert(sameIdSet(pair.surface_receipt_ids, sourceSurface.receipt_ids),
+      `rejected pair ${pair.actor_a}/${pair.actor_b} surface receipts disagree with ${pair.surface_id}`);
+    assert(sameIdSet(pair.receipt_ids, [
+      ...(sourceSurface.receipt_ids ?? []),
+      ...(matchingSource.actorAPart.receipt_ids ?? []),
+      ...(matchingSource.actorBPart.receipt_ids ?? []),
+    ]), `rejected pair ${pair.actor_a}/${pair.actor_b} combined receipts are incomplete`);
+    const actorAWindowReverifiable = (matchingSource.actorAPart.receipt_ids ?? [])
+      .some(receiptId => receiptSupportsPublishedWindow(receiptById.get(receiptId)));
+    const actorBWindowReverifiable = (matchingSource.actorBPart.receipt_ids ?? [])
+      .some(receiptId => receiptSupportsPublishedWindow(receiptById.get(receiptId)));
+    const expectedPublicationStatus = actorAWindowReverifiable && actorBWindowReverifiable ? 'verified' : 'review_required';
+    assert(pair.actor_a_window_reverifiable === actorAWindowReverifiable,
+      `rejected pair ${pair.actor_a}/${pair.actor_b} actor_a reverifiability is stale`);
+    assert(pair.actor_b_window_reverifiable === actorBWindowReverifiable,
+      `rejected pair ${pair.actor_a}/${pair.actor_b} actor_b reverifiability is stale`);
+    assert(pair.publication_status === expectedPublicationStatus,
+      `rejected pair ${pair.actor_a}/${pair.actor_b} publication status must be ${expectedPublicationStatus}`);
+    if (pair.publication_status === 'verified') {
+      assert(actorAWindowReverifiable && actorBWindowReverifiable,
+        `verified rejected pair ${pair.actor_a}/${pair.actor_b} lacks direct re-verifiable actor-window receipts`);
+    }
+  }
 }
 
 // Regression fixture 1: Ben Warner.

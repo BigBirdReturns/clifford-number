@@ -7,6 +7,7 @@ const steps = [
   ['score-deniability', 'tools/score-deniability.mjs'],
   ['scout-surfaces', 'tools/scout-surfaces.mjs'],
   ['compile-cases', 'tools/compile-cases.mjs'],
+  ['build-public-catalog', 'tools/build-public-catalog.mjs'],
 ];
 
 for (const [name, script] of steps) {

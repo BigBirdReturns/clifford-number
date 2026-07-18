@@ -34,7 +34,19 @@ export function basisWindow(basis) {
   return { valid_from: basis.valid_from ?? null, valid_until: basis.valid_until ?? null, dated: basis.temporal_status !== 'undated' };
 }
 
-export function deriveHopEdges({ surfaces, participationBySurface, broadOrgIds, densityPolicy }) {
+export function receiptSupportsPublishedWindow(receipt) {
+  if (!receipt || ['judgment', 'derived', 'open'].includes(receipt.evidence_class)) return false;
+  if (receipt.archive?.method === 'unrecoverable_local_paste') return false;
+  return /^https?:\/\//.test(String(receipt.path ?? ''))
+    || Boolean(receipt.archive?.ref)
+    || receipt.archive?.method === 'in_repo_content_hash';
+}
+
+function participantWindowIsReverifiable(participant, receiptById) {
+  return (participant.receipt_ids ?? []).some(receiptId => receiptSupportsPublishedWindow(receiptById.get(receiptId)));
+}
+
+export function deriveHopEdges({ surfaces, participationBySurface, broadOrgIds, densityPolicy, receiptById = new Map() }) {
   const hopEdgeMap = new Map();
   const rejectedHopSurfaces = [];
   const rejectedHopPairs = [];
@@ -88,6 +100,16 @@ export function deriveHopEdges({ surfaces, participationBySurface, broadOrgIds, 
         bWin.dated ? bWin : UNBOUNDED,
       ]);
       if (overlap === null) {
+        const actorAPart = ids[0] === a.actor_id ? a : b;
+        const actorBPart = ids[1] === b.actor_id ? b : a;
+        const actorAWindow = ids[0] === a.actor_id ? aWin : bWin;
+        const actorBWindow = ids[1] === b.actor_id ? bWin : aWin;
+        const actorAReceiptIds = uniq(actorAPart.receipt_ids ?? []);
+        const actorBReceiptIds = uniq(actorBPart.receipt_ids ?? []);
+        const surfaceReceiptIds = uniq(surface.receipt_ids ?? []);
+        const actorAWindowReverifiable = participantWindowIsReverifiable(actorAPart, receiptById);
+        const actorBWindowReverifiable = participantWindowIsReverifiable(actorBPart, receiptById);
+        const publicationStatus = actorAWindowReverifiable && actorBWindowReverifiable ? 'verified' : 'review_required';
         rejectedHopPairs.push({
           surface_id: surface.surface_id,
           actor_a: ids[0],
@@ -95,9 +117,20 @@ export function deriveHopEdges({ surfaces, participationBySurface, broadOrgIds, 
           reason: aWin.dated && bWin.dated && intersect(aWin, bWin) === null
             ? 'no_temporal_overlap'
             : 'no_temporal_overlap_with_surface_window',
-          actor_a_window: aWin,
-          actor_b_window: bWin,
+          actor_a_window: actorAWindow,
+          actor_b_window: actorBWindow,
           surface_window: surfaceWin,
+          actor_a_receipt_ids: actorAReceiptIds,
+          actor_b_receipt_ids: actorBReceiptIds,
+          surface_receipt_ids: surfaceReceiptIds,
+          receipt_ids: uniq([...surfaceReceiptIds, ...actorAReceiptIds, ...actorBReceiptIds]),
+          evidence_class: weakestEvidence([surface.evidence_class, actorAPart.evidence_class, actorBPart.evidence_class]),
+          actor_a_window_reverifiable: actorAWindowReverifiable,
+          actor_b_window_reverifiable: actorBWindowReverifiable,
+          publication_status: publicationStatus,
+          publication_reason: publicationStatus === 'verified'
+            ? 'both_actor_windows_have_reverifiable_receipts'
+            : 'actor_window_receipts_not_publicly_reverifiable',
         });
         continue;
       }

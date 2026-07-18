@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Check the shortest documented chain of shared public-role surfaces between public actors, with dates, evidence classes, and receipts for every step.">
-  <meta name="theme-color" content="#071e4a">
+  <meta name="description" content="Explore documented public decisions, research tracks, cases, claims, and the receipts behind every material statement.">
+  <meta name="theme-color" content="#faf6ec">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="The Clifford Number">
-  <meta property="og:title" content="The Clifford Number — connections you can check">
-  <meta property="og:description" content="Evidence-first public-institution topology. Every hop is a shared bounded surface. Every step carries receipts.">
+  <meta property="og:title" content="The Clifford Number — public records kept together">
+  <meta property="og:description" content="A public research instrument for following documented decisions, claims, connections, and source receipts.">
   <meta property="og:url" content="https://bigbirdreturns.github.io/clifford-number/">
   <meta property="og:image" content="https://bigbirdreturns.github.io/clifford-number/assets/social-card.png">
   <meta property="og:image:type" content="image/png">
@@ -18,7 +18,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="canonical" href="https://bigbirdreturns.github.io/clifford-number/">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <title>The Clifford Number — connections you can check</title>
+  <title>The Clifford Number — public records kept together</title>
   <script>
     (() => {
       try {
@@ -26,7 +26,7 @@
         const saved = localStorage.getItem('clifford-preferences');
         const prefs = saved ? JSON.parse(saved) : {};
         const legacyTheme = localStorage.getItem('theme');
-        const choice = ['system', 'light', 'dark'].includes(prefs.theme) ? prefs.theme : (['light', 'dark'].includes(legacyTheme) ? legacyTheme : 'system');
+        const choice = ['system', 'light', 'dark'].includes(prefs.theme) ? prefs.theme : (['light', 'dark'].includes(legacyTheme) ? legacyTheme : 'light');
         const actual = choice === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : choice;
         root.dataset.theme = actual;
         root.dataset.themeChoice = choice;
@@ -39,7 +39,7 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bitter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -53,6 +53,9 @@
       </a>
       <div class="topbar-actions">
         <span class="release-status"><span class="status-pulse" aria-hidden="true"></span><span data-i18n="status">Public research instrument</span></span>
+        <a href="#research-tracks">Research</a>
+        <a href="#explorer">Explore</a>
+        <a href="#desk">Check a connection</a>
         <a href="https://github.com/BigBirdReturns/clifford-number/blob/main/docs/methodology.md" target="_blank" rel="noreferrer" data-i18n="method">Method</a>
         <a href="https://github.com/BigBirdReturns/clifford-number" target="_blank" rel="noreferrer" data-i18n="source">Source</a>
         <details class="preferences-menu" id="preferences-menu">
@@ -96,51 +99,58 @@
       </div>
     </div>
 
-    <div class="hero shell-wide">
+    <div class="hero hero--civic shell-wide">
       <div class="hero-copy">
-        <p class="eyebrow"><span data-i18n="publicRole">Public decisions to outcomes</span><span class="eyebrow-rule" aria-hidden="true"></span><span data-i18n="withReceipts">With receipts</span></p>
-        <h1>The Clifford<br><em>Number.</em></h1>
+        <p class="eyebrow"><span>Documented public research</span><span class="eyebrow-rule" aria-hidden="true"></span><span data-i18n="withReceipts">With receipts</span></p>
+        <h1>Public decisions leave records.<br><em>We keep them together.</em></h1>
         <p class="hero-dek" data-i18n="heroDek">Trace documented public decisions through people, programs, money, and companies—then inspect what happened later, with every step timestamped and receipted.</p>
+
+        <section class="search-card search-card--hero civic-search" aria-labelledby="search-label">
+          <div class="search-label-row">
+            <label id="search-label" for="search" data-i18n="searchLabel">Search person, organization, surface, or case</label>
+            <span class="key-hint" aria-hidden="true" data-i18n="pressFocus">Press / to focus</span>
+          </div>
+          <div class="search-input-wrap">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input id="search" type="search" role="combobox" placeholder="Try a person, case, claim, receipt, or research track…" autocomplete="off" aria-controls="results" aria-autocomplete="list" aria-expanded="false" aria-describedby="search-help">
+            <span class="search-shortcut" aria-hidden="true">/</span>
+          </div>
+          <p class="try-row" id="search-help"><span data-i18n="startWith">Start with:</span> <span id="try-examples"></span> <button id="browse-all" type="button" data-i18n="browseIndex">Browse index</button></p>
+          <div id="results" class="results search-results" role="listbox" aria-label="Search results" aria-live="polite"></div>
+        </section>
+
         <div class="hero-actions">
-          <button class="primary-action" id="hero-check" type="button"><span data-i18n="checkConnection">Check a connection</span> <span aria-hidden="true">→</span></button>
-          <a class="text-action" href="#explorer"><span data-i18n="exploreTopology">Explore the topology</span> <span aria-hidden="true">↓</span></a>
+          <a class="primary-action" href="#research-tracks">Browse research <span aria-hidden="true">→</span></a>
+          <button class="text-action" id="hero-check" type="button"><span data-i18n="checkConnection">Check a connection</span> <span aria-hidden="true">→</span></button>
         </div>
         <p class="inference-boundary"><strong data-i18n="boundaryStrong">A timeline is not a causal verdict.</strong> <span data-i18n="boundaryText">The instrument distinguishes source-explicit causation from attribution, temporal association, and causation not established.</span></p>
       </div>
 
-      <figure class="topology-card" aria-labelledby="topology-title topology-caption">
-        <div class="topology-toolbar">
-          <span id="topology-title"><span class="status-pulse" aria-hidden="true"></span><span data-i18n="liveTopology">Live topology</span></span>
-          <span id="topology-edge-count" data-i18n="loadingGraph">Loading graph</span>
+      <aside class="civic-boundary" aria-labelledby="boundary-title">
+        <p class="section-kicker">How to read this record</p>
+        <h2 id="boundary-title">What appearing here does not mean</h2>
+        <p>Being named in a public record is not an accusation. A documented connection means the published rules found a qualifying shared surface—not contact, influence, coordination, intent, benefit, or wrongdoing.</p>
+        <div class="civic-boundary-rule">
+          <strong>Refusals are findings.</strong>
+          <span>When the evidence does not support a connection, Clifford Number publishes the failed rule instead of manufacturing an edge.</span>
         </div>
-        <svg id="hero-network" viewBox="0 0 620 390" role="img" aria-label="A sample actor-to-surface route from the current corpus">
-          <defs>
-            <pattern id="topology-grid" width="32" height="32" patternUnits="userSpaceOnUse">
-              <path d="M 32 0 L 0 0 0 32" fill="none" class="topology-grid-line"/>
-            </pattern>
-            <filter id="node-glow" x="-80%" y="-80%" width="260%" height="260%">
-              <feGaussianBlur stdDeviation="7" result="blur"/>
-              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-          </defs>
-          <rect width="620" height="390" fill="url(#topology-grid)"/>
-          <g id="hero-network-content" aria-hidden="true">
-            <path class="network-line network-line--ghost" d="M95 275 C205 72 400 70 525 180"/>
-            <circle class="network-node network-node--actor" cx="95" cy="275" r="17"/>
-            <rect class="network-node network-node--surface" x="288" y="82" width="34" height="34" rx="4" transform="rotate(45 305 99)"/>
-            <circle class="network-node network-node--anchor" cx="525" cy="180" r="21"/>
-          </g>
-        </svg>
-        <figcaption id="topology-caption">
-          <span class="topology-legend"><i class="legend-actor"></i><span data-i18n="actor">Actor</span></span>
-          <span class="topology-legend"><i class="legend-surface"></i><span data-i18n="boundedSurface">Bounded surface</span></span>
-          <span class="topology-legend"><i class="legend-anchor"></i><span data-i18n="anchor">Anchor</span></span>
-        </figcaption>
-      </figure>
+        <div class="release-strip" id="release-strip">Loading the current public release…</div>
+      </aside>
     </div>
   </header>
 
   <main id="main-content" class="shell-wide">
+    <section class="track-directory" id="research-tracks" aria-labelledby="tracks-title">
+      <div class="section-heading section-heading--tracks">
+        <div>
+          <p class="section-kicker">Published and exploratory research</p>
+          <h2 id="tracks-title">Choose a body of research.</h2>
+        </div>
+        <p>Tracks state what was examined, what the current evidence can support, and where coverage remains incomplete. Exploratory work is labeled before you open it.</p>
+      </div>
+      <div id="track-directory-list" class="track-grid" aria-live="polite"></div>
+    </section>
+
     <section class="purpose-map" aria-labelledby="purpose-title">
       <div class="purpose-heading">
         <p class="section-kicker" data-i18n="purposeKicker">What this instrument traces</p>
@@ -179,20 +189,6 @@
 
       <div id="view-status" class="sr-only" role="status" aria-live="polite"></div>
       <div id="view-map" role="tabpanel" aria-labelledby="tab-map">
-        <section class="search-card search-card--hero" aria-labelledby="search-label">
-          <div class="search-label-row">
-            <label id="search-label" for="search" data-i18n="searchLabel">Search person, organization, surface, or case</label>
-            <span class="key-hint" aria-hidden="true" data-i18n="pressFocus">Press / to focus</span>
-          </div>
-          <div class="search-input-wrap">
-            <span class="search-icon" aria-hidden="true">⌕</span>
-            <input id="search" type="search" role="combobox" placeholder="Try Ben Warner, Electric Twin, Simon Case…" data-i18n-placeholder="searchPlaceholder" autocomplete="off" aria-controls="results" aria-autocomplete="list" aria-expanded="false" aria-describedby="search-help">
-            <span class="search-shortcut" aria-hidden="true">/</span>
-          </div>
-          <p class="try-row" id="search-help"><span data-i18n="startWith">Start with:</span> <span id="try-examples"></span> <button id="browse-all" type="button" data-i18n="browseIndex">Browse index</button></p>
-          <div id="results" class="results search-results" role="listbox" aria-label="Search results" aria-live="polite"></div>
-        </section>
-
         <section id="summary" class="summary-grid" aria-label="Corpus summary"></section>
         <section id="detail" class="detail"></section>
       </div>
@@ -232,6 +228,16 @@
     </section>
   </main>
 
+  <dialog id="evidence-dialog" class="evidence-dialog" aria-labelledby="evidence-dialog-title">
+    <div class="evidence-dialog-frame">
+      <div class="evidence-dialog-toolbar">
+        <span class="panel-label">Claim and evidence inspector</span>
+        <button id="evidence-dialog-close" class="dialog-close" type="button" aria-label="Close evidence inspector">Close</button>
+      </div>
+      <div id="evidence-dialog-content"></div>
+    </div>
+  </dialog>
+
   <footer class="site-footer">
     <div class="shell-wide footer-grid">
       <div>
@@ -258,8 +264,8 @@
       </div>
     </div>
     <div class="footer-bottom shell-wide">
-      <span>AXM Labs topology experiment</span>
-      <span>Not conspiracy. Topology.</span>
+      <span>Public research instrument</span>
+      <span>Records, rules, receipts.</span>
     </div>
   </footer>
 
