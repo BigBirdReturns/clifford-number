@@ -38,7 +38,7 @@ if (!html.includes('id="main-content"') || !app.includes('build/public-catalog.j
   console.error('validate-pages failed: public entrypoint does not expose the explorer and compiled cases');
   process.exit(1);
 }
-if (!standalone.includes('data-portable-release="true"') || !standalone.includes('const EMBEDDED_DATA =') || standalone.includes('src="app.js"')) {
+if (!standalone.includes('data-portable-release="true"') || !standalone.includes('const EMBEDDED_DATA =') || /src="app\.js(?:\?[^\"]*)?"/.test(standalone)) {
   console.error('validate-pages failed: standalone release is not self-contained');
   process.exit(1);
 }

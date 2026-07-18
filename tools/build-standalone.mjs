@@ -38,9 +38,9 @@ let html = read('index.html')
   .replace(/\s*<link rel="preconnect" href="https:\/\/fonts\.gstatic\.com" crossorigin>/, '')
   .replace(/\s*<link href="https:\/\/fonts\.googleapis\.com\/css2\?[^\"]+" rel="stylesheet">/, '')
   .replace('href="assets/favicon.svg"', `href="data:image/svg+xml;base64,${faviconData}"`)
-  .replace('  <link rel="stylesheet" href="styles.css">', `  <style>\n${read('styles.css')}\n  </style>`)
+  .replace(/  <link rel="stylesheet" href="styles\.css(?:\?[^\"]*)?">/, `  <style>\n${read('styles.css')}\n  </style>`)
   .replace(
-    '  <script src="app.js" type="module"></script>',
+    /  <script src="app\.js(?:\?[^\"]*)?" type="module"><\/script>/,
     `  <script>\n${inlineApp}\n  </script>`
   )
   .replace('<body>', '<body data-portable-release="true">');
