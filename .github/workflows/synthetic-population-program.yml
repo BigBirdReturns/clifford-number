@@ -1,0 +1,35 @@
+name: Synthetic population program
+
+on:
+  pull_request:
+    paths:
+      - 'contributions/inbox/research-batches/synthetic-population-program.json'
+      - 'tools/validate-synthetic-population-program.mjs'
+      - 'test/synthetic-population-program.test.js'
+      - 'docs/synthetic-population-program.md'
+      - '.github/workflows/synthetic-population-program.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'contributions/inbox/research-batches/synthetic-population-program.json'
+      - 'tools/validate-synthetic-population-program.mjs'
+      - 'test/synthetic-population-program.test.js'
+      - 'docs/synthetic-population-program.md'
+      - '.github/workflows/synthetic-population-program.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Validate program contract
+        run: node tools/validate-synthetic-population-program.mjs
+      - name: Run regression test
+        run: node test/synthetic-population-program.test.js
