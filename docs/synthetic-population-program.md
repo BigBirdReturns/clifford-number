@@ -1,8 +1,17 @@
 # Synthetic population research program
 
-Status: staged research intake. This document and its manifest do not alter the canonical graph, a Clifford Number, a score, or publication-ready narration.
+Status: staged research intake. This document and its registries do not alter the canonical graph, a Clifford Number, a score, or publication-ready narration.
 
-The program began with the Electric Twin capability-lineage case in GitHub issue #29. Issue #30 is the program index. The manifest at `contributions/inbox/research-batches/synthetic-population-program.json` freezes eighteen independently bounded child cases and twenty frontier candidates. Every row carries `graph_effect: none`; the frontier is explicitly inadmissible until each candidate is promoted to a bounded case.
+The program began with the Electric Twin capability-lineage case in GitHub issue #29. Issue #30 is the program index. The staged files under `contributions/inbox/research-batches/` freeze eighteen independently bounded child cases, eighteen machine-proposed discovery seeds, twenty frontier candidates, a neutral selection declaration, and explicit coverage accounting. Every row carries `graph_effect: none`; the frontier is explicitly inadmissible until each candidate is promoted to a bounded case.
+
+## Staged registries
+
+- `synthetic-population-program.json` defines the issue-linked case and frontier contracts.
+- `synthetic-population-selection.json` explains why the program may look, what defines membership, how comparisons remain symmetric, and when the lane must be suspended.
+- `synthetic-population-coverage.json` counts durable architecture separately from observed evidence and records current gaps.
+- `synthetic-population-discovery-seeds.jsonl` gives every bounded case one machine-readable research instruction without adding it to the canonical graph or the public fan-out source plane.
+
+The files remain under `contributions/inbox/` deliberately. They are reviewed research intake, not canonical selection, evidence, or coverage. Promotion into the ordinary `data/canonical/`, `data/research/`, or ledger pipeline requires a separate reviewed change.
 
 ## Why the cases are separate
 
@@ -35,7 +44,25 @@ The same predicates and evidentiary burdens apply to the complete or declared co
 
 Missing records, failed searches, ordinary career movement, successful independent validation, clean controls, and evidence against a working hypothesis remain first-class results. Source failure never becomes absence. Capability never becomes deployment. Investment never becomes operational control. Role overlap never becomes scientific compromise. Co-presence never becomes coordination.
 
-## Manifest contract
+The selection registry is publicly reproducible but explicitly does not count toward public evidentiary coverage. It remains `pending_second_party` and carries a sunset condition that suspends target-specific ingestion if neutral denominators, ordinary controls, and analogous comparators cannot be maintained.
+
+## Coverage rule
+
+The coverage registry distinguishes work architecture from evidence. At the initial capture it records:
+
+- one staged program contract;
+- eighteen bounded case contracts;
+- twenty frontier questions;
+- eighteen case discovery seeds;
+- zero source-complete vendor denominators;
+- zero complete case receipt packets;
+- zero independently reviewed cases;
+- zero promoted canonical claims;
+- zero compiled graph effects.
+
+Those zeros do not prove that no responsive facts, relationships, deployments, failures, or ordinary explanations exist. They state that none has yet passed this program's source, selection, receipt, and human-review gates.
+
+## Manifest and seed contract
 
 Each bounded case must provide:
 
@@ -48,6 +75,8 @@ Each bounded case must provide:
 - `graph_effect: none`;
 - machine-proposed and publication-blocked status until human review.
 
+Each case receives exactly one discovery seed linked to its issue and workstream. A seed must state a bounded action, source contract, allowed predicates, forbidden inferences, and privacy treatment. The seeds are not read by the canonical public-interest fan-out tool unless a later reviewed change explicitly promotes them.
+
 Each frontier candidate must provide a stable `F-XX` identifier, a research question, and a promotion condition. Frontier rows cannot be used as claims, profiles, edges, scores, chains, or publication sentences.
 
 ## Validation
@@ -59,7 +88,9 @@ node tools/validate-synthetic-population-program.mjs
 node test/synthetic-population-program.test.js
 ```
 
-The dedicated GitHub Actions workflow runs both commands when the manifest, validator, test, documentation, or workflow changes.
+The validator checks the program, selection, coverage, and seed registries together. It enforces the eighteen-case and twenty-frontier counts, the complete issue ranges, workstream balance, one seed per case, explicit non-public coverage accounting, pending independent review, and the graph and publication firewalls.
+
+The dedicated GitHub Actions workflow runs both commands whenever any staged registry, the validator, regression test, documentation, or workflow changes. The repository-wide release checks run separately and confirm that staged research intake does not alter canonical or public output.
 
 ## Promotion
 
