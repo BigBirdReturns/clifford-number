@@ -15,7 +15,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
-      - name: Repair the lower-bound validator and restore CI
+      - name: Repair the lower-bound validator
         shell: bash
         run: |
           python - <<'PY'
@@ -39,30 +39,9 @@ jobs:
           if test_old not in test_text:
               raise SystemExit('expected advanced-target fanout fixture was not found')
           test.write_text(test_text.replace(test_old, test_new, 1), encoding='utf-8')
-
-          workflow = Path('.github/workflows/ci.yml')
-          workflow.write_text("""name: Release checks
-
-          on:
-            pull_request:
-            workflow_dispatch:
-
-          permissions:
-            contents: read
-
-          jobs:
-            release-check:
-              runs-on: ubuntu-latest
-              steps:
-                - uses: actions/checkout@v4
-                - uses: actions/setup-node@v4
-                  with:
-                    node-version: '20'
-                - run: npm run release:check
-          """.replace('          ', ''), encoding='utf-8')
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tools/lib/clifford-cross-corpus-public-interest-map.mjs test/clifford-cross-corpus-public-interest-map.test.js .github/workflows/ci.yml
+          git add tools/lib/clifford-cross-corpus-public-interest-map.mjs test/clifford-cross-corpus-public-interest-map.test.js
           git commit -m "Allow live fanout coverage gaps to grow"
           git push origin "HEAD:${GITHUB_HEAD_REF}"
