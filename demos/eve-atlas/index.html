@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Three isolated visualization prototypes for adapting EVE Online-style semantic zoom, tactical routes, and overview filtering to The Clifford Number.">
+  <meta name="theme-color" content="#07101b">
+  <title>Clifford Number Semantic Zoom Lab</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#demo-main">Skip to the demonstrations</a>
+  <header class="lab-header">
+    <div class="lab-header__copy">
+      <p class="eyebrow">Visualization prototype · no graph effect</p>
+      <h1>Clifford Number Semantic Zoom Lab</h1>
+      <p class="dek">Three working demonstrations of scale-dependent representation. The corpus projection, tactical route, and dense-surface overview all render from the same surface and hop artifacts.</p>
+    </div>
+    <div class="lab-header__status">
+      <span id="data-status" class="status-chip" role="status" aria-live="polite">Loading repository artifacts…</span>
+      <a href="../../">Return to the public instrument</a>
+    </div>
+  </header>
+
+  <div class="boundary-note" role="note">
+    <strong>Interpretation boundary.</strong> The demonstrations preserve the repository’s rule that a hop is documented shared context through a named bounded surface. Visual prominence does not establish contact, influence, coordination, intent, wrongdoing, or importance.
+  </div>
+
+  <nav class="demo-tabs" role="tablist" aria-label="Visualization demonstrations">
+    <button id="tab-semantic" class="demo-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="panel-semantic" data-demo-tab="semantic">
+      <span>01</span> Semantic zoom atlas
+    </button>
+    <button id="tab-route" class="demo-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-route" data-demo-tab="route" tabindex="-1">
+      <span>02</span> Tactical route
+    </button>
+    <button id="tab-dense" class="demo-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-dense" data-demo-tab="dense" tabindex="-1">
+      <span>03</span> Dense-surface overview
+    </button>
+  </nav>
+
+  <main id="demo-main">
+    <section id="panel-semantic" class="demo-panel" role="tabpanel" aria-labelledby="tab-semantic" data-demo-panel="semantic">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">Galaxy → machine → surface → evidence</p>
+          <h2>Semantic zoom changes the object, not only its size</h2>
+          <p>At wide scale, the display shows surface families and aggregate corridors. Moving closer reveals surface types, then bounded surfaces and actor participations. Selection persists through every representation.</p>
+        </div>
+        <div class="level-readout" aria-live="polite">
+          <span>Current representation</span>
+          <strong id="semantic-level">Corpus</strong>
+        </div>
+      </div>
+
+      <div class="control-bar" aria-label="Semantic zoom controls">
+        <label class="control control--wide" for="semantic-scale">
+          <span>Semantic scale</span>
+          <input id="semantic-scale" type="range" min="1" max="5.4" step="0.05" value="1">
+        </label>
+        <button id="semantic-zoom-out" type="button" aria-label="Zoom out one semantic step">−</button>
+        <button id="semantic-zoom-in" type="button" aria-label="Zoom in one semantic step">+</button>
+        <button id="semantic-reset" type="button">Whole corpus</button>
+        <label class="control" for="semantic-cluster-select">
+          <span>Surface family</span>
+          <select id="semantic-cluster-select"></select>
+        </label>
+        <label class="control" for="semantic-surface-select">
+          <span>Bounded surface</span>
+          <select id="semantic-surface-select"></select>
+        </label>
+      </div>
+
+      <div class="visual-layout">
+        <div class="stage-wrap">
+          <svg id="semantic-svg" class="stage" viewBox="0 0 1200 720" role="img" aria-labelledby="semantic-svg-title semantic-svg-desc">
+            <title id="semantic-svg-title">Semantic zoom atlas demonstration</title>
+            <desc id="semantic-svg-desc">An interactive display that changes from aggregate surface families to local actor and bounded-surface topology as semantic scale increases.</desc>
+            <g id="semantic-layer"></g>
+          </svg>
+          <p class="stage-caption">Scroll over the stage or use the scale control. Click a family, surface type, bounded surface, or actor to carry that selection into the next representation.</p>
+        </div>
+        <aside id="semantic-inspector" class="inspector" aria-live="polite"></aside>
+      </div>
+    </section>
+
+    <section id="panel-route" class="demo-panel" role="tabpanel" aria-labelledby="tab-route" data-demo-panel="route" hidden>
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">Actor → bounded surface → actor</p>
+          <h2>A tactical route keeps the surface visible</h2>
+          <p>The pathfinder filters the compiled hop graph by evidence floor and time. Direct actor lines are replaced by the named surface that permits each step.</p>
+        </div>
+        <div class="level-readout">
+          <span>Route state</span>
+          <strong id="route-state">Ready</strong>
+        </div>
+      </div>
+
+      <form id="route-controls" class="control-bar control-bar--route">
+        <label class="control" for="route-from">
+          <span>From actor</span>
+          <select id="route-from"></select>
+        </label>
+        <label class="control" for="route-to">
+          <span>To actor</span>
+          <select id="route-to"></select>
+        </label>
+        <label class="control" for="route-asof">
+          <span>As of year, month, or day</span>
+          <input id="route-asof" type="text" inputmode="numeric" placeholder="2024 or 2024-06">
+        </label>
+        <label class="control" for="route-evidence">
+          <span>Evidence floor</span>
+          <select id="route-evidence">
+            <option value="open">All admitted bases</option>
+            <option value="reported">Reported or stronger</option>
+            <option value="primary_public">Primary public or stronger</option>
+            <option value="official">Official or confirmed only</option>
+          </select>
+        </label>
+        <button type="submit">Recompute route</button>
+        <button id="route-reset" type="button" class="button-secondary">Reset filters</button>
+      </form>
+
+      <div class="route-stage-wrap">
+        <svg id="route-svg" class="stage stage--route" viewBox="0 0 1500 560" role="img" aria-labelledby="route-svg-title route-svg-desc">
+          <title id="route-svg-title">Filtered Clifford Number route</title>
+          <desc id="route-svg-desc">Actors appear as circles and the bounded surfaces that permit each hop appear as diamonds, with roles, evidence, dates, and receipts listed below.</desc>
+          <g id="route-layer"></g>
+        </svg>
+      </div>
+      <div id="route-summary" class="route-summary" aria-live="polite"></div>
+      <div class="overview-wrap">
+        <div class="overview-heading">
+          <div>
+            <p class="eyebrow">Evidence overview</p>
+            <h3>Every visible step has a basis</h3>
+          </div>
+          <p id="route-diagnostics"></p>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Step</th>
+                <th scope="col">Bounded surface</th>
+                <th scope="col">Roles</th>
+                <th scope="col">Validity window</th>
+                <th scope="col">Evidence</th>
+                <th scope="col">Receipts</th>
+              </tr>
+            </thead>
+            <tbody id="route-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="panel-dense" class="demo-panel" role="tabpanel" aria-labelledby="tab-dense" data-demo-panel="dense" hidden>
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">Roster container · bracket budget · sortable overview</p>
+          <h2>A dense surface remains a surface</h2>
+          <p>Large rosters are grouped and filtered inside a bounded container. The display never manufactures all-to-all actor adjacency. Search matches and pinned actors bypass ordinary suppression.</p>
+        </div>
+        <div class="level-readout">
+          <span>Visible brackets</span>
+          <strong id="dense-visible-count">0</strong>
+        </div>
+      </div>
+
+      <div class="control-bar control-bar--dense" aria-label="Dense-surface controls">
+        <label class="control control--wide" for="dense-surface-select">
+          <span>Dense bounded surface</span>
+          <select id="dense-surface-select"></select>
+        </label>
+        <label class="control control--wide" for="dense-search">
+          <span>Find actor or role</span>
+          <input id="dense-search" type="search" placeholder="Search within this surface">
+        </label>
+        <label class="control" for="dense-evidence">
+          <span>Evidence floor</span>
+          <select id="dense-evidence">
+            <option value="open">All evidence classes</option>
+            <option value="reported">Reported or stronger</option>
+            <option value="primary_public">Primary public or stronger</option>
+            <option value="official">Official or confirmed only</option>
+          </select>
+        </label>
+        <label class="control" for="dense-asof">
+          <span>Active during</span>
+          <input id="dense-asof" type="text" inputmode="numeric" placeholder="Optional date">
+        </label>
+        <label class="control control--wide" for="dense-budget">
+          <span>Bracket budget: <output id="dense-budget-output" for="dense-budget">18</output></span>
+          <input id="dense-budget" type="range" min="6" max="36" step="1" value="18">
+        </label>
+        <button id="dense-clear-pins" type="button" class="button-secondary">Clear pins</button>
+      </div>
+
+      <div class="visual-layout visual-layout--dense">
+        <div class="stage-wrap">
+          <svg id="dense-svg" class="stage" viewBox="0 0 1200 720" role="img" aria-labelledby="dense-svg-title dense-svg-desc">
+            <title id="dense-svg-title">Dense bounded-surface overview</title>
+            <desc id="dense-svg-desc">A bounded roster is shown as a container with aggregate participation groups and a limited budget of individual actor brackets. No participant-to-participant lines are drawn.</desc>
+            <g id="dense-layer"></g>
+          </svg>
+          <p class="stage-caption">Click an actor bracket or table row to pin it. Pinned actors stay visible when the budget, query, date, or evidence floor changes.</p>
+        </div>
+        <aside id="dense-inspector" class="inspector" aria-live="polite"></aside>
+      </div>
+
+      <div class="overview-wrap">
+        <div class="overview-heading">
+          <div>
+            <p class="eyebrow">Operator overview</p>
+            <h3>Stable rows for the currently visible brackets</h3>
+          </div>
+          <p id="dense-overview-status"></p>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Pin</th>
+                <th scope="col">Actor</th>
+                <th scope="col">Recorded role</th>
+                <th scope="col">Dates</th>
+                <th scope="col">Evidence</th>
+                <th scope="col">Receipts</th>
+              </tr>
+            </thead>
+            <tbody id="dense-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Prototype scope: display projection only. Canonical identity, hop eligibility, temporal rules, receipt requirements, and publication status remain controlled by the repository compiler.</p>
+  </footer>
+
+  <script type="module" src="app.mjs"></script>
+</body>
+</html>
