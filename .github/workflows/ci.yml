@@ -15,11 +15,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Run release checks and print only the failure tail
+      - name: Capture release-check result
+        id: release-check
         shell: bash
         run: |
-          set -o pipefail
-          npm run release:check > /tmp/release-check.log 2>&1 || {
-            tail -n 120 /tmp/release-check.log
-            exit 1
-          }
+          set +e
+          npm run release:check > /tmp/release-check.log 2>&1
+          status=$?
+          tail -n 160 /tmp/release-check.log > /tmp/release-check-tail.log
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Upload release-check failure tail
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-check-tail
+          path: /tmp/release-check-tail.log
+          retention-days: 1
+      - name: Fail when release checks fail
+        if: steps.release-check.outputs.status != '0'
+        run: exit 1
