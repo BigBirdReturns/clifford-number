@@ -10,7 +10,10 @@ for (let i = 0; i < 9; i++) {
   advancedTargetBranch.crawlObservations.push({ observation_id: `future-${i}` });
 }
 for (let i = 0; i < 28; i++) advancedTargetBranch.crawlRejections.push({ rejection_id: `future-${i}` });
-if (advancedTargetBranch.fanout) advancedTargetBranch.fanout.source_counts.total += 37;
+if (advancedTargetBranch.fanout) {
+  advancedTargetBranch.fanout.source_counts.total += 37;
+  advancedTargetBranch.fanout.source_counts.crawl_source_gaps += 1;
+}
 assert.deepEqual(
   validateCliffordCrossCorpusPublicInterestMap(advancedTargetBranch),
   [],

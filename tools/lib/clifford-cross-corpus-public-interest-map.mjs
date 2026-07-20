@@ -210,7 +210,7 @@ export function validateCliffordCrossCorpusPublicInterestMap(bundle) {
   expect(count('official-research-fanout', 'public_interest_seeds'), publicInterestSeeds.length, 'fanout public-interest seeds');
   if (fanout) {
     expectAtLeast(fanout.source_counts?.total, count('official-research-fanout', 'fanout_items_minimum'), 'fanout total items');
-    expect(count('official-research-fanout', 'crawl_source_gaps'), fanout.source_counts?.crawl_source_gaps, 'fanout crawl source gaps');
+    expectAtLeast(fanout.source_counts?.crawl_source_gaps, count('official-research-fanout', 'crawl_source_gaps'), 'fanout crawl source gaps');
     expect(count('official-research-fanout', 'field_autopsy_searches'), fanout.source_counts?.field_autopsy_trail_searches, 'fanout field-autopsy searches');
     expect(count('official-research-fanout', 'formation_signature_searches'), fanout.source_counts?.formation_signature_searches, 'fanout formation searches');
   }
