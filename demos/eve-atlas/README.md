@@ -31,6 +31,7 @@ When compiled artifacts are unavailable, the page falls back to an embedded fixt
 - `styles.css`: shared visual grammar for aggregates, surfaces, actor brackets, routes, evidence states, and overview tables.
 - `demo-core.mjs`: pure projection, filtering, pathfinding, temporal, density, and budgeting functions.
 - `sample-data.mjs`: an explicitly non-canonical fallback fixture.
-- `app.mjs`: browser rendering and interaction.
+- `app.mjs`: module bootstrap that exposes the projection core and loads the interaction scripts in order.
+- `app-part-1.js` through `app-part-5.js`: browser state, semantic zoom, route, and dense-surface rendering split into reviewable files.
 
 The core control question is whether each primitive helps the reader identify the bounded object, participating actors, valid period, evidence floor, and inference limit without asserting anything the ledgers do not.
