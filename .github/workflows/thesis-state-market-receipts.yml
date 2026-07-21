@@ -30,6 +30,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Compile core and denominator projections
+        run: |
+          npm run compile
+          npm run compile:denominator
+          npm run validate:denominator
       - name: Compile bounded case packets
         run: npm run compile:case-packets
       - name: Validate case-packet and receipt boundaries
