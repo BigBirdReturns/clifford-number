@@ -27,4 +27,9 @@ compileAllCases();
 const artifact = JSON.parse(fs.readFileSync('build/cases/field-autopsy-03.json', 'utf8'));
 assert.deepEqual(artifact, compiled, 'compiled case must be deterministic');
 
+/* Reporter briefings are a case presentation contract, so the standard case test
+ * regenerates and verifies them instead of relying only on a path-filtered workflow. */
+await import('../tools/compile-reporter-briefings.mjs');
+await import('./reporter-briefing.test.js');
+
 console.log('case-ledger.test.js: OK');
