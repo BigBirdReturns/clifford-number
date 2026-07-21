@@ -67,6 +67,7 @@ function setStage(markup, { title, description, minWidth = 0 } = {}) {
   $('#aperture-stage-title', state.root).textContent = title || 'Clifford Number operating map';
   $('#aperture-stage-desc', state.root).textContent = description || 'Interactive bounded-surface topology.';
   stage.style.minWidth = minWidth ? `${minWidth}px` : '';
+  if (state.export?.open) queueMicrotask(refreshPublicationExport);
 }
 
 function setTelemetry(breadcrumbs, stats) {
