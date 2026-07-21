@@ -5,7 +5,7 @@ import { root } from './lib/ledger.mjs';
 
 const destination = path.join(root, 'dist');
 const files = ['index.html', 'app.js', 'styles.css', 'package.json', 'graph.json'];
-const directories = ['assets', 'docs', 'data', 'build', 'cases', 'contributions', 'legacy', 'src', 'receipts'];
+const directories = ['assets', 'docs', 'data', 'build', 'cases', 'contributions', 'legacy', 'src', 'receipts', 'briefs'];
 
 fs.rmSync(destination, { recursive: true, force: true });
 fs.mkdirSync(destination, { recursive: true });
