@@ -46,9 +46,9 @@ async function main() {
   });
   const page = await context.newPage();
   page.on('console', message => {
-    if (message.type() === 'error') output.console_errors.push(message.text());
+    if (message.type() === 'error') output.console_errors.push({ text: message.text(), location: message.location() });
   });
-  page.on('pageerror', error => output.page_errors.push(error.message));
+  page.on('pageerror', error => output.page_errors.push({ message: error.message, stack: error.stack }));
 
   try {
     await page.goto('http://127.0.0.1:8080/#case/anduril-access-ownership', { waitUntil: 'domcontentloaded', timeout: 60000 });
