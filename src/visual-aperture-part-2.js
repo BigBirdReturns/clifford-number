@@ -130,3 +130,7 @@ function evidenceOptions(selected = 'open') {
 function actorOptions(selected) {
   return routeActorIds().map(id => `<option value="${esc(id)}"${id === selected ? ' selected' : ''}>${esc(actorLabel(id))}</option>`).join('');
 }
+
+function addressActionMarkup() {
+  return '<button type="button" class="aperture-secondary-button" data-ap-action="copy-view-link" aria-label="Copy a shareable link to this exact operating view">Copy exact view</button>';
+}
