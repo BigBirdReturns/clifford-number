@@ -21,8 +21,9 @@ applyApertureSnapshot = function boundedApplyApertureSnapshot(snapshot) {
   if (!applied) return false;
   if (Number.isInteger(snapshot?.overview?.page)) state.overview.page = Math.max(1, snapshot.overview.page);
   if (APERTURE_OVERVIEW_PAGE_SIZES.includes(snapshot?.overview?.pageSize)) state.overview.pageSize = snapshot.overview.pageSize;
-  if (Number.isInteger(snapshot?.route?.windowStart)) state.route.windowStart = Math.max(0, snapshot.route.windowStart);
-  state.route.windowFollowSelected = false;
+  const hasWindowStart = Number.isInteger(snapshot?.route?.windowStart);
+  if (hasWindowStart) state.route.windowStart = Math.max(0, snapshot.route.windowStart);
+  state.route.windowFollowSelected = !hasWindowStart;
   state.overview.preserveNextKey = true;
   state.overview.followSelected = false;
   return true;
@@ -36,8 +37,9 @@ function applyBoundedAddressStateFromLocation() {
     if (Number.isInteger(snapshot.overview.page)) state.overview.page = Math.max(1, snapshot.overview.page);
     if (APERTURE_OVERVIEW_PAGE_SIZES.includes(snapshot.overview.pageSize)) state.overview.pageSize = snapshot.overview.pageSize;
   }
-  if (Number.isInteger(snapshot.route?.windowStart)) state.route.windowStart = Math.max(0, snapshot.route.windowStart);
-  state.route.windowFollowSelected = false;
+  const hasWindowStart = Number.isInteger(snapshot.route?.windowStart);
+  if (hasWindowStart) state.route.windowStart = Math.max(0, snapshot.route.windowStart);
+  state.route.windowFollowSelected = !hasWindowStart;
   state.overview.preserveNextKey = true;
   renderCurrent();
 }
