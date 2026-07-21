@@ -49,7 +49,7 @@ function pins(value) {
     .split(',')
     .map(item => token(item))
     .filter(Boolean);
-  return [...new Set(values)].slice(0, MAX_PINS).sort();
+  return [...new Set(values)].sort().slice(0, MAX_PINS);
 }
 
 function set(parametersValue, key, value) {
