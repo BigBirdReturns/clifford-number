@@ -33,6 +33,9 @@ const deployWorkflow = readFileSync('.github/workflows/deploy.yml', 'utf8');
 const ciWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8');
 const pagesBuilder = readFileSync('tools/build-pages.mjs', 'utf8');
 const standaloneBuilder = readFileSync('tools/build-standalone.mjs', 'utf8');
+const staticServer = readFileSync('tools/serve-static.mjs', 'utf8');
+
+assert.match(staticServer, /['"]\.mjs['"]:\s*['"]text\/javascript['"]/, 'local server must serve ES modules with a browser-valid MIME type');
 
 // Durable metadata and first-run semantics.
 assert.match(html, /<meta name="description"/);

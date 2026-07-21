@@ -5,7 +5,7 @@ import path from 'node:path';
 import { root } from './lib/ledger.mjs';
 
 const port = Number(process.argv[2] || 8080);
-const types = { '.css': 'text/css', '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' };
+const types = { '.css': 'text/css', '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' };
 
 http.createServer((request, response) => {
   const pathname = decodeURIComponent(new URL(request.url, `http://${request.headers.host}`).pathname);
