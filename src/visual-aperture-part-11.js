@@ -51,6 +51,16 @@ function apertureSnapshot() {
   };
 }
 
+function normalizedSemanticLevel(scale, requested) {
+  let level = ['corpus', 'machine', 'surface', 'evidence'].includes(requested) ? requested : null;
+  for (let index = 0; index < 4; index += 1) {
+    const next = semanticLevelForScale(scale, level);
+    if (next === level) return next;
+    level = next;
+  }
+  return level;
+}
+
 function applyApertureSnapshot(snapshot) {
   if (!snapshot || !['map', 'route', 'surface'].includes(snapshot.mode)) return false;
   const clusterIds = new Set(summarizeClusters(state.data.surfaceGraph).map(cluster => cluster.id));
@@ -61,7 +71,7 @@ function applyApertureSnapshot(snapshot) {
   state.mode = snapshot.mode;
 
   if (Number.isFinite(snapshot.map?.scale)) state.map.scale = Math.max(1, Math.min(5.4, snapshot.map.scale));
-  if (['corpus', 'machine', 'surface', 'evidence'].includes(snapshot.map?.level)) state.map.level = snapshot.map.level;
+  state.map.level = normalizedSemanticLevel(state.map.scale, snapshot.map?.level);
   if (snapshot.map?.clusterId && clusterIds.has(snapshot.map.clusterId)) state.map.selectedClusterId = snapshot.map.clusterId;
   if (snapshot.map?.surfaceId && state.surfaces.has(snapshot.map.surfaceId)) {
     const surface = state.surfaces.get(snapshot.map.surfaceId);
@@ -119,13 +129,15 @@ function commitApertureAddress(historyMode = 'replace') {
   if (!state.address.ready || state.address.applying || historyMode === 'none') return;
   state.address.active = true;
   const target = buildApertureUrl(apertureSnapshot(), location.href);
-  if (target === location.href) return;
-  try {
-    const method = historyMode === 'push' ? 'pushState' : 'replaceState';
-    history[method]({ cliffordAperture: APERTURE_STATE_VERSION }, '', target);
-  } catch (error) {
-    console.warn('Could not write the aperture state to browser history.', error);
+  if (target !== location.href) {
+    try {
+      const method = historyMode === 'push' ? 'pushState' : 'replaceState';
+      history[method]({ cliffordAperture: APERTURE_STATE_VERSION }, '', target);
+    } catch (error) {
+      console.warn('Could not write the aperture state to browser history.', error);
+    }
   }
+  if (historyMode === 'push') recordCurrentWorkspaceRoute();
 }
 
 function restoreApertureFromLocation() {
@@ -143,9 +155,11 @@ function restoreApertureFromLocation() {
     reflectApertureMode();
     renderModeControls();
     renderCurrent();
+    renderWorkspacePanel();
   } finally {
     state.address.applying = false;
   }
+  if (decoded) commitApertureAddress('replace');
 }
 
 function writeApertureClipboard(text) {
@@ -263,6 +277,8 @@ async function mount() {
   state.root = root;
   initializeIndexes();
   initializeSelections();
+  initializeOperatorWorkspace();
+  restoreWorkspacePins(state.surface.surfaceId);
   state.address.defaults = apertureSnapshot();
   const decoded = readApertureState(location.search);
   if (decoded) {
@@ -276,6 +292,7 @@ async function mount() {
   bindEvents();
   renderModeControls();
   renderCurrent();
+  renderWorkspacePanel();
   setDataStatus();
   updatePublicHero();
   state.address.ready = true;
