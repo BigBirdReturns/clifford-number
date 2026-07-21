@@ -35,14 +35,35 @@ jobs:
         env:
           RECEIPT_CUSTODY_DRY_RUN: '1'
         run: python tools/integrate-state-market-receipt-custody.py
-      - name: Rebuild and validate the complete tranche
-        run: |
-          npm run compile:case-packets
-          npm run validate:case-packets
-          npm run compile:thesis
-          npm run validate:thesis
-          npm run validate:state-market-receipts
-          npm run release:check
+      - name: Compile case packets
+        run: npm run compile:case-packets 2>&1 | tee compile-case-packets.log
+      - name: Validate case packets
+        run: npm run validate:case-packets 2>&1 | tee validate-case-packets.log
+      - name: Compile thesis coverage
+        run: npm run compile:thesis 2>&1 | tee compile-thesis.log
+      - name: Validate thesis ceiling
+        run: npm run validate:thesis 2>&1 | tee validate-thesis.log
+      - name: Validate receipt custody
+        run: npm run validate:state-market-receipts 2>&1 | tee validate-receipts.log
+      - name: Run repository release gate
+        run: npm run release:check 2>&1 | tee release-check.log
+      - name: Preserve dry-run diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: receipt-custody-integration-diagnostics
+          path: |
+            *-case-packets.log
+            *-thesis.log
+            validate-receipts.log
+            release-check.log
+            build/thesis/case-packet-index.json
+            build/thesis/case-packet-index.md
+            build/thesis/case-packets/*.json
+            build/thesis/case-packets/*.md
+            build/thesis/synthetic-population-infrastructure.json
+            build/thesis/synthetic-population-infrastructure.md
+          if-no-files-found: warn
 
   apply:
     if: github.event_name == 'push' && github.actor != 'github-actions[bot]'
@@ -57,14 +78,18 @@ jobs:
           node-version: '20'
       - name: Complete source, test, documentation, and workflow contracts
         run: python tools/integrate-state-market-receipt-custody.py
-      - name: Regenerate and validate the complete tranche
-        run: |
-          npm run compile:case-packets
-          npm run validate:case-packets
-          npm run compile:thesis
-          npm run validate:thesis
-          npm run validate:state-market-receipts
-          npm run release:check
+      - name: Compile case packets
+        run: npm run compile:case-packets
+      - name: Validate case packets
+        run: npm run validate:case-packets
+      - name: Compile thesis coverage
+        run: npm run compile:thesis
+      - name: Validate thesis ceiling
+        run: npm run validate:thesis
+      - name: Validate receipt custody
+        run: npm run validate:state-market-receipts
+      - name: Run repository release gate
+        run: npm run release:check
       - name: Commit the integrated tranche
         run: |
           git config user.name github-actions[bot]
