@@ -59,7 +59,7 @@ jobs:
           git commit --no-edit
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --ignore-scripts
 
       - name: Verify complete release gate
         run: npm run release:check
