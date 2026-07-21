@@ -28,7 +28,8 @@ const helpers = [read('src/ui-utils.js'), read('src/i18n.js')]
 const apertureModuleFiles = [
   'src/visual-aperture-core.mjs',
   'src/visual-aperture-state.mjs',
-  'src/visual-aperture-workspace.mjs'
+  'src/visual-aperture-workspace.mjs',
+  'src/visual-aperture-export.mjs'
 ];
 const apertureModuleRecords = apertureModuleFiles.map(file => {
   const source = read(file);
@@ -42,6 +43,7 @@ const apertureModules = apertureModuleRecords
   .join('\n');
 const apertureRuntime = [
   read('src/visual-aperture-workspace-runtime.js'),
+  read('src/visual-aperture-export-runtime.js'),
   ...Array.from({ length: 11 }, (_, index) => read(`src/visual-aperture-part-${index + 1}.js`))
 ].join('\n\n');
 const apertureBundle = `(function visualApertureBundle() {\n${apertureModules}\n(function visualApertureRuntime() {\nconst { ${apertureNames.join(', ')} } = globalThis;\n${apertureRuntime}\n})();\n})();`;
@@ -57,7 +59,8 @@ const inlineCss = [
   read('src/visual-aperture-layout.css'),
   read('src/visual-aperture-svg.css'),
   read('src/visual-aperture-responsive.css'),
-  read('src/visual-aperture-workspace.css')
+  read('src/visual-aperture-workspace.css'),
+  read('src/visual-aperture-export.css')
 ].join('\n\n');
 
 let html = read('index.html')
