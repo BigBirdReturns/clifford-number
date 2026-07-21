@@ -27,8 +27,12 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Compile the public case and catalog
-        run: npm run compile
+      - name: Compile publication prerequisites
+        run: |
+          npm run compile
+          npm run compile:denominator
+          npm run compile:case-packets
+          npm run compile:thesis
 
       - name: Pin the Anduril case and inference boundary
         run: node test/anduril-reporter-aperture.test.js
