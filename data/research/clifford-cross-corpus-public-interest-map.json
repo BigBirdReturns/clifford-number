@@ -241,12 +241,27 @@
         "scout_findings": 141,
         "crawl_candidates_minimum": 6,
         "crawl_rejections_preserved_minimum": 61,
-        "crawl_source_gaps": 1,
+        "crawl_source_gaps": 2,
         "public_interest_seeds": 24,
         "field_autopsy_searches": 17,
         "formation_signature_searches": 66
       },
-      "what_the_data_shows": "The repository generated at least 316 inspectable research tasks; the live target branch may contain more as official-record intake advances. Batch count varies with the configured batch size and is presentation geometry, not a research-data count. Rejections, failed routes, source gaps, and inferred scout findings remain part of the discovery map rather than disappearing from it.",
+      "crawl_source_gap_states": [
+        {
+          "source_id": "sam-opportunities",
+          "status": "skipped_missing_credential",
+          "interpretation": "Acquisition did not run; this is not a zero result."
+        },
+        {
+          "source_id": "federal-register",
+          "status": "partial",
+          "records_seen": 6,
+          "failed_queries": 4,
+          "failure_class": "upstream_503",
+          "interpretation": "Coverage is incomplete; failed queries are not negative results."
+        }
+      ],
+      "what_the_data_shows": "The repository generated at least 316 inspectable research tasks; the live target branch may contain more as official-record intake advances. Batch count varies with the configured batch size and is presentation geometry, not a research-data count. Rejections, failed routes, source gaps, and inferred scout findings remain part of the discovery map rather than disappearing from it. The current committed crawl exposes two source gaps: SAM.gov did not execute without its credential, and the Federal Register scan completed only partially after four upstream 503 responses. Neither state supports a zero-result interpretation.",
       "open_join": "A fanout item is a research lead or coverage state, not a verified finding; each item retains its evidence and availability labels.",
       "source_paths": [
         "tools/build-research-fanout.mjs",
