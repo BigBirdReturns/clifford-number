@@ -9,8 +9,9 @@ When documents disagree, use this order:
 1. [`BUILD-INSTRUCTIONS.md`](../BUILD-INSTRUCTIONS.md) is the governing document. Its constitutional invariants outrank convenience and generated output.
 2. Canonical registries under [`data/canonical/`](../data/canonical/) control identities and vocabularies.
 3. Source ledgers under [`data/ledger/`](../data/ledger/) preserve claims, surfaces, participation, receipts, and chains.
-4. Artifacts under [`build/`](../build/) are generated, disposable views of those sources.
-5. The web app is a read-only presentation layer over compiled artifacts.
+4. Case ledgers under [`cases/`](../cases/) preserve typed case claims, receipts, events, relations, and publication metadata.
+5. Artifacts under [`build/`](../build/) and [`briefs/`](../briefs/) are generated, disposable views of those sources.
+6. The web app is a read-only presentation layer over compiled artifacts.
 
 Current Clifford Numbers come from bounded surfaces and participation rows compiled into `build/hop-graph.json`. The root `graph.json`, the older case JSON, and generic node-edge documents are legacy material; they do not define current Clifford Numbers.
 
@@ -20,6 +21,7 @@ Read these first:
 
 - [`evidence-model.md`](evidence-model.md) — the whole knowledge model: receipts, evidence layers, source attrition, discovery topology, and known-positive motifs.
 - [`methodology.md`](methodology.md) — what creates a hop, how dates work, evidence boundaries, density discipline, and publication behavior.
+- [`reporter-briefings.md`](reporter-briefings.md) — finite, nontechnical case front doors whose factual text is compiled from claim references and keeps every limitation attached.
 - [`definitions.md`](definitions.md) — the current vocabulary in one place.
 - [`redaction-policy.md`](redaction-policy.md) — public-role-only scope and material the project excludes.
 - [`plain-language.md`](plain-language.md) — how narration is generated without adding facts.
@@ -49,6 +51,8 @@ A candidate is a research question. It may preserve a non-hop fact, pattern, seq
 
 - [`../BUILD-INSTRUCTIONS.md`](../BUILD-INSTRUCTIONS.md) — governing invariants and phased acceptance criteria.
 - [`release-architecture.md`](release-architecture.md) — current ledger-to-build architecture.
+- [`reporter-briefings.md`](reporter-briefings.md) — the `reporter-briefing@1` source, compiler, manifest, review-queue, Pages, and browser contract.
+- [`adr-reporter-briefing-platform.md`](adr-reporter-briefing-platform.md) — architectural decision that cases are primary truth and briefs, graphs, routes, and tables are projections.
 - [`plain-language.md`](plain-language.md) — narration contract and flags.
 - [`self-assembling-architecture.md`](self-assembling-architecture.md) — proposed future intake architecture; it does not override the current compiler law.
 - [`design-system.md`](design-system.md) — interface design guidance.
@@ -60,7 +64,7 @@ The normal release gate is:
 npm run release:check
 ```
 
-Generated files under `build/` must not be edited by hand.
+Generated files under `build/` and `briefs/` must not be edited by hand.
 
 ## Evidence and stewardship
 
@@ -76,12 +80,14 @@ Receipts are the evidentiary asset. They include preserved archived or vanished 
 
 ### Current model
 
-These documents describe the bounded surface-hop release:
+These documents describe the bounded surface-hop and case-publication release:
 
 - [`evidence-model.md`](evidence-model.md)
 - [`methodology.md`](methodology.md)
 - [`definitions.md`](definitions.md)
 - [`release-architecture.md`](release-architecture.md)
+- [`reporter-briefings.md`](reporter-briefings.md)
+- [`adr-reporter-briefing-platform.md`](adr-reporter-briefing-platform.md)
 - [`plain-language.md`](plain-language.md)
 - [`research-intake.md`](research-intake.md)
 - [`redaction-policy.md`](redaction-policy.md)
@@ -117,7 +123,8 @@ Before publishing or sharing a result, confirm:
 - the relevant date windows overlap;
 - evidence class and receipts are shown;
 - dense roster logic has not silently collapsed the path;
-- listing, registration, and attendance remain distinct; and
+- listing, registration, and attendance remain distinct;
 - source attrition is preserved without inferring a remover or motive;
-- motif matches remain discovery leads rather than guilt claims; and
+- motif matches remain discovery leads rather than guilt claims;
+- briefing facts resolve to canonical case claims and retain their qualifications; and
 - the output states that shared context is not influence, coordination, or wrongdoing.
