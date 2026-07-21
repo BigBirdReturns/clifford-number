@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+# This helper exists only for the guarded integration run and is removed before merge.
 ROOT = Path(__file__).resolve().parents[1]
 ledger_path = ROOT / "data/ledger/receipts.jsonl"
 map_path = ROOT / "data/research/clifford-cross-corpus-public-interest-map.json"
