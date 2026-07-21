@@ -13,6 +13,12 @@ const state = {
   mode: 'map',
   sheetOpen: false,
   visibilityObserver: null,
+  address: {
+    ready: false,
+    active: false,
+    applying: false,
+    defaults: null
+  },
   selectedActorId: null,
   selectedSurfaceId: null,
   map: {

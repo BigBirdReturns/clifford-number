@@ -61,8 +61,13 @@ function renderRouteMode() {
   const path = validDate ? shortestFilteredPath(state.data.hopGraph, state.route.fromId, state.route.toId, filters) : null;
   const diagnostics = diagnosePathFilters(state.data.hopGraph, filters);
   state.route.path = path;
-  if (path?.hops?.length && !Number.isInteger(state.route.selectedStep)) state.route.selectedStep = 0;
-  if (!path?.hops?.length) state.route.selectedStep = null;
+  if (path?.hops?.length) {
+    if (!Number.isInteger(state.route.selectedStep) || state.route.selectedStep < 0 || state.route.selectedStep >= path.hops.length) state.route.selectedStep = 0;
+    if (state.route.selectedActorId && !path.actorPath.includes(state.route.selectedActorId)) state.route.selectedActorId = null;
+  } else {
+    state.route.selectedStep = null;
+    state.route.selectedActorId = null;
+  }
   const scene = renderRouteScene(path, state.route.fromId, state.route.toId);
   setStage(scene.markup, { title: `Route · ${actorLabel(state.route.fromId)} to ${actorLabel(state.route.toId)}`, description: path ? 'A filtered route where every actor-to-actor step is mediated by a bounded surface. Every actor line terminates at the bounded surface that mediates the step; no participant-to-participant lines are drawn.' : 'A blocked route under the selected evidence and temporal controls.', minWidth: scene.minWidth });
   setTelemetry(['Route', actorLabel(state.route.fromId), actorLabel(state.route.toId)], [

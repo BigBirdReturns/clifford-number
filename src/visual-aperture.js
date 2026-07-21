@@ -1,8 +1,10 @@
 import * as core from './visual-aperture-core.mjs';
+import * as addressState from './visual-aperture-state.mjs';
 
-Object.assign(globalThis, core);
+Object.assign(globalThis, core, addressState);
 
-const partUrls = Array.from({ length: 11 }, (_, index) => `./visual-aperture-part-${index + 1}.js`);
+const RUNTIME_VERSION = '20260721-addressable';
+const partUrls = Array.from({ length: 11 }, (_, index) => `./visual-aperture-part-${index + 1}.js?v=${RUNTIME_VERSION}`);
 
 for (const relativeUrl of partUrls) {
   await new Promise((resolve, reject) => {

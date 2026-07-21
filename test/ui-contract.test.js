@@ -7,6 +7,7 @@ const app = readFileSync('app.js', 'utf8');
 const i18n = readFileSync('src/i18n.js', 'utf8');
 const apertureBootstrap = readFileSync('src/aperture-bootstrap.js', 'utf8');
 const apertureCore = readFileSync('src/visual-aperture-core.mjs', 'utf8');
+const apertureState = readFileSync('src/visual-aperture-state.mjs', 'utf8');
 const apertureLoader = readFileSync('src/visual-aperture.js', 'utf8');
 const apertureUi = Array.from({ length: 11 }, (_, index) => readFileSync(`src/visual-aperture-part-${index + 1}.js`, 'utf8')).join('\n');
 const apertureCss = ['layout', 'svg', 'responsive'].map(part => readFileSync(`src/visual-aperture-${part}.css`, 'utf8')).join('\n');
@@ -82,6 +83,7 @@ assert.match(app, /Shared context is not influence|does not establish contact/);
 // The visual aperture upgrades the display projection without creating a second data plane.
 assert.match(html, /<script src="src\/aperture-bootstrap\.js[^"]*" type="module"><\/script>/);
 assert.match(apertureBootstrap, /import\('\.\/visual-aperture\.js/);
+assert.match(apertureLoader, /visual-aperture-state\.mjs/);
 assert.match(apertureLoader, /visual-aperture-part-\$\{index \+ 1\}\.js/);
 assert.match(apertureBootstrap, /__CLIFFORD_APERTURE_BUNDLED__/);
 assert.doesNotMatch(i18n, /visual-aperture|__CLIFFORD_APERTURE/);
@@ -98,11 +100,18 @@ assert.doesNotMatch(apertureUi, /sampleData|fixture fallback|embedded demonstrat
 assert.match(apertureCore, /function semanticLevelForScale\(scale, previousLevel/);
 assert.match(apertureCore, /function diagnosePathFilters/);
 assert.match(apertureCore, /function selectBudgetedParticipants/);
+assert.match(apertureState, /APERTURE_STATE_VERSION = '1'/);
+assert.match(apertureState, /function readApertureState/);
+assert.match(apertureState, /function writeApertureState/);
+assert.match(apertureUi, /Copy exact view/);
+assert.match(apertureUi, /buildApertureUrl/);
+assert.match(apertureUi, /addEventListener\('popstate'/);
 assert.match(apertureCss, /\.aperture-overview thead\s*\{[^}]*position:\s*sticky/s);
 assert.match(apertureCss, /\.aperture-inspector\.is-open/);
 assert.match(apertureCss, /position:\s*fixed/);
 assert.match(apertureCss, /@media \(prefers-reduced-motion: reduce\)/);
 assert.match(standaloneBuilder, /visual-aperture-core\.mjs/);
+assert.match(standaloneBuilder, /visual-aperture-state\.mjs/);
 assert.match(standaloneBuilder, /visual-aperture-layout\.css/);
 assert.match(standaloneBuilder, /__CLIFFORD_APERTURE_BUNDLED__/);
 

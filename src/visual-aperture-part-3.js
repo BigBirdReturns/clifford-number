@@ -9,7 +9,8 @@ function renderModeControls() {
       <label class="aperture-control aperture-control--scale"><span>Semantic scale · <strong id="ap-map-level">${esc(humanLabel(state.map.level))}</strong></span><input id="ap-map-scale" type="range" min="1" max="5.4" step="0.05" value="${state.map.scale}"></label>
       <div class="aperture-control-buttons" aria-label="Semantic zoom controls"><button type="button" data-ap-action="zoom-out" aria-label="Zoom out">−</button><button type="button" data-ap-action="zoom-in" aria-label="Zoom in">+</button><button type="button" data-ap-action="reset-map">Whole field</button></div>
       <label class="aperture-control"><span>Surface family</span><select id="ap-map-cluster">${clusters.map(item => `<option value="${esc(item.id)}"${item.id === state.map.selectedClusterId ? ' selected' : ''}>${esc(item.label)} · ${item.surfaceCount}</option>`).join('')}</select></label>
-      <label class="aperture-control aperture-control--wide"><span>Bounded surface</span><select id="ap-map-surface">${surfaces.map(surface => `<option value="${esc(surface.surface_id)}"${surface.surface_id === state.map.selectedSurfaceId ? ' selected' : ''}>${esc(shortLabel(surface.surface_label, 68))} · ${actorParticipants(surface).length}</option>`).join('')}</select></label>`;
+      <label class="aperture-control aperture-control--wide"><span>Bounded surface</span><select id="ap-map-surface">${surfaces.map(surface => `<option value="${esc(surface.surface_id)}"${surface.surface_id === state.map.selectedSurfaceId ? ' selected' : ''}>${esc(shortLabel(surface.surface_label, 68))} · ${actorParticipants(surface).length}</option>`).join('')}</select></label>
+      ${addressActionMarkup()}`;
     return;
   }
 
@@ -20,7 +21,8 @@ function renderModeControls() {
       <label class="aperture-control"><span>To actor</span><select id="ap-route-to">${actorOptions(state.route.toId)}</select></label>
       <label class="aperture-control"><span>Active during</span><input id="ap-route-asof" type="text" inputmode="numeric" placeholder="Optional date" value="${esc(state.route.asOf)}"></label>
       <label class="aperture-control"><span>Evidence floor</span><select id="ap-route-evidence">${evidenceOptions(state.route.evidenceFloor)}</select></label>
-      <button type="button" class="aperture-secondary-button" data-ap-action="route-reset">Reset</button>`;
+      <button type="button" class="aperture-secondary-button" data-ap-action="route-reset">Reset</button>
+      ${addressActionMarkup()}`;
     return;
   }
 
@@ -31,10 +33,11 @@ function renderModeControls() {
     <label class="aperture-control"><span>Active during</span><input id="ap-surface-asof" type="text" inputmode="numeric" placeholder="Optional date" value="${esc(state.surface.asOf)}"></label>
     <label class="aperture-control"><span>Evidence floor</span><select id="ap-surface-evidence">${evidenceOptions(state.surface.evidenceFloor)}</select></label>
     <label class="aperture-control aperture-control--scale"><span>Bracket budget · <strong id="ap-surface-budget-output">${state.surface.budget}</strong></span><input id="ap-surface-budget" type="range" min="6" max="36" step="1" value="${state.surface.budget}"></label>
-    <button type="button" class="aperture-secondary-button" data-ap-action="surface-clear-pins">Clear pins</button>`;
+    <button type="button" class="aperture-secondary-button" data-ap-action="surface-clear-pins">Clear pins</button>
+    ${addressActionMarkup()}`;
 }
 
-function setMode(mode, { renderControls = true } = {}) {
+function setMode(mode, { renderControls = true, history = 'push' } = {}) {
   if (!['map', 'route', 'surface'].includes(mode)) return;
   state.mode = mode;
   state.root.dataset.apertureMode = mode;
@@ -51,6 +54,7 @@ function setMode(mode, { renderControls = true } = {}) {
   if (mode === 'surface' && state.selectedSurfaceId && state.surfaces.has(state.selectedSurfaceId)) state.surface.surfaceId = state.selectedSurfaceId;
   if (renderControls) renderModeControls();
   renderCurrent();
+  commitApertureAddress(history);
 }
 
 function setStage(markup, { title, description, minWidth = 0 } = {}) {
@@ -112,7 +116,7 @@ function ensureMapSelection() {
   if (state.map.selectedActorId && !actorParticipants(state.surfaces.get(state.map.selectedSurfaceId)).some(item => item.actor_id === state.map.selectedActorId)) state.map.selectedActorId = null;
 }
 
-function setMapScale(value) {
+function setMapScale(value, { history = 'replace' } = {}) {
   state.map.scale = Math.max(1, Math.min(5.4, Number(value) || 1));
   state.map.level = semanticLevelForScale(state.map.scale, state.map.level);
   const input = $('#ap-map-scale', state.root);
@@ -120,6 +124,7 @@ function setMapScale(value) {
   const label = $('#ap-map-level', state.root);
   if (label) label.textContent = humanLabel(state.map.level);
   renderMapMode();
+  commitApertureAddress(history);
 }
 
 function clusterPositions(clusters) {
