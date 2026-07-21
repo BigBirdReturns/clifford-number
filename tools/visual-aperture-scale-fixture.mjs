@@ -156,7 +156,8 @@ export function buildVisualApertureScaleFixture(options = {}) {
   const hopGraph = {
     anchor_actor_id: syntheticActorId(Math.min(1, actorCount - 1)),
     edges,
-    rejected_hop_pairs: []
+    rejected_hop_pairs: [],
+    shortest_paths: {}
   };
   const receiptGraph = { receipts };
   const legacyGraph = { nodes: [], edges: [] };
