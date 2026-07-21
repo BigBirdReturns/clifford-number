@@ -146,7 +146,13 @@ export function buildVisualApertureScaleFixture(options = {}) {
     archive: { method: 'synthetic_fixture', ref: `fixture:${surface.surface_id}` }
   }));
 
-  const surfaceGraph = { actors, surfaces };
+  const surfaceGraph = {
+    actors,
+    organizations: [],
+    aliases: [],
+    candidates: [],
+    surfaces
+  };
   const hopGraph = {
     anchor_actor_id: syntheticActorId(Math.min(1, actorCount - 1)),
     edges,
