@@ -79,6 +79,7 @@ function togglePin(id) {
   else state.surface.pinned.add(id);
   state.surface.selectedActorId = id;
   state.selectedActorId = id;
+  syncWorkspacePins();
   renderSurfaceMode();
   commitApertureAddress('push');
   if (isMobile()) { state.sheetOpen = true; syncInspectorSheet(); }

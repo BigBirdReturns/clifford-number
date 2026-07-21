@@ -1,12 +1,16 @@
 import * as core from './visual-aperture-core.mjs';
 import * as addressState from './visual-aperture-state.mjs';
+import * as workspaceModel from './visual-aperture-workspace.mjs';
 
-Object.assign(globalThis, core, addressState);
+Object.assign(globalThis, core, addressState, workspaceModel);
 
-const RUNTIME_VERSION = '20260721-addressable';
-const partUrls = Array.from({ length: 11 }, (_, index) => `./visual-aperture-part-${index + 1}.js?v=${RUNTIME_VERSION}`);
+const RUNTIME_VERSION = '20260721-workspace';
+const runtimeUrls = [
+  `./visual-aperture-workspace-runtime.js?v=${RUNTIME_VERSION}`,
+  ...Array.from({ length: 11 }, (_, index) => `./visual-aperture-part-${index + 1}.js?v=${RUNTIME_VERSION}`)
+];
 
-for (const relativeUrl of partUrls) {
+for (const relativeUrl of runtimeUrls) {
   await new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.src = new URL(relativeUrl, import.meta.url).href;

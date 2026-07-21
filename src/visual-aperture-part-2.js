@@ -22,6 +22,8 @@ function shellMarkup() {
       <div id="aperture-mode-controls" class="aperture-mode-controls"></div>
     </div>
 
+    ${workspaceShellMarkup()}
+
     <div class="aperture-telemetry">
       <nav id="aperture-breadcrumbs" class="aperture-breadcrumbs" aria-label="Current visualization scope"></nav>
       <div id="aperture-stats" class="aperture-stats" aria-live="polite"></div>
@@ -132,5 +134,5 @@ function actorOptions(selected) {
 }
 
 function addressActionMarkup() {
-  return '<button type="button" class="aperture-secondary-button" data-ap-action="copy-view-link" aria-label="Copy a shareable link to this exact operating view">Copy exact view</button>';
+  return '<button type="button" class="aperture-secondary-button" data-ap-action="copy-view-link" aria-label="Copy a shareable link to this exact operating view">Copy exact view</button>' + workspaceActionMarkup();
 }

@@ -8,9 +8,11 @@ const i18n = readFileSync('src/i18n.js', 'utf8');
 const apertureBootstrap = readFileSync('src/aperture-bootstrap.js', 'utf8');
 const apertureCore = readFileSync('src/visual-aperture-core.mjs', 'utf8');
 const apertureState = readFileSync('src/visual-aperture-state.mjs', 'utf8');
+const apertureWorkspace = readFileSync('src/visual-aperture-workspace.mjs', 'utf8');
+const apertureWorkspaceRuntime = readFileSync('src/visual-aperture-workspace-runtime.js', 'utf8');
 const apertureLoader = readFileSync('src/visual-aperture.js', 'utf8');
-const apertureUi = Array.from({ length: 11 }, (_, index) => readFileSync(`src/visual-aperture-part-${index + 1}.js`, 'utf8')).join('\n');
-const apertureCss = ['layout', 'svg', 'responsive'].map(part => readFileSync(`src/visual-aperture-${part}.css`, 'utf8')).join('\n');
+const apertureUi = [apertureWorkspaceRuntime, ...Array.from({ length: 11 }, (_, index) => readFileSync(`src/visual-aperture-part-${index + 1}.js`, 'utf8'))].join('\n');
+const apertureCss = ['layout', 'svg', 'responsive', 'workspace'].map(part => readFileSync(`src/visual-aperture-${part}.css`, 'utf8')).join('\n');
 const socialCard = readFileSync('assets/social-card.svg', 'utf8');
 const deployWorkflow = readFileSync('.github/workflows/deploy.yml', 'utf8');
 const ciWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8');
@@ -84,6 +86,8 @@ assert.match(app, /Shared context is not influence|does not establish contact/);
 assert.match(html, /<script src="src\/aperture-bootstrap\.js[^"]*" type="module"><\/script>/);
 assert.match(apertureBootstrap, /import\('\.\/visual-aperture\.js/);
 assert.match(apertureLoader, /visual-aperture-state\.mjs/);
+assert.match(apertureLoader, /visual-aperture-workspace\.mjs/);
+assert.match(apertureLoader, /visual-aperture-workspace-runtime\.js/);
 assert.match(apertureLoader, /visual-aperture-part-\$\{index \+ 1\}\.js/);
 assert.match(apertureBootstrap, /__CLIFFORD_APERTURE_BUNDLED__/);
 assert.doesNotMatch(i18n, /visual-aperture|__CLIFFORD_APERTURE/);
@@ -106,13 +110,33 @@ assert.match(apertureState, /function writeApertureState/);
 assert.match(apertureUi, /Copy exact view/);
 assert.match(apertureUi, /buildApertureUrl/);
 assert.match(apertureUi, /addEventListener\('popstate'/);
+
+// The operator workspace remains local, identifier-only, resettable, and graph-inert.
+assert.match(apertureWorkspace, /APERTURE_WORKSPACE_VERSION = '1'/);
+assert.match(apertureWorkspace, /APERTURE_WORKSPACE_STORAGE_KEY = 'clifford-aperture-workspace'/);
+assert.match(apertureWorkspace, /function saveApertureWorkspaceView/);
+assert.match(apertureWorkspace, /function recordApertureWorkspaceRoute/);
+assert.match(apertureWorkspace, /function setApertureWorkspacePins/);
+assert.match(apertureWorkspace, /function toggleApertureWorkspaceCompare/);
+assert.match(apertureWorkspaceRuntime, /Save the view, not a new finding\./);
+assert.match(apertureWorkspaceRuntime, /Evidence prose and derived claims are never copied into workspace storage\./);
+assert.match(apertureWorkspaceRuntime, /Route results are always recomputed from the current compiled graph\./);
+assert.match(apertureWorkspaceRuntime, /The tray does not create an edge, score, or finding\./);
+assert.match(apertureWorkspaceRuntime, /Reset local workspace/);
+assert.match(apertureWorkspaceRuntime, /localStorage\.removeItem\(APERTURE_WORKSPACE_STORAGE_KEY\)/);
+assert.doesNotMatch(apertureWorkspace, /receipt_ids|evidence prose|plain:/i);
+
 assert.match(apertureCss, /\.aperture-overview thead\s*\{[^}]*position:\s*sticky/s);
 assert.match(apertureCss, /\.aperture-inspector\.is-open/);
+assert.match(apertureCss, /\.aperture-workspace\[hidden\]/);
+assert.match(apertureCss, /\.aperture-compare-grid/);
 assert.match(apertureCss, /position:\s*fixed/);
 assert.match(apertureCss, /@media \(prefers-reduced-motion: reduce\)/);
 assert.match(standaloneBuilder, /visual-aperture-core\.mjs/);
 assert.match(standaloneBuilder, /visual-aperture-state\.mjs/);
-assert.match(standaloneBuilder, /visual-aperture-layout\.css/);
+assert.match(standaloneBuilder, /visual-aperture-workspace\.mjs/);
+assert.match(standaloneBuilder, /visual-aperture-workspace-runtime\.js/);
+assert.match(standaloneBuilder, /visual-aperture-workspace\.css/);
 assert.match(standaloneBuilder, /__CLIFFORD_APERTURE_BUNDLED__/);
 
 // The public shell must expose real research objects without upgrading exploratory work.

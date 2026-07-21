@@ -51,7 +51,11 @@ function setMode(mode, { renderControls = true, history = 'push' } = {}) {
     state.route.fromId = state.selectedActorId;
     if (state.route.fromId === state.route.toId) state.route.toId = state.data.hopGraph.anchor_actor_id;
   }
-  if (mode === 'surface' && state.selectedSurfaceId && state.surfaces.has(state.selectedSurfaceId)) state.surface.surfaceId = state.selectedSurfaceId;
+  if (mode === 'surface' && state.selectedSurfaceId && state.surfaces.has(state.selectedSurfaceId)) {
+    const changed = state.surface.surfaceId !== state.selectedSurfaceId;
+    state.surface.surfaceId = state.selectedSurfaceId;
+    if (changed) restoreWorkspacePins(state.surface.surfaceId);
+  }
   if (renderControls) renderModeControls();
   renderCurrent();
   commitApertureAddress(history);

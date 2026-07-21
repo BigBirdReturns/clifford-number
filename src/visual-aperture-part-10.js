@@ -1,4 +1,5 @@
 function handleAction(button) {
+  if (handleWorkspaceAction(button)) return;
   const action = button.dataset.apAction;
   if (action === 'sheet-toggle') {
     state.sheetOpen = !state.sheetOpen;
@@ -43,6 +44,7 @@ function handleAction(button) {
   if (action === 'surface-clear-pins') {
     state.surface.pinned.clear();
     state.surface.selectedActorId = null;
+    syncWorkspacePins();
     renderSurfaceMode();
     commitApertureAddress('push');
     return;
@@ -61,6 +63,7 @@ function handleAction(button) {
   if (action === 'surface-from-selection') {
     const id = state.map.selectedSurfaceId || state.selectedSurfaceId;
     if (id) state.surface.surfaceId = id;
+    restoreWorkspacePins(state.surface.surfaceId);
     setMode('surface');
     return;
   }
@@ -68,6 +71,7 @@ function handleAction(button) {
     const id = button.dataset.surfaceId;
     if (id) state.surface.surfaceId = id;
     state.selectedSurfaceId = id;
+    restoreWorkspacePins(state.surface.surfaceId);
     setMode('surface');
   }
 }
@@ -134,7 +138,15 @@ function handleChange(event) {
   if (target.id === 'ap-route-to') { state.route.toId = target.value; state.route.selectedActorId = null; state.route.selectedStep = null; renderRouteMode(); commitApertureAddress('push'); return; }
   if (target.id === 'ap-route-asof') { state.route.asOf = target.value.trim(); state.route.selectedActorId = null; state.route.selectedStep = null; renderRouteMode(); commitApertureAddress('push'); return; }
   if (target.id === 'ap-route-evidence') { state.route.evidenceFloor = target.value; state.route.selectedActorId = null; state.route.selectedStep = null; renderRouteMode(); commitApertureAddress('push'); return; }
-  if (target.id === 'ap-surface-select') { state.surface.surfaceId = target.value; state.surface.pinned.clear(); state.surface.selectedActorId = null; state.selectedSurfaceId = target.value; renderSurfaceMode(); commitApertureAddress('push'); return; }
+  if (target.id === 'ap-surface-select') {
+    state.surface.surfaceId = target.value;
+    restoreWorkspacePins(state.surface.surfaceId);
+    state.surface.selectedActorId = null;
+    state.selectedSurfaceId = target.value;
+    renderSurfaceMode();
+    commitApertureAddress('push');
+    return;
+  }
   if (target.id === 'ap-surface-asof') { state.surface.asOf = target.value.trim(); renderSurfaceMode(); commitApertureAddress('push'); return; }
   if (target.id === 'ap-surface-evidence') { state.surface.evidenceFloor = target.value; renderSurfaceMode(); commitApertureAddress('push'); }
 }
@@ -142,6 +154,11 @@ function handleChange(event) {
 function handleKeydown(event) {
   const target = event.target instanceof Element ? event.target : event.target?.parentElement;
   if (!target) return;
+  if (target.id === 'ap-workspace-name' && event.key === 'Enter') {
+    event.preventDefault();
+    saveCurrentWorkspaceView();
+    return;
+  }
   const modeButton = target.closest('[data-ap-mode]');
   if (modeButton && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
     event.preventDefault();
