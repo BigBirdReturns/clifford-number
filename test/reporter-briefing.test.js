@@ -30,7 +30,7 @@ assert.ok(manifest.review_required_claim_ids.includes('clm-axis-working-proposit
 assert.ok(manifest.verified_claim_ids.includes('clm-army-enterprise-vehicle'));
 assert.ok(manifest.receipt_ids.includes('anduril-bundle-r3'));
 assert.ok(!manifest.public_receipt_ids.includes('anduril-bundle-r3'));
-assert.match(html, /Anduril: Access, Ownership, and the Government Gate/);
+assert.match(html, /Anduril: access, ownership, and the government gate/i);
 assert.match(html, /The March 2026 Army enterprise contract is a single-award/);
 assert.match(html, /The \$20 billion figure is a maximum ceiling/);
 assert.match(html, /Open evidence case/);
