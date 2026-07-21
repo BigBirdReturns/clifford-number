@@ -47,12 +47,20 @@ jobs:
         run: npm run validate:state-market-receipts 2>&1 | tee validate-receipts.log
       - name: Run repository release gate
         run: npm run release:check 2>&1 | tee release-check.log
-      - name: Preserve dry-run diagnostics
+      - name: Preserve the verified integration tree and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: receipt-custody-integration-diagnostics
           path: |
+            package.json
+            data/research/thesis-evidence/synthetic-population-infrastructure.json
+            tools/validate-thesis-case-packets.mjs
+            tools/validate-pages.mjs
+            test/thesis-case-packet.test.js
+            test/thesis-state-market-receipts.test.js
+            docs/thesis-state-market-receipt-custody.md
+            .github/workflows/thesis-state-market-receipts.yml
             *-case-packets.log
             *-thesis.log
             validate-receipts.log
