@@ -86,6 +86,25 @@ assert.equal(emptyBuild.bottom_line_generated, false);
 assert.ok(emptyBuild.propositions.every(item => item.machine_disposition === 'open_no_evidence_packets'));
 assert.doesNotMatch(renderThesisMarkdown(emptyBuild), /the thesis is proved|the thesis is supported/i);
 
+const coverageOnly = {
+  ...emptyEvidence,
+  packets: [{
+    packet_id: 'coverage-1', proposition_id: 'P1', case_id: 'case-a', relation: 'coverage',
+    summary: 'A source-custody record exists but the denominator remains blocked.',
+    source_paths: ['fixture-coverage.json'], source_families: ['source custody'],
+    receipt_ids: [], review_status: 'machine_recorded_coverage', counts_toward_support: false,
+    graph_effect: 'none'
+  }]
+};
+assert.deepEqual(validateThesisBundle({ manifest, evidence: coverageOnly, reviews: emptyReviews }), []);
+const coverageBuild = compileThesisBundle({ manifest, evidence: coverageOnly, reviews: emptyReviews, generatedAt: '2026-01-01T00:00:00Z' });
+assert.equal(coverageBuild.status, 'collecting_evidence');
+assert.equal(coverageBuild.counts.evidence_packets, 0);
+assert.equal(coverageBuild.counts.coverage_packets, 1);
+assert.equal(coverageBuild.propositions.find(item => item.proposition_id === 'P1').support_packet_count, 0);
+assert.equal(coverageBuild.propositions.find(item => item.proposition_id === 'P1').machine_disposition, 'collecting_evidence');
+assert.equal(coverageBuild.propositions.find(item => item.proposition_id === 'P2').machine_disposition, 'collecting_evidence');
+
 const supportWithoutReceipt = {
   ...emptyEvidence,
   packets: [{
@@ -175,12 +194,17 @@ assert.ok(validateThesisBundle({ manifest, evidence: overstatedNull, reviews: em
 const actualManifest = JSON.parse(readFileSync('data/research/theses/synthetic-population-infrastructure.json', 'utf8'));
 const actualEvidence = JSON.parse(readFileSync('data/research/thesis-evidence/synthetic-population-infrastructure.json', 'utf8'));
 const actualReviews = JSON.parse(readFileSync('data/research/thesis-reviews/synthetic-population-infrastructure.json', 'utf8'));
-assert.deepEqual(validateThesisBundle({ actual: true, manifest: actualManifest, evidence: actualEvidence, reviews: actualReviews }), []);
+assert.deepEqual(validateThesisBundle({ manifest: actualManifest, evidence: actualEvidence, reviews: actualReviews }), []);
 const actualBuild = compileThesisBundle({ manifest: actualManifest, evidence: actualEvidence, reviews: actualReviews, generatedAt: '2026-07-21T00:00:00Z' });
 assert.equal(actualBuild.counts.case_contracts, 18);
 assert.equal(actualBuild.counts.propositions, 6);
 assert.equal(actualBuild.counts.evidence_packets, 0);
-assert.equal(actualBuild.status, 'assembly_open_no_evidence_packets');
-assert.ok(actualBuild.propositions.every(item => item.machine_disposition === 'open_no_evidence_packets'));
+assert.equal(actualBuild.counts.coverage_packets, 1);
+assert.equal(actualBuild.status, 'collecting_evidence');
+assert.equal(actualBuild.propositions.find(item => item.proposition_id === 'P2-legitimacy-market').machine_disposition, 'collecting_evidence');
+assert.equal(actualBuild.propositions.find(item => item.proposition_id === 'P2-legitimacy-market').support_packet_count, 0);
+assert.equal(actualBuild.propositions.find(item => item.proposition_id === 'P6-infrastructure-synthesis').machine_disposition, 'collecting_evidence');
+assert.ok(actualBuild.propositions.filter(item => !['P2-legitimacy-market', 'P6-infrastructure-synthesis'].includes(item.proposition_id))
+  .every(item => item.machine_disposition === 'open_no_evidence_packets'));
 
 console.log('thesis-assembly.test.js: OK');
