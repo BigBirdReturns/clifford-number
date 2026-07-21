@@ -21,12 +21,42 @@ jobs:
           ref: agent/aperture-kit
           fetch-depth: 0
 
-      - name: Merge current main
+      - name: Merge current main and preserve the complete test chain
         run: |
           git config user.name "OpenAI"
           git config user.email "noreply@openai.com"
           git fetch origin main
-          git merge --no-edit origin/main
+          set +e
+          git merge --no-commit origin/main
+          merge_status=$?
+          set -e
+          if [ "$merge_status" -ne 0 ]; then
+            unmerged="$(git diff --name-only --diff-filter=U)"
+            if [ "$unmerged" != "package.json" ]; then
+              echo "Unexpected merge conflicts:"
+              printf '%s\n' "$unmerged"
+              exit 1
+            fi
+            git checkout --theirs package.json
+            node <<'NODE'
+          const fs = require('node:fs');
+          const path = 'package.json';
+          const pkg = JSON.parse(fs.readFileSync(path, 'utf8'));
+          const kit = 'node test/aperture-kit.test.js';
+          if (!pkg.scripts.test.includes(kit)) {
+            const marker = 'node test/visual-aperture.test.js';
+            if (!pkg.scripts.test.includes(marker)) throw new Error('visual aperture marker missing');
+            pkg.scripts.test = pkg.scripts.test.replace(marker, `${marker} && ${kit}`);
+          }
+          fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
+          NODE
+            git add package.json
+          fi
+          if [ -n "$(git diff --name-only --diff-filter=U)" ]; then
+            git diff --name-only --diff-filter=U
+            exit 1
+          fi
+          git commit --no-edit
 
       - name: Set up Node
         uses: actions/setup-node@v4
