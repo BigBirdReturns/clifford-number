@@ -57,6 +57,7 @@ jobs:
             git diff --name-only --diff-filter=U
             exit 1
           fi
+          git status --short
           git commit --no-edit
 
       - name: Install dependencies
