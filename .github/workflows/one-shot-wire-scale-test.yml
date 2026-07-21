@@ -1,0 +1,46 @@
+name: One-shot wire scale fixture test
+
+on:
+  push:
+    branches:
+      - agent/aperture-scale-baseline
+
+permissions:
+  contents: write
+
+jobs:
+  wire:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/aperture-scale-baseline
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Add the structural fixture test to npm test
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('package.json')
+          package = json.loads(path.read_text(encoding='utf-8'))
+          command = 'node test/visual-aperture-scale.test.js'
+          tests = package['scripts']['test']
+          if command not in tests:
+              package['scripts']['test'] = f'{tests} && {command}'
+          path.write_text(json.dumps(package, indent=2) + '\n', encoding='utf-8')
+          PY
+          node test/visual-aperture-scale.test.js
+          npm run release:check
+      - name: Commit the verified test-gate change
+        run: |
+          rm .github/workflows/one-shot-wire-scale-test.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add package.json .github/workflows/one-shot-wire-scale-test.yml
+          git commit -m "Run the scale fixture in the ordinary test gate"
+          git push origin HEAD:agent/aperture-scale-baseline
