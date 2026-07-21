@@ -8,6 +8,12 @@ const MAX_PINS_PER_SURFACE = 36;
 const MAX_COMPARE_ITEMS = 2;
 const EVIDENCE_FLOORS = new Set(['open', 'reported', 'primary_public', 'official']);
 const COMPARE_KINDS = new Set(['actor', 'surface']);
+const VIEW_QUERY_KEYS = new Set([
+  'ap_v', 'ap_mode',
+  'ap_map_scale', 'ap_map_level', 'ap_map_cluster', 'ap_map_type', 'ap_map_surface', 'ap_map_actor',
+  'ap_route_from', 'ap_route_to', 'ap_route_asof', 'ap_route_evidence', 'ap_route_step', 'ap_route_actor',
+  'ap_surface_id', 'ap_surface_query', 'ap_surface_asof', 'ap_surface_evidence', 'ap_surface_budget', 'ap_surface_pins', 'ap_surface_actor'
+]);
 
 function text(value, maximum) {
   return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, maximum);
@@ -32,6 +38,7 @@ function normalizedViewQuery(value) {
   const raw = String(value ?? '').replace(/^\?/, '').slice(0, 12_000);
   const params = new URLSearchParams(raw);
   if (params.get('ap_v') !== '1' || !['map', 'route', 'surface'].includes(params.get('ap_mode'))) return null;
+  for (const key of [...params.keys()]) if (!VIEW_QUERY_KEYS.has(key)) params.delete(key);
   return params.toString();
 }
 
@@ -94,16 +101,20 @@ export function normalizeApertureWorkspace(value) {
     .map(normalizedSavedView)
     .filter(Boolean)
     .sort((a, b) => b.savedAt.localeCompare(a.savedAt))
+    .filter((item, index, items) => items.findIndex(other => other.id === item.id) === index)
     .slice(0, MAX_SAVED_VIEWS);
+  const routeKey = item => `${item.fromId}|${item.toId}|${item.asOf}|${item.evidenceFloor}`;
   const recentRoutes = (Array.isArray(value.recentRoutes) ? value.recentRoutes : [])
     .map(normalizedRecentRoute)
     .filter(Boolean)
     .sort((a, b) => b.visitedAt.localeCompare(a.visitedAt))
+    .filter((item, index, items) => items.findIndex(other => routeKey(other) === routeKey(item)) === index)
     .slice(0, MAX_RECENT_ROUTES);
   const pinSets = (Array.isArray(value.pinSets) ? value.pinSets : [])
     .map(normalizedPinSet)
     .filter(Boolean)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .filter((item, index, items) => items.findIndex(other => other.surfaceId === item.surfaceId) === index)
     .slice(0, MAX_PIN_SURFACES);
   const compare = (Array.isArray(value.compare) ? value.compare : [])
     .map(normalizedCompareItem)
