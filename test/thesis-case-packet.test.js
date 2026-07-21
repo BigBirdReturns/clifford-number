@@ -25,7 +25,7 @@ for (const packet of actualPackets) {
   assert.equal(compiled.receipt_count, 0);
   assert.equal(compiled.promotion.eligible_for_thesis_evidence_promotion, false);
   assert.equal(compiled.thesis_consumption.evidence_packet_emitted, false);
-  assert.match(renderThesisCasePacketMarkdown(compiled), /Intended analytical relations inside intake packets do not count as thesis evidence/i);
+  assert.match(renderThesisCasePacketMarkdown(compiled), /preserves intended analytical relations but remains intake/i);
 }
 
 const index = compileThesisCasePacketIndex(actualPackets.map(compileThesisCasePacket));
