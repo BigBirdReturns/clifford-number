@@ -1,4 +1,5 @@
 const APERTURE_EXPORT_PREVIEW_ROW_LIMIT = 100;
+const boundedOriginalHandlePublicationExportAction = handlePublicationExportAction;
 
 function boundedExportTableMarkup(table, limit = APERTURE_EXPORT_PREVIEW_ROW_LIMIT) {
   const columns = table?.columns ?? [];
@@ -19,9 +20,10 @@ exportTableMarkup = function boundedExportTablePreview(table) {
   return boundedExportTableMarkup(table, APERTURE_EXPORT_PREVIEW_ROW_LIMIT);
 };
 
-renderPrintPublicationPacket = function boundedRenderPrintPublicationPacket(packet) {
-  const table = boundedExportTableMarkup(packet.view.table, Number.POSITIVE_INFINITY);
-  $('#aperture-print-export', state.root).innerHTML = `<header><p>The Clifford Number · publication packet</p><h1>${esc(packet.title)}</h1><p>${esc(packet.caption)}</p><dl><div><dt>Generated</dt><dd>${esc(packet.generated_at)}</dd></div><div><dt>Exact view</dt><dd>${esc(packet.exact_view_url)}</dd></div><div><dt>Receipt IDs</dt><dd>${esc(packet.receipt_ids.join(', ') || 'none attached to this aggregate view')}</dd></div><div><dt>Complete rows</dt><dd>${table.totalRows}</dd></div></dl></header><table><thead>${table.head}</thead><tbody>${table.body}</tbody></table><footer>${esc(packet.interpretation_contract.caveat)}</footer>`;
+renderPrintPublicationPacket = function boundedRenderPrintPublicationPacket(packet, { complete = false } = {}) {
+  const table = boundedExportTableMarkup(packet.view.table, complete ? Number.POSITIVE_INFINITY : APERTURE_EXPORT_PREVIEW_ROW_LIMIT);
+  const note = table.truncated ? `<p>Print preview is bounded to ${table.visibleRows} of ${table.totalRows} rows until Print packet is explicitly selected.</p>` : '';
+  $('#aperture-print-export', state.root).innerHTML = `<header><p>The Clifford Number · publication packet</p><h1>${esc(packet.title)}</h1><p>${esc(packet.caption)}</p><dl><div><dt>Generated</dt><dd>${esc(packet.generated_at)}</dd></div><div><dt>Exact view</dt><dd>${esc(packet.exact_view_url)}</dd></div><div><dt>Receipt IDs</dt><dd>${esc(packet.receipt_ids.join(', ') || 'none attached to this aggregate view')}</dd></div><div><dt>Complete rows</dt><dd>${table.totalRows}</dd></div></dl>${note}</header><table><thead>${table.head}</thead><tbody>${table.body}</tbody></table><footer>${esc(packet.interpretation_contract.caveat)}</footer>`;
 };
 
 renderPublicationExportPanel = function boundedRenderPublicationExportPanel() {
@@ -51,7 +53,17 @@ renderPublicationExportPanel = function boundedRenderPublicationExportPanel() {
     wrap.prepend(note);
   }
   note.textContent = table.truncated
-    ? `Previewing the first ${table.visibleRows} of ${table.totalRows} complete export rows. Copy, download, and print retain every row.`
+    ? `Previewing the first ${table.visibleRows} of ${table.totalRows} complete export rows. Copy and download retain every row; Print packet expands the full table only for printing.`
     : `${table.totalRows} complete export row${table.totalRows === 1 ? '' : 's'}.`;
   renderPrintPublicationPacket(packet);
+};
+
+handlePublicationExportAction = async function boundedHandlePublicationExportAction(button) {
+  if (button.dataset.apAction !== 'export-print') return boundedOriginalHandlePublicationExportAction(button);
+  const packet = currentPublicationPacket();
+  renderPrintPublicationPacket(packet, { complete: true });
+  window.print();
+  renderPrintPublicationPacket(packet);
+  setPublicationExportStatus('Print dialog opened with the complete packet.');
+  return true;
 };
