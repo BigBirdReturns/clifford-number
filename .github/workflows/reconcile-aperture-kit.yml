@@ -14,6 +14,7 @@ permissions:
 jobs:
   reconcile:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Check out Aperture branch
         uses: actions/checkout@v4
@@ -62,7 +63,26 @@ jobs:
         run: npm install --ignore-scripts
 
       - name: Verify complete release gate
-        run: npm run release:check
+        id: release
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run release:check 2>&1 | tee release-check.log
+
+      - name: Upload release diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aperture-reconcile-diagnostics
+          path: release-check.log
+          if-no-files-found: error
+          retention-days: 2
+
+      - name: Require complete release gate
+        if: steps.release.outcome == 'failure'
+        run: |
+          tail -n 300 release-check.log
+          exit 1
 
       - name: Publish reconciled branch
         run: git push origin HEAD:agent/aperture-kit
