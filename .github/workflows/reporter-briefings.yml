@@ -1,0 +1,89 @@
+name: Reporter briefing publication contract
+
+on:
+  pull_request:
+    paths:
+      - 'cases/**/briefing.json'
+      - 'cases/**/case.json'
+      - 'cases/**/claims.jsonl'
+      - 'cases/**/receipts.jsonl'
+      - 'tools/lib/reporter-briefing.mjs'
+      - 'tools/compile-reporter-briefings.mjs'
+      - 'tools/compile.mjs'
+      - 'tools/lib/case-ledger.mjs'
+      - 'tools/build-pages.mjs'
+      - 'tools/build-standalone.mjs'
+      - 'tools/validate-pages.mjs'
+      - 'tools/verify-reporter-briefings-browser.cjs'
+      - 'test/reporter-briefing.test.js'
+      - 'schemas/reporter-briefing.schema.json'
+      - '.github/workflows/reporter-briefings.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Compile the public corpus and reporter briefings
+        run: npm run compile
+
+      - name: Verify claim-referenced briefing and review-queue contracts
+        run: node test/reporter-briefing.test.js
+
+      - name: Compile publication prerequisites
+        run: |
+          npm run compile:denominator
+          npm run compile:case-packets
+          npm run compile:thesis
+
+      - name: Build and validate Pages and standalone output
+        run: |
+          npm run build:pages
+          npm run build:standalone
+          npm run validate:pages
+
+      - name: Install Chromium verification runtime
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Start the static public application
+        run: |
+          node tools/serve-static.mjs 8080 > /tmp/reporter-briefings-server.log 2>&1 &
+          echo $! > /tmp/reporter-briefings-server.pid
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8080/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/reporter-briefings-server.log
+          exit 1
+
+      - name: Verify finite brief to claim and receipt in Chromium
+        run: |
+          node --check tools/verify-reporter-briefings-browser.cjs
+          timeout 240s node tools/verify-reporter-briefings-browser.cjs
+
+      - name: Preserve deterministic publication evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporter-briefings-browser
+          path: |
+            build/briefings/index.json
+            build/briefings/*.json
+            build/review/reporter-briefing-queue.json
+            build/metrics/reporter-briefings-browser.json
+            build/metrics/reporter-briefing-first.png
+            build/metrics/reporter-briefing-evidence-first.png
+            /tmp/reporter-briefings-server.log
+          if-no-files-found: warn
