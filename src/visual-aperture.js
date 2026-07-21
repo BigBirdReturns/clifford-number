@@ -2,12 +2,7 @@ import * as core from './visual-aperture-core.mjs';
 
 Object.assign(globalThis, core);
 
-const partUrls = [
-  './visual-aperture-part-1.js',
-  './visual-aperture-part-2.js',
-  './visual-aperture-part-3.js',
-  './visual-aperture-part-4.js'
-];
+const partUrls = Array.from({ length: 11 }, (_, index) => `./visual-aperture-part-${index + 1}.js`);
 
 for (const relativeUrl of partUrls) {
   await new Promise((resolve, reject) => {
