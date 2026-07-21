@@ -12,6 +12,7 @@ on:
       - 'styles.css'
       - 'src/ui-utils.js'
       - 'src/i18n.js'
+      - 'package.json'
       - 'tools/lib/reporter-briefing.mjs'
       - 'tools/compile-reporter-briefings.mjs'
       - 'tools/compile.mjs'
@@ -65,9 +66,10 @@ jobs:
           tail -n 260 /tmp/reporter-briefings-build.log
           exit "$status"
 
-      - name: Install Chromium verification runtime
+      - name: Install declared browser verification dependency
         run: |
-          npm install --no-save --no-package-lock playwright@1.55.0
+          npm install --no-package-lock
+          node -e "const version = require('./node_modules/playwright/package.json').version; if (version !== '1.55.0') throw new Error('expected playwright 1.55.0, got ' + version);"
           npx playwright install --with-deps chromium
 
       - name: Start the static public application
