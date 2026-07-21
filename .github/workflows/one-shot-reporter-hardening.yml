@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Apply the three compiler and runtime hardening fixes
+      - name: Apply the compiler and declared-dependency hardening fixes
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -63,12 +63,6 @@ jobs:
           dev_dependencies['playwright'] = '1.55.0'
           package['devDependencies'] = dict(sorted(dev_dependencies.items()))
           package_path.write_text(json.dumps(package, indent=2) + '\n')
-
-          replace_once(
-              '.github/workflows/reporter-briefings.yml',
-              "      - name: Install Chromium verification runtime\n        run: |\n          npm install --no-save --no-package-lock playwright@1.55.0\n          npx playwright install --with-deps chromium",
-              "      - name: Install declared browser verification dependency\n        run: |\n          npm install --no-package-lock\n          node -e \"const version = require('./node_modules/playwright/package.json').version; if (version !== '1.55.0') throw new Error('expected playwright 1.55.0, got ' + version);\"\n          npx playwright install --with-deps chromium"
-          )
           PY
 
       - name: Verify the declared dependency and direct compiler refusals
@@ -85,7 +79,6 @@ jobs:
           git add \
             tools/lib/reporter-briefing.mjs \
             test/reporter-briefing.test.js \
-            package.json \
-            .github/workflows/reporter-briefings.yml
+            package.json
           git commit -m "Harden reporter briefing publication contract"
           git push origin HEAD:agent/reporter-briefing-hardening
