@@ -25,11 +25,19 @@ const embedded = Object.fromEntries([...new Set(dataPaths)].map(file => [file, r
 const helpers = [read('src/ui-utils.js'), read('src/i18n.js')]
   .join('\n\n')
   .replace(/^export\s+/gm, '');
-const apertureCoreSource = read('src/visual-aperture-core.mjs');
-const apertureCoreNames = [...apertureCoreSource.matchAll(/^export\s+(?:const|function|class)\s+(\w+)/gm)].map(match => match[1]);
-const apertureCore = apertureCoreSource.replace(/^export\s+/gm, '');
+const apertureModuleFiles = ['src/visual-aperture-core.mjs', 'src/visual-aperture-state.mjs'];
+const apertureModuleRecords = apertureModuleFiles.map(file => {
+  const source = read(file);
+  const names = [...source.matchAll(/^export\s+(?:const|function|class)\s+(\w+)/gm)].map(match => match[1]);
+  const body = source.replace(/^export\s+/gm, '');
+  return { file, names, body };
+});
+const apertureNames = [...new Set(apertureModuleRecords.flatMap(record => record.names))];
+const apertureModules = apertureModuleRecords
+  .map(record => `(function apertureModule() {\n${record.body}\nObject.assign(globalThis, { ${record.names.join(', ')} });\n})();`)
+  .join('\n');
 const apertureParts = Array.from({ length: 11 }, (_, index) => read(`src/visual-aperture-part-${index + 1}.js`)).join('\n\n');
-const apertureBundle = `(function visualApertureBundle() {\n${apertureCore}\nObject.assign(globalThis, { ${apertureCoreNames.join(', ')} });\n(function visualApertureRuntime() {\nconst { ${apertureCoreNames.join(', ')} } = globalThis;\n${apertureParts}\n})();\n})();`;
+const apertureBundle = `(function visualApertureBundle() {\n${apertureModules}\n(function visualApertureRuntime() {\nconst { ${apertureNames.join(', ')} } = globalThis;\n${apertureParts}\n})();\n})();`;
 let app = read('app.js')
   .replace(/^import .*?;\r?\n/gm, '')
   .replace(
