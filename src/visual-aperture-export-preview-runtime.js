@@ -1,5 +1,5 @@
 const APERTURE_EXPORT_PREVIEW_ROW_LIMIT = 100;
-const boundedOriginalHandlePublicationExportAction = handlePublicationExportAction;
+const boundedOriginalHandleExportAction = handleExportAction;
 
 function boundedExportTableMarkup(table, limit = APERTURE_EXPORT_PREVIEW_ROW_LIMIT) {
   const columns = table?.columns ?? [];
@@ -58,12 +58,13 @@ renderPublicationExportPanel = function boundedRenderPublicationExportPanel() {
   renderPrintPublicationPacket(packet);
 };
 
-handlePublicationExportAction = async function boundedHandlePublicationExportAction(button) {
-  if (button.dataset.apAction !== 'export-print') return boundedOriginalHandlePublicationExportAction(button);
-  const packet = currentPublicationPacket();
+handleExportAction = function boundedHandleExportAction(button) {
+  if (button.dataset.apAction !== 'export-print') return boundedOriginalHandleExportAction(button);
+  const packet = buildCurrentPublicationPacket();
+  state.export.packet = packet;
   renderPrintPublicationPacket(packet, { complete: true });
   window.print();
   renderPrintPublicationPacket(packet);
-  setPublicationExportStatus('Print dialog opened with the complete packet.');
+  exportSetStatus('Print dialog opened with the complete packet.');
   return true;
 };
