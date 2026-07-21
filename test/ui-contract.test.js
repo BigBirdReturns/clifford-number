@@ -5,6 +5,7 @@ const html = readFileSync('index.html', 'utf8');
 const css = readFileSync('styles.css', 'utf8');
 const app = readFileSync('app.js', 'utf8');
 const i18n = readFileSync('src/i18n.js', 'utf8');
+const apertureBootstrap = readFileSync('src/aperture-bootstrap.js', 'utf8');
 const apertureCore = readFileSync('src/visual-aperture-core.mjs', 'utf8');
 const apertureLoader = readFileSync('src/visual-aperture.js', 'utf8');
 const apertureUi = Array.from({ length: 11 }, (_, index) => readFileSync(`src/visual-aperture-part-${index + 1}.js`, 'utf8')).join('\n');
@@ -79,9 +80,12 @@ assert.match(app, /confirmed:\s*0/);
 assert.match(app, /Shared context is not influence|does not establish contact/);
 
 // The visual aperture upgrades the display projection without creating a second data plane.
-assert.match(i18n, /import\('\.\/visual-aperture\.js/);
+assert.match(html, /<script src="src\/aperture-bootstrap\.js[^"]*" type="module"><\/script>/);
+assert.match(apertureBootstrap, /import\('\.\/visual-aperture\.js/);
 assert.match(apertureLoader, /visual-aperture-part-\$\{index \+ 1\}\.js/);
-assert.match(i18n, /__CLIFFORD_APERTURE_BUNDLED__/);
+assert.match(apertureBootstrap, /__CLIFFORD_APERTURE_BUNDLED__/);
+assert.doesNotMatch(i18n, /visual-aperture|__CLIFFORD_APERTURE/);
+assert.match(standaloneBuilder, /aperture-bootstrap\\\.js/);
 for (const mode of ['map', 'route', 'surface']) assert.match(apertureUi, new RegExp(`data-ap-mode="${mode}"`));
 assert.match(apertureUi, /Map the system\. Keep the receipt attached\./);
 assert.match(apertureUi, /build\/surface-graph\.json/);
