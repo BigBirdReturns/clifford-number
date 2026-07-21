@@ -10,7 +10,10 @@ const required = [
   'build/public-catalog.json', 'build/cases/index.json', 'build/cases/field-autopsy-03.json',
   'build/cases/uk-ai-policy.json',
   'legacy/graph.edge-model.json', 'legacy/uk-ai-policy.edge-model.json',
-  'src/ui-utils.js', 'src/i18n.js', 'assets/social-card.png',
+  'src/ui-utils.js', 'src/i18n.js', 'src/visual-aperture-core.mjs', 'src/visual-aperture.js',
+  ...Array.from({ length: 11 }, (_, index) => `src/visual-aperture-part-${index + 1}.js`),
+  'src/visual-aperture.css', 'src/visual-aperture-layout.css', 'src/visual-aperture-svg.css',
+  'src/visual-aperture-responsive.css', 'assets/social-card.png',
   'docs/methodology.md', 'cases/field-autopsy-03/case.json'
 ];
 const missing = required.filter(file => !fs.existsSync(path.join(destination, file)));
@@ -26,6 +29,9 @@ for (const forbidden of ['data/crawl', 'data/intake', 'data/local', 'receipts/cr
 }
 const html = fs.readFileSync(path.join(destination, 'index.html'), 'utf8');
 const app = fs.readFileSync(path.join(destination, 'app.js'), 'utf8');
+const i18n = fs.readFileSync(path.join(destination, 'src', 'i18n.js'), 'utf8');
+const apertureEntry = fs.readFileSync(path.join(destination, 'src', 'visual-aperture.js'), 'utf8');
+const aperture = Array.from({ length: 11 }, (_, index) => fs.readFileSync(path.join(destination, 'src', `visual-aperture-part-${index + 1}.js`), 'utf8')).join('\n');
 const standalone = fs.readFileSync(path.join(destination, 'Clifford-Number-standalone.html'), 'utf8');
 const ukAiCase = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'cases', 'uk-ai-policy.json'), 'utf8'));
 const hopGraph = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'hop-graph.json'), 'utf8'));
@@ -38,8 +44,18 @@ if (!html.includes('id="main-content"') || !app.includes('build/public-catalog.j
   console.error('validate-pages failed: public entrypoint does not expose the explorer and compiled cases');
   process.exit(1);
 }
+if (!i18n.includes("import('./visual-aperture.js") || !apertureEntry.includes('visual-aperture-part-${index + 1}.js') || !aperture.includes('Map the system. Keep the receipt attached.')) {
+  console.error('validate-pages failed: integrated visual aperture is not wired into the public runtime');
+  process.exit(1);
+}
 if (!standalone.includes('data-portable-release="true"') || !standalone.includes('const EMBEDDED_DATA =') || /src="app\.js(?:\?[^\"]*)?"/.test(standalone)) {
   console.error('validate-pages failed: standalone release is not self-contained');
+  process.exit(1);
+}
+if (!standalone.includes('globalThis.__CLIFFORD_APERTURE_BUNDLED__ = true')
+  || !standalone.includes('Map the system. Keep the receipt attached.')
+  || /<(?:script|link)[^>]+(?:src|href)="[^"]*visual-aperture/.test(standalone)) {
+  console.error('validate-pages failed: standalone release omits or externally references the visual aperture');
   process.exit(1);
 }
 if (!standalone.includes('href="data:image/svg+xml;base64,') || standalone.includes('href="assets/favicon.svg"')) {

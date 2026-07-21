@@ -124,3 +124,23 @@ export function applyTranslations(root, locale) {
   for (const element of root.querySelectorAll('[data-i18n-aria-label]')) element.setAttribute('aria-label', translate(lang, element.dataset.i18nAriaLabel));
   return lang;
 }
+
+/* The public app already imports this module on every release. Use that stable
+ * bootstrap edge to mount the visual aperture without coupling the projection
+ * to the compiler-facing app module. Standalone builds set the bundle flag and
+ * inline the same CSS and JavaScript instead. */
+if (typeof document !== 'undefined'
+  && !globalThis.__CLIFFORD_APERTURE_BUNDLED__
+  && !globalThis.__CLIFFORD_APERTURE_LOADING__) {
+  globalThis.__CLIFFORD_APERTURE_LOADING__ = true;
+  if (!document.getElementById('clifford-visual-aperture-css')) {
+    const link = document.createElement('link');
+    link.id = 'clifford-visual-aperture-css';
+    link.rel = 'stylesheet';
+    link.href = 'src/visual-aperture.css?v=20260721-command-deck';
+    document.head.append(link);
+  }
+  import('./visual-aperture.js?v=20260721-command-deck').catch(error => {
+    console.error('Could not load the visual aperture.', error);
+  });
+}
