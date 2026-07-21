@@ -1,0 +1,44 @@
+name: Reconcile Aperture kit with main
+
+on:
+  push:
+    branches:
+      - agent/bootstrap-aperture-reconcile
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Aperture branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/aperture-kit
+          fetch-depth: 0
+
+      - name: Merge current main
+        run: |
+          git config user.name "OpenAI"
+          git config user.email "noreply@openai.com"
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify complete release gate
+        run: npm run release:check
+
+      - name: Publish reconciled branch
+        run: git push origin HEAD:agent/aperture-kit
