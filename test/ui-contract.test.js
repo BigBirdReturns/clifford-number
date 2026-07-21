@@ -4,10 +4,16 @@ import { readFileSync, statSync } from 'node:fs';
 const html = readFileSync('index.html', 'utf8');
 const css = readFileSync('styles.css', 'utf8');
 const app = readFileSync('app.js', 'utf8');
+const i18n = readFileSync('src/i18n.js', 'utf8');
+const apertureCore = readFileSync('src/visual-aperture-core.mjs', 'utf8');
+const apertureLoader = readFileSync('src/visual-aperture.js', 'utf8');
+const apertureUi = Array.from({ length: 11 }, (_, index) => readFileSync(`src/visual-aperture-part-${index + 1}.js`, 'utf8')).join('\n');
+const apertureCss = ['layout', 'svg', 'responsive'].map(part => readFileSync(`src/visual-aperture-${part}.css`, 'utf8')).join('\n');
 const socialCard = readFileSync('assets/social-card.svg', 'utf8');
 const deployWorkflow = readFileSync('.github/workflows/deploy.yml', 'utf8');
 const ciWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8');
 const pagesBuilder = readFileSync('tools/build-pages.mjs', 'utf8');
+const standaloneBuilder = readFileSync('tools/build-standalone.mjs', 'utf8');
 
 // Durable metadata and first-run semantics.
 assert.match(html, /<meta name="description"/);
@@ -71,6 +77,30 @@ assert.match(app, /async function loadCase/);
 assert.match(app, /async function loadTrackHarness/);
 assert.match(app, /confirmed:\s*0/);
 assert.match(app, /Shared context is not influence|does not establish contact/);
+
+// The visual aperture upgrades the display projection without creating a second data plane.
+assert.match(i18n, /import\('\.\/visual-aperture\.js/);
+assert.match(apertureLoader, /visual-aperture-part-\$\{index \+ 1\}\.js/);
+assert.match(i18n, /__CLIFFORD_APERTURE_BUNDLED__/);
+for (const mode of ['map', 'route', 'surface']) assert.match(apertureUi, new RegExp(`data-ap-mode="${mode}"`));
+assert.match(apertureUi, /Map the system\. Keep the receipt attached\./);
+assert.match(apertureUi, /build\/surface-graph\.json/);
+assert.match(apertureUi, /build\/hop-graph\.json/);
+assert.match(apertureUi, /build\/receipt-graph\.json/);
+assert.match(apertureUi, /Every actor line terminates at the bounded surface/);
+assert.match(apertureUi, /no participant-to-participant lines are drawn/i);
+assert.match(apertureUi, /data-open-receipt/);
+assert.doesNotMatch(apertureUi, /sampleData|fixture fallback|embedded demonstration fixture/i);
+assert.match(apertureCore, /function semanticLevelForScale\(scale, previousLevel/);
+assert.match(apertureCore, /function diagnosePathFilters/);
+assert.match(apertureCore, /function selectBudgetedParticipants/);
+assert.match(apertureCss, /\.ap-overview thead\s*\{[^}]*position:\s*sticky/s);
+assert.match(apertureCss, /\.ap-inspector\.is-open/);
+assert.match(apertureCss, /position:\s*fixed/);
+assert.match(apertureCss, /@media \(prefers-reduced-motion: reduce\)/);
+assert.match(standaloneBuilder, /visual-aperture-core\.mjs/);
+assert.match(standaloneBuilder, /visual-aperture-layout\.css/);
+assert.match(standaloneBuilder, /__CLIFFORD_APERTURE_BUNDLED__/);
 
 // The public shell must expose real research objects without upgrading exploratory work.
 assert.match(html, /id="research-tracks"/);
