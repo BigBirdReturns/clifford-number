@@ -34,10 +34,10 @@ jobs:
         run: npm run compile:thesis
       - name: Validate thesis remains evidence-free
         run: npm run validate:thesis
-      - name: Exercise case and synthesis fixtures
-        run: |
-          node test/thesis-case-packet.test.js
-          node test/thesis-assembly.test.js
+      - name: Exercise case-intake fixtures
+        run: node test/thesis-case-packet.test.js
+      - name: Exercise thesis-state fixtures
+        run: node test/thesis-assembly.test.js
       - name: Preserve deterministic intake projections
         uses: actions/upload-artifact@v4
         with:
