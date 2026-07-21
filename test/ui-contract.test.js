@@ -9,10 +9,25 @@ const apertureBootstrap = readFileSync('src/aperture-bootstrap.js', 'utf8');
 const apertureCore = readFileSync('src/visual-aperture-core.mjs', 'utf8');
 const apertureState = readFileSync('src/visual-aperture-state.mjs', 'utf8');
 const apertureWorkspace = readFileSync('src/visual-aperture-workspace.mjs', 'utf8');
+const apertureExport = readFileSync('src/visual-aperture-export.mjs', 'utf8');
 const apertureWorkspaceRuntime = readFileSync('src/visual-aperture-workspace-runtime.js', 'utf8');
+const apertureExportRuntime = readFileSync('src/visual-aperture-export-runtime.js', 'utf8');
 const apertureLoader = readFileSync('src/visual-aperture.js', 'utf8');
-const apertureUi = [apertureWorkspaceRuntime, ...Array.from({ length: 11 }, (_, index) => readFileSync(`src/visual-aperture-part-${index + 1}.js`, 'utf8'))].join('\n');
-const apertureCss = ['layout', 'svg', 'responsive', 'workspace'].map(part => readFileSync(`src/visual-aperture-${part}.css`, 'utf8')).join('\n');
+const apertureUi = [
+  apertureWorkspaceRuntime,
+  apertureExportRuntime,
+  ...Array.from({ length: 11 }, (_, index) => readFileSync(`src/visual-aperture-part-${index + 1}.js`, 'utf8'))
+].join('\n');
+const apertureCss = ['layout', 'svg', 'responsive', 'workspace', 'export']
+  .map(part => readFileSync(`src/visual-aperture-${part}.css`, 'utf8'))
+  .join('\n');
+const thesisManifest = readFileSync('data/research/theses/synthetic-population-infrastructure.json', 'utf8');
+const thesisEvidence = readFileSync('data/research/thesis-evidence/synthetic-population-infrastructure.json', 'utf8');
+const thesisReviews = readFileSync('data/research/thesis-reviews/synthetic-population-infrastructure.json', 'utf8');
+const thesisCore = readFileSync('tools/lib/thesis.mjs', 'utf8');
+const thesisCompiler = readFileSync('tools/compile-thesis.mjs', 'utf8');
+const thesisValidator = readFileSync('tools/validate-thesis.mjs', 'utf8');
+const thesisDoc = readFileSync('docs/thesis-assembly.md', 'utf8');
 const socialCard = readFileSync('assets/social-card.svg', 'utf8');
 const deployWorkflow = readFileSync('.github/workflows/deploy.yml', 'utf8');
 const ciWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8');
@@ -87,7 +102,9 @@ assert.match(html, /<script src="src\/aperture-bootstrap\.js[^"]*" type="module"
 assert.match(apertureBootstrap, /import\('\.\/visual-aperture\.js/);
 assert.match(apertureLoader, /visual-aperture-state\.mjs/);
 assert.match(apertureLoader, /visual-aperture-workspace\.mjs/);
+assert.match(apertureLoader, /visual-aperture-export\.mjs/);
 assert.match(apertureLoader, /visual-aperture-workspace-runtime\.js/);
+assert.match(apertureLoader, /visual-aperture-export-runtime\.js/);
 assert.match(apertureLoader, /visual-aperture-part-\$\{index \+ 1\}\.js/);
 assert.match(apertureBootstrap, /__CLIFFORD_APERTURE_BUNDLED__/);
 assert.doesNotMatch(i18n, /visual-aperture|__CLIFFORD_APERTURE/);
@@ -126,6 +143,46 @@ assert.match(apertureWorkspaceRuntime, /Reset local workspace/);
 assert.match(apertureWorkspaceRuntime, /localStorage\.removeItem\(APERTURE_WORKSPACE_STORAGE_KEY\)/);
 assert.doesNotMatch(apertureWorkspace, /receipt_ids|evidence prose|plain:/i);
 
+// Publication export carries the exact view, receipt IDs, temporal limits, and standing inference boundary.
+assert.match(apertureExport, /APERTURE_EXPORT_SCHEMA_VERSION = 'clifford-aperture-export@1'/);
+assert.match(apertureExport, /function buildApertureExportPacket/);
+assert.match(apertureExport, /graph_effect:\s*'none'/);
+assert.match(apertureExport, /Visual prominence is not an allegation/);
+assert.match(apertureExport, /exact_view_url_required:\s*true/);
+assert.match(apertureExportRuntime, /Export the view with its limits attached\./);
+assert.match(apertureExportRuntime, /Copy evidence JSON/);
+assert.match(apertureExportRuntime, /Download evidence JSON/);
+assert.match(apertureExportRuntime, /Print packet/);
+assert.match(apertureExportRuntime, /temporal_input_valid/);
+assert.match(apertureExportRuntime, /receipt_ids/);
+assert.match(apertureCss, /\.aperture-export\[hidden\]/);
+assert.match(apertureCss, /\.aperture-print-export/);
+
+// The thesis layer is a falsifiable assembly contract, never a machine-generated verdict.
+assert.match(thesisManifest, /"schema_version": "clifford-thesis@1"/);
+assert.match(thesisManifest, /"machine_synthesis_ceiling": "eligible_for_human_synthesis"/);
+assert.match(thesisManifest, /"proposition_id": "P1-state-market-continuity"/);
+assert.match(thesisManifest, /"proposition_id": "P6-infrastructure-synthesis"/);
+assert.match(thesisManifest, /"falsifiers": \[/);
+assert.match(thesisManifest, /"alternative_explanations": \[/);
+assert.match(thesisManifest, /"graph_effect": "none"/);
+assert.match(thesisEvidence, /"evidence_state": "no_case_packets_promoted"/);
+assert.match(thesisEvidence, /"packets": \[\]/);
+assert.match(thesisEvidence, /vendor-denominator-not-frozen/);
+assert.match(thesisReviews, /CI success is not a review\./);
+assert.match(thesisReviews, /No machine process may convert review absence into approval\./);
+assert.match(thesisCore, /eligible_for_human_synthesis/);
+assert.match(thesisCore, /contested_pending_human_synthesis/);
+assert.match(thesisCore, /conclusion_generated:\s*false/);
+assert.match(thesisCore, /bottom_line_generated:\s*false/);
+assert.doesNotMatch(thesisCore, /machine_disposition:\s*['"](?:supported|proved|confirmed)/);
+assert.match(thesisCompiler, /build', 'thesis'/);
+assert.match(thesisCompiler, /renderThesisMarkdown/);
+assert.match(thesisValidator, /compiled thesis JSON is stale/);
+assert.match(thesisValidator, /no generated conclusion/);
+assert.match(thesisDoc, /A case contract or GitHub issue is not an evidence packet\./);
+assert.match(thesisDoc, /It cannot emit `supported`, `proved`, `confirmed thesis`/);
+
 assert.match(apertureCss, /\.aperture-overview thead\s*\{[^}]*position:\s*sticky/s);
 assert.match(apertureCss, /\.aperture-inspector\.is-open/);
 assert.match(apertureCss, /\.aperture-workspace\[hidden\]/);
@@ -135,8 +192,11 @@ assert.match(apertureCss, /@media \(prefers-reduced-motion: reduce\)/);
 assert.match(standaloneBuilder, /visual-aperture-core\.mjs/);
 assert.match(standaloneBuilder, /visual-aperture-state\.mjs/);
 assert.match(standaloneBuilder, /visual-aperture-workspace\.mjs/);
+assert.match(standaloneBuilder, /visual-aperture-export\.mjs/);
 assert.match(standaloneBuilder, /visual-aperture-workspace-runtime\.js/);
+assert.match(standaloneBuilder, /visual-aperture-export-runtime\.js/);
 assert.match(standaloneBuilder, /visual-aperture-workspace\.css/);
+assert.match(standaloneBuilder, /visual-aperture-export\.css/);
 assert.match(standaloneBuilder, /__CLIFFORD_APERTURE_BUNDLED__/);
 
 // The public shell must expose real research objects without upgrading exploratory work.
