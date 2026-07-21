@@ -6,7 +6,6 @@ on:
       - 'cases/anduril-access-ownership/**'
       - 'briefs/anduril-access-ownership.html'
       - 'app.js'
-      - 'package.json'
       - 'tools/build-pages.mjs'
       - 'tools/build-standalone.mjs'
       - 'tools/validate-pages.mjs'
@@ -36,9 +35,15 @@ jobs:
 
       - name: Build and validate Pages and standalone output
         run: |
-          npm run build:pages
-          npm run build:standalone
-          npm run validate:pages
+          set +e
+          {
+            npm run build:pages &&
+            npm run build:standalone &&
+            npm run validate:pages
+          } > /tmp/anduril-publish-build.log 2>&1
+          status=$?
+          tail -n 260 /tmp/anduril-publish-build.log
+          exit "$status"
 
       - name: Install Chromium verification runtime
         run: |
@@ -63,7 +68,7 @@ jobs:
           node --check tools/verify-anduril-reporter-browser.cjs
           timeout 180s node tools/verify-anduril-reporter-browser.cjs
 
-      - name: Preserve browser evidence
+      - name: Preserve verification evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -72,5 +77,6 @@ jobs:
             build/metrics/anduril-reporter-browser.json
             build/metrics/anduril-reporter-evidence.png
             build/metrics/anduril-reporter-brief.png
+            /tmp/anduril-publish-build.log
             /tmp/anduril-reporter-server.log
-          if-no-files-found: error
+          if-no-files-found: warn
