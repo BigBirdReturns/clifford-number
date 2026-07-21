@@ -8,6 +8,7 @@ const workspace = read('src/visual-aperture-workspace.mjs');
 const windowing = read('src/visual-aperture-windowing.mjs');
 const boundedRuntime = read('src/visual-aperture-bounded-runtime.js');
 const addressRuntime = read('src/visual-aperture-bounded-address-runtime.js');
+const exportRuntime = read('src/visual-aperture-export-runtime.js');
 const exportModel = read('src/visual-aperture-export.mjs');
 const exportPreview = read('src/visual-aperture-export-preview-runtime.js');
 const boundedCss = read('src/visual-aperture-bounded.css');
@@ -42,6 +43,10 @@ assert.match(boundedRuntime, /complete_path_retained:\s*true/);
 assert.match(addressRuntime, /overview:\s*\{/);
 assert.match(addressRuntime, /windowStart/);
 
+assert.match(exportRuntime, /function handleExportAction/);
+assert.match(exportPreview, /boundedOriginalHandleExportAction = handleExportAction/);
+assert.match(exportPreview, /handleExportAction = function boundedHandleExportAction/);
+assert.doesNotMatch(exportPreview, /handlePublicationExportAction|currentPublicationPacket|setPublicationExportStatus/);
 assert.match(exportModel, /bounded_rendering_is_not_data_deletion:\s*true/);
 assert.match(exportModel, /complete path is retained in this packet/i);
 assert.match(exportModel, /the export retains every row/i);
