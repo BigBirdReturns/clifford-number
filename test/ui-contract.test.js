@@ -94,8 +94,8 @@ assert.doesNotMatch(apertureUi, /sampleData|fixture fallback|embedded demonstrat
 assert.match(apertureCore, /function semanticLevelForScale\(scale, previousLevel/);
 assert.match(apertureCore, /function diagnosePathFilters/);
 assert.match(apertureCore, /function selectBudgetedParticipants/);
-assert.match(apertureCss, /\.ap-overview thead\s*\{[^}]*position:\s*sticky/s);
-assert.match(apertureCss, /\.ap-inspector\.is-open/);
+assert.match(apertureCss, /\.aperture-overview thead\s*\{[^}]*position:\s*sticky/s);
+assert.match(apertureCss, /\.aperture-inspector\.is-open/);
 assert.match(apertureCss, /position:\s*fixed/);
 assert.match(apertureCss, /@media \(prefers-reduced-motion: reduce\)/);
 assert.match(standaloneBuilder, /visual-aperture-core\.mjs/);
