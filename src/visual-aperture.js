@@ -1,12 +1,14 @@
 import * as core from './visual-aperture-core.mjs';
 import * as addressState from './visual-aperture-state.mjs';
 import * as workspaceModel from './visual-aperture-workspace.mjs';
+import * as exportModel from './visual-aperture-export.mjs';
 
-Object.assign(globalThis, core, addressState, workspaceModel);
+Object.assign(globalThis, core, addressState, workspaceModel, exportModel);
 
-const RUNTIME_VERSION = '20260721-workspace';
+const RUNTIME_VERSION = '20260721-export';
 const runtimeUrls = [
   `./visual-aperture-workspace-runtime.js?v=${RUNTIME_VERSION}`,
+  `./visual-aperture-export-runtime.js?v=${RUNTIME_VERSION}`,
   ...Array.from({ length: 11 }, (_, index) => `./visual-aperture-part-${index + 1}.js?v=${RUNTIME_VERSION}`)
 ];
 
