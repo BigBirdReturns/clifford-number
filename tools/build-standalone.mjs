@@ -25,7 +25,11 @@ const embedded = Object.fromEntries([...new Set(dataPaths)].map(file => [file, r
 const helpers = [read('src/ui-utils.js'), read('src/i18n.js')]
   .join('\n\n')
   .replace(/^export\s+/gm, '');
-const apertureModuleFiles = ['src/visual-aperture-core.mjs', 'src/visual-aperture-state.mjs'];
+const apertureModuleFiles = [
+  'src/visual-aperture-core.mjs',
+  'src/visual-aperture-state.mjs',
+  'src/visual-aperture-workspace.mjs'
+];
 const apertureModuleRecords = apertureModuleFiles.map(file => {
   const source = read(file);
   const names = [...source.matchAll(/^export\s+(?:const|function|class)\s+(\w+)/gm)].map(match => match[1]);
@@ -36,8 +40,11 @@ const apertureNames = [...new Set(apertureModuleRecords.flatMap(record => record
 const apertureModules = apertureModuleRecords
   .map(record => `(function apertureModule() {\n${record.body}\nObject.assign(globalThis, { ${record.names.join(', ')} });\n})();`)
   .join('\n');
-const apertureParts = Array.from({ length: 11 }, (_, index) => read(`src/visual-aperture-part-${index + 1}.js`)).join('\n\n');
-const apertureBundle = `(function visualApertureBundle() {\n${apertureModules}\n(function visualApertureRuntime() {\nconst { ${apertureNames.join(', ')} } = globalThis;\n${apertureParts}\n})();\n})();`;
+const apertureRuntime = [
+  read('src/visual-aperture-workspace-runtime.js'),
+  ...Array.from({ length: 11 }, (_, index) => read(`src/visual-aperture-part-${index + 1}.js`))
+].join('\n\n');
+const apertureBundle = `(function visualApertureBundle() {\n${apertureModules}\n(function visualApertureRuntime() {\nconst { ${apertureNames.join(', ')} } = globalThis;\n${apertureRuntime}\n})();\n})();`;
 let app = read('app.js')
   .replace(/^import .*?;\r?\n/gm, '')
   .replace(
@@ -45,7 +52,13 @@ let app = read('app.js')
     `async function loadJson(path) {\n  if (!Object.hasOwn(EMBEDDED_DATA, path)) throw new Error(\`embedded release does not contain \${path}\`);\n  return structuredClone(EMBEDDED_DATA[path]);\n}`
   );
 const inlineApp = escapeScript(`globalThis.__CLIFFORD_APERTURE_BUNDLED__ = true;\nconst EMBEDDED_DATA = ${JSON.stringify(embedded)};\n${helpers}\n${app}\n${apertureBundle}`);
-const inlineCss = [read('styles.css'), read('src/visual-aperture-layout.css'), read('src/visual-aperture-svg.css'), read('src/visual-aperture-responsive.css')].join('\n\n');
+const inlineCss = [
+  read('styles.css'),
+  read('src/visual-aperture-layout.css'),
+  read('src/visual-aperture-svg.css'),
+  read('src/visual-aperture-responsive.css'),
+  read('src/visual-aperture-workspace.css')
+].join('\n\n');
 
 let html = read('index.html')
   .replace(/\s*<link rel="preconnect" href="https:\/\/fonts\.googleapis\.com">/, '')
