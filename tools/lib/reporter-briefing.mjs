@@ -126,6 +126,7 @@ export function validateReporterBriefing(spec, caseItem) {
   if (spec?.graph_effect !== 'none') errors.push('graph_effect must be none');
   if (spec?.conclusion_generated !== false) errors.push('conclusion_generated must be false');
   if (!ISO_DAY.test(spec?.as_of ?? '')) errors.push('as_of must be an ISO day');
+  if (spec?.as_of !== caseItem?.as_of) errors.push('as_of must match compiled case as_of');
   if (!ISO_DAY.test(spec?.published_at ?? '')) errors.push('published_at must be an ISO day');
   if (!text(spec?.title) || !text(spec?.dek)) errors.push('title and dek are required');
   if (caseItem?.presentation !== 'reporter_briefing') errors.push('compiled case presentation must be reporter_briefing');
@@ -172,6 +173,7 @@ export function validateReporterBriefing(spec, caseItem) {
     if (!CLAIM_STATUSES.has(claim.claim_status)) errors.push(`briefing claim ${claimId} has invalid status ${claim.claim_status}`);
     if (!text(claim.plain)) errors.push(`briefing claim ${claimId} lacks plain text`);
     if (!text(claim.qualification)) errors.push(`briefing claim ${claimId} lacks a qualification`);
+    if (!(claim.receipt_ids?.length > 0)) errors.push(`briefing claim ${claimId} has no receipts`);
     for (const receiptId of claim.receipt_ids ?? []) if (!receipts.has(receiptId)) errors.push(`briefing claim ${claimId} references missing receipt ${receiptId}`);
   }
 

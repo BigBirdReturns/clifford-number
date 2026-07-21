@@ -52,6 +52,19 @@ const unsafePath = structuredClone(spec);
 unsafePath.output_path = '../brief.html';
 assert.ok(validateReporterBriefing(unsafePath, caseItem).some(error => /safe briefs/.test(error)));
 
+const mismatchedAsOf = structuredClone(spec);
+mismatchedAsOf.as_of = '2026-07-16';
+assert.ok(validateReporterBriefing(mismatchedAsOf, caseItem).some(error => /as_of must match compiled case as_of/.test(error)));
+assert.throws(() => compileReporterBriefing(mismatchedAsOf, caseItem), /as_of must match compiled case as_of/);
+
+const receiptlessCase = structuredClone(caseItem);
+const receiptlessClaim = receiptlessCase.events
+  .flatMap(event => event.claims ?? [])
+  .find(claim => claim.claim_id === spec.threads[0].claim_ids[0]);
+receiptlessClaim.receipt_ids = [];
+assert.ok(validateReporterBriefing(spec, receiptlessCase).some(error => /briefing claim .* has no receipts/.test(error)));
+assert.throws(() => compileReporterBriefing(spec, receiptlessCase), /briefing claim .* has no receipts/);
+
 const unreviewedApproval = structuredClone(spec);
 unreviewedApproval.publication.status = 'approved';
 unreviewedApproval.publication.history[0].status = 'approved';
