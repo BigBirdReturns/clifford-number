@@ -1,15 +1,16 @@
 export const APERTURE_STATE_VERSION = '1';
 
 export const APERTURE_QUERY_KEYS = Object.freeze([
-  'ap_v', 'ap_mode',
+  'ap_v', 'ap_mode', 'ap_overview_page', 'ap_overview_size',
   'ap_map_scale', 'ap_map_level', 'ap_map_cluster', 'ap_map_type', 'ap_map_surface', 'ap_map_actor',
-  'ap_route_from', 'ap_route_to', 'ap_route_asof', 'ap_route_evidence', 'ap_route_step', 'ap_route_actor',
+  'ap_route_from', 'ap_route_to', 'ap_route_asof', 'ap_route_evidence', 'ap_route_step', 'ap_route_window', 'ap_route_actor',
   'ap_surface_id', 'ap_surface_query', 'ap_surface_asof', 'ap_surface_evidence', 'ap_surface_budget', 'ap_surface_pins', 'ap_surface_actor'
 ]);
 
 const MODES = new Set(['map', 'route', 'surface']);
 const MAP_LEVELS = new Set(['corpus', 'machine', 'surface', 'evidence']);
 const EVIDENCE_FLOORS = new Set(['open', 'reported', 'primary_public', 'official']);
+const OVERVIEW_PAGE_SIZES = new Set([25, 50, 100]);
 const MAX_PINS = 36;
 
 function parameters(input = '') {
@@ -44,6 +45,11 @@ function enumValue(value, allowed, fallback = null) {
   return cleaned && allowed.has(cleaned) ? cleaned : fallback;
 }
 
+function overviewPageSize(value, fallback = null) {
+  const parsed = optionalInteger(value, 25, 100);
+  return parsed !== null && OVERVIEW_PAGE_SIZES.has(parsed) ? parsed : fallback;
+}
+
 function pins(value) {
   const values = String(value || '')
     .split(',')
@@ -65,6 +71,10 @@ export function readApertureState(input = '') {
   return {
     version: APERTURE_STATE_VERSION,
     mode,
+    overview: {
+      page: optionalInteger(params.get('ap_overview_page'), 1, 999999),
+      pageSize: overviewPageSize(params.get('ap_overview_size'))
+    },
     map: {
       scale: optionalNumber(params.get('ap_map_scale'), 1, 5.4),
       level: enumValue(params.get('ap_map_level'), MAP_LEVELS),
@@ -78,7 +88,8 @@ export function readApertureState(input = '') {
       toId: token(params.get('ap_route_to')),
       asOf: text(params.get('ap_route_asof'), 10) ?? '',
       evidenceFloor: enumValue(params.get('ap_route_evidence'), EVIDENCE_FLOORS),
-      selectedStep: optionalInteger(params.get('ap_route_step'), 0, 999),
+      selectedStep: optionalInteger(params.get('ap_route_step'), 0, 999999),
+      windowStart: optionalInteger(params.get('ap_route_window'), 0, 999999),
       actorId: token(params.get('ap_route_actor'))
     },
     surface: {
@@ -98,12 +109,15 @@ export function writeApertureState(snapshot, input = '') {
   for (const key of APERTURE_QUERY_KEYS) params.delete(key);
 
   const mode = enumValue(snapshot?.mode, MODES, 'map');
+  const overview = snapshot?.overview ?? {};
   const map = snapshot?.map ?? {};
   const route = snapshot?.route ?? {};
   const surface = snapshot?.surface ?? {};
 
   set(params, 'ap_v', APERTURE_STATE_VERSION);
   set(params, 'ap_mode', mode);
+  set(params, 'ap_overview_page', Number.isInteger(overview.page) && overview.page >= 1 ? overview.page : 1);
+  set(params, 'ap_overview_size', overviewPageSize(overview.pageSize, 50));
   set(params, 'ap_map_scale', Number.isFinite(Number(map.scale)) ? Math.max(1, Math.min(5.4, Number(map.scale))).toFixed(2).replace(/\.?0+$/, '') : '1');
   set(params, 'ap_map_level', enumValue(map.level, MAP_LEVELS, 'corpus'));
   set(params, 'ap_map_cluster', token(map.clusterId) ?? '');
@@ -116,6 +130,7 @@ export function writeApertureState(snapshot, input = '') {
   set(params, 'ap_route_asof', text(route.asOf, 10) ?? '');
   set(params, 'ap_route_evidence', enumValue(route.evidenceFloor, EVIDENCE_FLOORS, 'open'));
   set(params, 'ap_route_step', Number.isInteger(route.selectedStep) && route.selectedStep >= 0 ? route.selectedStep : '');
+  set(params, 'ap_route_window', Number.isInteger(route.windowStart) && route.windowStart >= 0 ? route.windowStart : 0);
   set(params, 'ap_route_actor', token(route.actorId) ?? '');
 
   set(params, 'ap_surface_id', token(surface.surfaceId) ?? '');

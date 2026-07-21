@@ -8,7 +8,7 @@ import {
 } from '../src/visual-aperture-export.mjs';
 
 const generatedAt = '2026-07-21T12:00:00Z';
-const exactViewUrl = 'https://example.test/clifford-number/?ap_v=1&ap_mode=route#receipts/all';
+const exactViewUrl = 'https://example.test/clifford-number/?ap_v=1&ap_mode=route&ap_overview_page=2&ap_route_window=24#receipts/all';
 
 const routePacket = buildApertureExportPacket({
   mode: 'route',
@@ -19,6 +19,8 @@ const routePacket = buildApertureExportPacket({
     to: { actor_id: 'anchor', actor_label: 'Anchor Actor' },
     as_of: '2024',
     evidence_floor: 'primary_public',
+    display: { total_rows: 2, visible_from: 1, visible_until: 2, page: 1, page_size: 50, total_pages: 1, rendering: 'paginated_complete_rows_reachable' },
+    route_window: { visible_step_from: 1, visible_step_until: 2, total_steps: 2, max_visible_steps: 24, complete_path_retained: true },
     path: {
       number: 99,
       hops: [
@@ -55,6 +57,7 @@ assert.equal(routePacket.schema_version, APERTURE_EXPORT_SCHEMA_VERSION);
 assert.equal(routePacket.generated_at, '2026-07-21T12:00:00.000Z');
 assert.equal(routePacket.exact_view_url, exactViewUrl);
 assert.equal(routePacket.interpretation_contract.graph_effect, 'none');
+assert.equal(routePacket.interpretation_contract.bounded_rendering_is_not_data_deletion, true);
 assert.equal(routePacket.interpretation_contract.caveat, APERTURE_EXPORT_BOUNDARY);
 assert.equal(routePacket.view.path.number, 2, 'path length must derive from emitted hops, not a supplied claim');
 assert.deepEqual(routePacket.receipt_ids, ['receipt-1', 'receipt-2', 'receipt-3']);
@@ -62,8 +65,16 @@ assert.deepEqual(routePacket.view.path.hops.map(hop => hop.surface.surface_label
 assert.equal(routePacket.view.path.hops[0].surface.from_role, 'Member');
 assert.equal(routePacket.view.path.hops[0].surface.to_role, 'Chair');
 assert.equal(routePacket.view.path.hops[0].surface.valid_from, '2024-01-01');
+assert.deepEqual(routePacket.view.display, {
+  total_rows: 2, visible_from: 1, visible_until: 2, page: 1, page_size: 50, total_pages: 1,
+  rendering: 'paginated_complete_rows_reachable'
+});
+assert.deepEqual(routePacket.view.route_window, {
+  visible_step_from: 1, visible_step_until: 2, total_steps: 2, max_visible_steps: 24, complete_path_retained: true
+});
 assert.match(routePacket.caption, /Actor A → Policy Board → Actor B/);
 assert.match(routePacket.caption, /primary public evidence floor/);
+assert.match(routePacket.caption, /All 2 route steps are visible/);
 assert.match(routePacket.caption, new RegExp(APERTURE_EXPORT_BOUNDARY.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 assert.match(routePacket.caption, /Exact view:/);
 assert.doesNotMatch(JSON.stringify(routePacket), /must not survive|probability/);
@@ -85,7 +96,6 @@ assert.match(blocked.caption, /No actor-to-actor route/);
 assert.match(blocked.caption, /not proof that no relationship exists/);
 assert.equal(blocked.view.table.rows.length, 0);
 
-// An unparseable temporal control is refused, never published as an absent route.
 const refused = buildApertureExportPacket({
   mode: 'route', generatedAt, exactViewUrl,
   view: {
@@ -102,6 +112,32 @@ assert.equal(refused.view.table.rows.length, 0);
 assert.match(refused.caption, /refused rather than reported/);
 assert.doesNotMatch(refused.caption, /No actor-to-actor route|survives the current compiled corpus/);
 
+const longHops = Array.from({ length: 30 }, (_, index) => ({
+  from: { actor_id: `actor-${index}`, actor_label: `Actor ${index}` },
+  to: { actor_id: `actor-${index + 1}`, actor_label: `Actor ${index + 1}` },
+  surface: {
+    surface_id: `surface-${index + 1}`, surface_label: `Surface ${index + 1}`, surface_type: 'event_surface',
+    from_role: 'Member', to_role: 'Member', evidence_class: 'official',
+    valid_from: '2024', valid_until: '2024', temporal_status: 'dated', receipt_ids: [`receipt-${index + 1}`]
+  }
+}));
+const longRoute = buildApertureExportPacket({
+  mode: 'route', generatedAt, exactViewUrl,
+  view: {
+    from: longHops[0].from,
+    to: longHops.at(-1).to,
+    evidence_floor: 'official',
+    path: { hops: longHops },
+    display: { total_rows: 30, visible_from: 26, visible_until: 30, page: 2, page_size: 25, total_pages: 2 },
+    route_window: { visible_step_from: 7, visible_step_until: 30, total_steps: 30, max_visible_steps: 24, complete_path_retained: true }
+  }
+});
+assert.equal(longRoute.view.path.hops.length, 30, 'route windowing must not truncate the packet path');
+assert.equal(longRoute.view.table.rows.length, 30, 'route pagination must not truncate the packet table');
+assert.match(longRoute.caption, /middle sequence of 18 steps is omitted from this caption but retained in the packet/);
+assert.match(longRoute.caption, /browser shows route steps 7–30 of 30/);
+assert.match(longRoute.caption, /browser shows rows 26–30 of 30/);
+
 const mapPacket = buildApertureExportPacket({
   mode: 'map', generatedAt, exactViewUrl: 'https://example.test/?ap_v=1&ap_mode=map',
   view: {
@@ -111,7 +147,8 @@ const mapPacket = buildApertureExportPacket({
       { id: 'policy', label: 'Policy and government', surface_count: 2, actor_count: 3, hop_eligible: 1, context_only: 1 },
       { id: 'capital', label: 'Capital and finance', surface_count: 2, actor_count: 2, hop_eligible: 2, context_only: 0 }
     ],
-    corridors: [{ from_family_id: 'capital', to_family_id: 'policy', shared_actor_count: 1 }]
+    corridors: [{ from_family_id: 'capital', to_family_id: 'policy', shared_actor_count: 1 }],
+    display: { total_rows: 2, visible_from: 1, visible_until: 2, page: 1, page_size: 50, total_pages: 1 }
   }
 });
 assert.equal(mapPacket.view.corridors[0].graph_effect, 'none');
@@ -128,6 +165,7 @@ const surfacePacket = buildApertureExportPacket({
     },
     query: 'official', as_of: '2026', evidence_floor: 'reported', bracket_budget: 18,
     total_actors: 115, hidden_by_budget: 96, filtered_out: 1, pinned_actor_ids: ['actor-b', 'actor-a'],
+    display: { total_rows: 2, visible_from: 1, visible_until: 2, page: 1, page_size: 50, total_pages: 1 },
     visible_participants: [
       { actor_id: 'actor-a', actor_label: 'Actor A', role: 'Public official', participation_type: 'listed', time_start: '2026', time_end: '2026', evidence_class: 'primary_public', receipt_ids: ['receipt-a'], pinned: true },
       { actor_id: 'actor-b', actor_label: 'Actor B', role: 'Company leader', participation_type: 'listed', time_start: null, time_end: null, evidence_class: 'reported', receipt_ids: ['receipt-b'], pinned: false }
@@ -149,7 +187,8 @@ const moduleFiles = [
   'src/visual-aperture-core.mjs',
   'src/visual-aperture-state.mjs',
   'src/visual-aperture-workspace.mjs',
-  'src/visual-aperture-export.mjs'
+  'src/visual-aperture-export.mjs',
+  'src/visual-aperture-windowing.mjs'
 ];
 const moduleRecords = moduleFiles.map(file => {
   const source = readFileSync(file, 'utf8');
@@ -161,7 +200,11 @@ const modules = moduleRecords.map(record => `(function apertureModule() {\n${rec
 const runtime = [
   readFileSync('src/visual-aperture-workspace-runtime.js', 'utf8'),
   readFileSync('src/visual-aperture-export-runtime.js', 'utf8'),
-  ...Array.from({ length: 11 }, (_, index) => readFileSync(`src/visual-aperture-part-${index + 1}.js`, 'utf8'))
+  ...Array.from({ length: 10 }, (_, index) => readFileSync(`src/visual-aperture-part-${index + 1}.js`, 'utf8')),
+  readFileSync('src/visual-aperture-bounded-runtime.js', 'utf8'),
+  readFileSync('src/visual-aperture-export-preview-runtime.js', 'utf8'),
+  readFileSync('src/visual-aperture-part-11.js', 'utf8'),
+  readFileSync('src/visual-aperture-bounded-address-runtime.js', 'utf8')
 ].join('\n\n');
 const standaloneShape = `(function visualApertureBundle() {\n${modules}\n(function visualApertureRuntime() {\nconst { ${names.join(', ')} } = globalThis;\n${runtime}\n})();\n})();`;
 assert.doesNotThrow(() => new Function(standaloneShape), 'the publication runtime must parse in the exact standalone concatenation order');
