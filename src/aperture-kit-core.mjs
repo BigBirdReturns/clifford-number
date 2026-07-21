@@ -78,8 +78,8 @@ export function selectBudgetedItems(items, {
     const pinDelta = Number(rightPinned) - Number(leftPinned);
     return pinDelta || compare(left, right);
   });
-  const pinned = matches.filter(item => pins.has(String(idFor(item) ?? ''));
-  const unpinned = matches.filter(item => !pins.has(String(idFor(item) ?? ''));
+  const pinned = matches.filter(item => pins.has(String(idFor(item) ?? '')));
+  const unpinned = matches.filter(item => !pins.has(String(idFor(item) ?? '')));
   const target = Math.max(0, Number(budget) || 0, pinned.length);
   const visible = [...pinned, ...unpinned.slice(0, Math.max(0, target - pinned.length))];
   return {
