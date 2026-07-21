@@ -9,6 +9,7 @@ on:
       - 'tools/visual-aperture-scale-fixture.mjs'
       - 'tools/measure-visual-aperture-scale.mjs'
       - 'tools/measure-visual-aperture-browser.cjs'
+      - 'tools/measure-visual-aperture-route-browser.cjs'
       - 'tools/serve-static.mjs'
       - 'test/visual-aperture-scale.test.js'
       - 'docs/visual-aperture-scale-baseline.md'
@@ -54,10 +55,15 @@ jobs:
           cat /tmp/clifford-scale-server.log
           exit 1
 
-      - name: Measure the real aperture in Chromium
+      - name: Measure semantic levels and dense surfaces in Chromium
         run: |
           node --check tools/measure-visual-aperture-browser.cjs
           timeout 300s node tools/measure-visual-aperture-browser.cjs
+
+      - name: Measure the adversarial route in Chromium
+        run: |
+          node --check tools/measure-visual-aperture-route-browser.cjs
+          timeout 300s node tools/measure-visual-aperture-route-browser.cjs
 
       - name: Preserve measurement artifacts
         if: always()
@@ -69,6 +75,8 @@ jobs:
             build/metrics/visual-aperture-scale.md
             build/metrics/visual-aperture-browser.json
             build/metrics/visual-aperture-browser.md
+            build/metrics/visual-aperture-route-browser.json
+            build/metrics/visual-aperture-route-browser.md
             build/metrics/*.png
             /tmp/clifford-scale-server.log
           if-no-files-found: error
