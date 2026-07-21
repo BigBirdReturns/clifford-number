@@ -1,0 +1,49 @@
+name: QA export temporal browser states
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Reproduce the release build
+        run: npm run release:check
+      - name: Install browser runtime
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start the public app
+        run: |
+          node tools/serve-static.mjs 8080 > /tmp/clifford-server.log 2>&1 &
+          echo $! > /tmp/clifford-server.pid
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8080/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/clifford-server.log
+          exit 1
+      - name: Check the browser harness
+        run: node --check test/browser-export-temporal.cjs 2>&1 | tee browser-node-check.log
+      - name: Exercise refused, blocked, and traversable exports in Chromium
+        run: timeout 180s node test/browser-export-temporal.cjs
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: export-temporal-browser-qa
+          path: |
+            test/browser-export-temporal.cjs
+            browser-node-check.log
+            browser-qa/result.json
+            /tmp/clifford-server.log
+          if-no-files-found: warn
