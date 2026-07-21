@@ -10,7 +10,10 @@ const RUNTIME_VERSION = '20260721-bounded-rendering';
 const runtimeUrls = [
   `./visual-aperture-workspace-runtime.js?v=${RUNTIME_VERSION}`,
   `./visual-aperture-export-runtime.js?v=${RUNTIME_VERSION}`,
-  ...Array.from({ length: 11 }, (_, index) => `./visual-aperture-part-${index + 1}.js?v=${RUNTIME_VERSION}`)
+  ...Array.from({ length: 10 }, (_, index) => `./visual-aperture-part-${index + 1}.js?v=${RUNTIME_VERSION}`),
+  `./visual-aperture-bounded-runtime.js?v=${RUNTIME_VERSION}`,
+  `./visual-aperture-part-11.js?v=${RUNTIME_VERSION}`,
+  `./visual-aperture-bounded-address-runtime.js?v=${RUNTIME_VERSION}`
 ];
 
 for (const relativeUrl of runtimeUrls) {
