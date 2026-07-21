@@ -1,9 +1,6 @@
 name: One-shot receipt-custody integration
 
 on:
-  push:
-    branches:
-      - agent/thesis-state-market-receipt-custody
   pull_request:
     paths:
       - 'tools/integrate-state-market-receipt-custody.py'
@@ -25,73 +22,8 @@ permissions:
   contents: write
 
 jobs:
-  dry-run:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Apply the integration in a disposable worktree
-        env:
-          RECEIPT_CUSTODY_DRY_RUN: '1'
-        run: python tools/integrate-state-market-receipt-custody.py
-      - name: Align public receipt accounting
-        run: python tools/update-receipt-custody-map.py
-      - name: Compile case packets
-        run: |
-          set -o pipefail
-          npm run compile:case-packets 2>&1 | tee compile-case-packets.log
-      - name: Validate case packets
-        run: |
-          set -o pipefail
-          npm run validate:case-packets 2>&1 | tee validate-case-packets.log
-      - name: Compile thesis coverage
-        run: |
-          set -o pipefail
-          npm run compile:thesis 2>&1 | tee compile-thesis.log
-      - name: Validate thesis ceiling
-        run: |
-          set -o pipefail
-          npm run validate:thesis 2>&1 | tee validate-thesis.log
-      - name: Validate receipt custody
-        run: |
-          set -o pipefail
-          npm run validate:state-market-receipts 2>&1 | tee validate-receipts.log
-      - name: Run repository release gate
-        run: |
-          set -o pipefail
-          npm run release:check 2>&1 | tee release-check.log
-      - name: Preserve the verified integration tree and diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: receipt-custody-integration-diagnostics
-          path: |
-            package.json
-            data/research/thesis-evidence/synthetic-population-infrastructure.json
-            data/research/clifford-cross-corpus-public-interest-map.json
-            tools/validate-thesis-case-packets.mjs
-            tools/validate-pages.mjs
-            test/thesis-case-packet.test.js
-            test/thesis-state-market-receipts.test.js
-            docs/thesis-state-market-receipt-custody.md
-            .github/workflows/thesis-state-market-receipts.yml
-            *-case-packets.log
-            *-thesis.log
-            validate-receipts.log
-            release-check.log
-            build/thesis/case-packet-index.json
-            build/thesis/case-packet-index.md
-            build/thesis/case-packets/*.json
-            build/thesis/case-packets/*.md
-            build/thesis/synthetic-population-infrastructure.json
-            build/thesis/synthetic-population-infrastructure.md
-          if-no-files-found: warn
-
-  apply:
-    if: github.event_name == 'push' && github.actor != 'github-actions[bot]'
+  finalize:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -101,23 +33,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Complete source, test, documentation, and workflow contracts
+      - name: Complete the source and publication contracts
         run: |
           python tools/integrate-state-market-receipt-custody.py
           python tools/update-receipt-custody-map.py
-      - name: Compile case packets
-        run: npm run compile:case-packets
-      - name: Validate case packets
-        run: npm run validate:case-packets
-      - name: Compile thesis coverage
-        run: npm run compile:thesis
-      - name: Validate thesis ceiling
-        run: npm run validate:thesis
-      - name: Validate receipt custody
+      - name: Compile and validate case packets
+        run: |
+          npm run compile:case-packets
+          npm run validate:case-packets
+      - name: Compile and validate the thesis ceiling
+        run: |
+          npm run compile:thesis
+          npm run validate:thesis
+      - name: Validate immutable receipt custody
         run: npm run validate:state-market-receipts
-      - name: Run repository release gate
+      - name: Run the complete repository release gate
         run: npm run release:check
-      - name: Commit the integrated tranche
+      - name: Commit only the verified final tree
         run: |
           rm -f tools/update-receipt-custody-map.py
           git config user.name github-actions[bot]
