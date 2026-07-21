@@ -20,6 +20,21 @@ function reference(ids, records, owner, field, errors) {
   for (const id of ids ?? []) if (!records.has(id)) errors.push(`${owner} references missing ${field} ${id}`);
 }
 
+function validateBriefingMetadata(caseItem, errors) {
+  if (caseItem.presentation !== 'reporter_briefing') return;
+  const briefing = caseItem.briefing;
+  if (!briefing) {
+    errors.push('reporter_briefing case requires briefing metadata');
+    return;
+  }
+  if (briefing.schema_version !== 'reporter-briefing@1') errors.push('reporter briefing schema_version must be reporter-briefing@1');
+  if (!/^\d+\.\d+\.\d+$/.test(briefing.version ?? '')) errors.push('reporter briefing version must be semantic version x.y.z');
+  if (briefing.source !== `cases/${caseItem.case_id}/briefing.json`) errors.push('reporter briefing source must be cases/<case-id>/briefing.json');
+  if (briefing.href !== `briefs/${caseItem.case_id}.html`) errors.push('reporter briefing href must be briefs/<case-id>.html');
+  if (briefing.format !== 'compiled_static_html') errors.push('reporter briefing format must be compiled_static_html');
+  if (!briefing.audience || !briefing.label || !briefing.description) errors.push('reporter briefing metadata requires audience, label, and description');
+}
+
 export function validateCaseLedger(data) {
   const errors = [];
   const receipts = index(data.receipts, 'receipt_id', errors);
@@ -31,6 +46,7 @@ export function validateCaseLedger(data) {
   if (data.case.schema_version !== 'case-ledger@1') errors.push('case schema_version must be case-ledger@1');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data.case.as_of ?? '')) errors.push('case as_of must be an ISO day');
   if (!data.case.boundary || !data.case.disclaimer) errors.push('case must carry boundary and disclaimer text');
+  validateBriefingMetadata(data.case, errors);
 
   for (const receipt of data.receipts) {
     if (!receipt.label || !receipt.source_type || !receipt.evidence_class) errors.push(`receipt ${receipt.receipt_id} lacks source metadata`);
@@ -145,7 +161,11 @@ export function compileAllCases() {
       title: item.title,
       subtitle: item.subtitle,
       as_of: item.as_of,
+      published_at: item.published_at,
       status: item.status,
+      presentation: item.presentation,
+      featured_priority: item.featured_priority,
+      briefing: item.briefing,
       counts: item.counts,
       claim_status_counts: item.claim_status_counts,
       href: `build/cases/${item.case_id}.json`
