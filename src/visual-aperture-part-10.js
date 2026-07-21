@@ -1,4 +1,5 @@
 function handleAction(button) {
+  if (handleExportAction(button)) return;
   if (handleWorkspaceAction(button)) return;
   const action = button.dataset.apAction;
   if (action === 'sheet-toggle') {
