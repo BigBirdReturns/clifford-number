@@ -29,7 +29,7 @@ const apertureCoreSource = read('src/visual-aperture-core.mjs');
 const apertureCoreNames = [...apertureCoreSource.matchAll(/^export\s+(?:const|function|class)\s+(\w+)/gm)].map(match => match[1]);
 const apertureCore = apertureCoreSource.replace(/^export\s+/gm, '');
 const apertureParts = Array.from({ length: 11 }, (_, index) => read(`src/visual-aperture-part-${index + 1}.js`)).join('\n\n');
-const apertureBundle = `(function visualApertureBundle() {\n${apertureCore}\nObject.assign(globalThis, { ${apertureCoreNames.join(', ')} });\n(function visualApertureRuntime() {\n${apertureParts}\n})();\n})();`;
+const apertureBundle = `(function visualApertureBundle() {\n${apertureCore}\nObject.assign(globalThis, { ${apertureCoreNames.join(', ')} });\n(function visualApertureRuntime() {\nconst { ${apertureCoreNames.join(', ')} } = globalThis;\n${apertureParts}\n})();\n})();`;
 let app = read('app.js')
   .replace(/^import .*?;\r?\n/gm, '')
   .replace(
