@@ -66,7 +66,7 @@ async function main() {
 
       await page.setViewportSize({ width: 1440, height: 1100 });
       await page.goto(`http://127.0.0.1:8080/#case/${entry.case_id}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
-      await waitForCase(page, entry.title);
+      await waitForCase(page, caseItem.title);
       const caseBriefLink = page.locator('#detail .case-brief-link');
       assert.equal(await caseBriefLink.count(), 1);
       assert.equal(await caseBriefLink.getAttribute('href'), entry.output_path);
@@ -84,7 +84,7 @@ async function main() {
       }
 
       await page.goto(`http://127.0.0.1:8080/dist/Clifford-Number-standalone.html#case/${entry.case_id}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
-      await waitForCase(page, entry.title);
+      await waitForCase(page, caseItem.title);
       assert.equal(await page.locator('#detail .case-brief-link').count(), 0, 'portable release must suppress external briefing links');
 
       result.briefings.push({
