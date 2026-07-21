@@ -100,6 +100,7 @@ async function desktopMeasurements(browser, fixture) {
     route_mode: {},
     interaction_measurements_ms: [],
     long_tasks: [],
+    live_dom_nodes: null,
     dom_counters: null,
     console_errors: measured.consoleErrors,
     page_errors: measured.pageErrors
@@ -222,6 +223,8 @@ async function desktopMeasurements(browser, fixture) {
 
     result.long_tasks = await page.evaluate(() => globalThis.__apertureScaleLongTasks || []);
     const session = await context.newCDPSession(page);
+    result.live_dom_nodes = await page.evaluate(() => document.getElementsByTagName('*').length);
+    await session.send('HeapProfiler.collectGarbage');
     result.dom_counters = await session.send('Memory.getDOMCounters');
     result.reduced_motion = await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches);
     const maximumInteraction = Math.max(...result.interaction_measurements_ms);
@@ -230,12 +233,14 @@ async function desktopMeasurements(browser, fixture) {
       maximum_interaction_ms: round(maximumInteraction),
       maximum_long_task_ms: round(maximumLongTask),
       maximum_overview_rows: Math.max(...Object.values(result.semantic_levels).map(item => item.overview_rows), result.surface_mode.budget_36_overview_rows, result.route_mode.overview_rows),
-      dom_nodes: result.dom_counters.nodes
+      live_dom_nodes: result.live_dom_nodes,
+      retained_dom_nodes: result.dom_counters.nodes
     };
     assert.ok(maximumInteraction <= MAX_INTERACTION_MS, `post-mount interaction ${maximumInteraction}ms exceeds ${MAX_INTERACTION_MS}ms`);
     assert.ok(maximumLongTask <= MAX_LONG_TASK_MS, `post-mount long task ${maximumLongTask}ms exceeds ${MAX_LONG_TASK_MS}ms`);
     assert.ok(result.budgets.maximum_overview_rows <= MAX_OVERVIEW_ROWS);
-    assert.ok(result.dom_counters.nodes <= MAX_DOM_NODES, `DOM nodes ${result.dom_counters.nodes} exceed ${MAX_DOM_NODES}`);
+    assert.ok(result.live_dom_nodes <= MAX_DOM_NODES, `live DOM nodes ${result.live_dom_nodes} exceed ${MAX_DOM_NODES}`);
+    assert.ok(result.dom_counters.nodes <= MAX_DOM_NODES, `retained DOM nodes ${result.dom_counters.nodes} exceed ${MAX_DOM_NODES}`);
     assert.equal(result.reduced_motion, false);
     assert.deepEqual(result.console_errors, []);
     assert.deepEqual(result.page_errors, []);
@@ -337,7 +342,8 @@ async function main() {
       `- Maximum overview rows: ${output.desktop?.budgets?.maximum_overview_rows ?? 'n/a'}`,
       `- Maximum post-mount interaction: ${output.desktop?.budgets?.maximum_interaction_ms ?? 'n/a'} ms`,
       `- Maximum post-mount long task: ${output.desktop?.budgets?.maximum_long_task_ms ?? 'n/a'} ms`,
-      `- DOM nodes: ${output.desktop?.budgets?.dom_nodes ?? 'n/a'}`,
+      `- Live DOM nodes: ${output.desktop?.budgets?.live_dom_nodes ?? 'n/a'}`,
+      `- Retained post-GC DOM nodes: ${output.desktop?.budgets?.retained_dom_nodes ?? 'n/a'}`,
       `- Dense-surface participant-to-participant lines: ${output.desktop?.surface_mode?.participant_to_participant_lines ?? 'n/a'}`,
       `- Mobile horizontal overflow: ${output.mobile_reduced_motion?.horizontal_overflow ?? 'n/a'}`,
       `- Mobile reduced-motion query matched: ${output.mobile_reduced_motion?.reduced_motion ?? 'n/a'}`,
