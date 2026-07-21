@@ -1,0 +1,87 @@
+name: One-shot harden reporter briefing contract
+
+on:
+  push:
+    branches:
+      - agent/reporter-briefing-hardening
+
+permissions:
+  contents: write
+
+jobs:
+  harden:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/reporter-briefing-hardening
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Apply the three compiler and runtime hardening fixes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          def replace_once(path, old, new):
+              target = Path(path)
+              text = target.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one replacement, found {count}')
+              target.write_text(text.replace(old, new, 1))
+
+          replace_once(
+              'tools/lib/reporter-briefing.mjs',
+              "  if (!ISO_DAY.test(spec?.as_of ?? '')) errors.push('as_of must be an ISO day');\n  if (!ISO_DAY.test(spec?.published_at ?? '')) errors.push('published_at must be an ISO day');",
+              "  if (!ISO_DAY.test(spec?.as_of ?? '')) errors.push('as_of must be an ISO day');\n  if (spec?.as_of !== caseItem?.as_of) errors.push('as_of must match compiled case as_of');\n  if (!ISO_DAY.test(spec?.published_at ?? '')) errors.push('published_at must be an ISO day');"
+          )
+          replace_once(
+              'tools/lib/reporter-briefing.mjs',
+              "    if (!text(claim.qualification)) errors.push(`briefing claim ${claimId} lacks a qualification`);\n    for (const receiptId of claim.receipt_ids ?? []) if (!receipts.has(receiptId)) errors.push(`briefing claim ${claimId} references missing receipt ${receiptId}`);",
+              "    if (!text(claim.qualification)) errors.push(`briefing claim ${claimId} lacks a qualification`);\n    if (!(claim.receipt_ids?.length > 0)) errors.push(`briefing claim ${claimId} has no receipts`);\n    for (const receiptId of claim.receipt_ids ?? []) if (!receipts.has(receiptId)) errors.push(`briefing claim ${claimId} references missing receipt ${receiptId}`);"
+          )
+
+          replace_once(
+              'test/reporter-briefing.test.js',
+              "const unsafePath = structuredClone(spec);\nunsafePath.output_path = '../brief.html';\nassert.ok(validateReporterBriefing(unsafePath, caseItem).some(error => /safe briefs/.test(error)));\n\nconst unreviewedApproval = structuredClone(spec);",
+              "const unsafePath = structuredClone(spec);\nunsafePath.output_path = '../brief.html';\nassert.ok(validateReporterBriefing(unsafePath, caseItem).some(error => /safe briefs/.test(error)));\n\nconst mismatchedAsOf = structuredClone(spec);\nmismatchedAsOf.as_of = '2026-07-16';\nassert.ok(validateReporterBriefing(mismatchedAsOf, caseItem).some(error => /as_of must match compiled case as_of/.test(error)));\nassert.throws(() => compileReporterBriefing(mismatchedAsOf, caseItem), /as_of must match compiled case as_of/);\n\nconst receiptlessCase = structuredClone(caseItem);\nconst receiptlessClaim = receiptlessCase.events\n  .flatMap(event => event.claims ?? [])\n  .find(claim => claim.claim_id === spec.threads[0].claim_ids[0]);\nreceiptlessClaim.receipt_ids = [];\nassert.ok(validateReporterBriefing(spec, receiptlessCase).some(error => /briefing claim .* has no receipts/.test(error)));\nassert.throws(() => compileReporterBriefing(spec, receiptlessCase), /briefing claim .* has no receipts/);\n\nconst unreviewedApproval = structuredClone(spec);"
+          )
+
+          package_path = Path('package.json')
+          package = json.loads(package_path.read_text())
+          dev_dependencies = dict(package.get('devDependencies', {}))
+          dev_dependencies['playwright'] = '1.55.0'
+          package['devDependencies'] = dict(sorted(dev_dependencies.items()))
+          package_path.write_text(json.dumps(package, indent=2) + '\n')
+
+          replace_once(
+              '.github/workflows/reporter-briefings.yml',
+              "      - name: Install Chromium verification runtime\n        run: |\n          npm install --no-save --no-package-lock playwright@1.55.0\n          npx playwright install --with-deps chromium",
+              "      - name: Install declared browser verification dependency\n        run: |\n          npm install --no-package-lock\n          node -e \"const version = require('./node_modules/playwright/package.json').version; if (version !== '1.55.0') throw new Error('expected playwright 1.55.0, got ' + version);\"\n          npx playwright install --with-deps chromium"
+          )
+          PY
+
+      - name: Verify the declared dependency and direct compiler refusals
+        run: |
+          npm install --no-package-lock
+          node -e "const version = require('./node_modules/playwright/package.json').version; if (version !== '1.55.0') throw new Error('expected playwright 1.55.0, got ' + version);"
+          npm run compile
+          node test/reporter-briefing.test.js
+
+      - name: Commit the hardening tranche
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            tools/lib/reporter-briefing.mjs \
+            test/reporter-briefing.test.js \
+            package.json \
+            .github/workflows/reporter-briefings.yml
+          git commit -m "Harden reporter briefing publication contract"
+          git push origin HEAD:agent/reporter-briefing-hardening
