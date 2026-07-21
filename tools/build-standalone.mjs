@@ -49,6 +49,7 @@ let html = read('index.html')
     /  <script src="app\.js(?:\?[^\"]*)?" type="module"><\/script>/,
     `  <script>\n${inlineApp}\n  </script>`
   )
+  .replace(/\s*<script src="src\/aperture-bootstrap\.js(?:\?[^\"]*)?" type="module"><\/script>/, '')
   .replace('<body>', '<body data-portable-release="true">');
 
 const output = path.join(root, 'dist', 'Clifford-Number-standalone.html');
