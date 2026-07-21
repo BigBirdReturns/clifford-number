@@ -18,6 +18,7 @@ function selectCluster(id, { advance = true } = {}) {
   }
   renderModeControls();
   renderMapMode();
+  commitApertureAddress('push');
   if (isMobile()) { state.sheetOpen = true; syncInspectorSheet(); }
 }
 
@@ -31,6 +32,7 @@ function selectType(id) {
   state.map.level = 'surface';
   renderModeControls();
   renderMapMode();
+  commitApertureAddress('push');
   if (isMobile()) { state.sheetOpen = true; syncInspectorSheet(); }
 }
 
@@ -48,6 +50,7 @@ function selectMapSurface(id, { advance = true } = {}) {
   }
   renderModeControls();
   renderMapMode();
+  commitApertureAddress('push');
   if (isMobile()) { state.sheetOpen = true; syncInspectorSheet(); }
 }
 
@@ -66,6 +69,7 @@ function selectActor(id, context = 'map') {
     state.surface.selectedActorId = id;
     renderSurfaceMode();
   }
+  commitApertureAddress('push');
   if (isMobile()) { state.sheetOpen = true; syncInspectorSheet(); }
 }
 
@@ -76,6 +80,7 @@ function togglePin(id) {
   state.surface.selectedActorId = id;
   state.selectedActorId = id;
   renderSurfaceMode();
+  commitApertureAddress('push');
   if (isMobile()) { state.sheetOpen = true; syncInspectorSheet(); }
 }
 
