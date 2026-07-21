@@ -19,6 +19,11 @@ const state = {
     applying: false,
     defaults: null
   },
+  export: {
+    open: false,
+    packet: null,
+    status: ''
+  },
   selectedActorId: null,
   selectedSurfaceId: null,
   map: {
