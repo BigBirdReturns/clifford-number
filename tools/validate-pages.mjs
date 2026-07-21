@@ -9,8 +9,11 @@ const required = [
   'build/surface-graph.json', 'build/hop-graph.json', 'build/receipt-graph.json',
   'build/public-catalog.json', 'build/cases/index.json', 'build/cases/field-autopsy-03.json',
   'build/cases/uk-ai-policy.json',
+  'build/research/synthetic-population-vendor-denominator.json',
+  'build/research/synthetic-population-vendor-denominator.md',
   'build/thesis/synthetic-population-infrastructure.json',
   'build/thesis/synthetic-population-infrastructure.md',
+  'data/research/denominators/synthetic-population-vendors.json',
   'data/research/theses/synthetic-population-infrastructure.json',
   'data/research/thesis-evidence/synthetic-population-infrastructure.json',
   'data/research/thesis-reviews/synthetic-population-infrastructure.json',
@@ -22,7 +25,8 @@ const required = [
   ...Array.from({ length: 11 }, (_, index) => `src/visual-aperture-part-${index + 1}.js`),
   'src/visual-aperture.css', 'src/visual-aperture-layout.css', 'src/visual-aperture-svg.css',
   'src/visual-aperture-responsive.css', 'src/visual-aperture-workspace.css', 'src/visual-aperture-export.css',
-  'assets/social-card.png', 'docs/methodology.md', 'docs/thesis-assembly.md', 'cases/field-autopsy-03/case.json'
+  'assets/social-card.png', 'docs/methodology.md', 'docs/thesis-assembly.md',
+  'docs/synthetic-population-vendor-denominator.md', 'cases/field-autopsy-03/case.json'
 ];
 const missing = required.filter(file => !fs.existsSync(path.join(destination, file)));
 if (missing.length) {
@@ -51,6 +55,8 @@ const aperture = [
   ...Array.from({ length: 11 }, (_, index) => fs.readFileSync(path.join(destination, 'src', `visual-aperture-part-${index + 1}.js`), 'utf8'))
 ].join('\n');
 const standalone = fs.readFileSync(path.join(destination, 'Clifford-Number-standalone.html'), 'utf8');
+const denominatorBuild = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'research', 'synthetic-population-vendor-denominator.json'), 'utf8'));
+const denominatorMarkdown = fs.readFileSync(path.join(destination, 'build', 'research', 'synthetic-population-vendor-denominator.md'), 'utf8');
 const thesisBuild = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'thesis', 'synthetic-population-infrastructure.json'), 'utf8'));
 const thesisMarkdown = fs.readFileSync(path.join(destination, 'build', 'thesis', 'synthetic-population-infrastructure.md'), 'utf8');
 const ukAiCase = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'cases', 'uk-ai-policy.json'), 'utf8'));
@@ -121,6 +127,23 @@ if (!standalone.includes('globalThis.__CLIFFORD_APERTURE_BUNDLED__ = true')
   console.error('validate-pages failed: standalone release omits or externally references the operator aperture');
   process.exit(1);
 }
+if (denominatorBuild.schema_version !== 'synthetic-population-vendor-denominator-build@1'
+  || denominatorBuild.denominator_id !== 'gartner-7718657-synthetic-population-vendors-2026'
+  || denominatorBuild.status !== 'blocked_not_frozen'
+  || denominatorBuild.usable_as_denominator !== false
+  || denominatorBuild.counts_toward_thesis_evidence !== false
+  || denominatorBuild.graph_effect !== 'none'
+  || denominatorBuild.conclusion_generated !== false
+  || denominatorBuild.counts?.public_recovery_candidates_transcribed !== 14
+  || denominatorBuild.counts?.latest_issue_reported_recovery_count !== 15
+  || denominatorBuild.counts?.public_recoveries_not_yet_transcribed !== 1
+  || denominatorBuild.counts?.source_document_membership_confirmed !== 0
+  || denominatorBuild.counts?.denominator_members_frozen !== 0
+  || denominatorBuild.thesis_consumption?.evidence_bearing_relation_allowed !== false
+  || !denominatorMarkdown.includes('biased public recovery set, not the denominator')) {
+  console.error('validate-pages failed: vendor denominator recovery was promoted, distorted, or omitted');
+  process.exit(1);
+}
 if (thesisBuild.schema_version !== 'clifford-thesis-build@1'
   || thesisBuild.thesis_id !== 'synthetic-population-infrastructure'
   || thesisBuild.graph_effect !== 'none'
@@ -129,6 +152,9 @@ if (thesisBuild.schema_version !== 'clifford-thesis-build@1'
   || thesisBuild.machine_synthesis_ceiling !== 'eligible_for_human_synthesis'
   || thesisBuild.counts?.case_contracts !== 18
   || thesisBuild.counts?.propositions !== 6
+  || thesisBuild.counts?.evidence_packets !== 0
+  || thesisBuild.counts?.coverage_packets < 1
+  || thesisBuild.status !== 'collecting_evidence'
   || !thesisMarkdown.includes('Machine conclusion generated: false')) {
   console.error('validate-pages failed: compiled thesis dossier exceeds or omits its assembly contract');
   process.exit(1);
