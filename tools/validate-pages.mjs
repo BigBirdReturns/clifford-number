@@ -11,9 +11,17 @@ const required = [
   'build/cases/uk-ai-policy.json',
   'build/research/synthetic-population-vendor-denominator.json',
   'build/research/synthetic-population-vendor-denominator.md',
+  'build/thesis/case-packet-index.json',
+  'build/thesis/case-packet-index.md',
+  'build/thesis/case-packets/state-market-no10-pandemic-data-diaspora.json',
+  'build/thesis/case-packets/state-market-no10-pandemic-data-diaspora.md',
+  'build/thesis/case-packets/state-market-central-government-ai-unit-succession.json',
+  'build/thesis/case-packets/state-market-central-government-ai-unit-succession.md',
   'build/thesis/synthetic-population-infrastructure.json',
   'build/thesis/synthetic-population-infrastructure.md',
   'data/research/denominators/synthetic-population-vendors.json',
+  'data/research/thesis-case-packets/state-market-no10-pandemic-data-diaspora.json',
+  'data/research/thesis-case-packets/state-market-central-government-ai-unit-succession.json',
   'data/research/theses/synthetic-population-infrastructure.json',
   'data/research/thesis-evidence/synthetic-population-infrastructure.json',
   'data/research/thesis-reviews/synthetic-population-infrastructure.json',
@@ -26,7 +34,8 @@ const required = [
   'src/visual-aperture.css', 'src/visual-aperture-layout.css', 'src/visual-aperture-svg.css',
   'src/visual-aperture-responsive.css', 'src/visual-aperture-workspace.css', 'src/visual-aperture-export.css',
   'assets/social-card.png', 'docs/methodology.md', 'docs/thesis-assembly.md',
-  'docs/synthetic-population-vendor-denominator.md', 'cases/field-autopsy-03/case.json'
+  'docs/synthetic-population-vendor-denominator.md', 'docs/thesis-case-packets.md',
+  'cases/field-autopsy-03/case.json'
 ];
 const missing = required.filter(file => !fs.existsSync(path.join(destination, file)));
 if (missing.length) {
@@ -57,6 +66,9 @@ const aperture = [
 const standalone = fs.readFileSync(path.join(destination, 'Clifford-Number-standalone.html'), 'utf8');
 const denominatorBuild = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'research', 'synthetic-population-vendor-denominator.json'), 'utf8'));
 const denominatorMarkdown = fs.readFileSync(path.join(destination, 'build', 'research', 'synthetic-population-vendor-denominator.md'), 'utf8');
+const casePacketIndex = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'thesis', 'case-packet-index.json'), 'utf8'));
+const jonesPacket = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'thesis', 'case-packets', 'state-market-no10-pandemic-data-diaspora.json'), 'utf8'));
+const successionPacket = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'thesis', 'case-packets', 'state-market-central-government-ai-unit-succession.json'), 'utf8'));
 const thesisBuild = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'thesis', 'synthetic-population-infrastructure.json'), 'utf8'));
 const thesisMarkdown = fs.readFileSync(path.join(destination, 'build', 'thesis', 'synthetic-population-infrastructure.md'), 'utf8');
 const ukAiCase = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'cases', 'uk-ai-policy.json'), 'utf8'));
@@ -144,6 +156,22 @@ if (denominatorBuild.schema_version !== 'synthetic-population-vendor-denominator
   console.error('validate-pages failed: vendor denominator recovery was promoted, distorted, or omitted');
   process.exit(1);
 }
+if (casePacketIndex.schema_version !== 'clifford-thesis-case-packet-index@1'
+  || casePacketIndex.graph_effect !== 'none'
+  || casePacketIndex.conclusion_generated !== false
+  || casePacketIndex.totals?.cases !== 2
+  || casePacketIndex.totals?.repository_receipts !== 0
+  || casePacketIndex.totals?.eligible_for_promotion !== 0
+  || casePacketIndex.totals?.emitted_thesis_evidence_packets !== 0
+  || jonesPacket.promotion?.eligible_for_thesis_evidence_promotion !== false
+  || successionPacket.promotion?.eligible_for_thesis_evidence_promotion !== false
+  || !jonesPacket.observations?.some(item => item.predicate === 'business_appointment_rules_breach_recorded' && item.non_retroactive === true)
+  || !jonesPacket.observations?.some(item => item.predicate === 'source_explicit_ordinary_explanation' && item.relation === 'weakens')
+  || !successionPacket.observations?.some(item => item.predicate === 'institutional_succession_not_established_in_opened_sources' && item.relation === 'null_result')
+  || !successionPacket.observations?.some(item => item.predicate === 'units_collaborated' && item.relation === 'context')) {
+  console.error('validate-pages failed: thesis case-intake packets were promoted, flattened, or omitted');
+  process.exit(1);
+}
 if (thesisBuild.schema_version !== 'clifford-thesis-build@1'
   || thesisBuild.thesis_id !== 'synthetic-population-infrastructure'
   || thesisBuild.graph_effect !== 'none'
@@ -153,7 +181,7 @@ if (thesisBuild.schema_version !== 'clifford-thesis-build@1'
   || thesisBuild.counts?.case_contracts !== 18
   || thesisBuild.counts?.propositions !== 6
   || thesisBuild.counts?.evidence_packets !== 0
-  || thesisBuild.counts?.coverage_packets < 1
+  || thesisBuild.counts?.coverage_packets !== 3
   || thesisBuild.status !== 'collecting_evidence'
   || !thesisMarkdown.includes('Machine conclusion generated: false')) {
   console.error('validate-pages failed: compiled thesis dossier exceeds or omits its assembly contract');

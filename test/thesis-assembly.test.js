@@ -199,12 +199,16 @@ const actualBuild = compileThesisBundle({ manifest: actualManifest, evidence: ac
 assert.equal(actualBuild.counts.case_contracts, 18);
 assert.equal(actualBuild.counts.propositions, 6);
 assert.equal(actualBuild.counts.evidence_packets, 0);
-assert.equal(actualBuild.counts.coverage_packets, 1);
+assert.equal(actualBuild.counts.coverage_packets, 3);
+assert.equal(actualEvidence.evidence_bearing.count, 0);
+assert.deepEqual(actualEvidence.evidence_bearing.packets, []);
 assert.equal(actualBuild.status, 'collecting_evidence');
+assert.equal(actualBuild.propositions.find(item => item.proposition_id === 'P1-state-market-continuity').machine_disposition, 'collecting_evidence');
+assert.equal(actualBuild.propositions.find(item => item.proposition_id === 'P1-state-market-continuity').support_packet_count, 0);
 assert.equal(actualBuild.propositions.find(item => item.proposition_id === 'P2-legitimacy-market').machine_disposition, 'collecting_evidence');
 assert.equal(actualBuild.propositions.find(item => item.proposition_id === 'P2-legitimacy-market').support_packet_count, 0);
 assert.equal(actualBuild.propositions.find(item => item.proposition_id === 'P6-infrastructure-synthesis').machine_disposition, 'collecting_evidence');
-assert.ok(actualBuild.propositions.filter(item => !['P2-legitimacy-market', 'P6-infrastructure-synthesis'].includes(item.proposition_id))
+assert.ok(actualBuild.propositions.filter(item => !['P1-state-market-continuity', 'P2-legitimacy-market', 'P6-infrastructure-synthesis'].includes(item.proposition_id))
   .every(item => item.machine_disposition === 'open_no_evidence_packets'));
 
 console.log('thesis-assembly.test.js: OK');
