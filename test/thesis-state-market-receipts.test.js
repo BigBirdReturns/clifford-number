@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import crypto from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { compileThesisCasePacket } from '../tools/lib/thesis-case-packet.mjs';
+import { canonicalReceiptHash } from '../tools/lib/receipt-archival.mjs';
 
 const expectedReceiptIds = [
   'gov-acoba-samantha-jones-case-index-2024',
@@ -17,10 +17,7 @@ const expectedReceiptIds = [
   'gsa-centers-of-excellence-2017'
 ];
 
-const receipts = readFileSync('data/ledger/receipts.jsonl', 'utf8')
-  .split(/\r?\n/)
-  .filter(Boolean)
-  .map(line => JSON.parse(line));
+const receipts = readFileSync('data/ledger/receipts.jsonl', 'utf8').split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
 const receiptById = new Map(receipts.map(receipt => [receipt.receipt_id, receipt]));
 
 for (const receiptId of expectedReceiptIds) {
@@ -30,13 +27,12 @@ for (const receiptId of expectedReceiptIds) {
   assert.equal(receipt.evidence_class, 'official');
   assert.equal(receipt.archive?.method, 'in_repo_content_hash');
   assert.match(receipt.archive?.ref ?? '', /^sha256:[a-f0-9]{64}$/);
+  assert.equal(receipt.archive?.captured, '2026-07-21');
   assert.match(receipt.path, /^receipts\/thesis-state-market\//);
   assert.ok(existsSync(receipt.path), `${receipt.path} must exist`);
-  const source = readFileSync(receipt.path);
-  const digest = crypto.createHash('sha256').update(source).digest('hex');
-  assert.equal(receipt.archive.ref, `sha256:${digest}`, `${receiptId} content hash must match the immutable extract`);
+  assert.equal(receipt.archive.ref, `sha256:${canonicalReceiptHash(receipt.path)}`, `${receiptId} canonical content hash must match the immutable extract`);
   assert.match(receipt.archive?.note ?? '', /extract, not the remote page/i);
-  const text = source.toString('utf8');
+  const text = readFileSync(receipt.path, 'utf8');
   assert.match(text, /Live source:/);
   assert.match(text, /Capture type:/);
   assert.match(text, /structured factual extract/i);
@@ -78,14 +74,14 @@ for (const packet of packets) {
 }
 assert.deepEqual([...packetReceiptIds].sort(), [...expectedReceiptIds].sort());
 
-const jones = packets.find(packet => packet.case_id === 'state-market-no10-pandemic-data-diaspora');
-const breach = jones.observations.find(observation => observation.predicate === 'business_appointment_rules_breach_recorded');
+const jonesPacket = packets.find(packet => packet.case_id === 'state-market-no10-pandemic-data-diaspora');
+const breach = jonesPacket.observations.find(observation => observation.predicate === 'business_appointment_rules_breach_recorded');
 assert.equal(breach.non_retroactive, true);
 assert.ok(breach.forbidden_inferences.some(item => /retroactive|retroactively/i.test(item)));
 assert.ok(!breach.objects.includes('CeraCare'));
 
-const succession = packets.find(packet => packet.case_id === 'state-market-central-government-ai-unit-succession');
-const boundedNull = succession.observations.find(observation => observation.relation === 'null_result');
+const successionPacket = packets.find(packet => packet.case_id === 'state-market-central-government-ai-unit-succession');
+const boundedNull = successionPacket.observations.find(observation => observation.relation === 'null_result');
 assert.match(boundedNull.query_scope, /through 21 July 2026/i);
 assert.match(boundedNull.source_status, /not_a_complete_all-government-search/i);
 assert.ok(boundedNull.forbidden_inferences.some(item => /cannot be generalized|generalized beyond/i.test(item)));

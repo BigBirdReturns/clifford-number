@@ -45,26 +45,25 @@ else if (fs.readFileSync(indexJsonPath, 'utf8') !== expectedIndexJson) errors.pu
 if (!fs.existsSync(indexMarkdownPath)) errors.push(`missing compiled case packet index ${path.relative(root, indexMarkdownPath)}`);
 else if (fs.readFileSync(indexMarkdownPath, 'utf8') !== expectedIndexMarkdown) errors.push('compiled case packet index Markdown is stale');
 
+const receiptCompleteStatus = 'intake_receipts_complete_human_review_and_denominator_pending';
 if (index.totals.cases !== 2) errors.push(`expected two initial state-market case packets, got ${index.totals.cases}`);
-if (index.totals.repository_receipts !== 0) errors.push('initial state-market intake must not pretend external URLs are repository receipts');
-if (index.totals.eligible_for_promotion !== 0 || index.totals.emitted_thesis_evidence_packets !== 0) errors.push('initial state-market intake must not emit or qualify for thesis evidence promotion');
-if (index.cases.some(item => item.status !== 'intake_pending_receipt_ingest_and_human_review')) errors.push('all initial state-market packets must remain intake');
+if (index.totals.repository_receipts !== 11) errors.push(`expected eleven bounded repository receipts, got ${index.totals.repository_receipts}`);
+if (index.totals.receipt_complete_cases !== 2) errors.push(`expected two receipt-complete cases, got ${index.totals.receipt_complete_cases}`);
+if (index.totals.human_review_complete_cases !== 0) errors.push('receipt custody must not impersonate completed human review');
+if (index.totals.denominator_complete_cases !== 0) errors.push('receipt custody must not impersonate denominator completion');
+if (index.totals.eligible_for_promotion !== 0 || index.totals.emitted_thesis_evidence_packets !== 0) errors.push('receipted intake must not emit or qualify for thesis evidence promotion');
+if (index.cases.some(item => item.status !== receiptCompleteStatus || item.receipt_custody_status !== 'complete')) errors.push('both state-market packets must report complete receipt custody while remaining intake');
 if (compiledPackets.some(packet => packet.graph_effect !== 'none' || packet.conclusion_generated !== false)) errors.push('case packets must remain graph-inert and conclusion-free');
 
 const jones = compiledPackets.find(packet => packet.case_id === 'state-market-no10-pandemic-data-diaspora');
-if (!jones?.observations.some(observation => observation.predicate === 'business_appointment_rules_breach_recorded' && observation.non_retroactive === true)) {
-  errors.push('Jones packet must preserve the later compliance breach as non-retroactive context');
-}
-if (!jones?.observations.some(observation => observation.predicate === 'source_explicit_ordinary_explanation' && observation.relation === 'weakens')) {
-  errors.push('Jones packet must carry the official ordinary explanation and counterevidence');
-}
+if (jones?.receipt_count !== 3) errors.push(`Jones packet must carry three unique receipts, got ${jones?.receipt_count}`);
+if (!jones?.observations.some(observation => observation.predicate === 'business_appointment_rules_breach_recorded' && observation.non_retroactive === true)) errors.push('Jones packet must preserve the later compliance breach as non-retroactive context');
+if (!jones?.observations.some(observation => observation.predicate === 'source_explicit_ordinary_explanation' && observation.relation === 'weakens')) errors.push('Jones packet must carry the official ordinary explanation and counterevidence');
+
 const succession = compiledPackets.find(packet => packet.case_id === 'state-market-central-government-ai-unit-succession');
-if (!succession?.observations.some(observation => observation.predicate === 'institutional_succession_not_established_in_opened_sources' && observation.relation === 'null_result')) {
-  errors.push('institutional packet must preserve the refused 10DS to i.AI succession as a bounded null');
-}
-if (!succession?.observations.some(observation => observation.predicate === 'units_collaborated' && observation.relation === 'context')) {
-  errors.push('institutional packet must keep collaboration distinct from succession');
-}
+if (succession?.receipt_count !== 8) errors.push(`institutional packet must carry eight unique receipts, got ${succession?.receipt_count}`);
+if (!succession?.observations.some(observation => observation.predicate === 'institutional_succession_not_established_in_opened_sources' && observation.relation === 'null_result')) errors.push('institutional packet must preserve the refused 10DS to i.AI succession as a bounded null');
+if (!succession?.observations.some(observation => observation.predicate === 'units_collaborated' && observation.relation === 'context')) errors.push('institutional packet must keep collaboration distinct from succession');
 
 if (errors.length) {
   console.error(`validate-thesis-case-packets: ${errors.length} error(s)`);
@@ -72,4 +71,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`validate-thesis-case-packets: OK (${index.totals.cases} intake cases, ${index.totals.observations} observations, 0 receipts, 0 promoted evidence packets)`);
+console.log(`validate-thesis-case-packets: OK (${index.totals.cases} intake cases, ${index.totals.observations} observations, ${index.totals.repository_receipts} receipts, 0 promoted evidence packets)`);
