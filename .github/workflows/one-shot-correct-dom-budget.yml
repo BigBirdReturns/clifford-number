@@ -1,0 +1,99 @@
+name: One-shot correct aperture DOM budget
+
+on:
+  push:
+    branches:
+      - agent/aperture-bounded-rendering
+
+permissions:
+  contents: write
+
+jobs:
+  correct:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/aperture-bounded-rendering
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Distinguish live DOM from collectible detached nodes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new):
+              file = Path(path)
+              text = file.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'missing replacement marker in {path}: {old[:80]!r}')
+              file.write_text(text.replace(old, new), encoding='utf-8')
+
+          browser = 'tools/measure-visual-aperture-browser.cjs'
+          replace(browser,
+              "    dom_counters: null,\n    console_errors:",
+              "    live_dom_nodes: null,\n    dom_counters: null,\n    console_errors:")
+          replace(browser,
+              "    const session = await context.newCDPSession(page);\n    result.dom_counters = await session.send('Memory.getDOMCounters');",
+              "    const session = await context.newCDPSession(page);\n    result.live_dom_nodes = await page.evaluate(() => document.getElementsByTagName('*').length);\n    await session.send('HeapProfiler.collectGarbage');\n    result.dom_counters = await session.send('Memory.getDOMCounters');")
+          replace(browser,
+              "      dom_nodes: result.dom_counters.nodes",
+              "      live_dom_nodes: result.live_dom_nodes,\n      retained_dom_nodes: result.dom_counters.nodes")
+          replace(browser,
+              "    assert.ok(result.dom_counters.nodes <= MAX_DOM_NODES, `DOM nodes ${result.dom_counters.nodes} exceed ${MAX_DOM_NODES}`);",
+              "    assert.ok(result.live_dom_nodes <= MAX_DOM_NODES, `live DOM nodes ${result.live_dom_nodes} exceed ${MAX_DOM_NODES}`);\n    assert.ok(result.dom_counters.nodes <= MAX_DOM_NODES, `retained DOM nodes ${result.dom_counters.nodes} exceed ${MAX_DOM_NODES}`);")
+          replace(browser,
+              "      `- DOM nodes: ${output.desktop?.budgets?.dom_nodes ?? 'n/a'}`,",
+              "      `- Live DOM nodes: ${output.desktop?.budgets?.live_dom_nodes ?? 'n/a'}`,\n      `- Retained post-GC DOM nodes: ${output.desktop?.budgets?.retained_dom_nodes ?? 'n/a'}`,")
+
+          route = 'tools/measure-visual-aperture-route-browser.cjs'
+          replace(route,
+              "    dom_counters: null,\n    console_errors:",
+              "    live_dom_nodes: null,\n    dom_counters: null,\n    console_errors:")
+          replace(route,
+              "    const session = await context.newCDPSession(page);\n    output.dom_counters = await session.send('Memory.getDOMCounters');",
+              "    const session = await context.newCDPSession(page);\n    output.live_dom_nodes = await page.evaluate(() => document.getElementsByTagName('*').length);\n    await session.send('HeapProfiler.collectGarbage');\n    output.dom_counters = await session.send('Memory.getDOMCounters');")
+          replace(route,
+              "    assert.ok(output.dom_counters.nodes <= MAX_DOM_NODES, `route DOM ${output.dom_counters.nodes} exceeds ${MAX_DOM_NODES}`);",
+              "    assert.ok(output.live_dom_nodes <= MAX_DOM_NODES, `route live DOM ${output.live_dom_nodes} exceeds ${MAX_DOM_NODES}`);\n    assert.ok(output.dom_counters.nodes <= MAX_DOM_NODES, `route retained DOM ${output.dom_counters.nodes} exceeds ${MAX_DOM_NODES}`);")
+          replace(route,
+              "      `- DOM nodes after export preview: ${output.dom_counters?.nodes ?? 'n/a'}`,",
+              "      `- Live DOM nodes after export preview: ${output.live_dom_nodes ?? 'n/a'}`,\n      `- Retained post-GC DOM nodes: ${output.dom_counters?.nodes ?? 'n/a'}`,")
+          PY
+          node --check tools/measure-visual-aperture-browser.cjs
+          node --check tools/measure-visual-aperture-route-browser.cjs
+
+      - name: Run the ordinary release gate
+        run: npm run release:check
+
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Start the public application
+        run: |
+          node tools/serve-static.mjs 8080 > /tmp/clifford-scale-server.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8080/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/clifford-scale-server.log
+          exit 1
+
+      - name: Enforce both browser budget programs
+        run: |
+          timeout 300s node tools/measure-visual-aperture-browser.cjs
+          timeout 300s node tools/measure-visual-aperture-route-browser.cjs
+
+      - name: Commit the verified correction
+        run: |
+          rm .github/workflows/one-shot-correct-dom-budget.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add tools/measure-visual-aperture-browser.cjs tools/measure-visual-aperture-route-browser.cjs .github/workflows/one-shot-correct-dom-budget.yml
+          git commit -m "Measure live and retained aperture DOM"
+          git push origin HEAD:agent/aperture-bounded-rendering
