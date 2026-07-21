@@ -1,0 +1,46 @@
+name: One-shot materialize reporter briefing platform
+
+on:
+  push:
+    branches:
+      - agent/reporter-briefing-platform
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/reporter-briefing-platform
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run the exact repository release gate
+        run: npm run release:check
+
+      - name: Pin the reporter briefing and approval refusals
+        run: node test/reporter-briefing.test.js
+
+      - name: Commit deterministic publication artifacts
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            briefs/anduril-access-ownership.html \
+            build/briefings \
+            build/review/reporter-briefing-queue.json \
+            build/cases/anduril-access-ownership.json \
+            build/cases/index.json \
+            build/public-catalog.json
+          if git diff --cached --quiet; then
+            echo "Generated reporter briefing artifacts are already current."
+            exit 0
+          fi
+          git commit -m "Compile reporter briefing publication artifacts"
+          git push origin HEAD:agent/reporter-briefing-platform
