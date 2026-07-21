@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/reporter-briefing.schema.json",
+  "title": "Reporter briefing",
+  "description": "A finite, nontechnical projection of a compiled case. Factual briefing content is referenced by claim ID; the compiler supplies exact claim prose, qualifications, and receipts.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "briefing_id",
+    "case_id",
+    "title",
+    "dek",
+    "as_of",
+    "published_at",
+    "audience",
+    "output_path",
+    "case_href",
+    "graph_effect",
+    "conclusion_generated",
+    "publication",
+    "working_proposition",
+    "boundary",
+    "records_target",
+    "axis_alt",
+    "axes",
+    "threads"
+  ],
+  "properties": {
+    "schema_version": { "const": "reporter-briefing@1" },
+    "briefing_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+    "case_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+    "title": { "type": "string", "minLength": 1 },
+    "dek": { "type": "string", "minLength": 1 },
+    "as_of": { "type": "string", "format": "date" },
+    "published_at": { "type": "string", "format": "date" },
+    "audience": { "type": "string", "minLength": 1 },
+    "output_path": { "type": "string", "pattern": "^briefs/[a-z0-9][a-z0-9._/-]*\\.html$" },
+    "case_href": { "type": "string", "pattern": "^\\.\\./#case/[a-z0-9][a-z0-9._-]*$" },
+    "graph_effect": { "const": "none" },
+    "conclusion_generated": { "const": false },
+    "publication": {
+      "type": "object",
+      "required": ["version", "status", "correction_route", "history"],
+      "properties": {
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "status": { "enum": ["review_required", "approved", "superseded", "withdrawn"] },
+        "reviewer": { "type": ["string", "null"] },
+        "reviewed_at": { "type": ["string", "null"], "format": "date" },
+        "correction_route": { "type": "string", "format": "uri" },
+        "history": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["version", "published_at", "status", "change"],
+            "properties": {
+              "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+              "published_at": { "type": "string", "format": "date" },
+              "status": { "enum": ["review_required", "approved", "superseded", "withdrawn"] },
+              "change": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "working_proposition": { "$ref": "#/$defs/claimReference" },
+    "boundary": { "$ref": "#/$defs/claimReference" },
+    "records_target": { "$ref": "#/$defs/claimReference" },
+    "axis_alt": { "type": "string", "minLength": 1 },
+    "axes": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "low_label", "high_label"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "label": { "type": "string", "minLength": 1 },
+          "low_label": { "type": "string", "minLength": 1 },
+          "high_label": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "threads": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "subtitle", "x", "y", "claim_ids", "decisive_record"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+          "number": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "subtitle": { "type": "string", "minLength": 1 },
+          "x": { "type": "number", "minimum": 0, "maximum": 100 },
+          "y": { "type": "number", "minimum": 0, "maximum": 100 },
+          "claim_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true
+          },
+          "decisive_record": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "translations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["term", "question"],
+        "properties": {
+          "term": { "type": "string", "minLength": 1 },
+          "question": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "$defs": {
+    "claimReference": {
+      "type": "object",
+      "required": ["claim_id"],
+      "properties": {
+        "claim_id": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
