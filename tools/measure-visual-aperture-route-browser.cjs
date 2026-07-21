@@ -55,6 +55,7 @@ async function main() {
     export_preview_rows: null,
     print_preview_rows: null,
     long_tasks: [],
+    live_dom_nodes: null,
     dom_counters: null,
     console_errors: [],
     page_errors: [],
@@ -164,10 +165,13 @@ async function main() {
 
     output.long_tasks = await page.evaluate(() => globalThis.__apertureRouteLongTasks || []);
     const session = await context.newCDPSession(page);
+    output.live_dom_nodes = await page.evaluate(() => document.getElementsByTagName('*').length);
+    await session.send('HeapProfiler.collectGarbage');
     output.dom_counters = await session.send('Memory.getDOMCounters');
     const maximumLongTask = Math.max(0, ...output.long_tasks.map(item => item.duration));
     assert.ok(maximumLongTask <= MAX_LONG_TASK_MS, `route long task ${maximumLongTask}ms exceeds ${MAX_LONG_TASK_MS}ms`);
-    assert.ok(output.dom_counters.nodes <= MAX_DOM_NODES, `route DOM ${output.dom_counters.nodes} exceeds ${MAX_DOM_NODES}`);
+    assert.ok(output.live_dom_nodes <= MAX_DOM_NODES, `route live DOM ${output.live_dom_nodes} exceeds ${MAX_DOM_NODES}`);
+    assert.ok(output.dom_counters.nodes <= MAX_DOM_NODES, `route retained DOM ${output.dom_counters.nodes} exceeds ${MAX_DOM_NODES}`);
     assert.deepEqual(output.console_errors, []);
     assert.deepEqual(output.page_errors, []);
     output.passed = true;
@@ -193,7 +197,8 @@ async function main() {
       `- Stage minimum width: ${output.stage_min_width_px ?? 'n/a'} px`,
       `- Route render: ${output.render_ms ?? 'n/a'} ms`,
       `- Maximum post-mount long task: ${round(maximumLongTask)} ms`,
-      `- DOM nodes after export preview: ${output.dom_counters?.nodes ?? 'n/a'}`,
+      `- Live DOM nodes after export preview: ${output.live_dom_nodes ?? 'n/a'}`,
+      `- Retained post-GC DOM nodes: ${output.dom_counters?.nodes ?? 'n/a'}`,
       `- Export preview rows: ${output.export_preview_rows ?? 'n/a'}`,
       `- Complete export table rows: ${output.export_packet?.table_rows ?? 'n/a'}`,
       '',
