@@ -69,20 +69,33 @@ const inlineCss = [
   read('src/visual-aperture-bounded.css')
 ].join('\n\n');
 
+/* Replacement strings treat `$$`, `$&`, `$\`` and `$'` as substitution tokens.
+ * The aperture runtime intentionally defines a `$$` selector helper, so arbitrary
+ * bundled source must be inserted through replacer functions, never replacement
+ * strings. Otherwise valid source is silently rewritten during packaging. */
 let html = read('index.html')
   .replace(/\s*<link rel="preconnect" href="https:\/\/fonts\.googleapis\.com">/, '')
   .replace(/\s*<link rel="preconnect" href="https:\/\/fonts\.gstatic\.com" crossorigin>/, '')
   .replace(/\s*<link href="https:\/\/fonts\.googleapis\.com\/css2\?[^\"]+" rel="stylesheet">/, '')
-  .replace('href="assets/favicon.svg"', `href="data:image/svg+xml;base64,${faviconData}"`)
-  .replace(/  <link rel="stylesheet" href="styles\.css(?:\?[^\"]*)?">/, `  <style>\n${inlineCss}\n  </style>`)
+  .replace('href="assets/favicon.svg"', () => `href="data:image/svg+xml;base64,${faviconData}"`)
+  .replace(/  <link rel="stylesheet" href="styles\.css(?:\?[^\"]*)?">/, () => `  <style>\n${inlineCss}\n  </style>`)
   .replace(
     /  <script src="app\.js(?:\?[^\"]*)?" type="module"><\/script>/,
-    `  <script>\n${inlineApp}\n  </script>`
+    () => `  <script>\n${inlineApp}\n  </script>`
   )
   .replace(/\s*<script src="src\/aperture-bootstrap\.js(?:\?[^\"]*)?" type="module"><\/script>/, '')
   .replace('<body>', '<body data-portable-release="true">');
 
+const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(match => match[1]);
+for (const [index, script] of inlineScripts.entries()) {
+  try {
+    new Function(script);
+  } catch (error) {
+    throw new Error(`standalone inline script ${index + 1} does not parse: ${error.message}`, { cause: error });
+  }
+}
+
 const output = path.join(root, 'dist', 'Clifford-Number-standalone.html');
 fs.mkdirSync(path.dirname(output), { recursive: true });
 fs.writeFileSync(output, html);
-console.log(`build-standalone: ${path.relative(root, output)} (${fs.statSync(output).size} bytes, ${dataPaths.length} embedded records)`);
+console.log(`build-standalone: ${path.relative(root, output)} (${fs.statSync(output).size} bytes, ${dataPaths.length} embedded records, ${inlineScripts.length} parsed scripts)`);

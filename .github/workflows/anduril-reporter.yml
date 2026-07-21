@@ -1,0 +1,87 @@
+name: Anduril reporter aperture
+
+on:
+  pull_request:
+    paths:
+      - 'cases/anduril-access-ownership/**'
+      - 'briefs/anduril-access-ownership.html'
+      - 'app.js'
+      - 'tools/build-pages.mjs'
+      - 'tools/build-standalone.mjs'
+      - 'tools/validate-pages.mjs'
+      - 'tools/verify-anduril-reporter-browser.cjs'
+      - 'test/anduril-reporter-aperture.test.js'
+      - 'docs/anduril-reporter-aperture.md'
+      - '.github/workflows/anduril-reporter.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Compile publication prerequisites
+        run: |
+          npm run compile
+          npm run compile:denominator
+          npm run compile:case-packets
+          npm run compile:thesis
+
+      - name: Pin the Anduril case and inference boundary
+        run: node test/anduril-reporter-aperture.test.js
+
+      - name: Build and validate Pages and standalone output
+        run: |
+          set +e
+          {
+            npm run build:pages &&
+            npm run build:standalone &&
+            npm run validate:pages
+          } > /tmp/anduril-publish-build.log 2>&1
+          status=$?
+          tail -n 260 /tmp/anduril-publish-build.log
+          exit "$status"
+
+      - name: Install Chromium verification runtime
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Start the static public application
+        run: |
+          node tools/serve-static.mjs 8080 > /tmp/anduril-reporter-server.log 2>&1 &
+          echo $! > /tmp/anduril-reporter-server.pid
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8080/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/anduril-reporter-server.log
+          exit 1
+
+      - name: Verify the brief-to-receipt interaction in Chromium
+        run: |
+          node --check tools/verify-anduril-reporter-browser.cjs
+          timeout 180s node tools/verify-anduril-reporter-browser.cjs
+
+      - name: Preserve verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: anduril-reporter-browser
+          path: |
+            build/metrics/anduril-reporter-browser.json
+            build/metrics/anduril-reporter-evidence.png
+            build/metrics/anduril-reporter-brief.png
+            dist/Clifford-Number-standalone.html
+            /tmp/anduril-publish-build.log
+            /tmp/anduril-reporter-server.log
+          if-no-files-found: warn

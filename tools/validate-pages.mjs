@@ -9,6 +9,8 @@ const required = [
   'build/surface-graph.json', 'build/hop-graph.json', 'build/receipt-graph.json',
   'build/public-catalog.json', 'build/cases/index.json', 'build/cases/field-autopsy-03.json',
   'build/cases/uk-ai-policy.json',
+  'build/cases/anduril-access-ownership.json',
+  'briefs/anduril-access-ownership.html',
   'build/research/synthetic-population-vendor-denominator.json',
   'build/research/synthetic-population-vendor-denominator.md',
   'build/thesis/case-packet-index.json',
@@ -84,6 +86,8 @@ const successionPacket = JSON.parse(fs.readFileSync(path.join(destination, 'buil
 const thesisBuild = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'thesis', 'synthetic-population-infrastructure.json'), 'utf8'));
 const thesisMarkdown = fs.readFileSync(path.join(destination, 'build', 'thesis', 'synthetic-population-infrastructure.md'), 'utf8');
 const ukAiCase = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'cases', 'uk-ai-policy.json'), 'utf8'));
+const andurilCase = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'cases', 'anduril-access-ownership.json'), 'utf8'));
+const andurilBrief = fs.readFileSync(path.join(destination, 'briefs', 'anduril-access-ownership.html'), 'utf8');
 const hopGraph = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'hop-graph.json'), 'utf8'));
 const legacyGraph = JSON.parse(fs.readFileSync(path.join(destination, 'graph.json'), 'utf8'));
 const legacyEdgeModels = [
@@ -216,6 +220,21 @@ if (!standalone.includes('href="data:image/svg+xml;base64,') || standalone.inclu
 }
 if (!standalone.includes('legacy-uk-ai-policy@1') || !standalone.includes('all 50 recommendations')) {
   console.error('validate-pages failed: standalone release omits the public UK AI policy case');
+  process.exit(1);
+}
+if (andurilCase.case_id !== 'anduril-access-ownership'
+  || andurilCase.presentation !== 'reporter_briefing'
+  || andurilCase.status !== 'review_required'
+  || andurilCase.counts?.claims !== 24
+  || andurilCase.counts?.receipts !== 22
+  || andurilCase.claim_status_counts?.verified !== 15
+  || andurilCase.claim_status_counts?.review_required !== 9
+  || andurilCase.briefing?.href !== 'briefs/anduril-access-ownership.html'
+  || !andurilBrief.includes('Anduril: access, ownership, and the government gate')
+  || !andurilBrief.includes('../#case/anduril-access-ownership')
+  || !app.includes('function caseBriefingHref')
+  || !app.includes("item.briefing?.label || 'Open reporter brief'")) {
+  console.error('validate-pages failed: Anduril reporter aperture or its evidence route is missing, distorted, or promoted');
   process.exit(1);
 }
 if (ukAiCase.subtitle !== 'Seven degrees of UK AI policy topology, with receipts.') {

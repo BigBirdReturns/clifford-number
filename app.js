@@ -1256,10 +1256,21 @@ function renderCaseClaim(claim, caseId) {
   return `<article class="case-claim case-claim--${esc(claim.claim_status)}"><div class="case-claim-head"><span class="badge">${esc(humanLabel(claim.claim_status))}</span><span class="meta">${esc(humanLabel(claim.evidence_class || claim.evidence_state))} · causality: ${esc(humanLabel(claim.causal_status))}</span></div><p>${esc(claim.plain)}</p>${claim.value != null ? `<p class="case-value">${esc(formatCaseValue(claim.value))}</p>` : ''}${claim.qualification ? `<p class="evidence-note">${esc(claim.qualification)}</p>` : ''}<button class="claim-open" type="button" data-open-claim="${esc(`${caseId}::${claim.claim_id}`)}">Open claim and ${receiptCount} receipt${receiptCount === 1 ? '' : 's'} →</button></article>`;
 }
 
+function caseBriefingHref(item) {
+  const href = String(item?.briefing?.href || '');
+  if (!/^briefs\/[a-z0-9][a-z0-9._\/-]*\.html$/i.test(href)) return null;
+  if (document.body.dataset.portableRelease === 'true') return null;
+  return href;
+}
+
 async function renderCase(id) {
   const item = await loadCase(id);
   if (!item) return renderNotFound('case', id);
   setDocumentTitle(item.title);
+  const briefingHref = caseBriefingHref(item);
+  const briefingAction = briefingHref
+    ? `<a class="copy-link case-brief-link" href="${esc(briefingHref)}">${esc(item.briefing?.label || 'Open reporter brief')}</a>`
+    : '';
   $('#summary').innerHTML = [
     metricPanel('Typed events', item.counts.events),
     metricPanel('Claims', item.counts.claims),
@@ -1279,7 +1290,7 @@ async function renderCase(id) {
   const dimensions = (beacon?.dimensions ?? []).map(dimension => `<li><strong>${esc(humanLabel(dimension.id))}</strong><span>${esc(dimension.formula)}</span></li>`).join('');
   const graphBridge = item.presentation === 'research_graph_projection' ? `<section class="panel case-network-bridge"><span class="panel-label">The graph this case was hiding</span><h3>${item.source_counts?.nodes ?? state.legacyGraph.nodes.length} nodes · ${item.source_counts?.edges ?? state.legacyGraph.edges.length} sourced edges</h3><p>The case ladder is the ledger view. The network atlas is the whole-machine view. Dialog is the largest public cluster; the Action Plan is the policy spine; each edge opens the exact claim and receipts.</p><div class="case-policy-spine" aria-label="Official policy spine"><span>Matt Clifford</span><b>commissioned to lead</b><span>AI Opportunities Action Plan</span><b>adopted by</b><span>Starmer government</span></div><div class="case-network-actions"><button type="button" data-network-focus="dialog">Open the Dialog spine · ${state.networkModel?.nodeById.get('dialog')?.degree ?? 124} edges</button><button type="button" data-network-focus="ai-opportunities-action-plan">Open the policy spine · ${state.networkModel?.nodeById.get('ai-opportunities-action-plan')?.degree ?? 16} edges</button><button type="button" data-network-focus="palantir">Open the Palantir cluster · ${state.networkModel?.nodeById.get('palantir')?.degree ?? 10} edges</button></div></section>` : '';
   $('#detail').innerHTML = `
-    <div class="panel case-hero">${entityHeading(item.title, [])}<div class="case-print-row"><p class="case-subtitle">${esc(item.subtitle)} · ${esc(item.tracking_id)} · as known ${esc(item.as_of)}</p><button class="copy-link print-dossier" type="button" onclick="window.print()">Print dossier</button></div><p>${esc(item.scope)}</p><div class="evidence-note"><strong>Publication boundary.</strong> ${esc(item.boundary)}</div><p class="meta">${esc(item.disclaimer)}</p></div>
+    <div class="panel case-hero">${entityHeading(item.title, [])}<div class="case-print-row"><p class="case-subtitle">${esc(item.subtitle)} · ${esc(item.tracking_id)} · as known ${esc(item.as_of)}</p>${briefingAction}<button class="copy-link print-dossier" type="button" onclick="window.print()">Print dossier</button></div><p>${esc(item.scope)}</p><div class="evidence-note"><strong>Publication boundary.</strong> ${esc(item.boundary)}</div><p class="meta">${esc(item.disclaimer)}</p></div>
     ${graphBridge}
     ${relationFlow ? `<div class="panel relation-panel"><span class="panel-label">Decision-to-outcome map</span><h3>What is linked—and how strongly</h3><p>Each arrow is typed. It can preserve a long time gap without upgrading sequence into causation.</p><div class="relation-list">${relationFlow}</div></div>` : ''}
     ${beacon ? `<div class="panel beacon-panel"><span class="panel-label">Explainable beacon · ${esc(beacon.version || '')}</span><h3>${esc(beacon.label || 'No beacon')}</h3><div class="beacon-meter"><span style="width:${Math.round((beacon.evidence_coverage?.ratio || 0) * 100)}%"></span></div><p><strong>${beacon.evidence_coverage?.verified || 0} of ${beacon.evidence_coverage?.total || 0}</strong> beacon inputs are independently verified in this ledger.</p><ol class="beacon-dimensions">${dimensions}</ol><p class="evidence-note">${esc(beacon.prohibited_interpretation || '')}</p></div>` : ''}
