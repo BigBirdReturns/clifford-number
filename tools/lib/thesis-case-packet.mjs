@@ -6,6 +6,10 @@ const RELATIONS = new Set(['supports', 'weakens', 'contradicts', 'context', 'cov
 const EVIDENCE_BEARING = new Set(['supports', 'weakens', 'contradicts']);
 const CHALLENGE = new Set(['weakens', 'contradicts', 'null_result']);
 const PROMOTABLE_REVIEW = new Set(['human_reviewed', 'independently_reviewed']);
+const INTAKE_STATUSES = new Set([
+  'intake_pending_receipt_ingest_and_human_review',
+  'intake_receipts_complete_human_review_and_denominator_pending'
+]);
 const FORBIDDEN_KEYS = new Set(['finding', 'verdict', 'conclusion', 'probability', 'influence_score', 'guilt_score']);
 
 function array(value) {
@@ -53,9 +57,11 @@ function derivePromotion(packet) {
   const eligible = receiptsComplete && reviewComplete && denominatorComplete && challengePresent && positivePresent;
   const machineStage = eligible
     ? 'eligible_for_human_evidence_packet_promotion'
-    : evidence.some(observation => observationReceiptIds(observation).length > 0)
+    : receiptsComplete
       ? reviewComplete ? 'denominator_or_packet_completion_pending' : 'human_review_pending'
-      : 'intake_pending_receipt_ingest_and_human_review';
+      : evidence.some(observation => observationReceiptIds(observation).length > 0)
+        ? 'receipt_ingest_in_progress'
+        : 'intake_pending_receipt_ingest_and_human_review';
   return {
     evidence_bearing_observation_count: evidence.length,
     repository_receipts_complete: receiptsComplete,
@@ -82,7 +88,7 @@ export function validateThesisCasePacket(packet, { receiptIds = null, thesisCase
   if (caseIds && !caseIds.has(packet.case_id)) errors.push(`case packet references unknown thesis case ${packet.case_id}`);
   if (!array(packet?.proposition_ids).length) errors.push('case packet requires at least one proposition ID');
   for (const propositionId of array(packet?.proposition_ids)) if (propositionIds && !propositionIds.has(propositionId)) errors.push(`case packet references unknown proposition ${propositionId}`);
-  if (packet?.status !== 'intake_pending_receipt_ingest_and_human_review') errors.push('current case packets must remain intake_pending_receipt_ingest_and_human_review');
+  if (!INTAKE_STATUSES.has(packet?.status)) errors.push('case packet must remain in an allowed intake status');
   if (!text(packet?.publication_status).startsWith('blocked_')) errors.push('current case packet publication status must remain blocked');
   if (packet?.graph_effect !== 'none') errors.push('case packet graph_effect must remain none');
   if (!packet?.selection?.selection_unit || !packet?.selection?.selection_basis || !packet?.selection?.denominator_status || !packet?.selection?.denominator_description) errors.push('case packet requires a declared selection unit, basis, and denominator state');
@@ -134,6 +140,10 @@ export function validateThesisCasePacket(packet, { receiptIds = null, thesisCase
   if (!observations.some(observation => CHALLENGE.has(observation.relation))) errors.push('case packet requires weakening, contradiction, or bounded-null material');
 
   const derived = derivePromotion(packet);
+  const expectedStatus = derived.repository_receipts_complete
+    ? 'intake_receipts_complete_human_review_and_denominator_pending'
+    : 'intake_pending_receipt_ingest_and_human_review';
+  if (packet.status !== expectedStatus) errors.push(`case packet status expected ${expectedStatus}, got ${packet.status}`);
   const disposition = packet?.case_disposition ?? {};
   for (const key of ['positive_anchor_present', 'challenge_material_present', 'repository_receipts_complete', 'human_review_complete', 'denominator_complete', 'eligible_for_thesis_evidence_promotion']) {
     if (disposition[key] !== derived[key]) errors.push(`case disposition ${key} expected ${derived[key]}, got ${disposition[key]}`);
@@ -160,6 +170,7 @@ export function compileThesisCasePacket(packet) {
     title: packet.title,
     proposition_ids: unique(packet.proposition_ids),
     status: packet.status,
+    receipt_custody_status: derived.repository_receipts_complete ? 'complete' : 'incomplete',
     publication_status: packet.publication_status,
     graph_effect: 'none',
     conclusion_generated: false,
@@ -208,7 +219,7 @@ export function compileThesisCasePacket(packet) {
     thesis_consumption: {
       evidence_packet_emitted: false,
       allowed_relations_before_promotion: ['coverage', 'context'],
-      reason: 'The case packet preserves intended analytical relations but remains intake until receipts, denominator, and human-review gates pass in a separate promotion action.'
+      reason: 'The case packet preserves intended analytical relations but remains intake until receipt custody, denominator, and human-review gates pass in a separate promotion action.'
     }
   };
 }
@@ -222,6 +233,9 @@ export function compileThesisCasePacketIndex(compiledPackets) {
     intended_support_observations: packets.reduce((sum, packet) => sum + packet.relation_counts.supports, 0),
     challenge_observations: packets.reduce((sum, packet) => sum + packet.relation_counts.weakens + packet.relation_counts.contradicts + packet.relation_counts.null_result, 0),
     repository_receipts: packets.reduce((sum, packet) => sum + packet.receipt_count, 0),
+    receipt_complete_cases: packets.filter(packet => packet.promotion.repository_receipts_complete).length,
+    human_review_complete_cases: packets.filter(packet => packet.promotion.human_review_complete).length,
+    denominator_complete_cases: packets.filter(packet => packet.promotion.denominator_complete).length,
     eligible_for_promotion: packets.filter(packet => packet.promotion.eligible_for_thesis_evidence_promotion).length,
     emitted_thesis_evidence_packets: 0
   };
@@ -238,6 +252,7 @@ export function compileThesisCasePacketIndex(compiledPackets) {
       title: packet.title,
       proposition_ids: packet.proposition_ids,
       status: packet.status,
+      receipt_custody_status: packet.receipt_custody_status,
       source_count: packet.source_count,
       observation_count: packet.observation_count,
       relation_counts: packet.relation_counts,
@@ -248,7 +263,7 @@ export function compileThesisCasePacketIndex(compiledPackets) {
     interpretation_contract: {
       what_this_is: 'An index of bounded thesis case-intake packets and their promotion blockers.',
       what_this_is_not: 'A thesis evidence registry, finding set, graph projection, score, or conclusion.',
-      copy_ready_caveat: 'Intended analytical relations inside intake packets do not count as thesis evidence. Promotion remains a separate receipt-backed and human-reviewed act.'
+      copy_ready_caveat: 'Intended analytical relations inside intake packets do not count as thesis evidence. Receipt custody is necessary but does not replace denominator completion, human review, or a separate promotion act.'
     }
   };
 }
@@ -260,6 +275,8 @@ export function renderThesisCasePacketMarkdown(compiled) {
     `**Case:** ${compiled.case_id}`,
     '',
     `**Status:** ${compiled.status}`,
+    '',
+    `**Receipt custody:** ${compiled.receipt_custody_status}`,
     '',
     `**Machine stage:** ${compiled.promotion.machine_stage}`,
     '',
@@ -314,15 +331,18 @@ export function renderThesisCasePacketIndexMarkdown(index) {
     `- Intended support observations: ${index.totals.intended_support_observations}`,
     `- Challenge observations: ${index.totals.challenge_observations}`,
     `- Repository receipts: ${index.totals.repository_receipts}`,
+    `- Receipt-complete cases: ${index.totals.receipt_complete_cases}`,
+    `- Human-review-complete cases: ${index.totals.human_review_complete_cases}`,
+    `- Denominator-complete cases: ${index.totals.denominator_complete_cases}`,
     `- Eligible for promotion: ${index.totals.eligible_for_promotion}`,
     `- Emitted thesis evidence packets: ${index.totals.emitted_thesis_evidence_packets}`,
     '',
     '## Cases',
     '',
-    '| Case | Issue | Sources | Observations | Receipts | Stage | Promotion eligible |',
-    '|---|---:|---:|---:|---:|---|---:|'
+    '| Case | Issue | Sources | Observations | Receipts | Receipt custody | Stage | Promotion eligible |',
+    '|---|---:|---:|---:|---:|---|---|---:|'
   ];
-  for (const item of index.cases) lines.push(`| ${item.case_id} | ${item.issue} | ${item.source_count} | ${item.observation_count} | ${item.receipt_count} | ${item.machine_stage} | ${item.eligible_for_thesis_evidence_promotion} |`);
+  for (const item of index.cases) lines.push(`| ${item.case_id} | ${item.issue} | ${item.source_count} | ${item.observation_count} | ${item.receipt_count} | ${item.receipt_custody_status} | ${item.machine_stage} | ${item.eligible_for_thesis_evidence_promotion} |`);
   lines.push('');
   return lines.join('\n');
 }

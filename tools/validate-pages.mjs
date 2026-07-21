@@ -22,6 +22,17 @@ const required = [
   'data/research/denominators/synthetic-population-vendors.json',
   'data/research/thesis-case-packets/state-market-no10-pandemic-data-diaspora.json',
   'data/research/thesis-case-packets/state-market-central-government-ai-unit-succession.json',
+  'receipts/thesis-state-market/gov-acoba-samantha-jones-case-index-2024.md',
+  'receipts/thesis-state-market/gov-acoba-samantha-jones-ceracare-2024.md',
+  'receipts/thesis-state-market/civil-service-commission-samantha-harrison-breach-2026.md',
+  'receipts/thesis-state-market/gov-no10ds-formation-mid-2020.md',
+  'receipts/thesis-state-market/gov-iai-announcement-2023.md',
+  'receipts/thesis-state-market/gov-dsit-digital-ai-transfer-2024.md',
+  'receipts/thesis-state-market/gov-dsit-accounting-system-statement-2025.md',
+  'receipts/thesis-state-market/gov-cddo-about-new-gds-2025.md',
+  'receipts/thesis-state-market/gov-gds-about-new-gds-2025.md',
+  'receipts/thesis-state-market/gov-ai-playbook-red-teaming-2025.md',
+  'receipts/thesis-state-market/gsa-centers-of-excellence-2017.md',
   'data/research/theses/synthetic-population-infrastructure.json',
   'data/research/thesis-evidence/synthetic-population-infrastructure.json',
   'data/research/thesis-reviews/synthetic-population-infrastructure.json',
@@ -35,6 +46,7 @@ const required = [
   'src/visual-aperture-responsive.css', 'src/visual-aperture-workspace.css', 'src/visual-aperture-export.css',
   'assets/social-card.png', 'docs/methodology.md', 'docs/thesis-assembly.md',
   'docs/synthetic-population-vendor-denominator.md', 'docs/thesis-case-packets.md',
+  'docs/thesis-state-market-receipt-custody.md',
   'cases/field-autopsy-03/case.json'
 ];
 const missing = required.filter(file => !fs.existsSync(path.join(destination, file)));
@@ -160,10 +172,21 @@ if (casePacketIndex.schema_version !== 'clifford-thesis-case-packet-index@1'
   || casePacketIndex.graph_effect !== 'none'
   || casePacketIndex.conclusion_generated !== false
   || casePacketIndex.totals?.cases !== 2
-  || casePacketIndex.totals?.repository_receipts !== 0
+  || casePacketIndex.totals?.repository_receipts !== 11
+  || casePacketIndex.totals?.receipt_complete_cases !== 2
+  || casePacketIndex.totals?.human_review_complete_cases !== 0
+  || casePacketIndex.totals?.denominator_complete_cases !== 0
   || casePacketIndex.totals?.eligible_for_promotion !== 0
   || casePacketIndex.totals?.emitted_thesis_evidence_packets !== 0
+  || jonesPacket.receipt_custody_status !== 'complete'
+  || jonesPacket.receipt_count !== 3
+  || jonesPacket.promotion?.repository_receipts_complete !== true
+  || jonesPacket.promotion?.human_review_complete !== false
   || jonesPacket.promotion?.eligible_for_thesis_evidence_promotion !== false
+  || successionPacket.receipt_custody_status !== 'complete'
+  || successionPacket.receipt_count !== 8
+  || successionPacket.promotion?.repository_receipts_complete !== true
+  || successionPacket.promotion?.human_review_complete !== false
   || successionPacket.promotion?.eligible_for_thesis_evidence_promotion !== false
   || !jonesPacket.observations?.some(item => item.predicate === 'business_appointment_rules_breach_recorded' && item.non_retroactive === true)
   || !jonesPacket.observations?.some(item => item.predicate === 'source_explicit_ordinary_explanation' && item.relation === 'weakens')
