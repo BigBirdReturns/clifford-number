@@ -11,9 +11,11 @@ on:
       - 'tools/compile-reporter-briefings.mjs'
       - 'tools/compile.mjs'
       - 'tools/lib/case-ledger.mjs'
+      - 'tools/build-public-catalog.mjs'
       - 'tools/build-pages.mjs'
       - 'tools/build-standalone.mjs'
       - 'tools/validate-pages.mjs'
+      - 'tools/validate-reporter-briefing-pages.mjs'
       - 'tools/verify-reporter-briefings-browser.cjs'
       - 'test/reporter-briefing.test.js'
       - 'schemas/reporter-briefing.schema.json'
@@ -46,9 +48,16 @@ jobs:
 
       - name: Build and validate Pages and standalone output
         run: |
-          npm run build:pages
-          npm run build:standalone
-          npm run validate:pages
+          set +e
+          {
+            npm run build:pages &&
+            npm run build:standalone &&
+            npm run validate:pages &&
+            node tools/validate-reporter-briefing-pages.mjs
+          } > /tmp/reporter-briefings-build.log 2>&1
+          status=$?
+          tail -n 260 /tmp/reporter-briefings-build.log
+          exit "$status"
 
       - name: Install Chromium verification runtime
         run: |
@@ -85,5 +94,6 @@ jobs:
             build/metrics/reporter-briefings-browser.json
             build/metrics/reporter-briefing-first.png
             build/metrics/reporter-briefing-evidence-first.png
+            /tmp/reporter-briefings-build.log
             /tmp/reporter-briefings-server.log
           if-no-files-found: warn
