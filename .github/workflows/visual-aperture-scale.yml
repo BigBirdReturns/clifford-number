@@ -1,4 +1,4 @@
-name: Visual aperture scale baseline
+name: Visual aperture scale budgets
 
 on:
   pull_request:
@@ -12,6 +12,8 @@ on:
       - 'tools/measure-visual-aperture-route-browser.cjs'
       - 'tools/serve-static.mjs'
       - 'test/visual-aperture-scale.test.js'
+      - 'test/visual-aperture-windowing.test.js'
+      - 'test/visual-aperture-bounded-contract.test.js'
       - 'docs/visual-aperture-scale-baseline.md'
       - '.github/workflows/visual-aperture-scale.yml'
   workflow_dispatch:
@@ -20,7 +22,7 @@ permissions:
   contents: read
 
 jobs:
-  scale-baseline:
+  scale-budgets:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,8 +33,11 @@ jobs:
       - name: Compile current public artifacts
         run: npm run compile
 
-      - name: Pin deterministic fixture cardinalities
-        run: node test/visual-aperture-scale.test.js
+      - name: Pin deterministic fixture and windowing contracts
+        run: |
+          node test/visual-aperture-scale.test.js
+          node test/visual-aperture-windowing.test.js
+          node test/visual-aperture-bounded-contract.test.js
 
       - name: Measure pure projection costs
         run: node tools/measure-visual-aperture-scale.mjs
@@ -55,21 +60,21 @@ jobs:
           cat /tmp/clifford-scale-server.log
           exit 1
 
-      - name: Measure semantic levels and dense surfaces in Chromium
+      - name: Enforce overview, DOM, interaction, mobile, and motion budgets
         run: |
           node --check tools/measure-visual-aperture-browser.cjs
           timeout 300s node tools/measure-visual-aperture-browser.cjs
 
-      - name: Measure the adversarial route in Chromium
+      - name: Enforce the complete-path route-window budget
         run: |
           node --check tools/measure-visual-aperture-route-browser.cjs
           timeout 300s node tools/measure-visual-aperture-route-browser.cjs
 
-      - name: Preserve measurement artifacts
+      - name: Preserve scale-budget evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: visual-aperture-scale-baseline
+          name: visual-aperture-scale-budgets
           path: |
             build/metrics/visual-aperture-scale.json
             build/metrics/visual-aperture-scale.md

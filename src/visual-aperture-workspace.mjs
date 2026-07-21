@@ -9,9 +9,9 @@ const MAX_COMPARE_ITEMS = 2;
 const EVIDENCE_FLOORS = new Set(['open', 'reported', 'primary_public', 'official']);
 const COMPARE_KINDS = new Set(['actor', 'surface']);
 const VIEW_QUERY_KEYS = new Set([
-  'ap_v', 'ap_mode',
+  'ap_v', 'ap_mode', 'ap_overview_page', 'ap_overview_size',
   'ap_map_scale', 'ap_map_level', 'ap_map_cluster', 'ap_map_type', 'ap_map_surface', 'ap_map_actor',
-  'ap_route_from', 'ap_route_to', 'ap_route_asof', 'ap_route_evidence', 'ap_route_step', 'ap_route_actor',
+  'ap_route_from', 'ap_route_to', 'ap_route_asof', 'ap_route_evidence', 'ap_route_step', 'ap_route_window', 'ap_route_actor',
   'ap_surface_id', 'ap_surface_query', 'ap_surface_asof', 'ap_surface_evidence', 'ap_surface_budget', 'ap_surface_pins', 'ap_surface_actor'
 ]);
 

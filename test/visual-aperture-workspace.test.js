@@ -22,7 +22,8 @@ assert.deepEqual(parseApertureWorkspace('{bad json'), emptyApertureWorkspace());
 assert.deepEqual(normalizeApertureWorkspace({ version: '2', savedViews: [{ id: 'stale' }] }), emptyApertureWorkspace());
 
 const query = new URLSearchParams({
-  ap_v: '1', ap_mode: 'surface', ap_surface_id: 'surface-a', ap_surface_query: 'official',
+  ap_v: '1', ap_mode: 'surface', ap_overview_page: '3', ap_overview_size: '100',
+  ap_route_window: '120', ap_surface_id: 'surface-a', ap_surface_query: 'official',
   ap_surface_budget: '18', unrelated: 'must not persist', ap_evidence_prose: 'must not persist either'
 }).toString();
 let workspace = saveApertureWorkspaceView(emptyApertureWorkspace(), {
@@ -33,6 +34,9 @@ assert.equal(workspace.savedViews.length, 1);
 assert.equal(workspace.savedViews[0].name, 'Surface review');
 const storedViewQuery = new URLSearchParams(workspace.savedViews[0].query);
 assert.equal(storedViewQuery.get('ap_surface_id'), 'surface-a');
+assert.equal(storedViewQuery.get('ap_overview_page'), '3');
+assert.equal(storedViewQuery.get('ap_overview_size'), '100');
+assert.equal(storedViewQuery.get('ap_route_window'), '120');
 assert.equal(storedViewQuery.has('unrelated'), false);
 assert.equal(storedViewQuery.has('ap_evidence_prose'), false);
 assert.deepEqual(Object.keys(workspace.savedViews[0]).sort(), ['id', 'name', 'query', 'savedAt']);
@@ -97,7 +101,13 @@ const serialized = serializeApertureWorkspace(workspace);
 assert.deepEqual(parseApertureWorkspace(serialized), normalizeApertureWorkspace(workspace));
 for (const forbidden of ['This sentence must never enter', 'receipt-secret', 'must not persist', 'result']) assert.equal(serialized.includes(forbidden), false, `${forbidden} must not enter workspace storage`);
 
-const moduleFiles = ['src/visual-aperture-core.mjs', 'src/visual-aperture-state.mjs', 'src/visual-aperture-workspace.mjs'];
+const moduleFiles = [
+  'src/visual-aperture-core.mjs',
+  'src/visual-aperture-state.mjs',
+  'src/visual-aperture-workspace.mjs',
+  'src/visual-aperture-export.mjs',
+  'src/visual-aperture-windowing.mjs'
+];
 const moduleRecords = moduleFiles.map(file => {
   const source = readFileSync(file, 'utf8');
   const names = [...source.matchAll(/^export\s+(?:const|function|class)\s+(\w+)/gm)].map(match => match[1]);
@@ -107,7 +117,12 @@ const names = [...new Set(moduleRecords.flatMap(record => record.names))];
 const modules = moduleRecords.map(record => `(function apertureModule() {\n${record.body}\nObject.assign(globalThis, { ${record.names.join(', ')} });\n})();`).join('\n');
 const runtime = [
   readFileSync('src/visual-aperture-workspace-runtime.js', 'utf8'),
-  ...Array.from({ length: 11 }, (_, index) => readFileSync(`src/visual-aperture-part-${index + 1}.js`, 'utf8'))
+  readFileSync('src/visual-aperture-export-runtime.js', 'utf8'),
+  ...Array.from({ length: 10 }, (_, index) => readFileSync(`src/visual-aperture-part-${index + 1}.js`, 'utf8')),
+  readFileSync('src/visual-aperture-bounded-runtime.js', 'utf8'),
+  readFileSync('src/visual-aperture-export-preview-runtime.js', 'utf8'),
+  readFileSync('src/visual-aperture-part-11.js', 'utf8'),
+  readFileSync('src/visual-aperture-bounded-address-runtime.js', 'utf8')
 ].join('\n\n');
 const standaloneShape = `(function visualApertureBundle() {\n${modules}\n(function visualApertureRuntime() {\nconst { ${names.join(', ')} } = globalThis;\n${runtime}\n})();\n})();`;
 assert.doesNotThrow(() => new Function(standaloneShape), 'the workspace and aperture runtime must parse in the exact standalone concatenation order');

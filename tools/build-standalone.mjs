@@ -29,7 +29,8 @@ const apertureModuleFiles = [
   'src/visual-aperture-core.mjs',
   'src/visual-aperture-state.mjs',
   'src/visual-aperture-workspace.mjs',
-  'src/visual-aperture-export.mjs'
+  'src/visual-aperture-export.mjs',
+  'src/visual-aperture-windowing.mjs'
 ];
 const apertureModuleRecords = apertureModuleFiles.map(file => {
   const source = read(file);
@@ -44,7 +45,11 @@ const apertureModules = apertureModuleRecords
 const apertureRuntime = [
   read('src/visual-aperture-workspace-runtime.js'),
   read('src/visual-aperture-export-runtime.js'),
-  ...Array.from({ length: 11 }, (_, index) => read(`src/visual-aperture-part-${index + 1}.js`))
+  ...Array.from({ length: 10 }, (_, index) => read(`src/visual-aperture-part-${index + 1}.js`)),
+  read('src/visual-aperture-bounded-runtime.js'),
+  read('src/visual-aperture-export-preview-runtime.js'),
+  read('src/visual-aperture-part-11.js'),
+  read('src/visual-aperture-bounded-address-runtime.js')
 ].join('\n\n');
 const apertureBundle = `(function visualApertureBundle() {\n${apertureModules}\n(function visualApertureRuntime() {\nconst { ${apertureNames.join(', ')} } = globalThis;\n${apertureRuntime}\n})();\n})();`;
 let app = read('app.js')
@@ -60,7 +65,8 @@ const inlineCss = [
   read('src/visual-aperture-svg.css'),
   read('src/visual-aperture-responsive.css'),
   read('src/visual-aperture-workspace.css'),
-  read('src/visual-aperture-export.css')
+  read('src/visual-aperture-export.css'),
+  read('src/visual-aperture-bounded.css')
 ].join('\n\n');
 
 let html = read('index.html')

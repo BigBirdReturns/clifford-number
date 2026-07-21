@@ -104,11 +104,45 @@ function routeHop(value, index) {
   };
 }
 
+function displayMetadata(value, fallbackTotal = 0) {
+  if (!value) return null;
+  const totalRows = integer(value.total_rows, fallbackTotal);
+  const visibleFrom = totalRows ? Math.max(1, integer(value.visible_from, 1)) : 0;
+  const visibleUntil = totalRows ? Math.max(visibleFrom, Math.min(totalRows, integer(value.visible_until, totalRows))) : 0;
+  const pageSize = Math.max(1, integer(value.page_size, totalRows || 1));
+  const totalPages = Math.max(1, integer(value.total_pages, Math.ceil(totalRows / pageSize) || 1));
+  const page = Math.max(1, Math.min(totalPages, integer(value.page, 1)));
+  return {
+    total_rows: totalRows,
+    visible_from: visibleFrom,
+    visible_until: visibleUntil,
+    page,
+    page_size: pageSize,
+    total_pages: totalPages,
+    rendering: clean(value.rendering || 'bounded_view_complete_rows_retained', 100)
+  };
+}
+
+function routeWindowMetadata(value, totalSteps) {
+  if (!value) return null;
+  const total = integer(value.total_steps, totalSteps);
+  const from = total ? Math.max(1, integer(value.visible_step_from, 1)) : 0;
+  const until = total ? Math.max(from, Math.min(total, integer(value.visible_step_until, total))) : 0;
+  return {
+    visible_step_from: from,
+    visible_step_until: until,
+    total_steps: total,
+    max_visible_steps: Math.max(1, integer(value.max_visible_steps, 24)),
+    complete_path_retained: value.complete_path_retained !== false
+  };
+}
+
 function interpretationContract() {
   return {
     graph_effect: 'none',
     export_is_view_description_not_finding: true,
     exact_view_url_required: true,
+    bounded_rendering_is_not_data_deletion: true,
     caveat: APERTURE_EXPORT_BOUNDARY
   };
 }
@@ -120,14 +154,26 @@ function routeScopeText(route) {
   return parts.join(', ');
 }
 
+function displaySentence(display) {
+  if (!display || !display.total_rows) return '';
+  if (display.visible_from === 1 && display.visible_until === display.total_rows) return ` All ${display.total_rows} evidence rows are visible.`;
+  return ` The browser shows rows ${display.visible_from}–${display.visible_until} of ${display.total_rows}; the export retains every row.`;
+}
+
+function routeWindowSentence(window) {
+  if (!window || !window.total_steps) return '';
+  if (window.visible_step_from === 1 && window.visible_step_until === window.total_steps) return ` All ${window.total_steps} route steps are visible.`;
+  return ` The browser shows route steps ${window.visible_step_from}–${window.visible_step_until} of ${window.total_steps}; the complete path is retained in this packet.`;
+}
+
 function mapCaption(view) {
   if (view.level === 'corpus') {
-    return `This exact Clifford Number view shows ${view.families.length} surface families containing ${view.surface_count} bounded surfaces. Aggregate corridors count actors documented across more than one family; they are not Clifford hops.`;
+    return `This exact Clifford Number view shows ${view.families.length} surface families containing ${view.surface_count} bounded surfaces. Aggregate corridors count actors documented across more than one family; they are not Clifford hops.${displaySentence(view.display)}`;
   }
   if (view.level === 'machine') {
-    return `This exact Clifford Number view decomposes ${view.selected_family?.label || 'the selected family'} into ${view.surface_types.length} compiler surface types while keeping every bounded surface separately inspectable.`;
+    return `This exact Clifford Number view decomposes ${view.selected_family?.label || 'the selected family'} into ${view.surface_types.length} compiler surface types while keeping every bounded surface separately inspectable.${displaySentence(view.display)}`;
   }
-  return `This exact Clifford Number view shows ${view.participants.length} documented actor participation rows on ${view.surface?.surface_label || 'the selected bounded surface'}. The surface is ${view.surface?.hop_eligible ? 'hop-eligible only when every compiler rule passes' : 'context-only and creates no actor-to-actor hop'}.`;
+  return `This exact Clifford Number view contains ${view.participants.length} documented actor participation rows on ${view.surface?.surface_label || 'the selected bounded surface'}. The surface is ${view.surface?.hop_eligible ? 'hop-eligible only when every compiler rule passes' : 'context-only and creates no actor-to-actor hop'}.${displaySentence(view.display)}`;
 }
 
 function routeCaption(view) {
@@ -136,14 +182,17 @@ function routeCaption(view) {
     return `No route was computed from ${view.from.actor_label} to ${view.to.actor_label}: the temporal control "${view.as_of}" is not a year, month, or ISO day, so this view is refused rather than reported. It states nothing about whether a documented route exists.`;
   }
   if (!view.path) {
-    return `No actor-to-actor route from ${view.from.actor_label} to ${view.to.actor_label} survives the current compiled corpus under ${scope}. This scoped result is not proof that no relationship exists.`;
+    return `No actor-to-actor route from ${view.from.actor_label} to ${view.to.actor_label} survives the current compiled corpus under ${scope}. This scoped result is not proof that no relationship exists.${displaySentence(view.display)}`;
   }
-  const steps = view.path.hops.map(hop => `${hop.from.actor_label} → ${hop.surface.surface_label} → ${hop.to.actor_label}`).join('; ');
-  return `In the current compiled Clifford Number corpus, ${view.from.actor_label} connects to ${view.to.actor_label} in ${view.path.number} documented step${view.path.number === 1 ? '' : 's'} under ${scope}: ${steps}. Every step remains mediated by its named bounded surface.`;
+  const hops = view.path.hops;
+  const shown = hops.length <= 12 ? hops : [...hops.slice(0, 6), ...hops.slice(-6)];
+  const steps = shown.map(hop => `${hop.from.actor_label} → ${hop.surface.surface_label} → ${hop.to.actor_label}`).join('; ');
+  const omission = hops.length > shown.length ? ` A middle sequence of ${hops.length - shown.length} steps is omitted from this caption but retained in the packet.` : '';
+  return `In the current compiled Clifford Number corpus, ${view.from.actor_label} connects to ${view.to.actor_label} in ${view.path.number} documented step${view.path.number === 1 ? '' : 's'} under ${scope}: ${steps}.${omission} Every step remains mediated by its named bounded surface.${routeWindowSentence(view.route_window)}${displaySentence(view.display)}`;
 }
 
 function surfaceCaption(view) {
-  return `This exact Clifford Number surface view shows ${view.visible_participants.length} of ${view.total_actors} documented actors on ${view.surface.surface_label}; ${view.hidden_by_budget} eligible actors are held by the bracket budget and ${view.filtered_out} are outside the current filters. The bounded container creates no participant-to-participant adjacency.`;
+  return `This exact Clifford Number surface view shows ${view.visible_participants.length} of ${view.total_actors} documented actors on ${view.surface.surface_label}; ${view.hidden_by_budget} eligible actors are held by the bracket budget and ${view.filtered_out} are outside the current filters. The bounded container creates no participant-to-participant adjacency.${displaySentence(view.display)}`;
 }
 
 function appendBoundary(caption, url) {
@@ -215,6 +264,7 @@ function mapView(input) {
     surface_types: surfaceTypes,
     corridors,
     participants,
+    display: displayMetadata(input?.display, table.rows.length),
     table
   };
 }
@@ -222,9 +272,6 @@ function mapView(input) {
 function routeView(input) {
   const from = actor(input?.from);
   const to = actor(input?.to);
-  /* An unparseable temporal control means no route was ever computed. Such a
-   * view is refused, not published: reporting it as an absent route would
-   * export an apparent negative finding from an input the compiler rejected. */
   const temporalInputValid = input?.temporal_input_valid !== false;
   const hops = (Array.isArray(input?.path?.hops) ? input.path.hops : []).map(routeHop);
   const path = input?.path && temporalInputValid ? { number: hops.length, hops } : null;
@@ -256,6 +303,8 @@ function routeView(input) {
     evidence_floor: clean(input?.evidence_floor || 'open', 80),
     path,
     diagnostics,
+    display: displayMetadata(input?.display, table.rows.length),
+    route_window: routeWindowMetadata(input?.route_window, path?.number ?? 0),
     table
   };
 }
@@ -288,6 +337,7 @@ function surfaceView(input) {
     hidden_by_budget: integer(input?.hidden_by_budget),
     filtered_out: integer(input?.filtered_out),
     pinned_actor_ids: strings(input?.pinned_actor_ids, 200),
+    display: displayMetadata(input?.display, table.rows.length),
     table
   };
 }
