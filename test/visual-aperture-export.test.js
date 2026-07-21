@@ -85,6 +85,23 @@ assert.match(blocked.caption, /No actor-to-actor route/);
 assert.match(blocked.caption, /not proof that no relationship exists/);
 assert.equal(blocked.view.table.rows.length, 0);
 
+// An unparseable temporal control is refused, never published as an absent route.
+const refused = buildApertureExportPacket({
+  mode: 'route', generatedAt, exactViewUrl,
+  view: {
+    from: { actor_id: 'actor-a', actor_label: 'Actor A' },
+    to: { actor_id: 'actor-z', actor_label: 'Actor Z' },
+    as_of: 'not-a-date', temporal_input_valid: false, evidence_floor: 'open', path: null,
+    diagnostics: { total_edges: 4, traversable_edges: 4, evidence_blocked_bases: 0, time_blocked_bases: 0, undated_blocked_bases: 0 }
+  }
+});
+assert.equal(refused.view.temporal_input_valid, false);
+assert.equal(refused.view.path, null);
+assert.equal(refused.view.diagnostics, null);
+assert.equal(refused.view.table.rows.length, 0);
+assert.match(refused.caption, /refused rather than reported/);
+assert.doesNotMatch(refused.caption, /No actor-to-actor route|survives the current compiled corpus/);
+
 const mapPacket = buildApertureExportPacket({
   mode: 'map', generatedAt, exactViewUrl: 'https://example.test/?ap_v=1&ap_mode=map',
   view: {

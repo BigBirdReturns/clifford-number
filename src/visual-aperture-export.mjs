@@ -132,6 +132,9 @@ function mapCaption(view) {
 
 function routeCaption(view) {
   const scope = routeScopeText(view);
+  if (view.temporal_input_valid === false) {
+    return `No route was computed from ${view.from.actor_label} to ${view.to.actor_label}: the temporal control "${view.as_of}" is not a year, month, or ISO day, so this view is refused rather than reported. It states nothing about whether a documented route exists.`;
+  }
   if (!view.path) {
     return `No actor-to-actor route from ${view.from.actor_label} to ${view.to.actor_label} survives the current compiled corpus under ${scope}. This scoped result is not proof that no relationship exists.`;
   }
@@ -219,9 +222,13 @@ function mapView(input) {
 function routeView(input) {
   const from = actor(input?.from);
   const to = actor(input?.to);
+  /* An unparseable temporal control means no route was ever computed. Such a
+   * view is refused, not published: reporting it as an absent route would
+   * export an apparent negative finding from an input the compiler rejected. */
+  const temporalInputValid = input?.temporal_input_valid !== false;
   const hops = (Array.isArray(input?.path?.hops) ? input.path.hops : []).map(routeHop);
-  const path = input?.path ? { number: hops.length, hops } : null;
-  const diagnostics = {
+  const path = input?.path && temporalInputValid ? { number: hops.length, hops } : null;
+  const diagnostics = !temporalInputValid ? null : {
     total_edges: integer(input?.diagnostics?.total_edges),
     traversable_edges: integer(input?.diagnostics?.traversable_edges),
     evidence_blocked_bases: integer(input?.diagnostics?.evidence_blocked_bases),
@@ -245,6 +252,7 @@ function routeView(input) {
     from,
     to,
     as_of: nullable(input?.as_of, 20),
+    temporal_input_valid: temporalInputValid,
     evidence_floor: clean(input?.evidence_floor || 'open', 80),
     path,
     diagnostics,
