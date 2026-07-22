@@ -35,16 +35,13 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -97,28 +94,6 @@ jobs:
         run: |
           node --check tools/verify-reporter-briefings-browser.cjs
           timeout 240s node tools/verify-reporter-briefings-browser.cjs
-
-      - name: Commit deterministic prototype artifacts
-        if: success() && github.event_name == 'pull_request' && github.head_ref == 'agent/structured-reporter-report-v2'
-        env:
-          HEAD_BRANCH: ${{ github.head_ref }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            briefs/anduril-access-ownership.html \
-            build/briefings/anduril-access-ownership.json \
-            build/briefings/index.json \
-            build/cases/anduril-access-ownership.json \
-            build/cases/index.json \
-            build/public-catalog.json \
-            build/review/reporter-briefing-queue.json
-          if git diff --cached --quiet; then
-            echo "Deterministic report artifacts already match the compiler."
-          else
-            git commit -m "Compile structured report artifacts"
-            git push origin "HEAD:${HEAD_BRANCH}"
-          fi
 
       - name: Preserve deterministic publication evidence
         if: always()
