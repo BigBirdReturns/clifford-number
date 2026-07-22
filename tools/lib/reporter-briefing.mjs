@@ -34,12 +34,37 @@ function sha256(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
 
+function qualificationForClaim(claim, caseItem) {
+  if (text(claim?.qualification)) return { qualification: text(claim.qualification), qualification_source: 'claim' };
+  if (text(caseItem?.boundary)) return { qualification: text(caseItem.boundary), qualification_source: 'case_boundary' };
+  if (text(caseItem?.disclaimer)) return { qualification: text(caseItem.disclaimer), qualification_source: 'case_disclaimer' };
+  return { qualification: '', qualification_source: 'missing' };
+}
+
+function unsequencedDate(claim) {
+  if (text(claim?.valid_from) && text(claim?.valid_until) && claim.valid_from !== claim.valid_until) {
+    return `${claim.valid_from} to ${claim.valid_until}`;
+  }
+  return text(claim?.valid_from) || text(claim?.valid_until) || 'Not assigned to a dated event';
+}
+
 function claimMap(caseItem) {
   const claims = new Map();
+  for (const claim of caseItem.claims ?? []) {
+    claims.set(claim.claim_id, {
+      ...claim,
+      ...qualificationForClaim(claim, caseItem),
+      event_id: null,
+      event_type: 'unsequenced_case_claim',
+      event_label: 'Unsequenced case claim',
+      occurred_at: unsequencedDate(claim)
+    });
+  }
   for (const event of caseItem.events ?? []) {
     for (const claim of event.claims ?? []) {
       claims.set(claim.claim_id, {
         ...claim,
+        ...qualificationForClaim(claim, caseItem),
         event_id: event.event_id,
         event_type: event.event_type,
         event_label: event.label,
@@ -56,6 +81,10 @@ function eventMap(caseItem) {
 
 function receiptMap(caseItem) {
   return new Map((caseItem.receipts ?? []).map(receipt => [receipt.receipt_id, receipt]));
+}
+
+function trailMap(caseItem) {
+  return new Map((caseItem.trails ?? []).map(trail => [trail.trail_id, trail]));
 }
 
 function statusSummary(claims) {
@@ -137,11 +166,25 @@ function validateDimension(dimension, name, errors) {
   return ids;
 }
 
+function validateRecordsTarget(recordsTarget, claims, errors) {
+  const hasClaim = Boolean(recordsTarget?.claim_id);
+  const hasEditorial = Boolean(text(recordsTarget?.text) || text(recordsTarget?.qualification));
+  if (hasClaim === hasEditorial) {
+    errors.push('records_target must contain either claim_id or editorial text and qualification');
+    return;
+  }
+  if (hasClaim && !claims.has(recordsTarget.claim_id)) errors.push('records_target.claim_id must reference a case claim');
+  if (hasEditorial && (!text(recordsTarget?.text) || !text(recordsTarget?.qualification))) {
+    errors.push('editorial records_target requires text and qualification');
+  }
+}
+
 export function validateReporterBriefing(spec, caseItem) {
   const errors = [];
   const claims = claimMap(caseItem);
   const events = eventMap(caseItem);
   const receipts = receiptMap(caseItem);
+  const trails = trailMap(caseItem);
 
   if (spec?.schema_version !== REPORTER_BRIEFING_SCHEMA_VERSION) errors.push(`schema_version must be ${REPORTER_BRIEFING_SCHEMA_VERSION}`);
   if (spec?.case_id !== caseItem?.case_id) errors.push('briefing case_id must match compiled case');
@@ -241,6 +284,14 @@ export function validateReporterBriefing(spec, caseItem) {
     priorities.add(item?.priority);
     if (!Array.isArray(item?.thread_ids) || item.thread_ids.length === 0) errors.push(`workplan ${label} must target at least one thread`);
     for (const threadId of item?.thread_ids ?? []) if (!threadIds.has(threadId)) errors.push(`workplan ${label} references unknown thread ${threadId}`);
+    for (const trailId of item?.trail_ids ?? []) {
+      const trail = trails.get(trailId);
+      if (!trail) errors.push(`workplan ${label} references unknown case trail ${trailId}`);
+      else {
+        if (trail.graph_effect !== 'none') errors.push(`workplan ${label} references graph-active trail ${trailId}`);
+        if (trail.promotes_to && trail.promotes_to !== 'candidate_only') errors.push(`workplan ${label} references trail ${trailId} that promotes beyond candidate_only`);
+      }
+    }
     for (const field of ['custodians', 'records', 'routes']) {
       if (!Array.isArray(item?.[field]) || item[field].length === 0 || item[field].some(value => !text(value))) errors.push(`workplan ${label}.${field} must contain nonempty text entries`);
     }
@@ -249,9 +300,10 @@ export function validateReporterBriefing(spec, caseItem) {
   }
   if ((spec?.workplan ?? []).length === 0) errors.push('workplan must contain at least one sequenced reporting item');
 
-  for (const [name, ref] of [['working_proposition', spec?.working_proposition], ['boundary', spec?.boundary], ['records_target', spec?.records_target]]) {
+  for (const [name, ref] of [['working_proposition', spec?.working_proposition], ['boundary', spec?.boundary]]) {
     if (!ref?.claim_id || !claims.has(ref.claim_id)) errors.push(`${name}.claim_id must reference a case claim`);
   }
+  validateRecordsTarget(spec?.records_target, claims, errors);
 
   for (const [index, item] of (spec?.translations ?? []).entries()) {
     if (!text(item?.term) || !text(item?.question)) errors.push(`translation ${index + 1} requires term and question`);
@@ -262,7 +314,7 @@ export function validateReporterBriefing(spec, caseItem) {
     if (!claim) continue;
     if (!CLAIM_STATUSES.has(claim.claim_status)) errors.push(`briefing claim ${claimId} has invalid status ${claim.claim_status}`);
     if (!text(claim.plain)) errors.push(`briefing claim ${claimId} lacks plain text`);
-    if (!text(claim.qualification)) errors.push(`briefing claim ${claimId} lacks a qualification`);
+    if (!text(claim.qualification)) errors.push(`briefing claim ${claimId} lacks a claim qualification or case-wide boundary`);
     if (!(claim.receipt_ids?.length > 0)) errors.push(`briefing claim ${claimId} has no receipts`);
     for (const receiptId of claim.receipt_ids ?? []) if (!receipts.has(receiptId)) errors.push(`briefing claim ${claimId} references missing receipt ${receiptId}`);
   }
@@ -277,6 +329,7 @@ export function compileReporterBriefing(spec, caseItem) {
   const claimsById = claimMap(caseItem);
   const eventsById = eventMap(caseItem);
   const receiptsById = receiptMap(caseItem);
+  const trailsById = trailMap(caseItem);
   const claimIds = allBriefingClaimIds(spec, eventsById);
   const claims = claimIds.map(id => claimsById.get(id));
   const receipts = receiptsForClaims(claims, receiptsById);
@@ -286,7 +339,15 @@ export function compileReporterBriefing(spec, caseItem) {
 
   const proposition = claimsById.get(spec.working_proposition.claim_id);
   const boundary = claimsById.get(spec.boundary.claim_id);
-  const recordsTarget = claimsById.get(spec.records_target.claim_id);
+  const recordsTarget = spec.records_target.claim_id
+    ? { ...claimsById.get(spec.records_target.claim_id), source: 'claim' }
+    : {
+        plain: text(spec.records_target.text),
+        qualification: text(spec.records_target.qualification),
+        qualification_source: 'editorial',
+        claim_status: 'review_required',
+        source: 'editorial'
+      };
 
   const columnsById = new Map(spec.matrix.columns.map(column => [column.id, column]));
   const threadRecords = spec.threads.map((thread, index) => {
@@ -324,6 +385,15 @@ export function compileReporterBriefing(spec, caseItem) {
     return { ...control, claims: controlClaims, ...statusSummary(controlClaims) };
   });
 
+  const workplanRecords = [...spec.workplan].sort((a, b) => a.priority - b.priority).map(item => ({
+    ...item,
+    trails: (item.trail_ids ?? []).map(id => trailsById.get(id))
+  }));
+  const sourceTrailIds = unique(workplanRecords.flatMap(item => item.trail_ids ?? []));
+  const inheritedQualificationClaimIds = claims
+    .filter(claim => claim.qualification_source !== 'claim')
+    .map(claim => claim.claim_id);
+
   const caseSummary = statusSummary(claims);
   const xLevelById = new Map(spec.orientation.x.levels.map(level => [level.id, level]));
   const yLevelById = new Map(spec.orientation.y.levels.map(level => [level.id, level]));
@@ -343,6 +413,7 @@ export function compileReporterBriefing(spec, caseItem) {
     threadById,
     sequenceRecords,
     controlRecords,
+    workplanRecords,
     xLevelById,
     yLevelById,
     schemaVersion: REPORTER_BRIEFING_SCHEMA_VERSION
@@ -362,15 +433,21 @@ export function compileReporterBriefing(spec, caseItem) {
     publication: spec.publication,
     graph_effect: 'none',
     conclusion_generated: false,
+    records_target: {
+      source: recordsTarget.source,
+      claim_id: spec.records_target.claim_id ?? null
+    },
     counts: {
       threads: threadRecords.length,
       matrix_cells: threadRecords.reduce((total, thread) => total + thread.cells.length, 0),
       sequence_events: sequenceRecords.length,
       controls: controlRecords.length,
-      workplan_items: spec.workplan.length,
+      workplan_items: workplanRecords.length,
+      source_trails: sourceTrailIds.length,
       claims: claims.length,
       verified_claims: caseSummary.counts.verified,
       review_required_claims: caseSummary.counts.review_required,
+      inherited_qualifications: inheritedQualificationClaimIds.length,
       receipts: receipts.length,
       public_receipts: publicReceipts.length,
       translations: spec.translations?.length ?? 0
@@ -378,8 +455,10 @@ export function compileReporterBriefing(spec, caseItem) {
     claim_ids: claimIds,
     verified_claim_ids: claims.filter(claim => claim.claim_status === 'verified').map(claim => claim.claim_id),
     review_required_claim_ids: claims.filter(claim => claim.claim_status === 'review_required').map(claim => claim.claim_id),
+    inherited_qualification_claim_ids: inheritedQualificationClaimIds,
     receipt_ids: receipts.map(receipt => receipt.receipt_id),
     public_receipt_ids: publicReceipts.map(receipt => receipt.receipt_id),
+    source_trail_ids: sourceTrailIds,
     orientation: {
       x: spec.orientation.x,
       y: spec.orientation.y,
@@ -415,11 +494,12 @@ export function compileReporterBriefing(spec, caseItem) {
       status: control.status,
       graph_effect: 'none'
     })),
-    workplan: [...spec.workplan].sort((a, b) => a.priority - b.priority).map(item => ({
+    workplan: workplanRecords.map(item => ({
       id: item.id,
       priority: item.priority,
       title: item.title,
       thread_ids: item.thread_ids,
+      trail_ids: item.trail_ids ?? [],
       graph_effect: 'none'
     })),
     integrity: {
@@ -436,6 +516,7 @@ export function reporterBriefingQueueEntry(manifest) {
   const reasons = [];
   if (manifest.publication.status !== 'approved') reasons.push(`publication_status_${manifest.publication.status}`);
   if (manifest.counts.review_required_claims > 0) reasons.push(`${manifest.counts.review_required_claims}_claims_review_required`);
+  if (manifest.counts.inherited_qualifications > 0) reasons.push(`${manifest.counts.inherited_qualifications}_qualifications_inherited_from_case_boundary`);
   if (!manifest.publication.reviewer) reasons.push('independent_reviewer_missing');
   if (!manifest.publication.reviewed_at) reasons.push('review_date_missing');
   return {

@@ -45,6 +45,7 @@ export function validateCaseLedger(data) {
   const events = index(data.events, 'event_id', errors);
   index(data.relations, 'relation_id', errors);
   index(data.beacons, 'beacon_id', errors);
+  index(data.trails ?? [], 'trail_id', errors);
 
   if (data.case.schema_version !== 'case-ledger@1') errors.push('case schema_version must be case-ledger@1');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data.case.as_of ?? '')) errors.push('case as_of must be an ISO day');
@@ -92,6 +93,12 @@ export function validateCaseLedger(data) {
     for (const dimension of beacon.dimensions ?? []) reference(dimension.claim_ids, claims, `beacon ${beacon.beacon_id}/${dimension.id}`, 'claim', errors);
   }
 
+  for (const trail of data.trails ?? []) {
+    if (!trail.label || !trail.status) errors.push(`trail ${trail.trail_id} lacks label or status`);
+    if (trail.graph_effect !== 'none') errors.push(`trail ${trail.trail_id} must remain graph-inert`);
+    if (trail.promotes_to && trail.promotes_to !== 'candidate_only') errors.push(`trail ${trail.trail_id} may promote only to candidate_only`);
+  }
+
   for (const section of data.case.sections ?? []) reference(section.record_ids, events, `section ${section.id}`, 'event', errors);
   return errors;
 }
@@ -104,15 +111,22 @@ function claimValue(claim) {
 export function compileCaseLedger(data) {
   const errors = validateCaseLedger(data);
   if (errors.length) throw new Error(errors.join('\n'));
-  const claims = new Map(data.claims.map(row => [row.claim_id, row]));
+
   const receipts = new Map(data.receipts.map(row => [row.receipt_id, row]));
-  const events = new Map(data.events.map(row => [row.event_id, row]));
+  const hydratedClaims = data.claims.map(claim => ({
+    ...claim,
+    value: claimValue(claim),
+    receipts: claim.receipt_ids.map(receiptId => receipts.get(receiptId))
+  }));
+  const claims = new Map(hydratedClaims.map(row => [row.claim_id, row]));
+  const eventClaimIds = new Set(data.events.flatMap(event => event.claim_ids ?? []));
+  const unsequencedClaimIds = hydratedClaims
+    .filter(claim => !eventClaimIds.has(claim.claim_id))
+    .map(claim => claim.claim_id);
+
   const hydratedEvents = data.events.map(event => ({
     ...event,
-    claims: event.claim_ids.map(id => {
-      const claim = claims.get(id);
-      return { ...claim, value: claimValue(claim), receipts: claim.receipt_ids.map(receiptId => receipts.get(receiptId)) };
-    })
+    claims: event.claim_ids.map(id => claims.get(id))
   }));
   const hydratedById = new Map(hydratedEvents.map(row => [row.event_id, row]));
   const statusCounts = Object.fromEntries([...CLAIM_STATUSES].map(status => [status, data.claims.filter(row => row.claim_status === status).length]));
@@ -125,15 +139,28 @@ export function compileCaseLedger(data) {
       inputs: beacon.input_event_ids.map(id => hydratedById.get(id))
     };
   });
+
   return {
     ...data.case,
-    counts: { events: data.events.length, claims: data.claims.length, receipts: data.receipts.length, relations: data.relations.length, beacons: data.beacons.length },
+    counts: {
+      events: data.events.length,
+      claims: data.claims.length,
+      sequenced_claims: eventClaimIds.size,
+      unsequenced_claims: unsequencedClaimIds.length,
+      receipts: data.receipts.length,
+      relations: data.relations.length,
+      beacons: data.beacons.length,
+      trails: (data.trails ?? []).length
+    },
     claim_status_counts: statusCounts,
     sections: data.case.sections.map(section => ({ ...section, records: section.record_ids.map(id => hydratedById.get(id)) })),
+    claims: hydratedClaims,
+    unsequenced_claim_ids: unsequencedClaimIds,
     events: hydratedEvents,
     relations: data.relations,
     receipts: data.receipts,
-    beacons
+    beacons,
+    trails: data.trails ?? []
   };
 }
 
@@ -145,7 +172,8 @@ export function loadCaseLedger(caseDirectory) {
     claims: readJsonl(`${rel}/claims.jsonl`),
     events: readJsonl(`${rel}/events.jsonl`),
     relations: readJsonl(`${rel}/relations.jsonl`),
-    beacons: readJsonl(`${rel}/beacons.jsonl`)
+    beacons: readJsonl(`${rel}/beacons.jsonl`),
+    trails: readJsonl(`${rel}/trails.jsonl`, { optional: true })
   };
 }
 

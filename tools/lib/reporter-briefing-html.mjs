@@ -21,12 +21,25 @@ function statusLabel(status) {
     rejected: 'Rejected',
     mixed: 'Mixed record',
     open: 'Open record',
-    not_applicable: 'Not applicable'
+    not_applicable: 'Not applicable',
+    in_progress: 'In progress',
+    terminal_confirmed: 'Terminal confirmed',
+    terminal_rejected: 'Terminal rejected',
+    terminal_unavailable: 'Terminal unavailable'
   })[status] ?? String(status).replaceAll('_', ' ');
 }
 
 function badgeMarkup(status) {
   return `<span class="badge badge--${escapeAttribute(status)}">${escapeHtml(statusLabel(status))}</span>`;
+}
+
+function qualificationMarkup(claim) {
+  const source = ({
+    case_boundary: 'Case-wide boundary',
+    case_disclaimer: 'Case-wide disclaimer',
+    editorial: 'Editorial records target'
+  })[claim?.qualification_source];
+  return `${source ? `<small class="qualification-source">${escapeHtml(source)}</small><br>` : ''}${escapeHtml(claim?.qualification)}`;
 }
 
 function claimChips(claims, claimRefs) {
@@ -77,6 +90,7 @@ export function renderReporterBriefingHtml(view) {
     threadById,
     sequenceRecords,
     controlRecords,
+    workplanRecords,
     xLevelById,
     yLevelById,
     schemaVersion
@@ -177,16 +191,19 @@ export function renderReporterBriefingHtml(view) {
     control.claims.map(claim => [
       '<li>',
       `<strong>${escapeHtml(claim.plain)}</strong>`,
-      `<div class="qualification">${escapeHtml(claim.qualification)}</div>`,
+      `<div class="qualification">${qualificationMarkup(claim)}</div>`,
       '</li>'
     ].join('')).join(''),
     '</ul>',
     '</article>'
   ].join('')).join('');
 
-  const workplan = [...spec.workplan].sort((a, b) => a.priority - b.priority).map(item => {
+  const workplan = workplanRecords.map(item => {
     const tags = item.thread_ids
       .map(id => `<span>${escapeHtml(threadById.get(id)?.number ?? id)} · ${escapeHtml(threadById.get(id)?.title ?? id)}</span>`)
+      .join('');
+    const trailTags = item.trails
+      .map(trail => `<span data-trail-id="${escapeAttribute(trail.trail_id)}">${escapeHtml(trail.label)} · ${escapeHtml(statusLabel(trail.status))}</span>`)
       .join('');
     const list = values => `<ul>${values.map(value => `<li>${escapeHtml(value)}</li>`).join('')}</ul>`;
     return [
@@ -198,6 +215,7 @@ export function renderReporterBriefingHtml(view) {
       `<p class="note">${escapeHtml(item.date_window)}</p></div>`,
       '</div>',
       `<div class="thread-tags">${tags}</div>`,
+      trailTags ? `<div class="thread-tags source-trails"><strong>Source trails</strong>${trailTags}</div>` : '',
       '<div class="work-grid">',
       `<div><h4>Custodians</h4>${list(item.custodians)}</div>`,
       `<div><h4>Records</h4>${list(item.records)}</div>`,
@@ -218,13 +236,14 @@ export function renderReporterBriefingHtml(view) {
     `<td class="status">${badgeMarkup(claim.claim_status)}</td>`,
     `<td class="event"><strong>${escapeHtml(claim.occurred_at)}</strong><br>${escapeHtml(claim.event_label)}</td>`,
     `<td class="claim-text">${escapeHtml(claim.plain)}</td>`,
-    `<td class="qualification">${escapeHtml(claim.qualification)}</td>`,
+    `<td class="qualification">${qualificationMarkup(claim)}</td>`,
     `<td class="sources-cell">${claimSourceRefs(claim, sourceRefs)}</td>`,
     '</tr>'
   ].join('')).join('');
 
   const sourceRows = sourceIndexMarkup(receipts, sourceRefs);
   const publicationBoundary = `${caseItem.boundary} ${caseItem.disclaimer}`;
+  const sourceTrailCount = new Set(workplanRecords.flatMap(item => item.trail_ids ?? [])).size;
 
   return `<!doctype html>
 <html lang="en">
@@ -244,24 +263,24 @@ ${STYLES}
 <h1>${escapeHtml(spec.title)}</h1>
 <p class="dek">${escapeHtml(spec.dek)}</p>
 <section class="thesis">
-<div class="panel question"><div class="label">Working proposition · ${escapeHtml(statusLabel(proposition.claim_status))}</div><p><strong>${escapeHtml(proposition.plain)}</strong></p><p class="note">${escapeHtml(proposition.qualification)}</p></div>
-<div class="panel boundary"><div class="label">Evidence boundary</div><p>${escapeHtml(boundary.plain)}</p><p class="note">${escapeHtml(boundary.qualification)}</p></div>
+<div class="panel question"><div class="label">Working proposition · ${escapeHtml(statusLabel(proposition.claim_status))}</div><p><strong>${escapeHtml(proposition.plain)}</strong></p><p class="note">${qualificationMarkup(proposition)}</p></div>
+<div class="panel boundary"><div class="label">Evidence boundary</div><p>${escapeHtml(boundary.plain)}</p><p class="note">${qualificationMarkup(boundary)}</p></div>
 </section>
-<section class="metrics" aria-label="Briefing counts"><div class="metric"><strong>${sequenceRecords.length}</strong><span>dated sequence events</span></div><div class="metric"><strong>${threadRecords.length}</strong><span>decision threads</span></div><div class="metric"><strong>${claims.length}</strong><span>canonical claims</span></div><div class="metric"><strong>${publicReceipts.length}</strong><span>public source links</span></div><div class="metric"><strong>${spec.workplan.length}</strong><span>reporting actions</span></div></section>
+<section class="metrics" aria-label="Briefing counts"><div class="metric"><strong>${sequenceRecords.length}</strong><span>dated sequence events</span></div><div class="metric"><strong>${threadRecords.length}</strong><span>decision threads</span></div><div class="metric"><strong>${claims.length}</strong><span>canonical claims</span></div><div class="metric"><strong>${publicReceipts.length}</strong><span>public source links</span></div><div class="metric"><strong>${workplanRecords.length}</strong><span>reporting actions</span></div>${sourceTrailCount ? `<div class="metric"><strong>${sourceTrailCount}</strong><span>source trails</span></div>` : ''}</section>
 <div class="section-head"><div><div class="eyebrow">Categorical orientation</div><h2>Where the selected decision threads sit</h2></div><p>Three-by-three placement only. No interval score, probability, influence rating, or causal finding is generated.</p></div>
 <section class="orientation-shell"><div class="table-wrap"><table class="orientation-grid"><thead><tr><th>${escapeHtml(spec.orientation.y.label)} ↓ / ${escapeHtml(spec.orientation.x.label)} →</th>${orientationHeader}</tr></thead><tbody>${orientationRows}</tbody></table></div><div class="panel"><div class="label">Thread key</div><ol class="orientation-key">${orientationKey}</ol><p class="note">Placement is editorial orientation. The evidence matrix and claim register carry the record.</p></div></section>
-<div class="section-head"><div><div class="eyebrow">Story spine</div><h2>Decision sequence</h2></div><p>Opened records are ordered across capability, access, formal gates, and counterweights. Sequence is not causation.</p></div>
+<div class="section-head"><div><div class="eyebrow">Story spine</div><h2>Decision sequence</h2></div><p>Opened records are ordered across explicit case-defined lanes. Sequence is not causation.</p></div>
 <div class="table-wrap"><table class="sequence"><thead><tr><th scope="col">Date / period</th>${sequenceHeader}</tr></thead><tbody>${sequenceRows}</tbody></table></div>
 <div class="section-head"><div><div class="eyebrow">Evidence distribution</div><h2>What is established, and where the paper gap remains</h2></div><p>An open cell means the decisive record is not established in the opened case. It is not proof that the record or event does not exist.</p></div>
 <div class="table-wrap"><table class="matrix"><thead><tr><th scope="col">Decision thread</th>${matrixHeader}</tr></thead><tbody>${matrixRows}</tbody></table></div>
-<div class="section-head"><div><div class="eyebrow">Alternative explanations</div><h2>Counterweights the report must carry</h2></div><p>These records prevent a one-directional reading of access, award size, or vendor position.</p></div>
+<div class="section-head"><div><div class="eyebrow">Alternative explanations</div><h2>Counterweights the report must carry</h2></div><p>These records prevent a one-directional reading of sequence, institutional proximity, ownership, or project outcome.</p></div>
 <section class="controls">${controls}</section>
-<div class="section-head"><div><div class="eyebrow">Acquisition plan</div><h2>Reporting queue</h2></div><p>Work proceeds from formal decision records to communications, technical control, performance, money, comparators, and right of reply.</p></div>
+<div class="section-head"><div><div class="eyebrow">Acquisition plan</div><h2>Reporting queue</h2></div><p>Each action names the custodians, records, routes, and decision test. Linked evidence trails remain candidate-only and cannot become findings.</p></div>
 <section class="workplan">${workplan}</section>
-<section class="translate"><div class="panel"><div class="label">Bypass the jargon</div><h2>Translate the claim into an ordinary records question.</h2><dl>${translations}</dl></div><div class="panel"><div class="label">Records roadmap</div><h2>What would prove or defeat the stronger theory?</h2><p>${escapeHtml(recordsTarget.plain)}</p><p class="note">${escapeHtml(recordsTarget.qualification)}</p></div></section>
-<div class="section-head"><div><div class="eyebrow">Canonical record</div><h2>Claim register</h2></div><p>Every factual statement below is copied from the case ledger with its status, date, qualification, and receipt references.</p></div>
+<section class="translate"><div class="panel"><div class="label">Bypass the jargon</div><h2>Translate the claim into an ordinary records question.</h2><dl>${translations}</dl></div><div class="panel"><div class="label">Records roadmap</div><h2>What would prove or defeat the stronger theory?</h2><p>${escapeHtml(recordsTarget.plain)}</p><p class="note">${qualificationMarkup(recordsTarget)}</p></div></section>
+<div class="section-head"><div><div class="eyebrow">Canonical record</div><h2>Claim register</h2></div><p>Every factual statement below is copied from the case ledger with its status, date, qualification, and receipt references. Case-wide inherited boundaries are labeled and block approval until independently reviewed.</p></div>
 <div class="table-wrap"><table class="claim-register"><thead><tr><th>Ref</th><th>Status</th><th>Date / event</th><th>Canonical claim</th><th>Qualification</th><th>Sources</th></tr></thead><tbody>${claimRegisterRows}</tbody></table></div>
-<section class="cta"><div><div class="label">Claim-level evidence</div><h2>Open the full case.</h2><p>Inspect event structure, evidence class, causal status, receipts, and publication history.</p></div><a href="${escapeAttribute(spec.case_href)}">Open evidence case</a></section>
+<section class="cta"><div><div class="label">Claim-level evidence</div><h2>Open the full case.</h2><p>Inspect event structure, evidence class, causal status, receipts, trails, and publication history.</p></div><a href="${escapeAttribute(spec.case_href)}">Open evidence case</a></section>
 <div class="section-head"><div><div class="eyebrow">Receipts</div><h2>Public source index</h2></div><p>Private editorial provenance remains in custody and is never presented as independent public support.</p></div>
 <div class="table-wrap"><table class="sources"><thead><tr><th>ID</th><th>Publisher</th><th>Receipt</th><th>Boundary</th></tr></thead><tbody>${sourceRows}</tbody></table></div>
 <p class="foot">${escapeHtml(publicationBoundary)} Publication state: ${escapeHtml(spec.publication.status)} · version ${escapeHtml(spec.publication.version)} · ${publicReceipts.length} public source links · graph effect: none · conclusion generated: false. Corrections: ${escapeHtml(spec.publication.correction_route)}</p>

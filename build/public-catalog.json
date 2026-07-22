@@ -4,9 +4,9 @@
   "counts": {
     "tracks": 10,
     "cases": 4,
-    "claims": 308,
+    "claims": 336,
     "declared_claims": 336,
-    "receipts": 110
+    "receipts": 165
   },
   "tracks": [
     {
@@ -197,9 +197,12 @@
       "counts": {
         "events": 224,
         "claims": 224,
+        "sequenced_claims": 224,
+        "unsequenced_claims": 0,
         "receipts": 15,
         "relations": 0,
-        "beacons": 0
+        "beacons": 0,
+        "trails": 0
       },
       "claim_status_counts": {
         "verified": 37,
@@ -242,9 +245,12 @@
       "counts": {
         "events": 21,
         "claims": 24,
+        "sequenced_claims": 24,
+        "unsequenced_claims": 0,
         "receipts": 22,
         "relations": 6,
-        "beacons": 1
+        "beacons": 1,
+        "trails": 0
       },
       "claim_status_counts": {
         "verified": 15,
@@ -271,12 +277,27 @@
       "as_of": "2026-07-14",
       "published_at": "2026-07-14",
       "status": "review_required",
+      "presentation": "reporter_briefing",
+      "featured_priority": 90,
+      "briefing": {
+        "schema_version": "reporter-briefing@2",
+        "version": "1.0.0",
+        "source": "cases/arcadia-field-autopsy/briefing.json",
+        "href": "briefs/arcadia-field-autopsy.html",
+        "label": "Open the structured formation report",
+        "format": "compiled_static_html",
+        "audience": "enterprise_reporter",
+        "description": "A sequenced, non-narrative report showing public infrastructure, planning, assessment governance, ownership, project outcomes, counterweights, and the records queue beneath the formation theory."
+      },
       "counts": {
         "events": 42,
         "claims": 75,
+        "sequenced_claims": 47,
+        "unsequenced_claims": 28,
         "receipts": 142,
         "relations": 9,
-        "beacons": 1
+        "beacons": 1,
+        "trails": 10
       },
       "claim_status_counts": {
         "verified": 38,
@@ -306,9 +327,12 @@
       "counts": {
         "events": 13,
         "claims": 13,
+        "sequenced_claims": 13,
+        "unsequenced_claims": 0,
         "receipts": 1,
         "relations": 5,
-        "beacons": 1
+        "beacons": 1,
+        "trails": 0
       },
       "claim_status_counts": {
         "verified": 0,
@@ -3849,32 +3873,6 @@
       "receipt_count": 3
     },
     {
-      "key": "arcadia-field-autopsy::clm-flood-control",
-      "case_id": "arcadia-field-autopsy",
-      "case_title": "The Arcadia Formation",
-      "claim_id": "clm-flood-control",
-      "plain": "The Los Angeles County Flood Control District (created 1915) built Santa Anita Dam (1923-1927) and operates the dam, headworks, debris dam, and spreading grounds that control Santa Anita Creek/Wash above Arcadia.",
-      "claim_status": "verified",
-      "evidence_state": "corroborated",
-      "causal_status": "not_established",
-      "event_label": "LACFCD completes Santa Anita Dam; county takes over flood/water control of the wash",
-      "occurred_at": "1927",
-      "receipt_count": 2
-    },
-    {
-      "key": "arcadia-field-autopsy::clm-adjudication",
-      "case_id": "arcadia-field-autopsy",
-      "case_title": "The Arcadia Formation",
-      "claim_id": "clm-adjudication",
-      "plain": "The Raymond Basin was adjudicated in City of Pasadena v. City of Alhambra (filed 1937; judgment December 23, 1944; affirmed 1949) — the first groundwater adjudication in California — with the Raymond Basin Management Board as watermaster and Arcadia among party agencies.",
-      "claim_status": "verified",
-      "evidence_state": "corroborated",
-      "causal_status": "source_explicit",
-      "event_label": "Raymond Basin adjudication judgment (California's first)",
-      "occurred_at": "1944-12-23",
-      "receipt_count": 2
-    },
-    {
       "key": "arcadia-field-autopsy::clm-track1",
       "case_id": "arcadia-field-autopsy",
       "case_title": "The Arcadia Formation",
@@ -3914,6 +3912,19 @@
       "receipt_count": 1
     },
     {
+      "key": "arcadia-field-autopsy::clm-chandler-sale",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-chandler-sale",
+      "plain": "In 1936 Anita Baldwin sold the remaining Rancho Santa Anita to a real estate syndicate headed by the Chandler family, which subdivided the ranch lands through 1947.",
+      "claim_status": "review_required",
+      "evidence_state": "reported",
+      "causal_status": "not_established",
+      "event_label": "Anita Baldwin sells remaining rancho to Chandler-family syndicate",
+      "occurred_at": "1936",
+      "receipt_count": 1
+    },
+    {
       "key": "arcadia-field-autopsy::clm-latc-purchase",
       "case_id": "arcadia-field-autopsy",
       "case_title": "The Arcadia Formation",
@@ -3938,32 +3949,6 @@
       "event_label": "Santa Anita Park opens (Kaufmann design), Christmas Day 1934",
       "occurred_at": "1934-12-25",
       "receipt_count": 3
-    },
-    {
-      "key": "arcadia-field-autopsy::clm-chandler-sale",
-      "case_id": "arcadia-field-autopsy",
-      "case_title": "The Arcadia Formation",
-      "claim_id": "clm-chandler-sale",
-      "plain": "In 1936 Anita Baldwin sold the remaining Rancho Santa Anita to a real estate syndicate headed by the Chandler family, which subdivided the ranch lands through 1947.",
-      "claim_status": "review_required",
-      "evidence_state": "reported",
-      "causal_status": "not_established",
-      "event_label": "Anita Baldwin sells remaining rancho to Chandler-family syndicate",
-      "occurred_at": "1936",
-      "receipt_count": 1
-    },
-    {
-      "key": "arcadia-field-autopsy::clm-stronach",
-      "case_id": "arcadia-field-autopsy",
-      "case_title": "The Arcadia Formation",
-      "claim_id": "clm-stronach",
-      "plain": "The Stronach racing lineage acquired Santa Anita Park in December 1998 for $126 million; Magna Entertainment's 2009 bankruptcy passed the track through MI Developments to The Stronach Group (2011), rebranded 1/ST in 2020.",
-      "claim_status": "review_required",
-      "evidence_state": "reported",
-      "causal_status": "not_established",
-      "event_label": "Stronach lineage acquires Santa Anita Park ($126M)",
-      "occurred_at": "1998-12",
-      "receipt_count": 2
     },
     {
       "key": "arcadia-field-autopsy::clm-assembly-center",
@@ -4005,6 +3990,71 @@
       "receipt_count": 3
     },
     {
+      "key": "arcadia-field-autopsy::clm-stronach",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-stronach",
+      "plain": "The Stronach racing lineage acquired Santa Anita Park in December 1998 for $126 million; Magna Entertainment's 2009 bankruptcy passed the track through MI Developments to The Stronach Group (2011), rebranded 1/ST in 2020.",
+      "claim_status": "review_required",
+      "evidence_state": "reported",
+      "causal_status": "not_established",
+      "event_label": "Stronach lineage acquires Santa Anita Park ($126M)",
+      "occurred_at": "1998-12",
+      "receipt_count": 2
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-raymond-fault",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-raymond-fault",
+      "plain": "Per DWR Bulletin 118, the Raymond Basin's aquifers are alluvial deposits from San Gabriel Mountains streams (including Santa Anita Creek), and the Raymond fault acts as a groundwater barrier along the basin's southern boundary — a complete barrier only at its western end, ceasing to be effective east of Santa Anita Wash.",
+      "claim_status": "verified",
+      "evidence_state": "official_record",
+      "causal_status": "source_explicit",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "Not assigned to a dated event",
+      "receipt_count": 1
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-adjudication",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-adjudication",
+      "plain": "The Raymond Basin was adjudicated in City of Pasadena v. City of Alhambra (filed 1937; judgment December 23, 1944; affirmed 1949) — the first groundwater adjudication in California — with the Raymond Basin Management Board as watermaster and Arcadia among party agencies.",
+      "claim_status": "verified",
+      "evidence_state": "corroborated",
+      "causal_status": "source_explicit",
+      "event_label": "Raymond Basin adjudication judgment (California's first)",
+      "occurred_at": "1944-12-23",
+      "receipt_count": 2
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-city-water",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-city-water",
+      "plain": "The City of Arcadia's water supply comes from its own groundwater wells in the Main San Gabriel and Raymond basins (2024 water quality report), with an imported-water interconnection reported as backup.",
+      "claim_status": "verified",
+      "evidence_state": "official_record",
+      "causal_status": "not_established",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2024",
+      "receipt_count": 2
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-flood-control",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-flood-control",
+      "plain": "The Los Angeles County Flood Control District (created 1915) built Santa Anita Dam (1923-1927) and operates the dam, headworks, debris dam, and spreading grounds that control Santa Anita Creek/Wash above Arcadia.",
+      "claim_status": "verified",
+      "evidence_state": "corroborated",
+      "causal_status": "not_established",
+      "event_label": "LACFCD completes Santa Anita Dam; county takes over flood/water control of the wash",
+      "occurred_at": "1927",
+      "receipt_count": 2
+    },
+    {
       "key": "arcadia-field-autopsy::clm-rda",
       "case_id": "arcadia-field-autopsy",
       "case_title": "The Arcadia Formation",
@@ -4013,8 +4063,8 @@
       "claim_status": "verified",
       "evidence_state": "official_record",
       "causal_status": "source_explicit",
-      "event_label": "Arcadia Redevelopment Agency established",
-      "occurred_at": "1968",
+      "event_label": "Redevelopment dissolves statewide; successor agency inherits downtown assets",
+      "occurred_at": "2012-02-01",
       "receipt_count": 2
     },
     {
@@ -4044,19 +4094,6 @@
       "receipt_count": 2
     },
     {
-      "key": "arcadia-field-autopsy::clm-phase2a",
-      "case_id": "arcadia-field-autopsy",
-      "case_title": "The Arcadia Formation",
-      "claim_id": "clm-phase2a",
-      "plain": "Gold Line Phase 2A (11.5 miles, six stations including Arcadia) broke ground June 26, 2010, was completed September 23, 2015, and opened for passenger service March 5, 2016, with a 300-space parking structure at the Arcadia station.",
-      "claim_status": "verified",
-      "evidence_state": "official_record",
-      "causal_status": "not_established",
-      "event_label": "Gold Line Phase 2A groundbreaking",
-      "occurred_at": "2010-06-26",
-      "receipt_count": 3
-    },
-    {
       "key": "arcadia-field-autopsy::clm-gp-2010",
       "case_id": "arcadia-field-autopsy",
       "case_title": "The Arcadia Formation",
@@ -4068,6 +4105,19 @@
       "event_label": "2010 General Plan designates Downtown Mixed-Use around a station planned at First/Santa Clara",
       "occurred_at": "2010-11-16",
       "receipt_count": 2
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-phase2a",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-phase2a",
+      "plain": "Gold Line Phase 2A (11.5 miles, six stations including Arcadia) broke ground June 26, 2010, was completed September 23, 2015, and opened for passenger service March 5, 2016, with a 300-space parking structure at the Arcadia station.",
+      "claim_status": "verified",
+      "evidence_state": "official_record",
+      "causal_status": "not_established",
+      "event_label": "Arcadia Gold Line station opens for passenger service",
+      "occurred_at": "2016-03-05",
+      "receipt_count": 3
     },
     {
       "key": "arcadia-field-autopsy::clm-devcode",
@@ -4091,8 +4141,34 @@
       "claim_status": "verified",
       "evidence_state": "official_record",
       "causal_status": "source_explicit",
-      "event_label": "6th-cycle Housing Element adopted (RHNA 3,214)",
-      "occurred_at": "2022-02-15",
+      "event_label": "Housing Element rezonings expand DMU and raise MU density",
+      "occurred_at": "2024-02-06",
+      "receipt_count": 1
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-first-ave-scope",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-first-ave-scope",
+      "plain": "The current First Avenue project is 'Arterial Pavement Rehabilitation - First Avenue between Huntington Dr and Duarte Rd': grind-and-overlay plus curb and gutter, curb ramps, sidewalks, and pedestrian-safety bulb-outs, funded by Prop C via a federal STPL fund exchange with LA Metro, bid March 2026 with bids above budget.",
+      "claim_status": "verified",
+      "evidence_state": "official_record",
+      "causal_status": "source_explicit",
+      "event_label": "First Avenue arterial pavement rehabilitation bid (Prop C/STPL exchange)",
+      "occurred_at": "2026-03",
+      "receipt_count": 3
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-capital-outlay",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-capital-outlay",
+      "plain": "Arcadia's Capital Outlay Fund, which pays for much of the capital improvement program, was established to account for pari-mutuel revenues received from Santa Anita Race Track.",
+      "claim_status": "verified",
+      "evidence_state": "official_record",
+      "causal_status": "source_explicit",
+      "event_label": "First Avenue arterial pavement rehabilitation bid (Prop C/STPL exchange)",
+      "occurred_at": "2026-03",
       "receipt_count": 1
     },
     {
@@ -4135,81 +4211,29 @@
       "receipt_count": 3
     },
     {
-      "key": "arcadia-field-autopsy::clm-rusnak",
+      "key": "arcadia-field-autopsy::clm-daia-city-relationship",
       "case_id": "arcadia-field-autopsy",
       "case_title": "The Arcadia Formation",
-      "claim_id": "clm-rusnak",
-      "plain": "The City of Arcadia (via its redevelopment agency, then successor agency) held downtown-adjacent land including the former Church in Arcadia site at 21 Morlan Place, leasing it to Rusnak Mercedes-Benz and pursuing a reported $2.8 million two-acre sale as of February 2013.",
-      "claim_status": "review_required",
-      "evidence_state": "reported",
-      "causal_status": "source_explicit",
-      "event_label": "City/successor agency negotiates one surfaced downtown city-land disposition with Rusnak on the former church site",
-      "occurred_at": "2013-02",
-      "receipt_count": 1
-    },
-    {
-      "key": "arcadia-field-autopsy::clm-57-wheeler",
-      "case_id": "arcadia-field-autopsy",
-      "case_title": "The Arcadia Formation",
-      "claim_id": "clm-57-wheeler",
-      "plain": "57 Wheeler, a four-story mixed-use building (38 apartments over 17,850 sq ft commercial) by DPP Arcadia LLC at First and Wheeler, one block south of the station, was under construction by August 2017 — the earliest post-opening downtown mixed-use construction identified.",
-      "claim_status": "review_required",
-      "evidence_state": "reported",
-      "causal_status": "not_established",
-      "event_label": "57 Wheeler under construction (first documented post-opening downtown mixed use)",
-      "occurred_at": "2017-08",
-      "receipt_count": 2
-    },
-    {
-      "key": "arcadia-field-autopsy::clm-le-meridien",
-      "case_id": "arcadia-field-autopsy",
-      "case_title": "The Arcadia Formation",
-      "claim_id": "clm-le-meridien",
-      "plain": "Le Meridien Pasadena Arcadia (234 rooms, 130 W. Huntington Dr at Santa Anita/Huntington) was developed by Chateau Group founders Eric Chen and Ann Sung, is owned by SAICP, LLC, and opened with a ribbon-cutting June 23, 2021.",
-      "claim_status": "review_required",
-      "evidence_state": "reported",
-      "causal_status": "not_established",
-      "event_label": "Le Meridien hotel opens at Huntington/Santa Anita",
-      "occurred_at": "2021-06-23",
-      "receipt_count": 1
-    },
-    {
-      "key": "arcadia-field-autopsy::clm-le-meridien-eb5",
-      "case_id": "arcadia-field-autopsy",
-      "case_title": "The Arcadia Formation",
-      "claim_id": "clm-le-meridien-eb5",
-      "plain": "YK America Regional Center publicly presents the 130 W. Huntington Drive Le Méridien as its 14th EB-5 project, and independent 2019 finance reporting states that SAICP LLC's capitalization included an EB-5 component; City records bind SAICP, the address, and the hotel project.",
-      "claim_status": "review_required",
-      "evidence_state": "corroborated",
-      "causal_status": "source_explicit",
-      "event_label": "Le Meridien hotel opens at Huntington/Santa Anita",
-      "occurred_at": "2021-06-23",
-      "receipt_count": 3
-    },
-    {
-      "key": "arcadia-field-autopsy::clm-alexan-approval",
-      "case_id": "arcadia-field-autopsy",
-      "case_title": "The Arcadia Formation",
-      "claim_id": "clm-alexan-approval",
-      "plain": "The City of Arcadia approved the 319-unit Alexan Azalea (150 N. Santa Anita Ave; 26 affordable units via density bonus; architect Studio One Eleven) on July 21, 2022; prior site uses were two small private commercial buildings and surface parking.",
-      "claim_status": "verified",
-      "evidence_state": "corroborated",
-      "causal_status": "source_explicit",
-      "event_label": "Alexan Azalea (319 units) approved",
-      "occurred_at": "2022-07-21",
-      "receipt_count": 2
-    },
-    {
-      "key": "arcadia-field-autopsy::clm-derby",
-      "case_id": "arcadia-field-autopsy",
-      "case_title": "The Arcadia Formation",
-      "claim_id": "clm-derby",
-      "plain": "The Derby Mixed-Use Project at 233 E. Huntington Drive (owner/applicant reported as Elite Real Estate Holdings, LLC) was approved December 19, 2023 for 214 units plus a rebuilt Derby restaurant, requiring a General Plan Amendment and zone change to Downtown Mixed Use with H7 height overlay.",
+      "claim_id": "clm-daia-city-relationship",
+      "plain": "The City is a DAIA member for five City-owned downtown parcels, paid $5,400 in assessments in the fiscal year reported in 2023, and supplies recurring in-kind event support; by 2026 DAIA also remained an operational City counterpart on downtown events and business-regulation notice.",
       "claim_status": "verified",
       "evidence_state": "official_record",
       "causal_status": "source_explicit",
-      "event_label": "Derby Mixed-Use (214 units) approved with DMU zone change",
-      "occurred_at": "2023-12-19",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2013",
+      "receipt_count": 2
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-pi-registration",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-pi-registration",
+      "plain": "California Secretary of State records identify Positive Investments, Inc. as active California stock corporation 1362091, filed January 8, 1986, with principal address 610 N Santa Anita Avenue and agent Rao R. Yalamanchili.",
+      "claim_status": "verified",
+      "evidence_state": "official_record",
+      "causal_status": "source_explicit",
+      "event_label": "TCR / Positive Investments JV buys the 2.9-acre Alexan Azalea site (8 years after station opening)",
+      "occurred_at": "2024-04-22",
       "receipt_count": 1
     },
     {
@@ -4226,17 +4250,17 @@
       "receipt_count": 4
     },
     {
-      "key": "arcadia-field-autopsy::clm-pi-registration",
+      "key": "arcadia-field-autopsy::clm-alexan-approval",
       "case_id": "arcadia-field-autopsy",
       "case_title": "The Arcadia Formation",
-      "claim_id": "clm-pi-registration",
-      "plain": "California Secretary of State records identify Positive Investments, Inc. as active California stock corporation 1362091, filed January 8, 1986, with principal address 610 N Santa Anita Avenue and agent Rao R. Yalamanchili.",
+      "claim_id": "clm-alexan-approval",
+      "plain": "The City of Arcadia approved the 319-unit Alexan Azalea (150 N. Santa Anita Ave; 26 affordable units via density bonus; architect Studio One Eleven) on July 21, 2022; prior site uses were two small private commercial buildings and surface parking.",
       "claim_status": "verified",
-      "evidence_state": "official_record",
+      "evidence_state": "corroborated",
       "causal_status": "source_explicit",
-      "event_label": "TCR / Positive Investments JV buys the 2.9-acre Alexan Azalea site (8 years after station opening)",
-      "occurred_at": "2024-04-22",
-      "receipt_count": 1
+      "event_label": "Alexan Azalea (319 units) approved",
+      "occurred_at": "2022-07-21",
+      "receipt_count": 2
     },
     {
       "key": "arcadia-field-autopsy::clm-alexan-arroyo",
@@ -4252,6 +4276,45 @@
       "receipt_count": 2
     },
     {
+      "key": "arcadia-field-autopsy::clm-wahl-daia",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-wahl-daia",
+      "plain": "Erik Wahl is identified as President of the Downtown Arcadia Improvement Association in 2023-2025 IRS-derived filing records and on DAIA's public materials; the filing records list him as 1st Vice President in 2021.",
+      "claim_status": "review_required",
+      "evidence_state": "corroborated",
+      "causal_status": "source_explicit",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2021",
+      "receipt_count": 3
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-wahl-pi",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-wahl-pi",
+      "plain": "A December 2023 federal court filing identifies Erik Wahl of Positive Investments as an Asset Manager; DAIA's own published project video independently identifies its president Erik Wahl as 'from Positive Investments.'",
+      "claim_status": "review_required",
+      "evidence_state": "corroborated",
+      "causal_status": "source_explicit",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2023-12",
+      "receipt_count": 2
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-derby",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-derby",
+      "plain": "The Derby Mixed-Use Project at 233 E. Huntington Drive (owner/applicant reported as Elite Real Estate Holdings, LLC) was approved December 19, 2023 for 214 units plus a rebuilt Derby restaurant, requiring a General Plan Amendment and zone change to Downtown Mixed Use with H7 height overlay.",
+      "claim_status": "verified",
+      "evidence_state": "official_record",
+      "causal_status": "source_explicit",
+      "event_label": "Derby Mixed-Use (214 units) approved with DMU zone change",
+      "occurred_at": "2023-12-19",
+      "receipt_count": 1
+    },
+    {
       "key": "arcadia-field-autopsy::clm-town-center",
       "case_id": "arcadia-field-autopsy",
       "case_title": "The Arcadia Formation",
@@ -4263,6 +4326,32 @@
       "event_label": "Arcadia Town Center five-parcel consolidation (181 units) approved",
       "occurred_at": "2025-01-14",
       "receipt_count": 4
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-ben-zhang-identity-resolution",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-ben-zhang-identity-resolution",
+      "plain": "The Ben Zhang identified in Arcadia Town Center/New World applicant records and the Ben Zhang listed in DAIA governance records are supported as the same public person by official applicant appearances, a New World professional email domain, a primary-public cross-role profile, and annual filing records.",
+      "claim_status": "review_required",
+      "evidence_state": "corroborated",
+      "causal_status": "not_established",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2022 to 2025",
+      "receipt_count": 6
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-ben-zhang-daia-roles",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-ben-zhang-daia-roles",
+      "plain": "IRS-derived annual returns list Ben Zhang as a DAIA board member in FY2022, treasurer in FY2023, and board member in FY2024 and FY2025.",
+      "claim_status": "review_required",
+      "evidence_state": "corroborated",
+      "causal_status": "source_explicit",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2022 to 2025",
+      "receipt_count": 2
     },
     {
       "key": "arcadia-field-autopsy::clm-daia-atc-support",
@@ -4291,30 +4380,238 @@
       "receipt_count": 7
     },
     {
-      "key": "arcadia-field-autopsy::clm-first-ave-scope",
+      "key": "arcadia-field-autopsy::clm-alexan-owner-snapshots",
       "case_id": "arcadia-field-autopsy",
       "case_title": "The Arcadia Formation",
-      "claim_id": "clm-first-ave-scope",
-      "plain": "The current First Avenue project is 'Arterial Pavement Rehabilitation - First Avenue between Huntington Dr and Duarte Rd': grind-and-overlay plus curb and gutter, curb ramps, sidewalks, and pedestrian-safety bulb-outs, funded by Prop C via a federal STPL fund exchange with LA Metro, bid March 2026 with bids above budget.",
+      "claim_id": "clm-alexan-owner-snapshots",
+      "plain": "Official City records identify PI Properties No. 111 as owner of one Alexan Azalea parcel in November 2018 and of all four mapped project APNs in September 2021; Arcadia Apartments, LLC was the 2021 subdivider.",
       "claim_status": "verified",
       "evidence_state": "official_record",
       "causal_status": "source_explicit",
-      "event_label": "First Avenue arterial pavement rehabilitation bid (Prop C/STPL exchange)",
-      "occurred_at": "2026-03",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2018-11-05 to 2021-09-24",
+      "receipt_count": 2
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-pi111-registration",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-pi111-registration",
+      "plain": "California Secretary of State records identify PI Properties No. 111 LLC as active California LLC 201516110633, filed June 8, 2015, at 610 N Santa Anita Avenue Floor 2, with Positive Investments, Inc. as registered corporate agent.",
+      "claim_status": "verified",
+      "evidence_state": "official_record",
+      "causal_status": "source_explicit",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2015-06-08",
+      "receipt_count": 1
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-alexan-lot2-transfer-scope",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-alexan-lot2-transfer-scope",
+      "plain": "Los Angeles County Assessor histories place recorder document 0174959 and a $19.5 million consideration field on successor APNs 5773-006-075 through -078, the four tax parcels composing recorded Parcel Map Lot 2; the document does not appear on Lot 1 APN -074.",
+      "claim_status": "verified",
+      "evidence_state": "official_record",
+      "causal_status": "source_explicit",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2024-03-18",
+      "receipt_count": 2
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-town-center-parcel-chronology",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-town-center-parcel-chronology",
+      "plain": "Assessor histories record a common four-parcel Town Center transaction on APNs 5775-025-032/-033/-034/-037 in August 2019, separate full-DTT events on APN -038 in October 2019 and May 2021, and later partial-interest events shared across all five APNs.",
+      "claim_status": "verified",
+      "evidence_state": "official_record",
+      "causal_status": "source_explicit",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2019-08-12 to 2025-11-13",
+      "receipt_count": 2
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-atc-lei",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-atc-lei",
+      "plain": "GLEIF identifies Arcadia Town Center LLC as active California entity 202111810783 with LEI 254900JJT77HFSILPI43 and a Golden Springs legal address; the LEI validation is fully corroborated against California Secretary of State records.",
+      "claim_status": "review_required",
+      "evidence_state": "corroborated",
+      "causal_status": "source_explicit",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2021",
+      "receipt_count": 1
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-arcadia-station-betterments",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-arcadia-station-betterments",
+      "plain": "Construction Authority minutes state that Arcadia alone among Phase 2A cities requested betterments beyond the baseline station design, that the board authorized a station-and-bridge betterment agreement in May 2011, that the agreement was completed by July, and that Arcadia requested city-paid betterments.",
+      "claim_status": "verified",
+      "evidence_state": "official_record",
+      "causal_status": "source_explicit",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2011-03-09 to 2012-12-12",
+      "receipt_count": 4
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-arcadia-grade-separation-bonds",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-arcadia-grade-separation-bonds",
+      "plain": "Arcadia issued $8 million in voter-authorized general-obligation bonds in May 2011 for the Santa Anita Avenue/Gold Line grade separation.",
+      "claim_status": "verified",
+      "evidence_state": "official_record",
+      "causal_status": "source_explicit",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2011-05",
+      "receipt_count": 1
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-station-pedestrian-linkage",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-station-pedestrian-linkage",
+      "plain": "Arcadia's FY2014-19 capital plan programmed $2,379,700 for Gold Line Station Pedestrian Linkage Improvements at First Avenue and Santa Clara Street.",
+      "claim_status": "verified",
+      "evidence_state": "official_record",
+      "causal_status": "source_explicit",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2014 to 2019",
+      "receipt_count": 1
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-57-wheeler",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-57-wheeler",
+      "plain": "57 Wheeler, a four-story mixed-use building (38 apartments over 17,850 sq ft commercial) by DPP Arcadia LLC at First and Wheeler, one block south of the station, was under construction by August 2017 — the earliest post-opening downtown mixed-use construction identified.",
+      "claim_status": "review_required",
+      "evidence_state": "reported",
+      "causal_status": "not_established",
+      "event_label": "57 Wheeler under construction (first documented post-opening downtown mixed use)",
+      "occurred_at": "2017-08",
+      "receipt_count": 2
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-rusnak",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-rusnak",
+      "plain": "The City of Arcadia (via its redevelopment agency, then successor agency) held downtown-adjacent land including the former Church in Arcadia site at 21 Morlan Place, leasing it to Rusnak Mercedes-Benz and pursuing a reported $2.8 million two-acre sale as of February 2013.",
+      "claim_status": "review_required",
+      "evidence_state": "reported",
+      "causal_status": "source_explicit",
+      "event_label": "City/successor agency negotiates one surfaced downtown city-land disposition with Rusnak on the former church site",
+      "occurred_at": "2013-02",
+      "receipt_count": 1
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-parking-lots",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-parking-lots",
+      "plain": "The City's 2018 downtown brochure identifies three City-owned surface lots providing more than 300 public parking spaces. Later disposition or development status was only partially searched.",
+      "claim_status": "review_required",
+      "evidence_state": "partially_searched",
+      "causal_status": "not_established",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2018",
+      "receipt_count": 1
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-le-meridien",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-le-meridien",
+      "plain": "Le Meridien Pasadena Arcadia (234 rooms, 130 W. Huntington Dr at Santa Anita/Huntington) was developed by Chateau Group founders Eric Chen and Ann Sung, is owned by SAICP, LLC, and opened with a ribbon-cutting June 23, 2021.",
+      "claim_status": "review_required",
+      "evidence_state": "reported",
+      "causal_status": "not_established",
+      "event_label": "Le Meridien hotel opens at Huntington/Santa Anita",
+      "occurred_at": "2021-06-23",
+      "receipt_count": 1
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-le-meridien-eb5",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-le-meridien-eb5",
+      "plain": "YK America Regional Center publicly presents the 130 W. Huntington Drive Le Méridien as its 14th EB-5 project, and independent 2019 finance reporting states that SAICP LLC's capitalization included an EB-5 component; City records bind SAICP, the address, and the hotel project.",
+      "claim_status": "review_required",
+      "evidence_state": "corroborated",
+      "causal_status": "source_explicit",
+      "event_label": "Le Meridien hotel opens at Huntington/Santa Anita",
+      "occurred_at": "2021-06-23",
       "receipt_count": 3
     },
     {
-      "key": "arcadia-field-autopsy::clm-capital-outlay",
+      "key": "arcadia-field-autopsy::clm-intermediaries",
       "case_id": "arcadia-field-autopsy",
       "case_title": "The Arcadia Formation",
-      "claim_id": "clm-capital-outlay",
-      "plain": "Arcadia's Capital Outlay Fund, which pays for much of the capital improvement program, was established to account for pari-mutuel revenues received from Santa Anita Race Track.",
-      "claim_status": "verified",
-      "evidence_state": "official_record",
+      "claim_id": "clm-intermediaries",
+      "plain": "Across the four inspected downtown project records, architect Studio One Eleven appears on both Trammell Crow Residential projects. The inspected sample does not establish that it is the only repeat intermediary or that no cross-developer repeat exists.",
+      "claim_status": "review_required",
+      "evidence_state": "inferred",
+      "causal_status": "not_established",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2022",
+      "receipt_count": 4
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-fengshui-reporting",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-fengshui-reporting",
+      "plain": "Major-outlet journalism (LA Times, Dec 13, 2014) documented that Arcadia's teardown-mansion boom used siting 'drawn from both the Chinese philosophy of feng shui and some basic real-estate math' (mid-block, south-facing), with named designers Robert Tong (Sanyao International) and Philip Chan (PDS Studio) on record.",
+      "claim_status": "review_required",
+      "evidence_state": "reported",
       "causal_status": "source_explicit",
-      "event_label": "First Avenue arterial pavement rehabilitation bid (Prop C/STPL exchange)",
-      "occurred_at": "2026-03",
+      "event_label": "City adopts floor-area-ratio limits, closing the peak mansionization era",
+      "occurred_at": "2016-04-20",
+      "receipt_count": 3
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-number-premia",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-number-premia",
+      "plain": "One reported peer-reviewed study of about 117,000 Greater Vancouver sales found addresses ending in 4 sold at a 2.2% discount and addresses ending in 8 at a 2.5% premium, concentrated in neighborhoods with above-average Chinese population shares or in repeat transactions.",
+      "claim_status": "review_required",
+      "evidence_state": "reported",
+      "causal_status": "source_explicit",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2014",
+      "receipt_count": 2
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-auspicious-timing",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-auspicious-timing",
+      "plain": "A feng-shui-master-selected groundbreaking date (8/8/2017) is documented for a Chinese-parented developer's Marriott in Tacoma; no equivalent instance surfaced in the bounded San Gabriel Valley and Arcadia searches listed in cov-06.",
+      "claim_status": "review_required",
+      "evidence_state": "reported",
+      "causal_status": "source_explicit",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2017-08-08",
       "receipt_count": 1
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-traditions",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-traditions",
+      "plain": "Feng shui's Form branch reads landform for siting while the Compass branch applies directional-temporal formulas (Flying Star, Eight Mansions) with date selection a related practice; ley lines are a separate Western esoteric tradition (Watkins 1922/1925, respiritualized by Michell 1969, who borrowed 'lung mei' one-way).",
+      "claim_status": "review_required",
+      "evidence_state": "corroborated",
+      "causal_status": "not_established",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "Not assigned to a dated event",
+      "receipt_count": 2
     },
     {
       "key": "arcadia-field-autopsy::clm-hsieh",
@@ -4330,17 +4627,108 @@
       "receipt_count": 3
     },
     {
-      "key": "arcadia-field-autopsy::clm-fengshui-reporting",
+      "key": "arcadia-field-autopsy::clm-monrovia",
       "case_id": "arcadia-field-autopsy",
       "case_title": "The Arcadia Formation",
-      "claim_id": "clm-fengshui-reporting",
-      "plain": "Major-outlet journalism (LA Times, Dec 13, 2014) documented that Arcadia's teardown-mansion boom used siting 'drawn from both the Chinese philosophy of feng shui and some basic real-estate math' (mid-block, south-facing), with named designers Robert Tong (Sanyao International) and Philip Chan (PDS Studio) on record.",
+      "claim_id": "clm-monrovia",
+      "plain": "Municipal records show Monrovia planned Station Square before rail opening, funded public improvements, and approved multi-parcel institutional projects. Monrovia separately operates an assessment-funded Old Town BID whose codified/current boundaries do not extend south to Station Square.",
+      "claim_status": "review_required",
+      "evidence_state": "corroborated",
+      "causal_status": "not_established",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "1993",
+      "receipt_count": 10
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-wash-channelization",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-wash-channelization",
+      "plain": "U.S. Army Corps of Engineers annual reports record Santa Anita Wash channel reaches completed in January 1959 and January 1960, placing the core postwar flood-control channelization before Arcadia's later redevelopment and rail-planning regimes.",
+      "claim_status": "verified",
+      "evidence_state": "official_record",
+      "causal_status": "source_explicit",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "1959-01 to 1960-01",
+      "receipt_count": 2
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-daia-assessment-bookends",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-daia-assessment-bookends",
+      "plain": "Los Angeles County Auditor-Controller direct-assessment lists identify account 104.81 as the Arcadia Downtown Community Benefit District in FY2013-14 and again in FY2025-26.",
+      "claim_status": "verified",
+      "evidence_state": "official_record",
+      "causal_status": "source_explicit",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "Not assigned to a dated event",
+      "receipt_count": 2
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-azusa-delmar",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-azusa-delmar",
+      "plain": "Azusa adopted station-area TOD planning before its March 2016 stations opened, dedicated a 547-space intermodal center immediately before service, and entered a named multi-parcel developer agreement. At Pasadena's Del Mar station, public acquisition preceded opening, public property was disposed into joint development, and the Old Pasadena PBID predated and overlaps the broader station neighborhood.",
+      "claim_status": "review_required",
+      "evidence_state": "corroborated",
+      "causal_status": "not_established",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "1995",
+      "receipt_count": 11
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-tod-policy",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-tod-policy",
+      "plain": "Station-area densification is engineered public policy: SB 375 (2008) mandates regional sustainable communities strategies with CEQA streamlining for transit-oriented projects, and LA Metro's Joint Development Program solicits private developers for ~200 Metro-owned station-adjacent sites targeting 10,000 homes by 2031.",
+      "claim_status": "verified",
+      "evidence_state": "official_record",
+      "causal_status": "source_explicit",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "2008-09-30",
+      "receipt_count": 2
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-assembly-premium",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-assembly-premium",
+      "plain": "Peer-reviewed evidence from Los Angeles parcel data shows to-be-assembled land trades at a 15-40% premium, indicating holdout frictions that prevent assembly; developers systematically avoid dispersed small-lot ownership, so fragmented parcel fabric persists absent a motivated assembler.",
       "claim_status": "review_required",
       "evidence_state": "reported",
       "causal_status": "source_explicit",
-      "event_label": "LA Times documents feng shui-informed siting in the Arcadia mansion boom",
-      "occurred_at": "2014-12-13",
-      "receipt_count": 3
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "Not assigned to a dated event",
+      "receipt_count": 2
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-anticipation",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-anticipation",
+      "plain": "Anticipatory capitalization of Los Angeles rail investment into nearby property values is documented since the 1983-1988 Metro Rail announcement period, and the same speculation/uplift/institutional-developer shape recurred on the Crenshaw K Line around its 2022 opening with entirely different actors.",
+      "claim_status": "review_required",
+      "evidence_state": "reported",
+      "causal_status": "not_established",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "1983",
+      "receipt_count": 2
+    },
+    {
+      "key": "arcadia-field-autopsy::clm-growth-machine",
+      "case_id": "arcadia-field-autopsy",
+      "case_title": "The Arcadia Formation",
+      "claim_id": "clm-growth-machine",
+      "plain": "The Logan-Molotch growth-machine frame holds that coalitions of land-based elites, local businesses, and political actors routinely and lawfully align to maximize the exchange value of place — making convergent pro-growth behavior the expected default rather than evidence of conspiracy.",
+      "claim_status": "review_required",
+      "evidence_state": "reported",
+      "causal_status": "not_established",
+      "event_label": "Unsequenced case claim",
+      "occurred_at": "1987",
+      "receipt_count": 1
     },
     {
       "key": "arcadia-field-autopsy::clm-expr-formation",
@@ -5516,62 +5904,6 @@
       ]
     },
     {
-      "key": "lh-r20",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "lh-r20",
-      "label": "Wikipedia: Santa Anita Dam",
-      "publisher": "Wikipedia",
-      "source_type": "open_web",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-flood-control"
-      ]
-    },
-    {
-      "key": "lh-r12",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "lh-r12",
-      "label": "LA County Public Works: Santa Anita flood facilities",
-      "publisher": "Los Angeles County Public Works / LACFCD",
-      "source_type": "official_web_record",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-flood-control"
-      ]
-    },
-    {
-      "key": "lh-r03",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "lh-r03",
-      "label": "DWR Bulletin 118 Raymond Groundwater Basin (4-23)",
-      "publisher": "California Department of Water Resources",
-      "source_type": "official_web_record",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-adjudication"
-      ]
-    },
-    {
-      "key": "lh-r18",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "lh-r18",
-      "label": "Arroyo Seco Foundation: Raymond Basin adjudication history",
-      "publisher": "Arroyo Seco Foundation",
-      "source_type": "open_web",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-adjudication"
-      ]
-    },
-    {
       "key": "lh-r13",
       "case_id": "arcadia-field-autopsy",
       "case_ids": [
@@ -5631,8 +5963,8 @@
         "arcadia-field-autopsy::clm-track1-closure",
         "arcadia-field-autopsy::clm-latc-purchase",
         "arcadia-field-autopsy::clm-park-opening",
-        "arcadia-field-autopsy::clm-stronach",
-        "arcadia-field-autopsy::clm-camp-santa-anita"
+        "arcadia-field-autopsy::clm-camp-santa-anita",
+        "arcadia-field-autopsy::clm-stronach"
       ]
     },
     {
@@ -5665,20 +5997,6 @@
         "arcadia-field-autopsy::clm-park-opening",
         "arcadia-field-autopsy::clm-assembly-center",
         "arcadia-field-autopsy::clm-camp-santa-anita"
-      ]
-    },
-    {
-      "key": "lh-r11",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "lh-r11",
-      "label": "Wikipedia: Stronach Group",
-      "publisher": "Wikipedia",
-      "source_type": "open_web",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-stronach"
       ]
     },
     {
@@ -5723,6 +6041,92 @@
       "source_type": "reported_web",
       "claim_ids": [
         "arcadia-field-autopsy::clm-camp-santa-anita"
+      ]
+    },
+    {
+      "key": "lh-r11",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "lh-r11",
+      "label": "Wikipedia: Stronach Group",
+      "publisher": "Wikipedia",
+      "source_type": "open_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-stronach"
+      ]
+    },
+    {
+      "key": "lh-r03",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "lh-r03",
+      "label": "DWR Bulletin 118 Raymond Groundwater Basin (4-23)",
+      "publisher": "California Department of Water Resources",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-raymond-fault",
+        "arcadia-field-autopsy::clm-adjudication",
+        "arcadia-field-autopsy::clm-city-water"
+      ]
+    },
+    {
+      "key": "lh-r18",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "lh-r18",
+      "label": "Arroyo Seco Foundation: Raymond Basin adjudication history",
+      "publisher": "Arroyo Seco Foundation",
+      "source_type": "open_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-adjudication"
+      ]
+    },
+    {
+      "key": "lh-r21",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "lh-r21",
+      "label": "City of Arcadia 2024 Water Quality Report",
+      "publisher": "City of Arcadia Public Works Services Department",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-city-water"
+      ]
+    },
+    {
+      "key": "lh-r20",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "lh-r20",
+      "label": "Wikipedia: Santa Anita Dam",
+      "publisher": "Wikipedia",
+      "source_type": "open_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-flood-control"
+      ]
+    },
+    {
+      "key": "lh-r12",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "lh-r12",
+      "label": "LA County Public Works: Santa Anita flood facilities",
+      "publisher": "Los Angeles County Public Works / LACFCD",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-flood-control"
       ]
     },
     {
@@ -5784,34 +6188,6 @@
       ]
     },
     {
-      "key": "pl-r05",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "pl-r05",
-      "label": "Foothill Gold Line Construction Authority - Arcadia station page",
-      "publisher": "Foothill Gold Line Construction Authority",
-      "source_type": "primary_public_web",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-phase2a"
-      ]
-    },
-    {
-      "key": "cf-r03",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "cf-r03",
-      "label": "Foothill Gold Line Construction Authority — Monrovia station page",
-      "publisher": "Foothill Gold Line Construction Authority",
-      "source_type": "official_web_record",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-phase2a"
-      ]
-    },
-    {
       "key": "pl-r03",
       "case_id": "arcadia-field-autopsy",
       "case_ids": [
@@ -5840,6 +6216,34 @@
       ]
     },
     {
+      "key": "pl-r05",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "pl-r05",
+      "label": "Foothill Gold Line Construction Authority - Arcadia station page",
+      "publisher": "Foothill Gold Line Construction Authority",
+      "source_type": "primary_public_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-phase2a"
+      ]
+    },
+    {
+      "key": "cf-r03",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r03",
+      "label": "Foothill Gold Line Construction Authority — Monrovia station page",
+      "publisher": "Foothill Gold Line Construction Authority",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-phase2a"
+      ]
+    },
+    {
       "key": "pl-r18",
       "case_id": "arcadia-field-autopsy",
       "case_ids": [
@@ -5865,7 +6269,8 @@
       "source_type": "official_web_record",
       "claim_ids": [
         "arcadia-field-autopsy::clm-devcode",
-        "arcadia-field-autopsy::clm-daia-label"
+        "arcadia-field-autopsy::clm-daia-label",
+        "arcadia-field-autopsy::clm-parking-lots"
       ]
     },
     {
@@ -5880,6 +6285,49 @@
       "source_type": "official_web_record",
       "claim_ids": [
         "arcadia-field-autopsy::clm-housing-element"
+      ]
+    },
+    {
+      "key": "pl-r16",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "pl-r16",
+      "label": "City of Arcadia Proposed FY 2026-2031 Capital Improvement and Equipment Replacement Plan",
+      "publisher": "City of Arcadia (arcadiaca.gov)",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-first-ave-scope",
+        "arcadia-field-autopsy::clm-capital-outlay"
+      ]
+    },
+    {
+      "key": "pl-r19",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "pl-r19",
+      "label": "City CIP project page: First Avenue Corridor Improvements (stub)",
+      "publisher": "City of Arcadia (arcadiaca.gov)",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-first-ave-scope"
+      ]
+    },
+    {
+      "key": "pl-r20",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "pl-r20",
+      "label": "City CIP street projects index page",
+      "publisher": "City of Arcadia (arcadiaca.gov)",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-first-ave-scope"
       ]
     },
     {
@@ -5921,7 +6369,10 @@
       "publisher": "ProPublica (IRS Form 990 data)",
       "source_type": "open_web",
       "claim_ids": [
-        "arcadia-field-autopsy::clm-daia-form"
+        "arcadia-field-autopsy::clm-daia-form",
+        "arcadia-field-autopsy::clm-wahl-daia",
+        "arcadia-field-autopsy::clm-ben-zhang-identity-resolution",
+        "arcadia-field-autopsy::clm-ben-zhang-daia-roles"
       ]
     },
     {
@@ -5936,7 +6387,8 @@
       "source_type": "official_web_record",
       "claim_ids": [
         "arcadia-field-autopsy::clm-daia-form",
-        "arcadia-field-autopsy::clm-daia-label"
+        "arcadia-field-autopsy::clm-daia-label",
+        "arcadia-field-autopsy::clm-daia-city-relationship"
       ]
     },
     {
@@ -5954,17 +6406,509 @@
       ]
     },
     {
-      "key": "ow-r15",
+      "key": "pl-r21",
       "case_id": "arcadia-field-autopsy",
       "case_ids": [
         "arcadia-field-autopsy"
       ],
-      "receipt_id": "ow-r15",
-      "label": "Patch on Rusnak expansion and city-held former church site",
-      "publisher": "Arcadia Patch",
+      "receipt_id": "pl-r21",
+      "label": "Arcadia City Council agenda packet, March 3, 2026 (incl. Feb 17, 2026 minutes)",
+      "publisher": "City of Arcadia City Clerk",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-daia-city-relationship"
+      ]
+    },
+    {
+      "key": "af-r31",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r31",
+      "label": "California SOS — Positive Investments Inc.",
+      "publisher": "California Secretary of State",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-pi-registration"
+      ]
+    },
+    {
+      "key": "ow-r01",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "ow-r01",
+      "label": "CBRE press release: sale of 2.9-acre Arcadia development site to TCR/Positive Investments JV",
+      "publisher": "CBRE",
+      "source_type": "primary_public_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-jv-purchase",
+        "arcadia-field-autopsy::clm-intermediaries"
+      ]
+    },
+    {
+      "key": "af-r14",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r14",
+      "label": "LA City-hosted RealQuest comparable — 25 Wheeler sale",
+      "publisher": "City of Los Angeles document host / CoreLogic",
       "source_type": "reported_web",
       "claim_ids": [
-        "arcadia-field-autopsy::clm-rusnak"
+        "arcadia-field-autopsy::clm-jv-purchase"
+      ]
+    },
+    {
+      "key": "af-r28",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r28",
+      "label": "LA County Assessor — Alexan recorded parcel-map lineage",
+      "publisher": "Los Angeles County Assessor",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-jv-purchase",
+        "arcadia-field-autopsy::clm-alexan-lot2-transfer-scope"
+      ]
+    },
+    {
+      "key": "af-r29",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r29",
+      "label": "LA County Assessor — recorder document 0174959 Lot 2 scope",
+      "publisher": "Los Angeles County Assessor",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-jv-purchase",
+        "arcadia-field-autopsy::clm-alexan-lot2-transfer-scope"
+      ]
+    },
+    {
+      "key": "ow-r07",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "ow-r07",
+      "label": "Urbanize LA on city approval of 319-unit Alexan (Azalea)",
+      "publisher": "Urbanize LA",
+      "source_type": "reported_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-alexan-approval",
+        "arcadia-field-autopsy::clm-intermediaries"
+      ]
+    },
+    {
+      "key": "ow-r08",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "ow-r08",
+      "label": "The Real Deal on TCR 319-unit approval",
+      "publisher": "The Real Deal",
+      "source_type": "reported_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-alexan-approval"
+      ]
+    },
+    {
+      "key": "ow-r09",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "ow-r09",
+      "label": "Urbanize LA on Alexan Arroyo (325 N. Santa Anita)",
+      "publisher": "Urbanize LA",
+      "source_type": "reported_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-alexan-arroyo",
+        "arcadia-field-autopsy::clm-intermediaries"
+      ]
+    },
+    {
+      "key": "ow-r10",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "ow-r10",
+      "label": "The Real Deal on Alexan Arroyo site's prior owner (Arroyo Pacific Academy)",
+      "publisher": "The Real Deal",
+      "source_type": "reported_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-alexan-arroyo"
+      ]
+    },
+    {
+      "key": "ow-r02",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "ow-r02",
+      "label": "Downtown Arcadia Improvement Association executive board page",
+      "publisher": "Downtown Arcadia Improvement Association",
+      "source_type": "primary_public_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-wahl-daia"
+      ]
+    },
+    {
+      "key": "ow-r03",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "ow-r03",
+      "label": "DAIA Board of Directors page",
+      "publisher": "Downtown Arcadia Improvement Association",
+      "source_type": "primary_public_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-wahl-daia"
+      ]
+    },
+    {
+      "key": "af-r02",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r02",
+      "label": "Federal bankruptcy filing identifying Erik Wahl as Positive Investments asset manager",
+      "publisher": "Stretto public court-document repository",
+      "source_type": "primary_public_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-wahl-pi"
+      ]
+    },
+    {
+      "key": "ow-r05",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "ow-r05",
+      "label": "DAIA Facebook video featuring Erik Wahl touring Alexan Azalea",
+      "publisher": "Downtown Arcadia Improvement Association (Facebook)",
+      "source_type": "primary_public_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-wahl-pi"
+      ]
+    },
+    {
+      "key": "ow-r13",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "ow-r13",
+      "label": "CEQAnet Notice of Determination: The Derby Mixed-Use Project",
+      "publisher": "CEQAnet",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-derby"
+      ]
+    },
+    {
+      "key": "ow-r11",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "ow-r11",
+      "label": "CEQAnet record: Arcadia Town Center MND",
+      "publisher": "California Governor's Office of Land Use and Climate Innovation (CEQAnet)",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-town-center",
+        "arcadia-field-autopsy::clm-ben-zhang-identity-resolution",
+        "arcadia-field-autopsy::clm-atc-applicant-interfaces",
+        "arcadia-field-autopsy::clm-intermediaries"
+      ]
+    },
+    {
+      "key": "ow-r12",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "ow-r12",
+      "label": "CEQAnet Notice of Determination: Arcadia Town Center approval",
+      "publisher": "CEQAnet",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-town-center"
+      ]
+    },
+    {
+      "key": "af-r07",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r07",
+      "label": "Arcadia Planning Commission minutes — Town Center applicant and DAIA support",
+      "publisher": "City of Arcadia",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-town-center",
+        "arcadia-field-autopsy::clm-ben-zhang-identity-resolution",
+        "arcadia-field-autopsy::clm-daia-atc-support",
+        "arcadia-field-autopsy::clm-atc-applicant-interfaces"
+      ]
+    },
+    {
+      "key": "af-r09",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r09",
+      "label": "Arcadia Town Center January 2025 staff report and resolution",
+      "publisher": "City of Arcadia",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-town-center",
+        "arcadia-field-autopsy::clm-ben-zhang-identity-resolution",
+        "arcadia-field-autopsy::clm-atc-applicant-interfaces"
+      ]
+    },
+    {
+      "key": "af-r08",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r08",
+      "label": "Arcadia Police Foundation profile of Ben Zhang",
+      "publisher": "Arcadia Police Foundation",
+      "source_type": "primary_public_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-ben-zhang-identity-resolution",
+        "arcadia-field-autopsy::clm-ben-zhang-daia-roles"
+      ]
+    },
+    {
+      "key": "af-r11",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r11",
+      "label": "Arcadia City Council minutes — Town Center appeal applicant appearance",
+      "publisher": "City of Arcadia",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-ben-zhang-identity-resolution",
+        "arcadia-field-autopsy::clm-atc-applicant-interfaces"
+      ]
+    },
+    {
+      "key": "af-r25",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r25",
+      "label": "GLEIF legal-entity record — Arcadia Town Center LLC",
+      "publisher": "Global Legal Entity Identifier Foundation",
+      "source_type": "primary_public_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-atc-applicant-interfaces",
+        "arcadia-field-autopsy::clm-atc-lei"
+      ]
+    },
+    {
+      "key": "af-r26",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r26",
+      "label": "Arcadia Town Center Draft IS/MND applicant label",
+      "publisher": "City of Arcadia via CEQAnet",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-atc-applicant-interfaces"
+      ]
+    },
+    {
+      "key": "af-r27",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r27",
+      "label": "Arcadia Town Center Notice of Determination applicant label",
+      "publisher": "City of Arcadia via CEQAnet",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-atc-applicant-interfaces"
+      ]
+    },
+    {
+      "key": "af-r12",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r12",
+      "label": "Alexan Arcadia tentative parcel map — 2021 owner and subdivider",
+      "publisher": "City of Arcadia",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-alexan-owner-snapshots"
+      ]
+    },
+    {
+      "key": "af-r13",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r13",
+      "label": "Arcadia November 2018 permit report — PI Properties parcel owner",
+      "publisher": "City of Arcadia",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-alexan-owner-snapshots"
+      ]
+    },
+    {
+      "key": "af-r30",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r30",
+      "label": "California SOS — PI Properties No. 111 LLC",
+      "publisher": "California Secretary of State",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-pi111-registration"
+      ]
+    },
+    {
+      "key": "af-r33",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r33",
+      "label": "LA County Assessor — Town Center four-parcel transaction chronology",
+      "publisher": "Los Angeles County Assessor",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-town-center-parcel-chronology"
+      ]
+    },
+    {
+      "key": "af-r34",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r34",
+      "label": "LA County Assessor — Town Center APN 5775-025-038 chronology",
+      "publisher": "Los Angeles County Assessor",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-town-center-parcel-chronology"
+      ]
+    },
+    {
+      "key": "af-r15",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r15",
+      "label": "Gold Line board minutes — Arcadia alone requested station betterments",
+      "publisher": "Foothill Gold Line Construction Authority",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-arcadia-station-betterments"
+      ]
+    },
+    {
+      "key": "af-r16",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r16",
+      "label": "Gold Line board minutes — Arcadia betterment agreement authorization",
+      "publisher": "Foothill Gold Line Construction Authority",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-arcadia-station-betterments"
+      ]
+    },
+    {
+      "key": "af-r17",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r17",
+      "label": "Gold Line board minutes — Arcadia betterment agreement completed",
+      "publisher": "Foothill Gold Line Construction Authority",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-arcadia-station-betterments"
+      ]
+    },
+    {
+      "key": "af-r18",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r18",
+      "label": "Gold Line board minutes — city-paid Arcadia betterments",
+      "publisher": "Foothill Gold Line Construction Authority",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-arcadia-station-betterments"
+      ]
+    },
+    {
+      "key": "af-r19",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r19",
+      "label": "Arcadia ACFR — $8 million Gold Line grade-separation bonds",
+      "publisher": "City of Arcadia",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-arcadia-grade-separation-bonds"
+      ]
+    },
+    {
+      "key": "af-r20",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r20",
+      "label": "Arcadia FY2014-19 CIP — station pedestrian linkage funding",
+      "publisher": "City of Arcadia",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-station-pedestrian-linkage"
       ]
     },
     {
@@ -5993,6 +6937,20 @@
       "source_type": "open_web",
       "claim_ids": [
         "arcadia-field-autopsy::clm-57-wheeler"
+      ]
+    },
+    {
+      "key": "ow-r15",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "ow-r15",
+      "label": "Patch on Rusnak expansion and city-held former church site",
+      "publisher": "Arcadia Patch",
+      "source_type": "reported_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-rusnak"
       ]
     },
     {
@@ -6052,302 +7010,115 @@
       ]
     },
     {
-      "key": "ow-r07",
+      "key": "gm-r01",
       "case_id": "arcadia-field-autopsy",
       "case_ids": [
         "arcadia-field-autopsy"
       ],
-      "receipt_id": "ow-r07",
-      "label": "Urbanize LA on city approval of 319-unit Alexan (Azalea)",
-      "publisher": "Urbanize LA",
+      "receipt_id": "gm-r01",
+      "label": "LA Times (Hawthorne) on feng shui-informed siting in Arcadia mansion boom, via Philadelphia Inquirer reprint",
+      "publisher": "Los Angeles Times via TNS/McClatchy-Tribune (Philadelphia Inquirer reprint), byline Christopher Hawthorne, Dec 13, 2014",
       "source_type": "reported_web",
       "claim_ids": [
-        "arcadia-field-autopsy::clm-alexan-approval"
+        "arcadia-field-autopsy::clm-fengshui-reporting"
       ]
     },
     {
-      "key": "ow-r08",
+      "key": "gm-r02",
       "case_id": "arcadia-field-autopsy",
       "case_ids": [
         "arcadia-field-autopsy"
       ],
-      "receipt_id": "ow-r08",
-      "label": "The Real Deal on TCR 319-unit approval",
-      "publisher": "The Real Deal",
+      "receipt_id": "gm-r02",
+      "label": "LA Observed digest of Bloomberg Businessweek Arcadia feature (Oct 2014)",
+      "publisher": "LA Observed (Kevin Roderick), digesting Bloomberg Businessweek, Oct 17, 2014",
       "source_type": "reported_web",
       "claim_ids": [
-        "arcadia-field-autopsy::clm-alexan-approval"
+        "arcadia-field-autopsy::clm-fengshui-reporting"
       ]
     },
     {
-      "key": "ow-r13",
+      "key": "gm-r09",
       "case_id": "arcadia-field-autopsy",
       "case_ids": [
         "arcadia-field-autopsy"
       ],
-      "receipt_id": "ow-r13",
-      "label": "CEQAnet Notice of Determination: The Derby Mixed-Use Project",
-      "publisher": "CEQAnet",
-      "source_type": "official_web_record",
+      "receipt_id": "gm-r09",
+      "label": "KPCC/LAist on Arcadia's 2016 anti-mansionization ordinance",
+      "publisher": "KPCC / Southern California Public Radio (now LAist), Apr 20, 2016",
+      "source_type": "reported_web",
       "claim_ids": [
-        "arcadia-field-autopsy::clm-derby"
+        "arcadia-field-autopsy::clm-fengshui-reporting"
       ]
     },
     {
-      "key": "ow-r01",
+      "key": "gm-r03",
       "case_id": "arcadia-field-autopsy",
       "case_ids": [
         "arcadia-field-autopsy"
       ],
-      "receipt_id": "ow-r01",
-      "label": "CBRE press release: sale of 2.9-acre Arcadia development site to TCR/Positive Investments JV",
-      "publisher": "CBRE",
+      "receipt_id": "gm-r03",
+      "label": "UBC working paper: Superstition in the Housing Market (full PDF retrieved and text-extracted)",
+      "publisher": "University of British Columbia, Department of Economics",
       "source_type": "primary_public_web",
       "claim_ids": [
-        "arcadia-field-autopsy::clm-jv-purchase"
+        "arcadia-field-autopsy::clm-number-premia"
       ]
     },
     {
-      "key": "af-r14",
+      "key": "gm-r04",
       "case_id": "arcadia-field-autopsy",
       "case_ids": [
         "arcadia-field-autopsy"
       ],
-      "receipt_id": "af-r14",
-      "label": "LA City-hosted RealQuest comparable — 25 Wheeler sale",
-      "publisher": "City of Los Angeles document host / CoreLogic",
-      "source_type": "reported_web",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-jv-purchase"
-      ]
-    },
-    {
-      "key": "af-r28",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "af-r28",
-      "label": "LA County Assessor — Alexan recorded parcel-map lineage",
-      "publisher": "Los Angeles County Assessor",
-      "source_type": "official_web_record",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-jv-purchase"
-      ]
-    },
-    {
-      "key": "af-r29",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "af-r29",
-      "label": "LA County Assessor — recorder document 0174959 Lot 2 scope",
-      "publisher": "Los Angeles County Assessor",
-      "source_type": "official_web_record",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-jv-purchase"
-      ]
-    },
-    {
-      "key": "af-r31",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "af-r31",
-      "label": "California SOS — Positive Investments Inc.",
-      "publisher": "California Secretary of State",
-      "source_type": "official_web_record",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-pi-registration"
-      ]
-    },
-    {
-      "key": "ow-r09",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "ow-r09",
-      "label": "Urbanize LA on Alexan Arroyo (325 N. Santa Anita)",
-      "publisher": "Urbanize LA",
-      "source_type": "reported_web",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-alexan-arroyo"
-      ]
-    },
-    {
-      "key": "ow-r10",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "ow-r10",
-      "label": "The Real Deal on Alexan Arroyo site's prior owner (Arroyo Pacific Academy)",
-      "publisher": "The Real Deal",
-      "source_type": "reported_web",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-alexan-arroyo"
-      ]
-    },
-    {
-      "key": "ow-r11",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "ow-r11",
-      "label": "CEQAnet record: Arcadia Town Center MND",
-      "publisher": "California Governor's Office of Land Use and Climate Innovation (CEQAnet)",
-      "source_type": "official_web_record",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-town-center",
-        "arcadia-field-autopsy::clm-atc-applicant-interfaces"
-      ]
-    },
-    {
-      "key": "ow-r12",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "ow-r12",
-      "label": "CEQAnet Notice of Determination: Arcadia Town Center approval",
-      "publisher": "CEQAnet",
-      "source_type": "official_web_record",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-town-center"
-      ]
-    },
-    {
-      "key": "af-r07",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "af-r07",
-      "label": "Arcadia Planning Commission minutes — Town Center applicant and DAIA support",
-      "publisher": "City of Arcadia",
-      "source_type": "official_web_record",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-town-center",
-        "arcadia-field-autopsy::clm-daia-atc-support",
-        "arcadia-field-autopsy::clm-atc-applicant-interfaces"
-      ]
-    },
-    {
-      "key": "af-r09",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "af-r09",
-      "label": "Arcadia Town Center January 2025 staff report and resolution",
-      "publisher": "City of Arcadia",
-      "source_type": "official_web_record",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-town-center",
-        "arcadia-field-autopsy::clm-atc-applicant-interfaces"
-      ]
-    },
-    {
-      "key": "af-r11",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "af-r11",
-      "label": "Arcadia City Council minutes — Town Center appeal applicant appearance",
-      "publisher": "City of Arcadia",
-      "source_type": "official_web_record",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-atc-applicant-interfaces"
-      ]
-    },
-    {
-      "key": "af-r25",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "af-r25",
-      "label": "GLEIF legal-entity record — Arcadia Town Center LLC",
-      "publisher": "Global Legal Entity Identifier Foundation",
+      "receipt_id": "gm-r04",
+      "label": "Peer-reviewed publication of the Vancouver address-number study",
+      "publisher": "Economic Inquiry (Wiley); also RePEc listing ideas.repec.org/a/bla/ecinqu/v52y2014i3p974-993.html",
       "source_type": "primary_public_web",
       "claim_ids": [
-        "arcadia-field-autopsy::clm-atc-applicant-interfaces"
+        "arcadia-field-autopsy::clm-number-premia"
       ]
     },
     {
-      "key": "af-r26",
+      "key": "gm-r12",
       "case_id": "arcadia-field-autopsy",
       "case_ids": [
         "arcadia-field-autopsy"
       ],
-      "receipt_id": "af-r26",
-      "label": "Arcadia Town Center Draft IS/MND applicant label",
-      "publisher": "City of Arcadia via CEQAnet",
-      "source_type": "official_web_record",
+      "receipt_id": "gm-r12",
+      "label": "News Tribune (via Yahoo) on feng shui master choosing 8/8/2017 Tacoma Marriott groundbreaking date",
+      "publisher": "Tacoma News Tribune (Debbie Cockrell, Sep 22, 2025), syndicated on Yahoo News",
+      "source_type": "reported_web",
       "claim_ids": [
-        "arcadia-field-autopsy::clm-atc-applicant-interfaces"
+        "arcadia-field-autopsy::clm-auspicious-timing"
       ]
     },
     {
-      "key": "af-r27",
+      "key": "gm-r11",
       "case_id": "arcadia-field-autopsy",
       "case_ids": [
         "arcadia-field-autopsy"
       ],
-      "receipt_id": "af-r27",
-      "label": "Arcadia Town Center Notice of Determination applicant label",
-      "publisher": "City of Arcadia via CEQAnet",
-      "source_type": "official_web_record",
+      "receipt_id": "gm-r11",
+      "label": "Wikipedia: Feng shui (Form branch vs Compass branch; Xuan Kong; date selection)",
+      "publisher": "Wikipedia",
+      "source_type": "open_web",
       "claim_ids": [
-        "arcadia-field-autopsy::clm-atc-applicant-interfaces"
+        "arcadia-field-autopsy::clm-traditions"
       ]
     },
     {
-      "key": "pl-r16",
+      "key": "gm-r10",
       "case_id": "arcadia-field-autopsy",
       "case_ids": [
         "arcadia-field-autopsy"
       ],
-      "receipt_id": "pl-r16",
-      "label": "City of Arcadia Proposed FY 2026-2031 Capital Improvement and Equipment Replacement Plan",
-      "publisher": "City of Arcadia (arcadiaca.gov)",
-      "source_type": "official_web_record",
+      "receipt_id": "gm-r10",
+      "label": "Wikipedia: Ley line (origins with Watkins; New Age adoption via Michell)",
+      "publisher": "Wikipedia",
+      "source_type": "open_web",
       "claim_ids": [
-        "arcadia-field-autopsy::clm-first-ave-scope",
-        "arcadia-field-autopsy::clm-capital-outlay"
-      ]
-    },
-    {
-      "key": "pl-r19",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "pl-r19",
-      "label": "City CIP project page: First Avenue Corridor Improvements (stub)",
-      "publisher": "City of Arcadia (arcadiaca.gov)",
-      "source_type": "official_web_record",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-first-ave-scope"
-      ]
-    },
-    {
-      "key": "pl-r20",
-      "case_id": "arcadia-field-autopsy",
-      "case_ids": [
-        "arcadia-field-autopsy"
-      ],
-      "receipt_id": "pl-r20",
-      "label": "City CIP street projects index page",
-      "publisher": "City of Arcadia (arcadiaca.gov)",
-      "source_type": "official_web_record",
-      "claim_ids": [
-        "arcadia-field-autopsy::clm-first-ave-scope"
+        "arcadia-field-autopsy::clm-traditions"
       ]
     },
     {
@@ -6393,45 +7164,451 @@
       ]
     },
     {
-      "key": "gm-r01",
+      "key": "cf-r01",
       "case_id": "arcadia-field-autopsy",
       "case_ids": [
         "arcadia-field-autopsy"
       ],
-      "receipt_id": "gm-r01",
-      "label": "LA Times (Hawthorne) on feng shui-informed siting in Arcadia mansion boom, via Philadelphia Inquirer reprint",
-      "publisher": "Los Angeles Times via TNS/McClatchy-Tribune (Philadelphia Inquirer reprint), byline Christopher Hawthorne, Dec 13, 2014",
-      "source_type": "reported_web",
+      "receipt_id": "cf-r01",
+      "label": "Monrovia Development Spotlight — Station Square planning timeline and public investment",
+      "publisher": "City of Monrovia",
+      "source_type": "official_web_record",
       "claim_ids": [
-        "arcadia-field-autopsy::clm-fengshui-reporting"
+        "arcadia-field-autopsy::clm-monrovia"
       ]
     },
     {
-      "key": "gm-r02",
+      "key": "cf-r02",
       "case_id": "arcadia-field-autopsy",
       "case_ids": [
         "arcadia-field-autopsy"
       ],
-      "receipt_id": "gm-r02",
-      "label": "LA Observed digest of Bloomberg Businessweek Arcadia feature (Oct 2014)",
-      "publisher": "LA Observed (Kevin Roderick), digesting Bloomberg Businessweek, Oct 17, 2014",
-      "source_type": "reported_web",
+      "receipt_id": "cf-r02",
+      "label": "Monrovia Station Square Transit Village official page",
+      "publisher": "City of Monrovia",
+      "source_type": "official_web_record",
       "claim_ids": [
-        "arcadia-field-autopsy::clm-fengshui-reporting"
+        "arcadia-field-autopsy::clm-monrovia"
       ]
     },
     {
-      "key": "gm-r09",
+      "key": "cf-r04",
       "case_id": "arcadia-field-autopsy",
       "case_ids": [
         "arcadia-field-autopsy"
       ],
-      "receipt_id": "gm-r09",
-      "label": "KPCC/LAist on Arcadia's 2016 anti-mansionization ordinance",
-      "publisher": "KPCC / Southern California Public Radio (now LAist), Apr 20, 2016",
+      "receipt_id": "cf-r04",
+      "label": "Monrovia—Samuelson & Fetter lawsuit settlement (land + cash to developer)",
+      "publisher": "Patch (Monrovia, CA)",
       "source_type": "reported_web",
       "claim_ids": [
-        "arcadia-field-autopsy::clm-fengshui-reporting"
+        "arcadia-field-autopsy::clm-monrovia"
+      ]
+    },
+    {
+      "key": "cf-r06",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r06",
+      "label": "Trammell Crow Residential Alexan (Marmont) Monrovia at Station Square",
+      "publisher": "Crow Holdings",
+      "source_type": "open_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-monrovia"
+      ]
+    },
+    {
+      "key": "cf-r07",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r07",
+      "label": "Legacy Partners as developer of MODA, first Station Square apartments",
+      "publisher": "Legacy Partners",
+      "source_type": "open_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-monrovia"
+      ]
+    },
+    {
+      "key": "cf-r21",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r21",
+      "label": "Monrovia Old Town Advisory Board and assessment-funded BID",
+      "publisher": "City of Monrovia",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-monrovia"
+      ]
+    },
+    {
+      "key": "cf-r22",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r22",
+      "label": "Monrovia current fee schedule — Old Town BID boundaries",
+      "publisher": "City of Monrovia",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-monrovia"
+      ]
+    },
+    {
+      "key": "cf-r23",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r23",
+      "label": "Monrovia municipal code — business improvement area",
+      "publisher": "City of Monrovia / American Legal Publishing",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-monrovia"
+      ]
+    },
+    {
+      "key": "cf-r24",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r24",
+      "label": "Monrovia Station Square MODA parcel consolidation record",
+      "publisher": "City of Monrovia",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-monrovia"
+      ]
+    },
+    {
+      "key": "cf-r25",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r25",
+      "label": "Monrovia Alexan Foothills multi-lot planning record",
+      "publisher": "City of Monrovia",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-monrovia"
+      ]
+    },
+    {
+      "key": "af-r03",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r03",
+      "label": "USACE FY1959 annual report — Santa Anita Wash channel completion",
+      "publisher": "U.S. Army Corps of Engineers",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-wash-channelization"
+      ]
+    },
+    {
+      "key": "af-r04",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r04",
+      "label": "USACE FY1962 annual report — Santa Anita Wash channel completion chronology",
+      "publisher": "U.S. Army Corps of Engineers",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-wash-channelization"
+      ]
+    },
+    {
+      "key": "af-r05",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r05",
+      "label": "LA County FY2013-14 direct-assessment list — Arcadia Downtown CBD",
+      "publisher": "Los Angeles County Auditor-Controller",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-daia-assessment-bookends"
+      ]
+    },
+    {
+      "key": "af-r06",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "af-r06",
+      "label": "LA County FY2025-26 direct-assessment list — Arcadia Downtown CBD",
+      "publisher": "Los Angeles County Auditor-Controller",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-daia-assessment-bookends"
+      ]
+    },
+    {
+      "key": "cf-r08",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r08",
+      "label": "Azusa TOD Specific Plan CEQA record (SCH 2015021018)",
+      "publisher": "California Governor's Office of Land Use and Climate Innovation (State Clearinghouse)",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-azusa-delmar"
+      ]
+    },
+    {
+      "key": "cf-r09",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r09",
+      "label": "Azusa TOD Specific Plan EIR certification date",
+      "publisher": "Impact Sciences (EIR consultant)",
+      "source_type": "open_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-azusa-delmar"
+      ]
+    },
+    {
+      "key": "cf-r10",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r10",
+      "label": "Del Mar Station Transit Village (Pasadena) — Metro joint development on public land",
+      "publisher": "Congress for the New Urbanism",
+      "source_type": "reported_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-azusa-delmar"
+      ]
+    },
+    {
+      "key": "cf-r11",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r11",
+      "label": "Urban Partners selection by MTA and mid-construction sale to Archstone REIT",
+      "publisher": "Los Angeles Business Journal",
+      "source_type": "reported_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-azusa-delmar"
+      ]
+    },
+    {
+      "key": "cf-r26",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r26",
+      "label": "Metro 1996 Del Mar Station property-acquisition memo",
+      "publisher": "Los Angeles County Metropolitan Transportation Authority",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-azusa-delmar"
+      ]
+    },
+    {
+      "key": "cf-r27",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r27",
+      "label": "Metro completed TOD inventory — Del Mar Station",
+      "publisher": "Los Angeles County Metropolitan Transportation Authority",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-azusa-delmar"
+      ]
+    },
+    {
+      "key": "cf-r28",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r28",
+      "label": "Old Pasadena PBID 2025 management plan",
+      "publisher": "City of Pasadena",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-azusa-delmar"
+      ]
+    },
+    {
+      "key": "cf-r29",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r29",
+      "label": "Federal Del Mar Station neighborhood study",
+      "publisher": "U.S. Department of Transportation repository",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-azusa-delmar"
+      ]
+    },
+    {
+      "key": "cf-r30",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r30",
+      "label": "Azusa Transit Oriented Development Specific Plan staff record",
+      "publisher": "City of Azusa",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-azusa-delmar"
+      ]
+    },
+    {
+      "key": "cf-r31",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r31",
+      "label": "Azusa intermodal center record",
+      "publisher": "City of Azusa",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-azusa-delmar"
+      ]
+    },
+    {
+      "key": "cf-r32",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r32",
+      "label": "Azusa Olson Company multi-parcel development agreement",
+      "publisher": "City of Azusa",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-azusa-delmar"
+      ]
+    },
+    {
+      "key": "cf-r15",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r15",
+      "label": "LA Metro Joint Development Program",
+      "publisher": "Los Angeles County Metropolitan Transportation Authority",
+      "source_type": "official_web_record",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-tod-policy"
+      ]
+    },
+    {
+      "key": "cf-r16",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r16",
+      "label": "SB 375 (Sustainable Communities and Climate Protection Act of 2008)",
+      "publisher": "Wikipedia",
+      "source_type": "open_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-tod-policy"
+      ]
+    },
+    {
+      "key": "cf-r17",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r17",
+      "label": "Brooks & Lutz — urban land assembly premium (peer-reviewed, LA data)",
+      "publisher": "American Economic Association",
+      "source_type": "reported_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-assembly-premium"
+      ]
+    },
+    {
+      "key": "cf-r19",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r19",
+      "label": "Miceli & Sirmans — holdout problem, urban sprawl, and eminent domain",
+      "publisher": "Elsevier / ScienceDirect",
+      "source_type": "reported_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-assembly-premium"
+      ]
+    },
+    {
+      "key": "cf-r18",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r18",
+      "label": "Fejarang 1993 — LA Metro Rail announcement effects on property values",
+      "publisher": "TRID (Transportation Research Board database)",
+      "source_type": "reported_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-anticipation"
+      ]
+    },
+    {
+      "key": "cf-r20",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r20",
+      "label": "Crenshaw/LAX (K Line) corridor speculation and development reporting",
+      "publisher": "The Real Deal",
+      "source_type": "reported_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-anticipation"
+      ]
+    },
+    {
+      "key": "cf-r05",
+      "case_id": "arcadia-field-autopsy",
+      "case_ids": [
+        "arcadia-field-autopsy"
+      ],
+      "receipt_id": "cf-r05",
+      "label": "Logan & Molotch growth machine thesis summary",
+      "publisher": "Mesopolhis (CNRS/Sciences Po Aix research lab)",
+      "source_type": "reported_web",
+      "claim_ids": [
+        "arcadia-field-autopsy::clm-growth-machine"
       ]
     },
     {

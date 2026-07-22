@@ -166,16 +166,22 @@ function compileUkAiPolicyCase() {
     counts: {
       events: events.length,
       claims: claims.length,
+      sequenced_claims: claims.length,
+      unsequenced_claims: 0,
       receipts: receipts.length,
       relations: 0,
-      beacons: 0
+      beacons: 0,
+      trails: 0
     },
     claim_status_counts: claimStatusCounts,
     sections,
+    claims,
+    unsequenced_claim_ids: [],
     events,
     relations: [],
     receipts,
-    beacons: []
+    beacons: [],
+    trails: []
   };
   writeJson(UK_AI_CASE_HREF, output);
   return {
@@ -193,6 +199,26 @@ function compileUkAiPolicyCase() {
   };
 }
 
+function allCaseClaims(caseItem) {
+  if (Array.isArray(caseItem.claims) && caseItem.claims.length > 0) return caseItem.claims;
+  return (caseItem.events ?? []).flatMap(event => event.claims ?? []);
+}
+
+function eventContextByClaimId(caseItem) {
+  const contexts = new Map();
+  for (const event of caseItem.events ?? []) {
+    for (const claim of event.claims ?? []) {
+      contexts.set(claim.claim_id, { label: event.label, occurred_at: event.occurred_at });
+    }
+  }
+  return contexts;
+}
+
+function unsequencedOccurredAt(claim) {
+  if (claim.valid_from && claim.valid_until && claim.valid_from !== claim.valid_until) return `${claim.valid_from} to ${claim.valid_until}`;
+  return claim.valid_from || claim.valid_until || 'Not assigned to a dated event';
+}
+
 function firstVerifiedClaim(caseItem) {
   for (const section of caseItem.sections ?? []) {
     for (const event of section.records ?? []) {
@@ -200,7 +226,8 @@ function firstVerifiedClaim(caseItem) {
       if (claim) return { claim, event };
     }
   }
-  return null;
+  const claim = allCaseClaims(caseItem).find(item => item.claim_status === 'verified');
+  return claim ? { claim, event: null } : null;
 }
 
 function compilePublicCatalog() {
@@ -213,45 +240,43 @@ function compilePublicCatalog() {
 
   const cases = [projectedUkAiCase, ...(caseIndex.cases ?? []).filter(entry => entry.case_id !== UK_AI_CASE_ID)].map(entry => {
     const caseItem = readJson(entry.href);
-    for (const section of caseItem.sections ?? []) {
-      for (const event of section.records ?? []) {
-        for (const claim of event.claims ?? []) {
-          const key = `${caseItem.case_id}::${claim.claim_id}`;
-          if (!claims.has(key)) {
-            claims.set(key, {
-              key,
-              case_id: caseItem.case_id,
-              case_title: caseItem.title,
-              claim_id: claim.claim_id,
-              plain: claim.plain,
-              claim_status: claim.claim_status,
-              evidence_class: claim.evidence_class,
-              evidence_state: claim.evidence_state,
-              causal_status: claim.causal_status,
-              event_label: event.label,
-              occurred_at: event.occurred_at,
-              receipt_count: claim.receipts?.length ?? 0
-            });
-          }
-          for (const receipt of claim.receipts ?? []) {
-            const receiptKey = receipt.receipt_id;
-            const existing = receipts.get(receiptKey);
-            const claimKeys = new Set(existing?.claim_ids ?? []);
-            const caseIds = new Set(existing?.case_ids ?? []);
-            claimKeys.add(key);
-            caseIds.add(caseItem.case_id);
-            receipts.set(receiptKey, {
-              key: receiptKey,
-              case_id: existing?.case_id ?? caseItem.case_id,
-              case_ids: [...caseIds],
-              receipt_id: receipt.receipt_id,
-              label: existing?.label || receipt.label || receipt.title || receipt.source_title || receipt.receipt_id,
-              publisher: existing?.publisher || receipt.publisher,
-              source_type: existing?.source_type || receipt.source_type,
-              claim_ids: [...claimKeys]
-            });
-          }
-        }
+    const eventContexts = eventContextByClaimId(caseItem);
+    for (const claim of allCaseClaims(caseItem)) {
+      const key = `${caseItem.case_id}::${claim.claim_id}`;
+      const event = eventContexts.get(claim.claim_id);
+      if (!claims.has(key)) {
+        claims.set(key, {
+          key,
+          case_id: caseItem.case_id,
+          case_title: caseItem.title,
+          claim_id: claim.claim_id,
+          plain: claim.plain,
+          claim_status: claim.claim_status,
+          evidence_class: claim.evidence_class,
+          evidence_state: claim.evidence_state,
+          causal_status: claim.causal_status,
+          event_label: event?.label ?? 'Unsequenced case claim',
+          occurred_at: event?.occurred_at ?? unsequencedOccurredAt(claim),
+          receipt_count: claim.receipts?.length ?? 0
+        });
+      }
+      for (const receipt of claim.receipts ?? []) {
+        const receiptKey = receipt.receipt_id;
+        const existing = receipts.get(receiptKey);
+        const claimKeys = new Set(existing?.claim_ids ?? []);
+        const caseIds = new Set(existing?.case_ids ?? []);
+        claimKeys.add(key);
+        caseIds.add(caseItem.case_id);
+        receipts.set(receiptKey, {
+          key: receiptKey,
+          case_id: existing?.case_id ?? caseItem.case_id,
+          case_ids: [...caseIds],
+          receipt_id: receipt.receipt_id,
+          label: existing?.label || receipt.label || receipt.title || receipt.source_title || receipt.receipt_id,
+          publisher: existing?.publisher || receipt.publisher,
+          source_type: existing?.source_type || receipt.source_type,
+          claim_ids: [...claimKeys]
+        });
       }
     }
     const featured = firstVerifiedClaim(caseItem);
