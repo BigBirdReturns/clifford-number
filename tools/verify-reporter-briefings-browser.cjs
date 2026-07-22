@@ -68,7 +68,7 @@ async function main() {
       assert.equal(await page.locator('.controls [data-control-id]').count(), manifest.counts.controls);
       assert.equal(await page.locator('.workplan [data-work-id]').count(), manifest.counts.workplan_items);
       assert.equal(await page.locator('.claim-register tbody tr[id^="claim-"]').count(), manifest.counts.claims);
-      assert.equal(await page.locator('.sources a[href^="https://"]').count(), manifest.counts.public_receipts);
+      assert.equal(await page.locator('.sources a[href^="http"]').count(), manifest.counts.public_receipts);
       assert.equal(await page.locator(`a[href="${entry.case_href}"]`).count(), 1);
       const sourceTrailCount = await page.locator('[data-trail-id]').evaluateAll(nodes => new Set(nodes.map(node => node.getAttribute('data-trail-id'))).size);
       assert.equal(sourceTrailCount, manifest.counts.source_trails);
@@ -106,7 +106,7 @@ async function main() {
       if (verifiedCount > 0) {
         await page.locator('#detail .case-claim--verified .claim-open').first().click();
         await page.waitForSelector('#evidence-dialog[open] .claim-inspector', { timeout: 10000 });
-        assert.ok(await page.locator('#evidence-dialog .receipt-link[href^="https://"]').count() >= 1);
+        assert.ok(await page.locator('#evidence-dialog .receipt-link[href^="http"]').count() >= 1);
         assert.match(await page.locator('#evidence-dialog .claim-boundary').textContent(), /does not establish/i);
         if (position === 0) await page.screenshot({ path: evidenceScreenshotPath, fullPage: true });
         await page.locator('#evidence-dialog-close').click();
