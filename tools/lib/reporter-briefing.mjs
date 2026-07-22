@@ -41,8 +41,25 @@ function qualificationForClaim(claim, caseItem) {
   return { qualification: '', qualification_source: 'missing' };
 }
 
+function unsequencedDate(claim) {
+  if (text(claim?.valid_from) && text(claim?.valid_until) && claim.valid_from !== claim.valid_until) {
+    return `${claim.valid_from} to ${claim.valid_until}`;
+  }
+  return text(claim?.valid_from) || text(claim?.valid_until) || 'Not assigned to a dated event';
+}
+
 function claimMap(caseItem) {
   const claims = new Map();
+  for (const claim of caseItem.claims ?? []) {
+    claims.set(claim.claim_id, {
+      ...claim,
+      ...qualificationForClaim(claim, caseItem),
+      event_id: null,
+      event_type: 'unsequenced_case_claim',
+      event_label: 'Unsequenced case claim',
+      occurred_at: unsequencedDate(claim)
+    });
+  }
   for (const event of caseItem.events ?? []) {
     for (const claim of event.claims ?? []) {
       claims.set(claim.claim_id, {
