@@ -8,9 +8,8 @@ import {
   reporterBriefingQueueEntry,
   validateReporterBriefing
 } from '../tools/lib/reporter-briefing.mjs';
+import { readJson, root } from '../tools/lib/ledger.mjs';
 
-const root = path.resolve(import.meta.dirname, '..');
-const readJson = relative => JSON.parse(fs.readFileSync(path.join(root, relative), 'utf8'));
 const spec = readJson('cases/anduril-access-ownership/briefing.json');
 const caseItem = readJson('build/cases/anduril-access-ownership.json');
 const errors = validateReporterBriefing(spec, caseItem);
