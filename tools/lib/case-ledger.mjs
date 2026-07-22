@@ -5,6 +5,7 @@ import { readJson, readJsonl, root, writeJson } from './ledger.mjs';
 export const CLAIM_STATUSES = new Set(['verified', 'review_required', 'disputed', 'superseded', 'rejected']);
 export const CAUSAL_STATUSES = new Set(['source_explicit', 'institutionally_attributed', 'temporal_association', 'not_established']);
 export const AMOUNT_KINDS = new Set(['requested', 'authorized', 'appropriated', 'allocated', 'obligated', 'outlaid', 'paid', 'ceiling']);
+export const REPORTER_BRIEFING_SCHEMA_VERSIONS = new Set(['reporter-briefing@2']);
 
 function index(rows, key, errors) {
   const out = new Map();
@@ -27,7 +28,9 @@ function validateBriefingMetadata(caseItem, errors) {
     errors.push('reporter_briefing case requires briefing metadata');
     return;
   }
-  if (briefing.schema_version !== 'reporter-briefing@1') errors.push('reporter briefing schema_version must be reporter-briefing@1');
+  if (!REPORTER_BRIEFING_SCHEMA_VERSIONS.has(briefing.schema_version)) {
+    errors.push(`reporter briefing schema_version must be one of ${[...REPORTER_BRIEFING_SCHEMA_VERSIONS].join(', ')}`);
+  }
   if (!/^\d+\.\d+\.\d+$/.test(briefing.version ?? '')) errors.push('reporter briefing version must be semantic version x.y.z');
   if (briefing.source !== `cases/${caseItem.case_id}/briefing.json`) errors.push('reporter briefing source must be cases/<case-id>/briefing.json');
   if (briefing.href !== `briefs/${caseItem.case_id}.html`) errors.push('reporter briefing href must be briefs/<case-id>.html');

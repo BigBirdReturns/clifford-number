@@ -21,32 +21,53 @@ assert.equal(manifest.schema_version, COMPILED_REPORTER_BRIEFING_SCHEMA_VERSION)
 assert.equal(manifest.graph_effect, 'none');
 assert.equal(manifest.conclusion_generated, false);
 assert.equal(manifest.counts.threads, 6);
-assert.equal(manifest.counts.claims, 15);
-assert.equal(manifest.counts.verified_claims, 9);
-assert.equal(manifest.counts.review_required_claims, 6);
-assert.equal(manifest.counts.receipts, 13);
-assert.equal(manifest.counts.public_receipts, 12);
+assert.equal(manifest.counts.matrix_cells, 30);
+assert.equal(manifest.counts.sequence_events, 18);
+assert.equal(manifest.counts.controls, 3);
+assert.equal(manifest.counts.workplan_items, 7);
+assert.equal(manifest.counts.claims, 24);
+assert.equal(manifest.counts.verified_claims, 15);
+assert.equal(manifest.counts.review_required_claims, 9);
+assert.equal(manifest.counts.receipts, 22);
+assert.equal(manifest.counts.public_receipts, 21);
 assert.ok(manifest.review_required_claim_ids.includes('clm-axis-working-proposition'));
 assert.ok(manifest.verified_claim_ids.includes('clm-army-enterprise-vehicle'));
 assert.ok(manifest.receipt_ids.includes('anduril-bundle-r3'));
 assert.ok(!manifest.public_receipt_ids.includes('anduril-bundle-r3'));
-assert.match(html, /Anduril: access, ownership, and the government gate/i);
+assert.match(html, /Decision sequence/);
+assert.match(html, /What is established, and where the paper gap remains/);
+assert.match(html, /Reconstruct the formal gate before chasing access/);
 assert.match(html, /The March 2026 Army enterprise contract is a single-award/);
 assert.match(html, /The \$20 billion figure is a maximum ceiling/);
 assert.match(html, /Open evidence case/);
+assert.match(html, /data-briefing-schema="reporter-briefing@2"/);
 assert.match(html, /data-graph-effect="none"/);
+assert.doesNotMatch(html, /style="left:/);
+assert.doesNotMatch(html, /anduril-bundle-r3/);
 assert.doesNotMatch(html, /href="undefined"/);
 
 const queue = reporterBriefingQueueEntry(manifest);
 assert.equal(queue.eligible_for_approval, false);
 assert.ok(queue.blocking_reasons.includes('publication_status_review_required'));
-assert.ok(queue.blocking_reasons.includes('6_claims_review_required'));
+assert.ok(queue.blocking_reasons.includes('9_claims_review_required'));
 assert.ok(queue.blocking_reasons.includes('independent_reviewer_missing'));
 assert.ok(queue.blocking_reasons.includes('review_date_missing'));
 
 const missingClaim = structuredClone(spec);
-missingClaim.threads[0].claim_ids.push('missing-claim');
+missingClaim.threads[0].cells[0].claim_ids.push('missing-claim');
 assert.ok(validateReporterBriefing(missingClaim, caseItem).some(error => /missing claim missing-claim/.test(error)));
+
+const missingEvent = structuredClone(spec);
+missingEvent.sequence.items[0].event_id = 'missing-event';
+assert.ok(validateReporterBriefing(missingEvent, caseItem).some(error => /missing event missing-event/.test(error)));
+
+const pseudoPrecision = structuredClone(spec);
+pseudoPrecision.threads[0].placement.x_level = '92';
+assert.ok(validateReporterBriefing(pseudoPrecision, caseItem).some(error => /placement.x_level/.test(error)));
+
+const missingMatrixColumn = structuredClone(spec);
+missingMatrixColumn.threads[0].cells.pop();
+assert.ok(validateReporterBriefing(missingMatrixColumn, caseItem).some(error => /missing matrix column/.test(error)));
 
 const unsafePath = structuredClone(spec);
 unsafePath.output_path = '../brief.html';
@@ -60,14 +81,14 @@ assert.throws(() => compileReporterBriefing(mismatchedAsOf, caseItem), /as_of mu
 const receiptlessCase = structuredClone(caseItem);
 const receiptlessClaim = receiptlessCase.events
   .flatMap(event => event.claims ?? [])
-  .find(claim => claim.claim_id === spec.threads[0].claim_ids[0]);
+  .find(claim => claim.claim_id === 'clm-army-enterprise-vehicle');
 receiptlessClaim.receipt_ids = [];
 assert.ok(validateReporterBriefing(spec, receiptlessCase).some(error => /briefing claim .* has no receipts/.test(error)));
 assert.throws(() => compileReporterBriefing(spec, receiptlessCase), /briefing claim .* has no receipts/);
 
 const unreviewedApproval = structuredClone(spec);
 unreviewedApproval.publication.status = 'approved';
-unreviewedApproval.publication.history[0].status = 'approved';
+unreviewedApproval.publication.history.at(-1).status = 'approved';
 unreviewedApproval.publication.reviewer = null;
 unreviewedApproval.publication.reviewed_at = null;
 const approvalErrors = validateReporterBriefing(unreviewedApproval, { ...caseItem, status: 'approved' });
@@ -83,5 +104,6 @@ assert.equal(reviewQueue.totals.briefings, 1);
 assert.equal(reviewQueue.totals.approved, 0);
 assert.equal(reviewQueue.totals.review_required, 1);
 assert.equal(reviewQueue.totals.eligible_for_approval, 0);
+assert.ok(reviewQueue.queue[0].blocking_reasons.includes('9_claims_review_required'));
 
 console.log('reporter-briefing: OK');

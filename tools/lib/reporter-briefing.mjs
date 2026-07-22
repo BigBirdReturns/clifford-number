@@ -1,13 +1,14 @@
 import crypto from 'node:crypto';
+import { renderReporterBriefingHtml } from './reporter-briefing-html.mjs';
 
-export const REPORTER_BRIEFING_SCHEMA_VERSION = 'reporter-briefing@1';
-export const COMPILED_REPORTER_BRIEFING_SCHEMA_VERSION = 'compiled-reporter-briefing@1';
+export const REPORTER_BRIEFING_SCHEMA_VERSION = 'reporter-briefing@2';
+export const COMPILED_REPORTER_BRIEFING_SCHEMA_VERSION = 'compiled-reporter-briefing@2';
 export const REPORTER_BRIEFING_INDEX_SCHEMA_VERSION = 'reporter-briefing-index@1';
 export const REPORTER_BRIEFING_REVIEW_QUEUE_SCHEMA_VERSION = 'reporter-briefing-review-queue@1';
 
 const CLAIM_STATUSES = new Set(['verified', 'review_required', 'disputed', 'superseded', 'rejected']);
 const PUBLICATION_STATUSES = new Set(['review_required', 'approved', 'superseded', 'withdrawn']);
-const SAFE_OUTPUT = /^briefs\/[a-z0-9][a-z0-9._/-]*\.html$/i;
+const SAFE_OUTPUT = /^briefs\/[a-z0-9][a-z0-9._\/-]*\.html$/i;
 const SAFE_CASE_HREF = /^\.\.\/#case\/[a-z0-9][a-z0-9._-]*$/i;
 const SEMVER = /^\d+\.\d+\.\d+$/;
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -18,16 +19,6 @@ function unique(values) {
 
 function text(value) {
   return String(value ?? '').trim();
-}
-
-function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>"']/g, character => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  })[character]);
-}
-
-function escapeAttribute(value) {
-  return escapeHtml(value).replace(/`/g, '&#96;');
 }
 
 function safeHttpUrl(value) {
@@ -46,9 +37,21 @@ function sha256(value) {
 function claimMap(caseItem) {
   const claims = new Map();
   for (const event of caseItem.events ?? []) {
-    for (const claim of event.claims ?? []) claims.set(claim.claim_id, { ...claim, event_id: event.event_id, event_label: event.label, occurred_at: event.occurred_at });
+    for (const claim of event.claims ?? []) {
+      claims.set(claim.claim_id, {
+        ...claim,
+        event_id: event.event_id,
+        event_type: event.event_type,
+        event_label: event.label,
+        occurred_at: event.occurred_at
+      });
+    }
   }
   return claims;
+}
+
+function eventMap(caseItem) {
+  return new Map((caseItem.events ?? []).map(event => [event.event_id, event]));
 }
 
 function receiptMap(caseItem) {
@@ -59,20 +62,26 @@ function statusSummary(claims) {
   const counts = Object.fromEntries([...CLAIM_STATUSES].map(status => [status, 0]));
   for (const claim of claims) counts[claim.claim_status] = (counts[claim.claim_status] ?? 0) + 1;
   const statuses = unique(claims.map(claim => claim.claim_status));
-  const status = statuses.length === 1 ? statuses[0] : 'mixed';
+  const status = statuses.length === 0 ? 'open' : statuses.length === 1 ? statuses[0] : 'mixed';
   return { status, counts };
 }
 
-function allBriefingClaimIds(spec) {
+function eventClaimIds(event) {
+  return (event?.claims ?? []).map(claim => claim.claim_id);
+}
+
+function allBriefingClaimIds(spec, eventsById) {
   return unique([
     spec.working_proposition?.claim_id,
     spec.boundary?.claim_id,
-    spec.records_target?.claim_id,
-    ...(spec.threads ?? []).flatMap(thread => thread.claim_ids ?? [])
+    ...(spec.sequence?.items ?? []).flatMap(item => eventClaimIds(eventsById.get(item.event_id))),
+    ...(spec.threads ?? []).flatMap(thread => (thread.cells ?? []).flatMap(cell => cell.claim_ids ?? [])),
+    ...(spec.controls ?? []).flatMap(control => control.claim_ids ?? []),
+    spec.records_target?.claim_id
   ]);
 }
 
-function publicReceiptsForClaims(claims, receiptsById) {
+function receiptsForClaims(claims, receiptsById) {
   const ids = unique(claims.flatMap(claim => claim.receipt_ids ?? []));
   return ids.map(id => receiptsById.get(id)).filter(Boolean).map(receipt => ({
     receipt_id: receipt.receipt_id,
@@ -113,10 +122,27 @@ function validateHistory(publication, errors) {
   }
 }
 
+function validateDimension(dimension, name, errors) {
+  if (!text(dimension?.id) || !text(dimension?.label)) errors.push(`orientation.${name} requires id and label`);
+  if (!Array.isArray(dimension?.levels) || dimension.levels.length !== 3) {
+    errors.push(`orientation.${name}.levels must contain exactly three categorical levels`);
+    return new Set();
+  }
+  const ids = new Set();
+  for (const [index, level] of dimension.levels.entries()) {
+    if (!text(level?.id) || !text(level?.label)) errors.push(`orientation.${name}.levels[${index}] requires id and label`);
+    if (ids.has(level?.id)) errors.push(`orientation.${name} contains duplicate level ${level?.id}`);
+    ids.add(level?.id);
+  }
+  return ids;
+}
+
 export function validateReporterBriefing(spec, caseItem) {
   const errors = [];
   const claims = claimMap(caseItem);
+  const events = eventMap(caseItem);
   const receipts = receiptMap(caseItem);
+
   if (spec?.schema_version !== REPORTER_BRIEFING_SCHEMA_VERSION) errors.push(`schema_version must be ${REPORTER_BRIEFING_SCHEMA_VERSION}`);
   if (spec?.case_id !== caseItem?.case_id) errors.push('briefing case_id must match compiled case');
   if (spec?.briefing_id !== caseItem?.case_id) errors.push('briefing_id must equal case_id for stable routing');
@@ -132,42 +158,106 @@ export function validateReporterBriefing(spec, caseItem) {
   if (caseItem?.presentation !== 'reporter_briefing') errors.push('compiled case presentation must be reporter_briefing');
   if (caseItem?.briefing?.source !== `cases/${caseItem.case_id}/briefing.json`) errors.push('case briefing.source must point to the briefing specification');
   if (caseItem?.briefing?.href !== spec?.output_path) errors.push('case briefing.href must match output_path');
-  if (caseItem?.briefing?.schema_version !== REPORTER_BRIEFING_SCHEMA_VERSION) errors.push('case briefing.schema_version must match reporter-briefing@1');
+  if (caseItem?.briefing?.schema_version !== REPORTER_BRIEFING_SCHEMA_VERSION) errors.push(`case briefing.schema_version must match ${REPORTER_BRIEFING_SCHEMA_VERSION}`);
   if (caseItem?.briefing?.version !== spec?.publication?.version) errors.push('case briefing.version must match publication.version');
 
   validateHistory(spec?.publication, errors);
   if (spec?.publication?.status !== caseItem?.status) errors.push('publication.status must match case status');
 
-  const axes = spec?.axes ?? [];
-  if (axes.length !== 2) errors.push('exactly two axes are required');
-  const axisIds = new Set();
-  for (const [index, axis] of axes.entries()) {
-    if (!text(axis?.id) || !text(axis?.label) || !text(axis?.low_label) || !text(axis?.high_label)) errors.push(`axis ${index + 1} lacks id or labels`);
-    if (axisIds.has(axis?.id)) errors.push(`duplicate axis id ${axis?.id}`);
-    axisIds.add(axis?.id);
+  const xLevels = validateDimension(spec?.orientation?.x, 'x', errors);
+  const yLevels = validateDimension(spec?.orientation?.y, 'y', errors);
+
+  const columnIds = new Set();
+  if (!Array.isArray(spec?.matrix?.columns) || spec.matrix.columns.length < 4) {
+    errors.push('matrix.columns must contain at least four evidence columns');
   }
+  for (const [index, column] of (spec?.matrix?.columns ?? []).entries()) {
+    if (!text(column?.id) || !text(column?.label)) errors.push(`matrix column ${index + 1} requires id and label`);
+    if (columnIds.has(column?.id)) errors.push(`duplicate matrix column ${column?.id}`);
+    columnIds.add(column?.id);
+  }
+  if (!text(spec?.matrix?.empty_state_label)) errors.push('matrix.empty_state_label is required');
+
+  const threadIds = new Set();
+  for (const [index, thread] of (spec?.threads ?? []).entries()) {
+    const threadLabel = thread?.id ?? index + 1;
+    if (!text(thread?.id) || !text(thread?.title) || !text(thread?.subtitle)) errors.push(`thread ${index + 1} lacks id, title, or subtitle`);
+    if (threadIds.has(thread?.id)) errors.push(`duplicate thread id ${thread?.id}`);
+    threadIds.add(thread?.id);
+    if (!xLevels.has(thread?.placement?.x_level)) errors.push(`thread ${threadLabel}.placement.x_level must use an orientation.x level`);
+    if (!yLevels.has(thread?.placement?.y_level)) errors.push(`thread ${threadLabel}.placement.y_level must use an orientation.y level`);
+
+    const seenCells = new Set();
+    for (const cell of thread?.cells ?? []) {
+      if (!columnIds.has(cell?.column_id)) errors.push(`thread ${threadLabel} references unknown matrix column ${cell?.column_id}`);
+      if (seenCells.has(cell?.column_id)) errors.push(`thread ${threadLabel} repeats matrix column ${cell?.column_id}`);
+      seenCells.add(cell?.column_id);
+      const hasClaims = Array.isArray(cell?.claim_ids) && cell.claim_ids.length > 0;
+      const hasTarget = Boolean(text(cell?.record_target));
+      const isNA = cell?.not_applicable === true;
+      if ([hasClaims, hasTarget, isNA].filter(Boolean).length !== 1) errors.push(`thread ${threadLabel} cell ${cell?.column_id} must contain claim_ids, record_target, or not_applicable`);
+      for (const claimId of cell?.claim_ids ?? []) if (!claims.has(claimId)) errors.push(`thread ${threadLabel} references missing claim ${claimId}`);
+    }
+    for (const columnId of columnIds) if (!seenCells.has(columnId)) errors.push(`thread ${threadLabel} is missing matrix column ${columnId}`);
+    if ((thread?.cells ?? []).length !== columnIds.size) errors.push(`thread ${threadLabel} must contain exactly one cell for every matrix column`);
+  }
+  if ((spec?.threads ?? []).length < 2) errors.push('at least two briefing threads are required');
+
+  const laneIds = new Set();
+  if (!Array.isArray(spec?.sequence?.lanes) || spec.sequence.lanes.length < 3) errors.push('sequence.lanes must contain at least three lanes');
+  for (const [index, lane] of (spec?.sequence?.lanes ?? []).entries()) {
+    if (!text(lane?.id) || !text(lane?.label)) errors.push(`sequence lane ${index + 1} requires id and label`);
+    if (laneIds.has(lane?.id)) errors.push(`duplicate sequence lane ${lane?.id}`);
+    laneIds.add(lane?.id);
+  }
+  const sequenceEvents = new Set();
+  for (const [index, item] of (spec?.sequence?.items ?? []).entries()) {
+    if (!events.has(item?.event_id)) errors.push(`sequence item ${index + 1} references missing event ${item?.event_id}`);
+    if (!laneIds.has(item?.lane)) errors.push(`sequence item ${item?.event_id ?? index + 1} references unknown lane ${item?.lane}`);
+    if (sequenceEvents.has(item?.event_id)) errors.push(`sequence contains duplicate event ${item?.event_id}`);
+    sequenceEvents.add(item?.event_id);
+  }
+  if ((spec?.sequence?.items ?? []).length === 0) errors.push('sequence.items must contain at least one event');
+
+  const controlIds = new Set();
+  for (const [index, control] of (spec?.controls ?? []).entries()) {
+    if (!text(control?.id) || !text(control?.title)) errors.push(`control ${index + 1} requires id and title`);
+    if (controlIds.has(control?.id)) errors.push(`duplicate control id ${control?.id}`);
+    controlIds.add(control?.id);
+    if (!Array.isArray(control?.claim_ids) || control.claim_ids.length === 0) errors.push(`control ${control?.id ?? index + 1} must reference at least one claim`);
+    for (const claimId of control?.claim_ids ?? []) if (!claims.has(claimId)) errors.push(`control ${control?.id ?? index + 1} references missing claim ${claimId}`);
+  }
+  if ((spec?.controls ?? []).length < 2) errors.push('at least two counterweight groups are required');
+
+  const workIds = new Set();
+  const priorities = new Set();
+  for (const [index, item] of (spec?.workplan ?? []).entries()) {
+    const label = item?.id ?? index + 1;
+    if (!text(item?.id) || !text(item?.title)) errors.push(`workplan item ${index + 1} requires id and title`);
+    if (workIds.has(item?.id)) errors.push(`duplicate workplan id ${item?.id}`);
+    workIds.add(item?.id);
+    if (!Number.isInteger(item?.priority) || item.priority < 1) errors.push(`workplan ${label}.priority must be a positive integer`);
+    if (priorities.has(item?.priority)) errors.push(`workplan priority ${item?.priority} is duplicated`);
+    priorities.add(item?.priority);
+    if (!Array.isArray(item?.thread_ids) || item.thread_ids.length === 0) errors.push(`workplan ${label} must target at least one thread`);
+    for (const threadId of item?.thread_ids ?? []) if (!threadIds.has(threadId)) errors.push(`workplan ${label} references unknown thread ${threadId}`);
+    for (const field of ['custodians', 'records', 'routes']) {
+      if (!Array.isArray(item?.[field]) || item[field].length === 0 || item[field].some(value => !text(value))) errors.push(`workplan ${label}.${field} must contain nonempty text entries`);
+    }
+    if (!text(item?.date_window)) errors.push(`workplan ${label}.date_window is required`);
+    if (!text(item?.decision_test)) errors.push(`workplan ${label}.decision_test is required`);
+  }
+  if ((spec?.workplan ?? []).length === 0) errors.push('workplan must contain at least one sequenced reporting item');
 
   for (const [name, ref] of [['working_proposition', spec?.working_proposition], ['boundary', spec?.boundary], ['records_target', spec?.records_target]]) {
     if (!ref?.claim_id || !claims.has(ref.claim_id)) errors.push(`${name}.claim_id must reference a case claim`);
   }
 
-  const threadIds = new Set();
-  for (const [index, thread] of (spec?.threads ?? []).entries()) {
-    if (!text(thread?.id) || !text(thread?.title) || !text(thread?.subtitle)) errors.push(`thread ${index + 1} lacks id, title, or subtitle`);
-    if (threadIds.has(thread?.id)) errors.push(`duplicate thread id ${thread?.id}`);
-    threadIds.add(thread?.id);
-    if (!Array.isArray(thread?.claim_ids) || thread.claim_ids.length === 0) errors.push(`thread ${thread?.id ?? index + 1} must reference at least one claim`);
-    for (const claimId of thread?.claim_ids ?? []) if (!claims.has(claimId)) errors.push(`thread ${thread?.id ?? index + 1} references missing claim ${claimId}`);
-    for (const coordinate of ['x', 'y']) if (!Number.isFinite(thread?.[coordinate]) || thread[coordinate] < 0 || thread[coordinate] > 100) errors.push(`thread ${thread?.id ?? index + 1}.${coordinate} must be between 0 and 100`);
-    if (!text(thread?.decisive_record)) errors.push(`thread ${thread?.id ?? index + 1} requires decisive_record`);
-  }
-  if ((spec?.threads ?? []).length < 2) errors.push('at least two briefing threads are required');
-
   for (const [index, item] of (spec?.translations ?? []).entries()) {
     if (!text(item?.term) || !text(item?.question)) errors.push(`translation ${index + 1} requires term and question`);
   }
 
-  for (const claimId of allBriefingClaimIds(spec)) {
+  for (const claimId of allBriefingClaimIds(spec, events)) {
     const claim = claims.get(claimId);
     if (!claim) continue;
     if (!CLAIM_STATUSES.has(claim.claim_status)) errors.push(`briefing claim ${claimId} has invalid status ${claim.claim_status}`);
@@ -180,57 +270,84 @@ export function validateReporterBriefing(spec, caseItem) {
   return errors;
 }
 
-function claimMarkup(claim) {
-  const status = claim.claim_status === 'verified' ? 'Verified' : claim.claim_status === 'review_required' ? 'Review required' : claim.claim_status;
-  return `<li class="claim claim--${escapeAttribute(claim.claim_status)}"><span class="badge">${escapeHtml(status)}</span><p>${escapeHtml(claim.plain)}</p></li>`;
-}
-
-function limitsMarkup(claims) {
-  const limits = unique(claims.map(claim => claim.qualification));
-  return limits.map(limit => `<li>${escapeHtml(limit)}</li>`).join('');
-}
-
-function sourceIndexMarkup(receipts) {
-  const publicReceipts = receipts.filter(receipt => receipt.url);
-  return publicReceipts.map((receipt, index) => `<tr><td>S${String(index + 1).padStart(2, '0')}</td><td>${escapeHtml(receipt.publisher || 'Source')}</td><td><a href="${escapeAttribute(receipt.url)}" target="_blank" rel="noreferrer">${escapeHtml(receipt.label || receipt.receipt_id)}</a></td><td>${escapeHtml(receipt.notes || '')}</td></tr>`).join('');
-}
-
-function renderStyles() {
-  return `:root{--paper:#f5f0e5;--panel:#fffdf7;--ink:#181714;--muted:#5b574f;--line:#c9bea5;--amber:#9a6a12;--navy:#152739;--green:#2e6545;--red:#8b3f38;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--sans:Arial,Helvetica,sans-serif;--serif:Georgia,"Times New Roman",serif}*{box-sizing:border-box}html{background:#d8d1c4}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.52 var(--serif)}a{color:inherit}.page{width:min(1320px,100%);margin:auto;padding:36px}.kicker,.label{font:700 10px/1.2 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}h1{max-width:15ch;margin:8px 0 14px;font:800 clamp(40px,6vw,78px)/.94 var(--sans);letter-spacing:-.05em}.dek{max-width:86ch;color:var(--muted);font-size:19px}.panel{border:1px solid var(--line);background:var(--panel);padding:18px}.thesis{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin:24px 0}.thesis .question{border-left:6px solid var(--amber);font-size:18px}.thesis .boundary{border-left:6px solid var(--navy)}h2{margin:0 0 10px;font:800 22px/1.05 var(--sans)}.axis-shell{display:grid;grid-template-columns:minmax(0,2fr) minmax(250px,.8fr);gap:14px}.axis{position:relative;min-height:420px;border:1px solid var(--line);background:linear-gradient(90deg,#e8eee5 0 50%,#efe1bf 50%),linear-gradient(#e8eee5 0 50%,#ede6dc 50%);overflow:hidden}.axis:before{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed var(--line)}.axis:after{content:"";position:absolute;top:50%;left:0;right:0;border-top:1px dashed var(--line)}.xlab,.ylab{position:absolute;z-index:2;font:700 10px var(--mono)}.xlab{left:50%;bottom:8px;transform:translateX(-50%);white-space:nowrap}.ylab{left:8px;top:50%;transform:rotate(-90deg) translateX(-50%);transform-origin:left top;white-space:nowrap}.pin{position:absolute;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--navy);color:white;border:2px solid white;font:800 12px var(--mono);box-shadow:0 3px 10px #0004;transform:translate(-50%,-50%)}.legend{margin:0;padding:0;list-style:none}.legend li{display:grid;grid-template-columns:30px 1fr;gap:5px 8px;padding:10px 0;border-bottom:1px solid var(--line)}.legend li:last-child{border:0}.legend b{font:800 13px var(--sans)}.legend small{color:var(--muted)}.legend span{grid-row:1/3;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;font:800 10px var(--mono)}.note{color:var(--muted);font:10px/1.4 var(--mono)}.section-head{margin:30px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--ink)}.section-head h2{margin:0}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.card{display:flex;flex-direction:column;border:1px solid var(--line);background:var(--panel)}.card header{display:grid;grid-template-columns:34px 1fr;gap:8px;padding:12px;background:#eee5d4;border-bottom:1px solid var(--line)}.card header>span{color:var(--amber);font:800 17px var(--mono)}.card h3{margin:0;font:800 15px/1.15 var(--sans)}.card header p{margin:4px 0 0;color:var(--muted);font:10px var(--mono)}.claims,.limits{margin:0;padding:10px 26px}.claim{margin:0 0 10px}.claim p{margin:4px 0}.badge{display:inline-block;border:1px solid var(--line);padding:2px 6px;font:800 9px var(--mono);text-transform:uppercase}.limits{border-top:1px solid var(--line);font-size:12px;color:var(--muted)}.card footer{margin-top:auto;padding:10px 12px;border-top:1px solid var(--line)}.decisive{font-size:12px}.translate{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.translate dl{margin:0}.translate div{padding:8px 0;border-bottom:1px solid var(--line)}.translate dt{font:800 11px var(--mono)}.translate dd{margin:3px 0;color:var(--muted)}.cta{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-top:22px;border:2px solid var(--navy);background:var(--panel);padding:16px}.cta p{margin:4px 0 0;color:var(--muted)}.cta a{flex:0 0 auto;background:var(--navy);color:#fff;padding:10px 13px;text-decoration:none;font:800 10px var(--mono);letter-spacing:.08em;text-transform:uppercase}.sources{width:100%;border-collapse:collapse;background:var(--panel);font:10px/1.4 var(--mono)}.sources th,.sources td{border:1px solid var(--line);padding:7px;text-align:left;vertical-align:top}.sources th{background:#eee5d4;text-transform:uppercase}.sources td:first-child{font-weight:800}.foot{margin-top:18px;padding-top:10px;border-top:1px solid var(--line);color:var(--muted);font:9px/1.45 var(--mono)}@media(max-width:900px){.page{padding:22px 15px}.thesis,.axis-shell,.translate{grid-template-columns:1fr}.cards{grid-template-columns:1fr}.axis{min-height:360px}.cta{align-items:flex-start;flex-direction:column}}@media print{@page{size:A4 landscape;margin:8mm}html,body{background:#fff}.page{padding:0}.cta{display:none}h1{font-size:34pt}.cards{gap:7px}.sources{font-size:6.8pt}.axis{min-height:330px}}`;
-}
-
 export function compileReporterBriefing(spec, caseItem) {
   const errors = validateReporterBriefing(spec, caseItem);
   if (errors.length) throw new Error(errors.join('\n'));
+
   const claimsById = claimMap(caseItem);
+  const eventsById = eventMap(caseItem);
   const receiptsById = receiptMap(caseItem);
-  const claimIds = allBriefingClaimIds(spec);
+  const claimIds = allBriefingClaimIds(spec, eventsById);
   const claims = claimIds.map(id => claimsById.get(id));
-  const receipts = publicReceiptsForClaims(claims, receiptsById);
+  const receipts = receiptsForClaims(claims, receiptsById);
   const publicReceipts = receipts.filter(receipt => receipt.url);
+  const claimRefs = new Map(claimIds.map((id, index) => [id, `C${String(index + 1).padStart(2, '0')}`]));
+  const sourceRefs = new Map(publicReceipts.map((receipt, index) => [receipt.receipt_id, `S${String(index + 1).padStart(2, '0')}`]));
+
   const proposition = claimsById.get(spec.working_proposition.claim_id);
   const boundary = claimsById.get(spec.boundary.claim_id);
   const recordsTarget = claimsById.get(spec.records_target.claim_id);
+
+  const columnsById = new Map(spec.matrix.columns.map(column => [column.id, column]));
   const threadRecords = spec.threads.map((thread, index) => {
-    const threadClaims = thread.claim_ids.map(id => claimsById.get(id));
-    const threadReceipts = publicReceiptsForClaims(threadClaims, receiptsById);
+    const cells = thread.cells.map(cell => {
+      const cellClaims = (cell.claim_ids ?? []).map(id => claimsById.get(id));
+      const summary = statusSummary(cellClaims);
+      const state = cell.not_applicable ? 'not_applicable' : cell.record_target ? 'open' : summary.status;
+      return {
+        ...cell,
+        column: columnsById.get(cell.column_id),
+        claims: cellClaims,
+        status: state,
+        status_counts: summary.counts
+      };
+    });
+    const threadClaims = unique(cells.flatMap(cell => cell.claims.map(claim => claim.claim_id))).map(id => claimsById.get(id));
     return {
       ...thread,
       number: thread.number || String(index + 1).padStart(2, '0'),
+      cells,
       claims: threadClaims,
-      receipts: threadReceipts,
-      limits: unique(threadClaims.map(claim => claim.qualification)),
       ...statusSummary(threadClaims)
     };
   });
+  const threadById = new Map(threadRecords.map(thread => [thread.id, thread]));
+
+  const sequenceRecords = spec.sequence.items.map(item => {
+    const event = eventsById.get(item.event_id);
+    const eventClaims = (event.claims ?? []).map(claim => claimsById.get(claim.claim_id));
+    return { ...item, event, claims: eventClaims, ...statusSummary(eventClaims) };
+  });
+
+  const controlRecords = spec.controls.map(control => {
+    const controlClaims = control.claim_ids.map(id => claimsById.get(id));
+    return { ...control, claims: controlClaims, ...statusSummary(controlClaims) };
+  });
+
   const caseSummary = statusSummary(claims);
-  const sourceRows = sourceIndexMarkup(receipts);
-  const axisPins = threadRecords.map(thread => `<span class="pin" style="left:${thread.x}%;top:${100 - thread.y}%" title="${escapeAttribute(thread.title)}">${escapeHtml(thread.number)}</span>`).join('');
-  const legend = threadRecords.map(thread => `<li><span>${escapeHtml(thread.number)}</span><b>${escapeHtml(thread.title)}</b><small>${escapeHtml(thread.subtitle)}</small></li>`).join('');
-  const cards = threadRecords.map(thread => `<article class="card" id="thread-${escapeAttribute(thread.id)}"><header><span>${escapeHtml(thread.number)}</span><div><h3>${escapeHtml(thread.title)}</h3><p>${escapeHtml(thread.subtitle)}</p></div></header><ol class="claims">${thread.claims.map(claimMarkup).join('')}</ol><div class="limits"><strong>What this does not prove</strong><ul>${limitsMarkup(thread.claims)}</ul></div><footer><div class="label">Document that decides the stronger question</div><p class="decisive">${escapeHtml(thread.decisive_record)}</p></footer></article>`).join('');
-  const translations = (spec.translations ?? []).map(item => `<div><dt>${escapeHtml(item.term)}</dt><dd>${escapeHtml(item.question)}</dd></div>`).join('');
-  const publicationBoundary = `${caseItem.boundary} ${caseItem.disclaimer}`;
-  const html = `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n<meta name="color-scheme" content="light dark">\n<meta name="clifford-briefing-schema" content="${REPORTER_BRIEFING_SCHEMA_VERSION}">\n<meta name="clifford-briefing-version" content="${escapeAttribute(spec.publication.version)}">\n<title>${escapeHtml(spec.title)}</title>\n<style>\n${renderStyles()}\n</style>\n</head>\n<body data-briefing-id="${escapeAttribute(spec.briefing_id)}" data-graph-effect="none">\n<main class="page">\n<div class="kicker">Reporter briefing · public records · as known ${escapeHtml(spec.as_of)}</div>\n<h1>${escapeHtml(spec.title)}</h1>\n<p class="dek">${escapeHtml(spec.dek)}</p>\n<section class="thesis">\n<div class="panel question"><div class="label">Working proposition · ${escapeHtml(proposition.claim_status.replaceAll('_', ' '))}</div><p><strong>${escapeHtml(proposition.plain)}</strong></p><p class="note">${escapeHtml(proposition.qualification)}</p></div>\n<div class="panel boundary"><div class="label">Evidence boundary</div><p>${escapeHtml(boundary.plain)}</p><p class="note">${escapeHtml(boundary.qualification)}</p></div>\n</section>\n<section class="axis-shell">\n<div class="axis" role="img" aria-label="${escapeAttribute(spec.axis_alt)}">\n<div class="xlab">${escapeHtml(spec.axes[0].low_label)} ← ${escapeHtml(spec.axes[0].label)} → ${escapeHtml(spec.axes[0].high_label)}</div>\n<div class="ylab">${escapeHtml(spec.axes[1].low_label)} ← ${escapeHtml(spec.axes[1].label)} → ${escapeHtml(spec.axes[1].high_label)}</div>\n${axisPins}\n</div>\n<div class="panel"><div class="label">Case key</div><ol class="legend">${legend}</ol><p class="note">Placement is editorial orientation, not a score or finding. The evidence case carries the exact claims, dates, receipts, and typed limits.</p></div>\n</section>\n<div class="section-head"><h2>${threadRecords.length} records threads</h2></div>\n<section class="cards">${cards}</section>\n<section class="translate">\n<div class="panel"><div class="label">Bypass the jargon</div><h2>Translate the claim into an ordinary records question.</h2><dl>${translations}</dl></div>\n<div class="panel"><div class="label">Records roadmap</div><h2>What would prove or defeat the stronger theory?</h2><p>${escapeHtml(recordsTarget.plain)}</p><p class="note">${escapeHtml(recordsTarget.qualification)}</p></div>\n</section>\n<section class="cta"><div><div class="label">Claim-level evidence</div><h2>Open the full case.</h2><p>Every factual sentence resolves to its claim status, date, qualification, and public receipt.</p></div><a href="${escapeAttribute(spec.case_href)}">Open evidence case</a></section>\n<div class="section-head"><h2>Public source index</h2></div>\n<table class="sources"><thead><tr><th>ID</th><th>Publisher</th><th>Receipt</th><th>Boundary</th></tr></thead><tbody>${sourceRows}</tbody></table>\n<p class="foot">${escapeHtml(publicationBoundary)} Publication state: ${escapeHtml(spec.publication.status)} · version ${escapeHtml(spec.publication.version)} · ${publicReceipts.length} public source links · graph effect: none. Corrections: ${escapeHtml(spec.publication.correction_route)}</p>\n</main>\n</body>\n</html>\n`;
+  const xLevelById = new Map(spec.orientation.x.levels.map(level => [level.id, level]));
+  const yLevelById = new Map(spec.orientation.y.levels.map(level => [level.id, level]));
+
+  const html = renderReporterBriefingHtml({
+    spec,
+    caseItem,
+    claims,
+    receipts,
+    publicReceipts,
+    claimRefs,
+    sourceRefs,
+    proposition,
+    boundary,
+    recordsTarget,
+    threadRecords,
+    threadById,
+    sequenceRecords,
+    controlRecords,
+    xLevelById,
+    yLevelById,
+    schemaVersion: REPORTER_BRIEFING_SCHEMA_VERSION
+  });
+
   const manifest = {
     schema_version: COMPILED_REPORTER_BRIEFING_SCHEMA_VERSION,
     briefing_id: spec.briefing_id,
@@ -247,6 +364,10 @@ export function compileReporterBriefing(spec, caseItem) {
     conclusion_generated: false,
     counts: {
       threads: threadRecords.length,
+      matrix_cells: threadRecords.reduce((total, thread) => total + thread.cells.length, 0),
+      sequence_events: sequenceRecords.length,
+      controls: controlRecords.length,
+      workplan_items: spec.workplan.length,
       claims: claims.length,
       verified_claims: caseSummary.counts.verified,
       review_required_claims: caseSummary.counts.review_required,
@@ -259,14 +380,46 @@ export function compileReporterBriefing(spec, caseItem) {
     review_required_claim_ids: claims.filter(claim => claim.claim_status === 'review_required').map(claim => claim.claim_id),
     receipt_ids: receipts.map(receipt => receipt.receipt_id),
     public_receipt_ids: publicReceipts.map(receipt => receipt.receipt_id),
+    orientation: {
+      x: spec.orientation.x,
+      y: spec.orientation.y,
+      placements: threadRecords.map(thread => ({ id: thread.id, x_level: thread.placement.x_level, y_level: thread.placement.y_level }))
+    },
+    sequence: sequenceRecords.map(record => ({
+      event_id: record.event.event_id,
+      lane: record.lane,
+      occurred_at: record.event.occurred_at,
+      claim_ids: record.claims.map(claim => claim.claim_id),
+      status: record.status
+    })),
     threads: threadRecords.map(thread => ({
       id: thread.id,
       number: thread.number,
       title: thread.title,
-      claim_ids: thread.claim_ids,
-      receipt_ids: thread.receipts.map(receipt => receipt.receipt_id),
+      placement: thread.placement,
+      claim_ids: thread.claims.map(claim => claim.claim_id),
+      cells: thread.cells.map(cell => ({
+        column_id: cell.column_id,
+        state: cell.status,
+        claim_ids: cell.claims.map(claim => claim.claim_id),
+        record_target: cell.record_target ?? null
+      })),
       status: thread.status,
       status_counts: thread.counts,
+      graph_effect: 'none'
+    })),
+    controls: controlRecords.map(control => ({
+      id: control.id,
+      title: control.title,
+      claim_ids: control.claim_ids,
+      status: control.status,
+      graph_effect: 'none'
+    })),
+    workplan: [...spec.workplan].sort((a, b) => a.priority - b.priority).map(item => ({
+      id: item.id,
+      priority: item.priority,
+      title: item.title,
+      thread_ids: item.thread_ids,
       graph_effect: 'none'
     })),
     integrity: {
@@ -275,6 +428,7 @@ export function compileReporterBriefing(spec, caseItem) {
       html_sha256: sha256(html)
     }
   };
+
   return { html, manifest };
 }
 
