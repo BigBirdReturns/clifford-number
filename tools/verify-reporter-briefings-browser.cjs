@@ -6,6 +6,7 @@ const { chromium } = require('playwright');
 
 const root = path.resolve(__dirname, '..');
 const index = JSON.parse(fs.readFileSync(path.join(root, 'build', 'briefings', 'index.json'), 'utf8'));
+const frontier = JSON.parse(fs.readFileSync(path.join(root, 'build', 'report-frontier.json'), 'utf8'));
 const outputDirectory = path.join(root, 'build', 'metrics');
 const resultPath = path.join(outputDirectory, 'reporter-briefings-browser.json');
 const screenshotPath = path.join(outputDirectory, 'reporter-briefing-first.png');
@@ -27,6 +28,7 @@ async function main() {
     generated_at: new Date().toISOString(),
     graph_effect: 'none',
     conclusion_generated: false,
+    waterline: frontier.waterline,
     passed: false,
     briefings: [],
     console_errors: [],
@@ -42,7 +44,12 @@ async function main() {
   try {
     assert.equal(index.schema_version, 'reporter-briefing-index@1');
     assert.equal(index.graph_effect, 'none');
-    assert.ok(index.briefings.length >= 1, 'at least one reporter briefing must be compiled');
+    assert.ok(index.briefings.length >= 2, 'the waterline requires at least two cross-domain structured reports');
+    assert.equal(frontier.schema_version, 'report-frontier@1');
+    assert.equal(frontier.graph_effect, 'none');
+    assert.equal(frontier.conclusion_generated, false);
+    assert.equal(frontier.waterline.stage, 'structured_report');
+    assert.equal(frontier.waterline.next_transition, 'independent_review');
 
     for (const [position, entry] of index.briefings.entries()) {
       const manifest = JSON.parse(fs.readFileSync(path.join(root, 'build', 'briefings', `${entry.briefing_id}.json`), 'utf8'));
@@ -63,6 +70,14 @@ async function main() {
       assert.equal(await page.locator('.claim-register tbody tr[id^="claim-"]').count(), manifest.counts.claims);
       assert.equal(await page.locator('.sources a[href^="https://"]').count(), manifest.counts.public_receipts);
       assert.equal(await page.locator(`a[href="${entry.case_href}"]`).count(), 1);
+      const sourceTrailCount = await page.locator('[data-trail-id]').evaluateAll(nodes => new Set(nodes.map(node => node.getAttribute('data-trail-id'))).size);
+      assert.equal(sourceTrailCount, manifest.counts.source_trails);
+
+      const caseUnsequenced = new Set(caseItem.unsequenced_claim_ids ?? []);
+      assert.equal(caseItem.claims.length, caseItem.counts.claims);
+      assert.equal(caseUnsequenced.size, caseItem.counts.unsequenced_claims);
+      assert.equal(manifest.unsequenced_claim_ids.length, manifest.counts.unsequenced_claims);
+      for (const claimId of manifest.unsequenced_claim_ids) assert.ok(caseUnsequenced.has(claimId));
 
       const continuousCoordinates = await page.locator('[style*="left:"][style*="top:"]').count();
       assert.equal(continuousCoordinates, 0, 'structured reports must not render pseudo-precise coordinate pins');
@@ -81,10 +96,13 @@ async function main() {
       const caseBriefLink = page.locator('#detail .case-brief-link');
       assert.equal(await caseBriefLink.count(), 1);
       assert.equal(await caseBriefLink.getAttribute('href'), entry.output_path);
+      const sequencedClaims = caseItem.events.flatMap(event => event.claims ?? []);
+      const expectedVerified = sequencedClaims.filter(claim => claim.claim_status === 'verified').length;
+      const expectedReview = sequencedClaims.filter(claim => claim.claim_status === 'review_required').length;
       const verifiedCount = await page.locator('#detail .case-claim--verified').count();
       const reviewCount = await page.locator('#detail .case-claim--review_required').count();
-      assert.equal(verifiedCount, caseItem.claim_status_counts.verified);
-      assert.equal(reviewCount, caseItem.claim_status_counts.review_required);
+      assert.equal(verifiedCount, expectedVerified);
+      assert.equal(reviewCount, expectedReview);
       if (verifiedCount > 0) {
         await page.locator('#detail .case-claim--verified .claim-open').first().click();
         await page.waitForSelector('#evidence-dialog[open] .claim-inspector', { timeout: 10000 });
@@ -106,8 +124,12 @@ async function main() {
         sequence_events: manifest.counts.sequence_events,
         controls: manifest.counts.controls,
         workplan_items: manifest.counts.workplan_items,
+        source_trails: manifest.counts.source_trails,
         claims: manifest.counts.claims,
+        inherited_qualifications: manifest.counts.inherited_qualifications,
+        unsequenced_claims: manifest.counts.unsequenced_claims,
         public_receipts: manifest.counts.public_receipts,
+        sequenced_case_claims: sequencedClaims.length,
         desktop_horizontal_overflow: desktopOverflow,
         mobile_horizontal_overflow: mobileOverflow,
         public_case_brief_link: true,
