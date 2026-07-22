@@ -9,6 +9,7 @@ const steps = [
   ['compile-cases', 'tools/compile-cases.mjs'],
   ['compile-reporter-briefings', 'tools/compile-reporter-briefings.mjs'],
   ['build-public-catalog', 'tools/build-public-catalog.mjs'],
+  ['build-report-frontier', 'tools/build-report-frontier.mjs'],
 ];
 
 for (const [name, script] of steps) {
