@@ -12,6 +12,7 @@ const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
 })[character]);
+const count = (value, pattern) => [...value.matchAll(pattern)].length;
 
 const fail = message => {
   console.error(`validate-reporter-briefing-pages failed: ${message}`);
@@ -59,7 +60,7 @@ for (const entry of index.briefings) {
   const queueItem = queueById.get(entry.briefing_id);
   const catalogItem = catalogById.get(entry.case_id);
 
-  if (manifest.schema_version !== 'compiled-reporter-briefing@1'
+  if (manifest.schema_version !== 'compiled-reporter-briefing@2'
     || manifest.briefing_id !== entry.briefing_id
     || manifest.case_id !== entry.case_id
     || manifest.output_path !== entry.output_path
@@ -68,7 +69,7 @@ for (const entry of index.briefings) {
     || manifest.conclusion_generated !== false) fail(`${entry.briefing_id} manifest identity or inference boundary is invalid`);
 
   if (caseItem.presentation !== 'reporter_briefing'
-    || caseItem.briefing?.schema_version !== 'reporter-briefing@1'
+    || caseItem.briefing?.schema_version !== 'reporter-briefing@2'
     || caseItem.briefing?.version !== manifest.publication?.version
     || caseItem.briefing?.href !== entry.output_path
     || caseItem.briefing?.source !== `cases/${entry.case_id}/briefing.json`
@@ -76,6 +77,7 @@ for (const entry of index.briefings) {
 
   if (catalogItem?.briefing?.href !== entry.output_path
     || catalogItem?.briefing?.version !== manifest.publication?.version
+    || catalogItem?.briefing?.schema_version !== 'reporter-briefing@2'
     || catalogItem?.presentation !== 'reporter_briefing') fail(`${entry.briefing_id} is not discoverable through the public catalog`);
 
   if (!queueItem
@@ -87,17 +89,33 @@ for (const entry of index.briefings) {
     && (!manifest.publication?.reviewer || !manifest.publication?.reviewed_at || queueItem.eligible_for_approval !== true)) fail(`${entry.briefing_id} is approved without completed review metadata`);
   if (manifest.publication?.status !== 'approved' && queueItem.eligible_for_approval === true) fail(`${entry.briefing_id} is approval-eligible while publication remains ${manifest.publication?.status}`);
 
-  if (!html.includes(`name="clifford-briefing-schema" content="reporter-briefing@1"`)
+  if (!html.includes('name="clifford-briefing-schema" content="reporter-briefing@2"')
     || !html.includes(`name="clifford-briefing-version" content="${escapeHtml(manifest.publication.version)}"`)
     || !html.includes(`data-briefing-id="${escapeHtml(entry.briefing_id)}"`)
+    || !html.includes('data-briefing-schema="reporter-briefing@2"')
     || !html.includes('data-graph-effect="none"')
-    || !html.includes(`href="${escapeHtml(entry.case_href)}"`)) fail(`${entry.briefing_id} public HTML lacks its route, version, or graph boundary`);
+    || !html.includes(`href="${escapeHtml(entry.case_href)}"`)) fail(`${entry.briefing_id} public HTML lacks its route, version, schema, or graph boundary`);
+
+  if (count(html, /class="thread-pin"[^>]*data-x-level=/g) !== manifest.counts?.threads) fail(`${entry.briefing_id} categorical orientation count diverged`);
+  if (count(html, /<tr data-event-id=/g) !== manifest.counts?.sequence_events) fail(`${entry.briefing_id} sequence count diverged`);
+  if (count(html, /<tr id="thread-[^"]+" data-thread-id=/g) !== manifest.counts?.threads) fail(`${entry.briefing_id} matrix thread count diverged`);
+  if (count(html, /class="matrix-cell"/g) !== manifest.counts?.matrix_cells) fail(`${entry.briefing_id} matrix cell count diverged`);
+  if (count(html, /data-control-id=/g) !== manifest.counts?.controls) fail(`${entry.briefing_id} counterweight count diverged`);
+  if (count(html, /data-work-id=/g) !== manifest.counts?.workplan_items) fail(`${entry.briefing_id} workplan count diverged`);
+  if (count(html, /<tr id="claim-/g) !== manifest.counts?.claims) fail(`${entry.briefing_id} claim register count diverged`);
+  if (/style="[^"]*(?:left|top):/.test(html)) fail(`${entry.briefing_id} renders unsupported continuous coordinates`);
 
   if (sha256(html) !== manifest.integrity?.html_sha256) fail(`${entry.briefing_id} HTML digest does not match its manifest`);
   if (!/^[a-f0-9]{64}$/.test(manifest.integrity?.source_sha256 ?? '')
     || !/^[a-f0-9]{64}$/.test(manifest.integrity?.case_sha256 ?? '')) fail(`${entry.briefing_id} source or case digest is malformed`);
 
   const claimById = new Map((caseItem.events ?? []).flatMap(event => (event.claims ?? []).map(claim => [claim.claim_id, claim])));
+  const eventById = new Map((caseItem.events ?? []).map(event => [event.event_id, event]));
+  for (const item of manifest.sequence ?? []) {
+    const event = eventById.get(item.event_id);
+    if (!event) fail(`${entry.briefing_id} sequence references missing event ${item.event_id}`);
+    if (!html.includes(escapeHtml(event.label)) || !html.includes(escapeHtml(event.occurred_at))) fail(`${entry.briefing_id} sequence omits canonical event ${item.event_id}`);
+  }
   for (const claimId of manifest.claim_ids ?? []) {
     const claim = claimById.get(claimId);
     if (!claim) fail(`${entry.briefing_id} references missing claim ${claimId}`);
@@ -105,7 +123,7 @@ for (const entry of index.briefings) {
     if (!claim.qualification || !html.includes(escapeHtml(claim.qualification))) fail(`${entry.briefing_id} omits qualification for ${claimId}`);
   }
 
-  const publicLinks = [...html.matchAll(/<a\b[^>]*href="https:\/\//g)].length;
+  const publicLinks = count(html, /<a\b[^>]*href="https:\/\//g);
   if (publicLinks !== manifest.counts?.public_receipts) fail(`${entry.briefing_id} exposes ${publicLinks} public links but manifest records ${manifest.counts?.public_receipts}`);
   if ((manifest.public_receipt_ids ?? []).some(id => !(manifest.receipt_ids ?? []).includes(id))) fail(`${entry.briefing_id} public receipt set is not a subset of receipt custody`);
   for (const privateId of (manifest.receipt_ids ?? []).filter(id => !(manifest.public_receipt_ids ?? []).includes(id))) {
