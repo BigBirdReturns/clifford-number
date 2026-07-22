@@ -11,6 +11,7 @@ const steps = [
   ['build-public-catalog', 'tools/build-public-catalog.mjs'],
   ['build-report-frontier', 'tools/build-report-frontier.mjs'],
   ['render-report-frontier', 'tools/render-report-frontier.mjs'],
+  ['build-next-ten-estates', 'tools/build-next-ten-estates.mjs'],
 ];
 
 for (const [name, script] of steps) {
