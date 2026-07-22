@@ -24,12 +24,14 @@ for (const file of [
   'build/briefings/index.json',
   'build/review/reporter-briefing-queue.json',
   'build/public-catalog.json',
+  'build/report-frontier.json',
   'Clifford-Number-standalone.html'
 ]) if (!exists(file)) fail(`missing ${file}`);
 
 const index = readJson('build/briefings/index.json');
 const queue = readJson('build/review/reporter-briefing-queue.json');
 const catalog = readJson('build/public-catalog.json');
+const frontier = readJson('build/report-frontier.json');
 const standalone = read('Clifford-Number-standalone.html');
 
 if (index.schema_version !== 'reporter-briefing-index@1'
@@ -42,6 +44,12 @@ if (queue.schema_version !== 'reporter-briefing-review-queue@1'
   || queue.graph_effect !== 'none'
   || queue.conclusion_generated !== false
   || !Array.isArray(queue.queue)) fail('review queue is missing or exceeds its boundary');
+
+if (frontier.schema_version !== 'report-frontier@1'
+  || frontier.graph_effect !== 'none'
+  || frontier.conclusion_generated !== false
+  || frontier.waterline?.stage !== 'structured_report'
+  || frontier.waterline?.next_transition !== 'independent_review') fail('report frontier is missing or misstates the demonstrated publication waterline');
 
 const catalogById = new Map((catalog.cases ?? []).map(item => [item.case_id, item]));
 const queueById = new Map(queue.queue.map(item => [item.briefing_id, item]));
@@ -115,7 +123,10 @@ for (const entry of index.briefings) {
   if (!/^[a-f0-9]{64}$/.test(manifest.integrity?.source_sha256 ?? '')
     || !/^[a-f0-9]{64}$/.test(manifest.integrity?.case_sha256 ?? '')) fail(`${entry.briefing_id} source or case digest is malformed`);
 
-  const claimById = new Map((caseItem.events ?? []).flatMap(event => (event.claims ?? []).map(claim => [claim.claim_id, claim])));
+  const claimRows = Array.isArray(caseItem.claims) && caseItem.claims.length > 0
+    ? caseItem.claims
+    : (caseItem.events ?? []).flatMap(event => event.claims ?? []);
+  const claimById = new Map(claimRows.map(claim => [claim.claim_id, claim]));
   const eventById = new Map((caseItem.events ?? []).map(event => [event.event_id, event]));
   const trailById = new Map((caseItem.trails ?? []).map(trail => [trail.trail_id, trail]));
   for (const item of manifest.sequence ?? []) {
