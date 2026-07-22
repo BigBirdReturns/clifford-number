@@ -44,13 +44,16 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: read
 
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -110,6 +113,25 @@ jobs:
         run: |
           node --check tools/verify-reporter-briefings-browser.cjs
           timeout 240s node tools/verify-reporter-briefings-browser.cjs
+
+      - name: Commit deterministic report waterline artifacts
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add briefs/*.html
+          git add build/briefings/*.json build/briefings/index.json
+          git add build/cases/*.json build/cases/index.json
+          git add build/public-catalog.json build/report-frontier.json
+          git add build/review/reporter-briefing-queue.json
+          if git diff --cached --quiet; then
+            echo "deterministic report artifacts already match the source"
+          else
+            git commit -m "Compile report waterline artifacts [skip ci]"
+            git push origin "HEAD:${HEAD_REF}"
+          fi
 
       - name: Preserve deterministic publication evidence
         if: always()
