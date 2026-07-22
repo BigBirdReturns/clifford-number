@@ -5,10 +5,18 @@ import {
   COMPILED_REPORTER_BRIEFING_SCHEMA_VERSION,
   REPORTER_BRIEFING_SCHEMA_VERSION,
   compileReporterBriefing,
-  reporterBriefingQueueEntry,
   validateReporterBriefing
 } from '../tools/lib/reporter-briefing.mjs';
+import { applyReportWaterline, reportWaterlineQueueEntry } from '../tools/lib/report-waterline.mjs';
 import { readJson, root } from '../tools/lib/ledger.mjs';
+
+function compileWithWaterline(sourceSpec, sourceCase) {
+  const compiled = compileReporterBriefing(sourceSpec, sourceCase);
+  return {
+    html: compiled.html,
+    manifest: applyReportWaterline(compiled.manifest, sourceCase)
+  };
+}
 
 const spec = readJson('cases/anduril-access-ownership/briefing.json');
 const caseItem = readJson('build/cases/anduril-access-ownership.json');
@@ -16,7 +24,7 @@ const errors = validateReporterBriefing(spec, caseItem);
 assert.deepEqual(errors, []);
 assert.equal(spec.schema_version, REPORTER_BRIEFING_SCHEMA_VERSION);
 
-const { html, manifest } = compileReporterBriefing(spec, caseItem);
+const { html, manifest } = compileWithWaterline(spec, caseItem);
 assert.equal(manifest.schema_version, COMPILED_REPORTER_BRIEFING_SCHEMA_VERSION);
 assert.equal(manifest.graph_effect, 'none');
 assert.equal(manifest.conclusion_generated, false);
@@ -27,6 +35,8 @@ assert.equal(manifest.counts.controls, 3);
 assert.equal(manifest.counts.workplan_items, 7);
 assert.equal(manifest.counts.source_trails, 0);
 assert.equal(manifest.counts.inherited_qualifications, 0);
+assert.equal(manifest.counts.unsequenced_claims, 0);
+assert.deepEqual(manifest.unsequenced_claim_ids, []);
 assert.equal(manifest.counts.claims, 24);
 assert.equal(manifest.counts.verified_claims, 15);
 assert.equal(manifest.counts.review_required_claims, 9);
@@ -49,13 +59,14 @@ assert.doesNotMatch(html, /style="left:/);
 assert.doesNotMatch(html, /anduril-bundle-r3/);
 assert.doesNotMatch(html, /href="undefined"/);
 
-const queue = reporterBriefingQueueEntry(manifest);
+const queue = reportWaterlineQueueEntry(manifest);
 assert.equal(queue.eligible_for_approval, false);
 assert.ok(queue.blocking_reasons.includes('publication_status_review_required'));
 assert.ok(queue.blocking_reasons.includes('9_claims_review_required'));
 assert.ok(queue.blocking_reasons.includes('independent_reviewer_missing'));
 assert.ok(queue.blocking_reasons.includes('review_date_missing'));
 assert.ok(!queue.blocking_reasons.some(reason => /qualifications_inherited/.test(reason)));
+assert.ok(!queue.blocking_reasons.some(reason => /unsequenced_case_claims/.test(reason)));
 
 const missingClaim = structuredClone(spec);
 missingClaim.threads[0].cells[0].claim_ids.push('missing-claim');
@@ -96,11 +107,11 @@ const inheritedClaim = inheritedBoundaryCase.events
   .find(claim => claim.claim_id === 'clm-army-enterprise-vehicle');
 delete inheritedClaim.qualification;
 assert.deepEqual(validateReporterBriefing(spec, inheritedBoundaryCase), []);
-const inheritedCompilation = compileReporterBriefing(spec, inheritedBoundaryCase);
+const inheritedCompilation = compileWithWaterline(spec, inheritedBoundaryCase);
 assert.equal(inheritedCompilation.manifest.counts.inherited_qualifications, 1);
 assert.deepEqual(inheritedCompilation.manifest.inherited_qualification_claim_ids, ['clm-army-enterprise-vehicle']);
 assert.match(inheritedCompilation.html, /Case-wide boundary/);
-assert.ok(reporterBriefingQueueEntry(inheritedCompilation.manifest).blocking_reasons.includes('1_qualifications_inherited_from_case_boundary'));
+assert.ok(reportWaterlineQueueEntry(inheritedCompilation.manifest).blocking_reasons.includes('1_qualifications_inherited_from_case_boundary'));
 
 const unboundedCase = structuredClone(inheritedBoundaryCase);
 unboundedCase.boundary = '';
@@ -114,7 +125,7 @@ editorialTarget.records_target = {
   qualification: 'This is a records target, not a factual finding.'
 };
 assert.deepEqual(validateReporterBriefing(editorialTarget, caseItem), []);
-const editorialCompilation = compileReporterBriefing(editorialTarget, caseItem);
+const editorialCompilation = compileWithWaterline(editorialTarget, caseItem);
 assert.equal(editorialCompilation.manifest.records_target.source, 'editorial');
 assert.match(editorialCompilation.html, /This is a records target, not a factual finding/);
 assert.ok(!editorialCompilation.manifest.claim_ids.includes('clm-decisive-records'));
@@ -130,7 +141,7 @@ trailCase.trails = [{
 const trailSpec = structuredClone(spec);
 trailSpec.workplan[0].trail_ids = ['trail-test-records'];
 assert.deepEqual(validateReporterBriefing(trailSpec, trailCase), []);
-const trailCompilation = compileReporterBriefing(trailSpec, trailCase);
+const trailCompilation = compileWithWaterline(trailSpec, trailCase);
 assert.equal(trailCompilation.manifest.counts.source_trails, 1);
 assert.deepEqual(trailCompilation.manifest.source_trail_ids, ['trail-test-records']);
 assert.match(trailCompilation.html, /data-trail-id="trail-test-records"/);
@@ -150,7 +161,7 @@ assert.ok(approvalErrors.some(error => /requires publication.reviewed_at/.test(e
 const arcadiaSpec = readJson('cases/arcadia-field-autopsy/briefing.json');
 const arcadiaCase = readJson('build/cases/arcadia-field-autopsy.json');
 assert.deepEqual(validateReporterBriefing(arcadiaSpec, arcadiaCase), []);
-const arcadiaCompilation = compileReporterBriefing(arcadiaSpec, arcadiaCase);
+const arcadiaCompilation = compileWithWaterline(arcadiaSpec, arcadiaCase);
 assert.equal(arcadiaCompilation.manifest.counts.threads, 6);
 assert.equal(arcadiaCompilation.manifest.counts.matrix_cells, 30);
 assert.equal(arcadiaCompilation.manifest.counts.sequence_events, 19);
@@ -158,13 +169,18 @@ assert.equal(arcadiaCompilation.manifest.counts.controls, 3);
 assert.equal(arcadiaCompilation.manifest.counts.workplan_items, 8);
 assert.equal(arcadiaCompilation.manifest.counts.source_trails, 9);
 assert.ok(arcadiaCompilation.manifest.counts.inherited_qualifications > 0);
+assert.ok(arcadiaCompilation.manifest.counts.unsequenced_claims > 0);
+assert.equal(arcadiaCompilation.manifest.unsequenced_claim_ids.length, arcadiaCompilation.manifest.counts.unsequenced_claims);
+assert.ok(arcadiaCompilation.manifest.unsequenced_claim_ids.includes('clm-growth-machine'));
+assert.ok(arcadiaCompilation.manifest.unsequenced_claim_ids.every(claimId => arcadiaCase.unsequenced_claim_ids.includes(claimId)));
 assert.equal(arcadiaCompilation.manifest.records_target.source, 'editorial');
 assert.match(arcadiaCompilation.html, /The Arcadia Formation/);
 assert.match(arcadiaCompilation.html, /Recover the deed chain before interpreting ownership concentration/);
 assert.match(arcadiaCompilation.html, /data-trail-id="trail-deed-chronology"/);
 assert.match(arcadiaCompilation.html, /Case-wide boundary/);
-const arcadiaQueue = reporterBriefingQueueEntry(arcadiaCompilation.manifest);
+const arcadiaQueue = reportWaterlineQueueEntry(arcadiaCompilation.manifest);
 assert.ok(arcadiaQueue.blocking_reasons.some(reason => /qualifications_inherited_from_case_boundary/.test(reason)));
+assert.ok(arcadiaQueue.blocking_reasons.includes(`${arcadiaCompilation.manifest.counts.unsequenced_claims}_unsequenced_case_claims`));
 assert.equal(arcadiaQueue.eligible_for_approval, false);
 
 for (const [sourceSpec, compiled] of [[spec, { html, manifest }], [arcadiaSpec, arcadiaCompilation]]) {
@@ -174,12 +190,18 @@ for (const [sourceSpec, compiled] of [[spec, { html, manifest }], [arcadiaSpec, 
   assert.deepEqual(emittedManifest, compiled.manifest);
 }
 
+const briefingIndex = readJson('build/briefings/index.json');
+assert.equal(briefingIndex.counts.briefings, 2);
+assert.equal(briefingIndex.counts.unsequenced_claims,
+  briefingIndex.briefings.reduce((total, item) => total + item.counts.unsequenced_claims, 0));
 const reviewQueue = readJson('build/review/reporter-briefing-queue.json');
 assert.equal(reviewQueue.totals.briefings, 2);
 assert.equal(reviewQueue.totals.approved, 0);
 assert.equal(reviewQueue.totals.review_required, 2);
 assert.equal(reviewQueue.totals.eligible_for_approval, 0);
 assert.ok(reviewQueue.queue.find(item => item.briefing_id === 'anduril-access-ownership').blocking_reasons.includes('9_claims_review_required'));
-assert.ok(reviewQueue.queue.find(item => item.briefing_id === 'arcadia-field-autopsy').blocking_reasons.some(reason => /qualifications_inherited_from_case_boundary/.test(reason)));
+const emittedArcadiaQueue = reviewQueue.queue.find(item => item.briefing_id === 'arcadia-field-autopsy');
+assert.ok(emittedArcadiaQueue.blocking_reasons.some(reason => /qualifications_inherited_from_case_boundary/.test(reason)));
+assert.ok(emittedArcadiaQueue.blocking_reasons.some(reason => /unsequenced_case_claims/.test(reason)));
 
 console.log('reporter-briefing: OK');
