@@ -45,6 +45,7 @@ export function validateCaseLedger(data) {
   const events = index(data.events, 'event_id', errors);
   index(data.relations, 'relation_id', errors);
   index(data.beacons, 'beacon_id', errors);
+  index(data.trails ?? [], 'trail_id', errors);
 
   if (data.case.schema_version !== 'case-ledger@1') errors.push('case schema_version must be case-ledger@1');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data.case.as_of ?? '')) errors.push('case as_of must be an ISO day');
@@ -92,6 +93,12 @@ export function validateCaseLedger(data) {
     for (const dimension of beacon.dimensions ?? []) reference(dimension.claim_ids, claims, `beacon ${beacon.beacon_id}/${dimension.id}`, 'claim', errors);
   }
 
+  for (const trail of data.trails ?? []) {
+    if (!trail.label || !trail.status) errors.push(`trail ${trail.trail_id} lacks label or status`);
+    if (trail.graph_effect !== 'none') errors.push(`trail ${trail.trail_id} must remain graph-inert`);
+    if (trail.promotes_to && trail.promotes_to !== 'candidate_only') errors.push(`trail ${trail.trail_id} may promote only to candidate_only`);
+  }
+
   for (const section of data.case.sections ?? []) reference(section.record_ids, events, `section ${section.id}`, 'event', errors);
   return errors;
 }
@@ -127,13 +134,21 @@ export function compileCaseLedger(data) {
   });
   return {
     ...data.case,
-    counts: { events: data.events.length, claims: data.claims.length, receipts: data.receipts.length, relations: data.relations.length, beacons: data.beacons.length },
+    counts: {
+      events: data.events.length,
+      claims: data.claims.length,
+      receipts: data.receipts.length,
+      relations: data.relations.length,
+      beacons: data.beacons.length,
+      trails: (data.trails ?? []).length
+    },
     claim_status_counts: statusCounts,
     sections: data.case.sections.map(section => ({ ...section, records: section.record_ids.map(id => hydratedById.get(id)) })),
     events: hydratedEvents,
     relations: data.relations,
     receipts: data.receipts,
-    beacons
+    beacons,
+    trails: data.trails ?? []
   };
 }
 
@@ -145,7 +160,8 @@ export function loadCaseLedger(caseDirectory) {
     claims: readJsonl(`${rel}/claims.jsonl`),
     events: readJsonl(`${rel}/events.jsonl`),
     relations: readJsonl(`${rel}/relations.jsonl`),
-    beacons: readJsonl(`${rel}/beacons.jsonl`)
+    beacons: readJsonl(`${rel}/beacons.jsonl`),
+    trails: readJsonl(`${rel}/trails.jsonl`, { optional: true })
   };
 }
 
