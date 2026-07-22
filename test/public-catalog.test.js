@@ -7,6 +7,8 @@ assert.equal(catalog.counts.tracks, catalog.tracks.length);
 assert.equal(catalog.counts.cases, catalog.cases.length);
 assert.equal(catalog.counts.claims, catalog.claims.length);
 assert.equal(catalog.counts.declared_claims, catalog.cases.reduce((total, item) => total + item.counts.claims, 0));
+assert.equal(catalog.counts.claims, catalog.counts.declared_claims,
+  'the public catalog must expose every declared canonical case claim, including unsequenced claims');
 assert.equal(catalog.counts.receipts, catalog.receipts.length);
 assert.ok(catalog.tracks.length > 0);
 assert.ok(catalog.cases.length > 0);
@@ -22,6 +24,10 @@ const ukAiCase = JSON.parse(readFileSync(ukAiEntry.href, 'utf8'));
 assert.equal(ukAiCase.projection_version, 'legacy-uk-ai-policy@1');
 assert.equal(ukAiCase.counts.events, 224);
 assert.equal(ukAiCase.counts.claims, 224);
+assert.equal(ukAiCase.counts.sequenced_claims, 224);
+assert.equal(ukAiCase.counts.unsequenced_claims, 0);
+assert.equal(ukAiCase.claims.length, 224);
+assert.deepEqual(ukAiCase.unsequenced_claim_ids, []);
 assert.equal(ukAiCase.sections[0].records[0].claims[0].receipt_ids.length, 2);
 assert.equal(ukAiCase.relations.length, 0);
 assert.equal(ukAiCase.beacons.length, 0);
@@ -31,11 +37,26 @@ assert.equal(
   'every projected UK AI claim must retain an explicit publication status'
 );
 const ukReceiptIds = new Set(ukAiCase.receipts.map(item => item.receipt_id));
-for (const claim of ukAiCase.events.flatMap(event => event.claims)) {
+for (const claim of ukAiCase.claims) {
   for (const receiptId of claim.receipt_ids) {
     assert.ok(ukReceiptIds.has(receiptId), `UK AI claim receipt must resolve: ${receiptId}`);
   }
 }
+
+const arcadiaEntry = catalog.cases.find(item => item.case_id === 'arcadia-field-autopsy');
+assert.ok(arcadiaEntry, 'the Arcadia case must be present in the public catalog');
+const arcadiaCase = JSON.parse(readFileSync(arcadiaEntry.href, 'utf8'));
+assert.equal(arcadiaEntry.presentation, 'reporter_briefing');
+assert.equal(arcadiaCase.claims.length, arcadiaCase.counts.claims);
+assert.equal(arcadiaCase.unsequenced_claim_ids.length, arcadiaCase.counts.unsequenced_claims);
+assert.ok(arcadiaCase.unsequenced_claim_ids.includes('clm-growth-machine'));
+const arcadiaCatalogClaims = catalog.claims.filter(item => item.case_id === 'arcadia-field-autopsy');
+assert.equal(arcadiaCatalogClaims.length, arcadiaCase.counts.claims);
+const growthMachine = catalog.claims.find(item => item.key === 'arcadia-field-autopsy::clm-growth-machine');
+assert.ok(growthMachine, 'an unsequenced Arcadia claim must remain publicly addressable');
+assert.equal(growthMachine.event_label, 'Unsequenced case claim');
+assert.equal(growthMachine.occurred_at, '1987');
+assert.ok(growthMachine.receipt_count > 0);
 
 for (const collection of [catalog.tracks, catalog.cases, catalog.claims, catalog.receipts]) {
   const keys = collection.map(item => item.key ?? item.track_id ?? item.case_id);
