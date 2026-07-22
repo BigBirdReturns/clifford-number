@@ -1,11 +1,19 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { buildReportFrontier, REPORT_FRONTIER_SCHEMA_VERSION } from '../tools/build-report-frontier.mjs';
+import { renderReportFrontier } from '../tools/render-report-frontier.mjs';
 import { readJson } from '../tools/lib/ledger.mjs';
 
 const frontier = buildReportFrontier();
 const emitted = readJson('build/report-frontier.json');
 assert.deepEqual(emitted, frontier, 'the report frontier must be deterministic');
 assert.deepEqual(buildReportFrontier(), frontier, 'a second build must not change the frontier');
+
+const rendered = renderReportFrontier();
+const emittedHtml = fs.readFileSync(rendered.output_path, 'utf8');
+assert.equal(rendered.html, emittedHtml, 'the public frontier page must be deterministic');
+assert.deepEqual(rendered.frontier, frontier);
+assert.equal(rendered.output_path, 'reports/index.html');
 
 assert.equal(frontier.schema_version, REPORT_FRONTIER_SCHEMA_VERSION);
 assert.equal(frontier.graph_effect, 'none');
@@ -79,9 +87,24 @@ assert.equal(routerTrails.totals.frontier_rows, 17);
 assert.equal(routerTrails.totals.linked_to_report_workplan, 0);
 assert.ok(routerTrails.blockers.includes('not_in_case_ledger'));
 
+assert.match(emittedHtml, /data-report-frontier-schema="report-frontier@1"/);
+assert.match(emittedHtml, /data-graph-effect="none"/);
+assert.match(emittedHtml, /data-conclusion-generated="false"/);
+assert.match(emittedHtml, /data-case-id="anduril-access-ownership"/);
+assert.match(emittedHtml, /data-case-id="arcadia-field-autopsy"/);
+assert.match(emittedHtml, /data-program-id="case:arcadia-field-autopsy"/);
+assert.match(emittedHtml, /data-program-id="intake:person-centered-defense-routers"/);
+assert.match(emittedHtml, /href="..\/briefs\/anduril-access-ownership.html"/);
+assert.match(emittedHtml, /href="..\/#case\/uk-ai-policy"/);
+assert.equal((emittedHtml.match(/data-stage=/g) ?? []).length, frontier.transition_order.length);
+assert.equal((emittedHtml.match(/data-case-id=/g) ?? []).length, frontier.cases.length);
+assert.equal((emittedHtml.match(/data-program-id=/g) ?? []).length, frontier.trail_programs.length);
+assert.equal((emittedHtml.match(/data-trail-id=/g) ?? []).length, 10);
+
 for (const item of frontier.cases) assert.equal(item.graph_effect, 'none');
 for (const program of frontier.trail_programs) assert.equal(program.graph_effect, 'none');
 assert.doesNotMatch(JSON.stringify(frontier), /"(?:guilt|corruption|motive|influence|risk|probability)_score"/i);
 assert.doesNotMatch(JSON.stringify(frontier), /"ranking"\s*:/i);
+assert.doesNotMatch(emittedHtml, /(?:guilt|corruption|motive|influence|risk|probability)_score/i);
 
 console.log('report-frontier: OK');
