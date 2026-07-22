@@ -35,13 +35,16 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -94,6 +97,27 @@ jobs:
         run: |
           node --check tools/verify-reporter-briefings-browser.cjs
           timeout 240s node tools/verify-reporter-briefings-browser.cjs
+
+      - name: Normalize the prototype source specification
+        if: success() && github.event_name == 'pull_request' && github.head_ref == 'agent/structured-reporter-report-v2'
+        env:
+          HEAD_BRANCH: ${{ github.head_ref }}
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const file = 'cases/anduril-access-ownership/briefing.json';
+          const value = JSON.parse(fs.readFileSync(file, 'utf8'));
+          fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
+          NODE
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cases/anduril-access-ownership/briefing.json
+          if git diff --cached --quiet; then
+            echo "Prototype source is already normalized."
+          else
+            git commit -m "Format structured report source"
+            git push origin "HEAD:${HEAD_BRANCH}"
+          fi
 
       - name: Preserve deterministic publication evidence
         if: always()
