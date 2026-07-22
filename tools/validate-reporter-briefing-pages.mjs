@@ -57,6 +57,7 @@ let totalClaims = 0;
 let totalVerified = 0;
 let totalReviewRequired = 0;
 let totalInheritedQualifications = 0;
+let totalUnsequencedClaims = 0;
 let totalSourceTrails = 0;
 let totalPublicReceipts = 0;
 
@@ -101,6 +102,8 @@ for (const entry of index.briefings) {
   if (manifest.publication?.status !== 'approved' && queueItem.eligible_for_approval === true) fail(`${entry.briefing_id} is approval-eligible while publication remains ${manifest.publication?.status}`);
   if ((manifest.counts?.inherited_qualifications ?? 0) > 0
     && !queueItem.blocking_reasons.includes(`${manifest.counts.inherited_qualifications}_qualifications_inherited_from_case_boundary`)) fail(`${entry.briefing_id} inherited qualifications are absent from the approval blockers`);
+  if ((manifest.counts?.unsequenced_claims ?? 0) > 0
+    && !queueItem.blocking_reasons.includes(`${manifest.counts.unsequenced_claims}_unsequenced_case_claims`)) fail(`${entry.briefing_id} unsequenced claims are absent from the approval blockers`);
 
   if (!html.includes('name="clifford-briefing-schema" content="reporter-briefing@2"')
     || !html.includes(`name="clifford-briefing-version" content="${escapeHtml(manifest.publication.version)}"`)
@@ -129,6 +132,7 @@ for (const entry of index.briefings) {
   const claimById = new Map(claimRows.map(claim => [claim.claim_id, claim]));
   const eventById = new Map((caseItem.events ?? []).map(event => [event.event_id, event]));
   const trailById = new Map((caseItem.trails ?? []).map(trail => [trail.trail_id, trail]));
+  const caseUnsequenced = new Set(caseItem.unsequenced_claim_ids ?? []);
   for (const item of manifest.sequence ?? []) {
     const event = eventById.get(item.event_id);
     if (!event) fail(`${entry.briefing_id} sequence references missing event ${item.event_id}`);
@@ -145,6 +149,14 @@ for (const entry of index.briefings) {
   for (const claimId of manifest.inherited_qualification_claim_ids ?? []) {
     const claim = claimById.get(claimId);
     if (!claim || claim.qualification) fail(`${entry.briefing_id} incorrectly marks ${claimId} as inheriting a case boundary`);
+  }
+  if ((manifest.unsequenced_claim_ids ?? []).length !== manifest.counts?.unsequenced_claims) fail(`${entry.briefing_id} unsequenced claim count diverged`);
+  for (const claimId of manifest.unsequenced_claim_ids ?? []) {
+    if (!(manifest.claim_ids ?? []).includes(claimId)) fail(`${entry.briefing_id} marks unreferenced claim ${claimId} as unsequenced`);
+    if (!caseUnsequenced.has(claimId)) fail(`${entry.briefing_id} marks sequenced claim ${claimId} as unsequenced`);
+  }
+  for (const claimId of manifest.claim_ids ?? []) {
+    if (caseUnsequenced.has(claimId) !== (manifest.unsequenced_claim_ids ?? []).includes(claimId)) fail(`${entry.briefing_id} does not reconcile unsequenced custody for ${claimId}`);
   }
   if ((manifest.source_trail_ids ?? []).length !== manifest.counts?.source_trails) fail(`${entry.briefing_id} source trail manifest count diverged`);
   for (const trailId of manifest.source_trail_ids ?? []) {
@@ -168,6 +180,7 @@ for (const entry of index.briefings) {
   totalVerified += manifest.counts?.verified_claims ?? 0;
   totalReviewRequired += manifest.counts?.review_required_claims ?? 0;
   totalInheritedQualifications += manifest.counts?.inherited_qualifications ?? 0;
+  totalUnsequencedClaims += manifest.counts?.unsequenced_claims ?? 0;
   totalSourceTrails += manifest.counts?.source_trails ?? 0;
   totalPublicReceipts += manifest.counts?.public_receipts ?? 0;
 }
@@ -177,6 +190,7 @@ if (index.counts?.briefings !== index.briefings.length
   || index.counts?.verified_claims !== totalVerified
   || index.counts?.review_required_claims !== totalReviewRequired
   || index.counts?.inherited_qualifications !== totalInheritedQualifications
+  || index.counts?.unsequenced_claims !== totalUnsequencedClaims
   || index.counts?.source_trails !== totalSourceTrails
   || index.counts?.public_receipts !== totalPublicReceipts) fail('briefing index totals do not reconcile');
 
@@ -185,4 +199,4 @@ if (queue.totals?.briefings !== queue.queue.length
   || queue.totals?.review_required !== queue.queue.filter(item => item.publication_status === 'review_required').length
   || queue.totals?.eligible_for_approval !== queue.queue.filter(item => item.eligible_for_approval).length) fail('review queue totals do not reconcile');
 
-console.log(`validate-reporter-briefing-pages: OK (${index.briefings.length} briefings, ${totalClaims} claims, ${totalSourceTrails} source trails, ${totalPublicReceipts} public receipts)`);
+console.log(`validate-reporter-briefing-pages: OK (${index.briefings.length} briefings, ${totalClaims} claims, ${totalUnsequencedClaims} unsequenced claims, ${totalSourceTrails} source trails, ${totalPublicReceipts} public receipts)`);
