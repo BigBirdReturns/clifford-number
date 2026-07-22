@@ -13,6 +13,7 @@ const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character =>
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
 })[character]);
 const count = (value, pattern) => [...value.matchAll(pattern)].length;
+const attributeValues = (value, attribute) => [...value.matchAll(new RegExp(`${attribute}="([^"]+)"`, 'g'))].map(match => match[1]);
 
 const fail = message => {
   console.error(`validate-reporter-briefing-pages failed: ${message}`);
@@ -47,6 +48,8 @@ const queueById = new Map(queue.queue.map(item => [item.briefing_id, item]));
 let totalClaims = 0;
 let totalVerified = 0;
 let totalReviewRequired = 0;
+let totalInheritedQualifications = 0;
+let totalSourceTrails = 0;
 let totalPublicReceipts = 0;
 
 for (const entry of index.briefings) {
@@ -88,6 +91,8 @@ for (const entry of index.briefings) {
   if (manifest.publication?.status === 'approved'
     && (!manifest.publication?.reviewer || !manifest.publication?.reviewed_at || queueItem.eligible_for_approval !== true)) fail(`${entry.briefing_id} is approved without completed review metadata`);
   if (manifest.publication?.status !== 'approved' && queueItem.eligible_for_approval === true) fail(`${entry.briefing_id} is approval-eligible while publication remains ${manifest.publication?.status}`);
+  if ((manifest.counts?.inherited_qualifications ?? 0) > 0
+    && !queueItem.blocking_reasons.includes(`${manifest.counts.inherited_qualifications}_qualifications_inherited_from_case_boundary`)) fail(`${entry.briefing_id} inherited qualifications are absent from the approval blockers`);
 
   if (!html.includes('name="clifford-briefing-schema" content="reporter-briefing@2"')
     || !html.includes(`name="clifford-briefing-version" content="${escapeHtml(manifest.publication.version)}"`)
@@ -103,6 +108,7 @@ for (const entry of index.briefings) {
   if (count(html, /data-control-id=/g) !== manifest.counts?.controls) fail(`${entry.briefing_id} counterweight count diverged`);
   if (count(html, /data-work-id=/g) !== manifest.counts?.workplan_items) fail(`${entry.briefing_id} workplan count diverged`);
   if (count(html, /<tr id="claim-/g) !== manifest.counts?.claims) fail(`${entry.briefing_id} claim register count diverged`);
+  if (new Set(attributeValues(html, 'data-trail-id')).size !== manifest.counts?.source_trails) fail(`${entry.briefing_id} source-trail count diverged`);
   if (/style="[^"]*(?:left|top):/.test(html)) fail(`${entry.briefing_id} renders unsupported continuous coordinates`);
 
   if (sha256(html) !== manifest.integrity?.html_sha256) fail(`${entry.briefing_id} HTML digest does not match its manifest`);
@@ -111,6 +117,7 @@ for (const entry of index.briefings) {
 
   const claimById = new Map((caseItem.events ?? []).flatMap(event => (event.claims ?? []).map(claim => [claim.claim_id, claim])));
   const eventById = new Map((caseItem.events ?? []).map(event => [event.event_id, event]));
+  const trailById = new Map((caseItem.trails ?? []).map(trail => [trail.trail_id, trail]));
   for (const item of manifest.sequence ?? []) {
     const event = eventById.get(item.event_id);
     if (!event) fail(`${entry.briefing_id} sequence references missing event ${item.event_id}`);
@@ -120,7 +127,20 @@ for (const entry of index.briefings) {
     const claim = claimById.get(claimId);
     if (!claim) fail(`${entry.briefing_id} references missing claim ${claimId}`);
     if (!html.includes(escapeHtml(claim.plain))) fail(`${entry.briefing_id} does not render canonical claim text ${claimId}`);
-    if (!claim.qualification || !html.includes(escapeHtml(claim.qualification))) fail(`${entry.briefing_id} omits qualification for ${claimId}`);
+    const qualification = claim.qualification || caseItem.boundary || caseItem.disclaimer;
+    if (!qualification || !html.includes(escapeHtml(qualification))) fail(`${entry.briefing_id} omits qualification or case-wide boundary for ${claimId}`);
+  }
+  if ((manifest.inherited_qualification_claim_ids ?? []).length !== manifest.counts?.inherited_qualifications) fail(`${entry.briefing_id} inherited qualification count diverged`);
+  for (const claimId of manifest.inherited_qualification_claim_ids ?? []) {
+    const claim = claimById.get(claimId);
+    if (!claim || claim.qualification) fail(`${entry.briefing_id} incorrectly marks ${claimId} as inheriting a case boundary`);
+  }
+  if ((manifest.source_trail_ids ?? []).length !== manifest.counts?.source_trails) fail(`${entry.briefing_id} source trail manifest count diverged`);
+  for (const trailId of manifest.source_trail_ids ?? []) {
+    const trail = trailById.get(trailId);
+    if (!trail) fail(`${entry.briefing_id} references missing source trail ${trailId}`);
+    if (trail.graph_effect !== 'none' || (trail.promotes_to && trail.promotes_to !== 'candidate_only')) fail(`${entry.briefing_id} references trail ${trailId} beyond the candidate-only boundary`);
+    if (!html.includes(`data-trail-id="${escapeHtml(trailId)}"`)) fail(`${entry.briefing_id} omits source trail ${trailId} from the rendered workplan`);
   }
 
   const publicLinks = count(html, /<a\b[^>]*href="https:\/\//g);
@@ -136,6 +156,8 @@ for (const entry of index.briefings) {
   totalClaims += manifest.counts?.claims ?? 0;
   totalVerified += manifest.counts?.verified_claims ?? 0;
   totalReviewRequired += manifest.counts?.review_required_claims ?? 0;
+  totalInheritedQualifications += manifest.counts?.inherited_qualifications ?? 0;
+  totalSourceTrails += manifest.counts?.source_trails ?? 0;
   totalPublicReceipts += manifest.counts?.public_receipts ?? 0;
 }
 
@@ -143,6 +165,8 @@ if (index.counts?.briefings !== index.briefings.length
   || index.counts?.claims !== totalClaims
   || index.counts?.verified_claims !== totalVerified
   || index.counts?.review_required_claims !== totalReviewRequired
+  || index.counts?.inherited_qualifications !== totalInheritedQualifications
+  || index.counts?.source_trails !== totalSourceTrails
   || index.counts?.public_receipts !== totalPublicReceipts) fail('briefing index totals do not reconcile');
 
 if (queue.totals?.briefings !== queue.queue.length
@@ -150,4 +174,4 @@ if (queue.totals?.briefings !== queue.queue.length
   || queue.totals?.review_required !== queue.queue.filter(item => item.publication_status === 'review_required').length
   || queue.totals?.eligible_for_approval !== queue.queue.filter(item => item.eligible_for_approval).length) fail('review queue totals do not reconcile');
 
-console.log(`validate-reporter-briefing-pages: OK (${index.briefings.length} briefings, ${totalClaims} claims, ${totalPublicReceipts} public receipts)`);
+console.log(`validate-reporter-briefing-pages: OK (${index.briefings.length} briefings, ${totalClaims} claims, ${totalSourceTrails} source trails, ${totalPublicReceipts} public receipts)`);
