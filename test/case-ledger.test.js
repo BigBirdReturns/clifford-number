@@ -9,6 +9,8 @@ const compiled = compileCaseLedger(source);
 assert.equal(compiled.tracking_id, 'FA-2026-0603-SFC2');
 assert.equal(compiled.counts.events, 13);
 assert.equal(compiled.counts.claims, 13);
+assert.equal(compiled.counts.trails, 0);
+assert.deepEqual(compiled.trails, []);
 assert.equal(compiled.claim_status_counts.verified, 0, 'prototype assertions must not silently become verified facts');
 assert.equal(compiled.claim_status_counts.review_required, 13);
 assert.equal(compiled.events.find(event => event.event_id === 'evt-dawg-fy27-request').claims[0].value.amount_kind, 'requested');
@@ -23,9 +25,27 @@ const dishonest = structuredClone(source);
 dishonest.claims[0].claim_status = 'verified';
 assert.ok(validateCaseLedger(dishonest).some(error => error.includes('non-public receipt')));
 
+const graphActiveTrail = structuredClone(source);
+graphActiveTrail.trails = [{
+  trail_id: 'trail-invalid',
+  label: 'Invalid graph-active trail',
+  status: 'open',
+  graph_effect: 'context',
+  promotes_to: 'finding'
+}];
+const graphActiveTrailErrors = validateCaseLedger(graphActiveTrail);
+assert.ok(graphActiveTrailErrors.some(error => /must remain graph-inert/.test(error)));
+assert.ok(graphActiveTrailErrors.some(error => /candidate_only/.test(error)));
+
 compileAllCases();
 const artifact = JSON.parse(fs.readFileSync('build/cases/field-autopsy-03.json', 'utf8'));
 assert.deepEqual(artifact, compiled, 'compiled case must be deterministic');
+const arcadiaArtifact = JSON.parse(fs.readFileSync('build/cases/arcadia-field-autopsy.json', 'utf8'));
+assert.equal(arcadiaArtifact.presentation, 'reporter_briefing');
+assert.equal(arcadiaArtifact.briefing.schema_version, 'reporter-briefing@2');
+assert.equal(arcadiaArtifact.counts.trails, 10);
+assert.equal(arcadiaArtifact.trails.length, 10);
+assert.ok(arcadiaArtifact.trails.every(trail => trail.graph_effect === 'none' && trail.promotes_to === 'candidate_only'));
 
 /* Reporter briefings are a case presentation contract, so the standard case test
  * regenerates and verifies them instead of relying only on a path-filtered workflow. */
