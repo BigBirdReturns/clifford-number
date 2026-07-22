@@ -166,7 +166,7 @@ for (const entry of index.briefings) {
     if (!html.includes(`data-trail-id="${escapeHtml(trailId)}"`)) fail(`${entry.briefing_id} omits source trail ${trailId} from the rendered workplan`);
   }
 
-  const publicLinks = count(html, /<a\b[^>]*href="https:\/\//g);
+  const publicLinks = count(html, /<a\b[^>]*href="https?:\/\//g);
   if (publicLinks !== manifest.counts?.public_receipts) fail(`${entry.briefing_id} exposes ${publicLinks} public links but manifest records ${manifest.counts?.public_receipts}`);
   if ((manifest.public_receipt_ids ?? []).some(id => !(manifest.receipt_ids ?? []).includes(id))) fail(`${entry.briefing_id} public receipt set is not a subset of receipt custody`);
   for (const privateId of (manifest.receipt_ids ?? []).filter(id => !(manifest.public_receipt_ids ?? []).includes(id))) {
