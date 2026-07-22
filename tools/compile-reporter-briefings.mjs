@@ -39,6 +39,8 @@ writeJson('build/briefings/index.json', {
     claims: manifests.reduce((total, item) => total + item.counts.claims, 0),
     verified_claims: manifests.reduce((total, item) => total + item.counts.verified_claims, 0),
     review_required_claims: manifests.reduce((total, item) => total + item.counts.review_required_claims, 0),
+    inherited_qualifications: manifests.reduce((total, item) => total + item.counts.inherited_qualifications, 0),
+    source_trails: manifests.reduce((total, item) => total + item.counts.source_trails, 0),
     public_receipts: manifests.reduce((total, item) => total + item.counts.public_receipts, 0)
   },
   briefings: manifests.map(item => ({
