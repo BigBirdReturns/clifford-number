@@ -8,6 +8,9 @@ on:
       - 'cases/**/claims.jsonl'
       - 'cases/**/events.jsonl'
       - 'cases/**/receipts.jsonl'
+      - 'cases/**/trails.jsonl'
+      - 'data/intake/**/evidence-trails.jsonl'
+      - 'data/intake/**/trail-frontier.jsonl'
       - 'app.js'
       - 'index.html'
       - 'styles.css'
@@ -18,6 +21,7 @@ on:
       - 'tools/lib/reporter-briefing-html.mjs'
       - 'tools/lib/reporter-briefing.css'
       - 'tools/compile-reporter-briefings.mjs'
+      - 'tools/build-report-frontier.mjs'
       - 'tools/compile.mjs'
       - 'tools/lib/case-ledger.mjs'
       - 'tools/build-public-catalog.mjs'
@@ -28,8 +32,10 @@ on:
       - 'tools/verify-reporter-briefings-browser.cjs'
       - 'test/case-ledger.test.js'
       - 'test/reporter-briefing.test.js'
+      - 'test/report-frontier.test.js'
       - 'schemas/reporter-briefing.schema.json'
       - 'docs/reporter-briefings.md'
+      - 'docs/report-waterline.md'
       - 'docs/adr-reporter-briefing-platform.md'
       - '.github/workflows/reporter-briefings.yml'
   workflow_dispatch:
@@ -46,11 +52,18 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Compile the public corpus and reporter briefings
-        run: npm run compile
+      - name: Compile the public corpus, reports, and frontier
+        run: |
+          set +e
+          npm run compile > /tmp/reporter-briefings-compile.log 2>&1
+          status=$?
+          tail -n 260 /tmp/reporter-briefings-compile.log
+          exit "$status"
 
-      - name: Verify structured report and review-queue contracts
-        run: node test/reporter-briefing.test.js
+      - name: Verify structured reports, review queues, and waterline
+        run: |
+          node test/reporter-briefing.test.js
+          node test/report-frontier.test.js
 
       - name: Compile publication prerequisites
         run: |
@@ -104,13 +117,15 @@ jobs:
             briefs/*.html
             build/briefings/index.json
             build/briefings/*.json
-            build/cases/anduril-access-ownership.json
+            build/cases/*.json
             build/cases/index.json
             build/public-catalog.json
+            build/report-frontier.json
             build/review/reporter-briefing-queue.json
             build/metrics/reporter-briefings-browser.json
             build/metrics/reporter-briefing-first.png
             build/metrics/reporter-briefing-evidence-first.png
+            /tmp/reporter-briefings-compile.log
             /tmp/reporter-briefings-build.log
             /tmp/reporter-briefings-server.log
           if-no-files-found: warn
