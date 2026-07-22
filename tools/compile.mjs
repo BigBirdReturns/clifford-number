@@ -10,6 +10,7 @@ const steps = [
   ['compile-reporter-briefings', 'tools/compile-reporter-briefings.mjs'],
   ['build-public-catalog', 'tools/build-public-catalog.mjs'],
   ['build-report-frontier', 'tools/build-report-frontier.mjs'],
+  ['render-report-frontier', 'tools/render-report-frontier.mjs'],
 ];
 
 for (const [name, script] of steps) {
