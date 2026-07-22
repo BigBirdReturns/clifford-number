@@ -4,9 +4,9 @@ import path from 'node:path';
 import {
   REPORTER_BRIEFING_INDEX_SCHEMA_VERSION,
   REPORTER_BRIEFING_REVIEW_QUEUE_SCHEMA_VERSION,
-  compileReporterBriefing,
-  reporterBriefingQueueEntry
+  compileReporterBriefing
 } from './lib/reporter-briefing.mjs';
+import { applyReportWaterline, reportWaterlineQueueEntry } from './lib/report-waterline.mjs';
 import { readJson, root, writeJson } from './lib/ledger.mjs';
 
 const caseRoot = path.join(root, 'cases');
@@ -22,7 +22,8 @@ for (const caseId of directories) {
   if (!fs.existsSync(path.join(root, casePath))) throw new Error(`reporter briefing ${caseId} requires compiled case ${casePath}`);
   const spec = readJson(sourcePath);
   const caseItem = readJson(casePath);
-  const { html, manifest } = compileReporterBriefing(spec, caseItem);
+  const { html, manifest: compiledManifest } = compileReporterBriefing(spec, caseItem);
+  const manifest = applyReportWaterline(compiledManifest, caseItem);
   const output = path.join(root, spec.output_path);
   fs.mkdirSync(path.dirname(output), { recursive: true });
   fs.writeFileSync(output, html);
@@ -40,6 +41,7 @@ writeJson('build/briefings/index.json', {
     verified_claims: manifests.reduce((total, item) => total + item.counts.verified_claims, 0),
     review_required_claims: manifests.reduce((total, item) => total + item.counts.review_required_claims, 0),
     inherited_qualifications: manifests.reduce((total, item) => total + item.counts.inherited_qualifications, 0),
+    unsequenced_claims: manifests.reduce((total, item) => total + item.counts.unsequenced_claims, 0),
     source_trails: manifests.reduce((total, item) => total + item.counts.source_trails, 0),
     public_receipts: manifests.reduce((total, item) => total + item.counts.public_receipts, 0)
   },
@@ -57,7 +59,7 @@ writeJson('build/briefings/index.json', {
   }))
 });
 
-const queue = manifests.map(reporterBriefingQueueEntry);
+const queue = manifests.map(reportWaterlineQueueEntry);
 writeJson('build/review/reporter-briefing-queue.json', {
   schema_version: REPORTER_BRIEFING_REVIEW_QUEUE_SCHEMA_VERSION,
   graph_effect: 'none',
