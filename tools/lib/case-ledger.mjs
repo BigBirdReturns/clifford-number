@@ -111,15 +111,22 @@ function claimValue(claim) {
 export function compileCaseLedger(data) {
   const errors = validateCaseLedger(data);
   if (errors.length) throw new Error(errors.join('\n'));
-  const claims = new Map(data.claims.map(row => [row.claim_id, row]));
+
   const receipts = new Map(data.receipts.map(row => [row.receipt_id, row]));
-  const events = new Map(data.events.map(row => [row.event_id, row]));
+  const hydratedClaims = data.claims.map(claim => ({
+    ...claim,
+    value: claimValue(claim),
+    receipts: claim.receipt_ids.map(receiptId => receipts.get(receiptId))
+  }));
+  const claims = new Map(hydratedClaims.map(row => [row.claim_id, row]));
+  const eventClaimIds = new Set(data.events.flatMap(event => event.claim_ids ?? []));
+  const unsequencedClaimIds = hydratedClaims
+    .filter(claim => !eventClaimIds.has(claim.claim_id))
+    .map(claim => claim.claim_id);
+
   const hydratedEvents = data.events.map(event => ({
     ...event,
-    claims: event.claim_ids.map(id => {
-      const claim = claims.get(id);
-      return { ...claim, value: claimValue(claim), receipts: claim.receipt_ids.map(receiptId => receipts.get(receiptId)) };
-    })
+    claims: event.claim_ids.map(id => claims.get(id))
   }));
   const hydratedById = new Map(hydratedEvents.map(row => [row.event_id, row]));
   const statusCounts = Object.fromEntries([...CLAIM_STATUSES].map(status => [status, data.claims.filter(row => row.claim_status === status).length]));
@@ -132,11 +139,14 @@ export function compileCaseLedger(data) {
       inputs: beacon.input_event_ids.map(id => hydratedById.get(id))
     };
   });
+
   return {
     ...data.case,
     counts: {
       events: data.events.length,
       claims: data.claims.length,
+      sequenced_claims: eventClaimIds.size,
+      unsequenced_claims: unsequencedClaimIds.length,
       receipts: data.receipts.length,
       relations: data.relations.length,
       beacons: data.beacons.length,
@@ -144,6 +154,8 @@ export function compileCaseLedger(data) {
     },
     claim_status_counts: statusCounts,
     sections: data.case.sections.map(section => ({ ...section, records: section.record_ids.map(id => hydratedById.get(id)) })),
+    claims: hydratedClaims,
+    unsequenced_claim_ids: unsequencedClaimIds,
     events: hydratedEvents,
     relations: data.relations,
     receipts: data.receipts,
