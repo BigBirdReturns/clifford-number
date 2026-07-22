@@ -39,7 +39,7 @@ async function main() {
   page.on('pageerror', error => result.page_errors.push(error.message));
 
   try {
-    await page.goto('http://127.0.0.1:8080/reports/', { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.goto('http://127.0.0.1:8080/reports/index.html', { waitUntil: 'domcontentloaded', timeout: 60000 });
     await settle(page);
 
     assert.equal(await page.locator('body').getAttribute('data-report-frontier-schema'), 'report-frontier@1');
