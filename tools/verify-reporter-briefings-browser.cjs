@@ -23,7 +23,7 @@ async function waitForCase(page, title) {
 async function main() {
   fs.mkdirSync(outputDirectory, { recursive: true });
   const result = {
-    schema_version: 'reporter-briefings-browser@1',
+    schema_version: 'reporter-briefings-browser@2',
     generated_at: new Date().toISOString(),
     graph_effect: 'none',
     conclusion_generated: false,
@@ -50,11 +50,22 @@ async function main() {
       await page.setViewportSize({ width: 1440, height: 1100 });
       await page.goto(`http://127.0.0.1:8080/${entry.output_path}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
       await settle(page);
+
       assert.equal(await page.locator('body').getAttribute('data-briefing-id'), entry.briefing_id);
+      assert.equal(await page.locator('body').getAttribute('data-briefing-schema'), 'reporter-briefing@2');
       assert.equal(await page.locator('body').getAttribute('data-graph-effect'), 'none');
-      assert.equal(await page.locator('.cards .card').count(), manifest.counts.threads);
+      assert.equal(await page.locator('.orientation-grid [data-x-level][data-y-level]').count(), manifest.counts.threads);
+      assert.equal(await page.locator('.sequence tbody tr[data-event-id]').count(), manifest.counts.sequence_events);
+      assert.equal(await page.locator('.matrix tbody tr[data-thread-id]').count(), manifest.counts.threads);
+      assert.equal(await page.locator('.matrix .matrix-cell').count(), manifest.counts.matrix_cells);
+      assert.equal(await page.locator('.controls [data-control-id]').count(), manifest.counts.controls);
+      assert.equal(await page.locator('.workplan [data-work-id]').count(), manifest.counts.workplan_items);
+      assert.equal(await page.locator('.claim-register tbody tr[id^="claim-"]').count(), manifest.counts.claims);
       assert.equal(await page.locator('.sources a[href^="https://"]').count(), manifest.counts.public_receipts);
       assert.equal(await page.locator(`a[href="${entry.case_href}"]`).count(), 1);
+
+      const continuousCoordinates = await page.locator('[style*="left:"][style*="top:"]').count();
+      assert.equal(continuousCoordinates, 0, 'structured reports must not render pseudo-precise coordinate pins');
       const desktopOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
       assert.equal(desktopOverflow, false);
       if (position === 0) await page.screenshot({ path: screenshotPath, fullPage: true });
@@ -91,6 +102,11 @@ async function main() {
         briefing_id: entry.briefing_id,
         case_id: entry.case_id,
         threads: manifest.counts.threads,
+        matrix_cells: manifest.counts.matrix_cells,
+        sequence_events: manifest.counts.sequence_events,
+        controls: manifest.counts.controls,
+        workplan_items: manifest.counts.workplan_items,
+        claims: manifest.counts.claims,
         public_receipts: manifest.counts.public_receipts,
         desktop_horizontal_overflow: desktopOverflow,
         mobile_horizontal_overflow: mobileOverflow,
