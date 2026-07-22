@@ -9,7 +9,7 @@ When documents disagree, use this order:
 1. [`BUILD-INSTRUCTIONS.md`](../BUILD-INSTRUCTIONS.md) is the governing document. Its constitutional invariants outrank convenience and generated output.
 2. Canonical registries under [`data/canonical/`](../data/canonical/) control identities and vocabularies.
 3. Source ledgers under [`data/ledger/`](../data/ledger/) preserve claims, surfaces, participation, receipts, and chains.
-4. Case ledgers under [`cases/`](../cases/) preserve typed case claims, receipts, events, relations, and publication metadata.
+4. Case ledgers under [`cases/`](../cases/) preserve every canonical case claim, receipts, events, relations, optional candidate-only trails, and publication metadata.
 5. Artifacts under [`build/`](../build/) and [`briefs/`](../briefs/) are generated, disposable views of those sources.
 6. The web app is a read-only presentation layer over compiled artifacts.
 
@@ -21,12 +21,15 @@ Read these first:
 
 - [`evidence-model.md`](evidence-model.md) — the whole knowledge model: receipts, evidence layers, source attrition, discovery topology, and known-positive motifs.
 - [`methodology.md`](methodology.md) — what creates a hop, how dates work, evidence boundaries, density discipline, and publication behavior.
-- [`reporter-briefings.md`](reporter-briefings.md) — finite, nontechnical case front doors whose factual text is compiled from claim references and keeps every limitation attached.
+- [`reporter-briefings.md`](reporter-briefings.md) — structured, non-narrative case reports whose factual text is compiled from canonical claims and events and whose workplans may expose candidate-only case trails.
+- [`report-waterline.md`](report-waterline.md) — the current transition law from intake or projection through case ledger, structured report, independent review, and approved publication.
 - [`definitions.md`](definitions.md) — the current vocabulary in one place.
 - [`redaction-policy.md`](redaction-policy.md) — public-role-only scope and material the project excludes.
 - [`plain-language.md`](plain-language.md) — how narration is generated without adding facts.
 
 The essential reading rules are: a hop means documented shared context on a bounded surface, nothing more; and **no hop does not mean no relationship**. Co-presence is never coordination, a missing live source does not erase a preserved observation, and absence from the corpus is not proof of absence. The hop graph is a conservative projection of a larger, typed evidence model.
+
+For reports, a trail is not a claim, a canonical claim is not necessarily a dated event, an open matrix cell is not evidence of absence, and a structured report is not an approved publication.
 
 ## Researchers and contributors
 
@@ -51,8 +54,9 @@ A candidate is a research question. It may preserve a non-hop fact, pattern, seq
 
 - [`../BUILD-INSTRUCTIONS.md`](../BUILD-INSTRUCTIONS.md) — governing invariants and phased acceptance criteria.
 - [`release-architecture.md`](release-architecture.md) — current ledger-to-build architecture.
-- [`reporter-briefings.md`](reporter-briefings.md) — the `reporter-briefing@1` source, compiler, manifest, review-queue, Pages, and browser contract.
-- [`adr-reporter-briefing-platform.md`](adr-reporter-briefing-platform.md) — architectural decision that cases are primary truth and briefs, graphs, routes, and tables are projections.
+- [`reporter-briefings.md`](reporter-briefings.md) — the `reporter-briefing@2` source, compiler, manifest, review-queue, Pages, browser, trail, and unsequenced-claim contracts.
+- [`report-waterline.md`](report-waterline.md) — the project-level report frontier and allowed promotion transitions.
+- [`adr-reporter-briefing-platform.md`](adr-reporter-briefing-platform.md) — architectural decision that cases are primary truth and reports, graphs, frontiers, routes, and tables are projections.
 - [`plain-language.md`](plain-language.md) — narration contract and flags.
 - [`self-assembling-architecture.md`](self-assembling-architecture.md) — proposed future intake architecture; it does not override the current compiler law.
 - [`design-system.md`](design-system.md) — interface design guidance.
@@ -74,7 +78,7 @@ Generated files under `build/` and `briefs/` must not be edited by hand.
 - [`research-gap-audit.md`](research-gap-audit.md) — known evidence gaps and source-upgrade work.
 - [`redaction-policy.md`](redaction-policy.md) — privacy boundary for collection and publication.
 
-Receipts are the evidentiary asset. They include preserved archived or vanished material, transactions, dated observations, independent reporting, and reproducible derivations—not only currently live official pages. A generated score or attractive path cannot substitute for receipted inputs, but non-hop evidence must not be discarded merely because it cannot create an actor adjacency.
+Receipts are the evidentiary asset. They include preserved archived or vanished material, transactions, dated observations, independent reporting, and reproducible derivations—not only currently live official pages. A generated score or attractive path cannot substitute for receipted inputs, but non-hop evidence must not be discarded merely because it cannot create an actor adjacency or because it has not yet been attached to a dated event.
 
 ## Current, planning, and legacy status
 
@@ -87,6 +91,7 @@ These documents describe the bounded surface-hop and case-publication release:
 - [`definitions.md`](definitions.md)
 - [`release-architecture.md`](release-architecture.md)
 - [`reporter-briefings.md`](reporter-briefings.md)
+- [`report-waterline.md`](report-waterline.md)
 - [`adr-reporter-briefing-platform.md`](adr-reporter-briefing-platform.md)
 - [`plain-language.md`](plain-language.md)
 - [`research-intake.md`](research-intake.md)
@@ -111,7 +116,7 @@ Check each document's date and status before treating it as current behavior.
 - [`../cases/uk-ai-policy.json`](../cases/uk-ai-policy.json) and [`../graph.json`](../graph.json) belong to the older node-edge representation.
 - [`../legacy/`](../legacy/) preserves additional superseded artifacts.
 
-Legacy material can preserve useful sourced facts, but it must pass the current promotion process before it can affect a surface-hop release.
+Legacy material can preserve useful sourced facts, but it must pass the current promotion process before it can affect a surface-hop release or skip directly into a structured report.
 
 ## Minimum interpretation checklist
 
@@ -126,5 +131,8 @@ Before publishing or sharing a result, confirm:
 - listing, registration, and attendance remain distinct;
 - source attrition is preserved without inferring a remover or motive;
 - motif matches remain discovery leads rather than guilt claims;
-- briefing facts resolve to canonical case claims and retain their qualifications; and
+- report facts resolve to canonical case claims and retain a claim-specific or visibly inherited qualification;
+- every report-referenced unsequenced claim is identified and blocked from approval pending review;
+- every report-linked trail is graph-inert, candidate-only, and already in the case ledger;
+- a structured report remains distinct from independent review and approved publication; and
 - the output states that shared context is not influence, coordination, or wrongdoing.
