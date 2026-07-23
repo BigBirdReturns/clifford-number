@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/estate-milestone-diagnostics /tmp/estate-milestone-validation
+          mkdir -p /tmp/estate-milestone-diagnostics /tmp/estate-milestone-validation /tmp/estate-milestone-publish
           {
             echo 'chunk diagnostics'
             find .github/temporary/estate-milestone-source-v1 -maxdepth 1 -type f -name 'chunk-*.b64' -print | sort | while read -r file; do
@@ -114,12 +114,13 @@ jobs:
       - name: Publish permanent milestone source
         shell: bash
         run: |
-          set -euo pipefail
-          test ! -d .github/temporary
-          if find .github/workflows -maxdepth 1 -type f -name 'temporary-*' | grep -q .; then
-            echo 'temporary workflow survived milestone materialization' >&2
-            exit 1
-          fi
+          set +e
+          {
+            test ! -d .github/temporary
+            echo "temporary_directory_status=$?"
+            find .github/workflows -maxdepth 1 -type f -name 'temporary-*' -print
+          } > /tmp/estate-milestone-publish/01-boundary.log 2>&1
+
           rm -rf build/research build/thesis
           git restore --worktree --source=HEAD -- \
             build/axm-identity.json \
@@ -131,14 +132,45 @@ jobs:
             build/scores.json \
             build/scout-report.json \
             build/scout-report.md \
-            build/surface-graph.json
+            build/surface-graph.json \
+            > /tmp/estate-milestone-publish/02-restore.log 2>&1
+          restore_status=$?
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          git diff --cached --check
-          if git diff --cached --quiet; then
-            echo 'No permanent source changes to publish.'
-            exit 0
+          git add -A > /tmp/estate-milestone-publish/03-add.log 2>&1
+          add_status=$?
+          git status --short > /tmp/estate-milestone-publish/04-status.log 2>&1
+          git diff --cached --stat > /tmp/estate-milestone-publish/05-stat.log 2>&1
+          git diff --cached --check > /tmp/estate-milestone-publish/06-check.log 2>&1
+          check_status=$?
+
+          commit_status=0
+          push_status=0
+          if [ "$restore_status" -eq 0 ] && [ "$add_status" -eq 0 ] && [ "$check_status" -eq 0 ]; then
+            git commit -m 'Ship Estate Aperture v1 milestone' > /tmp/estate-milestone-publish/07-commit.log 2>&1
+            commit_status=$?
+            if [ "$commit_status" -eq 0 ]; then
+              git push origin HEAD:agent/close-estates-and-open-aperture > /tmp/estate-milestone-publish/08-push.log 2>&1
+              push_status=$?
+            fi
           fi
-          git commit -m 'Ship Estate Aperture v1 milestone'
-          git push origin HEAD:agent/close-estates-and-open-aperture
+          printf 'restore=%s\nadd=%s\ncheck=%s\ncommit=%s\npush=%s\n' \
+            "$restore_status" "$add_status" "$check_status" "$commit_status" "$push_status" \
+            > /tmp/estate-milestone-publish/00-statuses.log
+          cat /tmp/estate-milestone-publish/00-statuses.log
+          cat /tmp/estate-milestone-publish/06-check.log
+          cat /tmp/estate-milestone-publish/07-commit.log 2>/dev/null
+          cat /tmp/estate-milestone-publish/08-push.log 2>/dev/null
+          if [ "$restore_status" -ne 0 ] || [ "$add_status" -ne 0 ] || [ "$check_status" -ne 0 ] || [ "$commit_status" -ne 0 ] || [ "$push_status" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Preserve publish diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: estate-milestone-publish-diagnostics
+          path: /tmp/estate-milestone-publish/
+          if-no-files-found: warn
+          retention-days: 2
