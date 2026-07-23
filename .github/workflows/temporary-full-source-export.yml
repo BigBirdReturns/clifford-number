@@ -18,6 +18,7 @@ jobs:
           fetch-depth: 1
       - name: Preserve exact source tree
         run: |
+          # Final pre-cleanup materialization; this workflow is deleted before review.
           printf '%s\n' "${GITHUB_SHA}" > SOURCE_HEAD.txt
           tar \
             --exclude='.git' \
