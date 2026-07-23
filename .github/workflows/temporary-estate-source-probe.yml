@@ -21,19 +21,20 @@ jobs:
       - name: Materialize the bounded probe payload
         run: |
           base64 --decode .github/temporary/estate-probe-payload.tgz.b64 > /tmp/estate-probe-payload.tgz
-          printf '%s  %s\n' '70fbe732110a3daf345481271a57c749ff41b428f9f4d85dffe4659d5fe46bc1' /tmp/estate-probe-payload.tgz | sha256sum --check --status
+          printf '%s  %s\n' '4cb2ebc6d52aa0ee4e8c64840a33290f8d750547b6e1a4e6e464fb8f6800e35a' /tmp/estate-probe-payload.tgz | sha256sum --check --status
           tar -xzf /tmp/estate-probe-payload.tgz
       - name: Probe every declared source route
         env:
-          ESTATE_PROBE_AT: '2026-07-23T02:30:00.000Z'
+          ESTATE_PROBE_AT: '2026-07-23T03:00:00.000Z'
         run: |
           node tools/probe-estate-source-routes.mjs \
             --output build/estate-source-probe/observations.jsonl \
             --parallelism 8 \
             --timeout-ms 20000 \
             --max-bytes 262144
-      - name: Summarize bounded route states
+      - name: Validate and summarize bounded route states
         run: |
+          node tools/validate-estate-source-routes.mjs --observations build/estate-source-probe/observations.jsonl
           node - <<'NODE'
           const fs = require('node:fs');
           const rows = fs.readFileSync('build/estate-source-probe/observations.jsonl', 'utf8').trim().split(/\n/).filter(Boolean).map(JSON.parse);
