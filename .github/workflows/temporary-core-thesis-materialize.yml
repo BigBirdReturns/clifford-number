@@ -1,0 +1,94 @@
+name: Temporary materialize core thesis
+
+on:
+  pull_request:
+    paths:
+      - '.github/temporary/core-thesis-patch/**'
+      - '.github/workflows/temporary-core-thesis-materialize.yml'
+  push:
+    branches:
+      - agent/core-thesis-conversion-architecture
+    paths:
+      - '.github/temporary/core-thesis-patch/**'
+      - '.github/workflows/temporary-core-thesis-materialize.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-core-thesis-materialize
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/core-thesis-conversion-architecture
+          fetch-depth: 0
+          show-progress: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct and verify source patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/core-thesis-evidence
+          cp .github/temporary/core-thesis-patch/core-thesis.patch.gz /tmp/core-thesis.patch.gz
+          printf '%s  %s\n' \
+            '8184650d676818b61f76f6ffc98c024d0a13c0b8a8dbe026f836124fd7aaf778' \
+            /tmp/core-thesis.patch.gz | sha256sum --check
+          gzip -dc /tmp/core-thesis.patch.gz > /tmp/core-thesis.patch
+          printf '%s  %s\n' \
+            'e88d2e144eb6e19c08b374a8ebbee40ce8762aacbc302fc2080c628a9b19ab71' \
+            /tmp/core-thesis.patch | sha256sum --check
+          printf '%s\n' "$GITHUB_SHA" > /tmp/core-thesis-evidence/staged-source-head.txt
+          sha256sum /tmp/core-thesis.patch.gz /tmp/core-thesis.patch \
+            | tee /tmp/core-thesis-evidence/transport-sha256.txt
+
+      - name: Apply exact source and run the complete release gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply --check /tmp/core-thesis.patch
+          git apply /tmp/core-thesis.patch
+          npm run release:check 2>&1 | tee /tmp/core-thesis-evidence/release-check.log
+
+      - name: Preserve validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-thesis-materialization-evidence
+          path: |
+            /tmp/core-thesis-evidence/
+            data/project/
+            build/core-thesis/
+            thesis/
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Publish permanent core-thesis source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .github/temporary/core-thesis-patch
+          rm -f .github/workflows/temporary-core-thesis-materialize.yml
+          test -f data/project/core-thesis.json
+          test -f data/project/estate-thesis-alignment.json
+          test -f schemas/core-thesis.schema.json
+          test -f .github/workflows/core-thesis.yml
+          test -f thesis/index.html
+          test ! -d .github/temporary/core-thesis-patch
+          test ! -e .github/workflows/temporary-core-thesis-materialize.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git status --short | tee /tmp/core-thesis-evidence/final-status.txt
+          git commit -m 'Install durable core thesis and conversion architecture'
+          git push origin HEAD:agent/core-thesis-conversion-architecture
