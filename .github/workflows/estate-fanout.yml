@@ -59,7 +59,12 @@ jobs:
         name: Publish estate matrix
         shell: bash
         run: |
-          echo "value=$(node -e \"const fs=require('node:fs');const m=JSON.parse(fs.readFileSync('build/estate-fanout/manifest.json','utf8'));process.stdout.write(JSON.stringify(m.matrix))\")" >> "$GITHUB_OUTPUT"
+          {
+            echo 'value<<ESTATE_MATRIX'
+            node -e "const fs=require('node:fs');const m=JSON.parse(fs.readFileSync('build/estate-fanout/manifest.json','utf8'));process.stdout.write(JSON.stringify(m.matrix))"
+            echo
+            echo 'ESTATE_MATRIX'
+          } >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v4
         with:
