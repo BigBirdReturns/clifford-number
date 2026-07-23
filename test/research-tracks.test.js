@@ -1,5 +1,4 @@
-// Regression: the research-track harnesses stay conformant, index-reconciled,
-// and populated one-to-one by the candidate-only next-ten-estates intake.
+// Regression: research-track harnesses and their estate populations stay conformant.
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,19 +9,16 @@ const root = path.resolve(__dirname, '..');
 function run(script, expected) {
   const out = execFileSync('node', [script], { cwd: root, encoding: 'utf8' });
   if (!expected.test(out)) {
-    console.error(`research-tracks.test: FAIL — unexpected output from ${script}`);
-    console.error(out);
-    process.exit(1);
+    throw new Error(`${script} returned unexpected output:\n${out}`);
   }
 }
 
 try {
   run('tools/validate-research-tracks.mjs', /OK — 10 tracks/);
-  run('tools/validate-next-ten-estates.mjs', /OK \(10 estates, 25 sources, 239 raw records\)/);
-  run('test/next-ten-estates.test.js', /next-ten-estates\.test: OK/);
+  run('tools/validate-estate-expansion.mjs', /OK — 48 first-pass closures, 10 second-cohort estates/);
   console.log('research-tracks.test: OK');
-} catch (e) {
+} catch (error) {
   console.error('research-tracks.test: FAIL');
-  console.error(e.stdout || e.message);
+  console.error(error.stdout || error.message);
   process.exit(1);
 }
