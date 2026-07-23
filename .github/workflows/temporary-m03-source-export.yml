@@ -1,0 +1,41 @@
+name: Temporary M-03 source export
+
+on:
+  push:
+    branches:
+      - agent/m03-decisive-acquisition-review
+    paths:
+      - '.github/workflows/temporary-m03-source-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m03-decisive-acquisition-review
+          fetch-depth: 1
+      - name: Preserve exact source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$GITHUB_SHA" > SOURCE_HEAD.txt
+          tar \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='dist' \
+            --exclude='build/research-fanout' \
+            --exclude='build/estate-fanout' \
+            -czf /tmp/clifford-m03-source.tgz .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clifford-m03-source
+          path: |
+            /tmp/clifford-m03-source.tgz
+            SOURCE_HEAD.txt
+          if-no-files-found: error
+          retention-days: 2
