@@ -68,18 +68,22 @@ jobs:
           npm run compile
           npm run release:check
 
-      - name: Remove carriers, restore CI, and publish the materialized tree
+      - name: Publish source and products without workflow mutations
         shell: bash
         run: |
           set -euo pipefail
           git rm -r .github/temporary/m02-source-v1
           git rm -r .github/temporary/m02-payload
-          git rm .github/workflows/m02-materialize-source.yml
-          git show HEAD^:.github/workflows/ci.yml > .github/workflows/ci.yml
+          git restore --source=HEAD -- .github/workflows/estate-closure-aperture.yml
+          git restore --source=HEAD -- .github/workflows/estate-fanout.yml
+          rm -f .github/workflows/estate-frontier-game-trails.yml
           test ! -e .github/temporary/m02-source-v1
           test ! -e .github/temporary/m02-payload
-          test ! -e .github/workflows/m02-materialize-source.yml
           git add -A
+          if git diff --cached --name-only | grep -E '^\.github/workflows/'; then
+            echo 'workflow mutation leaked into the Actions-owned commit' >&2
+            exit 1
+          fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'Materialize M-02 estate frontier and game trails'
