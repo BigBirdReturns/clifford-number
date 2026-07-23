@@ -84,6 +84,12 @@ jobs:
         run: |
           set -o pipefail
           {
+            npm run compile:denominator
+            npm run validate:denominator
+            npm run compile:case-packets
+            npm run validate:case-packets
+            npm run compile:thesis
+            npm run validate:thesis
             npm run build:pages
             npm run build:standalone
             npm run validate:pages
