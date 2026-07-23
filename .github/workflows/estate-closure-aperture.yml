@@ -28,14 +28,8 @@ on:
     branches:
       - main
     paths:
-      - 'data/estates/**'
       - 'data/milestones/estate-aperture-v1.json'
       - 'docs/milestones/estate-aperture-v1.md'
-      - 'issue-handoffs/**'
-      - 'src/estate-aperture*'
-      - 'estates/**'
-      - 'tools/build-estate-closures.mjs'
-      - 'tools/render-estate-aperture.mjs'
       - '.github/workflows/estate-closure-aperture.yml'
   workflow_dispatch:
 
@@ -152,16 +146,24 @@ jobs:
         id: milestone
         shell: bash
         run: |
-          number="$(gh api "repos/$GH_REPO/milestones?state=all&per_page=100" --jq ".[] | select(.title == env.MILESTONE_TITLE) | .number" | head -n 1)"
+          record="$(gh api "repos/$GH_REPO/milestones?state=all&per_page=100" --jq ".[] | select(.title == env.MILESTONE_TITLE) | [.number,.state] | @tsv" | head -n 1)"
+          number="$(printf '%s' "$record" | cut -f1)"
+          state="$(printf '%s' "$record" | cut -f2)"
           description='Closes the declared fourteen-estate, 143-task acquisition pass to candidate-only handoffs and publishes the four-level Estate Aperture. A bounded pass is not a completed estate.'
           if [ -z "$number" ]; then
             number="$(gh api --method POST "repos/$GH_REPO/milestones" -f title="$MILESTONE_TITLE" -f description="$description" --jq '.number')"
-          else
-            gh api --method PATCH "repos/$GH_REPO/milestones/$number" -f state='open' -f description="$description" >/dev/null
+            state='open'
           fi
           echo "number=$number" >> "$GITHUB_OUTPUT"
+          if [ "$state" = 'closed' ]; then
+            echo 'already_closed=true' >> "$GITHUB_OUTPUT"
+          else
+            gh api --method PATCH "repos/$GH_REPO/milestones/$number" -f state='open' -f description="$description" >/dev/null
+            echo 'already_closed=false' >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Record bounded closure on every estate lane
+        if: steps.milestone.outputs.already_closed != 'true'
         shell: bash
         run: |
           for body in issue-handoffs/*.md; do
@@ -172,6 +174,7 @@ jobs:
           done
 
       - name: Close the completed milestone
+        if: steps.milestone.outputs.already_closed != 'true'
         shell: bash
         run: |
           gh api --method PATCH "repos/$GH_REPO/milestones/${{ steps.milestone.outputs.number }}" \

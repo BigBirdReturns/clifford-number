@@ -14,9 +14,12 @@ const steps = [
   ['build-next-ten-estates', 'tools/build-next-ten-estates.mjs'],
   ['build-estate-expansion', 'tools/build-estate-expansion.mjs'],
   ['build-estates', 'tools/build-estates.mjs'],
+  ['build-estate-frontier-surveys', 'tools/build-estate-frontier-surveys.mjs'],
+  ['build-estate-game-trails', 'tools/build-estate-game-trails.mjs'],
   ['build-estate-fanout', 'tools/build-estate-fanout.mjs'],
   ['build-estate-closures', 'tools/build-estate-closures.mjs'],
   ['render-estate-aperture', 'tools/render-estate-aperture.mjs'],
+  ['render-gametrail-aperture', 'tools/render-gametrail-aperture.mjs'],
 ];
 
 for (const [name, script] of steps) {

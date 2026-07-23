@@ -30,17 +30,21 @@ function walk(value, pointer = '$') {
 }
 
 const expected = compileEstateFanout();
+const activeEstates = expected.registry.estates.filter(estate => estate.generation === 'existing' || estate.generation === 'next');
+const activeEstateIds = new Set(activeEstates.map(estate => estate.estate_id));
 const manifestPath = `${OUTPUT_DIRECTORY}/manifest.json`;
 check(fs.existsSync(path.join(root, manifestPath)), 'manifest is missing; run tools/build-estate-fanout.mjs');
 const manifest = fs.existsSync(path.join(root, manifestPath)) ? readJson(manifestPath) : null;
 if (manifest) equal(manifest, expected.manifest, 'manifest diverges from deterministic compilation');
 
-check(expected.registry.estates.length === 14, 'expected fourteen macro estates');
+check(activeEstates.length === 14, 'expected fourteen active M-01 macro estates');
+check(expected.manifest.counts.frontier_estates_excluded === 10, 'expected ten frontier estates to remain excluded from M-01 fan-out');
 check(expected.manifest.counts.existing_estates === 4, 'expected four existing estates');
 check(expected.manifest.counts.next_estates === 10, 'expected ten next estates');
-check(expected.manifest.packets.length === expected.registry.estates.length, 'one packet per estate is required');
-check(expected.manifest.matrix.include.length === expected.registry.estates.length, 'matrix must include every estate exactly once');
-check(new Set(expected.manifest.matrix.include.map(item => item.estate_id)).size === expected.registry.estates.length, 'matrix duplicates an estate');
+check(expected.manifest.packets.length === activeEstates.length, 'one packet per active M-01 estate is required');
+check(expected.manifest.matrix.include.length === activeEstates.length, 'matrix must include every active M-01 estate exactly once');
+check(new Set(expected.manifest.matrix.include.map(item => item.estate_id)).size === activeEstates.length, 'matrix duplicates an active M-01 estate');
+check(expected.manifest.packets.every(packet => activeEstateIds.has(packet.estate_id)), 'frontier estate leaked into the frozen M-01 fan-out');
 
 const taskIds = new Set();
 let sourceTaskCount = 0;
@@ -125,10 +129,10 @@ for (const expectedPacket of expected.packets) {
 
 check(expected.manifest.counts.tasks === taskIds.size, 'manifest task total mismatch');
 check(expected.manifest.counts.source_acquisition_tasks === sourceTaskCount, 'manifest source-route total mismatch');
-check(expected.manifest.counts.denominator_tasks === expected.registry.estates.length, 'one denominator task per estate is required');
-check(expected.manifest.counts.identity_resolution_tasks === expected.registry.estates.length, 'one identity task per estate is required');
-check(expected.manifest.counts.temporal_and_null_control_tasks === expected.registry.estates.length, 'one temporal/null task per estate is required');
-check(expected.manifest.counts.candidate_packet_tasks === expected.registry.estates.length, 'one candidate packet per estate is required');
+check(expected.manifest.counts.denominator_tasks === activeEstates.length, 'one denominator task per active M-01 estate is required');
+check(expected.manifest.counts.identity_resolution_tasks === activeEstates.length, 'one identity task per active M-01 estate is required');
+check(expected.manifest.counts.temporal_and_null_control_tasks === activeEstates.length, 'one temporal/null task per active M-01 estate is required');
+check(expected.manifest.counts.candidate_packet_tasks === activeEstates.length, 'one candidate packet per active M-01 estate is required');
 walk(expected.manifest);
 walk(expected.packets);
 

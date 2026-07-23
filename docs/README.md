@@ -25,6 +25,7 @@ Read these first:
 - [`report-waterline.md`](report-waterline.md) — the current transition law from intake or projection through case ledger, structured report, independent review, and approved publication.
 - [`estates.md`](estates.md) — durable domain corpora, estate slices, fog classes, and the bounded acquisition law.
 - [`milestones/estate-aperture-v1.md`](milestones/estate-aperture-v1.md) — the completed fourteen-estate pass and the four-level Estate Aperture waterline.
+- [`milestones/estate-frontier-game-trails-v1.md`](milestones/estate-frontier-game-trails-v1.md) — ten prepared frontier estates and the complete twenty-four-estate Game-Trail Aperture pass.
 - [`definitions.md`](definitions.md) — the current vocabulary in one place.
 - [`redaction-policy.md`](redaction-policy.md) — public-role-only scope and material the project excludes.
 - [`plain-language.md`](plain-language.md) — how narration is generated without adding facts.

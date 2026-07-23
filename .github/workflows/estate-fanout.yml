@@ -78,7 +78,7 @@ jobs:
 
   dispatch:
     needs: prepare
-    if: github.event_name != 'pull_request' && needs.prepare.outputs.matrix != ''
+    if: github.event_name == 'workflow_dispatch' && needs.prepare.outputs.matrix != ''
     strategy:
       fail-fast: false
       max-parallel: 14
@@ -102,7 +102,7 @@ jobs:
           BODY_PATH: ${{ matrix.markdown_path }}
         shell: bash
         run: |
-          number="$(gh issue list --repo "$GH_REPO" --state open --limit 500 --json number,title --jq ".[] | select(.title == \"$ISSUE_TITLE\") | .number" | head -n 1)"
+          number="$(gh issue list --repo "$GH_REPO" --state all --limit 500 --json number,title --jq ".[] | select(.title == \"$ISSUE_TITLE\") | .number" | head -n 1)"
           if [ -n "$number" ]; then
             gh issue edit "$number" --repo "$GH_REPO" --body-file "$BODY_PATH"
           else

@@ -11,9 +11,10 @@ assert.equal(first.schema_version, COMPILED_ESTATE_REGISTRY_SCHEMA_VERSION);
 assert.equal(first.graph_effect, 'none');
 assert.equal(first.conclusion_generated, false);
 assert.deepEqual(first.counts, {
-  estates: 14,
+  estates: 24,
   existing_estates: 4,
   next_estates: 10,
+  frontier_estates: 10,
   mapped_cases: 4,
   mapped_tracks: 10,
   mapped_slices: 20,
@@ -39,6 +40,19 @@ for (const id of [
   'offshore-beneficial-ownership-estate',
   'public-interest-crossing-estate'
 ]) assert.equal(byId.get(id)?.generation, 'next', `${id} must be in the next estate generation`);
+
+for (const id of [
+  'judicial-administrative-adjudication-estate',
+  'professional-services-intermediaries-estate',
+  'philanthropy-nonprofit-policy-estate',
+  'higher-education-research-commercialization-estate',
+  'ai-data-compute-infrastructure-estate',
+  'energy-utilities-critical-infrastructure-estate',
+  'sanctions-export-controls-foreign-investment-estate',
+  'intellectual-property-standards-data-rights-estate',
+  'labor-immigration-workforce-mobility-estate',
+  'real-property-title-debt-estate'
+]) assert.equal(byId.get(id)?.generation, 'frontier', `${id} must be in the frontier estate generation`);
 
 assert.deepEqual(byId.get('dialog-estate').membership.primary_cases, ['uk-ai-policy']);
 assert.deepEqual(new Set(byId.get('us-defense-estate').membership.primary_cases), new Set(['anduril-access-ownership', 'field-autopsy-03']));

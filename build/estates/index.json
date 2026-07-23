@@ -10,9 +10,10 @@
   "graph_effect": "none",
   "conclusion_generated": false,
   "counts": {
-    "estates": 14,
+    "estates": 24,
     "existing_estates": 4,
     "next_estates": 10,
+    "frontier_estates": 10,
     "mapped_cases": 4,
     "mapped_tracks": 10,
     "mapped_slices": 20,
@@ -45,6 +46,21 @@
         "offshore-beneficial-ownership-estate",
         "public-interest-crossing-estate"
       ]
+    },
+    {
+      "generation": "frontier",
+      "estate_ids": [
+        "judicial-administrative-adjudication-estate",
+        "professional-services-intermediaries-estate",
+        "philanthropy-nonprofit-policy-estate",
+        "higher-education-research-commercialization-estate",
+        "ai-data-compute-infrastructure-estate",
+        "energy-utilities-critical-infrastructure-estate",
+        "sanctions-export-controls-foreign-investment-estate",
+        "intellectual-property-standards-data-rights-estate",
+        "labor-immigration-workforce-mobility-estate",
+        "real-property-title-debt-estate"
+      ]
     }
   ],
   "fog_vocabulary": {
@@ -68,9 +84,101 @@
     "missing_tenure_ethics_and_regulated_entity_join": "Regulator rosters exist without complete tenure, ethics, industry roles, and matter-specific entity joins.",
     "missing_filed_rights_and_complete_vehicle_denominators": "Capital surfaces exist without complete legal vehicles, filed governance rights, and portfolio controls.",
     "missing_official_registry_validation_and_role_precision": "Offshore nodes exist without official registry confirmation and precise owner/officer/intermediary roles.",
-    "missing_artifact_authentication_and_predicate_specific_identity": "Public-interest artifacts exist without sufficient authentication, predicate separation, and identity resolution."
+    "missing_artifact_authentication_and_predicate_specific_identity": "Public-interest artifacts exist without sufficient authentication, predicate separation, and identity resolution.",
+    "missing_dispositive_instruments_and_case_identity_crosswalk": "Dockets or disputes exist without complete dispositive instruments, exact party identity, and current appeal or settlement posture.",
+    "missing_client_matter_and_engagement_identity": "Intermediaries are visible without exact client, matter, service type, engagement dates, and ordinary-client controls.",
+    "missing_grant_board_and_related_organization_chronology": "Nonprofit institutions are visible without complete return-year, board, grant, related-organization, and fiscal-sponsor chronology.",
+    "missing_invention_license_and_spinout_chain": "Research awards or inventions exist without the complete patent, assignment, license, spinout, capital, and contract chain.",
+    "missing_system_vendor_data_and_compute_chain": "Algorithmic or compute systems are visible without complete vendor, model, data, cloud, contract, deployment, assurance, and retirement records.",
+    "missing_facility_load_rate_and_ownership_join": "Energy or infrastructure projects are visible without exact facility, load/capacity, rate, utility, ownership, approval, construction, and operating joins.",
+    "missing_transaction_level_review_and_list_version_identity": "Controls and list surfaces exist without exact transaction identity, versioned designation state, legal authority, and public-coverage limits.",
+    "missing_assignment_license_and_government_rights_schedule": "Inventions or technical baselines exist without complete assignment, license, standards, interface-control, and government-rights instruments.",
+    "missing_employer_person_position_and_visa_join": "Workforce or filing aggregates exist without exact employer, person, position, appointment, worksite, and temporal joins.",
+    "missing_instrument_level_title_and_secured_debt_chain": "Property references exist without complete title, deed, mortgage, lease, lien, UCC, release, and beneficial-owner chronology."
   },
   "estates": [
+    {
+      "estate_id": "ai-data-compute-infrastructure-estate",
+      "label": "AI, data, and compute infrastructure estate",
+      "generation": "frontier",
+      "domain": "algorithmic systems, cloud services, models, chips, data centers, data brokers, government deployments, and compute procurement",
+      "jurisdictions": [
+        "United States",
+        "United Kingdom",
+        "transatlantic suppliers"
+      ],
+      "scope": "Government and regulated uses of algorithmic tools, AI and data suppliers, cloud-authorized services, foundation and application models, data brokers, chips, compute clusters, data centers, deployment contracts, assurance records, and public transparency inventories. The estate distinguishes vendor, product, authorization, deployment, data source, model, compute, and decision use.",
+      "current_state": "surveyed_frontier_corpus",
+      "dominant_fog": "missing_system_vendor_data_and_compute_chain",
+      "fog": [
+        "missing_corpus_denominator",
+        "missing_source_family",
+        "missing_legal_instrument",
+        "missing_transaction_or_identity_join",
+        "missing_temporal_order",
+        "missing_counterfactual_or_null"
+      ],
+      "asset_refs": [
+        {
+          "kind": "path",
+          "path": "data/estates/surveys/ai-data-compute-infrastructure-estate.json",
+          "role": "bounded frontier survey and acquisition preparation"
+        },
+        {
+          "kind": "path",
+          "path": "data/estates/source-route-registry.json",
+          "role": "official source route registry"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-frontier-survey:ai-data-compute-infrastructure-estate",
+          "role": "compiled survey packet"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-game-trail:ai-data-compute-infrastructure-estate",
+          "role": "compiled outbound game-trail packet"
+        }
+      ],
+      "boundary": "A cloud authorization, model capability, vendor contract, algorithmic record, and deployed decision system are separate states. Shared infrastructure does not establish data sharing or common purpose.",
+      "next_acquisition": {
+        "operation": "freeze public AI-system and cloud-service denominators and join system, vendor, model, data, compute, contract, deployment, and assurance records",
+        "decisive_output": "system-level ledger of owner, vendor, model, data, compute, authorization, contract, deployment phase, users, impacts, and retirement or nondeployment controls",
+        "source_routes": [
+          "FedRAMP Marketplace",
+          "UK Algorithmic Transparency Recording Standard",
+          "agency AI inventories",
+          "USAspending",
+          "SAM.gov",
+          "SEC EDGAR",
+          "FERC eLibrary"
+        ]
+      },
+      "membership": {
+        "primary_cases": [],
+        "related_cases": [],
+        "primary_tracks": [],
+        "related_tracks": [],
+        "primary_slices": [],
+        "related_slices": []
+      },
+      "custody_counts": {
+        "path_assets": 2,
+        "logical_assets": 2,
+        "primary_cases": 0,
+        "related_cases": 0,
+        "primary_tracks": 0,
+        "related_tracks": 0,
+        "primary_slices": 0,
+        "related_slices": 0,
+        "primary_case_claims": 0,
+        "primary_case_receipts": 0,
+        "primary_slice_records": 0,
+        "primary_slice_completion_records": 0
+      },
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
     {
       "estate_id": "dialog-estate",
       "label": "Dialog estate",
@@ -144,6 +252,409 @@
         "related_slices": 0,
         "primary_case_claims": 224,
         "primary_case_receipts": 15,
+        "primary_slice_records": 0,
+        "primary_slice_completion_records": 0
+      },
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "estate_id": "energy-utilities-critical-infrastructure-estate",
+      "label": "Energy, utilities, and critical-infrastructure estate",
+      "generation": "frontier",
+      "domain": "electricity, gas, water, pipelines, utilities, grid interconnection, public commissions, infrastructure finance, and large-load demand",
+      "jurisdictions": [
+        "United States federal and state jurisdictions",
+        "United Kingdom where comparable"
+      ],
+      "scope": "Regulated utilities, generators, transmission, pipelines, water systems, public utility commissions, FERC dockets, interconnection queues, rate cases, large-load and data-center demand, infrastructure finance, reliability, public subsidies, and ownership. The estate preserves docket, facility, utility, customer, capacity, rate, approval, construction, and operational dates.",
+      "current_state": "surveyed_frontier_corpus",
+      "dominant_fog": "missing_facility_load_rate_and_ownership_join",
+      "fog": [
+        "missing_corpus_denominator",
+        "missing_source_family",
+        "missing_legal_instrument",
+        "missing_transaction_or_identity_join",
+        "missing_temporal_order",
+        "missing_counterfactual_or_null"
+      ],
+      "asset_refs": [
+        {
+          "kind": "path",
+          "path": "data/estates/surveys/energy-utilities-critical-infrastructure-estate.json",
+          "role": "bounded frontier survey and acquisition preparation"
+        },
+        {
+          "kind": "path",
+          "path": "data/estates/source-route-registry.json",
+          "role": "official source route registry"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-frontier-survey:energy-utilities-critical-infrastructure-estate",
+          "role": "compiled survey packet"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-game-trail:energy-utilities-critical-infrastructure-estate",
+          "role": "compiled outbound game-trail packet"
+        }
+      ],
+      "boundary": "A proposed project, queue position, rate filing, approval, financing, construction milestone, and operating asset are different states. Shared grid geography is not a relationship.",
+      "next_acquisition": {
+        "operation": "join facilities, utilities, dockets, rate instruments, capacity, ownership, public support, construction, and operation",
+        "decisive_output": "facility- and docket-level ledger of legal owner, utility, interconnection, load or capacity, rate treatment, approval, subsidy, construction, operation, and cancellation controls",
+        "source_routes": [
+          "FERC eLibrary",
+          "EIA Open Data",
+          "state utility commission dockets",
+          "USAspending",
+          "bond disclosures",
+          "local agreements",
+          "SEC EDGAR"
+        ]
+      },
+      "membership": {
+        "primary_cases": [],
+        "related_cases": [],
+        "primary_tracks": [],
+        "related_tracks": [],
+        "primary_slices": [],
+        "related_slices": []
+      },
+      "custody_counts": {
+        "path_assets": 2,
+        "logical_assets": 2,
+        "primary_cases": 0,
+        "related_cases": 0,
+        "primary_tracks": 0,
+        "related_tracks": 0,
+        "primary_slices": 0,
+        "related_slices": 0,
+        "primary_case_claims": 0,
+        "primary_case_receipts": 0,
+        "primary_slice_records": 0,
+        "primary_slice_completion_records": 0
+      },
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "estate_id": "higher-education-research-commercialization-estate",
+      "label": "Higher education, research, and commercialization estate",
+      "generation": "frontier",
+      "domain": "universities, laboratories, federal research awards, trustees, technology transfer, spinouts, licenses, and sponsored research",
+      "jurisdictions": [
+        "United States",
+        "United Kingdom where comparable"
+      ],
+      "scope": "Universities, affiliated laboratories, research centers, principal investigators, federal grants, sponsored research, technology-transfer offices, patents and assignments, licenses, spinouts, trustees, and corporate research partnerships. The estate separates research funding, invention, assignment, license, incorporation, investment, and procurement.",
+      "current_state": "surveyed_frontier_corpus",
+      "dominant_fog": "missing_invention_license_and_spinout_chain",
+      "fog": [
+        "missing_corpus_denominator",
+        "missing_source_family",
+        "missing_legal_instrument",
+        "missing_transaction_or_identity_join",
+        "missing_temporal_order"
+      ],
+      "asset_refs": [
+        {
+          "kind": "path",
+          "path": "data/estates/surveys/higher-education-research-commercialization-estate.json",
+          "role": "bounded frontier survey and acquisition preparation"
+        },
+        {
+          "kind": "path",
+          "path": "data/estates/source-route-registry.json",
+          "role": "official source route registry"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-frontier-survey:higher-education-research-commercialization-estate",
+          "role": "compiled survey packet"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-game-trail:higher-education-research-commercialization-estate",
+          "role": "compiled outbound game-trail packet"
+        }
+      ],
+      "boundary": "A grant, publication, patent, license, spinout, investment, and government contract are different events. Sequence or institutional affiliation does not establish transfer or control.",
+      "next_acquisition": {
+        "operation": "join federal research awards to investigators, institutions, inventions, assignments, licenses, spinouts, and later public contracts",
+        "decisive_output": "award-to-commercialization chain with exact grant, investigator, institution, patent, assignment, license, company, funding, and contract identifiers",
+        "source_routes": [
+          "NIH RePORTER",
+          "NSF Award Search",
+          "USAspending",
+          "SAM.gov",
+          "USPTO Patent Center",
+          "USPTO Assignment Search",
+          "university technology-transfer disclosures"
+        ]
+      },
+      "membership": {
+        "primary_cases": [],
+        "related_cases": [],
+        "primary_tracks": [],
+        "related_tracks": [],
+        "primary_slices": [],
+        "related_slices": []
+      },
+      "custody_counts": {
+        "path_assets": 2,
+        "logical_assets": 2,
+        "primary_cases": 0,
+        "related_cases": 0,
+        "primary_tracks": 0,
+        "related_tracks": 0,
+        "primary_slices": 0,
+        "related_slices": 0,
+        "primary_case_claims": 0,
+        "primary_case_receipts": 0,
+        "primary_slice_records": 0,
+        "primary_slice_completion_records": 0
+      },
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "estate_id": "intellectual-property-standards-data-rights-estate",
+      "label": "Intellectual property, standards, and data-rights estate",
+      "generation": "frontier",
+      "domain": "patents, assignments, trademarks, licenses, standards, technical baselines, government data rights, and interface control",
+      "jurisdictions": [
+        "United States",
+        "United Kingdom",
+        "international standards systems"
+      ],
+      "scope": "Patents, patent assignments, trademarks, licenses, standards participation, technical data and software rights, government-purpose and unlimited-rights clauses, interface control documents, reference architectures, interoperability obligations, and substitution rights. The estate separates invention, ownership, license, standard, contract clause, implementation, and control.",
+      "current_state": "surveyed_frontier_corpus",
+      "dominant_fog": "missing_assignment_license_and_government_rights_schedule",
+      "fog": [
+        "missing_corpus_denominator",
+        "missing_source_family",
+        "missing_legal_instrument",
+        "missing_transaction_or_identity_join",
+        "missing_temporal_order"
+      ],
+      "asset_refs": [
+        {
+          "kind": "path",
+          "path": "data/estates/surveys/intellectual-property-standards-data-rights-estate.json",
+          "role": "bounded frontier survey and acquisition preparation"
+        },
+        {
+          "kind": "path",
+          "path": "data/estates/source-route-registry.json",
+          "role": "official source route registry"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-frontier-survey:intellectual-property-standards-data-rights-estate",
+          "role": "compiled survey packet"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-game-trail:intellectual-property-standards-data-rights-estate",
+          "role": "compiled outbound game-trail packet"
+        }
+      ],
+      "boundary": "A patent, assignment, standard contribution, license, contract clause, and practical control of an interface are different facts. Citation or standards participation does not establish ownership or adoption.",
+      "next_acquisition": {
+        "operation": "join inventions, assignments, licenses, standards, contract clauses, interface baselines, and substitution rights",
+        "decisive_output": "asset- and instrument-level ledger of inventors, assignees, assignments, licenses, standards role, government rights, interface control, implementation, and expiration or abandonment",
+        "source_routes": [
+          "USPTO Patent Center",
+          "USPTO Assignment Search",
+          "USPTO Trademark Search",
+          "public standards repositories",
+          "SAM.gov",
+          "GAO",
+          "SEC EDGAR"
+        ]
+      },
+      "membership": {
+        "primary_cases": [],
+        "related_cases": [],
+        "primary_tracks": [],
+        "related_tracks": [],
+        "primary_slices": [],
+        "related_slices": []
+      },
+      "custody_counts": {
+        "path_assets": 2,
+        "logical_assets": 2,
+        "primary_cases": 0,
+        "related_cases": 0,
+        "primary_tracks": 0,
+        "related_tracks": 0,
+        "primary_slices": 0,
+        "related_slices": 0,
+        "primary_case_claims": 0,
+        "primary_case_receipts": 0,
+        "primary_slice_records": 0,
+        "primary_slice_completion_records": 0
+      },
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "estate_id": "judicial-administrative-adjudication-estate",
+      "label": "Judicial and administrative adjudication estate",
+      "generation": "frontier",
+      "domain": "court dockets, bid protests, agency adjudications, appeals, settlements, bankruptcy, and dispositive instruments",
+      "jurisdictions": [
+        "United States federal courts",
+        "United States administrative agencies",
+        "United Kingdom where comparable"
+      ],
+      "scope": "Federal and administrative adjudication systems that can confirm, reject, narrow, stay, dismiss, settle, or otherwise dispose of procurement, regulatory, corporate, property, employment, and public-law disputes. The estate preserves case identifiers, party identities, docket chronology, outcomes, appeal posture, sealed or unavailable coverage, and unsuccessful paths.",
+      "current_state": "surveyed_frontier_corpus",
+      "dominant_fog": "missing_dispositive_instruments_and_case_identity_crosswalk",
+      "fog": [
+        "missing_corpus_denominator",
+        "missing_source_family",
+        "missing_transaction_or_identity_join",
+        "missing_temporal_order",
+        "source_custody_attrition"
+      ],
+      "asset_refs": [
+        {
+          "kind": "path",
+          "path": "data/estates/surveys/judicial-administrative-adjudication-estate.json",
+          "role": "bounded frontier survey and acquisition preparation"
+        },
+        {
+          "kind": "path",
+          "path": "data/estates/source-route-registry.json",
+          "role": "official source route registry"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-frontier-survey:judicial-administrative-adjudication-estate",
+          "role": "compiled survey packet"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-game-trail:judicial-administrative-adjudication-estate",
+          "role": "compiled outbound game-trail packet"
+        }
+      ],
+      "boundary": "A filing, protest, allegation, or open docket is not a finding. Outcome labels require the operative decision and current appeal or settlement posture.",
+      "next_acquisition": {
+        "operation": "freeze party- and instrument-level adjudication denominators and recover dispositive records",
+        "decisive_output": "case-by-case ledger of parties, forum, filing, docket, disposition, appeal posture, operative instrument, and explicit no-case controls",
+        "source_routes": [
+          "PACER Case Locator",
+          "GAO",
+          "Court of Federal Claims opinions and dockets",
+          "agency adjudication libraries",
+          "DOJ and court libraries",
+          "Federal Register"
+        ]
+      },
+      "membership": {
+        "primary_cases": [],
+        "related_cases": [],
+        "primary_tracks": [],
+        "related_tracks": [],
+        "primary_slices": [],
+        "related_slices": []
+      },
+      "custody_counts": {
+        "path_assets": 2,
+        "logical_assets": 2,
+        "primary_cases": 0,
+        "related_cases": 0,
+        "primary_tracks": 0,
+        "related_tracks": 0,
+        "primary_slices": 0,
+        "related_slices": 0,
+        "primary_case_claims": 0,
+        "primary_case_receipts": 0,
+        "primary_slice_records": 0,
+        "primary_slice_completion_records": 0
+      },
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "estate_id": "labor-immigration-workforce-mobility-estate",
+      "label": "Labor, immigration, and workforce-mobility estate",
+      "generation": "frontier",
+      "domain": "employment, public service, visas, labor-condition filings, workforce programs, unions, layoffs, payroll, and personnel mobility",
+      "jurisdictions": [
+        "United States",
+        "United Kingdom where comparable"
+      ],
+      "scope": "Employer and occupational denominators, H-1B and labor-condition filings, permanent-labor certifications, public payroll and appointments, union and labor-organization filings, workforce grants, WARN notices, layoffs, hiring, job classifications, and personnel transitions. The estate separates authorized position, filing, employment, appointment, compensation, and later role.",
+      "current_state": "surveyed_frontier_corpus",
+      "dominant_fog": "missing_employer_person_position_and_visa_join",
+      "fog": [
+        "missing_corpus_denominator",
+        "missing_source_family",
+        "missing_transaction_or_identity_join",
+        "missing_temporal_order",
+        "missing_counterfactual_or_null"
+      ],
+      "asset_refs": [
+        {
+          "kind": "path",
+          "path": "data/estates/surveys/labor-immigration-workforce-mobility-estate.json",
+          "role": "bounded frontier survey and acquisition preparation"
+        },
+        {
+          "kind": "path",
+          "path": "data/estates/source-route-registry.json",
+          "role": "official source route registry"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-frontier-survey:labor-immigration-workforce-mobility-estate",
+          "role": "compiled survey packet"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-game-trail:labor-immigration-workforce-mobility-estate",
+          "role": "compiled outbound game-trail packet"
+        }
+      ],
+      "boundary": "A visa or labor filing is not proof a named person worked in a position. Employment sequence, public service, and later corporate role do not establish knowledge transfer or influence.",
+      "next_acquisition": {
+        "operation": "join exact employers, positions, filings, payroll, appointments, layoffs, unions, and personnel transitions while retaining aggregate-only limits",
+        "decisive_output": "employer- and position-level workforce ledger with filing, occupation, location, dates, compensation, appointment, separation, and explicit aggregate or no-match limits",
+        "source_routes": [
+          "DOL OFLC disclosure data",
+          "USCIS H-1B Employer Data Hub",
+          "WARN notices",
+          "public payroll and appointments",
+          "DOL OLMS union reports",
+          "state labor boards",
+          "USAspending",
+          "USCIS EB-5 regional centers and program records"
+        ]
+      },
+      "membership": {
+        "primary_cases": [],
+        "related_cases": [],
+        "primary_tracks": [],
+        "related_tracks": [],
+        "primary_slices": [],
+        "related_slices": []
+      },
+      "custody_counts": {
+        "path_assets": 2,
+        "logical_assets": 2,
+        "primary_cases": 0,
+        "related_cases": 0,
+        "primary_tracks": 0,
+        "related_tracks": 0,
+        "primary_slices": 0,
+        "related_slices": 0,
+        "primary_case_claims": 0,
+        "primary_case_receipts": 0,
         "primary_slice_records": 0,
         "primary_slice_completion_records": 0
       },
@@ -311,6 +822,165 @@
         ]
       },
       "boundary": "Inclusion in an offshore database does not establish illegality, beneficial ownership, transaction activity, or wrongdoing.",
+      "membership": {
+        "primary_cases": [],
+        "related_cases": [],
+        "primary_tracks": [],
+        "related_tracks": [],
+        "primary_slices": [],
+        "related_slices": []
+      },
+      "custody_counts": {
+        "path_assets": 2,
+        "logical_assets": 2,
+        "primary_cases": 0,
+        "related_cases": 0,
+        "primary_tracks": 0,
+        "related_tracks": 0,
+        "primary_slices": 0,
+        "related_slices": 0,
+        "primary_case_claims": 0,
+        "primary_case_receipts": 0,
+        "primary_slice_records": 0,
+        "primary_slice_completion_records": 0
+      },
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "estate_id": "philanthropy-nonprofit-policy-estate",
+      "label": "Philanthropy, nonprofit, and policy-institutions estate",
+      "generation": "frontier",
+      "domain": "foundations, charities, think tanks, fiscal sponsors, grants, boards, donors, and policy-program institutions",
+      "jurisdictions": [
+        "United States",
+        "United Kingdom"
+      ],
+      "scope": "Tax-exempt and charitable organizations, private foundations, think tanks, fiscal sponsors, donor-advised and grantmaking vehicles, board and officer rosters, grants, related organizations, program-service activity, and policy-facing partnerships. The estate preserves EIN or charity-number identity, filing years, missing returns, grants, board terms, and related-party schedules.",
+      "current_state": "surveyed_frontier_corpus",
+      "dominant_fog": "missing_grant_board_and_related_organization_chronology",
+      "fog": [
+        "missing_corpus_denominator",
+        "missing_source_family",
+        "missing_transaction_or_identity_join",
+        "missing_temporal_order",
+        "missing_counterfactual_or_null"
+      ],
+      "asset_refs": [
+        {
+          "kind": "path",
+          "path": "data/estates/surveys/philanthropy-nonprofit-policy-estate.json",
+          "role": "bounded frontier survey and acquisition preparation"
+        },
+        {
+          "kind": "path",
+          "path": "data/estates/source-route-registry.json",
+          "role": "official source route registry"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-frontier-survey:philanthropy-nonprofit-policy-estate",
+          "role": "compiled survey packet"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-game-trail:philanthropy-nonprofit-policy-estate",
+          "role": "compiled outbound game-trail packet"
+        }
+      ],
+      "boundary": "Board service, a grant, fiscal sponsorship, or shared donor is a typed institutional fact only. It does not establish direction, agreement, control, or policy influence.",
+      "next_acquisition": {
+        "operation": "freeze organization denominators and join returns, grants, boards, related organizations, and policy programs by exact identifiers and years",
+        "decisive_output": "organization-year ledger of status, returns, officers, grants, related entities, fiscal sponsorship, programs, and explicit nonfiling or no-grant rows",
+        "source_routes": [
+          "IRS TEOS and Form 990 bulk",
+          "Charity Commission register",
+          "state charity registries",
+          "Companies House",
+          "USAspending",
+          "NIH RePORTER"
+        ]
+      },
+      "membership": {
+        "primary_cases": [],
+        "related_cases": [],
+        "primary_tracks": [],
+        "related_tracks": [],
+        "primary_slices": [],
+        "related_slices": []
+      },
+      "custody_counts": {
+        "path_assets": 2,
+        "logical_assets": 2,
+        "primary_cases": 0,
+        "related_cases": 0,
+        "primary_tracks": 0,
+        "related_tracks": 0,
+        "primary_slices": 0,
+        "related_slices": 0,
+        "primary_case_claims": 0,
+        "primary_case_receipts": 0,
+        "primary_slice_records": 0,
+        "primary_slice_completion_records": 0
+      },
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "estate_id": "professional-services-intermediaries-estate",
+      "label": "Professional services and intermediaries estate",
+      "generation": "frontier",
+      "domain": "lobbying, legal, consulting, audit, placement, registered-agent, compliance, and public-affairs intermediaries",
+      "jurisdictions": [
+        "United States",
+        "United Kingdom",
+        "multi-jurisdictional registries"
+      ],
+      "scope": "The firms and individuals that translate between capital, public authority, regulation, transactions, and institutions: lobbying registrants, foreign agents, law firms, consultancies, auditors, placement agents, registered agents, compliance providers, and named engagement teams. The estate distinguishes legal representation, lobbying, advisory work, filing agency, and operational control.",
+      "current_state": "surveyed_frontier_corpus",
+      "dominant_fog": "missing_client_matter_and_engagement_identity",
+      "fog": [
+        "missing_corpus_denominator",
+        "missing_source_family",
+        "missing_transaction_or_identity_join",
+        "missing_temporal_order",
+        "missing_counterfactual_or_null"
+      ],
+      "asset_refs": [
+        {
+          "kind": "path",
+          "path": "data/estates/surveys/professional-services-intermediaries-estate.json",
+          "role": "bounded frontier survey and acquisition preparation"
+        },
+        {
+          "kind": "path",
+          "path": "data/estates/source-route-registry.json",
+          "role": "official source route registry"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-frontier-survey:professional-services-intermediaries-estate",
+          "role": "compiled survey packet"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-game-trail:professional-services-intermediaries-estate",
+          "role": "compiled outbound game-trail packet"
+        }
+      ],
+      "boundary": "A shared adviser, law firm, registered agent, or lobbying firm is an intermediary overlap only. It does not establish coordination, common control, knowledge, influence, or causation.",
+      "next_acquisition": {
+        "operation": "resolve intermediary engagements to exact client, matter, date, legal entity, and service type",
+        "decisive_output": "engagement ledger separating lobbying, legal representation, audit, placement, registered-agent, consulting, and compliance roles with explicit ordinary-client controls",
+        "source_routes": [
+          "FARA public search",
+          "US Senate LDA",
+          "SEC IAPD and Form ADV",
+          "Companies House",
+          "state lobbying registries",
+          "OGE and ethics offices"
+        ]
+      },
       "membership": {
         "primary_cases": [],
         "related_cases": [],
@@ -542,6 +1212,87 @@
       "conclusion_generated": false
     },
     {
+      "estate_id": "real-property-title-debt-estate",
+      "label": "Real property, title, and secured-debt estate",
+      "generation": "frontier",
+      "domain": "deeds, title, mortgages, leases, easements, liens, UCC filings, public property, securitization, and property debt",
+      "jurisdictions": [
+        "United States",
+        "United Kingdom"
+      ],
+      "scope": "Parcel and title chains, deeds, beneficial and legal ownership, mortgages, leases, easements, covenants, liens, UCC financing statements, public property inventories, federal leases and disposals, HM Land Registry datasets, securitizations, and property-level debt. The estate preserves document, parcel, title, party, lender, instrument, execution, recording, release, and disposition identifiers.",
+      "current_state": "surveyed_frontier_corpus",
+      "dominant_fog": "missing_instrument_level_title_and_secured_debt_chain",
+      "fog": [
+        "missing_corpus_denominator",
+        "missing_source_family",
+        "missing_legal_instrument",
+        "missing_transaction_or_identity_join",
+        "missing_temporal_order",
+        "source_custody_attrition"
+      ],
+      "asset_refs": [
+        {
+          "kind": "path",
+          "path": "data/estates/surveys/real-property-title-debt-estate.json",
+          "role": "bounded frontier survey and acquisition preparation"
+        },
+        {
+          "kind": "path",
+          "path": "data/estates/source-route-registry.json",
+          "role": "official source route registry"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-frontier-survey:real-property-title-debt-estate",
+          "role": "compiled survey packet"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-game-trail:real-property-title-debt-estate",
+          "role": "compiled outbound game-trail packet"
+        }
+      ],
+      "boundary": "Recorded title, beneficial ownership, occupancy, control, financing, development rights, and economic benefit are different predicates. An address match alone is not identity or ownership.",
+      "next_acquisition": {
+        "operation": "join parcel, title, party, mortgage, lease, easement, lien, UCC, public-property, and release chronology",
+        "decisive_output": "property-instrument ledger from title and public custody through debt, lease, encumbrance, release, disposition, and explicit unresolved beneficial ownership",
+        "source_routes": [
+          "GSA Federal Real Property Profile",
+          "HM Land Registry datasets",
+          "recorder and assessor systems",
+          "state UCC filing systems",
+          "SEC EDGAR",
+          "bond disclosures",
+          "local agreements"
+        ]
+      },
+      "membership": {
+        "primary_cases": [],
+        "related_cases": [],
+        "primary_tracks": [],
+        "related_tracks": [],
+        "primary_slices": [],
+        "related_slices": []
+      },
+      "custody_counts": {
+        "path_assets": 2,
+        "logical_assets": 2,
+        "primary_cases": 0,
+        "related_cases": 0,
+        "primary_tracks": 0,
+        "related_tracks": 0,
+        "primary_slices": 0,
+        "related_slices": 0,
+        "primary_case_claims": 0,
+        "primary_case_receipts": 0,
+        "primary_slice_records": 0,
+        "primary_slice_completion_records": 0
+      },
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
       "estate_id": "regulatory-markets-estate",
       "label": "Regulatory markets estate",
       "generation": "next",
@@ -615,6 +1366,88 @@
         "primary_case_receipts": 0,
         "primary_slice_records": 23,
         "primary_slice_completion_records": 2
+      },
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "estate_id": "sanctions-export-controls-foreign-investment-estate",
+      "label": "Sanctions, export controls, and foreign-investment estate",
+      "generation": "frontier",
+      "domain": "sanctions designations, export restrictions, denied parties, licenses, foreign-investment review, ownership, and national-security controls",
+      "jurisdictions": [
+        "United States",
+        "United Kingdom",
+        "multi-jurisdictional counterparties"
+      ],
+      "scope": "OFAC and UK sanctions designations, U.S. consolidated screening lists, BIS export-control restrictions, licenses and enforcement, CFIUS public actions and annual reports, UK National Security and Investment Act decisions, foreign ownership, transaction parties, controlled technologies, and explicit no-match controls. The estate preserves list version and effective date.",
+      "current_state": "surveyed_frontier_corpus",
+      "dominant_fog": "missing_transaction_level_review_and_list_version_identity",
+      "fog": [
+        "missing_corpus_denominator",
+        "missing_source_family",
+        "missing_legal_instrument",
+        "missing_transaction_or_identity_join",
+        "missing_temporal_order",
+        "source_custody_attrition"
+      ],
+      "asset_refs": [
+        {
+          "kind": "path",
+          "path": "data/estates/surveys/sanctions-export-controls-foreign-investment-estate.json",
+          "role": "bounded frontier survey and acquisition preparation"
+        },
+        {
+          "kind": "path",
+          "path": "data/estates/source-route-registry.json",
+          "role": "official source route registry"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-frontier-survey:sanctions-export-controls-foreign-investment-estate",
+          "role": "compiled survey packet"
+        },
+        {
+          "kind": "logical",
+          "ref": "build:estate-game-trail:sanctions-export-controls-foreign-investment-estate",
+          "role": "compiled outbound game-trail packet"
+        }
+      ],
+      "boundary": "A name match, list entry, review, mitigation agreement, blocked transaction, license, and enforcement action are different states. Absence from public CFIUS material cannot establish absence of review.",
+      "next_acquisition": {
+        "operation": "resolve counterparties and controlled transactions against versioned sanctions, export-control, and foreign-investment instruments",
+        "decisive_output": "entity- and transaction-level control ledger with exact identifiers, list version, legal authority, effective dates, disposition, license or mitigation, and explicit public-coverage limits",
+        "source_routes": [
+          "OFAC",
+          "Consolidated Screening List",
+          "UK Sanctions List",
+          "BIS export-control lists and enforcement",
+          "CFIUS public reports",
+          "UK NSI decisions and reports",
+          "Federal Register"
+        ]
+      },
+      "membership": {
+        "primary_cases": [],
+        "related_cases": [],
+        "primary_tracks": [],
+        "related_tracks": [],
+        "primary_slices": [],
+        "related_slices": []
+      },
+      "custody_counts": {
+        "path_assets": 2,
+        "logical_assets": 2,
+        "primary_cases": 0,
+        "related_cases": 0,
+        "primary_tracks": 0,
+        "related_tracks": 0,
+        "primary_slices": 0,
+        "related_slices": 0,
+        "primary_case_claims": 0,
+        "primary_case_receipts": 0,
+        "primary_slice_records": 0,
+        "primary_slice_completion_records": 0
       },
       "graph_effect": "none",
       "conclusion_generated": false
@@ -1689,7 +2522,8 @@
     "A slice may have one primary estate and multiple related estates, but it may not silently duplicate facts or promote evidence.",
     "Estate membership organizes custody and acquisition; it does not create graph edges, scores, conclusions, allegations, or publication approval.",
     "Cross-estate synthesis must consume typed claims, receipts, events, relations, exact identities, denominators, and explicit nulls.",
-    "No estate is complete merely because one slice, denominator, or anchor is complete."
+    "No estate is complete merely because one slice, denominator, or anchor is complete.",
+    "A frontier estate may be surveyed and source-prepared without entering the closed M-01 fan-out or claiming that its records have been acquired."
   ],
   "integrity": {
     "sources": [
@@ -1699,6 +2533,6 @@
       "data/estates/track-map.jsonl",
       "data/estates/slice-map.jsonl"
     ],
-    "source_sha256": "4d8ac6563bb1bc6dd9eb10ed8b6d0147b545bc0246a69b7fc84f6b3a5125694f"
+    "source_sha256": "5a8680a45fb9b3aa4a24f4d7f669c7ff7ee4e92531f0f328ced46fe9ba9eb5b1"
   }
 }

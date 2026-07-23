@@ -58,6 +58,21 @@ The estate registry does not duplicate claims or receipts. It organizes custody 
 9. `offshore-beneficial-ownership-estate`
 10. `public-interest-crossing-estate`
 
+### Frontier ten estates
+
+1. `judicial-administrative-adjudication-estate`
+2. `professional-services-intermediaries-estate`
+3. `philanthropy-nonprofit-policy-estate`
+4. `higher-education-research-commercialization-estate`
+5. `ai-data-compute-infrastructure-estate`
+6. `energy-utilities-critical-infrastructure-estate`
+7. `sanctions-export-controls-foreign-investment-estate`
+8. `intellectual-property-standards-data-rights-estate`
+9. `labor-immigration-workforce-mobility-estate`
+10. `real-property-title-debt-estate`
+
+The frontier generation is surveyed and source-prepared, not acquired or complete. Each estate owns a bounded denominator contract, official-source plan, required null controls, overlap hypotheses, residual fog, and a decisive next acquisition under `data/estates/surveys/`.
+
 ## Estate fan-out
 
 Each estate compiles to one durable research lane. All fourteen lanes may run concurrently; dependencies are enforced only inside a lane.
@@ -84,6 +99,22 @@ The fan-out methodology requires:
 
 Operational priority orders tasks inside a lane. It never ranks estates, subjects, people, institutions, importance, risk, or wrongdoing.
 
+## Estate frontier surveys and game trails
+
+M-02 preserves M-01 as a frozen fourteen-estate operation while expanding the registry to twenty-four durable estates. The ten frontier surveys compile to `build/estate-frontier/`; the full current game-trail pass compiles to `build/estate-game-trails/` and publishes through `gametrails/`.
+
+```text
+35 preserved legacy trails × 24 estates
++ 155 estate/source-route trails
++ 94 estate/custody trails
++ 24 estate-root summaries
+→ 308 candidate-only trails
+→ first typed overlap, shared custody, shared source infrastructure,
+  bounded non-overlap, or unresolved boundary
+```
+
+A shared source family is reusable acquisition infrastructure. A typed overlap is a review route. Neither is a finding.
+
 ## Compatibility law
 
 Historical source fields remain unchanged:
@@ -102,6 +133,11 @@ The macro registry translates those fields to `slice_id`. Future authoring shoul
 - `case-map.jsonl`, `track-map.jsonl`, and `slice-map.jsonl` — explicit primary and related estate crosswalks.
 - `fanout-methodology.json` — shared task kinds, required outputs, stopping rules, allowed results, and inference firewall.
 - `build/estates/index.json` — deterministic compiled registry with counts and per-estate membership.
+- `surveys/*.json` — authored survey and acquisition-preparation packets for the ten frontier estates.
+- `build/estate-frontier/` — compiled frontier-survey packets and manifest.
+- `data/gametrails/` — game-trail methodology, preserved trail map, and authored checkpoints.
+- `build/estate-game-trails/` — all compiled legacy, source-route, custody, summary, matrix, and terminal-ledger artifacts.
+- `gametrails/` — public Game-Trail Aperture and embedded data.
 - `build/estate-fanout/` — generated, disposable issue packets and manifest.
 - `tools/build-estates.mjs` and `tools/validate-estates.mjs` — registry compiler and validation.
 - `tools/build-estate-fanout.mjs` and `tools/validate-estate-fanout.mjs` — parallel-lane compiler and validation.
@@ -116,10 +152,11 @@ The macro registry translates those fields to `slice_id`. Future authoring shoul
 4. Related-estate membership is explicit and does not duplicate factual custody.
 5. Every path asset must exist; logical assets must be visibly typed as logical references.
 6. The registry and fan-out contain no score, rank, verdict, finding, claim status, graph effect, causal conclusion, or publication approval.
-7. The four existing estates and ten next estates are generation labels, not importance rankings.
-8. Every estate has one issue lane; every declared source route has one acquisition task.
+7. The four existing, ten next, and ten frontier estates are generation labels, not importance rankings.
+8. Every M-01 estate has one closed bounded-pass lane; frontier estates remain surveyed and prepared until a later acquisition fan-out.
 9. Source routes run in parallel, but identity, temporal, and candidate-packet tasks obey their dependencies.
-10. No estate becomes complete merely because one slice, denominator, source route, case, or report is complete.
+10. No estate becomes complete merely because one slice, denominator, source route, trail, case, or report is complete.
+11. A game-trail terminal class routes acquisition or review and never self-promotes into the claim graph.
 
 ## Build
 
@@ -130,6 +167,10 @@ node tools/build-estate-fanout.mjs
 node tools/validate-estate-fanout.mjs
 node test/estates.test.js
 node test/estate-fanout.test.js
+node tools/build-estate-frontier-surveys.mjs
+node tools/validate-estate-frontier-surveys.mjs
+node tools/build-estate-game-trails.mjs
+node tools/validate-estate-game-trails.mjs
 ```
 
 The normal compile sequence rebuilds the estate index after cases, reports, the report frontier, and the two estate-slice packages, then emits the disposable fan-out packets.
@@ -137,3 +178,5 @@ The normal compile sequence rebuilds the estate index after cases, reports, the 
 ## Bounded-pass milestone
 
 `estate-aperture-v1` closes the currently declared 143-task fan-out pass to candidate-only handoffs and projects it through `estates/index.html`. See `docs/milestones/estate-aperture-v1.md`. The milestone completes the declared operation, not the underlying estate.
+
+`estate-frontier-game-trails-v1` surveys ten further macro estates, reruns the complete current trail corpus through twenty-four estates, and publishes the result through `gametrails/index.html`. See `docs/milestones/estate-frontier-game-trails-v1.md`.

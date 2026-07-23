@@ -225,8 +225,19 @@ export function buildEstateClosures({ write = true } = {}) {
   const methodology = readJson(CLOSURE_METHODOLOGY);
   const issueMap = readJson(ISSUE_MAP);
 
-  const estateById = new Map(estateRegistry.estates.map(estate => [estate.estate_id, estate]));
-  const routeByLabel = new Map(routeRegistry.routes.map(route => [route.route_label, route]));
+  const closedEstateIds = new Set((fanoutManifest.packets ?? []).map(packet => packet.estate_id));
+  const closedEstates = estateRegistry.estates.filter(estate => closedEstateIds.has(estate.estate_id));
+  const projectRoute = route => {
+    const usedByEstateIds = (route.used_by_estate_ids ?? []).filter(estateId => closedEstateIds.has(estateId));
+    return {
+      ...route,
+      used_by_estate_ids: usedByEstateIds,
+      use_count: usedByEstateIds.length,
+    };
+  };
+  const projectedRoutes = routeRegistry.routes.map(projectRoute);
+  const estateById = new Map(closedEstates.map(estate => [estate.estate_id, estate]));
+  const routeByLabel = new Map(projectedRoutes.map(route => [route.route_label, route]));
   const issueByEstate = new Map(issueMap.issues.map(issue => [issue.estate_id, issue]));
 
   const packets = [];
@@ -280,14 +291,42 @@ export function buildEstateClosures({ write = true } = {}) {
 
   const allTasks = packets.flatMap(packet => packet.tasks);
   const sourceTasks = allTasks.filter(task => task.task_kind === 'source_acquisition');
+  const closedRouteLabels = new Set(packets.flatMap(packet => packet.source_routes.map(route => route.route_label)));
+  const closedRoutes = projectedRoutes.filter(route => closedRouteLabels.has(route.route_label));
+  const closedRegistryCounts = {
+    estates: closedEstates.length,
+    existing_estates: closedEstates.filter(estate => estate.generation === 'existing').length,
+    next_estates: closedEstates.filter(estate => estate.generation === 'next').length,
+    frontier_estates: 0,
+    mapped_cases: new Set(closedEstates.flatMap(estate => estate.membership?.primary_cases ?? [])).size,
+    mapped_tracks: new Set(closedEstates.flatMap(estate => estate.membership?.primary_tracks ?? [])).size,
+    mapped_slices: new Set(closedEstates.flatMap(estate => estate.membership?.primary_slices ?? [])).size,
+    primary_case_claims: closedEstates.reduce((sum, estate) => sum + (estate.custody_counts?.primary_case_claims ?? 0), 0),
+    primary_case_receipts: closedEstates.reduce((sum, estate) => sum + (estate.custody_counts?.primary_case_receipts ?? 0), 0),
+    slice_records: closedEstates.reduce((sum, estate) => sum + (estate.custody_counts?.primary_slice_records ?? 0), 0),
+    completion_records: closedEstates.reduce((sum, estate) => sum + (estate.custody_counts?.primary_slice_completion_records ?? 0), 0),
+  };
+  const frontierDominantFogs = new Set(
+    estateRegistry.estates
+      .filter(estate => estate.generation === 'frontier')
+      .map(estate => estate.dominant_fog),
+  );
+  const closedFogVocabulary = Object.fromEntries(
+    Object.entries(estateRegistry.fog_vocabulary ?? {})
+      .filter(([key]) => !frontierDominantFogs.has(key)),
+  );
+  const closedRegistryBoundaries = (estateRegistry.boundaries ?? [])
+    .filter(boundary => !/frontier estate/i.test(boundary));
   const manifest = {
     schema_version: ESTATE_CLOSURE_MANIFEST_SCHEMA_VERSION,
     as_of: methodology.as_of,
     generated_at: FIXED_CLOSED_AT,
     purpose: 'Close the currently declared macro-estate fan-out pass to bounded, reviewable task results and expose the remaining waterline without claiming factual estate completion.',
     source_fanout_fingerprint: fanoutManifest.fingerprint,
-    source_registry_fingerprint: estateRegistry.integrity?.source_sha256 ?? null,
-    route_registry_sha256: fullDigest(routeRegistry.routes),
+    source_registry_scope: 'closed_m01_estates_only',
+    source_registry_fingerprint: fullDigest(closedEstates),
+    route_registry_scope: 'closed_m01_routes_only',
+    route_registry_sha256: fullDigest(closedRoutes),
     counts: {
       estates: packets.length,
       issues: packets.length,
@@ -295,8 +334,8 @@ export function buildEstateClosures({ write = true } = {}) {
       surface_complete_tasks: allTasks.filter(task => task.closure_state === 'surface_complete').length,
       partially_searched_tasks: allTasks.filter(task => task.closure_state === 'partially_searched').length,
       unavailable_after_search_tasks: allTasks.filter(task => task.closure_state === 'unavailable_after_search').length,
-      route_labels: routeRegistry.counts.route_labels,
-      canonical_route_families: routeRegistry.counts.canonical_families,
+      route_labels: closedRoutes.length,
+      canonical_route_families: new Set(closedRoutes.map(route => route.canonical_family_id)).size,
       route_uses: sourceTasks.length,
     },
     counts_by_task_kind: countBy(allTasks, 'task_kind'),
@@ -326,18 +365,19 @@ export function buildEstateClosures({ write = true } = {}) {
   };
   manifest.fingerprint = digest(manifest);
 
-  const corridors = buildRouteCorridors(routeRegistry.routes);
+  const corridors = buildRouteCorridors(closedRoutes);
   const apertureData = {
     schema_version: ESTATE_APERTURE_DATA_SCHEMA_VERSION,
     as_of: methodology.as_of,
     manifest,
     registry: {
-      counts: estateRegistry.counts,
-      fog_vocabulary: estateRegistry.fog_vocabulary,
-      boundaries: estateRegistry.boundaries,
+      scope: 'closed_m01_estates_only',
+      counts: closedRegistryCounts,
+      fog_vocabulary: closedFogVocabulary,
+      boundaries: closedRegistryBoundaries,
     },
     estates: packets,
-    routes: routeRegistry.routes,
+    routes: closedRoutes,
     corridors,
     interpretation_contract: {
       graph_effect: 'none',

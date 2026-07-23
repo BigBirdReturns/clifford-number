@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { buildEstateClosures } from './build-estate-closures.mjs';
@@ -27,7 +28,18 @@ check(manifest.waterline.estate_completion_claimed === false, 'manifest claims e
 const taskIds = new Set();
 const routeRegistry = readJson('data/estates/source-route-registry.json');
 const routeLabels = new Set(routeRegistry.routes.map(route => route.route_label));
-check(routeRegistry.integrity?.sha256 === manifest.route_registry_sha256, 'source-route registry integrity digest drifted');
+check(manifest.source_registry_scope === 'closed_m01_estates_only', 'source registry scope is not isolated to M-01');
+check(manifest.route_registry_scope === 'closed_m01_routes_only', 'route registry scope is not isolated to M-01');
+check(apertureData.registry?.scope === 'closed_m01_estates_only', 'aperture registry scope is not isolated to M-01');
+check(apertureData.registry?.counts?.estates === 14, 'aperture registry count leaked beyond M-01');
+check(apertureData.registry?.counts?.frontier_estates === 0, 'frontier estates leaked into the M-01 registry projection');
+const stable = value => Array.isArray(value)
+  ? value.map(stable)
+  : (!value || typeof value !== 'object')
+    ? value
+    : Object.fromEntries(Object.keys(value).sort().map(key => [key, stable(value[key])]));
+const closedRouteDigest = crypto.createHash('sha256').update(JSON.stringify(stable(apertureData.routes))).digest('hex');
+check(manifest.route_registry_sha256 === closedRouteDigest, 'closed M-01 route projection digest drifted');
 for (const packet of packets) {
   check(packet.pass_status === 'bounded_pass_complete', `${packet.estate_id}: pass status mismatch`);
   check(packet.estate_status === 'open_residual_fog', `${packet.estate_id}: estate state must remain open`);
@@ -35,6 +47,9 @@ for (const packet of packets) {
   check(packet.graph_effect === 'none' && packet.conclusion_generated === false, `${packet.estate_id}: unsafe boundary`);
   check(packet.issue?.number >= 85 && packet.issue?.number <= 98, `${packet.estate_id}: issue mapping missing`);
   check(packet.tasks.length === packet.task_counts.total, `${packet.estate_id}: task count mismatch`);
+  check((packet.source_routes ?? []).every(route =>
+    (route.used_by_estate_ids ?? []).every(estateId => packets.some(candidate => candidate.estate_id === estateId))),
+  `${packet.estate_id}: shared route leaked an estate outside the M-01 closure set`);
   const localIds = new Set(packet.tasks.map(task => task.task_id));
   const candidates = packet.tasks.filter(task => task.task_kind === 'candidate_packet');
   check(candidates.length === 1, `${packet.estate_id}: expected one candidate packet`);

@@ -25,8 +25,10 @@ Start with the audience-based [documentation index](docs/README.md), then read t
 ## Operational waterlines
 
 - **Report waterline:** [`reports/index.html`](reports/index.html) shows cases moving from intake through structured report and independent review.
-- **Estate waterline:** [`estates/index.html`](estates/index.html) exposes 14 durable domain estates, 143 bounded tasks, 66 source routes, 34 shared-source corridors, and 14 candidate-only handoffs through the four-level Estate Aperture.
+- **Estate waterline:** [`estates/index.html`](estates/index.html) preserves the closed M-01 fourteen-estate, 143-task pass through the four-level Estate Aperture.
+- **Game-trail waterline:** [`gametrails/index.html`](gametrails/index.html) exposes 24 durable estates, 10 prepared frontier surveys, and 308 current trails through typed overlap, custody, shared-source, bounded non-overlap, and unresolved terminal classes.
 - **Milestone M-01:** [`docs/milestones/estate-aperture-v1.md`](docs/milestones/estate-aperture-v1.md) records completion of the declared estate pass without claiming that any estate is evidentially complete.
+- **Milestone M-02:** [`docs/milestones/estate-frontier-game-trails-v1.md`](docs/milestones/estate-frontier-game-trails-v1.md) records the frontier survey and complete current game-trail rerun without claiming acquisition or relationship findings.
 
 Both surfaces are projections over typed custody. Neither creates a claim, graph edge, score, allegation, causal conclusion, or publication approval.
 
@@ -132,4 +134,7 @@ This release must pass five fixtures before the full database can be trusted:
 ```bash
 npm run query:hops -- --from e_cxoy37udrurtowdj47suemrw   # "Ben Warner" (alias-derived)
 ```
+## Estate frontier and game trails
+
+M-02 surveys ten additional macro estates and reruns all preserved, source-route, and custody trails through the [Game-Trail Aperture](gametrails/). See [the milestone record](docs/milestones/estate-frontier-game-trails-v1.md).
 
