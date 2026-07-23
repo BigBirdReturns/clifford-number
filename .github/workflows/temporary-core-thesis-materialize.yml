@@ -1,6 +1,10 @@
 name: Temporary materialize core thesis
 
 on:
+  pull_request:
+    paths:
+      - '.github/temporary/core-thesis-patch/**'
+      - '.github/workflows/temporary-core-thesis-materialize.yml'
   push:
     branches:
       - agent/core-thesis-conversion-architecture
