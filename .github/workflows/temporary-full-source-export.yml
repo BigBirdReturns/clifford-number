@@ -47,6 +47,7 @@ jobs:
           sha256sum /tmp/estate-milestone-source.tgz >> /tmp/estate-milestone-diagnostics/decode.txt
           printf '%s  %s\n' '15d2380b3176a6ebcb3f76f4977bda91918c13c6da79bf2b722f481d108aa043' /tmp/estate-milestone-source.tgz | sha256sum --check
           tar -xzf /tmp/estate-milestone-source.tgz -C .
+          sed -i 's/[[:blank:]]\+$//' docs/milestones/estate-aperture-v1.md
           rm -rf .github/temporary
           rm -f .github/workflows/temporary-full-source-export.yml
           rm -f .github/workflows/temporary-estate-source-probe.yml
@@ -119,6 +120,18 @@ jobs:
             echo 'temporary workflow survived milestone materialization' >&2
             exit 1
           fi
+          rm -rf build/research build/thesis
+          git restore --worktree --source=HEAD -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
