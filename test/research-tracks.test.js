@@ -16,8 +16,8 @@ function run(script, expected) {
 try {
   run('tools/validate-research-tracks.mjs', /OK — 10 tracks/);
   run('tools/validate-estate-expansion.mjs', /OK — 48 first-pass closures, 10 second-cohort estates/);
-  run('tools/build-estates.mjs', /estates: 14 macro estates, 20 slices, 4 cases, 10 tracks/);
-  run('tools/validate-estates.mjs', /OK \(14 macro estates, 20 slices, 4 cases, 10 tracks\)/);
+  run('tools/build-estates.mjs', /estates: 24 macro estates, 20 slices, 4 cases, 10 tracks/);
+  run('tools/validate-estates.mjs', /OK \(24 macro estates, 20 slices, 4 cases, 10 tracks\)/);
   run('tools/build-estate-fanout.mjs', /estate fan-out: 14 estate lane\(s\), \d+ bounded task\(s\), \d+ source route\(s\)/);
   run('test/estate-fanout.test.js', /OK \(14 estates, \d+ tasks, \d+ source routes\)/);
   run('tools/validate-estate-fanout.mjs', /OK \(14 estate lanes, \d+ tasks, \d+ source routes\)/);

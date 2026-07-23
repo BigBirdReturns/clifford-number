@@ -138,3 +138,16 @@ Name similarity, shared sector, chronological proximity, shared investor, roster
 ## Milestone: bounded estate pass and Estate Aperture
 
 The first complete estate operating pass is recorded in [`docs/milestones/estate-aperture-v1.md`](milestones/estate-aperture-v1.md). It closes all 143 declared tasks to bounded states, preserves residual fog, and publishes the four-level Estate Aperture at `estates/index.html` without claiming that any estate is evidentially complete.
+## M-02 frontier and game-trail pass
+
+Ten additional macro estates are surveyed under `data/estates/surveys/` and recorded in [`docs/milestones/estate-frontier-game-trails-v1.md`](milestones/estate-frontier-game-trails-v1.md). Each declares a bounded denominator, inclusion and exclusion rules, null controls, official source routes, stopping rules, overlap predicates, residual fog, and a decisive next acquisition. Their source routes remain candidate-only until acquisition; the survey pass records zero acquired rows.
+
+The complete 24-estate trail plane is compiled from 35 preserved legacy trails, canonical custody, source-route infrastructure, and one estate-root summary per estate into `build/estate-game-trails/` and published through `gametrails/`. The pass evaluates every preserved trail against every estate and stops each current trail at the first lawful terminal class:
+
+- typed object overlap;
+- shared canonical custody;
+- shared source infrastructure;
+- bounded non-overlap; or
+- unresolved boundary.
+
+An overlap class routes evidence review. It is never a relationship, influence claim, or causal finding. A bounded non-overlap is only a statement about the declared current corpus.

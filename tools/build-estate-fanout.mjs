@@ -12,6 +12,7 @@ export const ESTATE_FANOUT_TASK_SCHEMA = 'estate-fanout-task@1';
 const REGISTRY_PATH = 'build/estates/index.json';
 const METHODOLOGY_PATH = 'data/estates/fanout-methodology.json';
 const OUTPUT_DIRECTORY = 'build/estate-fanout';
+const CLOSED_PASS_GENERATIONS = new Set(['existing', 'next']);
 
 const readJson = location => JSON.parse(fs.readFileSync(path.join(root, location), 'utf8'));
 const clean = value => String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -256,6 +257,7 @@ export function compileEstateFanout() {
   const methodology = readJson(METHODOLOGY_PATH);
   validateInputs(registry, methodology);
   const packets = [...registry.estates]
+    .filter(estate => CLOSED_PASS_GENERATIONS.has(estate.generation))
     .sort((a, b) => a.estate_id.localeCompare(b.estate_id))
     .map(estate => compileEstatePacket(estate, methodology));
 
@@ -283,6 +285,7 @@ export function compileEstateFanout() {
       estates: packets.length,
       existing_estates: packets.filter(packet => packet.generation === 'existing').length,
       next_estates: packets.filter(packet => packet.generation === 'next').length,
+      frontier_estates_excluded: registry.estates.filter(estate => estate.generation === 'frontier').length,
       tasks: allTasks.length,
       denominator_tasks: allTasks.filter(task => task.task_kind === 'denominator_freeze').length,
       source_acquisition_tasks: allTasks.filter(task => task.task_kind === 'source_acquisition').length,

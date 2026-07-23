@@ -18,6 +18,7 @@ assert.equal(manifest.promotes_to, 'candidate_only');
 assert.equal(manifest.counts.estates, 14);
 assert.equal(manifest.counts.existing_estates, 4);
 assert.equal(manifest.counts.next_estates, 10);
+assert.equal(manifest.counts.frontier_estates_excluded, 10);
 assert.equal(manifest.counts.denominator_tasks, 14);
 assert.equal(manifest.counts.identity_resolution_tasks, 14);
 assert.equal(manifest.counts.temporal_and_null_control_tasks, 14);
@@ -27,7 +28,7 @@ assert.equal(manifest.matrix.include.length, 14);
 
 const registryById = new Map(first.registry.estates.map(estate => [estate.estate_id, estate]));
 const packetById = new Map(first.packets.map(packet => [packet.estate_id, packet]));
-for (const estate of first.registry.estates) {
+for (const estate of first.registry.estates.filter(item => item.generation !== 'frontier')) {
   const packet = packetById.get(estate.estate_id);
   assert.ok(packet, `${estate.estate_id} lacks a fan-out packet`);
   assert.equal(packet.issue_title, `[estate fan-out] ${estate.label}`);
@@ -79,11 +80,11 @@ for (const id of [
 
 assert.equal(
   manifest.counts.source_acquisition_tasks,
-  first.registry.estates.reduce((total, estate) => total + estate.next_acquisition.source_routes.length, 0)
+  first.registry.estates.filter(estate => estate.generation !== 'frontier').reduce((total, estate) => total + estate.next_acquisition.source_routes.length, 0)
 );
 assert.equal(
   manifest.counts.tasks,
-  manifest.counts.source_acquisition_tasks + (first.registry.estates.length * 4)
+  manifest.counts.source_acquisition_tasks + (manifest.counts.estates * 4)
 );
 
 const rendered = first.packets.map(packet => fs.readFileSync(path.join(root, `build/estate-fanout/${packet.estate_id}.md`), 'utf8')).join('\n');

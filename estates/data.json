@@ -6,9 +6,11 @@
     "as_of": "2026-07-22",
     "generated_at": "2026-07-22T23:59:59Z",
     "purpose": "Close the currently declared macro-estate fan-out pass to bounded, reviewable task results and expose the remaining waterline without claiming factual estate completion.",
-    "source_fanout_fingerprint": "1cb2bfd69666673c729d",
-    "source_registry_fingerprint": "4d8ac6563bb1bc6dd9eb10ed8b6d0147b545bc0246a69b7fc84f6b3a5125694f",
-    "route_registry_sha256": "650551b446055e13840b260cff1e0dbaf3d8bb62f3f7edb6b8729da73a7fdbc4",
+    "source_fanout_fingerprint": "dffd736fd3eccf0fa0f6",
+    "source_registry_scope": "closed_m01_estates_only",
+    "source_registry_fingerprint": "77fdd508d27fee17d491e4940a2b87f1c19345da6f349bd934d348bec7a51d28",
+    "route_registry_scope": "closed_m01_routes_only",
+    "route_registry_sha256": "980af8d2f12f654645e321198563324063d6742985060d3e558ff2a6c64e7bc2",
     "counts": {
       "estates": 14,
       "issues": 14,
@@ -161,13 +163,15 @@
     "promotes_to": "candidate_only",
     "graph_effect": "none",
     "conclusion_generated": false,
-    "fingerprint": "dcd2caa028af6b7e79a7"
+    "fingerprint": "e436b57929882304d69a"
   },
   "registry": {
+    "scope": "closed_m01_estates_only",
     "counts": {
       "estates": 14,
       "existing_estates": 4,
       "next_estates": 10,
+      "frontier_estates": 0,
       "mapped_cases": 4,
       "mapped_tracks": 10,
       "mapped_slices": 20,
@@ -14864,824 +14868,6 @@
   ],
   "routes": [
     {
-      "route_label": "Companies House",
-      "canonical_family_id": "companies-house",
-      "authority": "UK Companies House",
-      "gateway_url": "https://find-and-update.company-information.service.gov.uk/",
-      "documentation_url": "https://developer.company-information.service.gov.uk/",
-      "jurisdiction": "United Kingdom",
-      "access_mode": "public_search_and_api",
-      "authentication": "api_key_for_api",
-      "machine_readiness": "official_gateway_only",
-      "repo_refs": [],
-      "bounded_output": "Company numbers, officers, PSCs, filing history, charges, insolvency, and document identifiers.",
-      "residual_fog": "Filed information may be inaccurate; document images, historical names, foreign entities, and legal-identity adjudication require further checks.",
-      "route_id": "companies-house",
-      "used_by_estate_ids": [
-        "dialog-estate",
-        "offshore-beneficial-ownership-estate",
-        "uk-defense-estate",
-        "uk-state-market-estate",
-        "venture-capital-corporate-control-estate"
-      ],
-      "use_count": 5,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "Contracts Finder",
-      "canonical_family_id": "contracts-finder",
-      "authority": "UK Cabinet Office / Crown Commercial Service",
-      "gateway_url": "https://www.contractsfinder.service.gov.uk/Search",
-      "documentation_url": "https://www.contractsfinder.service.gov.uk/apidocumentation",
-      "jurisdiction": "United Kingdom",
-      "access_mode": "public_search_api_and_csv",
-      "authentication": "none_for_published_data",
-      "machine_readiness": "official_gateway_only",
-      "repo_refs": [],
-      "bounded_output": "UK below-threshold notices and awards, OCDS releases, supplier identifiers, values, dates, and attachments.",
-      "residual_fog": "Signed contracts and attachments are notice-specific; buyer/supplier Companies House resolution and unsuccessful bids remain.",
-      "route_id": "contracts-finder",
-      "used_by_estate_ids": [
-        "uk-defense-estate",
-        "uk-state-market-estate"
-      ],
-      "use_count": 2,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "DOJ and court libraries",
-      "canonical_family_id": "courts-enforcement",
-      "authority": "U.S. Department of Justice and courts",
-      "gateway_url": "https://www.justice.gov/",
-      "documentation_url": "https://pacer.uscourts.gov/",
-      "jurisdiction": "United States",
-      "access_mode": "public_pages_and_docket_account",
-      "authentication": "pacer_account_for_some_records",
-      "machine_readiness": "official_gateway_only",
-      "repo_refs": [],
-      "bounded_output": "Press releases, charging instruments, judgments, dockets, opinions, settlements, and current dispositions.",
-      "residual_fog": "A press release is not the docket; sealed/protected filings, appeal status, and party-specific dispositions require exact case retrieval.",
-      "route_id": "doj-and-court-libraries",
-      "used_by_estate_ids": [
-        "public-interest-crossing-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "DoD releases",
-      "canonical_family_id": "dod-contract-releases",
-      "authority": "U.S. Department of Defense",
-      "gateway_url": "https://www.defense.gov/News/Contracts/",
-      "documentation_url": "https://www.defense.gov/News/Contracts/",
-      "jurisdiction": "United States",
-      "access_mode": "public_pages",
-      "authentication": "none",
-      "machine_readiness": "official_gateway_only",
-      "repo_refs": [],
-      "bounded_output": "Daily contract announcements with awardee, amount, competition, appropriation, and contracting activity.",
-      "residual_fog": "Announcements are not complete award files and do not establish obligations, outlays, evaluations, or acceptance.",
-      "route_id": "dod-releases",
-      "used_by_estate_ids": [
-        "us-defense-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "FEC",
-      "canonical_family_id": "openfec",
-      "authority": "Federal Election Commission",
-      "gateway_url": "https://www.fec.gov/data/",
-      "documentation_url": "https://api.open.fec.gov/developers/",
-      "jurisdiction": "United States",
-      "access_mode": "public_api_and_bulk",
-      "authentication": "api_key_or_demo_key",
-      "machine_readiness": "existing_script",
-      "repo_refs": [
-        "tools/resolve-openfec-cohort.mjs",
-        "tools/ingest-openfec-schedule-b.mjs",
-        "tools/acquire-fec-oppexp-cohort.mjs"
-      ],
-      "bounded_output": "Candidate, committee, report, contribution, disbursement, and filing-image identifiers.",
-      "residual_fog": "Committee affiliation, recipient identity, refunds, memo entries, and full neutral-cohort nulls remain estate-specific.",
-      "route_id": "fec",
-      "used_by_estate_ids": [
-        "public-interest-crossing-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "FPDS archives",
-      "canonical_family_id": "fpds-sam-contract-data",
-      "authority": "U.S. General Services Administration",
-      "gateway_url": "https://sam.gov/contracting",
-      "documentation_url": "https://open.gsa.gov/api/",
-      "jurisdiction": "United States",
-      "access_mode": "public_search_and_bulk",
-      "authentication": "varies",
-      "machine_readiness": "official_gateway_only",
-      "repo_refs": [],
-      "bounded_output": "Legacy and current contract-award records keyed by PIID and modification.",
-      "residual_fog": "Legacy FPDS/SAM reconciliation and archived modification history remain to be normalized.",
-      "route_id": "fpds-archives",
-      "used_by_estate_ids": [
-        "us-defense-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "Federal Register",
-      "canonical_family_id": "federal-register",
-      "authority": "Office of the Federal Register / GPO",
-      "gateway_url": "https://www.federalregister.gov/",
-      "documentation_url": "https://www.federalregister.gov/developers/documentation/api/v1",
-      "jurisdiction": "United States",
-      "access_mode": "public_api",
-      "authentication": "none",
-      "machine_readiness": "existing_adapter",
-      "repo_refs": [
-        "data/crawl/sources.json#federal-register"
-      ],
-      "bounded_output": "Rules, notices, presidential documents, agency identifiers, dates, docket numbers, and document numbers.",
-      "residual_fog": "A notice is not the underlying adjudication, approval, meeting attendance, or contract transaction.",
-      "route_id": "federal-register",
-      "used_by_estate_ids": [
-        "regulatory-markets-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "Find a Tender",
-      "canonical_family_id": "find-a-tender",
-      "authority": "UK Cabinet Office",
-      "gateway_url": "https://www.find-tender.service.gov.uk/Search",
-      "documentation_url": "https://www.gov.uk/government/publications/open-contracting",
-      "jurisdiction": "United Kingdom",
-      "access_mode": "public_search_and_ocds_api",
-      "authentication": "none",
-      "machine_readiness": "official_gateway_only",
-      "repo_refs": [],
-      "bounded_output": "UK procurement notices and OCDS release packages keyed by notice ID and OCID.",
-      "residual_fog": "Notice publication is not performance, outlay, acceptance, or proof of all bids and evaluation records.",
-      "route_id": "find-a-tender",
-      "used_by_estate_ids": [
-        "uk-defense-estate",
-        "uk-state-market-estate"
-      ],
-      "use_count": 2,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "GAO",
-      "canonical_family_id": "gao-bid-protests",
-      "authority": "U.S. Government Accountability Office",
-      "gateway_url": "https://www.gao.gov/legal/bid-protests",
-      "documentation_url": "https://www.gao.gov/legal/bid-protests/faqs",
-      "jurisdiction": "United States",
-      "access_mode": "public_search",
-      "authentication": "none",
-      "machine_readiness": "official_gateway_only",
-      "repo_refs": [],
-      "bounded_output": "Bid-protest docket, outcome, decision, solicitation, agency, and public decision documents.",
-      "residual_fog": "Routine dismissals and protected filings are not always public; FOIA may be required for decided-case records.",
-      "route_id": "gao",
-      "used_by_estate_ids": [
-        "us-defense-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "GOV.UK",
-      "canonical_family_id": "govuk",
-      "authority": "UK Government Digital Service",
-      "gateway_url": "https://www.gov.uk/search/all",
-      "documentation_url": "https://content-api.publishing.service.gov.uk/",
-      "jurisdiction": "United Kingdom",
-      "access_mode": "public_search_and_api",
-      "authentication": "none",
-      "machine_readiness": "existing_adapter",
-      "repo_refs": [
-        "data/crawl/sources.json#govuk-search"
-      ],
-      "bounded_output": "Official publications, announcements, transparency data, collections, organisations, and content identifiers.",
-      "residual_fog": "Search results do not by themselves freeze implementation, supplier, appointment, or decision denominators.",
-      "route_id": "gov-uk",
-      "used_by_estate_ids": [
-        "uk-defense-estate",
-        "uk-state-market-estate"
-      ],
-      "use_count": 2,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "GSA",
-      "canonical_family_id": "gsa-records",
-      "authority": "U.S. General Services Administration",
-      "gateway_url": "https://www.gsa.gov/reference/freedom-of-information-act-foia",
-      "documentation_url": "https://www.gsa.gov/real-estate/real-estate-services/leasing",
-      "jurisdiction": "United States",
-      "access_mode": "public_data_and_request",
-      "authentication": "varies",
-      "machine_readiness": "existing_script",
-      "repo_refs": [
-        "tools/acquire-gov-property-awards.mjs"
-      ],
-      "bounded_output": "Property, lease, procurement, travel, and agency records with stable identifiers where published.",
-      "residual_fog": "Lease schedules, property-level payments, and protective-service records may require targeted requests or agency records.",
-      "route_id": "gsa",
-      "used_by_estate_ids": [
-        "public-interest-crossing-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "House Clerk",
-      "canonical_family_id": "house-clerk-disclosures",
-      "authority": "Office of the Clerk, U.S. House of Representatives",
-      "gateway_url": "https://disclosures-clerk.house.gov/",
-      "documentation_url": "https://disclosures-clerk.house.gov/PublicDisclosure",
-      "jurisdiction": "United States",
-      "access_mode": "public_search_and_download",
-      "authentication": "none",
-      "machine_readiness": "official_gateway_only",
-      "repo_refs": [],
-      "bounded_output": "House member/candidate financial disclosure and periodic-transaction filing metadata and PDFs.",
-      "residual_fog": "PDF extraction, amendments, occupied-office denominators, and explicit member-level nulls require a frozen acquisition window.",
-      "route_id": "house-clerk",
-      "used_by_estate_ids": [
-        "us-legislative-political-finance-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "ICIJ datasets",
-      "canonical_family_id": "icij-offshore-leaks",
-      "authority": "International Consortium of Investigative Journalists",
-      "gateway_url": "https://offshoreleaks.icij.org/pages/database",
-      "documentation_url": "https://offshoreleaks.icij.org/pages/database",
-      "jurisdiction": "multi-jurisdictional",
-      "access_mode": "public_bulk_download",
-      "authentication": "none",
-      "machine_readiness": "existing_script",
-      "repo_refs": [
-        "tools/acquire-icij-offshoreleaks.mjs",
-        "tools/import-icij-panama.mjs"
-      ],
-      "bounded_output": "Offshore entity, officer, intermediary, address, and relationship tables with source-dataset identifiers.",
-      "residual_fog": "Leak inclusion does not validate legal identity, beneficial ownership, transaction activity, or current status; official registries are required.",
-      "route_id": "icij-datasets",
-      "used_by_estate_ids": [
-        "offshore-beneficial-ownership-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "LEI",
-      "canonical_family_id": "gleif-lei",
-      "authority": "Global Legal Entity Identifier Foundation",
-      "gateway_url": "https://search.gleif.org/",
-      "documentation_url": "https://www.gleif.org/en/lei-data/gleif-api/",
-      "jurisdiction": "global",
-      "access_mode": "public_search_api_and_bulk",
-      "authentication": "none",
-      "machine_readiness": "official_gateway_only",
-      "repo_refs": [],
-      "bounded_output": "LEI reference data, legal names, registration authorities, parent relationships, and mapped identifiers.",
-      "residual_fog": "LEI coverage is incomplete for many private entities; non-LEI entities still require official registries.",
-      "route_id": "lei",
-      "used_by_estate_ids": [
-        "offshore-beneficial-ownership-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "NARA",
-      "canonical_family_id": "nara-catalog",
-      "authority": "U.S. National Archives and Records Administration",
-      "gateway_url": "https://catalog.archives.gov/",
-      "documentation_url": "https://catalog.archives.gov/api/v2/api-docs/",
-      "jurisdiction": "United States",
-      "access_mode": "public_api_and_catalog",
-      "authentication": "none",
-      "machine_readiness": "existing_script",
-      "repo_refs": [
-        "tools/build-nara-locators.mjs"
-      ],
-      "bounded_output": "Archival descriptions, record groups, series, file units, digital objects, and stable NAIDs.",
-      "residual_fog": "Catalog description does not imply digitization; record requests and box/folder retrieval may remain necessary.",
-      "route_id": "nara",
-      "used_by_estate_ids": [
-        "public-interest-crossing-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "NATO DIANA",
-      "canonical_family_id": "nato-diana",
-      "authority": "NATO Defence Innovation Accelerator for the North Atlantic",
-      "gateway_url": "https://www.diana.nato.int/connect.html",
-      "documentation_url": "https://www.diana.nato.int/",
-      "jurisdiction": "NATO",
-      "access_mode": "public_pages",
-      "authentication": "none",
-      "machine_readiness": "official_gateway_only",
-      "repo_refs": [],
-      "bounded_output": "Challenge cohorts, company names, countries, challenge areas, phase progression, test centres, and contractual funding statements.",
-      "residual_fog": "Legal-company identifiers, unsuccessful applicants, founders, investors, and national awards require external registry joins.",
-      "route_id": "nato-diana",
-      "used_by_estate_ids": [
-        "transatlantic-defense-innovation-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "OFAC",
-      "canonical_family_id": "ofac-sanctions",
-      "authority": "U.S. Department of the Treasury, Office of Foreign Assets Control",
-      "gateway_url": "https://sanctionssearch.ofac.treas.gov/",
-      "documentation_url": "https://ofac.treasury.gov/sanctions-list-service",
-      "jurisdiction": "United States / global",
-      "access_mode": "public_search_and_download",
-      "authentication": "none",
-      "machine_readiness": "official_gateway_only",
-      "repo_refs": [],
-      "bounded_output": "Sanctions-list identifiers, programs, aliases, entity types, dates, and list changes.",
-      "residual_fog": "Name similarity is insufficient; official IDs, dates, program scope, removals, and ownership rules must be resolved.",
-      "route_id": "ofac",
-      "used_by_estate_ids": [
-        "offshore-beneficial-ownership-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "OGE",
-      "canonical_family_id": "us-ethics-records",
-      "authority": "U.S. Office of Government Ethics and agency ethics offices",
-      "gateway_url": "https://www.oge.gov/web/oge.nsf/Resources/OGE%20Form%20201:%20Request%20an%20Individual%E2%80%99s%20Ethics%20Documents",
-      "documentation_url": "https://www.oge.gov/web/oge.nsf/publicresources_disclosure-faq",
-      "jurisdiction": "United States",
-      "access_mode": "public_search_and_statutory_request",
-      "authentication": "request_required_for_many_records",
-      "machine_readiness": "existing_script",
-      "repo_refs": [
-        "tools/build-oge-locators.mjs",
-        "tools/acquire-oge-beneficial-interests.mjs"
-      ],
-      "bounded_output": "Public financial disclosures, PTRs, ethics agreements, certifications, recusals, waivers, and divestiture certificates.",
-      "residual_fog": "OGE holds only part of the filer universe; agency-by-agency requests, six-year retention limits, and lawful-use attestations remain.",
-      "route_id": "oge",
-      "used_by_estate_ids": [
-        "us-executive-appointments-ethics-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "OGE and ethics offices",
-      "canonical_family_id": "us-ethics-records",
-      "authority": "U.S. Office of Government Ethics and agency ethics offices",
-      "gateway_url": "https://www.oge.gov/web/oge.nsf/Resources/OGE%20Form%20201:%20Request%20an%20Individual%E2%80%99s%20Ethics%20Documents",
-      "documentation_url": "https://www.oge.gov/web/oge.nsf/publicresources_disclosure-faq",
-      "jurisdiction": "United States",
-      "access_mode": "public_search_and_statutory_request",
-      "authentication": "request_required_for_many_records",
-      "machine_readiness": "existing_script",
-      "repo_refs": [
-        "tools/build-oge-locators.mjs",
-        "tools/acquire-oge-beneficial-interests.mjs"
-      ],
-      "bounded_output": "Public financial disclosures, PTRs, ethics agreements, certifications, recusals, waivers, and divestiture certificates.",
-      "residual_fog": "OGE holds only part of the filer universe; agency-by-agency requests, six-year retention limits, and lawful-use attestations remain.",
-      "route_id": "oge-and-ethics-offices",
-      "used_by_estate_ids": [
-        "regulatory-markets-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "OpenFEC",
-      "canonical_family_id": "openfec",
-      "authority": "Federal Election Commission",
-      "gateway_url": "https://www.fec.gov/data/",
-      "documentation_url": "https://api.open.fec.gov/developers/",
-      "jurisdiction": "United States",
-      "access_mode": "public_api_and_bulk",
-      "authentication": "api_key_or_demo_key",
-      "machine_readiness": "existing_script",
-      "repo_refs": [
-        "tools/resolve-openfec-cohort.mjs",
-        "tools/ingest-openfec-schedule-b.mjs",
-        "tools/acquire-fec-oppexp-cohort.mjs"
-      ],
-      "bounded_output": "Candidate, committee, report, contribution, disbursement, and filing-image identifiers.",
-      "residual_fog": "Committee affiliation, recipient identity, refunds, memo entries, and full neutral-cohort nulls remain estate-specific.",
-      "route_id": "openfec",
-      "used_by_estate_ids": [
-        "us-legislative-political-finance-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "SAM.gov",
-      "canonical_family_id": "sam-gov",
-      "authority": "U.S. General Services Administration",
-      "gateway_url": "https://sam.gov/contracting",
-      "documentation_url": "https://open.gsa.gov/api/get-opportunities-public-api/",
-      "jurisdiction": "United States",
-      "access_mode": "public_search_and_api",
-      "authentication": "api_key_for_opportunities_api",
-      "machine_readiness": "existing_adapter",
-      "repo_refs": [
-        "data/crawl/sources.json#sam-opportunities"
-      ],
-      "bounded_output": "Contract opportunities, award notices, solicitation identifiers, and contracting data.",
-      "residual_fog": "Some APIs require a key; attachments, amendments, interested vendors, and source-selection files may require additional acquisition.",
-      "route_id": "sam-gov",
-      "used_by_estate_ids": [
-        "public-money-industrial-policy-estate",
-        "us-defense-estate"
-      ],
-      "use_count": 2,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "SBIR/STTR",
-      "canonical_family_id": "sbir-sttr",
-      "authority": "U.S. Small Business Administration",
-      "gateway_url": "https://www.sbir.gov/awards",
-      "documentation_url": "https://www.sbir.gov/data-resources",
-      "jurisdiction": "United States",
-      "access_mode": "public_search_bulk_and_api",
-      "authentication": "none",
-      "machine_readiness": "official_gateway_only",
-      "repo_refs": [],
-      "bounded_output": "SBIR/STTR awards, companies, agencies, topics, amounts, dates, and monthly bulk files.",
-      "residual_fog": "The API may be under maintenance; company identity, award amendments, and procurement follow-on require separate joins.",
-      "route_id": "sbir-sttr",
-      "used_by_estate_ids": [
-        "transatlantic-defense-innovation-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "SEC",
-      "canonical_family_id": "sec-edgar",
-      "authority": "U.S. Securities and Exchange Commission",
-      "gateway_url": "https://www.sec.gov/search-filings",
-      "documentation_url": "https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data",
-      "jurisdiction": "United States",
-      "access_mode": "public_search_api_and_files",
-      "authentication": "none",
-      "machine_readiness": "existing_adapter",
-      "repo_refs": [
-        "data/crawl/sources.json#sec-form-d",
-        "tools/build-sec-exact-overlap-intake.mjs"
-      ],
-      "bounded_output": "CIKs, accession numbers, filing types, Form D offerings, ownership, merger, and company filings.",
-      "residual_fog": "CIK resolution, filer/entity boundaries, amended filings, and governance-right extraction require estate-specific parsing.",
-      "route_id": "sec",
-      "used_by_estate_ids": [
-        "offshore-beneficial-ownership-estate",
-        "public-interest-crossing-estate"
-      ],
-      "use_count": 2,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "SEC EDGAR",
-      "canonical_family_id": "sec-edgar",
-      "authority": "U.S. Securities and Exchange Commission",
-      "gateway_url": "https://www.sec.gov/search-filings",
-      "documentation_url": "https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data",
-      "jurisdiction": "United States",
-      "access_mode": "public_search_api_and_files",
-      "authentication": "none",
-      "machine_readiness": "existing_adapter",
-      "repo_refs": [
-        "data/crawl/sources.json#sec-form-d",
-        "tools/build-sec-exact-overlap-intake.mjs"
-      ],
-      "bounded_output": "CIKs, accession numbers, filing types, Form D offerings, ownership, merger, and company filings.",
-      "residual_fog": "CIK resolution, filer/entity boundaries, amended filings, and governance-right extraction require estate-specific parsing.",
-      "route_id": "sec-edgar",
-      "used_by_estate_ids": [
-        "dialog-estate",
-        "regulatory-markets-estate",
-        "us-executive-appointments-ethics-estate",
-        "us-legislative-political-finance-estate"
-      ],
-      "use_count": 4,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "SEC EDGAR and Form D",
-      "canonical_family_id": "sec-edgar",
-      "authority": "U.S. Securities and Exchange Commission",
-      "gateway_url": "https://www.sec.gov/search-filings",
-      "documentation_url": "https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data",
-      "jurisdiction": "United States",
-      "access_mode": "public_search_api_and_files",
-      "authentication": "none",
-      "machine_readiness": "existing_adapter",
-      "repo_refs": [
-        "data/crawl/sources.json#sec-form-d",
-        "tools/build-sec-exact-overlap-intake.mjs"
-      ],
-      "bounded_output": "CIKs, accession numbers, filing types, Form D offerings, ownership, merger, and company filings.",
-      "residual_fog": "CIK resolution, filer/entity boundaries, amended filings, and governance-right extraction require estate-specific parsing.",
-      "route_id": "sec-edgar-and-form-d",
-      "used_by_estate_ids": [
-        "venture-capital-corporate-control-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "SEC Form D",
-      "canonical_family_id": "sec-edgar",
-      "authority": "U.S. Securities and Exchange Commission",
-      "gateway_url": "https://www.sec.gov/search-filings",
-      "documentation_url": "https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data",
-      "jurisdiction": "United States",
-      "access_mode": "public_search_api_and_files",
-      "authentication": "none",
-      "machine_readiness": "existing_adapter",
-      "repo_refs": [
-        "data/crawl/sources.json#sec-form-d",
-        "tools/build-sec-exact-overlap-intake.mjs"
-      ],
-      "bounded_output": "CIKs, accession numbers, filing types, Form D offerings, ownership, merger, and company filings.",
-      "residual_fog": "CIK resolution, filer/entity boundaries, amended filings, and governance-right extraction require estate-specific parsing.",
-      "route_id": "sec-form-d",
-      "used_by_estate_ids": [
-        "transatlantic-defense-innovation-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "Senate confirmations",
-      "canonical_family_id": "senate-nominations",
-      "authority": "U.S. Senate and Congress.gov",
-      "gateway_url": "https://www.congress.gov/search?q={\"source\":\"nominations\"}",
-      "documentation_url": "https://api.congress.gov/",
-      "jurisdiction": "United States",
-      "access_mode": "public_search_and_api",
-      "authentication": "api_key_for_congress_api",
-      "machine_readiness": "official_gateway_only",
-      "repo_refs": [],
-      "bounded_output": "Nomination identifiers, received dates, referrals, actions, confirmation, return, and withdrawal.",
-      "residual_fog": "Office normalization and exact tenure start/end dates require agency and appointment records.",
-      "route_id": "senate-confirmations",
-      "used_by_estate_ids": [
-        "us-executive-appointments-ethics-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "Senate eFD",
-      "canonical_family_id": "senate-efd",
-      "authority": "Secretary of the U.S. Senate",
-      "gateway_url": "https://efdsearch.senate.gov/search/home/",
-      "documentation_url": "https://www.ethics.senate.gov/public/index.cfm/financialdisclosure",
-      "jurisdiction": "United States",
-      "access_mode": "public_search",
-      "authentication": "attestation_or_session",
-      "machine_readiness": "official_gateway_only",
-      "repo_refs": [],
-      "bounded_output": "Senate financial disclosure and periodic transaction reports.",
-      "residual_fog": "Session controls, document acquisition, amendments, and full-cohort null preservation require an executed collector.",
-      "route_id": "senate-efd",
-      "used_by_estate_ids": [
-        "us-legislative-political-finance-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "UK Find a Tender",
-      "canonical_family_id": "find-a-tender",
-      "authority": "UK Cabinet Office",
-      "gateway_url": "https://www.find-tender.service.gov.uk/Search",
-      "documentation_url": "https://www.gov.uk/government/publications/open-contracting",
-      "jurisdiction": "United Kingdom",
-      "access_mode": "public_search_and_ocds_api",
-      "authentication": "none",
-      "machine_readiness": "official_gateway_only",
-      "repo_refs": [],
-      "bounded_output": "UK procurement notices and OCDS release packages keyed by notice ID and OCID.",
-      "residual_fog": "Notice publication is not performance, outlay, acceptance, or proof of all bids and evaluation records.",
-      "route_id": "uk-find-a-tender",
-      "used_by_estate_ids": [
-        "dialog-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "UK appointment and interests registers",
-      "canonical_family_id": "uk-appointments-interests",
-      "authority": "UK Cabinet Office and departments",
-      "gateway_url": "https://www.gov.uk/government/publications/public-appointments",
-      "documentation_url": "https://www.gov.uk/government/collections/registers-of-interest",
-      "jurisdiction": "United Kingdom",
-      "access_mode": "public_collections",
-      "authentication": "none",
-      "machine_readiness": "official_gateway_only",
-      "repo_refs": [],
-      "bounded_output": "Public appointments, terms, appointing authority, dates, remuneration, and declared interests where published.",
-      "residual_fog": "No single register covers all advisers, direct ministerial appointees, boards, and departments; nil returns and departures require partitioning.",
-      "route_id": "uk-appointment-and-interests-registers",
-      "used_by_estate_ids": [
-        "dialog-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "US Senate LDA",
-      "canonical_family_id": "senate-lda",
-      "authority": "Secretary of the U.S. Senate and Clerk of the House",
-      "gateway_url": "https://lda.senate.gov/system/public/",
-      "documentation_url": "https://lda.senate.gov/system/public/",
-      "jurisdiction": "United States",
-      "access_mode": "public_search_and_download",
-      "authentication": "none",
-      "machine_readiness": "official_gateway_only",
-      "repo_refs": [],
-      "bounded_output": "Lobbying registrations and quarterly reports keyed by registrant, client, issue, and filing identifier.",
-      "residual_fog": "Client and registrant legal-entity resolution, covered-position history, and exact decision windows remain.",
-      "route_id": "us-senate-lda",
-      "used_by_estate_ids": [
-        "dialog-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "USAspending",
-      "canonical_family_id": "usaspending",
-      "authority": "U.S. Department of the Treasury",
-      "gateway_url": "https://www.usaspending.gov/",
-      "documentation_url": "https://api.usaspending.gov/docs/",
-      "jurisdiction": "United States",
-      "access_mode": "public_api",
-      "authentication": "none",
-      "machine_readiness": "existing_adapter",
-      "repo_refs": [
-        "data/crawl/sources.json#usaspending-awards",
-        "tools/acquire-gov-property-awards.mjs"
-      ],
-      "bounded_output": "Award and transaction identifiers with separate ceiling, obligation, and outlay fields.",
-      "residual_fog": "Recipient identity, award hierarchy, subaward coverage, and performance reconciliation remain estate-specific.",
-      "route_id": "usaspending",
-      "used_by_estate_ids": [
-        "public-interest-crossing-estate",
-        "public-money-industrial-policy-estate",
-        "transatlantic-defense-innovation-estate",
-        "us-defense-estate",
-        "us-executive-appointments-ethics-estate",
-        "us-legislative-political-finance-estate"
-      ],
-      "use_count": 6,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
-      "route_label": "White House and agency appointments",
-      "canonical_family_id": "white-house-agency-appointments",
-      "authority": "The White House and executive agencies",
-      "gateway_url": "https://www.whitehouse.gov/presidential-actions/",
-      "documentation_url": "https://www.whitehouse.gov/presidential-actions/",
-      "jurisdiction": "United States",
-      "access_mode": "public_pages",
-      "authentication": "none",
-      "machine_readiness": "official_gateway_only",
-      "repo_refs": [],
-      "bounded_output": "Presidential nominations and appointments plus agency appointment announcements.",
-      "residual_fog": "Announcements are not a complete office-defined cohort; confirmations, commissions, acting service, departures, and agency records must be joined.",
-      "route_id": "white-house-and-agency-appointments",
-      "used_by_estate_ids": [
-        "us-executive-appointments-ethics-estate"
-      ],
-      "use_count": 1,
-      "locator_state": "surface_complete",
-      "record_acquisition_state": "partially_searched",
-      "graph_effect": "none",
-      "conclusion_generated": false
-    },
-    {
       "route_label": "agency award files",
       "canonical_family_id": "agency-award-files",
       "authority": "Awarding agencies",
@@ -15893,6 +15079,33 @@
       "conclusion_generated": false
     },
     {
+      "route_label": "Companies House",
+      "canonical_family_id": "companies-house",
+      "authority": "UK Companies House",
+      "gateway_url": "https://find-and-update.company-information.service.gov.uk/",
+      "documentation_url": "https://developer.company-information.service.gov.uk/",
+      "jurisdiction": "United Kingdom",
+      "access_mode": "public_search_and_api",
+      "authentication": "api_key_for_api",
+      "machine_readiness": "official_gateway_only",
+      "repo_refs": [],
+      "bounded_output": "Company numbers, officers, PSCs, filing history, charges, insolvency, and document identifiers.",
+      "residual_fog": "Filed information may be inaccurate; document images, historical names, foreign entities, and legal-identity adjudication require further checks.",
+      "route_id": "companies-house",
+      "used_by_estate_ids": [
+        "dialog-estate",
+        "offshore-beneficial-ownership-estate",
+        "uk-defense-estate",
+        "uk-state-market-estate",
+        "venture-capital-corporate-control-estate"
+      ],
+      "use_count": 5,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
       "route_label": "company filings",
       "canonical_family_id": "company-filings",
       "authority": "Securities regulators and company registrars",
@@ -15934,6 +15147,30 @@
         "us-defense-estate"
       ],
       "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "Contracts Finder",
+      "canonical_family_id": "contracts-finder",
+      "authority": "UK Cabinet Office / Crown Commercial Service",
+      "gateway_url": "https://www.contractsfinder.service.gov.uk/Search",
+      "documentation_url": "https://www.contractsfinder.service.gov.uk/apidocumentation",
+      "jurisdiction": "United Kingdom",
+      "access_mode": "public_search_api_and_csv",
+      "authentication": "none_for_published_data",
+      "machine_readiness": "official_gateway_only",
+      "repo_refs": [],
+      "bounded_output": "UK below-threshold notices and awards, OCDS releases, supplier identifiers, values, dates, and attachments.",
+      "residual_fog": "Signed contracts and attachments are notice-specific; buyer/supplier Companies House resolution and unsuccessful bids remain.",
+      "route_id": "contracts-finder",
+      "used_by_estate_ids": [
+        "uk-defense-estate",
+        "uk-state-market-estate"
+      ],
+      "use_count": 2,
       "locator_state": "surface_complete",
       "record_acquisition_state": "partially_searched",
       "graph_effect": "none",
@@ -16001,6 +15238,52 @@
       "route_id": "development-authorities",
       "used_by_estate_ids": [
         "local-development-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "DoD releases",
+      "canonical_family_id": "dod-contract-releases",
+      "authority": "U.S. Department of Defense",
+      "gateway_url": "https://www.defense.gov/News/Contracts/",
+      "documentation_url": "https://www.defense.gov/News/Contracts/",
+      "jurisdiction": "United States",
+      "access_mode": "public_pages",
+      "authentication": "none",
+      "machine_readiness": "official_gateway_only",
+      "repo_refs": [],
+      "bounded_output": "Daily contract announcements with awardee, amount, competition, appropriation, and contracting activity.",
+      "residual_fog": "Announcements are not complete award files and do not establish obligations, outlays, evaluations, or acceptance.",
+      "route_id": "dod-releases",
+      "used_by_estate_ids": [
+        "us-defense-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "DOJ and court libraries",
+      "canonical_family_id": "courts-enforcement",
+      "authority": "U.S. Department of Justice and courts",
+      "gateway_url": "https://www.justice.gov/",
+      "documentation_url": "https://pacer.uscourts.gov/",
+      "jurisdiction": "United States",
+      "access_mode": "public_pages_and_docket_account",
+      "authentication": "pacer_account_for_some_records",
+      "machine_readiness": "official_gateway_only",
+      "repo_refs": [],
+      "bounded_output": "Press releases, charging instruments, judgments, dockets, opinions, settlements, and current dispositions.",
+      "residual_fog": "A press release is not the docket; sealed/protected filings, appeal status, and party-specific dispositions require exact case retrieval.",
+      "route_id": "doj-and-court-libraries",
+      "used_by_estate_ids": [
+        "public-interest-crossing-estate"
       ],
       "use_count": 1,
       "locator_state": "surface_complete",
@@ -16081,6 +15364,105 @@
       "conclusion_generated": false
     },
     {
+      "route_label": "FEC",
+      "canonical_family_id": "openfec",
+      "authority": "Federal Election Commission",
+      "gateway_url": "https://www.fec.gov/data/",
+      "documentation_url": "https://api.open.fec.gov/developers/",
+      "jurisdiction": "United States",
+      "access_mode": "public_api_and_bulk",
+      "authentication": "api_key_or_demo_key",
+      "machine_readiness": "existing_script",
+      "repo_refs": [
+        "tools/resolve-openfec-cohort.mjs",
+        "tools/ingest-openfec-schedule-b.mjs",
+        "tools/acquire-fec-oppexp-cohort.mjs"
+      ],
+      "bounded_output": "Candidate, committee, report, contribution, disbursement, and filing-image identifiers.",
+      "residual_fog": "Committee affiliation, recipient identity, refunds, memo entries, and full neutral-cohort nulls remain estate-specific.",
+      "route_id": "fec",
+      "used_by_estate_ids": [
+        "public-interest-crossing-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "Federal Register",
+      "canonical_family_id": "federal-register",
+      "authority": "Office of the Federal Register / GPO",
+      "gateway_url": "https://www.federalregister.gov/",
+      "documentation_url": "https://www.federalregister.gov/developers/documentation/api/v1",
+      "jurisdiction": "United States",
+      "access_mode": "public_api",
+      "authentication": "none",
+      "machine_readiness": "existing_adapter",
+      "repo_refs": [
+        "data/crawl/sources.json#federal-register"
+      ],
+      "bounded_output": "Rules, notices, presidential documents, agency identifiers, dates, docket numbers, and document numbers.",
+      "residual_fog": "A notice is not the underlying adjudication, approval, meeting attendance, or contract transaction.",
+      "route_id": "federal-register",
+      "used_by_estate_ids": [
+        "regulatory-markets-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "Find a Tender",
+      "canonical_family_id": "find-a-tender",
+      "authority": "UK Cabinet Office",
+      "gateway_url": "https://www.find-tender.service.gov.uk/Search",
+      "documentation_url": "https://www.gov.uk/government/publications/open-contracting",
+      "jurisdiction": "United Kingdom",
+      "access_mode": "public_search_and_ocds_api",
+      "authentication": "none",
+      "machine_readiness": "official_gateway_only",
+      "repo_refs": [],
+      "bounded_output": "UK procurement notices and OCDS release packages keyed by notice ID and OCID.",
+      "residual_fog": "Notice publication is not performance, outlay, acceptance, or proof of all bids and evaluation records.",
+      "route_id": "find-a-tender",
+      "used_by_estate_ids": [
+        "uk-defense-estate",
+        "uk-state-market-estate"
+      ],
+      "use_count": 2,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "FPDS archives",
+      "canonical_family_id": "fpds-sam-contract-data",
+      "authority": "U.S. General Services Administration",
+      "gateway_url": "https://sam.gov/contracting",
+      "documentation_url": "https://open.gsa.gov/api/",
+      "jurisdiction": "United States",
+      "access_mode": "public_search_and_bulk",
+      "authentication": "varies",
+      "machine_readiness": "official_gateway_only",
+      "repo_refs": [],
+      "bounded_output": "Legacy and current contract-award records keyed by PIID and modification.",
+      "residual_fog": "Legacy FPDS/SAM reconciliation and archived modification history remain to be normalized.",
+      "route_id": "fpds-archives",
+      "used_by_estate_ids": [
+        "us-defense-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
       "route_label": "fund reports",
       "canonical_family_id": "fund-reports",
       "authority": "Securities regulators, public pension funds, and fund managers",
@@ -16104,6 +15486,129 @@
       "conclusion_generated": false
     },
     {
+      "route_label": "GAO",
+      "canonical_family_id": "gao-bid-protests",
+      "authority": "U.S. Government Accountability Office",
+      "gateway_url": "https://www.gao.gov/legal/bid-protests",
+      "documentation_url": "https://www.gao.gov/legal/bid-protests/faqs",
+      "jurisdiction": "United States",
+      "access_mode": "public_search",
+      "authentication": "none",
+      "machine_readiness": "official_gateway_only",
+      "repo_refs": [],
+      "bounded_output": "Bid-protest docket, outcome, decision, solicitation, agency, and public decision documents.",
+      "residual_fog": "Routine dismissals and protected filings are not always public; FOIA may be required for decided-case records.",
+      "route_id": "gao",
+      "used_by_estate_ids": [
+        "us-defense-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "GOV.UK",
+      "canonical_family_id": "govuk",
+      "authority": "UK Government Digital Service",
+      "gateway_url": "https://www.gov.uk/search/all",
+      "documentation_url": "https://content-api.publishing.service.gov.uk/",
+      "jurisdiction": "United Kingdom",
+      "access_mode": "public_search_and_api",
+      "authentication": "none",
+      "machine_readiness": "existing_adapter",
+      "repo_refs": [
+        "data/crawl/sources.json#govuk-search"
+      ],
+      "bounded_output": "Official publications, announcements, transparency data, collections, organisations, and content identifiers.",
+      "residual_fog": "Search results do not by themselves freeze implementation, supplier, appointment, or decision denominators.",
+      "route_id": "gov-uk",
+      "used_by_estate_ids": [
+        "uk-defense-estate",
+        "uk-state-market-estate"
+      ],
+      "use_count": 2,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "GSA",
+      "canonical_family_id": "gsa-records",
+      "authority": "U.S. General Services Administration",
+      "gateway_url": "https://www.gsa.gov/reference/freedom-of-information-act-foia",
+      "documentation_url": "https://www.gsa.gov/real-estate/real-estate-services/leasing",
+      "jurisdiction": "United States",
+      "access_mode": "public_data_and_request",
+      "authentication": "varies",
+      "machine_readiness": "existing_script",
+      "repo_refs": [
+        "tools/acquire-gov-property-awards.mjs"
+      ],
+      "bounded_output": "Property, lease, procurement, travel, and agency records with stable identifiers where published.",
+      "residual_fog": "Lease schedules, property-level payments, and protective-service records may require targeted requests or agency records.",
+      "route_id": "gsa",
+      "used_by_estate_ids": [
+        "public-interest-crossing-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "House Clerk",
+      "canonical_family_id": "house-clerk-disclosures",
+      "authority": "Office of the Clerk, U.S. House of Representatives",
+      "gateway_url": "https://disclosures-clerk.house.gov/",
+      "documentation_url": "https://disclosures-clerk.house.gov/PublicDisclosure",
+      "jurisdiction": "United States",
+      "access_mode": "public_search_and_download",
+      "authentication": "none",
+      "machine_readiness": "official_gateway_only",
+      "repo_refs": [],
+      "bounded_output": "House member/candidate financial disclosure and periodic-transaction filing metadata and PDFs.",
+      "residual_fog": "PDF extraction, amendments, occupied-office denominators, and explicit member-level nulls require a frozen acquisition window.",
+      "route_id": "house-clerk",
+      "used_by_estate_ids": [
+        "us-legislative-political-finance-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "ICIJ datasets",
+      "canonical_family_id": "icij-offshore-leaks",
+      "authority": "International Consortium of Investigative Journalists",
+      "gateway_url": "https://offshoreleaks.icij.org/pages/database",
+      "documentation_url": "https://offshoreleaks.icij.org/pages/database",
+      "jurisdiction": "multi-jurisdictional",
+      "access_mode": "public_bulk_download",
+      "authentication": "none",
+      "machine_readiness": "existing_script",
+      "repo_refs": [
+        "tools/acquire-icij-offshoreleaks.mjs",
+        "tools/import-icij-panama.mjs"
+      ],
+      "bounded_output": "Offshore entity, officer, intermediary, address, and relationship tables with source-dataset identifiers.",
+      "residual_fog": "Leak inclusion does not validate legal identity, beneficial ownership, transaction activity, or current status; official registries are required.",
+      "route_id": "icij-datasets",
+      "used_by_estate_ids": [
+        "offshore-beneficial-ownership-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
       "route_label": "inspectors general",
       "canonical_family_id": "oversight-gov",
       "authority": "Council of the Inspectors General on Integrity and Efficiency",
@@ -16119,6 +15624,29 @@
       "route_id": "inspectors-general",
       "used_by_estate_ids": [
         "public-interest-crossing-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "LEI",
+      "canonical_family_id": "gleif-lei",
+      "authority": "Global Legal Entity Identifier Foundation",
+      "gateway_url": "https://search.gleif.org/",
+      "documentation_url": "https://www.gleif.org/en/lei-data/gleif-api/",
+      "jurisdiction": "global",
+      "access_mode": "public_search_api_and_bulk",
+      "authentication": "none",
+      "machine_readiness": "official_gateway_only",
+      "repo_refs": [],
+      "bounded_output": "LEI reference data, legal names, registration authorities, parent relationships, and mapped identifiers.",
+      "residual_fog": "LEI coverage is incomplete for many private entities; non-LEI entities still require official registries.",
+      "route_id": "lei",
+      "used_by_estate_ids": [
+        "offshore-beneficial-ownership-estate"
       ],
       "use_count": 1,
       "locator_state": "surface_complete",
@@ -16219,6 +15747,31 @@
       "conclusion_generated": false
     },
     {
+      "route_label": "NARA",
+      "canonical_family_id": "nara-catalog",
+      "authority": "U.S. National Archives and Records Administration",
+      "gateway_url": "https://catalog.archives.gov/",
+      "documentation_url": "https://catalog.archives.gov/api/v2/api-docs/",
+      "jurisdiction": "United States",
+      "access_mode": "public_api_and_catalog",
+      "authentication": "none",
+      "machine_readiness": "existing_script",
+      "repo_refs": [
+        "tools/build-nara-locators.mjs"
+      ],
+      "bounded_output": "Archival descriptions, record groups, series, file units, digital objects, and stable NAIDs.",
+      "residual_fog": "Catalog description does not imply digitization; record requests and box/folder retrieval may remain necessary.",
+      "route_id": "nara",
+      "used_by_estate_ids": [
+        "public-interest-crossing-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
       "route_label": "national company registries",
       "canonical_family_id": "national-company-registries",
       "authority": "National company registrars",
@@ -16242,6 +15795,52 @@
       "conclusion_generated": false
     },
     {
+      "route_label": "NATO DIANA",
+      "canonical_family_id": "nato-diana",
+      "authority": "NATO Defence Innovation Accelerator for the North Atlantic",
+      "gateway_url": "https://www.diana.nato.int/connect.html",
+      "documentation_url": "https://www.diana.nato.int/",
+      "jurisdiction": "NATO",
+      "access_mode": "public_pages",
+      "authentication": "none",
+      "machine_readiness": "official_gateway_only",
+      "repo_refs": [],
+      "bounded_output": "Challenge cohorts, company names, countries, challenge areas, phase progression, test centres, and contractual funding statements.",
+      "residual_fog": "Legal-company identifiers, unsuccessful applicants, founders, investors, and national awards require external registry joins.",
+      "route_id": "nato-diana",
+      "used_by_estate_ids": [
+        "transatlantic-defense-innovation-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "OFAC",
+      "canonical_family_id": "ofac-sanctions",
+      "authority": "U.S. Department of the Treasury, Office of Foreign Assets Control",
+      "gateway_url": "https://sanctionssearch.ofac.treas.gov/",
+      "documentation_url": "https://ofac.treasury.gov/sanctions-list-service",
+      "jurisdiction": "United States / global",
+      "access_mode": "public_search_and_download",
+      "authentication": "none",
+      "machine_readiness": "official_gateway_only",
+      "repo_refs": [],
+      "bounded_output": "Sanctions-list identifiers, programs, aliases, entity types, dates, and list changes.",
+      "residual_fog": "Name similarity is insufficient; official IDs, dates, program scope, removals, and ownership rules must be resolved.",
+      "route_id": "ofac",
+      "used_by_estate_ids": [
+        "offshore-beneficial-ownership-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
       "route_label": "official institutional reviews",
       "canonical_family_id": "institutional-reviews",
       "authority": "Public institutions and commissioned reviewers",
@@ -16257,6 +15856,85 @@
       "route_id": "official-institutional-reviews",
       "used_by_estate_ids": [
         "public-interest-crossing-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "OGE",
+      "canonical_family_id": "us-ethics-records",
+      "authority": "U.S. Office of Government Ethics and agency ethics offices",
+      "gateway_url": "https://www.oge.gov/web/oge.nsf/Resources/OGE%20Form%20201:%20Request%20an%20Individual%E2%80%99s%20Ethics%20Documents",
+      "documentation_url": "https://www.oge.gov/web/oge.nsf/publicresources_disclosure-faq",
+      "jurisdiction": "United States",
+      "access_mode": "public_search_and_statutory_request",
+      "authentication": "request_required_for_many_records",
+      "machine_readiness": "existing_script",
+      "repo_refs": [
+        "tools/build-oge-locators.mjs",
+        "tools/acquire-oge-beneficial-interests.mjs"
+      ],
+      "bounded_output": "Public financial disclosures, PTRs, ethics agreements, certifications, recusals, waivers, and divestiture certificates.",
+      "residual_fog": "OGE holds only part of the filer universe; agency-by-agency requests, six-year retention limits, and lawful-use attestations remain.",
+      "route_id": "oge",
+      "used_by_estate_ids": [
+        "us-executive-appointments-ethics-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "OGE and ethics offices",
+      "canonical_family_id": "us-ethics-records",
+      "authority": "U.S. Office of Government Ethics and agency ethics offices",
+      "gateway_url": "https://www.oge.gov/web/oge.nsf/Resources/OGE%20Form%20201:%20Request%20an%20Individual%E2%80%99s%20Ethics%20Documents",
+      "documentation_url": "https://www.oge.gov/web/oge.nsf/publicresources_disclosure-faq",
+      "jurisdiction": "United States",
+      "access_mode": "public_search_and_statutory_request",
+      "authentication": "request_required_for_many_records",
+      "machine_readiness": "existing_script",
+      "repo_refs": [
+        "tools/build-oge-locators.mjs",
+        "tools/acquire-oge-beneficial-interests.mjs"
+      ],
+      "bounded_output": "Public financial disclosures, PTRs, ethics agreements, certifications, recusals, waivers, and divestiture certificates.",
+      "residual_fog": "OGE holds only part of the filer universe; agency-by-agency requests, six-year retention limits, and lawful-use attestations remain.",
+      "route_id": "oge-and-ethics-offices",
+      "used_by_estate_ids": [
+        "regulatory-markets-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "OpenFEC",
+      "canonical_family_id": "openfec",
+      "authority": "Federal Election Commission",
+      "gateway_url": "https://www.fec.gov/data/",
+      "documentation_url": "https://api.open.fec.gov/developers/",
+      "jurisdiction": "United States",
+      "access_mode": "public_api_and_bulk",
+      "authentication": "api_key_or_demo_key",
+      "machine_readiness": "existing_script",
+      "repo_refs": [
+        "tools/resolve-openfec-cohort.mjs",
+        "tools/ingest-openfec-schedule-b.mjs",
+        "tools/acquire-fec-oppexp-cohort.mjs"
+      ],
+      "bounded_output": "Candidate, committee, report, contribution, disbursement, and filing-image identifiers.",
+      "residual_fog": "Committee affiliation, recipient identity, refunds, memo entries, and full neutral-cohort nulls remain estate-specific.",
+      "route_id": "openfec",
+      "used_by_estate_ids": [
+        "us-legislative-political-finance-estate"
       ],
       "use_count": 1,
       "locator_state": "surface_complete",
@@ -16326,6 +16004,209 @@
       "route_id": "recorder-and-assessor-systems",
       "used_by_estate_ids": [
         "local-development-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "SAM.gov",
+      "canonical_family_id": "sam-gov",
+      "authority": "U.S. General Services Administration",
+      "gateway_url": "https://sam.gov/contracting",
+      "documentation_url": "https://open.gsa.gov/api/get-opportunities-public-api/",
+      "jurisdiction": "United States",
+      "access_mode": "public_search_and_api",
+      "authentication": "api_key_for_opportunities_api",
+      "machine_readiness": "existing_adapter",
+      "repo_refs": [
+        "data/crawl/sources.json#sam-opportunities"
+      ],
+      "bounded_output": "Contract opportunities, award notices, solicitation identifiers, and contracting data.",
+      "residual_fog": "Some APIs require a key; attachments, amendments, interested vendors, and source-selection files may require additional acquisition.",
+      "route_id": "sam-gov",
+      "used_by_estate_ids": [
+        "public-money-industrial-policy-estate",
+        "us-defense-estate"
+      ],
+      "use_count": 2,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "SBIR/STTR",
+      "canonical_family_id": "sbir-sttr",
+      "authority": "U.S. Small Business Administration",
+      "gateway_url": "https://www.sbir.gov/awards",
+      "documentation_url": "https://www.sbir.gov/data-resources",
+      "jurisdiction": "United States",
+      "access_mode": "public_search_bulk_and_api",
+      "authentication": "none",
+      "machine_readiness": "official_gateway_only",
+      "repo_refs": [],
+      "bounded_output": "SBIR/STTR awards, companies, agencies, topics, amounts, dates, and monthly bulk files.",
+      "residual_fog": "The API may be under maintenance; company identity, award amendments, and procurement follow-on require separate joins.",
+      "route_id": "sbir-sttr",
+      "used_by_estate_ids": [
+        "transatlantic-defense-innovation-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "SEC",
+      "canonical_family_id": "sec-edgar",
+      "authority": "U.S. Securities and Exchange Commission",
+      "gateway_url": "https://www.sec.gov/search-filings",
+      "documentation_url": "https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data",
+      "jurisdiction": "United States",
+      "access_mode": "public_search_api_and_files",
+      "authentication": "none",
+      "machine_readiness": "existing_adapter",
+      "repo_refs": [
+        "data/crawl/sources.json#sec-form-d",
+        "tools/build-sec-exact-overlap-intake.mjs"
+      ],
+      "bounded_output": "CIKs, accession numbers, filing types, Form D offerings, ownership, merger, and company filings.",
+      "residual_fog": "CIK resolution, filer/entity boundaries, amended filings, and governance-right extraction require estate-specific parsing.",
+      "route_id": "sec",
+      "used_by_estate_ids": [
+        "offshore-beneficial-ownership-estate",
+        "public-interest-crossing-estate"
+      ],
+      "use_count": 2,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "SEC EDGAR",
+      "canonical_family_id": "sec-edgar",
+      "authority": "U.S. Securities and Exchange Commission",
+      "gateway_url": "https://www.sec.gov/search-filings",
+      "documentation_url": "https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data",
+      "jurisdiction": "United States",
+      "access_mode": "public_search_api_and_files",
+      "authentication": "none",
+      "machine_readiness": "existing_adapter",
+      "repo_refs": [
+        "data/crawl/sources.json#sec-form-d",
+        "tools/build-sec-exact-overlap-intake.mjs"
+      ],
+      "bounded_output": "CIKs, accession numbers, filing types, Form D offerings, ownership, merger, and company filings.",
+      "residual_fog": "CIK resolution, filer/entity boundaries, amended filings, and governance-right extraction require estate-specific parsing.",
+      "route_id": "sec-edgar",
+      "used_by_estate_ids": [
+        "dialog-estate",
+        "regulatory-markets-estate",
+        "us-executive-appointments-ethics-estate",
+        "us-legislative-political-finance-estate"
+      ],
+      "use_count": 4,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "SEC EDGAR and Form D",
+      "canonical_family_id": "sec-edgar",
+      "authority": "U.S. Securities and Exchange Commission",
+      "gateway_url": "https://www.sec.gov/search-filings",
+      "documentation_url": "https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data",
+      "jurisdiction": "United States",
+      "access_mode": "public_search_api_and_files",
+      "authentication": "none",
+      "machine_readiness": "existing_adapter",
+      "repo_refs": [
+        "data/crawl/sources.json#sec-form-d",
+        "tools/build-sec-exact-overlap-intake.mjs"
+      ],
+      "bounded_output": "CIKs, accession numbers, filing types, Form D offerings, ownership, merger, and company filings.",
+      "residual_fog": "CIK resolution, filer/entity boundaries, amended filings, and governance-right extraction require estate-specific parsing.",
+      "route_id": "sec-edgar-and-form-d",
+      "used_by_estate_ids": [
+        "venture-capital-corporate-control-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "SEC Form D",
+      "canonical_family_id": "sec-edgar",
+      "authority": "U.S. Securities and Exchange Commission",
+      "gateway_url": "https://www.sec.gov/search-filings",
+      "documentation_url": "https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data",
+      "jurisdiction": "United States",
+      "access_mode": "public_search_api_and_files",
+      "authentication": "none",
+      "machine_readiness": "existing_adapter",
+      "repo_refs": [
+        "data/crawl/sources.json#sec-form-d",
+        "tools/build-sec-exact-overlap-intake.mjs"
+      ],
+      "bounded_output": "CIKs, accession numbers, filing types, Form D offerings, ownership, merger, and company filings.",
+      "residual_fog": "CIK resolution, filer/entity boundaries, amended filings, and governance-right extraction require estate-specific parsing.",
+      "route_id": "sec-form-d",
+      "used_by_estate_ids": [
+        "transatlantic-defense-innovation-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "Senate confirmations",
+      "canonical_family_id": "senate-nominations",
+      "authority": "U.S. Senate and Congress.gov",
+      "gateway_url": "https://www.congress.gov/search?q={\"source\":\"nominations\"}",
+      "documentation_url": "https://api.congress.gov/",
+      "jurisdiction": "United States",
+      "access_mode": "public_search_and_api",
+      "authentication": "api_key_for_congress_api",
+      "machine_readiness": "official_gateway_only",
+      "repo_refs": [],
+      "bounded_output": "Nomination identifiers, received dates, referrals, actions, confirmation, return, and withdrawal.",
+      "residual_fog": "Office normalization and exact tenure start/end dates require agency and appointment records.",
+      "route_id": "senate-confirmations",
+      "used_by_estate_ids": [
+        "us-executive-appointments-ethics-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "Senate eFD",
+      "canonical_family_id": "senate-efd",
+      "authority": "Secretary of the U.S. Senate",
+      "gateway_url": "https://efdsearch.senate.gov/search/home/",
+      "documentation_url": "https://www.ethics.senate.gov/public/index.cfm/financialdisclosure",
+      "jurisdiction": "United States",
+      "access_mode": "public_search",
+      "authentication": "attestation_or_session",
+      "machine_readiness": "official_gateway_only",
+      "repo_refs": [],
+      "bounded_output": "Senate financial disclosure and periodic transaction reports.",
+      "residual_fog": "Session controls, document acquisition, amendments, and full-cohort null preservation require an executed collector.",
+      "route_id": "senate-efd",
+      "used_by_estate_ids": [
+        "us-legislative-political-finance-estate"
       ],
       "use_count": 1,
       "locator_state": "surface_complete",
@@ -16447,6 +16328,129 @@
       "route_id": "transit-boards",
       "used_by_estate_ids": [
         "local-development-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "UK appointment and interests registers",
+      "canonical_family_id": "uk-appointments-interests",
+      "authority": "UK Cabinet Office and departments",
+      "gateway_url": "https://www.gov.uk/government/publications/public-appointments",
+      "documentation_url": "https://www.gov.uk/government/collections/registers-of-interest",
+      "jurisdiction": "United Kingdom",
+      "access_mode": "public_collections",
+      "authentication": "none",
+      "machine_readiness": "official_gateway_only",
+      "repo_refs": [],
+      "bounded_output": "Public appointments, terms, appointing authority, dates, remuneration, and declared interests where published.",
+      "residual_fog": "No single register covers all advisers, direct ministerial appointees, boards, and departments; nil returns and departures require partitioning.",
+      "route_id": "uk-appointment-and-interests-registers",
+      "used_by_estate_ids": [
+        "dialog-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "UK Find a Tender",
+      "canonical_family_id": "find-a-tender",
+      "authority": "UK Cabinet Office",
+      "gateway_url": "https://www.find-tender.service.gov.uk/Search",
+      "documentation_url": "https://www.gov.uk/government/publications/open-contracting",
+      "jurisdiction": "United Kingdom",
+      "access_mode": "public_search_and_ocds_api",
+      "authentication": "none",
+      "machine_readiness": "official_gateway_only",
+      "repo_refs": [],
+      "bounded_output": "UK procurement notices and OCDS release packages keyed by notice ID and OCID.",
+      "residual_fog": "Notice publication is not performance, outlay, acceptance, or proof of all bids and evaluation records.",
+      "route_id": "uk-find-a-tender",
+      "used_by_estate_ids": [
+        "dialog-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "US Senate LDA",
+      "canonical_family_id": "senate-lda",
+      "authority": "Secretary of the U.S. Senate and Clerk of the House",
+      "gateway_url": "https://lda.senate.gov/system/public/",
+      "documentation_url": "https://lda.senate.gov/system/public/",
+      "jurisdiction": "United States",
+      "access_mode": "public_search_and_download",
+      "authentication": "none",
+      "machine_readiness": "official_gateway_only",
+      "repo_refs": [],
+      "bounded_output": "Lobbying registrations and quarterly reports keyed by registrant, client, issue, and filing identifier.",
+      "residual_fog": "Client and registrant legal-entity resolution, covered-position history, and exact decision windows remain.",
+      "route_id": "us-senate-lda",
+      "used_by_estate_ids": [
+        "dialog-estate"
+      ],
+      "use_count": 1,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "USAspending",
+      "canonical_family_id": "usaspending",
+      "authority": "U.S. Department of the Treasury",
+      "gateway_url": "https://www.usaspending.gov/",
+      "documentation_url": "https://api.usaspending.gov/docs/",
+      "jurisdiction": "United States",
+      "access_mode": "public_api",
+      "authentication": "none",
+      "machine_readiness": "existing_adapter",
+      "repo_refs": [
+        "data/crawl/sources.json#usaspending-awards",
+        "tools/acquire-gov-property-awards.mjs"
+      ],
+      "bounded_output": "Award and transaction identifiers with separate ceiling, obligation, and outlay fields.",
+      "residual_fog": "Recipient identity, award hierarchy, subaward coverage, and performance reconciliation remain estate-specific.",
+      "route_id": "usaspending",
+      "used_by_estate_ids": [
+        "public-interest-crossing-estate",
+        "public-money-industrial-policy-estate",
+        "transatlantic-defense-innovation-estate",
+        "us-defense-estate",
+        "us-executive-appointments-ethics-estate",
+        "us-legislative-political-finance-estate"
+      ],
+      "use_count": 6,
+      "locator_state": "surface_complete",
+      "record_acquisition_state": "partially_searched",
+      "graph_effect": "none",
+      "conclusion_generated": false
+    },
+    {
+      "route_label": "White House and agency appointments",
+      "canonical_family_id": "white-house-agency-appointments",
+      "authority": "The White House and executive agencies",
+      "gateway_url": "https://www.whitehouse.gov/presidential-actions/",
+      "documentation_url": "https://www.whitehouse.gov/presidential-actions/",
+      "jurisdiction": "United States",
+      "access_mode": "public_pages",
+      "authentication": "none",
+      "machine_readiness": "official_gateway_only",
+      "repo_refs": [],
+      "bounded_output": "Presidential nominations and appointments plus agency appointment announcements.",
+      "residual_fog": "Announcements are not a complete office-defined cohort; confirmations, commissions, acting service, departures, and agency records must be joined.",
+      "route_id": "white-house-and-agency-appointments",
+      "used_by_estate_ids": [
+        "us-executive-appointments-ethics-estate"
       ],
       "use_count": 1,
       "locator_state": "surface_complete",
@@ -16917,5 +16921,5 @@
     "closure_is_not_estate_completion": true,
     "caveat": "Operational dependency is not evidence. Visual prominence is not importance, suspicion, influence, wrongdoing, or causation. A complete handoff is not an approved publication."
   },
-  "fingerprint": "d28d8ba262bc684fd226"
+  "fingerprint": "30183519568b8225711d"
 }

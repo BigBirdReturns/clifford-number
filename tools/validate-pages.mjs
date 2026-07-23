@@ -5,14 +5,15 @@ import { root } from './lib/ledger.mjs';
 
 const destination = path.join(root, 'dist');
 const required = [
-  'index.html', 'Clifford-Number-standalone.html', 'Clifford-Estate-Aperture-standalone.html', 'app.js', 'styles.css', '.nojekyll',
+  'index.html', 'Clifford-Number-standalone.html', 'Clifford-Estate-Aperture-standalone.html', 'Clifford-Game-Trail-Aperture-standalone.html', 'app.js', 'styles.css', '.nojekyll',
   'build/surface-graph.json', 'build/hop-graph.json', 'build/receipt-graph.json',
   'build/public-catalog.json', 'build/cases/index.json', 'build/cases/field-autopsy-03.json',
   'build/cases/uk-ai-policy.json',
   'build/cases/anduril-access-ownership.json',
   'briefs/anduril-access-ownership.html',
-  'estates/index.html', 'estates/data.json',
-  'build/estate-closures/manifest.json', 'build/estate-closures/us-defense-estate.json',
+  'estates/index.html', 'estates/data.json', 'estates/trails.json', 'gametrails/index.html', 'gametrails/data.json',
+  'build/estate-closures/manifest.json', 'build/estate-frontier/manifest.json', 'build/estate-game-trails/manifest.json',
+  'build/estate-game-trails/overlap-matrix.json', 'build/estate-game-trails/exact-trail-pairs.json', 'build/estate-closures/us-defense-estate.json',
   'build/research/synthetic-population-vendor-denominator.json',
   'build/research/synthetic-population-vendor-denominator.md',
   'build/thesis/case-packet-index.json',
@@ -48,6 +49,7 @@ const required = [
   ...Array.from({ length: 11 }, (_, index) => `src/visual-aperture-part-${index + 1}.js`),
   'src/visual-aperture.css', 'src/visual-aperture-layout.css', 'src/visual-aperture-svg.css',
   'src/estate-aperture-template.html', 'src/estate-aperture.css', 'src/estate-aperture-runtime.js',
+  'src/gametrail-aperture-template.html', 'src/gametrail-aperture.css', 'src/gametrail-aperture-runtime.js',
   'src/visual-aperture-responsive.css', 'src/visual-aperture-workspace.css', 'src/visual-aperture-export.css',
   'assets/social-card.png', 'docs/methodology.md', 'docs/thesis-assembly.md',
   'docs/synthetic-population-vendor-denominator.md', 'docs/thesis-case-packets.md',
@@ -81,6 +83,12 @@ const aperture = [
   ...Array.from({ length: 11 }, (_, index) => fs.readFileSync(path.join(destination, 'src', `visual-aperture-part-${index + 1}.js`), 'utf8'))
 ].join('\n');
 const standalone = fs.readFileSync(path.join(destination, 'Clifford-Number-standalone.html'), 'utf8');
+
+const gameTrailData = JSON.parse(fs.readFileSync(path.join(destination, 'gametrails', 'data.json'), 'utf8'));
+const gameTrailPage = fs.readFileSync(path.join(destination, 'gametrails', 'index.html'), 'utf8');
+const gameTrailStandalone = fs.readFileSync(path.join(destination, 'Clifford-Game-Trail-Aperture-standalone.html'), 'utf8');
+const estateFrontierSurvey = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'estate-frontier', 'manifest.json'), 'utf8'));
+const estateGameTrailManifest = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'estate-game-trails', 'manifest.json'), 'utf8'));
 const denominatorBuild = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'research', 'synthetic-population-vendor-denominator.json'), 'utf8'));
 const denominatorMarkdown = fs.readFileSync(path.join(destination, 'build', 'research', 'synthetic-population-vendor-denominator.md'), 'utf8');
 const casePacketIndex = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'thesis', 'case-packet-index.json'), 'utf8'));
@@ -97,7 +105,29 @@ const legacyEdgeModels = [
   JSON.parse(fs.readFileSync(path.join(destination, 'legacy', 'graph.edge-model.json'), 'utf8')),
   JSON.parse(fs.readFileSync(path.join(destination, 'legacy', 'uk-ai-policy.edge-model.json'), 'utf8')),
 ];
-if (!html.includes('id="main-content"') || !html.includes('href="estates/"') || !app.includes('build/public-catalog.json')) {
+
+if (gameTrailData.schema_version !== 'estate-game-trail-public-data@2'
+  || gameTrailData.manifest?.counts?.estates !== 24
+  || gameTrailData.manifest?.counts?.frontier_estates !== 10
+  || gameTrailData.manifest?.counts?.legacy_preserved_trails !== 35
+  || gameTrailData.manifest?.counts?.total_compiled_trails !== 308
+  || gameTrailData.manifest?.counts?.legacy_trail_estate_evaluations !== 840
+  || gameTrailData.overlap_matrix?.directed_overlap_pairs?.length !== 302
+  || gameTrailData.interpretation_contract?.graph_effect !== 'none'
+  || gameTrailData.interpretation_contract?.conclusion_generated !== false
+  || estateFrontierSurvey.counts?.estates !== 10
+  || estateFrontierSurvey.counts?.raw_records_acquired !== 0
+  || estateGameTrailManifest.counts?.legacy_preserved_trails !== 35
+  || estateGameTrailManifest.counts?.total_compiled_trails !== 308
+  || !gameTrailPage.includes('Game-Trail Aperture')
+  || !gameTrailPage.includes('Cell counts are trail counts, not scores')
+  || !gameTrailStandalone.includes('Game-Trail Aperture')
+  || /<script[^>]+src=/.test(gameTrailStandalone)) {
+  console.error('validate-pages failed: Game-Trail Aperture or frontier survey contract is missing, distorted, or promoted');
+  process.exit(1);
+}
+
+if (!html.includes('id="main-content"') || !html.includes('href="estates/"') || !html.includes('href="gametrails/"') || !app.includes('build/public-catalog.json')) {
   console.error('validate-pages failed: public entrypoint does not expose the explorer and compiled cases');
   process.exit(1);
 }

@@ -70,7 +70,7 @@ function validateEstate(estate, estateIds) {
   for (const field of ['estate_id', 'label', 'generation', 'domain', 'scope', 'current_state', 'dominant_fog', 'boundary']) {
     if (!String(estate[field] ?? '').trim()) fail(`${estate.estate_id ?? 'estate'} lacks ${field}`);
   }
-  if (!['existing', 'next'].includes(estate.generation)) fail(`${estate.estate_id} has invalid generation ${estate.generation}`);
+  if (!['existing', 'next', 'frontier'].includes(estate.generation)) fail(`${estate.estate_id} has invalid generation ${estate.generation}`);
   if (!Array.isArray(estate.jurisdictions) || estate.jurisdictions.length === 0) fail(`${estate.estate_id} lacks jurisdictions`);
   if (!Array.isArray(estate.asset_refs) || estate.asset_refs.length === 0) fail(`${estate.estate_id} lacks asset_refs`);
   if (!Array.isArray(estate.fog) || estate.fog.length === 0) fail(`${estate.estate_id} lacks fog`);
@@ -110,7 +110,7 @@ export function buildEstates({ write = true } = {}) {
 
   if (registry.schema_version !== ESTATE_REGISTRY_SCHEMA_VERSION) fail(`expected ${ESTATE_REGISTRY_SCHEMA_VERSION}`);
   if (registry.graph_effect !== 'none' || registry.conclusion_generated !== false) fail('registry exceeds the non-inference boundary');
-  if (!Array.isArray(registry.estates) || registry.estates.length !== 14) fail('registry must contain fourteen macro estates');
+  if (!Array.isArray(registry.estates) || registry.estates.length !== 24) fail('registry must contain twenty-four macro estates');
 
   walk(registry, (key, item, pointer) => {
     if (FORBIDDEN_KEYS.test(key)) fail(`registry contains prohibited field ${pointer}`);
@@ -127,7 +127,7 @@ export function buildEstates({ write = true } = {}) {
 
   const generationById = new Map();
   for (const generation of registry.generations ?? []) {
-    if (!['existing', 'next'].includes(generation.generation)) fail(`invalid generation ${generation.generation}`);
+    if (!['existing', 'next', 'frontier'].includes(generation.generation)) fail(`invalid generation ${generation.generation}`);
     for (const estateId of generation.estate_ids ?? []) {
       if (!estateIds.has(estateId)) fail(`generation ${generation.generation} references missing estate ${estateId}`);
       if (generationById.has(estateId)) fail(`estate ${estateId} occurs in multiple generations`);
@@ -137,7 +137,10 @@ export function buildEstates({ write = true } = {}) {
   if (generationById.size !== estateIds.size) fail('generation membership does not cover every estate');
   const existingCount = [...generationById.values()].filter(value => value === 'existing').length;
   const nextCount = [...generationById.values()].filter(value => value === 'next').length;
-  if (existingCount !== 4 || nextCount !== 10) fail(`expected four existing and ten next estates, found ${existingCount} and ${nextCount}`);
+  const frontierCount = [...generationById.values()].filter(value => value === 'frontier').length;
+  if (existingCount !== 4 || nextCount !== 10 || frontierCount !== 10) {
+    fail(`expected four existing, ten next, and ten frontier estates, found ${existingCount}, ${nextCount}, and ${frontierCount}`);
+  }
   for (const estate of registry.estates) if (generationById.get(estate.estate_id) !== estate.generation) fail(`${estate.estate_id} generation diverged`);
 
   const cases = publicCatalog.cases ?? [];
@@ -220,6 +223,7 @@ export function buildEstates({ write = true } = {}) {
       estates: compiledEstates.length,
       existing_estates: existingCount,
       next_estates: nextCount,
+      frontier_estates: frontierCount,
       mapped_cases: cases.length,
       mapped_tracks: tracks.length,
       mapped_slices: slices.length,
