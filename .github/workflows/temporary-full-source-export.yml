@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/estate-milestone-diagnostics
+          mkdir -p /tmp/estate-milestone-diagnostics /tmp/estate-milestone-validation
           {
             echo 'chunk diagnostics'
             find .github/temporary/estate-milestone-source-v1 -maxdepth 1 -type f -name 'chunk-*.b64' -print | sort | while read -r file; do
@@ -42,16 +42,9 @@ jobs:
           } > /tmp/estate-milestone-diagnostics/chunks.txt
           cat .github/temporary/estate-milestone-source-v1/chunk-*.b64 > /tmp/estate-milestone-source.b64
           sha256sum /tmp/estate-milestone-source.b64 > /tmp/estate-milestone-diagnostics/combined-b64.sha256
-          set +e
           base64 --decode /tmp/estate-milestone-source.b64 > /tmp/estate-milestone-source.tgz
-          decode_status=$?
-          set -e
-          printf 'decode_status=%s\n' "$decode_status" > /tmp/estate-milestone-diagnostics/decode.txt
-          wc -c /tmp/estate-milestone-source.b64 /tmp/estate-milestone-source.tgz >> /tmp/estate-milestone-diagnostics/decode.txt
+          wc -c /tmp/estate-milestone-source.b64 /tmp/estate-milestone-source.tgz > /tmp/estate-milestone-diagnostics/decode.txt
           sha256sum /tmp/estate-milestone-source.tgz >> /tmp/estate-milestone-diagnostics/decode.txt
-          cat /tmp/estate-milestone-diagnostics/chunks.txt
-          cat /tmp/estate-milestone-diagnostics/decode.txt
-          test "$decode_status" -eq 0
           printf '%s  %s\n' '15d2380b3176a6ebcb3f76f4977bda91918c13c6da79bf2b722f481d108aa043' /tmp/estate-milestone-source.tgz | sha256sum --check
           tar -xzf /tmp/estate-milestone-source.tgz -C .
           rm -rf .github/temporary
@@ -68,20 +61,48 @@ jobs:
           if-no-files-found: warn
           retention-days: 2
 
-      - name: Validate milestone source and products
+      - name: Compile milestone products
         shell: bash
         run: |
-          set -euo pipefail
-          npm run compile
-          npm run validate:estate-closures
-          node test/estate-closures.test.js
-          node test/estate-aperture.test.js
-          node test/estates.test.js
-          node test/estate-fanout.test.js
-          npm run build:pages
-          npm run build:standalone
-          npm run validate:pages
-          npm run release:check
+          set -o pipefail
+          npm run compile 2>&1 | tee /tmp/estate-milestone-validation/01-compile.log
+
+      - name: Validate estate closure contracts
+        shell: bash
+        run: |
+          set -o pipefail
+          {
+            npm run validate:estate-closures
+            node test/estate-closures.test.js
+            node test/estate-aperture.test.js
+            node test/estates.test.js
+            node test/estate-fanout.test.js
+          } 2>&1 | tee /tmp/estate-milestone-validation/02-estate-contracts.log
+
+      - name: Build and validate publication products
+        shell: bash
+        run: |
+          set -o pipefail
+          {
+            npm run build:pages
+            npm run build:standalone
+            npm run validate:pages
+          } 2>&1 | tee /tmp/estate-milestone-validation/03-publication.log
+
+      - name: Run full release gate
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run release:check 2>&1 | tee /tmp/estate-milestone-validation/04-release.log
+
+      - name: Preserve validation diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: estate-milestone-validation-diagnostics
+          path: /tmp/estate-milestone-validation/
+          if-no-files-found: warn
+          retention-days: 2
 
       - name: Publish permanent milestone source
         shell: bash
