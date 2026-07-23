@@ -5,86 +5,33 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-
-concurrency:
-  group: m02-source-materialization
-  cancel-in-progress: false
+  contents: read
 
 jobs:
-  materialize-m02:
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/estate-frontier-02-gametrails'
+  release-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent/estate-frontier-02-gametrails
-          fetch-depth: 0
           show-progress: false
-
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
-
-      - name: Reconstruct and verify the exact source archive
+          node-version: '20'
+      - name: Run repository release gate
         shell: bash
         run: |
-          set -euo pipefail
-          mapfile -t chunks < <(find .github/temporary/m02-source-v1 -maxdepth 1 -type f -name 'chunk-*.b64' | sort)
-          test "${#chunks[@]}" -eq 10
-          for index in $(seq 0 9); do
-            expected=".github/temporary/m02-source-v1/chunk-$(printf '%03d' "$index").b64"
-            test "${chunks[$index]}" = "$expected"
-          done
-          cat "${chunks[@]}" > /tmp/m02-source-only.tgz.b64
-          printf '%s  %s\n' 'c68b67b2ae0920c4675a35ea64c88b2d049307b826534a8292411cb33d7090fd' /tmp/m02-source-only.tgz.b64 | sha256sum -c -
-          base64 --decode /tmp/m02-source-only.tgz.b64 > /tmp/m02-source-only.tgz
-          printf '%s  %s\n' 'a44629e3980a667cdb4119eb7fcb7eea9647db4c6531d12965b60ac608cc171c' /tmp/m02-source-only.tgz | sha256sum -c -
-
-      - name: Refuse unsafe or unexpected archive members
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import PurePosixPath
-          import tarfile
-
-          with tarfile.open('/tmp/m02-source-only.tgz', 'r:gz') as archive:
-              members = archive.getmembers()
-              if len(members) != 63:
-                  raise SystemExit(f'expected 63 archive members, found {len(members)}')
-              for member in members:
-                  path = PurePosixPath(member.name)
-                  if path.is_absolute() or '..' in path.parts:
-                      raise SystemExit(f'unsafe archive path: {member.name}')
-                  if member.issym() or member.islnk():
-                      raise SystemExit(f'archive link not allowed: {member.name}')
+          set +e
+          npm run release:check > /tmp/release-check.log 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            python - <<'PY'
+          from pathlib import Path
+          import re
+          lines = Path('/tmp/release-check.log').read_text(errors='replace').splitlines()
+          relevant = [line.strip() for line in lines if re.search(r'AssertionError|ERR_ASSERTION|failed|Error:|SyntaxError|not found|must |does not|cannot ', line, re.I)]
+          tail = [line.strip() for line in lines[-14:] if line.strip()]
+          message = ' | '.join((relevant[-8:] + tail)[-16:])
+          print('CI_DIAG ' + message[:7000])
           PY
-
-      - name: Materialize, compile, and run the complete Linux gate
-        shell: bash
-        run: |
-          set -euo pipefail
-          tar -xzf /tmp/m02-source-only.tgz -C "$GITHUB_WORKSPACE"
-          npm run compile
-          npm run release:check
-
-      - name: Publish source and products without workflow mutations
-        shell: bash
-        run: |
-          set -euo pipefail
-          git rm -r .github/temporary/m02-source-v1
-          git rm -r .github/temporary/m02-payload
-          git restore --source=HEAD -- .github/workflows/estate-closure-aperture.yml
-          git restore --source=HEAD -- .github/workflows/estate-fanout.yml
-          rm -f .github/workflows/estate-frontier-game-trails.yml
-          test ! -e .github/temporary/m02-source-v1
-          test ! -e .github/temporary/m02-payload
-          git add -A
-          if git diff --cached --name-only | grep -E '^\.github/workflows/'; then
-            echo 'workflow mutation leaked into the Actions-owned commit' >&2
-            exit 1
           fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'Materialize M-02 estate frontier and game trails'
-          git push origin HEAD:agent/estate-frontier-02-gametrails
+          exit "$status"
