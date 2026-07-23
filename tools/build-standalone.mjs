@@ -98,4 +98,8 @@ for (const [index, script] of inlineScripts.entries()) {
 const output = path.join(root, 'dist', 'Clifford-Number-standalone.html');
 fs.mkdirSync(path.dirname(output), { recursive: true });
 fs.writeFileSync(output, html);
-console.log(`build-standalone: ${path.relative(root, output)} (${fs.statSync(output).size} bytes, ${dataPaths.length} embedded records, ${inlineScripts.length} parsed scripts)`);
+const estateApertureSource = path.join(root, 'estates', 'index.html');
+const estateApertureOutput = path.join(root, 'dist', 'Clifford-Estate-Aperture-standalone.html');
+if (!fs.existsSync(estateApertureSource)) throw new Error('Estate Aperture must be rendered before standalone packaging');
+fs.copyFileSync(estateApertureSource, estateApertureOutput);
+console.log(`build-standalone: ${path.relative(root, output)} (${fs.statSync(output).size} bytes, ${dataPaths.length} embedded records, ${inlineScripts.length} parsed scripts); ${path.relative(root, estateApertureOutput)} (${fs.statSync(estateApertureOutput).size} bytes)`);

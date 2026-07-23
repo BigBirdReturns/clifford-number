@@ -133,3 +133,7 @@ node test/estate-fanout.test.js
 ```
 
 The normal compile sequence rebuilds the estate index after cases, reports, the report frontier, and the two estate-slice packages, then emits the disposable fan-out packets.
+
+## Bounded-pass milestone
+
+`estate-aperture-v1` closes the currently declared 143-task fan-out pass to candidate-only handoffs and projects it through `estates/index.html`. See `docs/milestones/estate-aperture-v1.md`. The milestone completes the declared operation, not the underlying estate.

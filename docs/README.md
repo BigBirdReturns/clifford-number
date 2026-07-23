@@ -23,6 +23,8 @@ Read these first:
 - [`methodology.md`](methodology.md) — what creates a hop, how dates work, evidence boundaries, density discipline, and publication behavior.
 - [`reporter-briefings.md`](reporter-briefings.md) — structured, non-narrative case reports whose factual text is compiled from canonical claims and events and whose workplans may expose candidate-only case trails.
 - [`report-waterline.md`](report-waterline.md) — the current transition law from intake or projection through case ledger, structured report, independent review, and approved publication.
+- [`estates.md`](estates.md) — durable domain corpora, estate slices, fog classes, and the bounded acquisition law.
+- [`milestones/estate-aperture-v1.md`](milestones/estate-aperture-v1.md) — the completed fourteen-estate pass and the four-level Estate Aperture waterline.
 - [`definitions.md`](definitions.md) — the current vocabulary in one place.
 - [`redaction-policy.md`](redaction-policy.md) — public-role-only scope and material the project excludes.
 - [`plain-language.md`](plain-language.md) — how narration is generated without adding facts.
@@ -36,6 +38,7 @@ For reports, a trail is not a claim, a canonical claim is not necessarily a date
 - [`research-intake.md`](research-intake.md) — the candidate-surface packet and promotion path.
 - [`field-autopsy.md`](field-autopsy.md) — place-centered case bundles that re-derive an untrusted conversation's claims, plus formation signatures and evidence trails.
 - [`research-fanout.md`](research-fanout.md) — exhaustive scan-to-batch orchestration and its safety boundary.
+- [`estates.md`](estates.md) — the macro-estate registry, source-route fan-out, bounded closure states, and candidate-only handoffs.
 - [`public-interest-discovery.md`](public-interest-discovery.md) — the bounded Epstein, Trump, and Panama Papers source/crossing spine.
 - [`corpus-selection.md`](corpus-selection.md) — constitutional lane-selection symmetry and measured corpus coverage.
 - [`consumption-contract.md`](consumption-contract.md) — copy-ready interpretation caveats and adversarial neutral-universe review.
@@ -56,6 +59,7 @@ A candidate is a research question. It may preserve a non-hop fact, pattern, seq
 - [`release-architecture.md`](release-architecture.md) — current ledger-to-build architecture.
 - [`reporter-briefings.md`](reporter-briefings.md) — the `reporter-briefing@2` source, compiler, manifest, review-queue, Pages, browser, trail, and unsequenced-claim contracts.
 - [`report-waterline.md`](report-waterline.md) — the project-level report frontier and allowed promotion transitions.
+- [`estates.md`](estates.md) — the estate compiler, source-route registry, closure compiler, and Estate Aperture projection.
 - [`adr-reporter-briefing-platform.md`](adr-reporter-briefing-platform.md) — architectural decision that cases are primary truth and reports, graphs, frontiers, routes, and tables are projections.
 - [`plain-language.md`](plain-language.md) — narration contract and flags.
 - [`self-assembling-architecture.md`](self-assembling-architecture.md) — proposed future intake architecture; it does not override the current compiler law.

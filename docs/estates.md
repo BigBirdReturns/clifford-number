@@ -134,3 +134,7 @@ Name similarity, shared sector, chronological proximity, shared investor, roster
 - slice and completion record counts;
 - fog and next acquisitions; and
 - integrity and non-inference boundaries.
+
+## Milestone: bounded estate pass and Estate Aperture
+
+The first complete estate operating pass is recorded in [`docs/milestones/estate-aperture-v1.md`](milestones/estate-aperture-v1.md). It closes all 143 declared tasks to bounded states, preserves residual fog, and publishes the four-level Estate Aperture at `estates/index.html` without claiming that any estate is evidentially complete.

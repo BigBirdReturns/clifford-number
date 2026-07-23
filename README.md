@@ -21,6 +21,15 @@ Official-record growth follows an observation-first crawler contract modeled on 
 
 Start with the audience-based [documentation index](docs/README.md), then read the current [methodology](docs/methodology.md) and [definitions](docs/definitions.md).
 
+
+## Operational waterlines
+
+- **Report waterline:** [`reports/index.html`](reports/index.html) shows cases moving from intake through structured report and independent review.
+- **Estate waterline:** [`estates/index.html`](estates/index.html) exposes 14 durable domain estates, 143 bounded tasks, 66 source routes, 34 shared-source corridors, and 14 candidate-only handoffs through the four-level Estate Aperture.
+- **Milestone M-01:** [`docs/milestones/estate-aperture-v1.md`](docs/milestones/estate-aperture-v1.md) records completion of the declared estate pass without claiming that any estate is evidentially complete.
+
+Both surfaces are projections over typed custody. Neither creates a claim, graph edge, score, allegation, causal conclusion, or publication approval.
+
 ## Core rule
 
 A Clifford Number path may only move from Actor to Actor through a shared bounded Surface.
@@ -78,6 +87,9 @@ build/axm-identity.json
 build/scores.json
 build/migration-review.md
 build/scout-report.md
+build/estate-closures/manifest.json
+estates/data.json
+estates/index.html
 ```
 
 Generated artifacts are disposable. Do not edit them by hand.

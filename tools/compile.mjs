@@ -15,6 +15,8 @@ const steps = [
   ['build-estate-expansion', 'tools/build-estate-expansion.mjs'],
   ['build-estates', 'tools/build-estates.mjs'],
   ['build-estate-fanout', 'tools/build-estate-fanout.mjs'],
+  ['build-estate-closures', 'tools/build-estate-closures.mjs'],
+  ['render-estate-aperture', 'tools/render-estate-aperture.mjs'],
 ];
 
 for (const [name, script] of steps) {
