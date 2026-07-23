@@ -1,0 +1,82 @@
+name: Temporary M-03 source materializer
+
+on:
+  push:
+    branches:
+      - agent/m03-decisive-acquisition-review
+    paths:
+      - '.github/temporary/m03-source/**'
+      - '.github/workflows/temporary-m03-apply.yml'
+  pull_request:
+    paths:
+      - '.github/temporary/m03-source/**'
+      - '.github/workflows/temporary-m03-apply.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-m03-source-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m03-decisive-acquisition-review
+          fetch-depth: 0
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Materialize exact M-03 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/temporary/m03-source/part-*.b64 > /tmp/m03-source-payload.b64
+          printf '%s  %s\n' '1f49c5dc1832fd79eadcccb32b6793fa8ddf6dcf2a779ddfcbda6de28e0fe2cc' /tmp/m03-source-payload.b64 | sha256sum --check --status
+          base64 --decode /tmp/m03-source-payload.b64 > /tmp/m03-source-payload.tgz
+          printf '%s  %s\n' 'ab81f95f5875e1ce9f2ba91aea7077af6b7549fe54ba9ad19556b2a9c261fb31' /tmp/m03-source-payload.tgz | sha256sum --check --status
+          tar -xzf /tmp/m03-source-payload.tgz -C .
+          rm -rf .github/temporary
+          rm -f .github/workflows/temporary-m03-source-export.yml
+          rm -f .github/workflows/temporary-m03-apply.yml
+      - name: Validate permanent M-03 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run compile
+          npm run validate:m03-review
+          node test/m03-acquisition.test.js
+          node test/m03-review.test.js
+          npm run release:check
+      - name: Publish permanent M-03 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -d .github/temporary
+          if find .github/workflows -maxdepth 1 -type f -name 'temporary-m03-*' | grep -q .; then
+            echo 'temporary M-03 workflow survived materialization' >&2
+            exit 1
+          fi
+          rm -rf build/research build/thesis build/m03-test-acquisition
+          git restore --worktree --source=HEAD -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'Build M-03 decisive acquisition review'
+          git push origin HEAD:agent/m03-decisive-acquisition-review
