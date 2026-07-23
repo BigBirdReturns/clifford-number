@@ -3,7 +3,7 @@ name: Materialize estate expansion
 on:
   pull_request:
     paths:
-      - 'data/intake/estate-expansion-01/materialize.tar.gz.b64'
+      - 'data/intake/estate-expansion-01/materialize.part-*'
       - '.github/workflows/materialize-estate-expansion.yml'
   workflow_dispatch:
 
@@ -16,11 +16,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.head_ref || github.ref_name }}
 
-      - name: Extract deterministic expansion package
+      - name: Reassemble and verify deterministic expansion package
         run: |
-          base64 -d data/intake/estate-expansion-01/materialize.tar.gz.b64 > /tmp/estate-expansion.tar.gz
+          cat data/intake/estate-expansion-01/materialize.part-* > /tmp/estate-expansion.tar.gz.b64
+          test "$(wc -c < /tmp/estate-expansion.tar.gz.b64)" = "47608"
+          test "$(sha256sum /tmp/estate-expansion.tar.gz.b64 | cut -d' ' -f1)" = "f0d557880cb62f2d24a65525ac705a74b92162bd309092141eb67911b77a7cbf"
+          base64 -d /tmp/estate-expansion.tar.gz.b64 > /tmp/estate-expansion.tar.gz
+          test "$(sha256sum /tmp/estate-expansion.tar.gz | cut -d' ' -f1)" = "cf3cedd31a584083c6dda8722031f5d4ffb4004582366dedcec778fc36a3f7c7"
+          tar -tzf /tmp/estate-expansion.tar.gz >/dev/null
           tar -xzf /tmp/estate-expansion.tar.gz
           node tools/build-estate-expansion.mjs
           node tools/validate-estate-expansion.mjs
@@ -30,6 +35,6 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/intake/estate-expansion-01 tools/build-estate-expansion.mjs tools/validate-estate-expansion.mjs tools/compile.mjs test/estate-expansion.test.js test/research-tracks.test.js .github/workflows/estate-expansion.yml
+          git add data/intake/estate-expansion-01/README.md data/intake/estate-expansion-01/completion.json data/intake/estate-expansion-01/next-ten.json data/intake/estate-expansion-01/triage.json data/intake/estate-expansion-01/sources.jsonl data/intake/estate-expansion-01/manifest.json tools/build-estate-expansion.mjs tools/validate-estate-expansion.mjs tools/compile.mjs test/estate-expansion.test.js test/research-tracks.test.js .github/workflows/estate-expansion.yml
           git commit -m 'Materialize estate expansion' || exit 0
-          git push origin HEAD:${{ github.head_ref }}
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
