@@ -113,8 +113,8 @@ async function main() {
     await page.locator('#origin-select').selectOption('all');
     await page.locator('#trail-query').fill('pallas ventures');
     await settle(page);
-    assert.match(await page.locator('#stage-body').textContent(), /trail-sally-donnelly-validation/);
-    assert.match(await page.locator('#stage-body').textContent(), /trail-tony-demartino-validation/);
+    assert.equal(await page.locator('[data-trail-id="trail-sally-donnelly-validation"]').count(), 1);
+    assert.equal(await page.locator('[data-trail-id="trail-tony-demartino-validation"]').count(), 1);
     assert.match(await page.locator('#stage-body').textContent(), /vehicle:pallas-ventures/i);
 
     await page.setViewportSize({ width: 390, height: 844 });
