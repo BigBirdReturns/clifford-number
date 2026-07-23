@@ -1,0 +1,36 @@
+name: Temporary full source export
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-full-source-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Preserve exact source tree
+        run: |
+          printf '%s\n' "${GITHUB_SHA}" > SOURCE_HEAD.txt
+          tar \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='dist' \
+            --exclude='build/research-fanout' \
+            --exclude='build/estate-fanout' \
+            -czf /tmp/clifford-source.tgz .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clifford-full-source
+          path: |
+            /tmp/clifford-source.tgz
+            SOURCE_HEAD.txt
+          if-no-files-found: error
+          retention-days: 2
