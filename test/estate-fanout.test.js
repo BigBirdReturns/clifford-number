@@ -87,7 +87,7 @@ assert.equal(
 );
 
 const rendered = first.packets.map(packet => fs.readFileSync(path.join(root, `build/estate-fanout/${packet.estate_id}.md`), 'utf8')).join('\n');
-assert.match(rendered, /source failure is not evidence of absence/i);
+assert.match(rendered, /failed route is not evidence of absence/i);
 assert.match(rendered, /Stop before creating a canonical claim/i);
 assert.doesNotMatch(rendered, /guilt score|risk score|probability score/i);
 
