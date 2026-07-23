@@ -5,12 +5,14 @@ import { root } from './lib/ledger.mjs';
 
 const destination = path.join(root, 'dist');
 const required = [
-  'index.html', 'Clifford-Number-standalone.html', 'app.js', 'styles.css', '.nojekyll',
+  'index.html', 'Clifford-Number-standalone.html', 'Clifford-Estate-Aperture-standalone.html', 'app.js', 'styles.css', '.nojekyll',
   'build/surface-graph.json', 'build/hop-graph.json', 'build/receipt-graph.json',
   'build/public-catalog.json', 'build/cases/index.json', 'build/cases/field-autopsy-03.json',
   'build/cases/uk-ai-policy.json',
   'build/cases/anduril-access-ownership.json',
   'briefs/anduril-access-ownership.html',
+  'estates/index.html', 'estates/data.json',
+  'build/estate-closures/manifest.json', 'build/estate-closures/us-defense-estate.json',
   'build/research/synthetic-population-vendor-denominator.json',
   'build/research/synthetic-population-vendor-denominator.md',
   'build/thesis/case-packet-index.json',
@@ -45,6 +47,7 @@ const required = [
   'src/visual-aperture-workspace-runtime.js', 'src/visual-aperture-export-runtime.js', 'src/visual-aperture.js',
   ...Array.from({ length: 11 }, (_, index) => `src/visual-aperture-part-${index + 1}.js`),
   'src/visual-aperture.css', 'src/visual-aperture-layout.css', 'src/visual-aperture-svg.css',
+  'src/estate-aperture-template.html', 'src/estate-aperture.css', 'src/estate-aperture-runtime.js',
   'src/visual-aperture-responsive.css', 'src/visual-aperture-workspace.css', 'src/visual-aperture-export.css',
   'assets/social-card.png', 'docs/methodology.md', 'docs/thesis-assembly.md',
   'docs/synthetic-population-vendor-denominator.md', 'docs/thesis-case-packets.md',
@@ -94,7 +97,7 @@ const legacyEdgeModels = [
   JSON.parse(fs.readFileSync(path.join(destination, 'legacy', 'graph.edge-model.json'), 'utf8')),
   JSON.parse(fs.readFileSync(path.join(destination, 'legacy', 'uk-ai-policy.edge-model.json'), 'utf8')),
 ];
-if (!html.includes('id="main-content"') || !app.includes('build/public-catalog.json')) {
+if (!html.includes('id="main-content"') || !html.includes('href="estates/"') || !app.includes('build/public-catalog.json')) {
   console.error('validate-pages failed: public entrypoint does not expose the explorer and compiled cases');
   process.exit(1);
 }
