@@ -1,12 +1,15 @@
-# Next ten estates — raw intake
+# Next ten estate slices — raw intake
 
-This package populates one bounded **estate** for each of the project's ten declared research-track harnesses. An estate is a source-addressed raw-data domain with a named denominator, acquisition state, and missing-layer ledger. It is not a finding, case conclusion, graph edge, or publication.
+> **Compatibility note.** This historical package used `estate_id` for bounded site, program, agency, chamber, and cohort packets. The macro registry under `data/estates/` interprets those identifiers as **slice IDs**. Future work reserves **estate** for a durable domain corpus such as the Dialog, UK defense, U.S. defense, or local development estate.
+
+This package populates one bounded **estate slice** for each of the project's ten declared research-track harnesses. A slice is a source-addressed raw-data domain with a named denominator, acquisition state, and missing-layer ledger. It is not a macro estate, finding, case conclusion, graph edge, or publication.
 
 ## Transition boundary
 
 ```text
 official or primary-public raw records
-→ candidate-only estate intake
+→ candidate-only estate slice
+→ durable domain estate
 → typed, receipted case ledger
 → structured report
 → independent review
@@ -23,9 +26,9 @@ conclusion_generated: false
 
 The corpus does not infer coordination, influence, intent, wrongdoing, or causation. It preserves null and incomplete coverage explicitly.
 
-## Estate set
+## Slice set
 
-| # | Estate | Harness | Acquired denominator | State | Current raw state |
+| # | Slice | Harness | Acquired denominator | State | Current raw state |
 |---:|---|---|---:|---|---|
 | 1 | `fulton-county-qoz-centennial-yards` | `opportunity-zones-value-capture` | 27/27 | `surface_complete` | denominator_acquired_anchor_partial |
 | 2 | `district-noho-joint-development` | `metro-station-tod-sweep` | 1/1 | `surface_complete` | anchor_acquired_denominator_partial |
@@ -42,9 +45,9 @@ The operational order follows the existing `data/research-tracks/index.json` dec
 
 ## Files
 
-- `estates.jsonl` — one compact intake row per estate.
+- `estates.jsonl` — one compact historical intake row per slice; the `estate_id` field is retained for compatibility.
 - `sources.jsonl` — official or primary-public source registry.
-- `raw/<estate-id>.json` — acquired records and the layer-by-layer collection frontier.
+- `raw/<slice-id>.json` — acquired records and the layer-by-layer collection frontier.
 - `manifest.json` — deterministic hashes, counts, track coverage, and boundaries.
 
 ## Coverage vocabulary
@@ -54,7 +57,7 @@ The operational order follows the existing `data/research-tracks/index.json` dec
 - `not_searched` — no executed acquisition is claimed for that layer.
 - `unavailable_after_search` — permitted only with structured query, attempted locator, timestamp, and result provenance.
 
-A complete anchor does not make the whole estate complete. For example, a final award page can be complete while deeds, incentive agreements, or disbursement records remain `not_searched`.
+A complete anchor does not make a slice or its parent estate complete. For example, a final award page can be complete while deeds, incentive agreements, disbursement records, and estate-level controls remain open.
 
 ## Build and validate
 
@@ -62,6 +65,7 @@ A complete anchor does not make the whole estate complete. For example, a final 
 npm run build:next-ten-estates
 npm run validate:next-ten-estates
 node test/next-ten-estates.test.js
+node tools/build-estates.mjs
 ```
 
-The validator requires exactly one estate for every currently declared harness, resolves every source ID, checks denominator arithmetic, recomputes raw-file SHA-256 digests, and rejects score, ranking, verdict, finding, and graph-active fields.
+The slice validator requires exactly one slice for every currently declared harness, resolves every source ID, checks denominator arithmetic, recomputes raw-file SHA-256 digests, and rejects score, ranking, verdict, finding, and graph-active fields. The macro-estate compiler then maps each slice to one primary estate and any explicit related estates.
