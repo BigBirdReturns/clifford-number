@@ -52,8 +52,8 @@ async function main() {
     assert.equal(await page.locator('body').getAttribute('data-graph-effect'), 'none');
     assert.equal(await page.locator('body').getAttribute('data-conclusion-generated'), 'false');
     assert.equal(await page.locator('#metrics .metric').count(), 7);
-    assert.match(await page.locator('#metrics').textContent(), /Prepared surveys\s*10/i);
-    assert.match(await page.locator('#metrics').textContent(), /Compiled trails\s*308/i);
+    assert.match(await page.locator('#metrics').textContent(), /10\s*Prepared surveys/i);
+    assert.match(await page.locator('#metrics').textContent(), /308\s*Compiled trails/i);
     assert.equal(await page.locator('.matrix tbody tr').count(), 24);
     assert.equal(await page.locator('.matrix-cell').count(), 576);
     assert.match(await page.locator('#stage-title').textContent(), /First-overlap surface/);
