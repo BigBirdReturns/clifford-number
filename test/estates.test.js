@@ -18,7 +18,7 @@ assert.deepEqual(first.counts, {
   mapped_tracks: 10,
   mapped_slices: 20,
   primary_case_claims: 336,
-  primary_case_receipts: 165,
+  primary_case_receipts: 180,
   slice_records: 793,
   completion_records: 169
 });
