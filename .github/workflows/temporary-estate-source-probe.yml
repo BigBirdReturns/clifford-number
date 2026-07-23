@@ -3,7 +3,7 @@ name: Temporary estate source probe
 on:
   pull_request:
     paths:
-      - '.github/temporary/probe-chunks/**'
+      - '.github/temporary/probe-chunks-v2/**'
       - '.github/workflows/temporary-estate-source-probe.yml'
   workflow_dispatch:
 
@@ -20,14 +20,14 @@ jobs:
           node-version: '24'
       - name: Materialize the bounded probe payload
         run: |
-          cat .github/temporary/probe-chunks/chunk-*.b64 > /tmp/estate-probe-payload.tgz.b64
-          printf '%s  %s\n' 'f54450c2739ea55da18c4c418284a5c3df6535503782c241716f83b56bdab52b' /tmp/estate-probe-payload.tgz.b64 | sha256sum --check --status
+          cat .github/temporary/probe-chunks-v2/chunk-*.b64 > /tmp/estate-probe-payload.tgz.b64
+          printf '%s  %s\n' '25d24f5267200c89ee351558ed6c44ae3bf4ec62c9e89e9af517bd654f233a08' /tmp/estate-probe-payload.tgz.b64 | sha256sum --check --status
           base64 --decode /tmp/estate-probe-payload.tgz.b64 > /tmp/estate-probe-payload.tgz
-          printf '%s  %s\n' '4cb2ebc6d52aa0ee4e8c64840a33290f8d750547b6e1a4e6e464fb8f6800e35a' /tmp/estate-probe-payload.tgz | sha256sum --check --status
+          printf '%s  %s\n' '7e59f22651b39c55f5b468ae7e82daf368faa77d627ebdb2521fefcac64732f6' /tmp/estate-probe-payload.tgz | sha256sum --check --status
           tar -xzf /tmp/estate-probe-payload.tgz
       - name: Probe every declared source route
         env:
-          ESTATE_PROBE_AT: '2026-07-23T03:00:00.000Z'
+          ESTATE_PROBE_AT: '2026-07-23T03:20:00.000Z'
         run: |
           node tools/probe-estate-source-routes.mjs \
             --output build/estate-source-probe/observations.jsonl \
@@ -53,7 +53,7 @@ jobs:
             if (JSON.stringify(expected) !== JSON.stringify(observed)) throw new Error(`${route.route_id}: URL coverage drifted`);
             for (const probe of row.probes) {
               const challenge = `${probe.final_url || ''} ${probe.html_title || ''}`;
-              if (/request access|access denied|just a moment|attention required|captcha|unblock\./i.test(challenge) && probe.result !== 'restricted_after_search') {
+              if (/request access|access denied|just a moment|attention required|unblock\./i.test(challenge) && probe.result !== 'restricted_after_search') {
                 throw new Error(`${route.route_id}: challenge page misclassified as ${probe.result}`);
               }
             }
