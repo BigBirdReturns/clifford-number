@@ -1,0 +1,68 @@
+name: Core thesis and estate alignment
+
+on:
+  pull_request:
+    paths:
+      - 'CORE-THESIS.md'
+      - 'data/project/**'
+      - 'docs/core-thesis.md'
+      - 'docs/project-realignment.md'
+      - 'docs/adr-core-thesis-conversion-architecture.md'
+      - 'tools/build-core-thesis.mjs'
+      - 'tools/validate-core-thesis.mjs'
+      - 'test/core-thesis.test.js'
+      - 'reports/core-thesis/**'
+      - 'build/core-thesis/**'
+      - 'tools/compile.mjs'
+      - 'package.json'
+      - '.github/workflows/core-thesis.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'CORE-THESIS.md'
+      - 'data/project/**'
+      - 'docs/core-thesis.md'
+      - 'docs/project-realignment.md'
+      - 'docs/adr-core-thesis-conversion-architecture.md'
+      - 'tools/build-core-thesis.mjs'
+      - 'tools/validate-core-thesis.mjs'
+      - 'test/core-thesis.test.js'
+      - 'reports/core-thesis/**'
+      - 'build/core-thesis/**'
+      - 'tools/compile.mjs'
+      - 'package.json'
+      - '.github/workflows/core-thesis.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Compile the core thesis and public atlas
+        run: node tools/build-core-thesis.mjs
+      - name: Validate thesis, estate alignment, and generated products
+        run: |
+          node tools/validate-core-thesis.mjs
+          node test/core-thesis.test.js
+      - name: Refuse deterministic drift
+        run: git diff --exit-code -- build/core-thesis reports/core-thesis
+      - uses: actions/upload-artifact@v4
+        with:
+          name: core-thesis-atlas
+          path: |
+            data/project/
+            docs/core-thesis.md
+            docs/project-realignment.md
+            docs/adr-core-thesis-conversion-architecture.md
+            build/core-thesis/
+            reports/core-thesis/
+          if-no-files-found: error
+          retention-days: 90
