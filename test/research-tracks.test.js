@@ -1,4 +1,4 @@
-// Regression: research-track harnesses, estate slices, and macro estates stay conformant.
+// Regression: research-track harnesses, estate slices, macro estates, and their fan-out stay conformant.
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +17,8 @@ try {
   run('tools/validate-research-tracks.mjs', /OK — 10 tracks/);
   run('tools/validate-estate-expansion.mjs', /OK — 48 first-pass closures, 10 second-cohort estates/);
   run('tools/validate-estates.mjs', /OK \(14 macro estates, 20 slices, 4 cases, 10 tracks\)/);
+  run('test/estate-fanout.test.js', /OK \(14 estates, \d+ tasks, \d+ source routes\)/);
+  run('tools/validate-estate-fanout.mjs', /OK \(14 estate lanes, \d+ tasks, \d+ source routes\)/);
   console.log('research-tracks.test: OK');
 } catch (error) {
   console.error('research-tracks.test: FAIL');
