@@ -75,7 +75,8 @@ for (const estate of first.estates) {
 }
 
 const readme = fs.readFileSync('data/intake/next-ten-estates/README.md', 'utf8');
-assert.match(readme, /one bounded \*\*estate\*\* for each/i);
+assert.match(readme, /one bounded \*\*estate slice\*\* for each/i);
+assert.match(readme, /historical package used `estate_id`/i);
 assert.match(readme, /not a merit score or subject ranking/i);
 
 console.log('next-ten-estates.test: OK');
