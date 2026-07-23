@@ -3,7 +3,7 @@ name: Temporary estate source probe
 on:
   pull_request:
     paths:
-      - '.github/temporary/estate-probe-payload.tgz.b64'
+      - '.github/temporary/probe-chunks/**'
       - '.github/workflows/temporary-estate-source-probe.yml'
   workflow_dispatch:
 
@@ -20,7 +20,9 @@ jobs:
           node-version: '24'
       - name: Materialize the bounded probe payload
         run: |
-          base64 --decode .github/temporary/estate-probe-payload.tgz.b64 > /tmp/estate-probe-payload.tgz
+          cat .github/temporary/probe-chunks/chunk-*.b64 > /tmp/estate-probe-payload.tgz.b64
+          printf '%s  %s\n' 'f54450c2739ea55da18c4c418284a5c3df6535503782c241716f83b56bdab52b' /tmp/estate-probe-payload.tgz.b64 | sha256sum --check --status
+          base64 --decode /tmp/estate-probe-payload.tgz.b64 > /tmp/estate-probe-payload.tgz
           printf '%s  %s\n' '4cb2ebc6d52aa0ee4e8c64840a33290f8d750547b6e1a4e6e464fb8f6800e35a' /tmp/estate-probe-payload.tgz | sha256sum --check --status
           tar -xzf /tmp/estate-probe-payload.tgz
       - name: Probe every declared source route
