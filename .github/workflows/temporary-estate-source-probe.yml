@@ -35,8 +35,10 @@ jobs:
             --timeout-ms 20000 \
             --max-bytes 262144
       - name: Validate and summarize bounded route states
+        env:
+          ESTATE_SOURCE_OBSERVATIONS_PATH: build/estate-source-probe/observations.jsonl
         run: |
-          node tools/validate-estate-source-routes.mjs --observations build/estate-source-probe/observations.jsonl
+          node tools/validate-estate-source-routes.mjs
           node - <<'NODE'
           const fs = require('node:fs');
           const rows = fs.readFileSync('build/estate-source-probe/observations.jsonl', 'utf8').trim().split(/\n/).filter(Boolean).map(JSON.parse);
@@ -45,8 +47,9 @@ jobs:
           console.log(JSON.stringify({ routes: rows.length, counts }));
           NODE
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: estate-source-probe
           path: build/estate-source-probe/
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 2
