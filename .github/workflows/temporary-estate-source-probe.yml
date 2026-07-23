@@ -35,13 +35,29 @@ jobs:
             --timeout-ms 20000 \
             --max-bytes 262144
       - name: Validate and summarize bounded route states
-        env:
-          ESTATE_SOURCE_OBSERVATIONS_PATH: build/estate-source-probe/observations.jsonl
         run: |
-          node tools/validate-estate-source-routes.mjs
           node - <<'NODE'
           const fs = require('node:fs');
+          const catalog = JSON.parse(fs.readFileSync('data/estates/source-route-catalog.json', 'utf8'));
           const rows = fs.readFileSync('build/estate-source-probe/observations.jsonl', 'utf8').trim().split(/\n/).filter(Boolean).map(JSON.parse);
+          const allowed = new Set(['source_surface_observed','locator_observed','source_in_custody_live_route_unavailable','restricted_after_search','not_found_after_search','unavailable_after_search']);
+          if (rows.length !== catalog.routes.length || rows.length !== 66) throw new Error(`expected 66 route observations, saw ${rows.length}`);
+          if (new Set(rows.map(row => row.route_id)).size !== rows.length) throw new Error('duplicate route observation');
+          const byId = new Map(rows.map(row => [row.route_id, row]));
+          for (const route of catalog.routes) {
+            const row = byId.get(route.route_id);
+            if (!row) throw new Error(`missing ${route.route_id}`);
+            if (!allowed.has(row.coverage_state)) throw new Error(`${route.route_id}: invalid state ${row.coverage_state}`);
+            const expected = [...route.probe_urls].sort();
+            const observed = [...row.probes.map(probe => probe.requested_url)].sort();
+            if (JSON.stringify(expected) !== JSON.stringify(observed)) throw new Error(`${route.route_id}: URL coverage drifted`);
+            for (const probe of row.probes) {
+              const challenge = `${probe.final_url || ''} ${probe.html_title || ''}`;
+              if (/request access|access denied|just a moment|attention required|captcha|unblock\./i.test(challenge) && probe.result !== 'restricted_after_search') {
+                throw new Error(`${route.route_id}: challenge page misclassified as ${probe.result}`);
+              }
+            }
+          }
           const counts = Object.fromEntries([...new Set(rows.map(row => row.coverage_state))].sort().map(state => [state, rows.filter(row => row.coverage_state === state).length]));
           fs.writeFileSync('build/estate-source-probe/summary.json', JSON.stringify({ routes: rows.length, counts }, null, 2) + '\n');
           console.log(JSON.stringify({ routes: rows.length, counts }));
