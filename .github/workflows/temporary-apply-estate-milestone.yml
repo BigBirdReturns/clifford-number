@@ -1,0 +1,78 @@
+name: Temporary apply Estate Aperture milestone
+
+on:
+  push:
+    branches:
+      - agent/close-estates-and-open-aperture
+    paths:
+      - '.github/temporary/estate-milestone-source-v1/**'
+      - '.github/workflows/temporary-apply-estate-milestone.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-apply-estate-milestone
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/close-estates-and-open-aperture
+          fetch-depth: 0
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Materialize exact milestone source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/temporary/estate-milestone-source-v1/chunk-*.b64 > /tmp/estate-milestone-source.b64
+          base64 --decode /tmp/estate-milestone-source.b64 > /tmp/estate-milestone-source.tgz
+          printf '%s  %s\n' '15d2380b3176a6ebcb3f76f4977bda91918c13c6da79bf2b722f481d108aa043' /tmp/estate-milestone-source.tgz | sha256sum --check --status
+          tar -xzf /tmp/estate-milestone-source.tgz -C .
+          rm -rf .github/temporary
+          rm -f .github/workflows/temporary-full-source-export.yml
+          rm -f .github/workflows/temporary-estate-source-probe.yml
+          rm -f .github/workflows/temporary-apply-estate-milestone.yml
+
+      - name: Validate source and generated products
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run compile
+          npm run validate:estate-closures
+          node test/estate-closures.test.js
+          node test/estate-aperture.test.js
+          node test/estates.test.js
+          node test/estate-fanout.test.js
+          npm run build:pages
+          npm run build:standalone
+          npm run validate:pages
+          npm run release:check
+
+      - name: Publish permanent milestone source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -d .github/temporary
+          if find .github/workflows -maxdepth 1 -type f -name 'temporary-*' | grep -q .; then
+            echo 'temporary workflow survived source materialization' >&2
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'No permanent source changes to publish.'
+            exit 0
+          fi
+          git commit -m 'Ship Estate Aperture v1 milestone'
+          git push origin HEAD:agent/close-estates-and-open-aperture
