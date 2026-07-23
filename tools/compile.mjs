@@ -13,6 +13,7 @@ const steps = [
   ['render-report-frontier', 'tools/render-report-frontier.mjs'],
   ['build-next-ten-estates', 'tools/build-next-ten-estates.mjs'],
   ['build-estate-expansion', 'tools/build-estate-expansion.mjs'],
+  ['build-estates', 'tools/build-estates.mjs'],
 ];
 
 for (const [name, script] of steps) {
