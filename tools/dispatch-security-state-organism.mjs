@@ -208,7 +208,7 @@ if (mode === 'apply') {
       receipt.estate_comments_created.push(handoff.issue_number);
     } else if (existing.body !== body) {
       await call('PATCH', `/repos/${owner}/${repo}/issues/comments/${existing.id}`, { body });
-      receipt.estate_comments_updated.push(handoff.isssue_number);
+      receipt.estate_comments_updated.push(handoff.issue_number);
       if (legacyMatch) receipt.migrated_legacy_estate_comments.push(handoff.issue_number);
     } else receipt.estate_comments_unchanged.push(handoff.issue_number);
   }

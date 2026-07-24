@@ -97,4 +97,6 @@ for (const id of waveIds) { const record = evidenceById.get(id); assert.ok(recor
 assert.ok(routes.routes.find((x) => x.route_id === 'EREBOR-OCC').locators.some((x) => x.evidence_ids.includes('M04B-EV-011')));
 assert.ok(routes.routes.find((x) => x.route_id === 'US-IAPD').locators.some((x) => x.evidence_ids.includes('M04B-EV-015')));
 assert.ok(routes.routes.find((x) => x.route_id === 'US-SEC-FORM-D').locators.some((x) => x.evidence_ids.includes('M04B-EV-016')));
+assert.ok(dispatcher.includes('receipt.estate_comments_updated.push(handoff.issue_number);'));
+assert.equal(dispatcher.includes('isssue_number'), false);
 console.log('security-state-organism.test: ok');
