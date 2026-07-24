@@ -28,43 +28,80 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Reassemble and verify source payload
+      - name: Diagnose and reassemble source payload
         run: |
           python - <<'PY'
           import base64
           import hashlib
+          import json
+          import traceback
           from pathlib import Path
 
-          root = Path('.github/temporary/m04e-constitutional-awareness')
-          parts = sorted(root.glob('part-*.txt'))
-          if [p.name for p in parts] != [f'part-{i:02d}.txt' for i in range(7)]:
-              raise SystemExit(f'unexpected payload parts: {[p.name for p in parts]}')
+          diagnostic = {'ok': False}
+          try:
+              root = Path('.github/temporary/m04e-constitutional-awareness')
+              parts = sorted(root.glob('part-*.txt'))
+              diagnostic['cwd'] = str(Path.cwd())
+              diagnostic['parts'] = []
+              chunks = []
+              for part in parts:
+                  raw = part.read_bytes()
+                  text = ''.join(raw.decode('utf-8').split())
+                  diagnostic['parts'].append({
+                      'name': part.name,
+                      'raw_bytes': len(raw),
+                      'git_blob_sha1': hashlib.sha1(f'blob {len(raw)}\0'.encode() + raw).hexdigest(),
+                      'sha256': hashlib.sha256(raw).hexdigest(),
+                      'base64_chars_after_whitespace_removal': len(text),
+                  })
+                  chunks.append(text)
 
-          chunks = []
-          for part in parts:
-              text = ''.join(part.read_text(encoding='utf-8').split())
-              chunks.append(text)
-              print(f'{part.name}: {len(text)} base64 chars')
+              diagnostic['expected_parts'] = [f'part-{i:02d}.txt' for i in range(7)]
+              diagnostic['actual_parts'] = [p.name for p in parts]
+              encoded = ''.join(chunks)
+              diagnostic['assembled_base64_chars'] = len(encoded)
+              diagnostic['assembled_base64_sha256'] = hashlib.sha256(encoded.encode('ascii')).hexdigest()
+              diagnostic['expected_base64_chars'] = 47092
+              diagnostic['expected_base64_sha256'] = '38e5e01771381731412571f96b4485a9de09a61122aebe21b1ae99639364d4bd'
 
-          encoded = ''.join(chunks)
-          encoded_digest = hashlib.sha256(encoded.encode('ascii')).hexdigest()
-          print(f'assembled base64 chars: {len(encoded)}')
-          print(f'assembled base64 sha256: {encoded_digest}')
-          if len(encoded) != 47092:
-              raise SystemExit(f'base64 length mismatch: {len(encoded)} != 47092')
-          if encoded_digest != '38e5e01771381731412571f96b4485a9de09a61122aebe21b1ae99639364d4bd':
-              raise SystemExit('base64 text checksum mismatch')
+              payload = base64.b64decode(encoded, validate=True)
+              diagnostic['payload_bytes'] = len(payload)
+              diagnostic['payload_sha256'] = hashlib.sha256(payload).hexdigest()
+              diagnostic['expected_payload_bytes'] = 35318
+              diagnostic['expected_payload_sha256'] = '5234615d7c00a644e1e7fe8324bc3a476d58ff5265fb100ec5df29fb6a312f95'
 
-          payload = base64.b64decode(encoded, validate=True)
-          payload_digest = hashlib.sha256(payload).hexdigest()
-          print(f'payload bytes: {len(payload)}')
-          print(f'payload sha256: {payload_digest}')
-          if len(payload) != 35318:
-              raise SystemExit(f'payload length mismatch: {len(payload)} != 35318')
-          if payload_digest != '5234615d7c00a644e1e7fe8324bc3a476d58ff5265fb100ec5df29fb6a312f95':
-              raise SystemExit('payload checksum mismatch')
+              checks = {
+                  'part_names': diagnostic['actual_parts'] == diagnostic['expected_parts'],
+                  'base64_length': diagnostic['assembled_base64_chars'] == diagnostic['expected_base64_chars'],
+                  'base64_sha256': diagnostic['assembled_base64_sha256'] == diagnostic['expected_base64_sha256'],
+                  'payload_length': diagnostic['payload_bytes'] == diagnostic['expected_payload_bytes'],
+                  'payload_sha256': diagnostic['payload_sha256'] == diagnostic['expected_payload_sha256'],
+              }
+              diagnostic['checks'] = checks
+              diagnostic['ok'] = all(checks.values())
+              if diagnostic['ok']:
+                  Path('/tmp/m04e-source.tgz').write_bytes(payload)
+          except Exception as exc:
+              diagnostic['exception'] = repr(exc)
+              diagnostic['traceback'] = traceback.format_exc()
 
-          Path('/tmp/m04e-source.tgz').write_bytes(payload)
+          Path('/tmp/m04e-diagnostic.json').write_text(json.dumps(diagnostic, indent=2) + '\n')
+          print(json.dumps(diagnostic, indent=2))
+          PY
+      - name: Upload payload diagnostic
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04e-payload-diagnostic-${{ github.run_attempt }}
+          path: /tmp/m04e-diagnostic.json
+          if-no-files-found: error
+      - name: Verify source payload
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          diagnostic = json.loads(Path('/tmp/m04e-diagnostic.json').read_text())
+          if not diagnostic.get('ok'):
+              raise SystemExit('payload diagnostic failed')
           PY
           tar -tzf /tmp/m04e-source.tgz
       - name: Extract permanent source files
