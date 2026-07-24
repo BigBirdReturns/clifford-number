@@ -1,0 +1,92 @@
+name: Temporary materialize M-04B decisive acquisition wave 01
+
+on:
+  push:
+    branches: [agent/m04b-decisive-acquisition-wave-01]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m04b-wave-01-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Materialize exact source-bounded wave
+        run: |
+          node .github/temporary/m04b-wave-01/materialize.mjs
+          node tools/build-security-state-organism.mjs
+          node tools/validate-security-state-organism.mjs
+          node test/security-state-organism.test.js
+          M04B_REPOSITORY="$GITHUB_REPOSITORY" node tools/dispatch-security-state-organism.mjs --dry-run
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Remove one-shot carrier and rerun final gates
+        run: |
+          rm -rf .github/temporary/m04b-wave-01
+          rm -f .github/workflows/temporary-m04b-wave-01.yml
+          node tools/build-security-state-organism.mjs
+          node tools/validate-security-state-organism.mjs
+          node test/security-state-organism.test.js
+          M04B_REPOSITORY="$GITHUB_REPOSITORY" node tools/dispatch-security-state-organism.mjs --dry-run
+          npm run release:check
+          git diff --check
+      - name: Refuse unrelated durable drift
+        run: |
+          python - <<'PY'
+          import subprocess, sys
+          allowed_exact = {
+            'data/intake/security-state-organism-evidence-intake.json',
+            'data/intake/security-state-organism-source-routes.json',
+            'data/intake/security-state-organism-decisive-acquisition-wave-01.json',
+            'data/project/security-state-work-packages.json',
+            'tools/validate-security-state-organism.mjs',
+            'test/security-state-organism.test.js',
+            'docs/milestones/m04b-decisive-acquisition-wave-01.md',
+            '.github/workflows/temporary-m04b-wave-01.yml',
+          }
+          allowed_prefix = (
+            'build/core-thesis/security-state-organism/',
+            'reports/core-thesis/security-state-organism/',
+            '.github/temporary/m04b-wave-01/',
+          )
+          rows = subprocess.check_output(['git','status','--porcelain'], text=True).splitlines()
+          paths=[]
+          for row in rows:
+            p=row[3:]
+            if ' -> ' in p: p=p.split(' -> ',1)[1]
+            paths.append(p)
+          bad=[p for p in paths if p not in allowed_exact and not p.startswith(allowed_prefix)]
+          print('\n'.join(paths))
+          if bad:
+            print('unexpected durable drift:', *bad, sep='\n', file=sys.stderr)
+            sys.exit(1)
+          PY
+      - name: Commit verified permanent wave
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- \
+            .github/temporary/m04b-wave-01 \
+            .github/workflows/temporary-m04b-wave-01.yml \
+            data/intake/security-state-organism-evidence-intake.json \
+            data/intake/security-state-organism-source-routes.json \
+            data/intake/security-state-organism-decisive-acquisition-wave-01.json \
+            data/project/security-state-work-packages.json \
+            tools/validate-security-state-organism.mjs \
+            test/security-state-organism.test.js \
+            docs/milestones/m04b-decisive-acquisition-wave-01.md \
+            build/core-thesis/security-state-organism \
+            reports/core-thesis/security-state-organism
+          git commit -m "Execute M-04B decisive acquisition wave 01"
+          git push origin HEAD:${GITHUB_REF_NAME}
