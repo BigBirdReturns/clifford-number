@@ -18,7 +18,7 @@ permissions:
 
 concurrency:
   group: temporary-security-state-lineage-materialize
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   materialize:
@@ -83,7 +83,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
-      - name: Publish permanent source and deterministic products
+      - name: Stage permanent source and deterministic products
         shell: bash
         run: |
           set -euo pipefail
@@ -99,5 +99,22 @@ jobs:
           git add -A
           git diff --cached --check
           git status --short
-          git commit -m 'Reframe the project around the security-state lineage'
+          git diff --cached --stat
+
+      - name: Commit permanent source and deterministic products
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --cached --quiet; then
+            echo 'No materialization changes to commit.'
+          else
+            git commit -m 'Reframe the project around the security-state lineage'
+          fi
+
+      - name: Publish exact branch state
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin agent/security-state-lineage-organism
+          git rebase origin/agent/security-state-lineage-organism
           git push origin HEAD:agent/security-state-lineage-organism
