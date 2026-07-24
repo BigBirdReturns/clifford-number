@@ -55,7 +55,7 @@ Does this estate supply independently receipted organs, lineage transitions, tra
 - `US-IRS-990` — US IRS 990 · `candidate_system_locator` · https://www.irs.gov/charities-non-profits/tax-exempt-organization-search
 - `US-IRS-TEOS` — US IRS TEOS · `candidate_system_locator` · https://apps.irs.gov/app/eos/
 - `US-LOBBYING-DISCLOSURE` — US LOBBYING DISCLOSURE · `candidate_system_locator` · https://lda.senate.gov/system/public/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 - `US-STATE-CHARITY` — US STATE CHARITY · `unresolved_locator` · locator unresolved
 
 ## Source-bounded evidence intake

@@ -50,8 +50,8 @@ What exact legal, financial, technical, personnel, public-gate, deployment, cons
 
 - `LUX-OFFICIAL` — LUX OFFICIAL · `candidate_first_party_locator` · https://www.luxcapital.com/
 - `TRAYSAR-OFFICIAL` — TRAYSAR OFFICIAL · `source_bounded_locator` · https://traysar.com/news/traysar-raises-25m-seed
-- `US-IAPD` — US IAPD · `candidate_system_locator` · https://adviserinfo.sec.gov/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-IAPD` — US IAPD · `source_bounded_locator` · https://adviserinfo.sec.gov/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 
 ## Source-bounded evidence intake
 

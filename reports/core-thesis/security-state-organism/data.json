@@ -1,6 +1,6 @@
 {
   "schema_version": "security-state-organism-public@2",
-  "source_fingerprint": "750a64c1de3c8b17b299ab251374338563e74f3a57ac0b66fda186b938e49e42",
+  "source_fingerprint": "a722803b455042fd5fde7c03b42ea88b4855155f7a20320bca571f471efbe891",
   "program": {
     "schema_version": "security-state-organism-program@2",
     "program_id": "m04b-security-state-organism-evidence",
@@ -355,8 +355,8 @@
       "title_explicit_candidate_targets": 18,
       "unresolved_target_selection": 15
     },
-    "evidence_linked_packages": 27,
-    "evidence_records": 9,
+    "evidence_linked_packages": 33,
+    "evidence_records": 17,
     "entities": 41,
     "entity_resolution_states": {
       "alias_unresolved": 2,
@@ -368,9 +368,9 @@
     },
     "source_routes": 82,
     "source_route_states": {
-      "candidate_first_party_locator": 11,
-      "candidate_system_locator": 50,
-      "source_bounded_locator": 7,
+      "candidate_first_party_locator": 10,
+      "candidate_system_locator": 48,
+      "source_bounded_locator": 10,
       "unresolved_locator": 14
     },
     "estates": 24,
@@ -4586,14 +4586,25 @@
       "label": "EREBOR FDIC",
       "venue": "U.S. official or primary-public system",
       "jurisdiction": "United States",
-      "locator_status": "candidate_first_party_locator",
+      "locator_status": "source_bounded_locator",
       "url": "https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio",
       "locators": [
         {
           "url": "https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio",
-          "scope": "system_or_first_party_entrypoint",
-          "verification_state": "first_party_locator_not_independent_evidence",
-          "evidence_ids": []
+          "scope": "exact_source_record",
+          "verification_state": "source_bounded_intake",
+          "evidence_ids": [
+            "M04B-EV-013"
+          ]
+        },
+        {
+          "url": "https://www.fdic.gov/bank-examinations/decisions-bank-applications-deposit-insurance",
+          "scope": "exact_source_record",
+          "verification_state": "source_bounded_intake",
+          "evidence_ids": [
+            "M04B-EV-014",
+            "M04B-EV-017"
+          ]
         }
       ],
       "access": "public_web",
@@ -4632,6 +4643,16 @@
           "verification_state": "source_bounded_intake",
           "evidence_ids": [
             "M04B-EV-002"
+          ]
+        },
+        {
+          "url": "https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101a.pdf",
+          "scope": "exact_source_record",
+          "verification_state": "source_bounded_intake",
+          "evidence_ids": [
+            "M04B-EV-010",
+            "M04B-EV-011",
+            "M04B-EV-012"
           ]
         }
       ],
@@ -6271,7 +6292,7 @@
       "label": "US IAPD",
       "venue": "U.S. official or primary-public system",
       "jurisdiction": "United States",
-      "locator_status": "candidate_system_locator",
+      "locator_status": "source_bounded_locator",
       "url": "https://adviserinfo.sec.gov/",
       "locators": [
         {
@@ -6279,6 +6300,14 @@
           "scope": "system_or_first_party_entrypoint",
           "verification_state": "bounded_system_locator_requires_record_level_acquisition",
           "evidence_ids": []
+        },
+        {
+          "url": "https://adviserinfo.sec.gov/firm/summary/326901",
+          "scope": "exact_source_record",
+          "verification_state": "source_bounded_intake",
+          "evidence_ids": [
+            "M04B-EV-015"
+          ]
         }
       ],
       "access": "public_web",
@@ -6605,7 +6634,7 @@
       "label": "US SEC FORM D",
       "venue": "U.S. official or primary-public system",
       "jurisdiction": "United States",
-      "locator_status": "candidate_system_locator",
+      "locator_status": "source_bounded_locator",
       "url": "https://www.sec.gov/edgar/search/",
       "locators": [
         {
@@ -6613,6 +6642,14 @@
           "scope": "system_or_first_party_entrypoint",
           "verification_state": "bounded_system_locator_requires_record_level_acquisition",
           "evidence_ids": []
+        },
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/2080468/000147083125000151/xslFormDX01/primary_doc.xml",
+          "scope": "exact_source_record",
+          "verification_state": "regulatory_filing_source_bounded_intake",
+          "evidence_ids": [
+            "M04B-EV-016"
+          ]
         }
       ],
       "access": "public_web",
@@ -7382,7 +7419,13 @@
       "evidence_record_ids": [
         "M04B-EV-001",
         "M04B-EV-002",
-        "M04B-EV-007"
+        "M04B-EV-007",
+        "M04B-EV-010",
+        "M04B-EV-011",
+        "M04B-EV-012",
+        "M04B-EV-013",
+        "M04B-EV-014",
+        "M04B-EV-017"
       ]
     },
     {
@@ -9504,7 +9547,13 @@
       "evidence_record_ids": [
         "M04B-EV-001",
         "M04B-EV-002",
-        "M04B-EV-007"
+        "M04B-EV-007",
+        "M04B-EV-010",
+        "M04B-EV-011",
+        "M04B-EV-012",
+        "M04B-EV-013",
+        "M04B-EV-014",
+        "M04B-EV-017"
       ]
     },
     {
@@ -10867,7 +10916,9 @@
         "entity_resolution_creates_relationship": false,
         "candidate_organ_assignment_is_finding": false
       },
-      "evidence_record_ids": []
+      "evidence_record_ids": [
+        "M04B-EV-011"
+      ]
     },
     {
       "package_id": "ENT-peter-thiel",
@@ -11166,7 +11217,9 @@
       "evidence_record_ids": [
         "M04B-EV-003",
         "M04B-EV-006",
-        "M04B-EV-007"
+        "M04B-EV-007",
+        "M04B-EV-015",
+        "M04B-EV-016"
       ]
     },
     {
@@ -14157,7 +14210,13 @@
       },
       "evidence_record_ids": [
         "M04B-EV-001",
-        "M04B-EV-002"
+        "M04B-EV-002",
+        "M04B-EV-010",
+        "M04B-EV-011",
+        "M04B-EV-012",
+        "M04B-EV-013",
+        "M04B-EV-014",
+        "M04B-EV-017"
       ]
     },
     {
@@ -15290,7 +15349,11 @@
         "entity_resolution_creates_relationship": false,
         "candidate_organ_assignment_is_finding": false
       },
-      "evidence_record_ids": []
+      "evidence_record_ids": [
+        "M04B-EV-011",
+        "M04B-EV-015",
+        "M04B-EV-016"
+      ]
     },
     {
       "package_id": "LIN-L1-capture",
@@ -16321,7 +16384,11 @@
         "M04B-EV-001",
         "M04B-EV-002",
         "M04B-EV-008",
-        "M04B-EV-009"
+        "M04B-EV-009",
+        "M04B-EV-010",
+        "M04B-EV-012",
+        "M04B-EV-013",
+        "M04B-EV-014"
       ]
     },
     {
@@ -16464,7 +16531,9 @@
       },
       "evidence_record_ids": [
         "M04B-EV-004",
-        "M04B-EV-006"
+        "M04B-EV-006",
+        "M04B-EV-011",
+        "M04B-EV-016"
       ]
     },
     {
@@ -16765,7 +16834,11 @@
         "candidate_organ_assignment_is_finding": false
       },
       "evidence_record_ids": [
-        "M04B-EV-005"
+        "M04B-EV-005",
+        "M04B-EV-011",
+        "M04B-EV-012",
+        "M04B-EV-015",
+        "M04B-EV-016"
       ]
     },
     {
@@ -16851,7 +16924,11 @@
         "entity_resolution_creates_relationship": false,
         "candidate_organ_assignment_is_finding": false
       },
-      "evidence_record_ids": []
+      "evidence_record_ids": [
+        "M04B-EV-012",
+        "M04B-EV-013",
+        "M04B-EV-017"
+      ]
     },
     {
       "package_id": "ORG-O2-convening",
@@ -17142,7 +17219,11 @@
       "evidence_record_ids": [
         "M04B-EV-003",
         "M04B-EV-006",
-        "M04B-EV-007"
+        "M04B-EV-007",
+        "M04B-EV-011",
+        "M04B-EV-012",
+        "M04B-EV-015",
+        "M04B-EV-016"
       ]
     },
     {
@@ -17250,7 +17331,12 @@
       },
       "evidence_record_ids": [
         "M04B-EV-001",
-        "M04B-EV-002"
+        "M04B-EV-002",
+        "M04B-EV-010",
+        "M04B-EV-011",
+        "M04B-EV-012",
+        "M04B-EV-013",
+        "M04B-EV-014"
       ]
     },
     {
@@ -18644,7 +18730,11 @@
         "entity_resolution_creates_relationship": false,
         "candidate_organ_assignment_is_finding": false
       },
-      "evidence_record_ids": []
+      "evidence_record_ids": [
+        "M04B-EV-012",
+        "M04B-EV-016",
+        "M04B-EV-017"
+      ]
     },
     {
       "package_id": "TST-T4-coordination",
@@ -18715,7 +18805,9 @@
         "entity_resolution_creates_relationship": false,
         "candidate_organ_assignment_is_finding": false
       },
-      "evidence_record_ids": []
+      "evidence_record_ids": [
+        "M04B-EV-011"
+      ]
     },
     {
       "package_id": "TST-T5-reproduction",
@@ -18786,7 +18878,10 @@
         "entity_resolution_creates_relationship": false,
         "candidate_organ_assignment_is_finding": false
       },
-      "evidence_record_ids": []
+      "evidence_record_ids": [
+        "M04B-EV-016",
+        "M04B-EV-017"
+      ]
     },
     {
       "package_id": "TST-T6-feedback",
@@ -19466,6 +19561,503 @@
         "completeness or consistency of the vetting process"
       ],
       "next_acquisition": "Acquire annual applicant and eligible denominators, selectors, scoring data, exclusions, corrections, contract-source matching, FOCI procedure, non-selected controls, and subsequent award outcomes.",
+      "boundaries": {
+        "promotes_to": "candidate_only",
+        "graph_effect": "none",
+        "conclusion_generated": false,
+        "estate_completion_claimed": false,
+        "shared_investor_proves_common_design": false,
+        "shared_personnel_proves_coordination": false,
+        "deployment_in_one_theater_proves_transfer": false,
+        "founder_ideology_proves_operational_effect": false,
+        "profit_proves_self_dealing": false,
+        "national_security_need_proves_abuse": false,
+        "route_presence_proves_relationship": false,
+        "deterministic_generation_proves_evidence": false,
+        "packet_count_proves_coverage": false,
+        "synthetic_routing_allowed": false,
+        "source_failure_proves_absence": false,
+        "first_party_claim_is_independently_verified": false,
+        "entity_resolution_creates_relationship": false,
+        "candidate_organ_assignment_is_finding": false
+      }
+    },
+    {
+      "evidence_id": "M04B-EV-010",
+      "acquisition_wave": "M04B-W01",
+      "observed_at": "2026-07-24",
+      "source_date": "2025-10-15",
+      "source_type": "official_public_record",
+      "source_route_id": "EREBOR-OCC",
+      "source_title": "OCC conditional approval letter — charter identity and business model",
+      "source_url": "https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101a.pdf",
+      "source_reference": {
+        "document_id": "OCC Control No. 2025-Charter-342076",
+        "page_spans": [
+          "1-2"
+        ],
+        "capture_basis": "official PDF reviewed page-by-page"
+      },
+      "subject_ids": [
+        "erebor-bank-na"
+      ],
+      "packet_ids": [
+        "ENT-erebor-bank-na",
+        "ORG-O4-banking",
+        "ORG-O11-public-gates",
+        "BRG-07",
+        "EST-regulatory-markets-estate"
+      ],
+      "observation": "The OCC conditionally approved proposed charter number 25357 for Erebor Bank, N.A. and described a planned full-service insured national bank targeting technology companies and ultra-high-net-worth customers using virtual currencies, with lending, deposit, custody-related, and transaction-fee functions.",
+      "evidence_status": "source_observation",
+      "supports": [
+        "exact charter control and proposed charter number",
+        "stated target customer classes",
+        "stated banking and crypto-related service model",
+        "pre-opening status as of the letter date"
+      ],
+      "does_not_support": [
+        "final charter authorization at the letter date",
+        "actual customer composition or transaction volume",
+        "preferential treatment",
+        "ecosystem coordination or organism membership"
+      ],
+      "next_acquisition": "Acquire the OCC final charter authorization, opening certification, business-plan amendments, supervisory correspondence lawfully available, and comparable de novo charter conditions.",
+      "boundaries": {
+        "promotes_to": "candidate_only",
+        "graph_effect": "none",
+        "conclusion_generated": false,
+        "estate_completion_claimed": false,
+        "shared_investor_proves_common_design": false,
+        "shared_personnel_proves_coordination": false,
+        "deployment_in_one_theater_proves_transfer": false,
+        "founder_ideology_proves_operational_effect": false,
+        "profit_proves_self_dealing": false,
+        "national_security_need_proves_abuse": false,
+        "route_presence_proves_relationship": false,
+        "deterministic_generation_proves_evidence": false,
+        "packet_count_proves_coverage": false,
+        "synthetic_routing_allowed": false,
+        "source_failure_proves_absence": false,
+        "first_party_claim_is_independently_verified": false,
+        "entity_resolution_creates_relationship": false,
+        "candidate_organ_assignment_is_finding": false
+      }
+    },
+    {
+      "evidence_id": "M04B-EV-011",
+      "acquisition_wave": "M04B-W01",
+      "observed_at": "2026-07-24",
+      "source_date": "2025-10-15",
+      "source_type": "official_public_record",
+      "source_route_id": "EREBOR-OCC",
+      "source_title": "OCC conditional approval letter — organizing group, merger, subsidiary, and named leadership",
+      "source_url": "https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101a.pdf",
+      "source_reference": {
+        "document_id": "OCC Control No. 2025-Charter-342076",
+        "page_spans": [
+          "1",
+          "3",
+          "6-7"
+        ],
+        "capture_basis": "official PDF reviewed page-by-page"
+      },
+      "subject_ids": [
+        "erebor-bank-na",
+        "palmer-luckey"
+      ],
+      "packet_ids": [
+        "ENT-erebor-bank-na",
+        "ENT-palmer-luckey",
+        "ORG-O3-capital",
+        "ORG-O4-banking",
+        "ORG-O12-personnel",
+        "ORG-O14-residual-rights",
+        "BRG-07",
+        "TST-T4-coordination",
+        "EST-regulatory-markets-estate",
+        "EST-venture-capital-corporate-control-estate"
+      ],
+      "observation": "The OCC identified Erebor Group, Inc., a Delaware corporation, as the organizing group; approved its intended merger into the bank; stated that Atticus Digital, Inc. would become a wholly owned bank subsidiary and that the bank would have no holding company; and listed proposed organizers, officers, directors, and principal shareholders, including Owen Rapaport, Jacob Hirshman, and Palmer Luckey.",
+      "evidence_status": "source_observation",
+      "supports": [
+        "exact organizing-company identity",
+        "proposed merger and subsidiary structure",
+        "named proposed leadership roles",
+        "Palmer Luckey as proposed director and principal shareholder"
+      ],
+      "does_not_support": [
+        "consummation of every proposed transaction",
+        "final beneficial ownership percentages",
+        "coordination with Anduril, 8VC, or other companies",
+        "improper influence or common design"
+      ],
+      "next_acquisition": "Acquire merger-consummation certification, articles and organization certificate, shareholder and capitalization records where public, Atticus Digital records, and subsequent change-in-control filings.",
+      "boundaries": {
+        "promotes_to": "candidate_only",
+        "graph_effect": "none",
+        "conclusion_generated": false,
+        "estate_completion_claimed": false,
+        "shared_investor_proves_common_design": false,
+        "shared_personnel_proves_coordination": false,
+        "deployment_in_one_theater_proves_transfer": false,
+        "founder_ideology_proves_operational_effect": false,
+        "profit_proves_self_dealing": false,
+        "national_security_need_proves_abuse": false,
+        "route_presence_proves_relationship": false,
+        "deterministic_generation_proves_evidence": false,
+        "packet_count_proves_coverage": false,
+        "synthetic_routing_allowed": false,
+        "source_failure_proves_absence": false,
+        "first_party_claim_is_independently_verified": false,
+        "entity_resolution_creates_relationship": false,
+        "candidate_organ_assignment_is_finding": false
+      }
+    },
+    {
+      "evidence_id": "M04B-EV-012",
+      "acquisition_wave": "M04B-W01",
+      "observed_at": "2026-07-24",
+      "source_date": "2025-10-15",
+      "source_type": "official_public_record",
+      "source_route_id": "EREBOR-OCC",
+      "source_title": "OCC conditional approval letter — capital and supervisory conditions",
+      "source_url": "https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101a.pdf",
+      "source_reference": {
+        "document_id": "OCC Control No. 2025-Charter-342076",
+        "page_spans": [
+          "3-6"
+        ],
+        "capture_basis": "official PDF reviewed page-by-page"
+      },
+      "subject_ids": [
+        "erebor-bank-na"
+      ],
+      "packet_ids": [
+        "ENT-erebor-bank-na",
+        "ORG-O3-capital",
+        "ORG-O4-banking",
+        "ORG-O11-public-gates",
+        "ORG-O14-residual-rights",
+        "ORG-O15-counterpower",
+        "BRG-07",
+        "TST-T3-metabolism",
+        "EST-regulatory-markets-estate"
+      ],
+      "observation": "The OCC required a 12 percent minimum Tier 1 leverage ratio for the bank’s first three years, prior written non-objection for material business-plan changes, and a binding committed line of equity capital linked in timing to Erebor Group’s Series A financing; the approval also imposed pre-opening, information-systems, audit, BSA/AML/OFAC, and governance requirements.",
+      "evidence_status": "source_observation",
+      "supports": [
+        "specific capital floor and duration",
+        "regulator no-objection and pre-opening controls",
+        "stated link between organizing-company financing and committed bank capital",
+        "enumerated governance and systems conditions"
+      ],
+      "does_not_support": [
+        "amount, providers, or final terms of the equity line",
+        "whether conditions were uniquely favorable or burdensome",
+        "actual compliance after opening",
+        "private extraction or public-risk transfer"
+      ],
+      "next_acquisition": "Acquire the executed capital commitment, Series A closing and investor records, final examination and opening records, later supervisory orders, and matched conditions for ordinary de novo banks.",
+      "boundaries": {
+        "promotes_to": "candidate_only",
+        "graph_effect": "none",
+        "conclusion_generated": false,
+        "estate_completion_claimed": false,
+        "shared_investor_proves_common_design": false,
+        "shared_personnel_proves_coordination": false,
+        "deployment_in_one_theater_proves_transfer": false,
+        "founder_ideology_proves_operational_effect": false,
+        "profit_proves_self_dealing": false,
+        "national_security_need_proves_abuse": false,
+        "route_presence_proves_relationship": false,
+        "deterministic_generation_proves_evidence": false,
+        "packet_count_proves_coverage": false,
+        "synthetic_routing_allowed": false,
+        "source_failure_proves_absence": false,
+        "first_party_claim_is_independently_verified": false,
+        "entity_resolution_creates_relationship": false,
+        "candidate_organ_assignment_is_finding": false
+      }
+    },
+    {
+      "evidence_id": "M04B-EV-013",
+      "acquisition_wave": "M04B-W01",
+      "observed_at": "2026-07-24",
+      "source_date": "2025-12-16",
+      "source_type": "official_public_record",
+      "source_route_id": "EREBOR-FDIC",
+      "source_title": "FDIC approval of Erebor deposit-insurance application",
+      "source_url": "https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio",
+      "source_reference": {
+        "application_number": "20250699",
+        "capture_basis": "official FDIC press release"
+      },
+      "subject_ids": [
+        "erebor-bank-na"
+      ],
+      "packet_ids": [
+        "ENT-erebor-bank-na",
+        "ORG-O4-banking",
+        "ORG-O11-public-gates",
+        "ORG-O15-counterpower",
+        "BRG-07",
+        "EST-regulatory-markets-estate"
+      ],
+      "observation": "The FDIC announced approval of Erebor Bank, N.A.’s deposit-insurance application and described a business model focused on technology, payments, investment, defense, and virtual-currency customers, subject to capital and capital-call conditions.",
+      "evidence_status": "source_observation",
+      "supports": [
+        "exact federal deposit-insurance approval event",
+        "FDIC-described business-model focus",
+        "existence of capital-related approval conditions"
+      ],
+      "does_not_support": [
+        "opening date by itself",
+        "actual deposits, loans, payments, or defense-company relationships",
+        "preferential treatment",
+        "coordination with named investors or portfolio companies"
+      ],
+      "next_acquisition": "Acquire the FDIC order and statement, capital-call terms, deposit-insurance conditions, public comments, and comparable de novo deposit-insurance orders.",
+      "boundaries": {
+        "promotes_to": "candidate_only",
+        "graph_effect": "none",
+        "conclusion_generated": false,
+        "estate_completion_claimed": false,
+        "shared_investor_proves_common_design": false,
+        "shared_personnel_proves_coordination": false,
+        "deployment_in_one_theater_proves_transfer": false,
+        "founder_ideology_proves_operational_effect": false,
+        "profit_proves_self_dealing": false,
+        "national_security_need_proves_abuse": false,
+        "route_presence_proves_relationship": false,
+        "deterministic_generation_proves_evidence": false,
+        "packet_count_proves_coverage": false,
+        "synthetic_routing_allowed": false,
+        "source_failure_proves_absence": false,
+        "first_party_claim_is_independently_verified": false,
+        "entity_resolution_creates_relationship": false,
+        "candidate_organ_assignment_is_finding": false
+      }
+    },
+    {
+      "evidence_id": "M04B-EV-014",
+      "acquisition_wave": "M04B-W01",
+      "observed_at": "2026-07-24",
+      "source_date": "2026-02-06",
+      "source_type": "official_public_record",
+      "source_route_id": "EREBOR-FDIC",
+      "source_title": "FDIC deposit-insurance decisions table — Erebor opening record",
+      "source_url": "https://www.fdic.gov/bank-examinations/decisions-bank-applications-deposit-insurance",
+      "source_reference": {
+        "application_number": "20250699",
+        "certificate_number": "59378",
+        "table_row_date_checked": "2026-07-24",
+        "capture_basis": "official FDIC decisions table"
+      },
+      "subject_ids": [
+        "erebor-bank-na"
+      ],
+      "packet_ids": [
+        "ENT-erebor-bank-na",
+        "ORG-O4-banking",
+        "ORG-O11-public-gates",
+        "BRG-07",
+        "EST-regulatory-markets-estate"
+      ],
+      "observation": "The FDIC decisions table lists application number 20250699, certificate number 59378, agency action on December 16, 2025, and an opening date of February 6, 2026 for Erebor Bank, N.A., Columbus, Ohio.",
+      "evidence_status": "source_observation",
+      "supports": [
+        "application and certificate identifiers",
+        "agency-action date",
+        "recorded opening date",
+        "bank name, city, and state"
+      ],
+      "does_not_support": [
+        "scope of operations after opening",
+        "customer or counterparty identities",
+        "transaction volumes",
+        "lawfulness, success, or ecosystem role"
+      ],
+      "next_acquisition": "Acquire the FDIC BankFind profile, quarterly call reports, CRA strategic plan and evaluations, enforcement history, and bank-level financial statements as they become available.",
+      "boundaries": {
+        "promotes_to": "candidate_only",
+        "graph_effect": "none",
+        "conclusion_generated": false,
+        "estate_completion_claimed": false,
+        "shared_investor_proves_common_design": false,
+        "shared_personnel_proves_coordination": false,
+        "deployment_in_one_theater_proves_transfer": false,
+        "founder_ideology_proves_operational_effect": false,
+        "profit_proves_self_dealing": false,
+        "national_security_need_proves_abuse": false,
+        "route_presence_proves_relationship": false,
+        "deterministic_generation_proves_evidence": false,
+        "packet_count_proves_coverage": false,
+        "synthetic_routing_allowed": false,
+        "source_failure_proves_absence": false,
+        "first_party_claim_is_independently_verified": false,
+        "entity_resolution_creates_relationship": false,
+        "candidate_organ_assignment_is_finding": false
+      }
+    },
+    {
+      "evidence_id": "M04B-EV-015",
+      "acquisition_wave": "M04B-W01",
+      "observed_at": "2026-07-24",
+      "source_date": null,
+      "source_type": "official_public_record",
+      "source_route_id": "US-IAPD",
+      "source_title": "IAPD firm summary — Silent Ventures Management, LLC",
+      "source_url": "https://adviserinfo.sec.gov/firm/summary/326901",
+      "source_reference": {
+        "crd_number": "326901",
+        "sec_number": "802-136152",
+        "capture_basis": "official IAPD firm summary"
+      },
+      "subject_ids": [
+        "silent-ventures"
+      ],
+      "packet_ids": [
+        "ENT-silent-ventures",
+        "ORG-O3-capital",
+        "ORG-O14-residual-rights",
+        "EST-venture-capital-corporate-control-estate"
+      ],
+      "observation": "IAPD identifies Silent Ventures Management, LLC as CRD 326901 / SEC number 802-136152 and reports that it files as an Exempt Reporting Adviser, with active ERA reporting to the SEC effective March 31, 2026 and to Texas effective March 27, 2024. IAPD expressly warns that an ERA is not SEC-registered and that its filings are not approved or verified by the SEC.",
+      "evidence_status": "source_observation",
+      "supports": [
+        "exact management-company name and identifiers",
+        "reported exempt-reporting-adviser status and dates",
+        "regulatory-status boundary"
+      ],
+      "does_not_support": [
+        "SEC registration or endorsement",
+        "accuracy of every adviser filing",
+        "complete fund, asset, investor, portfolio, or control denominator",
+        "relationship to Silent Capital beyond separately sourced records"
+      ],
+      "next_acquisition": "Acquire the complete current and historical Form ADV filings, state records, related-person schedules, private-fund reporting sections, amendments, and withdrawn-jurisdiction history.",
+      "boundaries": {
+        "promotes_to": "candidate_only",
+        "graph_effect": "none",
+        "conclusion_generated": false,
+        "estate_completion_claimed": false,
+        "shared_investor_proves_common_design": false,
+        "shared_personnel_proves_coordination": false,
+        "deployment_in_one_theater_proves_transfer": false,
+        "founder_ideology_proves_operational_effect": false,
+        "profit_proves_self_dealing": false,
+        "national_security_need_proves_abuse": false,
+        "route_presence_proves_relationship": false,
+        "deterministic_generation_proves_evidence": false,
+        "packet_count_proves_coverage": false,
+        "synthetic_routing_allowed": false,
+        "source_failure_proves_absence": false,
+        "first_party_claim_is_independently_verified": false,
+        "entity_resolution_creates_relationship": false,
+        "candidate_organ_assignment_is_finding": false
+      }
+    },
+    {
+      "evidence_id": "M04B-EV-016",
+      "acquisition_wave": "M04B-W01",
+      "observed_at": "2026-07-24",
+      "source_date": "2025-08-27",
+      "source_type": "regulatory_filing",
+      "source_route_id": "US-SEC-FORM-D",
+      "source_title": "Silent Ventures Fund II, LP — Form D",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/2080468/000147083125000151/xslFormDX01/primary_doc.xml",
+      "source_reference": {
+        "cik": "0002080468",
+        "accession_number": "0001470831-25-000151",
+        "filing_date": "2025-08-27",
+        "capture_basis": "official SEC Form D; filer-supplied and not independently verified by the SEC"
+      },
+      "subject_ids": [
+        "silent-ventures"
+      ],
+      "packet_ids": [
+        "ENT-silent-ventures",
+        "ORG-O3-capital",
+        "ORG-O12-personnel",
+        "ORG-O14-residual-rights",
+        "TST-T3-metabolism",
+        "TST-T5-reproduction",
+        "EST-venture-capital-corporate-control-estate"
+      ],
+      "observation": "A Form D filed for Silent Ventures Fund II, LP identifies a Delaware venture-capital pooled fund formed in 2025; Silent Ventures Management, LLC as management company; Silent Ventures Fund II GP, LP as general partner; Silent Ventures Fund II UGP, LLC as general partner of that general partner; and Jackson Moses as manager of the upper-tier general partner. The notice invoked Rule 506(b) and Section 3(c)(7) and stated that first sale had yet to occur.",
+      "evidence_status": "regulatory_filing_claim",
+      "supports": [
+        "exact issuer and named management and general-partner vehicles",
+        "reported Jackson Moses role",
+        "claimed exemptions and offering state on the filing date",
+        "dated vehicle-formation evidence"
+      ],
+      "does_not_support": [
+        "SEC verification of the filing’s accuracy",
+        "offering close, amount raised, investor count, ownership, or governance rights",
+        "investment in Traysar or another named company",
+        "common strategy or operational coordination"
+      ],
+      "next_acquisition": "Acquire subsequent Form D amendments, Form ADV private-fund schedules, state entity records, fund governing documents where lawfully available, and transaction-specific portfolio records.",
+      "boundaries": {
+        "promotes_to": "candidate_only",
+        "graph_effect": "none",
+        "conclusion_generated": false,
+        "estate_completion_claimed": false,
+        "shared_investor_proves_common_design": false,
+        "shared_personnel_proves_coordination": false,
+        "deployment_in_one_theater_proves_transfer": false,
+        "founder_ideology_proves_operational_effect": false,
+        "profit_proves_self_dealing": false,
+        "national_security_need_proves_abuse": false,
+        "route_presence_proves_relationship": false,
+        "deterministic_generation_proves_evidence": false,
+        "packet_count_proves_coverage": false,
+        "synthetic_routing_allowed": false,
+        "source_failure_proves_absence": false,
+        "first_party_claim_is_independently_verified": false,
+        "entity_resolution_creates_relationship": false,
+        "candidate_organ_assignment_is_finding": false
+      }
+    },
+    {
+      "evidence_id": "M04B-EV-017",
+      "acquisition_wave": "M04B-W01",
+      "observed_at": "2026-07-24",
+      "source_date": "2026-07-24",
+      "source_type": "official_public_record",
+      "source_route_id": "EREBOR-FDIC",
+      "source_title": "FDIC de novo deposit-insurance decisions — bounded comparator roster",
+      "source_url": "https://www.fdic.gov/bank-examinations/decisions-bank-applications-deposit-insurance",
+      "source_reference": {
+        "comparison_window": "2024-01-01 through 2026-07-24",
+        "capture_basis": "official FDIC decisions table; comparator eligibility not yet adjudicated"
+      },
+      "subject_ids": [
+        "erebor-bank-na"
+      ],
+      "packet_ids": [
+        "ENT-erebor-bank-na",
+        "ORG-O15-counterpower",
+        "BRG-07",
+        "TST-T3-metabolism",
+        "TST-T5-reproduction",
+        "EST-regulatory-markets-estate"
+      ],
+      "observation": "The FDIC decisions table places Erebor among multiple recent de novo deposit-insurance applications with recorded agency-action and opening outcomes, including opened institutions and applications marked “Will Not Open.” This supplies a bounded comparator route rather than evidence that Erebor’s treatment was ordinary or exceptional.",
+      "evidence_status": "source_observation",
+      "supports": [
+        "existence of an official recent-de-novo comparator roster",
+        "variation in opening outcomes",
+        "a bounded route for matched regulatory comparison"
+      ],
+      "does_not_support": [
+        "comparability of business models, capital structures, review complexity, or conditions",
+        "favorable or unfavorable treatment of Erebor",
+        "causation, favoritism, or network influence"
+      ],
+      "next_acquisition": "Freeze a matched comparator cohort by application period, charter type, business model, capital condition, and opening outcome; acquire each corresponding order and statement before comparing treatment.",
       "boundaries": {
         "promotes_to": "candidate_only",
         "graph_effect": "none",

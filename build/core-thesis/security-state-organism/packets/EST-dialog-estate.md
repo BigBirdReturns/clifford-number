@@ -57,12 +57,12 @@ Does this estate supply independently receipted organs, lineage transitions, tra
 - `PALANTIR-OFFICIAL` — PALANTIR OFFICIAL · `candidate_first_party_locator` · https://www.palantir.com/
 - `SVDG-OFFICIAL` — SVDG OFFICIAL · `candidate_first_party_locator` · https://www.svdg.org/
 - `US-FEC` — US FEC · `candidate_system_locator` · https://www.fec.gov/data/
-- `US-IAPD` — US IAPD · `candidate_system_locator` · https://adviserinfo.sec.gov/
+- `US-IAPD` — US IAPD · `source_bounded_locator` · https://adviserinfo.sec.gov/
 - `US-IRS-990` — US IRS 990 · `candidate_system_locator` · https://www.irs.gov/charities-non-profits/tax-exempt-organization-search
 - `US-IRS-TEOS` — US IRS TEOS · `candidate_system_locator` · https://apps.irs.gov/app/eos/
 - `US-LOBBYING-DISCLOSURE` — US LOBBYING DISCLOSURE · `candidate_system_locator` · https://lda.senate.gov/system/public/
 - `US-SEC-EDGAR` — US SEC EDGAR · `candidate_system_locator` · https://www.sec.gov/edgar/search/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 - `US-STATE-CHARITY` — US STATE CHARITY · `unresolved_locator` · locator unresolved
 
 ## Source-bounded evidence intake

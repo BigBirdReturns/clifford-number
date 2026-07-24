@@ -42,8 +42,8 @@ What exact legal, financial, technical, personnel, public-gate, deployment, cons
 ## Source routes
 
 - `A16Z-OFFICIAL` — A16Z OFFICIAL · `candidate_first_party_locator` · https://a16z.com/american-dynamism/
-- `US-IAPD` — US IAPD · `candidate_system_locator` · https://adviserinfo.sec.gov/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-IAPD` — US IAPD · `source_bounded_locator` · https://adviserinfo.sec.gov/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 
 ## Source-bounded evidence intake
 

@@ -110,7 +110,7 @@ Does this estate supply independently receipted organs, lineage transitions, tra
 - `US-FTC` — US FTC · `candidate_system_locator` · https://www.ftc.gov/
 - `US-GAO` — US GAO · `candidate_system_locator` · https://www.gao.gov/
 - `US-GAO-PROTESTS` — US GAO PROTESTS · `candidate_system_locator` · https://www.gao.gov/legal/bid-protests/search
-- `US-IAPD` — US IAPD · `candidate_system_locator` · https://adviserinfo.sec.gov/
+- `US-IAPD` — US IAPD · `source_bounded_locator` · https://adviserinfo.sec.gov/
 - `US-ICE-PROCUREMENT` — US ICE PROCUREMENT · `candidate_system_locator` · https://www.ice.gov/procurement
 - `US-IMMIGRATION-LABOR` — US IMMIGRATION LABOR · `unresolved_locator` · locator unresolved
 - `US-IRS-990` — US IRS 990 · `candidate_system_locator` · https://www.irs.gov/charities-non-profits/tax-exempt-organization-search
@@ -119,7 +119,7 @@ Does this estate supply independently receipted organs, lineage transitions, tra
 - `US-PATENT-ASSIGNMENTS` — US PATENT ASSIGNMENTS · `candidate_system_locator` · https://assignmentcenter.uspto.gov/
 - `US-SAM-FPDS` — US SAM FPDS · `candidate_system_locator` · https://sam.gov/
 - `US-SEC-EDGAR` — US SEC EDGAR · `candidate_system_locator` · https://www.sec.gov/edgar/search/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 - `US-STATE-CORPORATE` — US STATE CORPORATE · `unresolved_locator` · locator unresolved
 - `US-USA-SPENDING` — US USA SPENDING · `candidate_system_locator` · https://www.usaspending.gov/
 

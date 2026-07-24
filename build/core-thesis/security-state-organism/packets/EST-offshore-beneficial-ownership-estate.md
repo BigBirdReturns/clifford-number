@@ -53,7 +53,7 @@ Does this estate supply independently receipted organs, lineage transitions, tra
 - `ISRAEL-MOD-DDRD` — ISRAEL MOD DDRD · `candidate_system_locator` · https://www.mod.gov.il/en/departments/directorate-of-defense-research-development
 - `ISRAEL-PATENTS` — ISRAEL PATENTS · `candidate_system_locator` · https://www.gov.il/en/departments/israel_patent_office/govil-landing-page
 - `SILENT-CAPITAL-OFFICIAL` — SILENT CAPITAL OFFICIAL · `source_bounded_locator` · https://silentcapital.vc/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 - `US-STATE-CORPORATE` — US STATE CORPORATE · `unresolved_locator` · locator unresolved
 
 ## Source-bounded evidence intake

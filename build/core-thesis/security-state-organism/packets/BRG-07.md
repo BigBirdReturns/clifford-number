@@ -55,17 +55,17 @@ What exact two-sided records establish or falsify erebor ecosystem banking rail?
 
 - `ANDURIL-OFFICIAL` — ANDURIL OFFICIAL · `candidate_first_party_locator` · https://www.anduril.com/
 - `EIGHT-VC-OFFICIAL` — EIGHT VC OFFICIAL · `candidate_first_party_locator` · https://www.8vc.com/
-- `EREBOR-FDIC` — EREBOR FDIC · `candidate_first_party_locator` · https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio
+- `EREBOR-FDIC` — EREBOR FDIC · `source_bounded_locator` · https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio
 - `EREBOR-OCC` — EREBOR OCC · `source_bounded_locator` · https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101.html
 - `FOUNDERS-FUND-OFFICIAL` — FOUNDERS FUND OFFICIAL · `candidate_first_party_locator` · https://foundersfund.com/
 - `US-CRA` — US CRA · `candidate_system_locator` · https://www.occ.gov/topics/consumers-and-communities/cra/index-cra.html
 - `US-FEC` — US FEC · `candidate_system_locator` · https://www.fec.gov/data/
 - `US-FED-NIC` — US FED NIC · `candidate_system_locator` · https://www.ffiec.gov/npw
 - `US-FFIEC` — US FFIEC · `candidate_system_locator` · https://www.ffiec.gov/npw
-- `US-IAPD` — US IAPD · `candidate_system_locator` · https://adviserinfo.sec.gov/
+- `US-IAPD` — US IAPD · `source_bounded_locator` · https://adviserinfo.sec.gov/
 - `US-LOBBYING-DISCLOSURE` — US LOBBYING DISCLOSURE · `candidate_system_locator` · https://lda.senate.gov/system/public/
 - `US-SEC-EDGAR` — US SEC EDGAR · `candidate_system_locator` · https://www.sec.gov/edgar/search/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 - `US-STATE-CORPORATE` — US STATE CORPORATE · `unresolved_locator` · locator unresolved
 - `US-UCC` — US UCC · `unresolved_locator` · locator unresolved
 
@@ -97,6 +97,60 @@ What exact two-sided records establish or falsify erebor ecosystem banking rail?
 - Supports: self-reported portfolio relationships
 - Does not support: exact investing entity or vehicle; investment date, amount, security, or current ownership; board or information rights; control or coordination among portfolio companies
 - Next acquisition: Acquire fund and vehicle identities, Form D and company financing records, transaction dates, rights, exits, write-offs, and the complete portfolio denominator.
+
+### M04B-EV-010 · OCC conditional approval letter — charter identity and business model
+
+- Source: https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101a.pdf
+- Status: `source_observation`
+- Observation: The OCC conditionally approved proposed charter number 25357 for Erebor Bank, N.A. and described a planned full-service insured national bank targeting technology companies and ultra-high-net-worth customers using virtual currencies, with lending, deposit, custody-related, and transaction-fee functions.
+- Supports: exact charter control and proposed charter number; stated target customer classes; stated banking and crypto-related service model; pre-opening status as of the letter date
+- Does not support: final charter authorization at the letter date; actual customer composition or transaction volume; preferential treatment; ecosystem coordination or organism membership
+- Next acquisition: Acquire the OCC final charter authorization, opening certification, business-plan amendments, supervisory correspondence lawfully available, and comparable de novo charter conditions.
+
+### M04B-EV-011 · OCC conditional approval letter — organizing group, merger, subsidiary, and named leadership
+
+- Source: https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101a.pdf
+- Status: `source_observation`
+- Observation: The OCC identified Erebor Group, Inc., a Delaware corporation, as the organizing group; approved its intended merger into the bank; stated that Atticus Digital, Inc. would become a wholly owned bank subsidiary and that the bank would have no holding company; and listed proposed organizers, officers, directors, and principal shareholders, including Owen Rapaport, Jacob Hirshman, and Palmer Luckey.
+- Supports: exact organizing-company identity; proposed merger and subsidiary structure; named proposed leadership roles; Palmer Luckey as proposed director and principal shareholder
+- Does not support: consummation of every proposed transaction; final beneficial ownership percentages; coordination with Anduril, 8VC, or other companies; improper influence or common design
+- Next acquisition: Acquire merger-consummation certification, articles and organization certificate, shareholder and capitalization records where public, Atticus Digital records, and subsequent change-in-control filings.
+
+### M04B-EV-012 · OCC conditional approval letter — capital and supervisory conditions
+
+- Source: https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101a.pdf
+- Status: `source_observation`
+- Observation: The OCC required a 12 percent minimum Tier 1 leverage ratio for the bank’s first three years, prior written non-objection for material business-plan changes, and a binding committed line of equity capital linked in timing to Erebor Group’s Series A financing; the approval also imposed pre-opening, information-systems, audit, BSA/AML/OFAC, and governance requirements.
+- Supports: specific capital floor and duration; regulator no-objection and pre-opening controls; stated link between organizing-company financing and committed bank capital; enumerated governance and systems conditions
+- Does not support: amount, providers, or final terms of the equity line; whether conditions were uniquely favorable or burdensome; actual compliance after opening; private extraction or public-risk transfer
+- Next acquisition: Acquire the executed capital commitment, Series A closing and investor records, final examination and opening records, later supervisory orders, and matched conditions for ordinary de novo banks.
+
+### M04B-EV-013 · FDIC approval of Erebor deposit-insurance application
+
+- Source: https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio
+- Status: `source_observation`
+- Observation: The FDIC announced approval of Erebor Bank, N.A.’s deposit-insurance application and described a business model focused on technology, payments, investment, defense, and virtual-currency customers, subject to capital and capital-call conditions.
+- Supports: exact federal deposit-insurance approval event; FDIC-described business-model focus; existence of capital-related approval conditions
+- Does not support: opening date by itself; actual deposits, loans, payments, or defense-company relationships; preferential treatment; coordination with named investors or portfolio companies
+- Next acquisition: Acquire the FDIC order and statement, capital-call terms, deposit-insurance conditions, public comments, and comparable de novo deposit-insurance orders.
+
+### M04B-EV-014 · FDIC deposit-insurance decisions table — Erebor opening record
+
+- Source: https://www.fdic.gov/bank-examinations/decisions-bank-applications-deposit-insurance
+- Status: `source_observation`
+- Observation: The FDIC decisions table lists application number 20250699, certificate number 59378, agency action on December 16, 2025, and an opening date of February 6, 2026 for Erebor Bank, N.A., Columbus, Ohio.
+- Supports: application and certificate identifiers; agency-action date; recorded opening date; bank name, city, and state
+- Does not support: scope of operations after opening; customer or counterparty identities; transaction volumes; lawfulness, success, or ecosystem role
+- Next acquisition: Acquire the FDIC BankFind profile, quarterly call reports, CRA strategic plan and evaluations, enforcement history, and bank-level financial statements as they become available.
+
+### M04B-EV-017 · FDIC de novo deposit-insurance decisions — bounded comparator roster
+
+- Source: https://www.fdic.gov/bank-examinations/decisions-bank-applications-deposit-insurance
+- Status: `source_observation`
+- Observation: The FDIC decisions table places Erebor among multiple recent de novo deposit-insurance applications with recorded agency-action and opening outcomes, including opened institutions and applications marked “Will Not Open.” This supplies a bounded comparator route rather than evidence that Erebor’s treatment was ordinary or exceptional.
+- Supports: existence of an official recent-de-novo comparator roster; variation in opening outcomes; a bounded route for matched regulatory comparison
+- Does not support: comparability of business models, capital structures, review complexity, or conditions; favorable or unfavorable treatment of Erebor; causation, favoritism, or network influence
+- Next acquisition: Freeze a matched comparator cohort by application period, charter type, business model, capital condition, and opening outcome; acquire each corresponding order and statement before comparing treatment.
 
 
 ## Falsifier

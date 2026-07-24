@@ -57,7 +57,7 @@ What exact legal, financial, technical, personnel, public-gate, deployment, cons
 - `ISRAEL-DECA` — ISRAEL DECA · `candidate_system_locator` · https://www.mod.gov.il/en/departments/defense-export-controls-agency
 - `ISRAEL-MOD-DDRD` — ISRAEL MOD DDRD · `candidate_system_locator` · https://www.mod.gov.il/en/departments/directorate-of-defense-research-development
 - `TRAYSAR-OFFICIAL` — TRAYSAR OFFICIAL · `source_bounded_locator` · https://traysar.com/news/traysar-raises-25m-seed
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 - `US-STATE-CORPORATE` — US STATE CORPORATE · `unresolved_locator` · locator unresolved
 
 ## Source-bounded evidence intake

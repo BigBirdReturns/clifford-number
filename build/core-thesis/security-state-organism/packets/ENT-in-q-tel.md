@@ -51,7 +51,7 @@ What exact legal, financial, technical, personnel, public-gate, deployment, cons
 - `IQT-OFFICIAL` — IQT OFFICIAL · `candidate_first_party_locator` · https://www.iqt.org/
 - `US-GAO` — US GAO · `candidate_system_locator` · https://www.gao.gov/
 - `US-IRS-990` — US IRS 990 · `candidate_system_locator` · https://www.irs.gov/charities-non-profits/tax-exempt-organization-search
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 
 ## Source-bounded evidence intake
 
