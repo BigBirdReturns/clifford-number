@@ -1,0 +1,83 @@
+name: Temporary M-04C H0 case and report mappings
+
+on:
+  push:
+    branches: [agent/m04c-h0-case-report-mappings]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m04c-h0-case-report-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m04c-h0-case-report-mappings
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Materialize explicit case and report memberships
+        run: |
+          node .github/temporary/m04c-h0-case-report/materialize.mjs
+          node tools/build-estate-lens-audit.mjs
+          node tools/validate-estate-lens-audit.mjs
+          node test/estate-lens-audit.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Remove one-shot carrier and restore unrelated generated drift
+        run: |
+          rm -rf .github/temporary/m04c-h0-case-report
+          rm -f .github/workflows/temporary-m04c-h0-case-report.yml
+          python - <<'PY'
+          import os, shutil, subprocess
+          allowed_exact = {
+            'data/project/estate-lens-mappings.jsonl',
+            'test/estate-lens-audit.test.js',
+            'docs/milestones/m04c-h0-case-report-mappings.md',
+            '.github/workflows/temporary-m04c-h0-case-report.yml',
+          }
+          allowed_prefix = (
+            'build/core-thesis/estate-lens-audit',
+            'reports/core-thesis/unmapped-sections/',
+            '.github/temporary/m04c-h0-case-report/',
+          )
+          rows = subprocess.check_output(['git', 'status', '--porcelain'], text=True).splitlines()
+          for row in rows:
+            status, p = row[:2], row[3:]
+            if ' -> ' in p:
+              p = p.split(' -> ', 1)[1]
+            if p in allowed_exact or p.startswith(allowed_prefix):
+              continue
+            if status == '??':
+              if os.path.isdir(p): shutil.rmtree(p)
+              elif os.path.exists(p): os.remove(p)
+            else:
+              subprocess.run(['git', 'restore', '--source=HEAD', '--staged', '--worktree', '--', p], check=True)
+          PY
+          node tools/build-estate-lens-audit.mjs
+          node tools/validate-estate-lens-audit.mjs
+          node test/estate-lens-audit.test.js
+          git diff --check
+      - name: Commit verified permanent pass
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- \
+            .github/temporary/m04c-h0-case-report \
+            .github/workflows/temporary-m04c-h0-case-report.yml \
+            data/project/estate-lens-mappings.jsonl \
+            test/estate-lens-audit.test.js \
+            docs/milestones/m04c-h0-case-report-mappings.md \
+            build/core-thesis/estate-lens-audit-manifest.json \
+            build/core-thesis/estate-lens-audit.jsonl \
+            build/core-thesis/estate-lens-audit \
+            reports/core-thesis/unmapped-sections
+          git commit -m "Map every case and report membership across the estates"
+          git push origin HEAD:agent/m04c-h0-case-report-mappings
