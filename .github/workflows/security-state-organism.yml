@@ -58,12 +58,20 @@ jobs:
           M04B_REPOSITORY="$GITHUB_REPOSITORY" node tools/dispatch-security-state-organism.mjs --dry-run
       - name: Run the complete repository release gate
         run: npm run release:check
-      - name: Refuse deterministic product drift
+      - name: Refuse deterministic builder-product drift
         run: |
-          git diff --exit-code -- \
-            build/core-thesis/security-state-organism \
-            reports/core-thesis/security-state-organism
+          owned_paths=(
+            build/core-thesis/security-state-organism/manifest.json
+            build/core-thesis/security-state-organism/fanout.json
+            build/core-thesis/security-state-organism/issue-plan.json
+            build/core-thesis/security-state-organism/packets
+            reports/core-thesis/security-state-organism/data.json
+            reports/core-thesis/security-state-organism/index.html
+          )
+          git diff --name-status -- "${owned_paths[@]}" | tee "$RUNNER_TEMP/security-state-organism-drift.txt"
+          git diff --exit-code -- "${owned_paths[@]}"
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: security-state-organism-evidence-program
           path: |
@@ -73,6 +81,7 @@ jobs:
             docs/milestones/m04b-*.md
             build/core-thesis/security-state-organism/
             reports/core-thesis/security-state-organism/
+            ${{ runner.temp }}/security-state-organism-drift.txt
           if-no-files-found: error
           retention-days: 90
 
