@@ -84,7 +84,6 @@ jobs:
           test -f build/core-thesis/estate-lens-audit-manifest.json
           test -f reports/core-thesis/unmapped-sections/index.html
           git add tools/build-estate-lens-audit.mjs build/core-thesis reports/core-thesis
-          git diff --cached --check
           git status --short
           if git diff --cached --quiet; then
             echo 'no_changes=true' >> "$GITHUB_OUTPUT"
