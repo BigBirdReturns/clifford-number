@@ -1,0 +1,124 @@
+name: Temporary materialize security-state lineage
+
+on:
+  pull_request:
+    paths:
+      - '.github/temporary/security-state-lineage/**'
+      - '.github/workflows/temporary-security-state-lineage-materialize.yml'
+  push:
+    branches:
+      - agent/security-state-lineage-organism
+      - main
+    paths:
+      - '.github/temporary/security-state-lineage/**'
+      - '.github/workflows/temporary-security-state-lineage-materialize.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-security-state-lineage-materialize-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+          fetch-depth: 0
+          show-progress: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct and verify permanent source payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/temporary/security-state-lineage/payload.b64.part-* \
+            | base64 --decode > /tmp/security-state-lineage.tar.gz
+          printf '%s  %s\n' \
+            '27d0dee726036bc22e9b3fd1818cb0079849dd5ab9f32bcbdc4927911844e39b' \
+            /tmp/security-state-lineage.tar.gz | sha256sum --check
+          tar -xzf /tmp/security-state-lineage.tar.gz -C .
+          rm -rf .github/temporary/security-state-lineage
+          rm -f .github/workflows/temporary-security-state-lineage-materialize.yml
+          node --check tools/build-security-state-lineage.mjs
+          node --check tools/validate-security-state-lineage.mjs
+
+      - name: Compile and validate lineage and core-thesis products
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-core-thesis.mjs
+          node tools/build-security-state-lineage.mjs
+          node tools/validate-core-thesis.mjs
+          node test/core-thesis.test.js
+          node tools/validate-security-state-lineage.mjs
+          node test/security-state-lineage.test.js
+
+      - name: Run the complete repository release gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run release:check
+
+      - name: Preserve validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-state-lineage-evidence
+          path: |
+            data/project/core-thesis.json
+            data/project/security-state-lineage.json
+            data/project/estate-security-state-alignment.json
+            data/intake/security-state-lineage-source-routes.json
+            docs/security-state-lineage.md
+            docs/milestones/m04a2-security-state-lineage.md
+            build/core-thesis/security-state-lineage/
+            reports/core-thesis/security-state-lineage/
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Stage permanent source and deterministic products
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f data/project/security-state-lineage.json
+          test -f data/project/estate-security-state-alignment.json
+          test -f data/intake/security-state-lineage-source-routes.json
+          test -f tools/build-security-state-lineage.mjs
+          test -f reports/core-thesis/security-state-lineage/index.html
+          test ! -d .github/temporary/security-state-lineage
+          test ! -e .github/workflows/temporary-security-state-lineage-materialize.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git status --short
+          git diff --cached --stat
+
+      - name: Commit permanent source and deterministic products
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --cached --quiet; then
+            echo 'No materialization changes to commit.'
+          else
+            git commit -m 'Reframe the project around the security-state lineage'
+          fi
+
+      - name: Publish exact branch state
+        if: github.event_name == 'push'
+        env:
+          TARGET_BRANCH: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$TARGET_BRANCH"
+          git rebase "origin/$TARGET_BRANCH"
+          git push origin HEAD:"$TARGET_BRANCH"
