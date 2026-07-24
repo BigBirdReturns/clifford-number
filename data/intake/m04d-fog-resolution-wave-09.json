@@ -1,0 +1,360 @@
+{
+  "schema_version": "m04d-fog-resolution-wave@1",
+  "wave_id": "M04D-FR-W09",
+  "as_of": "2026-07-24",
+  "parent_waves": ["M04D-FR-W01", "M04D-FR-W02", "M04D-FR-W03", "M04D-FR-W04", "M04D-FR-W05", "M04D-FR-W06", "M04D-FR-W07", "M04D-FR-W08"],
+  "purpose": "Resolve the practical-exit, substitution, transition-cost, incumbent-continuity, public-data-control, competition, and multi-supplier-ecosystem fog in bounded UK health and social-care Palantir lanes. The wave distinguishes an awarded alternate-supplier transition, formal exit obligations, a competitively retained incumbent, and unresolved observed completion or portability outcomes.",
+  "method": {
+    "null_hypothesis": "a public buyer can use transition contracts, competitive procurement, separate privacy and implementation suppliers, data-control provisions, and product-level substitution while still retaining an incumbent platform for capability, cost, or continuity reasons",
+    "promotion_rule": "A contract notice may establish the buyer, supplier, scope, dates, value, procedure, transition purpose, and ownership or control statement it publishes. It does not by itself establish completed migration, effective portability, service quality, absence of lock-in, or correctness of the award decision.",
+    "exit_rule": "Practical exit requires observed transfer of data, products, workflows, users, accreditation, and operating responsibility to an alternative or to public in-house custody with continuity and acceptable cost. An exit contract or alternate-supplier award is a transition instrument, not proof of completed exit.",
+    "terminal_states": [
+      "supported_for_human_review",
+      "retained_candidate_only",
+      "bounded_non_link",
+      "falsified",
+      "source_restricted",
+      "source_unavailable",
+      "requires_additional_acquisition"
+    ]
+  },
+  "records": [
+    {
+      "record_id": "M04D-FR-072",
+      "lane": "H4-adult-social-care-dashboard-alternate-supplier-transition",
+      "proposition": "The UK Department of Health and Social Care procured a different supplier to transition the Adult Social Care Dashboard from Palantir Foundry to EDGE.",
+      "source_date": "2021-08-16",
+      "sources": [
+        {
+          "publisher": "Contracts Finder",
+          "title": "Transition from Palantir Foundry to EDGE",
+          "url": "https://www.contractsfinder.service.gov.uk/Notice/ab872e51-c3e8-4188-aae8-86cd8c40affb",
+          "source_type": "official_procurement_record",
+          "locator_state": "source_bounded"
+        }
+      ],
+      "observation": "The official award notice identifies Mozaic Services Limited as supplier for a £100,000 contract running from August 16 through September 30, 2021 to transition the Adult Social Care Dashboard from Palantir Foundry to EDGE.",
+      "supports": [
+        "a bounded alternate-supplier transition instrument",
+        "a named product, incumbent platform, receiving platform, supplier, period, and price",
+        "counterevidence to the proposition that every Palantir product was contractually nontransferable"
+      ],
+      "does_not_support": [
+        "completed or successful migration",
+        "the amount, format, or quality of data and workflow transfer",
+        "continued operation after transition",
+        "absence of residual Palantir dependencies",
+        "broader NHS platform substitutability"
+      ],
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "awarded_alternate_supplier_product_transition",
+      "next_decisive_acquisition": "Acquire the statement of work, source and target architectures, data and product inventory, acceptance, migration logs, user cutover, defects, continuity, post-transition operation, residual licenses, and lessons learned.",
+      "falsifier": "The contract was cancelled, the transition was not executed, EDGE did not assume the dashboard function, or Palantir remained the material operating layer."
+    },
+    {
+      "record_id": "M04D-FR-073",
+      "lane": "H4-adult-social-care-dashboard-observed-exit",
+      "proposition": "The Adult Social Care Dashboard completed an effective operational exit from Palantir Foundry to EDGE.",
+      "source_date": "2021-2026",
+      "depends_on_records": ["M04D-FR-072"],
+      "sources": [],
+      "observation": "The official procurement record establishes an awarded transition contract. The current bounded record does not include completion, acceptance, production operation, user cutover, continuity, data validation, residual dependency, cost, or post-transition performance evidence.",
+      "supports": [
+        "an exact observed-exit acquisition lane"
+      ],
+      "does_not_support": [
+        "completed practical substitution",
+        "successful data and workflow portability",
+        "absence of service interruption or residual dependency",
+        "effective exit at another product or enterprise level"
+      ],
+      "disposition": "requires_additional_acquisition",
+      "evidence_ceiling": "transition_award_without_observed_completion",
+      "next_decisive_acquisition": "Acquire completion and acceptance certificates, operational records, user and service continuity evidence, data validation, residual contracts, defects, post-transition performance, costs, and any rollback or parallel operation.",
+      "falsifier": "Completion records show EDGE assumed the full product and operating role with validated data, continuity, no material Palantir dependency, and proportionate cost."
+    },
+    {
+      "record_id": "M04D-FR-074",
+      "lane": "C5-NHS-Foundry-transition-burden",
+      "proposition": "NHS England documented material cost and continuity burdens associated with replacing or transitioning its incumbent Palantir Foundry service.",
+      "source_date": "2022-2024",
+      "sources": [
+        {
+          "publisher": "Contracts Finder",
+          "title": "Contract Extension of the Data Platform Services",
+          "url": "https://www.contractsfinder.service.gov.uk/Notice/2cf9dde2-3991-4b41-8971-a9ee7ec432e2",
+          "source_type": "official_procurement_record",
+          "locator_state": "source_bounded"
+        },
+        {
+          "publisher": "Contracts Finder",
+          "title": "Palantir Foundry Transition & Exit Contract",
+          "url": "https://www.contractsfinder.service.gov.uk/Notice/94e3bcb5-d82c-4bbf-a2aa-5fbb3ea9ca09",
+          "source_type": "official_procurement_record",
+          "locator_state": "source_bounded"
+        }
+      ],
+      "observation": "NHS England stated in a 2022 extension notice that changing contractor before the future procurement would cause significant inconvenience and substantial duplicated cost and be impractical and uneconomic. It later awarded Palantir a separate 12-month, £24.925 million contract to support safe transition and exit of critical COVID-19 and elective-recovery products to alternative provisions and the future FDP supplier.",
+      "supports": [
+        "C5 transition burden and continuity dependence in a bounded NHS Foundry lane",
+        "material public expenditure specifically allocated to transition and exit",
+        "a documented distinction between formal exit planning and zero-cost substitution"
+      ],
+      "does_not_support": [
+        "impossibility of replacement",
+        "Palantir-caused delay or improper conduct",
+        "whether the stated costs were independently validated",
+        "whether the later transition reduced or increased dependence",
+        "system-wide public-sector lock-in"
+      ],
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "bounded_transition_cost_and_continuity_burden",
+      "next_decisive_acquisition": "Acquire the underlying extension and exit contracts, product and dependency inventory, cost model, alternative estimates, migration plan, exit deliverables, acceptance, performance, transition outcomes, and independent audit.",
+      "falsifier": "Observed records show replacement was straightforward, inexpensive, rapid, and achieved without continuity or duplication burdens."
+    },
+    {
+      "record_id": "M04D-FR-075",
+      "lane": "H4-FDP-competitive-successor-procurement",
+      "proposition": "NHS England used a competitive dialogue with multiple tenders to procure the successor Federated Data Platform and Associated Services contract.",
+      "source_date": "2023-11-22",
+      "sources": [
+        {
+          "publisher": "Find a Tender",
+          "title": "Federated Data Platform and Associated Services contract award notice",
+          "url": "https://www.find-tender.service.gov.uk/Notice/037776-2023",
+          "source_type": "official_procurement_record",
+          "locator_state": "source_bounded"
+        }
+      ],
+      "observation": "The award notice identifies competitive dialogue as the procedure, reports seven tenders received, weights quality at 60 percent, social value at 10 percent, and price at 30 percent, and records award to Palantir Technologies UK, Ltd. on November 22, 2023.",
+      "supports": [
+        "formal competition for the successor platform",
+        "a seven-tender option set and stated award criteria",
+        "counterevidence to a claim of a no-competition successor award"
+      ],
+      "does_not_support": [
+        "adequacy or neutrality of the requirements and evaluation",
+        "identity and viability of every tenderer",
+        "absence of incumbent advantage",
+        "best-value or performance conclusions",
+        "practical future substitution"
+      ],
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "competitive_successor_procurement",
+      "next_decisive_acquisition": "Acquire the complete prequalification and bidder denominator, dialogue records, requirements, evaluations, scores, exclusions, clarifications, conflicts, standstill challenges, price and architecture comparisons, and unsuccessful-tender feedback.",
+      "falsifier": "The procedure was nominally competitive but requirements, dialogue, evaluation, or access materially foreclosed viable alternatives or did not produce genuine competition."
+    },
+    {
+      "record_id": "M04D-FR-076",
+      "lane": "H4-FDP-incumbent-vendor-replacement",
+      "proposition": "The NHS Foundry exit process resulted in replacement of Palantir by a different supplier for the successor Federated Data Platform.",
+      "source_date": "2023-11-22",
+      "sources": [
+        {
+          "publisher": "Contracts Finder",
+          "title": "Palantir Foundry Transition & Exit Contract",
+          "url": "https://www.contractsfinder.service.gov.uk/Notice/94e3bcb5-d82c-4bbf-a2aa-5fbb3ea9ca09",
+          "source_type": "official_procurement_record",
+          "locator_state": "source_bounded"
+        },
+        {
+          "publisher": "Find a Tender",
+          "title": "Federated Data Platform and Associated Services contract award notice",
+          "url": "https://www.find-tender.service.gov.uk/Notice/037776-2023",
+          "source_type": "official_procurement_record",
+          "locator_state": "source_bounded"
+        }
+      ],
+      "observation": "The transition contract contemplated movement from incumbent Palantir Foundry to the future FDP supplier. The competitive successor procurement later awarded the FDP contract to Palantir Technologies UK, Ltd. The platform supplier therefore remained Palantir, even though the contractual vehicle, product scope, public controls, and supplier ecosystem changed.",
+      "supports": [
+        "a bounded non-link against actual incumbent-vendor replacement at the FDP platform level",
+        "a distinction between contractual exit readiness and final supplier substitution",
+        "continued testing of whether competition, performance, requirements, or incumbent advantage explains continuity"
+      ],
+      "does_not_support": [
+        "absence of product migration or architectural change",
+        "absence of practical exit capability",
+        "improper award or lock-in",
+        "Palantir control over all FDP-related suppliers or data"
+      ],
+      "disposition": "bounded_non_link",
+      "evidence_ceiling": "successor_platform_vendor_continuity",
+      "next_decisive_acquisition": "Compare incumbent and FDP architectures, products, data and rights; obtain the seven tenders, evaluation, migration and cutover records, performance, pricing, transition assistance, and evidence of any modules moved to different suppliers or public custody.",
+      "falsifier": "Operative records show the successor platform was materially supplied and controlled by a different vendor despite the Palantir award identity."
+    },
+    {
+      "record_id": "M04D-FR-077",
+      "lane": "C4-FDP-public-data-control",
+      "proposition": "The NHS FDP public contract and governance statements preserve NHS ownership and control of the platform data and prohibit supplier use for the supplier's own purposes.",
+      "source_date": "2023-2024",
+      "sources": [
+        {
+          "publisher": "Contracts Finder",
+          "title": "Federated Data Platform and Associated Services",
+          "url": "https://www.contractsfinder.service.gov.uk/Notice/0f8a65b5-23a2-4294-abb1-a7fd8efb3ad0",
+          "source_type": "official_procurement_record",
+          "locator_state": "source_bounded"
+        },
+        {
+          "publisher": "National Data Guardian",
+          "title": "National Data Guardian 2023-2024 report",
+          "url": "https://www.gov.uk/government/publications/national-data-guardian-2023-2024-report/national-data-guardian-2023-2024-report",
+          "source_type": "official_governance_record",
+          "locator_state": "source_bounded"
+        }
+      ],
+      "observation": "The procurement notice states that the platform will be owned and controlled by the NHS. The National Data Guardian states that the supplier will not control platform data and is not permitted to access, use, or share it for its own purposes, and that use was bounded to stated use cases absent further public engagement.",
+      "supports": [
+        "formal public data-control and purpose-limitation rights",
+        "counterevidence to private ownership of NHS platform data",
+        "a governance baseline for testing practical control, access, and audit"
+      ],
+      "does_not_support": [
+        "effective enforcement of the restrictions",
+        "public ownership of all software, source code, ontology, interfaces, or configuration",
+        "practical portability or supplier replacement",
+        "absence of supplier technical access required to provide services"
+      ],
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "formal_public_data_control_and_purpose_limits",
+      "next_decisive_acquisition": "Acquire the exact data, access, audit, subprocessor, IP, ontology, interface, configuration, export, retention, deletion, transition, breach, and enforcement clauses and test them against logs and observed operations.",
+      "falsifier": "Operative contracts or observed practice confer material supplier control, independent use, or rights inconsistent with the public statements."
+    },
+    {
+      "record_id": "M04D-FR-078",
+      "lane": "T2-FDP-differentiated-supplier-ecosystem",
+      "proposition": "The NHS FDP program uses differentiated suppliers around the Palantir platform rather than assigning all platform, privacy, implementation, and product-development functions to one supplier.",
+      "source_date": "2023-2025",
+      "sources": [
+        {
+          "publisher": "Contracts Finder",
+          "title": "NHS Privacy Enhancing Technology",
+          "url": "https://www.contractsfinder.service.gov.uk/notice/d9ad1074-265d-4505-a945-41fe87a514fa",
+          "source_type": "official_procurement_record",
+          "locator_state": "source_bounded"
+        },
+        {
+          "publisher": "Contracts Finder",
+          "title": "Technical Support and Implementation services to the NHS",
+          "url": "https://www.contractsfinder.service.gov.uk/notice/dda25018-75fb-42bc-baf3-aabb1e1bd1e1",
+          "source_type": "official_procurement_record",
+          "locator_state": "source_bounded"
+        },
+        {
+          "publisher": "Contracts Finder",
+          "title": "PHM Product Development Delivery Partner",
+          "url": "https://www.contractsfinder.service.gov.uk/Notice/ec7b7106-ce7a-40eb-bf8a-a31f7bc955e9",
+          "source_type": "official_procurement_record",
+          "locator_state": "source_bounded"
+        }
+      ],
+      "observation": "NHS England separately awarded privacy-enhancing technology to IQVIA, technical support and implementation services to KPMG, and a Population Health Management product-development role to Kainos, alongside Palantir's FDP platform award.",
+      "supports": [
+        "T2 functional differentiation and multiple supplier entry points",
+        "a public modularity and counterpower structure around the platform",
+        "counterevidence to one supplier performing every FDP function"
+      ],
+      "does_not_support": [
+        "independence of every supplier from Palantir architecture",
+        "component interchangeability",
+        "effective competition for the core platform",
+        "absence of common data, interface, accreditation, or deployment dependencies"
+      ],
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "differentiated_public_supplier_ecosystem",
+      "next_decisive_acquisition": "Acquire all supplier responsibility matrices, interfaces, data flows, subcontracting, pricing, performance, rights, replacement, failure, and cross-supplier dependence records.",
+      "falsifier": "Operative records show the other suppliers are nominal and Palantir controls or must approve all material functions, interfaces, data, deployment, and replacement."
+    },
+    {
+      "record_id": "M04D-FR-079",
+      "lane": "H4-FDP-practical-exit-and-portability",
+      "proposition": "The current record demonstrates practical, completed enterprise exit from Palantir Foundry with validated portability, continued public operation, and acceptable cost.",
+      "source_date": "2021-2026",
+      "depends_on_records": ["M04D-FR-072", "M04D-FR-073", "M04D-FR-074", "M04D-FR-075", "M04D-FR-076", "M04D-FR-077", "M04D-FR-078"],
+      "sources": [],
+      "observation": "The record establishes a product-level alternate-supplier transition award, formal enterprise transition and exit contracts, a competitive successor procurement, formal NHS data control, and differentiated suppliers. It also shows material transition costs and incumbent continuity at the successor platform level. It lacks completed migration and export outcomes, operational continuity, validated portability, replacement exercises, residual dependencies, and comparative cost and performance.",
+      "supports": [
+        "a precise practical-exit test with affirmative and countervailing records"
+      ],
+      "does_not_support": [
+        "complete practical exit",
+        "complete lock-in",
+        "effective portability of all products and workflows",
+        "continued public operation without Palantir",
+        "proportionate transition cost"
+      ],
+      "disposition": "requires_additional_acquisition",
+      "evidence_ceiling": "formal_exit_architecture_without_enterprise_outcome",
+      "next_decisive_acquisition": "Acquire product-by-product migration, exports, ontology and interface transfer, user cutover, accreditation, acceptance, performance, fallback, residual licensing, public operating capacity, costs, unsuccessful migrations, and later replacement or renewal outcomes.",
+      "falsifier": "Observed records demonstrate complete, timely, validated, and proportionate migration to alternative suppliers or in-house operation with no material residual platform dependency."
+    },
+    {
+      "record_id": "M04D-FR-080",
+      "lane": "single-supplier-closed-FDP-ecosystem",
+      "proposition": "Palantir is the sole supplier controlling all material FDP platform, privacy, implementation, and product-development functions.",
+      "source_date": "2023-2025",
+      "depends_on_records": ["M04D-FR-077", "M04D-FR-078"],
+      "sources": [],
+      "observation": "The public procurement ledger identifies Palantir as the core FDP supplier but separately identifies IQVIA, KPMG, and Kainos in privacy, implementation, and product-development roles and states that the NHS owns and controls platform data.",
+      "supports": [
+        "a bounded non-link against a literal single-supplier whole-program model",
+        "continued testing of concentration in the core platform, interfaces, and accreditation"
+      ],
+      "does_not_support": [
+        "effective modularity or supplier independence",
+        "absence of Palantir technical bottlenecks",
+        "practical replacement of the core platform",
+        "adequate public operating capacity"
+      ],
+      "disposition": "bounded_non_link",
+      "evidence_ceiling": "literal_single_supplier_program_non_link",
+      "next_decisive_acquisition": "Map every FDP supplier, subcontractor, module, interface, data flow, approval dependency, right, price, performance, failure, and replacement path to determine actual rather than nominal concentration.",
+      "falsifier": "Operative records show that Palantir controls, subcontracts, approves, or is technically indispensable to all material privacy, implementation, and product-development functions."
+    },
+    {
+      "record_id": "M04D-FR-081",
+      "lane": "system-wide-practical-irreversibility-after-NHS-exit-pass",
+      "proposition": "The NHS transition records establish that Palantir platforms are universally irreversible and that formal public controls, competition, and alternate suppliers cannot produce meaningful counterpower.",
+      "source_date": "2026-07-24",
+      "sources": [],
+      "observation": "Wave 09 establishes one alternate-supplier product transition, material transition burdens, a formal exit contract, seven-tender competitive successor procurement, incumbent continuity, public data-control provisions, and differentiated suppliers. It does not yet establish enterprise portability or universal irreversibility. The record is mixed and product-specific.",
+      "supports": [
+        "continued bounded testing of practical exit, concentration, and counterpower"
+      ],
+      "does_not_support": [
+        "universal platform irreversibility",
+        "complete public sovereignty",
+        "system-wide capture",
+        "absence of lock-in in exact products or modules"
+      ],
+      "disposition": "retained_candidate_only",
+      "evidence_ceiling": "mixed_formal_exit_competition_and_incumbent_continuity",
+      "next_decisive_acquisition": "Require observed exit, replacement, fallback, continuity, migration, cost, performance, rights, and public operating-capacity records across Army, ICE, NHS, NGC2, and other bounded platforms.",
+      "falsifier": "Source-complete product and enterprise exit records consistently show practical replacement, effective public control, broad competition, and proportionate migration costs."
+    }
+  ],
+  "triage_burndown": {
+    "adult_social_care_alternate_supplier_transition": "supported_for_human_review",
+    "adult_social_care_observed_completed_exit": "requires_additional_acquisition",
+    "NHS_Foundry_transition_burden": "supported_for_human_review",
+    "FDP_competitive_successor_procurement": "supported_for_human_review",
+    "FDP_incumbent_vendor_replacement": "bounded_non_link",
+    "FDP_formal_public_data_control": "supported_for_human_review",
+    "FDP_differentiated_supplier_ecosystem": "supported_for_human_review",
+    "FDP_practical_enterprise_exit": "requires_additional_acquisition",
+    "literal_single_supplier_FDP_ecosystem": "bounded_non_link",
+    "system_wide_practical_irreversibility": "retained_candidate_only"
+  },
+  "boundaries": {
+    "promotes_to": "candidate_only",
+    "graph_effect": "none",
+    "conclusion_generated": false,
+    "estate_completion_claimed": false,
+    "transition_contract_proves_completed_exit": false,
+    "competitive_procurement_proves_neutral_award": false,
+    "incumbent_continuity_proves_lock_in": false,
+    "formal_data_control_proves_practical_portability": false,
+    "multiple_suppliers_prove_component_substitution": false,
+    "product_level_transition_promotes_enterprise_claim": false
+  }
+}
