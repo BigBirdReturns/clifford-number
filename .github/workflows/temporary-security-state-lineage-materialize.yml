@@ -1,6 +1,10 @@
 name: Temporary materialize security-state lineage
 
 on:
+  pull_request:
+    paths:
+      - '.github/temporary/security-state-lineage/**'
+      - '.github/workflows/temporary-security-state-lineage-materialize.yml'
   push:
     branches:
       - agent/security-state-lineage-organism
