@@ -1,0 +1,100 @@
+name: Temporary repair M-04B dispatch receipt
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '.github/temporary/m04b-dispatch-receipt-fix/**'
+      - '.github/workflows/temporary-m04b-dispatch-receipt-fix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m04b-dispatch-receipt-fix-${{ github.head_ref || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Repair receipt field and prove focused contract
+        run: |
+          node .github/temporary/m04b-dispatch-receipt-fix/patch.mjs
+          node tools/build-security-state-organism.mjs
+          node tools/validate-security-state-organism.mjs
+          node test/security-state-organism.test.js
+          M04B_REPOSITORY="$GITHUB_REPOSITORY" node tools/dispatch-security-state-organism.mjs --dry-run
+      - name: Run complete repository release gate before cleanup
+        run: npm run release:check
+      - name: Remove one-shot carrier and rerun complete gate
+        run: |
+          rm -rf .github/temporary/m04b-dispatch-receipt-fix
+          rm -f .github/workflows/temporary-m04b-dispatch-receipt-fix.yml
+          npm run release:check
+      - name: Restore out-of-scope generated projections
+        run: |
+          python - <<'PY'
+          import pathlib, shutil, subprocess, sys
+          allowed_exact = {
+            'tools/dispatch-security-state-organism.mjs',
+            'test/security-state-organism.test.js',
+            '.github/workflows/temporary-m04b-dispatch-receipt-fix.yml',
+          }
+          allowed_prefix = ('.github/temporary/m04b-dispatch-receipt-fix/',)
+          def rows(): return subprocess.check_output(['git','status','--porcelain'], text=True).splitlines()
+          def path_of(row): return row[3:].split(' -> ', 1)[-1]
+          current = rows()
+          for row in current:
+            target = path_of(row)
+            if target in allowed_exact or target.startswith(allowed_prefix):
+              continue
+            status = row[:2]
+            print(f'restoring out-of-scope projection: {status} {target}')
+            if status == '??':
+              p = pathlib.Path(target)
+              if p.is_dir(): shutil.rmtree(p)
+              elif p.exists() or p.is_symlink(): p.unlink()
+            else:
+              subprocess.run(['git','restore','--worktree','--staged','--',target], check=True)
+          remaining = rows()
+          bad = [path_of(row) for row in remaining if path_of(row) not in allowed_exact and not path_of(row).startswith(allowed_prefix)]
+          print('\n'.join(path_of(row) for row in remaining))
+          if bad:
+            print('unreconciled out-of-scope drift:', *bad, sep='\n', file=sys.stderr)
+            sys.exit(1)
+          PY
+          node tools/build-security-state-organism.mjs
+          node tools/validate-security-state-organism.mjs
+          node test/security-state-organism.test.js
+          M04B_REPOSITORY="$GITHUB_REPOSITORY" node tools/dispatch-security-state-organism.mjs --dry-run
+          git diff --exit-code -- \
+            build/core-thesis/security-state-organism/manifest.json \
+            build/core-thesis/security-state-organism/fanout.json \
+            build/core-thesis/security-state-organism/issue-plan.json \
+            build/core-thesis/security-state-organism/packets \
+            reports/core-thesis/security-state-organism/data.json \
+            reports/core-thesis/security-state-organism/index.html
+          git diff --check
+      - name: Commit verified permanent repair
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- \
+            .github/temporary/m04b-dispatch-receipt-fix \
+            .github/workflows/temporary-m04b-dispatch-receipt-fix.yml \
+            tools/dispatch-security-state-organism.mjs \
+            test/security-state-organism.test.js
+          git commit -m "Repair M-04B dispatch receipt audit field"
+          target="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          git push origin HEAD:"$target"
