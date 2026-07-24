@@ -1,23 +1,29 @@
 name: Temporary materialize M-04B decisive acquisition wave 01
 
 on:
-  push:
-    branches: [agent/m04b-decisive-acquisition-wave-01]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '.github/temporary/m04b-wave-01/**'
+      - '.github/workflows/temporary-m04b-wave-01.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: m04b-wave-01-${{ github.ref }}
+  group: m04b-wave-01-${{ github.head_ref || github.ref }}
   cancel-in-progress: false
 
 jobs:
   materialize:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
@@ -89,4 +95,5 @@ jobs:
             build/core-thesis/security-state-organism \
             reports/core-thesis/security-state-organism
           git commit -m "Execute M-04B decisive acquisition wave 01"
-          git push origin HEAD:${GITHUB_REF_NAME}
+          target="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          git push origin HEAD:"$target"
