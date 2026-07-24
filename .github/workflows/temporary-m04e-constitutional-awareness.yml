@@ -206,11 +206,52 @@ jobs:
           if bad:
               raise SystemExit('unexpected durable drift:\n' + '\n'.join(bad))
           PY
-      - name: Commit verified permanent estate
+      - name: Commit and push verified permanent estate
+        id: publish
+        continue-on-error: true
         run: |
+          set +e
+          exec > >(tee /tmp/m04e-publish-diagnostic.log) 2>&1
+          target="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          remote_sha="$(git rev-parse "origin/$target")"
+          echo "target=$target"
+          echo "remote_sha=$remote_sha"
+          echo '--- working tree before stage ---'
+          git status --short
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
+          echo '--- staged names ---'
+          git diff --cached --name-status
+          echo '--- staged stat ---'
+          git diff --cached --stat
+          if git diff --cached --quiet; then
+            echo 'ERROR: no staged changes'
+            exit 20
+          fi
           git commit -m 'Install M-04E constitutional class and counterpower estate'
-          target="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
-          git push origin HEAD:"$target"
+          commit_rc=$?
+          echo "commit_rc=$commit_rc"
+          if [ "$commit_rc" -ne 0 ]; then
+            exit "$commit_rc"
+          fi
+          new_sha="$(git rev-parse HEAD)"
+          echo "new_sha=$new_sha"
+          git push --force-with-lease="refs/heads/$target:$remote_sha" origin "HEAD:refs/heads/$target"
+          push_rc=$?
+          echo "push_rc=$push_rc"
+          exit "$push_rc"
+      - name: Upload publication diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04e-publication-diagnostic-${{ github.run_attempt }}
+          path: /tmp/m04e-publish-diagnostic.log
+          if-no-files-found: warn
+      - name: Refuse failed publication
+        if: always()
+        env:
+          PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
+        run: |
+          echo "publish outcome: $PUBLISH_OUTCOME"
+          test "$PUBLISH_OUTCOME" = success
