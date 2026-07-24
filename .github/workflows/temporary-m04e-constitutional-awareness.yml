@@ -1,0 +1,258 @@
+name: Temporary materialize M-04E constitutional-class estate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '.github/temporary/m04e-constitutional-awareness/**'
+      - '.github/workflows/temporary-m04e-constitutional-awareness.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m04e-materialize-${{ github.head_ref || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Diagnose and reassemble source payload
+        run: |
+          python - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import traceback
+          from pathlib import Path
+
+          diagnostic = {'ok': False}
+          try:
+              root = Path('.github/temporary/m04e-constitutional-awareness')
+              parts = sorted(root.glob('part-*.txt'))
+              diagnostic['cwd'] = str(Path.cwd())
+              diagnostic['parts'] = []
+              chunks = []
+              for part in parts:
+                  raw = part.read_bytes()
+                  text = ''.join(raw.decode('utf-8').split())
+                  diagnostic['parts'].append({
+                      'name': part.name,
+                      'raw_bytes': len(raw),
+                      'git_blob_sha1': hashlib.sha1(f'blob {len(raw)}\0'.encode() + raw).hexdigest(),
+                      'sha256': hashlib.sha256(raw).hexdigest(),
+                      'base64_chars_after_whitespace_removal': len(text),
+                  })
+                  chunks.append(text)
+
+              diagnostic['expected_parts'] = [f'part-{i:02d}.txt' for i in range(7)]
+              diagnostic['actual_parts'] = [p.name for p in parts]
+              encoded = ''.join(chunks)
+              diagnostic['assembled_base64_chars'] = len(encoded)
+              diagnostic['assembled_base64_sha256'] = hashlib.sha256(encoded.encode('ascii')).hexdigest()
+              diagnostic['expected_base64_chars'] = 47092
+              diagnostic['expected_base64_sha256'] = '38e5e01771381731412571f96b4485a9de09a61122aebe21b1ae99639364d4bd'
+
+              payload = base64.b64decode(encoded, validate=True)
+              diagnostic['payload_bytes'] = len(payload)
+              diagnostic['payload_sha256'] = hashlib.sha256(payload).hexdigest()
+              diagnostic['expected_payload_bytes'] = 35318
+              diagnostic['expected_payload_sha256'] = '5234615d7c00a644e1e7fe8324bc3a476d58ff5265fb100ec5df29fb6a312f95'
+
+              checks = {
+                  'part_names': diagnostic['actual_parts'] == diagnostic['expected_parts'],
+                  'base64_length': diagnostic['assembled_base64_chars'] == diagnostic['expected_base64_chars'],
+                  'base64_sha256': diagnostic['assembled_base64_sha256'] == diagnostic['expected_base64_sha256'],
+                  'payload_length': diagnostic['payload_bytes'] == diagnostic['expected_payload_bytes'],
+                  'payload_sha256': diagnostic['payload_sha256'] == diagnostic['expected_payload_sha256'],
+              }
+              diagnostic['checks'] = checks
+              diagnostic['ok'] = all(checks.values())
+              if diagnostic['ok']:
+                  Path('/tmp/m04e-source.tgz').write_bytes(payload)
+          except Exception as exc:
+              diagnostic['exception'] = repr(exc)
+              diagnostic['traceback'] = traceback.format_exc()
+
+          Path('/tmp/m04e-diagnostic.json').write_text(json.dumps(diagnostic, indent=2) + '\n')
+          print(json.dumps(diagnostic, indent=2))
+          PY
+      - name: Upload payload diagnostic
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04e-payload-diagnostic-${{ github.run_attempt }}
+          path: /tmp/m04e-diagnostic.json
+          if-no-files-found: error
+      - name: Verify source payload
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          diagnostic = json.loads(Path('/tmp/m04e-diagnostic.json').read_text())
+          if not diagnostic.get('ok'):
+              raise SystemExit('payload diagnostic failed')
+          PY
+          tar -tzf /tmp/m04e-source.tgz
+      - name: Extract permanent source files
+        run: |
+          tar -xzf /tmp/m04e-source.tgz -C .
+          test -f data/project/m04e-constitutional-awareness-methodology.json
+          test -f data/intake/m04e-constitutional-awareness-estate-wave-01.json
+          test -f tools/build-m04e-constitutional-awareness.mjs
+      - name: Build constitutional-awareness projections
+        run: node tools/build-m04e-constitutional-awareness.mjs
+      - name: Validate constitutional-awareness estate
+        run: node tools/validate-m04e-constitutional-awareness.mjs
+      - name: Run constitutional-awareness regression
+        run: node test/m04e-constitutional-awareness.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Restore unrelated generated drift
+        run: |
+          python - <<'PY'
+          import shutil
+          import subprocess
+          from pathlib import Path
+
+          allowed_exact = {
+              '.github/workflows/m04e-constitutional-awareness.yml',
+              'data/intake/m04e-constitutional-awareness-estate-wave-01.json',
+              'data/project/m04e-constitutional-awareness-estate.json',
+              'data/project/m04e-constitutional-awareness-methodology.json',
+              'docs/milestones/m04e-constitutional-class-awareness.md',
+              'test/m04e-constitutional-awareness.test.js',
+              'tools/build-m04e-constitutional-awareness.mjs',
+              'tools/validate-m04e-constitutional-awareness.mjs',
+          }
+          allowed_prefix = (
+              'build/core-thesis/constitutional-awareness/',
+              'reports/core-thesis/constitutional-awareness/',
+          )
+          rows = subprocess.check_output(['git', 'status', '--porcelain'], text=True).splitlines()
+          bad = []
+          for row in rows:
+              path = row[3:]
+              if ' -> ' in path:
+                  path = path.split(' -> ', 1)[1]
+              if path in allowed_exact or path.startswith(allowed_prefix):
+                  continue
+              bad.append(path)
+          for path in bad:
+              tracked = subprocess.run(
+                  ['git', 'ls-files', '--error-unmatch', '--', path],
+                  stdout=subprocess.DEVNULL,
+                  stderr=subprocess.DEVNULL,
+              ).returncode == 0
+              if tracked:
+                  subprocess.run(['git', 'restore', '--staged', '--worktree', '--', path], check=True)
+              else:
+                  target = Path(path)
+                  if target.is_dir():
+                      shutil.rmtree(target)
+                  elif target.exists():
+                      target.unlink()
+          if bad:
+              print('restored unrelated generated drift:')
+              print('\n'.join(bad))
+          PY
+      - name: Rebuild permanent estate and run final focused gates
+        run: |
+          node tools/build-m04e-constitutional-awareness.mjs
+          node tools/validate-m04e-constitutional-awareness.mjs
+          node test/m04e-constitutional-awareness.test.js
+          git diff --check
+          python - <<'PY'
+          import subprocess
+          allowed_exact = {
+              '.github/workflows/m04e-constitutional-awareness.yml',
+              'data/intake/m04e-constitutional-awareness-estate-wave-01.json',
+              'data/project/m04e-constitutional-awareness-estate.json',
+              'data/project/m04e-constitutional-awareness-methodology.json',
+              'docs/milestones/m04e-constitutional-class-awareness.md',
+              'test/m04e-constitutional-awareness.test.js',
+              'tools/build-m04e-constitutional-awareness.mjs',
+              'tools/validate-m04e-constitutional-awareness.mjs',
+          }
+          allowed_prefix = (
+              'build/core-thesis/constitutional-awareness/',
+              'reports/core-thesis/constitutional-awareness/',
+          )
+          rows = subprocess.check_output(['git', 'status', '--porcelain'], text=True).splitlines()
+          paths = []
+          for row in rows:
+              path = row[3:]
+              if ' -> ' in path:
+                  path = path.split(' -> ', 1)[1]
+              paths.append(path)
+          bad = [p for p in paths if p not in allowed_exact and not p.startswith(allowed_prefix)]
+          print('\n'.join(paths))
+          if bad:
+              raise SystemExit('unexpected durable drift:\n' + '\n'.join(bad))
+          PY
+      - name: Commit and push verified permanent estate
+        id: publish
+        continue-on-error: true
+        run: |
+          set +e
+          exec > >(tee /tmp/m04e-publish-diagnostic.log) 2>&1
+          target="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          remote_sha="$(git rev-parse "origin/$target")"
+          echo "target=$target"
+          echo "remote_sha=$remote_sha"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- \
+            data/intake/m04e-constitutional-awareness-estate-wave-01.json \
+            data/project/m04e-constitutional-awareness-estate.json \
+            data/project/m04e-constitutional-awareness-methodology.json \
+            docs/milestones/m04e-constitutional-class-awareness.md \
+            test/m04e-constitutional-awareness.test.js \
+            tools/build-m04e-constitutional-awareness.mjs \
+            tools/validate-m04e-constitutional-awareness.mjs \
+            build/core-thesis/constitutional-awareness \
+            reports/core-thesis/constitutional-awareness
+          echo '--- staged names ---'
+          git diff --cached --name-status
+          echo '--- staged stat ---'
+          git diff --cached --stat
+          if git diff --cached --quiet; then
+            echo 'ERROR: no staged changes'
+            exit 20
+          fi
+          git commit -m 'Install M-04E constitutional class and counterpower estate'
+          commit_rc=$?
+          echo "commit_rc=$commit_rc"
+          if [ "$commit_rc" -ne 0 ]; then
+            exit "$commit_rc"
+          fi
+          new_sha="$(git rev-parse HEAD)"
+          echo "new_sha=$new_sha"
+          git push --force-with-lease="refs/heads/$target:$remote_sha" origin "HEAD:refs/heads/$target"
+          push_rc=$?
+          echo "push_rc=$push_rc"
+          exit "$push_rc"
+      - name: Upload publication diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04e-publication-diagnostic-${{ github.run_attempt }}
+          path: /tmp/m04e-publish-diagnostic.log
+          if-no-files-found: warn
+      - name: Refuse failed publication
+        if: always()
+        env:
+          PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
+        run: |
+          echo "publish outcome: $PUBLISH_OUTCOME"
+          test "$PUBLISH_OUTCOME" = success
