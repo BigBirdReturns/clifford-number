@@ -3,8 +3,8 @@
 > This packet inventories known custody and acquisition objects that still lack an explicit object-level mapping under the core thesis. Inherited estate context is not a finding.
 
 - Known objects: **26**
-- Explicitly mapped: **1**
-- Known but unmapped: **25**
+- Explicitly mapped: **2**
+- Known but unmapped: **24**
 - Unresolved: **0**
 - Ukraine-shock candidates: **26**
 
@@ -36,7 +36,6 @@
 - **game_trail: slice nato diana 2026 cohort** — candidate stages: Reversibility and counterpower, Option-set formation, Agenda formation
 - **game_trail: track defense accelerator fund rosters** — candidate stages: Reversibility and counterpower, Option-set formation, Agenda formation
 - **game_trail: United Kingdom defense estate frontier summary** — candidate stages: Reversibility and counterpower, Agenda formation
-- **research_track: Defense-tech accelerator & fund roster routers (beyond Capital Factory)** — candidate stages: Reversibility and counterpower, Residual value, Option-set formation, Agenda formation
 - **source_route: companies house** — candidate stages: Reversibility and counterpower, Option-set formation, Agenda formation
 - **source_route: contracts finder** — candidate stages: Reversibility and counterpower, Option-set formation, Agenda formation
 - **source_route: find a tender** — candidate stages: Reversibility and counterpower, Option-set formation, Agenda formation
@@ -67,7 +66,6 @@
 - **game_trail: track defense accelerator fund rosters** — estate_inherited_direct_candidate; subphases: U2-coalition-rearmament-industrial-catchup
 - **game_trail: United Kingdom defense estate frontier summary** — estate_inherited_direct_candidate; subphases: U2-coalition-rearmament-industrial-catchup
 - **next_acquisition: enumerate the official UK defense implementation and supplier universe before person-level routing** — estate_inherited_direct_candidate; subphases: U2-coalition-rearmament-industrial-catchup
-- **research_track: Defense-tech accelerator & fund roster routers (beyond Capital Factory)** — estate_inherited_direct_candidate; subphases: U2-coalition-rearmament-industrial-catchup
 - **source_route: companies house** — estate_inherited_direct_candidate; subphases: U2-coalition-rearmament-industrial-catchup
 - **source_route: contracts finder** — estate_inherited_direct_candidate; subphases: U2-coalition-rearmament-industrial-catchup
 - **source_route: find a tender** — estate_inherited_direct_candidate; subphases: U2-coalition-rearmament-industrial-catchup
@@ -76,7 +74,7 @@
 
 ## Next action
 
-Review 25 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
+Review 24 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
 
 `promotes_to: candidate_only` · `graph_effect: none` · `conclusion_generated: false` · `estate_completion_claimed: false`
 

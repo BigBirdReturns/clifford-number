@@ -3,8 +3,8 @@
 > This packet inventories known custody and acquisition objects that still lack an explicit object-level mapping under the core thesis. Inherited estate context is not a finding.
 
 - Known objects: **51**
-- Explicitly mapped: **4**
-- Known but unmapped: **47**
+- Explicitly mapped: **5**
+- Known but unmapped: **46**
 - Unresolved: **0**
 - Ukraine-shock candidates: **51**
 
@@ -90,7 +90,7 @@
 
 ## Next action
 
-Review 47 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
+Review 46 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
 
 `promotes_to: candidate_only` · `graph_effect: none` · `conclusion_generated: false` · `estate_completion_claimed: false`
 
