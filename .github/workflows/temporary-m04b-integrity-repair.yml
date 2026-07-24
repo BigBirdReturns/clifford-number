@@ -89,9 +89,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout HEAD -- \
-            .github/workflows/security-state-organism.yml \
-            .github/workflows/temporary-m04b-integrity-repair.yml
+          git checkout HEAD -- .github/workflows
           git add -A
           test -z "$(git status --short .github/workflows)"
           git status --short
