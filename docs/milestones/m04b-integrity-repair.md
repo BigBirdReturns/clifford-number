@@ -20,3 +20,7 @@ The repair changes infrastructure and research custody. It does not promote any 
 ## Live-dispatch hardening
 
 The dispatcher is internally restricted to a GitHub Actions `push` on `refs/heads/main`; workflow configuration is not the sole write barrier. API writes are serialized with retry and backoff. Existing v1 issue markers and estate-handoff markers are migrated in place, and ambiguous duplicate current/legacy markers fail closed rather than producing another lane.
+
+## Final acceptance target
+
+The merge candidate carries source fingerprint `750a64c1de3c8b17b299ab251374338563e74f3a57ac0b66fda186b938e49e42`, 121 bounded packets, 61 issue groups, 24 estate handoffs, 82 source routes, and nine source-bounded evidence records. It contains no temporary M-04B or lineage carrier. Live mutation remains downstream of exact-head validation after merge to `main`.
