@@ -1,11 +1,20 @@
 name: Temporary materialize M-04B integrity repair
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/temporary/m04b-integrity-repair/**'
+      - '.github/workflows/temporary-m04b-integrity-repair.yml'
   push:
     branches: [agent/m04b-integrity-repair]
     paths:
       - '.github/temporary/m04b-integrity-repair/trigger.txt'
   workflow_dispatch:
+
+concurrency:
+  group: m04b-integrity-repair
+  cancel-in-progress: false
 
 permissions:
   contents: write
