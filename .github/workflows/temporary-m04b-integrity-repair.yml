@@ -1,0 +1,95 @@
+name: Temporary materialize M-04B integrity repair
+
+on:
+  push:
+    branches: [agent/m04b-integrity-repair]
+    paths:
+      - '.github/temporary/m04b-integrity-repair/trigger.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  REPAIR_BRANCH: agent/m04b-integrity-repair
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.REPAIR_BRANCH }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Restore checksum-verified repair payload
+        run: |
+          set -euo pipefail
+          cat .github/temporary/m04b-integrity-repair/payload.b64.part-* > /tmp/m04b-integrity-repair.b64
+          base64 --decode /tmp/m04b-integrity-repair.b64 > /tmp/m04b-integrity-repair.tar.xz
+          expected="$(cat .github/temporary/m04b-integrity-repair/payload.sha256)"
+          actual="$(sha256sum /tmp/m04b-integrity-repair.tar.xz | awk '{print $1}')"
+          test "$actual" = "$expected"
+          tar -xJf /tmp/m04b-integrity-repair.tar.xz
+          node repair/apply.mjs
+      - name: Remove all temporary transport before validation
+        run: |
+          set -euo pipefail
+          rm -rf \
+            repair \
+            .github/temporary/m04b-integrity-repair \
+            .github/temporary/m04b-organism \
+            .github/temporary/m04b-organism-v2 \
+            .github/temporary/security-state-lineage \
+            .github/temporary/security-state-lineage-v2
+          rm -f \
+            .github/workflows/temporary-m04b-integrity-repair.yml \
+            .github/workflows/temporary-m04b-organism-materialize.yml \
+            .github/workflows/temporary-m04b-organism-materialize-v2.yml \
+            .github/workflows/temporary-security-state-lineage-materialize.yml \
+            .github/workflows/temporary-security-state-lineage-materialize-v2.yml
+      - name: Build, validate, and test the repaired source plane
+        run: |
+          set -euo pipefail
+          node tools/build-security-state-organism.mjs
+          node tools/validate-security-state-organism.mjs
+          node test/security-state-organism.test.js
+          M04B_REPOSITORY="$GITHUB_REPOSITORY" node tools/dispatch-security-state-organism.mjs --dry-run
+      - name: Run the complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic rebuild and clean patch
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/m04b-build-1 /tmp/m04b-report-1
+          cp -a build/core-thesis/security-state-organism /tmp/m04b-build-1
+          cp -a reports/core-thesis/security-state-organism /tmp/m04b-report-1
+          node tools/build-security-state-organism.mjs
+          diff -ru /tmp/m04b-build-1 build/core-thesis/security-state-organism
+          diff -ru /tmp/m04b-report-1 reports/core-thesis/security-state-organism
+          git diff --check
+          node tools/validate-security-state-organism.mjs
+          node test/security-state-organism.test.js
+      - name: Commit the permanent repaired tree
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git status --short
+          test -n "$(git status --porcelain)"
+          git commit -m "Repair M-04B integrity and source custody"
+          git push origin "HEAD:${REPAIR_BRANCH}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: m04b-integrity-repair-evidence
+          path: |
+            data/project/security-state-*.json
+            data/intake/security-state-organism-*.json
+            docs/security-state-organism-program.md
+            docs/milestones/m04b-*.md
+            build/core-thesis/security-state-organism/
+            reports/core-thesis/security-state-organism/
+          if-no-files-found: error
+          retention-days: 90
