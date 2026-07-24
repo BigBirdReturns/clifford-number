@@ -1,0 +1,88 @@
+name: Temporary materialize estate full-lens audit
+
+on:
+  push:
+    branches:
+      - agent/core-thesis-unmapped-audit
+    paths:
+      - '.github/workflows/temporary-estate-lens-materialize.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-estate-lens-materialize
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/core-thesis-unmapped-audit
+          fetch-depth: 0
+          show-progress: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct permanent audit source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/temporary/estate-lens-source/build-*.part > tools/build-estate-lens-audit.mjs
+          chmod +x tools/build-estate-lens-audit.mjs
+          node --check tools/build-estate-lens-audit.mjs
+          rm -rf .github/temporary/estate-lens-source
+          rm -f .github/workflows/temporary-estate-lens-materialize.yml
+
+      - name: Compile and validate the thesis-aligned estate audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-core-thesis.mjs
+          node tools/build-estate-lens-audit.mjs
+          node tools/validate-core-thesis.mjs
+          node test/core-thesis.test.js
+          node tools/validate-estate-lens-audit.mjs
+          node test/estate-lens-audit.test.js
+
+      - name: Run the complete release gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run release:check
+
+      - name: Preserve audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: known-unmapped-estate-sections
+          path: |
+            data/project/
+            docs/estate-lens-audit.md
+            docs/milestones/m04a1-known-unmapped-estates.md
+            build/core-thesis/
+            reports/core-thesis/
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Publish permanent source and generated products
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f tools/build-estate-lens-audit.mjs
+          test -f build/core-thesis/estate-lens-audit-manifest.json
+          test -f reports/core-thesis/unmapped-sections/index.html
+          test ! -d .github/temporary/estate-lens-source
+          test ! -e .github/workflows/temporary-estate-lens-materialize.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git status --short
+          git commit -m 'Map known unmapped estate sections under the core thesis'
+          git push origin HEAD:agent/core-thesis-unmapped-audit
