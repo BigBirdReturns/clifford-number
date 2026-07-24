@@ -1,6 +1,13 @@
 name: Temporary materialize estate full-lens audit
 
 on:
+  pull_request:
+    paths:
+      - '.github/temporary/estate-lens-source/**'
+      - '.github/workflows/temporary-estate-lens-materialize.yml'
+      - 'data/project/**'
+      - 'tools/validate-estate-lens-audit.mjs'
+      - 'test/estate-lens-audit.test.js'
   push:
     branches:
       - agent/core-thesis-unmapped-audit
