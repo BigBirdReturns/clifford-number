@@ -1,0 +1,110 @@
+    if (report) add(objectRow({ estate, kind:'report', id:report.report_id, label:report.title, description:`${report.current_stage} → ${report.next_transition}`, membership:(estate.membership?.primary_cases ?? []).includes(caseId) ? 'primary_case_report' : 'related_case_report', sourceRefs:[`briefs/${report.report_id}.html`, 'build/report-frontier.json'] }));
+  }
+
+  for (const [index, fog] of (estate.fog ?? []).entries()) add(objectRow({ estate, kind:'fog_item', id:`fog-${index+1}`, label:fog, description:`Dominant fog: ${estate.dominant_fog}`, sourceRefs:[`data/estates/definitions/${estate.estate_id}.json`] }));
+  if (estate.next_acquisition?.operation) add(objectRow({ estate, kind:'next_acquisition', id:'next-acquisition', label:estate.next_acquisition.operation, description:estate.next_acquisition.decisive_output ?? '', sourceRefs:[`data/estates/definitions/${estate.estate_id}.json`] }));
+}
+
+objects.sort((a,b) => a.estate_id.localeCompare(b.estate_id) || a.object_kind.localeCompare(b.object_kind) || a.object_id.localeCompare(b.object_id));
+
+const countBy = (items, key) => Object.fromEntries([...items.reduce((m,item)=>m.set(item[key],(m.get(item[key])??0)+1),new Map())].sort((a,b)=>String(a[0]).localeCompare(String(b[0]))));
+const stageCandidateCounts = Object.fromEntries(thesis.conversion_stages.map(stage => [stage.stage_id, objects.filter(item => item.mapping_state !== 'explicit_mapped' && item.candidate_conversion_stage_ids.includes(stage.stage_id)).length]));
+const estatePackets = estateIndex.estates.map(estate => {
+  const rows = objects.filter(item => item.estate_id === estate.estate_id);
+  const unmapped = rows.filter(item => item.mapping_state === 'known_unmapped');
+  const unresolved = rows.filter(item => item.mapping_state === 'unresolved');
+  return {
+    estate_id: estate.estate_id,
+    estate_label: estate.label,
+    generation: estate.generation,
+    inherited_alignment: { alignment_ref: `data/project/estate-thesis-alignment.json#${estate.estate_id}`, mapping_state: 'explicit_estate_root_alignment' },
+    counts: {
+      known_objects: rows.length,
+      explicit_mapped: rows.filter(item => item.mapping_state === 'explicit_mapped').length,
+      known_unmapped: unmapped.length,
+      unresolved: unresolved.length,
+      ukraine_direct_or_adjacent_candidates: rows.filter(item => item.ukraine_war_shock.state !== 'not_reached').length,
+    },
+    object_kind_counts: countBy(rows, 'object_kind'),
+    mapping_state_counts: countBy(rows, 'mapping_state'),
+    sequence_band_counts: countBy(rows.filter(item => item.mapping_state !== 'explicit_mapped'), 'sequence_band'),
+    candidate_stage_counts: Object.fromEntries(thesis.conversion_stages.map(stage => [stage.stage_id, rows.filter(item => item.mapping_state !== 'explicit_mapped' && item.candidate_conversion_stage_ids.includes(stage.stage_id)).length])),
+    decisive_mapping_queue: rows.filter(item => item.mapping_state !== 'explicit_mapped' && item.sequence_band === 'decisive_instrument_or_control').map(item => item.object_key),
+    conversion_mapping_queue: rows.filter(item => item.mapping_state !== 'explicit_mapped' && item.sequence_band === 'conversion_or_option_set').map(item => item.object_key),
+    infrastructure_mapping_queue: rows.filter(item => item.mapping_state !== 'explicit_mapped' && item.sequence_band === 'custody_or_source_infrastructure').map(item => item.object_key),
+    unresolved_queue: unresolved.map(item => item.object_key),
+    ukraine_shock_queue: rows.filter(item => item.ukraine_war_shock.state !== 'not_reached').map(item => item.object_key),
+    next_action: `Review ${unmapped.length + unresolved.length} inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.`,
+    graph_effect:'none', conclusion_generated:false, estate_completion_claimed:false,
+  };
+});
+
+const audit = {
+  schema_version:'estate-lens-audit@1',
+  audit_id:methodology.audit_id,
+  as_of:methodology.as_of,
+  thesis_id:thesis.thesis_id,
+  phase_shock_id:shock.shock_id,
+  methodology,
+  counts:{
+    estates:estatePackets.length,
+    known_object_memberships:objects.length,
+    explicit_mapped:objects.filter(item=>item.mapping_state==='explicit_mapped').length,
+    known_unmapped:objects.filter(item=>item.mapping_state==='known_unmapped').length,
+    unresolved:objects.filter(item=>item.mapping_state==='unresolved').length,
+    ukraine_direct_object_candidates:objects.filter(item=>item.ukraine_war_shock.state==='direct_object_candidate').length,
+    ukraine_inherited_direct_candidates:objects.filter(item=>item.ukraine_war_shock.state==='estate_inherited_direct_candidate').length,
+    ukraine_inherited_adjacent_candidates:objects.filter(item=>item.ukraine_war_shock.state==='estate_inherited_adjacent_candidate').length,
+  },
+  object_kind_counts:countBy(objects,'object_kind'),
+  mapping_state_counts:countBy(objects,'mapping_state'),
+  sequence_band_counts:countBy(objects.filter(item=>item.mapping_state!=='explicit_mapped'),'sequence_band'),
+  candidate_stage_counts:stageCandidateCounts,
+  estates:estatePackets,
+  objects,
+  boundaries:methodology.boundaries,
+  promotes_to:'candidate_only', graph_effect:'none', conclusion_generated:false, estate_completion_claimed:false,
+};
+audit.fingerprint = hash({counts:audit.counts,objects:objects.map(item=>[item.object_key,item.mapping_state,item.candidate_conversion_stage_ids,item.ukraine_war_shock.state])}).slice(0,24);
+
+function renderMarkdown() {
+  const lines = [
+    '# Known but unmapped estate sections', '',
+    '> Estate-root alignment is complete. Object-level alignment is not. These counts describe mapping debt, not evidentiary weakness, importance, risk, or wrongdoing.', '',
+    `- Estates: **${audit.counts.estates}**`,
+    `- Known object memberships: **${audit.counts.known_object_memberships}**`,
+    `- Explicitly object-mapped: **${audit.counts.explicit_mapped}**`,
+    `- Known but unmapped: **${audit.counts.known_unmapped}**`,
+    `- Unresolved even for conservative routing: **${audit.counts.unresolved}**`,
+    `- Ukraine-shock direct object candidates: **${audit.counts.ukraine_direct_object_candidates}**`, '',
+    '## Mapping debt by estate', '',
+    '| Estate | Known | Explicit | Unmapped | Unresolved | Ukraine lens |',
+    '|---|---:|---:|---:|---:|---:|',
+    ...estatePackets.map(item => `| ${item.estate_label} | ${item.counts.known_objects} | ${item.counts.explicit_mapped} | ${item.counts.known_unmapped} | ${item.counts.unresolved} | ${item.counts.ukraine_direct_or_adjacent_candidates} |`),
+    '', '## Candidate conversion-stage workload', '',
+    ...thesis.conversion_stages.map(stage => `- **${stage.label}:** ${stageCandidateCounts[stage.stage_id]} inherited-only or unresolved object memberships`),
+    '', '## Operating law', '',
+    '```text',
+    'known custody object',
+    '→ inherited estate context',
+    '→ object-specific mapping review',
+    '→ explicit phase / conversion stage / archetype / shock mapping',
+    '→ evidence and report use only after the normal claim and review gates',
+    '```', '',
+    'Machine stage suggestions are routing aids. They create no claim, intentionality assignment, graph effect, conclusion, allegation, or publication approval.', ''
+  ];
+  return lines.join('\n');
+}
+
+function renderEstatePacket(packet) {
+  const rows = objects.filter(item => item.estate_id === packet.estate_id && item.mapping_state !== 'explicit_mapped');
+  const lines = [
+    `# Full-lens mapping lane: ${packet.estate_label}`, '',
+    '> This packet inventories known custody and acquisition objects that still lack an explicit object-level mapping under the core thesis. Inherited estate context is not a finding.', '',
+    `- Known objects: **${packet.counts.known_objects}**`,
+    `- Explicitly mapped: **${packet.counts.explicit_mapped}**`,
+    `- Known but unmapped: **${packet.counts.known_unmapped}**`,
+    `- Unresolved: **${packet.counts.unresolved}**`,
+    `- Ukraine-shock candidates: **${packet.counts.ukraine_direct_or_adjacent_candidates}**`, '',
+    '## Inherited conversion context', '',
+    `- ${packet.inherited_alignment?.alignment_ref ?? 'alignment missing'}`, '',
