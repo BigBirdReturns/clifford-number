@@ -3,8 +3,8 @@
 > This packet inventories known custody and acquisition objects that still lack an explicit object-level mapping under the core thesis. Inherited estate context is not a finding.
 
 - Known objects: **25**
-- Explicitly mapped: **1**
-- Known but unmapped: **24**
+- Explicitly mapped: **2**
+- Known but unmapped: **23**
 - Unresolved: **0**
 - Ukraine-shock candidates: **25**
 
@@ -34,7 +34,6 @@
 - **game_trail: track defense accelerator fund rosters** — candidate stages: Residual value, Public conversion, Option-set formation
 - **game_trail: Transatlantic defense innovation estate frontier summary** — candidate stages: Residual value, Public conversion
 - **next_acquisition: resolve every cohort company to a legal entity and freeze longitudinal cohorts** — candidate stages: Residual value, Public conversion, Option-set formation
-- **research_track: Defense-tech accelerator & fund roster routers (beyond Capital Factory)** — candidate stages: Residual value, Public conversion, Option-set formation, Reversibility and counterpower
 - **source_route: allied award portals** — candidate stages: Residual value, Public conversion, Option-set formation
 - **source_route: national company registries** — candidate stages: Residual value, Public conversion, Option-set formation
 - **source_route: nato diana** — candidate stages: Residual value, Public conversion, Option-set formation
@@ -64,7 +63,6 @@
 - **game_trail: track defense accelerator fund rosters** — direct_object_candidate; subphases: requires review
 - **game_trail: Transatlantic defense innovation estate frontier summary** — direct_object_candidate; subphases: requires review
 - **next_acquisition: resolve every cohort company to a legal entity and freeze longitudinal cohorts** — direct_object_candidate; subphases: requires review
-- **research_track: Defense-tech accelerator & fund roster routers (beyond Capital Factory)** — direct_object_candidate; subphases: requires review
 - **source_route: allied award portals** — direct_object_candidate; subphases: requires review
 - **source_route: national company registries** — direct_object_candidate; subphases: requires review
 - **source_route: nato diana** — direct_object_candidate; subphases: requires review
@@ -74,7 +72,7 @@
 
 ## Next action
 
-Review 24 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
+Review 23 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
 
 `promotes_to: candidate_only` · `graph_effect: none` · `conclusion_generated: false` · `estate_completion_claimed: false`
 

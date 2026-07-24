@@ -3,8 +3,8 @@
 > This packet inventories known custody and acquisition objects that still lack an explicit object-level mapping under the core thesis. Inherited estate context is not a finding.
 
 - Known objects: **24**
-- Explicitly mapped: **1**
-- Known but unmapped: **8**
+- Explicitly mapped: **2**
+- Known but unmapped: **7**
 - Unresolved: **15**
 - Ukraine-shock candidates: **24**
 
@@ -24,7 +24,6 @@
 - **fog_item: committee and candidate identity** — candidate stages: Option-set formation
 - **fog_item: award recipient denominator** — candidate stages: Public conversion, Option-set formation
 - **fog_item: temporal order and explicit no-crossing rows** — candidate stages: Public conversion
-- **research_track: Congressional disclosure × federal money-stream crossings** — candidate stages: Public conversion, Option-set formation, Reversibility and counterpower
 
 ## Custody and source-infrastructure queue
 
@@ -47,7 +46,6 @@
 - **game_trail: track congressional disclosure crossings** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **game_trail: U.S. legislative and political-finance estate frontier summary** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **next_acquisition: acquire both chambers symmetrically and preserve all nonmatches** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
-- **research_track: Congressional disclosure × federal money-stream crossings** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **source_route: house clerk** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **source_route: openfec** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **source_route: sec edgar** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
@@ -57,7 +55,7 @@
 
 ## Next action
 
-Review 23 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
+Review 22 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
 
 `promotes_to: candidate_only` · `graph_effect: none` · `conclusion_generated: false` · `estate_completion_claimed: false`
 

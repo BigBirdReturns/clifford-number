@@ -3,8 +3,8 @@
 > This packet inventories known custody and acquisition objects that still lack an explicit object-level mapping under the core thesis. Inherited estate context is not a finding.
 
 - Known objects: **23**
-- Explicitly mapped: **1**
-- Known but unmapped: **22**
+- Explicitly mapped: **2**
+- Known but unmapped: **21**
 - Unresolved: **0**
 - Ukraine-shock candidates: **23**
 
@@ -28,7 +28,6 @@
 
 - **estate_slice: fda senior leadership 2021 2026** — candidate stages: Reversibility and counterpower, Public conversion, Control architecture, Residual value
 - **estate_slice: ftc commissioner router 2021 2026** — candidate stages: Reversibility and counterpower, Public conversion, Control architecture, Residual value
-- **research_track: Regulatory revolving-door routers (non-defense surfaces)** — candidate stages: Reversibility and counterpower, Residual value, Option-set formation
 - **source_route: enforcement and approval databases** — candidate stages: Reversibility and counterpower, Public conversion
 
 ## Custody and source-infrastructure queue
@@ -60,7 +59,6 @@
 - **game_trail: track regulatory revolving doors** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **game_trail: Regulatory markets estate frontier summary** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **next_acquisition: build tenure-complete regulator cohorts before matching industry roles** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
-- **research_track: Regulatory revolving-door routers (non-defense surfaces)** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **source_route: agency leadership archives** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **source_route: company filings** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **source_route: enforcement and approval databases** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
@@ -70,7 +68,7 @@
 
 ## Next action
 
-Review 22 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
+Review 21 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
 
 `promotes_to: candidate_only` · `graph_effect: none` · `conclusion_generated: false` · `estate_completion_claimed: false`
 

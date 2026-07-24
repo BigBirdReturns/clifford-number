@@ -3,8 +3,8 @@
 > This packet inventories known custody and acquisition objects that still lack an explicit object-level mapping under the core thesis. Inherited estate context is not a finding.
 
 - Known objects: **39**
-- Explicitly mapped: **1**
-- Known but unmapped: **38**
+- Explicitly mapped: **5**
+- Known but unmapped: **34**
 - Unresolved: **0**
 - Ukraine-shock candidates: **39**
 
@@ -45,10 +45,6 @@
 - **game_trail: track regulatory revolving doors** — candidate stages: Control architecture, Residual value
 - **game_trail: Venture capital and corporate-control estate frontier summary** — candidate stages: Control architecture, Residual value
 - **game_trail: thiel palantir state channel** — candidate stages: Control architecture, Residual value
-- **research_track: Congressional disclosure × federal money-stream crossings** — candidate stages: Control architecture, Residual value, Public conversion, Option-set formation, Reversibility and counterpower
-- **research_track: Defense-tech accelerator & fund roster routers (beyond Capital Factory)** — candidate stages: Control architecture, Residual value, Option-set formation, Reversibility and counterpower
-- **research_track: OGE-278 senior-appointee revolving-door routers** — candidate stages: Control architecture, Residual value, Public conversion, Option-set formation, Reversibility and counterpower
-- **research_track: Regulatory revolving-door routers (non-defense surfaces)** — candidate stages: Control architecture, Residual value, Option-set formation, Reversibility and counterpower
 - **source_route: companies house** — candidate stages: Control architecture, Residual value
 - **source_route: company filings** — candidate stages: Control architecture, Residual value
 - **source_route: fund reports** — candidate stages: Control architecture, Residual value, Option-set formation
@@ -89,12 +85,12 @@
 - **game_trail: thiel palantir state channel** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
 - **next_acquisition: freeze legal-entity and vehicle universes, then capture filed rights and dated transactions** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
 - **report: Anduril: Access, Ownership, and the Government Gate** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
-- **research_track: Congressional disclosure × federal money-stream crossings** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
-- **research_track: Defense-tech accelerator & fund roster routers (beyond Capital Factory)** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
+- **source_route: companies house** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
+- **source_route: company filings** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
 
 ## Next action
 
-Review 38 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
+Review 34 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
 
 `promotes_to: candidate_only` · `graph_effect: none` · `conclusion_generated: false` · `estate_completion_claimed: false`
 

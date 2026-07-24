@@ -3,8 +3,8 @@
 > This packet inventories known custody and acquisition objects that still lack an explicit object-level mapping under the core thesis. Inherited estate context is not a finding.
 
 - Known objects: **30**
-- Explicitly mapped: **1**
-- Known but unmapped: **29**
+- Explicitly mapped: **3**
+- Known but unmapped: **27**
 - Unresolved: **0**
 - Ukraine-shock candidates: **30**
 
@@ -38,8 +38,6 @@
 - **game_trail: track oge278 revolving door routers** — candidate stages: Reversibility and counterpower, Public conversion
 - **game_trail: track regulatory revolving doors** — candidate stages: Reversibility and counterpower, Public conversion
 - **game_trail: U.S. executive appointments and ethics estate frontier summary** — candidate stages: Reversibility and counterpower, Public conversion
-- **research_track: OGE-278 senior-appointee revolving-door routers** — candidate stages: Reversibility and counterpower, Public conversion, Option-set formation
-- **research_track: Regulatory revolving-door routers (non-defense surfaces)** — candidate stages: Reversibility and counterpower, Residual value, Public conversion, Option-set formation
 - **source_route: agency ethics offices** — candidate stages: Reversibility and counterpower, Public conversion
 - **source_route: oge** — candidate stages: Reversibility and counterpower, Public conversion
 - **source_route: sec edgar** — candidate stages: Reversibility and counterpower, Public conversion
@@ -73,8 +71,6 @@
 - **game_trail: track regulatory revolving doors** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **game_trail: U.S. executive appointments and ethics estate frontier summary** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **next_acquisition: freeze office-defined cohorts and acquire filings through lawful routes before joining** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
-- **research_track: OGE-278 senior-appointee revolving-door routers** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
-- **research_track: Regulatory revolving-door routers (non-defense surfaces)** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **source_route: agency ethics offices** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **source_route: oge** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **source_route: sec edgar** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
@@ -84,7 +80,7 @@
 
 ## Next action
 
-Review 29 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
+Review 27 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
 
 `promotes_to: candidate_only` · `graph_effect: none` · `conclusion_generated: false` · `estate_completion_claimed: false`
 

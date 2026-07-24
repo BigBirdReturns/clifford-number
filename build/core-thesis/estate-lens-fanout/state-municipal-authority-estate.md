@@ -3,8 +3,8 @@
 > This packet inventories known custody and acquisition objects that still lack an explicit object-level mapping under the core thesis. Inherited estate context is not a finding.
 
 - Known objects: **51**
-- Explicitly mapped: **1**
-- Known but unmapped: **22**
+- Explicitly mapped: **6**
+- Known but unmapped: **17**
 - Unresolved: **28**
 - Ukraine-shock candidates: **51**
 
@@ -33,11 +33,6 @@
 - **estate_slice: tsmc arizona chips cluster** — candidate stages: Public conversion, Control architecture, Residual value
 - **fog_item: contract and amendment rows** — candidate stages: Public conversion
 - **game_trail: track state officeholder land contract crossings** — candidate stages: Public conversion
-- **research_track: CHIPS-Act fab / data-center siting formation** — candidate stages: Residual value, Public conversion, Option-set formation, Reversibility and counterpower
-- **research_track: Transit station-area TOD formation sweep** — candidate stages: Agenda formation, Option-set formation, Reversibility and counterpower
-- **research_track: Stadium / arena public-finance capture** — candidate stages: Option-set formation, Reversibility and counterpower
-- **research_track: State officeholder × land / contract crossings** — candidate stages: Public conversion, Option-set formation, Reversibility and counterpower
-- **research_track: Tax-increment-financing district value capture** — candidate stages: Option-set formation, Reversibility and counterpower
 
 ## Custody and source-infrastructure queue
 
@@ -78,7 +73,7 @@
 
 ## Next action
 
-Review 50 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
+Review 45 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
 
 `promotes_to: candidate_only` · `graph_effect: none` · `conclusion_generated: false` · `estate_completion_claimed: false`
 
