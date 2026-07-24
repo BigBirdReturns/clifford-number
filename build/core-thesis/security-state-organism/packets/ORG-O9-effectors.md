@@ -75,7 +75,7 @@ Which exact actors, rights, records, inputs, outputs, dependencies, and counterw
 - `US-ICE-PROCUREMENT` — US ICE PROCUREMENT · `candidate_system_locator` · https://www.ice.gov/procurement
 - `US-PATENT-ASSIGNMENTS` — US PATENT ASSIGNMENTS · `candidate_system_locator` · https://assignmentcenter.uspto.gov/
 - `US-SAM-FPDS` — US SAM FPDS · `candidate_system_locator` · https://sam.gov/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 - `US-STATE-CORPORATE` — US STATE CORPORATE · `unresolved_locator` · locator unresolved
 - `US-USA-SPENDING` — US USA SPENDING · `candidate_system_locator` · https://www.usaspending.gov/
 

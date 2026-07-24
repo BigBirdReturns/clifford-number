@@ -51,7 +51,7 @@ What exact legal, financial, technical, personnel, public-gate, deployment, cons
 - `NATSEC100-OFFICIAL` — NATSEC100 OFFICIAL · `source_bounded_locator` · https://www.natsec100.org/
 - `SVDG-OFFICIAL` — SVDG OFFICIAL · `candidate_first_party_locator` · https://www.svdg.org/
 - `US-SAM-FPDS` — US SAM FPDS · `candidate_system_locator` · https://sam.gov/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 - `US-USA-SPENDING` — US USA SPENDING · `candidate_system_locator` · https://www.usaspending.gov/
 
 ## Source-bounded evidence intake

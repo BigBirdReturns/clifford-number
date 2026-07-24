@@ -56,14 +56,38 @@ jobs:
           node tools/validate-security-state-organism.mjs
           node test/security-state-organism.test.js
           M04B_REPOSITORY="$GITHUB_REPOSITORY" node tools/dispatch-security-state-organism.mjs --dry-run
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import crypto from 'node:crypto';
+          const read = (path) => JSON.parse(fs.readFileSync(path, 'utf8'));
+          const receipt = read('build/core-thesis/security-state-organism/dispatch-receipt.json');
+          const manifest = read('build/core-thesis/security-state-organism/manifest.json');
+          const plan = read('build/core-thesis/security-state-organism/issue-plan.json');
+          const digest = crypto.createHash('sha256').update(JSON.stringify(plan)).digest('hex');
+          if (receipt.schema_version !== 'm04b-dispatch-receipt@2') throw new Error('dispatch receipt schema drift');
+          if (receipt.mode !== 'dry-run') throw new Error('pull-request dispatch receipt must be dry-run');
+          if (receipt.source_fingerprint !== manifest.source_fingerprint) throw new Error('dispatch receipt source fingerprint drift');
+          if (receipt.issue_plan_digest !== digest) throw new Error('dispatch receipt issue-plan digest drift');
+          if (receipt.planned?.issues !== 61 || receipt.planned?.estate_handoffs !== 24) throw new Error('dispatch receipt plan counts drift');
+          if (receipt.boundaries?.graph_effect !== 'none' || receipt.boundaries?.conclusion_generated !== false || receipt.boundaries?.estate_completion_claimed !== false) throw new Error('dispatch receipt boundary drift');
+          console.log(JSON.stringify({ ok: true, mode: receipt.mode, source_fingerprint: receipt.source_fingerprint, issue_plan_digest: receipt.issue_plan_digest, planned: receipt.planned }, null, 2));
+          NODE
       - name: Run the complete repository release gate
         run: npm run release:check
-      - name: Refuse deterministic product drift
+      - name: Refuse deterministic builder-product drift
         run: |
-          git diff --exit-code -- \
-            build/core-thesis/security-state-organism \
-            reports/core-thesis/security-state-organism
+          owned_paths=(
+            build/core-thesis/security-state-organism/manifest.json
+            build/core-thesis/security-state-organism/fanout.json
+            build/core-thesis/security-state-organism/issue-plan.json
+            build/core-thesis/security-state-organism/packets
+            reports/core-thesis/security-state-organism/data.json
+            reports/core-thesis/security-state-organism/index.html
+          )
+          git diff --name-status -- "${owned_paths[@]}" | tee "$RUNNER_TEMP/security-state-organism-drift.txt"
+          git diff --exit-code -- "${owned_paths[@]}"
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: security-state-organism-evidence-program
           path: |
@@ -73,6 +97,7 @@ jobs:
             docs/milestones/m04b-*.md
             build/core-thesis/security-state-organism/
             reports/core-thesis/security-state-organism/
+            ${{ runner.temp }}/security-state-organism-drift.txt
           if-no-files-found: error
           retention-days: 90
 

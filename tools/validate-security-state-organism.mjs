@@ -50,7 +50,7 @@ if (registry.entities.length !== 41) fail('41 entities required');
 if (routes.routes.length !== 82) fail('82 routes required');
 if (alignment.estates.length !== 24) fail('24 estates required');
 if (work.packages.length !== 121) fail('121 packages required');
-if (evidence.records.length !== 9) fail('9 source-bounded evidence records required');
+if (evidence.records.length !== 17) fail('17 source-bounded evidence records required');
 if (issuePlan.issues.length !== 61) fail('61 issue groups required');
 if (issuePlan.estate_handoffs.length !== 24) fail('24 estate handoffs required');
 
@@ -174,8 +174,8 @@ for (const handoff of issuePlan.estate_handoffs) {
 
 const expectedFingerprint = fingerprint({ program, registry, routes, alignment, work, evidence });
 if (manifest.source_fingerprint !== expectedFingerprint || issuePlan.source_fingerprint !== expectedFingerprint || publicData.source_fingerprint !== expectedFingerprint) fail('source fingerprint drift');
-if (manifest.counts.packages !== 121 || manifest.counts.evidence_records !== 9 || manifest.counts.issue_groups !== 61 || manifest.counts.estate_handoffs !== 24) fail('manifest count drift');
-if (publicData.packages.length !== 121 || publicData.evidence.length !== 9 || publicData.routes.length !== 82) fail('public data drift');
+if (manifest.counts.packages !== 121 || manifest.counts.evidence_records !== 17 || manifest.counts.issue_groups !== 61 || manifest.counts.estate_handoffs !== 24) fail('manifest count drift');
+if (publicData.packages.length !== 121 || publicData.evidence.length !== 17 || publicData.routes.length !== 82) fail('public data drift');
 for (const packet of work.packages) if (!fs.existsSync(path.join(root, 'build/core-thesis/security-state-organism/packets', `${packet.package_id}.md`))) fail(`missing packet projection ${packet.package_id}`);
 if (!fs.existsSync(path.join(root, 'reports/core-thesis/security-state-organism/index.html'))) fail('missing atlas');
 

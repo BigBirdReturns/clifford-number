@@ -63,7 +63,7 @@ What exact two-sided records establish or falsify venture selection to public ga
 - `US-LOBBYING-DISCLOSURE` — US LOBBYING DISCLOSURE · `candidate_system_locator` · https://lda.senate.gov/system/public/
 - `US-OGE` — US OGE · `candidate_system_locator` · https://www.oge.gov/
 - `US-SAM-FPDS` — US SAM FPDS · `candidate_system_locator` · https://sam.gov/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 - `US-STATE-CHARITY` — US STATE CHARITY · `unresolved_locator` · locator unresolved
 - `US-USA-SPENDING` — US USA SPENDING · `candidate_system_locator` · https://www.usaspending.gov/
 

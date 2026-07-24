@@ -62,7 +62,7 @@ Which exact actors, rights, records, inputs, outputs, dependencies, and counterw
 - `A16Z-OFFICIAL` — A16Z OFFICIAL · `candidate_first_party_locator` · https://a16z.com/american-dynamism/
 - `DIU-OFFICIAL` — DIU OFFICIAL · `candidate_system_locator` · https://www.diu.mil/
 - `EIGHT-VC-OFFICIAL` — EIGHT VC OFFICIAL · `candidate_first_party_locator` · https://www.8vc.com/
-- `EREBOR-FDIC` — EREBOR FDIC · `candidate_first_party_locator` · https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio
+- `EREBOR-FDIC` — EREBOR FDIC · `source_bounded_locator` · https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio
 - `EREBOR-OCC` — EREBOR OCC · `source_bounded_locator` · https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101.html
 - `EU-TED` — EU TED · `candidate_system_locator` · https://ted.europa.eu/
 - `FOUNDERS-FUND-OFFICIAL` — FOUNDERS FUND OFFICIAL · `candidate_first_party_locator` · https://foundersfund.com/
@@ -80,14 +80,14 @@ Which exact actors, rights, records, inputs, outputs, dependencies, and counterw
 - `US-FEC` — US FEC · `candidate_system_locator` · https://www.fec.gov/data/
 - `US-GAO` — US GAO · `candidate_system_locator` · https://www.gao.gov/
 - `US-GAO-PROTESTS` — US GAO PROTESTS · `candidate_system_locator` · https://www.gao.gov/legal/bid-protests/search
-- `US-IAPD` — US IAPD · `candidate_system_locator` · https://adviserinfo.sec.gov/
+- `US-IAPD` — US IAPD · `source_bounded_locator` · https://adviserinfo.sec.gov/
 - `US-IRS-990` — US IRS 990 · `candidate_system_locator` · https://www.irs.gov/charities-non-profits/tax-exempt-organization-search
 - `US-IRS-TEOS` — US IRS TEOS · `candidate_system_locator` · https://apps.irs.gov/app/eos/
 - `US-LOBBYING-DISCLOSURE` — US LOBBYING DISCLOSURE · `candidate_system_locator` · https://lda.senate.gov/system/public/
 - `US-OGE` — US OGE · `candidate_system_locator` · https://www.oge.gov/
 - `US-SAM-FPDS` — US SAM FPDS · `candidate_system_locator` · https://sam.gov/
 - `US-SEC-EDGAR` — US SEC EDGAR · `candidate_system_locator` · https://www.sec.gov/edgar/search/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 - `US-STATE-CHARITY` — US STATE CHARITY · `unresolved_locator` · locator unresolved
 - `US-STATE-CORPORATE` — US STATE CORPORATE · `unresolved_locator` · locator unresolved
 - `US-USA-SPENDING` — US USA SPENDING · `candidate_system_locator` · https://www.usaspending.gov/

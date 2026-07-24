@@ -45,7 +45,33 @@ Which exact actors, rights, records, inputs, outputs, dependencies, and counterw
 
 ## Source-bounded evidence intake
 
-- No evidence record is attached.
+### M04B-EV-012 · OCC conditional approval letter — capital and supervisory conditions
+
+- Source: https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101a.pdf
+- Status: `source_observation`
+- Observation: The OCC required a 12 percent minimum Tier 1 leverage ratio for the bank’s first three years, prior written non-objection for material business-plan changes, and a binding committed line of equity capital linked in timing to Erebor Group’s Series A financing; the approval also imposed pre-opening, information-systems, audit, BSA/AML/OFAC, and governance requirements.
+- Supports: specific capital floor and duration; regulator no-objection and pre-opening controls; stated link between organizing-company financing and committed bank capital; enumerated governance and systems conditions
+- Does not support: amount, providers, or final terms of the equity line; whether conditions were uniquely favorable or burdensome; actual compliance after opening; private extraction or public-risk transfer
+- Next acquisition: Acquire the executed capital commitment, Series A closing and investor records, final examination and opening records, later supervisory orders, and matched conditions for ordinary de novo banks.
+
+### M04B-EV-013 · FDIC approval of Erebor deposit-insurance application
+
+- Source: https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio
+- Status: `source_observation`
+- Observation: The FDIC announced approval of Erebor Bank, N.A.’s deposit-insurance application and described a business model focused on technology, payments, investment, defense, and virtual-currency customers, subject to capital and capital-call conditions.
+- Supports: exact federal deposit-insurance approval event; FDIC-described business-model focus; existence of capital-related approval conditions
+- Does not support: opening date by itself; actual deposits, loans, payments, or defense-company relationships; preferential treatment; coordination with named investors or portfolio companies
+- Next acquisition: Acquire the FDIC order and statement, capital-call terms, deposit-insurance conditions, public comments, and comparable de novo deposit-insurance orders.
+
+### M04B-EV-017 · FDIC de novo deposit-insurance decisions — bounded comparator roster
+
+- Source: https://www.fdic.gov/bank-examinations/decisions-bank-applications-deposit-insurance
+- Status: `source_observation`
+- Observation: The FDIC decisions table places Erebor among multiple recent de novo deposit-insurance applications with recorded agency-action and opening outcomes, including opened institutions and applications marked “Will Not Open.” This supplies a bounded comparator route rather than evidence that Erebor’s treatment was ordinary or exceptional.
+- Supports: existence of an official recent-de-novo comparator roster; variation in opening outcomes; a bounded route for matched regulatory comparison
+- Does not support: comparability of business models, capital structures, review complexity, or conditions; favorable or unfavorable treatment of Erebor; causation, favoritism, or network influence
+- Next acquisition: Freeze a matched comparator cohort by application period, charter type, business model, capital condition, and opening outcome; acquire each corresponding order and statement before comparing treatment.
+
 
 ## Falsifier
 

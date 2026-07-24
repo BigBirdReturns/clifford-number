@@ -57,7 +57,7 @@ Does this estate supply independently receipted organs, lineage transitions, tra
 
 - `ANDURIL-OFFICIAL` — ANDURIL OFFICIAL · `candidate_first_party_locator` · https://www.anduril.com/
 - `EIGHT-VC-OFFICIAL` — EIGHT VC OFFICIAL · `candidate_first_party_locator` · https://www.8vc.com/
-- `EREBOR-FDIC` — EREBOR FDIC · `candidate_first_party_locator` · https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio
+- `EREBOR-FDIC` — EREBOR FDIC · `source_bounded_locator` · https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio
 - `EREBOR-OCC` — EREBOR OCC · `source_bounded_locator` · https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101.html
 - `EU-DSA` — EU DSA · `candidate_system_locator` · https://digital-strategy.ec.europa.eu/en/policies/digital-services-act-package
 - `FOUNDERS-FUND-OFFICIAL` — FOUNDERS FUND OFFICIAL · `candidate_first_party_locator` · https://foundersfund.com/
@@ -68,10 +68,10 @@ Does this estate supply independently receipted organs, lineage transitions, tra
 - `US-FED-NIC` — US FED NIC · `candidate_system_locator` · https://www.ffiec.gov/npw
 - `US-FFIEC` — US FFIEC · `candidate_system_locator` · https://www.ffiec.gov/npw
 - `US-FTC` — US FTC · `candidate_system_locator` · https://www.ftc.gov/
-- `US-IAPD` — US IAPD · `candidate_system_locator` · https://adviserinfo.sec.gov/
+- `US-IAPD` — US IAPD · `source_bounded_locator` · https://adviserinfo.sec.gov/
 - `US-LOBBYING-DISCLOSURE` — US LOBBYING DISCLOSURE · `candidate_system_locator` · https://lda.senate.gov/system/public/
 - `US-SEC-EDGAR` — US SEC EDGAR · `candidate_system_locator` · https://www.sec.gov/edgar/search/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 - `US-STATE-CORPORATE` — US STATE CORPORATE · `unresolved_locator` · locator unresolved
 - `US-UCC` — US UCC · `unresolved_locator` · locator unresolved
 

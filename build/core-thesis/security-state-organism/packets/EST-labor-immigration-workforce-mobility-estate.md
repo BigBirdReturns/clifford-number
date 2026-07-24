@@ -67,7 +67,7 @@ Does this estate supply independently receipted organs, lineage transitions, tra
 - `US-ICE-PROCUREMENT` — US ICE PROCUREMENT · `candidate_system_locator` · https://www.ice.gov/procurement
 - `US-IMMIGRATION-LABOR` — US IMMIGRATION LABOR · `unresolved_locator` · locator unresolved
 - `US-SAM-FPDS` — US SAM FPDS · `candidate_system_locator` · https://sam.gov/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 - `US-USA-SPENDING` — US USA SPENDING · `candidate_system_locator` · https://www.usaspending.gov/
 
 ## Source-bounded evidence intake

@@ -56,7 +56,7 @@ What exact legal, financial, technical, personnel, public-gate, deployment, cons
 - `EREBOR-OCC` — EREBOR OCC · `source_bounded_locator` · https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101.html
 - `FOUNDERS-FUND-OFFICIAL` — FOUNDERS FUND OFFICIAL · `candidate_first_party_locator` · https://foundersfund.com/
 - `US-FEC` — US FEC · `candidate_system_locator` · https://www.fec.gov/data/
-- `US-IAPD` — US IAPD · `candidate_system_locator` · https://adviserinfo.sec.gov/
+- `US-IAPD` — US IAPD · `source_bounded_locator` · https://adviserinfo.sec.gov/
 - `US-LOBBYING-DISCLOSURE` — US LOBBYING DISCLOSURE · `candidate_system_locator` · https://lda.senate.gov/system/public/
 - `US-SEC-EDGAR` — US SEC EDGAR · `candidate_system_locator` · https://www.sec.gov/edgar/search/
 

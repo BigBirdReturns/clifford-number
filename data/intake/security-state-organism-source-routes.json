@@ -5,9 +5,9 @@
   "purpose": "Source-route registry with explicit locator state. An unresolved route remains unresolved; no generic placeholder is treated as a source.",
   "counts": {
     "routes": 82,
-    "source_bounded_locators": 7,
-    "candidate_system_locators": 50,
-    "candidate_first_party_locators": 11,
+    "source_bounded_locators": 10,
+    "candidate_system_locators": 48,
+    "candidate_first_party_locators": 10,
     "unresolved_locators": 14
   },
   "routes": [
@@ -183,14 +183,25 @@
       "label": "EREBOR FDIC",
       "venue": "U.S. official or primary-public system",
       "jurisdiction": "United States",
-      "locator_status": "candidate_first_party_locator",
+      "locator_status": "source_bounded_locator",
       "url": "https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio",
       "locators": [
         {
           "url": "https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio",
-          "scope": "system_or_first_party_entrypoint",
-          "verification_state": "first_party_locator_not_independent_evidence",
-          "evidence_ids": []
+          "scope": "exact_source_record",
+          "verification_state": "source_bounded_intake",
+          "evidence_ids": [
+            "M04B-EV-013"
+          ]
+        },
+        {
+          "url": "https://www.fdic.gov/bank-examinations/decisions-bank-applications-deposit-insurance",
+          "scope": "exact_source_record",
+          "verification_state": "source_bounded_intake",
+          "evidence_ids": [
+            "M04B-EV-014",
+            "M04B-EV-017"
+          ]
         }
       ],
       "access": "public_web",
@@ -229,6 +240,16 @@
           "verification_state": "source_bounded_intake",
           "evidence_ids": [
             "M04B-EV-002"
+          ]
+        },
+        {
+          "url": "https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101a.pdf",
+          "scope": "exact_source_record",
+          "verification_state": "source_bounded_intake",
+          "evidence_ids": [
+            "M04B-EV-010",
+            "M04B-EV-011",
+            "M04B-EV-012"
           ]
         }
       ],
@@ -1868,7 +1889,7 @@
       "label": "US IAPD",
       "venue": "U.S. official or primary-public system",
       "jurisdiction": "United States",
-      "locator_status": "candidate_system_locator",
+      "locator_status": "source_bounded_locator",
       "url": "https://adviserinfo.sec.gov/",
       "locators": [
         {
@@ -1876,6 +1897,14 @@
           "scope": "system_or_first_party_entrypoint",
           "verification_state": "bounded_system_locator_requires_record_level_acquisition",
           "evidence_ids": []
+        },
+        {
+          "url": "https://adviserinfo.sec.gov/firm/summary/326901",
+          "scope": "exact_source_record",
+          "verification_state": "source_bounded_intake",
+          "evidence_ids": [
+            "M04B-EV-015"
+          ]
         }
       ],
       "access": "public_web",
@@ -2202,7 +2231,7 @@
       "label": "US SEC FORM D",
       "venue": "U.S. official or primary-public system",
       "jurisdiction": "United States",
-      "locator_status": "candidate_system_locator",
+      "locator_status": "source_bounded_locator",
       "url": "https://www.sec.gov/edgar/search/",
       "locators": [
         {
@@ -2210,6 +2239,14 @@
           "scope": "system_or_first_party_entrypoint",
           "verification_state": "bounded_system_locator_requires_record_level_acquisition",
           "evidence_ids": []
+        },
+        {
+          "url": "https://www.sec.gov/Archives/edgar/data/2080468/000147083125000151/xslFormDX01/primary_doc.xml",
+          "scope": "exact_source_record",
+          "verification_state": "regulatory_filing_source_bounded_intake",
+          "evidence_ids": [
+            "M04B-EV-016"
+          ]
         }
       ],
       "access": "public_web",

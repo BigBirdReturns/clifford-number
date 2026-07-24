@@ -41,8 +41,8 @@ What exact legal, financial, technical, personnel, public-gate, deployment, cons
 
 ## Source routes
 
-- `US-IAPD` — US IAPD · `candidate_system_locator` · https://adviserinfo.sec.gov/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-IAPD` — US IAPD · `source_bounded_locator` · https://adviserinfo.sec.gov/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 - `US-STATE-CORPORATE` — US STATE CORPORATE · `unresolved_locator` · locator unresolved
 
 ## Source-bounded evidence intake

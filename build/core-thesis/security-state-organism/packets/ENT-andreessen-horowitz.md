@@ -54,9 +54,9 @@ What exact legal, financial, technical, personnel, public-gate, deployment, cons
 
 - `A16Z-OFFICIAL` — A16Z OFFICIAL · `candidate_first_party_locator` · https://a16z.com/american-dynamism/
 - `US-FEC` — US FEC · `candidate_system_locator` · https://www.fec.gov/data/
-- `US-IAPD` — US IAPD · `candidate_system_locator` · https://adviserinfo.sec.gov/
+- `US-IAPD` — US IAPD · `source_bounded_locator` · https://adviserinfo.sec.gov/
 - `US-LOBBYING-DISCLOSURE` — US LOBBYING DISCLOSURE · `candidate_system_locator` · https://lda.senate.gov/system/public/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 - `US-STATE-CORPORATE` — US STATE CORPORATE · `unresolved_locator` · locator unresolved
 
 ## Source-bounded evidence intake

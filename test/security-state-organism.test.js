@@ -36,7 +36,7 @@ assert.equal(program.theaters.length, 7);
 assert.equal(registry.entities.length, 41);
 assert.equal(routes.routes.length, 82);
 assert.equal(alignment.estates.length, 24);
-assert.equal(evidence.records.length, 9);
+assert.equal(evidence.records.length, 17);
 assert.equal(issuePlan.issues.length, 61);
 assert.equal(issuePlan.estate_handoffs.length, 24);
 assert.equal(issuePlan.issues.filter((x) => x.issue_class === 'cluster_index').length, 12);
@@ -91,4 +91,12 @@ const dispatcher = fs.readFileSync('tools/dispatch-security-state-organism.mjs',
 assert.equal(builder.includes('https://www.usa.gov/'), false);
 assert.equal(/\b(?:round.?robin|count.?balanc|synthetic.?coverage)\b/i.test(builder), false);
 for (const required of ["GITHUB_ACTIONS === 'true'", "GITHUB_EVENT_NAME === 'push'", "GITHUB_REF === 'refs/heads/main'", "group.issue_class === 'cluster_index'", "`ENTITY-${group.issue_id.replace('CLUSTER-', '')}`", 'multiple current or legacy issue lanes found', 'multiple current or legacy estate handoffs found']) assert.ok(dispatcher.includes(required), required);
+const waveIds = new Set(['M04B-EV-010','M04B-EV-011','M04B-EV-012','M04B-EV-013','M04B-EV-014','M04B-EV-015','M04B-EV-016','M04B-EV-017']);
+assert.equal(evidence.records.filter((x) => waveIds.has(x.evidence_id)).length, 8);
+for (const id of waveIds) { const record = evidenceById.get(id); assert.ok(record, id); assert.equal(record.acquisition_wave, 'M04B-W01', id); assert.equal(record.boundaries.graph_effect, 'none', id); assert.equal(record.boundaries.conclusion_generated, false, id); }
+assert.ok(routes.routes.find((x) => x.route_id === 'EREBOR-OCC').locators.some((x) => x.evidence_ids.includes('M04B-EV-011')));
+assert.ok(routes.routes.find((x) => x.route_id === 'US-IAPD').locators.some((x) => x.evidence_ids.includes('M04B-EV-015')));
+assert.ok(routes.routes.find((x) => x.route_id === 'US-SEC-FORM-D').locators.some((x) => x.evidence_ids.includes('M04B-EV-016')));
+assert.ok(dispatcher.includes('receipt.estate_comments_updated.push(handoff.issue_number);'));
+assert.equal(dispatcher.includes('isssue_number'), false);
 console.log('security-state-organism.test: ok');

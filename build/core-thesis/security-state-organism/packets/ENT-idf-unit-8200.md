@@ -54,7 +54,7 @@ What exact legal, financial, technical, personnel, public-gate, deployment, cons
 - `ISRAEL-COMPANIES` — ISRAEL COMPANIES · `candidate_system_locator` · https://www.gov.il/en/service/company_extract
 - `ISRAEL-PATENTS` — ISRAEL PATENTS · `candidate_system_locator` · https://www.gov.il/en/departments/israel_patent_office/govil-landing-page
 - `US-IMMIGRATION-LABOR` — US IMMIGRATION LABOR · `unresolved_locator` · locator unresolved
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 
 ## Source-bounded evidence intake
 

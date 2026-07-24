@@ -68,7 +68,7 @@ Which exact actors, rights, records, inputs, outputs, dependencies, and counterw
 - `ANDURIL-OFFICIAL` — ANDURIL OFFICIAL · `candidate_first_party_locator` · https://www.anduril.com/
 - `DIU-OFFICIAL` — DIU OFFICIAL · `candidate_system_locator` · https://www.diu.mil/
 - `EIGHT-VC-OFFICIAL` — EIGHT VC OFFICIAL · `candidate_first_party_locator` · https://www.8vc.com/
-- `EREBOR-FDIC` — EREBOR FDIC · `candidate_first_party_locator` · https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio
+- `EREBOR-FDIC` — EREBOR FDIC · `source_bounded_locator` · https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio
 - `EREBOR-OCC` — EREBOR OCC · `source_bounded_locator` · https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101.html
 - `FOUNDERS-FUND-OFFICIAL` — FOUNDERS FUND OFFICIAL · `candidate_first_party_locator` · https://foundersfund.com/
 - `IDF-OFFICIAL` — IDF OFFICIAL · `candidate_system_locator` · https://www.idf.il/en/
@@ -84,7 +84,7 @@ Which exact actors, rights, records, inputs, outputs, dependencies, and counterw
 - `US-FEC` — US FEC · `candidate_system_locator` · https://www.fec.gov/data/
 - `US-GAO` — US GAO · `candidate_system_locator` · https://www.gao.gov/
 - `US-GAO-PROTESTS` — US GAO PROTESTS · `candidate_system_locator` · https://www.gao.gov/legal/bid-protests/search
-- `US-IAPD` — US IAPD · `candidate_system_locator` · https://adviserinfo.sec.gov/
+- `US-IAPD` — US IAPD · `source_bounded_locator` · https://adviserinfo.sec.gov/
 - `US-IMMIGRATION-LABOR` — US IMMIGRATION LABOR · `unresolved_locator` · locator unresolved
 - `US-IRS-990` — US IRS 990 · `candidate_system_locator` · https://www.irs.gov/charities-non-profits/tax-exempt-organization-search
 - `US-IRS-TEOS` — US IRS TEOS · `candidate_system_locator` · https://apps.irs.gov/app/eos/
@@ -93,7 +93,7 @@ Which exact actors, rights, records, inputs, outputs, dependencies, and counterw
 - `US-PATENT-ASSIGNMENTS` — US PATENT ASSIGNMENTS · `candidate_system_locator` · https://assignmentcenter.uspto.gov/
 - `US-SAM-FPDS` — US SAM FPDS · `candidate_system_locator` · https://sam.gov/
 - `US-SEC-EDGAR` — US SEC EDGAR · `candidate_system_locator` · https://www.sec.gov/edgar/search/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 - `US-STATE-CHARITY` — US STATE CHARITY · `unresolved_locator` · locator unresolved
 - `US-STATE-CORPORATE` — US STATE CORPORATE · `unresolved_locator` · locator unresolved
 - `US-USA-SPENDING` — US USA SPENDING · `candidate_system_locator` · https://www.usaspending.gov/
@@ -117,6 +117,24 @@ Which exact actors, rights, records, inputs, outputs, dependencies, and counterw
 - Supports: distinct branding and stated relationship; named management claim; two named Silent Capital legal entities; explicit umbrella-versus-vehicle boundary
 - Does not support: identity of every fund or special-purpose vehicle; common ownership or control of Silent Ventures; membership, transaction, or portfolio rights
 - Next acquisition: Acquire state registrations, Form D and adviser records, offering vehicles, management agreements, and transaction-specific syndicate and fund documents.
+
+### M04B-EV-011 · OCC conditional approval letter — organizing group, merger, subsidiary, and named leadership
+
+- Source: https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101a.pdf
+- Status: `source_observation`
+- Observation: The OCC identified Erebor Group, Inc., a Delaware corporation, as the organizing group; approved its intended merger into the bank; stated that Atticus Digital, Inc. would become a wholly owned bank subsidiary and that the bank would have no holding company; and listed proposed organizers, officers, directors, and principal shareholders, including Owen Rapaport, Jacob Hirshman, and Palmer Luckey.
+- Supports: exact organizing-company identity; proposed merger and subsidiary structure; named proposed leadership roles; Palmer Luckey as proposed director and principal shareholder
+- Does not support: consummation of every proposed transaction; final beneficial ownership percentages; coordination with Anduril, 8VC, or other companies; improper influence or common design
+- Next acquisition: Acquire merger-consummation certification, articles and organization certificate, shareholder and capitalization records where public, Atticus Digital records, and subsequent change-in-control filings.
+
+### M04B-EV-016 · Silent Ventures Fund II, LP — Form D
+
+- Source: https://www.sec.gov/Archives/edgar/data/2080468/000147083125000151/xslFormDX01/primary_doc.xml
+- Status: `regulatory_filing_claim`
+- Observation: A Form D filed for Silent Ventures Fund II, LP identifies a Delaware venture-capital pooled fund formed in 2025; Silent Ventures Management, LLC as management company; Silent Ventures Fund II GP, LP as general partner; Silent Ventures Fund II UGP, LLC as general partner of that general partner; and Jackson Moses as manager of the upper-tier general partner. The notice invoked Rule 506(b) and Section 3(c)(7) and stated that first sale had yet to occur.
+- Supports: exact issuer and named management and general-partner vehicles; reported Jackson Moses role; claimed exemptions and offering state on the filing date; dated vehicle-formation evidence
+- Does not support: SEC verification of the filing’s accuracy; offering close, amount raised, investor count, ownership, or governance rights; investment in Traysar or another named company; common strategy or operational coordination
+- Next acquisition: Acquire subsequent Form D amendments, Form ADV private-fund schedules, state entity records, fund governing documents where lawfully available, and transaction-specific portfolio records.
 
 
 ## Falsifier

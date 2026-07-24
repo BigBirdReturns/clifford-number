@@ -54,7 +54,7 @@ What exact legal, financial, technical, personnel, public-gate, deployment, cons
 - `FOUNDERS-FUND-OFFICIAL` — FOUNDERS FUND OFFICIAL · `candidate_first_party_locator` · https://foundersfund.com/
 - `PALANTIR-OFFICIAL` — PALANTIR OFFICIAL · `candidate_first_party_locator` · https://www.palantir.com/
 - `US-FEC` — US FEC · `candidate_system_locator` · https://www.fec.gov/data/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 
 ## Source-bounded evidence intake
 

@@ -53,15 +53,23 @@ What exact legal, financial, technical, personnel, public-gate, deployment, cons
 ## Source routes
 
 - `ANDURIL-OFFICIAL` — ANDURIL OFFICIAL · `candidate_first_party_locator` · https://www.anduril.com/
-- `EREBOR-FDIC` — EREBOR FDIC · `candidate_first_party_locator` · https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio
+- `EREBOR-FDIC` — EREBOR FDIC · `source_bounded_locator` · https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio
 - `EREBOR-OCC` — EREBOR OCC · `source_bounded_locator` · https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101.html
 - `US-FEC` — US FEC · `candidate_system_locator` · https://www.fec.gov/data/
 - `US-LOBBYING-DISCLOSURE` — US LOBBYING DISCLOSURE · `candidate_system_locator` · https://lda.senate.gov/system/public/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 
 ## Source-bounded evidence intake
 
-- No evidence record is attached.
+### M04B-EV-011 · OCC conditional approval letter — organizing group, merger, subsidiary, and named leadership
+
+- Source: https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101a.pdf
+- Status: `source_observation`
+- Observation: The OCC identified Erebor Group, Inc., a Delaware corporation, as the organizing group; approved its intended merger into the bank; stated that Atticus Digital, Inc. would become a wholly owned bank subsidiary and that the bank would have no holding company; and listed proposed organizers, officers, directors, and principal shareholders, including Owen Rapaport, Jacob Hirshman, and Palmer Luckey.
+- Supports: exact organizing-company identity; proposed merger and subsidiary structure; named proposed leadership roles; Palmer Luckey as proposed director and principal shareholder
+- Does not support: consummation of every proposed transaction; final beneficial ownership percentages; coordination with Anduril, 8VC, or other companies; improper influence or common design
+- Next acquisition: Acquire merger-consummation certification, articles and organization certificate, shareholder and capitalization records where public, Atticus Digital records, and subsequent change-in-control filings.
+
 
 ## Falsifier
 

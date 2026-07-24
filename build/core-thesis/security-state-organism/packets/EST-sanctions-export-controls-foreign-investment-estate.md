@@ -69,7 +69,7 @@ Does this estate supply independently receipted organs, lineage transitions, tra
 - `ISRAEL-STATE-COMPTROLLER` — ISRAEL STATE COMPTROLLER · `candidate_system_locator` · https://www.mevaker.gov.il/En
 - `NATO-PROCUREMENT` — NATO PROCUREMENT · `unresolved_locator` · locator unresolved
 - `TRAYSAR-OFFICIAL` — TRAYSAR OFFICIAL · `source_bounded_locator` · https://traysar.com/news/traysar-raises-25m-seed
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 - `US-STATE-CORPORATE` — US STATE CORPORATE · `unresolved_locator` · locator unresolved
 
 ## Source-bounded evidence intake

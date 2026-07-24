@@ -55,7 +55,7 @@ Does this estate supply independently receipted organs, lineage transitions, tra
 - `A16Z-OFFICIAL` — A16Z OFFICIAL · `candidate_first_party_locator` · https://a16z.com/american-dynamism/
 - `ANDURIL-OFFICIAL` — ANDURIL OFFICIAL · `candidate_first_party_locator` · https://www.anduril.com/
 - `DIU-OFFICIAL` — DIU OFFICIAL · `candidate_system_locator` · https://www.diu.mil/
-- `EREBOR-FDIC` — EREBOR FDIC · `candidate_first_party_locator` · https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio
+- `EREBOR-FDIC` — EREBOR FDIC · `source_bounded_locator` · https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio
 - `EREBOR-OCC` — EREBOR OCC · `source_bounded_locator` · https://www.occ.gov/news-issuances/news-releases/2025/nr-occ-2025-101.html
 - `FOUNDERS-FUND-OFFICIAL` — FOUNDERS FUND OFFICIAL · `candidate_first_party_locator` · https://foundersfund.com/
 - `PALANTIR-OFFICIAL` — PALANTIR OFFICIAL · `candidate_first_party_locator` · https://www.palantir.com/
@@ -64,11 +64,11 @@ Does this estate supply independently receipted organs, lineage transitions, tra
 - `US-FED-NIC` — US FED NIC · `candidate_system_locator` · https://www.ffiec.gov/npw
 - `US-FFIEC` — US FFIEC · `candidate_system_locator` · https://www.ffiec.gov/npw
 - `US-GAO-PROTESTS` — US GAO PROTESTS · `candidate_system_locator` · https://www.gao.gov/legal/bid-protests/search
-- `US-IAPD` — US IAPD · `candidate_system_locator` · https://adviserinfo.sec.gov/
+- `US-IAPD` — US IAPD · `source_bounded_locator` · https://adviserinfo.sec.gov/
 - `US-LOBBYING-DISCLOSURE` — US LOBBYING DISCLOSURE · `candidate_system_locator` · https://lda.senate.gov/system/public/
 - `US-OGE` — US OGE · `candidate_system_locator` · https://www.oge.gov/
 - `US-SAM-FPDS` — US SAM FPDS · `candidate_system_locator` · https://sam.gov/
-- `US-SEC-FORM-D` — US SEC FORM D · `candidate_system_locator` · https://www.sec.gov/edgar/search/
+- `US-SEC-FORM-D` — US SEC FORM D · `source_bounded_locator` · https://www.sec.gov/edgar/search/
 - `US-STATE-CORPORATE` — US STATE CORPORATE · `unresolved_locator` · locator unresolved
 - `US-UCC` — US UCC · `unresolved_locator` · locator unresolved
 - `US-USA-SPENDING` — US USA SPENDING · `candidate_system_locator` · https://www.usaspending.gov/
