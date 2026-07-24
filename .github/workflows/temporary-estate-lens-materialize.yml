@@ -75,21 +75,35 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
-      - name: Publish permanent source and generated products
+      - name: Stage permanent source and generated products
+        id: stage
         shell: bash
         run: |
           set -euo pipefail
           test -f tools/build-estate-lens-audit.mjs
           test -f build/core-thesis/estate-lens-audit-manifest.json
           test -f reports/core-thesis/unmapped-sections/index.html
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add tools/build-estate-lens-audit.mjs build/core-thesis reports/core-thesis
           git diff --cached --check
           git status --short
           if git diff --cached --quiet; then
-            echo 'Permanent audit products already match the source.'
-            exit 0
+            echo 'no_changes=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'no_changes=false' >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Commit permanent audit products
+        if: steps.stage.outputs.no_changes != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'Map known unmapped estate sections under the core thesis'
+
+      - name: Push permanent audit products
+        if: steps.stage.outputs.no_changes != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
           git push origin HEAD:agent/core-thesis-unmapped-audit
