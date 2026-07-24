@@ -1,0 +1,96 @@
+name: Temporary materialize reconciled M-04B organism evidence program
+
+on:
+  pull_request:
+    paths:
+      - '.github/temporary/m04b-organism-v2/**'
+      - '.github/workflows/temporary-m04b-organism-materialize-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-m04b-organism-materialize
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m04b-organism-evidence-fanout
+          fetch-depth: 0
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Materialize and reconcile canonical source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/m04b-debug
+          {
+            node .github/temporary/m04b-organism-v2/materialize.mjs
+            node .github/temporary/m04b-organism-v2/reconcile-routes.mjs
+            node tools/build-security-state-organism.mjs
+            node tools/validate-security-state-organism.mjs
+            node test/security-state-organism.test.js
+          } 2>&1 | tee /tmp/m04b-debug/materialize.log
+      - name: Run the complete repository release gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run release:check 2>&1 | tee /tmp/m04b-debug/release-check.log
+      - name: Preserve exact-head evidence and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04b-organism-materialization-v2-evidence
+          path: |
+            /tmp/m04b-debug/
+            data/project/security-state-*.json
+            data/intake/security-state-organism-source-routes.json
+            docs/security-state-organism-program.md
+            docs/milestones/m04b-security-state-organism-evidence.md
+            build/core-thesis/security-state-organism/
+            reports/core-thesis/security-state-organism/
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Remove transport and stage permanent tree
+        run: |
+          set -euo pipefail
+          rm -rf .github/temporary/m04b-organism-v2
+          rm -f .github/workflows/temporary-m04b-organism-materialize.yml
+          rm -f .github/workflows/temporary-m04b-organism-materialize-v2.yml
+          rm -f docs/milestones/m04b-fanout-trigger.md docs/milestones/m04b-fanout-scope.md docs/milestones/m04b-publication-boundary.md
+          test -f data/project/security-state-organism-program.json
+          test -f data/project/security-state-work-packages.json
+          test -f build/core-thesis/security-state-organism/manifest.json
+          test -f reports/core-thesis/security-state-organism/index.html
+          test ! -d .github/temporary/security-state-lineage
+          test ! -e .github/workflows/temporary-security-state-lineage-materialize.yml
+          test ! -d .github/temporary/m04b-organism-v2
+          test ! -e .github/workflows/temporary-m04b-organism-materialize.yml
+          test ! -e .github/workflows/temporary-m04b-organism-materialize-v2.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git status --short
+          git diff --cached --stat
+      - name: Commit permanent M-04B program
+        run: |
+          set -euo pipefail
+          if git diff --cached --quiet; then
+            echo 'No materialization changes to commit.'
+          else
+            git commit -m 'Fan out the security-state organism evidence program'
+          fi
+      - name: Publish exact branch state
+        run: |
+          set -euo pipefail
+          git fetch origin agent/m04b-organism-evidence-fanout
+          git rebase origin/agent/m04b-organism-evidence-fanout
+          git push origin HEAD:agent/m04b-organism-evidence-fanout
