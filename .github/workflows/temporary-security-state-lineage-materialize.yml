@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - agent/security-state-lineage-organism
+      - main
     paths:
       - '.github/temporary/security-state-lineage/**'
       - '.github/workflows/temporary-security-state-lineage-materialize.yml'
@@ -17,8 +18,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: temporary-security-state-lineage-materialize
-  cancel-in-progress: true
+  group: temporary-security-state-lineage-materialize-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   materialize:
@@ -26,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent/security-state-lineage-organism
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
           fetch-depth: 0
           show-progress: false
 
@@ -112,9 +113,12 @@ jobs:
           fi
 
       - name: Publish exact branch state
+        if: github.event_name == 'push'
+        env:
+          TARGET_BRANCH: ${{ github.ref_name }}
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin agent/security-state-lineage-organism
-          git rebase origin/agent/security-state-lineage-organism
-          git push origin HEAD:agent/security-state-lineage-organism
+          git fetch origin "$TARGET_BRANCH"
+          git rebase "origin/$TARGET_BRANCH"
+          git push origin HEAD:"$TARGET_BRANCH"
