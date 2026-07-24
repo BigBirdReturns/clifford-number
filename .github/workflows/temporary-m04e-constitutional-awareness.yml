@@ -1,0 +1,135 @@
+name: Temporary materialize M-04E constitutional-class estate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '.github/temporary/m04e-constitutional-awareness/**'
+      - '.github/workflows/temporary-m04e-constitutional-awareness.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m04e-materialize-${{ github.head_ref || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Materialize exact source-bounded estate
+        run: |
+          cat .github/temporary/m04e-constitutional-awareness/part-*.txt | base64 -d > /tmp/m04e-source.tgz
+          echo '5234615d7c00a644e1e7fe8324bc3a476d58ff5265fb100ec5df29fb6a312f95  /tmp/m04e-source.tgz' | sha256sum -c -
+          tar -xzf /tmp/m04e-source.tgz -C .
+          node tools/build-m04e-constitutional-awareness.mjs
+          node tools/validate-m04e-constitutional-awareness.mjs
+          node test/m04e-constitutional-awareness.test.js
+          npm run release:check
+      - name: Remove one-shot carrier and restore unrelated generated drift
+        run: |
+          rm -rf .github/temporary/m04e-constitutional-awareness
+          rm -f .github/workflows/temporary-m04e-constitutional-awareness.yml
+          python - <<'PY'
+          import shutil
+          import subprocess
+          from pathlib import Path
+
+          allowed_exact = {
+              '.github/workflows/m04e-constitutional-awareness.yml',
+              'data/intake/m04e-constitutional-awareness-estate-wave-01.json',
+              'data/project/m04e-constitutional-awareness-estate.json',
+              'data/project/m04e-constitutional-awareness-methodology.json',
+              'docs/milestones/m04e-constitutional-class-awareness.md',
+              'test/m04e-constitutional-awareness.test.js',
+              'tools/build-m04e-constitutional-awareness.mjs',
+              'tools/validate-m04e-constitutional-awareness.mjs',
+              '.github/workflows/temporary-m04e-constitutional-awareness.yml',
+          }
+          allowed_prefix = (
+              '.github/temporary/m04e-constitutional-awareness/',
+              'build/core-thesis/constitutional-awareness/',
+              'reports/core-thesis/constitutional-awareness/',
+          )
+          rows = subprocess.check_output(['git', 'status', '--porcelain'], text=True).splitlines()
+          bad = []
+          for row in rows:
+              path = row[3:]
+              if ' -> ' in path:
+                  path = path.split(' -> ', 1)[1]
+              if path in allowed_exact or path.startswith(allowed_prefix):
+                  continue
+              bad.append(path)
+          for path in bad:
+              tracked = subprocess.run(
+                  ['git', 'ls-files', '--error-unmatch', '--', path],
+                  stdout=subprocess.DEVNULL,
+                  stderr=subprocess.DEVNULL,
+              ).returncode == 0
+              if tracked:
+                  subprocess.run(['git', 'restore', '--staged', '--worktree', '--', path], check=True)
+              else:
+                  target = Path(path)
+                  if target.is_dir():
+                      shutil.rmtree(target)
+                  elif target.exists():
+                      target.unlink()
+          if bad:
+              print('restored unrelated generated drift:')
+              print('\n'.join(bad))
+          PY
+      - name: Rebuild permanent estate and run final focused gates
+        run: |
+          node tools/build-m04e-constitutional-awareness.mjs
+          node tools/validate-m04e-constitutional-awareness.mjs
+          node test/m04e-constitutional-awareness.test.js
+          git diff --check
+          python - <<'PY'
+          import subprocess
+          allowed_exact = {
+              '.github/workflows/m04e-constitutional-awareness.yml',
+              'data/intake/m04e-constitutional-awareness-estate-wave-01.json',
+              'data/project/m04e-constitutional-awareness-estate.json',
+              'data/project/m04e-constitutional-awareness-methodology.json',
+              'docs/milestones/m04e-constitutional-class-awareness.md',
+              'test/m04e-constitutional-awareness.test.js',
+              'tools/build-m04e-constitutional-awareness.mjs',
+              'tools/validate-m04e-constitutional-awareness.mjs',
+              '.github/workflows/temporary-m04e-constitutional-awareness.yml',
+          }
+          allowed_prefix = (
+              '.github/temporary/m04e-constitutional-awareness/',
+              'build/core-thesis/constitutional-awareness/',
+              'reports/core-thesis/constitutional-awareness/',
+          )
+          rows = subprocess.check_output(['git', 'status', '--porcelain'], text=True).splitlines()
+          paths = []
+          for row in rows:
+              path = row[3:]
+              if ' -> ' in path:
+                  path = path.split(' -> ', 1)[1]
+              paths.append(path)
+          bad = [p for p in paths if p not in allowed_exact and not p.startswith(allowed_prefix)]
+          print('\n'.join(paths))
+          if bad:
+              raise SystemExit('unexpected durable drift:\n' + '\n'.join(bad))
+          PY
+      - name: Commit verified permanent estate
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Install M-04E constitutional class and counterpower estate'
+          target="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          git push origin HEAD:"$target"
