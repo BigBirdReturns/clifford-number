@@ -16,6 +16,10 @@ The wave adds eight records, bringing the program to seventeen source-bounded ev
 
 The records resolve exact names, identifiers, proposed roles, corporate structure, regulatory gates and dates. They do not establish ecosystem financing, common design, operational integration, favoritism, coercion, extraction, wrongdoing, or organism membership.
 
+## Validation contract
+
+The permanent source was committed only after the focused M-04B build, validator, regression, and dispatcher dry run passed; the complete repository release gate passed before and after carrier removal; out-of-scope generated projections were restored; and the final scoped tree passed the focused gates and `git diff --check` again. Normal pull-request workflows remain the exact-head merge gate.
+
 ```text
 promotes_to: candidate_only
 graph_effect: none
