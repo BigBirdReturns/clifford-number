@@ -30,11 +30,26 @@ jobs:
           node-version: '24'
       - name: Materialize exact source-bounded wave
         run: |
-          node .github/temporary/m04b-wave-02/materialize.mjs
-          node tools/build-security-state-organism.mjs
-          node tools/validate-security-state-organism.mjs
-          node test/security-state-organism.test.js
-          M04B_REPOSITORY="$GITHUB_REPOSITORY" node tools/dispatch-security-state-organism.mjs --dry-run
+          set -o pipefail
+          {
+            echo '== materializer =='
+            node .github/temporary/m04b-wave-02/materialize.mjs
+            echo '== builder =='
+            node tools/build-security-state-organism.mjs
+            echo '== validator =='
+            node tools/validate-security-state-organism.mjs
+            echo '== regression =='
+            node test/security-state-organism.test.js
+            echo '== dispatcher dry run =='
+            M04B_REPOSITORY="$GITHUB_REPOSITORY" node tools/dispatch-security-state-organism.mjs --dry-run
+          } 2>&1 | tee "$RUNNER_TEMP/m04b-wave-02-materialize.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m04b-wave-02-materialization-diagnostics
+          path: ${{ runner.temp }}/m04b-wave-02-materialize.log
+          if-no-files-found: warn
+          retention-days: 30
       - name: Run complete repository release gate
         run: npm run release:check
       - name: Remove one-shot carrier and rerun complete gate
