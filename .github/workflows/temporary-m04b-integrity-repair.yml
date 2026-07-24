@@ -37,50 +37,15 @@ jobs:
       - name: Restore checksum-verified repair payload
         run: |
           set -euo pipefail
-          stage=concatenate
-          expected=""
-          actual=""
-          mkdir -p /tmp/m04b-integrity-diagnostics
-          sha256sum .github/temporary/m04b-integrity-repair/payload.b64.part-* > /tmp/m04b-integrity-diagnostics/chunk-sha256.txt
-          wc -c .github/temporary/m04b-integrity-repair/payload.b64.part-* > /tmp/m04b-integrity-diagnostics/chunk-sizes.txt
-          python - <<'PYCODE' > /tmp/m04b-integrity-diagnostics/base64-analysis.json
-          import json
-          from pathlib import Path
-          paths = sorted(Path('.github/temporary/m04b-integrity-repair').glob('payload.b64.part-*'))
-          text = ''.join(path.read_text() for path in paths)
-          invalid = sorted(set(text) - set('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='))
-          print(json.dumps({'parts': len(paths), 'length': len(text), 'mod4': len(text) % 4, 'invalid_codepoints': [ord(x) for x in invalid]}, indent=2))
-          PYCODE
-          trap 'rc=$?; printf "{\n  \"stage\": \"%s\",\n  \"exit_code\": %s,\n  \"expected_sha256\": \"%s\",\n  \"actual_sha256\": \"%s\"\n}\n" "$stage" "$rc" "${expected:-}" "${actual:-}" > /tmp/m04b-integrity-diagnostics/restore.json; exit "$rc"' EXIT
           cat .github/temporary/m04b-integrity-repair/payload.b64.part-* > /tmp/m04b-integrity-repair.b64
-          stage=decode
           base64 --decode /tmp/m04b-integrity-repair.b64 > /tmp/m04b-integrity-repair.tar.xz
-          stage=checksum
           expected="$(cat .github/temporary/m04b-integrity-repair/payload.sha256)"
           actual="$(sha256sum /tmp/m04b-integrity-repair.tar.xz | awk '{print $1}')"
-          echo "expected_sha256=$expected"
-          echo "actual_sha256=$actual"
+          printf 'expected_sha256=%s\nactual_sha256=%s\n' "$expected" "$actual"
           test "$actual" = "$expected"
-          stage=list
-          tar -tJf /tmp/m04b-integrity-repair.tar.xz > /tmp/m04b-integrity-diagnostics/archive-files.txt
-          stage=extract
+          tar -tJf /tmp/m04b-integrity-repair.tar.xz
           tar -xJf /tmp/m04b-integrity-repair.tar.xz
-          stage=apply
           node repair/apply.mjs
-          trap - EXIT
-          printf "{\n  \"stage\": \"complete\",\n  \"exit_code\": 0,\n  \"expected_sha256\": \"%s\",\n  \"actual_sha256\": \"%s\"\n}\n" "$expected" "$actual" > /tmp/m04b-integrity-diagnostics/restore.json
-      - name: Persist restore diagnostics on failure
-        if: failure()
-        run: |
-          set -euo pipefail
-          rm -rf .github/temporary/m04b-integrity-diagnostics
-          mkdir -p .github/temporary/m04b-integrity-diagnostics
-          cp -a /tmp/m04b-integrity-diagnostics/. .github/temporary/m04b-integrity-diagnostics/
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/temporary/m04b-integrity-diagnostics
-          git commit -m "Record M-04B restore diagnostics"
-          git push origin "HEAD:${REPAIR_BRANCH}"
       - name: Remove all temporary transport before validation
         run: |
           set -euo pipefail
@@ -119,12 +84,16 @@ jobs:
           git diff --check
           node tools/validate-security-state-organism.mjs
           node test/security-state-organism.test.js
-      - name: Commit the permanent repaired tree
+      - name: Commit non-workflow permanent content
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout HEAD -- \
+            .github/workflows/security-state-organism.yml \
+            .github/workflows/temporary-m04b-integrity-repair.yml
           git add -A
+          test -z "$(git status --short .github/workflows)"
           git status --short
           test -n "$(git status --porcelain)"
           git commit -m "Repair M-04B integrity and source custody"
