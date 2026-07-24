@@ -78,7 +78,7 @@ writeJson(workPath, work);
 writeJson(routesPath, routes);
 
 let validator = fs.readFileSync('tools/validate-security-state-organism.mjs', 'utf8')
-  .replace("if (routes.routes.length !== 82) fail('82 source routes required');", "if (routes.routes.length !== 83) fail('83 source routes required');")
+  .replace("if (routes.routes.length !== 82) fail('82 routes required');", "if (routes.routes.length !== 83) fail('83 routes required');")
   .replace("if (evidence.records.length !== 17) fail('17 source-bounded evidence records required');", "if (evidence.records.length !== 24) fail('24 source-bounded evidence records required');")
   .replace('manifest.counts.evidence_records !== 17', 'manifest.counts.evidence_records !== 24')
   .replace('publicData.evidence.length !== 17 || publicData.routes.length !== 82', 'publicData.evidence.length !== 24 || publicData.routes.length !== 83');
