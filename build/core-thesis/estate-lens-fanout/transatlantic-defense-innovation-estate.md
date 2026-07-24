@@ -3,8 +3,8 @@
 > This packet inventories known custody and acquisition objects that still lack an explicit object-level mapping under the core thesis. Inherited estate context is not a finding.
 
 - Known objects: **25**
-- Explicitly mapped: **2**
-- Known but unmapped: **23**
+- Explicitly mapped: **4**
+- Known but unmapped: **21**
 - Unresolved: **0**
 - Ukraine-shock candidates: **25**
 
@@ -21,8 +21,6 @@
 - **asset_ref: DIANA 2025 control slice and 2026 closure** — candidate stages: Residual value, Public conversion
 - **asset_ref: DIANA 2026 estate slice** — candidate stages: Residual value, Public conversion
 - **asset_ref: declared cohort and router harness** — candidate stages: Residual value, Public conversion, Option-set formation
-- **estate_slice: nato diana 2025 cohort** — candidate stages: Residual value, Public conversion, Option-set formation, Control architecture
-- **estate_slice: nato diana 2026 cohort** — candidate stages: Residual value, Public conversion, Option-set formation, Control architecture
 - **fog_item: company legal identity and aliases** — candidate stages: Residual value, Public conversion
 - **fog_item: founder and investor rosters** — candidate stages: Residual value, Public conversion
 - **fog_item: cross-year recurrence and attrition** — candidate stages: Residual value, Public conversion
@@ -50,8 +48,6 @@
 - **asset_ref: DIANA 2026 estate slice** — direct_object_candidate; subphases: requires review
 - **asset_ref: declared cohort and router harness** — direct_object_candidate; subphases: requires review
 - **case: Every Participant Gets a Contract** — direct_object_candidate; subphases: requires review
-- **estate_slice: nato diana 2025 cohort** — direct_object_candidate; subphases: requires review
-- **estate_slice: nato diana 2026 cohort** — direct_object_candidate; subphases: requires review
 - **fog_item: company legal identity and aliases** — direct_object_candidate; subphases: requires review
 - **fog_item: founder and investor rosters** — direct_object_candidate; subphases: requires review
 - **fog_item: cross-year recurrence and attrition** — direct_object_candidate; subphases: requires review
@@ -72,7 +68,7 @@
 
 ## Next action
 
-Review 23 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
+Review 21 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
 
 `promotes_to: candidate_only` · `graph_effect: none` · `conclusion_generated: false` · `estate_completion_claimed: false`
 

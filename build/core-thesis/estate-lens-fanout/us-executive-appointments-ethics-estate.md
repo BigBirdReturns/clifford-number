@@ -3,8 +3,8 @@
 > This packet inventories known custody and acquisition objects that still lack an explicit object-level mapping under the core thesis. Inherited estate context is not a finding.
 
 - Known objects: **30**
-- Explicitly mapped: **3**
-- Known but unmapped: **27**
+- Explicitly mapped: **7**
+- Known but unmapped: **23**
 - Unresolved: **0**
 - Ukraine-shock candidates: **30**
 
@@ -27,10 +27,6 @@
 
 ## Conversion and option-set queue
 
-- **estate_slice: commerce pas oge278 2021 2026** — candidate stages: Reversibility and counterpower, Public conversion, Control architecture, Residual value
-- **estate_slice: doe edf leadership portfolio** — candidate stages: Reversibility and counterpower, Public conversion, Option-set formation, Control architecture, Residual value
-- **estate_slice: fda senior leadership 2021 2026** — candidate stages: Reversibility and counterpower, Public conversion, Control architecture, Residual value
-- **estate_slice: ftc commissioner router 2021 2026** — candidate stages: Reversibility and counterpower, Public conversion, Control architecture, Residual value
 - **game_trail: slice commerce pas oge278 2021 2026** — candidate stages: Reversibility and counterpower, Public conversion
 - **game_trail: slice doe edf leadership portfolio** — candidate stages: Reversibility and counterpower, Public conversion, Option-set formation
 - **game_trail: slice fda senior leadership 2021 2026** — candidate stages: Reversibility and counterpower, Public conversion
@@ -54,10 +50,6 @@
 - **asset_ref: Commerce leadership slice** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **asset_ref: disclosure and appointment receipt custody** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **asset_ref: executive router harness** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
-- **estate_slice: commerce pas oge278 2021 2026** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
-- **estate_slice: doe edf leadership portfolio** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
-- **estate_slice: fda senior leadership 2021 2026** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
-- **estate_slice: ftc commissioner router 2021 2026** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **fog_item: complete filer and appointment denominator** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **fog_item: lawful report acquisition and amendments** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
 - **fog_item: asset and business-entity resolution** — estate_inherited_adjacent_candidate; subphases: U4-permanent-readiness-mobilized-infrastructure
@@ -80,7 +72,7 @@
 
 ## Next action
 
-Review 27 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
+Review 23 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
 
 `promotes_to: candidate_only` · `graph_effect: none` · `conclusion_generated: false` · `estate_completion_claimed: false`
 

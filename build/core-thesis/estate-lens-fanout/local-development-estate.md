@@ -3,8 +3,8 @@
 > This packet inventories known custody and acquisition objects that still lack an explicit object-level mapping under the core thesis. Inherited estate context is not a finding.
 
 - Known objects: **66**
-- Explicitly mapped: **9**
-- Known but unmapped: **23**
+- Explicitly mapped: **20**
+- Known but unmapped: **12**
 - Unresolved: **34**
 - Ukraine-shock candidates: **0**
 
@@ -21,17 +21,6 @@
 
 ## Conversion and option-set queue
 
-- **estate_slice: baltimore peninsula public incentive stack** — candidate stages: Residual value, Public conversion, Control architecture
-- **estate_slice: california high speed rail land contracts** — candidate stages: Public conversion, Control architecture, Residual value
-- **estate_slice: cortland chicago river tif** — candidate stages: Public conversion, Control architecture, Residual value
-- **estate_slice: district noho joint development** — candidate stages: Public conversion, Control architecture, Residual value
-- **estate_slice: expo crenshaw joint development** — candidate stages: Public conversion, Control architecture, Residual value
-- **estate_slice: fulton county qoz centennial yards** — candidate stages: Public conversion, Control architecture, Residual value
-- **estate_slice: micron clay chips cluster** — candidate stages: Public conversion, Control architecture, Residual value
-- **estate_slice: nashville east bank stadium district** — candidate stages: Public conversion, Control architecture, Residual value
-- **estate_slice: new highmark stadium public finance** — candidate stages: Public conversion, Control architecture, Residual value
-- **estate_slice: the 78 chicago tif** — candidate stages: Public conversion, Control architecture, Residual value
-- **estate_slice: tsmc arizona chips cluster** — candidate stages: Public conversion, Control architecture, Residual value
 - **fog_item: public outlay, debt service, tax benefit, and assessed-value panels** — candidate stages: Residual value
 - **game_trail: slice baltimore peninsula public incentive stack** — candidate stages: Residual value
 - **game_trail: track state officeholder land contract crossings** — candidate stages: Public conversion
@@ -49,7 +38,7 @@
 
 ## Next action
 
-Review 57 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
+Review 46 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
 
 `promotes_to: candidate_only` · `graph_effect: none` · `conclusion_generated: false` · `estate_completion_claimed: false`
 

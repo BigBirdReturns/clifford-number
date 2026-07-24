@@ -3,8 +3,8 @@
 > This packet inventories known custody and acquisition objects that still lack an explicit object-level mapping under the core thesis. Inherited estate context is not a finding.
 
 - Known objects: **51**
-- Explicitly mapped: **5**
-- Known but unmapped: **46**
+- Explicitly mapped: **7**
+- Known but unmapped: **44**
 - Unresolved: **0**
 - Ukraine-shock candidates: **51**
 
@@ -25,8 +25,6 @@
 - **asset_ref: Capital Factory, NatSec100, Pallas, Silent Ventures, and Lane B corpus** — candidate stages: Residual value
 - **asset_ref: candidate-only personnel trails** — candidate stages: Residual value, Option-set formation
 - **asset_ref: accelerator and fund denominator harness** — candidate stages: Residual value, Option-set formation
-- **estate_slice: nato diana 2025 cohort** — candidate stages: Residual value, Option-set formation, Public conversion, Control architecture
-- **estate_slice: nato diana 2026 cohort** — candidate stages: Residual value, Option-set formation, Public conversion, Control architecture
 - **fog_item: source-selection and requirement-design records** — candidate stages: Residual value, Option-set formation
 - **fog_item: contract ceiling, obligation, outlay, and acceptance separation** — candidate stages: Residual value, Public conversion
 - **fog_item: person, vehicle, portfolio-company, and award identity joins** — candidate stages: Residual value, Public conversion, Option-set formation
@@ -51,6 +49,8 @@
 - **game_trail: trail lauren knausenberger service** — candidate stages: Residual value
 - **game_trail: trail michael a brown service** — candidate stages: Residual value
 - **game_trail: trail raj s service** — candidate stages: Residual value
+- **game_trail: trail sally donnelly validation** — candidate stages: Residual value
+- **game_trail: trail tal shmueli vehicle** — candidate stages: Residual value
 
 ## Custody and source-infrastructure queue
 
@@ -62,8 +62,6 @@
 - **asset_ref: Capital Factory, NatSec100, Pallas, Silent Ventures, and Lane B corpus** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
 - **asset_ref: candidate-only personnel trails** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
 - **asset_ref: accelerator and fund denominator harness** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
-- **estate_slice: nato diana 2025 cohort** — direct_object_candidate; subphases: requires review
-- **estate_slice: nato diana 2026 cohort** — direct_object_candidate; subphases: requires review
 - **fog_item: source-selection and requirement-design records** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
 - **fog_item: contract ceiling, obligation, outlay, and acceptance separation** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
 - **fog_item: data rights, substitution, and interface control** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
@@ -87,10 +85,12 @@
 - **game_trail: trail joshua baer vehicle** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
 - **game_trail: trail katherine boyle validation** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
 - **game_trail: trail kevin weil service** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
+- **game_trail: trail lauren knausenberger service** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
+- **game_trail: trail michael a brown service** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
 
 ## Next action
 
-Review 46 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
+Review 44 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
 
 `promotes_to: candidate_only` · `graph_effect: none` · `conclusion_generated: false` · `estate_completion_claimed: false`
 
