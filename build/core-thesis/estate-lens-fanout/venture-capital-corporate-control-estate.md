@@ -3,8 +3,8 @@
 > This packet inventories known custody and acquisition objects that still lack an explicit object-level mapping under the core thesis. Inherited estate context is not a finding.
 
 - Known objects: **39**
-- Explicitly mapped: **5**
-- Known but unmapped: **34**
+- Explicitly mapped: **9**
+- Known but unmapped: **30**
 - Unresolved: **0**
 - Ukraine-shock candidates: **39**
 
@@ -30,10 +30,6 @@
 
 ## Conversion and option-set queue
 
-- **estate_slice: commerce pas oge278 2021 2026** — candidate stages: Control architecture, Residual value, Public conversion
-- **estate_slice: doe edf leadership portfolio** — candidate stages: Control architecture, Residual value, Option-set formation, Public conversion
-- **estate_slice: nato diana 2025 cohort** — candidate stages: Control architecture, Residual value, Option-set formation, Public conversion
-- **estate_slice: nato diana 2026 cohort** — candidate stages: Control architecture, Residual value, Option-set formation, Public conversion
 - **game_trail: case anduril access ownership** — candidate stages: Reversibility and counterpower, Control architecture, Residual value
 - **game_trail: slice commerce pas oge278 2021 2026** — candidate stages: Control architecture, Residual value
 - **game_trail: slice doe edf leadership portfolio** — candidate stages: Control architecture, Residual value, Option-set formation
@@ -63,10 +59,6 @@
 - **asset_ref: accelerator/fund harness** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
 - **asset_ref: frozen vendor denominator** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
 - **case: Anduril: Access, Ownership, and the Government Gate** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
-- **estate_slice: commerce pas oge278 2021 2026** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
-- **estate_slice: doe edf leadership portfolio** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
-- **estate_slice: nato diana 2025 cohort** — direct_object_candidate; subphases: requires review
-- **estate_slice: nato diana 2026 cohort** — direct_object_candidate; subphases: requires review
 - **fog_item: legal fund and SPV identity** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
 - **fog_item: financing versus cumulative funding versus valuation** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
 - **fog_item: board, veto, information, and strategic rights** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
@@ -87,10 +79,14 @@
 - **report: Anduril: Access, Ownership, and the Government Gate** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
 - **source_route: companies house** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
 - **source_route: company filings** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
+- **source_route: fund reports** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
+- **source_route: merger documents** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
+- **source_route: sec edgar and form d** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
+- **source_route: state registries** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup, U3-battlefield-integrated-market-making, U4-permanent-readiness-mobilized-infrastructure
 
 ## Next action
 
-Review 34 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
+Review 30 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
 
 `promotes_to: candidate_only` · `graph_effect: none` · `conclusion_generated: false` · `estate_completion_claimed: false`
 

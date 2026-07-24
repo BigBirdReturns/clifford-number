@@ -4,8 +4,8 @@
 
 - Estates: **24**
 - Known object memberships: **690**
-- Explicitly object-mapped: **59**
-- Known but unmapped: **489**
+- Explicitly object-mapped: **112**
+- Known but unmapped: **436**
 - Unresolved even for conservative routing: **142**
 - Ukraine-shock direct object candidates: **37**
 
@@ -20,33 +20,33 @@
 | Intellectual property, standards, and data-rights estate | 20 | 1 | 19 | 0 | 20 |
 | Judicial and administrative adjudication estate | 19 | 1 | 18 | 0 | 19 |
 | Labor, immigration, and workforce-mobility estate | 21 | 1 | 2 | 18 | 21 |
-| Local development estate | 66 | 9 | 23 | 34 | 0 |
+| Local development estate | 66 | 20 | 12 | 34 | 0 |
 | Offshore and beneficial-ownership estate | 19 | 1 | 18 | 0 | 0 |
 | Philanthropy, nonprofit, and policy-institutions estate | 19 | 1 | 18 | 0 | 0 |
 | Professional services and intermediaries estate | 19 | 1 | 18 | 0 | 19 |
 | Public-interest crossing estate | 22 | 1 | 21 | 0 | 22 |
-| Public money and industrial-policy estate | 70 | 8 | 62 | 0 | 70 |
+| Public money and industrial-policy estate | 70 | 22 | 48 | 0 | 70 |
 | Real property, title, and secured-debt estate | 21 | 1 | 20 | 0 | 0 |
-| Regulatory markets estate | 23 | 2 | 21 | 0 | 23 |
+| Regulatory markets estate | 23 | 4 | 19 | 0 | 23 |
 | Sanctions, export controls, and foreign-investment estate | 21 | 1 | 20 | 0 | 21 |
-| State and municipal authority estate | 51 | 6 | 17 | 28 | 51 |
-| Transatlantic defense innovation estate | 25 | 2 | 23 | 0 | 25 |
-| United Kingdom defense estate | 26 | 2 | 24 | 0 | 26 |
+| State and municipal authority estate | 51 | 16 | 7 | 28 | 51 |
+| Transatlantic defense innovation estate | 25 | 4 | 21 | 0 | 25 |
+| United Kingdom defense estate | 26 | 4 | 22 | 0 | 26 |
 | United Kingdom state–market estate | 21 | 1 | 9 | 11 | 21 |
-| United States defense estate | 51 | 5 | 46 | 0 | 51 |
-| U.S. executive appointments and ethics estate | 30 | 3 | 27 | 0 | 30 |
-| U.S. legislative and political-finance estate | 24 | 2 | 7 | 15 | 24 |
-| Venture capital and corporate-control estate | 39 | 5 | 34 | 0 | 39 |
+| United States defense estate | 51 | 7 | 44 | 0 | 51 |
+| U.S. executive appointments and ethics estate | 30 | 7 | 23 | 0 | 30 |
+| U.S. legislative and political-finance estate | 24 | 4 | 5 | 15 | 24 |
+| Venture capital and corporate-control estate | 39 | 9 | 30 | 0 | 39 |
 
 ## Candidate conversion-stage workload
 
-- **Agenda formation:** 143 inherited-only or unresolved object memberships
-- **Option-set formation:** 164 inherited-only or unresolved object memberships
-- **Public conversion:** 160 inherited-only or unresolved object memberships
-- **Control architecture:** 191 inherited-only or unresolved object memberships
+- **Agenda formation:** 127 inherited-only or unresolved object memberships
+- **Option-set formation:** 140 inherited-only or unresolved object memberships
+- **Public conversion:** 107 inherited-only or unresolved object memberships
+- **Control architecture:** 138 inherited-only or unresolved object memberships
 - **Dependency and compulsion:** 9 inherited-only or unresolved object memberships
-- **Residual value:** 186 inherited-only or unresolved object memberships
-- **Reversibility and counterpower:** 192 inherited-only or unresolved object memberships
+- **Residual value:** 133 inherited-only or unresolved object memberships
+- **Reversibility and counterpower:** 184 inherited-only or unresolved object memberships
 
 ## Operating law
 

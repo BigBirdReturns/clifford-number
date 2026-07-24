@@ -3,8 +3,8 @@
 > This packet inventories known custody and acquisition objects that still lack an explicit object-level mapping under the core thesis. Inherited estate context is not a finding.
 
 - Known objects: **26**
-- Explicitly mapped: **2**
-- Known but unmapped: **24**
+- Explicitly mapped: **4**
+- Known but unmapped: **22**
 - Unresolved: **0**
 - Ukraine-shock candidates: **26**
 
@@ -29,8 +29,6 @@
 
 ## Conversion and option-set queue
 
-- **estate_slice: nato diana 2025 cohort** — candidate stages: Reversibility and counterpower, Option-set formation, Agenda formation, Public conversion, Control architecture, Residual value
-- **estate_slice: nato diana 2026 cohort** — candidate stages: Reversibility and counterpower, Option-set formation, Agenda formation, Public conversion, Control architecture, Residual value
 - **game_trail: case uk ai policy** — candidate stages: Reversibility and counterpower, Agenda formation
 - **game_trail: slice nato diana 2025 cohort** — candidate stages: Reversibility and counterpower, Option-set formation, Agenda formation
 - **game_trail: slice nato diana 2026 cohort** — candidate stages: Reversibility and counterpower, Option-set formation, Agenda formation
@@ -54,8 +52,6 @@
 - **asset_ref: Strategic Defence Review bounded surface** — estate_inherited_direct_candidate; subphases: U2-coalition-rearmament-industrial-catchup
 - **asset_ref: current admitted defense-policy surface** — estate_inherited_direct_candidate; subphases: U2-coalition-rearmament-industrial-catchup
 - **case: The Clifford Number** — estate_inherited_direct_candidate; subphases: U2-coalition-rearmament-industrial-catchup
-- **estate_slice: nato diana 2025 cohort** — direct_object_candidate; subphases: U2-coalition-rearmament-industrial-catchup
-- **estate_slice: nato diana 2026 cohort** — direct_object_candidate; subphases: U2-coalition-rearmament-industrial-catchup
 - **fog_item: review recommendation to implementation sequence** — estate_inherited_direct_candidate; subphases: U2-coalition-rearmament-industrial-catchup
 - **fog_item: complete supplier, fund, accelerator, and contract denominators** — estate_inherited_direct_candidate; subphases: U2-coalition-rearmament-industrial-catchup
 - **fog_item: personnel transfer and interests chronology** — estate_inherited_direct_candidate; subphases: U1-emergency-improvisation-stockpile-liquidation, U2-coalition-rearmament-industrial-catchup
@@ -74,7 +70,7 @@
 
 ## Next action
 
-Review 24 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
+Review 22 inherited-only or unresolved objects and admit only object-specific phase, stage, archetype, shock, and report mappings supported by their own records.
 
 `promotes_to: candidate_only` · `graph_effect: none` · `conclusion_generated: false` · `estate_completion_claimed: false`
 
