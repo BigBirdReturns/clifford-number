@@ -28,15 +28,26 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Materialize exact source-bounded estate
+      - name: Reassemble and verify source payload
         run: |
+          wc -c .github/temporary/m04e-constitutional-awareness/part-*.txt
           cat .github/temporary/m04e-constitutional-awareness/part-*.txt | base64 -d > /tmp/m04e-source.tgz
           echo '5234615d7c00a644e1e7fe8324bc3a476d58ff5265fb100ec5df29fb6a312f95  /tmp/m04e-source.tgz' | sha256sum -c -
+          tar -tzf /tmp/m04e-source.tgz
+      - name: Extract permanent source files
+        run: |
           tar -xzf /tmp/m04e-source.tgz -C .
-          node tools/build-m04e-constitutional-awareness.mjs
-          node tools/validate-m04e-constitutional-awareness.mjs
-          node test/m04e-constitutional-awareness.test.js
-          npm run release:check
+          test -f data/project/m04e-constitutional-awareness-methodology.json
+          test -f data/intake/m04e-constitutional-awareness-estate-wave-01.json
+          test -f tools/build-m04e-constitutional-awareness.mjs
+      - name: Build constitutional-awareness projections
+        run: node tools/build-m04e-constitutional-awareness.mjs
+      - name: Validate constitutional-awareness estate
+        run: node tools/validate-m04e-constitutional-awareness.mjs
+      - name: Run constitutional-awareness regression
+        run: node test/m04e-constitutional-awareness.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
       - name: Remove one-shot carrier and restore unrelated generated drift
         run: |
           rm -rf .github/temporary/m04e-constitutional-awareness
