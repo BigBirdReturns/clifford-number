@@ -41,6 +41,16 @@ jobs:
           expected=""
           actual=""
           mkdir -p /tmp/m04b-integrity-diagnostics
+          sha256sum .github/temporary/m04b-integrity-repair/payload.b64.part-* > /tmp/m04b-integrity-diagnostics/chunk-sha256.txt
+          wc -c .github/temporary/m04b-integrity-repair/payload.b64.part-* > /tmp/m04b-integrity-diagnostics/chunk-sizes.txt
+          python - <<'PYCODE' > /tmp/m04b-integrity-diagnostics/base64-analysis.json
+          import json
+          from pathlib import Path
+          paths = sorted(Path('.github/temporary/m04b-integrity-repair').glob('payload.b64.part-*'))
+          text = ''.join(path.read_text() for path in paths)
+          invalid = sorted(set(text) - set('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='))
+          print(json.dumps({'parts': len(paths), 'length': len(text), 'mod4': len(text) % 4, 'invalid_codepoints': [ord(x) for x in invalid]}, indent=2))
+          PYCODE
           trap 'rc=$?; printf "{\n  \"stage\": \"%s\",\n  \"exit_code\": %s,\n  \"expected_sha256\": \"%s\",\n  \"actual_sha256\": \"%s\"\n}\n" "$stage" "$rc" "${expected:-}" "${actual:-}" > /tmp/m04b-integrity-diagnostics/restore.json; exit "$rc"' EXIT
           cat .github/temporary/m04b-integrity-repair/payload.b64.part-* > /tmp/m04b-integrity-repair.b64
           stage=decode
