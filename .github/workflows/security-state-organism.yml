@@ -4,9 +4,9 @@ on:
   pull_request:
     paths:
       - 'data/project/security-state-*.json'
-      - 'data/intake/security-state-organism-source-routes.json'
+      - 'data/intake/security-state-organism-*.json'
       - 'docs/security-state-organism-program.md'
-      - 'docs/milestones/m04b-security-state-organism-evidence.md'
+      - 'docs/milestones/m04b-*.md'
       - 'tools/build-security-state-organism.mjs'
       - 'tools/validate-security-state-organism.mjs'
       - 'tools/dispatch-security-state-organism.mjs'
@@ -20,9 +20,9 @@ on:
     branches: [main]
     paths:
       - 'data/project/security-state-*.json'
-      - 'data/intake/security-state-organism-source-routes.json'
+      - 'data/intake/security-state-organism-*.json'
       - 'docs/security-state-organism-program.md'
-      - 'docs/milestones/m04b-security-state-organism-evidence.md'
+      - 'docs/milestones/m04b-*.md'
       - 'tools/build-security-state-organism.mjs'
       - 'tools/validate-security-state-organism.mjs'
       - 'tools/dispatch-security-state-organism.mjs'
@@ -38,6 +38,10 @@ permissions:
   contents: read
   issues: write
 
+concurrency:
+  group: security-state-organism-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -46,23 +50,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Build and validate the adversarial evidence program
+      - name: Build and validate the canonical evidence program
         run: |
           node tools/build-security-state-organism.mjs
           node tools/validate-security-state-organism.mjs
           node test/security-state-organism.test.js
+          M04B_REPOSITORY="$GITHUB_REPOSITORY" node tools/dispatch-security-state-organism.mjs --dry-run
       - name: Run the complete repository release gate
         run: npm run release:check
-      - name: Refuse deterministic drift
-        run: git diff --exit-code -- build/core-thesis/security-state-organism reports/core-thesis/security-state-organism
+      - name: Refuse deterministic product drift
+        run: |
+          git diff --exit-code -- \
+            build/core-thesis/security-state-organism \
+            reports/core-thesis/security-state-organism
       - uses: actions/upload-artifact@v4
         with:
           name: security-state-organism-evidence-program
           path: |
             data/project/security-state-*.json
-            data/intake/security-state-organism-source-routes.json
+            data/intake/security-state-organism-*.json
             docs/security-state-organism-program.md
-            docs/milestones/m04b-security-state-organism-evidence.md
+            docs/milestones/m04b-*.md
             build/core-thesis/security-state-organism/
             reports/core-thesis/security-state-organism/
           if-no-files-found: error
@@ -77,12 +85,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Rebuild deterministic issue plan
+      - name: Rebuild exact issue plan
         run: node tools/build-security-state-organism.mjs
       - name: Upsert proof lanes and estate handoffs
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: node tools/dispatch-security-state-organism.mjs
+          M04B_DISPATCH_MODE: apply
+        run: node tools/dispatch-security-state-organism.mjs --apply
       - uses: actions/upload-artifact@v4
         with:
           name: security-state-organism-dispatch-receipt

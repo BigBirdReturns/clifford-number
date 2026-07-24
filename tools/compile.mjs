@@ -18,6 +18,7 @@ const steps = [
   ['build-estate-game-trails', 'tools/build-estate-game-trails.mjs'],
   ['build-core-thesis', 'tools/build-core-thesis.mjs'],
   ['build-estate-lens-audit', 'tools/build-estate-lens-audit.mjs'],
+  ['build-security-state-organism', 'tools/build-security-state-organism.mjs'],
   ['build-estate-fanout', 'tools/build-estate-fanout.mjs'],
   ['build-estate-closures', 'tools/build-estate-closures.mjs'],
   ['render-estate-aperture', 'tools/render-estate-aperture.mjs'],
