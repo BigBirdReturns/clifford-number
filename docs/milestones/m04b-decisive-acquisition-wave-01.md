@@ -20,6 +20,8 @@ The records resolve exact names, identifiers, proposed roles, corporate structur
 
 The permanent source was committed only after the focused M-04B build, validator, regression, and dispatcher dry run passed; the complete repository release gate passed before and after carrier removal; out-of-scope generated projections were restored; and the final scoped tree passed the focused gates and `git diff --check` again. Normal pull-request workflows remain the exact-head merge gate.
 
+Builder-owned deterministic products are checked separately from the dispatcher’s operational receipt. The receipt is independently checked for schema, dry-run mode, source fingerprint, issue-plan digest, planned lane counts, and constitutional boundaries. A regression also prevents the estate-comment update ledger from serializing misspelled issue-number fields as `null`.
+
 ```text
 promotes_to: candidate_only
 graph_effect: none
