@@ -15,9 +15,11 @@ const payload = JSON.parse(zlib.gunzipSync(Buffer.from(fs.readFileSync(payloadPa
 const evidencePath = 'data/intake/security-state-organism-evidence-intake.json';
 const workPath = 'data/project/security-state-work-packages.json';
 const routesPath = 'data/intake/security-state-organism-source-routes.json';
+const alignmentPath = 'data/project/security-state-estate-alignment.json';
 const evidence = read(evidencePath);
 const work = read(workPath);
 const routes = read(routesPath);
+const alignment = read(alignmentPath);
 
 if (evidence.records.length !== payload.baseline_evidence_count) throw new Error(`expected ${payload.baseline_evidence_count} baseline evidence records, found ${evidence.records.length}`);
 if (routes.routes.length !== payload.baseline_route_count) throw new Error(`expected ${payload.baseline_route_count} baseline routes, found ${routes.routes.length}`);
@@ -50,6 +52,7 @@ for (const patch of payload.locators) {
 routes.routes.sort((a, b) => a.route_id.localeCompare(b.route_id));
 
 const packageById = new Map(work.packages.map((x) => [x.package_id, x]));
+const estateById = new Map(alignment.estates.map((x) => [x.estate_id, x]));
 for (const record of payload.records) {
   if (!routeById.has(record.source_route_id)) throw new Error(`${record.evidence_id}: unknown source route ${record.source_route_id}`);
   for (const packageId of record.packet_ids) {
@@ -57,6 +60,12 @@ for (const record of payload.records) {
     if (!packet) throw new Error(`${record.evidence_id}: unknown packet ${packageId}`);
     packet.evidence_record_ids = [...new Set([...packet.evidence_record_ids, record.evidence_id])].sort();
     packet.source_route_ids = [...new Set([...packet.source_route_ids, record.source_route_id])].sort();
+    if (packet.package_class === 'estate') {
+      const estateId = packageId.slice('EST-'.length);
+      const estate = estateById.get(estateId);
+      if (!estate) throw new Error(`${record.evidence_id}: missing alignment for ${estateId}`);
+      estate.source_route_ids = [...new Set([...estate.source_route_ids, record.source_route_id])].sort();
+    }
   }
   evidence.records.push(record);
 }
@@ -76,6 +85,7 @@ for (const route of routes.routes) {
 writeJson(evidencePath, evidence);
 writeJson(workPath, work);
 writeJson(routesPath, routes);
+writeJson(alignmentPath, alignment);
 
 let validator = fs.readFileSync('tools/validate-security-state-organism.mjs', 'utf8')
   .replace("if (routes.routes.length !== 82) fail('82 routes required');", "if (routes.routes.length !== 83) fail('83 routes required');")
@@ -89,7 +99,7 @@ let test = fs.readFileSync('test/security-state-organism.test.js', 'utf8')
   .replace('assert.equal(routes.routes.length, 82);', 'assert.equal(routes.routes.length, 83);')
   .replace('assert.equal(evidence.records.length, 17);', 'assert.equal(evidence.records.length, 24);');
 const marker = "console.log('security-state-organism.test: ok');";
-const extra = `const wave2Ids = new Set(['M04B-EV-018','M04B-EV-019','M04B-EV-020','M04B-EV-021','M04B-EV-022','M04B-EV-023','M04B-EV-024']);\nassert.equal(evidence.records.filter((x) => wave2Ids.has(x.evidence_id)).length, 7);\nfor (const id of wave2Ids) { const record = evidenceById.get(id); assert.ok(record, id); assert.equal(record.acquisition_wave, 'M04B-W02', id); assert.equal(record.boundaries.graph_effect, 'none', id); assert.equal(record.boundaries.conclusion_generated, false, id); }\nconst armyRoute = routes.routes.find((x) => x.route_id === 'US-ARMY-NGC2');\nassert.ok(armyRoute);\nassert.equal(armyRoute.locator_status, 'source_bounded_locator');\nassert.ok(armyRoute.locators.some((x) => x.evidence_ids.includes('M04B-EV-021')));\nassert.ok(routes.routes.find((x) => x.route_id === 'ANDURIL-OFFICIAL').locators.some((x) => x.evidence_ids.includes('M04B-EV-020')));\nassert.ok(routes.routes.find((x) => x.route_id === 'PALANTIR-OFFICIAL').locators.some((x) => x.evidence_ids.includes('M04B-EV-023')));\nassert.ok(work.packages.find((x) => x.package_id === 'BRG-09').evidence_record_ids.includes('M04B-EV-021'));\nassert.ok(work.packages.find((x) => x.package_id === 'TST-T4-coordination').source_route_ids.includes('US-ARMY-NGC2'));\n`;
+const extra = `const wave2Ids = new Set(['M04B-EV-018','M04B-EV-019','M04B-EV-020','M04B-EV-021','M04B-EV-022','M04B-EV-023','M04B-EV-024']);\nassert.equal(evidence.records.filter((x) => wave2Ids.has(x.evidence_id)).length, 7);\nfor (const id of wave2Ids) { const record = evidenceById.get(id); assert.ok(record, id); assert.equal(record.acquisition_wave, 'M04B-W02', id); assert.equal(record.boundaries.graph_effect, 'none', id); assert.equal(record.boundaries.conclusion_generated, false, id); }\nconst armyRoute = routes.routes.find((x) => x.route_id === 'US-ARMY-NGC2');\nassert.ok(armyRoute);\nassert.equal(armyRoute.locator_status, 'source_bounded_locator');\nassert.ok(armyRoute.locators.some((x) => x.evidence_ids.includes('M04B-EV-021')));\nassert.ok(routes.routes.find((x) => x.route_id === 'ANDURIL-OFFICIAL').locators.some((x) => x.evidence_ids.includes('M04B-EV-020')));\nassert.ok(routes.routes.find((x) => x.route_id === 'PALANTIR-OFFICIAL').locators.some((x) => x.evidence_ids.includes('M04B-EV-023')));\nassert.ok(work.packages.find((x) => x.package_id === 'BRG-09').evidence_record_ids.includes('M04B-EV-021'));\nassert.ok(work.packages.find((x) => x.package_id === 'TST-T4-coordination').source_route_ids.includes('US-ARMY-NGC2'));\nassert.ok(alignment.estates.find((x) => x.estate_id === 'us-defense-estate').source_route_ids.includes('US-ARMY-NGC2'));\n`;
 if (!test.includes('const wave2Ids = new Set')) test = test.replace(marker, `${extra}${marker}`);
 if (!test.includes('assert.equal(evidence.records.length, 24);') || !test.includes('assert.equal(routes.routes.length, 83);')) throw new Error('test count patch failed');
 writeText('test/security-state-organism.test.js', test);
@@ -104,8 +114,9 @@ const receipt = {
   source_routes_touched: [...new Set([...payload.records.map((x) => x.source_route_id), ...payload.locators.map((x) => x.route_id)])].sort(),
   packet_backlinks_added: payload.records.reduce((n, x) => n + x.packet_ids.length, 0),
   packet_route_backlinks_added: payload.records.reduce((n, x) => n + x.packet_ids.length, 0),
+  estate_route_backlinks_added: [...new Set(payload.records.flatMap((x) => x.packet_ids.filter((id) => id.startsWith('EST-')).map((id) => `${id}:${x.source_route_id}`)))].length,
   boundaries: evidence.boundaries,
 };
 receipt.content_fingerprint = crypto.createHash('sha256').update(JSON.stringify(receipt)).digest('hex');
 writeJson('data/intake/security-state-organism-decisive-acquisition-wave-02.json', receipt);
-console.log(JSON.stringify({ ok: true, wave_id: payload.wave_id, evidence_records: evidence.records.length, routes: routes.routes.length, records_added: payload.records.length, packet_backlinks_added: receipt.packet_backlinks_added, route_counts: routes.counts, content_fingerprint: receipt.content_fingerprint }, null, 2));
+console.log(JSON.stringify({ ok: true, wave_id: payload.wave_id, evidence_records: evidence.records.length, routes: routes.routes.length, records_added: payload.records.length, packet_backlinks_added: receipt.packet_backlinks_added, estate_route_backlinks_added: receipt.estate_route_backlinks_added, route_counts: routes.counts, content_fingerprint: receipt.content_fingerprint }, null, 2));
