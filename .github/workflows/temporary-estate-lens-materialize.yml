@@ -43,8 +43,6 @@ jobs:
           cat .github/temporary/estate-lens-source/build-*.part > tools/build-estate-lens-audit.mjs
           chmod +x tools/build-estate-lens-audit.mjs
           node --check tools/build-estate-lens-audit.mjs
-          rm -rf .github/temporary/estate-lens-source
-          rm -f .github/workflows/temporary-estate-lens-materialize.yml
 
       - name: Compile and validate the thesis-aligned estate audit
         shell: bash
@@ -84,12 +82,14 @@ jobs:
           test -f tools/build-estate-lens-audit.mjs
           test -f build/core-thesis/estate-lens-audit-manifest.json
           test -f reports/core-thesis/unmapped-sections/index.html
-          test ! -d .github/temporary/estate-lens-source
-          test ! -e .github/workflows/temporary-estate-lens-materialize.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
+          git add tools/build-estate-lens-audit.mjs build/core-thesis reports/core-thesis
           git diff --cached --check
           git status --short
+          if git diff --cached --quiet; then
+            echo 'Permanent audit products already match the source.'
+            exit 0
+          fi
           git commit -m 'Map known unmapped estate sections under the core thesis'
           git push origin HEAD:agent/core-thesis-unmapped-audit
