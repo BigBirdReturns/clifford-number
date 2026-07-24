@@ -8,6 +8,12 @@ const token = process.env.GITHUB_TOKEN;
 const repository = process.env.GITHUB_REPOSITORY || process.env.M04B_REPOSITORY;
 if (!repository) throw new Error('GITHUB_REPOSITORY or M04B_REPOSITORY is required');
 if (mode === 'apply' && !token) throw new Error('GITHUB_TOKEN is required in apply mode');
+if (mode === 'apply') {
+  const liveContext = process.env.GITHUB_ACTIONS === 'true'
+    && process.env.GITHUB_EVENT_NAME === 'push'
+    && process.env.GITHUB_REF === 'refs/heads/main';
+  if (!liveContext) throw new Error('apply mode is restricted to a GitHub Actions push on refs/heads/main');
+}
 const [owner, repo] = repository.split('/');
 if (!owner || !repo) throw new Error(`invalid repository: ${repository}`);
 
@@ -26,11 +32,23 @@ const headers = {
   'User-Agent': 'clifford-number-m04b-integrity',
 };
 for (const key of Object.keys(headers)) if (headers[key] === undefined) delete headers[key];
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const call = async (method, url, body) => {
-  const response = await fetch(`${api}${url}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
-  const text = await response.text();
-  if (!response.ok) throw new Error(`${method} ${url} ${response.status}: ${text.slice(0, 1000)}`);
-  return text ? JSON.parse(text) : null;
+  const attempts = 5;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const response = await fetch(`${api}${url}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    const text = await response.text();
+    if (response.ok) {
+      if (method !== 'GET') await sleep(200);
+      return text ? JSON.parse(text) : null;
+    }
+    const retryable = response.status === 403 || response.status === 429 || response.status >= 500;
+    if (!retryable || attempt === attempts) throw new Error(`${method} ${url} ${response.status}: ${text.slice(0, 1000)}`);
+    const retryAfter = Number(response.headers.get('retry-after'));
+    const delay = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 1000 * (2 ** (attempt - 1));
+    await sleep(delay);
+  }
+  throw new Error(`${method} ${url}: exhausted retries`);
 };
 const pages = async (url) => {
   const output = [];
@@ -130,18 +148,34 @@ const receipt = {
   updated: [],
   reopened: [],
   unchanged: [],
+  migrated_legacy_issues: [],
   estate_comments_created: [],
   estate_comments_updated: [],
   estate_comments_unchanged: [],
+  migrated_legacy_estate_comments: [],
   boundaries: work.boundaries,
 };
 
 if (mode === 'apply') {
   const issues = await pages(`/repos/${owner}/${repo}/issues?state=all`);
   for (const group of plan.issues) {
-    const marker = `<!-- m04b-organism:${group.issue_id}:v2 -->`;
+    const currentMarker = `<!-- m04b-organism:${group.issue_id}:v2 -->`;
+    const legacyIssueIds = group.issue_class === 'cluster_index'
+      ? [`ENTITY-${group.issue_id.replace('CLUSTER-', '')}`]
+      : [];
+    const legacyMarkers = [
+      `<!-- m04b-organism:${group.issue_id} -->`,
+      ...legacyIssueIds.flatMap((id) => [
+        `<!-- m04b-organism:${id}:v2 -->`,
+        `<!-- m04b-organism:${id} -->`,
+      ]),
+    ];
+    const markers = [currentMarker, ...legacyMarkers];
+    const matches = issues.filter((x) => !x.pull_request && markers.some((marker) => String(x.body ?? '').includes(marker)));
+    if (matches.length > 1) throw new Error(`${group.issue_id}: multiple current or legacy issue lanes found`);
+    let existing = matches[0];
+    const legacyMatch = existing && !String(existing.body ?? '').includes(currentMarker);
     const body = issueBody(group);
-    let existing = issues.find((x) => !x.pull_request && String(x.body ?? '').includes(marker));
     if (!existing) {
       existing = await call('POST', `/repos/${owner}/${repo}/issues`, { title: group.title, body, labels: ['research'] });
       issues.push(existing);
@@ -157,19 +191,25 @@ if (mode === 'apply') {
     if (Object.keys(patch).length) {
       await call('PATCH', `/repos/${owner}/${repo}/issues/${existing.number}`, patch);
       receipt.updated.push(existing.number);
+      if (legacyMatch) receipt.migrated_legacy_issues.push(existing.number);
     } else receipt.unchanged.push(existing.number);
   }
   for (const handoff of plan.estate_handoffs) {
-    const marker = `<!-- m04b-estate-handoff:${handoff.estate_id}:v2 -->`;
+    const currentMarker = `<!-- m04b-estate-handoff:${handoff.estate_id}:v2 -->`;
+    const legacyMarker = `<!-- m04b-estate-handoff:${handoff.estate_id} -->`;
     const body = estateBody(handoff);
     const comments = await pages(`/repos/${owner}/${repo}/issues/${handoff.issue_number}/comments?`);
-    const existing = comments.find((x) => String(x.body ?? '').includes(marker));
+    const matches = comments.filter((x) => [currentMarker, legacyMarker].some((marker) => String(x.body ?? '').includes(marker)));
+    if (matches.length > 1) throw new Error(`${handoff.estate_id}: multiple current or legacy estate handoffs found`);
+    const existing = matches[0];
+    const legacyMatch = existing && !String(existing.body ?? '').includes(currentMarker);
     if (!existing) {
       await call('POST', `/repos/${owner}/${repo}/issues/${handoff.issue_number}/comments`, { body });
       receipt.estate_comments_created.push(handoff.issue_number);
     } else if (existing.body !== body) {
       await call('PATCH', `/repos/${owner}/${repo}/issues/comments/${existing.id}`, { body });
-      receipt.estate_comments_updated.push(handoff.issue_number);
+      receipt.estate_comments_updated.push(handoff.isssue_number);
+      if (legacyMatch) receipt.migrated_legacy_estate_comments.push(handoff.issue_number);
     } else receipt.estate_comments_unchanged.push(handoff.issue_number);
   }
 }
