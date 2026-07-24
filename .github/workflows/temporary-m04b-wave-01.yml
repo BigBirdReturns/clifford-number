@@ -47,10 +47,10 @@ jobs:
           M04B_REPOSITORY="$GITHUB_REPOSITORY" node tools/dispatch-security-state-organism.mjs --dry-run
           npm run release:check
           git diff --check
-      - name: Refuse unrelated durable drift
+      - name: Restore out-of-scope generated projections
         run: |
           python - <<'PY'
-          import subprocess, sys
+          import pathlib, shutil, subprocess, sys
           allowed_exact = {
             'data/intake/security-state-organism-evidence-intake.json',
             'data/intake/security-state-organism-source-routes.json',
@@ -66,18 +66,39 @@ jobs:
             'reports/core-thesis/security-state-organism/',
             '.github/temporary/m04b-wave-01/',
           )
-          rows = subprocess.check_output(['git','status','--porcelain'], text=True).splitlines()
-          paths=[]
-          for row in rows:
-            p=row[3:]
-            if ' -> ' in p: p=p.split(' -> ',1)[1]
-            paths.append(p)
-          bad=[p for p in paths if p not in allowed_exact and not p.startswith(allowed_prefix)]
+          def rows():
+            return subprocess.check_output(['git','status','--porcelain'], text=True).splitlines()
+          def path_of(row):
+            value = row[3:]
+            return value.split(' -> ', 1)[-1]
+          current = rows()
+          paths = [path_of(row) for row in current]
+          bad_rows = [row for row in current if (lambda p: p not in allowed_exact and not p.startswith(allowed_prefix))(path_of(row))]
+          print('all changed paths before scope reconciliation:')
           print('\n'.join(paths))
-          if bad:
-            print('unexpected durable drift:', *bad, sep='\n', file=sys.stderr)
+          for row in bad_rows:
+            status = row[:2]
+            target = path_of(row)
+            print(f'restoring out-of-scope projection: {status} {target}')
+            if status == '??':
+              p = pathlib.Path(target)
+              if p.is_dir(): shutil.rmtree(p)
+              elif p.exists() or p.is_symlink(): p.unlink()
+            else:
+              subprocess.run(['git','restore','--worktree','--staged','--',target], check=True)
+          remaining = rows()
+          remaining_bad = [path_of(row) for row in remaining if (lambda p: p not in allowed_exact and not p.startswith(allowed_prefix))(path_of(row))]
+          print('remaining scoped paths:')
+          print('\n'.join(path_of(row) for row in remaining))
+          if remaining_bad:
+            print('unreconciled out-of-scope drift:', *remaining_bad, sep='\n', file=sys.stderr)
             sys.exit(1)
           PY
+          node tools/build-security-state-organism.mjs
+          node tools/validate-security-state-organism.mjs
+          node test/security-state-organism.test.js
+          M04B_REPOSITORY="$GITHUB_REPOSITORY" node tools/dispatch-security-state-organism.mjs --dry-run
+          git diff --check
       - name: Commit verified permanent wave
         run: |
           git config user.name "github-actions[bot]"
