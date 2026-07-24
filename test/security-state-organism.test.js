@@ -39,6 +39,7 @@ assert.equal(alignment.estates.length, 24);
 assert.equal(evidence.records.length, 9);
 assert.equal(issuePlan.issues.length, 61);
 assert.equal(issuePlan.estate_handoffs.length, 24);
+assert.equal(issuePlan.issues.filter((x) => x.issue_class === 'cluster_index').length, 12);
 
 for (const packet of work.packages) {
   assert.equal(packet.routing.synthetic_assignment, false, packet.package_id);
@@ -86,6 +87,8 @@ for (const record of evidence.records) {
 }
 
 const builder = fs.readFileSync('tools/build-security-state-organism.mjs', 'utf8');
+const dispatcher = fs.readFileSync('tools/dispatch-security-state-organism.mjs', 'utf8');
 assert.equal(builder.includes('https://www.usa.gov/'), false);
 assert.equal(/\b(?:round.?robin|count.?balanc|synthetic.?coverage)\b/i.test(builder), false);
+for (const required of ["GITHUB_ACTIONS === 'true'", "GITHUB_EVENT_NAME === 'push'", "GITHUB_REF === 'refs/heads/main'", "group.issue_class === 'cluster_index'", "`ENTITY-${group.issue_id.replace('CLUSTER-', '')}`", 'multiple current or legacy issue lanes found', 'multiple current or legacy estate handoffs found']) assert.ok(dispatcher.includes(required), required);
 console.log('security-state-organism.test: ok');
