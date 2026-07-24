@@ -30,9 +30,42 @@ jobs:
           node-version: '24'
       - name: Reassemble and verify source payload
         run: |
-          wc -c .github/temporary/m04e-constitutional-awareness/part-*.txt
-          cat .github/temporary/m04e-constitutional-awareness/part-*.txt | base64 -d > /tmp/m04e-source.tgz
-          echo '5234615d7c00a644e1e7fe8324bc3a476d58ff5265fb100ec5df29fb6a312f95  /tmp/m04e-source.tgz' | sha256sum -c -
+          python - <<'PY'
+          import base64
+          import hashlib
+          from pathlib import Path
+
+          root = Path('.github/temporary/m04e-constitutional-awareness')
+          parts = sorted(root.glob('part-*.txt'))
+          if [p.name for p in parts] != [f'part-{i:02d}.txt' for i in range(7)]:
+              raise SystemExit(f'unexpected payload parts: {[p.name for p in parts]}')
+
+          chunks = []
+          for part in parts:
+              text = ''.join(part.read_text(encoding='utf-8').split())
+              chunks.append(text)
+              print(f'{part.name}: {len(text)} base64 chars')
+
+          encoded = ''.join(chunks)
+          encoded_digest = hashlib.sha256(encoded.encode('ascii')).hexdigest()
+          print(f'assembled base64 chars: {len(encoded)}')
+          print(f'assembled base64 sha256: {encoded_digest}')
+          if len(encoded) != 47092:
+              raise SystemExit(f'base64 length mismatch: {len(encoded)} != 47092')
+          if encoded_digest != '38e5e01771381731412571f96b4485a9de09a61122aebe21b1ae99639364d4bd':
+              raise SystemExit('base64 text checksum mismatch')
+
+          payload = base64.b64decode(encoded, validate=True)
+          payload_digest = hashlib.sha256(payload).hexdigest()
+          print(f'payload bytes: {len(payload)}')
+          print(f'payload sha256: {payload_digest}')
+          if len(payload) != 35318:
+              raise SystemExit(f'payload length mismatch: {len(payload)} != 35318')
+          if payload_digest != '5234615d7c00a644e1e7fe8324bc3a476d58ff5265fb100ec5df29fb6a312f95':
+              raise SystemExit('payload checksum mismatch')
+
+          Path('/tmp/m04e-source.tgz').write_bytes(payload)
+          PY
           tar -tzf /tmp/m04e-source.tgz
       - name: Extract permanent source files
         run: |
