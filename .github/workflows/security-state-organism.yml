@@ -1,0 +1,91 @@
+name: Security-state organism evidence program
+
+on:
+  pull_request:
+    paths:
+      - 'data/project/security-state-*.json'
+      - 'data/intake/security-state-organism-source-routes.json'
+      - 'docs/security-state-organism-program.md'
+      - 'docs/milestones/m04b-security-state-organism-evidence.md'
+      - 'tools/build-security-state-organism.mjs'
+      - 'tools/validate-security-state-organism.mjs'
+      - 'tools/dispatch-security-state-organism.mjs'
+      - 'test/security-state-organism.test.js'
+      - 'reports/core-thesis/security-state-organism/**'
+      - 'build/core-thesis/security-state-organism/**'
+      - 'package.json'
+      - 'tools/compile.mjs'
+      - '.github/workflows/security-state-organism.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/security-state-*.json'
+      - 'data/intake/security-state-organism-source-routes.json'
+      - 'docs/security-state-organism-program.md'
+      - 'docs/milestones/m04b-security-state-organism-evidence.md'
+      - 'tools/build-security-state-organism.mjs'
+      - 'tools/validate-security-state-organism.mjs'
+      - 'tools/dispatch-security-state-organism.mjs'
+      - 'test/security-state-organism.test.js'
+      - 'reports/core-thesis/security-state-organism/**'
+      - 'build/core-thesis/security-state-organism/**'
+      - 'package.json'
+      - 'tools/compile.mjs'
+      - '.github/workflows/security-state-organism.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build and validate the adversarial evidence program
+        run: |
+          node tools/build-security-state-organism.mjs
+          node tools/validate-security-state-organism.mjs
+          node test/security-state-organism.test.js
+      - name: Run the complete repository release gate
+        run: npm run release:check
+      - name: Refuse deterministic drift
+        run: git diff --exit-code -- build/core-thesis/security-state-organism reports/core-thesis/security-state-organism
+      - uses: actions/upload-artifact@v4
+        with:
+          name: security-state-organism-evidence-program
+          path: |
+            data/project/security-state-*.json
+            data/intake/security-state-organism-source-routes.json
+            docs/security-state-organism-program.md
+            docs/milestones/m04b-security-state-organism-evidence.md
+            build/core-thesis/security-state-organism/
+            reports/core-thesis/security-state-organism/
+          if-no-files-found: error
+          retention-days: 90
+
+  dispatch:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Rebuild deterministic issue plan
+        run: node tools/build-security-state-organism.mjs
+      - name: Upsert proof lanes and estate handoffs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node tools/dispatch-security-state-organism.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: security-state-organism-dispatch-receipt
+          path: build/core-thesis/security-state-organism/dispatch-receipt.json
+          if-no-files-found: error
+          retention-days: 90
