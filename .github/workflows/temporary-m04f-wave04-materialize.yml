@@ -1,13 +1,135 @@
 name: Temporary materialize M-04F Wave 04 vertical joins
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/temporary/m04f-wave04/**'
+      - '.github/workflows/temporary-m04f-wave04-materialize.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: m04f-wave04-materialize
+  cancel-in-progress: false
+
 jobs:
-  paused:
+  materialize:
     runs-on: ubuntu-latest
     steps:
-      - run: echo 'Payload repair in progress; final workflow will replace this pause.'
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m04f-wave04-vertical-joins
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Extract source records and apply clean Wave 04 code patch
+        run: |
+          python - <<'PY'
+          import base64, hashlib, io, tarfile
+          from pathlib import Path
+
+          root = Path('.github/temporary/m04f-wave04')
+          names = ['payload.b64', 'part-01.txt', 'part-02.txt', 'part-03.txt', 'part-04.txt', 'part-05.txt', 'part-06.txt']
+          encoded = ''.join((root / name).read_text().strip() for name in names)
+          assert len(encoded) == 54616, len(encoded)
+          assert hashlib.sha256(encoded.encode()).hexdigest() == '88c3bc67f6dc9860d8a84fa3459de53b2ea3f46c1862f4b2430ac468fee5edcd'
+          payload = base64.b64decode(encoded, validate=True)
+          assert len(payload) == 40960, len(payload)
+          assert hashlib.sha256(payload).hexdigest() == '9a4c6ad70ac555ec60254cba3ad276a8d0e49370f03a8cbae96368efbccb3365'
+          with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as tf:
+              members = tf.getmembers()
+              for member in members:
+                  path = Path(member.name)
+                  if path.is_absolute() or '..' in path.parts:
+                      raise SystemExit(f'unsafe archive path: {member.name}')
+              tf.extractall('.')
+          PY
+
+          git show origin/main:tools/build-m04f-epistemic-jurisdiction.mjs > tools/build-m04f-epistemic-jurisdiction.mjs
+          git show origin/main:tools/validate-m04f-epistemic-jurisdiction.mjs > tools/validate-m04f-epistemic-jurisdiction.mjs
+          git show origin/main:test/m04f-epistemic-jurisdiction.test.js > test/m04f-epistemic-jurisdiction.test.js
+
+          python - <<'PY'
+          import base64, gzip, hashlib
+          from pathlib import Path
+          encoded = '''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'''
+          data = base64.b64decode(encoded)
+          assert hashlib.sha256(encoded.encode()).hexdigest() == '6f3f150ed032690c01af8c33a091107357434e1ed11d5b177ea3e0116edb2917'
+          assert hashlib.sha256(data).hexdigest() == 'a3b804e9014edae73b651c5e3dd95449ebe37c41b5e84656f944a8d0e941198a'
+          patch = gzip.decompress(data)
+          assert hashlib.sha256(patch).hexdigest() == 'cfa1dcb857ac2f73e9027ab074938d362fd954f27828782c2c81be142b4b55d3'
+          Path('/tmp/wave04-clean.patch').write_bytes(patch)
+          PY
+          git apply /tmp/wave04-clean.patch
+      - name: Build and validate seven vertical joins
+        run: |
+          node tools/build-m04f-epistemic-jurisdiction.mjs
+          node tools/validate-m04f-epistemic-jurisdiction.mjs
+          node test/m04f-epistemic-jurisdiction.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Restore unrelated generated drift
+        run: |
+          python - <<'PY'
+          import shutil, subprocess
+          from pathlib import Path
+          def allowed(path):
+              exact = {
+                  '.github/workflows/m04f-epistemic-jurisdiction.yml',
+                  'tools/build-m04f-epistemic-jurisdiction.mjs',
+                  'tools/validate-m04f-epistemic-jurisdiction.mjs',
+                  'test/m04f-epistemic-jurisdiction.test.js',
+              }
+              prefixes = (
+                  'data/intake/m04f-epistemic-jurisdiction-', 'data/project/m04f-',
+                  'docs/milestones/m04f-', 'build/core-thesis/epistemic-jurisdiction/',
+                  'reports/core-thesis/epistemic-jurisdiction/', '.github/temporary/m04f-wave04/',
+                  '.github/workflows/temporary-m04f-wave04-',
+              )
+              return path in exact or path.startswith(prefixes)
+          for row in subprocess.check_output(['git', 'status', '--porcelain'], text=True).splitlines():
+              path = row[3:].split(' -> ')[-1]
+              if allowed(path):
+                  continue
+              tracked = subprocess.run(['git', 'ls-files', '--error-unmatch', '--', path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+              if tracked:
+                  subprocess.run(['git', 'restore', '--staged', '--worktree', '--', path], check=True)
+              else:
+                  target = Path(path)
+                  if target.is_dir(): shutil.rmtree(target)
+                  elif target.exists(): target.unlink()
+          PY
+      - name: Rebuild final products and refuse unexpected drift
+        run: |
+          node tools/build-m04f-epistemic-jurisdiction.mjs
+          node tools/validate-m04f-epistemic-jurisdiction.mjs
+          node test/m04f-epistemic-jurisdiction.test.js
+          git diff --check
+      - name: Commit verified permanent Wave 04 estate
+        run: |
+          target='agent/m04f-wave04-vertical-joins'
+          remote_sha="$(git rev-parse "origin/$target")"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -r --ignore-unmatch \
+            .github/temporary/m04f-wave04 \
+            .github/workflows/temporary-m04f-wave04-export.yml \
+            .github/workflows/temporary-m04f-wave04-materialize.yml
+          git add -- \
+            .github/workflows/m04f-epistemic-jurisdiction.yml \
+            'data/intake/m04f-epistemic-jurisdiction-*.json' \
+            'data/project/m04f-*.json' \
+            'docs/milestones/m04f-*.md' \
+            tools/build-m04f-epistemic-jurisdiction.mjs \
+            tools/validate-m04f-epistemic-jurisdiction.mjs \
+            test/m04f-epistemic-jurisdiction.test.js \
+            build/core-thesis/epistemic-jurisdiction \
+            reports/core-thesis/epistemic-jurisdiction
+          git diff --cached --name-status
+          git diff --cached --quiet && { echo 'No permanent Wave 04 changes to commit'; exit 1; }
+          git commit -m 'Close the seven M-04F vertical joins'
+          git push --force-with-lease="refs/heads/$target:$remote_sha" origin "HEAD:refs/heads/$target"
