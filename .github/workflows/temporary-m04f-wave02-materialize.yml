@@ -44,11 +44,25 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Build and validate Wave 02
+      - name: Build Wave 02
         run: |
-          node tools/build-m04f-epistemic-jurisdiction.mjs
-          node tools/validate-m04f-epistemic-jurisdiction.mjs
-          node test/m04f-epistemic-jurisdiction.test.js
+          set -o pipefail
+          node tools/build-m04f-epistemic-jurisdiction.mjs 2>&1 | tee /tmp/m04f-build.log
+      - name: Validate Wave 02
+        run: |
+          set -o pipefail
+          node tools/validate-m04f-epistemic-jurisdiction.mjs 2>&1 | tee /tmp/m04f-validate.log
+      - name: Run Wave 02 regression
+        run: |
+          set -o pipefail
+          node test/m04f-epistemic-jurisdiction.test.js 2>&1 | tee /tmp/m04f-test.log
+      - name: Upload focused diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04f-wave02-focused-${{ github.run_attempt }}
+          path: /tmp/m04f-*.log
+          if-no-files-found: warn
       - name: Run complete repository release gate
         run: npm run release:check
       - name: Restore unrelated generated drift
