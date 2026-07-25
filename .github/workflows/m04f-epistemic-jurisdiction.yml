@@ -1,0 +1,56 @@
+name: M-04F epistemic jurisdiction and counterfactual foreclosure
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/m04f-epistemic-jurisdiction-*.json'
+      - 'data/intake/m04f-epistemic-jurisdiction-*.json'
+      - 'tools/build-m04f-epistemic-jurisdiction.mjs'
+      - 'tools/validate-m04f-epistemic-jurisdiction.mjs'
+      - 'test/m04f-epistemic-jurisdiction.test.js'
+      - 'docs/milestones/m04f-epistemic-jurisdiction.md'
+      - 'build/core-thesis/epistemic-jurisdiction/**'
+      - 'reports/core-thesis/epistemic-jurisdiction/**'
+      - '.github/workflows/m04f-epistemic-jurisdiction.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/m04f-epistemic-jurisdiction-*.json'
+      - 'data/intake/m04f-epistemic-jurisdiction-*.json'
+      - 'tools/build-m04f-epistemic-jurisdiction.mjs'
+      - 'tools/validate-m04f-epistemic-jurisdiction.mjs'
+      - 'test/m04f-epistemic-jurisdiction.test.js'
+      - 'docs/milestones/m04f-epistemic-jurisdiction.md'
+      - 'build/core-thesis/epistemic-jurisdiction/**'
+      - 'reports/core-thesis/epistemic-jurisdiction/**'
+      - '.github/workflows/m04f-epistemic-jurisdiction.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build epistemic-jurisdiction estate
+        run: node tools/build-m04f-epistemic-jurisdiction.mjs
+      - name: Validate proof tests, evidence contracts, and report
+        run: |
+          node tools/validate-m04f-epistemic-jurisdiction.mjs
+          node test/m04f-epistemic-jurisdiction.test.js
+      - name: Refuse deterministic drift in estate products
+        run: git diff --exit-code -- build/core-thesis/epistemic-jurisdiction reports/core-thesis/epistemic-jurisdiction
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Revalidate after repository-wide generation
+        run: |
+          node tools/build-m04f-epistemic-jurisdiction.mjs
+          node tools/validate-m04f-epistemic-jurisdiction.mjs
+          node test/m04f-epistemic-jurisdiction.test.js
+          git diff --exit-code -- build/core-thesis/epistemic-jurisdiction reports/core-thesis/epistemic-jurisdiction
