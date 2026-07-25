@@ -24,7 +24,7 @@ const outputs = [
 ];
 const before = Object.fromEntries(outputs.map(rel => [rel, digest(rel)]));
 run('tools/build-m04f-epistemic-jurisdiction.mjs');
-assert.deepEqual(Object.fromEntries(outputs.map(rel => [rel, digest(rel)]), before);
+assert.deepEqual(Object.fromEntries(outputs.map(rel => [rel, digest(rel)])), before);
 
 const estate = readJson('data/project/m04f-epistemic-jurisdiction-estate.json');
 const waveOne = readJson('data/intake/m04f-epistemic-jurisdiction-wave-01.json');
