@@ -1,0 +1,38 @@
+name: M-04F federated sensing and action fan-out
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/m04f-federated-sensing-action-*.json'
+      - 'data/intake/m04f-federated-sensing-action-*.json'
+      - 'docs/milestones/m04f-federated-sensing-action-*.md'
+      - 'tools/validate-m04f-federated-sensing-action.mjs'
+      - 'test/m04f-federated-sensing-action.test.js'
+      - '.github/workflows/m04f-federated-sensing-action.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/m04f-federated-sensing-action-*.json'
+      - 'data/intake/m04f-federated-sensing-action-*.json'
+      - 'docs/milestones/m04f-federated-sensing-action-*.md'
+      - 'tools/validate-m04f-federated-sensing-action.mjs'
+      - 'test/m04f-federated-sensing-action.test.js'
+      - '.github/workflows/m04f-federated-sensing-action.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node tools/validate-m04f-federated-sensing-action.mjs
+      - run: node test/m04f-federated-sensing-action.test.js
+      - run: npm run release:check
+      - run: git diff --exit-code
