@@ -9,10 +9,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: m04f-wave03-materialize
+  cancel-in-progress: false
 
 jobs:
-  diagnose:
+  materialize:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,38 +41,110 @@ jobs:
           Path('/tmp/m04f-wave03-source.tgz').write_bytes(payload)
           PY
           tar -xzf /tmp/m04f-wave03-source.tgz -C .
-      - name: Build Wave 03
-        id: build
-        continue-on-error: true
-        run: node tools/build-m04f-epistemic-jurisdiction.mjs 2>&1 | tee /tmp/m04f-build.log
-      - name: Validate Wave 03
-        id: validate
-        if: always()
-        continue-on-error: true
-        run: node tools/validate-m04f-epistemic-jurisdiction.mjs 2>&1 | tee /tmp/m04f-validate.log
-      - name: Run Wave 03 regression
-        id: regression
-        if: always()
-        continue-on-error: true
-        run: node test/m04f-epistemic-jurisdiction.test.js 2>&1 | tee /tmp/m04f-test.log
-      - name: Upload focused diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: m04f-wave03-focused-${{ github.run_attempt }}
-          path: |
-            /tmp/m04f-build.log
-            /tmp/m04f-validate.log
-            /tmp/m04f-test.log
-          if-no-files-found: warn
-      - name: Refuse failed focused gates
-        if: always()
-        env:
-          BUILD: ${{ steps.build.outcome }}
-          VALIDATE: ${{ steps.validate.outcome }}
-          REGRESSION: ${{ steps.regression.outcome }}
+      - name: Repair Wave 01 baseline isolation
         run: |
-          echo "build=$BUILD validate=$VALIDATE regression=$REGRESSION"
-          test "$BUILD" = success
-          test "$VALIDATE" = success
-          test "$REGRESSION" = success
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tools/build-m04f-epistemic-jurisdiction.mjs')
+          text = path.read_text()
+          old = "  records: records.filter(record => baseSystemsDoc.systems.some(system => system.system_id === record.system_id)),"
+          new = "  records: baselineRecords.map(record => ({ ...record, stratigraphy: stratify(record) })),"
+          if old not in text:
+              raise SystemExit('expected Wave 01 baseline selector not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Build and validate evidentiary stratigraphy
+        run: |
+          node tools/build-m04f-epistemic-jurisdiction.mjs
+          node tools/validate-m04f-epistemic-jurisdiction.mjs
+          node test/m04f-epistemic-jurisdiction.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Restore unrelated generated drift
+        run: |
+          python - <<'PY'
+          import shutil, subprocess
+          from pathlib import Path
+          allowed_exact = {
+              '.github/workflows/m04f-epistemic-jurisdiction.yml',
+              'data/intake/m04f-epistemic-jurisdiction-sources-04.json',
+              'data/intake/m04f-epistemic-jurisdiction-wave-03.json',
+              'data/intake/m04f-epistemic-jurisdiction-wave-01.json',
+              'data/project/m04f-evidentiary-stratigraphy.json',
+              'data/project/m04f-epistemic-jurisdiction-fanout-wave-03.json',
+              'data/project/m04f-epistemic-jurisdiction-estate.json',
+              'docs/milestones/m04f-evidence-lake-wave-03-stratigraphy.md',
+              'test/m04f-epistemic-jurisdiction.test.js',
+              'tools/build-m04f-epistemic-jurisdiction.mjs',
+              'tools/validate-m04f-epistemic-jurisdiction.mjs',
+          }
+          allowed_prefix = ('build/core-thesis/epistemic-jurisdiction/', 'reports/core-thesis/epistemic-jurisdiction/')
+          for row in subprocess.check_output(['git', 'status', '--porcelain'], text=True).splitlines():
+              path = row[3:]
+              if ' -> ' in path:
+                  path = path.split(' -> ', 1)[1]
+              if path in allowed_exact or path.startswith(allowed_prefix):
+                  continue
+              tracked = subprocess.run(['git', 'ls-files', '--error-unmatch', '--', path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+              if tracked:
+                  subprocess.run(['git', 'restore', '--staged', '--worktree', '--', path], check=True)
+              else:
+                  target = Path(path)
+                  if target.is_dir(): shutil.rmtree(target)
+                  elif target.exists(): target.unlink()
+          PY
+      - name: Rebuild and refuse unexpected output
+        run: |
+          node tools/build-m04f-epistemic-jurisdiction.mjs
+          node tools/validate-m04f-epistemic-jurisdiction.mjs
+          node test/m04f-epistemic-jurisdiction.test.js
+          git diff --check
+          python - <<'PY'
+          import subprocess
+          allowed_exact = {
+              '.github/workflows/m04f-epistemic-jurisdiction.yml',
+              'data/intake/m04f-epistemic-jurisdiction-sources-04.json',
+              'data/intake/m04f-epistemic-jurisdiction-wave-03.json',
+              'data/intake/m04f-epistemic-jurisdiction-wave-01.json',
+              'data/project/m04f-evidentiary-stratigraphy.json',
+              'data/project/m04f-epistemic-jurisdiction-fanout-wave-03.json',
+              'data/project/m04f-epistemic-jurisdiction-estate.json',
+              'docs/milestones/m04f-evidence-lake-wave-03-stratigraphy.md',
+              'test/m04f-epistemic-jurisdiction.test.js',
+              'tools/build-m04f-epistemic-jurisdiction.mjs',
+              'tools/validate-m04f-epistemic-jurisdiction.mjs',
+          }
+          allowed_prefix = ('build/core-thesis/epistemic-jurisdiction/', 'reports/core-thesis/epistemic-jurisdiction/')
+          paths = []
+          for row in subprocess.check_output(['git', 'status', '--porcelain'], text=True).splitlines():
+              path = row[3:]
+              if ' -> ' in path: path = path.split(' -> ', 1)[1]
+              paths.append(path)
+          bad = [p for p in paths if p not in allowed_exact and not p.startswith(allowed_prefix)]
+          print('\n'.join(paths))
+          if bad: raise SystemExit('unexpected durable drift:\n' + '\n'.join(bad))
+          PY
+      - name: Commit verified permanent Wave 03 estate
+        run: |
+          target='agent/m04f-wave03-evidentiary-stratigraphy'
+          remote_sha="$(git rev-parse "origin/$target")"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- \
+            .github/workflows/m04f-epistemic-jurisdiction.yml \
+            data/intake/m04f-epistemic-jurisdiction-sources-04.json \
+            data/intake/m04f-epistemic-jurisdiction-wave-03.json \
+            data/intake/m04f-epistemic-jurisdiction-wave-01.json \
+            data/project/m04f-evidentiary-stratigraphy.json \
+            data/project/m04f-epistemic-jurisdiction-fanout-wave-03.json \
+            data/project/m04f-epistemic-jurisdiction-estate.json \
+            docs/milestones/m04f-evidence-lake-wave-03-stratigraphy.md \
+            test/m04f-epistemic-jurisdiction.test.js \
+            tools/build-m04f-epistemic-jurisdiction.mjs \
+            tools/validate-m04f-epistemic-jurisdiction.mjs \
+            build/core-thesis/epistemic-jurisdiction \
+            reports/core-thesis/epistemic-jurisdiction
+          git diff --cached --name-status
+          git diff --cached --quiet && { echo 'No generated changes to commit'; exit 1; }
+          git commit -m 'Install M-04F Wave 03 evidentiary stratigraphy'
+          git push --force-with-lease="refs/heads/$target:$remote_sha" origin "HEAD:refs/heads/$target"
