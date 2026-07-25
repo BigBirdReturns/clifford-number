@@ -1,9 +1,8 @@
 name: Temporary materialize M-04F Wave 04 vertical joins
 
 on:
-  push:
-    branches:
-      - agent/m04f-wave04-vertical-joins
+  pull_request:
+    branches: [main]
     paths:
       - '.github/temporary/m04f-wave04/**'
       - '.github/workflows/temporary-m04f-wave04-materialize.yml'
