@@ -7,6 +7,11 @@ on:
     paths:
       - '.github/temporary/m04f-fsa/**'
       - '.github/workflows/temporary-m04f-fsa-materialize.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/temporary/m04f-fsa/**'
+      - '.github/workflows/temporary-m04f-fsa-materialize.yml'
   workflow_dispatch:
 
 permissions:
@@ -52,14 +57,14 @@ jobs:
           }
           with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as tf:
               members = tf.getmembers()
-              names = {member.name for member in members if member.isfile()}
-              assert names == expected, (names, expected)
+              member_names = {member.name for member in members if member.isfile()}
+              assert member_names == expected, (member_names, expected)
               for member in members:
                   path = Path(member.name)
                   if path.is_absolute() or '..' in path.parts:
                       raise SystemExit(f'unsafe archive path: {member.name}')
               tf.extractall('.')
-              print('\n'.join(sorted(names)))
+              print('\n'.join(sorted(member_names)))
           PY
       - name: Validate the complete 47-candidate fan-out
         run: |
