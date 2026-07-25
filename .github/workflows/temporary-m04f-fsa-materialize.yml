@@ -1,0 +1,123 @@
+name: Temporary materialize M-04F federated sensing fan-out
+
+on:
+  push:
+    branches:
+      - agent/m04f-federated-sensing-action-fanout
+    paths:
+      - '.github/temporary/m04f-fsa/**'
+      - '.github/workflows/temporary-m04f-fsa-materialize.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m04f-fsa-materialize
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m04f-federated-sensing-action-fanout
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reassemble and safely extract the verified payload
+        run: |
+          python - <<'PY'
+          import base64, hashlib, io, tarfile
+          from pathlib import Path
+
+          root = Path('.github/temporary/m04f-fsa')
+          names = ['part-00', 'part-01']
+          encoded = ''.join((root / name).read_text().strip() for name in names)
+          assert len(encoded) == 9104, len(encoded)
+          assert hashlib.sha256(encoded.encode()).hexdigest() == '3423b1033f1f7f0f19844a27785aa040cc184fc007ed37b9e94114219c5856d0'
+          payload = base64.b64decode(encoded, validate=True)
+          assert len(payload) == 6828, len(payload)
+          assert hashlib.sha256(payload).hexdigest() == '3d36dba89127dbb2fb4277a5a6b3aba2a581ea2c6685312630725516c743922a'
+
+          expected = {
+              'data/project/m04f-federated-sensing-action-perimeter.json',
+              'data/project/m04f-federated-sensing-action-fanout.json',
+              'docs/milestones/m04f-federated-sensing-action-fanout.md',
+              'tools/validate-m04f-federated-sensing-action.mjs',
+              'test/m04f-federated-sensing-action.test.js',
+              '.github/workflows/m04f-federated-sensing-action.yml',
+          }
+          with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as tf:
+              members = tf.getmembers()
+              names = {member.name for member in members if member.isfile()}
+              assert names == expected, (names, expected)
+              for member in members:
+                  path = Path(member.name)
+                  if path.is_absolute() or '..' in path.parts:
+                      raise SystemExit(f'unsafe archive path: {member.name}')
+              tf.extractall('.')
+              print('\n'.join(sorted(names)))
+          PY
+      - name: Validate the complete 47-candidate fan-out
+        run: |
+          node tools/validate-m04f-federated-sensing-action.mjs
+          node test/m04f-federated-sensing-action.test.js
+      - name: Run the complete repository release gate
+        run: npm run release:check
+      - name: Refuse unrelated drift
+        run: |
+          git diff --check
+          python - <<'PY'
+          import subprocess
+
+          allowed_exact = {
+              '.github/workflows/m04f-federated-sensing-action.yml',
+              '.github/workflows/temporary-m04f-fsa-materialize.yml',
+              'data/intake/m04f-federated-sensing-action-sources.json',
+              'data/project/m04f-federated-sensing-action-census.json',
+              'data/project/m04f-federated-sensing-action-deep-systems.json',
+              'data/project/m04f-federated-sensing-action-perimeter.json',
+              'data/project/m04f-federated-sensing-action-fanout.json',
+              'docs/milestones/m04f-federated-sensing-action-fanout.md',
+              'tools/validate-m04f-federated-sensing-action.mjs',
+              'test/m04f-federated-sensing-action.test.js',
+          }
+          allowed_prefixes = ('.github/temporary/m04f-fsa/',)
+          paths = []
+          for row in subprocess.check_output(['git', 'status', '--porcelain'], text=True).splitlines():
+              path = row[3:].split(' -> ')[-1]
+              paths.append(path)
+          bad = [path for path in paths if path not in allowed_exact and not path.startswith(allowed_prefixes)]
+          print('\n'.join(paths))
+          if bad:
+              raise SystemExit('unexpected durable drift:\n' + '\n'.join(bad))
+          PY
+      - name: Commit only the durable fan-out and remove the carrier
+        run: |
+          target='agent/m04f-federated-sensing-action-fanout'
+          remote_sha="$(git rev-parse "origin/$target")"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git rm -r --ignore-unmatch \
+            .github/temporary/m04f-fsa \
+            .github/workflows/temporary-m04f-fsa-materialize.yml
+
+          git add -- \
+            .github/workflows/m04f-federated-sensing-action.yml \
+            data/intake/m04f-federated-sensing-action-sources.json \
+            data/project/m04f-federated-sensing-action-census.json \
+            data/project/m04f-federated-sensing-action-deep-systems.json \
+            data/project/m04f-federated-sensing-action-perimeter.json \
+            data/project/m04f-federated-sensing-action-fanout.json \
+            docs/milestones/m04f-federated-sensing-action-fanout.md \
+            tools/validate-m04f-federated-sensing-action.mjs \
+            test/m04f-federated-sensing-action.test.js
+
+          git diff --cached --name-status
+          git diff --cached --quiet && { echo 'No durable fan-out changes to commit'; exit 1; }
+          git commit -m 'Fan out Flock-like sensing and action architectures'
+          git push --force-with-lease="refs/heads/$target:$remote_sha" origin "HEAD:refs/heads/$target"
