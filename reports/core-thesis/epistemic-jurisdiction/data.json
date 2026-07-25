@@ -1,9 +1,9 @@
 {
-  "schema_version": "m04f-epistemic-jurisdiction-report@1",
-  "report_id": "M04F-EJ-REPORT-001",
+  "schema_version": "m04f-epistemic-jurisdiction-report@2",
+  "report_id": "M04F-EJ-REPORT-002",
   "as_of": "2026-07-24",
   "estate_id": "epistemic-jurisdiction-burden-counterfactual-estate",
-  "source_fingerprint": "8f5f94804b8bfa91299a80ea5905439841cad9a955b1a95257b68bc49fff55ae",
+  "source_fingerprint": "00d7ee99d76b6a779c55f7faa01e6e1b506754fa7c932322241bb9b51745df27",
   "source_files": [
     "data/project/m04f-epistemic-jurisdiction-core.json",
     "data/project/m04f-epistemic-jurisdiction-axes.json",
@@ -11,6 +11,7 @@
     "data/intake/m04f-epistemic-jurisdiction-systems.json",
     "data/intake/m04f-epistemic-jurisdiction-sources-01.json",
     "data/intake/m04f-epistemic-jurisdiction-sources-02.json",
+    "data/intake/m04f-epistemic-jurisdiction-sources-03.json",
     "data/project/m04f-epistemic-jurisdiction-fanout.json",
     "data/intake/m04f-epistemic-jurisdiction-matrix-army-ngc2.json",
     "data/intake/m04f-epistemic-jurisdiction-matrix-army-palantir-enterprise.json",
@@ -19,104 +20,120 @@
     "data/intake/m04f-epistemic-jurisdiction-matrix-erebor.json",
     "data/intake/m04f-epistemic-jurisdiction-matrix-ice-icm-immigrationos.json",
     "data/intake/m04f-epistemic-jurisdiction-matrix-nhs-foundry-fdp.json",
-    "data/intake/m04f-epistemic-jurisdiction-matrix-palantir-constitution-ontology.json"
+    "data/intake/m04f-epistemic-jurisdiction-matrix-palantir-constitution-ontology.json",
+    "data/intake/m04f-epistemic-jurisdiction-wave-02.json"
+  ],
+  "source_waves": [
+    {
+      "wave_id": "M04F-EJ-W01",
+      "path": "data/intake/m04f-epistemic-jurisdiction-wave-01.json",
+      "records": 64
+    },
+    {
+      "wave_id": "M04F-EJ-W02",
+      "path": "data/intake/m04f-epistemic-jurisdiction-wave-02.json",
+      "records": 18
+    }
   ],
   "counts": {
-    "systems": 8,
-    "records": 64,
-    "sources": 33,
-    "sources_used": 33,
+    "systems": 10,
+    "records": 82,
+    "sources": 48,
+    "sources_used": 48,
+    "waves": 2,
     "by_test": {
       "EJT1-inference-authority": 8,
-      "EJT2-threshold-authorship": 8,
-      "EJT3-burden-allocation": 8,
-      "EJT4-temporal-asymmetry": 8,
-      "EJT5-evidence-custody": 8,
-      "EJT6-counterfactual-foreclosure": 8,
-      "EJT7-exception-privilege": 8,
-      "EJT8-error-metabolism": 8
+      "EJT2-threshold-authorship": 9,
+      "EJT3-burden-allocation": 11,
+      "EJT4-temporal-asymmetry": 13,
+      "EJT5-evidence-custody": 10,
+      "EJT6-counterfactual-foreclosure": 11,
+      "EJT7-exception-privilege": 10,
+      "EJT8-error-metabolism": 10
     },
     "by_disposition": {
-      "bounded_non_link": 1,
-      "requires_additional_acquisition": 19,
-      "retained_candidate_only": 10,
-      "supported_for_human_review": 34
+      "bounded_non_link": 2,
+      "requires_additional_acquisition": 21,
+      "retained_candidate_only": 11,
+      "supported_for_human_review": 48
     },
     "by_epistemic_standing": {
-      "EJ2-bounded-inspection-or-review": 7,
-      "EJ3-evidence-schema-or-log-custody": 8,
-      "EJ4-prospective-action-on-inference": 29,
-      "EJ5-threshold-burden-or-counterfactual-authority": 20
+      "EJ1-notice-correction-or-petition": 4,
+      "EJ2-bounded-inspection-or-review": 14,
+      "EJ3-evidence-schema-or-log-custody": 10,
+      "EJ4-prospective-action-on-inference": 31,
+      "EJ5-threshold-burden-or-counterfactual-authority": 23
     },
     "by_burden": {
-      "B1-institution-bears-ex-ante-justification": 9,
-      "B2-shared-or-contested-burden": 32,
-      "B3-subject-bears-retrospective-proof": 21,
-      "B4-independent-authority-can-shift-burden": 2
+      "B1-institution-bears-ex-ante-justification": 10,
+      "B2-shared-or-contested-burden": 45,
+      "B3-subject-bears-retrospective-proof": 24,
+      "B4-independent-authority-can-shift-burden": 3
     },
     "by_timing": {
-      "IT1-prospective-review-before-action": 19,
-      "IT2-contemporaneous-human-or-institutional-control": 16,
-      "IT3-action-before-ordinary-review": 7,
-      "IT4-review-after-consequence": 22
+      "IT1-prospective-review-before-action": 29,
+      "IT2-contemporaneous-human-or-institutional-control": 18,
+      "IT3-action-before-ordinary-review": 8,
+      "IT4-review-after-consequence": 27
     },
     "by_custody": {
-      "EC1-fragmented-local-or-subject-custody": 7,
-      "EC2-public-institution-custody": 39,
-      "EC3-shared-public-private-custody": 16,
-      "EC4-independent-discoverable-or-auditable-custody": 2
+      "EC1-fragmented-local-or-subject-custody": 10,
+      "EC2-public-institution-custody": 46,
+      "EC3-shared-public-private-custody": 19,
+      "EC4-independent-discoverable-or-auditable-custody": 7
     },
     "by_counterfactual": {
-      "CF0-no-alternative-identified": 25,
-      "CF1-alternative-named": 32,
-      "CF2-alternative-evaluated": 4,
+      "CF0-no-alternative-identified": 26,
+      "CF1-alternative-named": 46,
+      "CF2-alternative-evaluated": 7,
       "CF3-alternative-piloted-or-operated": 3
     },
     "by_remedy": {
-      "RP1-voice-feedback-or-complaint": 16,
-      "RP2-correction-review-or-audit": 39,
-      "RP3-stay-veto-or-substitution-leverage": 7,
-      "RP4-compulsory-revision-reversal-or-termination": 2
+      "RP1-voice-feedback-or-complaint": 24,
+      "RP2-correction-review-or-audit": 46,
+      "RP3-stay-veto-or-substitution-leverage": 8,
+      "RP4-compulsory-revision-reversal-or-termination": 4
     },
     "by_uncertainty": {
-      "UA1-acting-institution-bears-uncertainty": 11,
-      "UA2-shared-or-contested-uncertainty": 32,
-      "UA3-subject-bears-uncertainty-as-risk-or-proof-burden": 13,
-      "UA4-system-captures-learning-while-subject-bears-error": 8
+      "UA1-acting-institution-bears-uncertainty": 13,
+      "UA2-shared-or-contested-uncertainty": 43,
+      "UA3-subject-bears-uncertainty-as-risk-or-proof-burden": 17,
+      "UA4-system-captures-learning-while-subject-bears-error": 9
     },
     "by_class": {
       "CJ01-prospective-inference-sovereign": 10,
-      "CJ02-threshold-author": 9,
+      "CJ02-threshold-author": 11,
       "CJ03-translating-clerisy": 16,
-      "CJ04-archive-and-admissibility-custodian": 8,
-      "CJ05-authorized-institutional-user": 15,
-      "CJ06-proof-bearing-subject": 13,
+      "CJ04-archive-and-admissibility-custodian": 10,
+      "CJ05-authorized-institutional-user": 16,
+      "CJ06-proof-bearing-subject": 14,
       "CJ07-counterfactual-dispossessed": 5,
-      "CJ08-retrospective-reviewer": 14,
-      "CJ09-preventive-counter-sovereign": 2,
-      "CJ10-exception-holder": 8,
-      "CJ11-error-cost-bearer": 8,
-      "CJ12-learning-or-residual-beneficiary": 8,
-      "CJ13-preventive-challenger": 1,
-      "CJ15-comparator-producer": 7,
-      "CJ16-burden-shifting-remedy-provider": 2
+      "CJ08-retrospective-reviewer": 19,
+      "CJ09-preventive-counter-sovereign": 3,
+      "CJ10-exception-holder": 11,
+      "CJ11-error-cost-bearer": 9,
+      "CJ12-learning-or-residual-beneficiary": 9,
+      "CJ13-preventive-challenger": 7,
+      "CJ14-feedback-only-complainant": 4,
+      "CJ15-comparator-producer": 10,
+      "CJ16-burden-shifting-remedy-provider": 3
     },
-    "direct_represented_person_voice_records": 0
+    "direct_represented_person_voice_records": 1
   },
   "current_ceiling": {
-    "bounded_form": "Multiple systems allocate prospective inference authority, thresholds, evidence custody, exception power, and retrospective burdens asymmetrically.",
+    "bounded_form": "Multiple systems allocate prospective inference authority, thresholds, evidence custody, exception power, and retrospective burdens asymmetrically; Wave 02 adds direct subject voice and observed bounded counterpower.",
     "system_claim": "retained_candidate_only",
     "monopoly_on_unprovable": "not_eligible_for_promotion",
-    "reason": "No complete cross-system denominator, direct represented-person voice, common governance, repeated rights-holder identity, or causal error-benefit chain."
+    "reason": "The estate still lacks a complete cross-system denominator, common governance, repeated rights-holder identity, deployment-specific direct subject voice in the core Palantir lanes, and causal error-benefit chains."
   },
   "most_informative_results": [
-    "Prospective inference authority appears across public acquisition, military, enforcement, health, banking, and platform systems; this alone does not establish abuse or one coordinated class.",
-    "The DCGS-A2 litigation is the strongest positive control for preventive counterpower because an independent court shifted a burden before award without selecting the challenger.",
-    "No record contains direct represented-person voice, so subject awareness, consent, injury, and practical standing remain unresolved rather than inferred.",
-    "Evidence custody is repeatedly fragmented across public institutions, vendors, source systems, users, reviewers, and affected people; fragmentation is not automatically deliberate concealment.",
-    "NGC2, NHS procurement, Brave1, and the Fundrise Erebor record provide material controls against total counterfactual foreclosure or exclusive-network explanations.",
-    "Human involvement and formal appeal remain separate from meaningful time, understanding, veto, stay, reversal, and practical exit.",
-    "The cross-system monopoly proposition remains candidate-only until repeated rights-holder identity, direct subject voice, consequence, remedy, comparator, and causal error-benefit chains are complete."
+    "Wave 02 preserves the first direct represented-person voice in the M-04F estate through a judicial record of a SEVIS termination, retrospective proof burden, and court-ordered restoration.",
+    "The SEVIS comparator is an explicit non-link to Palantir, ICM, and ImmigrationOS unless operative interface evidence is acquired.",
+    "NHS governance records show aggregated public feedback, direct public-representative participation, repeated challenge to AI consent and data-use thresholds, and observed programme response without yet proving a binding public veto.",
+    "Palantir shareholder proposals created explicit governance counterfactuals, while the Class F formula and actual vote record make founder voting privilege observable without proving how a one-share-one-vote counterfactual would have resolved.",
+    "Brave1 publicly describes high automation with operator target selection and an attack-cancel path, while the negative-validation, incident, recall, injury, and remedy denominator remains absent.",
+    "Technology-worker letters supply direct preventive challenge and evidence-custody claims, but not yet demonstrated compulsory power.",
+    "The cross-system monopoly proposition remains candidate-only until repeated rights-holder identity, direct deployment-specific subject voice, consequence, remedy, comparator, and causal error-benefit chains are complete."
   ],
   "systems": [
     {
@@ -209,7 +226,9 @@
         "M04F-EJ-029",
         "M04F-EJ-030",
         "M04F-EJ-031",
-        "M04F-EJ-032"
+        "M04F-EJ-032",
+        "M04F-EJ-069",
+        "M04F-EJ-070"
       ],
       "test_coverage": {
         "EJT1-inference-authority": "present",
@@ -235,7 +254,12 @@
         "M04F-EJ-037",
         "M04F-EJ-038",
         "M04F-EJ-039",
-        "M04F-EJ-040"
+        "M04F-EJ-040",
+        "M04F-EJ-071",
+        "M04F-EJ-072",
+        "M04F-EJ-073",
+        "M04F-EJ-074",
+        "M04F-EJ-075"
       ],
       "test_coverage": {
         "EJT1-inference-authority": "present",
@@ -261,7 +285,9 @@
         "M04F-EJ-045",
         "M04F-EJ-046",
         "M04F-EJ-047",
-        "M04F-EJ-048"
+        "M04F-EJ-048",
+        "M04F-EJ-079",
+        "M04F-EJ-080"
       ],
       "test_coverage": {
         "EJT1-inference-authority": "present",
@@ -313,7 +339,10 @@
         "M04F-EJ-061",
         "M04F-EJ-062",
         "M04F-EJ-063",
-        "M04F-EJ-064"
+        "M04F-EJ-064",
+        "M04F-EJ-076",
+        "M04F-EJ-077",
+        "M04F-EJ-078"
       ],
       "test_coverage": {
         "EJT1-inference-authority": "present",
@@ -324,6 +353,48 @@
         "EJT6-counterfactual-foreclosure": "present",
         "EJT7-exception-privilege": "present",
         "EJT8-error-metabolism": "present"
+      },
+      "current_ceiling": "bounded system adjudication only; no system-wide monopoly or coordinated-class conclusion"
+    },
+    {
+      "system_id": "SYS-ICE-SEVIS-TERMINATION-COMPARATOR",
+      "label": "ICE SEVIS termination and judicial-restoration comparator",
+      "scope": "Abrupt F-1 SEVIS termination, direct student testimony, immediate legal consequences, and federal-court temporary relief, 2025",
+      "record_ids": [
+        "M04F-EJ-065",
+        "M04F-EJ-066",
+        "M04F-EJ-067",
+        "M04F-EJ-068"
+      ],
+      "test_coverage": {
+        "EJT1-inference-authority": "not_yet_present",
+        "EJT2-threshold-authorship": "not_yet_present",
+        "EJT3-burden-allocation": "present",
+        "EJT4-temporal-asymmetry": "present",
+        "EJT5-evidence-custody": "present",
+        "EJT6-counterfactual-foreclosure": "present",
+        "EJT7-exception-privilege": "not_yet_present",
+        "EJT8-error-metabolism": "not_yet_present"
+      },
+      "current_ceiling": "bounded system adjudication only; no system-wide monopoly or coordinated-class conclusion"
+    },
+    {
+      "system_id": "SYS-WORKER-PREVENTIVE-CHALLENGE",
+      "label": "Technology-worker preventive challenge and disclosure rights",
+      "scope": "Direct worker warnings, confidentiality and retaliation concerns, collective challenge, and unresolved binding effect, 2021-2024",
+      "record_ids": [
+        "M04F-EJ-081",
+        "M04F-EJ-082"
+      ],
+      "test_coverage": {
+        "EJT1-inference-authority": "not_yet_present",
+        "EJT2-threshold-authorship": "not_yet_present",
+        "EJT3-burden-allocation": "not_yet_present",
+        "EJT4-temporal-asymmetry": "present",
+        "EJT5-evidence-custody": "not_yet_present",
+        "EJT6-counterfactual-foreclosure": "present",
+        "EJT7-exception-privilege": "not_yet_present",
+        "EJT8-error-metabolism": "not_yet_present"
       },
       "current_ceiling": "bounded system adjudication only; no system-wide monopoly or coordinated-class conclusion"
     }
@@ -387,7 +458,7 @@
           "authorize_action",
           "execute_action"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -528,7 +599,7 @@
           "define_category",
           "define_exception"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -670,7 +741,7 @@
           "appeal",
           "bear_error_or_consequence"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -812,7 +883,7 @@
           "receive_notice",
           "appeal"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -953,7 +1024,7 @@
           "control_disclosure",
           "compel_disclosure"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -1093,7 +1164,7 @@
           "operate_alternative",
           "terminate_or_substitute"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "bounded_non_link",
@@ -1233,7 +1304,7 @@
           "define_exception",
           "approve_or_override"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -1373,7 +1444,7 @@
           "bear_error_or_consequence",
           "receive_revenue_or_residual_benefit"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "retained_candidate_only",
@@ -1503,7 +1574,7 @@
           "authorize_action",
           "execute_action"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -1606,7 +1677,7 @@
           "define_category",
           "define_exception"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -1710,7 +1781,7 @@
           "appeal",
           "bear_error_or_consequence"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "retained_candidate_only",
@@ -1814,7 +1885,7 @@
           "receive_notice",
           "appeal"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "retained_candidate_only",
@@ -1917,7 +1988,7 @@
           "control_disclosure",
           "compel_disclosure"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -2020,7 +2091,7 @@
           "operate_alternative",
           "terminate_or_substitute"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -2122,7 +2193,7 @@
           "define_exception",
           "approve_or_override"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -2224,7 +2295,7 @@
           "bear_error_or_consequence",
           "receive_revenue_or_residual_benefit"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "retained_candidate_only",
@@ -2337,7 +2408,7 @@
           "authorize_action",
           "execute_action"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -2484,7 +2555,7 @@
           "define_category",
           "define_exception"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -2632,7 +2703,7 @@
           "appeal",
           "bear_error_or_consequence"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -2780,7 +2851,7 @@
           "receive_notice",
           "appeal"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "retained_candidate_only",
@@ -2927,7 +2998,7 @@
           "control_disclosure",
           "compel_disclosure"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -3073,7 +3144,7 @@
           "operate_alternative",
           "terminate_or_substitute"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -3219,7 +3290,7 @@
           "define_exception",
           "approve_or_override"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -3365,7 +3436,7 @@
           "bear_error_or_consequence",
           "receive_revenue_or_residual_benefit"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "retained_candidate_only",
@@ -3501,7 +3572,7 @@
           "authorize_action",
           "execute_action"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -3602,7 +3673,7 @@
           "define_category",
           "define_exception"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -3703,7 +3774,7 @@
           "abort_or_stay",
           "compel_disclosure"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -3804,7 +3875,7 @@
           "abort_or_stay",
           "compel_disclosure"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -3905,7 +3976,7 @@
           "control_disclosure",
           "compel_disclosure"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -4006,7 +4077,7 @@
           "operate_alternative",
           "terminate_or_substitute"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -4106,7 +4177,7 @@
           "define_exception",
           "approve_or_override"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -4206,7 +4277,7 @@
           "bear_error_or_consequence",
           "receive_revenue_or_residual_benefit"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -4319,7 +4390,7 @@
           "authorize_action",
           "execute_action"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -4460,7 +4531,7 @@
           "define_category",
           "define_exception"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -4602,7 +4673,7 @@
           "appeal",
           "bear_error_or_consequence"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -4744,7 +4815,7 @@
           "receive_notice",
           "appeal"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -4885,7 +4956,7 @@
           "control_disclosure",
           "compel_disclosure"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -5026,7 +5097,7 @@
           "operate_alternative",
           "terminate_or_substitute"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -5166,7 +5237,7 @@
           "define_exception",
           "approve_or_override"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -5306,7 +5377,7 @@
           "bear_error_or_consequence",
           "receive_revenue_or_residual_benefit"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "retained_candidate_only",
@@ -5451,7 +5522,7 @@
           "authorize_action",
           "execute_action"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -5608,7 +5679,7 @@
           "define_category",
           "define_exception"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -5766,7 +5837,7 @@
           "appeal",
           "bear_error_or_consequence"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -5924,7 +5995,7 @@
           "receive_notice",
           "appeal"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -6081,7 +6152,7 @@
           "control_disclosure",
           "compel_disclosure"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -6238,7 +6309,7 @@
           "operate_alternative",
           "terminate_or_substitute"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -6394,7 +6465,7 @@
           "define_exception",
           "approve_or_override"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -6550,7 +6621,7 @@
           "bear_error_or_consequence",
           "receive_revenue_or_residual_benefit"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "retained_candidate_only",
@@ -6703,7 +6774,7 @@
           "authorize_action",
           "execute_action"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -6860,7 +6931,7 @@
           "define_category",
           "define_exception"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -7018,7 +7089,7 @@
           "appeal",
           "bear_error_or_consequence"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -7176,7 +7247,7 @@
           "receive_notice",
           "appeal"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -7333,7 +7404,7 @@
           "control_disclosure",
           "compel_disclosure"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -7490,7 +7561,7 @@
           "operate_alternative",
           "terminate_or_substitute"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -7646,7 +7717,7 @@
           "define_exception",
           "approve_or_override"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -7802,7 +7873,7 @@
           "bear_error_or_consequence",
           "receive_revenue_or_residual_benefit"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "retained_candidate_only",
@@ -7953,7 +8024,7 @@
           "authorize_action",
           "execute_action"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -8090,7 +8161,7 @@
           "define_category",
           "define_exception"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -8228,7 +8299,7 @@
           "appeal",
           "bear_error_or_consequence"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -8366,7 +8437,7 @@
           "receive_notice",
           "appeal"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "requires_additional_acquisition",
@@ -8503,7 +8574,7 @@
           "control_disclosure",
           "compel_disclosure"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -8640,7 +8711,7 @@
           "operate_alternative",
           "terminate_or_substitute"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -8776,7 +8847,7 @@
           "define_exception",
           "approve_or_override"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "supported_for_human_review",
@@ -8912,7 +8983,7 @@
           "bear_error_or_consequence",
           "receive_revenue_or_residual_benefit"
         ],
-        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in current source set",
+        "represented_voice_basis": "institutional-description-only; no direct represented-person voice in the Wave 01 source set",
         "mental_state_ceiling": "No mental state, awareness, motive, or coordination inference is generated from this structural classification."
       },
       "disposition": "retained_candidate_only",
@@ -8993,6 +9064,1799 @@
           "title": "Palantir Technologies Inc. registration statement",
           "url": "https://www.sec.gov/Archives/edgar/data/1321655/000119312520230013/d904406ds1.htm",
           "source_type": "official_regulatory_filing",
+          "locator_state": "source_bounded"
+        }
+      ]
+    },
+    {
+      "record_id": "M04F-EJ-065",
+      "system_id": "SYS-ICE-SEVIS-TERMINATION-COMPARATOR",
+      "test_id": "EJT3-burden-allocation",
+      "source_ids": [
+        "M04F-S034"
+      ],
+      "parent_record_ids": [
+        "COMPARATOR-SEVIS-2025"
+      ],
+      "proposition": "A student whose SEVIS record was terminated had to initiate federal litigation and carry the burden of establishing likely unlawfulness and irreparable harm after the agency action.",
+      "observation": "The order states that the student learned from his university that ICE had terminated his SEVIS record, received no direct agency notice or opportunity to contest, feared reputational harm and detention or removal, and then obtained a temporary restraining order after making the required judicial showing.",
+      "supports": [
+        "direct represented-person voice preserved in a judicial record",
+        "a concrete retrospective proof burden following a unilateral data-system action",
+        "a court-created route capable of restoring the record and preventing downstream enforcement"
+      ],
+      "does_not_support": [
+        "a Palantir or ImmigrationOS role",
+        "the complete ICE data or decision chain",
+        "a finding that every SEVIS termination lacked notice or lawful basis",
+        "final merits adjudication or damages"
+      ],
+      "classification": {
+        "epistemic_standing_id": "EJ2-bounded-inspection-or-review",
+        "burden_position_id": "B3-subject-bears-retrospective-proof",
+        "intervention_timing_id": "IT4-review-after-consequence",
+        "evidence_custody_id": "EC1-fragmented-local-or-subject-custody",
+        "counterfactual_access_id": "CF1-alternative-named",
+        "remedy_power_id": "RP4-compulsory-revision-reversal-or-termination",
+        "uncertainty_allocation_id": "UA3-subject-bears-uncertainty-as-risk-or-proof-burden",
+        "class_ids": [
+          "CJ06-proof-bearing-subject",
+          "CJ08-retrospective-reviewer"
+        ],
+        "action_rights": [
+          "receive_notice",
+          "seek_correction",
+          "appeal",
+          "reverse_consequence"
+        ],
+        "represented_voice_basis": "direct-subject-declaration-quoted-in-judicial-opinion",
+        "mental_state_ceiling": "No mental state, awareness, motive, wrongdoing, or coordination inference is generated from this structural classification."
+      },
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "direct_subject_voice_and_retrospective_proof_burden",
+      "next_decisive_acquisition": "Acquire the complaint, plaintiff declaration, agency administrative record, termination instruction, criminal-record-check source, notice logs, university communications, reinstatement history, and final disposition.",
+      "falsifier": "Records show the student received timely direct notice, a meaningful pre-action opportunity to contest, and an ordinary administrative remedy that prevented legal consequences.",
+      "stopping_rule": "Close when the complete notice, basis, burden, remedy, and final-outcome chronology is source-bounded.",
+      "system": {
+        "system_id": "SYS-ICE-SEVIS-TERMINATION-COMPARATOR",
+        "label": "ICE SEVIS termination and judicial-restoration comparator",
+        "scope": "Abrupt F-1 SEVIS termination, direct student testimony, immediate legal consequences, and federal-court temporary relief, 2025",
+        "actors": [
+          "ICE Student and Exchange Visitor Program",
+          "John Doe plaintiff",
+          "University of Washington",
+          "U.S. District Court for the Western District of Washington"
+        ],
+        "source_ids": [
+          "M04F-S034"
+        ],
+        "parent_record_ids": [
+          "COMPARATOR-SEVIS-2025"
+        ]
+      },
+      "test": {
+        "test_id": "EJT3-burden-allocation",
+        "question": "Who must justify the action before it occurs, and who must prove error, injury, or entitlement afterward?",
+        "minimum_objects": [
+          "ex ante justification rule",
+          "post-action burden",
+          "review forum",
+          "standard of review",
+          "cost and timing"
+        ]
+      },
+      "sources": [
+        {
+          "source_id": "M04F-S034",
+          "publisher": "United States District Court for the Western District of Washington via Justia",
+          "title": "Doe v. Noem, Order on Motion for Temporary Restraining Order, No. 2:25-cv-00633-DGE",
+          "url": "https://law.justia.com/cases/federal/district-courts/washington/wawdce/2%3A2025cv00633/346855/16/",
+          "source_type": "judicial_opinion_public_mirror",
+          "locator_state": "source_bounded"
+        }
+      ]
+    },
+    {
+      "record_id": "M04F-EJ-066",
+      "system_id": "SYS-ICE-SEVIS-TERMINATION-COMPARATOR",
+      "test_id": "EJT4-temporal-asymmetry",
+      "source_ids": [
+        "M04F-S034"
+      ],
+      "parent_record_ids": [
+        "COMPARATOR-SEVIS-2025"
+      ],
+      "proposition": "A federal court supplied prospective stopping authority after SEVIS termination by ordering restoration and barring detention, transfer, removal proceedings, or deportation based on that termination.",
+      "observation": "The temporary restraining order restored the student's SEVIS record and I-20, set aside the termination, required a valid regulatory ground for any new termination, and prohibited downstream detention or removal action based on the challenged termination.",
+      "supports": [
+        "a bounded compulsory reversal and stay",
+        "a positive control showing that counterpower can alter the institution's action before the feared downstream consequence",
+        "separation of agency action from later judicial stopping authority"
+      ],
+      "does_not_support": [
+        "a complete system-wide appeal mechanism",
+        "proof that the order was obeyed permanently",
+        "a Palantir or ImmigrationOS connection",
+        "a conclusion that all affected students obtained comparable relief"
+      ],
+      "classification": {
+        "epistemic_standing_id": "EJ5-threshold-burden-or-counterfactual-authority",
+        "burden_position_id": "B4-independent-authority-can-shift-burden",
+        "intervention_timing_id": "IT1-prospective-review-before-action",
+        "evidence_custody_id": "EC4-independent-discoverable-or-auditable-custody",
+        "counterfactual_access_id": "CF1-alternative-named",
+        "remedy_power_id": "RP4-compulsory-revision-reversal-or-termination",
+        "uncertainty_allocation_id": "UA1-acting-institution-bears-uncertainty",
+        "class_ids": [
+          "CJ09-preventive-counter-sovereign",
+          "CJ16-burden-shifting-remedy-provider"
+        ],
+        "action_rights": [
+          "abort_or_stay",
+          "compel_disclosure",
+          "shift_burden",
+          "reverse_consequence"
+        ],
+        "represented_voice_basis": "institutional-court-record",
+        "mental_state_ceiling": "No mental state, awareness, motive, wrongdoing, or coordination inference is generated from this structural classification."
+      },
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "bounded_judicial_restoration_and_preventive_stay",
+      "next_decisive_acquisition": "Acquire compliance records, later orders, agency guidance, similarly situated cases, final merits rulings, and evidence of whether the intervention changed ICE's national termination practice.",
+      "falsifier": "The order was not implemented, was promptly dissolved without meaningful protection, or the student suffered the prohibited consequence despite the stay.",
+      "stopping_rule": "Close when the order's implementation, duration, reach, and institutional effect are terminally adjudicated.",
+      "system": {
+        "system_id": "SYS-ICE-SEVIS-TERMINATION-COMPARATOR",
+        "label": "ICE SEVIS termination and judicial-restoration comparator",
+        "scope": "Abrupt F-1 SEVIS termination, direct student testimony, immediate legal consequences, and federal-court temporary relief, 2025",
+        "actors": [
+          "ICE Student and Exchange Visitor Program",
+          "John Doe plaintiff",
+          "University of Washington",
+          "U.S. District Court for the Western District of Washington"
+        ],
+        "source_ids": [
+          "M04F-S034"
+        ],
+        "parent_record_ids": [
+          "COMPARATOR-SEVIS-2025"
+        ]
+      },
+      "test": {
+        "test_id": "EJT4-temporal-asymmetry",
+        "question": "Can the affected party obtain notice, inspection, or a stay before consequence, or only review afterward?",
+        "minimum_objects": [
+          "notice chronology",
+          "action chronology",
+          "stay or pause path",
+          "review chronology",
+          "final consequence"
+        ]
+      },
+      "sources": [
+        {
+          "source_id": "M04F-S034",
+          "publisher": "United States District Court for the Western District of Washington via Justia",
+          "title": "Doe v. Noem, Order on Motion for Temporary Restraining Order, No. 2:25-cv-00633-DGE",
+          "url": "https://law.justia.com/cases/federal/district-courts/washington/wawdce/2%3A2025cv00633/346855/16/",
+          "source_type": "judicial_opinion_public_mirror",
+          "locator_state": "source_bounded"
+        }
+      ]
+    },
+    {
+      "record_id": "M04F-EJ-067",
+      "system_id": "SYS-ICE-SEVIS-TERMINATION-COMPARATOR",
+      "test_id": "EJT5-evidence-custody",
+      "source_ids": [
+        "M04F-S034"
+      ],
+      "parent_record_ids": [
+        "COMPARATOR-SEVIS-2025"
+      ],
+      "proposition": "The public order exposes the termination result and limited stated basis but not the complete data provenance, matching process, decision author, versioned rationale, or national termination instructions.",
+      "observation": "The only information initially supplied to the student was a generic reference to a criminal-records check and/or visa revocation. The hearing identified the arrest as the sole reason, but the complete source data, matching process, internal approvals, batch instructions, and audit trail remain outside the current public record.",
+      "supports": [
+        "an exact evidence-custody gap",
+        "the need to distinguish court-reconstructed facts from the underlying agency record",
+        "a lawful acquisition target for the source-to-termination chain"
+      ],
+      "does_not_support": [
+        "that the missing records were deliberately concealed",
+        "that an automated model made the decision",
+        "that the arrest data were inaccurate",
+        "a Palantir or ImmigrationOS role"
+      ],
+      "classification": {
+        "epistemic_standing_id": "EJ3-evidence-schema-or-log-custody",
+        "burden_position_id": "B2-shared-or-contested-burden",
+        "intervention_timing_id": "IT4-review-after-consequence",
+        "evidence_custody_id": "EC2-public-institution-custody",
+        "counterfactual_access_id": "CF0-no-alternative-identified",
+        "remedy_power_id": "RP2-correction-review-or-audit",
+        "uncertainty_allocation_id": "UA3-subject-bears-uncertainty-as-risk-or-proof-burden",
+        "class_ids": [
+          "CJ04-archive-and-admissibility-custodian"
+        ],
+        "action_rights": [
+          "control_logs",
+          "control_disclosure",
+          "compel_disclosure"
+        ],
+        "represented_voice_basis": "institutional-description-plus-direct-subject-record",
+        "mental_state_ceiling": "No mental state, awareness, motive, wrongdoing, or coordination inference is generated from this structural classification."
+      },
+      "disposition": "requires_additional_acquisition",
+      "evidence_ceiling": "agency_record_and_data_lineage_absent",
+      "next_decisive_acquisition": "Acquire ICE and SEVP instructions, source-system fields, match rules, query logs, batch files, user identities, approvals, retention, notices, and the complete administrative record.",
+      "falsifier": "The complete record shows a documented lawful basis, accurate data lineage, identified human author, timely disclosure, and effective correction before material consequence.",
+      "stopping_rule": "Close only when every decisive field, transformation, user action, and custodian is mapped or explicitly unavailable.",
+      "system": {
+        "system_id": "SYS-ICE-SEVIS-TERMINATION-COMPARATOR",
+        "label": "ICE SEVIS termination and judicial-restoration comparator",
+        "scope": "Abrupt F-1 SEVIS termination, direct student testimony, immediate legal consequences, and federal-court temporary relief, 2025",
+        "actors": [
+          "ICE Student and Exchange Visitor Program",
+          "John Doe plaintiff",
+          "University of Washington",
+          "U.S. District Court for the Western District of Washington"
+        ],
+        "source_ids": [
+          "M04F-S034"
+        ],
+        "parent_record_ids": [
+          "COMPARATOR-SEVIS-2025"
+        ]
+      },
+      "test": {
+        "test_id": "EJT5-evidence-custody",
+        "question": "Who controls the data, model, logs, rationale, rejected alternatives, and records needed to reconstruct the decision?",
+        "minimum_objects": [
+          "source inventory",
+          "custodian",
+          "retention/versioning",
+          "disclosure route",
+          "audit or discovery right"
+        ]
+      },
+      "sources": [
+        {
+          "source_id": "M04F-S034",
+          "publisher": "United States District Court for the Western District of Washington via Justia",
+          "title": "Doe v. Noem, Order on Motion for Temporary Restraining Order, No. 2:25-cv-00633-DGE",
+          "url": "https://law.justia.com/cases/federal/district-courts/washington/wawdce/2%3A2025cv00633/346855/16/",
+          "source_type": "judicial_opinion_public_mirror",
+          "locator_state": "source_bounded"
+        }
+      ]
+    },
+    {
+      "record_id": "M04F-EJ-068",
+      "system_id": "SYS-ICE-SEVIS-TERMINATION-COMPARATOR",
+      "test_id": "EJT6-counterfactual-foreclosure",
+      "source_ids": [
+        "M04F-S034"
+      ],
+      "parent_record_ids": [
+        "M04F-EJ-025",
+        "M04F-EJ-032"
+      ],
+      "proposition": "The SEVIS termination record is a consequential ICE comparator but does not establish that Palantir, ICM, or ImmigrationOS supplied the data, category, decision, or consequence.",
+      "observation": "The order identifies SEVIS and ICE's Student and Exchange Visitor Program. It does not name Palantir, ICM, ImmigrationOS, or a shared technical interface. The case therefore supplies a direct subject-and-remedy comparator while preserving an explicit non-link to the current Palantir enforcement lane.",
+      "supports": [
+        "a real ICE data-system consequence and remedy comparator",
+        "a bounded non-link against silently importing Palantir into every ICE information-system action",
+        "a source for comparing notice, burden, custody, and review across systems"
+      ],
+      "does_not_support": [
+        "absence of any indirect interface",
+        "absence of Palantir in other ICE systems",
+        "system-wide independence",
+        "a complete ICE architecture map"
+      ],
+      "classification": {
+        "epistemic_standing_id": "EJ2-bounded-inspection-or-review",
+        "burden_position_id": "B2-shared-or-contested-burden",
+        "intervention_timing_id": "IT4-review-after-consequence",
+        "evidence_custody_id": "EC4-independent-discoverable-or-auditable-custody",
+        "counterfactual_access_id": "CF1-alternative-named",
+        "remedy_power_id": "RP2-correction-review-or-audit",
+        "uncertainty_allocation_id": "UA2-shared-or-contested-uncertainty",
+        "class_ids": [
+          "CJ15-comparator-producer"
+        ],
+        "action_rights": [
+          "evaluate_alternative",
+          "publish_or_petition"
+        ],
+        "represented_voice_basis": "institutional-comparator-with-direct-subject-source",
+        "mental_state_ceiling": "No mental state, awareness, motive, wrongdoing, or coordination inference is generated from this structural classification."
+      },
+      "disposition": "bounded_non_link",
+      "evidence_ceiling": "SEVIS_consequence_no_Palantir_or_ImmigrationOS_join",
+      "next_decisive_acquisition": "Acquire the ICE enterprise architecture, SEVIS source and interface inventory, cross-system identifiers, API and data-sharing records, and an explicit technical join or non-link.",
+      "falsifier": "Operative records identify Palantir, ICM, or ImmigrationOS as a material data, matching, prioritization, or decision component in the challenged termination.",
+      "stopping_rule": "Close when the system boundary is explicitly joined or explicitly separated.",
+      "system": {
+        "system_id": "SYS-ICE-SEVIS-TERMINATION-COMPARATOR",
+        "label": "ICE SEVIS termination and judicial-restoration comparator",
+        "scope": "Abrupt F-1 SEVIS termination, direct student testimony, immediate legal consequences, and federal-court temporary relief, 2025",
+        "actors": [
+          "ICE Student and Exchange Visitor Program",
+          "John Doe plaintiff",
+          "University of Washington",
+          "U.S. District Court for the Western District of Washington"
+        ],
+        "source_ids": [
+          "M04F-S034"
+        ],
+        "parent_record_ids": [
+          "COMPARATOR-SEVIS-2025"
+        ]
+      },
+      "test": {
+        "test_id": "EJT6-counterfactual-foreclosure",
+        "question": "Which alternatives were allowed to generate evidence, which were excluded, and who benefited from their absence?",
+        "minimum_objects": [
+          "complete denominator",
+          "selection/exclusion record",
+          "pilot or operating result",
+          "matched comparator",
+          "stopping rule"
+        ]
+      },
+      "sources": [
+        {
+          "source_id": "M04F-S034",
+          "publisher": "United States District Court for the Western District of Washington via Justia",
+          "title": "Doe v. Noem, Order on Motion for Temporary Restraining Order, No. 2:25-cv-00633-DGE",
+          "url": "https://law.justia.com/cases/federal/district-courts/washington/wawdce/2%3A2025cv00633/346855/16/",
+          "source_type": "judicial_opinion_public_mirror",
+          "locator_state": "source_bounded"
+        }
+      ]
+    },
+    {
+      "record_id": "M04F-EJ-069",
+      "system_id": "SYS-ICE-ICM-IMMIGRATIONOS",
+      "test_id": "EJT4-temporal-asymmetry",
+      "source_ids": [
+        "M04F-S035",
+        "M04F-S036"
+      ],
+      "parent_record_ids": [
+        "M04D-FR-043"
+      ],
+      "proposition": "DHS OIG created a source-bounded preventive challenge by recommending that ICE discontinue commercial telemetry data use until required Privacy Impact Assessments were completed and approved.",
+      "observation": "The audit found that ICE and other DHS components procured and used commercial telemetry data without adhering to privacy requirements. Recommendation 3 called for ICE to discontinue use until PIAs were completed; the recommendation remains listed as open.",
+      "supports": [
+        "an independent oversight intervention aimed at stopping use pending ex ante review",
+        "a concrete distinction between recommendation and demonstrated compulsory implementation",
+        "a comparator for preventive privacy governance in ICE systems"
+      ],
+      "does_not_support": [
+        "that ICE complied with the recommendation",
+        "that the recommendation was legally binding",
+        "a Palantir or ImmigrationOS role",
+        "a person-level consequence caused by commercial telemetry data"
+      ],
+      "classification": {
+        "epistemic_standing_id": "EJ2-bounded-inspection-or-review",
+        "burden_position_id": "B2-shared-or-contested-burden",
+        "intervention_timing_id": "IT4-review-after-consequence",
+        "evidence_custody_id": "EC4-independent-discoverable-or-auditable-custody",
+        "counterfactual_access_id": "CF1-alternative-named",
+        "remedy_power_id": "RP2-correction-review-or-audit",
+        "uncertainty_allocation_id": "UA2-shared-or-contested-uncertainty",
+        "class_ids": [
+          "CJ08-retrospective-reviewer",
+          "CJ13-preventive-challenger"
+        ],
+        "action_rights": [
+          "publish_or_petition",
+          "abort_or_stay"
+        ],
+        "represented_voice_basis": "official-oversight-record",
+        "mental_state_ceiling": "No mental state, awareness, motive, wrongdoing, or coordination inference is generated from this structural classification."
+      },
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "preventive_discontinuation_recommendation_not_binding_outcome",
+      "next_decisive_acquisition": "Acquire ICE's response, PIA completion record, operational-use suspension logs, later procurement and use records, compliance testing, and any person-level downstream uses.",
+      "falsifier": "ICE had already completed and approved all required PIAs before operational use, or the recommendation did not concern operational telemetry use.",
+      "stopping_rule": "Close when the recommendation's implementation, duration, scope, and enforcement effect are known.",
+      "system": {
+        "system_id": "SYS-ICE-ICM-IMMIGRATIONOS",
+        "label": "ICE ICM and ImmigrationOS enforcement systems",
+        "scope": "Investigative case management, targeting and prioritization, ERO modernization, oversight, and unresolved person-level consequence, 2023-2026",
+        "actors": [
+          "The White House",
+          "DHS",
+          "ICE",
+          "Palantir",
+          "ICE officers and supervisors",
+          "represented noncitizens",
+          "Congress",
+          "DHS OIG"
+        ],
+        "source_ids": [
+          "M04F-S009",
+          "M04F-S010",
+          "M04F-S011",
+          "M04F-S012",
+          "M04F-S013"
+        ],
+        "parent_record_ids": [
+          "M04D-FR-005",
+          "M04D-FR-006",
+          "M04D-FR-036",
+          "M04D-FR-037",
+          "M04D-FR-038",
+          "M04D-FR-039",
+          "M04D-FR-040",
+          "M04D-FR-041",
+          "M04D-FR-042",
+          "M04D-FR-044"
+        ]
+      },
+      "test": {
+        "test_id": "EJT4-temporal-asymmetry",
+        "question": "Can the affected party obtain notice, inspection, or a stay before consequence, or only review afterward?",
+        "minimum_objects": [
+          "notice chronology",
+          "action chronology",
+          "stay or pause path",
+          "review chronology",
+          "final consequence"
+        ]
+      },
+      "sources": [
+        {
+          "source_id": "M04F-S035",
+          "publisher": "DHS Office of Inspector General via Oversight.gov",
+          "title": "CBP, ICE, and Secret Service Did Not Adhere to Privacy Policies or Develop Sufficient Policies Before Procuring and Using Commercial Telemetry Data",
+          "url": "https://www.oversight.gov/reports/audit/cbp-ice-and-secret-service-did-not-adhere-privacy-policies-or-develop-sufficient",
+          "source_type": "official_oversight_record",
+          "locator_state": "source_bounded"
+        },
+        {
+          "source_id": "M04F-S036",
+          "publisher": "DHS Office of Inspector General via Oversight.gov",
+          "title": "OIG-23-61 Recommendation 3: ICE discontinue commercial telemetry data until PIAs are approved",
+          "url": "https://www.oversight.gov/reports/audit/cbp-ice-and-secret-service-did-not-adhere-privacy-policies-or-develop-sufficient-2",
+          "source_type": "official_open_recommendation_record",
+          "locator_state": "source_bounded"
+        }
+      ]
+    },
+    {
+      "record_id": "M04F-EJ-070",
+      "system_id": "SYS-ICE-ICM-IMMIGRATIONOS",
+      "test_id": "EJT7-exception-privilege",
+      "source_ids": [
+        "M04F-S035"
+      ],
+      "parent_record_ids": [
+        "M04D-FR-043"
+      ],
+      "proposition": "ICE's commercial-telemetry use proceeded without the approved privacy assessments that DHS policy ordinarily required, creating an auditable exception-governance question.",
+      "observation": "The OIG reported that ICE and other components did not adhere to DHS privacy policies or develop sufficient policies before procuring and using commercial telemetry data. The report does not establish the exact official who authorized each deviation or the downstream consequence.",
+      "supports": [
+        "a bounded case in which operational use preceded completion of the ordinary privacy gate",
+        "the need to identify exception authority, rationale, restrictions, and review",
+        "an official finding rather than an inferred policy gap"
+      ],
+      "does_not_support": [
+        "intentional misconduct",
+        "a Palantir or ImmigrationOS connection",
+        "the identity of every user or affected person",
+        "the absence of any emergency or testing rationale"
+      ],
+      "classification": {
+        "epistemic_standing_id": "EJ5-threshold-burden-or-counterfactual-authority",
+        "burden_position_id": "B1-institution-bears-ex-ante-justification",
+        "intervention_timing_id": "IT3-action-before-ordinary-review",
+        "evidence_custody_id": "EC2-public-institution-custody",
+        "counterfactual_access_id": "CF1-alternative-named",
+        "remedy_power_id": "RP2-correction-review-or-audit",
+        "uncertainty_allocation_id": "UA2-shared-or-contested-uncertainty",
+        "class_ids": [
+          "CJ02-threshold-author",
+          "CJ10-exception-holder"
+        ],
+        "action_rights": [
+          "define_exception",
+          "authorize_action",
+          "control_disclosure"
+        ],
+        "represented_voice_basis": "official-oversight-record",
+        "mental_state_ceiling": "No mental state, awareness, motive, wrongdoing, or coordination inference is generated from this structural classification."
+      },
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "privacy_gate_bypassed_or_incomplete_before_use",
+      "next_decisive_acquisition": "Acquire the privacy threshold analyses, PIA drafts, testing-versus-operational-use rules, deviation approvals, procurement chronology, operational restrictions, user logs, and responsible officials.",
+      "falsifier": "Operative records show all use was nonoperational testing conducted under a valid documented exception with strict restrictions and timely approval.",
+      "stopping_rule": "Close when ordinary rule, exception holder, basis, recorded use, and review are reconciled.",
+      "system": {
+        "system_id": "SYS-ICE-ICM-IMMIGRATIONOS",
+        "label": "ICE ICM and ImmigrationOS enforcement systems",
+        "scope": "Investigative case management, targeting and prioritization, ERO modernization, oversight, and unresolved person-level consequence, 2023-2026",
+        "actors": [
+          "The White House",
+          "DHS",
+          "ICE",
+          "Palantir",
+          "ICE officers and supervisors",
+          "represented noncitizens",
+          "Congress",
+          "DHS OIG"
+        ],
+        "source_ids": [
+          "M04F-S009",
+          "M04F-S010",
+          "M04F-S011",
+          "M04F-S012",
+          "M04F-S013"
+        ],
+        "parent_record_ids": [
+          "M04D-FR-005",
+          "M04D-FR-006",
+          "M04D-FR-036",
+          "M04D-FR-037",
+          "M04D-FR-038",
+          "M04D-FR-039",
+          "M04D-FR-040",
+          "M04D-FR-041",
+          "M04D-FR-042",
+          "M04D-FR-044"
+        ]
+      },
+      "test": {
+        "test_id": "EJT7-exception-privilege",
+        "question": "Who may depart from the rule, authorize an exception, or reinterpret failure without being recategorized as noncompliant?",
+        "minimum_objects": [
+          "ordinary rule",
+          "exception holder",
+          "exception basis",
+          "recorded use",
+          "review or appeal"
+        ]
+      },
+      "sources": [
+        {
+          "source_id": "M04F-S035",
+          "publisher": "DHS Office of Inspector General via Oversight.gov",
+          "title": "CBP, ICE, and Secret Service Did Not Adhere to Privacy Policies or Develop Sufficient Policies Before Procuring and Using Commercial Telemetry Data",
+          "url": "https://www.oversight.gov/reports/audit/cbp-ice-and-secret-service-did-not-adhere-privacy-policies-or-develop-sufficient",
+          "source_type": "official_oversight_record",
+          "locator_state": "source_bounded"
+        }
+      ]
+    },
+    {
+      "record_id": "M04F-EJ-071",
+      "system_id": "SYS-NHS-FOUNDRY-FDP",
+      "test_id": "EJT3-burden-allocation",
+      "source_ids": [
+        "M04F-S037"
+      ],
+      "parent_record_ids": [
+        "M04D-FR-077"
+      ],
+      "proposition": "NHS England received aggregated public questions and feedback on privacy, consent, cost, value, trust, and consultation, and stated that check-and-challenge input changed communications and programme steering.",
+      "observation": "The March 2025 minutes record 255 expressions of interest, 116 questions, and 38 feedback submissions. They also state that feedback led to changes in communication and how the programme was steered and developed. The record does not show that any participant could compel a decision or appeal a person-level consequence.",
+      "supports": [
+        "aggregated public voice in the official governance record",
+        "observed institutional responsiveness to feedback",
+        "a distinction between feedback influence and binding counterpower"
+      ],
+      "does_not_support": [
+        "direct person-level consequence or remedy",
+        "a public veto over FDP objectives",
+        "representativeness of every participant",
+        "proof that every reported change was caused exclusively by the portal"
+      ],
+      "classification": {
+        "epistemic_standing_id": "EJ1-notice-correction-or-petition",
+        "burden_position_id": "B2-shared-or-contested-burden",
+        "intervention_timing_id": "IT1-prospective-review-before-action",
+        "evidence_custody_id": "EC2-public-institution-custody",
+        "counterfactual_access_id": "CF1-alternative-named",
+        "remedy_power_id": "RP1-voice-feedback-or-complaint",
+        "uncertainty_allocation_id": "UA2-shared-or-contested-uncertainty",
+        "class_ids": [
+          "CJ14-feedback-only-complainant"
+        ],
+        "action_rights": [
+          "publish_or_petition",
+          "receive_notice"
+        ],
+        "represented_voice_basis": "aggregated-public-participant-feedback",
+        "mental_state_ceiling": "No mental state, awareness, motive, wrongdoing, or coordination inference is generated from this structural classification."
+      },
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "aggregated_public_feedback_with_observed_program_response",
+      "next_decisive_acquisition": "Acquire the deidentified submission corpus, response log, change-control links, participant denominator, demographic and representativeness review, rejected feedback, and later outcome records.",
+      "falsifier": "The programme cannot identify any concrete communication, design, governance, or steering change attributable to the feedback.",
+      "stopping_rule": "Close when the input-to-change path and its limits are versioned and source-bounded.",
+      "system": {
+        "system_id": "SYS-NHS-FOUNDRY-FDP",
+        "label": "NHS Foundry and Federated Data Platform",
+        "scope": "Public data control, platform continuity, competitive successor procurement, product-level transition, and unresolved practical exit, 2021-2024",
+        "actors": [
+          "NHS England",
+          "Department of Health and Social Care",
+          "Palantir Technologies UK",
+          "Mozaic Services",
+          "FDP bidders",
+          "National Data Guardian",
+          "patients and service users"
+        ],
+        "source_ids": [
+          "M04F-S014",
+          "M04F-S015",
+          "M04F-S016",
+          "M04F-S017",
+          "M04F-S018",
+          "M04F-S019"
+        ],
+        "parent_record_ids": [
+          "M04D-FR-072",
+          "M04D-FR-073",
+          "M04D-FR-074",
+          "M04D-FR-075",
+          "M04D-FR-076",
+          "M04D-FR-077"
+        ]
+      },
+      "test": {
+        "test_id": "EJT3-burden-allocation",
+        "question": "Who must justify the action before it occurs, and who must prove error, injury, or entitlement afterward?",
+        "minimum_objects": [
+          "ex ante justification rule",
+          "post-action burden",
+          "review forum",
+          "standard of review",
+          "cost and timing"
+        ]
+      },
+      "sources": [
+        {
+          "source_id": "M04F-S037",
+          "publisher": "NHS England",
+          "title": "Federated Data Platform Check and Challenge Group minutes and action notes: 21 March 2025",
+          "url": "https://www.england.nhs.uk/long-read/federated-data-platform-check-and-challenge-group-minutes-and-action-notes-21-march-2025/",
+          "source_type": "official_governance_minutes",
+          "locator_state": "source_bounded"
+        }
+      ]
+    },
+    {
+      "record_id": "M04F-EJ-072",
+      "system_id": "SYS-NHS-FOUNDRY-FDP",
+      "test_id": "EJT2-threshold-authorship",
+      "source_ids": [
+        "M04F-S039",
+        "M04F-S041"
+      ],
+      "parent_record_ids": [
+        "M04D-FR-077"
+      ],
+      "proposition": "FDP governance participants explicitly challenged whether implied consent and patients' reasonable expectations could support using live patient data to develop, validate, re-validate, or operate an AI-assisted discharge-summary tool.",
+      "observation": "The October 2025 minutes record a challenge that development and validation may not fall within direct care or reasonable patient expectations, making reliance on implied consent difficult. The February 2026 minutes again demanded clarity about whether live patient data had been used and called for further DPIA and hospital-level review.",
+      "supports": [
+        "an exact threshold-authorship dispute over consent, purpose, and development use",
+        "prospective scrutiny before the evidentiary basis is treated as settled",
+        "a named acquisition target for the DPIA, legal basis, and data-use chronology"
+      ],
+      "does_not_support": [
+        "that implied consent was legally unavailable",
+        "that the tool harmed a patient",
+        "that Palantir authored the consent position",
+        "that the challenge produced a binding stay"
+      ],
+      "classification": {
+        "epistemic_standing_id": "EJ2-bounded-inspection-or-review",
+        "burden_position_id": "B2-shared-or-contested-burden",
+        "intervention_timing_id": "IT1-prospective-review-before-action",
+        "evidence_custody_id": "EC2-public-institution-custody",
+        "counterfactual_access_id": "CF1-alternative-named",
+        "remedy_power_id": "RP2-correction-review-or-audit",
+        "uncertainty_allocation_id": "UA2-shared-or-contested-uncertainty",
+        "class_ids": [
+          "CJ13-preventive-challenger",
+          "CJ08-retrospective-reviewer"
+        ],
+        "action_rights": [
+          "set_threshold",
+          "publish_or_petition",
+          "seek_correction"
+        ],
+        "represented_voice_basis": "patient-public-and-professional-representatives",
+        "mental_state_ceiling": "No mental state, awareness, motive, wrongdoing, or coordination inference is generated from this structural classification."
+      },
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "consent_and_reasonable_expectations_threshold_contested",
+      "next_decisive_acquisition": "Acquire every AADS DPIA version, legal-basis decision, data-flow map, development and validation dataset inventory, patient notices, opt-out analysis, MHRA correspondence, safety case, and change log.",
+      "falsifier": "Operative records show no live patient data were used outside direct care, the legal basis was independently approved before use, and patients received effective notice and control.",
+      "stopping_rule": "Close when threshold author, legal basis, data use, version history, and challenge outcome are terminally adjudicated.",
+      "system": {
+        "system_id": "SYS-NHS-FOUNDRY-FDP",
+        "label": "NHS Foundry and Federated Data Platform",
+        "scope": "Public data control, platform continuity, competitive successor procurement, product-level transition, and unresolved practical exit, 2021-2024",
+        "actors": [
+          "NHS England",
+          "Department of Health and Social Care",
+          "Palantir Technologies UK",
+          "Mozaic Services",
+          "FDP bidders",
+          "National Data Guardian",
+          "patients and service users"
+        ],
+        "source_ids": [
+          "M04F-S014",
+          "M04F-S015",
+          "M04F-S016",
+          "M04F-S017",
+          "M04F-S018",
+          "M04F-S019"
+        ],
+        "parent_record_ids": [
+          "M04D-FR-072",
+          "M04D-FR-073",
+          "M04D-FR-074",
+          "M04D-FR-075",
+          "M04D-FR-076",
+          "M04D-FR-077"
+        ]
+      },
+      "test": {
+        "test_id": "EJT2-threshold-authorship",
+        "question": "Who selected the confidence, eligibility, risk, performance, or sufficiency threshold?",
+        "minimum_objects": [
+          "threshold or standard",
+          "author or adopting authority",
+          "date/version",
+          "exception rule",
+          "change history"
+        ]
+      },
+      "sources": [
+        {
+          "source_id": "M04F-S039",
+          "publisher": "NHS England",
+          "title": "Federated Data Platform Check and Challenge Group minutes and action notes: 21 October 2025",
+          "url": "https://www.england.nhs.uk/long-read/federated-data-platform-check-and-challenge-group-minutes-and-action-notes-21-october-2025/",
+          "source_type": "official_governance_minutes",
+          "locator_state": "source_bounded"
+        },
+        {
+          "source_id": "M04F-S041",
+          "publisher": "NHS England",
+          "title": "Transformation Check and Challenge Group meeting minutes: 20 February 2026",
+          "url": "https://www.england.nhs.uk/long-read/transformation-check-and-challenge-group-meeting-minutes-20-february-2026/",
+          "source_type": "official_governance_minutes",
+          "locator_state": "source_bounded"
+        }
+      ]
+    },
+    {
+      "record_id": "M04F-EJ-073",
+      "system_id": "SYS-NHS-FOUNDRY-FDP",
+      "test_id": "EJT4-temporal-asymmetry",
+      "source_ids": [
+        "M04F-S038",
+        "M04F-S039",
+        "M04F-S040"
+      ],
+      "parent_record_ids": [
+        "M04D-FR-077"
+      ],
+      "proposition": "The FDP Check and Challenge process created a prospective review surface for AI, portability, use-case definition, information governance, and regulatory assurance, but the current minutes do not establish a binding power to halt deployment.",
+      "observation": "The minutes record actions to test data portability, refine a sixth use case, update the AADS DPIA, invite MHRA-linked expertise, and return unresolved challenges to the group. They show repeated pre-decision scrutiny and programme responses, while leaving the group's formal veto or stay authority unclear.",
+      "supports": [
+        "a recurring prospective review forum",
+        "observed challenge-to-action routing",
+        "an exact distinction between advisory review and compulsory preventive power"
+      ],
+      "does_not_support": [
+        "that the group could legally stop a rollout",
+        "that every action was completed",
+        "a patient-level appeal",
+        "practical exit from the platform"
+      ],
+      "classification": {
+        "epistemic_standing_id": "EJ2-bounded-inspection-or-review",
+        "burden_position_id": "B2-shared-or-contested-burden",
+        "intervention_timing_id": "IT1-prospective-review-before-action",
+        "evidence_custody_id": "EC2-public-institution-custody",
+        "counterfactual_access_id": "CF1-alternative-named",
+        "remedy_power_id": "RP2-correction-review-or-audit",
+        "uncertainty_allocation_id": "UA1-acting-institution-bears-uncertainty",
+        "class_ids": [
+          "CJ13-preventive-challenger",
+          "CJ08-retrospective-reviewer"
+        ],
+        "action_rights": [
+          "publish_or_petition",
+          "seek_correction",
+          "evaluate_alternative"
+        ],
+        "represented_voice_basis": "institutional-and-public-representative-challenge",
+        "mental_state_ceiling": "No mental state, awareness, motive, wrongdoing, or coordination inference is generated from this structural classification."
+      },
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "prospective_review_surface_without_proven_binding_stay",
+      "next_decisive_acquisition": "Acquire the terms of reference, authority matrix, escalations, recommendations, programme responses, delayed or cancelled decisions, Red Team records, and cases where challenge was rejected.",
+      "falsifier": "The group had no access to material records, its recommendations produced no review or change, or all relevant decisions were completed before scrutiny.",
+      "stopping_rule": "Close when advisory, escalation, delay, veto, and implementation powers are distinguished in observed cases.",
+      "system": {
+        "system_id": "SYS-NHS-FOUNDRY-FDP",
+        "label": "NHS Foundry and Federated Data Platform",
+        "scope": "Public data control, platform continuity, competitive successor procurement, product-level transition, and unresolved practical exit, 2021-2024",
+        "actors": [
+          "NHS England",
+          "Department of Health and Social Care",
+          "Palantir Technologies UK",
+          "Mozaic Services",
+          "FDP bidders",
+          "National Data Guardian",
+          "patients and service users"
+        ],
+        "source_ids": [
+          "M04F-S014",
+          "M04F-S015",
+          "M04F-S016",
+          "M04F-S017",
+          "M04F-S018",
+          "M04F-S019"
+        ],
+        "parent_record_ids": [
+          "M04D-FR-072",
+          "M04D-FR-073",
+          "M04D-FR-074",
+          "M04D-FR-075",
+          "M04D-FR-076",
+          "M04D-FR-077"
+        ]
+      },
+      "test": {
+        "test_id": "EJT4-temporal-asymmetry",
+        "question": "Can the affected party obtain notice, inspection, or a stay before consequence, or only review afterward?",
+        "minimum_objects": [
+          "notice chronology",
+          "action chronology",
+          "stay or pause path",
+          "review chronology",
+          "final consequence"
+        ]
+      },
+      "sources": [
+        {
+          "source_id": "M04F-S038",
+          "publisher": "NHS England",
+          "title": "Federated Data Platform Check and Challenge Group minutes and action notes: 19 September 2025",
+          "url": "https://www.england.nhs.uk/long-read/federated-data-platform-check-and-challenge-group-minutes-and-action-notes-19-september-2025/",
+          "source_type": "official_governance_minutes",
+          "locator_state": "source_bounded"
+        },
+        {
+          "source_id": "M04F-S039",
+          "publisher": "NHS England",
+          "title": "Federated Data Platform Check and Challenge Group minutes and action notes: 21 October 2025",
+          "url": "https://www.england.nhs.uk/long-read/federated-data-platform-check-and-challenge-group-minutes-and-action-notes-21-october-2025/",
+          "source_type": "official_governance_minutes",
+          "locator_state": "source_bounded"
+        },
+        {
+          "source_id": "M04F-S040",
+          "publisher": "NHS England",
+          "title": "Federated Data Platform Check and Challenge Group minutes and action notes: 21 November 2025",
+          "url": "https://www.england.nhs.uk/long-read/fdp-check-challenge-group-minutes-action-notes-21nov2025/",
+          "source_type": "official_governance_minutes",
+          "locator_state": "source_bounded"
+        }
+      ]
+    },
+    {
+      "record_id": "M04F-EJ-074",
+      "system_id": "SYS-NHS-FOUNDRY-FDP",
+      "test_id": "EJT8-error-metabolism",
+      "source_ids": [
+        "M04F-S037",
+        "M04F-S040"
+      ],
+      "parent_record_ids": [
+        "M04D-FR-075",
+        "M04D-FR-077"
+      ],
+      "proposition": "Independent participants challenged how NHS waiting-list removals and Palantir-attributed savings claims were defined, validated, owned, and communicated.",
+      "observation": "The March minutes distinguish data validation, completed treatment, duplicate removal, and causal evaluation. The November minutes record a BMA challenge to the relation between FDP removals and national waiting-list reductions and a preference from the National Data Guardian's representative that Palantir CEO savings claims be owned, validated, and published by NHS England.",
+      "supports": [
+        "an official challenge to benefit attribution and causal ownership",
+        "a demand that public institutions validate vendor-associated claims",
+        "a concrete iterative-reality-tracking lane"
+      ],
+      "does_not_support": [
+        "that the claims were false",
+        "that the vendor intentionally overstated benefits",
+        "patient-level harm",
+        "complete cost-benefit or counterfactual analysis"
+      ],
+      "classification": {
+        "epistemic_standing_id": "EJ2-bounded-inspection-or-review",
+        "burden_position_id": "B2-shared-or-contested-burden",
+        "intervention_timing_id": "IT4-review-after-consequence",
+        "evidence_custody_id": "EC2-public-institution-custody",
+        "counterfactual_access_id": "CF2-alternative-evaluated",
+        "remedy_power_id": "RP2-correction-review-or-audit",
+        "uncertainty_allocation_id": "UA2-shared-or-contested-uncertainty",
+        "class_ids": [
+          "CJ08-retrospective-reviewer",
+          "CJ15-comparator-producer"
+        ],
+        "action_rights": [
+          "evaluate_alternative",
+          "publish_or_petition",
+          "control_disclosure"
+        ],
+        "represented_voice_basis": "professional-and-public-interest-representative-challenge",
+        "mental_state_ceiling": "No mental state, awareness, motive, wrongdoing, or coordination inference is generated from this structural classification."
+      },
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "benefit_attribution_and_validation_contested",
+      "next_decisive_acquisition": "Acquire the benefits methodology, numerator and denominator data, causal evaluation, vendor calculations, NHS validation and publication decisions, revisions, negative outcomes, costs, and independent comparators.",
+      "falsifier": "Independent replicated analysis validates the claims, attribution, durability, and counterfactual against complete data without material correction.",
+      "stopping_rule": "Close when every material benefit claim has a source, definition, denominator, comparator, owner, and revision history.",
+      "system": {
+        "system_id": "SYS-NHS-FOUNDRY-FDP",
+        "label": "NHS Foundry and Federated Data Platform",
+        "scope": "Public data control, platform continuity, competitive successor procurement, product-level transition, and unresolved practical exit, 2021-2024",
+        "actors": [
+          "NHS England",
+          "Department of Health and Social Care",
+          "Palantir Technologies UK",
+          "Mozaic Services",
+          "FDP bidders",
+          "National Data Guardian",
+          "patients and service users"
+        ],
+        "source_ids": [
+          "M04F-S014",
+          "M04F-S015",
+          "M04F-S016",
+          "M04F-S017",
+          "M04F-S018",
+          "M04F-S019"
+        ],
+        "parent_record_ids": [
+          "M04D-FR-072",
+          "M04D-FR-073",
+          "M04D-FR-074",
+          "M04D-FR-075",
+          "M04D-FR-076",
+          "M04D-FR-077"
+        ]
+      },
+      "test": {
+        "test_id": "EJT8-error-metabolism",
+        "question": "Who bears the immediate error or consequence, and who receives the resulting learning, capacity, revenue, or legitimacy?",
+        "minimum_objects": [
+          "error or uncertainty",
+          "affected party",
+          "learning loop",
+          "benefit recipient",
+          "correction or compensation"
+        ]
+      },
+      "sources": [
+        {
+          "source_id": "M04F-S037",
+          "publisher": "NHS England",
+          "title": "Federated Data Platform Check and Challenge Group minutes and action notes: 21 March 2025",
+          "url": "https://www.england.nhs.uk/long-read/federated-data-platform-check-and-challenge-group-minutes-and-action-notes-21-march-2025/",
+          "source_type": "official_governance_minutes",
+          "locator_state": "source_bounded"
+        },
+        {
+          "source_id": "M04F-S040",
+          "publisher": "NHS England",
+          "title": "Federated Data Platform Check and Challenge Group minutes and action notes: 21 November 2025",
+          "url": "https://www.england.nhs.uk/long-read/fdp-check-challenge-group-minutes-action-notes-21nov2025/",
+          "source_type": "official_governance_minutes",
+          "locator_state": "source_bounded"
+        }
+      ]
+    },
+    {
+      "record_id": "M04F-EJ-075",
+      "system_id": "SYS-NHS-FOUNDRY-FDP",
+      "test_id": "EJT3-burden-allocation",
+      "source_ids": [
+        "M04F-S041"
+      ],
+      "parent_record_ids": [
+        "M04D-FR-077"
+      ],
+      "proposition": "NHS England added Patient and Public Voices representatives to the Transformation Check and Challenge Group and recorded their direct challenges on trust, data use, public understanding, and complaint handling.",
+      "observation": "The February 2026 minutes identify two Patient and Public Voices representatives and preserve their interventions on authentic case studies, trust, expectations, baseline experience, live-data transparency, and complaints. The record shows direct representative participation, not a person-level right to stay or reverse an FDP-mediated consequence.",
+      "supports": [
+        "direct public-representative voice in a formal governance forum",
+        "institutional recognition that public experience is an evidentiary input",
+        "an acquisition bridge toward direct affected-person voice"
+      ],
+      "does_not_support": [
+        "representativeness of all patients",
+        "binding decision rights",
+        "a completed patient consequence or remedy",
+        "that the representatives spoke from personal FDP harm"
+      ],
+      "classification": {
+        "epistemic_standing_id": "EJ1-notice-correction-or-petition",
+        "burden_position_id": "B2-shared-or-contested-burden",
+        "intervention_timing_id": "IT1-prospective-review-before-action",
+        "evidence_custody_id": "EC2-public-institution-custody",
+        "counterfactual_access_id": "CF1-alternative-named",
+        "remedy_power_id": "RP1-voice-feedback-or-complaint",
+        "uncertainty_allocation_id": "UA2-shared-or-contested-uncertainty",
+        "class_ids": [
+          "CJ14-feedback-only-complainant"
+        ],
+        "action_rights": [
+          "publish_or_petition",
+          "receive_notice"
+        ],
+        "represented_voice_basis": "direct-public-representative-participation",
+        "mental_state_ceiling": "No mental state, awareness, motive, wrongdoing, or coordination inference is generated from this structural classification."
+      },
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "direct_public_representative_voice_not_person_level_remedy",
+      "next_decisive_acquisition": "Acquire representative selection and mandate, submissions, dissent, programme responses, affected-person testimony, complaint records, and any instance where public challenge delayed, changed, or stopped a use.",
+      "falsifier": "The representatives had no meaningful access, their interventions were omitted or ignored, or the forum existed only after all material decisions.",
+      "stopping_rule": "Close when representation, access, influence, and compulsory limits are separately adjudicated.",
+      "system": {
+        "system_id": "SYS-NHS-FOUNDRY-FDP",
+        "label": "NHS Foundry and Federated Data Platform",
+        "scope": "Public data control, platform continuity, competitive successor procurement, product-level transition, and unresolved practical exit, 2021-2024",
+        "actors": [
+          "NHS England",
+          "Department of Health and Social Care",
+          "Palantir Technologies UK",
+          "Mozaic Services",
+          "FDP bidders",
+          "National Data Guardian",
+          "patients and service users"
+        ],
+        "source_ids": [
+          "M04F-S014",
+          "M04F-S015",
+          "M04F-S016",
+          "M04F-S017",
+          "M04F-S018",
+          "M04F-S019"
+        ],
+        "parent_record_ids": [
+          "M04D-FR-072",
+          "M04D-FR-073",
+          "M04D-FR-074",
+          "M04D-FR-075",
+          "M04D-FR-076",
+          "M04D-FR-077"
+        ]
+      },
+      "test": {
+        "test_id": "EJT3-burden-allocation",
+        "question": "Who must justify the action before it occurs, and who must prove error, injury, or entitlement afterward?",
+        "minimum_objects": [
+          "ex ante justification rule",
+          "post-action burden",
+          "review forum",
+          "standard of review",
+          "cost and timing"
+        ]
+      },
+      "sources": [
+        {
+          "source_id": "M04F-S041",
+          "publisher": "NHS England",
+          "title": "Transformation Check and Challenge Group meeting minutes: 20 February 2026",
+          "url": "https://www.england.nhs.uk/long-read/transformation-check-and-challenge-group-meeting-minutes-20-february-2026/",
+          "source_type": "official_governance_minutes",
+          "locator_state": "source_bounded"
+        }
+      ]
+    },
+    {
+      "record_id": "M04F-EJ-076",
+      "system_id": "SYS-PALANTIR-CONSTITUTION-ONTOLOGY",
+      "test_id": "EJT6-counterfactual-foreclosure",
+      "source_ids": [
+        "M04F-S042",
+        "M04F-S044"
+      ],
+      "parent_record_ids": [
+        "M04F-EJ-046",
+        "M04F-EJ-048"
+      ],
+      "proposition": "Palantir shareholders placed two explicit alternative governance instruments before the 2026 annual meeting: an independent defense-product due-diligence report and a human-rights impact assessment.",
+      "observation": "The definitive proxy described Proposals 4 and 5, the board's opposition, and the voting standard. An exempt solicitation supplied the proponents' rationale for an independent report. The alternatives were therefore formally articulated and evaluated rather than remaining hypothetical.",
+      "supports": [
+        "a concrete corporate-governance counterfactual",
+        "formal shareholder access to a proposal and vote",
+        "source-bounded disagreement over evidence production and human-rights review"
+      ],
+      "does_not_support": [
+        "that either proposal would have changed company conduct",
+        "that proponents represented all ordinary shareholders",
+        "misconduct or human-rights violations",
+        "how voting would have resolved under a different capital structure"
+      ],
+      "classification": {
+        "epistemic_standing_id": "EJ2-bounded-inspection-or-review",
+        "burden_position_id": "B2-shared-or-contested-burden",
+        "intervention_timing_id": "IT1-prospective-review-before-action",
+        "evidence_custody_id": "EC4-independent-discoverable-or-auditable-custody",
+        "counterfactual_access_id": "CF2-alternative-evaluated",
+        "remedy_power_id": "RP1-voice-feedback-or-complaint",
+        "uncertainty_allocation_id": "UA2-shared-or-contested-uncertainty",
+        "class_ids": [
+          "CJ13-preventive-challenger",
+          "CJ15-comparator-producer"
+        ],
+        "action_rights": [
+          "evaluate_alternative",
+          "publish_or_petition"
+        ],
+        "represented_voice_basis": "shareholder-proponent-public-filing",
+        "mental_state_ceiling": "No mental state, awareness, motive, wrongdoing, or coordination inference is generated from this structural classification."
+      },
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "formal_shareholder_governance_alternative_evaluated",
+      "next_decisive_acquisition": "Acquire proponent communications, board deliberations, voting instructions, shareholder class denominator, engagement records, later policy changes, and peer-company outcomes under comparable proposals.",
+      "falsifier": "The proposals were not validly presented, were not considered by shareholders, or concerned no material alternative governance mechanism.",
+      "stopping_rule": "Close when proposal formation, evaluation, vote, implementation effect, and matched peer outcomes are known.",
+      "system": {
+        "system_id": "SYS-PALANTIR-CONSTITUTION-ONTOLOGY",
+        "label": "Palantir founder governance and Ontology action architecture",
+        "scope": "Founder voting control, corporate mission, Ontology objects and action types, customer roles, privacy controls, and deployment-specific subject standing",
+        "actors": [
+          "Palantir founders",
+          "Palantir board and shareholders",
+          "Palantir product architects",
+          "customer institutions",
+          "authorized users",
+          "represented people and organizations"
+        ],
+        "source_ids": [
+          "M04F-S029",
+          "M04F-S030",
+          "M04F-S031",
+          "M04F-S032",
+          "M04F-S033"
+        ],
+        "parent_record_ids": [
+          "M04D-FR-024",
+          "M04E constitutional class records"
+        ]
+      },
+      "test": {
+        "test_id": "EJT6-counterfactual-foreclosure",
+        "question": "Which alternatives were allowed to generate evidence, which were excluded, and who benefited from their absence?",
+        "minimum_objects": [
+          "complete denominator",
+          "selection/exclusion record",
+          "pilot or operating result",
+          "matched comparator",
+          "stopping rule"
+        ]
+      },
+      "sources": [
+        {
+          "source_id": "M04F-S042",
+          "publisher": "U.S. Securities and Exchange Commission",
+          "title": "Palantir Technologies Inc. 2026 definitive proxy statement",
+          "url": "https://www.sec.gov/Archives/edgar/data/1321655/000132165526000019/pltr-20260423.htm",
+          "source_type": "official_regulatory_filing",
+          "locator_state": "source_bounded"
+        },
+        {
+          "source_id": "M04F-S044",
+          "publisher": "U.S. Securities and Exchange Commission",
+          "title": "Exempt solicitation supporting Palantir Proposal 4, independent due-diligence report",
+          "url": "https://www.sec.gov/Archives/edgar/data/1321655/000121465926005220/o429261px14a6g.htm",
+          "source_type": "official_regulatory_filing_filer_supplied",
+          "locator_state": "source_bounded"
+        }
+      ]
+    },
+    {
+      "record_id": "M04F-EJ-077",
+      "system_id": "SYS-PALANTIR-CONSTITUTION-ONTOLOGY",
+      "test_id": "EJT7-exception-privilege",
+      "source_ids": [
+        "M04F-S042",
+        "M04F-S043"
+      ],
+      "parent_record_ids": [
+        "M04F-EJ-047",
+        "M04F-EJ-048"
+      ],
+      "proposition": "Palantir's Class F structure allocated a formula-based voting privilege to the founder trust on the 2026 shareholder proposals, and the company reported that Proposals 4 and 5 were not approved.",
+      "observation": "The proxy states that Class F voting power for Proposals 2 through 6 was designed to equal 49.999999 percent of represented voting power after specified founder-share adjustments. The 8-K reports approximately 160.412 votes per Class F share on Proposals 3 through 6 and records the defeat of Proposals 4 and 5.",
+      "supports": [
+        "an exact governance exception and actual vote result",
+        "formal insulation from ordinary one-share-one-vote correction",
+        "a source-bounded path for testing counterfactual shareholder outcomes"
+      ],
+      "does_not_support": [
+        "that founder votes alone caused defeat",
+        "that proposals would have passed under one-share-one-vote",
+        "wrongdoing or breach of duty",
+        "the founders' private motive"
+      ],
+      "classification": {
+        "epistemic_standing_id": "EJ5-threshold-burden-or-counterfactual-authority",
+        "burden_position_id": "B2-shared-or-contested-burden",
+        "intervention_timing_id": "IT1-prospective-review-before-action",
+        "evidence_custody_id": "EC4-independent-discoverable-or-auditable-custody",
+        "counterfactual_access_id": "CF2-alternative-evaluated",
+        "remedy_power_id": "RP1-voice-feedback-or-complaint",
+        "uncertainty_allocation_id": "UA2-shared-or-contested-uncertainty",
+        "class_ids": [
+          "CJ02-threshold-author",
+          "CJ10-exception-holder"
+        ],
+        "action_rights": [
+          "define_exception",
+          "set_threshold",
+          "authorize_action",
+          "control_disclosure"
+        ],
+        "represented_voice_basis": "official-regulatory-vote-record",
+        "mental_state_ceiling": "No mental state, awareness, motive, wrongdoing, or coordination inference is generated from this structural classification."
+      },
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "formula_based_founder_voting_privilege_and_defeated_proposals",
+      "next_decisive_acquisition": "Reconstruct the complete voting denominator by class and beneficial holder, founder instructions, excluded shares, proposal-specific counterfactuals, board deliberations, and peer governance controls.",
+      "falsifier": "Class F had no material effect on the available governance counterfactual, or independent directors and ordinary shareholders possessed and exercised equivalent correction authority.",
+      "stopping_rule": "Close when formal voting rights, actual votes, counterfactual results, and observed governance effects are reconciled.",
+      "system": {
+        "system_id": "SYS-PALANTIR-CONSTITUTION-ONTOLOGY",
+        "label": "Palantir founder governance and Ontology action architecture",
+        "scope": "Founder voting control, corporate mission, Ontology objects and action types, customer roles, privacy controls, and deployment-specific subject standing",
+        "actors": [
+          "Palantir founders",
+          "Palantir board and shareholders",
+          "Palantir product architects",
+          "customer institutions",
+          "authorized users",
+          "represented people and organizations"
+        ],
+        "source_ids": [
+          "M04F-S029",
+          "M04F-S030",
+          "M04F-S031",
+          "M04F-S032",
+          "M04F-S033"
+        ],
+        "parent_record_ids": [
+          "M04D-FR-024",
+          "M04E constitutional class records"
+        ]
+      },
+      "test": {
+        "test_id": "EJT7-exception-privilege",
+        "question": "Who may depart from the rule, authorize an exception, or reinterpret failure without being recategorized as noncompliant?",
+        "minimum_objects": [
+          "ordinary rule",
+          "exception holder",
+          "exception basis",
+          "recorded use",
+          "review or appeal"
+        ]
+      },
+      "sources": [
+        {
+          "source_id": "M04F-S042",
+          "publisher": "U.S. Securities and Exchange Commission",
+          "title": "Palantir Technologies Inc. 2026 definitive proxy statement",
+          "url": "https://www.sec.gov/Archives/edgar/data/1321655/000132165526000019/pltr-20260423.htm",
+          "source_type": "official_regulatory_filing",
+          "locator_state": "source_bounded"
+        },
+        {
+          "source_id": "M04F-S043",
+          "publisher": "U.S. Securities and Exchange Commission",
+          "title": "Palantir Technologies Inc. Form 8-K reporting 2026 annual-meeting voting results",
+          "url": "https://www.sec.gov/Archives/edgar/data/1321655/000132165526000033/pltr-20260603.htm",
+          "source_type": "official_regulatory_filing",
+          "locator_state": "source_bounded"
+        }
+      ]
+    },
+    {
+      "record_id": "M04F-EJ-078",
+      "system_id": "SYS-PALANTIR-CONSTITUTION-ONTOLOGY",
+      "test_id": "EJT5-evidence-custody",
+      "source_ids": [
+        "M04F-S042",
+        "M04F-S044"
+      ],
+      "parent_record_ids": [
+        "M04F-EJ-045",
+        "M04F-EJ-048"
+      ],
+      "proposition": "Palantir's board argued that customer confidentiality, legal obligations, and classification would materially constrain an independent third-party human-rights review, exposing a documented evidence-custody boundary.",
+      "observation": "The proxy says an outside assessor could not evaluate some work without conflicting with contractual, legal, or classification obligations and specifically notes limits concerning work such as ICE. The proponents sought an independent report that would omit proprietary information. The dispute establishes the boundary, not whether every requested fact is legally unavailable.",
+      "supports": [
+        "a source-bounded conflict over who may inspect and publish deployment evidence",
+        "shared custody among company, customers, and public institutions",
+        "an exact acquisition lane for classified, confidential, aggregated, or independently auditable substitutes"
+      ],
+      "does_not_support": [
+        "deliberate concealment",
+        "that no independent review is possible",
+        "that the underlying deployments caused human-rights harm",
+        "that all customer restrictions are identical"
+      ],
+      "classification": {
+        "epistemic_standing_id": "EJ3-evidence-schema-or-log-custody",
+        "burden_position_id": "B2-shared-or-contested-burden",
+        "intervention_timing_id": "IT1-prospective-review-before-action",
+        "evidence_custody_id": "EC3-shared-public-private-custody",
+        "counterfactual_access_id": "CF1-alternative-named",
+        "remedy_power_id": "RP1-voice-feedback-or-complaint",
+        "uncertainty_allocation_id": "UA2-shared-or-contested-uncertainty",
+        "class_ids": [
+          "CJ04-archive-and-admissibility-custodian"
+        ],
+        "action_rights": [
+          "control_logs",
+          "control_disclosure",
+          "publish_or_petition"
+        ],
+        "represented_voice_basis": "official-company-and-shareholder-filing",
+        "mental_state_ceiling": "No mental state, awareness, motive, wrongdoing, or coordination inference is generated from this structural classification."
+      },
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "documented_confidentiality_and_classification_custody_boundary",
+      "next_decisive_acquisition": "Acquire customer contract clauses, classification guides, audit rights, PCL reviews, board records, aggregated assurance methods, inspector or court access, and examples where independent review occurred without prohibited disclosure.",
+      "falsifier": "Operative records show the cited restrictions do not materially prevent independent review, or that equivalent evidence is routinely available to accountable external bodies.",
+      "stopping_rule": "Close when each asserted restriction, custodian, lawful reviewer, substitute evidence form, and observed audit path is mapped.",
+      "system": {
+        "system_id": "SYS-PALANTIR-CONSTITUTION-ONTOLOGY",
+        "label": "Palantir founder governance and Ontology action architecture",
+        "scope": "Founder voting control, corporate mission, Ontology objects and action types, customer roles, privacy controls, and deployment-specific subject standing",
+        "actors": [
+          "Palantir founders",
+          "Palantir board and shareholders",
+          "Palantir product architects",
+          "customer institutions",
+          "authorized users",
+          "represented people and organizations"
+        ],
+        "source_ids": [
+          "M04F-S029",
+          "M04F-S030",
+          "M04F-S031",
+          "M04F-S032",
+          "M04F-S033"
+        ],
+        "parent_record_ids": [
+          "M04D-FR-024",
+          "M04E constitutional class records"
+        ]
+      },
+      "test": {
+        "test_id": "EJT5-evidence-custody",
+        "question": "Who controls the data, model, logs, rationale, rejected alternatives, and records needed to reconstruct the decision?",
+        "minimum_objects": [
+          "source inventory",
+          "custodian",
+          "retention/versioning",
+          "disclosure route",
+          "audit or discovery right"
+        ]
+      },
+      "sources": [
+        {
+          "source_id": "M04F-S042",
+          "publisher": "U.S. Securities and Exchange Commission",
+          "title": "Palantir Technologies Inc. 2026 definitive proxy statement",
+          "url": "https://www.sec.gov/Archives/edgar/data/1321655/000132165526000019/pltr-20260423.htm",
+          "source_type": "official_regulatory_filing",
+          "locator_state": "source_bounded"
+        },
+        {
+          "source_id": "M04F-S044",
+          "publisher": "U.S. Securities and Exchange Commission",
+          "title": "Exempt solicitation supporting Palantir Proposal 4, independent due-diligence report",
+          "url": "https://www.sec.gov/Archives/edgar/data/1321655/000121465926005220/o429261px14a6g.htm",
+          "source_type": "official_regulatory_filing_filer_supplied",
+          "locator_state": "source_bounded"
+        }
+      ]
+    },
+    {
+      "record_id": "M04F-EJ-079",
+      "system_id": "SYS-BRAVE1",
+      "test_id": "EJT4-temporal-asymmetry",
+      "source_ids": [
+        "M04F-S045"
+      ],
+      "parent_record_ids": [
+        "M04D-FR-060"
+      ],
+      "proposition": "Brave1 publicly described a combat-tested interceptor workflow in which automation performs most of the engagement after an operator selects the target, while the operator retains the ability to cancel the attack at any moment.",
+      "observation": "The first-party account says the technology automates 95 percent of the interception process, integrates with radar, requires the operator to choose a target and command engagement, and permits cancellation at any time. This is a stated human-abort architecture, not an independently instrumented proof of meaningful veto in every deployment.",
+      "supports": [
+        "a bounded contemporaneous human command and abort claim",
+        "a concrete acquisition target for timing, interface, automation, and cancellation logs",
+        "separation of high automation from a declared retained human control"
+      ],
+      "does_not_support": [
+        "successful cancellation in practice",
+        "the accuracy of the 95 percent figure",
+        "lawfulness or accuracy of every target",
+        "absence of automation bias or time pressure"
+      ],
+      "classification": {
+        "epistemic_standing_id": "EJ4-prospective-action-on-inference",
+        "burden_position_id": "B2-shared-or-contested-burden",
+        "intervention_timing_id": "IT2-contemporaneous-human-or-institutional-control",
+        "evidence_custody_id": "EC3-shared-public-private-custody",
+        "counterfactual_access_id": "CF1-alternative-named",
+        "remedy_power_id": "RP3-stay-veto-or-substitution-leverage",
+        "uncertainty_allocation_id": "UA2-shared-or-contested-uncertainty",
+        "class_ids": [
+          "CJ05-authorized-institutional-user",
+          "CJ10-exception-holder"
+        ],
+        "action_rights": [
+          "authorize_action",
+          "approve_or_override",
+          "abort_or_stay",
+          "execute_action"
+        ],
+        "represented_voice_basis": "first-party-operational-claim",
+        "mental_state_ceiling": "No mental state, awareness, motive, wrongdoing, or coordination inference is generated from this structural classification."
+      },
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "declared_operator_target_selection_and_attack_abort",
+      "next_decisive_acquisition": "Acquire the interface, rules of engagement, target lineage, confidence states, reaction windows, abort logs, failed engagements, human-factor testing, after-action reviews, and independent performance evaluation.",
+      "falsifier": "Operational records show the operator could not meaningfully inspect, delay, or cancel the engagement, or the described system was not used as stated.",
+      "stopping_rule": "Close after one complete target-to-abort-or-effect trace and a matched manual or alternate-system comparator.",
+      "system": {
+        "system_id": "SYS-BRAVE1",
+        "label": "Brave1 Dataroom, Market, and allied feedback mechanisms",
+        "scope": "Combat-data access, developer onboarding, validation, procurement feedback, production, and allied transfer, 2024-2026",
+        "actors": [
+          "Ministry of Defence of Ukraine",
+          "Ministry of Digital Transformation of Ukraine",
+          "Armed Forces of Ukraine",
+          "Palantir",
+          "Brave1",
+          "defense developers",
+          "military units",
+          "allied governments"
+        ],
+        "source_ids": [
+          "M04F-S020",
+          "M04F-S021",
+          "M04F-S022",
+          "M04F-S023",
+          "M04F-S024"
+        ],
+        "parent_record_ids": [
+          "M04D-FR-054",
+          "M04D-FR-055",
+          "M04D-FR-056",
+          "M04D-FR-057",
+          "M04D-FR-060"
+        ]
+      },
+      "test": {
+        "test_id": "EJT4-temporal-asymmetry",
+        "question": "Can the affected party obtain notice, inspection, or a stay before consequence, or only review afterward?",
+        "minimum_objects": [
+          "notice chronology",
+          "action chronology",
+          "stay or pause path",
+          "review chronology",
+          "final consequence"
+        ]
+      },
+      "sources": [
+        {
+          "source_id": "M04F-S045",
+          "publisher": "Brave1",
+          "title": "A Brave1 member developed technology automating 95 percent of the interception process",
+          "url": "https://brave1.gov.ua/en/news/brave1-maxon-systems-eng",
+          "source_type": "first_party_program_record",
+          "locator_state": "source_bounded"
+        }
+      ]
+    },
+    {
+      "record_id": "M04F-EJ-080",
+      "system_id": "SYS-BRAVE1",
+      "test_id": "EJT8-error-metabolism",
+      "source_ids": [
+        "M04F-S045",
+        "M04F-S046"
+      ],
+      "parent_record_ids": [
+        "M04D-FR-060"
+      ],
+      "proposition": "Brave1 and Ukraine's ePoints market connect combat performance, unit choice, state funding, manufacturer orders, investment, and product scaling, while the public record still lacks the negative-validation, incident, recall, and remedy denominator.",
+      "observation": "The Ministry of Defence reports more than 500,000 drones ordered by over 400 units through a marketplace of more than 800 products and more than UAH 33 billion in equipment. Brave1 reports that MaXon Systems closed an investment round and moved from prototype to combat deployment within a year.",
+      "supports": [
+        "a large public feedback-to-market and investment cycle",
+        "unit-level selection and state-financed procurement",
+        "a concrete learning and residual-benefit pathway"
+      ],
+      "does_not_support": [
+        "complete delivery or performance",
+        "failure, civilian-harm, friendly-fire, or recall rates",
+        "ownership and IP allocation",
+        "proportionate error and remedy distribution"
+      ],
+      "classification": {
+        "epistemic_standing_id": "EJ4-prospective-action-on-inference",
+        "burden_position_id": "B2-shared-or-contested-burden",
+        "intervention_timing_id": "IT2-contemporaneous-human-or-institutional-control",
+        "evidence_custody_id": "EC3-shared-public-private-custody",
+        "counterfactual_access_id": "CF1-alternative-named",
+        "remedy_power_id": "RP1-voice-feedback-or-complaint",
+        "uncertainty_allocation_id": "UA4-system-captures-learning-while-subject-bears-error",
+        "class_ids": [
+          "CJ11-error-cost-bearer",
+          "CJ12-learning-or-residual-beneficiary"
+        ],
+        "action_rights": [
+          "prioritize_action",
+          "execute_action",
+          "receive_revenue_or_residual_benefit",
+          "bear_error_or_consequence"
+        ],
+        "represented_voice_basis": "official-program-and-procurement-reporting",
+        "mental_state_ceiling": "No mental state, awareness, motive, wrongdoing, or coordination inference is generated from this structural classification."
+      },
+      "disposition": "requires_additional_acquisition",
+      "evidence_ceiling": "scaled_feedback_market_without_negative_outcome_denominator",
+      "next_decisive_acquisition": "Freeze applicants, products, orders, deliveries, failures, suspensions, recalls, incidents, units, targets, casualties, manufacturer revenue, investment, IP, data rights, compensation, and rejected alternatives.",
+      "falsifier": "Complete records show errors, benefits, learning, and remedies are proportionately allocated with effective preventive stopping authority and no concentrated residual advantage.",
+      "stopping_rule": "Close only after positive and negative paths, affected parties, learning recipients, and remedies are all represented.",
+      "system": {
+        "system_id": "SYS-BRAVE1",
+        "label": "Brave1 Dataroom, Market, and allied feedback mechanisms",
+        "scope": "Combat-data access, developer onboarding, validation, procurement feedback, production, and allied transfer, 2024-2026",
+        "actors": [
+          "Ministry of Defence of Ukraine",
+          "Ministry of Digital Transformation of Ukraine",
+          "Armed Forces of Ukraine",
+          "Palantir",
+          "Brave1",
+          "defense developers",
+          "military units",
+          "allied governments"
+        ],
+        "source_ids": [
+          "M04F-S020",
+          "M04F-S021",
+          "M04F-S022",
+          "M04F-S023",
+          "M04F-S024"
+        ],
+        "parent_record_ids": [
+          "M04D-FR-054",
+          "M04D-FR-055",
+          "M04D-FR-056",
+          "M04D-FR-057",
+          "M04D-FR-060"
+        ]
+      },
+      "test": {
+        "test_id": "EJT8-error-metabolism",
+        "question": "Who bears the immediate error or consequence, and who receives the resulting learning, capacity, revenue, or legitimacy?",
+        "minimum_objects": [
+          "error or uncertainty",
+          "affected party",
+          "learning loop",
+          "benefit recipient",
+          "correction or compensation"
+        ]
+      },
+      "sources": [
+        {
+          "source_id": "M04F-S045",
+          "publisher": "Brave1",
+          "title": "A Brave1 member developed technology automating 95 percent of the interception process",
+          "url": "https://brave1.gov.ua/en/news/brave1-maxon-systems-eng",
+          "source_type": "first_party_program_record",
+          "locator_state": "source_bounded"
+        },
+        {
+          "source_id": "M04F-S046",
+          "publisher": "Ministry of Defence of Ukraine",
+          "title": "Over 500,000 drones ordered by the military through Brave1 Market using combat points",
+          "url": "https://mod.gov.ua/en/news/over-500-000-drones-ordered-by-the-military-through-brave1-market-using-combat-points",
+          "source_type": "official_public_record",
+          "locator_state": "source_bounded"
+        }
+      ]
+    },
+    {
+      "record_id": "M04F-EJ-081",
+      "system_id": "SYS-WORKER-PREVENTIVE-CHALLENGE",
+      "test_id": "EJT4-temporal-asymmetry",
+      "source_ids": [
+        "M04F-S047"
+      ],
+      "parent_record_ids": [
+        "M04E-WORKER-CONSTITUTIONAL-ADVERSARY"
+      ],
+      "proposition": "Current and former AI-company workers directly demanded protected channels to warn boards, regulators, independent experts, and the public about risks before harm, while describing confidentiality and retaliation as barriers.",
+      "observation": "The Right to Warn letter states that AI companies possess substantial non-public risk information, have incentives to avoid oversight, and should protect anonymous reporting, open criticism, and public disclosure after internal processes fail. It is direct worker voice and a proposed preventive constitution, not evidence that the requested rights became binding.",
+      "supports": [
+        "direct worker voice about evidence custody and retaliation risk",
+        "a prospective challenge design",
+        "a concrete comparator for internal feedback versus protected external warning"
+      ],
+      "does_not_support": [
+        "that every signatory's claim is correct",
+        "a specific undisclosed harm",
+        "binding worker veto",
+        "implementation by every named company"
+      ],
+      "classification": {
+        "epistemic_standing_id": "EJ1-notice-correction-or-petition",
+        "burden_position_id": "B3-subject-bears-retrospective-proof",
+        "intervention_timing_id": "IT1-prospective-review-before-action",
+        "evidence_custody_id": "EC1-fragmented-local-or-subject-custody",
+        "counterfactual_access_id": "CF1-alternative-named",
+        "remedy_power_id": "RP1-voice-feedback-or-complaint",
+        "uncertainty_allocation_id": "UA3-subject-bears-uncertainty-as-risk-or-proof-burden",
+        "class_ids": [
+          "CJ13-preventive-challenger",
+          "CJ14-feedback-only-complainant"
+        ],
+        "action_rights": [
+          "publish_or_petition",
+          "seek_correction"
+        ],
+        "represented_voice_basis": "direct-worker-open-letter",
+        "mental_state_ceiling": "No mental state, awareness, motive, wrongdoing, or coordination inference is generated from this structural classification."
+      },
+      "disposition": "supported_for_human_review",
+      "evidence_ceiling": "direct_worker_preventive_challenge_without_binding_veto",
+      "next_decisive_acquisition": "Acquire company policy changes, anonymous-channel design, reporting and retaliation cases, board responses, regulator access, disclosed risks, and observed instances where worker warning delayed or stopped deployment.",
+      "falsifier": "The signatories had effective protected channels, suffered no material disclosure barriers, or the proposed rights produced no decision-relevant information.",
+      "stopping_rule": "Close when voice, evidence access, retaliation risk, institutional response, and binding effect are separately adjudicated.",
+      "system": {
+        "system_id": "SYS-WORKER-PREVENTIVE-CHALLENGE",
+        "label": "Technology-worker preventive challenge and disclosure rights",
+        "scope": "Direct worker warnings, confidentiality and retaliation concerns, collective challenge, and unresolved binding effect, 2021-2024",
+        "actors": [
+          "current and former AI-company workers",
+          "Google workers",
+          "Amazon workers",
+          "AI-company boards and executives",
+          "external regulators and publics"
+        ],
+        "source_ids": [
+          "M04F-S047",
+          "M04F-S048"
+        ],
+        "parent_record_ids": [
+          "M04E-WORKER-CONSTITUTIONAL-ADVERSARY"
+        ]
+      },
+      "test": {
+        "test_id": "EJT4-temporal-asymmetry",
+        "question": "Can the affected party obtain notice, inspection, or a stay before consequence, or only review afterward?",
+        "minimum_objects": [
+          "notice chronology",
+          "action chronology",
+          "stay or pause path",
+          "review chronology",
+          "final consequence"
+        ]
+      },
+      "sources": [
+        {
+          "source_id": "M04F-S047",
+          "publisher": "Current and former AI-company workers",
+          "title": "A Right to Warn about Advanced Artificial Intelligence",
+          "url": "https://righttowarn.ai/",
+          "source_type": "primary_worker_open_letter",
+          "locator_state": "source_bounded"
+        }
+      ]
+    },
+    {
+      "record_id": "M04F-EJ-082",
+      "system_id": "SYS-WORKER-PREVENTIVE-CHALLENGE",
+      "test_id": "EJT6-counterfactual-foreclosure",
+      "source_ids": [
+        "M04F-S048"
+      ],
+      "parent_record_ids": [
+        "M04E-WORKER-CONSTITUTIONAL-ADVERSARY"
+      ],
+      "proposition": "Google and Amazon workers collectively demanded withdrawal from Project Nimbus, creating an explicit worker-authored alternative to contract continuation, but the current record does not establish a binding change in the contract or project.",
+      "observation": "The published letter states that more than 90 Google and 300 Amazon workers had signed internally and that signers remained anonymous because they feared retaliation. The source preserves collective opposition and a proposed alternative, while leaving signer denominator, company response, contract effect, and later worker power unresolved.",
+      "supports": [
+        "collective worker voice and a named non-participation counterfactual",
+        "fear-of-retaliation evidence from the workers' own account",
+        "a source-bounded test of whether labor can create operational evidence against a governing objective"
+      ],
+      "does_not_support": [
+        "the accuracy of every allegation in the letter",
+        "a complete worker denominator",
+        "contract cancellation or deployment change",
+        "exclusive causation by worker pressure"
+      ],
+      "classification": {
+        "epistemic_standing_id": "EJ1-notice-correction-or-petition",
+        "burden_position_id": "B3-subject-bears-retrospective-proof",
+        "intervention_timing_id": "IT1-prospective-review-before-action",
+        "evidence_custody_id": "EC1-fragmented-local-or-subject-custody",
+        "counterfactual_access_id": "CF1-alternative-named",
+        "remedy_power_id": "RP1-voice-feedback-or-complaint",
+        "uncertainty_allocation_id": "UA3-subject-bears-uncertainty-as-risk-or-proof-burden",
+        "class_ids": [
+          "CJ13-preventive-challenger",
+          "CJ14-feedback-only-complainant"
+        ],
+        "action_rights": [
+          "publish_or_petition",
+          "operate_alternative"
+        ],
+        "represented_voice_basis": "collective-worker-open-letter",
+        "mental_state_ceiling": "No mental state, awareness, motive, wrongdoing, or coordination inference is generated from this structural classification."
+      },
+      "disposition": "retained_candidate_only",
+      "evidence_ceiling": "collective_worker_counterfactual_without_observed_binding_effect",
+      "next_decisive_acquisition": "Acquire the full signature and employment denominator under privacy protections, internal petitions, management responses, retaliation records, resignations, work refusals, staffing effects, contract changes, and operational outcomes.",
+      "falsifier": "Complete records show the letter had no material relation to worker decisions, contract implementation, staffing, policy, or public accountability.",
+      "stopping_rule": "Close when collective voice, leverage, retaliation, institutional response, and contract effect are terminally adjudicated.",
+      "system": {
+        "system_id": "SYS-WORKER-PREVENTIVE-CHALLENGE",
+        "label": "Technology-worker preventive challenge and disclosure rights",
+        "scope": "Direct worker warnings, confidentiality and retaliation concerns, collective challenge, and unresolved binding effect, 2021-2024",
+        "actors": [
+          "current and former AI-company workers",
+          "Google workers",
+          "Amazon workers",
+          "AI-company boards and executives",
+          "external regulators and publics"
+        ],
+        "source_ids": [
+          "M04F-S047",
+          "M04F-S048"
+        ],
+        "parent_record_ids": [
+          "M04E-WORKER-CONSTITUTIONAL-ADVERSARY"
+        ]
+      },
+      "test": {
+        "test_id": "EJT6-counterfactual-foreclosure",
+        "question": "Which alternatives were allowed to generate evidence, which were excluded, and who benefited from their absence?",
+        "minimum_objects": [
+          "complete denominator",
+          "selection/exclusion record",
+          "pilot or operating result",
+          "matched comparator",
+          "stopping rule"
+        ]
+      },
+      "sources": [
+        {
+          "source_id": "M04F-S048",
+          "publisher": "Anonymous Google and Amazon workers via AURDIP",
+          "title": "We are Google and Amazon workers. We condemn Project Nimbus",
+          "url": "https://aurdip.org/en/we-are-google-and-amazon-workers/",
+          "source_type": "worker_open_letter_republication",
           "locator_state": "source_bounded"
         }
       ]
@@ -9261,6 +11125,126 @@
       "title": "Palantir Technologies Inc. registration statement",
       "url": "https://www.sec.gov/Archives/edgar/data/1321655/000119312520230013/d904406ds1.htm",
       "source_type": "official_regulatory_filing",
+      "locator_state": "source_bounded"
+    },
+    {
+      "source_id": "M04F-S034",
+      "publisher": "United States District Court for the Western District of Washington via Justia",
+      "title": "Doe v. Noem, Order on Motion for Temporary Restraining Order, No. 2:25-cv-00633-DGE",
+      "url": "https://law.justia.com/cases/federal/district-courts/washington/wawdce/2%3A2025cv00633/346855/16/",
+      "source_type": "judicial_opinion_public_mirror",
+      "locator_state": "source_bounded"
+    },
+    {
+      "source_id": "M04F-S035",
+      "publisher": "DHS Office of Inspector General via Oversight.gov",
+      "title": "CBP, ICE, and Secret Service Did Not Adhere to Privacy Policies or Develop Sufficient Policies Before Procuring and Using Commercial Telemetry Data",
+      "url": "https://www.oversight.gov/reports/audit/cbp-ice-and-secret-service-did-not-adhere-privacy-policies-or-develop-sufficient",
+      "source_type": "official_oversight_record",
+      "locator_state": "source_bounded"
+    },
+    {
+      "source_id": "M04F-S036",
+      "publisher": "DHS Office of Inspector General via Oversight.gov",
+      "title": "OIG-23-61 Recommendation 3: ICE discontinue commercial telemetry data until PIAs are approved",
+      "url": "https://www.oversight.gov/reports/audit/cbp-ice-and-secret-service-did-not-adhere-privacy-policies-or-develop-sufficient-2",
+      "source_type": "official_open_recommendation_record",
+      "locator_state": "source_bounded"
+    },
+    {
+      "source_id": "M04F-S037",
+      "publisher": "NHS England",
+      "title": "Federated Data Platform Check and Challenge Group minutes and action notes: 21 March 2025",
+      "url": "https://www.england.nhs.uk/long-read/federated-data-platform-check-and-challenge-group-minutes-and-action-notes-21-march-2025/",
+      "source_type": "official_governance_minutes",
+      "locator_state": "source_bounded"
+    },
+    {
+      "source_id": "M04F-S038",
+      "publisher": "NHS England",
+      "title": "Federated Data Platform Check and Challenge Group minutes and action notes: 19 September 2025",
+      "url": "https://www.england.nhs.uk/long-read/federated-data-platform-check-and-challenge-group-minutes-and-action-notes-19-september-2025/",
+      "source_type": "official_governance_minutes",
+      "locator_state": "source_bounded"
+    },
+    {
+      "source_id": "M04F-S039",
+      "publisher": "NHS England",
+      "title": "Federated Data Platform Check and Challenge Group minutes and action notes: 21 October 2025",
+      "url": "https://www.england.nhs.uk/long-read/federated-data-platform-check-and-challenge-group-minutes-and-action-notes-21-october-2025/",
+      "source_type": "official_governance_minutes",
+      "locator_state": "source_bounded"
+    },
+    {
+      "source_id": "M04F-S040",
+      "publisher": "NHS England",
+      "title": "Federated Data Platform Check and Challenge Group minutes and action notes: 21 November 2025",
+      "url": "https://www.england.nhs.uk/long-read/fdp-check-challenge-group-minutes-action-notes-21nov2025/",
+      "source_type": "official_governance_minutes",
+      "locator_state": "source_bounded"
+    },
+    {
+      "source_id": "M04F-S041",
+      "publisher": "NHS England",
+      "title": "Transformation Check and Challenge Group meeting minutes: 20 February 2026",
+      "url": "https://www.england.nhs.uk/long-read/transformation-check-and-challenge-group-meeting-minutes-20-february-2026/",
+      "source_type": "official_governance_minutes",
+      "locator_state": "source_bounded"
+    },
+    {
+      "source_id": "M04F-S042",
+      "publisher": "U.S. Securities and Exchange Commission",
+      "title": "Palantir Technologies Inc. 2026 definitive proxy statement",
+      "url": "https://www.sec.gov/Archives/edgar/data/1321655/000132165526000019/pltr-20260423.htm",
+      "source_type": "official_regulatory_filing",
+      "locator_state": "source_bounded"
+    },
+    {
+      "source_id": "M04F-S043",
+      "publisher": "U.S. Securities and Exchange Commission",
+      "title": "Palantir Technologies Inc. Form 8-K reporting 2026 annual-meeting voting results",
+      "url": "https://www.sec.gov/Archives/edgar/data/1321655/000132165526000033/pltr-20260603.htm",
+      "source_type": "official_regulatory_filing",
+      "locator_state": "source_bounded"
+    },
+    {
+      "source_id": "M04F-S044",
+      "publisher": "U.S. Securities and Exchange Commission",
+      "title": "Exempt solicitation supporting Palantir Proposal 4, independent due-diligence report",
+      "url": "https://www.sec.gov/Archives/edgar/data/1321655/000121465926005220/o429261px14a6g.htm",
+      "source_type": "official_regulatory_filing_filer_supplied",
+      "locator_state": "source_bounded"
+    },
+    {
+      "source_id": "M04F-S045",
+      "publisher": "Brave1",
+      "title": "A Brave1 member developed technology automating 95 percent of the interception process",
+      "url": "https://brave1.gov.ua/en/news/brave1-maxon-systems-eng",
+      "source_type": "first_party_program_record",
+      "locator_state": "source_bounded"
+    },
+    {
+      "source_id": "M04F-S046",
+      "publisher": "Ministry of Defence of Ukraine",
+      "title": "Over 500,000 drones ordered by the military through Brave1 Market using combat points",
+      "url": "https://mod.gov.ua/en/news/over-500-000-drones-ordered-by-the-military-through-brave1-market-using-combat-points",
+      "source_type": "official_public_record",
+      "locator_state": "source_bounded"
+    },
+    {
+      "source_id": "M04F-S047",
+      "publisher": "Current and former AI-company workers",
+      "title": "A Right to Warn about Advanced Artificial Intelligence",
+      "url": "https://righttowarn.ai/",
+      "source_type": "primary_worker_open_letter",
+      "locator_state": "source_bounded"
+    },
+    {
+      "source_id": "M04F-S048",
+      "publisher": "Anonymous Google and Amazon workers via AURDIP",
+      "title": "We are Google and Amazon workers. We condemn Project Nimbus",
+      "url": "https://aurdip.org/en/we-are-google-and-amazon-workers/",
+      "source_type": "worker_open_letter_republication",
       "locator_state": "source_bounded"
     }
   ],
