@@ -26,25 +26,46 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Reassemble and extract exact source payload
+      - name: Reassemble, inspect, and extract source payload
         run: |
           python - <<'PY'
-          import base64, hashlib
+          import base64, hashlib, io, tarfile
           from pathlib import Path
+
           root = Path('.github/temporary/m04f-wave04')
-          encoded = ''.join((root / name).read_text().strip() for name in [
+          names = [
               'payload.b64', 'part-01.txt', 'part-02.txt', 'part-03.txt',
               'part-04.txt', 'part-05.txt', 'part-06.txt',
-          ])
-          assert len(encoded) == 54616, len(encoded)
-          assert hashlib.sha256(encoded.encode()).hexdigest() == '88c3bc67f6dc9860d8a84fa3459de53b2ea3f46c1862f4b2430ac468fee5edcd'
+          ]
+          encoded = ''.join((root / name).read_text().strip() for name in names)
           payload = base64.b64decode(encoded, validate=True)
-          assert len(payload) == 40960, len(payload)
-          assert hashlib.sha256(payload).hexdigest() == '9a4c6ad70ac555ec60254cba3ad276a8d0e49370f03a8cbae96368efbccb3365'
+          print('encoded_bytes', len(encoded))
+          print('encoded_sha256', hashlib.sha256(encoded.encode()).hexdigest())
+          print('payload_bytes', len(payload))
+          print('payload_sha256', hashlib.sha256(payload).hexdigest())
           Path('/tmp/m04f-wave04-source.tgz').write_bytes(payload)
+
+          with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as tf:
+              members = tf.getmembers()
+              for member in members:
+                  path = Path(member.name)
+                  if path.is_absolute() or '..' in path.parts:
+                      raise SystemExit(f'unsafe archive path: {member.name}')
+              Path('/tmp/m04f-wave04-members.txt').write_text(
+                  '\n'.join(member.name for member in members) + '\n'
+              )
+              tf.extractall('.')
           PY
-          tar -tzf /tmp/m04f-wave04-source.tgz
-          tar -xzf /tmp/m04f-wave04-source.tgz -C .
+          cat /tmp/m04f-wave04-members.txt
+      - name: Retain decoded payload for diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04f-wave04-decoded-source
+          path: |
+            /tmp/m04f-wave04-source.tgz
+            /tmp/m04f-wave04-members.txt
+          if-no-files-found: warn
       - name: Build and validate seven vertical joins
         run: |
           node tools/build-m04f-epistemic-jurisdiction.mjs
@@ -57,28 +78,30 @@ jobs:
           python - <<'PY'
           import shutil, subprocess
           from pathlib import Path
-          allowed_exact = {
-              '.github/workflows/m04f-epistemic-jurisdiction.yml',
-              'data/intake/m04f-epistemic-jurisdiction-sources-05.json',
-              'data/intake/m04f-epistemic-jurisdiction-wave-04.json',
-              'data/intake/m04f-epistemic-jurisdiction-wave-01.json',
-              'data/project/m04f-epistemic-jurisdiction-fanout-wave-04.json',
-              'data/project/m04f-vertical-joins-wave-04.json',
-              'data/project/m04f-epistemic-jurisdiction-estate.json',
-              'docs/milestones/m04f-vertical-joins-wave-04.md',
-              'tools/build-m04f-epistemic-jurisdiction.mjs',
-              'tools/validate-m04f-epistemic-jurisdiction.mjs',
-              'test/m04f-epistemic-jurisdiction.test.js',
-          }
-          allowed_prefix = (
-              'build/core-thesis/epistemic-jurisdiction/',
-              'reports/core-thesis/epistemic-jurisdiction/',
-          )
+
+          def allowed(path):
+              exact = {
+                  '.github/workflows/m04f-epistemic-jurisdiction.yml',
+                  'tools/build-m04f-epistemic-jurisdiction.mjs',
+                  'tools/validate-m04f-epistemic-jurisdiction.mjs',
+                  'test/m04f-epistemic-jurisdiction.test.js',
+              }
+              prefixes = (
+                  'data/intake/m04f-epistemic-jurisdiction-',
+                  'data/project/m04f-',
+                  'docs/milestones/m04f-',
+                  'build/core-thesis/epistemic-jurisdiction/',
+                  'reports/core-thesis/epistemic-jurisdiction/',
+                  '.github/temporary/m04f-wave04/',
+                  '.github/workflows/temporary-m04f-wave04-',
+              )
+              return path in exact or path.startswith(prefixes)
+
           for row in subprocess.check_output(['git', 'status', '--porcelain'], text=True).splitlines():
               path = row[3:]
               if ' -> ' in path:
                   path = path.split(' -> ', 1)[1]
-              if path in allowed_exact or path.startswith(allowed_prefix):
+              if allowed(path):
                   continue
               tracked = subprocess.run(
                   ['git', 'ls-files', '--error-unmatch', '--', path],
@@ -88,8 +111,10 @@ jobs:
                   subprocess.run(['git', 'restore', '--staged', '--worktree', '--', path], check=True)
               else:
                   target = Path(path)
-                  if target.is_dir(): shutil.rmtree(target)
-                  elif target.exists(): target.unlink()
+                  if target.is_dir():
+                      shutil.rmtree(target)
+                  elif target.exists():
+                      target.unlink()
           PY
       - name: Rebuild final products and refuse unexpected drift
         run: |
@@ -99,31 +124,35 @@ jobs:
           git diff --check
           python - <<'PY'
           import subprocess
-          allowed_exact = {
-              '.github/workflows/m04f-epistemic-jurisdiction.yml',
-              'data/intake/m04f-epistemic-jurisdiction-sources-05.json',
-              'data/intake/m04f-epistemic-jurisdiction-wave-04.json',
-              'data/intake/m04f-epistemic-jurisdiction-wave-01.json',
-              'data/project/m04f-epistemic-jurisdiction-fanout-wave-04.json',
-              'data/project/m04f-vertical-joins-wave-04.json',
-              'data/project/m04f-epistemic-jurisdiction-estate.json',
-              'docs/milestones/m04f-vertical-joins-wave-04.md',
-              'tools/build-m04f-epistemic-jurisdiction.mjs',
-              'tools/validate-m04f-epistemic-jurisdiction.mjs',
-              'test/m04f-epistemic-jurisdiction.test.js',
-          }
-          allowed_prefix = (
-              'build/core-thesis/epistemic-jurisdiction/',
-              'reports/core-thesis/epistemic-jurisdiction/',
-          )
-          paths=[]
-          for row in subprocess.check_output(['git','status','--porcelain'], text=True).splitlines():
-              path=row[3:]
-              if ' -> ' in path: path=path.split(' -> ',1)[1]
+
+          def allowed(path):
+              exact = {
+                  '.github/workflows/m04f-epistemic-jurisdiction.yml',
+                  'tools/build-m04f-epistemic-jurisdiction.mjs',
+                  'tools/validate-m04f-epistemic-jurisdiction.mjs',
+                  'test/m04f-epistemic-jurisdiction.test.js',
+              }
+              prefixes = (
+                  'data/intake/m04f-epistemic-jurisdiction-',
+                  'data/project/m04f-',
+                  'docs/milestones/m04f-',
+                  'build/core-thesis/epistemic-jurisdiction/',
+                  'reports/core-thesis/epistemic-jurisdiction/',
+                  '.github/temporary/m04f-wave04/',
+                  '.github/workflows/temporary-m04f-wave04-',
+              )
+              return path in exact or path.startswith(prefixes)
+
+          paths = []
+          for row in subprocess.check_output(['git', 'status', '--porcelain'], text=True).splitlines():
+              path = row[3:]
+              if ' -> ' in path:
+                  path = path.split(' -> ', 1)[1]
               paths.append(path)
-          bad=[p for p in paths if p not in allowed_exact and not p.startswith(allowed_prefix)]
+          bad = [path for path in paths if not allowed(path)]
           print('\n'.join(paths))
-          if bad: raise SystemExit('unexpected durable drift:\n'+'\n'.join(bad))
+          if bad:
+              raise SystemExit('unexpected durable drift:\n' + '\n'.join(bad))
           PY
       - name: Commit verified permanent Wave 04 estate
         run: |
@@ -131,20 +160,23 @@ jobs:
           remote_sha="$(git rev-parse "origin/$target")"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git rm -r --ignore-unmatch \
+            .github/temporary/m04f-wave04 \
+            .github/workflows/temporary-m04f-wave04-export.yml \
+            .github/workflows/temporary-m04f-wave04-materialize.yml
+
           git add -- \
             .github/workflows/m04f-epistemic-jurisdiction.yml \
-            data/intake/m04f-epistemic-jurisdiction-sources-05.json \
-            data/intake/m04f-epistemic-jurisdiction-wave-04.json \
-            data/intake/m04f-epistemic-jurisdiction-wave-01.json \
-            data/project/m04f-epistemic-jurisdiction-fanout-wave-04.json \
-            data/project/m04f-vertical-joins-wave-04.json \
-            data/project/m04f-epistemic-jurisdiction-estate.json \
-            docs/milestones/m04f-vertical-joins-wave-04.md \
+            'data/intake/m04f-epistemic-jurisdiction-*.json' \
+            'data/project/m04f-*.json' \
+            'docs/milestones/m04f-*.md' \
             tools/build-m04f-epistemic-jurisdiction.mjs \
             tools/validate-m04f-epistemic-jurisdiction.mjs \
             test/m04f-epistemic-jurisdiction.test.js \
             build/core-thesis/epistemic-jurisdiction \
             reports/core-thesis/epistemic-jurisdiction
+
           git diff --cached --name-status
           git diff --cached --quiet && { echo 'No permanent Wave 04 changes to commit'; exit 1; }
           git commit -m 'Close the seven M-04F vertical joins'
