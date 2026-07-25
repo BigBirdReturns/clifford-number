@@ -1,0 +1,74 @@
+name: Temporary publish verified M-04F estate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '.github/temporary/m04f-epistemic-jurisdiction-v2/**'
+      - '.github/workflows/temporary-m04f-publish.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m04f-v2-publish-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reassemble exact source payload
+        run: |
+          python - <<'PY'
+          import base64, hashlib
+          from pathlib import Path
+          root=Path('.github/temporary/m04f-epistemic-jurisdiction-v2')
+          expected={
+            'payload-00.txt':'c67909d5320796e86e57fc4fdba78ad2655c01686b30a6cf90e07ec4b79e5eee',
+            'payload-01.txt':'9c116925db6adb453f9f02c7c0293319ffb207d155acca3f092e3cd31053359d',
+            'payload-02.txt':'397fd5682381a72fb920b9c71b83927617a2a092e3ca42ae33b7d34caab5da59',
+            'payload-03.txt':'f51cc00e77c246b68ac2e88a2e09fd901843f5f0e49fd451fdd264144731f483',
+            'payload-04.txt':'c318dfb3dd58fdbaca46f24a64c3829ee746466b7b74a5548264a2197cf3101e',
+            'payload-05.txt':'4ad33a0b12534ec3cf30d76f516c778bccb8b19f8f5965879a9adfaf42af0405',
+          }
+          chunks=[]
+          for name,digest in expected.items():
+            raw=(root/name).read_bytes()
+            if hashlib.sha256(raw).hexdigest()!=digest: raise SystemExit(f'{name}: checksum mismatch')
+            chunks.append(raw.decode('ascii'))
+          encoded=''.join(chunks)
+          if len(encoded)!=44360 or hashlib.sha256(encoded.encode()).hexdigest()!='33bab9bbd6a520527b8ae56015ada28591a0c36328d4a2ad1bb6c34c0d224206': raise SystemExit('assembled payload mismatch')
+          payload=base64.b64decode(encoded,validate=True)
+          if len(payload)!=33270 or hashlib.sha256(payload).hexdigest()!='a6a66b552df19a54d8056d950dde36671f4fc106fac97d265f098030241534af': raise SystemExit('decoded payload mismatch')
+          Path('/tmp/m04f-v2-source.tgz').write_bytes(payload)
+          PY
+          tar -xzf /tmp/m04f-v2-source.tgz -C .
+      - name: Build and validate permanent files
+        run: |
+          node tools/build-m04f-epistemic-jurisdiction.mjs
+          node tools/validate-m04f-epistemic-jurisdiction.mjs
+          node test/m04f-epistemic-jurisdiction.test.js
+          git diff --check
+      - name: Commit and force-with-lease push
+        run: |
+          set -euxo pipefail
+          target="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          remote_sha="$(git rev-parse "origin/$target")"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- data/project/m04f-epistemic-jurisdiction-*.json data/intake/m04f-epistemic-jurisdiction-*.json tools/build-m04f-epistemic-jurisdiction.mjs tools/validate-m04f-epistemic-jurisdiction.mjs test/m04f-epistemic-jurisdiction.test.js docs/milestones/m04f-epistemic-jurisdiction.md docs/methods/pattern-to-proof.md build/core-thesis/epistemic-jurisdiction reports/core-thesis/epistemic-jurisdiction
+          git diff --cached --name-status
+          test -n "$(git diff --cached --name-only)"
+          git commit -m 'Install M-04F epistemic jurisdiction estate'
+          git push --force-with-lease="refs/heads/$target:$remote_sha" origin "HEAD:refs/heads/$target"
