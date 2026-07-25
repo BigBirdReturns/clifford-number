@@ -32,17 +32,16 @@ jobs:
           import base64, hashlib, io, tarfile
           from pathlib import Path
 
-          root = Path('.github/temporary/m04f-wave04')
-          names = [
-              'payload.b64', 'part-01.txt', 'part-02.txt', 'part-03.txt',
-              'part-04.txt', 'part-05.txt', 'part-06.txt',
-          ]
-          encoded = ''.join((root / name).read_text().strip() for name in names)
+          encoded = Path('.github/temporary/m04f-wave04/payload.b64').read_text().strip()
           payload = base64.b64decode(encoded, validate=True)
           print('encoded_bytes', len(encoded))
           print('encoded_sha256', hashlib.sha256(encoded.encode()).hexdigest())
           print('payload_bytes', len(payload))
           print('payload_sha256', hashlib.sha256(payload).hexdigest())
+          assert len(encoded) == 54160
+          assert hashlib.sha256(encoded.encode()).hexdigest() == '270faa23c3e464b21882b576236c2af2cac5e6809e191418cd0dc8bd3e644e95'
+          assert len(payload) == 40620
+          assert hashlib.sha256(payload).hexdigest() == 'f2a5558e6362323dbff241581d4adff0aad7ef6bb362cecad97668fa1eae44f9'
           Path('/tmp/m04f-wave04-source.tgz').write_bytes(payload)
 
           with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as tf:
