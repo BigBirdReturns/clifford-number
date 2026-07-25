@@ -19,6 +19,7 @@ const outputs = [
   'data/project/m04f-epistemic-jurisdiction-estate.json',
   'build/core-thesis/epistemic-jurisdiction/manifest.json',
   'build/core-thesis/epistemic-jurisdiction/test-matrix.json',
+  'build/core-thesis/epistemic-jurisdiction/stratigraphy.json',
   'reports/core-thesis/epistemic-jurisdiction/data.json',
   'reports/core-thesis/epistemic-jurisdiction/index.html',
 ];
@@ -29,40 +30,49 @@ assert.deepEqual(Object.fromEntries(outputs.map(rel => [rel, digest(rel)])), bef
 const estate = readJson('data/project/m04f-epistemic-jurisdiction-estate.json');
 const waveOne = readJson('data/intake/m04f-epistemic-jurisdiction-wave-01.json');
 const waveTwo = readJson('data/intake/m04f-epistemic-jurisdiction-wave-02.json');
-const fanout = readJson('data/project/m04f-epistemic-jurisdiction-fanout.json');
+const waveThree = readJson('data/intake/m04f-epistemic-jurisdiction-wave-03.json');
 const report = readJson('reports/core-thesis/epistemic-jurisdiction/data.json');
+const fanoutBase = readJson('data/project/m04f-epistemic-jurisdiction-fanout.json');
+const fanoutThree = readJson('data/project/m04f-epistemic-jurisdiction-fanout-wave-03.json');
+const stratigraphy = readJson('build/core-thesis/epistemic-jurisdiction/stratigraphy.json');
 
 assert.equal(waveOne.records.length, 64);
 assert.equal(waveTwo.records.length, 18);
-assert.equal(estate.counts.records, 82);
-assert.equal(estate.counts.systems, 10);
-assert.equal(estate.counts.sources, 48);
-assert.equal(estate.counts.waves, 2);
-assert.equal(estate.counts.by_disposition.supported_for_human_review, 48);
-assert.equal(estate.counts.by_disposition.requires_additional_acquisition, 21);
-assert.equal(estate.counts.by_disposition.retained_candidate_only, 11);
-assert.equal(estate.counts.by_disposition.bounded_non_link, 2);
-assert.equal(estate.counts.direct_represented_person_voice_records, 1);
-assert.equal(fanout.lanes.length, 13);
-assert.equal(report.records.length, 82);
-assert.equal(report.source_waves.length, 2);
-
-const combined = [...waveOne.records, ...waveTwo.records];
+assert.equal(waveThree.records.length, 40);
+assert.equal(estate.counts.records, 122);
+assert.equal(estate.counts.systems, 15);
+assert.equal(estate.counts.sources, 66);
+assert.equal(estate.counts.waves, 3);
+assert.equal(estate.counts.fanout_lanes, 19);
+assert.equal(estate.counts.by_disposition.supported_for_human_review, 76);
+assert.equal(estate.counts.by_disposition.requires_additional_acquisition, 29);
+assert.equal(estate.counts.by_disposition.retained_candidate_only, 14);
+assert.equal(estate.counts.by_disposition.bounded_non_link, 3);
+assert.equal(estate.counts.direct_represented_person_voice_records, 10);
+assert.equal(fanoutBase.lanes.length + fanoutThree.lanes.length, 19);
+assert.equal(report.records.length, 122);
+assert.equal(report.source_waves.length, 3);
+assert.equal(report.waterline.length, 15);
+assert.equal(stratigraphy.records.length, 122);
+assert.equal(stratigraphy.systems.length, 15);
 assert.equal(
-  combined.filter(record => record.classification.remedy_power_id === 'RP4-compulsory-revision-reversal-or-termination').length,
-  4,
+  Object.values(estate.counts.by_stratigraphy).reduce((sum, value) => sum + value, 0),
+  122,
 );
 assert.equal(
-  combined.filter(record => record.classification.represented_voice_basis.startsWith('direct-subject')).length,
-  1,
-);
-assert.equal(
-  combined.find(record => record.record_id === 'M04F-EJ-068').disposition,
-  'bounded_non_link',
-);
-assert.equal(
-  combined.find(record => record.record_id === 'M04F-EJ-079').classification.remedy_power_id,
-  'RP3-stay-veto-or-substitution-leverage',
+  Object.values(estate.counts.waterline_by_state).reduce((sum, value) => sum + value, 0),
+  15,
 );
 
-console.log('m04f-epistemic-jurisdiction.test: OK (Wave 02 evidence lake)');
+const byId = new Map(report.records.map(record => [record.record_id, record]));
+assert.equal(byId.get('M04F-EJ-085').stratigraphy.state_id, 'bedrock');
+assert.equal(byId.get('M04F-EJ-096').stratigraphy.state_id, 'fault_line');
+assert.equal(byId.get('M04F-EJ-101').stratigraphy.state_id, 'bedrock');
+assert.equal(byId.get('M04F-EJ-109').stratigraphy.state_id, 'bedrock');
+assert.equal(byId.get('M04F-EJ-117').stratigraphy.state_id, 'bedrock');
+assert.equal(byId.get('M04F-EJ-068').stratigraphy.state_id, 'fault_line');
+assert.ok(report.waterline.some(item => item.waterline_state === 'bounded_landfall'));
+assert.equal(report.boundaries.bedrock_is_not_system_truth, true);
+assert.equal(report.boundaries.promotes_to, 'candidate_only');
+
+console.log('m04f-epistemic-jurisdiction.test: OK (Wave 03 evidentiary stratigraphy)');
