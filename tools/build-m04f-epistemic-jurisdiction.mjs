@@ -1,0 +1,58 @@
+#!/usr/bin/env node
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
+const j=rel=>JSON.parse(read(rel));
+const write=(rel,v)=>{const f=path.join(root,rel);fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,v)};
+const wj=(rel,v)=>write(rel,JSON.stringify(v,null,2)+'\n');
+const hash=v=>crypto.createHash('sha256').update(v).digest('hex');
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const corePath='data/project/m04f-epistemic-jurisdiction-core.json';
+const axesPath='data/project/m04f-epistemic-jurisdiction-axes.json';
+const tcPath='data/project/m04f-epistemic-jurisdiction-tests-classes.json';
+const systemsPath='data/intake/m04f-epistemic-jurisdiction-systems.json';
+const sourcePaths=['data/intake/m04f-epistemic-jurisdiction-sources-01.json','data/intake/m04f-epistemic-jurisdiction-sources-02.json'];
+const fanoutPath='data/project/m04f-epistemic-jurisdiction-fanout.json';
+const matrixPaths=fs.readdirSync(path.join(root,'data/intake')).filter(x=>x.startsWith('m04f-epistemic-jurisdiction-matrix-')).sort().map(x=>'data/intake/'+x);
+const sourceFiles=[corePath,axesPath,tcPath,systemsPath,...sourcePaths,fanoutPath,...matrixPaths];
+const texts=sourceFiles.map(read);
+const core=JSON.parse(texts[0]), axes=JSON.parse(texts[1]), tc=JSON.parse(texts[2]), systemsDoc=j(systemsPath), fanout=j(fanoutPath);
+const sources=sourcePaths.flatMap(p=>j(p).sources);
+const systems=systemsDoc.systems;
+const tests=new Map(tc.tests.map(x=>[x.test_id,x]));
+const systemMap=new Map(systems.map(x=>[x.system_id,x]));
+const matrices=matrixPaths.flatMap(p=>j(p).rows.map(r=>({...r,system_id:j(p).system_id})));
+const sourceMap=new Map(sources.map(x=>[x.source_id,x]));
+const records=matrices.map(row=>{
+ const sys=systemMap.get(row.system_id), test=tests.get(row.test);
+ return {
+  record_id:row.id,system_id:row.system_id,test_id:row.test,scope:sys.scope,actors:sys.actors,
+  source_ids:sys.source_ids,parent_record_ids:sys.parent_record_ids,
+  proposition:`${sys.label}: ${test.question}`,
+  observation:row.note,
+  supports:[`bounded ${test.test_id} review in ${sys.label}`,'the source-defined transition at the stated evidence ceiling'],
+  does_not_support:['mental state, motive, awareness, wrongdoing, coercion, or extraction','a system-wide coordinated-class or monopoly conclusion','causal consequence beyond the cited sources'],
+  classification:{epistemic_standing_id:row.e,burden_position_id:row.b,intervention_timing_id:row.i,evidence_custody_id:row.c,counterfactual_access_id:row.x,remedy_power_id:row.r,uncertainty_allocation_id:row.u,class_ids:row.k,action_rights:row.a,represented_voice_basis:'institutional-description-only; no direct represented-person voice in current source set',mental_state_ceiling:'No mental state, awareness, motive, or coordination inference is generated from this structural classification.'},
+  disposition:row.disp,evidence_ceiling:row.ceil,next_decisive_acquisition:row.next,falsifier:row.fals
+ };
+});
+const countBy=xs=>Object.fromEntries([...xs.reduce((m,v)=>m.set(v,(m.get(v)||0)+1),new Map())].sort(([a],[b])=>a.localeCompare(b)));
+const used=new Set(records.flatMap(r=>r.source_ids));
+const counts={systems:systems.length,records:records.length,sources:sources.length,sources_used:used.size,by_test:countBy(records.map(r=>r.test_id)),by_disposition:countBy(records.map(r=>r.disposition)),by_epistemic_standing:countBy(records.map(r=>r.classification.epistemic_standing_id)),by_burden:countBy(records.map(r=>r.classification.burden_position_id)),by_timing:countBy(records.map(r=>r.classification.intervention_timing_id)),by_custody:countBy(records.map(r=>r.classification.evidence_custody_id)),by_counterfactual:countBy(records.map(r=>r.classification.counterfactual_access_id)),by_remedy:countBy(records.map(r=>r.classification.remedy_power_id)),by_uncertainty:countBy(records.map(r=>r.classification.uncertainty_allocation_id)),by_class:countBy(records.flatMap(r=>r.classification.class_ids)),direct_represented_person_voice_records:0};
+const wave={schema_version:'m04f-epistemic-jurisdiction-wave@1',wave_id:'M04F-EJ-W01',estate_id:core.estate_id,status:'candidate_cross_estate',as_of:core.as_of,purpose:'Apply eight epistemic-jurisdiction tests to eight source-bounded systems without converting structural position into mental state or system-wide conclusion.',null_hypothesis:core.null,source_registry:sources,systems,records,boundaries:core.boundaries};
+const systemChains=systems.map(s=>({system_id:s.system_id,label:s.label,scope:s.scope,record_ids:records.filter(r=>r.system_id===s.system_id).map(r=>r.record_id),test_coverage:Object.fromEntries(tc.tests.map(t=>[t.test_id,'present'])),current_ceiling:'bounded system adjudication only; no system-wide monopoly or coordinated-class conclusion'}));
+const results=['Prospective inference authority appears across public acquisition, military, enforcement, health, banking, and platform systems; this alone does not establish abuse or one coordinated class.','The DCGS-A2 litigation is the strongest positive control for preventive counterpower because an independent court shifted a burden before award without selecting the challenger.','No record contains direct represented-person voice, so subject awareness, consent, injury, and practical standing remain unresolved rather than inferred.','Evidence custody is repeatedly fragmented across public institutions, vendors, source systems, users, reviewers, and affected people; fragmentation is not automatically deliberate concealment.','NGC2, NHS procurement, Brave1, and the Fundrise Erebor record provide material controls against total counterfactual foreclosure or exclusive-network explanations.','Human involvement and formal appeal remain separate from meaningful time, understanding, veto, stay, reversal, and practical exit.','The cross-system monopoly proposition remains candidate-only until repeated rights-holder identity, direct subject voice, consequence, remedy, comparator, and causal error-benefit chains are complete.'];
+const estate={schema_version:'m04f-epistemic-jurisdiction-estate@1',estate_id:core.estate_id,status:'candidate_cross_estate',as_of:core.as_of,source_wave:{wave_id:wave.wave_id,path:'data/intake/m04f-epistemic-jurisdiction-wave-01.json'},counts,current_ceiling:{bounded_form:'Multiple systems allocate prospective inference authority, thresholds, evidence custody, exception power, and retrospective burdens asymmetrically.',system_claim:'retained_candidate_only',monopoly_on_unprovable:'not_eligible_for_promotion',reason:'No complete cross-system denominator, direct represented-person voice, common governance, repeated rights-holder identity, or causal error-benefit chain.'},system_chains:systemChains,most_informative_results:results,next_sequence:fanout.lanes.map(x=>x.lane_id),admission_rule:'Canonical admission requires at least two source-complete systems with inference authority, threshold, evidence custody, direct affected-person voice, consequence, remedy, comparator, and observed exit or preventive stay.',boundaries:core.boundaries};
+const fingerprint=hash(texts.join('\n---\n'));
+const report={schema_version:'m04f-epistemic-jurisdiction-report@1',report_id:'M04F-EJ-REPORT-001',as_of:core.as_of,estate_id:core.estate_id,source_fingerprint:fingerprint,source_files:sourceFiles,counts,current_ceiling:estate.current_ceiling,most_informative_results:results,systems:systemChains,records:records.map(r=>({...r,system:systemMap.get(r.system_id),test:tests.get(r.test_id),sources:r.source_ids.map(id=>sourceMap.get(id))})),sources,proof_tests:tc.tests,axes:axes.axes,class_catalog:tc.classes,fanout:fanout.lanes,pattern_to_proof:core.pattern,boundaries:core.boundaries};
+wj('data/intake/m04f-epistemic-jurisdiction-wave-01.json',wave);wj('data/project/m04f-epistemic-jurisdiction-estate.json',estate);
+wj('build/core-thesis/epistemic-jurisdiction/manifest.json',{schema_version:'m04f-epistemic-jurisdiction-build@1',estate_id:core.estate_id,as_of:core.as_of,source_fingerprint:fingerprint,counts,source_files:sourceFiles,report_paths:['reports/core-thesis/epistemic-jurisdiction/data.json','reports/core-thesis/epistemic-jurisdiction/index.html'],boundaries:core.boundaries});
+wj('build/core-thesis/epistemic-jurisdiction/test-matrix.json',{schema_version:'m04f-epistemic-jurisdiction-test-matrix@1',estate_id:core.estate_id,proof_tests:tc.tests,systems:systemChains.map(s=>({system_id:s.system_id,label:s.label,record_ids:s.record_ids,dispositions:Object.fromEntries(records.filter(r=>r.system_id===s.system_id).map(r=>[r.test_id,r.disposition]))})),boundaries:core.boundaries});
+wj('reports/core-thesis/epistemic-jurisdiction/data.json',report);
+const cards=systemChains.map(s=>`<article><h3>${esc(s.label)}</h3><p>${esc(s.scope)}</p><p><code>${s.record_ids.length} tests</code></p></article>`).join('');
+const html=`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>M-04F epistemic jurisdiction</title><style>body{font:16px/1.55 system-ui;max-width:1500px;margin:35px auto;padding:0 22px;background:#ece9df;color:#171717}article,.box{background:#fffdf7;border:1px solid #c9c1b2;border-radius:12px;padding:14px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.metrics{display:flex;gap:12px;flex-wrap:wrap}.metric{min-width:130px}.metric b{display:block;font-size:1.7rem}.warn{border-left:5px solid #76251e;padding:14px;background:#fffdf7;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:.8rem;background:#fffdf7}th,td{padding:7px;border-bottom:1px solid #ddd;text-align:left;vertical-align:top}.pill{display:inline-block;border:1px solid #bbb;border-radius:999px;padding:2px 6px;margin:1px}</style></head><body><p><b>M-04F · candidate cross-estate</b></p><h1>${esc(core.title)}</h1><p>${esc(core.question)}</p><div class="warn"><b>Current ceiling:</b> ${esc(estate.current_ceiling.bounded_form)} Direct represented-person voice records: <b>0</b>.</div><div class="metrics"><div class="box metric"><b>${counts.systems}</b>systems</div><div class="box metric"><b>${counts.records}</b>records</div><div class="box metric"><b>${counts.sources}</b>sources</div><div class="box metric"><b>${counts.by_disposition.supported_for_human_review||0}</b>supported</div><div class="box metric"><b>${counts.by_disposition.requires_additional_acquisition||0}</b>acquire next</div></div><h2>Systems</h2><div class="grid">${cards}</div><h2>Records</h2><table><thead><tr><th>ID</th><th>System</th><th>Test</th><th>Observation</th><th>Disposition</th></tr></thead><tbody>${report.records.map(r=>`<tr><td><code>${r.record_id}</code></td><td>${esc(r.system.label)}</td><td>${esc(r.test_id)}</td><td>${esc(r.observation)}</td><td><code>${esc(r.disposition)}</code></td></tr>`).join('')}</tbody></table><h2>Pattern-to-Proof</h2><p>Seed manuscript SHA-256: <code>${esc(core.pattern.seed_document.sha256)}</code>. The source PDF binary is not published by this protocol.</p><div class="warn"><code>promotes_to: candidate_only · graph_effect: none · conclusion_generated: false · estate_completion_claimed: false</code></div></body></html>`;
+write('reports/core-thesis/epistemic-jurisdiction/index.html',html);
+console.log(`m04f build: ${records.length} records, ${systems.length} systems, ${sources.length} sources, ${fanout.lanes.length} lanes; ${fingerprint.slice(0,12)}`);
