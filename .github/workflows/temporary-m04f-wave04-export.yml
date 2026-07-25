@@ -1,0 +1,43 @@
+name: Temporary export M-04F Wave 04 working surface
+
+on:
+  push:
+    branches:
+      - agent/m04f-wave04-vertical-joins
+    paths:
+      - '.github/workflows/temporary-m04f-wave04-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m04f-wave04-vertical-joins
+          fetch-depth: 0
+      - name: Package exact working surface
+        run: |
+          tar -czf /tmp/m04f-wave04-working-surface.tgz \
+            package.json package-lock.json \
+            .github/workflows/m04f-epistemic-jurisdiction.yml \
+            data/intake/m04f-epistemic-jurisdiction-*.json \
+            data/project/m04f-*.json \
+            tools/build-m04f-epistemic-jurisdiction.mjs \
+            tools/validate-m04f-epistemic-jurisdiction.mjs \
+            test/m04f-epistemic-jurisdiction.test.js \
+            docs/methods/pattern-to-proof.md \
+            docs/milestones/m04f-*.md \
+            build/core-thesis/epistemic-jurisdiction \
+            reports/core-thesis/epistemic-jurisdiction
+          sha256sum /tmp/m04f-wave04-working-surface.tgz | tee /tmp/m04f-wave04-working-surface.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: m04f-wave04-working-surface
+          path: |
+            /tmp/m04f-wave04-working-surface.tgz
+            /tmp/m04f-wave04-working-surface.sha256
+          if-no-files-found: error
