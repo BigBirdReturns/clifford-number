@@ -12,6 +12,17 @@ on:
       - 'test/m04f-epistemic-jurisdiction.test.js'
       - 'docs/milestones/m04f-evidence-lake-wave-02.md'
       - '.github/workflows/temporary-m04f-wave02-materialize.yml'
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - 'data/intake/m04f-epistemic-jurisdiction-sources-03.json'
+      - 'data/intake/m04f-epistemic-jurisdiction-wave-02.json'
+      - 'tools/build-m04f-epistemic-jurisdiction.mjs'
+      - 'tools/validate-m04f-epistemic-jurisdiction.mjs'
+      - 'test/m04f-epistemic-jurisdiction.test.js'
+      - 'docs/milestones/m04f-evidence-lake-wave-02.md'
+      - '.github/workflows/temporary-m04f-wave02-materialize.yml'
   workflow_dispatch:
 
 permissions:
@@ -23,6 +34,7 @@ concurrency:
 
 jobs:
   materialize:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
