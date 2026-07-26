@@ -12,6 +12,7 @@ const triad=read('data/project/m05-answerable-power-sprint-01-triad.json');
 const benchmark=read('data/project/m05-answerable-power-benchmark-wave-01.json');
 const cadence=read('data/project/m05-answerable-power-sprint-cadence.json');
 const sourceHealth=read('data/project/m05-answerable-power-sprint-01-source-health.json');
+const topology=read('data/project/m05-answerable-power-sprint-02-live-topology.json');
 const report=read('reports/core-thesis/answerable-power/sprint-01.json');
 
 if(sources.sources.length!==25)fail(`expected 25 sources, got ${sources.sources.length}`);
@@ -45,12 +46,21 @@ if(cadence.exit_criteria.length<7)fail('sprint exit criteria too weak');
 if(sourceHealth.basis.polls_selected!==96 || sourceHealth.basis.polls_succeeded!==53 || sourceHealth.basis.polls_failed!==43)fail('M-04G source-health baseline drift');
 if(sourceHealth.state_separation.execution_complete!==true || sourceHealth.state_separation.coverage_healthy!==false || sourceHealth.state_separation.evidence_sufficient!==false)fail('source-health states collapsed');
 if(sourceHealth.failure_taxonomy.reduce((sum,row)=>sum+row.count,0)!==43)fail('failure taxonomy denominator mismatch');
-for(const object of [sources.boundaries,triad.boundaries,benchmark.boundaries,cadence.boundaries,sourceHealth.boundaries,report.boundaries]){
+if(topology.master_issue.number!==322 || topology.lanes.length!==7)fail('Sprint 02 topology drift');
+if(topology.counts.expected_lanes!==7 || topology.counts.live_lanes!==7 || topology.counts.uninstantiated_lanes!==0)fail('Sprint 02 issue denominator incomplete');
+if(new Set(topology.lanes.map((row)=>row.lane_id)).size!==7)fail('duplicate Sprint 02 lane ids');
+if(new Set(topology.lanes.map((row)=>row.issue_number)).size!==7)fail('duplicate Sprint 02 issue numbers');
+for(const lane of topology.lanes){
+  if(!lane.url.startsWith('https://github.com/BigBirdReturns/clifford-number/issues/'))fail(`${lane.lane_id}: invalid issue URL`);
+  if(!lane.title)fail(`${lane.lane_id}: title missing`);
+}
+for(const object of [sources.boundaries,triad.boundaries,benchmark.boundaries,cadence.boundaries,sourceHealth.boundaries,topology.boundaries,report.boundaries]){
   for(const [key,value] of Object.entries(object)){
     if(['promotes_to','graph_effect'].includes(key))continue;
     if(typeof value==='boolean' && value!==false)fail(`boundary ${key} must remain false`);
   }
 }
 if(report.counts.sources!==25 || report.counts.triad_packets!==6 || report.counts.benchmark_cases!==4)fail('report count drift');
+if(report.counts.next_sprint_lanes!==7)fail('report Sprint 02 topology drift');
 if(report.counts.polls_selected!==96 || report.counts.polls_succeeded!==53 || report.counts.polls_failed!==43)fail('report source-health drift');
 console.log('validate-m05-answerable-power-sprint-01: OK');
