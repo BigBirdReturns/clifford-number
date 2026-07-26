@@ -88,13 +88,12 @@ jobs:
           node tools/validate-m04g-global-circulation.mjs
           node test/m04g-global-circulation.test.js
           git diff --check
-      - name: Commit only permanent program
+      - name: Commit the fifteen non-workflow products
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git rm --ignore-unmatch .github/workflows/temporary-install-m04g-global-circulation.yml
           git add -- \
-            .github/workflows/m04g-global-circulation.yml build/core-thesis/global-circulation/data.json \
+            build/core-thesis/global-circulation/data.json \
             data/intake/m04g-global-circulation-sources-01.json data/project/m04g-global-circulation-basins.json \
             data/project/m04g-global-circulation-currents.json data/project/m04g-global-circulation-fanout.json \
             data/project/m04g-global-circulation-methodology.json data/project/m04g-global-circulation-polls.json \
@@ -103,6 +102,6 @@ jobs:
             test/m04g-global-circulation.test.js tools/build-m04g-global-circulation.mjs \
             tools/refresh-m04g-global-circulation.mjs tools/validate-m04g-global-circulation.mjs
           git diff --cached --name-status
-          git diff --cached --quiet && { echo 'no permanent changes'; exit 1; }
-          git commit -m 'Build proven M-04G global circulation wave 02'
+          git diff --cached --quiet && { echo 'no non-workflow changes'; exit 1; }
+          git commit -m 'Build M-04G global circulation data plane'
           git push origin HEAD:refs/heads/agent/m04g-global-circulation-clean-wave-02
