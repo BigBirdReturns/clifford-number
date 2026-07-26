@@ -18,21 +18,29 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: agent/m04g-evidence-hydrology-inland-sea
-      - name: Print payload receipts
+      - name: Write payload receipts
         run: |
           python - <<'PY'
           import base64
           import hashlib
           from pathlib import Path
           root = Path('.github/temporary/m04g-evidence-hydrology')
+          lines = []
           parts = []
           for index in range(10):
               name = f'part-{index:02d}'
               text = (root / name).read_text().strip()
               parts.append(text)
-              print(name, len(text), hashlib.sha256(text.encode()).hexdigest())
+              lines.append(f'{name} {len(text)} {hashlib.sha256(text.encode()).hexdigest()}')
           encoded = ''.join(parts)
-          print('combined', len(encoded), hashlib.sha256(encoded.encode()).hexdigest())
+          lines.append(f'combined {len(encoded)} {hashlib.sha256(encoded.encode()).hexdigest()}')
           payload = base64.b64decode(encoded, validate=True)
-          print('decoded', len(payload), hashlib.sha256(payload).hexdigest())
+          lines.append(f'decoded {len(payload)} {hashlib.sha256(payload).hexdigest()}')
+          Path('/tmp/m04g-payload-receipts.txt').write_text('\n'.join(lines) + '\n')
+          print('\n'.join(lines))
           PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: m04g-payload-receipts
+          path: /tmp/m04g-payload-receipts.txt
+          if-no-files-found: error
