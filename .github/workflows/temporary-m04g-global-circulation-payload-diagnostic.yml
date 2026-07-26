@@ -18,16 +18,24 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: agent/m04g-global-circulation-proof-wave-02
-      - name: Measure carrier
+      - name: Measure split carrier
         run: |
           python - <<'PY'
           import base64, hashlib, io, json, tarfile
           from pathlib import Path
-          p=Path('.github/temporary/m04g-global-circulation/payload.b64')
-          text=p.read_text().strip()
-          out={'encoded_length':len(text),'encoded_sha256':hashlib.sha256(text.encode()).hexdigest()}
+          root=Path('.github/temporary/m04g-global-circulation')
+          out={'parts':[]}
+          texts=[]
+          for index in range(9):
+            p=root/f'part-{index:02d}'
+            text=p.read_text().strip()
+            texts.append(text)
+            out['parts'].append({'name':p.name,'length':len(text),'sha256':hashlib.sha256(text.encode()).hexdigest()})
+          encoded=''.join(texts)
+          out['encoded_length']=len(encoded)
+          out['encoded_sha256']=hashlib.sha256(encoded.encode()).hexdigest()
           try:
-            payload=base64.b64decode(text,validate=True)
+            payload=base64.b64decode(encoded,validate=True)
             out['payload_length']=len(payload)
             out['payload_sha256']=hashlib.sha256(payload).hexdigest()
             try:
