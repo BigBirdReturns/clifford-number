@@ -1,0 +1,38 @@
+name: Temporary diagnose M-04G payload pieces
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/temporary/m04g-evidence-hydrology/**'
+      - '.github/workflows/temporary-m04g-payload-diagnostic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m04g-evidence-hydrology-inland-sea
+      - name: Print payload receipts
+        run: |
+          python - <<'PY'
+          import base64
+          import hashlib
+          from pathlib import Path
+          root = Path('.github/temporary/m04g-evidence-hydrology')
+          parts = []
+          for index in range(10):
+              name = f'part-{index:02d}'
+              text = (root / name).read_text().strip()
+              parts.append(text)
+              print(name, len(text), hashlib.sha256(text.encode()).hexdigest())
+          encoded = ''.join(parts)
+          print('combined', len(encoded), hashlib.sha256(encoded.encode()).hexdigest())
+          payload = base64.b64decode(encoded, validate=True)
+          print('decoded', len(payload), hashlib.sha256(payload).hexdigest())
+          PY
