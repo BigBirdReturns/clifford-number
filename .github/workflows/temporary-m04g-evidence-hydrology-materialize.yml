@@ -178,7 +178,7 @@ jobs:
           if bad:
               raise SystemExit('unexpected durable drift:\n' + '\n'.join(bad))
           PY
-      - name: Commit only the permanent evidence-hydrology program
+      - name: Commit and push the verified non-workflow program
         run: |
           target='agent/m04g-evidence-hydrology-inland-sea'
           git config user.name 'github-actions[bot]'
@@ -190,8 +190,13 @@ jobs:
             .github/workflows/temporary-m04g-payload-diagnostic.yml \
             .github/workflows/temporary-m04g-drift-diagnostic.yml
 
+          # Workflow files require a GitHub App permission that the Actions token
+          # intentionally does not have. Publish the fourteen verified non-workflow
+          # products here; the permanent workflow is added by the GitHub App only
+          # after this commit lands.
+          rm -f .github/workflows/m04g-evidence-hydrology.yml
+
           git add -- \
-            .github/workflows/m04g-evidence-hydrology.yml \
             data/project/m04g-evidence-hydrology-methodology.json \
             data/project/m04g-evidence-hydrology-catchments.json \
             data/project/m04g-evidence-hydrology-pilot-polls.json \
@@ -209,5 +214,5 @@ jobs:
 
           git diff --cached --name-status
           git diff --cached --quiet && { echo 'No permanent M-04G changes to commit'; exit 1; }
-          git commit -m 'Build M-04G evidence hydrology inland sea'
+          git commit -m 'Build M-04G evidence hydrology inland sea core'
           git push origin "HEAD:refs/heads/$target"
