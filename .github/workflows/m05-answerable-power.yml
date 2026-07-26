@@ -12,6 +12,7 @@ on:
       - 'test/m05-answerable-power.test.js'
       - 'test/m05-answerable-power-sprint-01.test.js'
       - 'test/m05-answerable-power-sprint-02-leg-01.test.js'
+      - 'test/m05-answerable-power-sprint-02-leg-02.test.js'
       - 'reports/core-thesis/answerable-power/**'
       - '.github/workflows/m05-answerable-power.yml'
   push:
@@ -25,6 +26,7 @@ on:
       - 'test/m05-answerable-power.test.js'
       - 'test/m05-answerable-power-sprint-01.test.js'
       - 'test/m05-answerable-power-sprint-02-leg-01.test.js'
+      - 'test/m05-answerable-power-sprint-02-leg-02.test.js'
       - 'reports/core-thesis/answerable-power/**'
       - '.github/workflows/m05-answerable-power.yml'
   workflow_dispatch:
@@ -51,6 +53,9 @@ jobs:
           node tools/build-m05-answerable-power-sprint-02-leg-01.mjs
           node tools/validate-m05-answerable-power-sprint-02-leg-01.mjs
           node test/m05-answerable-power-sprint-02-leg-01.test.js
+          node tools/build-m05-answerable-power-sprint-02-leg-02.mjs
+          node tools/validate-m05-answerable-power-sprint-02-leg-02.mjs
+          node test/m05-answerable-power-sprint-02-leg-02.test.js
       - name: Run complete repository release gate
         run: npm run release:check
       - name: Prove deterministic products
@@ -65,4 +70,7 @@ jobs:
           node tools/build-m05-answerable-power-sprint-02-leg-01.mjs
           node tools/validate-m05-answerable-power-sprint-02-leg-01.mjs
           node test/m05-answerable-power-sprint-02-leg-01.test.js
+          node tools/build-m05-answerable-power-sprint-02-leg-02.mjs
+          node tools/validate-m05-answerable-power-sprint-02-leg-02.mjs
+          node test/m05-answerable-power-sprint-02-leg-02.test.js
           git diff --exit-code
