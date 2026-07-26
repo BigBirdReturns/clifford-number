@@ -1,0 +1,145 @@
+name: Temporary materialize proven M-04G global circulation
+
+on:
+  push:
+    branches:
+      - agent/m04g-global-circulation-proof-wave-02
+    paths:
+      - '.github/temporary/m04g-global-circulation/payload.b64'
+      - '.github/workflows/temporary-m04g-global-circulation-proof-materialize.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m04g-global-circulation-proof-materialize
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m04g-global-circulation-proof-wave-02
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify and safely extract the global circulation payload
+        run: |
+          python - <<'PY'
+          import base64, hashlib, io, tarfile
+          from pathlib import Path
+          encoded = Path('.github/temporary/m04g-global-circulation/payload.b64').read_text().strip()
+          assert len(encoded) == 42808, len(encoded)
+          assert hashlib.sha256(encoded.encode()).hexdigest() == '1bc393a05475a2de5980376530314c91309f775c984d274208604eb1e11d4fcb'
+          payload = base64.b64decode(encoded, validate=True)
+          assert len(payload) == 32105, len(payload)
+          assert hashlib.sha256(payload).hexdigest() == '30b27b85a75d6ccdfa166848f4f73f3bdbc51b4126ab593265de91c47cdccdea'
+          expected = {
+            '.github/workflows/m04g-global-circulation.yml',
+            'build/core-thesis/global-circulation/data.json',
+            'data/intake/m04g-global-circulation-sources-01.json',
+            'data/project/m04g-global-circulation-basins.json',
+            'data/project/m04g-global-circulation-currents.json',
+            'data/project/m04g-global-circulation-fanout.json',
+            'data/project/m04g-global-circulation-methodology.json',
+            'data/project/m04g-global-circulation-polls.json',
+            'docs/methods/global-evidence-circulation.md',
+            'docs/milestones/m04g-global-circulation-wave-02.md',
+            'reports/core-thesis/global-circulation/data.json',
+            'reports/core-thesis/global-circulation/index.html',
+            'test/m04g-global-circulation.test.js',
+            'tools/build-m04g-global-circulation.mjs',
+            'tools/refresh-m04g-global-circulation.mjs',
+            'tools/validate-m04g-global-circulation.mjs',
+          }
+          with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as archive:
+            members = archive.getmembers()
+            names = {member.name for member in members}
+            assert names == expected, (names - expected, expected - names)
+            for member in members:
+              path = Path(member.name)
+              if path.is_absolute() or '..' in path.parts or not member.isfile():
+                raise SystemExit(f'unsafe archive member: {member.name}')
+            archive.extractall('.')
+          print('\n'.join(sorted(expected)))
+          PY
+      - name: Run focused global-circulation gates
+        run: |
+          node tools/build-m04g-global-circulation.mjs
+          node tools/validate-m04g-global-circulation.mjs
+          node test/m04g-global-circulation.test.js
+          node tools/refresh-m04g-global-circulation.mjs --dry-run --basin all --class all --limit 200
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Restore unrelated generated drift
+        run: git restore --staged --worktree .
+      - name: Rebuild and prove deterministic target surface
+        run: |
+          node tools/build-m04g-global-circulation.mjs
+          node tools/validate-m04g-global-circulation.mjs
+          node test/m04g-global-circulation.test.js
+          node tools/refresh-m04g-global-circulation.mjs --dry-run --basin all --class all --limit 200
+          python - <<'PY'
+          import subprocess
+          expected = {
+            '.github/temporary/m04g-global-circulation/payload.b64',
+            '.github/workflows/temporary-m04g-global-circulation-proof-materialize.yml',
+            '.github/workflows/m04g-global-circulation.yml',
+            'build/core-thesis/global-circulation/data.json',
+            'data/intake/m04g-global-circulation-sources-01.json',
+            'data/project/m04g-global-circulation-basins.json',
+            'data/project/m04g-global-circulation-currents.json',
+            'data/project/m04g-global-circulation-fanout.json',
+            'data/project/m04g-global-circulation-methodology.json',
+            'data/project/m04g-global-circulation-polls.json',
+            'docs/methods/global-evidence-circulation.md',
+            'docs/milestones/m04g-global-circulation-wave-02.md',
+            'reports/core-thesis/global-circulation/data.json',
+            'reports/core-thesis/global-circulation/index.html',
+            'test/m04g-global-circulation.test.js',
+            'tools/build-m04g-global-circulation.mjs',
+            'tools/refresh-m04g-global-circulation.mjs',
+            'tools/validate-m04g-global-circulation.mjs',
+          }
+          rows = subprocess.check_output(['git','status','--porcelain','--untracked-files=all'], text=True).splitlines()
+          paths=[]
+          for row in rows:
+            path=row[3:].split(' -> ',1)[-1]
+            paths.append(path)
+          bad=[path for path in paths if path not in expected]
+          print('\n'.join(paths))
+          if bad:
+            raise SystemExit('unexpected drift:\n'+'\n'.join(bad))
+          PY
+      - name: Commit only the permanent proven program
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -r --ignore-unmatch \
+            .github/temporary/m04g-global-circulation \
+            .github/workflows/temporary-m04g-global-circulation-proof-materialize.yml
+          git add -- \
+            .github/workflows/m04g-global-circulation.yml \
+            build/core-thesis/global-circulation/data.json \
+            data/intake/m04g-global-circulation-sources-01.json \
+            data/project/m04g-global-circulation-basins.json \
+            data/project/m04g-global-circulation-currents.json \
+            data/project/m04g-global-circulation-fanout.json \
+            data/project/m04g-global-circulation-methodology.json \
+            data/project/m04g-global-circulation-polls.json \
+            docs/methods/global-evidence-circulation.md \
+            docs/milestones/m04g-global-circulation-wave-02.md \
+            reports/core-thesis/global-circulation/data.json \
+            reports/core-thesis/global-circulation/index.html \
+            test/m04g-global-circulation.test.js \
+            tools/build-m04g-global-circulation.mjs \
+            tools/refresh-m04g-global-circulation.mjs \
+            tools/validate-m04g-global-circulation.mjs
+          git diff --cached --name-status
+          git diff --cached --quiet && { echo 'no permanent changes'; exit 1; }
+          git commit -m 'Build proven M-04G global circulation wave 02'
+          git push origin HEAD:refs/heads/agent/m04g-global-circulation-proof-wave-02
