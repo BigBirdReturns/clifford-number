@@ -74,7 +74,7 @@ jobs:
           }
           prefixes = ('.github/temporary/m04g-evidence-hydrology/',)
           def allowed(path): return path in exact or path.startswith(prefixes)
-          for row in subprocess.check_output(['git','status','--porcelain'], text=True).splitlines():
+          for row in subprocess.check_output(['git','status','--porcelain','--untracked-files=all'], text=True).splitlines():
               path = row[3:].split(' -> ',1)[-1]
               if allowed(path): continue
               target = Path(path)
@@ -98,8 +98,8 @@ jobs:
           echo '--- git diff --check ---' >> /tmp/m04g-drift-diagnostic.txt
           git diff --check >> /tmp/m04g-drift-diagnostic.txt 2>&1
           echo "diff_check_exit=$?" >> /tmp/m04g-drift-diagnostic.txt
-          echo '--- git status --porcelain=v1 ---' >> /tmp/m04g-drift-diagnostic.txt
-          git status --porcelain=v1 >> /tmp/m04g-drift-diagnostic.txt
+          echo '--- git status --porcelain=v1 --untracked-files=all ---' >> /tmp/m04g-drift-diagnostic.txt
+          git status --porcelain=v1 --untracked-files=all >> /tmp/m04g-drift-diagnostic.txt
           echo '--- git diff --name-status ---' >> /tmp/m04g-drift-diagnostic.txt
           git diff --name-status >> /tmp/m04g-drift-diagnostic.txt
           echo '--- git diff --stat ---' >> /tmp/m04g-drift-diagnostic.txt
@@ -111,3 +111,25 @@ jobs:
           name: m04g-drift-diagnostic
           path: /tmp/m04g-drift-diagnostic.txt
           if-no-files-found: error
+      - name: Export exact verified permanent inland-sea program
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-verified-program
+          path: |
+            .github/workflows/m04g-evidence-hydrology.yml
+            data/project/m04g-evidence-hydrology-methodology.json
+            data/project/m04g-evidence-hydrology-catchments.json
+            data/project/m04g-evidence-hydrology-pilot-polls.json
+            data/project/m04g-evidence-hydrology-fanout.json
+            data/intake/m04g-evidence-hydrology-sources-01.json
+            docs/methods/evidence-hydrology.md
+            docs/milestones/m04g-evidence-hydrology-inland-sea-wave-01.md
+            tools/build-m04g-evidence-hydrology.mjs
+            tools/validate-m04g-evidence-hydrology.mjs
+            tools/refresh-m04g-evidence-hydrology.mjs
+            test/m04g-evidence-hydrology.test.js
+            build/core-thesis/evidence-hydrology/data.json
+            reports/core-thesis/evidence-hydrology/data.json
+            reports/core-thesis/evidence-hydrology/index.html
+          if-no-files-found: error
+          include-hidden-files: true
