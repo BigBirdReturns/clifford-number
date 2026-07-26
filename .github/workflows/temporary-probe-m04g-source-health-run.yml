@@ -1,0 +1,62 @@
+name: Temporary probe post-repair M-04G run
+
+on:
+  push:
+    branches:
+      - agent/m05-sprint-02-reconciliation
+    paths:
+      - '.github/workflows/temporary-probe-m04g-source-health-run.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET_SHA: 0f517f497eed8c8a9d7f1f83c5c0688a509ea41f
+    steps:
+      - name: Find post-repair push run and publish diagnostic
+        run: |
+          gh api --paginate \
+            -H 'Accept: application/vnd.github+json' \
+            '/repos/${{ github.repository }}/actions/runs?branch=main&event=push&per_page=100' \
+            > runs-pages.json
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          raw=Path('runs-pages.json').read_text().strip()
+          pages=[]
+          decoder=json.JSONDecoder()
+          index=0
+          while index < len(raw):
+            while index < len(raw) and raw[index].isspace(): index += 1
+            if index>=len(raw): break
+            value,end=decoder.raw_decode(raw,index)
+            pages.append(value); index=end
+          runs=[]
+          for page in pages:
+            runs.extend(page.get('workflow_runs',[]))
+          target=os.environ['TARGET_SHA']
+          matched=[row for row in runs if row.get('head_sha')==target]
+          lines=[
+            '<!-- m04g-source-health-run-probe:'+target+' -->',
+            '## M-04G post-repair run probe',
+            '',
+            f'- Target head: `{target}`',
+            f'- Matched push runs: `{len(matched)}`',
+            '',
+          ]
+          if matched:
+            lines += ['| Run | Workflow | Status | Conclusion | Created | Updated |','|---:|---|---|---|---|---|']
+            for row in sorted(matched,key=lambda item:item.get('created_at','')):
+              lines.append(f"| [{row['id']}]({row['html_url']}) | {row['name']} | `{row['status']}` | `{row.get('conclusion')}` | {row.get('created_at')} | {row.get('updated_at')} |")
+          else:
+            lines += ['No push-triggered workflow run was returned for the target head.']
+          Path('probe.md').write_text('\n'.join(lines)+'\n')
+          PY
+          gh issue comment 278 --repo '${{ github.repository }}' --body-file probe.md
