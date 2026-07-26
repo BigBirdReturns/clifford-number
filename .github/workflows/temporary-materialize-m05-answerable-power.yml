@@ -1,0 +1,58 @@
+name: Temporary materialize M-05 answerable power
+
+on:
+  push:
+    branches:
+      - agent/m05-answerable-power-story-ecology
+    paths:
+      - '.github/workflows/temporary-materialize-m05-answerable-power.yml'
+      - 'data/project/m05-answerable-power-*.json'
+      - 'docs/methods/answerable-power-story-ecology.md'
+      - 'docs/milestones/m05-answerable-power-*.md'
+      - 'tools/*m05-answerable-power*.mjs'
+      - 'test/m05-answerable-power.test.js'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m05-answerable-power-materialize
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m05-answerable-power-story-ecology
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build and validate M-05
+        run: |
+          node tools/build-m05-answerable-power.mjs
+          node tools/validate-m05-answerable-power.mjs
+          node test/m05-answerable-power.test.js
+          npm run release:check
+      - name: Restore unrelated drift and rebuild target products
+        run: |
+          git restore --staged --worktree .
+          node tools/build-m05-answerable-power.mjs
+          node tools/validate-m05-answerable-power.mjs
+          node test/m05-answerable-power.test.js
+          git diff --check
+      - name: Commit only permanent M-05 program
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm --ignore-unmatch .github/workflows/temporary-materialize-m05-answerable-power.yml
+          git add -- \
+            reports/core-thesis/answerable-power/data.json \
+            reports/core-thesis/answerable-power/index.html
+          git diff --cached --name-status
+          git diff --cached --quiet && { echo 'no permanent changes'; exit 1; }
+          git commit -m 'Materialize M-05 answerable-power story ecology'
+          git push origin HEAD:refs/heads/agent/m05-answerable-power-story-ecology
