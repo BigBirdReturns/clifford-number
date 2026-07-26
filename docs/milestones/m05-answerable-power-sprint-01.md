@@ -71,10 +71,10 @@ one three-way common-purpose compact
 Wave 01 includes:
 
 ```text
-K.W. v. Armstrong      R3/R4 pre-action stay, disclosure, restoration
-SyRI                    R4 system-level prohibition
+K.W. v. Armstrong       R3/R4 pre-action stay, disclosure, restoration
+SyRI                     R4 system-level prohibition
 Homes for Ukraine Share R5 observed public substitution
-Robodebt                R2/R4 retrospective reconstruction and reform
+Robodebt                 R2/R4 retrospective reconstruction and reform
 ```
 
 The benchmark spans four domains and four jurisdictions, but the works standard is not met.
@@ -108,6 +108,22 @@ The repair contract targets host-aware rate limiting, stable official interfaces
 5. Test one R6 co-governance candidate.
 6. Test one R7 value-recovery candidate.
 7. Raise the M-04G public-route success rate from 55.2% toward the 75% acceptance threshold.
+
+## Live Sprint 02 topology
+
+```text
+master  #322  Decision files, direct voice, R6/R7, and source health
+
+S02-L1  #323  Matt Clifford decision file
+S02-L2  #324  Clifford × Anduril closure
+S02-L3  #325  NGC2 responsibility and acceptance
+S02-L4  #326  Palantir represented-person chain
+S02-L5  #327  R6 co-governance candidate
+S02-L6  #328  R7 value-recovery candidate
+S02-L7  #329  M-04G source-health repair
+```
+
+Issue creation is routing, not proof. Every lane remains subject to source acquisition, falsification, terminal disposition, deterministic publication, and regression review.
 
 ## Boundary
 
