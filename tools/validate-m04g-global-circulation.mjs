@@ -11,6 +11,7 @@ const currents=read('data/project/m04g-global-circulation-currents.json').curren
 const sources=read('data/intake/m04g-global-circulation-sources-01.json').sources;
 const polls=read('data/project/m04g-global-circulation-polls.json').polls;
 const lanes=read('data/project/m04g-global-circulation-fanout.json').lanes;
+const health=read('data/project/m04g-global-circulation-source-health-policy.json');
 const report=read('reports/core-thesis/global-circulation/data.json');
 if (basins.length!==12) fail(`expected 12 basins, got ${basins.length}`);
 if (currents.length!==8) fail(`expected 8 currents, got ${currents.length}`);
@@ -44,11 +45,27 @@ for (const source of sources) {
   if (source.hydrology_class==='tributary_direct_voice' && source.automation_state!=='manual_privacy_review') fail(`${source.source_id}: voice boundary`);
   if (!['locator_only','candidate_only'].includes(source.promotion_ceiling)) fail(`${source.source_id}: invalid ceiling`);
 }
+if(health.request_policy.maximum_attempts<2||health.request_policy.maximum_attempts>5)fail('retry budget out of bounds');
+if(!health.request_policy.retryable_statuses.includes(429)||!health.request_policy.retryable_statuses.includes(502))fail('retryable status coverage incomplete');
+if(health.request_policy.metadata_fallback.method!=='HEAD')fail('metadata fallback must use HEAD');
+if(health.host_policy['api.gdeltproject.org']?.minimum_interval_ms<5000)fail('GDELT interval must be at least five seconds');
+if(health.acceptance_contract.minimum_global_route_success_rate<0.75)fail('global route target too weak');
+if(health.acceptance_contract.minimum_global_content_success_rate<0.65)fail('global content target too weak');
+if(health.acceptance_contract.minimum_basin_route_success_rate<0.5||health.acceptance_contract.minimum_basin_content_success_rate<0.5)fail('basin target too weak');
+if(health.acceptance_contract.direct_voice_may_be_automatically_polled!==false)fail('direct voice automation boundary');
+if(health.acceptance_contract.network_output_may_self_promote!==false)fail('network promotion boundary');
+if(health.baseline.selected!==96||health.baseline.content_succeeded!==53||health.baseline.failed!==43)fail('source-health baseline drift');
+if(new Set(health.failure_taxonomy).size!==health.failure_taxonomy.length)fail('duplicate failure classes');
+for(const required of ['rate_limited','access_blocked','transport_failure','timeout','oversized_response','redirect_unresolved','unknown_failure'])if(!health.failure_taxonomy.includes(required))fail(`missing failure class ${required}`);
 if (report.coverage_gaps.length!==0) fail('coverage gaps remain');
 if (report.counts.unique_hosts<100) fail(`expected >=100 unique hosts, got ${report.counts.unique_hosts}`);
 if (report.source_diversity.max_host_share>0.08) fail(`host concentration too high: ${report.source_diversity.max_host_share}`);
-for (const [key,value] of Object.entries(methodology.boundaries)) {
-  if (key==='status' || key==='promotes_to' || key==='graph_effect') continue;
-  if (value!==false) fail(`boundary ${key} must remain false`);
+if(report.source_health_policy.schema_version!==health.schema_version)fail('source-health policy missing from report');
+if(JSON.stringify(report.source_health_policy.acceptance_contract)!==JSON.stringify(health.acceptance_contract))fail('source-health acceptance drift');
+for (const object of [methodology.boundaries,health.boundaries]) {
+  for (const [key,value] of Object.entries(object)) {
+    if (key==='status' || key==='promotes_to' || key==='graph_effect') continue;
+    if (value!==false) fail(`boundary ${key} must remain false`);
+  }
 }
 console.log('validate-m04g-global-circulation: OK');
