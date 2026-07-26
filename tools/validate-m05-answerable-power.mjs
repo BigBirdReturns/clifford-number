@@ -30,9 +30,7 @@ for(const lane of fanout.lanes){
   if(!lane.question || !lane.falsifier || !lane.stopping_rule)fail(`${lane.lane_id}: incomplete lane`);
   if(!Array.isArray(lane.allowed_terminal_states) || lane.allowed_terminal_states.length<3)fail(`${lane.lane_id}: terminal states`);
 }
-const expectedCounts={standalone_actor:3,exact_overlap:3,conststitutional_mechanism:3,answer_story:3,non_link:1};
-expectedCounts.constitutional_mechanism=expectedCounts.conststitutional_mechanism;
-delete expectedCounts.conststitutional_mechanism;
+const expectedCounts={standalone_actor:3,exact_overlap:3,constitutional_mechanism:3,answer_story:3,non_link:1};
 for(const [mode,count] of Object.entries(expectedCounts)){
   if(registry.counts[mode]!==count)fail(`${mode}: expected ${count}, got ${registry.counts[mode]}`);
 }
