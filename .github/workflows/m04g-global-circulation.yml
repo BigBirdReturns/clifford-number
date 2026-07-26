@@ -48,6 +48,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: m04g-global-circulation-${{ github.ref }}-${{ github.event_name }}-${{ github.event.schedule || inputs.mode || 'validation' }}
@@ -205,6 +206,47 @@ jobs:
           print(json.dumps(proof,indent=2))
           if not proof['complete']: raise SystemExit('incomplete global orbit')
           PY
+      - name: Publish orbit receipt to the master ledger
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          proof=json.loads(Path('orbit-proof/orbit-proof.json').read_text())
+          digest=hashlib.sha256(Path('orbit-proof/orbit-proof.json').read_bytes()).hexdigest()
+          lines=[
+            f"<!-- m04g-global-orbit-proof:{proof['run_id']} -->",
+            "## M-04G global orbit proof",
+            "",
+            f"- Run: https://github.com/${{ github.repository }}/actions/runs/{proof['run_id']}",
+            f"- Head: `{proof['head_sha']}`",
+            f"- Event: `{proof['event']}`",
+            f"- Classes: `{proof['classes']}`",
+            f"- Basin denominator: `{proof['observed_basins']}/{proof['expected_basins']}`",
+            f"- Orbit job: `{proof['orbit_job_result']}`",
+            f"- Complete: `{str(proof['complete']).lower()}`",
+            f"- Proof SHA-256: `{digest}`",
+            "",
+            "| Basin | Selected | Succeeded | Failed | Candidates |",
+            "|---|---:|---:|---:|---:|",
+          ]
+          for row in proof['basins']:
+            counts=row.get('counts',{})
+            lines.append(f"| `{row.get('basin')}` | {counts.get('selected',0)} | {counts.get('succeeded',0)} | {counts.get('failed',0)} | {counts.get('candidates',0)} |")
+          lines += [
+            "",
+            "```text",
+            "promotes_to: candidate_only",
+            "graph_effect: none",
+            "conclusion_generated: false",
+            "estate_completion_claimed: false",
+            "```",
+          ]
+          Path('orbit-proof/issue-comment.md').write_text('\n'.join(lines)+'\n')
+          PY
+          gh issue comment 278 --repo '${{ github.repository }}' --body-file orbit-proof/issue-comment.md
       - uses: actions/upload-artifact@v4
         with:
           name: m04g-global-orbit-proof-${{ github.run_id }}
