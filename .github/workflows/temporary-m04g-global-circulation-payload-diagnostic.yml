@@ -1,0 +1,47 @@
+name: Temporary diagnose M-04G global circulation payload
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/temporary/m04g-global-circulation/**'
+      - '.github/workflows/temporary-m04g-global-circulation-payload-diagnostic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m04g-global-circulation-proof-wave-02
+      - name: Measure carrier
+        run: |
+          python - <<'PY'
+          import base64, hashlib, io, json, tarfile
+          from pathlib import Path
+          p=Path('.github/temporary/m04g-global-circulation/payload.b64')
+          text=p.read_text().strip()
+          out={'encoded_length':len(text),'encoded_sha256':hashlib.sha256(text.encode()).hexdigest()}
+          try:
+            payload=base64.b64decode(text,validate=True)
+            out['payload_length']=len(payload)
+            out['payload_sha256']=hashlib.sha256(payload).hexdigest()
+            try:
+              with tarfile.open(fileobj=io.BytesIO(payload),mode='r:gz') as archive:
+                out['members']=[m.name for m in archive.getmembers()]
+            except Exception as error:
+              out['tar_error']=str(error)
+          except Exception as error:
+            out['decode_error']=str(error)
+          Path('/tmp/m04g-global-payload-diagnostic.json').write_text(json.dumps(out,indent=2)+'\n')
+          print(json.dumps(out,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: m04g-global-payload-diagnostic
+          path: /tmp/m04g-global-payload-diagnostic.json
+          if-no-files-found: error
