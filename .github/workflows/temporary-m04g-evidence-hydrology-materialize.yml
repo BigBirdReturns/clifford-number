@@ -32,18 +32,26 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Reassemble and safely extract the verified inland-sea payload
+      - name: Reassemble, repair, and safely extract the verified inland-sea payload
         run: |
           python - <<'PY'
           import base64
           import hashlib
           import io
+          import json
           import tarfile
           from pathlib import Path
 
           root = Path('.github/temporary/m04g-evidence-hydrology')
           names = [f'part-{index:02d}' for index in range(10)]
           encoded = ''.join((root / name).read_text().strip() for name in names)
+
+          repairs = json.loads((root / 'repair-map.json').read_text())
+          for repair in sorted(repairs, key=lambda item: item['start'], reverse=True):
+              start = int(repair['start'])
+              end = int(repair['end'])
+              encoded = encoded[:start] + repair['replacement'] + encoded[end:]
+
           assert len(encoded) == 116252, len(encoded)
           assert hashlib.sha256(encoded.encode()).hexdigest() == 'cf935bdfd81c8f0e6c5923392be8881da87291bfadda060ff89f127d0af39740'
 
@@ -165,7 +173,8 @@ jobs:
 
           git rm -r --ignore-unmatch \
             .github/temporary/m04g-evidence-hydrology \
-            .github/workflows/temporary-m04g-evidence-hydrology-materialize.yml
+            .github/workflows/temporary-m04g-evidence-hydrology-materialize.yml \
+            .github/workflows/temporary-m04g-payload-diagnostic.yml
 
           git add -- \
             .github/workflows/m04g-evidence-hydrology.yml \
