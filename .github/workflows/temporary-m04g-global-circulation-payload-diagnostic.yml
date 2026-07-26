@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: agent/m04g-global-circulation-proof-wave-02
-      - name: Measure split carrier
+      - name: Measure split carrier and recovery slices
         run: |
           python - <<'PY'
           import base64, hashlib, io, json, tarfile
@@ -30,7 +30,13 @@ jobs:
             p=root/f'part-{index:02d}'
             text=p.read_text().strip()
             texts.append(text)
-            out['parts'].append({'name':p.name,'length':len(text),'sha256':hashlib.sha256(text.encode()).hexdigest()})
+            row={'name':p.name,'length':len(text),'sha256':hashlib.sha256(text.encode()).hexdigest()}
+            if index in (0,7):
+              row['first_5000_sha256']=hashlib.sha256(text[:5000].encode()).hexdigest()
+              row['last_5000_sha256']=hashlib.sha256(text[-5000:].encode()).hexdigest()
+              row['first_2808_sha256']=hashlib.sha256(text[:2808].encode()).hexdigest()
+              row['last_2808_sha256']=hashlib.sha256(text[-2808:].encode()).hexdigest()
+            out['parts'].append(row)
           encoded=''.join(texts)
           out['encoded_length']=len(encoded)
           out['encoded_sha256']=hashlib.sha256(encoded.encode()).hexdigest()
