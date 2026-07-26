@@ -112,7 +112,11 @@ jobs:
             elif mode=='ocean': basins=all_basins; classes='ocean_discovery'
             elif mode=='aquifer': basins=all_basins; classes='aquifer_archival_or_restricted'
             else: basins=all_basins; classes='all'
-          matrix={'include':[{'basin':basin,'classes':classes} for basin in basins]}
+          matrix={'include':[{
+            'basin':basin,
+            'classes':classes,
+            'stagger_ms':all_basins.index(basin)*6000
+          } for basin in basins]}
           with open(os.environ['GITHUB_OUTPUT'],'a') as fh:
             fh.write('matrix='+json.dumps(matrix,separators=(',',':'))+'\n')
             fh.write('expected='+str(len(basins))+'\n')
@@ -123,6 +127,7 @@ jobs:
     needs: plan
     strategy:
       fail-fast: false
+      max-parallel: 12
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     runs-on: ubuntu-latest
     steps:
@@ -144,6 +149,7 @@ jobs:
             --basin '${{ matrix.basin }}' \
             --class '${{ matrix.classes }}' \
             --limit '${{ inputs.limit || '20' }}' \
+            --initial-delay-ms '${{ matrix.stagger_ms }}' \
             --strict-min-success 1 \
             --output-dir 'build/global-circulation/${{ matrix.basin }}'
       - uses: actions/cache/save@v4
@@ -164,11 +170,12 @@ jobs:
     needs: [plan, orbit]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           pattern: m04g-global-*-${{ github.run_id }}
           path: artifacts
-      - name: Reconcile expected basin denominator
+      - name: Reconcile expected basin denominator and source health
         env:
           EXPECTED: ${{ needs.plan.outputs.expected }}
           ORBIT_RESULT: ${{ needs.orbit.result }}
@@ -185,9 +192,31 @@ jobs:
             payload=json.loads(manifests[0].read_text())
             payload['artifact_dir']=root.name
             rows.append(payload)
+          policy=json.loads(Path('data/project/m04g-global-circulation-source-health-policy.json').read_text())
+          acceptance=policy['acceptance_contract']
           expected=int(os.environ['EXPECTED'])
+          totals={key:0 for key in ['selected','route_succeeded','content_succeeded','metadata_only','failed','degraded','candidates','unclassified_failures']}
+          failure_classes={}
+          healthy_basins=0
+          for row in rows:
+            counts=row.get('counts',{})
+            for key in totals: totals[key]+=int(counts.get(key,0) or 0)
+            if row.get('basin_health',{}).get('coverage_healthy'): healthy_basins+=1
+            for key,value in row.get('failure_class_counts',{}).items(): failure_classes[key]=failure_classes.get(key,0)+int(value)
+          selected=totals['selected']
+          route_rate=round(totals['route_succeeded']/selected,4) if selected else 0
+          content_rate=round(totals['content_succeeded']/selected,4) if selected else 0
+          execution_complete=len(rows)==expected and os.environ['ORBIT_RESULT']=='success'
+          health_evaluated=os.environ['CLASSES']=='all'
+          coverage_healthy=(
+            health_evaluated and
+            route_rate>=acceptance['minimum_global_route_success_rate'] and
+            content_rate>=acceptance['minimum_global_content_success_rate'] and
+            healthy_basins==expected and
+            totals['unclassified_failures']==0
+          )
           proof={
-            'schema':'m04g-global-orbit-proof@1',
+            'schema':'m04g-global-orbit-proof@2',
             'run_id':'${{ github.run_id }}',
             'head_sha':'${{ github.sha }}',
             'event':'${{ github.event_name }}',
@@ -196,9 +225,27 @@ jobs:
             'expected_basins':expected,
             'observed_basins':len(rows),
             'orbit_job_result':os.environ['ORBIT_RESULT'],
+            'totals':totals,
+            'global_route_success_rate':route_rate,
+            'global_content_success_rate':content_rate,
+            'healthy_basins':healthy_basins,
+            'failure_class_counts':failure_classes,
+            'health_evaluated':health_evaluated,
+            'state_separation':{
+              'execution_complete':execution_complete,
+              'coverage_healthy':coverage_healthy,
+              'evidence_sufficient':False,
+            },
             'basins':rows,
-            'complete':len(rows)==expected and os.environ['ORBIT_RESULT']=='success',
-            'boundaries':{'promotes_to':'candidate_only','graph_effect':'none','conclusion_generated':False,'estate_completion_claimed':False},
+            'complete':execution_complete,
+            'boundaries':{
+              'metadata_fingerprint_proves_content_access':False,
+              'coverage_healthy_proves_evidence_sufficient':False,
+              'promotes_to':'candidate_only',
+              'graph_effect':'none',
+              'conclusion_generated':False,
+              'estate_completion_claimed':False,
+            },
           }
           Path('orbit-proof').mkdir()
           Path('orbit-proof/orbit-proof.json').write_text(json.dumps(proof,indent=2)+'\n')
@@ -216,6 +263,8 @@ jobs:
           from pathlib import Path
           proof=json.loads(Path('orbit-proof/orbit-proof.json').read_text())
           digest=hashlib.sha256(Path('orbit-proof/orbit-proof.json').read_bytes()).hexdigest()
+          state=proof['state_separation']
+          totals=proof['totals']
           lines=[
             f"<!-- m04g-global-orbit-proof:{proof['run_id']} -->",
             "## M-04G global orbit proof",
@@ -226,18 +275,30 @@ jobs:
             f"- Classes: `{proof['classes']}`",
             f"- Basin denominator: `{proof['observed_basins']}/{proof['expected_basins']}`",
             f"- Orbit job: `{proof['orbit_job_result']}`",
-            f"- Complete: `{str(proof['complete']).lower()}`",
+            f"- Execution complete: `{str(state['execution_complete']).lower()}`",
+            f"- Coverage healthy: `{str(state['coverage_healthy']).lower()}`",
+            f"- Evidence sufficient: `{str(state['evidence_sufficient']).lower()}`",
+            f"- Route success: `{totals['route_succeeded']}/{totals['selected']}` (`{proof['global_route_success_rate']}`)",
+            f"- Content success: `{totals['content_succeeded']}/{totals['selected']}` (`{proof['global_content_success_rate']}`)",
+            f"- Metadata only: `{totals['metadata_only']}`",
+            f"- Failed: `{totals['failed']}`",
+            f"- Healthy basins: `{proof['healthy_basins']}/{proof['expected_basins']}`",
             f"- Proof SHA-256: `{digest}`",
             "",
-            "| Basin | Selected | Succeeded | Failed | Candidates |",
-            "|---|---:|---:|---:|---:|",
+            "| Basin | Selected | Route | Content | Metadata | Failed | Healthy |",
+            "|---|---:|---:|---:|---:|---:|---|",
           ]
           for row in proof['basins']:
             counts=row.get('counts',{})
-            lines.append(f"| `{row.get('basin')}` | {counts.get('selected',0)} | {counts.get('succeeded',0)} | {counts.get('failed',0)} | {counts.get('candidates',0)} |")
+            healthy=row.get('basin_health',{}).get('coverage_healthy',False)
+            lines.append(f"| `{row.get('basin')}` | {counts.get('selected',0)} | {counts.get('route_succeeded',0)} | {counts.get('content_succeeded',0)} | {counts.get('metadata_only',0)} | {counts.get('failed',0)} | `{str(healthy).lower()}` |")
           lines += [
             "",
             "```text",
+            "execution completeness ≠ coverage health",
+            "coverage health ≠ evidentiary sufficiency",
+            "metadata fingerprint ≠ content access",
+            "",
             "promotes_to: candidate_only",
             "graph_effect: none",
             "conclusion_generated: false",
