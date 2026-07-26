@@ -5,20 +5,24 @@ on:
     branches: [main]
     paths:
       - 'data/project/m05-answerable-power-*.json'
+      - 'data/intake/m05-answerable-power-*.json'
       - 'docs/methods/answerable-power-story-ecology.md'
       - 'docs/milestones/m05-answerable-power-*.md'
       - 'tools/*m05-answerable-power*.mjs'
       - 'test/m05-answerable-power.test.js'
+      - 'test/m05-answerable-power-sprint-01.test.js'
       - 'reports/core-thesis/answerable-power/**'
       - '.github/workflows/m05-answerable-power.yml'
   push:
     branches: [main]
     paths:
       - 'data/project/m05-answerable-power-*.json'
+      - 'data/intake/m05-answerable-power-*.json'
       - 'docs/methods/answerable-power-story-ecology.md'
       - 'docs/milestones/m05-answerable-power-*.md'
       - 'tools/*m05-answerable-power*.mjs'
       - 'test/m05-answerable-power.test.js'
+      - 'test/m05-answerable-power-sprint-01.test.js'
       - 'reports/core-thesis/answerable-power/**'
       - '.github/workflows/m05-answerable-power.yml'
   workflow_dispatch:
@@ -39,6 +43,9 @@ jobs:
           node tools/build-m05-answerable-power.mjs
           node tools/validate-m05-answerable-power.mjs
           node test/m05-answerable-power.test.js
+          node tools/build-m05-answerable-power-sprint-01.mjs
+          node tools/validate-m05-answerable-power-sprint-01.mjs
+          node test/m05-answerable-power-sprint-01.test.js
       - name: Run complete repository release gate
         run: npm run release:check
       - name: Prove deterministic products
@@ -47,4 +54,7 @@ jobs:
           node tools/build-m05-answerable-power.mjs
           node tools/validate-m05-answerable-power.mjs
           node test/m05-answerable-power.test.js
+          node tools/build-m05-answerable-power-sprint-01.mjs
+          node tools/validate-m05-answerable-power-sprint-01.mjs
+          node test/m05-answerable-power-sprint-01.test.js
           git diff --exit-code
