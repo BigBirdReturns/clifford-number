@@ -18,51 +18,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: agent/m04g-evidence-hydrology-inland-sea
-      - name: Write payload, repair, and combined receipts
-        run: |
-          python - <<'PY'
-          import base64
-          import hashlib
-          import json
-          from pathlib import Path
-
-          root = Path('.github/temporary/m04g-evidence-hydrology')
-          lines = []
-          parts = []
-          for index in range(10):
-              name = f'part-{index:02d}'
-              text = (root / name).read_text().strip()
-              parts.append(text)
-              lines.append(f'{name} {len(text)} {hashlib.sha256(text.encode()).hexdigest()}')
-
-          encoded = ''.join(parts)
-          lines.append(f'combined {len(encoded)} {hashlib.sha256(encoded.encode()).hexdigest()}')
-          payload = base64.b64decode(encoded, validate=True)
-          lines.append(f'decoded {len(payload)} {hashlib.sha256(payload).hexdigest()}')
-
-          repairs = json.loads((root / 'repair-map.json').read_text())
-          lines.append(f'repair_count {len(repairs)}')
-          repaired = encoded
-          for repair in sorted(repairs, key=lambda item: item['start'], reverse=True):
-              start = int(repair['start'])
-              end = int(repair['end'])
-              replacement = repair['replacement']
-              lines.append(f'repair {start} {end} {len(replacement)}')
-              repaired = repaired[:start] + replacement + repaired[end:]
-          lines.append(f'repaired {len(repaired)} {hashlib.sha256(repaired.encode()).hexdigest()}')
-
-          Path('/tmp/m04g-payload-receipts.txt').write_text('\n'.join(lines) + '\n')
-          Path('/tmp/m04g-current-combined.txt').write_text(encoded)
-          Path('/tmp/m04g-repaired-combined.txt').write_text(repaired)
-          Path('/tmp/m04g-repair-map.json').write_text((root / 'repair-map.json').read_text())
-          print('\n'.join(lines))
-          PY
-      - uses: actions/upload-artifact@v4
+      - name: Upload exact payload carrier and repair map
+        uses: actions/upload-artifact@v4
         with:
-          name: m04g-payload-diagnostic
-          path: |
-            /tmp/m04g-payload-receipts.txt
-            /tmp/m04g-current-combined.txt
-            /tmp/m04g-repaired-combined.txt
-            /tmp/m04g-repair-map.json
+          name: m04g-payload-source
+          path: .github/temporary/m04g-evidence-hydrology/
           if-no-files-found: error
+          include-hidden-files: true
