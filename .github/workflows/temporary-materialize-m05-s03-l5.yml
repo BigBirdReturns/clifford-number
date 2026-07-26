@@ -42,12 +42,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git restore .github/workflows/m05-answerable-power.yml
-          git add data/project/m05-answerable-power-sprint-03-leg-05-public-platform-exit.json \
+          git status --short
+          git add -f data/project/m05-answerable-power-sprint-03-leg-05-public-platform-exit.json \
             docs/milestones/m05-answerable-power-sprint-03-leg-05.md \
             tools/build-m05-answerable-power-sprint-03-leg-05.mjs \
             tools/validate-m05-answerable-power-sprint-03-leg-05.mjs \
             test/m05-answerable-power-sprint-03-leg-05.test.js \
             reports/core-thesis/answerable-power/sprint-03-leg-05.json \
             reports/core-thesis/answerable-power/sprint-03-leg-05.html
+          git diff --cached --stat
           git commit -m "Add M-05 Sprint 03 public-platform exit test"
           git push origin HEAD:agent/m05-sprint-03-leg-05-public-platform-exit-v2
