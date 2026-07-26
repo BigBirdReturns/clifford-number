@@ -1,0 +1,126 @@
+name: Temporary recover M-04G global circulation v2
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-m04g-global-circulation-recovered-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m04g-global-circulation-proof-wave-02
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify exact carrier segments and extract
+        run: |
+          python - <<'PY'
+          import base64,hashlib,io,tarfile
+          from pathlib import Path
+          root=Path('.github/temporary/m04g-global-circulation')
+          segment_hashes=[
+            'd3814040440bb523a97c2c477899032e9af7eda0584e73da75435462093bca8e',
+            'abcb4885d07e21b6876f8bf4b1ffb693f0ed0941bf41312705f7843981123205',
+            '0ae3dc007be74eacdd6ec7ba16d2f75b822fdeda4116c686e1fde7e87bd317d7',
+            'b4de4fed972052e2837e303e440f9ef5abe9b2b7eb4cea64ff03f8c59b7d89bc',
+          ]
+          segments=[]
+          for index,digest in enumerate(segment_hashes):
+            text=(root/f'part-00-{index}').read_text().strip()
+            assert len(text)==1250,(index,len(text))
+            assert hashlib.sha256(text.encode()).hexdigest()==digest,index
+            segments.append(text)
+          part0=''.join(segments)
+          assert hashlib.sha256(part0.encode()).hexdigest()=='2b5ec0c593d11ba6dd9ac3a0d48d4c1daacbab6d774f2105059c43286e89e9fc'
+          expected_hashes=[
+            '62e705096c760803fb5b559e99fa5182be075607eb17eb89d604898d89312a27',
+            '17f4f73ae82a006856f97b9ace7b61c292660b9040438bb9bc442ca7bdbbce57',
+            'eb8eaf4a92f168e55959b4ca8380e29b25693a537dcc755c5337cdf173e794ff',
+            'ef5bc7c5d4c93a13f2d9ba7a39513374514a0d53d64756d398d97cea09f6c8d4',
+            'ce61ebfdaef83ec02e7dde4cf767e7b1a44c322abcb12f5ae4e6d5df9ef62773',
+            'd7ca67b6c1db4d8d12330c86b1c06096090a4de5b5013e632e5b640299437444',
+          ]
+          parts=[part0]
+          for index,digest in enumerate(expected_hashes,start=1):
+            text=(root/f'part-{index:02d}').read_text().strip()
+            assert len(text)==5000,(index,len(text))
+            assert hashlib.sha256(text.encode()).hexdigest()==digest,index
+            parts.append(text)
+          raw7=(root/'part-07').read_text().strip()
+          assert len(raw7)==7808 and hashlib.sha256(raw7.encode()).hexdigest()=='115fed4743f0a293c35ac18b0f9558e3f14834c8e941dd20734dd71c80abd47b'
+          part7=raw7[:5000]
+          assert hashlib.sha256(part7.encode()).hexdigest()=='2840b83133903c87c15294b2d053fe4ded8336fbcd346a7ede9231a9ec027a27'
+          part8=(root/'part-08').read_text().strip()
+          assert len(part8)==2808 and hashlib.sha256(part8.encode()).hexdigest()=='74301d4b6d8928a35004d8dc52a3ac9da2043c8b88c9adcfe2fb5b4c40bb4128'
+          parts.extend([part7,part8])
+          encoded=''.join(parts)
+          assert len(encoded)==42808
+          assert hashlib.sha256(encoded.encode()).hexdigest()=='1bc393a05475a2de5980376530314c91309f775c984d274208604eb1e11d4fcb'
+          payload=base64.b64decode(encoded,validate=True)
+          assert len(payload)==32105
+          assert hashlib.sha256(payload).hexdigest()=='30b27b85a75d6ccdfa166848f4f73f3bdbc51b4126ab593265de91c47cdccdea'
+          expected={
+            '.github/workflows/m04g-global-circulation.yml','build/core-thesis/global-circulation/data.json',
+            'data/intake/m04g-global-circulation-sources-01.json','data/project/m04g-global-circulation-basins.json',
+            'data/project/m04g-global-circulation-currents.json','data/project/m04g-global-circulation-fanout.json',
+            'data/project/m04g-global-circulation-methodology.json','data/project/m04g-global-circulation-polls.json',
+            'docs/methods/global-evidence-circulation.md','docs/milestones/m04g-global-circulation-wave-02.md',
+            'reports/core-thesis/global-circulation/data.json','reports/core-thesis/global-circulation/index.html',
+            'test/m04g-global-circulation.test.js','tools/build-m04g-global-circulation.mjs',
+            'tools/refresh-m04g-global-circulation.mjs','tools/validate-m04g-global-circulation.mjs',
+          }
+          with tarfile.open(fileobj=io.BytesIO(payload),mode='r:gz') as archive:
+            members=archive.getmembers(); names={m.name for m in members}
+            assert names==expected,(names-expected,expected-names)
+            for member in members:
+              path=Path(member.name)
+              if path.is_absolute() or '..' in path.parts or not member.isfile(): raise SystemExit(member.name)
+            archive.extractall('.')
+          PY
+      - name: Validate focused and repository-wide contracts
+        run: |
+          node tools/build-m04g-global-circulation.mjs
+          node tools/validate-m04g-global-circulation.mjs
+          node test/m04g-global-circulation.test.js
+          node tools/refresh-m04g-global-circulation.mjs --dry-run --basin all --class all --limit 200
+          npm run release:check
+      - name: Restore unrelated drift and rerun
+        run: |
+          git restore --staged --worktree .
+          node tools/build-m04g-global-circulation.mjs
+          node tools/validate-m04g-global-circulation.mjs
+          node test/m04g-global-circulation.test.js
+          node tools/refresh-m04g-global-circulation.mjs --dry-run --basin all --class all --limit 200
+          git diff --check
+      - name: Commit the permanent program and remove all carriers
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -r --ignore-unmatch \
+            .github/temporary/m04g-global-circulation \
+            .github/workflows/temporary-m04g-global-circulation-proof-materialize.yml \
+            .github/workflows/temporary-m04g-global-circulation-payload-diagnostic.yml \
+            .github/workflows/temporary-m04g-global-circulation-recovered-materialize.yml \
+            .github/workflows/temporary-m04g-global-circulation-recovered-v2.yml
+          git add -- \
+            .github/workflows/m04g-global-circulation.yml build/core-thesis/global-circulation/data.json \
+            data/intake/m04g-global-circulation-sources-01.json data/project/m04g-global-circulation-basins.json \
+            data/project/m04g-global-circulation-currents.json data/project/m04g-global-circulation-fanout.json \
+            data/project/m04g-global-circulation-methodology.json data/project/m04g-global-circulation-polls.json \
+            docs/methods/global-evidence-circulation.md docs/milestones/m04g-global-circulation-wave-02.md \
+            reports/core-thesis/global-circulation/data.json reports/core-thesis/global-circulation/index.html \
+            test/m04g-global-circulation.test.js tools/build-m04g-global-circulation.mjs \
+            tools/refresh-m04g-global-circulation.mjs tools/validate-m04g-global-circulation.mjs
+          git diff --cached --name-status
+          git diff --cached --quiet && { echo 'no permanent changes'; exit 1; }
+          git commit -m 'Build proven M-04G global circulation wave 02'
+          git push origin HEAD:refs/heads/agent/m04g-global-circulation-proof-wave-02
