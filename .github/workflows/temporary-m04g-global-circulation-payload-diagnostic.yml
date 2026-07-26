@@ -24,7 +24,8 @@ jobs:
           import base64, hashlib, io, json, tarfile
           from pathlib import Path
           root=Path('.github/temporary/m04g-global-circulation')
-          out={'parts':[]}
+          seed=(root/'payload.b64').read_text().strip()
+          out={'seed':{'length':len(seed),'sha256':hashlib.sha256(seed.encode()).hexdigest(),'first_5000_sha256':hashlib.sha256(seed[:5000].encode()).hexdigest()},'parts':[]}
           texts=[]
           for index in range(9):
             p=root/f'part-{index:02d}'
