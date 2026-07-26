@@ -1,11 +1,6 @@
-name: Temporary probe post-repair M-04G run
+name: Temporary materialize M-05 Sprint 02 reconciliation
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - '.github/workflows/temporary-probe-m04g-source-health-run.yml'
-      - 'data/project/m05-answerable-power-sprint-02-reconciliation.json'
   push:
     branches:
       - agent/m05-sprint-02-reconciliation
@@ -14,125 +9,31 @@ on:
   workflow_dispatch:
 
 permissions:
-  actions: read
   contents: write
-  issues: write
 
 jobs:
-  probe:
+  materialize:
     runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ github.token }}
-      TARGET_SHA: 0f517f497eed8c8a9d7f1f83c5c0688a509ea41f
-      TARGET_WORKFLOW: M-04G global evidence circulation
-      TARGET_BRANCH: agent/m05-sprint-02-reconciliation
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/m05-sprint-02-reconciliation
-      - name: Find post-repair push run, preserve diagnostic, and retrieve proof when available
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build and validate Sprint 02 reconciliation
         run: |
-          gh api --paginate \
-            -H 'Accept: application/vnd.github+json' \
-            '/repos/${{ github.repository }}/actions/runs?branch=main&event=push&per_page=100' \
-            > runs-pages.json
-          python - <<'PY'
-          import json, os, subprocess
-          from pathlib import Path
-
-          raw=Path('runs-pages.json').read_text().strip()
-          pages=[]
-          decoder=json.JSONDecoder()
-          index=0
-          while index < len(raw):
-            while index < len(raw) and raw[index].isspace(): index += 1
-            if index>=len(raw): break
-            value,end=decoder.raw_decode(raw,index)
-            pages.append(value); index=end
-
-          runs=[]
-          for page in pages:
-            runs.extend(page.get('workflow_runs',[]))
-          target=os.environ['TARGET_SHA']
-          workflow=os.environ['TARGET_WORKFLOW']
-          matched=[row for row in runs if row.get('head_sha')==target]
-          selected=[row for row in matched if row.get('name')==workflow]
-          selected.sort(key=lambda item:item.get('created_at',''),reverse=True)
-          chosen=selected[0] if selected else None
-
-          diagnostic={
-            'schema_version':'m04g-source-health-run-probe@1',
-            'target_head_sha':target,
-            'target_workflow':workflow,
-            'matched_push_runs':[
-              {
-                'id':row.get('id'),
-                'name':row.get('name'),
-                'status':row.get('status'),
-                'conclusion':row.get('conclusion'),
-                'event':row.get('event'),
-                'created_at':row.get('created_at'),
-                'updated_at':row.get('updated_at'),
-                'html_url':row.get('html_url')
-              }
-              for row in sorted(matched,key=lambda item:item.get('created_at',''))
-            ],
-            'selected_run':None,
-            'orbit_proof':None,
-            'artifact_error':None
-          }
-          if chosen:
-            diagnostic['selected_run']={
-              'id':chosen.get('id'),
-              'name':chosen.get('name'),
-              'status':chosen.get('status'),
-              'conclusion':chosen.get('conclusion'),
-              'event':chosen.get('event'),
-              'created_at':chosen.get('created_at'),
-              'updated_at':chosen.get('updated_at'),
-              'html_url':chosen.get('html_url')
-            }
-            if chosen.get('status')=='completed' and chosen.get('conclusion')=='success':
-              run_id=str(chosen['id'])
-              artifact=f'm04g-global-orbit-proof-{run_id}'
-              try:
-                subprocess.run(['gh','run','download',run_id,'--repo',os.environ['GITHUB_REPOSITORY'],'--name',artifact,'--dir','downloaded-proof'],check=True)
-                proofs=list(Path('downloaded-proof').rglob('orbit-proof.json'))
-                if proofs:
-                  diagnostic['orbit_proof']=json.loads(proofs[0].read_text())
-                else:
-                  diagnostic['artifact_error']='orbit-proof.json not found in downloaded artifact'
-              except subprocess.CalledProcessError as error:
-                diagnostic['artifact_error']=f'gh run download failed: {error.returncode}'
-          Path('data/project/m04g-source-health-run-probe.json').write_text(json.dumps(diagnostic,indent=2)+'\n')
-
-          lines=[
-            '<!-- m04g-source-health-run-probe:'+target+' -->',
-            '## M-04G post-repair run probe',
-            '',
-            f'- Target head: `{target}`',
-            f'- Matched push runs: `{len(matched)}`',
-          ]
-          if chosen:
-            lines += [
-              f"- Selected run: [{chosen['id']}]({chosen['html_url']})",
-              f"- Status: `{chosen.get('status')}`",
-              f"- Conclusion: `{chosen.get('conclusion')}`",
-              f"- Proof retrieved: `{str(diagnostic['orbit_proof'] is not None).lower()}`",
-            ]
-          else:
-            lines += ['- Selected run: `none`']
-          Path('probe.md').write_text('\n'.join(lines)+'\n')
-          PY
-          gh issue comment 278 --repo '${{ github.repository }}' --body-file probe.md
-      - name: Commit diagnostic to reconciliation branch
+          node tools/build-m05-answerable-power-sprint-02-reconciliation.mjs
+          node tools/validate-m05-answerable-power-sprint-02-reconciliation.mjs
+          node test/m05-answerable-power-sprint-02-reconciliation.test.js
+      - name: Commit generated products
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add data/project/m04g-source-health-run-probe.json
+          git add reports/core-thesis/answerable-power/sprint-02-reconciliation.json reports/core-thesis/answerable-power/sprint-02-reconciliation.html
           if git diff --cached --quiet; then
-            echo 'No diagnostic drift'
+            echo 'No generated drift'
           else
-            git commit -m 'Capture post-repair M-04G run diagnostic'
+            git commit -m 'Materialize M-05 Sprint 02 reconciliation report'
             git push origin HEAD:agent/m05-sprint-02-reconciliation
           fi
