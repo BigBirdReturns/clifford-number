@@ -37,8 +37,12 @@ jobs:
           node tools/build-m05-answerable-power-sprint-03-leg-05.mjs
           node tools/validate-m05-answerable-power-sprint-03-leg-05.mjs
           node test/m05-answerable-power-sprint-03-leg-05.test.js
-      - name: Commit generated products
+      - name: Diagnose commit and push
+        id: diagnose
+        continue-on-error: true
         run: |
+          exec > >(tee /tmp/m05-s03-l5-diagnostic.log) 2>&1
+          set -x
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git restore .github/workflows/m05-answerable-power.yml
@@ -53,3 +57,24 @@ jobs:
           git diff --cached --stat
           git commit -m "Add M-05 Sprint 03 public-platform exit test"
           git push origin HEAD:agent/m05-sprint-03-leg-05-public-platform-exit-v2
+      - name: Package generated products and diagnostic
+        if: always()
+        run: |
+          tar -czf /tmp/m05-s03-l5-generated.tgz \
+            data/project/m05-answerable-power-sprint-03-leg-05-public-platform-exit.json \
+            docs/milestones/m05-answerable-power-sprint-03-leg-05.md \
+            tools/build-m05-answerable-power-sprint-03-leg-05.mjs \
+            tools/validate-m05-answerable-power-sprint-03-leg-05.mjs \
+            test/m05-answerable-power-sprint-03-leg-05.test.js \
+            reports/core-thesis/answerable-power/sprint-03-leg-05.json \
+            reports/core-thesis/answerable-power/sprint-03-leg-05.html
+          sha256sum /tmp/m05-s03-l5-generated.tgz > /tmp/m05-s03-l5-generated.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m05-s03-l5-materialization-diagnostic
+          path: |
+            /tmp/m05-s03-l5-diagnostic.log
+            /tmp/m05-s03-l5-generated.tgz
+            /tmp/m05-s03-l5-generated.sha256
+          if-no-files-found: error
