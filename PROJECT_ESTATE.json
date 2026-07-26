@@ -1,0 +1,14 @@
+{
+  "schema": "drivesort/project-estate-spec@1",
+  "project": "Clifford-Number",
+  "allowed_anchors": ["D:\\Projects", "S:\\Projects", "S:\\Scratch"],
+  "roots": [
+    {"id": "live", "path": "D:\\Projects\\Products\\Clifford-Number\\repo", "role": "live", "purpose": "canonical source checkout", "active": true},
+    {"id": "durable", "path": "S:\\Projects\\Products\\Clifford-Number", "role": "custody", "purpose": "durable project-owned large artifacts and receipts"},
+    {"id": "scratch", "path": "S:\\Scratch\\Products\\Clifford-Number", "role": "temp", "purpose": "disposable runs and intermediates", "active": true},
+    {"id": "legacy_d_project", "path": "D:\\Projects\\Clifford-Number", "role": "alias", "purpose": "retired pre-taxonomy project root", "expected_target_root": "live", "desired_state": "absent"},
+    {"id": "legacy_s_project", "path": "S:\\Projects\\Clifford-Number", "role": "alias", "purpose": "retired durable compatibility root", "expected_target_root": "durable", "desired_state": "absent"},
+    {"id": "legacy_s_scratch", "path": "S:\\Scratch\\Clifford-Number", "role": "alias", "purpose": "retired scratch compatibility root", "expected_target_root": "scratch", "desired_state": "absent"}
+  ],
+  "cleanup": []
+}
