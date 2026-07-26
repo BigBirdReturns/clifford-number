@@ -1,0 +1,43 @@
+name: Temporary materialize M-05 Sprint 03 launch
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-materialize-m05-s03-launch.yml'
+  push:
+    branches:
+      - agent/m05-sprint-03-launch
+    paths:
+      - '.github/workflows/temporary-materialize-m05-s03-launch.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m05-sprint-03-launch
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build and validate Sprint 03
+        run: |
+          node tools/build-m05-answerable-power-sprint-03.mjs
+          node tools/validate-m05-answerable-power-sprint-03.mjs
+          node test/m05-answerable-power-sprint-03.test.js
+      - name: Commit generated products
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add reports/core-thesis/answerable-power/sprint-03-plan.json reports/core-thesis/answerable-power/sprint-03-plan.html
+          if git diff --cached --quiet; then
+            echo 'No generated drift'
+          else
+            git commit -m 'Materialize M-05 Sprint 03 plan report'
+            git push origin HEAD:agent/m05-sprint-03-launch
+          fi
