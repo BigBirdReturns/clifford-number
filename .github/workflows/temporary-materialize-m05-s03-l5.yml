@@ -1,6 +1,11 @@
 name: Temporary materialize M-05 Sprint 03 Leg 05
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-materialize-m05-s03-l5.yml'
+      - 'tmp/m05-s03-l5-payload.b64'
   push:
     branches:
       - agent/m05-sprint-03-leg-05-public-platform-exit-v2
