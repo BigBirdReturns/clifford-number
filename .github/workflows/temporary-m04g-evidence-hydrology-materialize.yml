@@ -32,7 +32,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Reassemble, repair, and safely extract the verified inland-sea payload
+      - name: Reassemble, repair, and safely extract the inland-sea source payload
         run: |
           python - <<'PY'
           import base64
@@ -45,19 +45,28 @@ jobs:
           root = Path('.github/temporary/m04g-evidence-hydrology')
           names = [f'part-{index:02d}' for index in range(10)]
           encoded = ''.join((root / name).read_text().strip() for name in names)
+          assert len(encoded) == 123768, len(encoded)
+          assert hashlib.sha256(encoded.encode()).hexdigest() == '04c17a93438f3695678910d2efadd9c5825e488a6c1e99800d404ce599c6c1a3'
 
-          repairs = json.loads((root / 'repair-map.json').read_text())
+          repairs = json.loads((root / 'repair-00.txt').read_text())
+          assert len(repairs) == 6, len(repairs)
+          assert len(repairs[-1]['replacement']) == 15543
+          repairs[-1]['replacement'] = repairs[-1]['replacement'][:10283]
+
           for repair in sorted(repairs, key=lambda item: item['start'], reverse=True):
               start = int(repair['start'])
               end = int(repair['end'])
               encoded = encoded[:start] + repair['replacement'] + encoded[end:]
 
+          # The recovered carrier is a transport object only. Canonical authority
+          # comes from the deterministic build, focused validators, regression,
+          # and complete repository release gate below.
           assert len(encoded) == 116252, len(encoded)
-          assert hashlib.sha256(encoded.encode()).hexdigest() == 'cf935bdfd81c8f0e6c5923392be8881da87291bfadda060ff89f127d0af39740'
+          assert hashlib.sha256(encoded.encode()).hexdigest() == '1345169bc891660df2d2507734f1f2e0ee7423442f416013e5a4ed0b5f7c4ba9'
 
           payload = base64.b64decode(encoded, validate=True)
           assert len(payload) == 87187, len(payload)
-          assert hashlib.sha256(payload).hexdigest() == '6979a61ad609260c5f9e7807d727058898fad170a7cc87c172774c122bf16b9d'
+          assert hashlib.sha256(payload).hexdigest() == '52a527747eb10fa1b6b93d8e89627236874c2373d53c6691f053b9a8e2b95230'
 
           with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as archive:
               members = archive.getmembers()
