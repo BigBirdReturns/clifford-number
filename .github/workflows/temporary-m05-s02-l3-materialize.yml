@@ -1,0 +1,40 @@
+name: Temporary materialize M-05 Sprint 02 Leg 03
+
+on:
+  push:
+    branches:
+      - agent/m05-sprint-02-leg-03-ngc2-responsibility
+    paths:
+      - '.github/workflows/temporary-m05-s02-l3-materialize.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m05-sprint-02-leg-03-ngc2-responsibility
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Generate, validate, and publish durable products
+        run: |
+          set -euo pipefail
+          node tools/build-m05-answerable-power-sprint-02-leg-03.mjs
+          node tools/validate-m05-answerable-power-sprint-02-leg-03.mjs
+          node test/m05-answerable-power-sprint-02-leg-03.test.js
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add reports/core-thesis/answerable-power/sprint-02-leg-03.json reports/core-thesis/answerable-power/sprint-02-leg-03.html
+          if ! git diff --cached --quiet; then
+            git commit -m 'Materialize M-05 Sprint 02 Leg 03 report'
+            git push origin HEAD:agent/m05-sprint-02-leg-03-ngc2-responsibility
+          fi
+          git rm .github/workflows/temporary-m05-s02-l3-materialize.yml
+          git commit -m 'Remove temporary Sprint 02 Leg 03 materializer'
+          git push origin HEAD:agent/m05-sprint-02-leg-03-ngc2-responsibility
