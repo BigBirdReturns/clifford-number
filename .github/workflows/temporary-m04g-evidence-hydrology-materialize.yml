@@ -115,7 +115,9 @@ jobs:
           def allowed(path: str) -> bool:
               return path in exact or path.startswith(prefixes)
 
-          for row in subprocess.check_output(['git', 'status', '--porcelain'], text=True).splitlines():
+          for row in subprocess.check_output(
+              ['git', 'status', '--porcelain', '--untracked-files=all'], text=True
+          ).splitlines():
               path = row[3:]
               if ' -> ' in path:
                   path = path.split(' -> ', 1)[1]
@@ -164,7 +166,9 @@ jobs:
           }
           prefixes = ('.github/temporary/m04g-evidence-hydrology/',)
           paths = []
-          for row in subprocess.check_output(['git', 'status', '--porcelain'], text=True).splitlines():
+          for row in subprocess.check_output(
+              ['git', 'status', '--porcelain', '--untracked-files=all'], text=True
+          ).splitlines():
               path = row[3:]
               if ' -> ' in path:
                   path = path.split(' -> ', 1)[1]
@@ -183,7 +187,8 @@ jobs:
           git rm -r --ignore-unmatch \
             .github/temporary/m04g-evidence-hydrology \
             .github/workflows/temporary-m04g-evidence-hydrology-materialize.yml \
-            .github/workflows/temporary-m04g-payload-diagnostic.yml
+            .github/workflows/temporary-m04g-payload-diagnostic.yml \
+            .github/workflows/temporary-m04g-drift-diagnostic.yml
 
           git add -- \
             .github/workflows/m04g-evidence-hydrology.yml \
