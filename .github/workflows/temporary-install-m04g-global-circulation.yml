@@ -6,6 +6,10 @@ on:
       - agent/m04g-global-circulation-clean-wave-02
     paths:
       - '.github/workflows/temporary-install-m04g-global-circulation.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-install-m04g-global-circulation.yml'
   workflow_dispatch:
 
 permissions:
@@ -73,7 +77,7 @@ jobs:
           npm run release:check
           git restore --staged --worktree -- . ':!/.github/workflows/temporary-install-m04g-global-circulation.yml' || true
           python - <<'PY'
-          import hashlib,json,shutil
+          import json,shutil
           from pathlib import Path
           src=Path('/tmp/m04g-global-program')
           manifest=json.loads((src/'MANIFEST.json').read_text())
