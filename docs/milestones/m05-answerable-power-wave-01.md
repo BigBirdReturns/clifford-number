@@ -37,6 +37,15 @@ three pairwise overlaps
 ≠ one three-way common purpose
 ```
 
+## Live operating topology
+
+```text
+master issue: #303
+A01–A16: #304–#319
+```
+
+The lanes cover the three standalone stories, all three pairwise overlaps, public market-making, operator translation, represented people and workers, effective counterpower, exit and public capacity, the answer benchmark, non-links, deterministic story generation, public interfaces, and long-run regression monitoring.
+
 ## Completion condition
 
 The project does not end at comprehensive description. It ends only after a repeatable answer to power asymmetry survives observed use across domains and jurisdictions.
