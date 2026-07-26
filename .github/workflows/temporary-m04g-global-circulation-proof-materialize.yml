@@ -5,12 +5,12 @@ on:
     branches:
       - agent/m04g-global-circulation-proof-wave-02
     paths:
-      - '.github/temporary/m04g-global-circulation/payload.b64'
+      - '.github/temporary/m04g-global-circulation/**'
       - '.github/workflows/temporary-m04g-global-circulation-proof-materialize.yml'
   pull_request:
     branches: [main]
     paths:
-      - '.github/temporary/m04g-global-circulation/payload.b64'
+      - '.github/temporary/m04g-global-circulation/**'
       - '.github/workflows/temporary-m04g-global-circulation-proof-materialize.yml'
   workflow_dispatch:
 
@@ -37,13 +37,31 @@ jobs:
           python - <<'PY'
           import base64, hashlib, io, tarfile
           from pathlib import Path
-          encoded = Path('.github/temporary/m04g-global-circulation/payload.b64').read_text().strip()
+          root = Path('.github/temporary/m04g-global-circulation')
+          expected_parts = [
+            (5000, '2b5ec0c593d11ba6dd9ac3a0d48d4c1daacbab6d774f2105059c43286e89e9fc'),
+            (5000, '62e705096c760803fb5b559e99fa5182be075607eb17eb89d604898d89312a27'),
+            (5000, '17f4f73ae82a006856f97b9ace7b61c292660b9040438bb9bc442ca7bdbbce57'),
+            (5000, 'eb8eaf4a92f168e55959b4ca8380e29b25693a537dcc755c5337cdf173e794ff'),
+            (5000, 'ef5bc7c5d4c93a13f2d9ba7a39513374514a0d53d64756d398d97cea09f6c8d4'),
+            (5000, 'ce61ebfdaef83ec02e7dde4cf767e7b1a44c322abcb12f5ae4e6d5df9ef62773'),
+            (5000, 'd7ca67b6c1db4d8d12330c86b1c06096090a4de5b5013e632e5b640299437444'),
+            (5000, '2840b83133903c87c15294b2d053fe4ded8336fbcd346a7ede9231a9ec027a27'),
+            (2808, '74301d4b6d8928a35004d8dc52a3ac9da2043c8b88c9adcfe2fb5b4c40bb4128'),
+          ]
+          parts=[]
+          for index, (length, digest) in enumerate(expected_parts):
+            text=(root / f'part-{index:02d}').read_text().strip()
+            assert len(text) == length, (index, len(text), length)
+            assert hashlib.sha256(text.encode()).hexdigest() == digest, index
+            parts.append(text)
+          encoded=''.join(parts)
           assert len(encoded) == 42808, len(encoded)
           assert hashlib.sha256(encoded.encode()).hexdigest() == '1bc393a05475a2de5980376530314c91309f775c984d274208604eb1e11d4fcb'
-          payload = base64.b64decode(encoded, validate=True)
+          payload=base64.b64decode(encoded, validate=True)
           assert len(payload) == 32105, len(payload)
           assert hashlib.sha256(payload).hexdigest() == '30b27b85a75d6ccdfa166848f4f73f3bdbc51b4126ab593265de91c47cdccdea'
-          expected = {
+          expected={
             '.github/workflows/m04g-global-circulation.yml',
             'build/core-thesis/global-circulation/data.json',
             'data/intake/m04g-global-circulation-sources-01.json',
@@ -62,11 +80,11 @@ jobs:
             'tools/validate-m04g-global-circulation.mjs',
           }
           with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as archive:
-            members = archive.getmembers()
-            names = {member.name for member in members}
-            assert names == expected, (names - expected, expected - names)
+            members=archive.getmembers()
+            names={member.name for member in members}
+            assert names == expected, (names-expected, expected-names)
             for member in members:
-              path = Path(member.name)
+              path=Path(member.name)
               if path.is_absolute() or '..' in path.parts or not member.isfile():
                 raise SystemExit(f'unsafe archive member: {member.name}')
             archive.extractall('.')
@@ -81,19 +99,14 @@ jobs:
       - name: Run complete repository release gate
         run: npm run release:check
       - name: Restore unrelated generated drift
-        run: git restore --staged --worktree .
-      - name: Rebuild and prove deterministic target surface
         run: |
-          node tools/build-m04g-global-circulation.mjs
-          node tools/validate-m04g-global-circulation.mjs
-          node test/m04g-global-circulation.test.js
-          node tools/refresh-m04g-global-circulation.mjs --dry-run --basin all --class all --limit 200
           python - <<'PY'
-          import subprocess
-          expected = {
-            '.github/temporary/m04g-global-circulation/payload.b64',
-            '.github/workflows/temporary-m04g-global-circulation-proof-materialize.yml',
+          import shutil, subprocess
+          from pathlib import Path
+          exact={
             '.github/workflows/m04g-global-circulation.yml',
+            '.github/workflows/temporary-m04g-global-circulation-proof-materialize.yml',
+            '.github/workflows/temporary-m04g-global-circulation-payload-diagnostic.yml',
             'build/core-thesis/global-circulation/data.json',
             'data/intake/m04g-global-circulation-sources-01.json',
             'data/project/m04g-global-circulation-basins.json',
@@ -110,15 +123,50 @@ jobs:
             'tools/refresh-m04g-global-circulation.mjs',
             'tools/validate-m04g-global-circulation.mjs',
           }
-          rows = subprocess.check_output(['git','status','--porcelain','--untracked-files=all'], text=True).splitlines()
-          paths=[]
-          for row in rows:
+          prefix='.github/temporary/m04g-global-circulation/'
+          for row in subprocess.check_output(['git','status','--porcelain','--untracked-files=all'], text=True).splitlines():
             path=row[3:].split(' -> ',1)[-1]
-            paths.append(path)
-          bad=[path for path in paths if path not in expected]
+            if path in exact or path.startswith(prefix): continue
+            target=Path(path)
+            tracked=subprocess.run(['git','ls-files','--error-unmatch','--',path],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode == 0
+            if tracked: subprocess.run(['git','restore','--staged','--worktree','--',path],check=True)
+            elif target.is_dir(): shutil.rmtree(target)
+            elif target.exists(): target.unlink()
+          PY
+      - name: Rebuild and prove deterministic target surface
+        run: |
+          node tools/build-m04g-global-circulation.mjs
+          node tools/validate-m04g-global-circulation.mjs
+          node test/m04g-global-circulation.test.js
+          node tools/refresh-m04g-global-circulation.mjs --dry-run --basin all --class all --limit 200
+          git diff --check
+          python - <<'PY'
+          import subprocess
+          allowed={
+            '.github/workflows/m04g-global-circulation.yml',
+            '.github/workflows/temporary-m04g-global-circulation-proof-materialize.yml',
+            '.github/workflows/temporary-m04g-global-circulation-payload-diagnostic.yml',
+            'build/core-thesis/global-circulation/data.json',
+            'data/intake/m04g-global-circulation-sources-01.json',
+            'data/project/m04g-global-circulation-basins.json',
+            'data/project/m04g-global-circulation-currents.json',
+            'data/project/m04g-global-circulation-fanout.json',
+            'data/project/m04g-global-circulation-methodology.json',
+            'data/project/m04g-global-circulation-polls.json',
+            'docs/methods/global-evidence-circulation.md',
+            'docs/milestones/m04g-global-circulation-wave-02.md',
+            'reports/core-thesis/global-circulation/data.json',
+            'reports/core-thesis/global-circulation/index.html',
+            'test/m04g-global-circulation.test.js',
+            'tools/build-m04g-global-circulation.mjs',
+            'tools/refresh-m04g-global-circulation.mjs',
+            'tools/validate-m04g-global-circulation.mjs',
+          }
+          rows=subprocess.check_output(['git','status','--porcelain','--untracked-files=all'],text=True).splitlines()
+          paths=[row[3:].split(' -> ',1)[-1] for row in rows]
+          bad=[path for path in paths if path not in allowed and not path.startswith('.github/temporary/m04g-global-circulation/')]
           print('\n'.join(paths))
-          if bad:
-            raise SystemExit('unexpected drift:\n'+'\n'.join(bad))
+          if bad: raise SystemExit('unexpected drift:\n'+'\n'.join(bad))
           PY
       - name: Commit only the permanent proven program
         run: |
@@ -126,7 +174,8 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git rm -r --ignore-unmatch \
             .github/temporary/m04g-global-circulation \
-            .github/workflows/temporary-m04g-global-circulation-proof-materialize.yml
+            .github/workflows/temporary-m04g-global-circulation-proof-materialize.yml \
+            .github/workflows/temporary-m04g-global-circulation-payload-diagnostic.yml
           git add -- \
             .github/workflows/m04g-global-circulation.yml \
             build/core-thesis/global-circulation/data.json \
