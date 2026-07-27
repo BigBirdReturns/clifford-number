@@ -41,6 +41,7 @@ jobs:
           assert len(paths) == 6, f'expected six payload parts, got {len(paths)}'
           encoded = ''.join(''.join(pathlib.Path(path).read_text().split()) for path in paths)
           raw = base64.b64decode(encoded, validate=True)
+          pathlib.Path('/tmp/s05-audit-payload.tgz').write_bytes(raw)
           print(f'decoded {len(encoded)} base64 characters into {len(raw)} bytes')
           with tarfile.open(fileobj=io.BytesIO(raw), mode='r:gz') as archive:
               archive.extractall('.')
@@ -55,6 +56,13 @@ jobs:
         run: npm run release:check
       - name: Commit only the permanent audited surface
         run: |
+          git restore --staged --worktree .
+          git clean -fd
+          tar -xzf /tmp/s05-audit-payload.tgz -C .
+          node tools/build-m05-answerable-power-sprint-05.mjs
+          node tools/validate-m05-answerable-power-sprint-05.mjs
+          node test/m05-answerable-power-sprint-05.test.js
+          node test/m05-adoption-conformance.test.js
           git add -A
           actual="$(git diff --cached --name-only | sort)"
           expected="$(printf '%s\n' \
