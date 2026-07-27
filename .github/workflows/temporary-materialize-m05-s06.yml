@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/temporary-materialize-m05-s06.yml'
-      - '.github/tmp/s06-payload.b64'
+      - '.github/tmp/s06-payload-part-*.b64'
   push:
     branches:
       - agent/m05-sprint-06-independent-reproduction
@@ -30,7 +30,10 @@ jobs:
           node-version: '24'
       - name: Expand the Sprint 06 package
         run: |
-          base64 -d .github/tmp/s06-payload.b64 > /tmp/s06-package.tgz
+          cat .github/tmp/s06-payload-part-*.b64 > /tmp/s06-package.b64
+          base64 -d /tmp/s06-package.b64 > /tmp/s06-package.tgz
+          test "$(wc -c < /tmp/s06-package.tgz)" = '16914'
+          tar -tzf /tmp/s06-package.tgz >/dev/null
           tar -xzf /tmp/s06-package.tgz -C .
       - name: Run focused Sprint 06 checks
         run: |
