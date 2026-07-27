@@ -66,25 +66,25 @@ jobs:
           git add -A
           actual="$(git diff --cached --name-only | sort)"
           cat > /tmp/allowed-s05-audit-paths <<'PATHS'
-.github/workflows/m05-answerable-power-sprint-05.yml
-data/project/m05-answerable-power-sprint-05-audit.json
-data/project/m05-answerable-power-sprint-05-leg-01-conformance.json
-data/project/m05-answerable-power-sprint-05-leg-02-threat-model.json
-data/project/m05-answerable-power-sprint-05-leg-05-candidate-landscape.json
-data/project/m05-answerable-power-sprint-05-leg-07-registry.json
-data/project/m05-answerable-power-sprint-05-plan.json
-data/project/m05-answerable-power-sprint-05-release-manifest.json
-docs/methods/answerable-power-adoption-integrity.md
-docs/milestones/m05-answerable-power-sprint-05-audit.md
-docs/milestones/m05-answerable-power-sprint-05.md
-reports/core-thesis/answerable-power/sprint-05.html
-reports/core-thesis/answerable-power/sprint-05.json
-test/m05-adoption-conformance.test.js
-test/m05-answerable-power-sprint-05.test.js
-tools/build-m05-answerable-power-sprint-05.mjs
-tools/m05-adoption-conformance.mjs
-tools/validate-m05-answerable-power-sprint-05.mjs
-PATHS
+          .github/workflows/m05-answerable-power-sprint-05.yml
+          data/project/m05-answerable-power-sprint-05-audit.json
+          data/project/m05-answerable-power-sprint-05-leg-01-conformance.json
+          data/project/m05-answerable-power-sprint-05-leg-02-threat-model.json
+          data/project/m05-answerable-power-sprint-05-leg-05-candidate-landscape.json
+          data/project/m05-answerable-power-sprint-05-leg-07-registry.json
+          data/project/m05-answerable-power-sprint-05-plan.json
+          data/project/m05-answerable-power-sprint-05-release-manifest.json
+          docs/methods/answerable-power-adoption-integrity.md
+          docs/milestones/m05-answerable-power-sprint-05-audit.md
+          docs/milestones/m05-answerable-power-sprint-05.md
+          reports/core-thesis/answerable-power/sprint-05.html
+          reports/core-thesis/answerable-power/sprint-05.json
+          test/m05-adoption-conformance.test.js
+          test/m05-answerable-power-sprint-05.test.js
+          tools/build-m05-answerable-power-sprint-05.mjs
+          tools/m05-adoption-conformance.mjs
+          tools/validate-m05-answerable-power-sprint-05.mjs
+          PATHS
           while IFS= read -r path; do
             grep -Fxq "$path" /tmp/allowed-s05-audit-paths || {
               printf 'Disallowed staged path: %s\n' "$path"
