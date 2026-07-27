@@ -1,82 +1,95 @@
 {
-  "schema_version": "m05-answerable-power-sprint-05-plan@1",
+  "schema_version": "m05-answerable-power-sprint-05-plan@2",
   "program_id": "M-05",
   "sprint_id": "M05-SPRINT-05",
   "as_of": "2026-07-27",
   "title": "Adoption integrity and anti-counterfeit adoption",
-  "status": "reference_adoption_package_complete_at_a0",
-  "governing_problem": "A technically complete constitutional design can be captured during adoption through self-certification, selected representatives, nominal independence, hidden adverse authority, unbounded emergency exceptions, vendor evidence custody, remedy or exit theater, metric gaming, and successor-system relabeling.",
-  "governing_purpose": "Make APC-01 difficult to counterfeit by requiring external evidence, affected-party authority, a real-person entry gate, preregistered evaluation, independent stopping power, expiring claims, and successor-system inheritance before any adoption level can advance.",
+  "status": "reference_adoption_package_hardened_at_a0",
+  "governing_problem": "A technically complete constitutional design can still be captured during adoption through self-certification, boolean-only proof, cross-scope receipt reuse, blocker suppression, selected representatives, nominal independence, hidden adverse authority, unbounded emergency exceptions, vendor evidence custody, remedy or exit theater, metric gaming, and successor-system relabeling.",
+  "governing_purpose": "Make APC-01 difficult to counterfeit by requiring exact-byte reference custody, current scope-bound external evidence, affected-party authority, a real-person entry gate, preregistered evaluation, independent stopping power, blocker-aware reconciliation, expiring claims, and successor-system inheritance before any adoption level can advance.",
   "reconstruction_receipt": {
     "basis": "A source-bounded operator handoff described S05-L1 through S05-L5 and specified S05-L6 and S05-L7.",
     "historical_repository_merge_inferred": false,
     "historical_terminal_receipts_verified": false,
-    "materialized_in_this_branch": true,
-    "rule": "The branch establishes only the bytes and validation produced here; it does not convert the handoff's prior local execution claims into historical repository fact."
+    "materialized_in_repository": true,
+    "rule": "Repository history establishes only committed bytes and observed checks; the handoff does not convert prior unpushed execution claims into historical fact."
+  },
+  "audit_receipt": {
+    "path": "data/project/m05-answerable-power-sprint-05-audit.json",
+    "audit_scope": "start_to_finish_source_code_data_report_and_ci_review",
+    "legacy_conformance_version": "apc-adoption-package@1",
+    "authoritative_conformance_version": "apc-adoption-package@2",
+    "verified_ceiling_before_and_after": "A0"
+  },
+  "release_manifest": {
+    "path": "data/project/m05-answerable-power-sprint-05-release-manifest.json",
+    "hash_mode": "sha256_over_exact_utf8_bytes",
+    "generated": true,
+    "self_included": false
   },
   "adoption_ladder": [
     {
       "level": "A0",
       "name": "published_reference",
-      "test": "A versioned reference implementation, constitutional specification, deterministic report, and machine-validation surface are publicly inspectable.",
+      "test": "A versioned reference implementation, constitutional specification, exact-byte release manifest, deterministic report, and machine-validation surface are publicly inspectable.",
       "minimum_external_evidence": [],
       "forbidden_shortcut": "Internal build success may not be described as independent reproduction or institutional use."
     },
     {
       "level": "A1",
       "name": "independently_reproduced",
-      "test": "At least one non-operator, non-vendor party reproduces the package from the published instructions and signs a dated, evidence-linked receipt.",
+      "test": "At least one non-operator, non-vendor party reproduces the exact published bundle and signs a current, scope-bound, evidence-linked receipt.",
       "minimum_external_evidence": [
         "independent reproducer identity",
         "relationship and conflict disclosure",
-        "clean-room or equivalent reproduction receipt",
-        "version and checksum"
+        "current signed reproduction receipt",
+        "exact release-bundle fingerprint"
       ],
-      "forbidden_shortcut": "A maintainer, vendor, funded reviewer, or operator may not self-attest independence."
+      "forbidden_shortcut": "A maintainer, vendor, funded reviewer, operator, boolean flag, or unsigned narrative may not establish independent reproduction."
     },
     {
       "level": "A2",
       "name": "independently_reviewed_and_affected_party_approved",
-      "test": "Independent legal, privacy, ethics, and technical review is complete and a legitimately formed affected-party body gives binding approval.",
+      "test": "Independent legal, privacy, ethics, and technical review is current and scope-bound, and a legitimately formed affected-party body gives binding approval with formation, conflict, dissent, recall, and nonretaliation evidence.",
       "minimum_external_evidence": [
-        "independent review receipts",
+        "four current independent review receipts",
         "jurisdiction-specific authority",
         "affected-party formation record",
         "approval and dissent record",
-        "conflict and recusal record"
+        "conflict, recusal, recall, and nonretaliation record"
       ],
-      "forbidden_shortcut": "Consultation, advisory feedback, or institution-selected representatives may not substitute for affected-party approval."
+      "forbidden_shortcut": "Consultation, advisory feedback, selected representatives, or boolean approval may not substitute for affected-party authority."
     },
     {
       "level": "A3",
       "name": "lawful_no_adverse_shadow_mode",
-      "test": "A jurisdiction-specific real-person entry gate authorizes a bounded shadow period that cannot make, recommend, trigger, or influence an adverse action.",
+      "test": "A jurisdiction-specific real-person entry gate authorizes a bounded shadow period whose technical and operating mode cannot make, recommend, trigger, influence, or inform an adverse action.",
       "minimum_external_evidence": [
-        "entry-gate approval",
-        "no-adverse-action technical and policy boundary",
-        "independent stop authority",
-        "preregistered evaluation",
-        "incident and suspension route"
+        "current entry-gate instrument",
+        "no-adverse technical and policy boundary",
+        "current independent stop authority",
+        "frozen preregistration",
+        "scope-bound shadow observation receipts"
       ],
-      "forbidden_shortcut": "A system with hidden, indirect, discretionary, or emergency adverse authority is not in shadow mode."
+      "forbidden_shortcut": "A system with hidden, indirect, discretionary, informal, or emergency adverse authority is not in shadow mode."
     },
     {
       "level": "A4",
       "name": "prospective_parallel_operation_without_adverse_authority",
-      "test": "The system operates prospectively in parallel, with complete comparison telemetry and no authority over the live decision or service consequence.",
+      "test": "The system operates prospectively in parallel with complete comparator and failure-denominator receipts and no live-decision influence.",
       "minimum_external_evidence": [
         "A3 evidence",
-        "prospective parallel-operation receipt",
-        "comparator and denominator",
+        "prospective parallel-operation receipts",
+        "comparator and complete denominator",
         "continuity and burden monitoring",
         "independent pause records"
       ],
-      "forbidden_shortcut": "Operational staff may not use parallel outputs informally, selectively, or outside the preregistered protocol."
+      "forbidden_shortcut": "Operational staff may not consult or use parallel outputs informally, selectively, or outside the preregistered protocol."
     },
     {
       "level": "A5",
       "name": "observed_rights_bearing_use",
-      "test": "At least one real consequential use is governed by enforceable R1–R7 duties, with observed notice, access, pause, remedy, governance, exit, and value-allocation receipts as applicable.",
+      "test": "At least one real consequential use is governed by enforceable R1–R7 duties with scope-bound observed notice, access, pause, remedy, governance, exit, and value receipts as applicable.",
       "minimum_external_evidence": [
         "lawful live-use authority",
         "person-level rights receipts",
@@ -84,12 +97,12 @@
         "observed correction propagation",
         "open harm and failure denominator"
       ],
-      "forbidden_shortcut": "A policy promise, training exercise, synthetic scenario, or unexercised right is not observed rights-bearing use."
+      "forbidden_shortcut": "A policy promise, training exercise, synthetic scenario, boolean assertion, or unexercised right is not observed rights-bearing use."
     },
     {
       "level": "A6",
       "name": "durable_adoption_surviving_turnover_and_successor_systems",
-      "test": "The constitutional obligations survive leadership, vendor, model, policy, funding, and successor-system change and remain effective after re-review.",
+      "test": "The constitutional obligations survive leadership, vendor, model, policy, funding, and successor-system change and remain effective after scope-bound re-review.",
       "minimum_external_evidence": [
         "turnover survival receipt",
         "successor inheritance instrument",
@@ -97,7 +110,7 @@
         "durability and regression telemetry",
         "renewed independent attestation"
       ],
-      "forbidden_shortcut": "Relabeling, migration, renewal, or replacement may not reset the rights floor or erase prior evidence and obligations."
+      "forbidden_shortcut": "Relabeling, migration, renewal, replacement, or inherited branding may not preserve the adoption level by itself."
     }
   ],
   "leg_registry": [
@@ -154,11 +167,15 @@
   "current_state": {
     "reference_implementation_complete": true,
     "synthetic_adversarial_exercise_complete": true,
+    "start_to_finish_audit_complete": true,
+    "legacy_conformance_v1_superseded": true,
+    "exact_byte_release_manifest_complete": true,
     "adoption_specification_complete": true,
     "threat_model_complete": true,
     "real_person_entry_gate_complete": true,
     "synthetic_governance_protocol_complete": true,
     "candidate_landscape_complete": true,
+    "candidate_source_ledger_complete": true,
     "preregistration_template_complete": true,
     "adoption_registry_complete": true,
     "external_reproduction_observed": false,
@@ -178,6 +195,7 @@
     "synthetic_conformance_proves_real_governance": false,
     "internal_validation_proves_independent_reproduction": false,
     "reference_publication_proves_institutional_adoption": false,
+    "audit_completion_proves_external_adoption": false,
     "sprint_completion_proves_project_completion": false
   }
 }
