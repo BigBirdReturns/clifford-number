@@ -1,0 +1,52 @@
+name: Temporary diagnose M-05 Sprint 05 audit paths
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-diagnose-m05-s05-audit.yml'
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m05-sprint-05-start-to-finish-audit
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct and report the exact staged denominator
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import base64
+          import glob
+          import io
+          import pathlib
+          import tarfile
+          paths = sorted(glob.glob('.github/tmp/s05-audit-payload-part-*.b64'))
+          encoded = ''.join(''.join(pathlib.Path(path).read_text().split()) for path in paths)
+          raw = base64.b64decode(encoded, validate=True)
+          with tarfile.open(fileobj=io.BytesIO(raw), mode='r:gz') as archive:
+              archive.extractall('.')
+          PY
+          node tools/build-m05-answerable-power-sprint-05.mjs
+          node tools/validate-m05-answerable-power-sprint-05.mjs
+          node test/m05-answerable-power-sprint-05.test.js
+          node test/m05-adoption-conformance.test.js
+          git add -A
+          {
+            echo '## Sprint 05 audit staged-path diagnostic'
+            echo
+            echo '```text'
+            git diff --cached --name-status | sort
+            echo '```'
+          } > /tmp/s05-audit-paths.md
+          gh pr comment 358 --body-file /tmp/s05-audit-paths.md
