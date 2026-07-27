@@ -1,0 +1,37 @@
+name: Biological Omega staged-program checks
+
+on:
+  push:
+    paths:
+      - 'contributions/inbox/research-batches/biological-omega-*'
+      - 'docs/biological-omega-program.md'
+      - 'tools/validate-biological-omega-program.mjs'
+      - 'test/biological-omega-program.test.js'
+      - '.github/workflows/biological-omega-program.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contributions/inbox/research-batches/biological-omega-*'
+      - 'docs/biological-omega-program.md'
+      - 'tools/validate-biological-omega-program.mjs'
+      - 'test/biological-omega-program.test.js'
+      - '.github/workflows/biological-omega-program.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate staged programme
+        run: node tools/validate-biological-omega-program.mjs
+      - name: Run boundary regressions
+        run: node --test test/biological-omega-program.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
