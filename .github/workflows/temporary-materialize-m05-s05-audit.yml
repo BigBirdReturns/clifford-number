@@ -30,9 +30,21 @@ jobs:
           node-version: '24'
       - name: Expand the checksum-bounded permanent payload
         run: |
-          cat .github/tmp/s05-audit-payload-part-*.b64 > /tmp/s05-audit-payload.b64
-          base64 -d /tmp/s05-audit-payload.b64 > /tmp/s05-audit-payload.tgz
-          tar -xzf /tmp/s05-audit-payload.tgz -C .
+          python - <<'PY'
+          import base64
+          import glob
+          import io
+          import pathlib
+          import tarfile
+
+          paths = sorted(glob.glob('.github/tmp/s05-audit-payload-part-*.b64'))
+          assert len(paths) == 6, f'expected six payload parts, got {len(paths)}'
+          encoded = ''.join(''.join(pathlib.Path(path).read_text().split()) for path in paths)
+          raw = base64.b64decode(encoded, validate=True)
+          print(f'decoded {len(encoded)} base64 characters into {len(raw)} bytes')
+          with tarfile.open(fileobj=io.BytesIO(raw), mode='r:gz') as archive:
+              archive.extractall('.')
+          PY
       - name: Run focused Sprint 05 hardening checks
         run: |
           node tools/build-m05-answerable-power-sprint-05.mjs
