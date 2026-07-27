@@ -1,0 +1,106 @@
+name: Temporary materialize M-05 Sprint 07
+
+on:
+  push:
+    branches:
+      - agent/m05-sprint-07-external-adjudication
+    paths:
+      - '.github/workflows/temporary-materialize-m05-s07.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m05-sprint-07-external-adjudication
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Expand Sprint 07 exact payload
+        run: |
+          base64 -d .github/tmp/s07-payload.b64 > /tmp/s07.tgz
+          tar -xzf /tmp/s07.tgz -C .
+      - name: Run focused Sprint 07 checks
+        run: |
+          node tools/build-m05-answerable-power-sprint-07.mjs
+          node tools/validate-m05-answerable-power-sprint-07.mjs
+          node test/m05-a1-adjudication.test.js
+          node test/m05-answerable-power-sprint-07.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Reconstruct clean permanent package
+        run: |
+          git restore --staged --worktree .
+          git clean -fd
+          tar -xzf /tmp/s07.tgz -C .
+          node tools/build-m05-answerable-power-sprint-07.mjs
+          node tools/validate-m05-answerable-power-sprint-07.mjs
+          node test/m05-a1-adjudication.test.js
+          node test/m05-answerable-power-sprint-07.test.js
+      - name: Commit exact permanent denominator
+        run: |
+          git add \
+            .github/ISSUE_TEMPLATE/apc-a1-adjudicator-nomination.yml \
+            .github/workflows/m05-answerable-power-sprint-07.yml \
+            data/project/m05-answerable-power-sprint-07-plan.json \
+            data/project/m05-answerable-power-sprint-07-adjudicator-constitution.json \
+            data/project/m05-answerable-power-sprint-07-adjudication-schema.json \
+            data/project/m05-answerable-power-sprint-07-scenarios.json \
+            data/project/m05-answerable-power-sprint-07-docket.json \
+            data/project/m05-answerable-power-sprint-07-release-manifest.json \
+            docs/methods/answerable-power-a1-adjudication.md \
+            docs/milestones/m05-answerable-power-sprint-07.md \
+            tools/m05-a1-adjudication.mjs \
+            tools/build-m05-answerable-power-sprint-07.mjs \
+            tools/validate-m05-answerable-power-sprint-07.mjs \
+            test/m05-a1-adjudication.test.js \
+            test/m05-answerable-power-sprint-07.test.js \
+            reports/core-thesis/answerable-power/sprint-07.json \
+            reports/core-thesis/answerable-power/sprint-07.html
+          python - <<'PY'
+          import subprocess
+          expected = {
+            '.github/ISSUE_TEMPLATE/apc-a1-adjudicator-nomination.yml',
+            '.github/workflows/m05-answerable-power-sprint-07.yml',
+            'data/project/m05-answerable-power-sprint-07-plan.json',
+            'data/project/m05-answerable-power-sprint-07-adjudicator-constitution.json',
+            'data/project/m05-answerable-power-sprint-07-adjudication-schema.json',
+            'data/project/m05-answerable-power-sprint-07-scenarios.json',
+            'data/project/m05-answerable-power-sprint-07-docket.json',
+            'data/project/m05-answerable-power-sprint-07-release-manifest.json',
+            'docs/methods/answerable-power-a1-adjudication.md',
+            'docs/milestones/m05-answerable-power-sprint-07.md',
+            'tools/m05-a1-adjudication.mjs',
+            'tools/build-m05-answerable-power-sprint-07.mjs',
+            'tools/validate-m05-answerable-power-sprint-07.mjs',
+            'test/m05-a1-adjudication.test.js',
+            'test/m05-answerable-power-sprint-07.test.js',
+            'reports/core-thesis/answerable-power/sprint-07.json',
+            'reports/core-thesis/answerable-power/sprint-07.html',
+          }
+          actual = set(subprocess.check_output(['git','diff','--cached','--name-only'], text=True).splitlines())
+          assert actual == expected, f'path denominator mismatch\nmissing={sorted(expected-actual)}\nextra={sorted(actual-expected)}'
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit --no-gpg-sign -m 'Build M-05 Sprint 07 external adjudication'
+      - name: Prove deterministic permanent products
+        run: |
+          node tools/build-m05-answerable-power-sprint-07.mjs
+          node tools/validate-m05-answerable-power-sprint-07.mjs
+          node test/m05-a1-adjudication.test.js
+          node test/m05-answerable-power-sprint-07.test.js
+          git diff --exit-code
+      - name: Remove transport and publish clean branch
+        run: |
+          git rm -f .github/workflows/temporary-materialize-m05-s07.yml .github/tmp/s07-payload.b64
+          git commit --no-gpg-sign -m 'Remove Sprint 07 transport machinery'
+          git push origin HEAD:agent/m05-sprint-07-external-adjudication
