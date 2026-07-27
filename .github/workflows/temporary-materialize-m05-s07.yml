@@ -106,8 +106,8 @@ jobs:
           node test/m05-a1-adjudication.test.js
           node test/m05-answerable-power-sprint-07.test.js
           git diff --exit-code
-      - name: Remove transport and publish clean branch
+      - name: Remove transport and publish isolated clean ref
         run: |
           git rm -f .github/workflows/temporary-materialize-m05-s07.yml .github/tmp/s07-payload.b64 .github/tmp/s07-payload-part-*.b64
           git commit --no-gpg-sign -m 'Remove Sprint 07 transport machinery'
-          git push origin HEAD:agent/m05-sprint-07-external-adjudication
+          git push origin HEAD:agent/m05-sprint-07-external-adjudication-clean
