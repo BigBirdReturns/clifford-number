@@ -1,6 +1,11 @@
 name: Temporary materialize M-05 Sprint 07
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-materialize-m05-s07.yml'
+      - '.github/tmp/s07-payload.b64'
   push:
     branches:
       - agent/m05-sprint-07-external-adjudication
