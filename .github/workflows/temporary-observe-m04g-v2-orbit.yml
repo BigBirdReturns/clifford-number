@@ -1,0 +1,233 @@
+name: Temporary observe M-04G v2 orbit
+
+on:
+  push:
+    branches:
+      - agent/m05-sprint-03-observed-orbit-reconciliation
+    paths:
+      - '.github/workflows/temporary-observe-m04g-v2-orbit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+  issues: write
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m05-sprint-03-observed-orbit-reconciliation
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify canonical Leg 06 and Leg 07 on main
+        run: |
+          git fetch origin main
+          for path in \
+            data/project/m05-answerable-power-sprint-03-leg-06-value-recovery-transfer.json \
+            reports/core-thesis/answerable-power/sprint-03-leg-06.json \
+            data/project/m05-answerable-power-sprint-03-leg-07-source-ecology-v2.json \
+            reports/core-thesis/answerable-power/sprint-03-leg-07.json \
+            .github/workflows/m04g-source-ecology-v2.yml; do
+            git cat-file -e "origin/main:${path}"
+          done
+          git worktree add --detach /tmp/m05-s03-main origin/main
+          cd /tmp/m05-s03-main
+          node tools/build-m05-answerable-power-sprint-03-leg-06.mjs
+          node tools/validate-m05-answerable-power-sprint-03-leg-06.mjs
+          node test/m05-answerable-power-sprint-03-leg-06.test.js
+          node tools/build-m05-answerable-power-sprint-03-leg-07.mjs
+          node tools/validate-m05-answerable-power-sprint-03-leg-07.mjs
+          node test/m05-answerable-power-sprint-03-leg-07.test.js
+          npm run release:check
+      - name: Dispatch exact-main v2 orbit and capture run
+        id: orbit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          START=$(date -u +%s)
+          gh workflow run m04g-source-ecology-v2.yml --ref main
+          RUN_ID=''
+          for attempt in $(seq 1 40); do
+            RUN_ID=$(gh run list --workflow m04g-source-ecology-v2.yml --branch main --event workflow_dispatch --limit 20 --json databaseId,createdAt --jq ".[] | select((.createdAt | fromdateiso8601) >= ${START}) | .databaseId" | head -n 1)
+            if [ -n "$RUN_ID" ]; then break; fi
+            sleep 3
+          done
+          test -n "$RUN_ID"
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          gh run watch "$RUN_ID" --interval 10 || true
+          gh run view "$RUN_ID" --json databaseId,headSha,status,conclusion,event,createdAt,updatedAt,url > /tmp/m04g-v2-run.json
+          mkdir -p /tmp/m04g-v2-artifact
+          gh run download "$RUN_ID" -n "m04g-source-ecology-v2-${RUN_ID}" -D /tmp/m04g-v2-artifact
+      - name: Materialize observed receipt and repair queue
+        env:
+          ORBIT_RUN_ID: ${{ steps.orbit.outputs.run_id }}
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          const read=(p)=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const run=read('/tmp/m04g-v2-run.json');
+          const receiptPath='/tmp/m04g-v2-artifact/m04g-source-ecology-v2-receipt.json';
+          const observationsPath='/tmp/m04g-v2-artifact/m04g-source-ecology-v2-observations.json';
+          const failuresPath='/tmp/m04g-v2-artifact/m04g-source-ecology-v2-failures.json';
+          const basinsPath='/tmp/m04g-v2-artifact/m04g-source-ecology-v2-basin-health.json';
+          const receipt=read(receiptPath);
+          const observations=read(observationsPath);
+          const failures=read(failuresPath);
+          const basins=read(basinsPath);
+          const baseline={route_successes:63,content_successes:60,metadata_only:3,failed:33,healthy_basins:9,selected:96};
+          const delta={
+            route_successes:receipt.summary.route_successes-baseline.route_successes,
+            content_successes:receipt.summary.content_successes-baseline.content_successes,
+            metadata_only:receipt.summary.metadata_only-baseline.metadata_only,
+            failed:receipt.summary.failed-baseline.failed,
+            healthy_basins:receipt.summary.healthy_basins-baseline.healthy_basins
+          };
+          const byFailure={};
+          for(const row of failures){
+            const key=row.failure||'unclassified';
+            byFailure[key]=(byFailure[key]||0)+1;
+          }
+          const unhealthy=basins.filter((row)=>!row.healthy);
+          const degraded=observations.filter((row)=>row.fallback_used||row.metadata_only||!row.route_success).map((row)=>({
+            route_id:row.route_id,
+            basin_id:row.basin_id,
+            hydrology_class:row.hydrology_class,
+            original_url:row.original_url,
+            route_success:row.route_success,
+            content_success:row.content_success,
+            metadata_only:row.metadata_only,
+            fallback_used:row.fallback_used,
+            failure:row.failure||null,
+            selected_candidate:row.selected_candidate??null
+          }));
+          const observation={
+            schema_version:'m04g-source-ecology-v2-observation@1',
+            program_id:'M-04G',
+            sprint_id:'M05-SPRINT-03',
+            leg_id:'S03-L7',
+            as_of:new Date().toISOString(),
+            workflow_run:run,
+            proof_sha256:receipt.proof_sha256,
+            registry_file:receipt.registry_file,
+            registry_path:receipt.registry_path,
+            baseline,
+            observed:receipt.summary,
+            delta,
+            by_basin:basins,
+            failure_counts:byFailure,
+            unhealthy_basins:unhealthy.map((row)=>row.basin_id),
+            degraded_routes:degraded,
+            state:{
+              execution_complete:receipt.summary.execution_complete,
+              route_healthy:receipt.summary.route_healthy,
+              content_healthy:receipt.summary.content_healthy,
+              coverage_healthy:receipt.summary.coverage_healthy,
+              evidentiary_sufficiency:false,
+              answer_effectiveness:false
+            },
+            boundaries:{
+              observed_orbit_proves_evidentiary_sufficiency:false,
+              source_health_proves_answer_effectiveness:false,
+              fallback_success_proves_source_equivalence:false,
+              metadata_only_proves_content_access:false,
+              coverage_health_proves_completeness:false,
+              promotes_to:'candidate_only',
+              graph_effect:'none',
+              conclusion_generated:false,
+              estate_completion_claimed:false
+            }
+          };
+          fs.mkdirSync('data/project',{recursive:true});
+          fs.writeFileSync('data/project/m04g-source-ecology-v2-observation-wave-01.json',JSON.stringify(observation,null,2)+'\n');
+          fs.mkdirSync('docs/milestones',{recursive:true});
+          const pct=(value)=>(100*value).toFixed(2)+'%';
+          const lines=[
+            '# M-04G source ecology v2 — observed orbit',
+            '',
+            '```text',
+            `run:                  ${run.databaseId}`,
+            `head:                 ${run.headSha}`,
+            `conclusion:           ${run.conclusion}`,
+            `selected routes:      ${receipt.summary.selected}`,
+            `route successes:      ${receipt.summary.route_successes} · ${pct(receipt.summary.route_success_rate)}`,
+            `content successes:    ${receipt.summary.content_successes} · ${pct(receipt.summary.content_success_rate)}`,
+            `metadata only:        ${receipt.summary.metadata_only}`,
+            `failed:               ${receipt.summary.failed}`,
+            `healthy basins:       ${receipt.summary.healthy_basins} / 12`,
+            `unclassified failures:${receipt.summary.unclassified_failures}`,
+            `coverage healthy:     ${receipt.summary.coverage_healthy}`,
+            `proof SHA-256:        ${receipt.proof_sha256}`,
+            '```',
+            '',
+            '## Delta from the first repaired orbit',
+            '',
+            '```json',
+            JSON.stringify(delta,null,2),
+            '```',
+            '',
+            '## Failure denominator',
+            '',
+            '```json',
+            JSON.stringify(byFailure,null,2),
+            '```',
+            '',
+            '## Unhealthy basins',
+            '',
+            unhealthy.length?unhealthy.map((row)=>`- **${row.basin_id}** — route ${row.route_successes}/${row.selected}; content ${row.content_successes}/${row.selected}; freshwater=${row.freshwater_content}; discovery/archive=${row.discovery_or_archive_content}`).join('\n'):'All twelve basins satisfied the frozen health contract.',
+            '',
+            '## Boundary',
+            '',
+            '```text',
+            'source health proves evidentiary sufficiency: false',
+            'source health proves answer effectiveness: false',
+            'coverage health proves completeness: false',
+            'metadata proves content access: false',
+            '```'
+          ];
+          fs.writeFileSync('docs/milestones/m04g-source-ecology-v2-observation-wave-01.md',lines.join('\n')+'\n');
+          NODE
+      - name: Reconcile issue and commit observation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ORBIT_RUN_ID: ${{ steps.orbit.outputs.run_id }}
+        run: |
+          node --input-type=module <<'NODE' > /tmp/m04g-v2-observation-comment.md
+          import fs from 'node:fs';
+          const o=JSON.parse(fs.readFileSync('data/project/m04g-source-ecology-v2-observation-wave-01.json','utf8'));
+          const s=o.observed;
+          console.log('## Exact-main M-04G v2 orbit reconciliation');
+          console.log('');
+          console.log('```text');
+          console.log(`run:                  ${o.workflow_run.databaseId}`);
+          console.log(`head:                 ${o.workflow_run.headSha}`);
+          console.log(`route successes:      ${s.route_successes} / ${s.selected} · ${(100*s.route_success_rate).toFixed(2)}%`);
+          console.log(`content successes:    ${s.content_successes} / ${s.selected} · ${(100*s.content_success_rate).toFixed(2)}%`);
+          console.log(`metadata only:        ${s.metadata_only}`);
+          console.log(`failed:               ${s.failed}`);
+          console.log(`healthy basins:       ${s.healthy_basins} / 12`);
+          console.log(`unclassified failures:${s.unclassified_failures}`);
+          console.log(`coverage healthy:     ${s.coverage_healthy}`);
+          console.log(`proof SHA-256:        ${o.proof_sha256}`);
+          console.log('```');
+          console.log('');
+          console.log(`Delta from the prior orbit: route ${o.delta.route_successes>=0?'+':''}${o.delta.route_successes}; content ${o.delta.content_successes>=0?'+':''}${o.delta.content_successes}; failures ${o.delta.failed>=0?'+':''}${o.delta.failed}; healthy basins ${o.delta.healthy_basins>=0?'+':''}${o.delta.healthy_basins}.`);
+          console.log('');
+          if(o.unhealthy_basins.length)console.log(`Unhealthy basins remain: ${o.unhealthy_basins.join(', ')}.`);
+          else console.log('All twelve basins satisfy the frozen source-health contract.');
+          console.log('');
+          console.log('Source health remains separate from evidentiary sufficiency and APC-01 effectiveness.');
+          NODE
+          gh issue comment 345 --body-file /tmp/m04g-v2-observation-comment.md
+          git rm -f .github/workflows/temporary-observe-m04g-v2-orbit.yml
+          git add data/project/m04g-source-ecology-v2-observation-wave-01.json docs/milestones/m04g-source-ecology-v2-observation-wave-01.md
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m 'Record the observed M-04G source ecology v2 orbit'
+          git push origin HEAD:agent/m05-sprint-03-observed-orbit-reconciliation
