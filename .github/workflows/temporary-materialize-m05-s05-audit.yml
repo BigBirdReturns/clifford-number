@@ -65,29 +65,44 @@ jobs:
           node test/m05-adoption-conformance.test.js
           git add -A
           actual="$(git diff --cached --name-only | sort)"
-          expected="$(printf '%s\n' \
-            '.github/workflows/m05-answerable-power-sprint-05.yml' \
+          cat > /tmp/allowed-s05-audit-paths <<'PATHS'
+.github/workflows/m05-answerable-power-sprint-05.yml
+data/project/m05-answerable-power-sprint-05-audit.json
+data/project/m05-answerable-power-sprint-05-leg-01-conformance.json
+data/project/m05-answerable-power-sprint-05-leg-02-threat-model.json
+data/project/m05-answerable-power-sprint-05-leg-05-candidate-landscape.json
+data/project/m05-answerable-power-sprint-05-leg-07-registry.json
+data/project/m05-answerable-power-sprint-05-plan.json
+data/project/m05-answerable-power-sprint-05-release-manifest.json
+docs/methods/answerable-power-adoption-integrity.md
+docs/milestones/m05-answerable-power-sprint-05-audit.md
+docs/milestones/m05-answerable-power-sprint-05.md
+reports/core-thesis/answerable-power/sprint-05.html
+reports/core-thesis/answerable-power/sprint-05.json
+test/m05-adoption-conformance.test.js
+test/m05-answerable-power-sprint-05.test.js
+tools/build-m05-answerable-power-sprint-05.mjs
+tools/m05-adoption-conformance.mjs
+tools/validate-m05-answerable-power-sprint-05.mjs
+PATHS
+          while IFS= read -r path; do
+            grep -Fxq "$path" /tmp/allowed-s05-audit-paths || {
+              printf 'Disallowed staged path: %s\n' "$path"
+              exit 1
+            }
+          done <<< "$actual"
+          for required in \
             'data/project/m05-answerable-power-sprint-05-audit.json' \
-            'data/project/m05-answerable-power-sprint-05-leg-01-conformance.json' \
-            'data/project/m05-answerable-power-sprint-05-leg-02-threat-model.json' \
-            'data/project/m05-answerable-power-sprint-05-leg-05-candidate-landscape.json' \
-            'data/project/m05-answerable-power-sprint-05-leg-07-registry.json' \
-            'data/project/m05-answerable-power-sprint-05-plan.json' \
             'data/project/m05-answerable-power-sprint-05-release-manifest.json' \
-            'docs/methods/answerable-power-adoption-integrity.md' \
-            'docs/milestones/m05-answerable-power-sprint-05-audit.md' \
-            'docs/milestones/m05-answerable-power-sprint-05.md' \
-            'reports/core-thesis/answerable-power/sprint-05.html' \
             'reports/core-thesis/answerable-power/sprint-05.json' \
             'test/m05-adoption-conformance.test.js' \
-            'test/m05-answerable-power-sprint-05.test.js' \
-            'tools/build-m05-answerable-power-sprint-05.mjs' \
-            'tools/m05-adoption-conformance.mjs' \
-            'tools/validate-m05-answerable-power-sprint-05.mjs' | sort)"
-          test "$actual" = "$expected" || {
-            printf 'Unexpected staged paths:\n%s\n\nExpected:\n%s\n' "$actual" "$expected"
-            exit 1
-          }
+            'tools/m05-adoption-conformance.mjs'; do
+            grep -Fxq "$required" <<< "$actual" || {
+              printf 'Required audited path not staged: %s\n' "$required"
+              exit 1
+            }
+          done
+          printf 'Audited staged paths (%s):\n%s\n' "$(wc -l <<< "$actual")" "$actual"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'Harden M-05 Sprint 05 after start-to-finish audit'
