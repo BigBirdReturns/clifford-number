@@ -1,0 +1,40 @@
+name: Temporary materialize M-05 Sprint 03 Leg 05
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-05-public-platform-exit.json'
+      - 'tools/build-m05-answerable-power-sprint-03-leg-05.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-05.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-05.test.js'
+      - '.github/workflows/temporary-materialize-m05-s03-l5.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build and validate public-platform exit test
+        run: |
+          node tools/build-m05-answerable-power-sprint-03-leg-05.mjs
+          node tools/validate-m05-answerable-power-sprint-03-leg-05.mjs
+          node test/m05-answerable-power-sprint-03-leg-05.test.js
+      - name: Commit generated products
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add reports/core-thesis/answerable-power/sprint-03-leg-05.json reports/core-thesis/answerable-power/sprint-03-leg-05.html
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Materialize Sprint 03 Leg 05 report'
+          git push
