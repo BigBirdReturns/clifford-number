@@ -1,0 +1,134 @@
+{
+  "schema_version": "m05-answerable-power-adoption-conformance@1",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-05",
+  "leg_id": "S05-L1",
+  "as_of": "2026-07-27",
+  "title": "Adoption conformance specification and CLI",
+  "status": "protocol_complete_reference_only",
+  "purpose": "Define the evidence-bearing package an adopter must submit and compute the maximum structurally eligible adoption level without accepting the adopter's own level claim.",
+  "package_schema": {
+    "schema_version": "apc-adoption-package@1",
+    "required_top_level_fields": [
+      "schema_version",
+      "package_id",
+      "claim",
+      "independence",
+      "reviews",
+      "affected_party",
+      "deployment",
+      "stop_authority",
+      "evidence",
+      "evaluation",
+      "successor",
+      "registry",
+      "observations"
+    ],
+    "required_claim_fields": [
+      "requested_level",
+      "as_of",
+      "deployment_mode"
+    ],
+    "required_review_fields": [
+      "legal",
+      "privacy",
+      "ethics"
+    ],
+    "required_registry_fields": [
+      "expires_at",
+      "re_review_date",
+      "open_blockers"
+    ]
+  },
+  "machine_rejection_rules": [
+    {
+      "rule_id": "CONF-01",
+      "name": "self_attested_independence",
+      "test": "independence.self_attested must be false and A1+ requires at least one external attestor."
+    },
+    {
+      "rule_id": "CONF-02",
+      "name": "missing_legal_privacy_or_ethics_review",
+      "test": "Any claim above A0 or any real-person data requires current approved legal, privacy, and ethics reviews."
+    },
+    {
+      "rule_id": "CONF-03",
+      "name": "adverse_authority_disguised_as_shadow",
+      "test": "A3 or A4 fails when the deployment can make, recommend, trigger, influence, or be consulted for an adverse action."
+    },
+    {
+      "rule_id": "CONF-04",
+      "name": "unbounded_emergency_power",
+      "test": "An enabled emergency authority requires a named independent authorizer, a fixed expiry, a minimum-necessary scope, and preserved evidence."
+    },
+    {
+      "rule_id": "CONF-05",
+      "name": "missing_affected_party_approval",
+      "test": "A2+ requires approval by an independently formed affected-party body with conflict, dissent, removal, and nonretaliation records."
+    },
+    {
+      "rule_id": "CONF-06",
+      "name": "real_person_data_without_entry_gate",
+      "test": "Real-person data fails unless the complete S05-L3 gate is approved and current."
+    },
+    {
+      "rule_id": "CONF-07",
+      "name": "unsupported_level_claim",
+      "test": "The requested level may not exceed the maximum level computed from the submitted evidence and observations."
+    },
+    {
+      "rule_id": "CONF-08",
+      "name": "stale_or_expired_authority",
+      "test": "Expired approvals, attestations, preregistrations, or registry entries cannot support a level claim."
+    },
+    {
+      "rule_id": "CONF-09",
+      "name": "silent_material_update",
+      "test": "A material model, policy, purpose, vendor, data, threshold, or interface update requires recorded reapproval."
+    },
+    {
+      "rule_id": "CONF-10",
+      "name": "successor_inheritance_missing",
+      "test": "A6 requires an operative successor-system inheritance instrument and post-change reapproval."
+    }
+  ],
+  "cli": {
+    "path": "tools/m05-adoption-conformance.mjs",
+    "usage": "node tools/m05-adoption-conformance.mjs <manifest.json>",
+    "outputs": [
+      "conformant",
+      "requested_level",
+      "computed_maximum_level",
+      "errors",
+      "warnings",
+      "truthfulness_determined"
+    ],
+    "exit_codes": {
+      "0": "structurally conformant at or below computed level",
+      "2": "nonconformant",
+      "64": "usage or unreadable input"
+    }
+  },
+  "truth_boundary": {
+    "can_determine_structural_completeness": true,
+    "can_determine_uploaded_evidence_truthfulness": false,
+    "can_determine_actual_independence": false,
+    "can_determine_actual_stopping_power": false,
+    "required_external_action": "Independent human investigation must verify evidence truth, institutional practice, capture, retaliation, remedy, exit, and value realization."
+  },
+  "current_result": {
+    "conformance_protocol_complete": true,
+    "cli_implemented": true,
+    "external_package_received": false,
+    "independent_reproduction_observed": false,
+    "maximum_verified_adoption_level": "A0"
+  },
+  "boundaries": {
+    "promotes_to": "candidate_only",
+    "graph_effect": "none",
+    "valid_manifest_proves_true_manifest": false,
+    "named_independent_reviewer_proves_independence": false,
+    "documented_stop_authority_proves_stopping_power": false,
+    "structural_conformance_proves_adoption": false
+  }
+}

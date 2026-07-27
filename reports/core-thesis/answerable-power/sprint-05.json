@@ -1,0 +1,1781 @@
+{
+  "schema_version": "m05-answerable-power-sprint-05-report@1",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-05",
+  "title": "Adoption integrity and anti-counterfeit adoption",
+  "status": "reference_adoption_package_complete_at_a0",
+  "as_of": "2026-07-27",
+  "generated_from": [
+    "data/project/m05-answerable-power-sprint-05-plan.json",
+    "data/project/m05-answerable-power-sprint-05-leg-01-conformance.json",
+    "data/project/m05-answerable-power-sprint-05-leg-02-threat-model.json",
+    "data/project/m05-answerable-power-sprint-05-leg-03-entry-gate.json",
+    "data/project/m05-answerable-power-sprint-05-leg-04-governance.json",
+    "data/project/m05-answerable-power-sprint-05-leg-05-candidate-landscape.json",
+    "data/project/m05-answerable-power-sprint-05-leg-06-preregistration.json",
+    "data/project/m05-answerable-power-sprint-05-leg-07-registry.json"
+  ],
+  "fingerprints": {
+    "data/project/m05-answerable-power-sprint-05-plan.json": "e35c54e60e71b9876d913c7df8d182594437ba7c58c813f872a9e63a9b1b6c67",
+    "data/project/m05-answerable-power-sprint-05-leg-01-conformance.json": "7bd81e8542739014d3f3a0f9027685a41763ec4aabbf2442a1e07827b382a5c0",
+    "data/project/m05-answerable-power-sprint-05-leg-02-threat-model.json": "065acfbab35898cdd5eee46fe2d12fa5c7dd262d7fba9639cf214c40accfa573",
+    "data/project/m05-answerable-power-sprint-05-leg-03-entry-gate.json": "888b5ae81fc07e912a65da7b37221e98f6f71386239cd035cf60c0b946b2cccc",
+    "data/project/m05-answerable-power-sprint-05-leg-04-governance.json": "95aea79c2db2c5cecb292ed7fccaf0ae3b0ce98aacf7b51d513c5fb25a31004e",
+    "data/project/m05-answerable-power-sprint-05-leg-05-candidate-landscape.json": "d5dfe826089f1d145e09c10151956a39453bdac329b9de6d1857d1a220b34d5c",
+    "data/project/m05-answerable-power-sprint-05-leg-06-preregistration.json": "49be05098341a83841653a17906ea5dc79dfb4dc83db3657017093befbfe7fde",
+    "data/project/m05-answerable-power-sprint-05-leg-07-registry.json": "34531d2a0415feedea20ab17086cd5e01807ebcf9689ba692819d3bdfffb2939"
+  },
+  "combined_fingerprint": "2fa7a80905828a73694c288ef6b1fe31c739a8aba39514fa336c07755b2a0015",
+  "counts": {
+    "adoption_levels": 7,
+    "legs": 7,
+    "conformance_rejection_rules": 10,
+    "attack_classes": 20,
+    "machine_detectable_attacks": 12,
+    "human_investigation_attacks": 8,
+    "entry_gate_sections": 13,
+    "governance_roles": 8,
+    "governance_formation_rules": 14,
+    "governance_properties": 14,
+    "governance_scenarios": 12,
+    "governance_scenario_counts": {
+      "conformant": 1,
+      "blocked": 9,
+      "mandatory_pause": 2
+    },
+    "candidate_surfaces": 7,
+    "exact_operating_systems": 1,
+    "metric_families": 15,
+    "constitutional_stop_thresholds": 8,
+    "registry_entries": 1,
+    "reconciliation_rules": 12
+  },
+  "governing_problem": "A technically complete constitutional design can be captured during adoption through self-certification, selected representatives, nominal independence, hidden adverse authority, unbounded emergency exceptions, vendor evidence custody, remedy or exit theater, metric gaming, and successor-system relabeling.",
+  "governing_purpose": "Make APC-01 difficult to counterfeit by requiring external evidence, affected-party authority, a real-person entry gate, preregistered evaluation, independent stopping power, expiring claims, and successor-system inheritance before any adoption level can advance.",
+  "reconstruction_receipt": {
+    "basis": "A source-bounded operator handoff described S05-L1 through S05-L5 and specified S05-L6 and S05-L7.",
+    "historical_repository_merge_inferred": false,
+    "historical_terminal_receipts_verified": false,
+    "materialized_in_this_branch": true,
+    "rule": "The branch establishes only the bytes and validation produced here; it does not convert the handoff's prior local execution claims into historical repository fact."
+  },
+  "adoption_ladder": [
+    {
+      "level": "A0",
+      "name": "published_reference",
+      "test": "A versioned reference implementation, constitutional specification, deterministic report, and machine-validation surface are publicly inspectable.",
+      "minimum_external_evidence": [],
+      "forbidden_shortcut": "Internal build success may not be described as independent reproduction or institutional use."
+    },
+    {
+      "level": "A1",
+      "name": "independently_reproduced",
+      "test": "At least one non-operator, non-vendor party reproduces the package from the published instructions and signs a dated, evidence-linked receipt.",
+      "minimum_external_evidence": [
+        "independent reproducer identity",
+        "relationship and conflict disclosure",
+        "clean-room or equivalent reproduction receipt",
+        "version and checksum"
+      ],
+      "forbidden_shortcut": "A maintainer, vendor, funded reviewer, or operator may not self-attest independence."
+    },
+    {
+      "level": "A2",
+      "name": "independently_reviewed_and_affected_party_approved",
+      "test": "Independent legal, privacy, ethics, and technical review is complete and a legitimately formed affected-party body gives binding approval.",
+      "minimum_external_evidence": [
+        "independent review receipts",
+        "jurisdiction-specific authority",
+        "affected-party formation record",
+        "approval and dissent record",
+        "conflict and recusal record"
+      ],
+      "forbidden_shortcut": "Consultation, advisory feedback, or institution-selected representatives may not substitute for affected-party approval."
+    },
+    {
+      "level": "A3",
+      "name": "lawful_no_adverse_shadow_mode",
+      "test": "A jurisdiction-specific real-person entry gate authorizes a bounded shadow period that cannot make, recommend, trigger, or influence an adverse action.",
+      "minimum_external_evidence": [
+        "entry-gate approval",
+        "no-adverse-action technical and policy boundary",
+        "independent stop authority",
+        "preregistered evaluation",
+        "incident and suspension route"
+      ],
+      "forbidden_shortcut": "A system with hidden, indirect, discretionary, or emergency adverse authority is not in shadow mode."
+    },
+    {
+      "level": "A4",
+      "name": "prospective_parallel_operation_without_adverse_authority",
+      "test": "The system operates prospectively in parallel, with complete comparison telemetry and no authority over the live decision or service consequence.",
+      "minimum_external_evidence": [
+        "A3 evidence",
+        "prospective parallel-operation receipt",
+        "comparator and denominator",
+        "continuity and burden monitoring",
+        "independent pause records"
+      ],
+      "forbidden_shortcut": "Operational staff may not use parallel outputs informally, selectively, or outside the preregistered protocol."
+    },
+    {
+      "level": "A5",
+      "name": "observed_rights_bearing_use",
+      "test": "At least one real consequential use is governed by enforceable R1–R7 duties, with observed notice, access, pause, remedy, governance, exit, and value-allocation receipts as applicable.",
+      "minimum_external_evidence": [
+        "lawful live-use authority",
+        "person-level rights receipts",
+        "binding stop and remedy evidence",
+        "observed correction propagation",
+        "open harm and failure denominator"
+      ],
+      "forbidden_shortcut": "A policy promise, training exercise, synthetic scenario, or unexercised right is not observed rights-bearing use."
+    },
+    {
+      "level": "A6",
+      "name": "durable_adoption_surviving_turnover_and_successor_systems",
+      "test": "The constitutional obligations survive leadership, vendor, model, policy, funding, and successor-system change and remain effective after re-review.",
+      "minimum_external_evidence": [
+        "turnover survival receipt",
+        "successor inheritance instrument",
+        "post-change reapproval",
+        "durability and regression telemetry",
+        "renewed independent attestation"
+      ],
+      "forbidden_shortcut": "Relabeling, migration, renewal, or replacement may not reset the rights floor or erase prior evidence and obligations."
+    }
+  ],
+  "leg_registry": [
+    {
+      "leg_id": "S05-L1",
+      "name": "conformance_specification_and_cli",
+      "source_file": "data/project/m05-answerable-power-sprint-05-leg-01-conformance.json",
+      "protocol_complete": true,
+      "external_effect_observed": false
+    },
+    {
+      "leg_id": "S05-L2",
+      "name": "threat_model_and_independent_review",
+      "source_file": "data/project/m05-answerable-power-sprint-05-leg-02-threat-model.json",
+      "protocol_complete": true,
+      "external_effect_observed": false
+    },
+    {
+      "leg_id": "S05-L3",
+      "name": "real_person_entry_gate",
+      "source_file": "data/project/m05-answerable-power-sprint-05-leg-03-entry-gate.json",
+      "protocol_complete": true,
+      "external_effect_observed": false
+    },
+    {
+      "leg_id": "S05-L4",
+      "name": "affected_party_governance_and_independent_stop",
+      "source_file": "data/project/m05-answerable-power-sprint-05-leg-04-governance.json",
+      "protocol_complete": true,
+      "external_effect_observed": false
+    },
+    {
+      "leg_id": "S05-L5",
+      "name": "candidate_landscape",
+      "source_file": "data/project/m05-answerable-power-sprint-05-leg-05-candidate-landscape.json",
+      "protocol_complete": true,
+      "external_effect_observed": false
+    },
+    {
+      "leg_id": "S05-L6",
+      "name": "preregistered_evaluation_and_telemetry",
+      "source_file": "data/project/m05-answerable-power-sprint-05-leg-06-preregistration.json",
+      "protocol_complete": true,
+      "external_effect_observed": false
+    },
+    {
+      "leg_id": "S05-L7",
+      "name": "adoption_registry_and_reconciliation",
+      "source_file": "data/project/m05-answerable-power-sprint-05-leg-07-registry.json",
+      "protocol_complete": true,
+      "external_effect_observed": false
+    }
+  ],
+  "conformance": {
+    "schema_version": "m05-answerable-power-adoption-conformance@1",
+    "program_id": "M-05",
+    "sprint_id": "M05-SPRINT-05",
+    "leg_id": "S05-L1",
+    "as_of": "2026-07-27",
+    "title": "Adoption conformance specification and CLI",
+    "status": "protocol_complete_reference_only",
+    "purpose": "Define the evidence-bearing package an adopter must submit and compute the maximum structurally eligible adoption level without accepting the adopter's own level claim.",
+    "package_schema": {
+      "schema_version": "apc-adoption-package@1",
+      "required_top_level_fields": [
+        "schema_version",
+        "package_id",
+        "claim",
+        "independence",
+        "reviews",
+        "affected_party",
+        "deployment",
+        "stop_authority",
+        "evidence",
+        "evaluation",
+        "successor",
+        "registry",
+        "observations"
+      ],
+      "required_claim_fields": [
+        "requested_level",
+        "as_of",
+        "deployment_mode"
+      ],
+      "required_review_fields": [
+        "legal",
+        "privacy",
+        "ethics"
+      ],
+      "required_registry_fields": [
+        "expires_at",
+        "re_review_date",
+        "open_blockers"
+      ]
+    },
+    "machine_rejection_rules": [
+      {
+        "rule_id": "CONF-01",
+        "name": "self_attested_independence",
+        "test": "independence.self_attested must be false and A1+ requires at least one external attestor."
+      },
+      {
+        "rule_id": "CONF-02",
+        "name": "missing_legal_privacy_or_ethics_review",
+        "test": "Any claim above A0 or any real-person data requires current approved legal, privacy, and ethics reviews."
+      },
+      {
+        "rule_id": "CONF-03",
+        "name": "adverse_authority_disguised_as_shadow",
+        "test": "A3 or A4 fails when the deployment can make, recommend, trigger, influence, or be consulted for an adverse action."
+      },
+      {
+        "rule_id": "CONF-04",
+        "name": "unbounded_emergency_power",
+        "test": "An enabled emergency authority requires a named independent authorizer, a fixed expiry, a minimum-necessary scope, and preserved evidence."
+      },
+      {
+        "rule_id": "CONF-05",
+        "name": "missing_affected_party_approval",
+        "test": "A2+ requires approval by an independently formed affected-party body with conflict, dissent, removal, and nonretaliation records."
+      },
+      {
+        "rule_id": "CONF-06",
+        "name": "real_person_data_without_entry_gate",
+        "test": "Real-person data fails unless the complete S05-L3 gate is approved and current."
+      },
+      {
+        "rule_id": "CONF-07",
+        "name": "unsupported_level_claim",
+        "test": "The requested level may not exceed the maximum level computed from the submitted evidence and observations."
+      },
+      {
+        "rule_id": "CONF-08",
+        "name": "stale_or_expired_authority",
+        "test": "Expired approvals, attestations, preregistrations, or registry entries cannot support a level claim."
+      },
+      {
+        "rule_id": "CONF-09",
+        "name": "silent_material_update",
+        "test": "A material model, policy, purpose, vendor, data, threshold, or interface update requires recorded reapproval."
+      },
+      {
+        "rule_id": "CONF-10",
+        "name": "successor_inheritance_missing",
+        "test": "A6 requires an operative successor-system inheritance instrument and post-change reapproval."
+      }
+    ],
+    "cli": {
+      "path": "tools/m05-adoption-conformance.mjs",
+      "usage": "node tools/m05-adoption-conformance.mjs <manifest.json>",
+      "outputs": [
+        "conformant",
+        "requested_level",
+        "computed_maximum_level",
+        "errors",
+        "warnings",
+        "truthfulness_determined"
+      ],
+      "exit_codes": {
+        "0": "structurally conformant at or below computed level",
+        "2": "nonconformant",
+        "64": "usage or unreadable input"
+      }
+    },
+    "truth_boundary": {
+      "can_determine_structural_completeness": true,
+      "can_determine_uploaded_evidence_truthfulness": false,
+      "can_determine_actual_independence": false,
+      "can_determine_actual_stopping_power": false,
+      "required_external_action": "Independent human investigation must verify evidence truth, institutional practice, capture, retaliation, remedy, exit, and value realization."
+    },
+    "current_result": {
+      "conformance_protocol_complete": true,
+      "cli_implemented": true,
+      "external_package_received": false,
+      "independent_reproduction_observed": false,
+      "maximum_verified_adoption_level": "A0"
+    },
+    "boundaries": {
+      "promotes_to": "candidate_only",
+      "graph_effect": "none",
+      "valid_manifest_proves_true_manifest": false,
+      "named_independent_reviewer_proves_independence": false,
+      "documented_stop_authority_proves_stopping_power": false,
+      "structural_conformance_proves_adoption": false
+    }
+  },
+  "threat_model": {
+    "schema_version": "m05-answerable-power-adoption-threat-model@1",
+    "program_id": "M-05",
+    "sprint_id": "M05-SPRINT-05",
+    "leg_id": "S05-L2",
+    "as_of": "2026-07-27",
+    "title": "Adoption threat model and independent-review protocol",
+    "status": "protocol_complete_reference_only",
+    "attack_classes": [
+      {
+        "attack_id": "ADOPT-ATTACK-01",
+        "name": "self_attested_independence",
+        "machine_detectable": true,
+        "description": "The operator, vendor, maintainer, funder, or institution certifies its own independence.",
+        "required_response": "reject_or_pause"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-02",
+        "name": "missing_required_review",
+        "machine_detectable": true,
+        "description": "Required legal, privacy, ethics, security, or affected-party review is omitted or represented by an empty placeholder.",
+        "required_response": "reject_or_pause"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-03",
+        "name": "shadow_mode_authority_creep",
+        "machine_detectable": true,
+        "description": "A nominal shadow deployment can make, recommend, trigger, influence, or be consulted for an adverse action.",
+        "required_response": "reject_or_pause"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-04",
+        "name": "emergency_laundering",
+        "machine_detectable": true,
+        "description": "An emergency exception lacks a fixed expiry, independent authorization, minimum-necessary scope, or preserved evidence.",
+        "required_response": "reject_or_pause"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-05",
+        "name": "stale_evidence",
+        "machine_detectable": true,
+        "description": "An approval, attestation, preregistration, or review has expired or predates a material update.",
+        "required_response": "reject_or_pause"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-06",
+        "name": "silent_model_or_policy_update",
+        "machine_detectable": true,
+        "description": "The deployed model, policy, threshold, purpose, vendor, data, or interface version differs without reapproval.",
+        "required_response": "reject_or_pause"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-07",
+        "name": "vendor_controlled_custody",
+        "machine_detectable": true,
+        "description": "Material action, evaluation, incident, or remedy evidence is exclusively held or selectively released by the vendor.",
+        "required_response": "reject_or_pause"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-08",
+        "name": "missing_affected_party_approval",
+        "machine_detectable": true,
+        "description": "A2+ is claimed without a binding affected-party approval receipt.",
+        "required_response": "reject_or_pause"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-09",
+        "name": "successor_system_relabeling",
+        "machine_detectable": true,
+        "description": "A replacement or relabeled system lacks an inheritance and re-review record.",
+        "required_response": "reject_or_pause"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-10",
+        "name": "purpose_drift_without_reapproval",
+        "machine_detectable": true,
+        "description": "The operative purpose or consequence expands beyond the approved scope.",
+        "required_response": "reject_or_pause"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-11",
+        "name": "metric_gaming_or_denominator_suppression",
+        "machine_detectable": true,
+        "description": "Metrics, exclusions, denominators, missingness, comparators, or analysis rules differ from preregistration.",
+        "required_response": "reject_or_pause"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-12",
+        "name": "exit_or_deletion_receipt_missing",
+        "machine_detectable": true,
+        "description": "Exit, deletion, continuity, or residual-custody claims lack required receipts.",
+        "required_response": "reject_or_pause"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-13",
+        "name": "reviewer_capture",
+        "machine_detectable": false,
+        "description": "A formally external reviewer is financially, professionally, institutionally, or socially dependent on the operator or vendor.",
+        "required_response": "independent_human_investigation"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-14",
+        "name": "representative_capture",
+        "machine_detectable": false,
+        "description": "The affected-party body is selected, constrained, intimidated, under-resourced, or divided by the institution or vendor.",
+        "required_response": "independent_human_investigation"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-15",
+        "name": "retaliation",
+        "machine_detectable": false,
+        "description": "People who contest, report harm, dissent, or exercise stop rights face formal or informal penalty.",
+        "required_response": "independent_human_investigation"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-16",
+        "name": "remedy_theater",
+        "machine_detectable": false,
+        "description": "A remedy is documented but inaccessible, delayed, nonbinding, incomplete, or unable to reach downstream copies and successor uses.",
+        "required_response": "independent_human_investigation"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-17",
+        "name": "exit_theater",
+        "machine_detectable": false,
+        "description": "An exit clause exists but the institution cannot preserve service, evidence, rights, staffing, interfaces, security, or independent operation.",
+        "required_response": "independent_human_investigation"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-18",
+        "name": "valuation_theater",
+        "machine_detectable": false,
+        "description": "Paper rights, spending, savings, valuation, repayment, or strategic capability are presented as realized and fairly distributed R7 value.",
+        "required_response": "independent_human_investigation"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-19",
+        "name": "fabricated_evidence",
+        "machine_detectable": false,
+        "description": "Receipts, minutes, attestations, logs, approvals, or metrics are false, selectively assembled, or materially misleading.",
+        "required_response": "independent_human_investigation"
+      },
+      {
+        "attack_id": "ADOPT-ATTACK-20",
+        "name": "jurisdiction_shopping",
+        "machine_detectable": false,
+        "description": "The deployment is placed, classified, or contracted in a jurisdiction or entity chosen to evade the governing rights and review standard.",
+        "required_response": "independent_human_investigation"
+      }
+    ],
+    "independent_review_protocol": {
+      "minimum_reviewers": 2,
+      "required_independence_disclosures": [
+        "current and prior operator, vendor, funder, customer, regulator, litigation, and procurement relationships",
+        "financial interests and contingent compensation",
+        "selection and removal authority",
+        "access to complete evidence without operator preselection",
+        "authority to publish dissent and unresolved limitations"
+      ],
+      "required_review_surfaces": [
+        "manifest and evidence integrity",
+        "legal and jurisdictional authority",
+        "privacy and data protection",
+        "ethics and human-subjects classification",
+        "security and incident response",
+        "affected-party formation",
+        "stop and remedy power",
+        "deployment mode and adverse-action boundary",
+        "preregistration and denominators",
+        "exit, value, and successor-system inheritance"
+      ],
+      "review_output": [
+        "signed finding",
+        "conflicts and recusals",
+        "evidence inspected",
+        "unresolved gaps",
+        "dissent",
+        "expiration",
+        "re-review triggers",
+        "whether adoption level is supported"
+      ]
+    },
+    "detectability_counts": {
+      "machine_detectable": 12,
+      "human_investigation_required": 8
+    },
+    "current_result": {
+      "attack_classes_frozen": 20,
+      "machine_detectable_attacks": 12,
+      "human_investigation_attacks": 8,
+      "independent_review_observed": false,
+      "maximum_verified_adoption_level": "A0"
+    },
+    "boundaries": {
+      "promotes_to": "candidate_only",
+      "graph_effect": "none",
+      "valid_manifest_proves_true_manifest": false,
+      "cryptographic_integrity_proves_factual_truth": false,
+      "reviewer_named_proves_reviewer_independence": false,
+      "documented_remedy_proves_effective_remedy": false,
+      "documented_exit_proves_operating_sovereignty": false,
+      "paper_value_right_proves_realized_distribution": false
+    }
+  },
+  "entry_gate": {
+    "schema_version": "m05-answerable-power-real-person-entry-gate@1",
+    "program_id": "M-05",
+    "sprint_id": "M05-SPRINT-05",
+    "leg_id": "S05-L3",
+    "as_of": "2026-07-27",
+    "title": "Real-person entry gate",
+    "status": "protocol_complete_no_authorization_issued",
+    "gate_sections": [
+      {
+        "section_id": "ENTRY-01",
+        "name": "jurisdiction_specific_legal_authority",
+        "required_evidence": [
+          "named jurisdiction and decision authority",
+          "lawful basis for each purpose and consequence",
+          "procurement, administrative, labor, equality, sectoral, and constitutional authority as applicable",
+          "external legal approval and expiry"
+        ],
+        "approval_must_be_external_where_applicable": true
+      },
+      {
+        "section_id": "ENTRY-02",
+        "name": "research_operations_and_ethics_classification",
+        "required_evidence": [
+          "research-versus-operations determination",
+          "human-subjects or equivalent classification",
+          "ethics review authority",
+          "protocol deviations and incident escalation"
+        ],
+        "approval_must_be_external_where_applicable": true
+      },
+      {
+        "section_id": "ENTRY-03",
+        "name": "privacy_and_data_protection_review",
+        "required_evidence": [
+          "data inventory and lawful basis",
+          "data-protection impact assessment or jurisdictional equivalent",
+          "rights and access routes",
+          "cross-border and subprocessor treatment"
+        ],
+        "approval_must_be_external_where_applicable": true
+      },
+      {
+        "section_id": "ENTRY-04",
+        "name": "data_minimization_retention_and_deletion",
+        "required_evidence": [
+          "minimum fields and purpose binding",
+          "retention schedule",
+          "deletion and downstream-propagation proof",
+          "litigation and appeal holds"
+        ],
+        "approval_must_be_external_where_applicable": true
+      },
+      {
+        "section_id": "ENTRY-05",
+        "name": "security_and_incident_response",
+        "required_evidence": [
+          "threat model",
+          "access controls and logs",
+          "breach and safety incident plan",
+          "notification, containment, recovery, and independent review"
+        ],
+        "approval_must_be_external_where_applicable": true
+      },
+      {
+        "section_id": "ENTRY-06",
+        "name": "accessibility_language_and_support",
+        "required_evidence": [
+          "accessible notice and interfaces",
+          "language access",
+          "human assistance",
+          "accommodation and offline route"
+        ],
+        "approval_must_be_external_where_applicable": true
+      },
+      {
+        "section_id": "ENTRY-07",
+        "name": "notice_lawful_basis_and_nonretaliation",
+        "required_evidence": [
+          "timely person notice",
+          "lawful basis and named authority",
+          "contest and assistance route",
+          "binding nonretaliation protection"
+        ],
+        "approval_must_be_external_where_applicable": true
+      },
+      {
+        "section_id": "ENTRY-08",
+        "name": "affected_party_governance",
+        "required_evidence": [
+          "independent formation",
+          "affected-party voting majority",
+          "compensation, recall, minority review, conflicts, and dissent",
+          "material-update reapproval"
+        ],
+        "approval_must_be_external_where_applicable": true
+      },
+      {
+        "section_id": "ENTRY-09",
+        "name": "independent_stop_and_remedy_authority",
+        "required_evidence": [
+          "independence from operator and vendor",
+          "complete evidence access",
+          "power to bind, pause, reverse, restore, delete, compensate, or prohibit",
+          "timely availability and enforcement"
+        ],
+        "approval_must_be_external_where_applicable": true
+      },
+      {
+        "section_id": "ENTRY-10",
+        "name": "vendor_and_subprocessor_controls",
+        "required_evidence": [
+          "named vendors and subprocessors",
+          "version, purpose, update, security, audit, and evidence obligations",
+          "no exclusive custody",
+          "termination, transition, deletion, and successor duties"
+        ],
+        "approval_must_be_external_where_applicable": true
+      },
+      {
+        "section_id": "ENTRY-11",
+        "name": "evidence_preservation_and_public_accountability",
+        "required_evidence": [
+          "action and telemetry schema",
+          "tamper-evident retention",
+          "public aggregate reporting",
+          "independent access, dissent, and incident publication"
+        ],
+        "approval_must_be_external_where_applicable": true
+      },
+      {
+        "section_id": "ENTRY-12",
+        "name": "strict_no_adverse_action_mode_boundary",
+        "required_evidence": [
+          "technical and policy prohibition on adverse authority",
+          "no recommendation, trigger, ranking, prioritization, or informal consultation",
+          "staff instruction and monitoring",
+          "automatic suspension on breach"
+        ],
+        "approval_must_be_external_where_applicable": true
+      },
+      {
+        "section_id": "ENTRY-13",
+        "name": "suspension_exit_and_successor_rules",
+        "required_evidence": [
+          "stop thresholds",
+          "continuity and fallback",
+          "exit and deletion",
+          "successor inheritance and re-review"
+        ],
+        "approval_must_be_external_where_applicable": true
+      }
+    ],
+    "issuance_rule": "The repository may report only whether required objects are present, current, and internally consistent. It cannot issue legal, ethics, privacy, human-subjects, security, affected-party, or institutional approval.",
+    "entry_decision": {
+      "protocol_complete": true,
+      "real_person_pilot_authorized": false,
+      "external_legal_approval_observed": false,
+      "ethics_approval_observed": false,
+      "privacy_approval_observed": false,
+      "affected_party_approval_observed": false,
+      "independent_stop_authority_observed": false,
+      "eligible_real_person_pilots": 0,
+      "decision": "blocked_at_a0"
+    },
+    "automatic_blockers": [
+      "missing or stale jurisdiction-specific authority",
+      "unresolved research or human-subjects classification",
+      "missing privacy or data-protection approval",
+      "real-person data beyond the minimized approved inventory",
+      "adverse-action authority in shadow or parallel mode",
+      "institution-selected affected-party majority",
+      "operator- or vendor-controlled stop authority",
+      "exclusive vendor evidence custody",
+      "unbounded emergency exception",
+      "missing preregistration, denominator, or stop thresholds",
+      "missing suspension, exit, deletion, or successor-system rules"
+    ],
+    "boundaries": {
+      "promotes_to": "candidate_only",
+      "graph_effect": "none",
+      "protocol_complete_proves_pilot_authorized": false,
+      "repository_check_proves_legal_approval": false,
+      "repository_check_proves_ethics_approval": false,
+      "repository_check_proves_privacy_approval": false,
+      "repository_check_proves_affected_party_approval": false,
+      "entry_package_proves_institutional_practice": false
+    }
+  },
+  "governance": {
+    "schema_version": "m05-answerable-power-affected-party-governance@1",
+    "program_id": "M-05",
+    "sprint_id": "M05-SPRINT-05",
+    "leg_id": "S05-L4",
+    "as_of": "2026-07-27",
+    "title": "Affected-party governance and independent stop",
+    "status": "synthetic_protocol_complete_no_real_body_observed",
+    "constitutional_roles": [
+      {
+        "role_id": "GOV-ROLE-01",
+        "name": "affected_party_voting_members",
+        "function": "Hold a strict voting majority and exercise binding approval, condition, pause, and termination authority."
+      },
+      {
+        "role_id": "GOV-ROLE-02",
+        "name": "minority_and_dissent_representatives",
+        "function": "Trigger review, preserve dissent, and prevent a bare majority from erasing materially affected minorities."
+      },
+      {
+        "role_id": "GOV-ROLE-03",
+        "name": "independent_chair_and_process_steward",
+        "function": "Administer fair procedure without controlling substantive affected-party votes."
+      },
+      {
+        "role_id": "GOV-ROLE-04",
+        "name": "independent_counsel",
+        "function": "Advise the body rather than the operator or vendor and support enforceable rights and remedies."
+      },
+      {
+        "role_id": "GOV-ROLE-05",
+        "name": "independent_technical_and_domain_experts",
+        "function": "Inspect systems, versions, thresholds, evidence, security, accessibility, and bypass risks."
+      },
+      {
+        "role_id": "GOV-ROLE-06",
+        "name": "accessibility_language_and_participation_steward",
+        "function": "Ensure compensated, accessible, language-supported, nonretaliatory participation."
+      },
+      {
+        "role_id": "GOV-ROLE-07",
+        "name": "independent_stop_and_remedy_authority",
+        "function": "Exercise binding pause, suspension, reversal, deletion, restoration, compensation, or prohibition power."
+      },
+      {
+        "role_id": "GOV-ROLE-08",
+        "name": "evidence_public_capacity_and_value_steward",
+        "function": "Preserve records and oversee exit, successor inheritance, public capacity, and R7 contribution and distribution ledgers."
+      }
+    ],
+    "formation_rules": [
+      {
+        "rule_id": "GOV-RULE-01",
+        "name": "strict_affected_party_voting_majority",
+        "rule": "Affected-party voting members must hold more than half of all voting seats."
+      },
+      {
+        "rule_id": "GOV-RULE-02",
+        "name": "independent_selection",
+        "rule": "The institution and vendor may not select or veto the affected-party majority."
+      },
+      {
+        "rule_id": "GOV-RULE-03",
+        "name": "no_vendor_self_vote",
+        "rule": "A vendor has no vote over its own deployment, update, evidence, remedy, exit, or value claim."
+      },
+      {
+        "rule_id": "GOV-RULE-04",
+        "name": "compensated_participation",
+        "rule": "Participation, preparation, caregiving, travel, accessibility, language, and expertise costs are compensated."
+      },
+      {
+        "rule_id": "GOV-RULE-05",
+        "name": "recall_and_removal",
+        "rule": "Affected constituencies can recall representatives; misconduct and conflict rules permit removal with due process."
+      },
+      {
+        "rule_id": "GOV-RULE-06",
+        "name": "minority_trigger",
+        "rule": "No more than twenty-five percent of voting members may trigger independent review or a temporary hold."
+      },
+      {
+        "rule_id": "GOV-RULE-07",
+        "name": "conflict_disclosure",
+        "rule": "Members and advisers disclose material institutional, vendor, funder, litigation, procurement, and financial relationships."
+      },
+      {
+        "rule_id": "GOV-RULE-08",
+        "name": "recusal_and_suspension",
+        "rule": "Material conflicts require recusal and may require suspension pending independent review."
+      },
+      {
+        "rule_id": "GOV-RULE-09",
+        "name": "independent_resources",
+        "rule": "The body controls sufficient independent counsel, technical expertise, budget, and evidence access."
+      },
+      {
+        "rule_id": "GOV-RULE-10",
+        "name": "accessibility_and_language",
+        "rule": "Meetings, records, notices, assistance, and voting are accessible and language-supported."
+      },
+      {
+        "rule_id": "GOV-RULE-11",
+        "name": "nonretaliation",
+        "rule": "Dissent, reporting, contestation, stop requests, and representative service receive binding nonretaliation protection."
+      },
+      {
+        "rule_id": "GOV-RULE-12",
+        "name": "immutable_r1_r4_floor",
+        "rule": "Collective governance may add protections but may not waive direct R1–R4 rights."
+      },
+      {
+        "rule_id": "GOV-RULE-13",
+        "name": "material_change_reapproval",
+        "rule": "Material updates, purpose drift, new vendors, new data, new thresholds, emergencies, and successor systems require reapproval."
+      },
+      {
+        "rule_id": "GOV-RULE-14",
+        "name": "independent_binding_stop",
+        "rule": "The stopping authority is independent from operator, institution, and vendor and can bind all of them."
+      }
+    ],
+    "machine_tested_properties": [
+      "affected_party_majority",
+      "independent_selection",
+      "vendor_no_self_vote",
+      "compensation",
+      "recall_and_removal",
+      "minority_trigger_at_or_below_25_percent",
+      "conflict_disclosure",
+      "recusal_and_suspension",
+      "independent_resources",
+      "accessibility_and_language",
+      "nonretaliation",
+      "immutable_r1_r4_floor",
+      "material_change_reapproval",
+      "binding_independent_stop"
+    ],
+    "synthetic_scenarios": [
+      {
+        "scenario_id": "GOV-SCENARIO-01",
+        "name": "conformant_affected_party_constitution",
+        "expected_outcome": "conformant",
+        "violated_properties": []
+      },
+      {
+        "scenario_id": "GOV-SCENARIO-02",
+        "name": "institution_appointed_majority",
+        "expected_outcome": "blocked",
+        "violated_properties": [
+          "affected_party_majority",
+          "independent_selection"
+        ]
+      },
+      {
+        "scenario_id": "GOV-SCENARIO-03",
+        "name": "vendor_voting_conflict",
+        "expected_outcome": "blocked",
+        "violated_properties": [
+          "vendor_no_self_vote",
+          "conflict_disclosure",
+          "recusal_and_suspension"
+        ]
+      },
+      {
+        "scenario_id": "GOV-SCENARIO-04",
+        "name": "missing_minority_trigger",
+        "expected_outcome": "blocked",
+        "violated_properties": [
+          "minority_trigger_at_or_below_25_percent"
+        ]
+      },
+      {
+        "scenario_id": "GOV-SCENARIO-05",
+        "name": "disabled_recall",
+        "expected_outcome": "blocked",
+        "violated_properties": [
+          "recall_and_removal"
+        ]
+      },
+      {
+        "scenario_id": "GOV-SCENARIO-06",
+        "name": "waiver_of_direct_r1_r4_rights",
+        "expected_outcome": "blocked",
+        "violated_properties": [
+          "immutable_r1_r4_floor"
+        ]
+      },
+      {
+        "scenario_id": "GOV-SCENARIO-07",
+        "name": "operator_controlled_stop_authority",
+        "expected_outcome": "blocked",
+        "violated_properties": [
+          "binding_independent_stop"
+        ]
+      },
+      {
+        "scenario_id": "GOV-SCENARIO-08",
+        "name": "silent_cloud_update",
+        "expected_outcome": "blocked",
+        "violated_properties": [
+          "material_change_reapproval"
+        ]
+      },
+      {
+        "scenario_id": "GOV-SCENARIO-09",
+        "name": "uncompensated_participation",
+        "expected_outcome": "blocked",
+        "violated_properties": [
+          "compensation",
+          "accessibility_and_language"
+        ]
+      },
+      {
+        "scenario_id": "GOV-SCENARIO-10",
+        "name": "missing_retaliation_protection",
+        "expected_outcome": "blocked",
+        "violated_properties": [
+          "nonretaliation"
+        ]
+      },
+      {
+        "scenario_id": "GOV-SCENARIO-11",
+        "name": "material_contest",
+        "expected_outcome": "mandatory_pause",
+        "violated_properties": []
+      },
+      {
+        "scenario_id": "GOV-SCENARIO-12",
+        "name": "emergency_claim_without_independent_authorization",
+        "expected_outcome": "mandatory_pause",
+        "violated_properties": []
+      }
+    ],
+    "scenario_denominator": {
+      "conformant": 1,
+      "blocked": 9,
+      "mandatory_pause": 2,
+      "total": 12
+    },
+    "current_result": {
+      "synthetic_governance_conformance_complete": true,
+      "real_affected_party_representation_observed": false,
+      "absence_of_capture_observed": false,
+      "real_independent_stop_authority_observed": false,
+      "maximum_verified_adoption_level": "A0"
+    },
+    "boundaries": {
+      "promotes_to": "candidate_only",
+      "graph_effect": "none",
+      "synthetic_governance_conformance_proves_real_representation": false,
+      "representative_majority_proves_absence_of_capture": false,
+      "documented_stop_authority_proves_observed_stopping_power": false,
+      "collective_governance_may_waive_direct_r1_r4": false
+    }
+  },
+  "candidate_landscape": {
+    "schema_version": "m05-answerable-power-adoption-candidate-landscape@1",
+    "program_id": "M-05",
+    "sprint_id": "M05-SPRINT-05",
+    "leg_id": "S05-L5",
+    "as_of": "2026-07-27",
+    "title": "Source-bounded adoption candidate landscape",
+    "status": "candidate_denominator_complete_no_outreach",
+    "selection_rule": "A policy, registry, legal, or institutional surface cannot enter an adoption test until one exact deployment, operator, jurisdiction, affected population, decision mode, evidence custodian, and stop authority are selected.",
+    "candidates": [
+      {
+        "candidate_id": "CAND-CA-FED-ADM",
+        "label": "Canadian federal automated-decision governance",
+        "jurisdiction": "Canada",
+        "domain": "administrative decision governance",
+        "exact_system_state": "surface_only_specific_deployment_required",
+        "exact_system": null,
+        "legal_authority_surface": "deployment_specific_external_review_required",
+        "affected_party_body": "not_observed",
+        "independent_stop_authority": "not_observed",
+        "no_adverse_shadow_feasibility": "desk_review_only_until_s05_l3_entry_gate",
+        "data_sensitivity": "not_assessed_for_a_selected_deployment",
+        "public_capacity_surface": "policy_registry_or_legal_surface_only",
+        "r7_instrument": "not_observed",
+        "lawful_outreach_route": "identify_only_after_exact_system_selection_and_legal_review",
+        "disqualifiers": [
+          "no exact deployment selected",
+          "no external legal, privacy, or ethics approval observed",
+          "no affected-party approval observed",
+          "no independent stop authority observed",
+          "no pilot-specific preregistration observed",
+          "no outreach started"
+        ]
+      },
+      {
+        "candidate_id": "CAND-UK-BENEFITS-ATR",
+        "label": "UK benefits and algorithmic-transparency surfaces",
+        "jurisdiction": "United Kingdom",
+        "domain": "benefits and algorithmic transparency",
+        "exact_system_state": "surface_only_specific_deployment_required",
+        "exact_system": null,
+        "legal_authority_surface": "deployment_specific_external_review_required",
+        "affected_party_body": "not_observed",
+        "independent_stop_authority": "not_observed",
+        "no_adverse_shadow_feasibility": "desk_review_only_until_s05_l3_entry_gate",
+        "data_sensitivity": "not_assessed_for_a_selected_deployment",
+        "public_capacity_surface": "policy_registry_or_legal_surface_only",
+        "r7_instrument": "not_observed",
+        "lawful_outreach_route": "identify_only_after_exact_system_selection_and_legal_review",
+        "disqualifiers": [
+          "no exact deployment selected",
+          "no external legal, privacy, or ethics approval observed",
+          "no affected-party approval observed",
+          "no independent stop authority observed",
+          "no pilot-specific preregistration observed",
+          "no outreach started"
+        ]
+      },
+      {
+        "candidate_id": "CAND-NL-ALG-REGISTER",
+        "label": "Dutch Algorithm Register and rights-assessment surfaces",
+        "jurisdiction": "Netherlands",
+        "domain": "algorithm registry and rights assessment",
+        "exact_system_state": "surface_only_specific_deployment_required",
+        "exact_system": null,
+        "legal_authority_surface": "deployment_specific_external_review_required",
+        "affected_party_body": "not_observed",
+        "independent_stop_authority": "not_observed",
+        "no_adverse_shadow_feasibility": "desk_review_only_until_s05_l3_entry_gate",
+        "data_sensitivity": "not_assessed_for_a_selected_deployment",
+        "public_capacity_surface": "policy_registry_or_legal_surface_only",
+        "r7_instrument": "not_observed",
+        "lawful_outreach_route": "identify_only_after_exact_system_selection_and_legal_review",
+        "disqualifiers": [
+          "no exact deployment selected",
+          "no external legal, privacy, or ethics approval observed",
+          "no affected-party approval observed",
+          "no independent stop authority observed",
+          "no pilot-specific preregistration observed",
+          "no outreach started"
+        ]
+      },
+      {
+        "candidate_id": "CAND-DE-WORK-CODET",
+        "label": "German workplace co-determination",
+        "jurisdiction": "Germany",
+        "domain": "workplace monitoring and co-determination",
+        "exact_system_state": "surface_only_specific_deployment_required",
+        "exact_system": null,
+        "legal_authority_surface": "deployment_specific_external_review_required",
+        "affected_party_body": "not_observed",
+        "independent_stop_authority": "not_observed",
+        "no_adverse_shadow_feasibility": "desk_review_only_until_s05_l3_entry_gate",
+        "data_sensitivity": "not_assessed_for_a_selected_deployment",
+        "public_capacity_surface": "policy_registry_or_legal_surface_only",
+        "r7_instrument": "not_observed",
+        "lawful_outreach_route": "identify_only_after_exact_system_selection_and_legal_review",
+        "disqualifiers": [
+          "no exact deployment selected",
+          "no external legal, privacy, or ethics approval observed",
+          "no affected-party approval observed",
+          "no independent stop authority observed",
+          "no pilot-specific preregistration observed",
+          "no outreach started"
+        ]
+      },
+      {
+        "candidate_id": "CAND-UK-HFU-SHARE",
+        "label": "Homes for Ukraine Share",
+        "jurisdiction": "United Kingdom",
+        "domain": "public-service platform substitution",
+        "exact_system_state": "exact_operating_system_bounded",
+        "exact_system": "Homes for Ukraine Share",
+        "legal_authority_surface": "deployment_specific_external_review_required",
+        "affected_party_body": "not_observed",
+        "independent_stop_authority": "not_observed",
+        "no_adverse_shadow_feasibility": "desk_review_only_until_s05_l3_entry_gate",
+        "data_sensitivity": "not_assessed_for_a_selected_deployment",
+        "public_capacity_surface": "bounded_exact_operating_system_already_in_project_record; adoption_suitability_not_established",
+        "r7_instrument": "not_observed",
+        "lawful_outreach_route": "identify_only_after_exact_system_selection_and_legal_review",
+        "disqualifiers": [
+          "no institutional willingness observed",
+          "no external legal, privacy, or ethics approval observed",
+          "no affected-party approval observed",
+          "no independent stop authority observed",
+          "no pilot-specific preregistration observed",
+          "no outreach started"
+        ]
+      },
+      {
+        "candidate_id": "CAND-NZ-PUBLIC-ALG",
+        "label": "New Zealand public-service algorithm governance",
+        "jurisdiction": "New Zealand",
+        "domain": "public-service algorithm governance",
+        "exact_system_state": "surface_only_specific_deployment_required",
+        "exact_system": null,
+        "legal_authority_surface": "deployment_specific_external_review_required",
+        "affected_party_body": "not_observed",
+        "independent_stop_authority": "not_observed",
+        "no_adverse_shadow_feasibility": "desk_review_only_until_s05_l3_entry_gate",
+        "data_sensitivity": "not_assessed_for_a_selected_deployment",
+        "public_capacity_surface": "policy_registry_or_legal_surface_only",
+        "r7_instrument": "not_observed",
+        "lawful_outreach_route": "identify_only_after_exact_system_selection_and_legal_review",
+        "disqualifiers": [
+          "no exact deployment selected",
+          "no external legal, privacy, or ethics approval observed",
+          "no affected-party approval observed",
+          "no independent stop authority observed",
+          "no pilot-specific preregistration observed",
+          "no outreach started"
+        ]
+      },
+      {
+        "candidate_id": "CAND-AU-FED-ADM",
+        "label": "Australian federal automated-decision governance",
+        "jurisdiction": "Australia",
+        "domain": "federal automated decision governance",
+        "exact_system_state": "surface_only_specific_deployment_required",
+        "exact_system": null,
+        "legal_authority_surface": "deployment_specific_external_review_required",
+        "affected_party_body": "not_observed",
+        "independent_stop_authority": "not_observed",
+        "no_adverse_shadow_feasibility": "desk_review_only_until_s05_l3_entry_gate",
+        "data_sensitivity": "not_assessed_for_a_selected_deployment",
+        "public_capacity_surface": "policy_registry_or_legal_surface_only",
+        "r7_instrument": "not_observed",
+        "lawful_outreach_route": "identify_only_after_exact_system_selection_and_legal_review",
+        "disqualifiers": [
+          "no exact deployment selected",
+          "no external legal, privacy, or ethics approval observed",
+          "no affected-party approval observed",
+          "no independent stop authority observed",
+          "no pilot-specific preregistration observed",
+          "no outreach started"
+        ]
+      }
+    ],
+    "current_result": {
+      "candidate_surfaces": 7,
+      "exact_operating_systems": 1,
+      "outreach_started": false,
+      "institutional_willingness_observed": false,
+      "external_legal_approval_observed": false,
+      "affected_party_approval_observed": false,
+      "eligible_real_person_pilots": 0,
+      "maximum_verified_adoption_level": "A0"
+    },
+    "boundaries": {
+      "promotes_to": "candidate_only",
+      "graph_effect": "none",
+      "candidate_surface_proves_exact_deployment": false,
+      "exact_system_proves_adoption_suitability": false,
+      "lawful_outreach_route_proves_willingness": false,
+      "desk_review_proves_pilot_authority": false,
+      "candidate_denominator_proves_real_person_pilot": false
+    }
+  },
+  "preregistration": {
+    "schema_version": "m05-answerable-power-preregistered-evaluation@1",
+    "program_id": "M-05",
+    "sprint_id": "M05-SPRINT-05",
+    "leg_id": "S05-L6",
+    "as_of": "2026-07-27",
+    "title": "Preregistered evaluation and telemetry",
+    "status": "template_complete_no_pilot_specific_preregistration",
+    "freeze_rule": "Outcome measures, denominators, comparators, exclusions, missing-data treatment, stop thresholds, subgroup analysis, and decision rules must be signed and time-stamped before the institution or vendor can inspect pilot results.",
+    "required_design": {
+      "baseline_and_comparator": "Name the predeployment baseline, contemporaneous comparator where lawful, assignment or matching rule, version, observation window, and known non-equivalences.",
+      "missing_data_policy": "Preserve missingness and its cause in the denominator; specify sensitivity analyses and prohibit complete-case substitution unless independently justified in advance.",
+      "stop_thresholds": "Bind the constitutional stop events below and add pilot-specific numerical or categorical harm and performance thresholds before A3.",
+      "harm_monitoring": "Monitor rights, service, safety, retaliation, burden, subgroup disparity, evidence loss, update drift, and irreversible consequences continuously.",
+      "qualitative_direct_voice": "Collect deployment-specific direct voice through accessible, compensated, nonretaliatory routes; do not transfer voice from another deployment.",
+      "failure_denominator": "Retain all failed, excluded, withdrawn, harmed, unreachable, missing, overridden, bypassed, and stopped cases with reasons.",
+      "analysis_plan": "Predefine estimands, uncertainty, subgroup analysis, multiple comparisons, causal limits, qualitative synthesis, and publication of null and harmful findings.",
+      "no_post_hoc_metric_replacement": "Do not replace, redefine, suppress, or selectively foreground metrics after results are visible; amendments require independent approval, versioning, and parallel reporting."
+    },
+    "metric_families": [
+      {
+        "metric_id": "TEL-01",
+        "name": "notice_timing_and_comprehension",
+        "purpose": "Whether notice arrives before consequence and is understood through accessible, language-supported testing.",
+        "numerator_or_measure": "covered people receiving timely notice",
+        "denominator": "all covered people entering the action window",
+        "direction": "lower failure is better",
+        "required_disaggregation": [
+          "jurisdiction",
+          "deployment mode",
+          "affected group where lawful and safe",
+          "decision or service consequence",
+          "system and policy version"
+        ],
+        "missing_data_rule": "Report missingness in the denominator; do not silently exclude unavailable, withdrawn, harmed, unreachable, or operator-failed cases.",
+        "pilot_specific_threshold_required_before_a3": true
+      },
+      {
+        "metric_id": "TEL-02",
+        "name": "evidence_completeness_and_access_latency",
+        "purpose": "Whether the material action packet is complete and reachable in time to contest.",
+        "numerator_or_measure": "complete usable evidence packets delivered within the preregistered window",
+        "denominator": "all requested or triggered evidence packets",
+        "direction": "higher completeness and lower latency are better",
+        "required_disaggregation": [
+          "jurisdiction",
+          "deployment mode",
+          "affected group where lawful and safe",
+          "decision or service consequence",
+          "system and policy version"
+        ],
+        "missing_data_rule": "Report missingness in the denominator; do not silently exclude unavailable, withdrawn, harmed, unreachable, or operator-failed cases.",
+        "pilot_specific_threshold_required_before_a3": true
+      },
+      {
+        "metric_id": "TEL-03",
+        "name": "contest_frequency",
+        "purpose": "How often people contest and whether the rate is interpreted with access and burden controls rather than treated as error by itself.",
+        "numerator_or_measure": "material contests received",
+        "denominator": "all covered notices",
+        "direction": "descriptive; no directional success claim",
+        "required_disaggregation": [
+          "jurisdiction",
+          "deployment mode",
+          "affected group where lawful and safe",
+          "decision or service consequence",
+          "system and policy version"
+        ],
+        "missing_data_rule": "Report missingness in the denominator; do not silently exclude unavailable, withdrawn, harmed, unreachable, or operator-failed cases.",
+        "pilot_specific_threshold_required_before_a3": true
+      },
+      {
+        "metric_id": "TEL-04",
+        "name": "automatic_pause_latency",
+        "purpose": "Whether a material contest produces an effective pause before avoidable consequence.",
+        "numerator_or_measure": "covered contests paused within the constitutional window",
+        "denominator": "all covered material contests",
+        "direction": "higher and faster are better",
+        "required_disaggregation": [
+          "jurisdiction",
+          "deployment mode",
+          "affected group where lawful and safe",
+          "decision or service consequence",
+          "system and policy version"
+        ],
+        "missing_data_rule": "Report missingness in the denominator; do not silently exclude unavailable, withdrawn, harmed, unreachable, or operator-failed cases.",
+        "pilot_specific_threshold_required_before_a3": true
+      },
+      {
+        "metric_id": "TEL-05",
+        "name": "correction_propagation",
+        "purpose": "Whether corrections reach models, source records, downstream copies, decisions, and successor systems.",
+        "numerator_or_measure": "verified complete correction propagations",
+        "denominator": "all accepted material corrections",
+        "direction": "higher and faster are better",
+        "required_disaggregation": [
+          "jurisdiction",
+          "deployment mode",
+          "affected group where lawful and safe",
+          "decision or service consequence",
+          "system and policy version"
+        ],
+        "missing_data_rule": "Report missingness in the denominator; do not silently exclude unavailable, withdrawn, harmed, unreachable, or operator-failed cases.",
+        "pilot_specific_threshold_required_before_a3": true
+      },
+      {
+        "metric_id": "TEL-06",
+        "name": "institutional_proof_completeness",
+        "purpose": "Whether the institution proves authority, evidence, necessity, proportionality, and alternatives.",
+        "numerator_or_measure": "complete proof records",
+        "denominator": "all actions requiring institutional proof",
+        "direction": "higher is better",
+        "required_disaggregation": [
+          "jurisdiction",
+          "deployment mode",
+          "affected group where lawful and safe",
+          "decision or service consequence",
+          "system and policy version"
+        ],
+        "missing_data_rule": "Report missingness in the denominator; do not silently exclude unavailable, withdrawn, harmed, unreachable, or operator-failed cases.",
+        "pilot_specific_threshold_required_before_a3": true
+      },
+      {
+        "metric_id": "TEL-07",
+        "name": "false_positive_and_false_negative_rates",
+        "purpose": "Error rates against a preregistered, independently reviewed reference standard with subgroup denominators.",
+        "numerator_or_measure": "false-positive and false-negative counts by preregistered stratum",
+        "denominator": "all adjudicated reference-standard cases by stratum",
+        "direction": "lower is better; uncertainty must be reported",
+        "required_disaggregation": [
+          "jurisdiction",
+          "deployment mode",
+          "affected group where lawful and safe",
+          "decision or service consequence",
+          "system and policy version"
+        ],
+        "missing_data_rule": "Report missingness in the denominator; do not silently exclude unavailable, withdrawn, harmed, unreachable, or operator-failed cases.",
+        "pilot_specific_threshold_required_before_a3": true
+      },
+      {
+        "metric_id": "TEL-08",
+        "name": "remedy_completeness_and_timing",
+        "purpose": "Whether binding relief is accessible, timely, complete, and reaches downstream copies and residual injury.",
+        "numerator_or_measure": "fully implemented remedies within the preregistered period",
+        "denominator": "all ordered or accepted remedies",
+        "direction": "higher and faster are better",
+        "required_disaggregation": [
+          "jurisdiction",
+          "deployment mode",
+          "affected group where lawful and safe",
+          "decision or service consequence",
+          "system and policy version"
+        ],
+        "missing_data_rule": "Report missingness in the denominator; do not silently exclude unavailable, withdrawn, harmed, unreachable, or operator-failed cases.",
+        "pilot_specific_threshold_required_before_a3": true
+      },
+      {
+        "metric_id": "TEL-09",
+        "name": "service_continuity",
+        "purpose": "Whether rights exercise, pause, correction, or exit preserves necessary service and status quo.",
+        "numerator_or_measure": "covered periods without avoidable service interruption",
+        "denominator": "all covered service periods",
+        "direction": "higher is better",
+        "required_disaggregation": [
+          "jurisdiction",
+          "deployment mode",
+          "affected group where lawful and safe",
+          "decision or service consequence",
+          "system and policy version"
+        ],
+        "missing_data_rule": "Report missingness in the denominator; do not silently exclude unavailable, withdrawn, harmed, unreachable, or operator-failed cases.",
+        "pilot_specific_threshold_required_before_a3": true
+      },
+      {
+        "metric_id": "TEL-10",
+        "name": "represented_person_burden",
+        "purpose": "Time, cost, repetition, documentation, emotional load, accessibility barriers, and assistance needs imposed on represented people.",
+        "numerator_or_measure": "aggregate and distribution of measured burden events",
+        "denominator": "all represented people sampled under the preregistered protocol",
+        "direction": "lower is better",
+        "required_disaggregation": [
+          "jurisdiction",
+          "deployment mode",
+          "affected group where lawful and safe",
+          "decision or service consequence",
+          "system and policy version"
+        ],
+        "missing_data_rule": "Report missingness in the denominator; do not silently exclude unavailable, withdrawn, harmed, unreachable, or operator-failed cases.",
+        "pilot_specific_threshold_required_before_a3": true
+      },
+      {
+        "metric_id": "TEL-11",
+        "name": "capture_conflict_and_retaliation_signals",
+        "purpose": "Signals of reviewer, representative, operator, vendor, funder, or authority capture, conflict, pressure, or retaliation.",
+        "numerator_or_measure": "substantiated and unresolved signals",
+        "denominator": "all governance participants and rights exercises",
+        "direction": "any credible retaliation triggers pause",
+        "required_disaggregation": [
+          "jurisdiction",
+          "deployment mode",
+          "affected group where lawful and safe",
+          "decision or service consequence",
+          "system and policy version"
+        ],
+        "missing_data_rule": "Report missingness in the denominator; do not silently exclude unavailable, withdrawn, harmed, unreachable, or operator-failed cases.",
+        "pilot_specific_threshold_required_before_a3": true
+      },
+      {
+        "metric_id": "TEL-12",
+        "name": "fallback_and_exit_performance",
+        "purpose": "Whether fallback, migration, deletion, continuity, and independent operation work in practice.",
+        "numerator_or_measure": "successful preregistered fallback or exit tests",
+        "denominator": "all scheduled and triggered tests",
+        "direction": "higher is better; failed critical test triggers pause",
+        "required_disaggregation": [
+          "jurisdiction",
+          "deployment mode",
+          "affected group where lawful and safe",
+          "decision or service consequence",
+          "system and policy version"
+        ],
+        "missing_data_rule": "Report missingness in the denominator; do not silently exclude unavailable, withdrawn, harmed, unreachable, or operator-failed cases.",
+        "pilot_specific_threshold_required_before_a3": true
+      },
+      {
+        "metric_id": "TEL-13",
+        "name": "public_capacity_durability",
+        "purpose": "Staffing, budget, documentation, security, interfaces, knowledge, and authority retained outside the vendor.",
+        "numerator_or_measure": "durable capacity requirements met",
+        "denominator": "all preregistered capacity requirements",
+        "direction": "higher is better",
+        "required_disaggregation": [
+          "jurisdiction",
+          "deployment mode",
+          "affected group where lawful and safe",
+          "decision or service consequence",
+          "system and policy version"
+        ],
+        "missing_data_rule": "Report missingness in the denominator; do not silently exclude unavailable, withdrawn, harmed, unreachable, or operator-failed cases.",
+        "pilot_specific_threshold_required_before_a3": true
+      },
+      {
+        "metric_id": "TEL-14",
+        "name": "value_realization_and_distribution",
+        "purpose": "Whether enforceable R7 rights produce realized, accounted, and fairly distributed value or capacity.",
+        "numerator_or_measure": "realized and distributed value or capacity under the governing formula",
+        "denominator": "all matured or triggered R7 instruments",
+        "direction": "higher realization is not success without fair distribution",
+        "required_disaggregation": [
+          "jurisdiction",
+          "deployment mode",
+          "affected group where lawful and safe",
+          "decision or service consequence",
+          "system and policy version"
+        ],
+        "missing_data_rule": "Report missingness in the denominator; do not silently exclude unavailable, withdrawn, harmed, unreachable, or operator-failed cases.",
+        "pilot_specific_threshold_required_before_a3": true
+      },
+      {
+        "metric_id": "TEL-15",
+        "name": "successor_system_regression",
+        "purpose": "Whether rights, evidence, performance, stop power, exit, and value obligations survive material updates and successors.",
+        "numerator_or_measure": "successor checks meeting the full inherited constitution",
+        "denominator": "all material updates and successor systems",
+        "direction": "any inherited-rights regression triggers reapproval and pause",
+        "required_disaggregation": [
+          "jurisdiction",
+          "deployment mode",
+          "affected group where lawful and safe",
+          "decision or service consequence",
+          "system and policy version"
+        ],
+        "missing_data_rule": "Report missingness in the denominator; do not silently exclude unavailable, withdrawn, harmed, unreachable, or operator-failed cases.",
+        "pilot_specific_threshold_required_before_a3": true
+      }
+    ],
+    "constitutional_stop_thresholds": [
+      {
+        "threshold_id": "STOP-01",
+        "trigger": "Any adverse-action authority, recommendation, influence, informal consultation, or staff use in A3 or A4.",
+        "action": "immediate suspension and independent incident review"
+      },
+      {
+        "threshold_id": "STOP-02",
+        "trigger": "The named stop authority cannot access evidence or bind the operator, institution, vendor, or downstream recipient.",
+        "action": "immediate suspension"
+      },
+      {
+        "threshold_id": "STOP-03",
+        "trigger": "Any credible retaliation, coercion, loss of service, or penalty tied to notice, contest, dissent, reporting, or governance participation.",
+        "action": "protective pause, independent investigation, and remedy"
+      },
+      {
+        "threshold_id": "STOP-04",
+        "trigger": "Material evidence loss, tampering, undisclosed custody gap, or exclusive vendor control.",
+        "action": "pause affected operation and preserve all available evidence"
+      },
+      {
+        "threshold_id": "STOP-05",
+        "trigger": "Unapproved material update, purpose drift, new vendor, new data, new threshold, new interface, or successor system.",
+        "action": "suspend the changed function pending reapproval"
+      },
+      {
+        "threshold_id": "STOP-06",
+        "trigger": "Irreversible or severe rights harm, unsafe service loss, or inability to restore the status quo.",
+        "action": "immediate protective stop and escalation to the independent authority"
+      },
+      {
+        "threshold_id": "STOP-07",
+        "trigger": "Metric, comparator, exclusion, denominator, missing-data, subgroup, or analysis-plan replacement after results are visible.",
+        "action": "invalidate the affected evaluation and require independent re-preregistration"
+      },
+      {
+        "threshold_id": "STOP-08",
+        "trigger": "Expiry, withdrawal, contradiction, or material limitation of legal, privacy, ethics, affected-party, security, or institutional approval.",
+        "action": "suspend entry authorization until renewed"
+      }
+    ],
+    "telemetry_minimization": {
+      "rule": "Collect only telemetry necessary to test the preregistered rights, harm, performance, governance, exit, value, and durability questions.",
+      "prohibited": [
+        "secondary operational use without new authority and approval",
+        "unbounded behavioral collection",
+        "vendor product improvement without a separately governed contribution and rights instrument",
+        "identity linkage beyond the approved purpose"
+      ],
+      "required": [
+        "versioned event schema",
+        "purpose and retention binding",
+        "access and disclosure log",
+        "correction and deletion propagation",
+        "privacy-preserving aggregation where compatible with person-level rights"
+      ]
+    },
+    "current_result": {
+      "evaluation_template_complete": true,
+      "metric_families": 15,
+      "constitutional_stop_thresholds": 8,
+      "pilot_specific_values_frozen": false,
+      "institution_has_seen_pilot_results": false,
+      "real_person_telemetry_collected": false,
+      "maximum_verified_adoption_level": "A0"
+    },
+    "boundaries": {
+      "promotes_to": "candidate_only",
+      "graph_effect": "none",
+      "template_complete_proves_preregistration": false,
+      "telemetry_schema_proves_lawful_collection": false,
+      "metric_observation_proves_causation": false,
+      "low_contest_rate_proves_comprehension_or_fairness": false,
+      "reported_savings_prove_r7_distribution": false,
+      "post_hoc_metric_replacement_permitted": false
+    }
+  },
+  "adoption_registry": {
+    "schema_version": "m05-answerable-power-adoption-registry@1",
+    "program_id": "M-05",
+    "sprint_id": "M05-SPRINT-05",
+    "leg_id": "S05-L7",
+    "as_of": "2026-07-27",
+    "title": "Adoption registry and reconciliation",
+    "status": "registry_complete_current_level_a0",
+    "required_registry_fields": [
+      "claim_id",
+      "package_id",
+      "requested_level",
+      "computed_maximum_level",
+      "external_attestors",
+      "independence_evidence",
+      "affected_party_approval",
+      "legal_privacy_and_ethics_authority",
+      "deployment_mode",
+      "adverse_action_boundary",
+      "stop_authority_receipts",
+      "preregistered_evaluation",
+      "open_blockers",
+      "expiration",
+      "re_review_date",
+      "successor_system_inheritance",
+      "evidence_fingerprint",
+      "reconciliation_history"
+    ],
+    "level_requirements": [
+      {
+        "level": "A0",
+        "requirements": [
+          "versioned reference package",
+          "deterministic build and validation",
+          "public boundary statement"
+        ]
+      },
+      {
+        "level": "A1",
+        "requirements": [
+          "A0",
+          "non-self external attestor",
+          "independent reproduction observation",
+          "version and checksum receipt"
+        ]
+      },
+      {
+        "level": "A2",
+        "requirements": [
+          "A1",
+          "current legal, privacy, and ethics review",
+          "independent review observation",
+          "binding affected-party approval",
+          "conflict and dissent record"
+        ]
+      },
+      {
+        "level": "A3",
+        "requirements": [
+          "A2",
+          "approved real-person entry gate",
+          "no-adverse shadow mode",
+          "independent binding stop authority",
+          "frozen pilot preregistration",
+          "lawful shadow observation"
+        ]
+      },
+      {
+        "level": "A4",
+        "requirements": [
+          "A3",
+          "prospective parallel-operation observation",
+          "complete comparator and failure denominator",
+          "no live-decision influence"
+        ]
+      },
+      {
+        "level": "A5",
+        "requirements": [
+          "A4",
+          "lawful rights-bearing live use",
+          "observed notice, access, pause, remedy, governance, exit, and value receipts as applicable",
+          "open harm denominator"
+        ]
+      },
+      {
+        "level": "A6",
+        "requirements": [
+          "A5",
+          "turnover survival observation",
+          "successor-system survival observation",
+          "operative inheritance instrument",
+          "post-change reapproval and regression review"
+        ]
+      }
+    ],
+    "reconciliation_rules": [
+      {
+        "rule_id": "REG-01",
+        "rule": "Compute the maximum eligible level from evidence and observations; never accept requested_level as authoritative."
+      },
+      {
+        "rule_id": "REG-02",
+        "rule": "A level requires every lower level and every requirement at that level."
+      },
+      {
+        "rule_id": "REG-03",
+        "rule": "A1+ requires a non-self external attestor with conflict and relationship disclosure."
+      },
+      {
+        "rule_id": "REG-04",
+        "rule": "A2+ requires current external legal, privacy, ethics, technical, and affected-party authority."
+      },
+      {
+        "rule_id": "REG-05",
+        "rule": "A3 and A4 fail on any adverse-action authority, influence, consultation, or use."
+      },
+      {
+        "rule_id": "REG-06",
+        "rule": "A3+ requires a pilot-specific preregistration frozen before results are visible."
+      },
+      {
+        "rule_id": "REG-07",
+        "rule": "Expired, withdrawn, contradicted, stale, or update-mismatched evidence cannot support a level."
+      },
+      {
+        "rule_id": "REG-08",
+        "rule": "Open critical blockers cap the claim below the first affected level."
+      },
+      {
+        "rule_id": "REG-09",
+        "rule": "Material updates trigger re-review and may reduce the computed level until reapproved."
+      },
+      {
+        "rule_id": "REG-10",
+        "rule": "A6 requires observed turnover and successor survival plus operative inheritance; relabeling cannot preserve A6 by itself."
+      },
+      {
+        "rule_id": "REG-11",
+        "rule": "Truth, independence, capture, retaliation, remedy, exit, and value realization remain external investigation questions."
+      },
+      {
+        "rule_id": "REG-12",
+        "rule": "Every reconciliation appends, rather than overwrites, the prior level, evidence fingerprint, reasons, blockers, and timestamp."
+      }
+    ],
+    "registry": [
+      {
+        "claim_id": "APC-01-ADOPTION-0001",
+        "package_id": "APC-01-REFERENCE",
+        "requested_level": "A0",
+        "computed_maximum_level": "A0",
+        "external_attestors": [],
+        "independence_evidence": "not_observed",
+        "affected_party_approval": "not_observed",
+        "legal_privacy_and_ethics_authority": "not_observed_for_real_person_use",
+        "deployment_mode": "published_reference",
+        "adverse_action_boundary": "no_deployment",
+        "stop_authority_receipts": [],
+        "preregistered_evaluation": "template_only_no_pilot_values",
+        "open_blockers": [
+          "no independent reproduction",
+          "no independent review and affected-party approval",
+          "no lawful shadow deployment",
+          "no prospective parallel operation",
+          "no observed rights-bearing use",
+          "no turnover or successor-system durability observation"
+        ],
+        "expiration": "2027-01-27",
+        "re_review_date": "2026-10-27",
+        "successor_system_inheritance": "reference_requirement_only_not_observed",
+        "evidence_fingerprint": "generated_by_sprint_05_builder",
+        "reconciliation_history": [
+          {
+            "as_of": "2026-07-27",
+            "prior_level": null,
+            "computed_level": "A0",
+            "reason": "Published and machine-validated reference package only."
+          }
+        ]
+      }
+    ],
+    "current_result": {
+      "A0_achieved": true,
+      "A1_independent_reproduction_observed": false,
+      "A2_independent_review_and_affected_party_approval_observed": false,
+      "A3_lawful_shadow_mode_observed": false,
+      "A4_prospective_parallel_operation_observed": false,
+      "A5_observed_rights_bearing_use": false,
+      "A6_durable_adoption_observed": false,
+      "maximum_verified_adoption_level": "A0",
+      "works_standard_met": false,
+      "project_complete": false
+    },
+    "boundaries": {
+      "promotes_to": "candidate_only",
+      "graph_effect": "none",
+      "claimant_may_set_computed_level": false,
+      "internal_attestation_proves_independence": false,
+      "expired_evidence_supports_current_level": false,
+      "successor_relabeling_preserves_adoption_level": false,
+      "registry_entry_proves_evidence_truth": false,
+      "a0_proves_real_world_effectiveness": false
+    }
+  },
+  "current_state": {
+    "reference_implementation_complete": true,
+    "synthetic_adversarial_exercise_complete": true,
+    "adoption_specification_complete": true,
+    "threat_model_complete": true,
+    "real_person_entry_gate_complete": true,
+    "synthetic_governance_protocol_complete": true,
+    "candidate_landscape_complete": true,
+    "preregistration_template_complete": true,
+    "adoption_registry_complete": true,
+    "external_reproduction_observed": false,
+    "institutional_shadow_test_observed": false,
+    "real_decision_governed_by_apc_01": false,
+    "durable_adoption_observed": false,
+    "works_standard_met": false,
+    "project_complete": false,
+    "maximum_verified_adoption_level": "A0"
+  },
+  "current_adoption_result": {
+    "A0_achieved": true,
+    "A1_independent_reproduction_observed": false,
+    "A2_independent_review_and_affected_party_approval_observed": false,
+    "A3_lawful_shadow_mode_observed": false,
+    "A4_prospective_parallel_operation_observed": false,
+    "A5_observed_rights_bearing_use": false,
+    "A6_durable_adoption_observed": false,
+    "maximum_verified_adoption_level": "A0",
+    "works_standard_met": false,
+    "project_complete": false
+  },
+  "boundaries": {
+    "promotes_to": "candidate_only",
+    "graph_effect": "none",
+    "conclusion_generated": false,
+    "estate_completion_claimed": false,
+    "protocol_completeness_proves_truthfulness": false,
+    "synthetic_conformance_proves_real_governance": false,
+    "internal_validation_proves_independent_reproduction": false,
+    "reference_publication_proves_institutional_adoption": false,
+    "sprint_completion_proves_project_completion": false
+  }
+}
