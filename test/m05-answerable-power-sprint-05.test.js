@@ -1,36 +1,3 @@
 #!/usr/bin/env node
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import path from 'node:path';
-import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-
-const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const run=(args)=>{const result=spawnSync(process.execPath,args,{cwd:root,encoding:'utf8'});if(result.status!==0){console.error(result.stdout);console.error(result.stderr);throw new Error(`${args.join(' ')} failed`)}return result.stdout};
-run(['tools/build-m05-answerable-power-sprint-05.mjs']);
-run(['tools/validate-m05-answerable-power-sprint-05.mjs']);
-const report=JSON.parse(fs.readFileSync(path.join(root,'reports/core-thesis/answerable-power/sprint-05.json'),'utf8'));
-assert.equal(report.counts.adoption_levels,7);
-assert.equal(report.counts.legs,7);
-assert.equal(report.counts.attack_classes,20);
-assert.equal(report.counts.machine_detectable_attacks,12);
-assert.equal(report.counts.human_investigation_attacks,8);
-assert.equal(report.counts.entry_gate_sections,13);
-assert.equal(report.counts.governance_roles,8);
-assert.equal(report.counts.governance_formation_rules,14);
-assert.equal(report.counts.governance_properties,14);
-assert.equal(report.counts.governance_scenarios,12);
-assert.deepEqual(report.counts.governance_scenario_counts,{conformant:1,blocked:9,mandatory_pause:2});
-assert.equal(report.counts.candidate_surfaces,7);
-assert.equal(report.counts.exact_operating_systems,1);
-assert.equal(report.counts.metric_families,15);
-assert.equal(report.counts.constitutional_stop_thresholds,8);
-assert.equal(report.current_state.maximum_verified_adoption_level,'A0');
-assert.equal(report.current_adoption_result.A0_achieved,true);
-assert.equal(report.current_adoption_result.A1_independent_reproduction_observed,false);
-assert.equal(report.current_adoption_result.A6_durable_adoption_observed,false);
-assert.equal(report.current_adoption_result.project_complete,false);
-assert.equal(report.reconstruction_receipt.historical_repository_merge_inferred,false);
-assert.equal(report.reconstruction_receipt.historical_terminal_receipts_verified,false);
-assert.equal(report.combined_fingerprint.length,64);
-console.log('m05-answerable-power-sprint-05.test: OK');
+import assert from 'node:assert/strict';import fs from 'node:fs';import path from 'node:path';import {spawnSync} from 'node:child_process';import {fileURLToPath} from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');const run=(a)=>{const r=spawnSync(process.execPath,a,{cwd:root,encoding:'utf8'});if(r.status!==0){console.error(r.stdout);console.error(r.stderr);throw new Error(`${a.join(' ')} failed`)}return r.stdout};run(['tools/build-m05-answerable-power-sprint-05.mjs']);run(['tools/validate-m05-answerable-power-sprint-05.mjs']);const report=JSON.parse(fs.readFileSync(path.join(root,'reports/core-thesis/answerable-power/sprint-05.json'),'utf8'));assert.equal(report.schema_version,'m05-answerable-power-sprint-05-report@2');assert.equal(report.counts.adoption_levels,7);assert.equal(report.counts.legs,7);assert.equal(report.counts.conformance_rejection_rules,18);assert.equal(report.counts.attack_classes,24);assert.equal(report.counts.machine_detectable_attacks,16);assert.equal(report.counts.human_investigation_attacks,8);assert.equal(report.counts.audit_findings,8);assert.equal(report.counts.candidate_surfaces,7);assert(report.counts.candidate_source_locators>=9);assert.equal(report.counts.metric_families,15);assert.equal(report.counts.registry_fields,20);assert.equal(report.current_state.legacy_conformance_v1_superseded,true);assert.equal(report.current_adoption_result.maximum_verified_adoption_level,'A0');assert.equal(report.current_adoption_result.A1_independent_reproduction_observed,false);assert.equal(report.current_adoption_result.project_complete,false);assert.match(report.release_manifest.combined_sha256,/^[0-9a-f]{64}$/);assert.equal(report.adoption_registry.registry[0].evidence_fingerprint,report.release_manifest.combined_sha256);console.log('m05-answerable-power-sprint-05.test: OK');

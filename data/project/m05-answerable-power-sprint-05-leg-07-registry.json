@@ -1,20 +1,22 @@
 {
-  "schema_version": "m05-answerable-power-adoption-registry@1",
+  "schema_version": "m05-answerable-power-adoption-registry@2",
   "program_id": "M-05",
   "sprint_id": "M05-SPRINT-05",
   "leg_id": "S05-L7",
   "as_of": "2026-07-27",
   "title": "Adoption registry and reconciliation",
-  "status": "registry_complete_current_level_a0",
+  "status": "registry_hardened_current_level_a0",
   "required_registry_fields": [
     "claim_id",
     "package_id",
     "requested_level",
     "computed_maximum_level",
+    "reference_bundle_manifest",
+    "evidence_fingerprint_source",
     "external_attestors",
     "independence_evidence",
     "affected_party_approval",
-    "legal_privacy_and_ethics_authority",
+    "legal_privacy_ethics_and_technical_authority",
     "deployment_mode",
     "adverse_action_boundary",
     "stop_authority_receipts",
@@ -31,6 +33,7 @@
       "level": "A0",
       "requirements": [
         "versioned reference package",
+        "exact-byte release manifest",
         "deterministic build and validation",
         "public boundary statement"
       ]
@@ -39,37 +42,37 @@
       "level": "A1",
       "requirements": [
         "A0",
-        "non-self external attestor",
-        "independent reproduction observation",
-        "version and checksum receipt"
+        "current non-self external attestor",
+        "scope-bound independent reproduction receipt",
+        "exact version and checksum receipt"
       ]
     },
     {
       "level": "A2",
       "requirements": [
         "A1",
-        "current legal, privacy, and ethics review",
-        "independent review observation",
+        "current legal, privacy, ethics, and technical review",
+        "scope-bound independent review observation",
         "binding affected-party approval",
-        "conflict and dissent record"
+        "formation, conflict, dissent, recall, and nonretaliation records"
       ]
     },
     {
       "level": "A3",
       "requirements": [
         "A2",
-        "approved real-person entry gate",
+        "current approved real-person entry gate",
         "no-adverse shadow mode",
-        "independent binding stop authority",
+        "current independent binding stop authority",
         "frozen pilot preregistration",
-        "lawful shadow observation"
+        "scope-bound lawful shadow receipts"
       ]
     },
     {
       "level": "A4",
       "requirements": [
         "A3",
-        "prospective parallel-operation observation",
+        "scope-bound prospective parallel-operation receipts",
         "complete comparator and failure denominator",
         "no live-decision influence"
       ]
@@ -79,7 +82,7 @@
       "requirements": [
         "A4",
         "lawful rights-bearing live use",
-        "observed notice, access, pause, remedy, governance, exit, and value receipts as applicable",
+        "scope-bound notice, access, pause, remedy, governance, exit, and value receipts as applicable",
         "open harm denominator"
       ]
     },
@@ -87,8 +90,8 @@
       "level": "A6",
       "requirements": [
         "A5",
-        "turnover survival observation",
-        "successor-system survival observation",
+        "turnover survival receipts",
+        "successor-system survival receipts",
         "operative inheritance instrument",
         "post-change reapproval and regression review"
       ]
@@ -97,7 +100,7 @@
   "reconciliation_rules": [
     {
       "rule_id": "REG-01",
-      "rule": "Compute the maximum eligible level from evidence and observations; never accept requested_level as authoritative."
+      "rule": "Compute the maximum eligible level from exact evidence and observations; never accept requested_level as authoritative."
     },
     {
       "rule_id": "REG-02",
@@ -105,7 +108,7 @@
     },
     {
       "rule_id": "REG-03",
-      "rule": "A1+ requires a non-self external attestor with conflict and relationship disclosure."
+      "rule": "A1+ requires a current non-self external attestor with conflict, relationship, expiry, and scope disclosure."
     },
     {
       "rule_id": "REG-04",
@@ -113,7 +116,7 @@
     },
     {
       "rule_id": "REG-05",
-      "rule": "A3 and A4 fail on any adverse-action authority, influence, consultation, or use."
+      "rule": "A3 and A4 fail on any adverse-action authority, influence, recommendation, consultation, or use."
     },
     {
       "rule_id": "REG-06",
@@ -121,19 +124,19 @@
     },
     {
       "rule_id": "REG-07",
-      "rule": "Expired, withdrawn, contradicted, stale, or update-mismatched evidence cannot support a level."
+      "rule": "Expired, future-dated, withdrawn, contradicted, stale, or scope-mismatched evidence cannot support a level."
     },
     {
       "rule_id": "REG-08",
-      "rule": "Open critical blockers cap the claim below the first affected level."
+      "rule": "Every open blocker caps the claim below its first_affected_level."
     },
     {
       "rule_id": "REG-09",
-      "rule": "Material updates trigger re-review and may reduce the computed level until reapproved."
+      "rule": "Material updates trigger re-review and reduce the computed level until scoped reapproval."
     },
     {
       "rule_id": "REG-10",
-      "rule": "A6 requires observed turnover and successor survival plus operative inheritance; relabeling cannot preserve A6 by itself."
+      "rule": "A6 requires observed turnover and successor survival plus operative inheritance; relabeling cannot preserve A6."
     },
     {
       "rule_id": "REG-11",
@@ -141,7 +144,7 @@
     },
     {
       "rule_id": "REG-12",
-      "rule": "Every reconciliation appends, rather than overwrites, the prior level, evidence fingerprint, reasons, blockers, and timestamp."
+      "rule": "Every reconciliation appends rather than overwrites the prior level, exact fingerprint, reasons, blockers, and timestamp."
     }
   ],
   "registry": [
@@ -150,32 +153,76 @@
       "package_id": "APC-01-REFERENCE",
       "requested_level": "A0",
       "computed_maximum_level": "A0",
+      "reference_bundle_manifest": "data/project/m05-answerable-power-sprint-05-release-manifest.json",
+      "evidence_fingerprint_source": "release_manifest.combined_sha256",
       "external_attestors": [],
       "independence_evidence": "not_observed",
       "affected_party_approval": "not_observed",
-      "legal_privacy_and_ethics_authority": "not_observed_for_real_person_use",
+      "legal_privacy_ethics_and_technical_authority": "not_observed_for_real_person_use",
       "deployment_mode": "published_reference",
       "adverse_action_boundary": "no_deployment",
       "stop_authority_receipts": [],
       "preregistered_evaluation": "template_only_no_pilot_values",
       "open_blockers": [
-        "no independent reproduction",
-        "no independent review and affected-party approval",
-        "no lawful shadow deployment",
-        "no prospective parallel operation",
-        "no observed rights-bearing use",
-        "no turnover or successor-system durability observation"
+        {
+          "blocker_id": "BLK-A1-01",
+          "status": "open",
+          "first_affected_level": "A1",
+          "reason": "No independent external reproduction receipt exists.",
+          "evidence_uri": null
+        },
+        {
+          "blocker_id": "BLK-A2-01",
+          "status": "open",
+          "first_affected_level": "A2",
+          "reason": "No complete independent review and affected-party approval package exists.",
+          "evidence_uri": null
+        },
+        {
+          "blocker_id": "BLK-A3-01",
+          "status": "open",
+          "first_affected_level": "A3",
+          "reason": "No lawful real-person shadow deployment or current entry-gate authorization exists.",
+          "evidence_uri": null
+        },
+        {
+          "blocker_id": "BLK-A4-01",
+          "status": "open",
+          "first_affected_level": "A4",
+          "reason": "No prospective parallel operation exists.",
+          "evidence_uri": null
+        },
+        {
+          "blocker_id": "BLK-A5-01",
+          "status": "open",
+          "first_affected_level": "A5",
+          "reason": "No observed rights-bearing live use exists.",
+          "evidence_uri": null
+        },
+        {
+          "blocker_id": "BLK-A6-01",
+          "status": "open",
+          "first_affected_level": "A6",
+          "reason": "No turnover or successor-system durability observation exists.",
+          "evidence_uri": null
+        }
       ],
       "expiration": "2027-01-27",
       "re_review_date": "2026-10-27",
       "successor_system_inheritance": "reference_requirement_only_not_observed",
-      "evidence_fingerprint": "generated_by_sprint_05_builder",
+      "evidence_fingerprint": null,
       "reconciliation_history": [
         {
           "as_of": "2026-07-27",
           "prior_level": null,
           "computed_level": "A0",
           "reason": "Published and machine-validated reference package only."
+        },
+        {
+          "as_of": "2026-07-27",
+          "prior_level": "A0",
+          "computed_level": "A0",
+          "reason": "Start-to-finish audit hardened exact-byte custody, scope binding, evidence receipts, mode consistency, and blocker-aware computation without adding external evidence."
         }
       ]
     }
@@ -198,6 +245,8 @@
     "claimant_may_set_computed_level": false,
     "internal_attestation_proves_independence": false,
     "expired_evidence_supports_current_level": false,
+    "boolean_observation_supports_level": false,
+    "open_blocker_may_be_ignored": false,
     "successor_relabeling_preserves_adoption_level": false,
     "registry_entry_proves_evidence_truth": false,
     "a0_proves_real_world_effectiveness": false

@@ -1,11 +1,11 @@
 {
-  "schema_version": "m05-answerable-power-adoption-threat-model@1",
+  "schema_version": "m05-answerable-power-adoption-threat-model@2",
   "program_id": "M-05",
   "sprint_id": "M05-SPRINT-05",
   "leg_id": "S05-L2",
   "as_of": "2026-07-27",
   "title": "Adoption threat model and independent-review protocol",
-  "status": "protocol_complete_reference_only",
+  "status": "hardened_protocol_complete_reference_only",
   "attack_classes": [
     {
       "attack_id": "ADOPT-ATTACK-01",
@@ -18,35 +18,35 @@
       "attack_id": "ADOPT-ATTACK-02",
       "name": "missing_required_review",
       "machine_detectable": true,
-      "description": "Required legal, privacy, ethics, security, or affected-party review is omitted or represented by an empty placeholder.",
+      "description": "Required legal, privacy, ethics, technical, security, or affected-party review is omitted or represented by an empty placeholder.",
       "required_response": "reject_or_pause"
     },
     {
       "attack_id": "ADOPT-ATTACK-03",
       "name": "shadow_mode_authority_creep",
       "machine_detectable": true,
-      "description": "A nominal shadow deployment can make, recommend, trigger, influence, or be consulted for an adverse action.",
+      "description": "A nominal shadow deployment can make, recommend, trigger, influence, informally advise, or be consulted for an adverse action.",
       "required_response": "reject_or_pause"
     },
     {
       "attack_id": "ADOPT-ATTACK-04",
       "name": "emergency_laundering",
       "machine_detectable": true,
-      "description": "An emergency exception lacks a fixed expiry, independent authorization, minimum-necessary scope, or preserved evidence.",
+      "description": "An emergency exception lacks fixed expiry, independent authorization, minimum-necessary scope, or preserved evidence.",
       "required_response": "reject_or_pause"
     },
     {
       "attack_id": "ADOPT-ATTACK-05",
       "name": "stale_evidence",
       "machine_detectable": true,
-      "description": "An approval, attestation, preregistration, or review has expired or predates a material update.",
+      "description": "An approval, attestation, preregistration, authority, or registry entry has expired, is future-dated, or predates a material update.",
       "required_response": "reject_or_pause"
     },
     {
       "attack_id": "ADOPT-ATTACK-06",
       "name": "silent_model_or_policy_update",
       "machine_detectable": true,
-      "description": "The deployed model, policy, threshold, purpose, vendor, data, or interface version differs without reapproval.",
+      "description": "The model, policy, threshold, purpose, vendor, data, interface, or jurisdiction changes without scoped reapproval.",
       "required_response": "reject_or_pause"
     },
     {
@@ -60,7 +60,7 @@
       "attack_id": "ADOPT-ATTACK-08",
       "name": "missing_affected_party_approval",
       "machine_detectable": true,
-      "description": "A2+ is claimed without a binding affected-party approval receipt.",
+      "description": "A2+ is claimed without a binding, independently formed affected-party approval receipt.",
       "required_response": "reject_or_pause"
     },
     {
@@ -144,12 +144,46 @@
       "attack_id": "ADOPT-ATTACK-20",
       "name": "jurisdiction_shopping",
       "machine_detectable": false,
-      "description": "The deployment is placed, classified, or contracted in a jurisdiction or entity chosen to evade the governing rights and review standard.",
+      "description": "The deployment is placed, classified, or contracted to evade the governing rights and review standard.",
       "required_response": "independent_human_investigation"
+    },
+    {
+      "attack_id": "ADOPT-ATTACK-21",
+      "name": "boolean_only_proof_laundering",
+      "machine_detectable": true,
+      "description": "A bare true/false field is used in place of a dated, scope-bound evidence receipt.",
+      "required_response": "reject_or_pause"
+    },
+    {
+      "attack_id": "ADOPT-ATTACK-22",
+      "name": "cross_scope_receipt_reuse",
+      "machine_detectable": true,
+      "description": "A receipt for one bundle, deployment, version, jurisdiction, or purpose is reused for another scope.",
+      "required_response": "reject_or_pause"
+    },
+    {
+      "attack_id": "ADOPT-ATTACK-23",
+      "name": "blocker_suppression",
+      "machine_detectable": true,
+      "description": "Open blockers are omitted, represented as free text, or ignored when computing the maximum level.",
+      "required_response": "reject_or_pause"
+    },
+    {
+      "attack_id": "ADOPT-ATTACK-24",
+      "name": "claim_deployment_mode_mismatch",
+      "machine_detectable": true,
+      "description": "The requested level, claim mode, and actual deployment mode disagree.",
+      "required_response": "reject_or_pause"
     }
   ],
   "independent_review_protocol": {
     "minimum_reviewers": 2,
+    "required_review_types": [
+      "legal",
+      "privacy",
+      "ethics",
+      "technical"
+    ],
     "required_independence_disclosures": [
       "current and prior operator, vendor, funder, customer, regulator, litigation, and procurement relationships",
       "financial interests and contingent compensation",
@@ -158,11 +192,11 @@
       "authority to publish dissent and unresolved limitations"
     ],
     "required_review_surfaces": [
-      "manifest and evidence integrity",
+      "manifest and exact-byte evidence integrity",
       "legal and jurisdictional authority",
       "privacy and data protection",
       "ethics and human-subjects classification",
-      "security and incident response",
+      "technical architecture, security, and bypass risk",
       "affected-party formation",
       "stop and remedy power",
       "deployment mode and adverse-action boundary",
@@ -170,7 +204,8 @@
       "exit, value, and successor-system inheritance"
     ],
     "review_output": [
-      "signed finding",
+      "signed and dated finding",
+      "scope fingerprint",
       "conflicts and recusals",
       "evidence inspected",
       "unresolved gaps",
@@ -181,12 +216,12 @@
     ]
   },
   "detectability_counts": {
-    "machine_detectable": 12,
+    "machine_detectable": 16,
     "human_investigation_required": 8
   },
   "current_result": {
-    "attack_classes_frozen": 20,
-    "machine_detectable_attacks": 12,
+    "attack_classes_frozen": 24,
+    "machine_detectable_attacks": 16,
     "human_investigation_attacks": 8,
     "independent_review_observed": false,
     "maximum_verified_adoption_level": "A0"

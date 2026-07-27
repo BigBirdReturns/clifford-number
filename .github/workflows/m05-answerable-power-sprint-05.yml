@@ -1,4 +1,4 @@
-name: M-05 Sprint 05 adoption integrity
+name: M-05 Sprint 05 audited adoption integrity
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
     paths:
       - 'data/project/m05-answerable-power-sprint-05-*.json'
       - 'docs/methods/answerable-power-adoption-integrity.md'
-      - 'docs/milestones/m05-answerable-power-sprint-05.md'
+      - 'docs/milestones/m05-answerable-power-sprint-05*.md'
       - 'tools/m05-adoption-conformance.mjs'
       - 'tools/build-m05-answerable-power-sprint-05.mjs'
       - 'tools/validate-m05-answerable-power-sprint-05.mjs'
@@ -19,7 +19,7 @@ on:
     paths:
       - 'data/project/m05-answerable-power-sprint-05-*.json'
       - 'docs/methods/answerable-power-adoption-integrity.md'
-      - 'docs/milestones/m05-answerable-power-sprint-05.md'
+      - 'docs/milestones/m05-answerable-power-sprint-05*.md'
       - 'tools/m05-adoption-conformance.mjs'
       - 'tools/build-m05-answerable-power-sprint-05.mjs'
       - 'tools/validate-m05-answerable-power-sprint-05.mjs'
@@ -40,7 +40,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Build, validate, and test Sprint 05
+      - name: Build, validate, and test audited Sprint 05
         run: |
           node tools/build-m05-answerable-power-sprint-05.mjs
           node tools/validate-m05-answerable-power-sprint-05.mjs
@@ -48,7 +48,7 @@ jobs:
           node test/m05-adoption-conformance.test.js
       - name: Run complete repository release gate
         run: npm run release:check
-      - name: Prove deterministic Sprint 05 products
+      - name: Prove deterministic exact-byte products
         run: |
           git restore --staged --worktree .
           node tools/build-m05-answerable-power-sprint-05.mjs
