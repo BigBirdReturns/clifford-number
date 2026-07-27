@@ -52,11 +52,10 @@ jobs:
           node tools/validate-m05-answerable-power-sprint-07.mjs
           node test/m05-a1-adjudication.test.js
           node test/m05-answerable-power-sprint-07.test.js
-      - name: Commit exact permanent denominator
+      - name: Commit permanent non-workflow denominator
         run: |
           git add \
             .github/ISSUE_TEMPLATE/apc-a1-adjudicator-nomination.yml \
-            .github/workflows/m05-answerable-power-sprint-07.yml \
             data/project/m05-answerable-power-sprint-07-plan.json \
             data/project/m05-answerable-power-sprint-07-adjudicator-constitution.json \
             data/project/m05-answerable-power-sprint-07-adjudication-schema.json \
@@ -76,7 +75,6 @@ jobs:
           import subprocess
           expected = {
             '.github/ISSUE_TEMPLATE/apc-a1-adjudicator-nomination.yml',
-            '.github/workflows/m05-answerable-power-sprint-07.yml',
             'data/project/m05-answerable-power-sprint-07-plan.json',
             'data/project/m05-answerable-power-sprint-07-adjudicator-constitution.json',
             'data/project/m05-answerable-power-sprint-07-adjudication-schema.json',
@@ -106,5 +104,5 @@ jobs:
           node test/m05-a1-adjudication.test.js
           node test/m05-answerable-power-sprint-07.test.js
           git diff --exit-code
-      - name: Publish validated permanent commit to isolated ref
-        run: git push origin HEAD:agent/m05-sprint-07-external-adjudication-clean
+      - name: Publish validated non-workflow commit
+        run: git push origin HEAD:agent/m05-sprint-07-external-adjudication
