@@ -1,0 +1,39 @@
+name: WebsiteIQ baseline audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/websiteiq-baseline-audit.yml'
+      - 'tools/run-websiteiq-baseline-audit.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TARGET_URL: https://bigbirdreturns.github.io/clifford-number/
+      WEBSITEIQ_BASE_URL: https://websiteiq.xyz
+      CONTACT_EMAIL: bigbirdreturns@proton.me
+      OUT_DIR: websiteiq-audit
+      MAX_POLLS: '120'
+      POLL_MS: '5000'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run WebsiteIQ baseline audit
+        run: node tools/run-websiteiq-baseline-audit.mjs
+      - name: Upload WebsiteIQ report and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: websiteiq-baseline-audit
+          path: websiteiq-audit/
+          if-no-files-found: warn
+          retention-days: 14
