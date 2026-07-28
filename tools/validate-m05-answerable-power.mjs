@@ -14,8 +14,8 @@ const report=read('reports/core-thesis/answerable-power/data.json');
 
 if(methodology.story_modes.length!==5)fail('expected five story modes');
 if(methodology.power_answer_ladder.length!==8)fail('expected R0-R7 ladder');
-if(registry.stories.length!==13)fail(`expected 13 stories, got ${registry.stories.length}`);
-if(fanout.lanes.length!==16)fail(`expected 16 lanes, got ${fanout.lanes.length}`);
+if(registry.stories.length!==14)fail(`expected 14 stories, got ${registry.stories.length}`);
+if(fanout.lanes.length!==17)fail(`expected 17 lanes, got ${fanout.lanes.length}`);
 if(new Set(registry.stories.map((row)=>row.story_id)).size!==registry.stories.length)fail('duplicate story ids');
 if(new Set(fanout.lanes.map((row)=>row.lane_id)).size!==fanout.lanes.length)fail('duplicate lane ids');
 
@@ -30,7 +30,7 @@ for(const lane of fanout.lanes){
   if(!lane.question || !lane.falsifier || !lane.stopping_rule)fail(`${lane.lane_id}: incomplete lane`);
   if(!Array.isArray(lane.allowed_terminal_states) || lane.allowed_terminal_states.length<3)fail(`${lane.lane_id}: terminal states`);
 }
-const expectedCounts={standalone_actor:3,exact_overlap:3,constitutional_mechanism:3,answer_story:3,non_link:1};
+const expectedCounts={standalone_actor:3,exact_overlap:3,constitutional_mechanism:4,answer_story:3,non_link:1};
 for(const [mode,count] of Object.entries(expectedCounts)){
   if(registry.counts[mode]!==count)fail(`${mode}: expected ${count}, got ${registry.counts[mode]}`);
 }
@@ -40,6 +40,8 @@ for(const [key,value] of Object.entries(methodology.boundaries)){
   if(['status','promotes_to','graph_effect'].includes(key))continue;
   if(value!==false)fail(`boundary ${key} must remain false`);
 }
-if(report.counts.stories!==13 || report.counts.lanes!==16)fail('report counts drift');
+if(report.counts.stories!==14 || report.counts.lanes!==17)fail('report counts drift');
+if(!registry.stories.some((row)=>row.story_id==='M05-S14'))fail('M05-S14 missing');
+if(!fanout.lanes.some((row)=>row.lane_id==='A17'&&row.story_id==='M05-S14'))fail('A17 missing or disconnected');
 if(JSON.stringify(report.boundaries)!==JSON.stringify(methodology.boundaries))fail('report boundary drift');
 console.log('validate-m05-answerable-power: OK');
