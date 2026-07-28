@@ -1,5 +1,5 @@
 name: Temporary materialize K0 source and field audit
-# checksum-bound carrier that exports a validated working tree for a separate repository transaction
+# checksum-bound carrier that creates an unreferenced validated Git commit for connector publication
 
 on:
   pull_request:
@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   materialize:
@@ -68,7 +68,7 @@ jobs:
           node tools/validate-corpus-selection.mjs
           node tools/validate-consumption-contract.mjs
 
-      - name: Package exact validated transaction
+      - name: Prepare exact validated transaction
         run: |
           rm -rf /tmp/k0-audit-export
           mkdir -p /tmp/k0-audit-export
@@ -96,6 +96,119 @@ jobs:
           git rev-parse 'HEAD^{tree}' > /tmp/k0-audit-export/CARRIER_TREE.txt
           git status --short > /tmp/k0-audit-export/MATERIALIZED_STATUS.txt
           git diff --name-status > /tmp/k0-audit-export/MATERIALIZED_PATHS.txt
+
+      - name: Create unreferenced validated Git commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PYCOMMIT'
+          import base64
+          import json
+          import os
+          import subprocess
+          import urllib.request
+
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GH_TOKEN']
+          api = 'https://api.github.com'
+          parent = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          base_tree = subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip()
+
+          updates = [
+              '.github/workflows/k0-source-field-audit.yml',
+              'data/canonical/corpus-selection.json',
+              'data/intake/k0-ceiling-conversion-seed-events.json',
+              'data/project/k0-epistemic-admissibility-methodology.json',
+              'data/project/k0-epistemic-admissibility-release-manifest.json',
+              'data/research/corpus-coverage.json',
+              'data/research/k0-field-audit.json',
+              'data/research/k0-role-neutral-denominator.json',
+              'data/research/k0-source-custody-audit.json',
+              'data/research/selection-adversarial-reviews.json',
+              'docs/methods/k0-epistemic-admissibility.md',
+              'docs/milestones/m05-k0-source-field-audit.md',
+              'reports/core-thesis/answerable-power/k0.html',
+              'reports/core-thesis/answerable-power/k0.json',
+              'schemas/k0-ceiling-conversion-event.schema.json',
+              'test/k0-epistemic-admissibility.test.js',
+              'tools/build-k0-epistemic-admissibility.mjs',
+              'tools/validate-k0-epistemic-admissibility.mjs',
+          ]
+          deletions = [
+              '.github/workflows/temporary-materialize-k0-audit.yml',
+              '.github/tmp/k0-audit-wave01-part-00.b64',
+              '.github/tmp/k0-audit-wave01-part-01.b64',
+              '.github/tmp/k0-audit-wave01-part-02.b64',
+              '.github/tmp/k0-source-field-audit-part-00.b64',
+              '.github/tmp/k0-source-field-audit-part-01.b64',
+              '.github/tmp/k0-source-field-audit-part-02.b64',
+              '.github/tmp/k0-source-field-audit-part-03.b64',
+              '.github/tmp/k0-source-field-audit-part-04.b64',
+              '.github/tmp/k0-source-field-audit-part-05.b64',
+              '.github/tmp/k0-source-field-audit-part-06.b64',
+              '.github/tmp/k0-source-field-audit-part-07.b64',
+              '.github/tmp/k0-source-field-audit-part-08.b64',
+          ]
+
+          def post(path, payload):
+              req = urllib.request.Request(
+                  api + path,
+                  data=json.dumps(payload).encode(),
+                  method='POST',
+                  headers={
+                      'Authorization': f'Bearer {token}',
+                      'Accept': 'application/vnd.github+json',
+                      'X-GitHub-Api-Version': '2022-11-28',
+                      'Content-Type': 'application/json',
+                      'User-Agent': 'k0-source-field-audit',
+                  },
+              )
+              with urllib.request.urlopen(req) as response:
+                  return json.load(response)
+
+          tree_entries = []
+          blob_receipts = []
+          for path in updates:
+              raw = open(path, 'rb').read()
+              blob = post(f'/repos/{repo}/git/blobs', {
+                  'content': base64.b64encode(raw).decode(),
+                  'encoding': 'base64',
+              })
+              try:
+                  index_row = subprocess.check_output(['git', 'ls-files', '-s', '--', path], text=True).strip()
+                  mode = index_row.split()[0] if index_row else '100644'
+              except subprocess.CalledProcessError:
+                  mode = '100644'
+              tree_entries.append({'path': path, 'mode': mode, 'type': 'blob', 'sha': blob['sha']})
+              blob_receipts.append({'path': path, 'sha': blob['sha'], 'bytes': len(raw), 'mode': mode})
+
+          for path in deletions:
+              tree_entries.append({'path': path, 'mode': '100644', 'type': 'blob', 'sha': None})
+
+          tree = post(f'/repos/{repo}/git/trees', {'base_tree': base_tree, 'tree': tree_entries})
+          commit = post(f'/repos/{repo}/git/commits', {
+              'message': 'Audit K0 source custody and CCD semantics',
+              'tree': tree['sha'],
+              'parents': [parent],
+          })
+          receipt = {
+              'repository': repo,
+              'parent': parent,
+              'base_tree': base_tree,
+              'candidate_tree': tree['sha'],
+              'candidate_commit': commit['sha'],
+              'updates': blob_receipts,
+              'deletions': deletions,
+              'ref_updated': False,
+          }
+          with open('/tmp/k0-audit-export/CANDIDATE_COMMIT.json', 'w') as handle:
+              json.dump(receipt, handle, indent=2)
+              handle.write('\n')
+          print(json.dumps(receipt, indent=2))
+          PYCOMMIT
+
+      - name: Seal exact validated transaction
+        run: |
           find /tmp/k0-audit-export -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/k0-audit-export/FILE_SHA256SUMS.txt
           tar -czf /tmp/k0-source-field-audit-permanent.tgz -C /tmp/k0-audit-export .
           sha256sum /tmp/k0-source-field-audit-permanent.tgz > /tmp/k0-source-field-audit-permanent.sha256
