@@ -238,11 +238,13 @@
       "comparator_tests": [
         {
           "test_id": "same-gate-opposite-outcome-controls",
-          "status": "not_executed_in_repo",
+          "status": "partial_wave01_and_wave02_controls",
           "method": "For each gate class, compare events where independent review preserved standing or stayed action against events where the original gateholder controlled both classification and consequence.",
           "blocking_conditions": [
-            "no role-neutral event harvest",
-            "no source-audited positive-control denominator"
+            "controls remain maintainer-selected",
+            "Wave 02 systemic records lack individual request-level chains",
+            "six frozen query templates remain unexecuted",
+            "second-party review absent"
           ]
         },
         {
@@ -253,9 +255,19 @@
             "fixtures are not a selected denominator",
             "second-party review absent"
           ]
+        },
+        {
+          "test_id": "platform-access-enforcement-lifecycle",
+          "status": "maintainer_partial",
+          "method": "Compare formal proceedings, preliminary findings, final noncompliance, binding commitments, corrective plans, and statutory access controls without assuming that later correction proves earlier motive or present effectiveness.",
+          "blocking_conditions": [
+            "individual researcher requests are not identified in the public decision summaries",
+            "corrective-plan effectiveness is not yet observed",
+            "independent review absent"
+          ]
         }
       ],
-      "disposition": "Maintainer source and field corrections are recorded, but publication remains blocked. A distinct reviewer must audit all thirteen events and the role-neutral denominator before any clearance.",
+      "disposition": "Two maintainer waves now preserve employment, safety, platform-access, negative, correction, and counterpower controls. Publication remains blocked because six query templates, request-level Wave 02 field adjudication, exact remote custody, and a genuinely independent review remain incomplete.",
       "maintainer_audit": {
         "audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
         "auditor_id": "project-maintainers",
@@ -271,19 +283,21 @@
         ]
       },
       "role_neutral_execution": {
-        "wave_id": "K0-W01",
-        "path": "data/research/k0-role-neutral-wave-01.json",
-        "author_id": "project-maintainers",
-        "independence_effect": "does_not_satisfy_second_party_clearance",
-        "query_executions": 4,
-        "raw_results_observed": 18,
-        "retained_records": 10,
-        "candidate_records": 5,
-        "positive_controls": 1,
-        "negative_controls": 2,
-        "requires_additional_acquisition": 2,
+        "wave_ids": [
+          "K0-W01",
+          "K0-W02"
+        ],
+        "query_templates_executed": [
+          "K0-Q01",
+          "K0-Q03",
+          "K0-Q04"
+        ],
+        "query_executions": 8,
+        "raw_results_observed": 33,
+        "retained_records": 17,
+        "controls_preserved": 6,
         "included_events": 0,
-        "publication_effect": "none"
+        "independence_effect": "does_not_satisfy_second_party_clearance"
       }
     }
   ]

@@ -40,13 +40,20 @@
     "field_audit_retained_candidate_only": 7,
     "ccd_depth_changes": 6,
     "role_changes": 1,
-    "role_neutral_query_executions": 4,
-    "role_neutral_raw_results_observed": 18,
-    "role_neutral_retained_records": 10,
-    "role_neutral_candidate_records": 5,
-    "role_neutral_positive_controls": 1,
+    "role_neutral_query_executions": 8,
+    "role_neutral_raw_results_observed": 33,
+    "role_neutral_retained_records": 17,
+    "role_neutral_candidate_records": 8,
+    "role_neutral_positive_controls": 3,
     "role_neutral_negative_controls": 2,
-    "role_neutral_requires_additional_acquisition": 2,
+    "role_neutral_coverage_controls": 1,
+    "role_neutral_requires_additional_acquisition": 1,
+    "role_neutral_resolved_additional_acquisition": 2,
+    "role_neutral_wave_01_query_executions": 4,
+    "role_neutral_wave_01_retained_records": 10,
+    "role_neutral_wave_02_query_executions": 4,
+    "role_neutral_wave_02_retained_records": 7,
+    "role_neutral_wave_02_candidate_records": 3,
     "unique_external_urls_in_events": 32,
     "natural_k0_fixtures": 10,
     "clean_first_class_estate_routes": 8,
@@ -1317,7 +1324,7 @@
     "layer_id": "K0",
     "as_of": "2026-07-27",
     "selection_lane_id": "epistemic-admissibility-ceiling-events",
-    "status": "execution_started_wave_01_discovery_only",
+    "status": "execution_started_wave_02_discovery_only",
     "selection_unit": "one bounded, source-addressable gate action preceded by a documented contradiction from a person or body with a stated qualification basis",
     "selection_universe": "all recoverable public-source events returned by the frozen gate-stratified search battery, including non-events, ordinary disagreements, failed searches, inaccessible sources, and exculpatory controls",
     "gate_strata": [
@@ -1502,20 +1509,25 @@
     ],
     "execution": {
       "name_blind_execution_started": true,
-      "searches_executed": 4,
-      "raw_results_observed": 18,
-      "returned_records": 10,
-      "candidate_records": 5,
-      "positive_controls": 1,
+      "searches_executed": 8,
+      "query_templates_executed": 3,
+      "raw_results_observed": 33,
+      "returned_records": 17,
+      "candidate_records": 8,
+      "positive_controls": 3,
       "negative_controls": 2,
-      "requires_additional_acquisition": 2,
+      "coverage_controls": 1,
+      "requires_additional_acquisition": 3,
+      "resolved_additional_acquisition": 2,
+      "open_additional_acquisition": 1,
       "included_events": 0,
-      "non_events": 3,
+      "non_events": 6,
       "source_failures": 0,
       "executed_wave_ids": [
-        "K0-W01"
+        "K0-W01",
+        "K0-W02"
       ],
-      "last_executed_at": "2026-07-27",
+      "last_executed_at": "2026-07-28",
       "independent_second_party_review_complete": false
     },
     "boundaries": {
@@ -1530,7 +1542,7 @@
       {
         "wave_id": "K0-W01",
         "path": "data/research/k0-role-neutral-wave-01.json",
-        "status": "discovery_complete_field_adjudication_pending",
+        "status": "discovery_complete_field_adjudication_complete_additional_acquisition_resolved",
         "query_templates_touched": [
           "K0-Q01",
           "K0-Q03"
@@ -1543,6 +1555,21 @@
           "K0-G06",
           "K0-G07",
           "K0-G08",
+          "K0-G09"
+        ],
+        "graph_effect": "none"
+      },
+      {
+        "wave_id": "K0-W02",
+        "path": "data/research/k0-role-neutral-wave-02.json",
+        "status": "discovery_complete_field_adjudication_pending",
+        "query_templates_touched": [
+          "K0-Q04"
+        ],
+        "gate_strata_touched": [
+          "K0-G02",
+          "K0-G05",
+          "K0-G07",
           "K0-G09"
         ],
         "graph_effect": "none"
@@ -1981,6 +2008,423 @@
       "candidate_record_creates_graph_effect": false,
       "publication_cleared": false,
       "graph_effect": "none"
+    }
+  },
+  "role_neutral_wave_02": {
+    "schema_version": "k0-role-neutral-wave@1",
+    "program_id": "M-05",
+    "layer_id": "K0",
+    "wave_id": "K0-W02",
+    "as_of": "2026-07-28",
+    "status": "name_blind_dsa_researcher_access_discovery_complete_field_adjudication_pending",
+    "selection_lane_id": "epistemic-admissibility-ceiling-events",
+    "query_template_ids": [
+      "K0-Q04"
+    ],
+    "source_plane": {
+      "search_provider": "OpenAI web search adapter",
+      "source_families": [
+        "digital-strategy.ec.europa.eu",
+        "algorithmic-transparency.ec.europa.eu",
+        "data-access.dsa.ec.europa.eu"
+      ],
+      "jurisdiction": "European Union",
+      "provider_result_order_reproducible": false,
+      "query_text_and_retained_urls_frozen": true,
+      "public_source_pages_retrievable": true,
+      "coverage_claim": "bounded official European Union discovery pass over the Digital Services Act researcher-access enforcement and implementation plane; not a complete platform universe, not a count of individual access denials, and not evidence of absence outside the observed result set"
+    },
+    "query_executions": [
+      {
+        "execution_id": "K0-W02-Q04-PRELIMINARY",
+        "query_id": "K0-Q04",
+        "query_text": "site:digital-strategy.ec.europa.eu/en/news \"researchers\" \"data access\" \"preliminary findings\" DSA",
+        "domain_filter": "digital-strategy.ec.europa.eu",
+        "selection_by_person_name": false,
+        "selection_by_platform_name": false
+      },
+      {
+        "execution_id": "K0-W02-Q04-FINE",
+        "query_id": "K0-Q04",
+        "query_text": "site:digital-strategy.ec.europa.eu/en/news \"researchers\" \"data access\" fine DSA",
+        "domain_filter": "digital-strategy.ec.europa.eu",
+        "selection_by_person_name": false,
+        "selection_by_platform_name": false
+      },
+      {
+        "execution_id": "K0-W02-Q04-COMMITMENTS",
+        "query_id": "K0-Q04",
+        "query_text": "site:digital-strategy.ec.europa.eu/en/news \"researchers\" \"data access\" commitments DSA",
+        "domain_filter": "digital-strategy.ec.europa.eu",
+        "selection_by_person_name": false,
+        "selection_by_platform_name": false
+      },
+      {
+        "execution_id": "K0-W02-Q04-PORTAL",
+        "query_id": "K0-Q04",
+        "query_text": "site:digital-strategy.ec.europa.eu/en/news \"vetted researchers\" \"data access portal\" DSA",
+        "domain_filter": "digital-strategy.ec.europa.eu",
+        "selection_by_person_name": false,
+        "selection_by_platform_name": false
+      }
+    ],
+    "capture_policy": {
+      "raw_results_observed": 15,
+      "retain": "distinct official source pages or lifecycle matters that document the legal access gate, formal enforcement, a preliminary or final disposition, a corrective commitment, or a counterpower mechanism",
+      "exclude": "machine-translated duplicates, duplicate summaries of the same decision, general overview pages already represented by a more specific instrument, and pages without a researcher-access proposition",
+      "deduplication_key": "bounded matter plus enforcement or control stage",
+      "query_hit_is_event": false,
+      "formal_proceeding_is_merits_finding": false,
+      "preliminary_finding_is_final": false,
+      "corrective_plan_proves_effectiveness": false,
+      "manual_retention_is_independent_review": false
+    },
+    "counts": {
+      "query_executions": 4,
+      "raw_results_observed": 15,
+      "retained_records": 7,
+      "candidate_requires_field_audit": 3,
+      "positive_controls": 2,
+      "coverage_controls": 1,
+      "requires_additional_acquisition": 1,
+      "preliminary_only_records": 2,
+      "final_noncompliance_records": 1,
+      "corrective_action_records": 2,
+      "included_events": 0,
+      "assigned_ccd_values": 0,
+      "publication_cleared": 0,
+      "graph_effects": 0,
+      "source_failures": 0
+    },
+    "records": [
+      {
+        "record_id": "K0-W02-R001",
+        "matter": "DSA vetted-researcher access mechanism and portal",
+        "institution": "European Commission / national Digital Services Coordinators / designated VLOPs and VLOSEs",
+        "gate_stratum_ids": [
+          "K0-G02",
+          "K0-G05",
+          "K0-G07",
+          "K0-G09"
+        ],
+        "selection_outcome": "positive_counterpower_control",
+        "control_kind": "independent_statutory_access_gate",
+        "qualification_basis_status": "law_defined_vetting",
+        "source_packets": [
+          {
+            "url": "https://digital-strategy.ec.europa.eu/en/news/commission-launches-public-consultation-rules-researchers-access-online-platform-data-under-digital",
+            "source_class": "official_public_consultation",
+            "issued_at": "2024-10-29",
+            "supports": "Draft access procedures, portal design, data formats, and researcher-platform-DSC communication."
+          },
+          {
+            "url": "https://digital-strategy.ec.europa.eu/en/news/commission-adopts-delegated-act-data-access-under-digital-services-act",
+            "source_class": "official_delegated_act_summary",
+            "issued_at": "2025-07-02",
+            "supports": "Independent vetting criteria, procedural harmonisation, documentation duties, and the data-access portal."
+          },
+          {
+            "url": "https://digital-strategy.ec.europa.eu/en/news/new-measures-unlock-access-data-largest-online-platforms-support-research",
+            "source_class": "official_entry_into_force_statement",
+            "issued_at": "2025-10-29",
+            "supports": "Legal obligation to comply with qualifying requests after DSC assessment."
+          },
+          {
+            "url": "https://digital-strategy.ec.europa.eu/en/news/commission-holds-roundtable-data-access-vetted-researchers",
+            "source_class": "official_implementation_update",
+            "issued_at": "2026-05-20",
+            "supports": "Forty-nine applications received for assessment and Commission responsibility for enforcement."
+          }
+        ],
+        "source_supports": "A separated public authority vets researchers and the Commission retains enforcement power over platform access obligations.",
+        "source_does_not_establish": [
+          "that any particular application was granted",
+          "that requested data was delivered fully or on time",
+          "that the mechanism has prevented retaliation or restored a removed researcher",
+          "that observed research outcomes changed platform conduct"
+        ],
+        "field_audit_status": "control_retained",
+        "ccd_chain_depth": null,
+        "included_event": false,
+        "evidence_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_status": "blocked",
+        "graph_effect": "none"
+      },
+      {
+        "record_id": "K0-W02-R002",
+        "matter": "Commission information requests to seventeen designated platforms and search engines",
+        "institution": "European Commission / seventeen designated VLOPs and VLOSEs",
+        "gate_stratum_ids": [
+          "K0-G05",
+          "K0-G07"
+        ],
+        "selection_outcome": "coverage_control",
+        "control_kind": "same_question_multi_platform_intake",
+        "qualification_basis_status": "not_applicable_coverage_control",
+        "source_packets": [
+          {
+            "url": "https://digital-strategy.ec.europa.eu/en/news/commission-sends-requests-information-17-very-large-online-platforms-and-search-engines-under",
+            "source_class": "official_request_for_information",
+            "issued_at": "2024-01-18",
+            "supports": "The same public-data-access compliance question was sent to seventeen named services."
+          }
+        ],
+        "source_supports": "A cross-platform intake denominator existed before platform-specific outcomes were selected.",
+        "source_does_not_establish": [
+          "noncompliance by any listed service",
+          "an individual researcher access denial",
+          "a ceiling-conversion event"
+        ],
+        "field_audit_status": "control_retained",
+        "ccd_chain_depth": null,
+        "included_event": false,
+        "evidence_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_status": "blocked",
+        "graph_effect": "none"
+      },
+      {
+        "record_id": "K0-W02-R003",
+        "matter": "X public-data access noncompliance and corrective-action lifecycle",
+        "institution": "X / European Commission",
+        "gate_stratum_ids": [
+          "K0-G02",
+          "K0-G05",
+          "K0-G07"
+        ],
+        "selection_outcome": "candidate_requires_field_audit",
+        "qualification_basis_status": "individual_researcher_basis_not_identified_in_public_decision",
+        "lifecycle_state": "final_noncompliance_corrective_plan_accepted_effectiveness_unobserved",
+        "source_packets": [
+          {
+            "url": "https://digital-strategy.ec.europa.eu/en/news/commission-sends-preliminary-findings-x-breach-digital-services-act",
+            "source_class": "official_preliminary_findings",
+            "issued_at": "2024-07-12",
+            "supports": "Preliminary findings on data access for researchers after internal-document review and expert interviews."
+          },
+          {
+            "url": "https://digital-strategy.ec.europa.eu/en/news/commission-fines-x-eu120-million-under-digital-services-act",
+            "source_class": "official_final_noncompliance_decision_summary",
+            "issued_at": "2025-12-05",
+            "supports": "Final DSA noncompliance decision, terms prohibiting eligible scraping, unnecessary access barriers, and a financial penalty."
+          },
+          {
+            "url": "https://digital-strategy.ec.europa.eu/en/news/commission-accepts-xs-action-plan-comply-digital-services-act",
+            "source_class": "official_corrective_action_acceptance",
+            "issued_at": "2026-07-16",
+            "supports": "Accepted plan to improve screening, provide free access, enable API access, and remove contractual scraping prohibitions."
+          }
+        ],
+        "source_supports": "The platform's terms and procedures were found to impede eligible researcher access, followed by a final decision and an accepted corrective plan.",
+        "source_does_not_establish": [
+          "the identity and bounded qualification of a particular affected researcher",
+          "the exact contradiction delivered to a platform decisionmaker",
+          "a competence reclassification or explanation mutation",
+          "effective implementation of the corrective plan",
+          "a complete CCD chain"
+        ],
+        "field_audit_status": "pending",
+        "ccd_chain_depth": null,
+        "included_event": false,
+        "evidence_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_status": "blocked",
+        "graph_effect": "none"
+      },
+      {
+        "record_id": "K0-W02-R004",
+        "matter": "Meta public-data access preliminary DSA findings",
+        "institution": "Meta / European Commission",
+        "gate_stratum_ids": [
+          "K0-G02",
+          "K0-G05",
+          "K0-G07"
+        ],
+        "selection_outcome": "candidate_requires_field_audit",
+        "qualification_basis_status": "individual_researcher_basis_not_identified_in_public_summary",
+        "lifecycle_state": "preliminary_findings_only",
+        "source_packets": [
+          {
+            "url": "https://digital-strategy.ec.europa.eu/en/news/commission-preliminarily-finds-tiktok-and-meta-breach-their-transparency-obligations-under-digital",
+            "source_class": "official_preliminary_findings",
+            "issued_at": "2025-10-24",
+            "supports": "Preliminary finding that Meta did not grant researchers adequate access to public data."
+          }
+        ],
+        "source_supports": "A regulator issued preliminary findings concerning the adequacy of public-data access.",
+        "source_does_not_establish": [
+          "a final noncompliance decision",
+          "the exact denied request or affected researcher",
+          "competence reclassification or explanation mutation",
+          "a complete CCD chain"
+        ],
+        "field_audit_status": "pending",
+        "ccd_chain_depth": null,
+        "included_event": false,
+        "evidence_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_status": "blocked",
+        "graph_effect": "none"
+      },
+      {
+        "record_id": "K0-W02-R005",
+        "matter": "TikTok public-data access preliminary DSA findings",
+        "institution": "TikTok / European Commission",
+        "gate_stratum_ids": [
+          "K0-G02",
+          "K0-G05",
+          "K0-G07"
+        ],
+        "selection_outcome": "candidate_requires_field_audit",
+        "qualification_basis_status": "individual_researcher_basis_not_identified_in_public_summary",
+        "lifecycle_state": "preliminary_findings_only",
+        "source_packets": [
+          {
+            "url": "https://digital-strategy.ec.europa.eu/en/news/commission-preliminarily-finds-tiktok-and-meta-breach-their-transparency-obligations-under-digital",
+            "source_class": "official_preliminary_findings",
+            "issued_at": "2025-10-24",
+            "supports": "Preliminary finding that TikTok did not grant researchers adequate access to public data."
+          }
+        ],
+        "source_supports": "A regulator issued preliminary findings concerning the adequacy of public-data access.",
+        "source_does_not_establish": [
+          "a final noncompliance decision",
+          "the exact denied request or affected researcher",
+          "competence reclassification or explanation mutation",
+          "a complete CCD chain"
+        ],
+        "field_audit_status": "pending",
+        "ccd_chain_depth": null,
+        "included_event": false,
+        "evidence_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_status": "blocked",
+        "graph_effect": "none"
+      },
+      {
+        "record_id": "K0-W02-R006",
+        "matter": "AliExpress researcher-access commitments and monitoring",
+        "institution": "AliExpress / European Commission / independent Monitoring Trustee",
+        "gate_stratum_ids": [
+          "K0-G02",
+          "K0-G05",
+          "K0-G07"
+        ],
+        "selection_outcome": "positive_correction_control",
+        "control_kind": "binding_commitments_with_external_monitor",
+        "qualification_basis_status": "law_defined_eligible_researchers",
+        "lifecycle_state": "formal_proceeding_binding_commitments_effectiveness_unobserved",
+        "source_packets": [
+          {
+            "url": "https://digital-strategy.ec.europa.eu/en/news/commission-opens-formal-proceedings-against-aliexpress-under-digital-services-act",
+            "source_class": "official_formal_proceeding",
+            "issued_at": "2024-03-14",
+            "supports": "Researcher data access was one of the compliance areas placed under formal investigation."
+          },
+          {
+            "url": "https://digital-strategy.ec.europa.eu/en/news/commission-makes-aliexpress-commitments-under-digital-services-act-binding",
+            "source_class": "official_binding_commitment_decision_summary",
+            "issued_at": "2025-06-18",
+            "supports": "Binding API, scraping, customised-dataset and information-page commitments, plus independent Monitoring Trustee reporting."
+          }
+        ],
+        "source_supports": "The platform accepted binding access commitments with continuing external monitoring.",
+        "source_does_not_establish": [
+          "that every commitment has been implemented effectively",
+          "that an individual researcher obtained the requested data",
+          "the complete pre-commitment K0 causal chain",
+          "absence of future access barriers"
+        ],
+        "field_audit_status": "control_retained",
+        "ccd_chain_depth": null,
+        "included_event": false,
+        "evidence_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_status": "blocked",
+        "graph_effect": "none"
+      },
+      {
+        "record_id": "K0-W02-R007",
+        "matter": "Temu researcher-access formal DSA proceeding",
+        "institution": "Temu / European Commission",
+        "gate_stratum_ids": [
+          "K0-G05",
+          "K0-G07"
+        ],
+        "selection_outcome": "requires_additional_acquisition",
+        "qualification_basis_status": "unresolved_in_current_source",
+        "lifecycle_state": "formal_proceeding_no_merits_disposition",
+        "source_packets": [
+          {
+            "url": "https://digital-strategy.ec.europa.eu/en/news/commission-opens-formal-proceedings-against-temu-under-digital-services-act",
+            "source_class": "official_formal_proceeding",
+            "issued_at": "2024-10-31",
+            "supports": "The Commission opened proceedings that include compliance with researcher access to publicly accessible data."
+          }
+        ],
+        "source_supports": "Researcher access is within a formal DSA investigation.",
+        "source_does_not_establish": [
+          "a breach or merits finding",
+          "the affected researcher or exact denied request",
+          "a K0 contradiction, reclassification, or explanation mutation",
+          "a complete CCD chain"
+        ],
+        "field_audit_status": "requires_additional_acquisition",
+        "ccd_chain_depth": null,
+        "included_event": false,
+        "evidence_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_status": "blocked",
+        "graph_effect": "none"
+      }
+    ],
+    "excluded_results": [
+      {
+        "exclusion_id": "K0-W02-X001",
+        "reason": "machine-translated duplicate of retained Meta/TikTok preliminary-findings page"
+      },
+      {
+        "exclusion_id": "K0-W02-X002",
+        "reason": "machine-translated duplicate of retained DSA data-access entry-into-force page"
+      },
+      {
+        "exclusion_id": "K0-W02-X003",
+        "reason": "general DSA transparency overview duplicated specific retained instruments"
+      },
+      {
+        "exclusion_id": "K0-W02-X004",
+        "reason": "technical roundtable duplicated the retained delegated-act and portal mechanism"
+      },
+      {
+        "exclusion_id": "K0-W02-X005",
+        "reason": "European Board press statement duplicated the retained entry-into-force control"
+      },
+      {
+        "exclusion_id": "K0-W02-X006",
+        "reason": "AliExpress summary duplicated the retained binding-commitments matter"
+      },
+      {
+        "exclusion_id": "K0-W02-X007",
+        "reason": "policy-library page duplicated the retained delegated-act summary"
+      },
+      {
+        "exclusion_id": "K0-W02-X008",
+        "reason": "general implementation page lacked a distinct bounded access disposition"
+      }
+    ],
+    "boundaries": {
+      "query_hit_is_event": false,
+      "formal_proceeding_is_merits_finding": false,
+      "preliminary_finding_is_final": false,
+      "final_noncompliance_proves_k0_chain": false,
+      "corrective_plan_proves_effectiveness": false,
+      "portal_exists_means_access_granted": false,
+      "applications_received_mean_access_granted": false,
+      "platform_lifecycle_creates_person_edge": false,
+      "publication_cleared": false,
+      "graph_effect": "none",
+      "project_complete": false
     }
   },
   "ecosystem_wiring": {
@@ -2500,7 +2944,7 @@
           "metric_id": "name_blind_searches_executed",
           "unit": "searches",
           "expected": 9,
-          "observed": 0,
+          "observed": 3,
           "denominator_kind": "exact",
           "publicly_reproducible": true,
           "source": "data/research/k0-role-neutral-denominator.json"
@@ -2518,51 +2962,51 @@
           "metric_id": "name_blind_query_executions",
           "unit": "query_executions",
           "expected": 9,
-          "observed": 4,
+          "observed": 8,
           "denominator_kind": "exact",
           "publicly_reproducible": false,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-01.json"
+          "source": "data/research/k0-role-neutral-denominator.json"
         },
         {
           "metric_id": "raw_search_results_observed",
           "unit": "search_results",
           "expected": null,
-          "observed": 18,
+          "observed": 33,
           "denominator_kind": "open",
           "publicly_reproducible": false,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-01.json"
+          "source": "data/research/k0-role-neutral-denominator.json"
         },
         {
           "metric_id": "retained_official_records",
           "unit": "records",
           "expected": null,
-          "observed": 10,
+          "observed": 17,
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-01.json"
+          "source": "data/research/k0-role-neutral-denominator.json"
         },
         {
           "metric_id": "candidate_records_pending_field_audit",
           "unit": "records",
           "expected": null,
-          "observed": 5,
+          "observed": 3,
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-01.json"
+          "source": "data/research/k0-role-neutral-wave-02.json"
         },
         {
           "metric_id": "role_neutral_positive_controls",
           "unit": "controls",
           "expected": null,
-          "observed": 1,
+          "observed": 3,
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-01.json"
+          "source": "data/research/k0-role-neutral-denominator.json"
         },
         {
           "metric_id": "role_neutral_negative_controls",
@@ -2572,17 +3016,17 @@
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-01.json"
+          "source": "data/research/k0-role-neutral-denominator.json"
         },
         {
           "metric_id": "role_neutral_requires_additional_acquisition",
           "unit": "records",
           "expected": null,
-          "observed": 2,
+          "observed": 1,
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-01.json"
+          "source": "data/research/k0-role-neutral-denominator.json"
         },
         {
           "metric_id": "role_neutral_included_events",
@@ -2592,7 +3036,27 @@
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-01.json"
+          "source": "data/research/k0-role-neutral-denominator.json"
+        },
+        {
+          "metric_id": "role_neutral_coverage_controls",
+          "unit": "controls",
+          "expected": null,
+          "observed": 1,
+          "denominator_kind": "open",
+          "publicly_reproducible": true,
+          "counts_toward_public_progress": false,
+          "source": "data/research/k0-role-neutral-wave-02.json"
+        },
+        {
+          "metric_id": "role_neutral_resolved_additional_acquisition",
+          "unit": "records",
+          "expected": null,
+          "observed": 2,
+          "denominator_kind": "open",
+          "publicly_reproducible": true,
+          "counts_toward_public_progress": false,
+          "source": "data/research/k0-wave01-additional-acquisition-resolution.json"
         }
       ],
       "known_gaps": [
@@ -2610,15 +3074,15 @@
         },
         {
           "gap_id": "k0-gap-name-blind-universe-execution",
-          "description": "The role-neutral gate-stratified search battery is frozen but none of its nine searches has been executed, so the ten source people remain fixtures rather than a tested denominator.",
+          "description": "Three of nine frozen query templates have now been executed across U.S. oversight and EU DSA researcher-access planes; six templates and additional jurisdictions remain unexecuted.",
           "status": "blocking",
-          "next_action": "Execute the frozen battery across all gate strata, preserving non-events, nulls, source failures, and controls."
+          "next_action": "Execute the remaining six templates through declared source planes while preserving non-events, nulls, controls, and source failures."
         },
         {
           "gap_id": "k0-role-neutral-battery-incomplete",
-          "description": "Wave 01 executed two of nine frozen query templates against two official U.S. oversight source families; the remaining templates, source families, jurisdictions, and gate strata are not searched.",
+          "description": "Waves 01 and 02 executed K0-Q01, K0-Q03, and K0-Q04. Publication, appointment, safety-warning, professional-judgment, committee-capture, and editorial-veto templates remain open.",
           "status": "open",
-          "next_action": "Execute the remaining frozen templates through separately declared source planes while preserving raw returns, exclusions, controls, and failures."
+          "next_action": "Execute K0-Q02 and K0-Q05 through K0-Q09 in separately bounded waves."
         },
         {
           "gap_id": "k0-search-ranking-nonreproducible",
@@ -2628,9 +3092,15 @@
         },
         {
           "gap_id": "k0-wave01-field-adjudication-open",
-          "description": "Five candidate records require event-level source packets and two records require additional qualification or contradiction evidence before any K0 disposition.",
+          "description": "All five Wave 01 candidates received maintainer field adjudication and both additional-acquisition records were resolved to supported-for-human-review packets; none became an included event.",
+          "status": "resolved_at_maintainer_layer",
+          "next_action": "Preserve the packets for independent second-party review without promoting them internally."
+        },
+        {
+          "gap_id": "k0-wave02-field-adjudication-open",
+          "description": "Three DSA platform-access candidates require field adjudication and one formal proceeding requires additional acquisition; no Wave 02 record is an included event.",
           "status": "blocking",
-          "next_action": "Acquire bounded source packets and run field-level CCD adjudication without promoting discovery records."
+          "next_action": "Acquire bounded request-level evidence and adjudicate X, Meta, TikTok, and Temu without treating preliminary or systemic findings as complete K0 chains."
         }
       ]
     },
@@ -2693,11 +3163,13 @@
       "comparator_tests": [
         {
           "test_id": "same-gate-opposite-outcome-controls",
-          "status": "not_executed_in_repo",
+          "status": "partial_wave01_and_wave02_controls",
           "method": "For each gate class, compare events where independent review preserved standing or stayed action against events where the original gateholder controlled both classification and consequence.",
           "blocking_conditions": [
-            "no role-neutral event harvest",
-            "no source-audited positive-control denominator"
+            "controls remain maintainer-selected",
+            "Wave 02 systemic records lack individual request-level chains",
+            "six frozen query templates remain unexecuted",
+            "second-party review absent"
           ]
         },
         {
@@ -2708,9 +3180,19 @@
             "fixtures are not a selected denominator",
             "second-party review absent"
           ]
+        },
+        {
+          "test_id": "platform-access-enforcement-lifecycle",
+          "status": "maintainer_partial",
+          "method": "Compare formal proceedings, preliminary findings, final noncompliance, binding commitments, corrective plans, and statutory access controls without assuming that later correction proves earlier motive or present effectiveness.",
+          "blocking_conditions": [
+            "individual researcher requests are not identified in the public decision summaries",
+            "corrective-plan effectiveness is not yet observed",
+            "independent review absent"
+          ]
         }
       ],
-      "disposition": "Maintainer source and field corrections are recorded, but publication remains blocked. A distinct reviewer must audit all thirteen events and the role-neutral denominator before any clearance.",
+      "disposition": "Two maintainer waves now preserve employment, safety, platform-access, negative, correction, and counterpower controls. Publication remains blocked because six query templates, request-level Wave 02 field adjudication, exact remote custody, and a genuinely independent review remain incomplete.",
       "maintainer_audit": {
         "audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
         "auditor_id": "project-maintainers",
@@ -2726,19 +3208,21 @@
         ]
       },
       "role_neutral_execution": {
-        "wave_id": "K0-W01",
-        "path": "data/research/k0-role-neutral-wave-01.json",
-        "author_id": "project-maintainers",
-        "independence_effect": "does_not_satisfy_second_party_clearance",
-        "query_executions": 4,
-        "raw_results_observed": 18,
-        "retained_records": 10,
-        "candidate_records": 5,
-        "positive_controls": 1,
-        "negative_controls": 2,
-        "requires_additional_acquisition": 2,
+        "wave_ids": [
+          "K0-W01",
+          "K0-W02"
+        ],
+        "query_templates_executed": [
+          "K0-Q01",
+          "K0-Q03",
+          "K0-Q04"
+        ],
+        "query_executions": 8,
+        "raw_results_observed": 33,
+        "retained_records": 17,
+        "controls_preserved": 6,
         "included_events": 0,
-        "publication_effect": "none"
+        "independence_effect": "does_not_satisfy_second_party_clearance"
       }
     }
   },
@@ -4445,7 +4929,7 @@
   },
   "release_manifest": {
     "path": "data/project/k0-epistemic-admissibility-release-manifest.json",
-    "combined_sha256": "bb60fac2754c3dc18ae9fb37e9c60c49d51a19c4718368039fda919a74c66992"
+    "combined_sha256": "c07a88aac69e98f316717afd338a76c32dafdcf3a4010be2b78efb1120637ce0"
   },
   "boundaries": {
     "promotes_to": "candidate_only",

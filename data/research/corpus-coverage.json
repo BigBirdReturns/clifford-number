@@ -834,7 +834,7 @@
           "metric_id": "name_blind_searches_executed",
           "unit": "searches",
           "expected": 9,
-          "observed": 0,
+          "observed": 3,
           "denominator_kind": "exact",
           "publicly_reproducible": true,
           "source": "data/research/k0-role-neutral-denominator.json"
@@ -852,51 +852,51 @@
           "metric_id": "name_blind_query_executions",
           "unit": "query_executions",
           "expected": 9,
-          "observed": 4,
+          "observed": 8,
           "denominator_kind": "exact",
           "publicly_reproducible": false,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-01.json"
+          "source": "data/research/k0-role-neutral-denominator.json"
         },
         {
           "metric_id": "raw_search_results_observed",
           "unit": "search_results",
           "expected": null,
-          "observed": 18,
+          "observed": 33,
           "denominator_kind": "open",
           "publicly_reproducible": false,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-01.json"
+          "source": "data/research/k0-role-neutral-denominator.json"
         },
         {
           "metric_id": "retained_official_records",
           "unit": "records",
           "expected": null,
-          "observed": 10,
+          "observed": 17,
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-01.json"
+          "source": "data/research/k0-role-neutral-denominator.json"
         },
         {
           "metric_id": "candidate_records_pending_field_audit",
           "unit": "records",
           "expected": null,
-          "observed": 5,
+          "observed": 3,
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-01.json"
+          "source": "data/research/k0-role-neutral-wave-02.json"
         },
         {
           "metric_id": "role_neutral_positive_controls",
           "unit": "controls",
           "expected": null,
-          "observed": 1,
+          "observed": 3,
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-01.json"
+          "source": "data/research/k0-role-neutral-denominator.json"
         },
         {
           "metric_id": "role_neutral_negative_controls",
@@ -906,17 +906,17 @@
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-01.json"
+          "source": "data/research/k0-role-neutral-denominator.json"
         },
         {
           "metric_id": "role_neutral_requires_additional_acquisition",
           "unit": "records",
           "expected": null,
-          "observed": 2,
+          "observed": 1,
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-01.json"
+          "source": "data/research/k0-role-neutral-denominator.json"
         },
         {
           "metric_id": "role_neutral_included_events",
@@ -926,7 +926,27 @@
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-01.json"
+          "source": "data/research/k0-role-neutral-denominator.json"
+        },
+        {
+          "metric_id": "role_neutral_coverage_controls",
+          "unit": "controls",
+          "expected": null,
+          "observed": 1,
+          "denominator_kind": "open",
+          "publicly_reproducible": true,
+          "counts_toward_public_progress": false,
+          "source": "data/research/k0-role-neutral-wave-02.json"
+        },
+        {
+          "metric_id": "role_neutral_resolved_additional_acquisition",
+          "unit": "records",
+          "expected": null,
+          "observed": 2,
+          "denominator_kind": "open",
+          "publicly_reproducible": true,
+          "counts_toward_public_progress": false,
+          "source": "data/research/k0-wave01-additional-acquisition-resolution.json"
         }
       ],
       "known_gaps": [
@@ -944,15 +964,15 @@
         },
         {
           "gap_id": "k0-gap-name-blind-universe-execution",
-          "description": "The role-neutral gate-stratified search battery is frozen but none of its nine searches has been executed, so the ten source people remain fixtures rather than a tested denominator.",
+          "description": "Three of nine frozen query templates have now been executed across U.S. oversight and EU DSA researcher-access planes; six templates and additional jurisdictions remain unexecuted.",
           "status": "blocking",
-          "next_action": "Execute the frozen battery across all gate strata, preserving non-events, nulls, source failures, and controls."
+          "next_action": "Execute the remaining six templates through declared source planes while preserving non-events, nulls, controls, and source failures."
         },
         {
           "gap_id": "k0-role-neutral-battery-incomplete",
-          "description": "Wave 01 executed two of nine frozen query templates against two official U.S. oversight source families; the remaining templates, source families, jurisdictions, and gate strata are not searched.",
+          "description": "Waves 01 and 02 executed K0-Q01, K0-Q03, and K0-Q04. Publication, appointment, safety-warning, professional-judgment, committee-capture, and editorial-veto templates remain open.",
           "status": "open",
-          "next_action": "Execute the remaining frozen templates through separately declared source planes while preserving raw returns, exclusions, controls, and failures."
+          "next_action": "Execute K0-Q02 and K0-Q05 through K0-Q09 in separately bounded waves."
         },
         {
           "gap_id": "k0-search-ranking-nonreproducible",
@@ -962,9 +982,15 @@
         },
         {
           "gap_id": "k0-wave01-field-adjudication-open",
-          "description": "Five candidate records require event-level source packets and two records require additional qualification or contradiction evidence before any K0 disposition.",
+          "description": "All five Wave 01 candidates received maintainer field adjudication and both additional-acquisition records were resolved to supported-for-human-review packets; none became an included event.",
+          "status": "resolved_at_maintainer_layer",
+          "next_action": "Preserve the packets for independent second-party review without promoting them internally."
+        },
+        {
+          "gap_id": "k0-wave02-field-adjudication-open",
+          "description": "Three DSA platform-access candidates require field adjudication and one formal proceeding requires additional acquisition; no Wave 02 record is an included event.",
           "status": "blocking",
-          "next_action": "Acquire bounded source packets and run field-level CCD adjudication without promoting discovery records."
+          "next_action": "Acquire bounded request-level evidence and adjudicate X, Meta, TikTok, and Temu without treating preliminary or systemic findings as complete K0 chains."
         }
       ]
     }
