@@ -1,0 +1,38 @@
+name: WebsiteIQ corrected landing-path audit
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened]
+    paths:
+      - '.github/workflows/websiteiq-path-audit.yml'
+      - 'tools/run-websiteiq-path-audit.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TARGET_URL: https://bigbirdreturns.github.io/clifford-number/
+      CONTACT_EMAIL: bigbirdreturns@proton.me
+      OUT_DIR: websiteiq-path-audit
+      MAX_POLLS: '120'
+      POLL_MS: '5000'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Submit origin plus landingPath
+        run: node tools/run-websiteiq-path-audit.mjs
+      - name: Upload corrected audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: websiteiq-path-audit
+          path: websiteiq-path-audit/
+          if-no-files-found: warn
+          retention-days: 14
