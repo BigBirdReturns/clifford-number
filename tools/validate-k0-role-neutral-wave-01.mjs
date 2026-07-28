@@ -89,12 +89,16 @@ export function validateK0RoleNeutralWave01({
   if (wave.boundaries?.name_blind_discovery_executed !== true || wave.boundaries?.full_search_battery_executed !== false) fail('execution boundary drift');
   if (wave.boundaries?.query_hit_is_event !== false || wave.boundaries?.publication_cleared !== false || wave.boundaries?.graph_effect !== 'none') fail('promotion boundary drift');
 
+  // W01 validates its frozen slice inside an append-only aggregate. Later waves may
+  // increase aggregate totals but may not erase, undercount, or relabel W01.
   const execution = neutral.execution || {};
-  if (neutral.status !== 'execution_started_wave_01_discovery_only') fail('neutral status drift');
-  if (execution.name_blind_execution_started !== true || execution.searches_executed !== 4 || execution.raw_results_observed !== 18 || execution.returned_records !== 10) fail('neutral execution count drift');
-  if (execution.candidate_records !== 5 || execution.positive_controls !== 1 || execution.negative_controls !== 2 || execution.requires_additional_acquisition !== 2) fail('neutral classification count drift');
+  if (!String(neutral.status || '').startsWith('execution_started_wave_')) fail('neutral status drift');
+  if (execution.name_blind_execution_started !== true || execution.searches_executed < 4 || execution.raw_results_observed < 18 || execution.returned_records < 10) fail('neutral execution count drift');
+  if (execution.candidate_records < 5 || execution.positive_controls < 1 || execution.negative_controls < 2 || execution.requires_additional_acquisition < 2) fail('neutral classification count drift');
   if (execution.included_events !== 0 || execution.independent_second_party_review_complete !== false) fail('neutral promotion/independence drift');
-  if (JSON.stringify(execution.executed_wave_ids) !== JSON.stringify(['K0-W01'])) fail('neutral wave linkage drift');
+  if (!Array.isArray(execution.executed_wave_ids) || !execution.executed_wave_ids.includes('K0-W01')) fail('neutral W01 linkage drift');
+  const waveLink = neutral.discovery_waves?.find(row => row.wave_id === 'K0-W01');
+  if (!waveLink || waveLink.path !== 'data/research/k0-role-neutral-wave-01.json' || waveLink.graph_effect !== 'none') fail('neutral W01 discovery-row drift');
 
   return { ok: failures.length === 0, failures };
 }
