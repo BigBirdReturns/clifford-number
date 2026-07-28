@@ -93,6 +93,7 @@ jobs:
             tools/validate-k0-epistemic-admissibility.mjs \
             /tmp/k0-audit-export/
           git rev-parse HEAD > /tmp/k0-audit-export/CARRIER_HEAD.txt
+          git rev-parse 'HEAD^{tree}' > /tmp/k0-audit-export/CARRIER_TREE.txt
           git status --short > /tmp/k0-audit-export/MATERIALIZED_STATUS.txt
           git diff --name-status > /tmp/k0-audit-export/MATERIALIZED_PATHS.txt
           find /tmp/k0-audit-export -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/k0-audit-export/FILE_SHA256SUMS.txt
