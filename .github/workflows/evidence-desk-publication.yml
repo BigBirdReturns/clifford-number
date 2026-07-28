@@ -1,0 +1,53 @@
+name: Evidence Desk publication estate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/evidence-desk-publication-estate.json'
+      - 'reports/websiteiq/2026-07-28-baseline.md'
+      - 'docs/evidence-desk-publication-estate.md'
+      - 'tools/build-evidence-desk.mjs'
+      - 'tools/validate-evidence-desk.mjs'
+      - '.github/workflows/evidence-desk-publication.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/evidence-desk-publication-estate.json'
+      - 'reports/websiteiq/2026-07-28-baseline.md'
+      - 'docs/evidence-desk-publication-estate.md'
+      - 'tools/build-evidence-desk.mjs'
+      - 'tools/validate-evidence-desk.mjs'
+      - '.github/workflows/evidence-desk-publication.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build root publication estate
+        run: node tools/build-evidence-desk.mjs
+      - name: Validate root publication estate
+        run: node tools/validate-evidence-desk.mjs
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic generated output
+        run: |
+          cp -R build/evidence-desk /tmp/evidence-desk-first
+          rm -rf build/evidence-desk
+          node tools/build-evidence-desk.mjs
+          diff -ru /tmp/evidence-desk-first build/evidence-desk
+      - name: Upload root-deployable publication
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-desk-root-publication
+          path: build/evidence-desk/
+          retention-days: 14
