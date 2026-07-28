@@ -41,6 +41,7 @@ export function validateK0({
   const fieldAudit = read(fieldAuditPath);
   const neutral = read('data/research/k0-role-neutral-denominator.json');
   const neutralWave01 = read('data/research/k0-role-neutral-wave-01.json');
+  const neutralWave02 = read('data/research/k0-role-neutral-wave-02.json');
   const registry = read('data/project/m05-answerable-power-story-registry.json');
   const fanout = read('data/project/m05-answerable-power-fanout.json');
   const selection = read('data/canonical/corpus-selection.json');
@@ -55,6 +56,7 @@ export function validateK0({
   if (method.failure_species.length !== 5 || new Set(method.failure_species).size !== 5) fail('failure species denominator drift');
   if (method.boundaries.graph_effect !== 'none' || method.boundaries.project_complete !== false) fail('method boundary drift');
   if (method.boundaries.maintainer_review_is_independent_second_party_review !== false) fail('maintainer independence boundary drift');
+  if (JSON.stringify(method.selection_contract?.execution_wave_ids) !== JSON.stringify(['K0-W01','K0-W02'])) fail('method execution-wave drift');
   if (sha256(fs.readFileSync(path.join(root, method.source_path))) !== method.source_sha256) fail('source exact-byte hash drift');
 
   if (sourceAudit.schema_version !== 'k0-source-custody-audit@1' || sourceAudit.rows.length !== 25) fail('source audit denominator drift');
@@ -107,12 +109,16 @@ export function validateK0({
   if (seeds.events.find(row => row.event_id === 'K0-SEED-013')?.ccd_chain_depth !== 5) fail('strategic-bypass CCD drift');
 
   if (neutral.schema_version !== 'k0-role-neutral-denominator@1' || neutral.gate_strata.length !== 9 || neutral.synthetic_controls.length !== 8 || neutral.search_battery.length !== 9) fail('neutral denominator drift');
-  if (neutral.status !== 'execution_started_wave_01_discovery_only' || neutral.execution.name_blind_execution_started !== true || neutral.execution.searches_executed !== 4 || neutral.execution.returned_records !== 10 || neutral.execution.included_events !== 0) fail('neutral execution state drift');
-  if (neutral.execution.candidate_records !== 5 || neutral.execution.positive_controls !== 1 || neutral.execution.negative_controls !== 2 || neutral.execution.requires_additional_acquisition !== 2) fail('neutral execution classification drift');
-  if (JSON.stringify(neutral.execution.executed_wave_ids) !== JSON.stringify(['K0-W01']) || neutral.execution.independent_second_party_review_complete !== false) fail('neutral wave/independence drift');
-  if (neutralWave01.schema_version !== 'k0-role-neutral-wave@1' || neutralWave01.wave_id !== 'K0-W01' || neutralWave01.records.length !== 10 || neutralWave01.excluded_results.length !== 8) fail('neutral wave denominator drift');
-  if (neutralWave01.counts.query_executions !== 4 || neutralWave01.counts.raw_results_observed !== 18 || neutralWave01.counts.candidate_requires_field_audit !== 5 || neutralWave01.counts.included_events !== 0) fail('neutral wave count drift');
-  if (neutralWave01.boundaries.query_hit_is_event !== false || neutralWave01.boundaries.publication_cleared !== false || neutralWave01.boundaries.graph_effect !== 'none') fail('neutral wave boundary drift');
+  if (neutral.status !== 'execution_started_wave_02_discovery_only' || neutral.execution.name_blind_execution_started !== true || neutral.execution.searches_executed !== 8 || neutral.execution.query_templates_executed !== 3 || neutral.execution.returned_records !== 17 || neutral.execution.included_events !== 0) fail('neutral execution state drift');
+  if (neutral.execution.candidate_records !== 8 || neutral.execution.positive_controls !== 3 || neutral.execution.negative_controls !== 2 || neutral.execution.coverage_controls !== 1 || neutral.execution.requires_additional_acquisition !== 3 || neutral.execution.resolved_additional_acquisition !== 2 || neutral.execution.open_additional_acquisition !== 1) fail('neutral execution classification drift');
+  if (JSON.stringify(neutral.execution.executed_wave_ids) !== JSON.stringify(['K0-W01','K0-W02']) || neutral.execution.independent_second_party_review_complete !== false) fail('neutral wave/independence drift');
+  if (neutralWave01.schema_version !== 'k0-role-neutral-wave@1' || neutralWave01.wave_id !== 'K0-W01' || neutralWave01.records.length !== 10 || neutralWave01.excluded_results.length !== 8) fail('neutral wave-01 denominator drift');
+  if (neutralWave01.counts.query_executions !== 4 || neutralWave01.counts.raw_results_observed !== 18 || neutralWave01.counts.candidate_requires_field_audit !== 5 || neutralWave01.counts.included_events !== 0) fail('neutral wave-01 count drift');
+  if (neutralWave01.boundaries.query_hit_is_event !== false || neutralWave01.boundaries.publication_cleared !== false || neutralWave01.boundaries.graph_effect !== 'none') fail('neutral wave-01 boundary drift');
+  if (neutralWave02.schema_version !== 'k0-role-neutral-wave@1' || neutralWave02.wave_id !== 'K0-W02' || neutralWave02.records.length !== 7 || neutralWave02.excluded_results.length !== 8) fail('neutral wave-02 denominator drift');
+  if (neutralWave02.counts.query_executions !== 4 || neutralWave02.counts.raw_results_observed !== 15 || neutralWave02.counts.candidate_requires_field_audit !== 3 || neutralWave02.counts.positive_controls !== 2 || neutralWave02.counts.coverage_controls !== 1 || neutralWave02.counts.requires_additional_acquisition !== 1 || neutralWave02.counts.included_events !== 0) fail('neutral wave-02 count drift');
+  if (neutralWave02.boundaries.query_hit_is_event !== false || neutralWave02.boundaries.preliminary_finding_is_final !== false || neutralWave02.boundaries.corrective_plan_proves_effectiveness !== false || neutralWave02.boundaries.publication_cleared !== false || neutralWave02.boundaries.graph_effect !== 'none') fail('neutral wave-02 boundary drift');
+  for (const row of neutralWave02.records) if (row.included_event !== false || row.ccd_chain_depth !== null || row.evidence_truth_determined !== false || row.independent_review_complete !== false || row.publication_status !== 'blocked' || row.graph_effect !== 'none') fail(`${row.record_id}: wave-02 promotion boundary drift`);
   if (neutral.boundaries.seed_ten_are_denominator !== false || neutral.boundaries.graph_effect !== 'none') fail('neutral denominator boundary drift');
 
   if (wiring.schema_version !== 'k0-existing-ecosystem-wiring@2' || wiring.rows.length !== 10) fail('wiring denominator drift');
@@ -148,7 +154,7 @@ export function validateK0({
   if (report.counts.top_ten_people !== 10 || report.counts.normalized_seed_events !== 13 || report.counts.common_purpose_network_edges !== 0) fail('report denominator drift');
   if (report.counts.field_audit_supported_for_human_review !== 6 || report.counts.field_audit_retained_candidate_only !== 7) fail('report field audit count drift');
   if (report.current_result.maintainer_source_retrieval_audit_complete !== true || report.current_result.maintainer_field_audit_complete !== true) fail('report audit state drift');
-  if (report.current_result.role_neutral_universe_execution_started !== true || report.counts.role_neutral_query_executions !== 4 || report.counts.role_neutral_retained_records !== 10 || report.counts.role_neutral_candidate_records !== 5) fail('report role-neutral execution drift');
+  if (report.current_result.role_neutral_universe_execution_started !== true || report.counts.role_neutral_query_executions !== 8 || report.counts.role_neutral_retained_records !== 17 || report.counts.role_neutral_candidate_records !== 8 || report.counts.role_neutral_positive_controls !== 3 || report.counts.role_neutral_coverage_controls !== 1 || report.counts.role_neutral_requires_additional_acquisition !== 1 || report.counts.role_neutral_resolved_additional_acquisition !== 2 || report.counts.role_neutral_wave_02_retained_records !== 7) fail('report role-neutral execution drift');
   if (report.current_result.source_receipt_exact_hash_custody_complete !== false || report.current_result.independent_second_party_review_complete !== false) fail('report independence/custody laundering');
   if (report.current_result.evidence_truth_determined !== false || report.current_result.graph_effect !== 'none' || report.current_result.project_complete !== false) fail('report result boundary drift');
 
