@@ -1,0 +1,107 @@
+name: Temporary materialize K0 Wave 01 field products
+
+on:
+  push:
+    branches:
+      - agent/k0-wave01-field-adjudication
+    paths:
+      - '.github/workflows/temporary-materialize-k0-wave01-field.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/k0-wave01-field-adjudication
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build and validate exact field products
+        run: |
+          node tools/build-k0-wave01-field-adjudication.mjs
+          node tools/validate-k0-wave01-field-adjudication.mjs
+          node test/k0-wave01-field-adjudication.test.js
+          npm run release:check
+      - name: Enforce generated path denominator
+        run: |
+          python - <<'PYDENOM'
+          import subprocess
+          expected = {
+              'data/project/k0-wave01-field-adjudication-release-manifest.json',
+              'reports/core-thesis/answerable-power/k0-wave01-field-adjudication.html',
+              'reports/core-thesis/answerable-power/k0-wave01-field-adjudication.json',
+          }
+          raw = subprocess.check_output(['git','status','--porcelain=v1','-z'])
+          actual = set()
+          for record in raw.split(b'\0'):
+              if record:
+                  actual.add(record[3:].decode())
+          assert actual == expected, f'path mismatch\nmissing={sorted(expected-actual)}\nextra={sorted(actual-expected)}'
+          PYDENOM
+      - name: Reconstruct and prove deterministic products
+        run: |
+          rm -f \
+            data/project/k0-wave01-field-adjudication-release-manifest.json \
+            reports/core-thesis/answerable-power/k0-wave01-field-adjudication.html \
+            reports/core-thesis/answerable-power/k0-wave01-field-adjudication.json
+          node tools/build-k0-wave01-field-adjudication.mjs
+          node tools/validate-k0-wave01-field-adjudication.mjs
+          node test/k0-wave01-field-adjudication.test.js
+      - name: Create exact blob receipts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PYBLOBS'
+          import base64, json, os, subprocess, urllib.request
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GH_TOKEN']
+          api = 'https://api.github.com'
+          paths = [
+              'data/project/k0-wave01-field-adjudication-release-manifest.json',
+              'reports/core-thesis/answerable-power/k0-wave01-field-adjudication.html',
+              'reports/core-thesis/answerable-power/k0-wave01-field-adjudication.json',
+          ]
+          def post(path, payload):
+              req = urllib.request.Request(api + path, data=json.dumps(payload).encode(), method='POST', headers={
+                  'Authorization': f'Bearer {token}',
+                  'Accept': 'application/vnd.github+json',
+                  'X-GitHub-Api-Version': '2022-11-28',
+                  'Content-Type': 'application/json',
+                  'User-Agent': 'k0-wave01-field-adjudication',
+              })
+              with urllib.request.urlopen(req) as response:
+                  return json.load(response)
+          rows = []
+          for path in paths:
+              raw = open(path, 'rb').read()
+              blob = post(f'/repos/{repo}/git/blobs', {'content': base64.b64encode(raw).decode(), 'encoding': 'base64'})
+              rows.append({'path': path, 'sha': blob['sha'], 'bytes': len(raw), 'mode': '100644'})
+          receipt = {
+              'schema_version': 'k0-wave01-field-transaction@1',
+              'repository': repo,
+              'parent': subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip(),
+              'base_tree': subprocess.check_output(['git','rev-parse','HEAD^{tree}'], text=True).strip(),
+              'updates': rows,
+              'deletions': ['.github/workflows/temporary-materialize-k0-wave01-field.yml'],
+              'ref_updated': False,
+          }
+          os.makedirs('/tmp/k0-field-export', exist_ok=True)
+          with open('/tmp/k0-field-export/BLOB_RECEIPTS.json', 'w') as handle:
+              json.dump(receipt, handle, indent=2); handle.write('\n')
+          print(json.dumps(receipt, indent=2))
+          PYBLOBS
+      - name: Export validated transaction
+        uses: actions/upload-artifact@v4
+        with:
+          name: k0-wave01-field-adjudication-validated-transaction
+          path: /tmp/k0-field-export/BLOB_RECEIPTS.json
+          if-no-files-found: error
+          retention-days: 30
