@@ -32,13 +32,14 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git merge-base --is-ancestor d9d2a0640d447afdfd72281003821207092cbb4b HEAD
 
+          cp .github/tmp/adversarial-release-manifest.json /tmp/adversarial-release-manifest.json
+          expected_chunks="$(python -c "import json; print(json.load(open('/tmp/adversarial-release-manifest.json'))['chunk_count'])")"
           mapfile -t chunks < <(find .github/tmp -maxdepth 1 -type f -name 'adversarial-release-payload-*.b64' | sort)
-          test "${#chunks[@]}" -eq 10
+          test "${#chunks[@]}" -eq "$expected_chunks"
           cat "${chunks[@]}" > /tmp/adversarial-release-payload.b64
           printf '%s  %s\n' '1bcbb4a052ce85492b49f3753bd5364949174eb07ede183fc83036204ae58b83' /tmp/adversarial-release-payload.b64 | sha256sum --check --strict
           base64 --decode /tmp/adversarial-release-payload.b64 > /tmp/adversarial-release-payload.tar.gz
           printf '%s  %s\n' '72001b6ff65b031b9de9dc3001ab442fb400664b0d66f1d7b70937c01b2c3adc' /tmp/adversarial-release-payload.tar.gz | sha256sum --check --strict
-          cp .github/tmp/adversarial-release-manifest.json /tmp/adversarial-release-manifest.json
           git ls-files '.github/tmp/**' > /tmp/adversarial-release-transport-paths.txt
 
           python - <<'PY'
