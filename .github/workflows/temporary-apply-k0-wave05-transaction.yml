@@ -1,0 +1,87 @@
+name: Temporary apply validated K0 Wave 05 transaction
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-apply-k0-wave05-transaction.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/k0-role-neutral-wave-05
+          fetch-depth: 0
+      - name: Download and verify validated transaction
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl -L --fail-with-body \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/8710210966/zip" \
+            -o /tmp/k0-wave05-transaction.zip
+          rm -rf /tmp/k0-wave05-transaction
+          mkdir -p /tmp/k0-wave05-transaction
+          unzip -q /tmp/k0-wave05-transaction.zip -d /tmp/k0-wave05-transaction
+          python - <<'PYVERIFY'
+          import json
+          p='/tmp/k0-wave05-transaction/BLOB_RECEIPTS.json'
+          d=json.load(open(p))
+          assert d['schema_version']=='k0-role-neutral-wave-05-transaction@2'
+          assert d['source_package_sha256']=='229b15062e72d756d7fbda7eec1c6345530f00edfe4462cff403826be00b76a5'
+          assert d['rejected_claimed_sha256']=='58848239eaff432d0ff4c6f164bff3e4e1e4cefaec8288b7629feb8d5fb3c674'
+          assert len(d['updates'])==18
+          assert d['included_events']==0
+          assert d['publication_cleared'] is False
+          assert d['graph_effect']=='none'
+          print('validated transaction receipt accepted')
+          PYVERIFY
+
+      - name: Create clean tree and advance branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PYAPPLY'
+          import json, os, subprocess, urllib.request
+          repo=os.environ['GITHUB_REPOSITORY']
+          token=os.environ['GH_TOKEN']
+          api='https://api.github.com'
+          branch='agent/k0-role-neutral-wave-05'
+          receipt=json.load(open('/tmp/k0-wave05-transaction/BLOB_RECEIPTS.json'))
+          parent=subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip()
+          def call(method, path, payload=None):
+              data=None if payload is None else json.dumps(payload).encode()
+              req=urllib.request.Request(api+path, data=data, method=method, headers={
+                  'Authorization': f'Bearer {token}',
+                  'Accept':'application/vnd.github+json',
+                  'X-GitHub-Api-Version':'2022-11-28',
+                  'Content-Type':'application/json',
+                  'User-Agent':'k0-wave05-transaction-apply',
+              })
+              with urllib.request.urlopen(req) as response:
+                  return json.load(response)
+          tree=[]
+          for row in receipt['updates']:
+              tree.append({'path':row['path'],'mode':row['mode'],'type':'blob','sha':row['sha']})
+          for path in receipt['deletions']:
+              tree.append({'path':path,'mode':'100644','type':'blob','sha':None})
+          # This workflow was introduced after validation; base the final tree on the
+          # validated tree so this temporary file is absent without widening scope.
+          new_tree=call('POST', f'/repos/{repo}/git/trees', {'base_tree':receipt['base_tree'],'tree':tree})
+          commit=call('POST', f'/repos/{repo}/git/commits', {
+              'message':'Materialize validated K0 role-neutral Wave 05',
+              'tree':new_tree['sha'],
+              'parents':[parent],
+          })
+          call('PATCH', f'/repos/{repo}/git/refs/heads/{branch}', {'sha':commit['sha'],'force':False})
+          print(json.dumps({'parent':parent,'tree':new_tree['sha'],'commit':commit['sha']}, indent=2))
+          PYAPPLY
