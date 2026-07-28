@@ -32,7 +32,9 @@ jobs:
       - name: Expand exact Wave 04 field source package
         run: |
           cat .github/tmp/k0-wave04-field-materializer-part-*.b64 | base64 -d > /tmp/k0-wave04-field-materializer.tgz
-          test "$(sha256sum /tmp/k0-wave04-field-materializer.tgz | awk '{print $1}')" = "d54c27704410e58ed58f5d603932f824102844d4f30ae924062d5dfc2fabd348"
+          actual="$(sha256sum /tmp/k0-wave04-field-materializer.tgz | awk '{print $1}')"
+          echo "reconstructed_sha256=$actual"
+          test "$actual" = "d54c27704410e58ed58f5d603932f824102844d4f30ae924062d5dfc2fabd348"
           rm -rf /tmp/k0-wave04-field-materializer
           mkdir -p /tmp/k0-wave04-field-materializer
           tar -xzf /tmp/k0-wave04-field-materializer.tgz -C /tmp/k0-wave04-field-materializer
