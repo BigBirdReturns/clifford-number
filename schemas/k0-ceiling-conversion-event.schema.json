@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/k0-ceiling-conversion-event-v1.json",
+  "title": "K0 ceiling-conversion event fixture",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "event_id",
+    "event_name",
+    "corpus_role",
+    "gateholder_id",
+    "qualified_knower_id",
+    "institution_id",
+    "jurisdiction",
+    "domain",
+    "bounded_domain",
+    "knower_qualification_basis",
+    "failure_species",
+    "explanation_mutation_types",
+    "controlled_gate_types",
+    "path",
+    "ccd_depth",
+    "ccd_missing",
+    "direct_personal_attribution",
+    "attribution_basis",
+    "evidence_tiers",
+    "sources",
+    "alternative_explanations",
+    "counterevidence",
+    "review_status",
+    "graph_effect"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "pattern": "^K0-(SEED|EXP|CTRL)-[0-9]{3}$"
+    },
+    "corpus_role": {
+      "enum": [
+        "seed_positive_fixture",
+        "seed_boundary_fixture",
+        "seed_strategic_boundary_fixture",
+        "expanded_positive_candidate",
+        "expanded_candidate",
+        "expanded_boundary_candidate",
+        "positive_control",
+        "remedial_control"
+      ]
+    },
+    "failure_species": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "comprehension_failure",
+          "status_protective_reclassification",
+          "designed_comprehension_ceiling",
+          "strategic_bypass",
+          "mixed"
+        ]
+      }
+    },
+    "ccd_depth": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 7
+    },
+    "direct_personal_attribution": {
+      "type": "boolean"
+    },
+    "graph_effect": {
+      "const": "none"
+    }
+  }
+}
