@@ -128,5 +128,51 @@ jobs:
           node tools/validate-consumption-contract.mjs
           git diff --exit-code
 
-      - name: Publish validated commit
-        run: git push origin HEAD:agent/k0-source-field-audit
+      - name: Package exact validated transaction
+        run: |
+          rm -rf /tmp/k0-audit-export
+          mkdir -p /tmp/k0-audit-export
+          cp --parents \
+            .github/workflows/k0-source-field-audit.yml \
+            data/canonical/corpus-selection.json \
+            data/intake/k0-ceiling-conversion-seed-events.json \
+            data/project/k0-epistemic-admissibility-methodology.json \
+            data/project/k0-epistemic-admissibility-release-manifest.json \
+            data/research/corpus-coverage.json \
+            data/research/k0-field-audit.json \
+            data/research/k0-role-neutral-denominator.json \
+            data/research/k0-source-custody-audit.json \
+            data/research/selection-adversarial-reviews.json \
+            docs/methods/k0-epistemic-admissibility.md \
+            docs/milestones/m05-k0-source-field-audit.md \
+            reports/core-thesis/answerable-power/k0.html \
+            reports/core-thesis/answerable-power/k0.json \
+            schemas/k0-ceiling-conversion-event.schema.json \
+            test/k0-epistemic-admissibility.test.js \
+            tools/build-k0-epistemic-admissibility.mjs \
+            tools/validate-k0-epistemic-admissibility.mjs \
+            /tmp/k0-audit-export/
+          git rev-parse HEAD > /tmp/k0-audit-export/VALIDATED_COMMIT.txt
+          git status --short > /tmp/k0-audit-export/VALIDATED_STATUS.txt
+          tar -czf /tmp/k0-source-field-audit-permanent.tgz -C /tmp/k0-audit-export .
+          sha256sum /tmp/k0-source-field-audit-permanent.tgz > /tmp/k0-source-field-audit-permanent.sha256
+
+      - name: Attempt validated branch publication
+        id: publish
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          git push origin HEAD:agent/k0-source-field-audit 2>&1 | tee /tmp/k0-source-field-audit-push.log
+
+      - name: Export validated transaction and push diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k0-source-field-audit-validated-transaction
+          path: |
+            /tmp/k0-source-field-audit-permanent.tgz
+            /tmp/k0-source-field-audit-permanent.sha256
+            /tmp/k0-source-field-audit-push.log
+          if-no-files-found: error
+          retention-days: 30
