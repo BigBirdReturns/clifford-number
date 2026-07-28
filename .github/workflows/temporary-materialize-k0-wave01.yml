@@ -31,7 +31,8 @@ jobs:
 
       - name: Expand exact Wave 01 materializer
         run: |
-          base64 -d .github/tmp/k0-wave01-payload.b64 > /tmp/k0-wave01.tgz
+          cat .github/tmp/k0-wave01-part-*.b64 > /tmp/k0-wave01.b64
+          base64 -d /tmp/k0-wave01.b64 > /tmp/k0-wave01.tgz
           test "$(sha256sum /tmp/k0-wave01.tgz | awk '{print $1}')" = "4dd0c8e2401a74ed4fbf2dd640a3866a1f73f1bcf3e41bcee81ba02bfc2fb84f"
           rm -rf /tmp/k0-wave01
           mkdir -p /tmp/k0-wave01
@@ -155,7 +156,13 @@ jobs:
               'base_tree': base_tree,
               'updates': rows,
               'deletions': [
-                  '.github/tmp/k0-wave01-payload.b64',
+                  '.github/tmp/k0-wave01-part-00.b64',
+                  '.github/tmp/k0-wave01-part-01.b64',
+                  '.github/tmp/k0-wave01-part-02.b64',
+                  '.github/tmp/k0-wave01-part-03.b64',
+                  '.github/tmp/k0-wave01-part-04.b64',
+                  '.github/tmp/k0-wave01-part-05.b64',
+                  '.github/tmp/k0-wave01-part-06.b64',
                   '.github/workflows/temporary-materialize-k0-wave01.yml',
               ],
               'ref_updated': False,
