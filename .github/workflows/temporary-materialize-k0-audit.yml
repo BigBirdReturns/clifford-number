@@ -1,5 +1,5 @@
 name: Temporary materialize K0 source and field audit
-# visible checksum-bound carrier job; workflow cleanup is a separate atomic Git transaction
+# checksum-bound carrier that exports a validated working tree for a separate repository transaction
 
 on:
   pull_request:
@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   materialize:
@@ -54,7 +54,7 @@ jobs:
       - name: Run complete repository release gate
         run: npm run release:check
 
-      - name: Reconstruct clean permanent package
+      - name: Reconstruct and revalidate from the unchanged carrier
         run: |
           git restore --staged --worktree .
           git clean -fd
@@ -67,66 +67,6 @@ jobs:
           node test/m05-answerable-power.test.js
           node tools/validate-corpus-selection.mjs
           node tools/validate-consumption-contract.mjs
-
-      - name: Commit validated non-workflow denominator
-        run: |
-          git add \
-            data/canonical/corpus-selection.json \
-            data/intake/k0-ceiling-conversion-seed-events.json \
-            data/project/k0-epistemic-admissibility-methodology.json \
-            data/project/k0-epistemic-admissibility-release-manifest.json \
-            data/research/corpus-coverage.json \
-            data/research/k0-field-audit.json \
-            data/research/k0-role-neutral-denominator.json \
-            data/research/k0-source-custody-audit.json \
-            data/research/selection-adversarial-reviews.json \
-            docs/methods/k0-epistemic-admissibility.md \
-            docs/milestones/m05-k0-source-field-audit.md \
-            reports/core-thesis/answerable-power/k0.html \
-            reports/core-thesis/answerable-power/k0.json \
-            schemas/k0-ceiling-conversion-event.schema.json \
-            test/k0-epistemic-admissibility.test.js \
-            tools/build-k0-epistemic-admissibility.mjs \
-            tools/validate-k0-epistemic-admissibility.mjs
-          python - <<'PYDENOM'
-          import subprocess
-          permanent = {
-              'data/canonical/corpus-selection.json',
-              'data/intake/k0-ceiling-conversion-seed-events.json',
-              'data/project/k0-epistemic-admissibility-methodology.json',
-              'data/project/k0-epistemic-admissibility-release-manifest.json',
-              'data/research/corpus-coverage.json',
-              'data/research/k0-field-audit.json',
-              'data/research/k0-role-neutral-denominator.json',
-              'data/research/k0-source-custody-audit.json',
-              'data/research/selection-adversarial-reviews.json',
-              'docs/methods/k0-epistemic-admissibility.md',
-              'docs/milestones/m05-k0-source-field-audit.md',
-              'reports/core-thesis/answerable-power/k0.html',
-              'reports/core-thesis/answerable-power/k0.json',
-              'schemas/k0-ceiling-conversion-event.schema.json',
-              'test/k0-epistemic-admissibility.test.js',
-              'tools/build-k0-epistemic-admissibility.mjs',
-              'tools/validate-k0-epistemic-admissibility.mjs',
-          }
-          changed = set(subprocess.check_output(['git','diff','--cached','--name-only'], text=True).splitlines())
-          assert changed == permanent, f'permanent path mismatch\nmissing={sorted(permanent-changed)}\nextra={sorted(changed-permanent)}'
-          PYDENOM
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit --no-gpg-sign -m 'Audit K0 source custody and CCD semantics'
-
-      - name: Prove deterministic permanent products
-        run: |
-          node tools/build-k0-epistemic-admissibility.mjs
-          node tools/validate-k0-epistemic-admissibility.mjs
-          node test/k0-epistemic-admissibility.test.js
-          node tools/build-m05-answerable-power.mjs
-          node tools/validate-m05-answerable-power.mjs
-          node test/m05-answerable-power.test.js
-          node tools/validate-corpus-selection.mjs
-          node tools/validate-consumption-contract.mjs
-          git diff --exit-code
 
       - name: Package exact validated transaction
         run: |
@@ -152,27 +92,19 @@ jobs:
             tools/build-k0-epistemic-admissibility.mjs \
             tools/validate-k0-epistemic-admissibility.mjs \
             /tmp/k0-audit-export/
-          git rev-parse HEAD > /tmp/k0-audit-export/VALIDATED_COMMIT.txt
-          git status --short > /tmp/k0-audit-export/VALIDATED_STATUS.txt
+          git rev-parse HEAD > /tmp/k0-audit-export/CARRIER_HEAD.txt
+          git status --short > /tmp/k0-audit-export/MATERIALIZED_STATUS.txt
+          git diff --name-status > /tmp/k0-audit-export/MATERIALIZED_PATHS.txt
+          find /tmp/k0-audit-export -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/k0-audit-export/FILE_SHA256SUMS.txt
           tar -czf /tmp/k0-source-field-audit-permanent.tgz -C /tmp/k0-audit-export .
           sha256sum /tmp/k0-source-field-audit-permanent.tgz > /tmp/k0-source-field-audit-permanent.sha256
 
-      - name: Attempt validated branch publication
-        id: publish
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          git push origin HEAD:agent/k0-source-field-audit 2>&1 | tee /tmp/k0-source-field-audit-push.log
-
-      - name: Export validated transaction and push diagnostic
-        if: always()
+      - name: Export validated transaction
         uses: actions/upload-artifact@v4
         with:
           name: k0-source-field-audit-validated-transaction
           path: |
             /tmp/k0-source-field-audit-permanent.tgz
             /tmp/k0-source-field-audit-permanent.sha256
-            /tmp/k0-source-field-audit-push.log
           if-no-files-found: error
           retention-days: 30
