@@ -1,6 +1,11 @@
 name: Adversarial review bootstrap
 
 on:
+  push:
+    branches:
+      - agent/adversarial-release-integrity
+    paths:
+      - '.github/workflows/adversarial-review-bootstrap.yml'
   pull_request:
     branches: [main]
     paths:
