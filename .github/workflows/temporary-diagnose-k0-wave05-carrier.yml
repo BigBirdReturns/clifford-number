@@ -1,0 +1,26 @@
+name: Temporary diagnose K0 Wave 05 carrier
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-diagnose-k0-wave05-carrier.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/k0-role-neutral-wave-05
+      - name: Reconstruct and inspect carrier
+        run: |
+          set -euxo pipefail
+          wc -c .github/tmp/k0-wave05-materializer-part-*.b64
+          cat .github/tmp/k0-wave05-materializer-part-*.b64 | base64 -d > /tmp/k0-wave05-materializer.tgz
+          sha256sum /tmp/k0-wave05-materializer.tgz
+          wc -c /tmp/k0-wave05-materializer.tgz
+          tar -tzf /tmp/k0-wave05-materializer.tgz | sed -n '1,80p'
