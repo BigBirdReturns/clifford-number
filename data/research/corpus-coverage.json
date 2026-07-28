@@ -747,7 +747,7 @@
     },
     {
       "lane_id": "epistemic-admissibility-ceiling-events",
-      "coverage_state": "proposed_fixture_only",
+      "coverage_state": "active_discovery_partial",
       "counts_toward_public_progress": true,
       "consumption": {
         "contract_id": "public-topology-map@1",
@@ -847,6 +847,86 @@
           "denominator_kind": "exact",
           "publicly_reproducible": true,
           "source": "canonical graph ledgers"
+        },
+        {
+          "metric_id": "name_blind_query_executions",
+          "unit": "query_executions",
+          "expected": 9,
+          "observed": 4,
+          "denominator_kind": "exact",
+          "publicly_reproducible": false,
+          "counts_toward_public_progress": false,
+          "source": "data/research/k0-role-neutral-wave-01.json"
+        },
+        {
+          "metric_id": "raw_search_results_observed",
+          "unit": "search_results",
+          "expected": null,
+          "observed": 18,
+          "denominator_kind": "open",
+          "publicly_reproducible": false,
+          "counts_toward_public_progress": false,
+          "source": "data/research/k0-role-neutral-wave-01.json"
+        },
+        {
+          "metric_id": "retained_official_records",
+          "unit": "records",
+          "expected": null,
+          "observed": 10,
+          "denominator_kind": "open",
+          "publicly_reproducible": true,
+          "counts_toward_public_progress": false,
+          "source": "data/research/k0-role-neutral-wave-01.json"
+        },
+        {
+          "metric_id": "candidate_records_pending_field_audit",
+          "unit": "records",
+          "expected": null,
+          "observed": 5,
+          "denominator_kind": "open",
+          "publicly_reproducible": true,
+          "counts_toward_public_progress": false,
+          "source": "data/research/k0-role-neutral-wave-01.json"
+        },
+        {
+          "metric_id": "role_neutral_positive_controls",
+          "unit": "controls",
+          "expected": null,
+          "observed": 1,
+          "denominator_kind": "open",
+          "publicly_reproducible": true,
+          "counts_toward_public_progress": false,
+          "source": "data/research/k0-role-neutral-wave-01.json"
+        },
+        {
+          "metric_id": "role_neutral_negative_controls",
+          "unit": "controls",
+          "expected": null,
+          "observed": 2,
+          "denominator_kind": "open",
+          "publicly_reproducible": true,
+          "counts_toward_public_progress": false,
+          "source": "data/research/k0-role-neutral-wave-01.json"
+        },
+        {
+          "metric_id": "role_neutral_requires_additional_acquisition",
+          "unit": "records",
+          "expected": null,
+          "observed": 2,
+          "denominator_kind": "open",
+          "publicly_reproducible": true,
+          "counts_toward_public_progress": false,
+          "source": "data/research/k0-role-neutral-wave-01.json"
+        },
+        {
+          "metric_id": "role_neutral_included_events",
+          "unit": "events",
+          "expected": null,
+          "observed": 0,
+          "denominator_kind": "open",
+          "publicly_reproducible": true,
+          "counts_toward_public_progress": false,
+          "source": "data/research/k0-role-neutral-wave-01.json"
         }
       ],
       "known_gaps": [
@@ -867,6 +947,24 @@
           "description": "The role-neutral gate-stratified search battery is frozen but none of its nine searches has been executed, so the ten source people remain fixtures rather than a tested denominator.",
           "status": "blocking",
           "next_action": "Execute the frozen battery across all gate strata, preserving non-events, nulls, source failures, and controls."
+        },
+        {
+          "gap_id": "k0-role-neutral-battery-incomplete",
+          "description": "Wave 01 executed two of nine frozen query templates against two official U.S. oversight source families; the remaining templates, source families, jurisdictions, and gate strata are not searched.",
+          "status": "open",
+          "next_action": "Execute the remaining frozen templates through separately declared source planes while preserving raw returns, exclusions, controls, and failures."
+        },
+        {
+          "gap_id": "k0-search-ranking-nonreproducible",
+          "description": "The public source URLs are reproducible, but search-provider ordering and completeness are not; the observed result set is a dated discovery capture rather than a complete denominator.",
+          "status": "permanent_boundary",
+          "next_action": "Retain query text and returned URLs, and do not treat missing results as absence or search rank as evidence weight."
+        },
+        {
+          "gap_id": "k0-wave01-field-adjudication-open",
+          "description": "Five candidate records require event-level source packets and two records require additional qualification or contradiction evidence before any K0 disposition.",
+          "status": "blocking",
+          "next_action": "Acquire bounded source packets and run field-level CCD adjudication without promoting discovery records."
         }
       ]
     }

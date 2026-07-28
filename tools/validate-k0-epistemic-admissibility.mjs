@@ -40,6 +40,7 @@ export function validateK0({
   const sourceAudit = read(sourceAuditPath);
   const fieldAudit = read(fieldAuditPath);
   const neutral = read('data/research/k0-role-neutral-denominator.json');
+  const neutralWave01 = read('data/research/k0-role-neutral-wave-01.json');
   const registry = read('data/project/m05-answerable-power-story-registry.json');
   const fanout = read('data/project/m05-answerable-power-fanout.json');
   const selection = read('data/canonical/corpus-selection.json');
@@ -106,7 +107,12 @@ export function validateK0({
   if (seeds.events.find(row => row.event_id === 'K0-SEED-013')?.ccd_chain_depth !== 5) fail('strategic-bypass CCD drift');
 
   if (neutral.schema_version !== 'k0-role-neutral-denominator@1' || neutral.gate_strata.length !== 9 || neutral.synthetic_controls.length !== 8 || neutral.search_battery.length !== 9) fail('neutral denominator drift');
-  if (neutral.status !== 'protocol_frozen_execution_not_started' || neutral.execution.name_blind_execution_started !== false || neutral.execution.searches_executed !== 0) fail('neutral execution laundering');
+  if (neutral.status !== 'execution_started_wave_01_discovery_only' || neutral.execution.name_blind_execution_started !== true || neutral.execution.searches_executed !== 4 || neutral.execution.returned_records !== 10 || neutral.execution.included_events !== 0) fail('neutral execution state drift');
+  if (neutral.execution.candidate_records !== 5 || neutral.execution.positive_controls !== 1 || neutral.execution.negative_controls !== 2 || neutral.execution.requires_additional_acquisition !== 2) fail('neutral execution classification drift');
+  if (JSON.stringify(neutral.execution.executed_wave_ids) !== JSON.stringify(['K0-W01']) || neutral.execution.independent_second_party_review_complete !== false) fail('neutral wave/independence drift');
+  if (neutralWave01.schema_version !== 'k0-role-neutral-wave@1' || neutralWave01.wave_id !== 'K0-W01' || neutralWave01.records.length !== 10 || neutralWave01.excluded_results.length !== 8) fail('neutral wave denominator drift');
+  if (neutralWave01.counts.query_executions !== 4 || neutralWave01.counts.raw_results_observed !== 18 || neutralWave01.counts.candidate_requires_field_audit !== 5 || neutralWave01.counts.included_events !== 0) fail('neutral wave count drift');
+  if (neutralWave01.boundaries.query_hit_is_event !== false || neutralWave01.boundaries.publication_cleared !== false || neutralWave01.boundaries.graph_effect !== 'none') fail('neutral wave boundary drift');
   if (neutral.boundaries.seed_ten_are_denominator !== false || neutral.boundaries.graph_effect !== 'none') fail('neutral denominator boundary drift');
 
   if (wiring.schema_version !== 'k0-existing-ecosystem-wiring@2' || wiring.rows.length !== 10) fail('wiring denominator drift');
@@ -126,7 +132,7 @@ export function validateK0({
   const coverageRow = coverage.lanes.find(row => row.lane_id === 'epistemic-admissibility-ceiling-events');
   const review = reviews.reviews.find(row => row.lane_id === 'epistemic-admissibility-ceiling-events');
   if (!selectionLane || selectionLane.status !== 'proposed' || selectionLane.graph_effect !== 'none') fail('selection lane boundary drift');
-  if (!coverageRow || coverageRow.coverage_state !== 'proposed_fixture_only') fail('coverage row missing');
+  if (!coverageRow || coverageRow.coverage_state !== 'active_discovery_partial') fail('coverage row missing');
   if (!review || review.status !== 'pending_second_party' || review.publication_status !== 'blocked' || review.reviewer_id !== null) fail('selection review boundary drift');
   if (review.maintainer_audit?.independence_effect !== 'does_not_satisfy_second_party_clearance') fail('maintainer audit review boundary missing');
 
@@ -142,6 +148,7 @@ export function validateK0({
   if (report.counts.top_ten_people !== 10 || report.counts.normalized_seed_events !== 13 || report.counts.common_purpose_network_edges !== 0) fail('report denominator drift');
   if (report.counts.field_audit_supported_for_human_review !== 6 || report.counts.field_audit_retained_candidate_only !== 7) fail('report field audit count drift');
   if (report.current_result.maintainer_source_retrieval_audit_complete !== true || report.current_result.maintainer_field_audit_complete !== true) fail('report audit state drift');
+  if (report.current_result.role_neutral_universe_execution_started !== true || report.counts.role_neutral_query_executions !== 4 || report.counts.role_neutral_retained_records !== 10 || report.counts.role_neutral_candidate_records !== 5) fail('report role-neutral execution drift');
   if (report.current_result.source_receipt_exact_hash_custody_complete !== false || report.current_result.independent_second_party_review_complete !== false) fail('report independence/custody laundering');
   if (report.current_result.evidence_truth_determined !== false || report.current_result.graph_effect !== 'none' || report.current_result.project_complete !== false) fail('report result boundary drift');
 
