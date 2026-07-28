@@ -18,6 +18,7 @@ const baseline = validateK0RoleNeutralWave01({ root });
 assert.equal(baseline.ok, true, baseline.failures.join('\n'));
 
 const wave = JSON.parse(fs.readFileSync(path.join(root, 'data/research/k0-role-neutral-wave-01.json'), 'utf8'));
+const neutral = JSON.parse(fs.readFileSync(path.join(root, 'data/research/k0-role-neutral-denominator.json'), 'utf8'));
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'k0-wave01-'));
 const write = (name, value) => {
   const file = path.join(tmp, name);
@@ -55,6 +56,13 @@ drift.counts.retained_records = 9;
 result = validateK0RoleNeutralWave01({ root, wavePath: write('drift.json', drift) });
 assert.equal(result.ok, false);
 assert.ok(result.failures.some(row => row.includes('wave count drift')));
+
+const missingWaveLink = structuredClone(neutral);
+missingWaveLink.execution.executed_wave_ids = missingWaveLink.execution.executed_wave_ids.filter(id => id !== 'K0-W01');
+missingWaveLink.discovery_waves = missingWaveLink.discovery_waves.filter(row => row.wave_id !== 'K0-W01');
+result = validateK0RoleNeutralWave01({ root, neutralPath: write('missing-wave-link.json', missingWaveLink) });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some(row => row.includes('neutral W01 linkage drift')));
 
 run(['tools/validate-k0-epistemic-admissibility.mjs']);
 console.log('k0-role-neutral-wave-01.test: OK');
