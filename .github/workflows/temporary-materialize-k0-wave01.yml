@@ -85,7 +85,12 @@ jobs:
               'tools/validate-k0-epistemic-admissibility.mjs',
               'tools/validate-k0-role-neutral-wave-01.mjs',
           }
-          actual = set(subprocess.check_output(['git','diff','--name-only'], text=True).splitlines())
+          raw = subprocess.check_output(['git','status','--porcelain=v1','-z'])
+          actual = set()
+          for record in raw.split(b'\0'):
+              if not record:
+                  continue
+              actual.add(record[3:].decode('utf-8'))
           assert actual == expected, f'path mismatch\nmissing={sorted(expected-actual)}\nextra={sorted(actual-expected)}'
           PYDENOM
 
