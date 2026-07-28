@@ -1,7 +1,11 @@
 name: Temporary materialize K0 source and field audit
-# retrigger after exact payload-fragment repair
+# visible checksum-bound carrier job; removed by its own successful commit
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-materialize-k0-audit.yml'
   push:
     branches:
       - agent/k0-source-field-audit
