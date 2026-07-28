@@ -36,6 +36,23 @@ jobs:
           rm -rf /tmp/k0-wave03-materializer
           mkdir -p /tmp/k0-wave03-materializer
           tar -xzf /tmp/k0-wave03-materializer.tgz -C /tmp/k0-wave03-materializer
+          python - <<'PYPATCH'
+          from hashlib import sha256
+          from pathlib import Path
+          p = Path('/tmp/k0-wave03-materializer/materialize-k0-role-neutral-wave-03.mjs')
+          s = p.read_text()
+          old = """aggregateValidator = replaceOnce(aggregateValidator,
+  \"if (report.current_result.role_neutral_universe_execution_started !== true || report.counts.role_neutral_query_executions !== 8 || report.counts.role_neutral_retained_records !== 17 || report.counts.role_neutral_candidate_records !== 8)\",
+  \"if (report.current_result.role_neutral_universe_execution_started !== true || report.counts.role_neutral_query_executions !== 12 || report.counts.role_neutral_retained_records !== 24 || report.counts.role_neutral_candidate_records !== 13 || report.counts.role_neutral_wave_03_retained_records !== 7)\",
+  'validator report counts');"""
+          new = """aggregateValidator = replaceOnce(aggregateValidator,
+  \"if (report.current_result.role_neutral_universe_execution_started !== true || report.counts.role_neutral_query_executions !== 8 || report.counts.role_neutral_retained_records !== 17 || report.counts.role_neutral_candidate_records !== 8 || report.counts.role_neutral_positive_controls !== 3 || report.counts.role_neutral_coverage_controls !== 1 || report.counts.role_neutral_requires_additional_acquisition !== 1 || report.counts.role_neutral_resolved_additional_acquisition !== 2 || report.counts.role_neutral_wave_02_retained_records !== 7) fail('report role-neutral execution drift');\",
+  \"if (report.current_result.role_neutral_universe_execution_started !== true || report.counts.role_neutral_query_executions !== 12 || report.counts.role_neutral_retained_records !== 24 || report.counts.role_neutral_candidate_records !== 13 || report.counts.role_neutral_positive_controls !== 3 || report.counts.role_neutral_negative_controls !== 3 || report.counts.role_neutral_coverage_controls !== 2 || report.counts.role_neutral_requires_additional_acquisition !== 1 || report.counts.role_neutral_resolved_additional_acquisition !== 2 || report.counts.role_neutral_wave_02_retained_records !== 7 || report.counts.role_neutral_wave_03_query_executions !== 4 || report.counts.role_neutral_wave_03_retained_records !== 7 || report.counts.role_neutral_wave_03_candidate_records !== 5) fail('report role-neutral execution drift');\",
+  'validator report counts');"""
+          assert s.count(old) == 1, 'stale-anchor patch denominator drift'
+          p.write_text(s.replace(old, new))
+          assert sha256(p.read_bytes()).hexdigest() == 'a8baed2a03a8c8a9b5469765c3d1d8d32b023bc2885683f61f98376fe89610d7'
+          PYPATCH
 
       - name: Materialize and validate Wave 03
         run: |
@@ -151,8 +168,11 @@ jobs:
               'deletions': [
                   '.github/tmp/k0-wave03-materializer.b64',
                   '.github/workflows/temporary-materialize-k0-wave03.yml',
+                  '.github/workflows/temporary-diagnose-k0-wave03.yml',
+                  '.github/workflows/temporary-capture-k0-wave03-materializer.yml',
               ],
               'materializer_sha256': '51b43d6772b0be8c0312e3fd24de339d5d230711b852f4dacb863364a8fe7b33',
+              'effective_materializer_sha256': 'a8baed2a03a8c8a9b5469765c3d1d8d32b023bc2885683f61f98376fe89610d7',
               'query_templates_executed': 4,
               'retained_records': 24,
               'included_events': 0,
