@@ -44,6 +44,7 @@ export function validateK0({
   const neutralWave02 = read('data/research/k0-role-neutral-wave-02.json');
   const neutralWave03 = read('data/research/k0-role-neutral-wave-03.json');
   const neutralWave04 = read('data/research/k0-role-neutral-wave-04.json');
+  const wave04Field = read('data/research/k0-wave04-field-adjudication.json');
   const registry = read('data/project/m05-answerable-power-story-registry.json');
   const fanout = read('data/project/m05-answerable-power-fanout.json');
   const selection = read('data/canonical/corpus-selection.json');
@@ -111,7 +112,7 @@ export function validateK0({
   if (seeds.events.find(row => row.event_id === 'K0-SEED-013')?.ccd_chain_depth !== 5) fail('strategic-bypass CCD drift');
 
   if (neutral.schema_version !== 'k0-role-neutral-denominator@1' || neutral.gate_strata.length !== 9 || neutral.synthetic_controls.length !== 8 || neutral.search_battery.length !== 9) fail('neutral denominator drift');
-  if (neutral.status !== 'execution_started_wave_04_discovery_only' || neutral.execution.name_blind_execution_started !== true || neutral.execution.searches_executed !== 16 || neutral.execution.query_templates_executed !== 5 || neutral.execution.raw_results_observed !== 68 || neutral.execution.returned_records !== 32 || neutral.execution.included_events !== 0) fail('neutral execution state drift');
+  if (neutral.status !== 'execution_started_wave_04_field_complete' || neutral.execution.name_blind_execution_started !== true || neutral.execution.searches_executed !== 16 || neutral.execution.query_templates_executed !== 5 || neutral.execution.raw_results_observed !== 68 || neutral.execution.returned_records !== 32 || neutral.execution.included_events !== 0) fail('neutral execution state drift');
   if (neutral.execution.candidate_records !== 16 || neutral.execution.positive_controls !== 5 || neutral.execution.negative_controls !== 5 || neutral.execution.coverage_controls !== 3 || neutral.execution.requires_additional_acquisition !== 3 || neutral.execution.resolved_additional_acquisition !== 2 || neutral.execution.open_additional_acquisition !== 1 || neutral.execution.non_events !== 13) fail('neutral execution classification drift');
   if (JSON.stringify(neutral.execution.executed_wave_ids) !== JSON.stringify(['K0-W01','K0-W02','K0-W03','K0-W04']) || neutral.execution.independent_second_party_review_complete !== false) fail('neutral wave/independence drift');
   if (neutralWave01.schema_version !== 'k0-role-neutral-wave@1' || neutralWave01.wave_id !== 'K0-W01' || neutralWave01.records.length !== 10 || neutralWave01.excluded_results.length !== 8) fail('neutral wave-01 denominator drift');
@@ -129,10 +130,15 @@ export function validateK0({
   if (neutralWave04.counts.query_executions !== 4 || neutralWave04.counts.raw_results_observed !== 20 || neutralWave04.counts.candidate_requires_field_audit !== 3 || neutralWave04.counts.positive_controls !== 2 || neutralWave04.counts.negative_controls !== 2 || neutralWave04.counts.coverage_controls !== 1 || neutralWave04.counts.included_events !== 0) fail('neutral wave-04 count drift');
   if (neutralWave04.boundaries.query_hit_is_event !== false || neutralWave04.boundaries.committee_reset_proves_capture !== false || neutralWave04.boundaries.conflict_claim_proves_member_specific_conflict !== false || neutralWave04.boundaries.seed_fixture_recovery_creates_second_event !== false || neutralWave04.boundaries.publication_cleared !== false || neutralWave04.boundaries.graph_effect !== 'none') fail('neutral wave-04 boundary drift');
   for (const row of neutralWave04.records) if (row.included_event !== false || row.ccd_chain_depth !== null || row.evidence_truth_determined !== false || row.independent_review_complete !== false || row.publication_status !== 'blocked' || row.graph_effect !== 'none') fail(`${row.record_id}: wave-04 promotion boundary drift`);
+  if (wave04Field.schema_version !== 'k0-wave04-field-adjudication@1' || wave04Field.audit_id !== 'K0-W04-FIELD-2026-07-28-MAINTAINER' || wave04Field.rows.length !== 8) fail('Wave 04 field package drift');
+  if (wave04Field.counts.stage_adjudicated_records !== 3 || wave04Field.counts.control_records_reviewed !== 5 || wave04Field.counts.supported_for_human_review !== 0 || wave04Field.counts.bounded_non_link !== 1 || wave04Field.counts.retained_candidate_only !== 2 || wave04Field.counts.included_events !== 0) fail('Wave 04 field count drift');
+  for (const row of wave04Field.rows) if (row.included_event !== false || row.evidence_truth_determined !== false || row.independent_review_complete !== false || row.publication_status !== 'blocked' || row.graph_effect !== 'none') fail(`${row.record_id}: Wave 04 field promotion boundary drift`);
+  const wave04Exclusion = wave04Field.rows.find(row => row.record_id === 'K0-W04-R004');
+  if (wave04Exclusion?.candidate_disposition !== 'bounded_non_link' || wave04Exclusion?.provisional_ccd_chain_depth !== 0 || wave04Exclusion?.stage_assessments?.[1]?.status !== 'post_action_documented') fail('Wave 04 temporal/non-link drift');
   const denominatorWave03 = neutral.discovery_waves.find(row => row.wave_id === 'K0-W03');
   const denominatorWave04 = neutral.discovery_waves.find(row => row.wave_id === 'K0-W04');
   if (denominatorWave03?.status !== 'discovery_complete_field_adjudication_complete') fail('Wave 03 reconciliation drift');
-  if (denominatorWave04?.status !== 'discovery_complete_field_adjudication_pending') fail('Wave 04 denominator state drift');
+  if (denominatorWave04?.status !== 'discovery_complete_field_adjudication_complete') fail('Wave 04 denominator state drift');
   if (neutral.boundaries.seed_ten_are_denominator !== false || neutral.boundaries.graph_effect !== 'none') fail('neutral denominator boundary drift');
 
   if (wiring.schema_version !== 'k0-existing-ecosystem-wiring@2' || wiring.rows.length !== 10) fail('wiring denominator drift');
@@ -155,6 +161,13 @@ export function validateK0({
   if (!coverageRow || coverageRow.coverage_state !== 'active_discovery_partial') fail('coverage row missing');
   if (!review || review.status !== 'pending_second_party' || review.publication_status !== 'blocked' || review.reviewer_id !== null) fail('selection review boundary drift');
   if (review.maintainer_audit?.independence_effect !== 'does_not_satisfy_second_party_clearance') fail('maintainer audit review boundary missing');
+  const pendingFieldMetric = coverageRow.metrics?.find(row => row.metric_id === 'candidate_records_pending_field_audit');
+  const wave04CoverageGap = coverageRow.known_gaps?.find(row => row.gap_id === 'k0-wave04-field-adjudication-open');
+  const committeeComparator = review.comparator_tests?.find(row => row.test_id === 'committee-capture-reset-and-conflict-controls');
+  if (pendingFieldMetric?.observed !== 0 || pendingFieldMetric?.source !== 'data/research/k0-wave04-field-adjudication.json') fail('Wave 04 coverage metric drift');
+  if (wave04CoverageGap?.status !== 'resolved_at_maintainer_layer') fail('Wave 04 coverage gap drift');
+  if (committeeComparator?.status !== 'maintainer_field_complete' || committeeComparator.blocking_conditions?.some(value => value.includes('await field adjudication'))) fail('Wave 04 comparator review drift');
+
 
   for (const rel of ['data/ledger/surfaces.jsonl','data/ledger/participation.jsonl','data/ledger/chains.jsonl']) {
     const full = path.join(root, rel);

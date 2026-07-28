@@ -1330,7 +1330,7 @@
     "layer_id": "K0",
     "as_of": "2026-07-27",
     "selection_lane_id": "epistemic-admissibility-ceiling-events",
-    "status": "execution_started_wave_04_discovery_only",
+    "status": "execution_started_wave_04_field_complete",
     "selection_unit": "one bounded, source-addressable gate action preceded by a documented contradiction from a person or body with a stated qualification basis",
     "selection_universe": "all recoverable public-source events returned by the frozen gate-stratified search battery, including non-events, ordinary disagreements, failed searches, inaccessible sources, and exculpatory controls",
     "gate_strata": [
@@ -1604,7 +1604,7 @@
       {
         "wave_id": "K0-W04",
         "path": "data/research/k0-role-neutral-wave-04.json",
-        "status": "discovery_complete_field_adjudication_pending",
+        "status": "discovery_complete_field_adjudication_complete",
         "query_templates_touched": [
           "K0-Q08"
         ],
@@ -1615,7 +1615,8 @@
           "K0-G07",
           "K0-G09"
         ],
-        "graph_effect": "none"
+        "graph_effect": "none",
+        "field_adjudication_path": "data/research/k0-wave04-field-adjudication.json"
       }
     ]
   },
@@ -3936,11 +3937,11 @@
           "metric_id": "candidate_records_pending_field_audit",
           "unit": "records",
           "expected": null,
-          "observed": 3,
+          "observed": 0,
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-04.json"
+          "source": "data/research/k0-wave04-field-adjudication.json"
         },
         {
           "metric_id": "role_neutral_positive_controls",
@@ -4054,9 +4055,9 @@
         },
         {
           "gap_id": "k0-wave04-field-adjudication-open",
-          "description": "Three committee reset or eligibility candidates require field-level causal adjudication; seed overlap, ordinary turnover, termination, and conflict-management controls must remain in the denominator.",
-          "status": "blocking",
-          "next_action": "Adjudicate the 2017 EPA eligibility rule and the 2021 and 2025-2026 EPA resets without treating a conflict label or committee-wide replacement as member-specific K0 proof."
+          "description": "All eight Wave 04 records received maintainer field review: one bounded non-link, two candidate-only records, one seed-overlap control, two negative controls, and two counterpower controls; none became an included event.",
+          "status": "resolved_at_maintainer_layer",
+          "next_action": "Preserve the committee field packet for independent review; acquire member-specific contradictions before proposing any event."
         }
       ]
     },
@@ -4123,7 +4124,6 @@
           "method": "For each gate class, compare events where independent review preserved standing or stayed action against events where the original gateholder controlled both classification and consequence.",
           "blocking_conditions": [
             "controls remain maintainer-selected",
-            "three Wave 04 committee candidates await field adjudication",
             "four frozen query templates remain unexecuted",
             "second-party review absent"
           ]
@@ -4159,17 +4159,17 @@
         },
         {
           "test_id": "committee-capture-reset-and-conflict-controls",
-          "status": "maintainer_discovery_complete_field_review_open",
+          "status": "maintainer_field_complete",
           "method": "Compare total committee resets and categorical eligibility exclusions against ordinary staggered turnover, public conflict registers, item-specific recusal, external audit, termination without a capture predicate, and seed-overlap deduplication.",
           "blocking_conditions": [
             "member-specific contradiction and reclassification evidence remains absent from committee-wide summaries",
-            "three Wave 04 candidates await field adjudication",
+            "post-action judicial correction cannot complete a pre-action K0 chain",
             "control effectiveness is not independently observed",
             "second-party review absent"
           ]
         }
       ],
-      "disposition": "Four maintainer waves now preserve employment, access, safety-warning, committee-reset, negative, coverage, correction, conflict-management, and counterpower records. Publication remains blocked because four query templates, Wave 04 field adjudication, Temu request-level acquisition, exact remote custody, and genuinely independent review remain incomplete.",
+      "disposition": "Four maintainer waves now preserve employment, access, safety-warning, committee-reset, negative, coverage, correction, conflict-management, and counterpower records. Wave 04 field review is complete. Publication remains blocked because four query templates, Temu request-level acquisition, exact remote custody, and genuinely independent review remain incomplete.",
       "maintainer_audit": {
         "audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
         "auditor_id": "project-maintainers",
@@ -5910,7 +5910,7 @@
   },
   "release_manifest": {
     "path": "data/project/k0-epistemic-admissibility-release-manifest.json",
-    "combined_sha256": "42c85324e093cf30a26c665659741794cf831d302a748681a76add21f181b5eb"
+    "combined_sha256": "f6e45a579adc998d775c5637ad5b0a88855f9032ad9a00b19893b72d0ada7d39"
   },
   "boundaries": {
     "promotes_to": "candidate_only",
