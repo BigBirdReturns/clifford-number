@@ -34,10 +34,11 @@ jobs:
           node tools/validate-k0-wave01-field-adjudication.mjs
           node test/k0-wave01-field-adjudication.test.js
           npm run release:check
-      - name: Enforce generated path denominator
+      - name: Record release-gate drift and require field products
         run: |
+          mkdir -p /tmp/k0-field-export
           python - <<'PYDENOM'
-          import subprocess
+          import json, subprocess
           expected = {
               'data/project/k0-wave01-field-adjudication-release-manifest.json',
               'reports/core-thesis/answerable-power/k0-wave01-field-adjudication.html',
@@ -48,17 +49,29 @@ jobs:
           for record in raw.split(b'\0'):
               if record:
                   actual.add(record[3:].decode())
-          assert actual == expected, f'path mismatch\nmissing={sorted(expected-actual)}\nextra={sorted(actual-expected)}'
+          assert expected <= actual, f'missing generated products: {sorted(expected-actual)}'
+          with open('/tmp/k0-field-export/RELEASE_GATE_STATUS.json', 'w') as handle:
+              json.dump({'expected': sorted(expected), 'actual': sorted(actual), 'extra': sorted(actual-expected)}, handle, indent=2)
+              handle.write('\n')
           PYDENOM
-      - name: Reconstruct and prove deterministic products
+      - name: Reconstruct exact products from a clean tree
         run: |
-          rm -f \
-            data/project/k0-wave01-field-adjudication-release-manifest.json \
-            reports/core-thesis/answerable-power/k0-wave01-field-adjudication.html \
-            reports/core-thesis/answerable-power/k0-wave01-field-adjudication.json
+          git restore --staged --worktree .
+          git clean -fd
           node tools/build-k0-wave01-field-adjudication.mjs
           node tools/validate-k0-wave01-field-adjudication.mjs
           node test/k0-wave01-field-adjudication.test.js
+          python - <<'PYCLEAN'
+          import subprocess
+          expected = {
+              'data/project/k0-wave01-field-adjudication-release-manifest.json',
+              'reports/core-thesis/answerable-power/k0-wave01-field-adjudication.html',
+              'reports/core-thesis/answerable-power/k0-wave01-field-adjudication.json',
+          }
+          raw = subprocess.check_output(['git','status','--porcelain=v1','-z'])
+          actual = {record[3:].decode() for record in raw.split(b'\0') if record}
+          assert actual == expected, f'clean product mismatch\nmissing={sorted(expected-actual)}\nextra={sorted(actual-expected)}'
+          PYCLEAN
       - name: Create exact blob receipts
         env:
           GH_TOKEN: ${{ github.token }}
@@ -97,7 +110,6 @@ jobs:
               'deletions': ['.github/workflows/temporary-materialize-k0-wave01-field.yml'],
               'ref_updated': False,
           }
-          os.makedirs('/tmp/k0-field-export', exist_ok=True)
           with open('/tmp/k0-field-export/BLOB_RECEIPTS.json', 'w') as handle:
               json.dump(receipt, handle, indent=2); handle.write('\n')
           print(json.dumps(receipt, indent=2))
@@ -106,6 +118,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: k0-wave01-field-adjudication-validated-transaction
-          path: /tmp/k0-field-export/BLOB_RECEIPTS.json
+          path: /tmp/k0-field-export/
           if-no-files-found: error
           retention-days: 30
