@@ -31,7 +31,8 @@ jobs:
 
       - name: Expand exact field source package
         run: |
-          base64 -d .github/tmp/k0-wave02-field-source.b64 > /tmp/k0-wave02-field-source.tgz
+          cat .github/tmp/k0-wave02-field-source-part-*.b64 > /tmp/k0-wave02-field-source.b64
+          base64 -d /tmp/k0-wave02-field-source.b64 > /tmp/k0-wave02-field-source.tgz
           test "$(sha256sum /tmp/k0-wave02-field-source.tgz | awk '{print $1}')" = "33fd30fff16cf6dcaec2d9c308f83690e5b2a6966915bb9cde1d3941979c0e6d"
           tar -xzf /tmp/k0-wave02-field-source.tgz -C .
 
@@ -125,6 +126,11 @@ jobs:
               'updates': rows,
               'deletions': [
                   '.github/tmp/k0-wave02-field-source.b64',
+                  '.github/tmp/k0-wave02-field-source-part-00.b64',
+                  '.github/tmp/k0-wave02-field-source-part-01.b64',
+                  '.github/tmp/k0-wave02-field-source-part-02.b64',
+                  '.github/tmp/k0-wave02-field-source-part-03.b64',
+                  '.github/tmp/k0-wave02-field-source-part-04.b64',
                   '.github/workflows/temporary-materialize-k0-wave02-field.yml',
               ],
               'source_package_sha256': '33fd30fff16cf6dcaec2d9c308f83690e5b2a6966915bb9cde1d3941979c0e6d',
