@@ -42,6 +42,25 @@ jobs:
       - name: Materialize and validate Wave 04 field package
         run: |
           node /tmp/k0-wave04-field-materializer/materialize-k0-wave04-field-adjudication.mjs
+          python - <<'PYPATCH'
+          from pathlib import Path
+          path = Path('tools/validate-k0-role-neutral-wave-04.mjs')
+          text = path.read_text()
+          replacements = [
+              (
+                  "  if (neutral.status !== 'execution_started_wave_04_discovery_only') fail('neutral status drift');",
+                  "  if (!['execution_started_wave_04_discovery_only','execution_started_wave_04_field_complete'].includes(neutral.status)) fail('neutral status drift');"
+              ),
+              (
+                  "  if (w04?.status !== 'discovery_complete_field_adjudication_pending') fail('Wave 04 discovery state drift');",
+                  "  if (!['discovery_complete_field_adjudication_pending','discovery_complete_field_adjudication_complete'].includes(w04?.status)) fail('Wave 04 discovery state drift');"
+              ),
+          ]
+          for before, after in replacements:
+              assert text.count(before) == 1, before
+              text = text.replace(before, after)
+          path.write_text(text)
+          PYPATCH
           node tools/build-k0-wave04-field-adjudication.mjs
           node tools/validate-k0-wave04-field-adjudication.mjs
           node test/k0-wave04-field-adjudication.test.js
@@ -61,6 +80,25 @@ jobs:
           git restore --staged --worktree .
           git clean -fd
           node /tmp/k0-wave04-field-materializer/materialize-k0-wave04-field-adjudication.mjs
+          python - <<'PYPATCH'
+          from pathlib import Path
+          path = Path('tools/validate-k0-role-neutral-wave-04.mjs')
+          text = path.read_text()
+          replacements = [
+              (
+                  "  if (neutral.status !== 'execution_started_wave_04_discovery_only') fail('neutral status drift');",
+                  "  if (!['execution_started_wave_04_discovery_only','execution_started_wave_04_field_complete'].includes(neutral.status)) fail('neutral status drift');"
+              ),
+              (
+                  "  if (w04?.status !== 'discovery_complete_field_adjudication_pending') fail('Wave 04 discovery state drift');",
+                  "  if (!['discovery_complete_field_adjudication_pending','discovery_complete_field_adjudication_complete'].includes(w04?.status)) fail('Wave 04 discovery state drift');"
+              ),
+          ]
+          for before, after in replacements:
+              assert text.count(before) == 1, before
+              text = text.replace(before, after)
+          path.write_text(text)
+          PYPATCH
           node tools/build-k0-wave04-field-adjudication.mjs
           node tools/validate-k0-wave04-field-adjudication.mjs
           node test/k0-wave04-field-adjudication.test.js
@@ -89,6 +127,7 @@ jobs:
               'data/research/k0-role-neutral-denominator.json',
               'data/research/corpus-coverage.json',
               'data/research/selection-adversarial-reviews.json',
+              'tools/validate-k0-role-neutral-wave-04.mjs',
               'tools/validate-k0-epistemic-admissibility.mjs',
               'data/project/k0-epistemic-admissibility-release-manifest.json',
               'reports/core-thesis/answerable-power/k0.json',
@@ -122,6 +161,7 @@ jobs:
               'data/research/k0-role-neutral-denominator.json',
               'data/research/corpus-coverage.json',
               'data/research/selection-adversarial-reviews.json',
+              'tools/validate-k0-role-neutral-wave-04.mjs',
               'tools/validate-k0-epistemic-admissibility.mjs',
               'data/project/k0-epistemic-admissibility-release-manifest.json',
               'reports/core-thesis/answerable-power/k0.json',
@@ -145,7 +185,7 @@ jobs:
               mode = index_row.split()[0] if index_row else '100644'
               rows.append({'path': path, 'sha': blob['sha'], 'bytes': len(raw), 'mode': mode})
           receipt = {
-              'schema_version': 'k0-wave04-field-adjudication-transaction@2',
+              'schema_version': 'k0-wave04-field-adjudication-transaction@3',
               'repository': repo,
               'parent': subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip(),
               'base_tree': subprocess.check_output(['git','rev-parse','HEAD^{tree}'], text=True).strip(),
@@ -156,6 +196,7 @@ jobs:
                   '.github/tmp/k0-wave04-field-materializer-part-02.b64',
                   '.github/tmp/k0-wave04-field-materializer-part-03.b64',
                   '.github/workflows/temporary-materialize-k0-wave04-field.yml',
+                  '.github/workflows/temporary-diagnose-k0-wave04-field.yml',
               ],
               'source_package_sha256': 'd54c27704410e58ed58f5d603932f824102844d4f30ae924062d5dfc2fabd348',
               'included_events': 0,
@@ -172,7 +213,7 @@ jobs:
       - name: Export validated transaction
         uses: actions/upload-artifact@v4
         with:
-          name: k0-wave04-field-adjudication-validated-transaction-v2
+          name: k0-wave04-field-adjudication-validated-transaction-v3
           path: /tmp/k0-wave04-field-export/BLOB_RECEIPTS.json
           if-no-files-found: error
           retention-days: 30
