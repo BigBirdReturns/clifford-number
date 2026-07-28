@@ -82,13 +82,13 @@ export function validateWave04({
   if (termination?.selection_outcome !== 'negative_control' || termination?.control_kind !== 'committee_termination_without_documented_capture_predicate') fail('termination control drift');
   if (wave.boundaries?.query_hit_is_event !== false || wave.boundaries?.committee_reset_proves_capture !== false || wave.boundaries?.conflict_claim_proves_member_specific_conflict !== false || wave.boundaries?.seed_fixture_recovery_creates_second_event !== false || wave.boundaries?.graph_effect !== 'none') fail('wave boundaries drift');
 
-  if (neutral.status !== 'execution_started_wave_04_discovery_only') fail('neutral status drift');
+  if (!['execution_started_wave_04_discovery_only','execution_started_wave_04_field_complete'].includes(neutral.status)) fail('neutral status drift');
   if (neutral.execution?.searches_executed !== 16 || neutral.execution?.query_templates_executed !== 5 || neutral.execution?.raw_results_observed !== 68 || neutral.execution?.returned_records !== 32) fail('aggregate execution count drift');
   if (JSON.stringify(neutral.execution?.executed_wave_ids) !== JSON.stringify(['K0-W01','K0-W02','K0-W03','K0-W04'])) fail('aggregate wave linkage drift');
   const w03 = neutral.discovery_waves?.find(row => row.wave_id === 'K0-W03');
   const w04 = neutral.discovery_waves?.find(row => row.wave_id === 'K0-W04');
   if (w03?.status !== 'discovery_complete_field_adjudication_complete') fail('Wave 03 reconciliation drift');
-  if (w04?.status !== 'discovery_complete_field_adjudication_pending') fail('Wave 04 discovery state drift');
+  if (!['discovery_complete_field_adjudication_pending','discovery_complete_field_adjudication_complete'].includes(w04?.status)) fail('Wave 04 discovery state drift');
 
   const expectedManifest = computeWave04Manifest();
   if (JSON.stringify(manifest) !== JSON.stringify(expectedManifest)) fail('exact-byte manifest drift');
