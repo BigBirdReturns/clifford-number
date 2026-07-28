@@ -40,13 +40,13 @@
     "field_audit_retained_candidate_only": 7,
     "ccd_depth_changes": 6,
     "role_changes": 1,
-    "role_neutral_query_executions": 8,
-    "role_neutral_raw_results_observed": 33,
-    "role_neutral_retained_records": 17,
-    "role_neutral_candidate_records": 8,
+    "role_neutral_query_executions": 12,
+    "role_neutral_raw_results_observed": 48,
+    "role_neutral_retained_records": 24,
+    "role_neutral_candidate_records": 13,
     "role_neutral_positive_controls": 3,
-    "role_neutral_negative_controls": 2,
-    "role_neutral_coverage_controls": 1,
+    "role_neutral_negative_controls": 3,
+    "role_neutral_coverage_controls": 2,
     "role_neutral_requires_additional_acquisition": 1,
     "role_neutral_resolved_additional_acquisition": 2,
     "role_neutral_wave_01_query_executions": 4,
@@ -54,6 +54,9 @@
     "role_neutral_wave_02_query_executions": 4,
     "role_neutral_wave_02_retained_records": 7,
     "role_neutral_wave_02_candidate_records": 3,
+    "role_neutral_wave_03_query_executions": 4,
+    "role_neutral_wave_03_retained_records": 7,
+    "role_neutral_wave_03_candidate_records": 5,
     "unique_external_urls_in_events": 32,
     "natural_k0_fixtures": 10,
     "clean_first_class_estate_routes": 8,
@@ -1324,7 +1327,7 @@
     "layer_id": "K0",
     "as_of": "2026-07-27",
     "selection_lane_id": "epistemic-admissibility-ceiling-events",
-    "status": "execution_started_wave_02_discovery_only",
+    "status": "execution_started_wave_03_discovery_only",
     "selection_unit": "one bounded, source-addressable gate action preceded by a documented contradiction from a person or body with a stated qualification basis",
     "selection_universe": "all recoverable public-source events returned by the frozen gate-stratified search battery, including non-events, ordinary disagreements, failed searches, inaccessible sources, and exculpatory controls",
     "gate_strata": [
@@ -1509,23 +1512,24 @@
     ],
     "execution": {
       "name_blind_execution_started": true,
-      "searches_executed": 8,
-      "query_templates_executed": 3,
-      "raw_results_observed": 33,
-      "returned_records": 17,
-      "candidate_records": 8,
+      "searches_executed": 12,
+      "query_templates_executed": 4,
+      "raw_results_observed": 48,
+      "returned_records": 24,
+      "candidate_records": 13,
       "positive_controls": 3,
-      "negative_controls": 2,
-      "coverage_controls": 1,
+      "negative_controls": 3,
+      "coverage_controls": 2,
       "requires_additional_acquisition": 3,
       "resolved_additional_acquisition": 2,
       "open_additional_acquisition": 1,
       "included_events": 0,
-      "non_events": 6,
+      "non_events": 8,
       "source_failures": 0,
       "executed_wave_ids": [
         "K0-W01",
-        "K0-W02"
+        "K0-W02",
+        "K0-W03"
       ],
       "last_executed_at": "2026-07-28",
       "independent_second_party_review_complete": false
@@ -1562,7 +1566,7 @@
       {
         "wave_id": "K0-W02",
         "path": "data/research/k0-role-neutral-wave-02.json",
-        "status": "discovery_complete_field_adjudication_pending",
+        "status": "discovery_complete_field_adjudication_complete",
         "query_templates_touched": [
           "K0-Q04"
         ],
@@ -1570,6 +1574,25 @@
           "K0-G02",
           "K0-G05",
           "K0-G07",
+          "K0-G09"
+        ],
+        "graph_effect": "none"
+      },
+      {
+        "wave_id": "K0-W03",
+        "path": "data/research/k0-role-neutral-wave-03.json",
+        "status": "discovery_complete_field_adjudication_pending",
+        "query_templates_touched": [
+          "K0-Q06"
+        ],
+        "gate_strata_touched": [
+          "K0-G01",
+          "K0-G03",
+          "K0-G04",
+          "K0-G05",
+          "K0-G06",
+          "K0-G07",
+          "K0-G08",
           "K0-G09"
         ],
         "graph_effect": "none"
@@ -2427,6 +2450,418 @@
       "project_complete": false
     }
   },
+  "role_neutral_wave_03": {
+    "schema_version": "k0-role-neutral-wave@1",
+    "program_id": "M-05",
+    "layer_id": "K0",
+    "wave_id": "K0-W03",
+    "as_of": "2026-07-28",
+    "status": "name_blind_safety_warning_discovery_complete_field_adjudication_pending",
+    "selection_lane_id": "epistemic-admissibility-ceiling-events",
+    "query_template_ids": [
+      "K0-Q06"
+    ],
+    "source_plane": {
+      "search_provider": "OpenAI web search adapter",
+      "source_families": [
+        "nasa.gov/history",
+        "ntsb.gov",
+        "csb.gov",
+        "gov.uk"
+      ],
+      "jurisdictions": [
+        "United States",
+        "United Kingdom"
+      ],
+      "provider_result_order_reproducible": false,
+      "query_text_and_retained_urls_frozen": true,
+      "public_source_pages_retrievable": true,
+      "coverage_claim": "bounded first-page official-source discovery pass over safety warnings, management override, accident investigation, resident warning, and recommendation-persistence surfaces; not a complete safety-event universe and not evidence of absence outside the observed return set"
+    },
+    "query_executions": [
+      {
+        "execution_id": "K0-W03-Q06-NASA",
+        "query_id": "K0-Q06",
+        "query_text": "site:nasa.gov/history \"safety warning\" (overruled OR ignored) \"commission report\"",
+        "domain_filter": "nasa.gov",
+        "selection_by_person_name": false,
+        "selection_by_event_name": false
+      },
+      {
+        "execution_id": "K0-W03-Q06-NTSB",
+        "query_id": "K0-Q06",
+        "query_text": "site:ntsb.gov \"safety concerns\" (disregarded OR ignored) investigation report",
+        "domain_filter": "ntsb.gov",
+        "selection_by_person_name": false,
+        "selection_by_event_name": false
+      },
+      {
+        "execution_id": "K0-W03-Q06-CSB",
+        "query_id": "K0-Q06",
+        "query_text": "site:csb.gov warnings ignored investigation report safety",
+        "domain_filter": "csb.gov",
+        "selection_by_person_name": false,
+        "selection_by_event_name": false
+      },
+      {
+        "execution_id": "K0-W03-Q06-UK",
+        "query_id": "K0-Q06",
+        "query_text": "site:gov.uk inquiry \"safety concerns were ignored\" report",
+        "domain_filter": "gov.uk",
+        "selection_by_person_name": false,
+        "selection_by_event_name": false
+      }
+    ],
+    "capture_policy": {
+      "raw_results_observed": 15,
+      "retain": "distinct official matters documenting a qualified or situated safety warning, a management or institutional decision surface, an accident or material consequence, or a control showing that a query hit lacks the K0 causal preconditions",
+      "exclude": "duplicate transcripts and summaries of retained matters, contextual safety-program material without a distinct bounded gate action, and later implementation pages that add no new warning-to-gate sequence",
+      "deduplication_key": "bounded matter plus official investigation or control function",
+      "query_hit_is_event": false,
+      "accident_proves_warning_ignored": false,
+      "safety_recommendation_proves_gate_action": false,
+      "material_consequence_proves_reclassification": false,
+      "manual_retention_is_independent_review": false
+    },
+    "counts": {
+      "query_executions": 4,
+      "raw_results_observed": 15,
+      "retained_records": 7,
+      "candidate_requires_field_audit": 5,
+      "negative_controls": 1,
+      "coverage_controls": 1,
+      "requires_additional_acquisition": 0,
+      "included_events": 0,
+      "assigned_ccd_values": 0,
+      "publication_cleared": 0,
+      "graph_effects": 0,
+      "source_failures": 0
+    },
+    "records": [
+      {
+        "record_id": "K0-W03-R001",
+        "matter": "Challenger launch recommendation reversal and engineer opposition",
+        "institution": "NASA / Morton Thiokol",
+        "gate_stratum_ids": [
+          "K0-G01",
+          "K0-G04",
+          "K0-G08"
+        ],
+        "selection_outcome": "candidate_requires_field_audit",
+        "qualification_basis_status": "source_explicit",
+        "qualification_basis": "Morton Thiokol engineers responsible for the solid rocket motor field joint and O-ring assessment.",
+        "source_packets": [
+          {
+            "url": "https://www.nasa.gov/history/rogersrep/v1ch5.htm",
+            "source_class": "presidential_commission_report",
+            "issued_at": "1986-06-06",
+            "supports": "Initial no-launch recommendation below 53 degrees, continuing engineer opposition, management reversal, and launch decisionmakers unaware of the opposition."
+          },
+          {
+            "url": "https://www.nasa.gov/history/SP-4219/Chapter15.html",
+            "source_class": "official_agency_history",
+            "issued_at": null,
+            "supports": "Post-testimony reassignment of dissenting engineers and later restoration of Allan McDonald after congressional and NASA pressure."
+          }
+        ],
+        "source_supports": "A contractor engineering warning was reversed at management level, dissent disappeared inside an apparent organizational recommendation, launch proceeded, and dissenters were later reassigned.",
+        "source_does_not_establish": [
+          "one individual gateholder motive or psychological state",
+          "the complete personnel record for every dissenting engineer",
+          "that every NASA decisionmaker received the underlying engineering evidence before launch",
+          "a final K0 disposition without field-level causal adjudication"
+        ],
+        "field_audit_status": "pending",
+        "ccd_chain_depth": null,
+        "included_event": false,
+        "evidence_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_status": "blocked",
+        "graph_effect": "none"
+      },
+      {
+        "record_id": "K0-W03-R002",
+        "matter": "Columbia foam-strike imagery request denied by mission management",
+        "institution": "NASA Space Shuttle Program",
+        "gate_stratum_ids": [
+          "K0-G05",
+          "K0-G08"
+        ],
+        "selection_outcome": "candidate_requires_field_audit",
+        "qualification_basis_status": "source_explicit",
+        "qualification_basis": "NASA engineers assessing the STS-107 foam strike and orbiter damage risk.",
+        "source_packets": [
+          {
+            "url": "https://www.nasa.gov/history/20-years-ago-remembering-columbia-and-her-crew/",
+            "source_class": "official_agency_history",
+            "issued_at": "2023-02-01",
+            "supports": "Engineers requested high-resolution imagery to complete a more thorough analysis; managers turned down the request before re-entry."
+          }
+        ],
+        "source_supports": "A qualified technical team requested an evidence channel and mission management denied it before the fatal re-entry.",
+        "source_does_not_establish": [
+          "an explicit competence, loyalty, or attitude reclassification of the requesting engineers",
+          "an explanation-before and explanation-after mutation",
+          "that high-resolution imagery would necessarily have enabled a successful repair or rescue",
+          "a complete CCD chain"
+        ],
+        "field_audit_status": "pending",
+        "ccd_chain_depth": null,
+        "included_event": false,
+        "evidence_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_status": "blocked",
+        "graph_effect": "none"
+      },
+      {
+        "record_id": "K0-W03-R003",
+        "matter": "NDK Crystal pressure-vessel warnings and inspection failures",
+        "institution": "NDK Crystal / Illinois pressure-vessel oversight",
+        "gate_stratum_ids": [
+          "K0-G04",
+          "K0-G06",
+          "K0-G08"
+        ],
+        "selection_outcome": "candidate_requires_field_audit",
+        "qualification_basis_status": "source_explicit",
+        "qualification_basis": "The pressure-vessel manufacturer and a third-party safety auditor with vessel-design and inspection expertise.",
+        "source_packets": [
+          {
+            "url": "https://www.csb.gov/csb-finds-fatal-2009-ndk-explosion-resulted-from-stress-corrosion-cracking-of-high-pressure-vessel-crystal-maker-failed-to-inspect-or-test-vessels-and-to-heed-earlier-warning-about-risk-to-public-/",
+            "source_class": "official_chemical_safety_board_finding",
+            "issued_at": "2013-02-14",
+            "supports": "Annual inspection recommendations, a direct 2007 auditor warning against returning vessels to service, continued operation without inspection, and the fatal 2009 rupture."
+          }
+        ],
+        "source_supports": "The company continued operating after source-explicit technical warnings and without the recommended inspections; a catastrophic rupture killed a member of the public.",
+        "source_does_not_establish": [
+          "a documented reclassification of the manufacturer or auditor as incompetent or disloyal",
+          "the exact explanation mutation used by each company or regulator decisionmaker",
+          "one personal decision chain across the company and state oversight system",
+          "a complete K0 event without field adjudication"
+        ],
+        "field_audit_status": "pending",
+        "ccd_chain_depth": null,
+        "included_event": false,
+        "evidence_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_status": "blocked",
+        "graph_effect": "none"
+      },
+      {
+        "record_id": "K0-W03-R004",
+        "matter": "East River doors-off helicopter pilot warnings disregarded",
+        "institution": "Liberty Helicopters / NYONair / FAA oversight",
+        "gate_stratum_ids": [
+          "K0-G01",
+          "K0-G06",
+          "K0-G08"
+        ],
+        "selection_outcome": "candidate_requires_field_audit",
+        "qualification_basis_status": "source_explicit",
+        "qualification_basis": "Liberty pilots with direct operational knowledge of the harness, tether, emergency-egress, and aircraft-control risks.",
+        "source_packets": [
+          {
+            "url": "https://www.ntsb.gov/Advocacy/Activities/Pages/homendy-20200818.aspx",
+            "source_class": "official_ntsb_board_member_analysis",
+            "issued_at": "2020-08-18",
+            "supports": "Pilots repeatedly raised predicted harness, egress, control-entanglement, and flotation concerns that management disregarded."
+          },
+          {
+            "url": "https://www.ntsb.gov/investigations/pages/ERA18MA099.aspx",
+            "source_class": "official_ntsb_investigation",
+            "issued_at": null,
+            "supports": "Five passenger deaths, deficient safety management, foreseeable tether and egress risks, operational-control problems, and inadequate FAA oversight."
+          }
+        ],
+        "source_supports": "Operational specialists predicted multiple hazards that later contributed to the crash and deaths; official investigation found deficient safety management.",
+        "source_does_not_establish": [
+          "the exact wording and recipient of every pilot warning",
+          "a competence or loyalty reclassification applied to a bounded pilot",
+          "the complete employment or retaliation record",
+          "a continuous CCD chain without docket-level review"
+        ],
+        "field_audit_status": "pending",
+        "ccd_chain_depth": null,
+        "included_event": false,
+        "evidence_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_status": "blocked",
+        "graph_effect": "none"
+      },
+      {
+        "record_id": "K0-W03-R005",
+        "matter": "Grenfell resident safety warnings and institutional nonresponse",
+        "institution": "Kensington and Chelsea TMO / RBKC / central building-safety system",
+        "gate_stratum_ids": [
+          "K0-G03",
+          "K0-G06",
+          "K0-G08",
+          "K0-G09"
+        ],
+        "selection_outcome": "candidate_requires_field_audit",
+        "qualification_basis_status": "situated_knowledge_explicit",
+        "qualification_basis": "Grenfell residents possessed situated knowledge of their building, landlord response, and recurring safety conditions; professional and governmental recommendations supplied additional technical warning channels.",
+        "source_packets": [
+          {
+            "url": "https://www.gov.uk/government/publications/grenfell-tower-inquiry-phase-2-report-government-response/grenfell-tower-inquiry-phase-2-report-government-response-html",
+            "source_class": "official_government_response_to_public_inquiry",
+            "issued_at": "2025-02-26",
+            "supports": "Residents were ignored when raising safety issues; the institutional culture resisted external scrutiny and failed to track or act on fire-safety recommendations."
+          },
+          {
+            "url": "https://www.gov.uk/government/news/government-responds-in-full-to-grenfell-tower-inquiry-setting-out-tough-new-reforms-to-fix-building-safety-and-strengthen-accountability",
+            "source_class": "official_government_response_summary",
+            "issued_at": "2025-02-26",
+            "supports": "The final report exposed ignored safety risks, failures to listen to residents, and systemic failures preceding the fire."
+          }
+        ],
+        "source_supports": "Situated and professional warning channels were institutionally discounted within a system that resisted scrutiny; the fire killed 72 people.",
+        "source_does_not_establish": [
+          "one bounded gateholder or one warning-to-decision transaction",
+          "a single competence reclassification applied to all residents or advisers",
+          "that every resident concern was technically correct or causally material",
+          "a complete event without decomposing the distributed institutional chain"
+        ],
+        "field_audit_status": "pending",
+        "ccd_chain_depth": null,
+        "included_event": false,
+        "evidence_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_status": "blocked",
+        "graph_effect": "none"
+      },
+      {
+        "record_id": "K0-W03-R006",
+        "matter": "Cape Douglas sinking without a documented pre-action qualified contradiction",
+        "institution": "Cape Douglas vessel operation",
+        "gate_stratum_ids": [
+          "K0-G08"
+        ],
+        "selection_outcome": "negative_control",
+        "control_kind": "accident_without_documented_k0_preconditions",
+        "qualification_basis_status": "not_established_in_public_summary",
+        "source_packets": [
+          {
+            "url": "https://www.ntsb.gov/investigations/Pages/DCA25FM003.aspx",
+            "source_class": "official_ntsb_investigation",
+            "issued_at": null,
+            "supports": "Completed investigation, flooding, open watertight doors, no injuries, and total vessel loss."
+          }
+        ],
+        "source_supports": "The official record establishes an accident and operational causes.",
+        "source_does_not_establish": [
+          "a qualified warning reaching the decision surface before the sinking",
+          "a knower reclassification or explanation mutation",
+          "a retaliatory or exclusionary gate action",
+          "a ceiling-conversion event"
+        ],
+        "field_audit_status": "control_retained",
+        "ccd_chain_depth": null,
+        "included_event": false,
+        "evidence_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_status": "blocked",
+        "graph_effect": "none"
+      },
+      {
+        "record_id": "K0-W03-R007",
+        "matter": "Repeated DOT-111 tank-car recommendations and recommendation persistence",
+        "institution": "NTSB / PHMSA / FRA / railroad and tank-car regulatory system",
+        "gate_stratum_ids": [
+          "K0-G06",
+          "K0-G07",
+          "K0-G08"
+        ],
+        "selection_outcome": "coverage_control",
+        "control_kind": "recommendation_persistence_without_event_completion",
+        "qualification_basis_status": "institutional_safety_authority",
+        "source_packets": [
+          {
+            "url": "https://www.ntsb.gov/news/press-releases/Pages/NR20260611.aspx",
+            "source_class": "official_ntsb_final_investigation_release",
+            "issued_at": "2026-06-11",
+            "supports": "Repeated NTSB warnings about DOT-111 vulnerability, reiterated phase-out recommendations, and a 2024 derailment with hazardous-material releases."
+          },
+          {
+            "url": "https://www.ntsb.gov/investigations/Pages/RRD24LR012.aspx",
+            "source_class": "official_ntsb_investigation",
+            "issued_at": null,
+            "supports": "Accident findings, recommendation set, and investigation status."
+          }
+        ],
+        "source_supports": "The record preserves a long-lived warning and recommendation stream across accidents and regulators.",
+        "source_does_not_establish": [
+          "one bounded gate action preceded by one delivered contradiction",
+          "a competence reclassification or explanation mutation",
+          "that all delayed phase-out decisions shared one motive or decision chain",
+          "a K0 event rather than a recommendation-persistence surface"
+        ],
+        "field_audit_status": "control_retained",
+        "ccd_chain_depth": null,
+        "included_event": false,
+        "evidence_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_status": "blocked",
+        "graph_effect": "none"
+      }
+    ],
+    "excluded_results": [
+      {
+        "result_id": "K0-W03-X001",
+        "source_url": "https://www.nasa.gov/history/rogersrep/v1appa.htm",
+        "reason": "Commission-process appendix duplicates the retained Challenger decision-chain matter and adds no separate bounded gate action."
+      },
+      {
+        "result_id": "K0-W03-X002",
+        "source_url": "https://www.nasa.gov/history/rogersrep/v4part7.htm",
+        "reason": "Hearing transcript is supporting evidence for the retained Challenger matter, not a separate denominator event."
+      },
+      {
+        "result_id": "K0-W03-X003",
+        "source_url": "https://www.nasa.gov/history/rogersrep/v1ch7.htm",
+        "reason": "Silent-safety-program chapter supplies institutional context but does not define a distinct warning-to-gate transaction beyond the retained Challenger matter."
+      },
+      {
+        "result_id": "K0-W03-X004",
+        "source_url": "https://www.nasa.gov/history/rogersrep/v4p740.htm",
+        "reason": "Contemporaneous notes support the retained Challenger packet and are excluded as a duplicate matter rather than counted again."
+      },
+      {
+        "result_id": "K0-W03-X005",
+        "source_url": "https://www.ntsb.gov/news/press-releases/Pages/NR20191210.aspx",
+        "reason": "Press release duplicates the retained East River investigation and warning matter."
+      },
+      {
+        "result_id": "K0-W03-X006",
+        "source_url": "https://www.ntsb.gov/news/press-releases/Pages/NR20250612.aspx",
+        "reason": "Press release duplicates the retained Cape Douglas investigation control."
+      },
+      {
+        "result_id": "K0-W03-X007",
+        "source_url": "https://www.ntsb.gov/investigations/Pages/RRD24LR012.aspx",
+        "reason": "Investigation page is retained as a supporting packet for the recommendation-persistence control and is not counted as a second record."
+      },
+      {
+        "result_id": "K0-W03-X008",
+        "source_url": "https://www.gov.uk/government/publications/grenfell-tower-inquiry-government-annual-report-february-2026/grenfell-tower-inquiry-phase-2-annual-report-february-2026",
+        "reason": "Implementation update is a remedial follow-up to the retained Grenfell matter and adds no distinct pre-fire warning-to-gate sequence."
+      }
+    ],
+    "boundaries": {
+      "name_blind_discovery_executed": true,
+      "full_search_battery_executed": false,
+      "query_hit_is_event": false,
+      "accident_proves_warning_ignored": false,
+      "material_consequence_proves_reclassification": false,
+      "safety_recommendation_proves_gate_action": false,
+      "field_adjudication_complete": false,
+      "included_events": 0,
+      "publication_cleared": false,
+      "graph_effect": "none",
+      "project_complete": false
+    }
+  },
   "ecosystem_wiring": {
     "schema_version": "k0-existing-ecosystem-wiring@2",
     "as_of": "2026-07-27",
@@ -2944,7 +3379,7 @@
           "metric_id": "name_blind_searches_executed",
           "unit": "searches",
           "expected": 9,
-          "observed": 3,
+          "observed": 4,
           "denominator_kind": "exact",
           "publicly_reproducible": true,
           "source": "data/research/k0-role-neutral-denominator.json"
@@ -2961,9 +3396,9 @@
         {
           "metric_id": "name_blind_query_executions",
           "unit": "query_executions",
-          "expected": 9,
-          "observed": 8,
-          "denominator_kind": "exact",
+          "expected": null,
+          "observed": 12,
+          "denominator_kind": "open",
           "publicly_reproducible": false,
           "counts_toward_public_progress": false,
           "source": "data/research/k0-role-neutral-denominator.json"
@@ -2972,7 +3407,7 @@
           "metric_id": "raw_search_results_observed",
           "unit": "search_results",
           "expected": null,
-          "observed": 33,
+          "observed": 48,
           "denominator_kind": "open",
           "publicly_reproducible": false,
           "counts_toward_public_progress": false,
@@ -2982,7 +3417,7 @@
           "metric_id": "retained_official_records",
           "unit": "records",
           "expected": null,
-          "observed": 17,
+          "observed": 24,
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
@@ -2992,11 +3427,11 @@
           "metric_id": "candidate_records_pending_field_audit",
           "unit": "records",
           "expected": null,
-          "observed": 3,
+          "observed": 5,
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-02.json"
+          "source": "data/research/k0-role-neutral-wave-03.json"
         },
         {
           "metric_id": "role_neutral_positive_controls",
@@ -3012,7 +3447,7 @@
           "metric_id": "role_neutral_negative_controls",
           "unit": "controls",
           "expected": null,
-          "observed": 2,
+          "observed": 3,
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
@@ -3042,11 +3477,11 @@
           "metric_id": "role_neutral_coverage_controls",
           "unit": "controls",
           "expected": null,
-          "observed": 1,
+          "observed": 2,
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
-          "source": "data/research/k0-role-neutral-wave-02.json"
+          "source": "data/research/k0-role-neutral-denominator.json"
         },
         {
           "metric_id": "role_neutral_resolved_additional_acquisition",
@@ -3074,15 +3509,15 @@
         },
         {
           "gap_id": "k0-gap-name-blind-universe-execution",
-          "description": "Three of nine frozen query templates have now been executed across U.S. oversight and EU DSA researcher-access planes; six templates and additional jurisdictions remain unexecuted.",
+          "description": "Four of nine frozen query templates have now been executed across U.S. oversight, EU DSA researcher-access, and U.S./UK safety-warning planes; five templates and additional jurisdictions remain unexecuted.",
           "status": "blocking",
-          "next_action": "Execute the remaining six templates through declared source planes while preserving non-events, nulls, controls, and source failures."
+          "next_action": "Execute the remaining five templates through declared source planes while preserving non-events, nulls, controls, and source failures."
         },
         {
           "gap_id": "k0-role-neutral-battery-incomplete",
-          "description": "Waves 01 and 02 executed K0-Q01, K0-Q03, and K0-Q04. Publication, appointment, safety-warning, professional-judgment, committee-capture, and editorial-veto templates remain open.",
+          "description": "Waves 01 through 03 executed K0-Q01, K0-Q03, K0-Q04, and K0-Q06. Appointment, publication, professional-judgment, committee-capture, and editorial-veto templates remain open.",
           "status": "open",
-          "next_action": "Execute K0-Q02 and K0-Q05 through K0-Q09 in separately bounded waves."
+          "next_action": "Execute K0-Q02, K0-Q05, and K0-Q07 through K0-Q09 in separately bounded waves."
         },
         {
           "gap_id": "k0-search-ranking-nonreproducible",
@@ -3098,9 +3533,15 @@
         },
         {
           "gap_id": "k0-wave02-field-adjudication-open",
-          "description": "Three DSA platform-access candidates require field adjudication and one formal proceeding requires additional acquisition; no Wave 02 record is an included event.",
+          "description": "All seven Wave 02 records received maintainer field review: one bounded non-link, two candidate-only records, three controls, and one open additional-acquisition matter; none became an included event.",
+          "status": "resolved_at_maintainer_layer",
+          "next_action": "Preserve the field packet for independent review and continue bounded acquisition on the unresolved Temu researcher-access limb."
+        },
+        {
+          "gap_id": "k0-wave03-field-adjudication-open",
+          "description": "Five safety-warning candidate records require field-level causal adjudication; the negative and recommendation-persistence controls must remain in the denominator.",
           "status": "blocking",
-          "next_action": "Acquire bounded request-level evidence and adjudicate X, Meta, TikTok, and Temu without treating preliminary or systemic findings as complete K0 chains."
+          "next_action": "Adjudicate Challenger, Columbia, NDK, East River, and Grenfell without treating catastrophe or warning persistence as proof of reclassification."
         }
       ]
     },
@@ -3163,12 +3604,12 @@
       "comparator_tests": [
         {
           "test_id": "same-gate-opposite-outcome-controls",
-          "status": "partial_wave01_and_wave02_controls",
+          "status": "partial_wave01_wave02_wave03_controls",
           "method": "For each gate class, compare events where independent review preserved standing or stayed action against events where the original gateholder controlled both classification and consequence.",
           "blocking_conditions": [
             "controls remain maintainer-selected",
-            "Wave 02 systemic records lack individual request-level chains",
-            "six frozen query templates remain unexecuted",
+            "five safety-warning candidates await field adjudication",
+            "five frozen query templates remain unexecuted",
             "second-party review absent"
           ]
         },
@@ -3190,9 +3631,20 @@
             "corrective-plan effectiveness is not yet observed",
             "independent review absent"
           ]
+        },
+        {
+          "test_id": "safety-warning-consequence-and-control-lifecycle",
+          "status": "maintainer_partial",
+          "method": "Compare warnings followed by management override or evidence denial against accident records lacking a documented pre-action contradiction and against long-lived recommendation streams lacking one bounded gate action.",
+          "blocking_conditions": [
+            "candidate field adjudication pending",
+            "accident severity cannot substitute for causal transitions",
+            "official summaries may compress multi-actor systems",
+            "independent review absent"
+          ]
         }
       ],
-      "disposition": "Two maintainer waves now preserve employment, safety, platform-access, negative, correction, and counterpower controls. Publication remains blocked because six query templates, request-level Wave 02 field adjudication, exact remote custody, and a genuinely independent review remain incomplete.",
+      "disposition": "Three maintainer waves now preserve employment, access, safety-warning, negative, coverage, correction, and counterpower records. Publication remains blocked because five query templates, Wave 03 field adjudication, Temu request-level acquisition, exact remote custody, and genuinely independent review remain incomplete.",
       "maintainer_audit": {
         "audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
         "auditor_id": "project-maintainers",
@@ -3210,17 +3662,19 @@
       "role_neutral_execution": {
         "wave_ids": [
           "K0-W01",
-          "K0-W02"
+          "K0-W02",
+          "K0-W03"
         ],
         "query_templates_executed": [
           "K0-Q01",
           "K0-Q03",
-          "K0-Q04"
+          "K0-Q04",
+          "K0-Q06"
         ],
-        "query_executions": 8,
-        "raw_results_observed": 33,
-        "retained_records": 17,
-        "controls_preserved": 6,
+        "query_executions": 12,
+        "raw_results_observed": 48,
+        "retained_records": 24,
+        "controls_preserved": 8,
         "included_events": 0,
         "independence_effect": "does_not_satisfy_second_party_clearance"
       }
@@ -4929,7 +5383,7 @@
   },
   "release_manifest": {
     "path": "data/project/k0-epistemic-admissibility-release-manifest.json",
-    "combined_sha256": "c07a88aac69e98f316717afd338a76c32dafdcf3a4010be2b78efb1120637ce0"
+    "combined_sha256": "1b511adf0cee930a82b9479fad0efda50d5b86769bd4649dd1da0979f6d7b07b"
   },
   "boundaries": {
     "promotes_to": "candidate_only",

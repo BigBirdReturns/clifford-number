@@ -20,6 +20,7 @@ export const releaseScope = [
   '.github/workflows/k0-source-field-audit.yml',
   '.github/workflows/k0-role-neutral-wave-01.yml',
   '.github/workflows/k0-role-neutral-wave-02.yml',
+  '.github/workflows/k0-role-neutral-wave-03.yml',
   'data/intake/k0-epistemic-admissibility-source.txt',
   'data/intake/k0-ceiling-conversion-seed-events.json',
   'data/project/k0-epistemic-admissibility-methodology.json',
@@ -29,20 +30,25 @@ export const releaseScope = [
   'data/research/k0-role-neutral-denominator.json',
   'data/research/k0-role-neutral-wave-01.json',
   'data/research/k0-role-neutral-wave-02.json',
+  'data/research/k0-role-neutral-wave-03.json',
   'schemas/k0-ceiling-conversion-event.schema.json',
   'docs/methods/k0-epistemic-admissibility.md',
   'docs/milestones/m05-k0-epistemic-admissibility.md',
   'docs/milestones/m05-k0-source-field-audit.md',
   'docs/milestones/m05-k0-role-neutral-wave-01.md',
   'docs/milestones/m05-k0-role-neutral-wave-02.md',
+  'docs/milestones/m05-k0-role-neutral-wave-03.md',
   'tools/build-k0-epistemic-admissibility.mjs',
   'tools/validate-k0-epistemic-admissibility.mjs',
   'tools/validate-k0-role-neutral-wave-01.mjs',
   'tools/build-k0-role-neutral-wave-02.mjs',
   'tools/validate-k0-role-neutral-wave-02.mjs',
+  'tools/build-k0-role-neutral-wave-03.mjs',
+  'tools/validate-k0-role-neutral-wave-03.mjs',
   'test/k0-epistemic-admissibility.test.js',
   'test/k0-role-neutral-wave-01.test.js',
-  'test/k0-role-neutral-wave-02.test.js'
+  'test/k0-role-neutral-wave-02.test.js',
+  'test/k0-role-neutral-wave-03.test.js'
 ];
 
 export function computeK0ReleaseManifest() {
@@ -78,6 +84,7 @@ const fieldAudit = read('data/research/k0-field-audit.json');
 const neutral = read('data/research/k0-role-neutral-denominator.json');
 const neutralWave01 = read('data/research/k0-role-neutral-wave-01.json');
 const neutralWave02 = read('data/research/k0-role-neutral-wave-02.json');
+const neutralWave03 = read('data/research/k0-role-neutral-wave-03.json');
 const registry = read('data/project/m05-answerable-power-story-registry.json');
 const fanout = read('data/project/m05-answerable-power-fanout.json');
 const selection = read('data/canonical/corpus-selection.json');
@@ -136,6 +143,9 @@ const report = {
     role_neutral_wave_02_query_executions: neutralWave02.counts.query_executions,
     role_neutral_wave_02_retained_records: neutralWave02.counts.retained_records,
     role_neutral_wave_02_candidate_records: neutralWave02.counts.candidate_requires_field_audit,
+    role_neutral_wave_03_query_executions: neutralWave03.counts.query_executions,
+    role_neutral_wave_03_retained_records: neutralWave03.counts.retained_records,
+    role_neutral_wave_03_candidate_records: neutralWave03.counts.candidate_requires_field_audit,
     unique_external_urls_in_events: uniqueExternalUrls.size,
     natural_k0_fixtures: wiring.natural_k0_fixture_count,
     clean_first_class_estate_routes: wiring.clean_first_class_estate_route_count,
@@ -160,6 +170,7 @@ const report = {
   role_neutral_denominator: neutral,
   role_neutral_wave_01: neutralWave01,
   role_neutral_wave_02: neutralWave02,
+  role_neutral_wave_03: neutralWave03,
   ecosystem_wiring: wiring,
   selection: { lane: selectionLane, coverage: coverageRow, review },
   seed_events: seeds.events,
