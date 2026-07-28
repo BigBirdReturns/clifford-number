@@ -128,6 +128,9 @@ jobs:
               'data/research/corpus-coverage.json',
               'data/research/selection-adversarial-reviews.json',
               'tools/validate-k0-role-neutral-wave-04.mjs',
+              'data/project/k0-role-neutral-wave-04-release-manifest.json',
+              'reports/core-thesis/answerable-power/k0-role-neutral-wave-04.json',
+              'reports/core-thesis/answerable-power/k0-role-neutral-wave-04.html',
               'tools/validate-k0-epistemic-admissibility.mjs',
               'data/project/k0-epistemic-admissibility-release-manifest.json',
               'reports/core-thesis/answerable-power/k0.json',
@@ -162,6 +165,9 @@ jobs:
               'data/research/corpus-coverage.json',
               'data/research/selection-adversarial-reviews.json',
               'tools/validate-k0-role-neutral-wave-04.mjs',
+              'data/project/k0-role-neutral-wave-04-release-manifest.json',
+              'reports/core-thesis/answerable-power/k0-role-neutral-wave-04.json',
+              'reports/core-thesis/answerable-power/k0-role-neutral-wave-04.html',
               'tools/validate-k0-epistemic-admissibility.mjs',
               'data/project/k0-epistemic-admissibility-release-manifest.json',
               'reports/core-thesis/answerable-power/k0.json',
@@ -185,7 +191,7 @@ jobs:
               mode = index_row.split()[0] if index_row else '100644'
               rows.append({'path': path, 'sha': blob['sha'], 'bytes': len(raw), 'mode': mode})
           receipt = {
-              'schema_version': 'k0-wave04-field-adjudication-transaction@3',
+              'schema_version': 'k0-wave04-field-adjudication-transaction@4',
               'repository': repo,
               'parent': subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip(),
               'base_tree': subprocess.check_output(['git','rev-parse','HEAD^{tree}'], text=True).strip(),
@@ -213,7 +219,7 @@ jobs:
       - name: Export validated transaction
         uses: actions/upload-artifact@v4
         with:
-          name: k0-wave04-field-adjudication-validated-transaction-v3
+          name: k0-wave04-field-adjudication-validated-transaction-v4
           path: /tmp/k0-wave04-field-export/BLOB_RECEIPTS.json
           if-no-files-found: error
           retention-days: 30
