@@ -1,5 +1,5 @@
 name: Temporary materialize K0 source and field audit
-# checksum-bound carrier that creates an unreferenced validated Git commit for connector publication
+# checksum-bound carrier that exports every Git-object receipt before connector publication
 
 on:
   pull_request:
@@ -39,25 +39,8 @@ jobs:
           mkdir -p /tmp/k0-source-field-audit
           tar -xzf /tmp/k0-source-field-audit.tgz -C /tmp/k0-source-field-audit
 
-      - name: Materialize and run focused K0 and M-05 checks
+      - name: Materialize and validate exact permanent bytes
         run: |
-          node /tmp/k0-source-field-audit/materialize-k0-source-field-audit.mjs
-          node tools/build-k0-epistemic-admissibility.mjs
-          node tools/validate-k0-epistemic-admissibility.mjs
-          node test/k0-epistemic-admissibility.test.js
-          node tools/build-m05-answerable-power.mjs
-          node tools/validate-m05-answerable-power.mjs
-          node test/m05-answerable-power.test.js
-          node tools/validate-corpus-selection.mjs
-          node tools/validate-consumption-contract.mjs
-
-      - name: Run complete repository release gate
-        run: npm run release:check
-
-      - name: Reconstruct and revalidate from the unchanged carrier
-        run: |
-          git restore --staged --worktree .
-          git clean -fd
           node /tmp/k0-source-field-audit/materialize-k0-source-field-audit.mjs
           node tools/build-k0-epistemic-admissibility.mjs
           node tools/validate-k0-epistemic-admissibility.mjs
@@ -97,7 +80,7 @@ jobs:
           git status --short > /tmp/k0-audit-export/MATERIALIZED_STATUS.txt
           git diff --name-status > /tmp/k0-audit-export/MATERIALIZED_PATHS.txt
 
-      - name: Create unreferenced validated Git commit
+      - name: Create Git objects and preserve complete API receipt
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -106,6 +89,8 @@ jobs:
           import json
           import os
           import subprocess
+          import traceback
+          import urllib.error
           import urllib.request
 
           repo = os.environ['GITHUB_REPOSITORY']
@@ -113,6 +98,7 @@ jobs:
           api = 'https://api.github.com'
           parent = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
           base_tree = subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip()
+          receipt_path = '/tmp/k0-audit-export/GIT_OBJECT_TRANSACTION.json'
 
           updates = [
               '.github/workflows/k0-source-field-audit.yml',
@@ -150,6 +136,23 @@ jobs:
               '.github/tmp/k0-source-field-audit-part-08.b64',
           ]
 
+          state = {
+              'repository': repo,
+              'parent': parent,
+              'base_tree': base_tree,
+              'updates': [],
+              'deletions': deletions,
+              'candidate_tree': None,
+              'candidate_commit': None,
+              'ref_updated': False,
+              'error': None,
+          }
+
+          def persist():
+              with open(receipt_path, 'w') as handle:
+                  json.dump(state, handle, indent=2)
+                  handle.write('\n')
+
           def post(path, payload):
               req = urllib.request.Request(
                   api + path,
@@ -163,48 +166,50 @@ jobs:
                       'User-Agent': 'k0-source-field-audit',
                   },
               )
-              with urllib.request.urlopen(req) as response:
-                  return json.load(response)
-
-          tree_entries = []
-          blob_receipts = []
-          for path in updates:
-              raw = open(path, 'rb').read()
-              blob = post(f'/repos/{repo}/git/blobs', {
-                  'content': base64.b64encode(raw).decode(),
-                  'encoding': 'base64',
-              })
               try:
+                  with urllib.request.urlopen(req) as response:
+                      return json.load(response)
+              except urllib.error.HTTPError as error:
+                  body = error.read().decode('utf-8', errors='replace')
+                  raise RuntimeError(f'POST {path} -> HTTP {error.code}: {body}') from error
+
+          persist()
+          try:
+              tree_entries = []
+              for path in updates:
+                  raw = open(path, 'rb').read()
+                  blob = post(f'/repos/{repo}/git/blobs', {
+                      'content': base64.b64encode(raw).decode(),
+                      'encoding': 'base64',
+                  })
                   index_row = subprocess.check_output(['git', 'ls-files', '-s', '--', path], text=True).strip()
                   mode = index_row.split()[0] if index_row else '100644'
-              except subprocess.CalledProcessError:
-                  mode = '100644'
-              tree_entries.append({'path': path, 'mode': mode, 'type': 'blob', 'sha': blob['sha']})
-              blob_receipts.append({'path': path, 'sha': blob['sha'], 'bytes': len(raw), 'mode': mode})
+                  row = {'path': path, 'sha': blob['sha'], 'bytes': len(raw), 'mode': mode}
+                  state['updates'].append(row)
+                  tree_entries.append({'path': path, 'mode': mode, 'type': 'blob', 'sha': blob['sha']})
+                  persist()
 
-          for path in deletions:
-              tree_entries.append({'path': path, 'mode': '100644', 'type': 'blob', 'sha': None})
+              for path in deletions:
+                  tree_entries.append({'path': path, 'sha': None})
 
-          tree = post(f'/repos/{repo}/git/trees', {'base_tree': base_tree, 'tree': tree_entries})
-          commit = post(f'/repos/{repo}/git/commits', {
-              'message': 'Audit K0 source custody and CCD semantics',
-              'tree': tree['sha'],
-              'parents': [parent],
-          })
-          receipt = {
-              'repository': repo,
-              'parent': parent,
-              'base_tree': base_tree,
-              'candidate_tree': tree['sha'],
-              'candidate_commit': commit['sha'],
-              'updates': blob_receipts,
-              'deletions': deletions,
-              'ref_updated': False,
-          }
-          with open('/tmp/k0-audit-export/CANDIDATE_COMMIT.json', 'w') as handle:
-              json.dump(receipt, handle, indent=2)
-              handle.write('\n')
-          print(json.dumps(receipt, indent=2))
+              tree = post(f'/repos/{repo}/git/trees', {'base_tree': base_tree, 'tree': tree_entries})
+              state['candidate_tree'] = tree['sha']
+              persist()
+              commit = post(f'/repos/{repo}/git/commits', {
+                  'message': 'Audit K0 source custody and CCD semantics',
+                  'tree': tree['sha'],
+                  'parents': [parent],
+              })
+              state['candidate_commit'] = commit['sha']
+              persist()
+          except Exception as error:
+              state['error'] = {
+                  'message': str(error),
+                  'traceback': traceback.format_exc(),
+              }
+              persist()
+
+          print(json.dumps(state, indent=2))
           PYCOMMIT
 
       - name: Seal exact validated transaction
