@@ -37,9 +37,9 @@ jobs:
           mapfile -t chunks < <(find .github/tmp -maxdepth 1 -type f -name 'adversarial-release-payload-*.b64' | sort)
           test "${#chunks[@]}" -eq "$expected_chunks"
           cat "${chunks[@]}" > /tmp/adversarial-release-payload.b64
-          printf '%s  %s\n' '1bcbb4a052ce85492b49f3753bd5364949174eb07ede183fc83036204ae58b83' /tmp/adversarial-release-payload.b64 | sha256sum --check --strict
+          printf '%s  %s\n' 'f0ada39b440224c8d3663d63731ec7110b4211c894a95456c60b0de577a5100b' /tmp/adversarial-release-payload.b64 | sha256sum --check --strict
           base64 --decode /tmp/adversarial-release-payload.b64 > /tmp/adversarial-release-payload.tar.gz
-          printf '%s  %s\n' '72001b6ff65b031b9de9dc3001ab442fb400664b0d66f1d7b70937c01b2c3adc' /tmp/adversarial-release-payload.tar.gz | sha256sum --check --strict
+          printf '%s  %s\n' 'e8df370307244ae3ebcf94f22c9ef1c8b1f82b3f7de6692869c2a54ac58fbac3' /tmp/adversarial-release-payload.tar.gz | sha256sum --check --strict
           git ls-files '.github/tmp/**' > /tmp/adversarial-release-transport-paths.txt
 
           python - <<'PY'
@@ -56,7 +56,7 @@ jobs:
           assert hashlib.sha256(payload).hexdigest() == manifest['payload_sha256']
           assert len(payload) == manifest['payload_bytes']
 
-          expected = sorted(manifest['write_paths'])
+          expected = sorted(manifest['payload_paths'])
           with tarfile.open('/tmp/adversarial-release-payload.tar.gz', 'r:gz') as archive:
               members = archive.getmembers()
               names = sorted(member.name for member in members)
