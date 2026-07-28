@@ -1,0 +1,34 @@
+name: Adversarial review bootstrap
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/adversarial-review-bootstrap.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-exact-checkout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Package exact checkout with git metadata
+        run: |
+          mkdir -p /tmp/clifford-review-bootstrap
+          git rev-parse HEAD > /tmp/clifford-review-bootstrap/head.txt
+          git status --porcelain=v1 > /tmp/clifford-review-bootstrap/status.txt
+          tar \
+            --exclude='./node_modules' \
+            --exclude='./dist' \
+            -czf /tmp/clifford-review-bootstrap/clifford-number-exact.tgz .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clifford-number-exact-checkout
+          path: /tmp/clifford-review-bootstrap
+          if-no-files-found: error
+          retention-days: 1
