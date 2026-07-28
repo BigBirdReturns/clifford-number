@@ -1,0 +1,150 @@
+name: Temporary materialize K0 Wave 03 field adjudication
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-materialize-k0-wave03-field.yml'
+  push:
+    branches:
+      - agent/k0-wave03-field-adjudication
+    paths:
+      - '.github/workflows/temporary-materialize-k0-wave03-field.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/k0-wave03-field-adjudication
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Expand exact Wave 03 field source package
+        run: |
+          base64 -d .github/tmp/k0-wave03-field-source.b64 > /tmp/k0-wave03-field-source.tgz
+          test "$(sha256sum /tmp/k0-wave03-field-source.tgz | awk '{print $1}')" = "9e7a4c76f23010d8fd3663595dad78ce40310125fb010cb9df821327a894719c"
+          tar -xzf /tmp/k0-wave03-field-source.tgz -C .
+
+      - name: Build, validate, and test Wave 03 field package
+        run: |
+          node tools/build-k0-wave03-field-adjudication.mjs
+          node tools/validate-k0-wave03-field-adjudication.mjs
+          node test/k0-wave03-field-adjudication.test.js
+          node tools/validate-k0-role-neutral-wave-03.mjs
+          node test/k0-role-neutral-wave-03.test.js
+          node tools/validate-k0-epistemic-admissibility.mjs
+          node test/k0-epistemic-admissibility.test.js
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Reconstruct exact permanent package
+        run: |
+          git restore --staged --worktree .
+          git clean -fd
+          tar -xzf /tmp/k0-wave03-field-source.tgz -C .
+          node tools/build-k0-wave03-field-adjudication.mjs
+          node tools/validate-k0-wave03-field-adjudication.mjs
+          node test/k0-wave03-field-adjudication.test.js
+          node tools/validate-k0-role-neutral-wave-03.mjs
+          node test/k0-role-neutral-wave-03.test.js
+          node tools/validate-k0-epistemic-admissibility.mjs
+          node test/k0-epistemic-admissibility.test.js
+
+      - name: Enforce permanent path denominator
+        run: |
+          python - <<'PYDENOM'
+          import subprocess
+          expected = {
+              '.github/workflows/k0-wave03-field-adjudication.yml',
+              'data/research/k0-wave03-field-adjudication.json',
+              'docs/milestones/m05-k0-wave03-field-adjudication.md',
+              'tools/build-k0-wave03-field-adjudication.mjs',
+              'tools/validate-k0-wave03-field-adjudication.mjs',
+              'test/k0-wave03-field-adjudication.test.js',
+              'data/project/k0-wave03-field-adjudication-release-manifest.json',
+              'reports/core-thesis/answerable-power/k0-wave03-field-adjudication.json',
+              'reports/core-thesis/answerable-power/k0-wave03-field-adjudication.html',
+          }
+          changed = set(subprocess.check_output(['git','diff','--name-only'], text=True).splitlines())
+          untracked = set(subprocess.check_output(['git','ls-files','--others','--exclude-standard'], text=True).splitlines())
+          actual = changed | untracked
+          assert actual == expected, f'path mismatch\nmissing={sorted(expected-actual)}\nextra={sorted(actual-expected)}'
+          PYDENOM
+
+      - name: Create exact blob receipts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PYBLOBS'
+          import base64, json, os, subprocess, urllib.request
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GH_TOKEN']
+          api = 'https://api.github.com'
+          paths = [
+              '.github/workflows/k0-wave03-field-adjudication.yml',
+              'data/research/k0-wave03-field-adjudication.json',
+              'docs/milestones/m05-k0-wave03-field-adjudication.md',
+              'tools/build-k0-wave03-field-adjudication.mjs',
+              'tools/validate-k0-wave03-field-adjudication.mjs',
+              'test/k0-wave03-field-adjudication.test.js',
+              'data/project/k0-wave03-field-adjudication-release-manifest.json',
+              'reports/core-thesis/answerable-power/k0-wave03-field-adjudication.json',
+              'reports/core-thesis/answerable-power/k0-wave03-field-adjudication.html',
+          ]
+          def post(path, payload):
+              req = urllib.request.Request(api + path, data=json.dumps(payload).encode(), method='POST', headers={
+                  'Authorization': f'Bearer {token}',
+                  'Accept': 'application/vnd.github+json',
+                  'X-GitHub-Api-Version': '2022-11-28',
+                  'Content-Type': 'application/json',
+                  'User-Agent': 'k0-wave03-field-adjudication',
+              })
+              with urllib.request.urlopen(req) as response:
+                  return json.load(response)
+          rows = []
+          for path in paths:
+              raw = open(path, 'rb').read()
+              blob = post(f'/repos/{repo}/git/blobs', {'content': base64.b64encode(raw).decode(), 'encoding': 'base64'})
+              rows.append({'path': path, 'sha': blob['sha'], 'bytes': len(raw), 'mode': '100644'})
+          receipt = {
+              'schema_version': 'k0-wave03-field-adjudication-transaction@1',
+              'repository': repo,
+              'parent': subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip(),
+              'base_tree': subprocess.check_output(['git','rev-parse','HEAD^{tree}'], text=True).strip(),
+              'updates': rows,
+              'deletions': [
+                  '.github/tmp/k0-wave03-field-source.b64',
+                  '.github/workflows/temporary-materialize-k0-wave03-field.yml',
+              ],
+              'source_package_sha256': '9e7a4c76f23010d8fd3663595dad78ce40310125fb010cb9df821327a894719c',
+              'reviewed_records': 7,
+              'supported_for_human_review': 3,
+              'included_events': 0,
+              'publication_cleared': False,
+              'graph_effect': 'none',
+              'ref_updated': False,
+          }
+          os.makedirs('/tmp/k0-wave03-field-export', exist_ok=True)
+          with open('/tmp/k0-wave03-field-export/BLOB_RECEIPTS.json', 'w') as handle:
+              json.dump(receipt, handle, indent=2); handle.write('\n')
+          print(json.dumps(receipt, indent=2))
+          PYBLOBS
+
+      - name: Export validated transaction
+        uses: actions/upload-artifact@v4
+        with:
+          name: k0-wave03-field-adjudication-validated-transaction
+          path: /tmp/k0-wave03-field-export/BLOB_RECEIPTS.json
+          if-no-files-found: error
+          retention-days: 30
