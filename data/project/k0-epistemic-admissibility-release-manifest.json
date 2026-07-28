@@ -1,5 +1,5 @@
 {
-  "schema_version": "k0-epistemic-admissibility-release-manifest@1",
+  "schema_version": "k0-epistemic-admissibility-release-manifest@2",
   "program_id": "M-05",
   "layer_id": "K0",
   "as_of": "2026-07-27",
@@ -8,19 +8,29 @@
   "self_included": false,
   "entries": [
     {
+      "path": ".github/workflows/k0-epistemic-admissibility.yml",
+      "sha256": "36926a6e6fea65f4076166885eb989bae71e5af29513908ffe8e4efd48c4aa98",
+      "bytes": 2892
+    },
+    {
+      "path": ".github/workflows/k0-source-field-audit.yml",
+      "sha256": "e041d09739e79674f861e1a9e283989b647b64fb1162913ae26a458303ccc6fb",
+      "bytes": 2240
+    },
+    {
       "path": "data/intake/k0-epistemic-admissibility-source.txt",
       "sha256": "190251bf19be7a4bee5dd0ba0191d72eb5e5dd030c3c2dbb93db84e08531888d",
       "bytes": 31958
     },
     {
       "path": "data/intake/k0-ceiling-conversion-seed-events.json",
-      "sha256": "04cb6cc45eba3270e05fff4e3c06182bd64e231fbf1658ecedb6ffc3dbb7731a",
-      "bytes": 62881
+      "sha256": "214f934932bd96c364cea740a4384670a416efd9fa86248adffbdb262284bbfb",
+      "bytes": 73651
     },
     {
       "path": "data/project/k0-epistemic-admissibility-methodology.json",
-      "sha256": "7f7c54d2cf25d6c3f4c25a4806d2e027fdd9af16574ea343ee664f84e7286a56",
-      "bytes": 6486
+      "sha256": "b17bd205f63eb5a207b60c9b77d1c844d96e038f7332fe16fb2713e8c803b2f8",
+      "bytes": 8076
     },
     {
       "path": "data/project/k0-existing-ecosystem-wiring.json",
@@ -28,14 +38,29 @@
       "bytes": 15054
     },
     {
+      "path": "data/research/k0-source-custody-audit.json",
+      "sha256": "9c1a8ad1ab0852e5e90fd33305c99126bccd2c8573cd1349ef32404219f85fb2",
+      "bytes": 31264
+    },
+    {
+      "path": "data/research/k0-field-audit.json",
+      "sha256": "e6477c23a71c2728d4d8ea22fd39f39225ab5c6bc7f0978a595be04297e462b5",
+      "bytes": 14348
+    },
+    {
+      "path": "data/research/k0-role-neutral-denominator.json",
+      "sha256": "80aecc1b0bad8f80b66723deceb638423601bf3653e453128a2bf0ed5fdcefe1",
+      "bytes": 6846
+    },
+    {
       "path": "schemas/k0-ceiling-conversion-event.schema.json",
-      "sha256": "f06050ff1bb6dec4f77c9069e0d67544c29da4612f353878266e6c551b97e9ca",
-      "bytes": 1828
+      "sha256": "a039db68e4ddf7caf3cd4c3f4be878e50d536fc17c5d0aaf30d902352c2beada",
+      "bytes": 2752
     },
     {
       "path": "docs/methods/k0-epistemic-admissibility.md",
-      "sha256": "d332f5b26253fa1642570ba51f2a56dbab004e9fbd21ba7d0ed11e5fb78786bf",
-      "bytes": 1870
+      "sha256": "1c91cab27a433887c8b51478fdc370bd3d4231ee943c1240e5f077e29138aae3",
+      "bytes": 1996
     },
     {
       "path": "docs/milestones/m05-k0-epistemic-admissibility.md",
@@ -43,26 +68,32 @@
       "bytes": 805
     },
     {
+      "path": "docs/milestones/m05-k0-source-field-audit.md",
+      "sha256": "563a33b4024ccc7c088631ca367850459ea44c4c153134b7d41d3d44bc08ddaf",
+      "bytes": 1516
+    },
+    {
       "path": "tools/build-k0-epistemic-admissibility.mjs",
-      "sha256": "9eca036b350be025f7cc5562c5fc923fe667e152e482694f52cd968ba0a523e5",
-      "bytes": 9242
+      "sha256": "768d2c7b3f3ccbf952dc3c0f28b55277be371755e1dfb2793caea63e172dcb94",
+      "bytes": 11850
     },
     {
       "path": "tools/validate-k0-epistemic-admissibility.mjs",
-      "sha256": "fc2681d4b972872eb0173ecd3ab1d30b63d7feac9a4c1c86419b878017a81c51",
-      "bytes": 8161
+      "sha256": "fc45d65b4934c18b29bc97e16b9064b5e650e8fe16cc3ea9ed1cf2730dbd9683",
+      "bytes": 13304
     },
     {
       "path": "test/k0-epistemic-admissibility.test.js",
-      "sha256": "e792e9fabec42c2f09eba8371b90cc4824582f5e37e32e80075c25cb214508df",
-      "bytes": 2977
+      "sha256": "12525146784f88430a12bb2dc0cf5db0af51adf49abbfb4278c26effef74c83b",
+      "bytes": 4212
     }
   ],
-  "combined_sha256": "144ed8a5ee658e6d964e248f4db873b3249271df2b85b362395173d08095058f",
+  "combined_sha256": "7bbbff1d5271cb942967c1fa2c9542353f49081c8109100a33ce3c13ed855145",
   "boundaries": {
     "exact_bytes_prove_event_truth": false,
-    "manifest_proves_source_availability": false,
+    "manifest_proves_remote_source_hash_custody": false,
     "manifest_proves_selection_neutrality": false,
+    "maintainer_audit_proves_independent_review": false,
     "manifest_creates_graph_effect": false
   }
 }

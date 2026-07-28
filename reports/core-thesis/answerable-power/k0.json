@@ -1,28 +1,46 @@
 {
-  "schema_version": "k0-epistemic-admissibility-report@1",
+  "schema_version": "k0-epistemic-admissibility-report@2",
   "program_id": "M-05",
   "layer_id": "K0",
   "title": "Epistemic admissibility and ceiling conversion",
-  "status": "structural_integration_complete_source_truth_unreviewed",
+  "status": "maintainer_source_and_field_audit_complete_independent_review_open",
   "as_of": "2026-07-27",
   "source": {
     "path": "data/intake/k0-epistemic-admissibility-source.txt",
     "sha256": "190251bf19be7a4bee5dd0ba0191d72eb5e5dd030c3c2dbb93db84e08531888d",
     "reference_count": 25,
-    "status": "source_provided_analysis_not_independently_reverified"
+    "status": "source_provided_analysis_maintainer_scope_audited_not_independently_adjudicated"
   },
   "counts": {
     "top_ten_people": 10,
     "normalized_seed_events": 13,
-    "seed_positive_fixtures": 8,
-    "seed_boundary_fixtures": 4,
+    "seed_positive_fixtures": 7,
+    "seed_boundary_fixtures": 5,
     "seed_strategic_boundary_fixtures": 1,
-    "ccd_depths": {
-      "4": 1,
-      "6": 8,
+    "ccd_chain_depths": {
+      "0": 3,
+      "1": 1,
+      "3": 1,
+      "5": 1,
+      "6": 4,
+      "7": 3
+    },
+    "furthest_documented_stages": {
+      "3": 1,
+      "5": 1,
+      "6": 7,
       "7": 4
     },
-    "unique_external_urls_in_events": 25,
+    "original_source_rows": 25,
+    "directly_retrieved_sources": 23,
+    "restricted_sources": 2,
+    "source_rows_with_substitute_or_primary_upgrade": 7,
+    "exact_remote_content_hashes": 0,
+    "field_audit_supported_for_human_review": 6,
+    "field_audit_retained_candidate_only": 7,
+    "ccd_depth_changes": 6,
+    "role_changes": 1,
+    "unique_external_urls_in_events": 32,
     "natural_k0_fixtures": 10,
     "clean_first_class_estate_routes": 8,
     "shared_media_publication_taxonomy_gaps": 2,
@@ -93,7 +111,1405 @@
         "receipt": "correction, substitution, or exit materially blocked"
       }
     ],
+    "ccd_semantics": {
+      "cumulative": true,
+      "satisfying_statuses": [
+        "documented"
+      ],
+      "chain_depth_field": "ccd_chain_depth",
+      "furthest_documented_field": "furthest_documented_stage",
+      "backward_compatibility_field": "ccd_depth",
+      "backward_compatibility_rule": "ccd_depth must equal ccd_chain_depth",
+      "attempted_or_partial_rule": "partial, inferred, attempted, attempted_but_resisted, not_observed, and unavailable do not complete a CCD stage",
+      "gap_rule": "A later documented consequence cannot conceal a missing earlier transition."
+    },
     "final_control_question": "When a qualified knower contradicts the gateholder, who has independent authority to preserve the knower’s standing, preserve the evidence, and suspend the gate action before the gateholder’s explanation becomes the institution’s rule?"
+  },
+  "source_audit": {
+    "schema_version": "k0-source-custody-audit@1",
+    "program_id": "M-05",
+    "layer_id": "K0",
+    "audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+    "audit_type": "maintainer_source_retrieval_and_scope_review",
+    "as_of": "2026-07-27",
+    "auditor": "project-maintainers",
+    "independence_effect": "does_not_satisfy_second_party_review",
+    "source_denominator": 25,
+    "directly_retrieved": 23,
+    "source_restricted": 2,
+    "rows_with_substitute_or_primary_upgrade": 7,
+    "exact_content_hashes_captured": 0,
+    "hash_boundary": "This audit records retrieval and scope. It does not claim exact-byte custody of remote pages because no raw response bytes were retained in the repository.",
+    "rows": [
+      {
+        "source_index": 1,
+        "source_id": "K0-SRC-001",
+        "event_ids": [
+          "K0-SEED-001"
+        ],
+        "title": "CBS News: Elon Musk says he fired Twitter engineer who corrected him",
+        "original_url": "https://www.cbsnews.com/news/elon-musk-twitter-engineer-fired-eric-frohnhoefer/",
+        "source_class": "named_reporting",
+        "retrieval_status": "retrieved_direct",
+        "direct_source_available": true,
+        "substitute_sources": [],
+        "supports_fields": [
+          "qualified_knower",
+          "documented_contradiction",
+          "gate_action",
+          "material_consequence",
+          "feedback_source_removed"
+        ],
+        "limits": [
+          "Does not provide the complete personnel record or an independent merits adjudication.",
+          "Does not establish every available correction or appeal route."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 2,
+        "source_id": "K0-SRC-002",
+        "event_ids": [
+          "K0-SEED-002"
+        ],
+        "title": "Ars Technica: Musk fired top engineer for explaining view decline",
+        "original_url": "https://arstechnica.com/tech-policy/2023/02/musk-fired-top-engineer-for-explaining-why-his-tweets-views-are-down/",
+        "source_class": "named_reporting",
+        "retrieval_status": "source_restricted_substitute_retrieved",
+        "direct_source_available": false,
+        "substitute_sources": [
+          {
+            "url": "https://arstechnica.com/tech-policy/2023/02/report-musk-had-twitter-engineers-boost-his-tweets-after-biden-got-more-views/",
+            "source_class": "named_reporting_same_publisher",
+            "supports": "Special system, power-user multiplier, Biden/Musk comparison, and ranking intervention."
+          },
+          {
+            "url": "https://www.theguardian.com/technology/2023/feb/15/elon-musk-changes-twitter-algorithm-super-bowl-slump-report",
+            "source_class": "named_reporting",
+            "supports": "Emergency engineering effort and reported factor-1000 boost."
+          }
+        ],
+        "supports_fields": [
+          "governing_claim",
+          "qualified_contradiction",
+          "gate_action",
+          "material_consequence",
+          "feedback_source_removed",
+          "reality_modification"
+        ],
+        "limits": [
+          "The cited original page was not directly retrievable in the maintainer web audit.",
+          "No independent public audit of the ranking code is present."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 3,
+        "source_id": "K0-SRC-003",
+        "event_ids": [
+          "K0-SEED-003"
+        ],
+        "title": "Washington Post: Timnit Gebru and Google's AI ethics dispute",
+        "original_url": "https://www.washingtonpost.com/technology/2020/12/23/google-timnit-gebru-ai-ethics/",
+        "source_class": "named_reporting",
+        "retrieval_status": "retrieved_direct",
+        "direct_source_available": true,
+        "substitute_sources": [],
+        "supports_fields": [
+          "domain_gap_acknowledgment",
+          "publication_gate",
+          "withdrawal_or_author_removal_demand",
+          "Dean_explanation",
+          "institutional_process"
+        ],
+        "limits": [
+          "Does not expose the complete internal paper-review record.",
+          "Does not by itself resolve firing versus resignation."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 4,
+        "source_id": "K0-SRC-004",
+        "event_ids": [
+          "K0-SEED-003"
+        ],
+        "title": "Reuters/Thomson Reuters Foundation: Gebru says Google fired her; company denies it",
+        "original_url": "https://news.trust.org/item/20201203224748-8daoy",
+        "source_class": "named_reporting",
+        "retrieval_status": "retrieved_direct_archived_site",
+        "direct_source_available": true,
+        "substitute_sources": [],
+        "supports_fields": [
+          "competing_departure_accounts",
+          "system_access_loss",
+          "paper_process_explanation",
+          "external_publication_remained_possible"
+        ],
+        "limits": [
+          "Preserves competing accounts rather than adjudicating them.",
+          "The site is an archived publication surface."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 5,
+        "source_id": "K0-SRC-005",
+        "event_ids": [
+          "K0-SEED-003"
+        ],
+        "title": "Google Research: Jeffrey Dean",
+        "original_url": "https://research.google/people/jeff/",
+        "source_class": "first_party_role_page",
+        "retrieval_status": "retrieved_direct",
+        "direct_source_available": true,
+        "substitute_sources": [],
+        "supports_fields": [
+          "current_role_context",
+          "general_technical_qualification"
+        ],
+        "limits": [
+          "Does not establish personal direction of every institutional action.",
+          "Current role context does not prove the historical mechanism."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 6,
+        "source_id": "K0-SRC-006",
+        "event_ids": [
+          "K0-SEED-004"
+        ],
+        "title": "Los Angeles Times: no endorsement decision and resignations",
+        "original_url": "https://www.latimes.com/business/story/2024-10-25/latimes-no-presidential-endorsement-decison-resignations",
+        "source_class": "first_party_institutional_reporting",
+        "retrieval_status": "retrieved_direct",
+        "direct_source_available": true,
+        "substitute_sources": [],
+        "supports_fields": [
+          "board_proposal",
+          "owner_decision",
+          "publication_gate",
+          "resignations",
+          "subscriber_cancellations",
+          "competing_authorship_accounts"
+        ],
+        "limits": [
+          "The newspaper is reporting on its own owner and institution.",
+          "Ownership authority and professional board jurisdiction remain a governance dispute."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 7,
+        "source_id": "K0-SRC-007",
+        "event_ids": [
+          "K0-SEED-004"
+        ],
+        "title": "TheWrap: owner and editor dispute who chose silence",
+        "original_url": "https://www.thewrap.com/la-times-owner-patrick-soon-shiong-denies-harris-veto/",
+        "source_class": "named_reporting",
+        "retrieval_status": "retrieved_direct",
+        "direct_source_available": true,
+        "substitute_sources": [],
+        "supports_fields": [
+          "authorship_transfer",
+          "owner_explanation",
+          "editor_rebuttal"
+        ],
+        "limits": [
+          "Reports a contested exchange and does not adjudicate the proper scope of owner authority."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 8,
+        "source_id": "K0-SRC-008",
+        "event_ids": [
+          "K0-SEED-005"
+        ],
+        "title": "HHS: reconstituting ACIP",
+        "original_url": "https://www.hhs.gov/press-room/hhs-restore-public-trust-vaccines-acip.html",
+        "source_class": "official_statement",
+        "retrieval_status": "retrieved_direct",
+        "direct_source_available": true,
+        "substitute_sources": [],
+        "supports_fields": [
+          "gateholder_claim",
+          "removal_of_17_members",
+          "appointment_timing",
+          "clean_sweep_rationale",
+          "rubber_stamp_language"
+        ],
+        "limits": [
+          "Provides the gateholder's rationale, not independent proof of individual conflicts.",
+          "Does not document a contradiction delivered by the removed committee before the action."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 9,
+        "source_id": "K0-SRC-009",
+        "event_ids": [
+          "K0-SEED-005"
+        ],
+        "title": "CDC: ACIP membership criteria",
+        "original_url": "https://www.cdc.gov/acip/apply-for-membership/index.html",
+        "source_class": "official_criteria",
+        "retrieval_status": "retrieved_direct",
+        "direct_source_available": true,
+        "substitute_sources": [],
+        "supports_fields": [
+          "qualification_basis",
+          "conflict_process",
+          "public_scientific_deliberation"
+        ],
+        "limits": [
+          "General membership criteria are not a contradiction presented to HHS.",
+          "Criteria do not prove each removed member was conflict-free."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 10,
+        "source_id": "K0-SRC-010",
+        "event_ids": [
+          "K0-SEED-005"
+        ],
+        "title": "JAMA: conflicts of interest in federal vaccine advisory committees",
+        "original_url": "https://jamanetwork.com/journals/jama/fullarticle/2837784",
+        "source_class": "peer_reviewed_analysis",
+        "retrieval_status": "retrieved_direct",
+        "direct_source_available": true,
+        "substitute_sources": [],
+        "supports_fields": [
+          "historical_conflict_prevalence",
+          "counterevidence_to_generalized_capture_claim"
+        ],
+        "limits": [
+          "Published after the removal and cannot prove it was knowingly disregarded.",
+          "Aggregate disclosure prevalence cannot resolve every individual conflict or nonfinancial conflict."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 11,
+        "source_id": "K0-SRC-011",
+        "event_ids": [
+          "K0-SEED-005"
+        ],
+        "title": "Reuters: role of the newly appointed U.S. vaccine advisory panel",
+        "original_url": "https://www.reuters.com/business/healthcare-pharmaceuticals/what-is-role-kennedys-newly-appointed-us-vaccine-advisory-panel-2025-06-25/",
+        "source_class": "named_reporting",
+        "retrieval_status": "retrieved_direct",
+        "direct_source_available": true,
+        "substitute_sources": [],
+        "supports_fields": [
+          "advisory_role",
+          "appointment_and_removal_authority",
+          "institutional_downstream_context",
+          "absence_of_specific_public_conflict_evidence"
+        ],
+        "limits": [
+          "Describes potential recommendation and coverage consequences, not an observed person-specific harm in this event."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 12,
+        "source_id": "K0-SRC-012",
+        "event_ids": [
+          "K0-SEED-006"
+        ],
+        "title": "Washington Post: Bezos changes opinion section",
+        "original_url": "https://www.washingtonpost.com/style/media/2025/02/26/washington-post-bezos-opinions-section/",
+        "source_class": "first_party_institutional_reporting",
+        "retrieval_status": "retrieved_direct",
+        "direct_source_available": true,
+        "substitute_sources": [
+          {
+            "url": "https://www.theguardian.com/media/2025/feb/26/jeff-bezos-washington-post-opinion",
+            "source_class": "named_reporting",
+            "supports": "The quoted 'hell yes' condition and Shipley departure."
+          }
+        ],
+        "supports_fields": [
+          "owner_mission_directive",
+          "opposing_views_excluded",
+          "hell_yes_condition",
+          "Shipley_departure"
+        ],
+        "limits": [
+          "Does not by itself establish inability to understand editorial expertise.",
+          "The owner may characterize this as an explicit strategy rather than a competence judgment."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 13,
+        "source_id": "K0-SRC-013",
+        "event_ids": [
+          "K0-SEED-006"
+        ],
+        "title": "Guardian: Ruth Marcus resigns after dissenting column is declined",
+        "original_url": "https://www.theguardian.com/media/2025/mar/10/washington-post-ruth-marcus-resigns",
+        "source_class": "named_reporting",
+        "retrieval_status": "retrieved_direct",
+        "direct_source_available": true,
+        "substitute_sources": [],
+        "supports_fields": [
+          "internal_dissent",
+          "publication_refusal",
+          "resignation",
+          "same_gate_controls_policy_and_critique"
+        ],
+        "limits": [
+          "A declined column does not alone prove a comprehension failure.",
+          "External publication and exit remained possible."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 14,
+        "source_id": "K0-SRC-014",
+        "event_ids": [
+          "K0-SEED-007"
+        ],
+        "title": "Meta: research and privacy",
+        "original_url": "https://about.fb.com/news/2021/08/research-cannot-be-the-justification-for-compromising-peoples-privacy/",
+        "source_class": "first_party_platform_statement",
+        "retrieval_status": "retrieved_direct",
+        "direct_source_available": true,
+        "substitute_sources": [],
+        "supports_fields": [
+          "Meta_rationale",
+          "unauthorized_scraping_classification",
+          "access_termination",
+          "claimed_alternatives"
+        ],
+        "limits": [
+          "The source is the platform's own justification.",
+          "Does not establish that the privacy rationale was pretextual."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 15,
+        "source_id": "K0-SRC-015",
+        "event_ids": [
+          "K0-SEED-007"
+        ],
+        "title": "FTC letter to Facebook",
+        "original_url": "https://www.ftc.gov/blog-posts/2021/08/letter-acting-director-bureau-consumer-protection-samuel-levine-facebook",
+        "source_class": "regulator_letter",
+        "retrieval_status": "retrieved_direct",
+        "direct_source_available": true,
+        "substitute_sources": [],
+        "supports_fields": [
+          "consent_decree_interpretation",
+          "good_faith_research_exception",
+          "pretext_warning"
+        ],
+        "limits": [
+          "The FTC rejected claimed necessity but did not finally adjudicate Meta's independent privacy and terms arguments.",
+          "The letter did not itself restore access."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 16,
+        "source_id": "K0-SRC-016",
+        "event_ids": [
+          "K0-SEED-007"
+        ],
+        "title": "Meta 2026 proxy statement",
+        "original_url": "https://www.sec.gov/Archives/edgar/data/1326801/000162828026025532/meta-20260416.htm",
+        "source_class": "securities_filing",
+        "retrieval_status": "retrieved_direct",
+        "direct_source_available": true,
+        "substitute_sources": [],
+        "supports_fields": [
+          "founder_voting_control_context"
+        ],
+        "limits": [
+          "Voting control does not establish Zuckerberg personally ordered the NYU suspension.",
+          "Governance context cannot substitute for event-level attribution."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 17,
+        "source_id": "K0-SRC-017",
+        "event_ids": [
+          "K0-SEED-008"
+        ],
+        "title": "MS NOW transcript containing Rufo brand strategy",
+        "original_url": "https://www.ms.now/transcript/transcript-reidout-6-23-21-n1272222",
+        "source_class": "broadcast_transcript",
+        "retrieval_status": "source_restricted_substitute_retrieved",
+        "direct_source_available": false,
+        "substitute_sources": [
+          {
+            "url": "https://transcripts.cnn.com/show/cnr/date/2021-11-07/segment/06",
+            "source_class": "broadcast_transcript",
+            "supports": "The frozen-brand/toxicity quote and Rufo's later intrinsic-toxicity defense."
+          },
+          {
+            "url": "https://www.washingtonpost.com/outlook/critical-race-theory-law-systemic-racism/2021/07/02/6abe7590-d9f5-11eb-8fb8-aea56b785b00_story.html",
+            "source_class": "named_commentary",
+            "supports": "Contemporaneous quotation of the March 2021 post."
+          }
+        ],
+        "supports_fields": [
+          "designed_category_strategy",
+          "explanation_mutation",
+          "strategic_bypass_boundary"
+        ],
+        "limits": [
+          "The original cited page was not directly retrievable in the maintainer audit.",
+          "Category design alone does not establish a later institutional gate action or material consequence."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 18,
+        "source_id": "K0-SRC-018",
+        "event_ids": [
+          "K0-SEED-009"
+        ],
+        "title": "AAUP special committee report on New College",
+        "original_url": "https://www.aaup.org/reports-publications/aaup-policies-reports/investigation-and-inquiries/report-special-committee",
+        "source_class": "professional_association_inquiry",
+        "retrieval_status": "retrieved_direct",
+        "direct_source_available": true,
+        "substitute_sources": [],
+        "supports_fields": [
+          "tenure_denials",
+          "lack_of_merits_discussion",
+          "self_select_out_statement",
+          "governance_changes",
+          "faculty_departures"
+        ],
+        "limits": [
+          "AAUP is a professional association, not a court.",
+          "Complete individual tenure files and individualized board rationales remain absent."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 19,
+        "source_id": "K0-SRC-019",
+        "event_ids": [
+          "K0-SEED-010"
+        ],
+        "title": "Florida Governor: New College transformation",
+        "original_url": "https://flgov.com/eog/news/press/2023/governor-ron-desantis-commends-new-college-floridas-transformation-under-newly",
+        "source_class": "official_executive_statement",
+        "retrieval_status": "retrieved_direct",
+        "direct_source_available": true,
+        "substitute_sources": [],
+        "supports_fields": [
+          "appointments",
+          "funding",
+          "mission_claim",
+          "far_left_faculty_replacement_language",
+          "program_change"
+        ],
+        "limits": [
+          "Provides the administration's framing and selected claimed outcomes.",
+          "Does not adjudicate academic merit or legality."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 20,
+        "source_id": "K0-SRC-020",
+        "event_ids": [
+          "K0-SEED-010"
+        ],
+        "title": "AAUP sanctions New College",
+        "original_url": "https://www.aaup.org/news/aaup-votes-sanction-new-college-florida-and-spartanburg-community-college",
+        "source_class": "professional_association_action",
+        "retrieval_status": "retrieved_direct",
+        "direct_source_available": true,
+        "substitute_sources": [],
+        "supports_fields": [
+          "unanimous_sanction",
+          "shared_governance_findings",
+          "due_process_findings",
+          "appointment_chronology"
+        ],
+        "limits": [
+          "Association sanction is not a judicial disposition.",
+          "Litigation and other counterpower routes require separate tracking."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 21,
+        "source_id": "K0-SRC-021",
+        "event_ids": [
+          "K0-SEED-011"
+        ],
+        "title": "Guardian: removal of Joint Chiefs chairman C.Q. Brown Jr.",
+        "original_url": "https://www.theguardian.com/us-news/2025/feb/21/trump-hegseth-joint-chiefs-cq-brown-jr",
+        "source_class": "named_reporting",
+        "retrieval_status": "retrieved_direct",
+        "direct_source_available": true,
+        "substitute_sources": [],
+        "supports_fields": [
+          "prior_merit_or_race_statement",
+          "professional_record",
+          "removal",
+          "post_removal_praise"
+        ],
+        "limits": [
+          "Does not identify a specific contrary military judgment that triggered removal.",
+          "Professional record is counterevidence to a fitness claim, not a documented contradiction delivered by Brown."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 22,
+        "source_id": "K0-SRC-022",
+        "event_ids": [
+          "K0-SEED-011"
+        ],
+        "title": "Defense Department: Caine nomination and statement on Brown",
+        "original_url": "https://www.defense.gov/News/News-Stories/Article/Article/4077712/trump-nominates-dan-razin-caine-to-be-joint-chiefs-chairman/",
+        "source_class": "official_defense_statement",
+        "retrieval_status": "retrieved_via_redirect",
+        "direct_source_available": true,
+        "substitute_sources": [
+          {
+            "url": "https://www.war.gov/News/News-Stories/Article/Article/4077712/trump-nominates-dan-razin-caine-to-be-joint-chiefs-chairman/",
+            "source_class": "official_defense_statement_redirect_target",
+            "supports": "Current official location of the statement."
+          }
+        ],
+        "supports_fields": [
+          "removal_context",
+          "successor_nomination",
+          "ceremonial_recognition",
+          "warfighter_ethos_rationale"
+        ],
+        "limits": [
+          "Does not establish the motive for removal or a preceding professional contradiction."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 23,
+        "source_id": "K0-SRC-023",
+        "event_ids": [
+          "K0-SEED-012"
+        ],
+        "title": "Washington Post opinion: military-lawyer removals",
+        "original_url": "https://www.washingtonpost.com/opinions/2025/09/19/hegseth-national-guard-military-lawyer-purge/",
+        "source_class": "named_commentary",
+        "retrieval_status": "retrieved_direct_commentary_primary_upgrade_added",
+        "direct_source_available": true,
+        "substitute_sources": [
+          {
+            "url": "https://transcripts.cnn.com/show/lcl/date/2025-02-24/segment/01",
+            "source_class": "recorded_public_statement_transcript",
+            "supports": "Hegseth's exact roadblocks-to-orders explanation and lawful-orders qualification."
+          }
+        ],
+        "supports_fields": [
+          "roadblocks_language",
+          "removals",
+          "JAG_counterpower_context"
+        ],
+        "limits": [
+          "The cited Washington Post item is commentary.",
+          "No specific contrary legal advice event preceding removal is documented."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 24,
+        "source_id": "K0-SRC-024",
+        "event_ids": [
+          "K0-SEED-013"
+        ],
+        "title": "CBS News: Donoghue notes on corruption request",
+        "original_url": "https://www.cbsnews.com/news/trump-2020-election-corrupt-calls-jeffrey-rosen-richard-donoghue/",
+        "source_class": "named_reporting_on_contemporaneous_notes",
+        "retrieval_status": "retrieved_direct_primary_upgrade_added",
+        "direct_source_available": true,
+        "substitute_sources": [
+          {
+            "url": "https://oversightdemocrats.house.gov/news/press-releases/committee-obtains-key-evidence-of-president-trump-s-attempts-to-overturn-the",
+            "source_class": "official_congressional_release",
+            "supports": "The handwritten-note quotations, replacement implication, and committee custody."
+          }
+        ],
+        "supports_fields": [
+          "specific_refuted_claim",
+          "corruption_request",
+          "replacement_pressure",
+          "strategic_bypass"
+        ],
+        "limits": [
+          "The attempted replacement did not remove the DOJ feedback source.",
+          "Committee characterization must remain distinct from the underlying notes."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      },
+      {
+        "source_index": 25,
+        "source_id": "K0-SRC-025",
+        "event_ids": [
+          "K0-SEED-013"
+        ],
+        "title": "CBS News: January 6 Committee final report",
+        "original_url": "https://www.cbsnews.com/news/january-6-committee-final-report-release-capitol-assault/",
+        "source_class": "named_reporting_on_congressional_record",
+        "retrieval_status": "retrieved_direct_primary_upgrade_added",
+        "direct_source_available": true,
+        "substitute_sources": [
+          {
+            "url": "https://www.govinfo.gov/collection/january-6th-committee-final-report",
+            "source_class": "official_congressional_report_collection",
+            "supports": "The final report and supporting materials in official GPO custody."
+          }
+        ],
+        "supports_fields": [
+          "wider_pressure_campaign",
+          "repeated_rejection_of_fraud_claims",
+          "attempted_DOJ_leadership_replacement",
+          "institutional_resistance"
+        ],
+        "limits": [
+          "The event reached attempted feedback removal and attempted blockage, not completed stages six and seven."
+        ],
+        "retrieved_at": "2026-07-27",
+        "exact_content_sha256": null,
+        "hash_status": "not_captured_in_maintainer_web_audit",
+        "claim_truth_determined": false,
+        "independent_review_complete": false,
+        "publication_effect": "none",
+        "graph_effect": "none"
+      }
+    ],
+    "boundaries": {
+      "retrieval_proves_claim": false,
+      "substitute_source_is_identical_artifact": false,
+      "maintainer_audit_is_independent_review": false,
+      "source_scope_review_is_event_adjudication": false,
+      "remote_exact_byte_custody_complete": false,
+      "publication_unblocked": false,
+      "graph_effect": "none"
+    }
+  },
+  "field_audit": {
+    "schema_version": "k0-field-audit@1",
+    "program_id": "M-05",
+    "layer_id": "K0",
+    "audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+    "audit_type": "maintainer_field_level_correction",
+    "as_of": "2026-07-27",
+    "auditor": "project-maintainers",
+    "independence_effect": "does_not_satisfy_second_party_review",
+    "event_denominator": 13,
+    "disposition_counts": {
+      "supported_for_human_review": 6,
+      "retained_candidate_only": 7,
+      "bounded_non_link": 0,
+      "falsified": 0
+    },
+    "role_changes": 1,
+    "ccd_depth_changes": 6,
+    "rows": [
+      {
+        "event_id": "K0-SEED-001",
+        "disposition": "supported_for_human_review",
+        "prior_corpus_role": "seed_positive_fixture",
+        "audited_corpus_role": "seed_positive_fixture",
+        "prior_ccd_depth": 6,
+        "ccd_chain_depth": 6,
+        "furthest_documented_stage": 6,
+        "changes": [],
+        "remaining_gaps": [
+          "Complete personnel record",
+          "Independent merits review or appeal record",
+          "Proof that every correction route was unavailable"
+        ],
+        "rationale": "The public contradiction, reclassification, firing, material consequence, and feedback removal are documented; the terminal correction/exit stage remains partial."
+      },
+      {
+        "event_id": "K0-SEED-002",
+        "disposition": "supported_for_human_review",
+        "prior_corpus_role": "seed_positive_fixture",
+        "audited_corpus_role": "seed_positive_fixture",
+        "prior_ccd_depth": 7,
+        "ccd_chain_depth": 7,
+        "furthest_documented_stage": 7,
+        "changes": [
+          {
+            "field": "sources",
+            "change": "add_substitute_and_same_publisher_upgrade",
+            "rationale": "The originally cited Ars page was restricted in the audit; a second Ars report and Guardian reporting support the system intervention."
+          }
+        ],
+        "remaining_gaps": [
+          "Independent audit of the ranking code",
+          "Complete internal engineering record"
+        ],
+        "rationale": "The source set supports the complete reported chain while leaving code-level truth and internal causation unadjudicated."
+      },
+      {
+        "event_id": "K0-SEED-003",
+        "disposition": "retained_candidate_only",
+        "prior_corpus_role": "seed_positive_fixture",
+        "audited_corpus_role": "seed_positive_fixture",
+        "prior_ccd_depth": 6,
+        "ccd_chain_depth": 6,
+        "furthest_documented_stage": 6,
+        "changes": [
+          {
+            "field": "source_url",
+            "change": "remove_tracking_parameter_from_google_role_page",
+            "rationale": "Canonicalize the first-party locator."
+          }
+        ],
+        "remaining_gaps": [
+          "Complete internal review file",
+          "Independent appeal authority",
+          "Resolved firing-versus-resignation disposition",
+          "Decision-by-decision personal attribution"
+        ],
+        "rationale": "The gate action and competing explanations are documented, but institutional and personal attribution remain materially contested."
+      },
+      {
+        "event_id": "K0-SEED-004",
+        "disposition": "supported_for_human_review",
+        "prior_corpus_role": "seed_positive_fixture",
+        "audited_corpus_role": "seed_positive_fixture",
+        "prior_ccd_depth": 7,
+        "ccd_chain_depth": 7,
+        "furthest_documented_stage": 7,
+        "changes": [],
+        "remaining_gaps": [
+          "Independent governance review of owner and board authority"
+        ],
+        "rationale": "The proposed endorsement, owner veto, competing authorship account, resignations, and publication blockage are directly reported."
+      },
+      {
+        "event_id": "K0-SEED-005",
+        "disposition": "retained_candidate_only",
+        "prior_corpus_role": "seed_boundary_fixture",
+        "audited_corpus_role": "seed_boundary_fixture",
+        "prior_ccd_depth": 6,
+        "ccd_chain_depth": 0,
+        "furthest_documented_stage": 6,
+        "changes": [
+          {
+            "field": "path.qualified_contradiction.status",
+            "prior": "partial",
+            "audited": "not_observed",
+            "rationale": "Membership criteria and later aggregate data are external counterevidence, not proof that the removed committee delivered a contradiction before the action."
+          },
+          {
+            "field": "ccd_depth",
+            "prior": 6,
+            "audited": 0,
+            "rationale": "CCD is cumulative; a missing stage-one contradiction prevents a complete chain beyond the documented governing claim."
+          }
+        ],
+        "remaining_gaps": [
+          "A dated contradiction delivered by the sitting committee or members before removal",
+          "Person-specific conflict findings",
+          "Observed downstream effects"
+        ],
+        "rationale": "The removal and rationale are documented, but the current source set does not close the defining contradiction transition."
+      },
+      {
+        "event_id": "K0-SEED-006",
+        "disposition": "supported_for_human_review",
+        "prior_corpus_role": "seed_positive_fixture",
+        "audited_corpus_role": "seed_positive_fixture",
+        "prior_ccd_depth": 7,
+        "ccd_chain_depth": 7,
+        "furthest_documented_stage": 7,
+        "changes": [
+          {
+            "field": "sources",
+            "change": "add_independent_quote_corroboration",
+            "rationale": "The quoted 'hell yes' and 100% commitment condition is corroborated outside the institution."
+          }
+        ],
+        "remaining_gaps": [
+          "Independent test of editorial-product effects",
+          "Formal internal appeal and publication-governance record"
+        ],
+        "rationale": "The owner directive, commitment condition, declined dissent, departures, and control of the publication gate are documented."
+      },
+      {
+        "event_id": "K0-SEED-007",
+        "disposition": "retained_candidate_only",
+        "prior_corpus_role": "seed_boundary_fixture",
+        "audited_corpus_role": "seed_boundary_fixture",
+        "prior_ccd_depth": 6,
+        "ccd_chain_depth": 1,
+        "furthest_documented_stage": 7,
+        "changes": [
+          {
+            "field": "ccd_depth",
+            "prior": 6,
+            "audited": 1,
+            "rationale": "The event has a documented external contradiction, but knower reclassification remains partial rather than a completed cumulative stage."
+          }
+        ],
+        "remaining_gaps": [
+          "Final adjudication of privacy and nonparticipant-data claims",
+          "Evidence of personal direction by Zuckerberg",
+          "Proof that the conduct classification was a competence reclassification"
+        ],
+        "rationale": "The access action and regulator disagreement are documented; the defining reclassification remains contested."
+      },
+      {
+        "event_id": "K0-SEED-008",
+        "disposition": "retained_candidate_only",
+        "prior_corpus_role": "seed_boundary_fixture",
+        "audited_corpus_role": "seed_boundary_fixture",
+        "prior_ccd_depth": 4,
+        "ccd_chain_depth": 3,
+        "furthest_documented_stage": 3,
+        "changes": [
+          {
+            "field": "ccd_depth",
+            "prior": 4,
+            "audited": 3,
+            "rationale": "The formal institutional gate action is partial and belongs to later application events."
+          },
+          {
+            "field": "sources",
+            "change": "add_retrievable_transcript_substitute",
+            "rationale": "The original transcript was restricted; CNN preserves the quotation and later defense."
+          }
+        ],
+        "remaining_gaps": [
+          "Specific institutional gate action",
+          "Bounded material consequence",
+          "Feedback removal",
+          "Blocked correction route"
+        ],
+        "rationale": "The record strongly supports deliberate category engineering but not a complete ceiling-conversion event in this bounded unit."
+      },
+      {
+        "event_id": "K0-SEED-009",
+        "disposition": "supported_for_human_review",
+        "prior_corpus_role": "seed_positive_fixture",
+        "audited_corpus_role": "seed_positive_fixture",
+        "prior_ccd_depth": 6,
+        "ccd_chain_depth": 6,
+        "furthest_documented_stage": 6,
+        "changes": [],
+        "remaining_gaps": [
+          "Complete tenure files",
+          "Individualized board rationales",
+          "Judicial or equivalent merits disposition"
+        ],
+        "rationale": "AAUP documents the tenure gate, absence of individualized merits discussion, self-selection framing, consequences, and loss of durable faculty standing."
+      },
+      {
+        "event_id": "K0-SEED-010",
+        "disposition": "supported_for_human_review",
+        "prior_corpus_role": "seed_positive_fixture",
+        "audited_corpus_role": "seed_positive_fixture",
+        "prior_ccd_depth": 6,
+        "ccd_chain_depth": 6,
+        "furthest_documented_stage": 6,
+        "changes": [],
+        "remaining_gaps": [
+          "Final judicial dispositions",
+          "Decision-specific causal allocation across governor, board, and administration"
+        ],
+        "rationale": "Official executive language and AAUP records support the category-to-appointment-to-control sequence while leaving legal merits open."
+      },
+      {
+        "event_id": "K0-SEED-011",
+        "disposition": "retained_candidate_only",
+        "prior_corpus_role": "seed_boundary_fixture",
+        "audited_corpus_role": "seed_boundary_fixture",
+        "prior_ccd_depth": 6,
+        "ccd_chain_depth": 0,
+        "furthest_documented_stage": 6,
+        "changes": [
+          {
+            "field": "path.qualified_contradiction.status",
+            "prior": "documented",
+            "audited": "not_observed",
+            "rationale": "Brown's professional record is qualification and counterevidence, not a documented contrary military judgment presented in the decision chain."
+          },
+          {
+            "field": "path.knower_reclassification.status",
+            "prior": "documented",
+            "audited": "inferred",
+            "rationale": "The causal use of the earlier merit/race framing in the removal remains inferential."
+          },
+          {
+            "field": "path.explanation_mutation.status",
+            "prior": "documented",
+            "audited": "inferred",
+            "rationale": "Ceremonial praise and 'warfighter ethos' do not establish the exact explanation mutation without the decision record."
+          },
+          {
+            "field": "ccd_depth",
+            "prior": 6,
+            "audited": 0,
+            "rationale": "The cumulative chain stops at the documented governing claim."
+          }
+        ],
+        "remaining_gaps": [
+          "Specific contrary military advice",
+          "Removal decision record",
+          "Causal link between prior framing and gate action"
+        ],
+        "rationale": "Removal and qualifications are documented, but the event lacks the defining contradiction and causal reclassification links."
+      },
+      {
+        "event_id": "K0-SEED-012",
+        "disposition": "retained_candidate_only",
+        "prior_corpus_role": "seed_positive_fixture",
+        "audited_corpus_role": "seed_boundary_fixture",
+        "prior_ccd_depth": 6,
+        "ccd_chain_depth": 0,
+        "furthest_documented_stage": 6,
+        "changes": [
+          {
+            "field": "corpus_role",
+            "prior": "seed_positive_fixture",
+            "audited": "seed_boundary_fixture",
+            "rationale": "The record documents removal and a generalized account of the checking function, not a specific contradiction by the removed lawyers."
+          },
+          {
+            "field": "path.qualified_contradiction.status",
+            "prior": "documented",
+            "audited": "not_observed",
+            "rationale": "The institutional purpose of JAG advice is not a concrete contrary advice event."
+          },
+          {
+            "field": "path.knower_reclassification.status",
+            "prior": "documented",
+            "audited": "inferred",
+            "rationale": "Roadblocks language targets the function, but event-specific reclassification remains inferential."
+          },
+          {
+            "field": "path.explanation_mutation.status",
+            "prior": "documented",
+            "audited": "inferred",
+            "rationale": "The causal mutation from advice to obstruction cannot be completed without a specific advice record."
+          },
+          {
+            "field": "ccd_depth",
+            "prior": 6,
+            "audited": 0,
+            "rationale": "The cumulative chain stops at the documented governing claim."
+          },
+          {
+            "field": "sources",
+            "change": "add_recorded_statement_transcript",
+            "rationale": "Upgrade the commentary-dependent quote to a transcript of the public statement."
+          }
+        ],
+        "remaining_gaps": [
+          "Specific legal advice preceding removal",
+          "Decision record",
+          "Evidence that removed lawyers were treated as defective because of that advice"
+        ],
+        "rationale": "The case remains a strong counterpower-target boundary fixture, not a completed ceiling-conversion positive."
+      },
+      {
+        "event_id": "K0-SEED-013",
+        "disposition": "retained_candidate_only",
+        "prior_corpus_role": "seed_strategic_boundary_fixture",
+        "audited_corpus_role": "seed_strategic_boundary_fixture",
+        "prior_ccd_depth": 7,
+        "ccd_chain_depth": 5,
+        "furthest_documented_stage": 5,
+        "changes": [
+          {
+            "field": "ccd_depth",
+            "prior": 7,
+            "audited": 5,
+            "rationale": "Feedback-source removal and blockage were attempted and resisted, not completed."
+          },
+          {
+            "field": "sources",
+            "change": "add_official_congressional_custody",
+            "rationale": "Upgrade named reporting with the House Oversight release and GovInfo report collection."
+          }
+        ],
+        "remaining_gaps": [
+          "Completed feedback-source removal",
+          "Completed blockage of correction or certification",
+          "Separation of each pressured institution into bounded subevents"
+        ],
+        "rationale": "The strategic-bypass chain is strongly documented through attempted material consequence, but institutional resistance prevented stages six and seven from completing."
+      }
+    ],
+    "boundaries": {
+      "maintainer_correction_is_independent_review": false,
+      "supported_for_human_review_is_publication_clearance": false,
+      "retained_candidate_only_is_falsified": false,
+      "field_audit_determines_private_psychology": false,
+      "field_audit_creates_network_edge": false,
+      "graph_effect": "none"
+    }
+  },
+  "role_neutral_denominator": {
+    "schema_version": "k0-role-neutral-denominator@1",
+    "program_id": "M-05",
+    "layer_id": "K0",
+    "as_of": "2026-07-27",
+    "selection_lane_id": "epistemic-admissibility-ceiling-events",
+    "status": "protocol_frozen_execution_not_started",
+    "selection_unit": "one bounded, source-addressable gate action preceded by a documented contradiction from a person or body with a stated qualification basis",
+    "selection_universe": "all recoverable public-source events returned by the frozen gate-stratified search battery, including non-events, ordinary disagreements, failed searches, inaccessible sources, and exculpatory controls",
+    "gate_strata": [
+      {
+        "stratum_id": "K0-G01",
+        "gate": "employment_and_professional_standing"
+      },
+      {
+        "stratum_id": "K0-G02",
+        "gate": "publication_and_research"
+      },
+      {
+        "stratum_id": "K0-G03",
+        "gate": "appointment_and_advisory_governance"
+      },
+      {
+        "stratum_id": "K0-G04",
+        "gate": "funding_procurement_and_contracting"
+      },
+      {
+        "stratum_id": "K0-G05",
+        "gate": "data_platform_and_system_access"
+      },
+      {
+        "stratum_id": "K0-G06",
+        "gate": "accreditation_licensing_tenure_and_certification"
+      },
+      {
+        "stratum_id": "K0-G07",
+        "gate": "regulatory_enforcement_and_prosecution"
+      },
+      {
+        "stratum_id": "K0-G08",
+        "gate": "public_safety_and_operational_authority"
+      },
+      {
+        "stratum_id": "K0-G09",
+        "gate": "law_constitutional_process_and_public_information"
+      }
+    ],
+    "inclusion_rules": [
+      "A dated governing claim and bounded domain are source-addressable.",
+      "A person or body has a stated qualification basis in that bounded domain.",
+      "A contradictory finding, warning, result, or professional judgment is documented as reaching the decision surface.",
+      "A traceable gate action or attempted gate action follows.",
+      "Alternative explanations and counterevidence are retained."
+    ],
+    "exclusion_rules": [
+      "Fame, party, ideology, wealth, nationality, or anticipated news value selects the event.",
+      "A bad outcome substitutes for a documented contradiction and gate action.",
+      "Expert status substitutes for evidence that the expert was correct.",
+      "Ordinary disagreement with independent merits review is treated as capture.",
+      "A legitimate emergency or safety action with bounded expiry, evidence preservation, and independent stay is treated as capture.",
+      "Unrelated performance or misconduct evidence is ignored because the person also dissented."
+    ],
+    "search_battery": [
+      {
+        "query_id": "K0-Q01",
+        "template": "\"raised concerns\" AND (fired OR removed OR access revoked) AND (audit OR investigation OR report)"
+      },
+      {
+        "query_id": "K0-Q02",
+        "template": "\"contrary advice\" AND (appointment OR removal OR board) AND official record"
+      },
+      {
+        "query_id": "K0-Q03",
+        "template": "\"whistleblower\" AND (retaliation OR reassigned OR suspended) AND oversight finding"
+      },
+      {
+        "query_id": "K0-Q04",
+        "template": "\"research access\" AND (terminated OR disabled) AND regulator letter"
+      },
+      {
+        "query_id": "K0-Q05",
+        "template": "\"publication\" AND (withdraw OR remove authors OR declined) AND internal review"
+      },
+      {
+        "query_id": "K0-Q06",
+        "template": "\"safety warning\" AND (overruled OR ignored) AND commission report"
+      },
+      {
+        "query_id": "K0-Q07",
+        "template": "\"professional judgment\" AND (insubordination OR commitment OR roadblock) AND removal"
+      },
+      {
+        "query_id": "K0-Q08",
+        "template": "\"captured\" OR \"conflicted\" AND entire committee removed AND official criteria"
+      },
+      {
+        "query_id": "K0-Q09",
+        "template": "\"chose to\" AND veto OR blocked AND board OR editor"
+      }
+    ],
+    "synthetic_controls": [
+      {
+        "control_id": "K0-C01",
+        "name": "ordinary_peer_review_rejection",
+        "expected": "not_a_ceiling_conversion_event",
+        "conditions": [
+          "reasoned merits record",
+          "independent reviewers",
+          "resubmission or appeal",
+          "no employment or access consequence"
+        ]
+      },
+      {
+        "control_id": "K0-C02",
+        "name": "performance_action_with_independent_record",
+        "expected": "not_a_ceiling_conversion_event",
+        "conditions": [
+          "independent performance evidence",
+          "no causal link to contradiction",
+          "appeal with stay",
+          "evidence preserved"
+        ]
+      },
+      {
+        "control_id": "K0-C03",
+        "name": "bounded_emergency_action",
+        "expected": "counterpower_preserved",
+        "conditions": [
+          "fixed expiry",
+          "independent authorization",
+          "evidence preservation",
+          "prompt merits review"
+        ]
+      },
+      {
+        "control_id": "K0-C04",
+        "name": "privacy_restriction_with_external_adjudication",
+        "expected": "not_a_ceiling_conversion_event_without_more",
+        "conditions": [
+          "specific privacy evidence",
+          "less restrictive alternative",
+          "independent appeal",
+          "institution cannot close record unilaterally"
+        ]
+      },
+      {
+        "control_id": "K0-C05",
+        "name": "gateholder_updates_after_contradiction",
+        "expected": "positive_update_control",
+        "conditions": [
+          "public correction",
+          "knower standing preserved",
+          "gate action stayed",
+          "evidence retained"
+        ]
+      },
+      {
+        "control_id": "K0-C06",
+        "name": "known_falsehood_used_instrumentally",
+        "expected": "strategic_bypass_boundary",
+        "conditions": [
+          "contradictory evidence understood",
+          "false claim used for gate action",
+          "competence-model gap not required"
+        ]
+      },
+      {
+        "control_id": "K0-C07",
+        "name": "independent_whistleblower_stay",
+        "expected": "answer_story_candidate",
+        "conditions": [
+          "external authority",
+          "pre-action stay",
+          "standing preserved",
+          "burden shifted"
+        ]
+      },
+      {
+        "control_id": "K0-C08",
+        "name": "affected_party_veto",
+        "expected": "answer_story_candidate",
+        "conditions": [
+          "direct affected-party authority",
+          "evidence access",
+          "binding pause",
+          "retaliation protection"
+        ]
+      }
+    ],
+    "execution": {
+      "name_blind_execution_started": false,
+      "searches_executed": 0,
+      "returned_records": 0,
+      "included_events": 0,
+      "non_events": 0,
+      "source_failures": 0,
+      "independent_second_party_review_complete": false
+    },
+    "boundaries": {
+      "seed_ten_are_denominator": false,
+      "query_hit_is_event": false,
+      "absence_of_hit_is_negative_fact": false,
+      "synthetic_control_proves_real_world_effect": false,
+      "protocol_freeze_is_execution": false,
+      "graph_effect": "none"
+    }
   },
   "ecosystem_wiring": {
     "schema_version": "k0-existing-ecosystem-wiring@2",
@@ -471,19 +1887,24 @@
       },
       "sources": [
         {
-          "source_id": "k0-source-proposition",
-          "source_class": "source_provided_analysis_not_receipt",
+          "source_id": "k0-source-intake",
+          "source_class": "source_provided_graph_inert_fixture",
           "url": "data/intake/k0-epistemic-admissibility-source.txt"
         },
         {
-          "source_id": "k0-seed-events",
-          "source_class": "graph_inert_source_addressed_fixtures",
-          "url": "data/intake/k0-ceiling-conversion-seed-events.json"
+          "source_id": "k0-source-custody-audit",
+          "source_class": "maintainer_retrieval_scope_audit",
+          "url": "data/research/k0-source-custody-audit.json"
         },
         {
-          "source_id": "k0-methodology",
-          "source_class": "checked_in_selection_and_event_contract",
-          "url": "data/project/k0-epistemic-admissibility-methodology.json"
+          "source_id": "k0-field-audit",
+          "source_class": "maintainer_field_correction_ledger",
+          "url": "data/research/k0-field-audit.json"
+        },
+        {
+          "source_id": "k0-role-neutral-denominator",
+          "source_class": "frozen_selection_and_control_protocol",
+          "url": "data/research/k0-role-neutral-denominator.json"
         }
       ],
       "privacy": {
@@ -506,7 +1927,7 @@
       "review": {
         "last_reviewed_at": "2026-07-27",
         "review_by": "2026-10-27",
-        "sunset_condition": "Keep the lane publication-blocked if the role-neutral universe, source-addressable receipts, null denominator, or independent adversarial review cannot be maintained."
+        "sunset_condition": "Remain proposed and publication-blocked until name-blind denominator execution, exact source custody where lawful, and a distinct second-party review are complete."
       },
       "consumption": {
         "contract_id": "public-topology-map@1",
@@ -532,7 +1953,7 @@
       },
       "metrics": [
         {
-          "metric_id": "source_provided_seed_people",
+          "metric_id": "source_provided_fixture_people",
           "unit": "people",
           "expected": 10,
           "observed": 10,
@@ -541,7 +1962,7 @@
           "source": "data/intake/k0-ceiling-conversion-seed-events.json"
         },
         {
-          "metric_id": "normalized_seed_events",
+          "metric_id": "normalized_fixture_events",
           "unit": "events",
           "expected": 13,
           "observed": 13,
@@ -550,66 +1971,96 @@
           "source": "data/intake/k0-ceiling-conversion-seed-events.json"
         },
         {
-          "metric_id": "source_provided_reference_urls",
-          "unit": "source_urls",
+          "metric_id": "original_source_rows",
+          "unit": "sources",
           "expected": 25,
           "observed": 25,
           "denominator_kind": "exact",
           "publicly_reproducible": true,
-          "source": "data/intake/k0-epistemic-admissibility-source.txt"
+          "source": "data/research/k0-source-custody-audit.json"
         },
         {
-          "metric_id": "independently_retrieved_and_archived_source_receipts",
-          "unit": "source_receipts",
+          "metric_id": "directly_retrieved_source_rows",
+          "unit": "sources",
+          "expected": 25,
+          "observed": 23,
+          "denominator_kind": "exact",
+          "publicly_reproducible": true,
+          "source": "data/research/k0-source-custody-audit.json"
+        },
+        {
+          "metric_id": "source_restricted_rows_with_substitutes",
+          "unit": "sources",
+          "expected": 2,
+          "observed": 2,
+          "denominator_kind": "exact",
+          "publicly_reproducible": true,
+          "source": "data/research/k0-source-custody-audit.json"
+        },
+        {
+          "metric_id": "remote_exact_byte_hashes",
+          "unit": "sources",
           "expected": 25,
           "observed": 0,
           "denominator_kind": "exact",
           "publicly_reproducible": true,
-          "source": "No K0 receipt-audit and archival manifest is checked in."
+          "source": "data/research/k0-source-custody-audit.json"
         },
         {
-          "metric_id": "name_blind_role_neutral_universe_events",
+          "metric_id": "maintainer_field_audits",
           "unit": "events",
-          "expected": null,
-          "observed": 0,
-          "denominator_kind": "open",
+          "expected": 13,
+          "observed": 13,
+          "denominator_kind": "exact",
           "publicly_reproducible": true,
-          "source": "Role-neutral universe execution has not started."
+          "source": "data/research/k0-field-audit.json"
         },
         {
-          "metric_id": "independent_selection_reviews",
-          "unit": "reviews",
-          "expected": 1,
+          "metric_id": "independent_second_party_event_reviews",
+          "unit": "events",
+          "expected": 13,
           "observed": 0,
           "denominator_kind": "exact",
           "publicly_reproducible": true,
-          "source": "data/research/selection-adversarial-reviews.json"
+          "source": "issue:367"
+        },
+        {
+          "metric_id": "name_blind_searches_executed",
+          "unit": "searches",
+          "expected": 9,
+          "observed": 0,
+          "denominator_kind": "exact",
+          "publicly_reproducible": true,
+          "source": "data/research/k0-role-neutral-denominator.json"
+        },
+        {
+          "metric_id": "promoted_graph_events",
+          "unit": "events",
+          "expected": 0,
+          "observed": 0,
+          "denominator_kind": "exact",
+          "publicly_reproducible": true,
+          "source": "canonical graph ledgers"
         }
       ],
       "known_gaps": [
         {
-          "gap_id": "selection-gap-k0-receipt-audit",
-          "description": "The twenty-five source-provided URLs have not been independently retrieved, archived, hashed, and adjudicated in the repository.",
+          "gap_id": "k0-gap-remote-exact-byte-custody",
+          "description": "The maintainer audit retrieved or substituted all source rows but retained zero exact remote response hashes, so source custody is not complete.",
           "status": "blocking",
-          "next_action": "Build a source receipt manifest and preserve unavailable, changed, paywalled, or contradictory records without converting them into absence."
+          "next_action": "Acquire lawful exact artifacts or archive references and record hashes without treating retrieval as claim truth."
         },
         {
-          "gap_id": "selection-gap-k0-role-neutral-universe",
-          "description": "The ten people remain source-provided fixtures rather than the output of a name-blind, role-neutral event universe.",
+          "gap_id": "k0-gap-independent-second-party-review",
+          "description": "All thirteen event field audits were performed by project maintainers and therefore do not satisfy the distinct reviewer required by Issue #367.",
           "status": "blocking",
-          "next_action": "Execute the declared gate-action predicate across symmetric institutional and jurisdictional strata, preserving nulls and rejected candidates."
+          "next_action": "Obtain one disposition per event and one adversarial universe review from a genuinely separate reviewer."
         },
         {
-          "gap_id": "selection-gap-k0-independent-review",
-          "description": "No reviewer independent from the integration author has challenged the selection universe, event classification, or media-publication taxonomy gap.",
+          "gap_id": "k0-gap-name-blind-universe-execution",
+          "description": "The role-neutral gate-stratified search battery is frozen but none of its nine searches has been executed, so the ten source people remain fixtures rather than a tested denominator.",
           "status": "blocking",
-          "next_action": "Obtain a second-party adversarial review before any fixture is represented as cleared or publication-ready."
-        },
-        {
-          "gap_id": "selection-gap-k0-media-taxonomy",
-          "description": "Patrick Soon-Shiong and Jeff Bezos fit the event mechanism but expose a shared publication and editorial-governance taxonomy gap in the current estate vocabulary.",
-          "status": "open",
-          "next_action": "Test a cross-estate publication-gate semantic without creating a personality or media-owner estate."
+          "next_action": "Execute the frozen battery across all gate strata, preserving non-events, nulls, source failures, and controls."
         }
       ]
     },
@@ -626,7 +2077,10 @@
         "Actor-centered stories can compress multi-person institutions into one gateholder without sufficient attribution evidence.",
         "Strategic deception and designed exclusion can be mislabeled as sincere comprehension failure.",
         "Paywalled, changed, or later-published sources can make apparent evidence symmetry illusory.",
-        "Credential bias can exclude situated and affected-party knowledge while overcrediting formal status."
+        "Credential bias can exclude situated and affected-party knowledge while overcrediting formal status.",
+        "Maintainer corrections can improve internal discipline while still reproducing the project author’s selection assumptions.",
+        "English-language and digitally durable sources remain overrepresented.",
+        "A source-present event can still lack the causal transition required by K0."
       ],
       "boundary_attacks": [
         {
@@ -686,7 +2140,21 @@
           ]
         }
       ],
-      "disposition": "The ten source cases are structurally integrated as graph-inert fixtures, not cleared findings or a denominator. The lane remains publication-blocked pending source receipt audit, name-blind universe execution, comparator controls, and independent second-party review."
+      "disposition": "Maintainer source and field corrections are recorded, but publication remains blocked. A distinct reviewer must audit all thirteen events and the role-neutral denominator before any clearance.",
+      "maintainer_audit": {
+        "audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+        "auditor_id": "project-maintainers",
+        "completed_at": "2026-07-27",
+        "role": "source_retrieval_and_field_correction",
+        "independence_effect": "does_not_satisfy_second_party_clearance",
+        "findings": [
+          "CCD previously conflated furthest documented consequence with cumulative chain completion.",
+          "General qualifications or institutional function were sometimes substituted for a contradiction delivered to the gateholder.",
+          "Attempted feedback removal and attempted blockage were counted as completed stages.",
+          "One positive fixture required demotion to boundary status.",
+          "Two restricted sources and one commentary-dependent claim required substitute or primary-source upgrades."
+        ]
+      }
     }
   },
   "seed_events": [
@@ -787,11 +2255,20 @@
       "selection_lane_id": "epistemic-admissibility-ceiling-events",
       "m05_story_id": "M05-S14",
       "m05_lane_id": "A17",
-      "source_status": "source_provided_not_independently_reverified",
+      "source_status": "maintainer_retrieval_and_scope_audited_independent_adjudication_open",
       "evidence_truth_determined": false,
       "receipt_audit_complete": false,
       "publication_status": "blocked_pending_receipt_audit_and_second_party_selection_review",
-      "network_edge_created": false
+      "network_edge_created": false,
+      "ccd_chain_depth": 6,
+      "furthest_documented_stage": 6,
+      "field_audit_disposition": "supported_for_human_review",
+      "audit_record_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+      "audited_source_ids": [
+        "K0-SRC-001"
+      ],
+      "maintainer_source_audit_complete": true,
+      "independent_review_complete": false
     },
     {
       "event_id": "K0-SEED-002",
@@ -877,6 +2354,30 @@
           "url": "https://arstechnica.com/tech-policy/2023/02/musk-fired-top-engineer-for-explaining-why-his-tweets-views-are-down/",
           "kind": "named_reporting",
           "supports": "Internal analysis, dismissal, and special multiplier."
+        },
+        {
+          "title": "Ars Technica: special system and power-user multiplier",
+          "url": "https://arstechnica.com/tech-policy/2023/02/report-musk-had-twitter-engineers-boost-his-tweets-after-biden-got-more-views/",
+          "kind": "named_reporting_same_publisher",
+          "supports": "Special system, power-user multiplier, and ranking intervention."
+        },
+        {
+          "title": "Guardian: reported factor-1000 boost",
+          "url": "https://www.theguardian.com/technology/2023/feb/15/elon-musk-changes-twitter-algorithm-super-bowl-slump-report",
+          "kind": "named_reporting",
+          "supports": "Emergency engineering effort and reported ranking boost."
+        },
+        {
+          "title": "Ars Technica: special system and power-user multiplier",
+          "url": "https://arstechnica.com/tech-policy/2023/02/report-musk-had-twitter-engineers-boost-his-tweets-after-biden-got-more-views/",
+          "kind": "named_reporting_same_publisher",
+          "supports": "Special system, power-user multiplier, and ranking intervention."
+        },
+        {
+          "title": "Guardian: reported factor-1000 boost",
+          "url": "https://www.theguardian.com/technology/2023/feb/15/elon-musk-changes-twitter-algorithm-super-bowl-slump-report",
+          "kind": "named_reporting",
+          "supports": "Emergency engineering effort and reported ranking boost."
         }
       ],
       "alternative_explanations": [
@@ -892,11 +2393,20 @@
       "selection_lane_id": "epistemic-admissibility-ceiling-events",
       "m05_story_id": "M05-S14",
       "m05_lane_id": "A17",
-      "source_status": "source_provided_not_independently_reverified",
+      "source_status": "maintainer_retrieval_and_scope_audited_independent_adjudication_open",
       "evidence_truth_determined": false,
       "receipt_audit_complete": false,
       "publication_status": "blocked_pending_receipt_audit_and_second_party_selection_review",
-      "network_edge_created": false
+      "network_edge_created": false,
+      "ccd_chain_depth": 7,
+      "furthest_documented_stage": 7,
+      "field_audit_disposition": "supported_for_human_review",
+      "audit_record_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+      "audited_source_ids": [
+        "K0-SRC-002"
+      ],
+      "maintainer_source_audit_complete": true,
+      "independent_review_complete": false
     },
     {
       "event_id": "K0-SEED-003",
@@ -994,7 +2504,7 @@
         },
         {
           "title": "Google Research: Jeffrey Dean",
-          "url": "https://research.google/people/jeff/?utm_source=chatgpt.com",
+          "url": "https://research.google/people/jeff/",
           "kind": "first_party_role_page",
           "supports": "Current institutional role context; does not establish personal direction of every Google action."
         }
@@ -1012,11 +2522,22 @@
       "selection_lane_id": "epistemic-admissibility-ceiling-events",
       "m05_story_id": "M05-S14",
       "m05_lane_id": "A17",
-      "source_status": "source_provided_not_independently_reverified",
+      "source_status": "maintainer_retrieval_and_scope_audited_independent_adjudication_open",
       "evidence_truth_determined": false,
       "receipt_audit_complete": false,
       "publication_status": "blocked_pending_receipt_audit_and_second_party_selection_review",
-      "network_edge_created": false
+      "network_edge_created": false,
+      "ccd_chain_depth": 6,
+      "furthest_documented_stage": 6,
+      "field_audit_disposition": "retained_candidate_only",
+      "audit_record_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+      "audited_source_ids": [
+        "K0-SRC-003",
+        "K0-SRC-004",
+        "K0-SRC-005"
+      ],
+      "maintainer_source_audit_complete": true,
+      "independent_review_complete": false
     },
     {
       "event_id": "K0-SEED-004",
@@ -1120,11 +2641,21 @@
       "selection_lane_id": "epistemic-admissibility-ceiling-events",
       "m05_story_id": "M05-S14",
       "m05_lane_id": "A17",
-      "source_status": "source_provided_not_independently_reverified",
+      "source_status": "maintainer_retrieval_and_scope_audited_independent_adjudication_open",
       "evidence_truth_determined": false,
       "receipt_audit_complete": false,
       "publication_status": "blocked_pending_receipt_audit_and_second_party_selection_review",
-      "network_edge_created": false
+      "network_edge_created": false,
+      "ccd_chain_depth": 7,
+      "furthest_documented_stage": 7,
+      "field_audit_disposition": "supported_for_human_review",
+      "audit_record_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+      "audited_source_ids": [
+        "K0-SRC-006",
+        "K0-SRC-007"
+      ],
+      "maintainer_source_audit_complete": true,
+      "independent_review_complete": false
     },
     {
       "event_id": "K0-SEED-005",
@@ -1163,8 +2694,8 @@
           "summary": "HHS described the committee as conflicted, ideologically locked, and industry-captured."
         },
         "qualified_contradiction": {
-          "status": "partial",
-          "summary": "Membership criteria and disclosure records counter a generalized capture claim."
+          "status": "not_observed",
+          "summary": "Membership criteria and later aggregate disclosure data are external counterevidence; the current sources do not show a qualified contradiction delivered to HHS before removal."
         },
         "knower_reclassification": {
           "status": "documented",
@@ -1191,8 +2722,9 @@
           "summary": "Public and judicial review may exist, but the committee could not reverse its own removal."
         }
       },
-      "ccd_depth": 6,
+      "ccd_depth": 0,
       "ccd_missing": [
+        "dated contradiction delivered by the sitting committee or members before removal",
         "case-specific findings for each removed member",
         "observed downstream effects"
       ],
@@ -1250,11 +2782,23 @@
       "selection_lane_id": "epistemic-admissibility-ceiling-events",
       "m05_story_id": "M05-S14",
       "m05_lane_id": "A17",
-      "source_status": "source_provided_not_independently_reverified",
+      "source_status": "maintainer_retrieval_and_scope_audited_independent_adjudication_open",
       "evidence_truth_determined": false,
       "receipt_audit_complete": false,
       "publication_status": "blocked_pending_receipt_audit_and_second_party_selection_review",
-      "network_edge_created": false
+      "network_edge_created": false,
+      "ccd_chain_depth": 0,
+      "furthest_documented_stage": 6,
+      "field_audit_disposition": "retained_candidate_only",
+      "audit_record_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+      "audited_source_ids": [
+        "K0-SRC-008",
+        "K0-SRC-009",
+        "K0-SRC-010",
+        "K0-SRC-011"
+      ],
+      "maintainer_source_audit_complete": true,
+      "independent_review_complete": false
     },
     {
       "event_id": "K0-SEED-006",
@@ -1344,6 +2888,18 @@
           "url": "https://www.theguardian.com/media/2025/mar/10/washington-post-ruth-marcus-resigns",
           "kind": "named_reporting",
           "supports": "Internal dissent and publication gate."
+        },
+        {
+          "title": "Guardian: Bezos quoted hell-yes and commitment condition",
+          "url": "https://www.theguardian.com/media/2025/feb/26/jeff-bezos-washington-post-opinion",
+          "kind": "named_reporting",
+          "supports": "The quoted commitment condition and Shipley departure."
+        },
+        {
+          "title": "Guardian: Bezos quoted hell-yes and commitment condition",
+          "url": "https://www.theguardian.com/media/2025/feb/26/jeff-bezos-washington-post-opinion",
+          "kind": "named_reporting",
+          "supports": "The quoted commitment condition and Shipley departure."
         }
       ],
       "alternative_explanations": [
@@ -1359,11 +2915,21 @@
       "selection_lane_id": "epistemic-admissibility-ceiling-events",
       "m05_story_id": "M05-S14",
       "m05_lane_id": "A17",
-      "source_status": "source_provided_not_independently_reverified",
+      "source_status": "maintainer_retrieval_and_scope_audited_independent_adjudication_open",
       "evidence_truth_determined": false,
       "receipt_audit_complete": false,
       "publication_status": "blocked_pending_receipt_audit_and_second_party_selection_review",
-      "network_edge_created": false
+      "network_edge_created": false,
+      "ccd_chain_depth": 7,
+      "furthest_documented_stage": 7,
+      "field_audit_disposition": "supported_for_human_review",
+      "audit_record_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+      "audited_source_ids": [
+        "K0-SRC-012",
+        "K0-SRC-013"
+      ],
+      "maintainer_source_audit_complete": true,
+      "independent_review_complete": false
     },
     {
       "event_id": "K0-SEED-007",
@@ -1428,7 +2994,7 @@
           "summary": "The regulator could dispute the rationale but could not itself restore access."
         }
       },
-      "ccd_depth": 6,
+      "ccd_depth": 1,
       "ccd_missing": [
         "documented personal direction by Zuckerberg",
         "final adjudication of Meta’s privacy argument"
@@ -1479,11 +3045,22 @@
       "selection_lane_id": "epistemic-admissibility-ceiling-events",
       "m05_story_id": "M05-S14",
       "m05_lane_id": "A17",
-      "source_status": "source_provided_not_independently_reverified",
+      "source_status": "maintainer_retrieval_and_scope_audited_independent_adjudication_open",
       "evidence_truth_determined": false,
       "receipt_audit_complete": false,
       "publication_status": "blocked_pending_receipt_audit_and_second_party_selection_review",
-      "network_edge_created": false
+      "network_edge_created": false,
+      "ccd_chain_depth": 1,
+      "furthest_documented_stage": 7,
+      "field_audit_disposition": "retained_candidate_only",
+      "audit_record_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+      "audited_source_ids": [
+        "K0-SRC-014",
+        "K0-SRC-015",
+        "K0-SRC-016"
+      ],
+      "maintainer_source_audit_complete": true,
+      "independent_review_complete": false
     },
     {
       "event_id": "K0-SEED-008",
@@ -1548,7 +3125,7 @@
           "summary": "The public category is self-sealing, but no single formal appeal route governs it."
         }
       },
-      "ccd_depth": 4,
+      "ccd_depth": 3,
       "ccd_missing": [
         "specific institutional gate action",
         "bounded material consequence",
@@ -1571,6 +3148,18 @@
           "url": "https://www.ms.now/transcript/transcript-reidout-6-23-21-n1272222",
           "kind": "first_party_public_statement",
           "supports": "Category engineering and later defense."
+        },
+        {
+          "title": "CNN transcript: Rufo frozen-brand quote and later defense",
+          "url": "https://transcripts.cnn.com/show/cnr/date/2021-11-07/segment/06",
+          "kind": "broadcast_transcript",
+          "supports": "Category-engineering quotation and intrinsic-toxicity defense."
+        },
+        {
+          "title": "CNN transcript: Rufo frozen-brand quote and later defense",
+          "url": "https://transcripts.cnn.com/show/cnr/date/2021-11-07/segment/06",
+          "kind": "broadcast_transcript",
+          "supports": "Category-engineering quotation and intrinsic-toxicity defense."
         }
       ],
       "alternative_explanations": [
@@ -1586,11 +3175,20 @@
       "selection_lane_id": "epistemic-admissibility-ceiling-events",
       "m05_story_id": "M05-S14",
       "m05_lane_id": "A17",
-      "source_status": "source_provided_not_independently_reverified",
+      "source_status": "maintainer_retrieval_and_scope_audited_independent_adjudication_open",
       "evidence_truth_determined": false,
       "receipt_audit_complete": false,
       "publication_status": "blocked_pending_receipt_audit_and_second_party_selection_review",
-      "network_edge_created": false
+      "network_edge_created": false,
+      "ccd_chain_depth": 3,
+      "furthest_documented_stage": 3,
+      "field_audit_disposition": "retained_candidate_only",
+      "audit_record_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+      "audited_source_ids": [
+        "K0-SRC-017"
+      ],
+      "maintainer_source_audit_complete": true,
+      "independent_review_complete": false
     },
     {
       "event_id": "K0-SEED-009",
@@ -1694,11 +3292,20 @@
       "selection_lane_id": "epistemic-admissibility-ceiling-events",
       "m05_story_id": "M05-S14",
       "m05_lane_id": "A17",
-      "source_status": "source_provided_not_independently_reverified",
+      "source_status": "maintainer_retrieval_and_scope_audited_independent_adjudication_open",
       "evidence_truth_determined": false,
       "receipt_audit_complete": false,
       "publication_status": "blocked_pending_receipt_audit_and_second_party_selection_review",
-      "network_edge_created": false
+      "network_edge_created": false,
+      "ccd_chain_depth": 6,
+      "furthest_documented_stage": 6,
+      "field_audit_disposition": "supported_for_human_review",
+      "audit_record_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+      "audited_source_ids": [
+        "K0-SRC-018"
+      ],
+      "maintainer_source_audit_complete": true,
+      "independent_review_complete": false
     },
     {
       "event_id": "K0-SEED-010",
@@ -1806,11 +3413,21 @@
       "selection_lane_id": "epistemic-admissibility-ceiling-events",
       "m05_story_id": "M05-S14",
       "m05_lane_id": "A17",
-      "source_status": "source_provided_not_independently_reverified",
+      "source_status": "maintainer_retrieval_and_scope_audited_independent_adjudication_open",
       "evidence_truth_determined": false,
       "receipt_audit_complete": false,
       "publication_status": "blocked_pending_receipt_audit_and_second_party_selection_review",
-      "network_edge_created": false
+      "network_edge_created": false,
+      "ccd_chain_depth": 6,
+      "furthest_documented_stage": 6,
+      "field_audit_disposition": "supported_for_human_review",
+      "audit_record_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+      "audited_source_ids": [
+        "K0-SRC-019",
+        "K0-SRC-020"
+      ],
+      "maintainer_source_audit_complete": true,
+      "independent_review_complete": false
     },
     {
       "event_id": "K0-SEED-011",
@@ -1848,16 +3465,16 @@
           "summary": "Prior public statements questioned whether Brown’s advancement reflected merit or race."
         },
         "qualified_contradiction": {
-          "status": "documented",
-          "summary": "Brown’s command and combat record supplied professional counterevidence."
+          "status": "not_observed",
+          "summary": "Brown’s professional record establishes qualification and counterevidence, not a specific contrary military judgment delivered in the removal decision chain."
         },
         "knower_reclassification": {
-          "status": "documented",
-          "summary": "Competence was rendered institutionally irrelevant under a different “warfighter ethos.”"
+          "status": "inferred",
+          "summary": "The use of prior merit-or-race framing in the removal remains inferential without the decision record."
         },
         "explanation_mutation": {
-          "status": "documented",
-          "summary": "Post-removal praise recognized service without reopening the action."
+          "status": "inferred",
+          "summary": "Post-removal praise and “warfighter ethos” do not by themselves establish the exact explanation mutation."
         },
         "institutional_gate_action": {
           "status": "documented",
@@ -1876,9 +3493,11 @@
           "summary": "Senate confirmation governs the successor, not restoration of the removed incumbent."
         }
       },
-      "ccd_depth": 6,
+      "ccd_depth": 0,
       "ccd_missing": [
-        "specific contrary military judgment triggering removal"
+        "specific contrary military judgment triggering removal",
+        "removal decision record",
+        "causal link between prior framing and gate action"
       ],
       "direct_personal_attribution": true,
       "attribution_basis": "Removal and post-removal statement are official; motive remains inferential.",
@@ -1919,16 +3538,26 @@
       "selection_lane_id": "epistemic-admissibility-ceiling-events",
       "m05_story_id": "M05-S14",
       "m05_lane_id": "A17",
-      "source_status": "source_provided_not_independently_reverified",
+      "source_status": "maintainer_retrieval_and_scope_audited_independent_adjudication_open",
       "evidence_truth_determined": false,
       "receipt_audit_complete": false,
       "publication_status": "blocked_pending_receipt_audit_and_second_party_selection_review",
-      "network_edge_created": false
+      "network_edge_created": false,
+      "ccd_chain_depth": 0,
+      "furthest_documented_stage": 6,
+      "field_audit_disposition": "retained_candidate_only",
+      "audit_record_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+      "audited_source_ids": [
+        "K0-SRC-021",
+        "K0-SRC-022"
+      ],
+      "maintainer_source_audit_complete": true,
+      "independent_review_complete": false
     },
     {
       "event_id": "K0-SEED-012",
       "event_name": "Removal of senior military lawyers as potential roadblocks",
-      "corpus_role": "seed_positive_fixture",
+      "corpus_role": "seed_boundary_fixture",
       "seed_person": "Pete Hegseth",
       "seed_rank": 9,
       "gateholder_id": "Pete Hegseth / Defense leadership",
@@ -1962,16 +3591,16 @@
           "summary": "Top military lawyers were described as potential roadblocks to orders."
         },
         "qualified_contradiction": {
-          "status": "documented",
-          "summary": "JAG leadership exists to distinguish lawful from unlawful action and give independent advice."
+          "status": "not_observed",
+          "summary": "The general function of JAG advice is not a specific contrary legal advice event delivered before removal."
         },
         "knower_reclassification": {
-          "status": "documented",
-          "summary": "The checking function was recoded as obstruction."
+          "status": "inferred",
+          "summary": "Roadblocks language targets the checking function, but event-specific reclassification remains inferential."
         },
         "explanation_mutation": {
-          "status": "documented",
-          "summary": "Independent legal friction became a staffing defect."
+          "status": "inferred",
+          "summary": "The conversion of specific legal advice into obstruction is not complete without the advice record."
         },
         "institutional_gate_action": {
           "status": "documented",
@@ -1990,9 +3619,11 @@
           "summary": "Courts and Congress remain external checks; no pre-action stay is documented."
         }
       },
-      "ccd_depth": 6,
+      "ccd_depth": 0,
       "ccd_missing": [
-        "specific advice event preceding removal"
+        "specific legal advice event preceding removal",
+        "decision record",
+        "causal evidence connecting advice to removal"
       ],
       "direct_personal_attribution": true,
       "attribution_basis": "Hegseth publicly used the roadblock framing after the removals.",
@@ -2012,6 +3643,18 @@
           "url": "https://www.washingtonpost.com/opinions/2025/09/19/hegseth-national-guard-military-lawyer-purge/",
           "kind": "named_commentary",
           "supports": "Source-provided framing of judge advocates as potential roadblocks; requires primary-source upgrade before factual promotion."
+        },
+        {
+          "title": "CNN transcript: Hegseth roadblocks-to-orders statement",
+          "url": "https://transcripts.cnn.com/show/lcl/date/2025-02-24/segment/01",
+          "kind": "recorded_public_statement_transcript",
+          "supports": "Exact roadblocks-to-orders explanation and lawful-orders qualification."
+        },
+        {
+          "title": "CNN transcript: Hegseth roadblocks-to-orders statement",
+          "url": "https://transcripts.cnn.com/show/lcl/date/2025-02-24/segment/01",
+          "kind": "recorded_public_statement_transcript",
+          "supports": "Exact roadblocks-to-orders explanation and lawful-orders qualification."
         }
       ],
       "alternative_explanations": [
@@ -2021,17 +3664,26 @@
       "counterevidence": [
         "No specific instance of improper advice by removed lawyers is supplied."
       ],
-      "review_status": "counterpower_target_fixture_with_motive_caveat",
+      "review_status": "boundary_fixture_missing_specific_contradiction",
       "notes": [],
       "graph_effect": "none",
       "selection_lane_id": "epistemic-admissibility-ceiling-events",
       "m05_story_id": "M05-S14",
       "m05_lane_id": "A17",
-      "source_status": "source_provided_not_independently_reverified",
+      "source_status": "maintainer_retrieval_and_scope_audited_independent_adjudication_open",
       "evidence_truth_determined": false,
       "receipt_audit_complete": false,
       "publication_status": "blocked_pending_receipt_audit_and_second_party_selection_review",
-      "network_edge_created": false
+      "network_edge_created": false,
+      "ccd_chain_depth": 0,
+      "furthest_documented_stage": 6,
+      "field_audit_disposition": "retained_candidate_only",
+      "audit_record_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+      "audited_source_ids": [
+        "K0-SRC-023"
+      ],
+      "maintainer_source_audit_complete": true,
+      "independent_review_complete": false
     },
     {
       "event_id": "K0-SEED-013",
@@ -2099,8 +3751,12 @@
           "summary": "DOJ resistance, threatened resignations, courts, and certification blocked full conversion."
         }
       },
-      "ccd_depth": 7,
-      "ccd_missing": [],
+      "ccd_depth": 5,
+      "ccd_missing": [
+        "completed feedback-source removal",
+        "completed blockage of correction or certification",
+        "separation of pressured institutions into bounded subevents"
+      ],
       "direct_personal_attribution": true,
       "attribution_basis": "Contemporaneous notes and testimony directly attribute the request and repeated pressure.",
       "evidence_tiers": [
@@ -2127,6 +3783,30 @@
           "url": "https://www.cbsnews.com/news/january-6-committee-final-report-release-capitol-assault/",
           "kind": "named_reporting_on_congressional_record",
           "supports": "Wider institutional pressure and repeated rejection of fraud claims."
+        },
+        {
+          "title": "House Oversight: Donoghue notes release",
+          "url": "https://oversightdemocrats.house.gov/news/press-releases/committee-obtains-key-evidence-of-president-trump-s-attempts-to-overturn-the",
+          "kind": "official_congressional_release",
+          "supports": "Handwritten-note quotations, replacement implication, and official custody."
+        },
+        {
+          "title": "GovInfo: January 6 final report collection",
+          "url": "https://www.govinfo.gov/collection/january-6th-committee-final-report",
+          "kind": "official_congressional_report_collection",
+          "supports": "Official report and supporting-material custody."
+        },
+        {
+          "title": "House Oversight: Donoghue notes release",
+          "url": "https://oversightdemocrats.house.gov/news/press-releases/committee-obtains-key-evidence-of-president-trump-s-attempts-to-overturn-the",
+          "kind": "official_congressional_release",
+          "supports": "Handwritten-note quotations, replacement implication, and official custody."
+        },
+        {
+          "title": "GovInfo: January 6 final report collection",
+          "url": "https://www.govinfo.gov/collection/january-6th-committee-final-report",
+          "kind": "official_congressional_report_collection",
+          "supports": "Official report and supporting-material custody."
         }
       ],
       "alternative_explanations": [
@@ -2142,30 +3822,44 @@
       "selection_lane_id": "epistemic-admissibility-ceiling-events",
       "m05_story_id": "M05-S14",
       "m05_lane_id": "A17",
-      "source_status": "source_provided_not_independently_reverified",
+      "source_status": "maintainer_retrieval_and_scope_audited_independent_adjudication_open",
       "evidence_truth_determined": false,
       "receipt_audit_complete": false,
       "publication_status": "blocked_pending_receipt_audit_and_second_party_selection_review",
-      "network_edge_created": false
+      "network_edge_created": false,
+      "ccd_chain_depth": 5,
+      "furthest_documented_stage": 5,
+      "field_audit_disposition": "retained_candidate_only",
+      "audit_record_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+      "audited_source_ids": [
+        "K0-SRC-024",
+        "K0-SRC-025"
+      ],
+      "maintainer_source_audit_complete": true,
+      "independent_review_complete": false
     }
   ],
   "current_result": {
     "source_preserved_exactly": true,
     "structural_event_protocol_complete": true,
+    "maintainer_source_retrieval_audit_complete": true,
+    "maintainer_field_audit_complete": true,
+    "source_receipt_exact_hash_custody_complete": false,
     "m05_story_installed": true,
     "m05_lane_installed": true,
     "central_selection_lane_installed": true,
-    "source_receipt_audit_complete": false,
+    "role_neutral_universe_protocol_frozen": true,
     "role_neutral_universe_executed": false,
     "independent_second_party_review_complete": false,
     "evidence_truth_determined": false,
+    "publication_status": "blocked",
     "graph_effect": "none",
     "works_standard_met": false,
     "project_complete": false
   },
   "release_manifest": {
     "path": "data/project/k0-epistemic-admissibility-release-manifest.json",
-    "combined_sha256": "144ed8a5ee658e6d964e248f4db873b3249271df2b85b362395173d08095058f"
+    "combined_sha256": "7bbbff1d5271cb942967c1fa2c9542353f49081c8109100a33ce3c13ed855145"
   },
   "boundaries": {
     "promotes_to": "candidate_only",
@@ -2179,6 +3873,10 @@
     "expert_status_proves_correctness": false,
     "later_vindication_proves_prior_knowledge": false,
     "common_shape_proves_common_purpose": false,
-    "project_complete": false
+    "project_complete": false,
+    "maintainer_review_is_independent_second_party_review": false,
+    "source_retrieval_proves_claim": false,
+    "remote_exact_byte_custody_complete": false,
+    "publication_unblocked": false
   }
 }

@@ -759,7 +759,7 @@
       },
       "metrics": [
         {
-          "metric_id": "source_provided_seed_people",
+          "metric_id": "source_provided_fixture_people",
           "unit": "people",
           "expected": 10,
           "observed": 10,
@@ -768,7 +768,7 @@
           "source": "data/intake/k0-ceiling-conversion-seed-events.json"
         },
         {
-          "metric_id": "normalized_seed_events",
+          "metric_id": "normalized_fixture_events",
           "unit": "events",
           "expected": 13,
           "observed": 13,
@@ -777,66 +777,96 @@
           "source": "data/intake/k0-ceiling-conversion-seed-events.json"
         },
         {
-          "metric_id": "source_provided_reference_urls",
-          "unit": "source_urls",
+          "metric_id": "original_source_rows",
+          "unit": "sources",
           "expected": 25,
           "observed": 25,
           "denominator_kind": "exact",
           "publicly_reproducible": true,
-          "source": "data/intake/k0-epistemic-admissibility-source.txt"
+          "source": "data/research/k0-source-custody-audit.json"
         },
         {
-          "metric_id": "independently_retrieved_and_archived_source_receipts",
-          "unit": "source_receipts",
+          "metric_id": "directly_retrieved_source_rows",
+          "unit": "sources",
+          "expected": 25,
+          "observed": 23,
+          "denominator_kind": "exact",
+          "publicly_reproducible": true,
+          "source": "data/research/k0-source-custody-audit.json"
+        },
+        {
+          "metric_id": "source_restricted_rows_with_substitutes",
+          "unit": "sources",
+          "expected": 2,
+          "observed": 2,
+          "denominator_kind": "exact",
+          "publicly_reproducible": true,
+          "source": "data/research/k0-source-custody-audit.json"
+        },
+        {
+          "metric_id": "remote_exact_byte_hashes",
+          "unit": "sources",
           "expected": 25,
           "observed": 0,
           "denominator_kind": "exact",
           "publicly_reproducible": true,
-          "source": "No K0 receipt-audit and archival manifest is checked in."
+          "source": "data/research/k0-source-custody-audit.json"
         },
         {
-          "metric_id": "name_blind_role_neutral_universe_events",
+          "metric_id": "maintainer_field_audits",
           "unit": "events",
-          "expected": null,
-          "observed": 0,
-          "denominator_kind": "open",
+          "expected": 13,
+          "observed": 13,
+          "denominator_kind": "exact",
           "publicly_reproducible": true,
-          "source": "Role-neutral universe execution has not started."
+          "source": "data/research/k0-field-audit.json"
         },
         {
-          "metric_id": "independent_selection_reviews",
-          "unit": "reviews",
-          "expected": 1,
+          "metric_id": "independent_second_party_event_reviews",
+          "unit": "events",
+          "expected": 13,
           "observed": 0,
           "denominator_kind": "exact",
           "publicly_reproducible": true,
-          "source": "data/research/selection-adversarial-reviews.json"
+          "source": "issue:367"
+        },
+        {
+          "metric_id": "name_blind_searches_executed",
+          "unit": "searches",
+          "expected": 9,
+          "observed": 0,
+          "denominator_kind": "exact",
+          "publicly_reproducible": true,
+          "source": "data/research/k0-role-neutral-denominator.json"
+        },
+        {
+          "metric_id": "promoted_graph_events",
+          "unit": "events",
+          "expected": 0,
+          "observed": 0,
+          "denominator_kind": "exact",
+          "publicly_reproducible": true,
+          "source": "canonical graph ledgers"
         }
       ],
       "known_gaps": [
         {
-          "gap_id": "selection-gap-k0-receipt-audit",
-          "description": "The twenty-five source-provided URLs have not been independently retrieved, archived, hashed, and adjudicated in the repository.",
+          "gap_id": "k0-gap-remote-exact-byte-custody",
+          "description": "The maintainer audit retrieved or substituted all source rows but retained zero exact remote response hashes, so source custody is not complete.",
           "status": "blocking",
-          "next_action": "Build a source receipt manifest and preserve unavailable, changed, paywalled, or contradictory records without converting them into absence."
+          "next_action": "Acquire lawful exact artifacts or archive references and record hashes without treating retrieval as claim truth."
         },
         {
-          "gap_id": "selection-gap-k0-role-neutral-universe",
-          "description": "The ten people remain source-provided fixtures rather than the output of a name-blind, role-neutral event universe.",
+          "gap_id": "k0-gap-independent-second-party-review",
+          "description": "All thirteen event field audits were performed by project maintainers and therefore do not satisfy the distinct reviewer required by Issue #367.",
           "status": "blocking",
-          "next_action": "Execute the declared gate-action predicate across symmetric institutional and jurisdictional strata, preserving nulls and rejected candidates."
+          "next_action": "Obtain one disposition per event and one adversarial universe review from a genuinely separate reviewer."
         },
         {
-          "gap_id": "selection-gap-k0-independent-review",
-          "description": "No reviewer independent from the integration author has challenged the selection universe, event classification, or media-publication taxonomy gap.",
+          "gap_id": "k0-gap-name-blind-universe-execution",
+          "description": "The role-neutral gate-stratified search battery is frozen but none of its nine searches has been executed, so the ten source people remain fixtures rather than a tested denominator.",
           "status": "blocking",
-          "next_action": "Obtain a second-party adversarial review before any fixture is represented as cleared or publication-ready."
-        },
-        {
-          "gap_id": "selection-gap-k0-media-taxonomy",
-          "description": "Patrick Soon-Shiong and Jeff Bezos fit the event mechanism but expose a shared publication and editorial-governance taxonomy gap in the current estate vocabulary.",
-          "status": "open",
-          "next_action": "Test a cross-estate publication-gate semantic without creating a personality or media-owner estate."
+          "next_action": "Execute the frozen battery across all gate strata, preserving non-events, nulls, source failures, and controls."
         }
       ]
     }
