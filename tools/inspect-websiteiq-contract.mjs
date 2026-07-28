@@ -8,6 +8,12 @@ await fs.mkdir(OUT, { recursive: true });
 const targets = [
   '/',
   '/.well-known/api-catalog',
+  '/api/openapi.json',
+  '/.well-known/mcp/server-card.json',
+  '/.well-known/agent-skills/index.json',
+  '/auth.md',
+  '/okf/manifest.json',
+  '/okf/offers/audits.json',
   '/methodology/',
   '/crawler/',
   '/sample-report/',
@@ -57,6 +63,6 @@ for (const [index, asset] of assets.entries()) {
 
 await fs.writeFile(
   path.join(OUT, 'asset-index.json'),
-  `${JSON.stringify({ scripts, styles, assets }, null, 2)}\n`,
+  `${JSON.stringify({ scripts, styles, assets, targets }, null, 2)}\n`,
 );
 console.log(`Saved WebsiteIQ contract surface: ${targets.length} routes and ${assets.length} assets.`);
