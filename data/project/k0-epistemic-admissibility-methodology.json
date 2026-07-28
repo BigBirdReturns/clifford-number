@@ -1,9 +1,9 @@
 {
-  "schema_version": "k0-epistemic-admissibility-methodology@1",
+  "schema_version": "k0-epistemic-admissibility-methodology@2",
   "program_id": "M-05",
   "layer_id": "K0",
   "title": "Epistemic admissibility and ceiling conversion",
-  "status": "graph_inert_fixture_protocol_pending_role_neutral_universe_execution",
+  "status": "maintainer_source_and_field_audit_complete_role_neutral_execution_pending",
   "as_of": "2026-07-27",
   "source_path": "data/intake/k0-epistemic-admissibility-source.txt",
   "source_sha256": "190251bf19be7a4bee5dd0ba0191d72eb5e5dd030c3c2dbb93db84e08531888d",
@@ -105,7 +105,7 @@
       "receipt": "correction, substitution, or exit materially blocked"
     }
   ],
-  "ccd_boundary": "CCD measures evidence completion only; it is not guilt, intent, intelligence, ideology, or harm severity.",
+  "ccd_boundary": "CCD chain depth is the highest contiguous stage supported by a documented status from level 0. Furthest documented stage is reported separately. Neither quantity measures guilt, intent, intelligence, ideology, or harm severity.",
   "selection_contract": {
     "lane_id": "epistemic-admissibility-ceiling-events",
     "selection_unit": "one bounded gate action preceded by a documented contradiction from a person or body with a stated qualification basis",
@@ -141,7 +141,13 @@
     "counterevidence",
     "alternative_explanations",
     "review_status",
-    "graph_effect"
+    "graph_effect",
+    "ccd_chain_depth",
+    "furthest_documented_stage",
+    "field_audit_disposition",
+    "audit_record_id",
+    "maintainer_source_audit_complete",
+    "independent_review_complete"
   ],
   "ecosystem_wiring": {
     "story_id": "M05-S14",
@@ -184,6 +190,32 @@
     "expert_status_proves_correctness": false,
     "later_vindication_proves_prior_knowledge": false,
     "common_shape_proves_common_purpose": false,
-    "project_complete": false
+    "project_complete": false,
+    "maintainer_review_is_independent_second_party_review": false,
+    "source_retrieval_proves_claim": false,
+    "remote_exact_byte_custody_complete": false,
+    "publication_unblocked": false
+  },
+  "ccd_semantics": {
+    "cumulative": true,
+    "satisfying_statuses": [
+      "documented"
+    ],
+    "chain_depth_field": "ccd_chain_depth",
+    "furthest_documented_field": "furthest_documented_stage",
+    "backward_compatibility_field": "ccd_depth",
+    "backward_compatibility_rule": "ccd_depth must equal ccd_chain_depth",
+    "attempted_or_partial_rule": "partial, inferred, attempted, attempted_but_resisted, not_observed, and unavailable do not complete a CCD stage",
+    "gap_rule": "A later documented consequence cannot conceal a missing earlier transition."
+  },
+  "audit_contract": {
+    "source_audit_path": "data/research/k0-source-custody-audit.json",
+    "field_audit_path": "data/research/k0-field-audit.json",
+    "neutral_denominator_path": "data/research/k0-role-neutral-denominator.json",
+    "audit_type": "maintainer_source_retrieval_and_field_review",
+    "independence_effect": "does_not_satisfy_second_party_review",
+    "publication_status": "blocked",
+    "remote_exact_byte_custody_complete": false,
+    "second_party_review_issue": "issue:367"
   }
 }

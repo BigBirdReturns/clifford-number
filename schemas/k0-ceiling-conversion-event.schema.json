@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/k0-ceiling-conversion-event-v1.json",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/k0-ceiling-conversion-event-v2.json",
   "title": "K0 ceiling-conversion event fixture",
   "type": "object",
   "additionalProperties": true,
@@ -20,7 +20,13 @@
     "controlled_gate_types",
     "path",
     "ccd_depth",
+    "ccd_chain_depth",
+    "furthest_documented_stage",
     "ccd_missing",
+    "field_audit_disposition",
+    "audit_record_id",
+    "maintainer_source_audit_complete",
+    "independent_review_complete",
     "direct_personal_attribution",
     "attribution_basis",
     "evidence_tiers",
@@ -61,12 +67,39 @@
       }
     },
     "ccd_depth": {
-      "type": [
-        "integer",
-        "null"
-      ],
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 7,
+      "description": "Backward-compatible alias that must equal ccd_chain_depth."
+    },
+    "ccd_chain_depth": {
+      "type": "integer",
       "minimum": 0,
       "maximum": 7
+    },
+    "furthest_documented_stage": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 7
+    },
+    "field_audit_disposition": {
+      "enum": [
+        "supported_for_human_review",
+        "retained_candidate_only",
+        "bounded_non_link",
+        "falsified",
+        "identity_ambiguous",
+        "temporal_order_unresolved",
+        "source_restricted",
+        "source_unavailable",
+        "requires_additional_acquisition"
+      ]
+    },
+    "maintainer_source_audit_complete": {
+      "const": true
+    },
+    "independent_review_complete": {
+      "const": false
     },
     "direct_personal_attribution": {
       "type": "boolean"
