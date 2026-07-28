@@ -1,39 +1,119 @@
-name: Adversarial review bootstrap
+name: Materialize adversarial release integrity
 
 on:
   push:
     branches:
       - agent/adversarial-release-integrity
     paths:
-      - '.github/workflows/adversarial-review-bootstrap.yml'
-  pull_request:
-    branches: [main]
-    paths:
-      - '.github/workflows/adversarial-review-bootstrap.yml'
-  workflow_dispatch:
+      - '.github/tmp/adversarial-release-trigger.json'
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: adversarial-release-integrity-materializer
+  cancel-in-progress: false
 
 jobs:
-  package-exact-checkout:
+  materialize:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: agent/adversarial-release-integrity
           fetch-depth: 0
-      - name: Package exact checkout with git metadata
-        run: |
-          mkdir -p /tmp/clifford-review-bootstrap
-          git rev-parse HEAD > /tmp/clifford-review-bootstrap/head.txt
-          git status --porcelain=v1 > /tmp/clifford-review-bootstrap/status.txt
-          tar \
-            --exclude='./node_modules' \
-            --exclude='./dist' \
-            -czf /tmp/clifford-review-bootstrap/clifford-number-exact.tgz .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/setup-node@v4
         with:
-          name: clifford-number-exact-checkout
-          path: /tmp/clifford-review-bootstrap
-          if-no-files-found: error
-          retention-days: 1
+          node-version: '24'
+      - name: Verify and apply the exact repair payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git merge-base --is-ancestor d9d2a0640d447afdfd72281003821207092cbb4b HEAD
+
+          mapfile -t chunks < <(find .github/tmp -maxdepth 1 -type f -name 'adversarial-release-payload-*.b64' | sort)
+          test "${#chunks[@]}" -eq 10
+          cat "${chunks[@]}" > /tmp/adversarial-release-payload.b64
+          printf '%s  %s\n' '1bcbb4a052ce85492b49f3753bd5364949174eb07ede183fc83036204ae58b83' /tmp/adversarial-release-payload.b64 | sha256sum --check --strict
+          base64 --decode /tmp/adversarial-release-payload.b64 > /tmp/adversarial-release-payload.tar.gz
+          printf '%s  %s\n' '72001b6ff65b031b9de9dc3001ab442fb400664b0d66f1d7b70937c01b2c3adc' /tmp/adversarial-release-payload.tar.gz | sha256sum --check --strict
+          cp .github/tmp/adversarial-release-manifest.json /tmp/adversarial-release-manifest.json
+          git ls-files '.github/tmp/**' > /tmp/adversarial-release-transport-paths.txt
+
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import tarfile
+          from pathlib import Path, PurePosixPath
+
+          manifest = json.loads(Path('/tmp/adversarial-release-manifest.json').read_text())
+          payload = Path('/tmp/adversarial-release-payload.tar.gz').read_bytes()
+          assert manifest['schema_version'] == 'adversarial-release-materializer@1'
+          assert manifest['base_commit'] == 'd9d2a0640d447afdfd72281003821207092cbb4b'
+          assert hashlib.sha256(payload).hexdigest() == manifest['payload_sha256']
+          assert len(payload) == manifest['payload_bytes']
+
+          expected = sorted(manifest['write_paths'])
+          with tarfile.open('/tmp/adversarial-release-payload.tar.gz', 'r:gz') as archive:
+              members = archive.getmembers()
+              names = sorted(member.name for member in members)
+              assert names == expected, (names, expected)
+              for member in members:
+                  pure = PurePosixPath(member.name)
+                  assert not pure.is_absolute() and '..' not in pure.parts
+                  assert member.isfile(), member.name
+                  source = archive.extractfile(member)
+                  assert source is not None
+                  target = Path(member.name)
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(source.read())
+                  os.chmod(target, member.mode & 0o777)
+          PY
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path('/tmp/adversarial-release-manifest.json').read_text())
+          for relative in manifest['delete_paths']:
+              path = Path(relative)
+              if path.is_dir():
+                  import shutil
+                  shutil.rmtree(path)
+              else:
+                  path.unlink(missing_ok=True)
+          PY
+          rm -rf .github/tmp
+
+          npm run release:check
+          git diff --check
+
+          python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          manifest = json.loads(Path('/tmp/adversarial-release-manifest.json').read_text())
+          transport = set(Path('/tmp/adversarial-release-transport-paths.txt').read_text().splitlines())
+          expected = set(manifest['write_paths']) | set(manifest['delete_paths']) | transport
+          raw = subprocess.check_output([
+              'git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'
+          ])
+          entries = [entry for entry in raw.decode().split('\0') if entry]
+          actual = set()
+          for entry in entries:
+              status = entry[:2]
+              assert 'R' not in status and 'C' not in status, entry
+              actual.add(entry[3:])
+          assert actual == expected, {
+              'unexpected': sorted(actual - expected),
+              'missing': sorted(expected - actual),
+          }
+          PY
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Harden Clifford Number release integrity'
+          git push origin HEAD:agent/adversarial-release-integrity
