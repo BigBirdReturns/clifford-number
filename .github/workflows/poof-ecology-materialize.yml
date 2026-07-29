@@ -3,9 +3,10 @@ name: One-shot POOF ecology materializer
 on:
   pull_request:
     branches: [main]
+    types: [opened, reopened, synchronize]
     paths:
       - '.github/workflows/poof-ecology-materialize.yml'
-      - '.bootstrap/poof-clifford-ecology/source.patch.gz.b64'
+      - '.bootstrap/poof-clifford-ecology/part-07.b64'
 
 permissions:
   contents: write
@@ -25,7 +26,12 @@ jobs:
           node-version: '24'
       - name: Decode and verify source patch
         run: |
-          base64 --decode .bootstrap/poof-clifford-ecology/source.patch.gz.b64 | gzip --decompress > /tmp/poof-clifford-ecology.patch
+          test "$(find .bootstrap/poof-clifford-ecology -maxdepth 1 -name 'part-*.b64' | wc -l)" -eq 7
+          cat .bootstrap/poof-clifford-ecology/part-*.b64 \
+            | tr -d '\n\r' \
+            | base64 --decode \
+            | gzip --decompress \
+            > /tmp/poof-clifford-ecology.patch
           echo '34744d87daf8f884710d12024e76592d0f094664c14deaff297c83538148bf2c  /tmp/poof-clifford-ecology.patch' | sha256sum --check
           git apply --check /tmp/poof-clifford-ecology.patch
       - name: Materialize source and deterministic products
