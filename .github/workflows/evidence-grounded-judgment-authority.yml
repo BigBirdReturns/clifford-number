@@ -11,9 +11,12 @@ on:
       - main
     paths:
       - 'data/project/evidence-grounded-judgment-authority.json'
+      - 'data/project/lake-judgment-shadow-snapshot.json'
       - 'docs/methods/evidence-grounded-judgment-authority.md'
       - 'tools/build-evidence-grounded-judgments.mjs'
+      - 'tools/augment-evidence-grounded-judgments-with-lake.mjs'
       - 'tools/validate-evidence-grounded-judgments.mjs'
+      - 'tools/validate-evidence-grounded-lake-judgments.mjs'
       - 'test/evidence-grounded-judgments.test.js'
       - 'tools/compile.mjs'
       - '.github/workflows/evidence-grounded-judgment-authority.yml'
@@ -45,15 +48,20 @@ jobs:
       - name: Build and validate evidence-grounded judgments
         run: |
           node tools/build-evidence-grounded-judgments.mjs
+          node tools/augment-evidence-grounded-judgments-with-lake.mjs
           node tools/validate-evidence-grounded-judgments.mjs
+          node tools/validate-evidence-grounded-lake-judgments.mjs
           node test/evidence-grounded-judgments.test.js
       - name: Prove deterministic judgment products
         run: |
           sha256sum \
             build/evidence-grounded-judgments.json \
-            reports/evidence-grounded-judgments.md > /tmp/judgments-first.sha256
+            reports/evidence-grounded-judgments.md \
+            reports/evidence-grounded-lake-decisions.md > /tmp/judgments-first.sha256
           node tools/build-evidence-grounded-judgments.mjs
+          node tools/augment-evidence-grounded-judgments-with-lake.mjs
           node tools/validate-evidence-grounded-judgments.mjs
+          node tools/validate-evidence-grounded-lake-judgments.mjs
           node test/evidence-grounded-judgments.test.js
           sha256sum --check --strict /tmp/judgments-first.sha256
           git diff --check
@@ -69,6 +77,7 @@ jobs:
               '.github/tmp/evidence-grounded-judgment-trigger.json',
               'build/evidence-grounded-judgments.json',
               'reports/evidence-grounded-judgments.md',
+              'reports/evidence-grounded-lake-decisions.md',
           }
           raw = subprocess.check_output([
               'git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'
