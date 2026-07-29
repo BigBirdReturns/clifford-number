@@ -35,7 +35,9 @@ jobs:
         run: |
           node tools/build-lake-index.mjs
           node tools/stabilize-lake-index.mjs
+          node tools/build-lake-gap-summary.mjs
           node tools/validate-lake-index.mjs
+          node tools/validate-lake-gap-summary.mjs
           node test/lake-index.test.js
       - name: Prove deterministic census products
         run: |
@@ -43,11 +45,15 @@ jobs:
             build/lake-index.json \
             build/lake-object-index.json \
             build/lake-index-gaps.json \
-            reports/lake-index-census.md > /tmp/lake-index-first.sha256
+            build/lake-index-gap-summary.json \
+            reports/lake-index-census.md \
+            reports/lake-index-gap-summary.md > /tmp/lake-index-first.sha256
           node tools/build-lake-index.mjs
           node tools/stabilize-lake-index.mjs
+          node tools/build-lake-gap-summary.mjs
           sha256sum --check --strict /tmp/lake-index-first.sha256
           node tools/validate-lake-index.mjs
+          node tools/validate-lake-gap-summary.mjs
           node test/lake-index.test.js
           git diff --check
       - name: Enforce the exact generated change set
@@ -63,8 +69,10 @@ jobs:
               'build/lake-index.json',
               'build/lake-object-index.json',
               'build/lake-index-gaps.json',
+              'build/lake-index-gap-summary.json',
               'data/project/lake-open-pr-shadow.json',
               'reports/lake-index-census.md',
+              'reports/lake-index-gap-summary.md',
           }
           raw = subprocess.check_output([
               'git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'
@@ -85,5 +93,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -m 'Index the current evidence lake'
+          git commit -m 'Classify the current evidence lake'
           git push origin HEAD:agent/lake-index-census
