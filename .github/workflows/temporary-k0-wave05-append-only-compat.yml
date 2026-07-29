@@ -2,6 +2,10 @@ name: Temporary K0 Wave 05 append-only compatibility
 # Human-authored exact-head trigger after initial workflow registration.
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-k0-wave05-append-only-compat.yml'
   push:
     branches:
       - agent/k0-role-neutral-wave-05
