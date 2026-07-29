@@ -35,6 +35,11 @@ writeJson('build/briefings/index.json', {
   schema_version: REPORTER_BRIEFING_INDEX_SCHEMA_VERSION,
   graph_effect: 'none',
   conclusion_generated: false,
+  subject_identity_projection: {
+    schema_version: 'reporter-briefing-subject-identity-index@1',
+    scope: 'selected_claim_subjects_only',
+    graph_effect: 'none'
+  },
   counts: {
     briefings: manifests.length,
     claims: manifests.reduce((total, item) => total + item.counts.claims, 0),
@@ -43,7 +48,12 @@ writeJson('build/briefings/index.json', {
     inherited_qualifications: manifests.reduce((total, item) => total + item.counts.inherited_qualifications, 0),
     unsequenced_claims: manifests.reduce((total, item) => total + item.counts.unsequenced_claims, 0),
     source_trails: manifests.reduce((total, item) => total + item.counts.source_trails, 0),
-    public_receipts: manifests.reduce((total, item) => total + item.counts.public_receipts, 0)
+    public_receipts: manifests.reduce((total, item) => total + item.counts.public_receipts, 0),
+    subject_references: manifests.reduce((total, item) => total + item.counts.subject_references, 0),
+    resolved_subject_references: manifests.reduce((total, item) => total + item.counts.resolved_subject_references, 0),
+    unresolved_subject_references: manifests.reduce((total, item) => total + item.counts.unresolved_subject_references, 0),
+    subjects: manifests.reduce((total, item) => total + item.counts.subjects, 0),
+    canonical_subjects: manifests.reduce((total, item) => total + item.counts.canonical_subjects, 0)
   },
   briefings: manifests.map(item => ({
     briefing_id: item.briefing_id,
@@ -55,6 +65,7 @@ writeJson('build/briefings/index.json', {
     output_path: item.output_path,
     case_href: item.case_href,
     counts: item.counts,
+    subject_identity_projection: item.subject_identity_projection,
     graph_effect: 'none'
   }))
 });
@@ -73,4 +84,4 @@ writeJson('build/review/reporter-briefing-queue.json', {
   queue
 });
 
-console.log(`reporter briefings: ${manifests.length} compiled, ${queue.filter(item => item.eligible_for_approval).length} approval-ready`);
+console.log(`reporter briefings: ${manifests.length} compiled, ${queue.filter(item => item.eligible_for_approval).length} approval-ready, ${manifests.reduce((total, item) => total + item.counts.resolved_subject_references, 0)} resolved subject references`);
