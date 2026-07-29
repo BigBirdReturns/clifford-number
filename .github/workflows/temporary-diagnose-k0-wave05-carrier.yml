@@ -1,4 +1,4 @@
-name: Temporary repair K0 Wave 05 carrier
+name: Temporary diagnose K0 Wave 05 carrier
 
 on:
   pull_request:
@@ -13,10 +13,10 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  repair:
+  diagnose:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -24,63 +24,51 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: agent/k0-role-neutral-wave-05
-          fetch-depth: 0
-      - name: Repair exactly one missing Base64 character by frozen archive hash
+      - name: Search one-character repairs for a valid gzip tar archive
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          import base64, hashlib
+          from io import BytesIO
+          import base64, hashlib, tarfile, time
 
-          target = '229b15062e72d756d7fbda7eec1c6345530f00edfe4462cff403826be00b76a5'
           paths = sorted(Path('.github/tmp').glob('k0-wave05-materializer-part-*.b64'))
           assert len(paths) == 4, paths
           chunks = [b''.join(path.read_bytes().split()) for path in paths]
-          merged = b''.join(chunks)
-
-          def digest(encoded: bytes):
-              try:
-                  decoded = base64.b64decode(encoded, validate=True)
-              except Exception:
-                  return None
-              return hashlib.sha256(decoded).hexdigest()
-
-          if len(merged) % 4 == 0 and digest(merged) == target:
-              print('carrier already matches frozen source-package hash')
-              raise SystemExit(0)
-
-          assert len(chunks[0]) % 4 == 3, len(chunks[0])
+          assert len(chunks[0]) % 4 == 3
           assert all(len(chunk) % 4 == 0 for chunk in chunks[1:])
           alphabet = b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
           tail = b''.join(chunks[1:])
+          target = '229b15062e72d756d7fbda7eec1c6345530f00edfe4462cff403826be00b76a5'
           found = []
+          started = time.time()
+
           for pos in range(len(chunks[0]) + 1):
               prefix = chunks[0][:pos]
               suffix = chunks[0][pos:]
               for char in alphabet:
-                  candidate0 = prefix + bytes([char]) + suffix
-                  if digest(candidate0 + tail) == target:
-                      found.append((pos, char, candidate0))
-                      print(f'found exact repair at byte offset {pos} with character {chr(char)!r}')
-                      break
-              if found:
-                  break
+                  encoded = prefix + bytes([char]) + suffix + tail
+                  try:
+                      decoded = base64.b64decode(encoded, validate=True)
+                      with tarfile.open(fileobj=BytesIO(decoded), mode='r:gz') as archive:
+                          names = archive.getnames()
+                          members = archive.getmembers()
+                          for member in members:
+                              if member.isfile():
+                                  handle = archive.extractfile(member)
+                                  if handle is not None:
+                                      while handle.read(1024 * 1024):
+                                          pass
+                  except Exception:
+                      continue
+                  digest = hashlib.sha256(decoded).hexdigest()
+                  found.append((pos, chr(char), digest, len(decoded), names))
+                  print(f'VALID pos={pos} char={chr(char)!r} sha256={digest} bytes={len(decoded)} names={names}')
+              if pos % 500 == 0:
+                  print(f'progress pos={pos} elapsed={time.time()-started:.1f}s')
 
-          assert len(found) == 1, f'exact repair count={len(found)}'
-          pos, char, repaired = found[0]
-          paths[0].write_bytes(repaired)
-          final = b''.join([repaired, *chunks[1:]])
-          assert len(final) % 4 == 0
-          assert digest(final) == target
-          print(f'repaired fragment bytes={len(repaired)} merged={len(final)} sha256={target}')
+          print(f'valid repair candidates={len(found)}')
+          exact = [row for row in found if row[2] == target]
+          print(f'frozen-hash candidates={exact}')
+          assert found, 'no one-character insertion yields a valid gzip tar archive'
           PY
-
-          if git diff --quiet -- .github/tmp/k0-wave05-materializer-part-00.b64; then
-            echo 'No repair commit required.'
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .github/tmp/k0-wave05-materializer-part-00.b64
-          git commit -m 'Repair exact Wave 05 carrier fragment'
-          git push origin HEAD:agent/k0-role-neutral-wave-05
