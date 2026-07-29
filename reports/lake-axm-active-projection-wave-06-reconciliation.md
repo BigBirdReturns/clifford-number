@@ -21,7 +21,7 @@ hop-graph identity fields:                  0
 active projection migrated:                 true
 active projection quarantined:              false
 external AXM gate complete:                 true
-cross-case join authorized:                 false
+cross-case join authorized:              false
 decisions requiring human permission:       0
 ```
 
