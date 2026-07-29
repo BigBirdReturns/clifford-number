@@ -49,7 +49,7 @@ const buildInstructions = fs.readFileSync(full('BUILD-INSTRUCTIONS.md'), 'utf8')
 const report = fs.existsSync(full(policy.report_path)) ? fs.readFileSync(full(policy.report_path), 'utf8') : '';
 const reconciliationReport = fs.existsSync(full(policy.reconciliation_report_path)) ? fs.readFileSync(full(policy.reconciliation_report_path), 'utf8') : '';
 const data = loadAll();
-const identity = buildIdentityLayer({ namespace: data.caseConfig.namespace, actors: data.actors, organizations: data.organizations, surfaces: data.surfaces, participation: data.participation, aliases: data.aliases });
+const identity = buildIdentityLayer({ namespace: readJson('cases.json').default_case_id, actors: data.actors, organizations: data.organizations, surfaces: data.surfaces, participation: data.participation, aliases: data.aliases });
 const committedIdentity = readJson(policy.target_projection_path);
 
 if (policy.schema_version !== 'lake-axm-lineage-wave-04-policy@1') fail('unexpected Wave 04 policy schema');

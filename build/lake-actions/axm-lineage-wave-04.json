@@ -1,0 +1,150 @@
+{
+  "schema_version": "lake-axm-lineage-wave-04-plan@1",
+  "program_key": "CN-LAKE-AXM-LINEAGE-W04",
+  "source_fingerprint_sha256": "d44fcaf4e97ef570c99af7d1e5c0437ca3f57d9c34b9fc5918cceea05e09d9b2",
+  "input_manifest": [
+    {
+      "path": "BUILD-INSTRUCTIONS.md",
+      "bytes": 15729,
+      "sha256": "41d7bb36b8b09a0dea469c12cf51fe3d59938db168ac071c37f15e3d10cc8662"
+    },
+    {
+      "path": "build/axm-identity.json",
+      "bytes": 140587,
+      "sha256": "9012feb108a519560b0c1dad9b4b3fdd9faf90bed0e87720bfa6c5b0c001b180"
+    },
+    {
+      "path": "build/lake-actions/native-source-migration-wave-03-reconciliation.json",
+      "bytes": 6606,
+      "sha256": "10a193e22fc1a47fd7b1f5787afdbfb6ddb379ec4d5d748ca884191e51afb112"
+    },
+    {
+      "path": "cases.json",
+      "bytes": 469,
+      "sha256": "96e5c061b44ee3a0a7e2200a96e05ec18ea1ce37a932d0e8c02b25b1a32a0de7"
+    },
+    {
+      "path": "data/canonical/actors.json",
+      "bytes": 13881,
+      "sha256": "7c05810fa4e565fcd1ee27f0bd7d2f47f98c112bbf0e45704928a13287f6ef83"
+    },
+    {
+      "path": "data/canonical/aliases.json",
+      "bytes": 2399,
+      "sha256": "c580d6c410f4b5affa41221549fd24b9b04fa8dd45a99fe58863c5be74008596"
+    },
+    {
+      "path": "data/canonical/organizations.json",
+      "bytes": 2928,
+      "sha256": "fa21dd778b1171a8c1d067255bcbdf5857b71a90a5c0778fa5b69df064e97087"
+    },
+    {
+      "path": "data/ledger/participation.jsonl",
+      "bytes": 50196,
+      "sha256": "3f4d454a15961e0088a02ab712a66875c073b8263876e98b2f2092fcf8e71097"
+    },
+    {
+      "path": "data/ledger/surfaces.jsonl",
+      "bytes": 9432,
+      "sha256": "9a8615d5836ad24f429ebd2472a7cd42d0a094f9f2145cce793b36f0083625c6"
+    },
+    {
+      "path": "data/project/lake-axm-lineage-wave-04-policy.json",
+      "bytes": 2949,
+      "sha256": "771b771fa9072317484353b38d3863a6e48f9dc769ebd264d253b30fbc1d0d21"
+    },
+    {
+      "path": "data/project/lake-identifier-source-registry-wave-02.jsonl",
+      "bytes": 2430970,
+      "sha256": "4fef5260750f2ca5a852c6b045586823e6999f94c55af6a99a6d067ce68ba7a5"
+    },
+    {
+      "path": "data/project/lake-identifier-source-supersessions-wave-03.jsonl",
+      "bytes": 409092,
+      "sha256": "74819bbc34430ed075aa61e0234ec970c3831a7a58ed4785ccf49a5b304c28c4"
+    },
+    {
+      "path": "tools/build-hop-graph.mjs",
+      "bytes": 7257,
+      "sha256": "d450677b25e66364b85f2b119abb2321053a2585170d94905f1d7282154fd656"
+    },
+    {
+      "path": "tools/lib/axm-id.mjs",
+      "bytes": 3496,
+      "sha256": "3f0b506c25568a0b82b34bbf70406813ed1f7d14ae9fc352e2f64525df1d7263"
+    },
+    {
+      "path": "tools/lib/axm-identity.mjs",
+      "bytes": 5906,
+      "sha256": "4dfd19e464b249b84c4916704655e132fa434a8a0a18f3c7c691fb94d3bb525b"
+    }
+  ],
+  "before": {
+    "fallback_registrations": 164,
+    "native_source_migration_debt": 164,
+    "provisional_axm_claims": 164,
+    "external_axm_reconciliation_complete": false,
+    "cross_case_join_authorized": false
+  },
+  "lineage": {
+    "supersession_rows": 164,
+    "canonical_participation_rows_linked": 164,
+    "multi_stint_claims": 0,
+    "distinct_receipt_ids_linked": 15,
+    "supersession_ledger_path": "data/project/lake-identifier-source-supersessions-wave-04.jsonl",
+    "canonical_participation_path": "data/ledger/participation.jsonl"
+  },
+  "decisions": [
+    {
+      "decision_key": "W04-AXM-NATIVE-LINEAGE",
+      "judgment": "all_164_provisional_axm_participates_in_claims_recompute_from_canonical_participation_rows",
+      "action": "write:data/project/lake-identifier-source-supersessions-wave-04.jsonl",
+      "evidence_count": 164,
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_correct_the_lineage_mapping_but_does_not_block_the_reversible_supersession"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "a_later_axm_or_ledger_reconciliation_may_supersede_this_row_without_deleting_the_prior_registration_or_participation_rows"
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_key": "W04-AXM-EXTERNAL-BOUNDARY",
+      "judgment": "native_lineage_closes_source_debt_but_does_not_close_external_axm_serialization_reconciliation",
+      "action": "retain_provisional_scheme_and_cross_case_join_prohibition_until_byte_for_byte_axm_genesis_reconciliation",
+      "evidence_count": 164,
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "external_reproduction_controls_cross_system_use_not_permission_to_record_current_native_lineage"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "a_later_axm_or_ledger_reconciliation_may_supersede_this_row_without_deleting_the_prior_registration_or_participation_rows"
+      },
+      "graph_effect": "none"
+    }
+  ],
+  "completion": {
+    "every_fallback_registration_superseded": true,
+    "every_axm_claim_has_canonical_participation_lineage": true,
+    "native_source_migration_debt_after_wave": 0,
+    "external_axm_reconciliation_complete": false,
+    "cross_case_join_authorized": false,
+    "post_execution_reconciliation_complete": false,
+    "evidence_truth_determined": false,
+    "publication_cleared": false,
+    "decisions_requiring_human_permission": 0
+  },
+  "boundaries": {
+    "participation_lineage_proves_evidence_truth": false,
+    "participation_lineage_resolves_identity": false,
+    "provisional_axm_id_is_externally_reconciled": false,
+    "cross_case_join_authorized": false,
+    "participates_in_claim_is_coordination_or_causation": false,
+    "dense_surface_creates_pairwise_hop": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}

@@ -47,7 +47,7 @@ const summary = readJson('build/lake-index/summary.json');
 const buildInstructions = fs.readFileSync(full('BUILD-INSTRUCTIONS.md'), 'utf8');
 const data = loadAll();
 const identity = buildIdentityLayer({
-  namespace: data.caseConfig.namespace,
+  namespace: readJson('cases.json').default_case_id,
   actors: data.actors,
   organizations: data.organizations,
   surfaces: data.surfaces,

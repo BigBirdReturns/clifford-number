@@ -76,7 +76,7 @@ const sourceFingerprint = sha256(Buffer.from(inputs.map(row => `${row.path}\0${r
 
 const data = loadAll();
 const identity = buildIdentityLayer({
-  namespace: data.caseConfig.namespace,
+  namespace: readJson('cases.json').default_case_id,
   actors: data.actors,
   organizations: data.organizations,
   surfaces: data.surfaces,
