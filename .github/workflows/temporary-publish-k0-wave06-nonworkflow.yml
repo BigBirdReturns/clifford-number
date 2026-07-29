@@ -1,0 +1,147 @@
+name: Temporary publish K0 Wave 06 non-workflow surface
+
+on:
+  push:
+    branches: [agent/k0-role-neutral-wave-06]
+    paths:
+      - '.github/workflows/temporary-publish-k0-wave06-nonworkflow.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.actor != 'github-actions[bot]' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/k0-role-neutral-wave-06
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct and verify exact Wave 06 source
+        run: |
+          set -euo pipefail
+          test "$(find .github/tmp -maxdepth 1 -name 'k0-wave06-source-part-*.b64' -type f | wc -l)" -eq 10
+          cat .github/tmp/k0-wave06-source-part-*.b64 > /tmp/k0-wave06-source.b64
+          base64 -d /tmp/k0-wave06-source.b64 > /tmp/k0-wave06-source.tar.gz
+          test "$(sha256sum /tmp/k0-wave06-source.tar.gz | awk '{print $1}')" = "efa32db6bd3537d5a34a31661eecfd53a0903eaff5efd98dc3addf9cf9420cfa"
+          python - <<'PY'
+          import tarfile
+          expected = {
+            '.github/workflows/k0-role-neutral-wave-06.yml',
+            'data/project/k0-epistemic-admissibility-methodology.json',
+            'data/research/corpus-coverage.json',
+            'data/research/k0-role-neutral-denominator.json',
+            'data/research/k0-role-neutral-wave-06.json',
+            'data/research/selection-adversarial-reviews.json',
+            'docs/milestones/m05-k0-role-neutral-wave-06.md',
+            'test/k0-epistemic-admissibility.test.js',
+            'test/k0-role-neutral-wave-06.test.js',
+            'tools/build-k0-epistemic-admissibility.mjs',
+            'tools/build-k0-role-neutral-wave-06.mjs',
+            'tools/validate-k0-epistemic-admissibility.mjs',
+            'tools/validate-k0-role-neutral-wave-06.mjs',
+          }
+          with tarfile.open('/tmp/k0-wave06-source.tar.gz', 'r:gz') as tf:
+            actual = {m.name.removeprefix('./') for m in tf.getmembers() if m.isfile()}
+            assert actual == expected, f'bundle path mismatch\nmissing={sorted(expected-actual)}\nextra={sorted(actual-expected)}'
+            for member in tf.getmembers():
+              name = member.name.removeprefix('./')
+              assert name and not name.startswith('/') and '..' not in name.split('/'), name
+          print(f'exact source denominator: {len(actual)}')
+          PY
+          tar -xzf /tmp/k0-wave06-source.tar.gz
+
+      - name: Run focused, aggregate, and full release gates
+        run: |
+          set -euo pipefail
+          node tools/build-k0-role-neutral-wave-06.mjs
+          node tools/validate-k0-role-neutral-wave-06.mjs
+          node test/k0-role-neutral-wave-06.test.js
+          node tools/build-k0-epistemic-admissibility.mjs
+          node tools/validate-k0-epistemic-admissibility.mjs
+          node test/k0-epistemic-admissibility.test.js
+          node tools/validate-corpus-selection.mjs
+          node tools/validate-consumption-contract.mjs
+          npm run release:check
+
+      - name: Prove deterministic source products
+        run: |
+          set -euo pipefail
+          git diff -- . ':!build/**' ':!dist/**' > /tmp/k0-wave06-before.patch
+          node tools/build-k0-role-neutral-wave-06.mjs
+          node tools/build-k0-epistemic-admissibility.mjs
+          git diff -- . ':!build/**' ':!dist/**' > /tmp/k0-wave06-after.patch
+          cmp /tmp/k0-wave06-before.patch /tmp/k0-wave06-after.patch
+
+      - name: Commit non-workflow permanent surface
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          rm .github/workflows/k0-role-neutral-wave-06.yml
+          git rm .github/tmp/k0-wave06-source.tar.gz.b64
+          git rm .github/tmp/k0-wave06-source-part-*.b64
+
+          git add \
+            data/project/k0-epistemic-admissibility-methodology.json \
+            data/project/k0-epistemic-admissibility-release-manifest.json \
+            data/project/k0-role-neutral-wave-06-release-manifest.json \
+            data/research/corpus-coverage.json \
+            data/research/k0-role-neutral-denominator.json \
+            data/research/k0-role-neutral-wave-06.json \
+            data/research/selection-adversarial-reviews.json \
+            docs/milestones/m05-k0-role-neutral-wave-06.md \
+            reports/core-thesis/answerable-power/k0-role-neutral-wave-06.html \
+            reports/core-thesis/answerable-power/k0-role-neutral-wave-06.json \
+            reports/core-thesis/answerable-power/k0.html \
+            reports/core-thesis/answerable-power/k0.json \
+            test/k0-epistemic-admissibility.test.js \
+            test/k0-role-neutral-wave-06.test.js \
+            tools/build-k0-epistemic-admissibility.mjs \
+            tools/build-k0-role-neutral-wave-06.mjs \
+            tools/validate-k0-epistemic-admissibility.mjs \
+            tools/validate-k0-role-neutral-wave-06.mjs
+
+          python - <<'PY'
+          import subprocess
+          permanent = {
+            'data/project/k0-epistemic-admissibility-methodology.json',
+            'data/project/k0-epistemic-admissibility-release-manifest.json',
+            'data/project/k0-role-neutral-wave-06-release-manifest.json',
+            'data/research/corpus-coverage.json',
+            'data/research/k0-role-neutral-denominator.json',
+            'data/research/k0-role-neutral-wave-06.json',
+            'data/research/selection-adversarial-reviews.json',
+            'docs/milestones/m05-k0-role-neutral-wave-06.md',
+            'reports/core-thesis/answerable-power/k0-role-neutral-wave-06.html',
+            'reports/core-thesis/answerable-power/k0-role-neutral-wave-06.json',
+            'reports/core-thesis/answerable-power/k0.html',
+            'reports/core-thesis/answerable-power/k0.json',
+            'test/k0-epistemic-admissibility.test.js',
+            'test/k0-role-neutral-wave-06.test.js',
+            'tools/build-k0-epistemic-admissibility.mjs',
+            'tools/build-k0-role-neutral-wave-06.mjs',
+            'tools/validate-k0-epistemic-admissibility.mjs',
+            'tools/validate-k0-role-neutral-wave-06.mjs',
+          }
+          transport = {'.github/tmp/k0-wave06-source.tar.gz.b64'}
+          transport.update({f'.github/tmp/k0-wave06-source-part-{i:02d}.b64' for i in range(10)})
+          actual = set(subprocess.check_output(['git','diff','--cached','--name-only'], text=True).splitlines())
+          expected = permanent | transport
+          assert actual == expected, f'path mismatch\nmissing={sorted(expected-actual)}\nextra={sorted(actual-expected)}'
+          assert len(permanent) == 18 and len(transport) == 11 and len(actual) == 29
+          assert not any(p.startswith('build/') or p.startswith('dist/') or p.startswith('.github/workflows/') for p in actual)
+          print('exact staged denominator: 18 non-workflow permanent paths + 11 carrier deletions')
+          PY
+
+          git diff --cached --check
+          git commit -m 'Materialize K0 Wave 06 non-workflow surface'
+          git push origin HEAD:agent/k0-role-neutral-wave-06
