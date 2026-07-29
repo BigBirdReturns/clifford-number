@@ -84,7 +84,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf .github/tmp
+          rm -f .github/tmp/evidence-grounded-judgment-trigger.json
           python - <<'PY'
           import subprocess
           expected = {
