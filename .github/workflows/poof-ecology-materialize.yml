@@ -1,0 +1,51 @@
+name: One-shot POOF ecology materializer
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/poof-ecology-materialize.yml'
+      - '.bootstrap/poof-clifford-ecology/source.patch.gz.b64'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/poof-clifford-ecology
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Decode and verify source patch
+        run: |
+          base64 --decode .bootstrap/poof-clifford-ecology/source.patch.gz.b64 | gzip --decompress > /tmp/poof-clifford-ecology.patch
+          echo '34744d87daf8f884710d12024e76592d0f094664c14deaff297c83538148bf2c  /tmp/poof-clifford-ecology.patch' | sha256sum --check
+          git apply --check /tmp/poof-clifford-ecology.patch
+      - name: Materialize source and deterministic products
+        run: |
+          git apply /tmp/poof-clifford-ecology.patch
+          node tools/build-core-thesis.mjs
+          node tools/build-m05-answerable-power.mjs
+          node tools/build-k0-epistemic-admissibility.mjs
+          node tools/build-poof-clifford-ecology.mjs
+          npm run ci:poof-ecology
+          git diff --check
+      - name: Remove bootstrap transport and publish branch commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rm -rf .bootstrap/poof-clifford-ecology
+          rm -f .github/workflows/poof-ecology-bootstrap-export.yml
+          rm -f .github/workflows/poof-ecology-materialize.yml
+          git add -A
+          git config user.name 'OpenAI Agent'
+          git config user.email 'agent@openai.invalid'
+          git commit -m 'Build POOF and Clifford constitutional ecology'
+          git push origin HEAD:agent/poof-clifford-ecology
