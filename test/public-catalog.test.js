@@ -10,8 +10,17 @@ assert.equal(catalog.counts.declared_claims, catalog.cases.reduce((total, item) 
 assert.equal(catalog.counts.claims, catalog.counts.declared_claims,
   'the public catalog must expose every declared canonical case claim, including unsequenced claims');
 assert.equal(catalog.counts.receipts, catalog.receipts.length);
+assert.equal(catalog.counts.subjects, catalog.subjects.length);
+assert.equal(catalog.counts.subject_references, catalog.claims.length);
+assert.equal(catalog.counts.resolved_subject_references + catalog.counts.unresolved_subject_references, catalog.counts.subject_references);
+assert.equal(catalog.counts.canonical_subjects, catalog.subjects.filter(item => item.canonical_subject_id).length);
+assert.equal(catalog.subject_identity_projection.scope, 'claim_subject_only');
+assert.equal(catalog.subject_identity_projection.graph_effect, 'none');
 assert.ok(catalog.tracks.length > 0);
 assert.ok(catalog.cases.length > 0);
+assert.ok(catalog.subjects.length > 0);
+assert.ok(catalog.counts.resolved_subject_references > 0);
+assert.ok(catalog.counts.unresolved_subject_references > 0);
 
 const ukAiEntry = catalog.cases.find(item => item.case_id === 'uk-ai-policy');
 assert.ok(ukAiEntry, 'the legacy UK AI graph must cross the public-case boundary');
@@ -20,6 +29,7 @@ assert.equal(ukAiEntry.featured_priority, 100);
 assert.equal(ukAiEntry.subtitle, 'Seven degrees of UK AI policy topology, with receipts.');
 assert.match(ukAiEntry.featured_claim.plain, /all 50 recommendations/);
 assert.equal(ukAiEntry.featured_claim.receipt_count, 2);
+assert.ok(ukAiEntry.featured_claim.subject_identity);
 const ukAiCase = JSON.parse(readFileSync(ukAiEntry.href, 'utf8'));
 assert.equal(ukAiCase.projection_version, 'legacy-uk-ai-policy@1');
 assert.equal(ukAiCase.counts.events, 224);
@@ -31,6 +41,8 @@ assert.deepEqual(ukAiCase.unsequenced_claim_ids, []);
 assert.equal(ukAiCase.sections[0].records[0].claims[0].receipt_ids.length, 2);
 assert.equal(ukAiCase.relations.length, 0);
 assert.equal(ukAiCase.beacons.length, 0);
+assert.equal(ukAiCase.counts.subject_references, ukAiCase.counts.claims);
+assert.equal(ukAiCase.subject_identity_projection.boundaries.subject_id_preserved, true);
 assert.equal(
   ukAiCase.claim_status_counts.verified + ukAiCase.claim_status_counts.review_required,
   ukAiCase.counts.claims,
@@ -38,10 +50,18 @@ assert.equal(
 );
 const ukReceiptIds = new Set(ukAiCase.receipts.map(item => item.receipt_id));
 for (const claim of ukAiCase.claims) {
+  assert.ok(claim.subject_identity);
+  assert.equal(claim.subject_identity.local_subject_id, claim.subject_id);
   for (const receiptId of claim.receipt_ids) {
     assert.ok(ukReceiptIds.has(receiptId), `UK AI claim receipt must resolve: ${receiptId}`);
   }
 }
+const adlCatalogClaim = catalog.claims.find(item => item.case_id === 'uk-ai-policy' && item.claim_id === 'clm-e-adl-umbrella-u13-umbrella-membership');
+assert.ok(adlCatalogClaim);
+assert.equal(adlCatalogClaim.subject_id, 'adl');
+assert.equal(adlCatalogClaim.canonical_subject_id, 'anti-defamation-league');
+assert.ok(adlCatalogClaim.subject_search_keys.includes('adl'));
+assert.ok(adlCatalogClaim.subject_search_keys.includes('Anti-Defamation League'));
 
 const arcadiaEntry = catalog.cases.find(item => item.case_id === 'arcadia-field-autopsy');
 assert.ok(arcadiaEntry, 'the Arcadia case must be present in the public catalog');
@@ -57,10 +77,35 @@ assert.ok(growthMachine, 'an unsequenced Arcadia claim must remain publicly addr
 assert.equal(growthMachine.event_label, 'Unsequenced case claim');
 assert.equal(growthMachine.occurred_at, '1987');
 assert.ok(growthMachine.receipt_count > 0);
+assert.equal(growthMachine.subject_id, 'org-city-of-arcadia');
+assert.equal(growthMachine.canonical_subject_id, 'city-of-arcadia');
 
-for (const collection of [catalog.tracks, catalog.cases, catalog.claims, catalog.receipts]) {
+const daiaClaim = catalog.claims.find(item => item.key === 'arcadia-field-autopsy::clm-daia-assessment-bookends');
+assert.ok(daiaClaim);
+assert.equal(daiaClaim.subject_id, 'org-daia');
+assert.equal(daiaClaim.canonical_subject_id, 'arcadia-improvement-association');
+assert.ok(daiaClaim.subject_search_keys.includes('org-daia'));
+assert.ok(daiaClaim.subject_search_keys.includes('Arcadia Improvement Association'));
+const daiaSubject = catalog.subjects.find(item => item.key === 'canonical:arcadia-improvement-association');
+assert.ok(daiaSubject);
+assert.equal(daiaSubject.canonical_kind, 'organization');
+assert.ok(daiaSubject.local_subjects.some(item => item.case_id === 'arcadia-field-autopsy' && item.local_subject_id === 'org-daia'));
+assert.ok(daiaSubject.claim_ids.includes('arcadia-field-autopsy::clm-daia-assessment-bookends'));
+assert.equal(daiaSubject.graph_effect, 'none');
+
+for (const collection of [catalog.tracks, catalog.cases, catalog.subjects, catalog.claims, catalog.receipts]) {
   const keys = collection.map(item => item.key ?? item.track_id ?? item.case_id);
   assert.equal(new Set(keys).size, keys.length, 'catalog keys must be unique');
+}
+for (const subject of catalog.subjects) {
+  assert.ok(subject.local_subjects.length > 0);
+  assert.ok(subject.claim_ids.length > 0);
+  assert.ok(subject.search_keys.length > 0);
+  assert.equal(subject.source_records_mutated, false);
+  assert.equal(subject.source_records_merged, false);
+  assert.equal(subject.relationship_created, false);
+  assert.equal(subject.participation_created, false);
+  assert.equal(subject.graph_effect, 'none');
 }
 for (const item of [...catalog.tracks, ...catalog.cases]) {
   assert.ok(existsSync(item.href), `catalog target must exist: ${item.href}`);
