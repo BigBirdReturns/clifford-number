@@ -1,4 +1,4 @@
-name: Temporary repair K0 Wave 05 carrier
+name: Temporary diagnose K0 Wave 05 aggregate state
 
 on:
   pull_request:
@@ -13,75 +13,45 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  repair:
-    if: github.actor != 'github-actions[bot]' || github.event_name == 'workflow_dispatch'
+  diagnose:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/k0-role-neutral-wave-05
-          fetch-depth: 0
-      - name: Apply the unique valid carrier reconstruction
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Materialize and expose aggregate Wave 05 values
         run: |
           set -euo pipefail
+          cat .github/tmp/k0-wave05-materializer-part-*.b64 | base64 -d > /tmp/k0-wave05-materializer.tgz
+          test "$(sha256sum /tmp/k0-wave05-materializer.tgz | awk '{print $1}')" = "191727093d18d1df7684f0b57883544f935f481aa67c9125d2f0693437221aca"
+          rm -rf /tmp/k0-wave05-materializer
+          mkdir -p /tmp/k0-wave05-materializer
+          tar -xzf /tmp/k0-wave05-materializer.tgz -C /tmp/k0-wave05-materializer
+          node /tmp/k0-wave05-materializer/materialize-k0-role-neutral-wave-05.mjs
+          node tools/build-k0-role-neutral-wave-05.mjs
+          node tools/build-k0-epistemic-admissibility.mjs
           python - <<'PY'
-          from pathlib import Path
-          from io import BytesIO
-          import base64, hashlib, tarfile
-
-          target = '191727093d18d1df7684f0b57883544f935f481aa67c9125d2f0693437221aca'
-          expected_names = [
-              'materialize-k0-role-neutral-wave-05.mjs',
-              'payload/.github/workflows/k0-role-neutral-wave-05.yml',
-              'payload/data/research/k0-role-neutral-wave-05.json',
-              'payload/docs/milestones/m05-k0-role-neutral-wave-05.md',
-              'payload/test/k0-role-neutral-wave-05.test.js',
-              'payload/tools/build-k0-role-neutral-wave-05.mjs',
-              'payload/tools/validate-k0-role-neutral-wave-05.mjs',
-          ]
-          paths = sorted(Path('.github/tmp').glob('k0-wave05-materializer-part-*.b64'))
-          assert len(paths) == 4, paths
-          chunks = [b''.join(path.read_bytes().split()) for path in paths]
-
-          def verify(encoded: bytes):
-              decoded = base64.b64decode(encoded, validate=True)
-              assert hashlib.sha256(decoded).hexdigest() == target
-              with tarfile.open(fileobj=BytesIO(decoded), mode='r:gz') as archive:
-                  assert archive.getnames() == expected_names, archive.getnames()
-                  for member in archive.getmembers():
-                      if member.isfile():
-                          handle = archive.extractfile(member)
-                          assert handle is not None
-                          while handle.read(1024 * 1024):
-                              pass
-              return decoded
-
-          merged = b''.join(chunks)
-          try:
-              verify(merged)
-              print('carrier already equals unique recovered archive')
-              raise SystemExit(0)
-          except Exception:
-              pass
-
-          assert len(chunks[0]) == 5499, len(chunks[0])
-          assert len(merged) == 20099, len(merged)
-          repaired = chunks[0][:293] + b'O' + chunks[0][293:]
-          decoded = verify(b''.join([repaired, *chunks[1:]]))
-          paths[0].write_bytes(repaired)
-          print(f'repaired fragment-00 at byte 293; archive bytes={len(decoded)} sha256={target}')
+          import json
+          coverage = json.load(open('data/research/corpus-coverage.json'))
+          reviews = json.load(open('data/research/selection-adversarial-reviews.json'))
+          neutral = json.load(open('data/research/k0-role-neutral-denominator.json'))
+          row = next(x for x in coverage['lanes'] if x['lane_id'] == 'epistemic-admissibility-ceiling-events')
+          metric = next((x for x in row.get('metrics', []) if x.get('metric_id') == 'candidate_records_pending_field_audit'), None)
+          gap04 = next((x for x in row.get('known_gaps', []) if x.get('gap_id') == 'k0-wave04-field-adjudication-open'), None)
+          gap05 = next((x for x in row.get('known_gaps', []) if x.get('gap_id') == 'k0-wave05-field-adjudication-open'), None)
+          review = next(x for x in reviews['reviews'] if x['lane_id'] == 'epistemic-admissibility-ceiling-events')
+          print('metric=', json.dumps(metric, indent=2))
+          print('gap04=', json.dumps(gap04, indent=2))
+          print('gap05=', json.dumps(gap05, indent=2))
+          print('neutral.status=', neutral.get('status'))
+          print('neutral.execution=', json.dumps(neutral.get('execution'), indent=2))
+          print('review.execution=', json.dumps(review.get('role_neutral_execution'), indent=2))
           PY
-
-          if git diff --quiet -- .github/tmp/k0-wave05-materializer-part-00.b64; then
-            echo 'No repair commit required.'
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .github/tmp/k0-wave05-materializer-part-00.b64
-          git commit -m 'Repair exact Wave 05 carrier fragment'
-          git push origin HEAD:agent/k0-role-neutral-wave-05
+          grep -n -A8 -B3 "pendingFieldMetric" tools/validate-k0-epistemic-admissibility.mjs
