@@ -503527,6 +503527,7 @@
     "build/fec-payee-inventory/fec-oppexp-cohort-local-20260713-r2/payee-records.jsonl",
     "build/icij-panama-import/panama-nodes.jsonl",
     "build/icij-panama-import/panama-relationships.jsonl",
+    "build/lake-index-gap-summary.json",
     "build/lake-index-gaps.json",
     "build/lake-index.json",
     "build/lake-object-index.json",
@@ -503574,13 +503575,14 @@
     "docs/removal-protocol.md",
     "reports/core-thesis/answerable-power/sprint-03-leg-07.html",
     "reports/core-thesis/answerable-power/sprint-03-leg-07.json",
-    "reports/lake-index-census.md"
+    "reports/lake-index-census.md",
+    "reports/lake-index-gap-summary.md"
   ],
   "open_pull_request_shadow": {
     "schema_version": "lake-open-pr-shadow@1",
-    "observed_at": "2026-07-29T02:10:42.546Z",
+    "observed_at": "2026-07-29T02:20:04.411Z",
     "repository": "BigBirdReturns/clifford-number",
-    "exact_checkout_head": "3e1550f9143392d459474ee443bbb3db8672e570",
+    "exact_checkout_head": "c539234977db050a5a3929f6708e2c63f4977b0b",
     "status": "complete",
     "pull_requests": [
       {
@@ -504934,42 +504936,86 @@
         "draft": true,
         "state": "open",
         "created_at": "2026-07-29T02:10:13Z",
-        "updated_at": "2026-07-29T02:10:24Z",
+        "updated_at": "2026-07-29T02:19:44Z",
         "base_ref": "main",
         "base_sha": "5bd4c0ce50f4ae03f9be7d466f8341d470e95d05",
         "head_ref": "agent/lake-index-census",
-        "head_sha": "3e1550f9143392d459474ee443bbb3db8672e570",
+        "head_sha": "c539234977db050a5a3929f6708e2c63f4977b0b",
         "files": [
           {
             "path": ".github/tmp/lake-index-trigger.json",
             "status": "added",
-            "blob_sha": "36852e4a614d7f227f2a20a334098a95c2118578",
+            "blob_sha": "1a76832b0adf98408347eb6e95b6bfa86d145e32",
             "previous_path": null,
-            "additions": 5,
+            "additions": 6,
             "deletions": 0,
-            "changes": 5,
+            "changes": 6,
             "evidence_like": false,
             "branch_only_path": false
           },
           {
             "path": ".github/workflows/lake-index-census.yml",
             "status": "added",
-            "blob_sha": "b7a1b15b689fcf88a5a08dfc277c1326d2575a1f",
+            "blob_sha": "9c11764ee1419eff795a915bdc4b6c5ab1a7b23d",
             "previous_path": null,
-            "additions": 89,
+            "additions": 113,
             "deletions": 0,
-            "changes": 89,
+            "changes": 113,
             "evidence_like": false,
+            "branch_only_path": false
+          },
+          {
+            "path": "build/lake-index-gaps.json",
+            "status": "added",
+            "blob_sha": "a043b50a3d7ce285d27bd97857e2e42159047dc6",
+            "previous_path": null,
+            "additions": 505060,
+            "deletions": 0,
+            "changes": 505060,
+            "evidence_like": true,
+            "branch_only_path": false
+          },
+          {
+            "path": "build/lake-index.json",
+            "status": "added",
+            "blob_sha": "6c89327d79f82072a696099a9ab8eda20569aaf9",
+            "previous_path": null,
+            "additions": 194913,
+            "deletions": 0,
+            "changes": 194913,
+            "evidence_like": true,
+            "branch_only_path": false
+          },
+          {
+            "path": "build/lake-object-index.json",
+            "status": "added",
+            "blob_sha": "9e6e1e27166ab0ebfb20ed5ba70e7acec4a276f5",
+            "previous_path": null,
+            "additions": 595927,
+            "deletions": 0,
+            "changes": 595927,
+            "evidence_like": true,
             "branch_only_path": false
           },
           {
             "path": "data/project/lake-index-policy.json",
             "status": "added",
-            "blob_sha": "99a585c6e58e54bf8401137313d12777c69bc1ae",
+            "blob_sha": "4ba644a583806471dd68ad97b826cc3f482cc6fe",
             "previous_path": null,
-            "additions": 114,
+            "additions": 116,
             "deletions": 0,
-            "changes": 114,
+            "changes": 116,
+            "evidence_like": true,
+            "branch_only_path": false
+          },
+          {
+            "path": "data/project/lake-open-pr-shadow.json",
+            "status": "added",
+            "blob_sha": "6a721c3ce6fe68f9234b9309d12eb8416de92f62",
+            "previous_path": null,
+            "additions": 1480,
+            "deletions": 0,
+            "changes": 1480,
             "evidence_like": true,
             "branch_only_path": false
           },
@@ -504985,6 +505031,17 @@
             "branch_only_path": false
           },
           {
+            "path": "reports/lake-index-census.md",
+            "status": "added",
+            "blob_sha": "51e05d0b4483d4aca2f9fbe71d412bb4cb264df5",
+            "previous_path": null,
+            "additions": 47,
+            "deletions": 0,
+            "changes": 47,
+            "evidence_like": true,
+            "branch_only_path": false
+          },
+          {
             "path": "test/lake-index.test.js",
             "status": "added",
             "blob_sha": "0df6bc3b1b274901c4c5d8ae34c35c9108587159",
@@ -504992,6 +505049,17 @@
             "additions": 32,
             "deletions": 0,
             "changes": 32,
+            "evidence_like": false,
+            "branch_only_path": false
+          },
+          {
+            "path": "tools/build-lake-gap-summary.mjs",
+            "status": "added",
+            "blob_sha": "54338d10937ace7e8179fea6abea1c4762c1ef6c",
+            "previous_path": null,
+            "additions": 173,
+            "deletions": 0,
+            "changes": 173,
             "evidence_like": false,
             "branch_only_path": false
           },
@@ -505029,6 +505097,17 @@
             "branch_only_path": false
           },
           {
+            "path": "tools/validate-lake-gap-summary.mjs",
+            "status": "added",
+            "blob_sha": "0683a8edf3456e059c850ae70ddf610a0ef9cc8d",
+            "previous_path": null,
+            "additions": 52,
+            "deletions": 0,
+            "changes": 52,
+            "evidence_like": false,
+            "branch_only_path": false
+          },
+          {
             "path": "tools/validate-lake-index.mjs",
             "status": "added",
             "blob_sha": "a0465af729cd645466e642bce0d3764525aba3f2",
@@ -505044,8 +505123,8 @@
     ],
     "counts": {
       "open_pull_requests": 13,
-      "changed_paths": 116,
-      "evidence_like_changed_paths": 19,
+      "changed_paths": 123,
+      "evidence_like_changed_paths": 24,
       "branch_only_paths": 102,
       "branch_only_evidence_paths": 17
     },
@@ -505056,5 +505135,5 @@
       "closed_or_unpushed_branch_history_indexed": false
     }
   },
-  "source_fingerprint_sha256": "f731099b019b612cd180185e222a85378ef294ff1d2eb46211549dca5eae6966"
+  "source_fingerprint_sha256": "57b1875c3073af6993cd320566ba835d9d53be68aaebd0e1c1f681f1b890b42a"
 }

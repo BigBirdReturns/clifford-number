@@ -6,9 +6,9 @@
     "schema_version": "lake-index-summary@1",
     "census_id": "CN-LAKE-INDEX-2026-07",
     "counts": {
-      "tracked_files_indexed": 1850,
+      "tracked_files_indexed": 1852,
       "evidence_bearing_files": 1266,
-      "text_or_structured_files_parsed": 1822,
+      "text_or_structured_files_parsed": 1824,
       "parse_errors": 0,
       "index_files": 166,
       "authoritative_roots_present": 19,
@@ -29,9 +29,9 @@
       "case_ids": 27,
       "case_ids_not_in_public_catalog": 23,
       "report_ids": 5,
-      "missing_repo_path_tokens": 55,
+      "missing_repo_path_tokens": 57,
       "open_pull_requests_observed": 13,
-      "open_pr_changed_paths_observed": 116,
+      "open_pr_changed_paths_observed": 123,
       "open_pr_branch_only_paths_observed": 102
     },
     "boundaries": {
@@ -44,7 +44,7 @@
       "publication_cleared": false,
       "common_purpose_conclusion_generated": false
     },
-    "source_fingerprint_sha256": "f731099b019b612cd180185e222a85378ef294ff1d2eb46211549dca5eae6966"
+    "source_fingerprint_sha256": "57b1875c3073af6993cd320566ba835d9d53be68aaebd0e1c1f681f1b890b42a"
   },
   "authoritative_roots": [
     "README.md",
@@ -1845,8 +1845,8 @@
     },
     {
       "path": ".github/workflows/lake-index-census.yml",
-      "bytes": 2916,
-      "sha256": "ee0023e6b6ad862b06a1b2eb34c7f06f3db9605b50fdd387ddacf258794bffa9",
+      "bytes": 3960,
+      "sha256": "0b5becbb24c02e94f0ab7451342fe67da49d855168073dc9bfef2d25ebe4751c",
       "extension": ".yml",
       "role": "workflow",
       "generated": false,
@@ -1865,9 +1865,11 @@
       "receipt_reference_count": 0,
       "outgoing_refs": [
         "test/lake-index.test.js",
+        "tools/build-lake-gap-summary.mjs",
         "tools/build-lake-index.mjs",
         "tools/build-lake-open-pr-shadow.mjs",
         "tools/stabilize-lake-index.mjs",
+        "tools/validate-lake-gap-summary.mjs",
         "tools/validate-lake-index.mjs"
       ],
       "incoming_refs": [],
@@ -1878,11 +1880,13 @@
       "exact_orphan": false,
       "ownership_state": "no_program_owner_detected",
       "missing_path_tokens": [
+        "build/lake-index-gap-summary.json",
         "build/lake-index-gaps.json",
         "build/lake-index.json",
         "build/lake-object-index.json",
         "data/project/lake-open-pr-shadow.json",
-        "reports/lake-index-census.md"
+        "reports/lake-index-census.md",
+        "reports/lake-index-gap-summary.md"
       ]
     },
     {
@@ -109413,8 +109417,8 @@
     },
     {
       "path": "data/project/lake-index-policy.json",
-      "bytes": 2947,
-      "sha256": "b3ff5cd06de34f6266084e4c09b15cfc93ffe22a233b7e8430abb1eca3fe815b",
+      "bytes": 3029,
+      "sha256": "021ee689236fe21e5b682ef1f6af92d5979d2a3a692f1cec36e20c11076e0ba3",
       "extension": ".json",
       "role": "project_governance",
       "generated": false,
@@ -109471,11 +109475,13 @@
       "exact_orphan": false,
       "ownership_state": "no_program_owner_detected",
       "missing_path_tokens": [
+        "build/lake-index-gap-summary.json",
         "build/lake-index-gaps.json",
         "build/lake-index.json",
         "build/lake-object-index.json",
         "data/project/lake-open-pr-shadow.json",
-        "reports/lake-index-census.md"
+        "reports/lake-index-census.md",
+        "reports/lake-index-gap-summary.md"
       ]
     },
     {
@@ -186312,6 +186318,46 @@
       "missing_path_tokens": []
     },
     {
+      "path": "tools/build-lake-gap-summary.mjs",
+      "bytes": 10858,
+      "sha256": "627ad56a931f6e5ec55a469291359ddc7ebdcf4fb5d910b90139d86ddeb0cd82",
+      "extension": ".mjs",
+      "role": "tooling",
+      "generated": false,
+      "evidence_bearing": false,
+      "index_file": false,
+      "parse_status": "text",
+      "parse_error": null,
+      "schema_versions": [],
+      "program_ids": [],
+      "case_ids": [],
+      "report_ids": [],
+      "machine_id_count": 0,
+      "machine_id_reference_count": 0,
+      "status_values": [],
+      "receipt_definition_count": 0,
+      "receipt_reference_count": 0,
+      "outgoing_refs": [],
+      "incoming_refs": [
+        ".github/workflows/lake-index-census.yml"
+      ],
+      "incoming_index_refs": [
+        ".github/workflows/lake-index-census.yml"
+      ],
+      "authoritative_reachable": false,
+      "index_reachable": true,
+      "public_reachable": false,
+      "exact_orphan": false,
+      "ownership_state": "no_program_owner_detected",
+      "missing_path_tokens": [
+        "build/lake-index-gap-summary.json",
+        "build/lake-index-gaps.json",
+        "build/lake-index.json",
+        "build/lake-object-index.json",
+        "reports/lake-index-gap-summary.md"
+      ]
+    },
+    {
       "path": "tools/build-lake-index.mjs",
       "bytes": 26883,
       "sha256": "8d2fc54048fc6b27f47c876c8635d8d215d1c181ec559330fa14f7449312e46a",
@@ -192939,6 +192985,45 @@
       "exact_orphan": false,
       "ownership_state": "referenced_by_program_file",
       "missing_path_tokens": []
+    },
+    {
+      "path": "tools/validate-lake-gap-summary.mjs",
+      "bytes": 3818,
+      "sha256": "7f05fac17ff07dd88c305a3dc316a648621fa343aaef2697d4e1a052ca520200",
+      "extension": ".mjs",
+      "role": "tooling",
+      "generated": false,
+      "evidence_bearing": false,
+      "index_file": false,
+      "parse_status": "text",
+      "parse_error": null,
+      "schema_versions": [],
+      "program_ids": [],
+      "case_ids": [],
+      "report_ids": [],
+      "machine_id_count": 0,
+      "machine_id_reference_count": 0,
+      "status_values": [],
+      "receipt_definition_count": 0,
+      "receipt_reference_count": 0,
+      "outgoing_refs": [],
+      "incoming_refs": [
+        ".github/workflows/lake-index-census.yml"
+      ],
+      "incoming_index_refs": [
+        ".github/workflows/lake-index-census.yml"
+      ],
+      "authoritative_reachable": false,
+      "index_reachable": true,
+      "public_reachable": false,
+      "exact_orphan": false,
+      "ownership_state": "no_program_owner_detected",
+      "missing_path_tokens": [
+        "build/lake-index-gap-summary.json",
+        "build/lake-index-gaps.json",
+        "build/lake-index.json",
+        "reports/lake-index-gap-summary.md"
+      ]
     },
     {
       "path": "tools/validate-lake-index.mjs",
