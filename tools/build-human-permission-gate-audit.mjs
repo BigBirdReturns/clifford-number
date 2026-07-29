@@ -88,7 +88,7 @@ for (const relative of tracked) {
     let classification = 'ambiguous_review_language';
     let activePermissionGate = false;
     let mappedDecisionCount = domain ? (decisionDomains.get(domain)?.length ?? 0) : 0;
-    if (relative === policyPath || relative === ledgerPath || relative.startsWith('docs/methods/evidence-grounded-judgment-authority')) {
+    if (relative === policyPath || relative === ledgerPath || relative === 'data/project/evidence-grounded-judgment-authority.json' || relative.startsWith('docs/methods/evidence-grounded-judgment-authority')) {
       classification = 'governing_no_veto_definition';
     } else if (empirical) {
       classification = 'external_empirical_state';

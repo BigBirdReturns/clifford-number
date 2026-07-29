@@ -1,6 +1,6 @@
 # Evidence-grounded judgment frontier
 
-Source fingerprint: `f123abec6c5ba1b16d356a89e46bb75b5d11ba71afe6cfd4173eea800512c914`
+Source fingerprint: `edc8a4a689d97016067f03712fecc2a4430fc2ea2e854706ba2b748aa7c9664b`
 
 ## Governing decision
 
@@ -32,14 +32,14 @@ lake layer present: false
 
 | Lane | Level | Judgment | Action | Publication state |
 |---|---|---|---|---|
-| ai-policy-public-private-topology | J4 | continue_active_lane_and_publish_only_at_its_current_caveated_status | execute_gap:selection-gap-axm-identity-lock | provisional |
-| epistemic-admissibility-ceiling-events | J4 | execute_next_bounded_acquisition_or_comparator_step | execute_gap:k0-gap-remote-exact-byte-custody | blocked |
-| epstein-public-corpus | J4 | execute_next_bounded_acquisition_or_comparator_step | execute_gap:selection-gap-epstein-manifest | blocked |
+| ai-policy-public-private-topology | J4 | continue_active_lane_and_publish_only_at_its_current_caveated_status | execute_gap:selection-gap-axm-identity-lock | provisional_with_attached_consumption_contract |
+| epistemic-admissibility-ceiling-events | J4 | execute_next_bounded_acquisition_or_comparator_step | execute_gap:k0-gap-remote-exact-byte-custody | provisional_with_attached_consumption_contract |
+| epstein-public-corpus | J4 | execute_next_bounded_acquisition_or_comparator_step | execute_gap:selection-gap-epstein-manifest | provisional_with_attached_consumption_contract |
 | linkedin-private-attention | J1 | retain_as_private_support_only | preserve_without_public_evidence_or_population_inference | support_only |
-| official-record-cross-cutting | J4 | continue_active_lane_and_publish_only_at_its_current_caveated_status | execute_gap:selection-gap-sam-credential | provisional |
-| panama-offshore-service-providers | J4 | execute_next_bounded_acquisition_or_comparator_step | execute_gap:selection-gap-panama-importer | blocked |
-| trump-office-business-capital | J4 | execute_next_bounded_acquisition_or_comparator_step | execute_gap:selection-gap-trump-schedule-b-api-key | blocked |
-| us-defense-natsec100 | J4 | execute_next_bounded_acquisition_or_comparator_step | execute_gap:selection-gap-natsec100-2025-roster | blocked |
+| official-record-cross-cutting | J4 | continue_active_lane_and_publish_only_at_its_current_caveated_status | execute_gap:selection-gap-sam-credential | provisional_with_attached_consumption_contract |
+| panama-offshore-service-providers | J4 | execute_next_bounded_acquisition_or_comparator_step | execute_gap:selection-gap-panama-importer | provisional_with_attached_consumption_contract |
+| trump-office-business-capital | J4 | execute_next_bounded_acquisition_or_comparator_step | execute_gap:selection-gap-trump-schedule-b-api-key | provisional_with_attached_consumption_contract |
+| us-defense-natsec100 | J4 | execute_next_bounded_acquisition_or_comparator_step | execute_gap:selection-gap-natsec100-2025-roster | provisional_with_attached_consumption_contract |
 
 ## Report decisions
 

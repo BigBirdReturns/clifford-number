@@ -513,12 +513,17 @@ export function compileReporterBriefing(spec, caseItem) {
 }
 
 export function reporterBriefingQueueEntry(manifest) {
-  const reasons = [];
-  if (manifest.publication.status !== 'approved') reasons.push(`publication_status_${manifest.publication.status}`);
-  if (manifest.counts.review_required_claims > 0) reasons.push(`${manifest.counts.review_required_claims}_claims_review_required`);
-  if (manifest.counts.inherited_qualifications > 0) reasons.push(`${manifest.counts.inherited_qualifications}_qualifications_inherited_from_case_boundary`);
-  if (!manifest.publication.reviewer) reasons.push('independent_reviewer_missing');
-  if (!manifest.publication.reviewed_at) reasons.push('review_date_missing');
+  const scopeLimits = [];
+  if (manifest.publication.status !== 'approved') scopeLimits.push(`publication_status_${manifest.publication.status}`);
+  if (manifest.counts.review_required_claims > 0) scopeLimits.push(`${manifest.counts.review_required_claims}_claims_review_required`);
+  if (manifest.counts.inherited_qualifications > 0) scopeLimits.push(`${manifest.counts.inherited_qualifications}_qualifications_inherited_from_case_boundary`);
+  const clearanceConditions = [];
+  if (!manifest.publication.reviewer) clearanceConditions.push('independent_reviewer_missing');
+  if (!manifest.publication.reviewed_at) clearanceConditions.push('review_date_missing');
+  const blockers = [];
+  if (!(manifest.counts.verified_claims > 0)) blockers.push('no_verified_claims');
+  if (!(manifest.counts.public_receipts > 0)) blockers.push('no_public_receipts');
+  const provisionalPublicationEligible = blockers.length === 0;
   return {
     briefing_id: manifest.briefing_id,
     case_id: manifest.case_id,
@@ -527,8 +532,16 @@ export function reporterBriefingQueueEntry(manifest) {
     publication_status: manifest.publication.status,
     reviewer: manifest.publication.reviewer ?? null,
     reviewed_at: manifest.publication.reviewed_at ?? null,
-    blocking_reasons: reasons,
-    eligible_for_approval: reasons.length === 0,
+    judgment_state: provisionalPublicationEligible ? 'bounded_working_judgment' : 'observation_only',
+    blocking_reasons: blockers,
+    scope_limits: scopeLimits,
+    clearance_conditions: clearanceConditions,
+    provisional_publication_eligible: provisionalPublicationEligible,
+    eligible_for_approval: provisionalPublicationEligible && scopeLimits.length === 0 && clearanceConditions.length === 0,
+    review_dependency: {
+      required_to_decide: false,
+      effect: 'challenge_or_clearance_only_not_permission_to_form_a_bounded_judgment'
+    },
     graph_effect: 'none'
   };
 }

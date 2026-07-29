@@ -44,7 +44,8 @@ function currentStage({ native, manifest }) {
 
 function nextTransition({ native, manifest, verifiedClaims }) {
   if (manifest?.publication?.status === 'approved') return 'correction_and_version_maintenance';
-  if (manifest) return 'independent_review';
+  if (manifest && verifiedClaims > 0) return 'provisional_publication_and_adversarial_challenge';
+  if (manifest) return 'evidence_upgrade';
   if (!native) return 'case_ledger_migration';
   if (verifiedClaims === 0) return 'evidence_upgrade';
   return 'structured_report_specification';
@@ -102,7 +103,12 @@ export function buildReportFrontier() {
       receipts: native?.counts?.receipts ?? publicEntry?.counts?.receipts ?? 0,
       trails: native?.counts?.trails ?? 0,
       source_trails_linked_to_report: manifest?.counts?.source_trails ?? 0,
+      judgment_state: queue?.judgment_state ?? (verifiedClaims > 0 ? 'candidate_judgment' : 'observation_only'),
+      provisional_publication_eligible: queue?.provisional_publication_eligible ?? false,
       blockers: caseBlockers({ native, manifest, queue, verifiedClaims, reviewRequiredClaims }),
+      scope_limits: queue?.scope_limits ?? [],
+      clearance_conditions: queue?.clearance_conditions ?? [],
+      review_dependency: queue?.review_dependency ?? { required_to_decide: false, effect: 'not_applicable' },
       graph_effect: 'none'
     };
   });
@@ -189,7 +195,7 @@ export function buildReportFrontier() {
   const waterline = approvedPublications > 0
     ? { stage: 'approved_publication', next_transition: 'correction_and_version_maintenance' }
     : structuredReports > 0
-      ? { stage: 'structured_report', next_transition: 'independent_review' }
+      ? { stage: 'structured_report', next_transition: 'provisional_publication_and_adversarial_challenge' }
       : nativeCases > 0
         ? { stage: 'case_ledger', next_transition: 'structured_report_specification' }
         : { stage: 'intake_or_projection', next_transition: 'case_ledger_promotion' };
@@ -219,7 +225,9 @@ export function buildReportFrontier() {
       legacy_projections: legacyProjections,
       structured_reports: structuredReports,
       approved_publications: approvedPublications,
-      reports_awaiting_independent_review: cases.filter(item => item.current_stage === 'structured_report').length,
+      reports_open_to_independent_challenge: cases.filter(item => item.current_stage === 'structured_report').length,
+      reports_with_bounded_working_judgment: cases.filter(item => item.judgment_state === 'bounded_working_judgment').length,
+      provisional_publication_eligible: cases.filter(item => item.provisional_publication_eligible).length,
       case_trails: sum(trailPrograms.filter(item => item.kind === 'case_trails'), item => item.totals.trails),
       intake_trails: sum(trailPrograms.filter(item => item.kind === 'intake_trails'), item => item.totals.trails),
       report_linked_trails: sum(trailPrograms, item => item.totals.linked_to_report_workplan)
@@ -230,7 +238,7 @@ export function buildReportFrontier() {
       'A trail is a bounded search path, not a claim.',
       'A report workplan may reference only graph-inert, candidate-only case trails.',
       'A structured report may organize canonical claims and explicit records gaps but may not generate a conclusion.',
-      'Independent review requires a named reviewer, review date, resolved claim-level qualifications, and append-only publication history.',
+      'Independent challenge can raise, lower, or overturn confidence and may satisfy the independently cleared label; it does not create permission for a bounded judgment or provisional publication.',
       'Legacy projections and intake programs do not skip the case-ledger transition.'
     ]
   };

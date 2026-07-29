@@ -17,8 +17,7 @@ export function reportWaterlineQueueEntry(manifest) {
   const entry = reporterBriefingQueueEntry(manifest);
   const count = manifest.counts?.unsequenced_claims ?? 0;
   if (count > 0) {
-    const insertAt = entry.blocking_reasons.findIndex(reason => reason === 'independent_reviewer_missing');
-    entry.blocking_reasons.splice(insertAt >= 0 ? insertAt : entry.blocking_reasons.length, 0, `${count}_unsequenced_case_claims`);
+    entry.scope_limits.push(`${count}_unsequenced_case_claims`);
     entry.eligible_for_approval = false;
   }
   return entry;

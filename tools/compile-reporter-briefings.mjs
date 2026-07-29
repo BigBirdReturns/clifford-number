@@ -68,9 +68,11 @@ writeJson('build/review/reporter-briefing-queue.json', {
     briefings: queue.length,
     approved: queue.filter(item => item.publication_status === 'approved').length,
     review_required: queue.filter(item => item.publication_status === 'review_required').length,
-    eligible_for_approval: queue.filter(item => item.eligible_for_approval).length
+    eligible_for_approval: queue.filter(item => item.eligible_for_approval).length,
+    provisional_publication_eligible: queue.filter(item => item.provisional_publication_eligible).length,
+    bounded_working_judgments: queue.filter(item => item.judgment_state === 'bounded_working_judgment').length
   },
   queue
 });
 
-console.log(`reporter briefings: ${manifests.length} compiled, ${queue.filter(item => item.eligible_for_approval).length} approval-ready`);
+console.log(`reporter briefings: ${manifests.length} compiled, ${queue.filter(item => item.provisional_publication_eligible).length} provisionally publishable, ${queue.filter(item => item.eligible_for_approval).length} independently cleared`);

@@ -136,13 +136,18 @@ for (const lane of safeArray(selection.lanes)) {
       coverage_metric_count: metrics.length,
       incomplete_metric_count: incompleteMetrics.length,
       material_gap_count: materialGaps.length,
-      review_only_gap_count: reviewOnlyGaps.length
+      review_only_gap_count: reviewOnlyGaps.length,
+      clearance_state: review?.publication_status ?? 'not_declared'
     },
     counterevidence: review?.known_boundary_risks ?? [],
     uncertainties: materialGaps.map(gap => gap.description),
     action,
     review,
-    publicationEffect: review?.publication_status ?? 'not_declared'
+    publicationEffect: privateSupport
+      ? 'support_only'
+      : lane.replicability?.public_reproducible === true
+        ? 'provisional_with_attached_consumption_contract'
+        : 'internal_only'
   }));
 }
 

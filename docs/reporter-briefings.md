@@ -74,16 +74,15 @@ The per-report manifest records:
 - status counts, output routes, graph effect, and conclusion boundary; and
 - SHA-256 digests of the source specification, compiled case, and emitted HTML.
 
-The review queue explains why a report is not approval-ready without promoting it, changing its evidence, or impersonating human review. Blockers can include:
+The review queue separates three different things that must never be collapsed:
 
-- publication status remains `review_required`;
-- report-referenced claims remain review-required;
-- qualifications are inherited from the case boundary;
-- report-referenced claims are not attached to canonical events;
-- independent reviewer identity is missing; or
-- review date is missing.
+- **material blockers** such as no verified claim or no inspectable public receipt;
+- **scope limits** such as review-required claims, inherited qualifications, or unsequenced claims; and
+- **independent-clearance conditions** such as reviewer identity and review date.
 
-The report frontier reconciles reports with native cases, legacy projections, case trails, and intake trail programs. It records the next allowed transition without scoring or ranking subjects.
+A report with verified claims and public receipts may form a bounded working judgment and publish provisionally with every scope limit attached. Missing independent review can withhold the word *approved* or *independently corroborated*; it cannot erase the judgment or block provisional use of the verified subset.
+
+The report frontier reconciles reports with native cases, legacy projections, case trails, and intake trail programs. It records the next evidence action without scoring or ranking subjects.
 
 ## Claim custody and temporal context
 

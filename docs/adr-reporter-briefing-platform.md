@@ -116,14 +116,14 @@ Automation may not supply independent review. Approval still requires a named re
 - **Evidence matrix without counterweights:** rejected because a structurally complete table can still be directionally biased.
 - **Discarding claims without event assignments:** rejected because case custody must not depend on presentation readiness.
 - **Converting every claim into a synthetic event:** rejected because doing so would invent chronology and erase the distinction between standing interpretation, dated observation, and event.
-- **Letting intake trails feed reports directly:** rejected because search paths must cross the case-ledger evidence and review boundary before publication projection.
-- **Treating workflow success as approval:** rejected because integrity automation cannot impersonate independent editorial review.
+- **Letting intake trails feed reports directly:** rejected because search paths must cross the typed case-ledger evidence boundary before they can be represented as claims. Verified subsets may still support a bounded provisional report while unresolved trails remain explicit workplan inputs.
+- **Treating workflow success as independent corroboration:** rejected because integrity automation proves reproducibility, not external corroboration. It does not prevent the project from making a bounded judgment from the evidence it has.
 - **Automatically converting event sequence, matrix cells, or trails into graph edges:** rejected because temporal order, institutional adjacency, shared subject matter, or search recurrence does not establish bounded co-participation or causation.
 
 ## Migration and proof
 
 The Anduril access-and-ownership case is the prototype `reporter-briefing@2` report. Its evidence case, claim statuses, receipts, graph effect, and conclusion boundary were not promoted by the migration.
 
-The Arcadia Formation is the second proof. It applies the same report law to a different domain: place formation, public infrastructure, planning, assessment governance, parcel ownership, project approvals, and comparative controls. Its candidate-only evidence trails remain workplan inputs, not findings. The report remains `review_required` and explicitly exposes inherited qualifications and unsequenced claims as approval blockers.
+The Arcadia Formation is the second proof. It applies the same report law to a different domain: place formation, public infrastructure, planning, assessment governance, parcel ownership, project approvals, and comparative controls. Its candidate-only evidence trails remain workplan inputs, not findings. The report remains `review_required` for independent clearance while its verified subset supports a bounded working judgment; inherited qualifications and unsequenced claims travel as scope limits rather than permission gates.
 
-Together the two reports establish the current project waterline at **structured report**. The next unlocked transition is **independent review**.
+Together the two reports establish the current project waterline at **structured report plus bounded working judgment**. The next evidence action is **provisional publication and adversarial challenge**. Independent review may raise, lower, or overturn confidence and may satisfy the independently cleared label; it is not permission to judge.

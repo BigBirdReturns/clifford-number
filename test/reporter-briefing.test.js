@@ -61,12 +61,14 @@ assert.doesNotMatch(html, /href="undefined"/);
 
 const queue = reportWaterlineQueueEntry(manifest);
 assert.equal(queue.eligible_for_approval, false);
-assert.ok(queue.blocking_reasons.includes('publication_status_review_required'));
-assert.ok(queue.blocking_reasons.includes('9_claims_review_required'));
-assert.ok(queue.blocking_reasons.includes('independent_reviewer_missing'));
-assert.ok(queue.blocking_reasons.includes('review_date_missing'));
-assert.ok(!queue.blocking_reasons.some(reason => /qualifications_inherited/.test(reason)));
-assert.ok(!queue.blocking_reasons.some(reason => /unsequenced_case_claims/.test(reason)));
+assert.equal(queue.provisional_publication_eligible, true);
+assert.equal(queue.judgment_state, 'bounded_working_judgment');
+assert.deepEqual(queue.blocking_reasons, []);
+assert.ok(queue.scope_limits.includes('publication_status_review_required'));
+assert.ok(queue.scope_limits.includes('9_claims_review_required'));
+assert.ok(queue.clearance_conditions.includes('independent_reviewer_missing'));
+assert.ok(queue.clearance_conditions.includes('review_date_missing'));
+assert.equal(queue.review_dependency.required_to_decide, false);
 
 const missingClaim = structuredClone(spec);
 missingClaim.threads[0].cells[0].claim_ids.push('missing-claim');
@@ -111,7 +113,7 @@ const inheritedCompilation = compileWithWaterline(spec, inheritedBoundaryCase);
 assert.equal(inheritedCompilation.manifest.counts.inherited_qualifications, 1);
 assert.deepEqual(inheritedCompilation.manifest.inherited_qualification_claim_ids, ['clm-army-enterprise-vehicle']);
 assert.match(inheritedCompilation.html, /Case-wide boundary/);
-assert.ok(reportWaterlineQueueEntry(inheritedCompilation.manifest).blocking_reasons.includes('1_qualifications_inherited_from_case_boundary'));
+assert.ok(reportWaterlineQueueEntry(inheritedCompilation.manifest).scope_limits.includes('1_qualifications_inherited_from_case_boundary'));
 
 const unboundedCase = structuredClone(inheritedBoundaryCase);
 unboundedCase.boundary = '';
@@ -179,8 +181,9 @@ assert.match(arcadiaCompilation.html, /Recover the deed chain before interpretin
 assert.match(arcadiaCompilation.html, /data-trail-id="trail-deed-chronology"/);
 assert.match(arcadiaCompilation.html, /Case-wide boundary/);
 const arcadiaQueue = reportWaterlineQueueEntry(arcadiaCompilation.manifest);
-assert.ok(arcadiaQueue.blocking_reasons.some(reason => /qualifications_inherited_from_case_boundary/.test(reason)));
-assert.ok(arcadiaQueue.blocking_reasons.includes(`${arcadiaCompilation.manifest.counts.unsequenced_claims}_unsequenced_case_claims`));
+assert.ok(arcadiaQueue.scope_limits.some(reason => /qualifications_inherited_from_case_boundary/.test(reason)));
+assert.ok(arcadiaQueue.scope_limits.includes(`${arcadiaCompilation.manifest.counts.unsequenced_claims}_unsequenced_case_claims`));
+assert.equal(arcadiaQueue.provisional_publication_eligible, true);
 assert.equal(arcadiaQueue.eligible_for_approval, false);
 
 for (const [sourceSpec, compiled] of [[spec, { html, manifest }], [arcadiaSpec, arcadiaCompilation]]) {
@@ -199,9 +202,12 @@ assert.equal(reviewQueue.totals.briefings, 2);
 assert.equal(reviewQueue.totals.approved, 0);
 assert.equal(reviewQueue.totals.review_required, 2);
 assert.equal(reviewQueue.totals.eligible_for_approval, 0);
-assert.ok(reviewQueue.queue.find(item => item.briefing_id === 'anduril-access-ownership').blocking_reasons.includes('9_claims_review_required'));
+assert.equal(reviewQueue.totals.provisional_publication_eligible, 2);
+assert.equal(reviewQueue.totals.bounded_working_judgments, 2);
+assert.ok(reviewQueue.queue.find(item => item.briefing_id === 'anduril-access-ownership').scope_limits.includes('9_claims_review_required'));
 const emittedArcadiaQueue = reviewQueue.queue.find(item => item.briefing_id === 'arcadia-field-autopsy');
-assert.ok(emittedArcadiaQueue.blocking_reasons.some(reason => /qualifications_inherited_from_case_boundary/.test(reason)));
-assert.ok(emittedArcadiaQueue.blocking_reasons.some(reason => /unsequenced_case_claims/.test(reason)));
+assert.ok(emittedArcadiaQueue.scope_limits.some(reason => /qualifications_inherited_from_case_boundary/.test(reason)));
+assert.ok(emittedArcadiaQueue.scope_limits.some(reason => /unsequenced_case_claims/.test(reason)));
+assert.deepEqual(emittedArcadiaQueue.blocking_reasons, []);
 
 console.log('reporter-briefing: OK');

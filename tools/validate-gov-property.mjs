@@ -23,8 +23,9 @@ export function validateGovProperty(manifest, cohortEntities, v1) {
   if (manifest?.summary?.name_candidate_unresolved < 0) e.push('manifest: negative candidate count');
   // reviewer attached but non-blocking
   if (manifest?.consumption?.selection_review_status !== 'pending_second_party') e.push('manifest: review status must be attached');
-  if (manifest?.consumption?.review_effect !== 'labels_clearance_only_does_not_block_discovery_or_intake') e.push('manifest: review must not be described as blocking discovery/intake');
-  if (manifest?.consumption?.publication_status !== 'blocked_pending_independent_review') e.push('manifest: publication must remain blocked pending review');
+  if (manifest?.consumption?.review_effect !== 'challenge_and_confidence_only_does_not_block_discovery_intake_or_provisional_publication') e.push('manifest: review must be challenge/confidence metadata, not permission');
+  if (manifest?.consumption?.publication_status !== 'provisional_with_attached_limits') e.push('manifest: bounded provisional publication must remain available');
+  if (manifest?.consumption?.review_dependency?.required_to_decide !== false) e.push('manifest: review may not be required to decide');
   // source-scope honesty (first-page false-positive sample recorded, not overclaimed)
   const probe = manifest?.source_scope_probe;
   if (!probe || probe.trump_recipient_universe?.all_false_positive !== true) e.push('manifest: must record the false-positive contract-recipient sample');

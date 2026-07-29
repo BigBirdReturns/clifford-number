@@ -12,7 +12,7 @@
   ],
   "waterline": {
     "stage": "structured_report",
-    "next_transition": "independent_review",
+    "next_transition": "provisional_publication_and_adversarial_challenge",
     "definition": "The highest publication transition demonstrated by deterministic repository artifacts. It is a capability boundary, not a quality score or ranking."
   },
   "totals": {
@@ -21,7 +21,9 @@
     "legacy_projections": 1,
     "structured_reports": 2,
     "approved_publications": 0,
-    "reports_awaiting_independent_review": 2,
+    "reports_open_to_independent_challenge": 2,
+    "reports_with_bounded_working_judgment": 2,
+    "provisional_publication_eligible": 2,
     "case_trails": 10,
     "intake_trails": 18,
     "report_linked_trails": 9
@@ -32,7 +34,7 @@
       "title": "Anduril: Access, Ownership, and the Government Gate",
       "case_state": "case_ledger",
       "current_stage": "structured_report",
-      "next_transition": "independent_review",
+      "next_transition": "provisional_publication_and_adversarial_challenge",
       "report_state": "review_required",
       "report_id": "anduril-access-ownership",
       "report_version": "2.0.0",
@@ -44,12 +46,21 @@
       "receipts": 22,
       "trails": 0,
       "source_trails_linked_to_report": 0,
-      "blockers": [
+      "judgment_state": "bounded_working_judgment",
+      "provisional_publication_eligible": true,
+      "blockers": [],
+      "scope_limits": [
         "publication_status_review_required",
-        "9_claims_review_required",
+        "9_claims_review_required"
+      ],
+      "clearance_conditions": [
         "independent_reviewer_missing",
         "review_date_missing"
       ],
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_or_clearance_only_not_permission_to_form_a_bounded_judgment"
+      },
       "graph_effect": "none"
     },
     {
@@ -57,7 +68,7 @@
       "title": "The Arcadia Formation",
       "case_state": "case_ledger",
       "current_stage": "structured_report",
-      "next_transition": "independent_review",
+      "next_transition": "provisional_publication_and_adversarial_challenge",
       "report_state": "review_required",
       "report_id": "arcadia-field-autopsy",
       "report_version": "1.0.0",
@@ -69,14 +80,23 @@
       "receipts": 142,
       "trails": 10,
       "source_trails_linked_to_report": 9,
-      "blockers": [
+      "judgment_state": "bounded_working_judgment",
+      "provisional_publication_eligible": true,
+      "blockers": [],
+      "scope_limits": [
         "publication_status_review_required",
         "21_claims_review_required",
         "18_qualifications_inherited_from_case_boundary",
-        "22_unsequenced_case_claims",
+        "22_unsequenced_case_claims"
+      ],
+      "clearance_conditions": [
         "independent_reviewer_missing",
         "review_date_missing"
       ],
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_or_clearance_only_not_permission_to_form_a_bounded_judgment"
+      },
       "graph_effect": "none"
     },
     {
@@ -96,11 +116,19 @@
       "receipts": 1,
       "trails": 0,
       "source_trails_linked_to_report": 0,
+      "judgment_state": "observation_only",
+      "provisional_publication_eligible": false,
       "blockers": [
         "no_verified_claims",
         "13_claims_review_required",
         "structured_report_not_declared"
       ],
+      "scope_limits": [],
+      "clearance_conditions": [],
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "not_applicable"
+      },
       "graph_effect": "none"
     },
     {
@@ -120,11 +148,19 @@
       "receipts": 15,
       "trails": 0,
       "source_trails_linked_to_report": 0,
+      "judgment_state": "candidate_judgment",
+      "provisional_publication_eligible": false,
       "blockers": [
         "canonical_case_ledger_missing",
         "187_claims_review_required",
         "structured_report_not_declared"
       ],
+      "scope_limits": [],
+      "clearance_conditions": [],
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "not_applicable"
+      },
       "graph_effect": "none"
     }
   ],
@@ -274,7 +310,7 @@
     "A trail is a bounded search path, not a claim.",
     "A report workplan may reference only graph-inert, candidate-only case trails.",
     "A structured report may organize canonical claims and explicit records gaps but may not generate a conclusion.",
-    "Independent review requires a named reviewer, review date, resolved claim-level qualifications, and append-only publication history.",
+    "Independent challenge can raise, lower, or overturn confidence and may satisfy the independently cleared label; it does not create permission for a bounded judgment or provisional publication.",
     "Legacy projections and intake programs do not skip the case-ledger transition."
   ]
 }

@@ -6,7 +6,9 @@
     "briefings": 2,
     "approved": 0,
     "review_required": 2,
-    "eligible_for_approval": 0
+    "eligible_for_approval": 0,
+    "provisional_publication_eligible": 2,
+    "bounded_working_judgments": 2
   },
   "queue": [
     {
@@ -17,13 +19,22 @@
       "publication_status": "review_required",
       "reviewer": null,
       "reviewed_at": null,
-      "blocking_reasons": [
+      "judgment_state": "bounded_working_judgment",
+      "blocking_reasons": [],
+      "scope_limits": [
         "publication_status_review_required",
-        "9_claims_review_required",
+        "9_claims_review_required"
+      ],
+      "clearance_conditions": [
         "independent_reviewer_missing",
         "review_date_missing"
       ],
+      "provisional_publication_eligible": true,
       "eligible_for_approval": false,
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_or_clearance_only_not_permission_to_form_a_bounded_judgment"
+      },
       "graph_effect": "none"
     },
     {
@@ -34,15 +45,24 @@
       "publication_status": "review_required",
       "reviewer": null,
       "reviewed_at": null,
-      "blocking_reasons": [
+      "judgment_state": "bounded_working_judgment",
+      "blocking_reasons": [],
+      "scope_limits": [
         "publication_status_review_required",
         "21_claims_review_required",
         "18_qualifications_inherited_from_case_boundary",
-        "22_unsequenced_case_claims",
+        "22_unsequenced_case_claims"
+      ],
+      "clearance_conditions": [
         "independent_reviewer_missing",
         "review_date_missing"
       ],
+      "provisional_publication_eligible": true,
       "eligible_for_approval": false,
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_or_clearance_only_not_permission_to_form_a_bounded_judgment"
+      },
       "graph_effect": "none"
     }
   ]
