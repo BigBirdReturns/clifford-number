@@ -1,0 +1,244 @@
+name: Evidence lake basin execution Wave 01
+
+on:
+  push:
+    branches:
+      - agent/lake-basin-execution-wave-01
+    paths:
+      - '.github/tmp/lake-basin-execution-wave-01-trigger.json'
+  pull_request:
+    branches:
+      - agent/lake-index-census
+    paths:
+      - 'data/project/lake-basin-execution-policy.json'
+      - 'tools/build-lake-basin-execution-wave-01.mjs'
+      - 'tools/reconcile-lake-basin-execution-wave-01.mjs'
+      - 'tools/validate-lake-basin-execution-wave-01.mjs'
+      - 'test/lake-basin-execution-wave-01.test.js'
+      - '.github/workflows/lake-basin-execution-wave-01.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: lake-basin-execution-wave-01-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Determine execution mode
+        id: mode
+        shell: bash
+        run: |
+          if test -f .github/tmp/lake-basin-execution-wave-01-trigger.json; then
+            echo 'validate=true' >> "$GITHUB_OUTPUT"
+            echo 'materialize=true' >> "$GITHUB_OUTPUT"
+          elif test "$GITHUB_EVENT_NAME" = 'pull_request' || test "$GITHUB_EVENT_NAME" = 'workflow_dispatch'; then
+            echo 'validate=true' >> "$GITHUB_OUTPUT"
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'validate=false' >> "$GITHUB_OUTPUT"
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.mode.outputs.validate == 'true'
+        with:
+          node-version: '24'
+      - name: Run the complete repository release gate before the census decision snapshot
+        if: steps.mode.outputs.validate == 'true'
+        run: npm run release:check
+      - name: Restore committed bytes before pull-request-only focused validation
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.materialize != 'true'
+        run: git restore --staged --worktree .
+      - name: Observe current open-PR shadow
+        if: steps.mode.outputs.validate == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/build-lake-open-pr-shadow.mjs
+      - name: Rebuild the pre-execution census and semantic basin snapshot
+        if: steps.mode.outputs.validate == 'true'
+        run: |
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-basin-index.mjs
+          node test/lake-index.test.js
+          node test/lake-basin-index.test.js
+      - name: Build the Wave 01 decisions and prove their deterministic pre-execution snapshot
+        if: steps.mode.outputs.validate == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-lake-basin-execution-wave-01.mjs
+          sha256sum \
+            build/core-thesis/index.json \
+            build/lake-actions/unclassified-path-dispositions.jsonl \
+            build/lake-actions/identifier-repair-queue.json \
+            build/lake-actions/case-catalog-dispositions.json \
+            build/lake-actions/branch-shadow-dispositions.json \
+            build/lake-actions/waterline.json \
+            reports/lake-basin-execution-wave-01.md > /tmp/lake-wave-01-first.sha256
+          node tools/build-lake-basin-execution-wave-01.mjs
+          sha256sum --check --strict /tmp/lake-wave-01-first.sha256
+      - name: Apply the bounded source and ownership decisions
+        if: steps.mode.outputs.materialize == 'true'
+        run: |
+          git add \
+            build/core-thesis/index.json \
+            build/lake-actions/unclassified-path-dispositions.jsonl \
+            build/lake-actions/identifier-repair-queue.json \
+            build/lake-actions/case-catalog-dispositions.json \
+            build/lake-actions/branch-shadow-dispositions.json \
+            build/lake-actions/waterline.json \
+            reports/lake-basin-execution-wave-01.md
+          node .github/tmp/apply-lake-basin-wave-01.mjs
+          git add \
+            data/project/lake-basin-registry.json \
+            data/project/lake-index-policy.json \
+            data/project/lake-wave-01-path-decisions.jsonl \
+            data/project/lake-basin-execution-wave-01.json
+      - name: Rebuild and reconcile the post-execution lake
+        if: steps.mode.outputs.materialize == 'true'
+        run: |
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/reconcile-lake-basin-execution-wave-01.mjs
+          node tools/validate-lake-basin-execution-wave-01.mjs
+          node test/lake-index.test.js
+          node test/lake-basin-index.test.js
+          node test/lake-basin-execution-wave-01.test.js
+      - name: Validate the non-materializing pull-request surface
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.materialize != 'true'
+        run: |
+          echo 'PR validation confirms source code and the pre-execution decision build.'
+          echo 'Post-execution reconciliation is exercised only by a materialization trigger because it requires the checked source migration.'
+          git restore --staged --worktree .
+          test -z "$(git status --porcelain)"
+      - name: Prove deterministic post-execution products
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          find build/lake-index -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/lake-wave-01-post.sha256
+          sha256sum \
+            build/lake-actions/post-execution-reconciliation.json \
+            reports/lake-index-census.md \
+            reports/lake-index-gap-summary.md \
+            reports/lake-basin-index.md \
+            reports/lake-basin-execution-wave-01-reconciliation.md >> /tmp/lake-wave-01-post.sha256
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/reconcile-lake-basin-execution-wave-01.mjs
+          sha256sum --check --strict /tmp/lake-wave-01-post.sha256
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-basin-execution-wave-01.mjs
+          node test/lake-basin-execution-wave-01.test.js
+          git diff --check
+      - name: Enforce source decisions and generated-output boundaries
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .github/tmp/lake-wave-01-source-paths.json /tmp/lake-wave-01-source-paths.json
+          rm -f \
+            .github/tmp/lake-basin-execution-wave-01-trigger.json \
+            .github/tmp/apply-lake-basin-wave-01.mjs \
+            .github/tmp/lake-wave-01-source-paths.json
+          python - <<'PY'
+          import json
+          import re
+          import subprocess
+
+          migration = json.load(open('/tmp/lake-wave-01-source-paths.json'))
+          required = set(migration['changed_paths']) | {
+              '.github/tmp/lake-basin-execution-wave-01-trigger.json',
+              '.github/tmp/apply-lake-basin-wave-01.mjs',
+              'build/core-thesis/index.json',
+              'build/lake-actions/unclassified-path-dispositions.jsonl',
+              'build/lake-actions/identifier-repair-queue.json',
+              'build/lake-actions/case-catalog-dispositions.json',
+              'build/lake-actions/branch-shadow-dispositions.json',
+              'build/lake-actions/waterline.json',
+              'build/lake-actions/post-execution-reconciliation.json',
+              'reports/lake-basin-execution-wave-01.md',
+              'reports/lake-basin-execution-wave-01-reconciliation.md',
+          }
+          exact_allowed_sources = required | {
+              'data/project/lake-open-pr-shadow.json',
+          }
+          generated_prefixes = (
+              'build/',
+              'reports/',
+              'briefs/',
+              'estates/',
+              'gametrails/',
+          )
+          generated_root = re.compile(r'^(?:Clifford-.*\.html|[^/]+-standalone\.html)$')
+
+          raw = subprocess.check_output([
+              'git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'
+          ])
+          entries = [entry for entry in raw.decode().split('\0') if entry]
+          actual = set()
+          for entry in entries:
+              status = entry[:2]
+              assert 'R' not in status and 'C' not in status, entry
+              actual.add(entry[3:])
+
+          unexpected = sorted(path for path in actual
+              if path not in exact_allowed_sources
+              and not path.startswith(generated_prefixes)
+              and not generated_root.match(path))
+          assert required <= actual, {
+              'missing_required_decision_or_source_changes': sorted(required - actual),
+          }
+          assert not unexpected, {
+              'undeclared_source_changes': unexpected,
+          }
+          print(json.dumps({
+              'required_changes': len(required),
+              'actual_changes': len(actual),
+              'generated_changes': len(actual - exact_allowed_sources),
+          }, indent=2))
+          PY
+      - name: Commit the executed wave
+        if: steps.mode.outputs.materialize == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Execute evidence lake basin Wave 01'
+          git pull --rebase origin agent/lake-basin-execution-wave-01
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-basin-execution-wave-01.mjs
+          git push origin HEAD:agent/lake-basin-execution-wave-01
