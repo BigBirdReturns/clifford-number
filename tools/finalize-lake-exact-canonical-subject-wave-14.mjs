@@ -98,8 +98,50 @@ plan.counts.exact_subject_observation_rows = exactSubjectObservations.length;
 plan.counts.unresolved_registry_rows = unresolvedRows.length;
 plan.finalization = projection.finalization;
 
+const preliminaryReceipt = {
+  schema_version: 'lake-exact-canonical-subject-wave-14@1',
+  program_key: policy.program_key,
+  as_of: policy.as_of,
+  source_fingerprint_sha256: projection.source_fingerprint_sha256,
+  input_manifest: projection.input_manifest,
+  counts: {
+    claim_subject_references: projection.counts.claim_subject_references,
+    explicit_resolution_references: projection.counts.explicit_resolution_references,
+    exact_canonical_id_references: projection.counts.exact_canonical_id_references,
+    exact_canonical_subjects: projection.counts.exact_canonical_subjects,
+    unresolved_subject_references: projection.counts.unresolved_subject_references,
+    unresolved_distinct_subjects: unresolvedRows.length,
+    briefing_exact_canonical_references: projection.counts.briefing_exact_canonical_references,
+    exact_claim_references_observed: 0,
+    unresolved_ids_source_projection_and_index_observed: 0,
+    source_subject_id_changes: 0,
+    source_claim_text_changes: 0,
+    participation_delta: 0,
+    active_claim_delta: 0,
+    graph_edge_delta: 0,
+    accepted_cross_case_identity_bridges: 0
+  },
+  unresolved_classification_counts: projection.unresolved_classification_counts,
+  exact_canonical_id_lane_complete: true,
+  unresolved_routing_registry_built: true,
+  source_claims_preserved: true,
+  exact_string_equality_only: true,
+  post_execution_reconciliation_complete: false,
+  normalized_name_matching_authorized: false,
+  alias_matching_authorized: false,
+  fuzzy_matching_authorized: false,
+  automatic_cross_case_join_authorized: false,
+  cross_case_graph_join_authorized: false,
+  cross_case_hop_creation_authorized: false,
+  decisions_requiring_human_permission: 0,
+  correction_mode: 'append_preserving_supersession',
+  boundaries: policy.boundaries
+};
+
 writeJson(policy.projection_path, projection);
 writeJson(policy.plan_path, plan);
+writeJson(policy.receipt_path, preliminaryReceipt);
 console.log('exact canonical subject Wave 14 finalized');
 console.log(`  exact observation IDs / unresolved IDs projected: ${exactSubjectObservations.length} / ${unresolvedRows.length}`);
+console.log('  preliminary receipt written; post-execution reconciliation complete: false');
 console.log('  source mutation, relationship, participation, graph, and hop effects: 0');
