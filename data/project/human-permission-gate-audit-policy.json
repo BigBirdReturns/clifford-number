@@ -1,0 +1,151 @@
+{
+  "schema_version": "human-permission-gate-audit-policy@1",
+  "policy_id": "CN-NO-MAGIC-HUMAN-AUDIT-01",
+  "purpose": "Detect review language that has been allowed to function as permission to judge or execute, distinguish it from legitimate review and clearance metadata, and require an evidence-grounded decision for every active domain.",
+  "tracked_extensions": [
+    ".json",
+    ".jsonl",
+    ".md",
+    ".txt",
+    ".js",
+    ".mjs",
+    ".yml",
+    ".yaml",
+    ".html"
+  ],
+  "phrase_patterns": [
+    "supported_for_human_review",
+    "pending_second_party",
+    "independent_reviewer_missing",
+    "independent reviewer missing",
+    "independent review missing",
+    "second-party review absent",
+    "second party review absent",
+    "independent review absent",
+    "awaiting independent review",
+    "pending independent review",
+    "until independent review",
+    "requires independent review",
+    "reviewer_id",
+    "review required",
+    "review_required"
+  ],
+  "active_gate_context_patterns": [
+    "blocker",
+    "blocking_condition",
+    "blocking conditions",
+    "next_transition",
+    "next action",
+    "next_action",
+    "remain blocked",
+    "remains blocked",
+    "do not activate",
+    "do not publish",
+    "cannot publish",
+    "must not publish",
+    "wait for",
+    "await",
+    "required before",
+    "requires approval",
+    "requires sign-off",
+    "until a reviewer",
+    "until an independent"
+  ],
+  "clearance_metadata_context_patterns": [
+    "review_status",
+    "selection_review_status",
+    "publication_status",
+    "independent_review_complete",
+    "independence_effect",
+    "reviewer_id",
+    "cleared",
+    "clearance",
+    "confidence",
+    "corroboration",
+    "challenge",
+    "adjudication level",
+    "adoption level",
+    "A0",
+    "A1"
+  ],
+  "historical_context_patterns": [
+    "historical",
+    "prior",
+    "previous",
+    "superseded",
+    "deprecated",
+    "old criterion",
+    "adversarial review found",
+    "failure this corrects"
+  ],
+  "domain_path_rules": [
+    {
+      "domain": "k0_event",
+      "prefixes": [
+        "data/intake/k0-",
+        "data/research/k0-",
+        "data/project/k0-",
+        "reports/core-thesis/answerable-power/k0",
+        "docs/methods/k0-",
+        "docs/milestones/m05-k0-"
+      ]
+    },
+    {
+      "domain": "selection_lane",
+      "prefixes": [
+        "data/canonical/corpus-selection.json",
+        "data/research/corpus-coverage.json",
+        "data/research/selection-adversarial-reviews.json"
+      ]
+    },
+    {
+      "domain": "report",
+      "prefixes": [
+        "build/report-frontier.json",
+        "reports/report-frontier",
+        "cases/",
+        "build/cases/",
+        "briefs/"
+      ]
+    },
+    {
+      "domain": "lake_basin",
+      "prefixes": [
+        "build/lake-index/",
+        "build/lake-history/",
+        "build/receipt-custody/",
+        "build/intake-custody/",
+        "reports/lake-",
+        "data/project/lake-"
+      ]
+    }
+  ],
+  "external_empirical_state_prefixes": [
+    "data/project/m05-answerable-power-adoption",
+    "data/project/m05-answerable-power-reproduction",
+    "reports/core-thesis/answerable-power/sprint-05",
+    "reports/core-thesis/answerable-power/sprint-06",
+    "reports/core-thesis/answerable-power/sprint-07",
+    "reports/core-thesis/answerable-power/sprint-08"
+  ],
+  "excluded_paths": [
+    ".github/tmp/",
+    "build/human-permission-gate-audit.json",
+    "reports/human-permission-gate-audit.md"
+  ],
+  "law": {
+    "review_state_may_change_confidence": true,
+    "review_state_may_control_the_word_cleared": true,
+    "review_state_alone_may_block_a_bounded_judgment": false,
+    "review_state_alone_may_block_reversible_execution": false,
+    "external_reproduction_may_control_empirical_adoption_level": true,
+    "every_active_domain_with_review_language_requires_a_mapped_decision": true
+  },
+  "boundaries": {
+    "audit_match_proves_active_gate": false,
+    "mapped_review_metadata_is_ignored": false,
+    "external_reproduction_is_magic_permission": false,
+    "zero_active_gates_proves_evidence_truth": false,
+    "graph_effect": "none"
+  }
+}
