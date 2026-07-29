@@ -1,0 +1,248 @@
+{
+  "schema_version": "lake-subject-ontology-routing-wave-10-reconciliation@1",
+  "program_key": "CN-LAKE-SUBJECT-ONTOLOGY-W10",
+  "source_fingerprint_sha256": "96e3bdbca2e33e633938d341417fbf2d62a3610294de71c4ae66c5d135e3bbd0",
+  "input_manifest": [
+    {
+      "path": "build/hop-graph.json",
+      "bytes": 59001,
+      "sha256": "2f91dfcb5b050e5abd7282de35ba249025403549ea0fb7662c4d48c52e29556f"
+    },
+    {
+      "path": "build/lake-actions/subject-ontology-routing-wave-10.json",
+      "bytes": 6679,
+      "sha256": "051c7eb7d119dcdbb29217899ac8d0598f9d6d0c88ea0a82154bf7756ed50a9e"
+    },
+    {
+      "path": "build/lake-index/files.jsonl",
+      "bytes": 5119800,
+      "sha256": "78c8b7f4a404cb0b0723d38c0096b9b84d87c5daf0c6ed9a5257c628c356e8fb"
+    },
+    {
+      "path": "build/lake-index/objects.jsonl",
+      "bytes": 18972742,
+      "sha256": "2c6ed156b6390c425391bc07dc2ced67297f2be8a26b1398e90cea7581089742"
+    },
+    {
+      "path": "build/lake-index/summary.json",
+      "bytes": 16954,
+      "sha256": "a98cc4ae44d3307d1fe399283e5cb9ed3698fb6ca708d79d0fe31555cfec8af1"
+    },
+    {
+      "path": "build/subject-ontology-routing-index-wave-10.json",
+      "bytes": 424788,
+      "sha256": "2386cad9ab5e0f1f00f0751e6b090cab8423a30378b405bc38f82dc4ceebdced"
+    },
+    {
+      "path": "data/canonical/actors.json",
+      "bytes": 13881,
+      "sha256": "7c05810fa4e565fcd1ee27f0bd7d2f47f98c112bbf0e45704928a13287f6ef83"
+    },
+    {
+      "path": "data/canonical/organizations.json",
+      "bytes": 2928,
+      "sha256": "fa21dd778b1171a8c1d067255bcbdf5857b71a90a5c0778fa5b69df064e97087"
+    },
+    {
+      "path": "data/project/lake-canonical-acquisition-registry-wave-10.jsonl",
+      "bytes": 95102,
+      "sha256": "45e587454f23e700aa34826af2827559e294f4668187de5e47b905376ae5effd"
+    },
+    {
+      "path": "data/project/lake-noncanonical-subject-routing-registry-wave-10.jsonl",
+      "bytes": 49228,
+      "sha256": "d627b35a6490a1919c9a6cfa03da126afd14760c82178e7ca7bccf1d3c3e6ddd"
+    },
+    {
+      "path": "data/project/lake-subject-ontology-routing-registry-wave-10.jsonl",
+      "bytes": 196648,
+      "sha256": "5e5302d0422849dc1703b07928ce5b7e889dd5700c7782c91b8a193716964e09"
+    },
+    {
+      "path": "data/project/lake-subject-ontology-routing-wave-10-policy.json",
+      "bytes": 6300,
+      "sha256": "7ea6a8a24bb04c167a49835f33134f35b2a0a73a73b281adeec3b6e1f28ab22f"
+    },
+    {
+      "path": "data/project/lake-subject-ontology-routing-wave-10.json",
+      "bytes": 2380,
+      "sha256": "cf2e9851b24c4f81636f3542189fbe709b68a3a2ff1631d18b2e9036884db6aa"
+    }
+  ],
+  "before": {
+    "noncovered_identity_rows": 106,
+    "semantic_types_assigned": 0,
+    "canonical_acquisition_queue_present": false,
+    "noncanonical_routing_registry_present": false,
+    "canonical_mutations_applied": 0,
+    "accepted_identity_bridges": 0
+  },
+  "after": {
+    "routing_rows": 106,
+    "canonical_acquisition_rows": 67,
+    "publicly_inspectable_canonical_acquisition_rows": 62,
+    "noncanonical_routing_rows": 39,
+    "unresolved_rows": 2,
+    "semantic_type_counts": {
+      "actor_candidate": 33,
+      "case_internal_or_analytic_object": 2,
+      "geographic_feature": 3,
+      "infrastructure_or_facility": 10,
+      "legal_or_policy_instrument": 2,
+      "opaque_record_identifier": 2,
+      "organization_candidate": 34,
+      "procurement_award_or_protest_identifier": 3,
+      "program_or_capability": 8,
+      "project_or_development": 6,
+      "role_or_office": 1,
+      "unresolved_name_like": 2
+    },
+    "confidence_counts": {
+      "high": 65,
+      "low": 19,
+      "medium": 22
+    },
+    "route_counts": {
+      "bounded_acquisition_queue": 2,
+      "canonical_actor_acquisition_queue": 33,
+      "canonical_organization_acquisition_queue": 34,
+      "case_infrastructure_registry": 10,
+      "case_internal_object_registry": 2,
+      "case_legal_policy_instrument_registry": 2,
+      "case_place_registry": 3,
+      "case_procurement_identifier_registry": 3,
+      "case_program_capability_registry": 8,
+      "case_project_registry": 6,
+      "case_record_identifier_registry": 2,
+      "case_role_registry": 1
+    },
+    "priority_counts": {
+      "P0": 20,
+      "P1": 49,
+      "P2": 35,
+      "P3": 2
+    },
+    "routing_ids_source_projection_and_index_observed": 106,
+    "acquisition_ids_source_projection_and_index_observed": 67,
+    "noncanonical_route_ids_source_projection_and_index_observed": 39,
+    "source_controls_authoritative_reachable": true,
+    "source_control_states": [
+      {
+        "path": "data/project/lake-subject-ontology-routing-registry-wave-10.jsonl",
+        "present": true,
+        "generated": false,
+        "index_file": true,
+        "authoritative_reachable": true,
+        "public_reachable": false
+      },
+      {
+        "path": "data/project/lake-canonical-acquisition-registry-wave-10.jsonl",
+        "present": true,
+        "generated": false,
+        "index_file": true,
+        "authoritative_reachable": true,
+        "public_reachable": false
+      },
+      {
+        "path": "data/project/lake-noncanonical-subject-routing-registry-wave-10.jsonl",
+        "present": true,
+        "generated": false,
+        "index_file": true,
+        "authoritative_reachable": true,
+        "public_reachable": false
+      },
+      {
+        "path": "data/project/lake-subject-ontology-routing-wave-10.json",
+        "present": true,
+        "generated": false,
+        "index_file": false,
+        "authoritative_reachable": true,
+        "public_reachable": false
+      }
+    ],
+    "projection_indexed": true,
+    "canonical_actor_count": 137,
+    "canonical_organization_count": 25,
+    "canonical_mutations_applied": 0,
+    "accepted_identity_bridges": 0,
+    "automatic_cross_case_join_authorized": false,
+    "cross_case_graph_join_authorized": false,
+    "cross_case_hop_creation_authorized": false,
+    "routing_tokens_in_active_hop_graph": 0,
+    "global_machine_ids": 13821,
+    "unindexed_machine_ids": 8195,
+    "exact_orphan_evidence_files": 106
+  },
+  "deltas": {
+    "semantic_types_assigned": 106,
+    "canonical_acquisition_rows_created": 67,
+    "noncanonical_routes_created": 39,
+    "canonical_mutations_applied": 0,
+    "accepted_identity_bridges": 0,
+    "graph_effects_created": 0
+  },
+  "decisions": [
+    {
+      "decision_key": "W10-RECONCILE-ONTOLOGY",
+      "judgment": "the_wave09_noncovered_denominator_is_partitioned_into_identity_and_nonidentity_semantic_types",
+      "action": "retain_all_routing_rows_with_confidence_rules_and_correction_paths",
+      "evidence_count": 106,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_key": "W10-RECONCILE-CANONICAL-ACQUISITION",
+      "judgment": "only_custodied_actor_and_organization_candidates_enter_canonical_acquisition",
+      "action": "retain_the_prioritized_acquisition_registry_without_mutating_canonical",
+      "evidence_count": 67,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_key": "W10-RECONCILE-NONIDENTITY-ROUTING",
+      "judgment": "nonidentity_subjects_are_routed_to_typed_case_registries_or_bounded_acquisition",
+      "action": "retain_noncanonical_routes_and_keep_identity_graph_and_hop_authority_false",
+      "evidence_count": 39,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    }
+  ],
+  "completion": {
+    "every_target_row_typed_and_routed": true,
+    "source_and_projection_registries_agree": true,
+    "every_routing_id_source_projection_and_index_observed": true,
+    "every_acquisition_id_source_projection_and_index_observed": true,
+    "every_noncanonical_route_id_source_projection_and_index_observed": true,
+    "source_controls_authoritative_reachable": true,
+    "canonical_acquisition_queue_present": true,
+    "noncanonical_routing_registry_present": true,
+    "unresolved_rows_preserved": true,
+    "canonical_mutations_applied": 0,
+    "accepted_identity_bridges": 0,
+    "post_execution_reconciliation_complete": true,
+    "evidence_truth_determined": false,
+    "publication_cleared": false,
+    "decisions_requiring_human_permission": 0
+  },
+  "boundaries": {
+    "semantic_type_proves_real_world_identity": false,
+    "actor_candidate_is_canonical_actor": false,
+    "organization_candidate_is_canonical_organization": false,
+    "routing_destination_creates_relationship": false,
+    "routing_destination_creates_hop": false,
+    "canonical_mutation_applied": false,
+    "accepted_identity_bridge": false,
+    "automatic_cross_case_join_authorized": false,
+    "cross_case_graph_join_authorized": false,
+    "cross_case_hop_creation_authorized": false,
+    "evidence_truth_determined": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}
