@@ -2,9 +2,21 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { readJson, root, writeJson } from './lib/ledger.mjs';
+import {
+  loadLocalCanonicalResolutionIndex,
+  resolveSubjectIdentity,
+  summarizeSubjectIdentities
+} from './lib/local-canonical-resolution.mjs';
 
 const UK_AI_CASE_ID = 'uk-ai-policy';
 const UK_AI_CASE_HREF = `build/cases/${UK_AI_CASE_ID}.json`;
+
+function uniqueSorted(values) {
+  return [...new Set((values ?? [])
+    .filter(value => value !== null && value !== undefined && String(value).length > 0)
+    .map(String))]
+    .sort((left, right) => left.localeCompare(right));
+}
 
 function normalizeReceipt(receipt) {
   const archiveRef = receipt.archive?.ref;
@@ -24,7 +36,7 @@ function claimStatusForEvidence(evidenceClass) {
   return ['official', 'confirmed'].includes(evidenceClass) ? 'verified' : 'review_required';
 }
 
-function compileUkAiPolicyCase() {
+function compileUkAiPolicyCase(subjectIdentityIndex) {
   const legacy = readJson('cases/uk-ai-policy.json');
   const wrapUp = readJson('data/research/clifford-thiel-trump-wrap-up.json');
   const receiptGraph = readJson('build/receipt-graph.json');
@@ -55,6 +67,7 @@ function compileUkAiPolicyCase() {
     claim_id: `clm-${leadOutcome.outcome_id}`,
     plain: leadOutcome.outcome,
     subject_id: 'matt-clifford',
+    subject_identity: resolveSubjectIdentity(UK_AI_CASE_ID, 'matt-clifford', subjectIdentityIndex),
     predicate: 'commissioned_plan_and_adopted_recommendations',
     object: 'keir-starmer',
     claim_kind: 'external_fact',
@@ -83,6 +96,7 @@ function compileUkAiPolicyCase() {
       claim_id: `clm-${edge.id}`,
       plain: edge.claim,
       subject_id: edge.from,
+      subject_identity: resolveSubjectIdentity(UK_AI_CASE_ID, edge.from, subjectIdentityIndex),
       predicate: edge.type,
       object: edge.to,
       claim_kind: 'external_fact',
@@ -132,6 +146,10 @@ function compileUkAiPolicyCase() {
   }));
   const events = sections.flatMap(section => section.records);
   const claims = events.flatMap(event => event.claims);
+  const subjectIdentityProjection = summarizeSubjectIdentities(claims, {
+    caseId: UK_AI_CASE_ID,
+    registryPaths: subjectIdentityIndex.registry_paths
+  });
   const usedReceiptIds = new Set(claims.flatMap(claim => claim.receipt_ids));
   const receipts = [...usedReceiptIds].map(receiptId => receiptById.get(receiptId));
   const claimStatusCounts = {
@@ -171,9 +189,11 @@ function compileUkAiPolicyCase() {
       receipts: receipts.length,
       relations: 0,
       beacons: 0,
-      trails: 0
+      trails: 0,
+      ...subjectIdentityProjection.counts
     },
     claim_status_counts: claimStatusCounts,
+    subject_identity_projection: subjectIdentityProjection,
     sections,
     claims,
     unsequenced_claim_ids: [],
@@ -194,6 +214,7 @@ function compileUkAiPolicyCase() {
     featured_priority: output.featured_priority,
     source_counts: output.source_counts,
     counts: output.counts,
+    subject_identity_counts: output.subject_identity_projection.counts,
     claim_status_counts: output.claim_status_counts,
     href: UK_AI_CASE_HREF
   };
@@ -230,14 +251,64 @@ function firstVerifiedClaim(caseItem) {
   return claim ? { claim, event: null } : null;
 }
 
+function subjectCatalogKey(caseItem, identity) {
+  return identity.canonical_subject_id
+    ? `canonical:${identity.canonical_subject_id}`
+    : `local:${caseItem.case_id}::${identity.local_subject_id}`;
+}
+
+function addSubjectReference(subjects, caseItem, claim, claimKey) {
+  const identity = claim.subject_identity;
+  if (!identity) throw new Error(`${claimKey}: compiled claim lacks subject_identity`);
+  const key = subjectCatalogKey(caseItem, identity);
+  const existing = subjects.get(key) ?? {
+    key,
+    canonical_subject_id: identity.canonical_subject_id,
+    canonical_kind: identity.canonical_kind,
+    canonical_label: identity.canonical_label,
+    resolution_status: identity.resolution_status,
+    local_subjects: [],
+    case_ids: [],
+    claim_ids: [],
+    search_keys: [],
+    source_records_mutated: false,
+    source_records_merged: false,
+    relationship_created: false,
+    participation_created: false,
+    automatic_cross_case_join_authorized: false,
+    cross_case_graph_join_authorized: false,
+    cross_case_hop_creation_authorized: false,
+    graph_effect: 'none'
+  };
+  if (existing.canonical_subject_id !== identity.canonical_subject_id || existing.canonical_kind !== identity.canonical_kind) {
+    throw new Error(`${key}: inconsistent catalog subject identity`);
+  }
+  const localKey = `${caseItem.case_id}\0${identity.local_subject_id}`;
+  if (!existing.local_subjects.some(item => `${item.case_id}\0${item.local_subject_id}` === localKey)) {
+    existing.local_subjects.push({
+      case_id: caseItem.case_id,
+      local_subject_id: identity.local_subject_id,
+      resolution_id: identity.resolution_id,
+      resolution_status: identity.resolution_status
+    });
+  }
+  existing.case_ids = uniqueSorted([...existing.case_ids, caseItem.case_id]);
+  existing.claim_ids = uniqueSorted([...existing.claim_ids, claimKey]);
+  existing.search_keys = uniqueSorted([...existing.search_keys, ...(identity.search_keys ?? []), identity.local_subject_id]);
+  existing.local_subjects.sort((left, right) => `${left.case_id}\0${left.local_subject_id}`.localeCompare(`${right.case_id}\0${right.local_subject_id}`));
+  subjects.set(key, existing);
+}
+
 function compilePublicCatalog() {
   const caseIndex = readJson('build/cases/index.json');
   const trackIndex = readJson('data/research-tracks/index.json');
+  const subjectIdentityIndex = loadLocalCanonicalResolutionIndex({ refresh: true });
   const claims = new Map();
   const receipts = new Map();
+  const subjects = new Map();
 
   const nativeUkAiCase = (caseIndex.cases ?? []).find(entry => entry.case_id === UK_AI_CASE_ID);
-  const projectedUkAiCase = nativeUkAiCase ?? compileUkAiPolicyCase();
+  const projectedUkAiCase = nativeUkAiCase ?? compileUkAiPolicyCase(subjectIdentityIndex);
 
   const cases = [projectedUkAiCase, ...(caseIndex.cases ?? []).filter(entry => entry.case_id !== UK_AI_CASE_ID)].map(entry => {
     const caseItem = readJson(entry.href);
@@ -245,6 +316,7 @@ function compilePublicCatalog() {
     for (const claim of allCaseClaims(caseItem)) {
       const key = `${caseItem.case_id}::${claim.claim_id}`;
       const event = eventContexts.get(claim.claim_id);
+      addSubjectReference(subjects, caseItem, claim, key);
       if (!claims.has(key)) {
         claims.set(key, {
           key,
@@ -252,6 +324,10 @@ function compilePublicCatalog() {
           case_title: caseItem.title,
           claim_id: claim.claim_id,
           plain: claim.plain,
+          subject_id: claim.subject_id,
+          subject_identity: claim.subject_identity,
+          canonical_subject_id: claim.subject_identity?.canonical_subject_id ?? null,
+          subject_search_keys: uniqueSorted(claim.subject_identity?.search_keys ?? [claim.subject_id]),
           claim_status: claim.claim_status,
           evidence_class: claim.evidence_class,
           evidence_state: claim.evidence_state,
@@ -271,12 +347,12 @@ function compilePublicCatalog() {
         receipts.set(receiptKey, {
           key: receiptKey,
           case_id: existing?.case_id ?? caseItem.case_id,
-          case_ids: [...caseIds],
+          case_ids: [...caseIds].sort(),
           receipt_id: receipt.receipt_id,
           label: existing?.label || receipt.label || receipt.title || receipt.source_title || receipt.receipt_id,
           publisher: existing?.publisher || receipt.publisher,
           source_type: existing?.source_type || receipt.source_type,
-          claim_ids: [...claimKeys]
+          claim_ids: [...claimKeys].sort()
         });
       }
     }
@@ -284,10 +360,13 @@ function compilePublicCatalog() {
     return {
       ...entry,
       source_counts: entry.source_counts ?? caseItem.source_counts,
+      subject_identity_counts: entry.subject_identity_counts ?? caseItem.subject_identity_projection?.counts,
       featured_claim: featured ? {
         key: `${caseItem.case_id}::${featured.claim.claim_id}`,
         claim_id: featured.claim.claim_id,
         plain: featured.claim.plain,
+        subject_id: featured.claim.subject_id,
+        subject_identity: featured.claim.subject_identity,
         claim_status: featured.claim.claim_status,
         evidence_class: featured.claim.evidence_class,
         evidence_state: featured.claim.evidence_state,
@@ -307,19 +386,33 @@ function compilePublicCatalog() {
     };
   });
 
+  const subjectRows = [...subjects.values()].sort((left, right) => left.key.localeCompare(right.key));
+  const claimRows = [...claims.values()];
   const catalog = {
     schema_version: 'public-catalog@1',
     built_by: 'tools/build-public-catalog.mjs',
+    subject_identity_projection: {
+      schema_version: 'public-catalog-subject-identity@1',
+      registry_paths: subjectIdentityIndex.registry_paths,
+      scope: 'claim_subject_only',
+      graph_effect: 'none'
+    },
     counts: {
       tracks: tracks.length,
       cases: cases.length,
       claims: claims.size,
       declared_claims: cases.reduce((total, item) => total + (item.counts?.claims ?? 0), 0),
-      receipts: receipts.size
+      receipts: receipts.size,
+      subject_references: claimRows.length,
+      resolved_subject_references: claimRows.filter(item => item.subject_identity?.resolution_status === 'resolved_local_to_canonical').length,
+      unresolved_subject_references: claimRows.filter(item => item.subject_identity?.resolution_status !== 'resolved_local_to_canonical').length,
+      subjects: subjectRows.length,
+      canonical_subjects: subjectRows.filter(item => item.canonical_subject_id).length
     },
     tracks,
     cases,
-    claims: [...claims.values()],
+    subjects: subjectRows,
+    claims: claimRows,
     receipts: [...receipts.values()]
   };
   writeJson('build/public-catalog.json', catalog);
@@ -330,4 +423,4 @@ const catalog = compilePublicCatalog();
 const fullBytes = [...catalog.cases.map(item => item.href), ...catalog.tracks.map(item => item.href)]
   .reduce((total, file) => total + fs.statSync(path.join(root, file)).size, 0);
 const catalogBytes = fs.statSync(path.join(root, 'build/public-catalog.json')).size;
-console.log(`public catalog: ${catalog.counts.tracks} tracks, ${catalog.counts.cases} cases, ${catalog.counts.claims} claims, ${catalog.counts.receipts} receipts (${catalogBytes} bytes vs ${fullBytes} eager bytes)`);
+console.log(`public catalog: ${catalog.counts.tracks} tracks, ${catalog.counts.cases} cases, ${catalog.counts.claims} claims, ${catalog.counts.subjects} subjects, ${catalog.counts.receipts} receipts (${catalogBytes} bytes vs ${fullBytes} eager bytes)`);
