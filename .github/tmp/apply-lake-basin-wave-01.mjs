@@ -13,11 +13,15 @@ const indexPolicy = JSON.parse(fs.readFileSync(indexPolicyPath, 'utf8'));
 const dispositionsText = fs.readFileSync(dispositionsPath, 'utf8');
 const dispositions = dispositionsText.split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
 const changedPaths = new Set([registryPath, indexPolicyPath, decisionsSourcePath, migrationReceiptPath]);
+const updatedBasinIds = new Set();
 
 function addBasin(basin) {
+  if (!basin) return false;
   const existing = registry.basins.find(item => item.basin_id === basin.basin_id);
   if (existing) Object.assign(existing, basin);
   else registry.basins.push(basin);
+  updatedBasinIds.add(basin.basin_id);
+  return true;
 }
 function exactPaths(ruleId) {
   return dispositions.filter(row => row.matched_rule_id === ruleId).map(row => row.path).sort();
@@ -29,10 +33,12 @@ function rule(ruleId) {
 }
 function basinFromRule(ruleId, label, pathPrefixes = null) {
   const source = rule(ruleId);
+  const prefixes = [...new Set(pathPrefixes ?? source.prefixes ?? exactPaths(ruleId))].sort();
+  if (prefixes.length === 0) return null;
   return {
     basin_id: ruleId,
     label,
-    path_prefixes: pathPrefixes ?? source.prefixes ?? exactPaths(ruleId),
+    path_prefixes: prefixes,
     semantic_role: source.semantic_role,
     owner_program_id: source.owner_program_id,
     ownership_status: 'declared_by_wave_01_decision',
@@ -82,6 +88,7 @@ const core = registry.basins.find(item => item.basin_id === 'core-thesis-build-p
 if (!core) throw new Error('core-thesis-build-products basin missing');
 core.ownership_status = 'declared_by_generated_entrypoint';
 core.authoritative_entrypoints = [...new Set([...(core.authoritative_entrypoints ?? []), 'build/core-thesis/index.json'])];
+updatedBasinIds.add(core.basin_id);
 
 registry.basins.sort((a, b) => a.basin_id.localeCompare(b.basin_id));
 indexPolicy.authoritative_roots = [...new Set([
@@ -101,17 +108,7 @@ const receipt = {
   schema_version: 'lake-basin-execution-wave-01@1',
   program_id: policy.program_id,
   source_decision_rows: dispositions.length,
-  added_or_updated_basins: [
-    'lake-action-products',
-    'comprehension-protocol',
-    'contribution-pipeline',
-    'temporary-transport',
-    'standalone-public-release',
-    'root-legacy-artifact',
-    'repository-config',
-    ...(residualPaths.length ? ['residual-current-tree'] : []),
-    'core-thesis-build-products'
-  ],
+  added_or_updated_basins: [...updatedBasinIds].sort(),
   authoritative_roots_added: [
     'build/core-thesis/index.json',
     'build/lake-actions/waterline.json',
