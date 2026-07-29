@@ -1,0 +1,67 @@
+{
+  "schema_version": "lake-production-cross-case-census-wave-08-policy@1",
+  "program_key": "CN-LAKE-PRODUCTION-CROSS-CASE-W08",
+  "as_of": "2026-07-29",
+  "purpose": "Measure every exact identity-like local identifier recurrence across the current native case projections, preserve the complete case-pair denominator, and apply the Wave 07 decision law without authorizing any automatic identity, graph, or hop join.",
+  "input_paths": [
+    "build/cases/index.json",
+    "build/axm-identity.json",
+    "data/project/lake-axm-cross-case-acceptance-wave-07-policy.json",
+    "data/project/lake-axm-cross-case-join-registry-wave-07.jsonl",
+    "BUILD-INSTRUCTIONS.md"
+  ],
+  "identity_keys": [
+    "subject_id",
+    "actor_id",
+    "organization_id",
+    "company_id",
+    "participant_id",
+    "entity_id",
+    "local_id"
+  ],
+  "candidate_registry_path": "data/project/lake-production-cross-case-candidate-registry-wave-08.jsonl",
+  "case_pair_denominator_path": "data/project/lake-production-cross-case-case-pairs-wave-08.jsonl",
+  "census_receipt_path": "data/project/lake-production-cross-case-census-wave-08.json",
+  "candidate_projection_path": "build/axm-production-cross-case-candidate-index-wave-08.json",
+  "plan_path": "build/lake-actions/production-cross-case-census-wave-08.json",
+  "reconciliation_path": "build/lake-actions/production-cross-case-census-wave-08-reconciliation.json",
+  "report_path": "reports/lake-production-cross-case-census-wave-08.md",
+  "reconciliation_report_path": "reports/lake-production-cross-case-census-wave-08-reconciliation.md",
+  "expected": {
+    "native_cases": 4,
+    "case_pairs": 6,
+    "accepted_production_identity_bridges": 0,
+    "automatic_cross_case_join_authorized": false,
+    "cross_case_graph_join_authorized": false,
+    "cross_case_hop_creation_authorized": false,
+    "active_projection_cross_case_join_authorized": false
+  },
+  "decision_law": {
+    "review_required_to_decide": false,
+    "missing_reviewer_blocks_census": false,
+    "exact_local_identifier_recurrence_proves_identity": false,
+    "explicit_same_entity_assertion_required": true,
+    "left_and_right_source_custody_required": true,
+    "assertion_source_custody_required": true,
+    "shared_identity_namespace_required": true,
+    "unambiguous_identity_token_overlap_required": true,
+    "candidate_may_create_graph_relation": false,
+    "candidate_may_create_hop": false,
+    "correction_mode": "append_preserving_supersession"
+  },
+  "boundaries": {
+    "exact_local_identifier_recurrence_proves_same_entity": false,
+    "receipt_reference_proves_source_custody": false,
+    "case_id_is_shared_identity_namespace": false,
+    "candidate_status_is_identity_finding": false,
+    "candidate_status_creates_relationship": false,
+    "candidate_status_creates_hop": false,
+    "automatic_cross_case_join_authorized": false,
+    "cross_case_graph_join_authorized": false,
+    "cross_case_hop_creation_authorized": false,
+    "active_projection_cross_case_join_authorized": false,
+    "evidence_truth_determined": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}
