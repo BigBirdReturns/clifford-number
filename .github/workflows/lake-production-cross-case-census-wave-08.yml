@@ -93,6 +93,23 @@ jobs:
       - name: Run the complete repository release gate with the production census active
         if: steps.mode.outputs.validate == 'true'
         run: npm run release:check
+      - name: Rebuild the production census against release-normalized case projections
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-lake-production-cross-case-census-wave-08.mjs
+          sha256sum \
+            data/project/lake-production-cross-case-candidate-registry-wave-08.jsonl \
+            data/project/lake-production-cross-case-case-pair-registry-wave-08.jsonl \
+            data/project/lake-production-cross-case-census-wave-08.json \
+            build/axm-production-cross-case-candidate-index-wave-08.json \
+            build/lake-actions/production-cross-case-census-wave-08.json \
+            reports/lake-production-cross-case-census-wave-08.md > /tmp/lake-production-cross-case-wave-08-normalized.sha256
+          node tools/build-lake-production-cross-case-census-wave-08.mjs
+          sha256sum --check --strict /tmp/lake-production-cross-case-wave-08-normalized.sha256
+          git add -A
+          git diff --check
       - name: Stabilize the source and generated tree before the lake census
         if: steps.mode.outputs.validate == 'true'
         shell: bash
