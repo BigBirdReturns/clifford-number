@@ -1,0 +1,1127 @@
+{
+  "schema_version": "lake-basin-index@1",
+  "registry_id": "CN-LAKE-BASINS-2026-07",
+  "source_fingerprint": "cc11f01444e394d4599c64655df32cedac5949310df15f16da5f53987f0e5ebe",
+  "source_census_path": "build/lake-index/files.jsonl",
+  "counts": {
+    "source_rows": 1856,
+    "basin_count": 30,
+    "classified_without_default": 1794,
+    "unclassified_paths": 62,
+    "evidence_bearing_files": 1266,
+    "evidence_files_with_registry_owner": 1257,
+    "evidence_files_previously_unowned": 1266,
+    "exact_orphan_evidence_files": 770,
+    "gap_rows": 206,
+    "gap_type_counts": {
+      "missing_authoritative_entrypoint": 1,
+      "public_reachability_requires_authorization_review": 55,
+      "source_record_without_authoritative_reachability": 88,
+      "unclassified_path": 62
+    }
+  },
+  "completion": {
+    "current_tree_path_assignment_complete": false,
+    "current_tree_semantic_index_complete": false,
+    "historical_git_objects_indexed": false,
+    "open_pull_request_shadow_merged": false,
+    "independent_semantic_review_complete": false
+  },
+  "basins": [
+    {
+      "basin_id": "estate-game-trail-products",
+      "label": "Estate game-trail generated products",
+      "semantic_role": "generated_projection",
+      "owner_program_id": "estate-game-trail-program",
+      "ownership_status": "declared_by_manifest",
+      "path_prefixes": [
+        "build/estate-game-trails/"
+      ],
+      "authoritative_entrypoints": [
+        "build/estate-game-trails/manifest.json"
+      ],
+      "source_basin_ids": [
+        "estate-source-data"
+      ],
+      "publication_disposition": "projection_only",
+      "retention_disposition": "reproducible_generated",
+      "counts": {
+        "files": 313,
+        "evidence_bearing": 313,
+        "index_reachable": 35,
+        "public_reachable": 3,
+        "exact_orphans": 278,
+        "previously_unowned": 313,
+        "registry_owner_added": 313
+      },
+      "entrypoint_state": [
+        {
+          "path": "build/estate-game-trails/manifest.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "core-thesis-build-products",
+      "label": "Core-thesis generated products",
+      "semantic_role": "generated_projection",
+      "owner_program_id": "core-thesis-program",
+      "ownership_status": "provisional_path_convention",
+      "path_prefixes": [
+        "build/core-thesis/"
+      ],
+      "authoritative_entrypoints": [
+        "build/core-thesis/index.json"
+      ],
+      "source_basin_ids": [
+        "research-records",
+        "project-governance",
+        "receipt-artifacts"
+      ],
+      "publication_disposition": "internal_or_explicitly_authorized",
+      "retention_disposition": "reproducible_generated",
+      "counts": {
+        "files": 184,
+        "evidence_bearing": 184,
+        "index_reachable": 9,
+        "public_reachable": 0,
+        "exact_orphans": 175,
+        "previously_unowned": 184,
+        "registry_owner_added": 184
+      },
+      "entrypoint_state": [
+        {
+          "path": "build/core-thesis/index.json",
+          "present_in_census_snapshot": false
+        }
+      ],
+      "entrypoint_complete": false
+    },
+    {
+      "basin_id": "intake-custody",
+      "label": "Unpromoted intake and candidate custody",
+      "semantic_role": "intake_only",
+      "owner_program_id": "intake-custody",
+      "ownership_status": "declared",
+      "path_prefixes": [
+        "data/intake/",
+        "contributions/inbox/"
+      ],
+      "authoritative_entrypoints": [],
+      "source_basin_ids": [],
+      "publication_disposition": "blocked",
+      "retention_disposition": "review_queue",
+      "counts": {
+        "files": 142,
+        "evidence_bearing": 142,
+        "index_reachable": 78,
+        "public_reachable": 34,
+        "exact_orphans": 64,
+        "previously_unowned": 142,
+        "registry_owner_added": 142
+      },
+      "entrypoint_state": [],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "core-thesis-report-products",
+      "label": "Core-thesis reader-facing reports",
+      "semantic_role": "report_projection",
+      "owner_program_id": "core-thesis-program",
+      "ownership_status": "provisional_path_convention",
+      "path_prefixes": [
+        "reports/core-thesis/"
+      ],
+      "authoritative_entrypoints": [
+        "reports/core-thesis/index.html"
+      ],
+      "source_basin_ids": [
+        "core-thesis-build-products",
+        "research-records"
+      ],
+      "publication_disposition": "status_bound",
+      "retention_disposition": "generated_report",
+      "counts": {
+        "files": 96,
+        "evidence_bearing": 96,
+        "index_reachable": 40,
+        "public_reachable": 0,
+        "exact_orphans": 56,
+        "previously_unowned": 96,
+        "registry_owner_added": 96
+      },
+      "entrypoint_state": [
+        {
+          "path": "reports/core-thesis/index.html",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "project-governance",
+      "label": "Project governance and program state",
+      "semantic_role": "project_governance",
+      "owner_program_id": "project-governance",
+      "ownership_status": "provisional_path_convention",
+      "path_prefixes": [
+        "data/project/"
+      ],
+      "authoritative_entrypoints": [
+        "BUILD-INSTRUCTIONS.md"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "internal_or_explicitly_authorized",
+      "retention_disposition": "canonical_governance",
+      "counts": {
+        "files": 95,
+        "evidence_bearing": 95,
+        "index_reachable": 69,
+        "public_reachable": 0,
+        "exact_orphans": 26,
+        "previously_unowned": 95,
+        "registry_owner_added": 95
+      },
+      "entrypoint_state": [
+        {
+          "path": "BUILD-INSTRUCTIONS.md",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "milestone-governance",
+      "label": "Milestone and historical governance records",
+      "semantic_role": "governance_history",
+      "owner_program_id": "project-governance",
+      "ownership_status": "provisional_path_convention",
+      "path_prefixes": [
+        "docs/milestones/"
+      ],
+      "authoritative_entrypoints": [
+        "docs/README.md"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "documentation_only",
+      "retention_disposition": "historical_governance",
+      "counts": {
+        "files": 65,
+        "evidence_bearing": 65,
+        "index_reachable": 19,
+        "public_reachable": 2,
+        "exact_orphans": 46,
+        "previously_unowned": 65,
+        "registry_owner_added": 65
+      },
+      "entrypoint_state": [
+        {
+          "path": "docs/README.md",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "documentation",
+      "label": "General documentation",
+      "semantic_role": "documentation",
+      "owner_program_id": "documentation-program",
+      "ownership_status": "provisional_path_convention",
+      "path_prefixes": [
+        "docs/"
+      ],
+      "authoritative_entrypoints": [
+        "docs/README.md",
+        "README.md"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "documentation_only",
+      "retention_disposition": "maintained_documentation",
+      "counts": {
+        "files": 58,
+        "evidence_bearing": 58,
+        "index_reachable": 26,
+        "public_reachable": 11,
+        "exact_orphans": 32,
+        "previously_unowned": 58,
+        "registry_owner_added": 58
+      },
+      "entrypoint_state": [
+        {
+          "path": "docs/README.md",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "README.md",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "research-tracks",
+      "label": "Declared research tracks",
+      "semantic_role": "research_program_source",
+      "owner_program_id": "research-track-program",
+      "ownership_status": "declared_by_harness",
+      "path_prefixes": [
+        "data/research-tracks/"
+      ],
+      "authoritative_entrypoints": [
+        "build/public-catalog.json"
+      ],
+      "source_basin_ids": [
+        "research-records",
+        "receipt-artifacts"
+      ],
+      "publication_disposition": "exploratory_only",
+      "retention_disposition": "canonical_program_source",
+      "counts": {
+        "files": 52,
+        "evidence_bearing": 52,
+        "index_reachable": 12,
+        "public_reachable": 12,
+        "exact_orphans": 40,
+        "previously_unowned": 52,
+        "registry_owner_added": 52
+      },
+      "entrypoint_state": [
+        {
+          "path": "build/public-catalog.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "research-records",
+      "label": "Research records and adjudication ledgers",
+      "semantic_role": "research_source",
+      "owner_program_id": "research-program-registry",
+      "ownership_status": "provisional_path_convention",
+      "path_prefixes": [
+        "data/research/"
+      ],
+      "authoritative_entrypoints": [
+        "data/canonical/corpus-selection.json",
+        "data/research/corpus-coverage.json",
+        "data/research/selection-adversarial-reviews.json"
+      ],
+      "source_basin_ids": [
+        "receipt-artifacts"
+      ],
+      "publication_disposition": "status_bound",
+      "retention_disposition": "canonical_research",
+      "counts": {
+        "files": 48,
+        "evidence_bearing": 48,
+        "index_reachable": 48,
+        "public_reachable": 43,
+        "exact_orphans": 0,
+        "previously_unowned": 48,
+        "registry_owner_added": 48
+      },
+      "entrypoint_state": [
+        {
+          "path": "data/canonical/corpus-selection.json",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "data/research/corpus-coverage.json",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "data/research/selection-adversarial-reviews.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "estate-source-data",
+      "label": "Estate source and task data",
+      "semantic_role": "estate_source",
+      "owner_program_id": "estate-aperture-program",
+      "ownership_status": "provisional_path_convention",
+      "path_prefixes": [
+        "data/estates/"
+      ],
+      "authoritative_entrypoints": [
+        "build/estate-closures/manifest.json",
+        "build/estate-frontier/manifest.json",
+        "build/estate-game-trails/manifest.json"
+      ],
+      "source_basin_ids": [
+        "research-records",
+        "receipt-artifacts"
+      ],
+      "publication_disposition": "status_bound",
+      "retention_disposition": "canonical_program_source",
+      "counts": {
+        "files": 43,
+        "evidence_bearing": 43,
+        "index_reachable": 21,
+        "public_reachable": 18,
+        "exact_orphans": 22,
+        "previously_unowned": 43,
+        "registry_owner_added": 43
+      },
+      "entrypoint_state": [
+        {
+          "path": "build/estate-closures/manifest.json",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "build/estate-frontier/manifest.json",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "build/estate-game-trails/manifest.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "case-sources",
+      "label": "Case source ledgers",
+      "semantic_role": "case_source",
+      "owner_program_id": "case-ledger-program",
+      "ownership_status": "declared_by_case",
+      "path_prefixes": [
+        "cases/"
+      ],
+      "authoritative_entrypoints": [
+        "cases.json",
+        "build/cases/index.json"
+      ],
+      "source_basin_ids": [
+        "receipt-artifacts",
+        "research-records"
+      ],
+      "publication_disposition": "status_bound",
+      "retention_disposition": "canonical_case_source",
+      "counts": {
+        "files": 36,
+        "evidence_bearing": 36,
+        "index_reachable": 11,
+        "public_reachable": 9,
+        "exact_orphans": 25,
+        "previously_unowned": 36,
+        "registry_owner_added": 36
+      },
+      "entrypoint_state": [
+        {
+          "path": "cases.json",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "build/cases/index.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "receipt-artifacts",
+      "label": "Preserved receipt artifacts",
+      "semantic_role": "receipt_artifact",
+      "owner_program_id": "receipt-custody",
+      "ownership_status": "provisional_path_convention",
+      "path_prefixes": [
+        "receipts/"
+      ],
+      "authoritative_entrypoints": [
+        "data/ledger/receipts.jsonl",
+        "build/receipt-graph.json"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "source_specific",
+      "retention_disposition": "canonical_evidence_custody",
+      "counts": {
+        "files": 32,
+        "evidence_bearing": 32,
+        "index_reachable": 31,
+        "public_reachable": 31,
+        "exact_orphans": 1,
+        "previously_unowned": 32,
+        "registry_owner_added": 32
+      },
+      "entrypoint_state": [
+        {
+          "path": "data/ledger/receipts.jsonl",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "build/receipt-graph.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "general-build-products",
+      "label": "Other generated build products",
+      "semantic_role": "generated_projection",
+      "owner_program_id": "build-system",
+      "ownership_status": "provisional_path_convention",
+      "path_prefixes": [
+        "build/"
+      ],
+      "authoritative_entrypoints": [
+        "package.json"
+      ],
+      "source_basin_ids": [
+        "canonical-registries",
+        "canonical-ledgers",
+        "research-records",
+        "project-governance"
+      ],
+      "publication_disposition": "internal_or_explicitly_authorized",
+      "retention_disposition": "reproducible_generated",
+      "counts": {
+        "files": 25,
+        "evidence_bearing": 25,
+        "index_reachable": 25,
+        "public_reachable": 11,
+        "exact_orphans": 0,
+        "previously_unowned": 25,
+        "registry_owner_added": 25
+      },
+      "entrypoint_state": [
+        {
+          "path": "package.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "estate-closure-products",
+      "label": "Estate closure generated products",
+      "semantic_role": "generated_projection",
+      "owner_program_id": "estate-aperture-program",
+      "ownership_status": "declared_by_manifest",
+      "path_prefixes": [
+        "build/estate-closures/"
+      ],
+      "authoritative_entrypoints": [
+        "build/estate-closures/manifest.json"
+      ],
+      "source_basin_ids": [
+        "estate-source-data"
+      ],
+      "publication_disposition": "projection_only",
+      "retention_disposition": "reproducible_generated",
+      "counts": {
+        "files": 15,
+        "evidence_bearing": 15,
+        "index_reachable": 15,
+        "public_reachable": 14,
+        "exact_orphans": 0,
+        "previously_unowned": 15,
+        "registry_owner_added": 15
+      },
+      "entrypoint_state": [
+        {
+          "path": "build/estate-closures/manifest.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "canonical-registries",
+      "label": "Canonical registries",
+      "semantic_role": "canonical_registry",
+      "owner_program_id": "compiler-kernel",
+      "ownership_status": "declared",
+      "path_prefixes": [
+        "data/canonical/"
+      ],
+      "authoritative_entrypoints": [
+        "BUILD-INSTRUCTIONS.md",
+        "README.md"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "public_source_with_contract",
+      "retention_disposition": "canonical",
+      "counts": {
+        "files": 12,
+        "evidence_bearing": 12,
+        "index_reachable": 12,
+        "public_reachable": 10,
+        "exact_orphans": 0,
+        "previously_unowned": 12,
+        "registry_owner_added": 12
+      },
+      "entrypoint_state": [
+        {
+          "path": "BUILD-INSTRUCTIONS.md",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "README.md",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "estate-frontier-products",
+      "label": "Estate frontier generated products",
+      "semantic_role": "generated_projection",
+      "owner_program_id": "estate-frontier-program",
+      "ownership_status": "declared_by_manifest",
+      "path_prefixes": [
+        "build/estate-frontier/"
+      ],
+      "authoritative_entrypoints": [
+        "build/estate-frontier/manifest.json"
+      ],
+      "source_basin_ids": [
+        "estate-source-data"
+      ],
+      "publication_disposition": "projection_only",
+      "retention_disposition": "reproducible_generated",
+      "counts": {
+        "files": 11,
+        "evidence_bearing": 11,
+        "index_reachable": 11,
+        "public_reachable": 11,
+        "exact_orphans": 0,
+        "previously_unowned": 11,
+        "registry_owner_added": 11
+      },
+      "entrypoint_state": [
+        {
+          "path": "build/estate-frontier/manifest.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "unclassified-current-tree",
+      "label": "Unclassified current-tree paths",
+      "semantic_role": "unclassified",
+      "owner_program_id": null,
+      "ownership_status": "disposition_required",
+      "path_prefixes": [],
+      "authoritative_entrypoints": [],
+      "source_basin_ids": [],
+      "publication_disposition": "blocked_pending_classification",
+      "retention_disposition": "disposition_required",
+      "counts": {
+        "files": 62,
+        "evidence_bearing": 9,
+        "index_reachable": 10,
+        "public_reachable": 5,
+        "exact_orphans": 45,
+        "previously_unowned": 62,
+        "registry_owner_added": 0
+      },
+      "entrypoint_state": [],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "crawl-state",
+      "label": "Crawler state and observation queues",
+      "semantic_role": "crawler_state",
+      "owner_program_id": "official-record-crawler",
+      "ownership_status": "declared",
+      "path_prefixes": [
+        "data/crawl/"
+      ],
+      "authoritative_entrypoints": [
+        "docs/official-record-crawler.md"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "blocked",
+      "retention_disposition": "operational_state",
+      "counts": {
+        "files": 6,
+        "evidence_bearing": 6,
+        "index_reachable": 5,
+        "public_reachable": 5,
+        "exact_orphans": 1,
+        "previously_unowned": 6,
+        "registry_owner_added": 6
+      },
+      "entrypoint_state": [
+        {
+          "path": "docs/official-record-crawler.md",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "briefing-products",
+      "label": "Reporter briefing products",
+      "semantic_role": "report_projection",
+      "owner_program_id": "reporter-briefing-program",
+      "ownership_status": "declared_by_builder",
+      "path_prefixes": [
+        "briefs/",
+        "build/briefings/"
+      ],
+      "authoritative_entrypoints": [
+        "build/briefings/index.json",
+        "build/cases/index.json"
+      ],
+      "source_basin_ids": [
+        "case-sources",
+        "case-build-products"
+      ],
+      "publication_disposition": "status_bound",
+      "retention_disposition": "reproducible_generated",
+      "counts": {
+        "files": 5,
+        "evidence_bearing": 5,
+        "index_reachable": 3,
+        "public_reachable": 2,
+        "exact_orphans": 2,
+        "previously_unowned": 5,
+        "registry_owner_added": 5
+      },
+      "entrypoint_state": [
+        {
+          "path": "build/briefings/index.json",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "build/cases/index.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "canonical-ledgers",
+      "label": "Canonical ledgers",
+      "semantic_role": "canonical_ledger",
+      "owner_program_id": "surface-hop-compiler",
+      "ownership_status": "declared",
+      "path_prefixes": [
+        "data/ledger/"
+      ],
+      "authoritative_entrypoints": [
+        "README.md",
+        "build/receipt-graph.json",
+        "build/surface-graph.json",
+        "build/hop-graph.json"
+      ],
+      "source_basin_ids": [
+        "receipt-artifacts"
+      ],
+      "publication_disposition": "public_source_with_contract",
+      "retention_disposition": "canonical",
+      "counts": {
+        "files": 5,
+        "evidence_bearing": 5,
+        "index_reachable": 5,
+        "public_reachable": 5,
+        "exact_orphans": 0,
+        "previously_unowned": 5,
+        "registry_owner_added": 5
+      },
+      "entrypoint_state": [
+        {
+          "path": "README.md",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "build/receipt-graph.json",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "build/surface-graph.json",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "build/hop-graph.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "case-build-products",
+      "label": "Compiled case products",
+      "semantic_role": "generated_projection",
+      "owner_program_id": "case-ledger-program",
+      "ownership_status": "declared_by_builder",
+      "path_prefixes": [
+        "build/cases/"
+      ],
+      "authoritative_entrypoints": [
+        "build/cases/index.json"
+      ],
+      "source_basin_ids": [
+        "case-sources"
+      ],
+      "publication_disposition": "status_bound",
+      "retention_disposition": "reproducible_generated",
+      "counts": {
+        "files": 5,
+        "evidence_bearing": 5,
+        "index_reachable": 5,
+        "public_reachable": 5,
+        "exact_orphans": 0,
+        "previously_unowned": 5,
+        "registry_owner_added": 5
+      },
+      "entrypoint_state": [
+        {
+          "path": "build/cases/index.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "estate-public-products",
+      "label": "Estate public projections",
+      "semantic_role": "public_projection",
+      "owner_program_id": "estate-aperture-program",
+      "ownership_status": "declared_by_public_surface",
+      "path_prefixes": [
+        "estates/"
+      ],
+      "authoritative_entrypoints": [
+        "estates/index.html",
+        "estates/data.json",
+        "estates/trails.json"
+      ],
+      "source_basin_ids": [
+        "estate-source-data",
+        "estate-closure-products"
+      ],
+      "publication_disposition": "public_with_contract",
+      "retention_disposition": "generated_public_projection",
+      "counts": {
+        "files": 3,
+        "evidence_bearing": 3,
+        "index_reachable": 3,
+        "public_reachable": 2,
+        "exact_orphans": 0,
+        "previously_unowned": 3,
+        "registry_owner_added": 3
+      },
+      "entrypoint_state": [
+        {
+          "path": "estates/index.html",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "estates/data.json",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "estates/trails.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "legacy-history",
+      "label": "Retired legacy architecture",
+      "semantic_role": "historical_legacy",
+      "owner_program_id": "project-governance",
+      "ownership_status": "declared",
+      "path_prefixes": [
+        "legacy/"
+      ],
+      "authoritative_entrypoints": [
+        "README.md"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "historical_only",
+      "retention_disposition": "retired_history",
+      "counts": {
+        "files": 3,
+        "evidence_bearing": 3,
+        "index_reachable": 2,
+        "public_reachable": 0,
+        "exact_orphans": 1,
+        "previously_unowned": 3,
+        "registry_owner_added": 3
+      },
+      "entrypoint_state": [
+        {
+          "path": "README.md",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "gametrail-public-products",
+      "label": "Game-trail public projections",
+      "semantic_role": "public_projection",
+      "owner_program_id": "estate-game-trail-program",
+      "ownership_status": "declared_by_public_surface",
+      "path_prefixes": [
+        "gametrails/"
+      ],
+      "authoritative_entrypoints": [
+        "gametrails/index.html",
+        "gametrails/data.json"
+      ],
+      "source_basin_ids": [
+        "estate-game-trail-products"
+      ],
+      "publication_disposition": "public_with_contract",
+      "retention_disposition": "generated_public_projection",
+      "counts": {
+        "files": 2,
+        "evidence_bearing": 2,
+        "index_reachable": 2,
+        "public_reachable": 2,
+        "exact_orphans": 0,
+        "previously_unowned": 2,
+        "registry_owner_added": 2
+      },
+      "entrypoint_state": [
+        {
+          "path": "gametrails/index.html",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "gametrails/data.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "general-report-products",
+      "label": "Other report products",
+      "semantic_role": "report_projection",
+      "owner_program_id": "report-frontier-program",
+      "ownership_status": "provisional_path_convention",
+      "path_prefixes": [
+        "reports/"
+      ],
+      "authoritative_entrypoints": [
+        "reports/index.html",
+        "build/report-frontier.json"
+      ],
+      "source_basin_ids": [
+        "research-records",
+        "case-sources"
+      ],
+      "publication_disposition": "status_bound",
+      "retention_disposition": "generated_report",
+      "counts": {
+        "files": 1,
+        "evidence_bearing": 1,
+        "index_reachable": 1,
+        "public_reachable": 1,
+        "exact_orphans": 0,
+        "previously_unowned": 1,
+        "registry_owner_added": 1
+      },
+      "entrypoint_state": [
+        {
+          "path": "reports/index.html",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "build/report-frontier.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "toolchain",
+      "label": "Compiler and maintenance toolchain",
+      "semantic_role": "tooling",
+      "owner_program_id": "build-system",
+      "ownership_status": "declared",
+      "path_prefixes": [
+        "tools/"
+      ],
+      "authoritative_entrypoints": [
+        "package.json"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "not_evidence",
+      "retention_disposition": "tooling",
+      "counts": {
+        "files": 261,
+        "evidence_bearing": 0,
+        "index_reachable": 191,
+        "public_reachable": 45,
+        "exact_orphans": 21,
+        "previously_unowned": 261,
+        "registry_owner_added": 261
+      },
+      "entrypoint_state": [
+        {
+          "path": "package.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "regressions",
+      "label": "Regression and adversarial fixtures",
+      "semantic_role": "test_fixture",
+      "owner_program_id": "build-system",
+      "ownership_status": "declared",
+      "path_prefixes": [
+        "test/"
+      ],
+      "authoritative_entrypoints": [
+        "package.json"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "not_evidence",
+      "retention_disposition": "regression",
+      "counts": {
+        "files": 146,
+        "evidence_bearing": 0,
+        "index_reachable": 105,
+        "public_reachable": 1,
+        "exact_orphans": 8,
+        "previously_unowned": 146,
+        "registry_owner_added": 146
+      },
+      "entrypoint_state": [
+        {
+          "path": "package.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "automation",
+      "label": "Repository automation",
+      "semantic_role": "automation",
+      "owner_program_id": "build-system",
+      "ownership_status": "declared",
+      "path_prefixes": [
+        ".github/"
+      ],
+      "authoritative_entrypoints": [
+        "package.json"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "not_evidence",
+      "retention_disposition": "tooling",
+      "counts": {
+        "files": 73,
+        "evidence_bearing": 0,
+        "index_reachable": 26,
+        "public_reachable": 0,
+        "exact_orphans": 44,
+        "previously_unowned": 73,
+        "registry_owner_added": 73
+      },
+      "entrypoint_state": [
+        {
+          "path": "package.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "public-runtime",
+      "label": "Public runtime and assets",
+      "semantic_role": "public_runtime",
+      "owner_program_id": "public-interface",
+      "ownership_status": "declared",
+      "path_prefixes": [
+        "src/",
+        "assets/",
+        "index.html",
+        "app.js",
+        "styles.css"
+      ],
+      "authoritative_entrypoints": [
+        "index.html"
+      ],
+      "source_basin_ids": [
+        "general-build-products"
+      ],
+      "publication_disposition": "public_runtime_only",
+      "retention_disposition": "maintained_runtime",
+      "counts": {
+        "files": 52,
+        "evidence_bearing": 0,
+        "index_reachable": 39,
+        "public_reachable": 7,
+        "exact_orphans": 12,
+        "previously_unowned": 52,
+        "registry_owner_added": 52
+      },
+      "entrypoint_state": [
+        {
+          "path": "index.html",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "repository-root-governance",
+      "label": "Repository-root governance and configuration",
+      "semantic_role": "repository_governance",
+      "owner_program_id": "project-governance",
+      "ownership_status": "declared",
+      "path_prefixes": [
+        "README.md",
+        "BUILD-INSTRUCTIONS.md",
+        "CONTRIBUTING.md",
+        "package.json",
+        "cases.json"
+      ],
+      "authoritative_entrypoints": [
+        "README.md",
+        "BUILD-INSTRUCTIONS.md"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "documentation_only",
+      "retention_disposition": "canonical_governance",
+      "counts": {
+        "files": 5,
+        "evidence_bearing": 0,
+        "index_reachable": 5,
+        "public_reachable": 3,
+        "exact_orphans": 0,
+        "previously_unowned": 5,
+        "registry_owner_added": 5
+      },
+      "entrypoint_state": [
+        {
+          "path": "README.md",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "BUILD-INSTRUCTIONS.md",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    }
+  ],
+  "boundaries": {
+    "basin_assignment_proves_semantic_correctness": false,
+    "path_prefix_proves_program_ownership": false,
+    "owner_program_proves_evidence_truth": false,
+    "generated_projection_is_independent_evidence": false,
+    "public_reachability_is_publication_clearance": false,
+    "complete_current_tree_assignment_is_complete_lake_knowledge": false,
+    "historical_git_objects_indexed": false,
+    "open_pull_request_shadow_is_merged_corpus": false
+  }
+}
