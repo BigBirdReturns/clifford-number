@@ -117,18 +117,29 @@ jobs:
       - name: Rebuild and reconcile the canonical-subject lake
         if: steps.mode.outputs.validate == 'true'
         run: |
+          set -euo pipefail
           node tools/build-lake-index.mjs
           node tools/stabilize-lake-index.mjs
           node tools/reconcile-lake-receipt-semantics.mjs
           node tools/build-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/reconcile-lake-canonical-subject-projection-wave-13.mjs
+          # Make the reconciliation products part of the tracked index before the
+          # final census. Otherwise the materialization commit adds paths that the
+          # pre-commit file shard could not observe.
+          git add -A
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
           node tools/validate-lake-index.mjs
           node tools/validate-lake-receipt-semantics.mjs
           node tools/validate-lake-gap-summary.mjs
-          node tools/shard-lake-index.mjs
-          node tools/build-lake-basin-index.mjs
           node tools/validate-lake-index-shards.mjs
           node tools/validate-lake-basin-index.mjs
-          node tools/reconcile-lake-canonical-subject-projection-wave-13.mjs
           node tools/validate-lake-canonical-subject-projection-wave-13.mjs
           node test/lake-index.test.js
           node test/lake-basin-index.test.js
@@ -151,12 +162,22 @@ jobs:
           node tools/shard-lake-index.mjs
           node tools/build-lake-basin-index.mjs
           node tools/reconcile-lake-canonical-subject-projection-wave-13.mjs
+          git add -A
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
           node tools/snapshot-lake-canonical-subject-projection-wave-13.mjs /tmp/lake-canonical-subject-wave-13-after.json
           if ! cmp --silent /tmp/lake-canonical-subject-wave-13-before.json /tmp/lake-canonical-subject-wave-13-after.json; then
             diff -u /tmp/lake-canonical-subject-wave-13-before.json /tmp/lake-canonical-subject-wave-13-after.json | sed -n '1,240p'
             exit 1
           fi
           sha256sum /tmp/lake-canonical-subject-wave-13-before.json /tmp/lake-canonical-subject-wave-13-after.json
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
           node tools/validate-lake-index-shards.mjs
           node tools/validate-lake-basin-index.mjs
           node tools/validate-lake-canonical-subject-projection-wave-13.mjs
