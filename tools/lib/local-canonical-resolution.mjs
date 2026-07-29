@@ -5,6 +5,9 @@ import { readJson, readJsonl, root } from './ledger.mjs';
 export const SUBJECT_IDENTITY_SCHEMA_VERSION = 'subject-identity-projection@1';
 export const SUBJECT_IDENTITY_SUMMARY_SCHEMA_VERSION = 'subject-identity-summary@1';
 export const ACCEPTED_LOCAL_RESOLUTION_STATUS = 'accepted_graph_inert_local_resolution';
+export const RESOLVED_SUBJECT_STATUS = 'resolved_local_to_canonical';
+export const EXPLICIT_SUBJECT_RESOLUTION_BASIS = 'explicit_case_scoped_resolution';
+export const EXACT_CANONICAL_SUBJECT_RESOLUTION_BASIS = 'exact_subject_id_equals_canonical_id';
 
 let cachedIndex = null;
 
@@ -121,9 +124,14 @@ export function loadLocalCanonicalResolutionIndex({ refresh = false } = {}) {
       registry_files: registryPaths.length,
       resolution_rows: entries.length,
       current_resolutions: currentByCaseAndLocal.size,
-      canonical_targets: new Set([...currentByCaseAndLocal.values()].map(entry => entry.row.canonical_id)).size
+      canonical_targets: new Set([...currentByCaseAndLocal.values()].map(entry => entry.row.canonical_id)).size,
+      canonical_records: canonicalById.size
     },
     boundaries: {
+      explicit_case_resolution_precedes_exact_canonical_id: true,
+      exact_canonical_id_requires_byte_equal_subject_id: true,
+      normalized_name_matching_authorized: false,
+      alias_matching_authorized: false,
       source_records_mutated: false,
       source_records_merged: false,
       relationship_created: false,
@@ -137,48 +145,13 @@ export function loadLocalCanonicalResolutionIndex({ refresh = false } = {}) {
   return cachedIndex;
 }
 
-export function resolveSubjectIdentity(caseId, localSubjectId, index = loadLocalCanonicalResolutionIndex()) {
-  const local = String(localSubjectId ?? '');
-  const entry = index.current_by_case_and_local.get(`${caseId}\0${local}`);
-  if (!entry) {
-    return {
-      schema_version: SUBJECT_IDENTITY_SCHEMA_VERSION,
-      case_id: caseId,
-      local_subject_id: local,
-      canonical_subject_id: null,
-      canonical_kind: null,
-      canonical_label: null,
-      canonical_aliases: [],
-      resolution_id: null,
-      resolution_status: 'local_only_unresolved',
-      source_ids: [],
-      search_keys: uniqueSorted([local]),
-      source_records_mutated: false,
-      source_records_merged: false,
-      relationship_created: false,
-      participation_created: false,
-      accepted_cross_case_identity_bridge: false,
-      automatic_cross_case_join_authorized: false,
-      cross_case_graph_join_authorized: false,
-      cross_case_hop_creation_authorized: false,
-      graph_effect: 'none'
-    };
-  }
-  const row = entry.row;
-  const canonical = index.canonical_by_id.get(row.canonical_id);
-  const aliases = index.aliases_by_canonical.get(row.canonical_id) ?? [];
+export function isResolvedSubjectIdentity(identity) {
+  return Boolean(identity?.canonical_subject_id)
+    && identity?.resolution_status === RESOLVED_SUBJECT_STATUS;
+}
+
+function projectionBoundaryFields() {
   return {
-    schema_version: SUBJECT_IDENTITY_SCHEMA_VERSION,
-    case_id: caseId,
-    local_subject_id: local,
-    canonical_subject_id: row.canonical_id,
-    canonical_kind: row.canonical_kind,
-    canonical_label: canonical.label,
-    canonical_aliases: aliases,
-    resolution_id: row.resolution_id,
-    resolution_status: 'resolved_local_to_canonical',
-    source_ids: uniqueSorted(row.source_ids),
-    search_keys: uniqueSorted([local, row.canonical_id, canonical.label, ...aliases]),
     source_records_mutated: false,
     source_records_merged: false,
     relationship_created: false,
@@ -188,6 +161,67 @@ export function resolveSubjectIdentity(caseId, localSubjectId, index = loadLocal
     cross_case_graph_join_authorized: false,
     cross_case_hop_creation_authorized: false,
     graph_effect: 'none'
+  };
+}
+
+export function resolveSubjectIdentity(caseId, localSubjectId, index = loadLocalCanonicalResolutionIndex()) {
+  const local = String(localSubjectId ?? '');
+  const entry = index.current_by_case_and_local.get(`${caseId}\0${local}`);
+  if (entry) {
+    const row = entry.row;
+    const canonical = index.canonical_by_id.get(row.canonical_id);
+    const aliases = index.aliases_by_canonical.get(row.canonical_id) ?? [];
+    return {
+      schema_version: SUBJECT_IDENTITY_SCHEMA_VERSION,
+      case_id: caseId,
+      local_subject_id: local,
+      canonical_subject_id: row.canonical_id,
+      canonical_kind: row.canonical_kind,
+      canonical_label: canonical.label,
+      canonical_aliases: aliases,
+      resolution_id: row.resolution_id,
+      resolution_status: RESOLVED_SUBJECT_STATUS,
+      resolution_basis: EXPLICIT_SUBJECT_RESOLUTION_BASIS,
+      source_ids: uniqueSorted(row.source_ids),
+      search_keys: uniqueSorted([local, row.canonical_id, canonical.label, ...aliases]),
+      ...projectionBoundaryFields()
+    };
+  }
+
+  const exactCanonical = index.canonical_by_id.get(local);
+  if (exactCanonical) {
+    const aliases = index.aliases_by_canonical.get(local) ?? [];
+    return {
+      schema_version: SUBJECT_IDENTITY_SCHEMA_VERSION,
+      case_id: caseId,
+      local_subject_id: local,
+      canonical_subject_id: local,
+      canonical_kind: exactCanonical.kind,
+      canonical_label: exactCanonical.label,
+      canonical_aliases: aliases,
+      resolution_id: null,
+      resolution_status: RESOLVED_SUBJECT_STATUS,
+      resolution_basis: EXACT_CANONICAL_SUBJECT_RESOLUTION_BASIS,
+      source_ids: uniqueSorted(exactCanonical.record?.source_ids),
+      search_keys: uniqueSorted([local, exactCanonical.label, ...aliases]),
+      ...projectionBoundaryFields()
+    };
+  }
+
+  return {
+    schema_version: SUBJECT_IDENTITY_SCHEMA_VERSION,
+    case_id: caseId,
+    local_subject_id: local,
+    canonical_subject_id: null,
+    canonical_kind: null,
+    canonical_label: null,
+    canonical_aliases: [],
+    resolution_id: null,
+    resolution_status: 'local_only_unresolved',
+    resolution_basis: 'none',
+    source_ids: [],
+    search_keys: uniqueSorted([local]),
+    ...projectionBoundaryFields()
   };
 }
 
@@ -207,12 +241,16 @@ export function summarizeSubjectIdentities(claims, { caseId = null, registryPath
         canonical_aliases: identity.canonical_aliases,
         resolution_id: identity.resolution_id,
         resolution_status: identity.resolution_status,
+        resolution_basis: identity.resolution_basis,
         search_keys: identity.search_keys,
         claim_ids: []
       });
     }
     const row = rowsByLocal.get(key);
-    if (row.canonical_subject_id !== identity.canonical_subject_id || row.resolution_id !== identity.resolution_id) {
+    if (row.canonical_subject_id !== identity.canonical_subject_id
+      || row.resolution_id !== identity.resolution_id
+      || row.resolution_status !== identity.resolution_status
+      || row.resolution_basis !== identity.resolution_basis) {
       throw new Error(`${identity.case_id}/${identity.local_subject_id}: inconsistent subject identity projection`);
     }
     row.claim_ids.push(claim.claim_id);
@@ -221,7 +259,7 @@ export function summarizeSubjectIdentities(claims, { caseId = null, registryPath
     ...row,
     claim_ids: uniqueSorted(row.claim_ids)
   })).sort((left, right) => `${left.case_id}\0${left.local_subject_id}`.localeCompare(`${right.case_id}\0${right.local_subject_id}`));
-  const resolvedClaims = (claims ?? []).filter(claim => claim.subject_identity?.resolution_status === 'resolved_local_to_canonical');
+  const resolvedClaims = (claims ?? []).filter(claim => isResolvedSubjectIdentity(claim.subject_identity));
   return {
     schema_version: SUBJECT_IDENTITY_SUMMARY_SCHEMA_VERSION,
     case_id: caseId,
@@ -230,6 +268,8 @@ export function summarizeSubjectIdentities(claims, { caseId = null, registryPath
     counts: {
       subject_references: (claims ?? []).length,
       resolved_subject_references: resolvedClaims.length,
+      explicit_resolution_references: (claims ?? []).filter(claim => claim.subject_identity?.resolution_basis === EXPLICIT_SUBJECT_RESOLUTION_BASIS).length,
+      exact_canonical_id_references: (claims ?? []).filter(claim => claim.subject_identity?.resolution_basis === EXACT_CANONICAL_SUBJECT_RESOLUTION_BASIS).length,
       unresolved_subject_references: (claims ?? []).length - resolvedClaims.length,
       distinct_local_subjects: subjects.length,
       distinct_canonical_subjects: new Set(subjects.map(row => row.canonical_subject_id).filter(Boolean)).size
@@ -238,6 +278,9 @@ export function summarizeSubjectIdentities(claims, { caseId = null, registryPath
     boundaries: {
       subject_id_preserved: true,
       claim_text_mutated: false,
+      explicit_case_resolution_precedes_exact_canonical_id: true,
+      normalized_name_matching_authorized: false,
+      alias_matching_authorized: false,
       source_records_mutated: false,
       source_records_merged: false,
       object_identity_inferred: false,
