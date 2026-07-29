@@ -8,9 +8,19 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-function readJsonl(file, optional = false) {
-  if (optional && !fs.existsSync(file)) return [];
+function readJsonl(file) {
   return fs.readFileSync(file, 'utf8').split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
+}
+
+function extensionRegistryPaths() {
+  return fs.readdirSync('data/project')
+    .filter(name => /^lake-canonical-identity-extension-registry-wave-\d+\.jsonl$/.test(name))
+    .sort()
+    .map(name => `data/project/${name}`);
+}
+
+function uniqueSorted(values) {
+  return [...new Set((values ?? []).filter(Boolean).map(String))].sort((left, right) => left.localeCompare(right));
 }
 
 const validation = spawnSync(process.execPath, ['tools/validate-lake-axm-active-projection-wave-06.mjs'], { encoding: 'utf8' });
@@ -24,7 +34,8 @@ const policy = readJson('data/project/lake-axm-active-projection-wave-06-policy.
 const active = readJson(policy.active_projection_path);
 const migration = readJson('build/axm-identity-genesis-v1-migration.json');
 const baselineRegistry = readJsonl(policy.migration_registry_path);
-const extensionRegistry = readJsonl('data/project/lake-canonical-identity-extension-registry-wave-11.jsonl', true);
+const extensionPaths = extensionRegistryPaths();
+const extensionRegistry = extensionPaths.flatMap(sourcePath => readJsonl(sourcePath).map(row => ({ ...row, __sourcePath: sourcePath })));
 const receipt = readJson(policy.migration_receipt_path);
 const plan = readJson(policy.plan_path);
 const reconciliation = readJson(policy.reconciliation_path);
@@ -55,12 +66,16 @@ assert.ok(extensionRegistry.every(row => row.review_dependency.required_to_decid
 assert.ok(extensionRegistry.every(row => row.reversibility.mode === 'append_preserving_supersession'));
 assert.ok(extensionRegistry.every(row => row.active_projection_extension === true));
 assert.ok(extensionRegistry.every(row => row.cross_case_join_authorized === false));
-assert.ok(extensionRegistry.every(row => row.accepted_identity_bridge === false));
+assert.ok(extensionRegistry.every(row => (row.accepted_cross_case_identity_bridge ?? row.accepted_identity_bridge) === false));
 assert.ok(extensionRegistry.every(row => row.participation_created === false));
 assert.ok(extensionRegistry.every(row => row.graph_effect === 'none'));
 
 const baselineByLocal = new Map(baselineEntityRows.map(row => [row.local_id, row]));
-const extensionByLocal = new Map(extensionEntityRows.map(row => [row.local_id, row]));
+const extensionByLocal = new Map();
+for (const row of extensionEntityRows) {
+  assert.equal(extensionByLocal.has(row.local_id), false, `${row.local_id}: duplicate extension entity`);
+  extensionByLocal.set(row.local_id, row);
+}
 const aliasExtensionsByLocal = new Map();
 for (const row of extensionAliasRows) {
   if (!aliasExtensionsByLocal.has(row.canonical_id)) aliasExtensionsByLocal.set(row.canonical_id, []);
@@ -73,21 +88,20 @@ for (const entity of active.entities) {
   const baseline = baselineByLocal.get(entity.local_id);
   const extension = extensionByLocal.get(entity.local_id);
   assert.ok(baseline || extension, `${entity.local_id}: missing baseline or extension row`);
+  const source = baseline ?? extension;
   if (baseline) {
     const mapped = migrationByLocal.get(entity.local_id);
     assert.ok(mapped);
     assert.equal(entity.axm_entity_id, mapped.genesis_v1_entity_id);
     assert.equal(entity.legacy_provisional_entity_id, mapped.legacy_provisional_entity_id);
-    for (const alias of aliasExtensionsByLocal.get(entity.local_id) ?? []) {
-      assert.ok(entity.alias_axm_ids.includes(alias.axm_alias_id));
-      assert.ok(entity.legacy_provisional_alias_ids.includes(alias.legacy_provisional_alias_id));
-    }
   } else {
     assert.equal(entity.axm_entity_id, extension.axm_entity_id);
     assert.equal(entity.legacy_provisional_entity_id, extension.legacy_provisional_entity_id);
-    assert.deepEqual(entity.alias_axm_ids, extension.alias_axm_ids);
-    assert.deepEqual(entity.legacy_provisional_alias_ids, extension.legacy_provisional_alias_ids);
   }
+  const expectedCurrentAliases = uniqueSorted([...(source.alias_axm_ids ?? []), ...(aliasExtensionsByLocal.get(entity.local_id) ?? []).map(row => row.axm_alias_id)]);
+  const expectedLegacyAliases = uniqueSorted([...(source.legacy_provisional_alias_ids ?? []), ...(aliasExtensionsByLocal.get(entity.local_id) ?? []).map(row => row.legacy_provisional_alias_id)]);
+  assert.deepEqual(entity.alias_axm_ids, expectedCurrentAliases);
+  assert.deepEqual(entity.legacy_provisional_alias_ids, expectedLegacyAliases);
   for (const token of [entity.axm_entity_id, ...entity.alias_axm_ids]) {
     assert.equal(resolveLocalId(active, token), entity.local_id);
     currentEntityTokens += 1;
@@ -141,4 +155,4 @@ assert.equal(reconciliation.completion.evidence_truth_determined, false);
 assert.equal(reconciliation.completion.publication_cleared, false);
 assert.equal(reconciliation.completion.decisions_requiring_human_permission, 0);
 
-console.log(`lake-axm-active-projection-wave-06.test: OK (176 baseline entities, ${extensionEntityRows.length} extensions, 164 claims; joins disabled)`);
+console.log(`lake-axm-active-projection-wave-06.test: OK (176 baseline entities, ${extensionPaths.length} extension registries, ${extensionEntityRows.length} extensions, 164 claims; joins disabled)`);
