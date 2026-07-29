@@ -8,6 +8,10 @@ function sha256(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
 
+function jsonSafe(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
 function uniqueSorted(values) {
   return [...new Set((values ?? []).filter(Boolean).map(String))].sort((left, right) => left.localeCompare(right));
 }
@@ -269,7 +273,7 @@ export function evaluateHopControls(hopControls) {
     densityPolicy: hopControls.density_policy,
     receiptById: new Map()
   });
-  return {
+  return jsonSafe({
     schema_version: 'axm-cross-case-hop-controls@1',
     row_type: 'hop_control_summary',
     decision_id: 'fixture-hop-controls',
@@ -281,7 +285,7 @@ export function evaluateHopControls(hopControls) {
     cross_case_graph_join_authorized: false,
     cross_case_hop_creation_authorized: false,
     graph_effect: 'none'
-  };
+  });
 }
 
 export function compileCrossCaseAcceptance(fixture) {
