@@ -2,6 +2,10 @@ name: Temporary materialize K0 Wave 05 field adjudication
 # Exact-head registration trigger after initial workflow creation.
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-materialize-k0-wave05-field.yml'
   push:
     branches:
       - agent/k0-wave05-field-adjudication
