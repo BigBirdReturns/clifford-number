@@ -66,6 +66,8 @@ const receiptGapRows = [
   ...(gaps.undefined_receipt_references ?? []).map(value => ({ gap_class: 'undefined_receipt_reference', ...value })),
   ...(gaps.unused_receipt_definitions ?? []).map(value => ({ gap_class: 'unused_receipt_definition', ...value }))
 ].sort((a, b) => `${a.gap_class}:${a.receipt_id}`.localeCompare(`${b.gap_class}:${b.receipt_id}`));
+const receiptLocators = objects.receipt_token_classes?.source_locators ?? [];
+const receiptHashes = objects.receipt_token_classes?.content_hashes ?? [];
 
 const branchShadowRows = [];
 for (const pr of gaps.open_pull_request_shadow?.pull_requests ?? []) {
@@ -102,6 +104,8 @@ writeJson('summary.json', summary);
 writeJsonl('files.jsonl', index.files ?? []);
 writeJsonl('objects.jsonl', objects.objects ?? []);
 writeJsonl('receipts.jsonl', objects.receipts ?? []);
+writeJsonl('receipt-locators.jsonl', receiptLocators);
+writeJsonl('receipt-hashes.jsonl', receiptHashes);
 writeJson('programs.json', { schema_version: 'lake-program-index@1', census_id: index.census_id, programs: objects.programs ?? [] });
 writeJson('cases.json', { schema_version: 'lake-case-index@1', census_id: index.census_id, cases: objects.cases ?? [] });
 writeJson('reports.json', { schema_version: 'lake-report-index@1', census_id: index.census_id, reports: objects.reports ?? [] });
@@ -115,11 +119,17 @@ writeJson('missing-path-tokens.json', {
   tokens: gaps.missing_repo_path_tokens ?? []
 });
 writeJson('gap-summary.json', gapSummary);
+writeJson('receipt-semantics.json', gaps.receipt_semantics ?? {
+  schema_version: 'lake-receipt-semantics@1',
+  unavailable: true
+});
 
 const rowCounts = {
   files: index.files?.length ?? 0,
   objects: objects.objects?.length ?? 0,
   receipts: objects.receipts?.length ?? 0,
+  receipt_locators: receiptLocators.length,
+  receipt_hashes: receiptHashes.length,
   path_gaps: pathGapRows.length,
   id_gaps: idGapRows.length,
   receipt_gaps: receiptGapRows.length,
@@ -163,4 +173,6 @@ console.log('lake index sharded');
 console.log(`  shard files: ${entries.length + 1}`);
 console.log(`  file rows: ${rowCounts.files}`);
 console.log(`  object rows: ${rowCounts.objects}`);
+console.log(`  receipt locators: ${rowCounts.receipt_locators}`);
+console.log(`  receipt hashes: ${rowCounts.receipt_hashes}`);
 console.log(`  gap rows: ${rowCounts.path_gaps + rowCounts.id_gaps + rowCounts.receipt_gaps}`);
