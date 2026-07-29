@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-import fs from 'node:fs';
 import { loadAll, readJson, writeJson, indexBy } from './lib/ledger.mjs';
 import { deriveHopEdges, buildAdjacency, shortestPath } from './lib/hops.mjs';
 import { buildIdentityLayer } from './lib/axm-identity.mjs';
+import { loadLocalCanonicalResolutionIndex } from './lib/local-canonical-resolution.mjs';
 
 const ANCHOR_ACTOR_ID = 'matt-clifford';
+const LEGACY_GRAPH_CASE_ID = 'uk-ai-policy';
 
 const data = loadAll();
 const legacyGraph = readJson('graph.json');
@@ -14,42 +15,10 @@ const orgById = indexBy(data.organizations, 'id');
 const receiptById = indexBy(data.receipts, 'receipt_id');
 const surfaceById = indexBy(data.surfaces, 'surface_id');
 const typeById = indexBy(data.surfaceTypes, 'id');
+const localResolutionIndex = loadLocalCanonicalResolutionIndex({ refresh: true });
 
 const errors = [];
 const warnings = [];
-
-function readJsonl(relative) {
-  return fs.readFileSync(relative, 'utf8').split(/\r?\n/).filter(Boolean).map((line, index) => {
-    try { return JSON.parse(line); }
-    catch (error) { throw new Error(`${relative}:${index + 1}: ${error.message}`); }
-  });
-}
-
-function loadLocalCanonicalResolutions() {
-  const directory = 'data/project';
-  if (!fs.existsSync(directory)) return { rows: [], byLocal: new Map() };
-  const paths = fs.readdirSync(directory)
-    .filter(name => /^lake-local-canonical-resolution-registry-wave-\d+\.jsonl$/.test(name))
-    .sort()
-    .map(name => `${directory}/${name}`);
-  const rows = [];
-  const byLocal = new Map();
-  for (const relative of paths) {
-    for (const row of readJsonl(relative)) {
-      if (!row.local_subject_id || !row.canonical_id) continue;
-      if (!String(row.status ?? '').startsWith('accepted_')) continue;
-      const prior = byLocal.get(row.local_subject_id);
-      if (prior && prior.canonical_id !== row.canonical_id) {
-        errors.push(`local canonical resolution conflict for ${row.local_subject_id}: ${prior.canonical_id} vs ${row.canonical_id}`);
-        continue;
-      }
-      const bound = { ...row, source_registry_path: relative };
-      byLocal.set(row.local_subject_id, bound);
-      rows.push(bound);
-    }
-  }
-  return { rows, byLocal };
-}
 
 for (const surface of data.surfaces) {
   if (!typeById.has(surface.surface_type)) errors.push(`surface ${surface.surface_id} has unknown surface_type ${surface.surface_type}`);
@@ -108,14 +77,55 @@ const aliasKeys = new Set(aliases.map(row => `${row.kind}:${row.canonical_id}:${
 const legacyActors = [];
 const legacyOrganizations = [];
 const legacyNodeById = new Map((legacyGraph.nodes ?? []).map(node => [node.id, node]));
-const { rows: localResolutionRows, byLocal: localResolutionByLocal } = loadLocalCanonicalResolutions();
 const legacyContextsByCanonical = new Map();
+
+const localResolutionRows = [...localResolutionIndex.current_by_case_and_local.values()].map(entry => ({
+  ...entry.row,
+  source_registry_path: entry.source_path
+})).sort((left, right) => `${left.source_case_id}\0${left.local_subject_id}`.localeCompare(`${right.source_case_id}\0${right.local_subject_id}`));
+const localResolutionByCaseAndLocal = new Map(localResolutionRows.map(row => [`${row.source_case_id}\0${row.local_subject_id}`, row]));
 
 function pushAlias(row) {
   const key = `${row.kind}:${row.canonical_id}:${String(row.alias).toLowerCase()}`;
-  if (aliasKeys.has(key)) return;
+  if (aliasKeys.has(key)) return false;
   aliasKeys.add(key);
   aliases.push(row);
+  return true;
+}
+
+const globalTargetsByLocal = new Map();
+for (const row of localResolutionRows) {
+  if (!globalTargetsByLocal.has(row.local_subject_id)) globalTargetsByLocal.set(row.local_subject_id, new Map());
+  globalTargetsByLocal.get(row.local_subject_id).set(`${row.canonical_kind}:${row.canonical_id}`, row);
+}
+const projectedLocalSearchKeys = new Set();
+const ambiguousLocalSearchKeys = [];
+for (const [localSubjectId, targets] of [...globalTargetsByLocal.entries()].sort(([left], [right]) => left.localeCompare(right))) {
+  if (targets.size !== 1) {
+    ambiguousLocalSearchKeys.push({
+      local_subject_id: localSubjectId,
+      canonical_targets: [...targets.values()].map(row => ({
+        source_case_id: row.source_case_id,
+        canonical_id: row.canonical_id,
+        canonical_kind: row.canonical_kind,
+        resolution_id: row.resolution_id
+      })).sort((left, right) => `${left.canonical_kind}:${left.canonical_id}`.localeCompare(`${right.canonical_kind}:${right.canonical_id}`))
+    });
+    warnings.push(`local subject search key ${localSubjectId} is ambiguous across canonical targets and was not projected as an alias`);
+    continue;
+  }
+  const row = [...targets.values()][0];
+  if (row.local_subject_id === row.canonical_id) continue;
+  const projected = pushAlias({
+    alias: row.local_subject_id,
+    canonical_id: row.canonical_id,
+    kind: row.canonical_kind,
+    source: 'local_canonical_subject_search_projection',
+    source_case_id: row.source_case_id,
+    local_resolution_id: row.resolution_id,
+    graph_effect: 'none'
+  });
+  if (projected) projectedLocalSearchKeys.add(`${row.source_case_id}\0${row.local_subject_id}`);
 }
 
 function addLegacyContext(canonicalId, node, resolution = null) {
@@ -129,7 +139,7 @@ function addLegacyContext(canonicalId, node, resolution = null) {
 }
 
 for (const node of legacyGraph.nodes ?? []) {
-  const resolution = localResolutionByLocal.get(node.id) ?? null;
+  const resolution = localResolutionByCaseAndLocal.get(`${LEGACY_GRAPH_CASE_ID}\0${node.id}`) ?? null;
   let targetId = resolution?.canonical_id ?? node.id;
   const targetIsActor = actorById.has(targetId);
   const targetIsOrganization = orgById.has(targetId);
@@ -248,12 +258,15 @@ const surfaceGraph = {
   aliases,
   local_canonical_resolutions: localResolutionRows.map(row => ({
     resolution_id: row.resolution_id,
+    source_case_id: row.source_case_id,
     local_subject_id: row.local_subject_id,
     canonical_id: row.canonical_id,
     canonical_kind: row.canonical_kind,
     status: row.status,
+    search_alias_projected: projectedLocalSearchKeys.has(`${row.source_case_id}\0${row.local_subject_id}`),
     graph_effect: row.graph_effect,
   })),
+  ambiguous_local_canonical_search_keys: ambiguousLocalSearchKeys,
   candidates: intakeCandidates,
 };
 
@@ -289,13 +302,23 @@ writeJson('build/surface-graph.json', surfaceGraph);
 writeJson('build/hop-graph.json', hopGraph);
 writeJson('build/receipt-graph.json', receiptGraph);
 writeJson('build/axm-identity.json', { generated: new Date().toISOString(), ...identityLayer });
-writeJson('build/build-hop-report.json', { generated: new Date().toISOString(), errors, warnings, hop_edges: hopEdges.length, rejected_hop_surfaces: rejectedHopSurfaces, rejected_hop_pairs: rejectedHopPairs });
+writeJson('build/build-hop-report.json', {
+  generated: new Date().toISOString(),
+  errors,
+  warnings,
+  hop_edges: hopEdges.length,
+  rejected_hop_surfaces: rejectedHopSurfaces,
+  rejected_hop_pairs: rejectedHopPairs,
+  local_canonical_resolutions: localResolutionRows.length,
+  local_subject_search_aliases: projectedLocalSearchKeys.size,
+  ambiguous_local_subject_search_keys: ambiguousLocalSearchKeys.length
+});
 
 if (errors.length) {
   console.error(errors.join('\n'));
   process.exit(1);
 }
 console.log(`build-hop-graph: ${data.surfaces.length} surfaces, ${hopEdges.length} actor-hop edges.`);
-console.log(`axm identity (provisional): ${identityLayer.entities.length} entities, ${identityLayer.claims.length} participates_in claims.`);
-console.log(`local canonical resolutions observed: ${localResolutionRows.length}.`);
+console.log(`axm identity: ${identityLayer.entities.length} entities, ${identityLayer.claims.length} participates_in claims.`);
+console.log(`local canonical subject search aliases: ${projectedLocalSearchKeys.size}; ambiguous keys held: ${ambiguousLocalSearchKeys.length}.`);
 console.log(`rejected hop surfaces: ${rejectedHopSurfaces.length}, rejected hop pairs (no temporal overlap): ${rejectedHopPairs.length}`);
