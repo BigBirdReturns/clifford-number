@@ -1,7 +1,11 @@
 name: Temporary publish K0 Wave 06 non-workflow surface
-# Registration trigger after workflow creation.
+# Pull-request trigger added after registration so the exact-head run is observable.
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-publish-k0-wave06-nonworkflow.yml'
   push:
     branches: [agent/k0-role-neutral-wave-06]
     paths:
