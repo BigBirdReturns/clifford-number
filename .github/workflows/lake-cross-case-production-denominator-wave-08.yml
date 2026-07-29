@@ -47,7 +47,7 @@ jobs:
           elif test "$GITHUB_EVENT_NAME" = 'pull_request' || test "$GITHUB_EVENT_NAME" = 'workflow_dispatch'; then
             echo 'validate=true' >> "$GITHUB_OUTPUT"
             echo 'materialize=false' >> "$GITHUB_OUTPUT"
-            if git ls-files --error-unmatch data/project/lake-cross-case-production-join-decisions-wave-08.jsonl >/dev/null 2>&1; then
+            if git ls-files --error-unmatch data/project/lake-cross-case-production-join-decision-registry-wave-08.jsonl >/dev/null 2>&1; then
               echo 'phase=post' >> "$GITHUB_OUTPUT"
             else
               echo 'phase=execute' >> "$GITHUB_OUTPUT"
@@ -80,7 +80,7 @@ jobs:
           sha256sum \
             data/project/lake-cross-case-production-entity-registry-wave-08.jsonl \
             data/project/lake-cross-case-production-pair-denominator-wave-08.jsonl \
-            data/project/lake-cross-case-production-join-decisions-wave-08.jsonl \
+            data/project/lake-cross-case-production-join-decision-registry-wave-08.jsonl \
             data/project/lake-cross-case-production-denominator-wave-08.json \
             build/cross-case-production-join-decision-index-wave-08.json \
             build/lake-actions/cross-case-production-denominator-wave-08.json \
@@ -140,7 +140,7 @@ jobs:
           sha256sum \
             data/project/lake-cross-case-production-entity-registry-wave-08.jsonl \
             data/project/lake-cross-case-production-pair-denominator-wave-08.jsonl \
-            data/project/lake-cross-case-production-join-decisions-wave-08.jsonl \
+            data/project/lake-cross-case-production-join-decision-registry-wave-08.jsonl \
             data/project/lake-cross-case-production-denominator-wave-08.json \
             build/cross-case-production-join-decision-index-wave-08.json \
             build/lake-actions/cross-case-production-denominator-wave-08.json \
@@ -190,7 +190,7 @@ jobs:
               '.github/tmp/apply-lake-cross-case-production-denominator-wave-08.mjs',
               'data/project/lake-cross-case-production-entity-registry-wave-08.jsonl',
               'data/project/lake-cross-case-production-pair-denominator-wave-08.jsonl',
-              'data/project/lake-cross-case-production-join-decisions-wave-08.jsonl',
+              'data/project/lake-cross-case-production-join-decision-registry-wave-08.jsonl',
               'data/project/lake-cross-case-production-denominator-wave-08.json',
               'build/cross-case-production-join-decision-index-wave-08.json',
               'build/lake-actions/cross-case-production-denominator-wave-08.json',
