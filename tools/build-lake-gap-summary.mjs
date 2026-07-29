@@ -8,8 +8,10 @@ const objects = JSON.parse(fs.readFileSync(path.join(root, 'build/lake-object-in
 const gaps = JSON.parse(fs.readFileSync(path.join(root, 'build/lake-index-gaps.json'), 'utf8'));
 const shadow = gaps.open_pull_request_shadow ?? null;
 
-function clusterOf(file) {
-  const parts = file.split('/');
+function clusterOf(fileOrPath) {
+  const filePath = typeof fileOrPath === 'string' ? fileOrPath : fileOrPath?.path;
+  if (!filePath) return 'unknown';
+  const parts = filePath.split('/');
   if (parts[0] === 'data') return parts.slice(0, Math.min(2, parts.length)).join('/');
   if (['build', 'reports', 'receipts', 'docs', 'cases', 'legacy', 'contributions'].includes(parts[0])) {
     return parts.slice(0, Math.min(2, parts.length)).join('/');
@@ -58,7 +60,7 @@ const branchOnlyFiles = (shadow?.pull_requests ?? []).flatMap(pr => pr.files
   .map(file => ({ ...file, pr_number: pr.number, pr_title: pr.title, head_ref: pr.head_ref, head_sha: pr.head_sha })));
 
 const roleSummary = roleRows(evidence);
-const clusterSummary = [...new Set(evidence.map(file => clusterOf(file)))].map(cluster => {
+const clusterSummary = [...new Set(evidence.map(clusterOf))].map(cluster => {
   const rows = evidence.filter(file => clusterOf(file) === cluster);
   return {
     cluster,
@@ -86,13 +88,13 @@ const priorityQueues = {
     description: 'Evidence-bearing paths with no inbound repository reference; absence of an inbound reference is not a judgment of irrelevance.',
     count: exactOrphans.length,
     by_role: tally(exactOrphans, file => file.role),
-    by_cluster: tally(exactOrphans, file => clusterOf(file))
+    by_cluster: tally(exactOrphans, clusterOf)
   },
   p2_unowned_evidence: {
     description: 'Evidence-bearing paths without a detected program ID or reference from a program-bearing file.',
     count: unowned.length,
     by_role: tally(unowned, file => file.role),
-    by_cluster: tally(unowned, file => clusterOf(file))
+    by_cluster: tally(unowned, clusterOf)
   },
   p3_index_and_publication_gaps: {
     description: 'Known paths that remain outside an index, authoritative root, public entry surface, or current public case catalog.',
@@ -111,7 +113,7 @@ const priorityQueues = {
       branch_only_evidence_paths: shadow?.counts?.branch_only_evidence_paths ?? 0
     },
     by_pr: tally(branchOnlyFiles, file => `#${file.pr_number} ${file.pr_title}`),
-    by_cluster: tally(branchOnlyFiles, file => clusterOf(file.path))
+    by_cluster: tally(branchOnlyFiles, clusterOf)
   },
   p5_history_and_semantics: {
     description: 'Current-tree path indexing cannot answer historical Git reachability, identity equivalence, evidentiary truth, or semantic ownership.',
