@@ -1,0 +1,157 @@
+name: Temporary repair K0 Wave 05 field materialization
+
+on:
+  push:
+    branches:
+      - agent/k0-wave05-field-repair
+    paths:
+      - '.github/workflows/temporary-repair-k0-wave05-field.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/k0-wave05-field-repair
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Recover and execute the already-validated materializer
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import runpy
+          import textwrap
+
+          source = Path('.github/workflows/temporary-materialize-k0-wave05-field.yml')
+          text = source.read_text()
+          marker = "cat > /tmp/materialize-k0-wave05-field.py <<'PY'"
+          lines = text.splitlines()
+          start = next(i for i, line in enumerate(lines) if marker in line) + 1
+          end = next(i for i in range(start, len(lines)) if lines[i].strip() == 'PY')
+          script = textwrap.dedent('\n'.join(lines[start:end])) + '\n'
+          target = Path('/tmp/materialize-k0-wave05-field.py')
+          target.write_text(script)
+          runpy.run_path(str(target), run_name='__main__')
+          PY
+
+      - name: Validate focused and aggregate products
+        run: |
+          set -euo pipefail
+          node tools/build-k0-wave05-field-adjudication.mjs
+          node tools/validate-k0-wave05-field-adjudication.mjs
+          node test/k0-wave05-field-adjudication.test.js
+          node tools/build-k0-role-neutral-wave-05.mjs
+          node tools/validate-k0-role-neutral-wave-05.mjs
+          node test/k0-role-neutral-wave-05.test.js
+          node tools/build-k0-epistemic-admissibility.mjs
+          node tools/validate-k0-epistemic-admissibility.mjs
+          node test/k0-epistemic-admissibility.test.js
+          node tools/validate-corpus-selection.mjs
+          node tools/validate-consumption-contract.mjs
+          npm run release:check
+
+      - name: Prove deterministic generated products
+        run: |
+          set -euo pipefail
+          git diff -- . ':!build/**' ':!dist/**' > /tmp/k0-wave05-field.before.patch
+          node tools/build-k0-wave05-field-adjudication.mjs
+          node tools/build-k0-role-neutral-wave-05.mjs
+          node tools/build-k0-epistemic-admissibility.mjs
+          git diff -- . ':!build/**' ':!dist/**' > /tmp/k0-wave05-field.after.patch
+          cmp /tmp/k0-wave05-field.before.patch /tmp/k0-wave05-field.after.patch
+
+      - name: Commit only the permanent repair surface
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git restore --staged --worktree -- build 2>/dev/null || true
+          git clean -fd -- build dist
+
+          git rm .github/tmp/k0-wave05-field-json-part-*.txt
+          git rm .github/tmp/k0-wave05-field-patch-part-*.txt
+          git rm .github/workflows/temporary-materialize-k0-wave05-field.yml
+          git rm .github/workflows/temporary-repair-k0-wave05-field.yml
+
+          git add \
+            .github/workflows/k0-wave05-field-adjudication.yml \
+            data/project/k0-epistemic-admissibility-release-manifest.json \
+            data/project/k0-role-neutral-wave-05-release-manifest.json \
+            data/project/k0-wave05-field-adjudication-release-manifest.json \
+            data/research/corpus-coverage.json \
+            data/research/k0-role-neutral-denominator.json \
+            data/research/k0-wave05-field-adjudication.json \
+            data/research/selection-adversarial-reviews.json \
+            docs/milestones/m05-k0-wave05-field-adjudication.md \
+            reports/core-thesis/answerable-power/k0-role-neutral-wave-05.html \
+            reports/core-thesis/answerable-power/k0-role-neutral-wave-05.json \
+            reports/core-thesis/answerable-power/k0-wave05-field-adjudication.html \
+            reports/core-thesis/answerable-power/k0-wave05-field-adjudication.json \
+            reports/core-thesis/answerable-power/k0.html \
+            reports/core-thesis/answerable-power/k0.json \
+            test/k0-role-neutral-wave-05.test.js \
+            test/k0-wave05-field-adjudication.test.js \
+            tools/build-k0-epistemic-admissibility.mjs \
+            tools/build-k0-wave05-field-adjudication.mjs \
+            tools/validate-k0-epistemic-admissibility.mjs \
+            tools/validate-k0-role-neutral-wave-05.mjs \
+            tools/validate-k0-wave05-field-adjudication.mjs
+
+          python - <<'PY'
+          import subprocess
+          changed = set(subprocess.check_output(['git','diff','--cached','--name-only'], text=True).splitlines())
+          allowed = {
+            '.github/workflows/k0-wave05-field-adjudication.yml',
+            '.github/workflows/temporary-materialize-k0-wave05-field.yml',
+            'data/project/k0-epistemic-admissibility-release-manifest.json',
+            'data/project/k0-role-neutral-wave-05-release-manifest.json',
+            'data/project/k0-wave05-field-adjudication-release-manifest.json',
+            'data/research/corpus-coverage.json',
+            'data/research/k0-role-neutral-denominator.json',
+            'data/research/k0-wave05-field-adjudication.json',
+            'data/research/selection-adversarial-reviews.json',
+            'docs/milestones/m05-k0-wave05-field-adjudication.md',
+            'reports/core-thesis/answerable-power/k0-role-neutral-wave-05.html',
+            'reports/core-thesis/answerable-power/k0-role-neutral-wave-05.json',
+            'reports/core-thesis/answerable-power/k0-wave05-field-adjudication.html',
+            'reports/core-thesis/answerable-power/k0-wave05-field-adjudication.json',
+            'reports/core-thesis/answerable-power/k0.html',
+            'reports/core-thesis/answerable-power/k0.json',
+            'test/k0-role-neutral-wave-05.test.js',
+            'test/k0-wave05-field-adjudication.test.js',
+            'tools/build-k0-epistemic-admissibility.mjs',
+            'tools/build-k0-wave05-field-adjudication.mjs',
+            'tools/validate-k0-epistemic-admissibility.mjs',
+            'tools/validate-k0-role-neutral-wave-05.mjs',
+            'tools/validate-k0-wave05-field-adjudication.mjs',
+          }
+          allowed.update({f'.github/tmp/k0-wave05-field-json-part-{i:02d}.txt' for i in range(6)})
+          allowed.update({f'.github/tmp/k0-wave05-field-patch-part-{i:02d}.txt' for i in range(4)})
+          assert changed <= allowed, f'unexpected staged paths: {sorted(changed-allowed)}'
+          required = {
+            'data/research/k0-wave05-field-adjudication.json',
+            'data/project/k0-wave05-field-adjudication-release-manifest.json',
+            'reports/core-thesis/answerable-power/k0-wave05-field-adjudication.json',
+            'reports/core-thesis/answerable-power/k0-wave05-field-adjudication.html',
+            '.github/workflows/temporary-materialize-k0-wave05-field.yml',
+          }
+          assert required <= changed, f'missing required repair paths: {sorted(required-changed)}'
+          assert not any(path.startswith('build/') or path.startswith('dist/') for path in changed)
+          print(f'permanent repair denominator: {len(changed)} paths')
+          PY
+
+          git diff --cached --check
+          git commit -m 'Materialize K0 Wave 05 field adjudication'
+          git push origin HEAD:agent/k0-wave05-field-repair
