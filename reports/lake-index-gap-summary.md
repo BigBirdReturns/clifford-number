@@ -1,10 +1,10 @@
 # Lake index gap summary
 
-Source fingerprint: `bdfeecd002f455467adfc7583e04a96fa4c86109af1c9b5b2740a5f2c53360ba`
+Source fingerprint: `219537fe6dc826d7b7b1a730352ea343b9ff5f7500b5358511eb7dcfaa7a5dad`
 
 ## Finding
 
-The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1277 evidence-bearing files, 159 (12.5%) are not reachable from any detected index, 124 (9.7%) have no inbound repository reference, and 517 (40.5%) have no detected program owner.
+The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1280 evidence-bearing files, 142 (11.1%) are not reachable from any detected index, 106 (8.3%) have no inbound repository reference, and 520 (40.6%) have no detected program owner.
 
 ## By evidence role
 
@@ -14,8 +14,8 @@ The current Git tree is physically censused, but the evidence lake is not semant
 | intake | 141 | 120 | 19 | 107 |
 | documentation | 123 | 51 | 55 | 101 |
 | repository_root | 109 | 80 | 28 | 61 |
-| project_governance | 99 | 99 | 0 | 6 |
-| report_product | 98 | 65 | 18 | 61 |
+| project_governance | 102 | 101 | 0 | 9 |
+| report_product | 98 | 83 | 0 | 61 |
 | research_record | 48 | 48 | 0 | 31 |
 | case_source | 36 | 35 | 1 | 33 |
 | receipt_artifact | 32 | 31 | 1 | 32 |
@@ -30,8 +30,8 @@ The current Git tree is physically censused, but the evidence lake is not semant
 | build/estate-game-trails | 313 | 313 | 0 | 5 |
 | build/core-thesis | 185 | 185 | 0 | 0 |
 | data/intake | 141 | 120 | 19 | 107 |
-| data/project | 99 | 99 | 0 | 6 |
-| reports/core-thesis | 96 | 63 | 18 | 59 |
+| data/project | 102 | 101 | 0 | 9 |
+| reports/core-thesis | 96 | 81 | 0 | 59 |
 | docs/milestones | 65 | 19 | 37 | 49 |
 | data/research-tracks | 52 | 25 | 27 | 42 |
 | data/research | 48 | 48 | 0 | 31 |
@@ -50,8 +50,8 @@ The current Git tree is physically censused, but the evidence lake is not semant
 ```text
 parse errors:                   0
 undefined receipt references:   0
-projection IDs without source:  4351
-missing repository path tokens: 112
+projection IDs without source:  1942
+missing repository path tokens: 116
 ```
 
 ### P1 — exact orphan evidence
@@ -61,7 +61,6 @@ missing repository path tokens: 112
 | docs/milestones | 37 |
 | data/research-tracks | 27 |
 | data/intake | 19 |
-| reports/core-thesis | 18 |
 | docs/public-site-handoff | 4 |
 | cases/arcadia-field-autopsy | 1 |
 | contributions/inbox | 1 |
@@ -73,17 +72,18 @@ missing repository path tokens: 112
 | docs/corpus-selection.md | 1 |
 | docs/design-system.md | 1 |
 | docs/edge-schema.md | 1 |
+| docs/field-autopsy.md | 1 |
 
 ### P2 — unowned evidence
 
-517 evidence-bearing files have no detected program owner. Ownership here means a declared program ID or an inbound reference from a program-bearing file; it does not mean that every unowned file is erroneous.
+520 evidence-bearing files have no detected program owner. Ownership here means a declared program ID or an inbound reference from a program-bearing file; it does not mean that every unowned file is erroneous.
 
 ### P3 — index and publication gaps
 
 ```text
-not reachable from any detected index: 159
-not reachable from authoritative roots: 167
-not reachable from public roots: 1042
+not reachable from any detected index: 142
+not reachable from authoritative roots: 150
+not reachable from public roots: 1045
 case IDs absent from public catalog: 23
 ```
 
@@ -94,7 +94,6 @@ case IDs absent from public catalog: 23
 | #365 Build M-05 Sprint 08 A1 support lifecycle | 29 |
 | #382 Harden release integrity after top-to-bottom adversarial review | 22 |
 | #386 Make evidence-grounded judgments without a human-permission gate | 18 |
-| #388 Execute K0 role-neutral denominator Wave 06 | 11 |
 | #245 Close the seven M-04F vertical joins | 9 |
 | #362 Stage biological Omega control-surface research program | 9 |
 | #50 Stage synthetic-population research program | 8 |
@@ -105,6 +104,7 @@ case IDs absent from public catalog: 23
 | #211 Map every case and report membership across the estates | 2 |
 | #379 Run corrected WebsiteIQ landing-path audit | 2 |
 | #356 Reconcile the observed M-04G source ecology v2 orbit | 1 |
+| #390 Adjudicate K0 Wave 06 professional-judgment records | 1 |
 
 ### P5 — history and semantics
 

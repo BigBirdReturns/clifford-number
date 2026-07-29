@@ -1,0 +1,155 @@
+{
+  "schema_version": "lake-identifier-repair-wave-02-reconciliation@1",
+  "program_key": "CN-LAKE-ID-REPAIR-W02",
+  "source_fingerprint_sha256": "01b5d8b0c75c13eb9ac595abd287115abac7c4c290cf025415c2f8c00f1fa65b",
+  "input_manifest": [
+    {
+      "path": "build/lake-actions/identifier-repair-wave-02.json",
+      "bytes": 5759,
+      "sha256": "75e29e8fb7f0d8f13465e285ebd7e83d79430d38d3800efda1ddeb1c6bb993a1"
+    },
+    {
+      "path": "build/lake-index/id-gaps.jsonl",
+      "bytes": 10083588,
+      "sha256": "4a27ccba52709284209e69c56a7d4525795e262d2d8ab7729162e89c56e79548"
+    },
+    {
+      "path": "build/lake-index/objects.jsonl",
+      "bytes": 16159309,
+      "sha256": "9ae1f47429e3b39edfb8c3657fb2aa0463da5a3731f583c37fde40842b49422a"
+    },
+    {
+      "path": "build/lake-index/summary.json",
+      "bytes": 13133,
+      "sha256": "c7f0cca836e6cb2d433fbe314263b6593e8fe0d3387fa792945932010fb480d6"
+    },
+    {
+      "path": "data/project/lake-identifier-repair-wave-02-policy.json",
+      "bytes": 4593,
+      "sha256": "2870998a79e44f96f6d0703a427269e994e1fd28f39bff6304297c46222dd1f3"
+    },
+    {
+      "path": "data/project/lake-identifier-repair-wave-02.json",
+      "bytes": 1427,
+      "sha256": "fa906e738c0ed2b12a47d1962792484ea0b5d6e4bb4ff6d4699dd0d3452398d9"
+    },
+    {
+      "path": "data/project/lake-identifier-source-registry-wave-02.jsonl",
+      "bytes": 2430970,
+      "sha256": "4fef5260750f2ca5a852c6b045586823e6999f94c55af6a99a6d067ce68ba7a5"
+    }
+  ],
+  "before": {
+    "total_identifier_gap_rows": 20124,
+    "projection_without_source_rows": 3953,
+    "targeted_explicit_projection_rows": 2011,
+    "targeted_by_identifier_key": {
+      "claim_id": 1106,
+      "event_id": 224,
+      "object_id": 408,
+      "trail_id": 273
+    },
+    "prior_bare_local_projection_rows": 398,
+    "local_identifier_values_observed": 1131,
+    "local_identifier_occurrences_observed": 7859
+  },
+  "after": {
+    "global_machine_ids": 11646,
+    "local_identifier_values_observed": 1131,
+    "local_identifier_occurrences_observed": 7859,
+    "local_identifier_objects_in_global_index": 0,
+    "local_identifier_rows_in_global_gap_queue": 0,
+    "projection_without_source_rows": 1942,
+    "targeted_explicit_projection_rows_remaining": 0,
+    "registered_rows_with_source_occurrence": 2011,
+    "registered_rows_indexed": 2011,
+    "registered_object_rows_observed": 2011,
+    "native_source_migrations_still_required": 612,
+    "unresolved_registrations": 164,
+    "divergent_identifier_projections": 1748,
+    "source_ids_without_projection": 4543,
+    "unindexed_machine_ids": 8366
+  },
+  "deltas": {
+    "projection_without_source_rows": -2011,
+    "targeted_explicit_projection_rows": -2011,
+    "registered_rows_closed": 2011,
+    "prior_bare_local_projection_rows_removed": 398
+  },
+  "registration_state": {
+    "rows": 2011,
+    "by_identifier_key": {
+      "claim_id": 1106,
+      "event_id": 224,
+      "object_id": 408,
+      "trail_id": 273
+    },
+    "by_rule": {
+      "core-thesis-derived-object": 408,
+      "estate-game-trail-derived-identifier": 273,
+      "fallback-unresolved-registration": 164,
+      "legacy-master-claim-projection": 718,
+      "legacy-uk-ai-case-projection": 448
+    },
+    "by_status": {
+      "derived_identifier_with_declared_source_lineage": 718,
+      "generated_identifier_with_declared_builder_lineage": 681,
+      "legacy_projection_identifier_registered": 448,
+      "unresolved_projection_identifier_registered": 164
+    },
+    "native_source_migrations_still_required": 612,
+    "unresolved_registrations": 164
+  },
+  "decisions": [
+    {
+      "decision_key": "W02-RECONCILE-NAMESPACE",
+      "judgment": "bare_local_ids_are_excluded_from_global_identifier_and_gap_joins",
+      "action": "retain_local_occurrence_telemetry_without_global_identity_semantics",
+      "evidence_count": 7859,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_key": "W02-RECONCILE-REGISTRATIONS",
+      "judgment": "all_targeted_explicit_projection_identifiers_have_source_registrations",
+      "action": "continue_with_native_source_migration_debt_and_the_next_identifier_family",
+      "evidence_count": 2011,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_key": "W02-RECONCILE-NATIVE-DEBT",
+      "judgment": "native_source_migration_debt_remains_explicit_after_identifier_registration",
+      "action": "migrate_legacy_native_case_sources_without_revoking_the_current_identifier_registrations",
+      "evidence_count": 612,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    }
+  ],
+  "completion": {
+    "bare_local_id_removed_from_global_join_semantics": true,
+    "all_targeted_explicit_projection_rows_registered": true,
+    "every_registration_has_source_occurrence": true,
+    "every_registration_is_indexed": true,
+    "native_source_migrations_complete": false,
+    "unresolved_registrations_remaining": 164,
+    "post_execution_reconciliation_complete": true,
+    "semantic_lake_complete": false,
+    "evidence_truth_determined": false,
+    "decisions_requiring_human_permission": 0
+  },
+  "boundaries": {
+    "source_registration_proves_evidence_truth": false,
+    "source_registration_resolves_identity": false,
+    "same_identifier_string_proves_same_entity": false,
+    "legacy_projection_registration_completes_native_case_migration": false,
+    "generated_identifier_registration_is_independent_evidence": false,
+    "graph_effect": "none"
+  }
+}

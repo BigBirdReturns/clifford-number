@@ -5,14 +5,14 @@ This report partitions the current tracked lake census into declared semantic ba
 ## Current assignment
 
 ```text
-source rows:                         1876
+source rows:                         1884
 semantic basins:                    37
-classified without default:         1876
+classified without default:         1884
 unclassified paths:                 0
-evidence-bearing files:             1277
-evidence files with registry owner: 1277
-evidence files previously unowned:  1277
-exact orphan evidence files:        159
+evidence-bearing files:             1280
+evidence files with registry owner: 1280
+evidence files previously unowned:  1280
+exact orphan evidence files:        142
 gap rows:                           80
 ```
 
@@ -23,8 +23,8 @@ gap rows:                           80
 | estate-game-trail-products | generated_projection | 313 | 313 | 313 | 0 | 313 | yes |
 | core-thesis-build-products | generated_projection | 185 | 185 | 185 | 0 | 185 | yes |
 | intake-custody | intake_only | 142 | 142 | 120 | 22 | 142 | yes |
-| project-governance | project_governance | 99 | 99 | 99 | 0 | 99 | yes |
-| core-thesis-report-products | report_projection | 96 | 96 | 63 | 33 | 96 | yes |
+| project-governance | project_governance | 102 | 102 | 101 | 1 | 102 | yes |
+| core-thesis-report-products | report_projection | 96 | 96 | 81 | 15 | 96 | yes |
 | milestone-governance | governance_history | 65 | 65 | 19 | 46 | 65 | yes |
 | documentation | documentation | 58 | 58 | 32 | 26 | 58 | yes |
 | research-tracks | research_program_source | 52 | 52 | 25 | 27 | 52 | yes |
@@ -47,9 +47,9 @@ gap rows:                           80
 | gametrail-public-products | public_projection | 2 | 2 | 2 | 0 | 2 | yes |
 | contribution-pipeline | contribution_source_or_template | 1 | 1 | 1 | 0 | 1 | yes |
 | general-report-products | report_projection | 1 | 1 | 1 | 0 | 1 | yes |
-| toolchain | tooling | 266 | 0 | 205 | 21 | 266 | yes |
-| regressions | test_fixture | 148 | 0 | 111 | 6 | 148 | yes |
-| automation | automation | 58 | 0 | 28 | 27 | 58 | yes |
+| toolchain | tooling | 269 | 0 | 205 | 21 | 269 | yes |
+| regressions | test_fixture | 149 | 0 | 111 | 6 | 149 | yes |
+| automation | automation | 59 | 0 | 28 | 28 | 59 | yes |
 | public-runtime | public_runtime | 52 | 0 | 41 | 10 | 52 | yes |
 | temporary-transport | temporary_transport | 17 | 0 | 1 | 16 | 17 | yes |
 | comprehension-protocol | method_and_fixture | 8 | 0 | 8 | 0 | 8 | yes |
