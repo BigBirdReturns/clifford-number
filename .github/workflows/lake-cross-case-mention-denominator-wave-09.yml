@@ -170,6 +170,8 @@ jobs:
           node test/lake-cross-case-mention-denominator-wave-09.test.js
       - name: Prove deterministic post-mention products
         if: steps.mode.outputs.validate == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
@@ -189,6 +191,11 @@ jobs:
             reports/lake-basin-index.md \
             reports/lake-cross-case-mention-denominator-wave-09.md \
             reports/lake-cross-case-mention-denominator-wave-09-reconciliation.md >> /tmp/lake-cross-case-wave-09-post.sha256
+          npm run release:check
+          git add -A
+          git restore --worktree .
+          git clean -fd
+          node tools/build-lake-open-pr-shadow.mjs
           node tools/build-lake-cross-case-mention-denominator-wave-09.mjs
           node tools/build-lake-index.mjs
           node tools/stabilize-lake-index.mjs
@@ -202,7 +209,6 @@ jobs:
           node tools/validate-lake-basin-index.mjs
           node tools/validate-lake-cross-case-mention-denominator-wave-09.mjs
           node test/lake-cross-case-mention-denominator-wave-09.test.js
-          npm run release:check
           git diff --check
       - name: Restore the non-materializing validation surface
         if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.materialize != 'true'
@@ -215,13 +221,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -f .github/tmp/lake-cross-case-mention-denominator-wave-09-trigger.json
+          rm -f \
+            .github/tmp/lake-cross-case-mention-denominator-wave-09-trigger.json \
+            .github/tmp/lake-cross-case-mention-denominator-wave-09-finalize-trigger.json \
+            .github/workflows/lake-cross-case-mention-denominator-wave-09-finalize.yml
           python - <<'PY'
           import re
           import subprocess
 
           required = {
               '.github/tmp/lake-cross-case-mention-denominator-wave-09-trigger.json',
+              '.github/tmp/lake-cross-case-mention-denominator-wave-09-finalize-trigger.json',
+              '.github/workflows/lake-cross-case-mention-denominator-wave-09-finalize.yml',
               'BUILD-INSTRUCTIONS.md',
               'README.md',
               'package.json',
