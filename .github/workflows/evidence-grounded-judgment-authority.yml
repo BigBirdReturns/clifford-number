@@ -38,14 +38,27 @@ jobs:
         with:
           ref: agent/evidence-grounded-judgment-authority
           fetch-depth: 0
+      - name: Detect a live materialization request
+        id: request
+        shell: bash
+        run: |
+          if test -f .github/tmp/evidence-grounded-judgment-trigger.json; then
+            echo 'present=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'present=false' >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-node@v4
+        if: steps.request.outputs.present == 'true'
         with:
           node-version: '24'
       - name: Run the complete repository release gate
+        if: steps.request.outputs.present == 'true'
         run: npm run release:check
       - name: Restore the exact committed branch before focused reconstruction
+        if: steps.request.outputs.present == 'true'
         run: git restore --staged --worktree .
       - name: Build and validate evidence-grounded judgments
+        if: steps.request.outputs.present == 'true'
         run: |
           node tools/build-evidence-grounded-judgments.mjs
           node tools/augment-evidence-grounded-judgments-with-lake.mjs
@@ -53,6 +66,7 @@ jobs:
           node tools/validate-evidence-grounded-lake-judgments.mjs
           node test/evidence-grounded-judgments.test.js
       - name: Prove deterministic judgment products
+        if: steps.request.outputs.present == 'true'
         run: |
           sha256sum \
             build/evidence-grounded-judgments.json \
@@ -66,7 +80,7 @@ jobs:
           sha256sum --check --strict /tmp/judgments-first.sha256
           git diff --check
       - name: Enforce exact generated change set
-        if: github.event_name == 'push'
+        if: steps.request.outputs.present == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -94,7 +108,7 @@ jobs:
           }
           PY
       - name: Commit the judgment frontier
-        if: github.event_name == 'push'
+        if: steps.request.outputs.present == 'true'
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
