@@ -1,0 +1,66 @@
+{
+  "schema_version": "lake-axm-lineage-wave-04-policy@1",
+  "program_key": "CN-LAKE-AXM-LINEAGE-W04",
+  "as_of": "2026-07-29",
+  "purpose": "Close the remaining 164 Wave 02 native-source debts by proving each provisional AXM participates_in claim is a deterministic projection of canonical participation rows, without claiming external AXM serialization reconciliation or authorizing cross-case joins.",
+  "input_paths": [
+    "data/project/lake-identifier-source-registry-wave-02.jsonl",
+    "data/project/lake-identifier-source-supersessions-wave-03.jsonl",
+    "build/lake-actions/native-source-migration-wave-03-reconciliation.json",
+    "build/axm-identity.json",
+    "data/ledger/participation.jsonl",
+    "data/ledger/actors.jsonl",
+    "data/ledger/organizations.jsonl",
+    "data/ledger/surfaces.jsonl",
+    "cases.json",
+    "tools/lib/axm-identity.mjs",
+    "BUILD-INSTRUCTIONS.md"
+  ],
+  "target_prior_rule": "fallback-unresolved-registration",
+  "target_projection_path": "build/axm-identity.json",
+  "target_identifier_key": "claim_id",
+  "expected": {
+    "target_registrations": 164,
+    "axm_participates_in_claims": 164,
+    "remaining_native_source_debt_before": 164,
+    "remaining_native_source_debt_after": 0
+  },
+  "supersession_ledger_path": "data/project/lake-identifier-source-supersessions-wave-04.jsonl",
+  "migration_receipt_path": "data/project/lake-axm-lineage-wave-04.json",
+  "plan_path": "build/lake-actions/axm-lineage-wave-04.json",
+  "reconciliation_path": "build/lake-actions/axm-lineage-wave-04-reconciliation.json",
+  "report_path": "reports/lake-axm-lineage-wave-04.md",
+  "reconciliation_report_path": "reports/lake-axm-lineage-wave-04-reconciliation.md",
+  "native_source_paths": [
+    "data/ledger/participation.jsonl",
+    "data/ledger/actors.jsonl",
+    "data/ledger/organizations.jsonl",
+    "data/ledger/surfaces.jsonl",
+    "cases.json"
+  ],
+  "builder_paths": [
+    "tools/lib/axm-identity.mjs",
+    "tools/lib/axm-id.mjs",
+    "tools/build-hop-graph.mjs"
+  ],
+  "decision_law": {
+    "review_required_to_decide": false,
+    "missing_reviewer_blocks_lineage_registration": false,
+    "every_claim_must_recompute_from_current_canonical_rows": true,
+    "native_source_migration_required_after_complete_lineage": false,
+    "external_axm_reconciliation_required_for_cross_system_use": true,
+    "cross_case_join_authorized": false,
+    "prior_registration_rows_may_be_deleted": false,
+    "correction_mode": "append_preserving_supersession"
+  },
+  "boundaries": {
+    "participation_lineage_proves_evidence_truth": false,
+    "participation_lineage_resolves_identity": false,
+    "provisional_axm_id_is_externally_reconciled": false,
+    "cross_case_join_authorized": false,
+    "participates_in_claim_is_coordination_or_causation": false,
+    "dense_surface_creates_pairwise_hop": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}
