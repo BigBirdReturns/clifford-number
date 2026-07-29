@@ -1,7 +1,17 @@
 #!/usr/bin/env node
+import crypto from 'node:crypto';
 import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
 
 const changedPaths = new Set();
+
+function replaceExact(file, before, after) {
+  const source = fs.readFileSync(file, 'utf8');
+  const occurrences = source.split(before).length - 1;
+  if (occurrences !== 1) throw new Error(`${file}: expected one Wave 07 source target, found ${occurrences}`);
+  fs.writeFileSync(file, source.replace(before, after));
+  changedPaths.add(file);
+}
 
 function replaceSection(file, startMarker, endMarker, replacement) {
   const source = fs.readFileSync(file, 'utf8');
@@ -12,6 +22,32 @@ function replaceSection(file, startMarker, endMarker, replacement) {
   fs.writeFileSync(file, `${source.slice(0, start)}${replacement}${source.slice(end)}`);
   changedPaths.add(file);
 }
+
+function run(command, args) {
+  const result = spawnSync(command, args, { stdio: 'inherit' });
+  if (result.status !== 0) throw new Error(`${command} ${args.join(' ')} failed with status ${result.status}`);
+}
+
+function sha256File(file) {
+  return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+}
+
+replaceExact(
+  'tools/lib/axm-cross-case-join.mjs',
+  `    hop_basis_candidate: claimIdentityEqual && temporalOverlap,
+    cross_case_hop_creation_authorized: false,
+    cross_case_graph_join_authorized: false,`,
+  `    hop_basis_candidate: claimIdentityEqual && temporalOverlap,
+    automatic_cross_case_join_authorized: false,
+    cross_case_graph_join_authorized: false,
+    cross_case_hop_creation_authorized: false,`
+);
+
+replaceExact(
+  'tools/validate-lake-axm-cross-case-acceptance-wave-07.mjs',
+  "    if (!object.occurrences.some(item => item.path === policy.plan_path && item.generated === true)) fail(`${row.decision_id}: plan occurrence missing`);",
+  "    if (!object.occurrences.some(item => item.path === policy.decision_projection_path && item.generated === true)) fail(`${row.decision_id}: generated decision projection occurrence missing`);"
+);
 
 replaceSection(
   'BUILD-INSTRUCTIONS.md',
@@ -105,10 +141,26 @@ lakePolicy.boundaries.axm_automatic_same_label_join_authorized = false;
 fs.writeFileSync(lakePolicyPath, `${JSON.stringify(lakePolicy, null, 2)}\n`);
 changedPaths.add(lakePolicyPath);
 
+const wavePolicy = JSON.parse(fs.readFileSync('data/project/lake-axm-cross-case-acceptance-wave-07-policy.json', 'utf8'));
+const deterministicPaths = [
+  wavePolicy.decision_registry_path,
+  wavePolicy.decision_projection_path,
+  wavePolicy.acceptance_receipt_path,
+  wavePolicy.plan_path,
+  wavePolicy.report_path
+];
+run(process.execPath, ['tools/build-lake-axm-cross-case-acceptance-wave-07.mjs']);
+const firstDigests = new Map(deterministicPaths.map(file => [file, sha256File(file)]));
+run(process.execPath, ['tools/build-lake-axm-cross-case-acceptance-wave-07.mjs']);
+for (const file of deterministicPaths) {
+  const current = sha256File(file);
+  if (current !== firstDigests.get(file)) throw new Error(`${file}: Wave 07 post-repair rebuild is not deterministic`);
+}
+
 changedPaths.add('.github/tmp/lake-axm-cross-case-acceptance-wave-07-source-paths.json');
 fs.writeFileSync('.github/tmp/lake-axm-cross-case-acceptance-wave-07-source-paths.json', `${JSON.stringify({
   schema_version: 'lake-axm-cross-case-acceptance-wave-07-source-paths@1',
   changed_paths: [...changedPaths].sort()
 }, null, 2)}\n`);
 
-console.log(`Wave 07 documentation and lake policy carrier applied: ${changedPaths.size} paths`);
+console.log(`Wave 07 decision-boundary, documentation, and lake-policy carrier applied: ${changedPaths.size} source paths`);
