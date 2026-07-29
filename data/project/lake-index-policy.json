@@ -51,6 +51,8 @@
     "data/canonical/consumption-contracts.json",
     "data/canonical/corpus-selection.json",
     "data/project/lake-basin-execution-wave-01.json",
+    "data/project/lake-identifier-repair-wave-02.json",
+    "data/project/lake-identifier-source-registry-wave-02.jsonl",
     "data/project/lake-index-policy.json",
     "data/project/lake-wave-01-path-decisions.jsonl",
     "data/research/corpus-coverage.json",
@@ -84,6 +86,9 @@
     "waterline",
     "inventory",
     "census"
+  ],
+  "local_identifier_keys": [
+    "id"
   ],
   "status_keys": [
     "status",
@@ -127,15 +132,20 @@
     "build/lake-index/basin-gaps.jsonl",
     "build/lake-index/basin-manifest.json",
     "build/lake-actions/post-execution-reconciliation.json",
+    "build/lake-actions/identifier-repair-wave-02.json",
+    "build/lake-actions/identifier-repair-wave-02-reconciliation.json",
     "reports/lake-index-census.md",
     "reports/lake-index-gap-summary.md",
     "reports/lake-basin-index.md",
     "reports/lake-basin-execution-wave-01-reconciliation.md",
+    "reports/lake-identifier-repair-wave-02.md",
+    "reports/lake-identifier-repair-wave-02-reconciliation.md",
     "data/project/lake-open-pr-shadow.json",
     ".github/tmp/lake-index-trigger.json",
     ".github/tmp/lake-basin-execution-wave-01-trigger.json",
     ".github/tmp/apply-lake-basin-wave-01.mjs",
-    ".github/tmp/lake-wave-01-source-paths.json"
+    ".github/tmp/lake-wave-01-source-paths.json",
+    ".github/tmp/lake-identifier-repair-wave-02-trigger.json"
   ],
   "boundaries": {
     "tracked_path_census_proves_semantic_completeness": false,
@@ -143,6 +153,8 @@
     "public_discoverability_proves_publication_clearance": false,
     "unreferenced_file_proves_irrelevance": false,
     "repeated_identifier_proves_same_entity": false,
+    "bare_local_id_is_globally_joinable": false,
+    "registered_identifier_proves_source_truth": false,
     "open_pull_request_path_proves_merged_corpus": false,
     "historical_git_object_indexed": false
   }
