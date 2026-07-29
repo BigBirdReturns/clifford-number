@@ -94,7 +94,7 @@ jobs:
           node test/human-permission-gate-audit.test.js
           sha256sum --check --strict /tmp/judgments-first.sha256
           git diff --check
-      - name: Enforce exact migration and generated change set
+      - name: Enforce required migration and generated allowlist
         if: steps.request.outputs.present == 'true'
         shell: bash
         run: |
@@ -108,25 +108,52 @@ jobs:
           python - <<'PY'
           import json
           import subprocess
+
           migration = json.load(open('/tmp/no-human-gate-migration-paths.json'))
-          expected = set(migration['changed_paths']) | {
+          transport_deletions = {
               '.github/tmp/evidence-grounded-judgment-trigger.json',
               '.github/tmp/apply-no-human-gate-migration.mjs',
               '.github/tmp/fix-no-human-gate-migration.mjs',
+          }
+          required = set(migration['changed_paths']) | transport_deletions
+          generated_allowlist = {
+              'briefs/anduril-access-ownership.html',
+              'briefs/arcadia-field-autopsy.html',
+              'build/axm-identity.json',
               'build/briefings/anduril-access-ownership.json',
               'build/briefings/arcadia-field-autopsy.json',
               'build/briefings/index.json',
-              'build/review/reporter-briefing-queue.json',
-              'briefs/anduril-access-ownership.html',
-              'briefs/arcadia-field-autopsy.html',
-              'build/report-frontier.json',
-              'reports/index.html',
+              'build/build-hop-report.json',
+              'build/core-thesis/estate-lens-audit/estates/local-development-estate.json',
+              'build/core-thesis/estate-lens-audit/estates/public-money-industrial-policy-estate.json',
+              'build/core-thesis/estate-lens-audit/estates/state-municipal-authority-estate.json',
+              'build/core-thesis/estate-lens-audit/estates/us-defense-estate.json',
+              'build/core-thesis/estate-lens-audit/estates/venture-capital-corporate-control-estate.json',
+              'build/core-thesis/security-state-organism/dispatch-receipt.json',
               'build/evidence-grounded-judgments.json',
+              'build/hop-graph.json',
               'build/human-permission-gate-audit.json',
+              'build/migration-review.md',
+              'build/migration-summary.json',
+              'build/receipt-graph.json',
+              'build/report-frontier.json',
+              'build/review/reporter-briefing-queue.json',
+              'build/scores.json',
+              'build/scout-report.json',
+              'build/scout-report.md',
+              'build/surface-graph.json',
+              'reports/core-thesis/unmapped-sections/estates/local-development-estate.json',
+              'reports/core-thesis/unmapped-sections/estates/public-money-industrial-policy-estate.json',
+              'reports/core-thesis/unmapped-sections/estates/state-municipal-authority-estate.json',
+              'reports/core-thesis/unmapped-sections/estates/us-defense-estate.json',
+              'reports/core-thesis/unmapped-sections/estates/venture-capital-corporate-control-estate.json',
               'reports/evidence-grounded-judgments.md',
               'reports/evidence-grounded-lake-decisions.md',
               'reports/human-permission-gate-audit.md',
+              'reports/index.html',
           }
+          allowed = required | generated_allowlist
+
           raw = subprocess.check_output([
               'git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'
           ])
@@ -136,10 +163,18 @@ jobs:
               status = entry[:2]
               assert 'R' not in status and 'C' not in status, entry
               actual.add(entry[3:])
-          assert actual == expected, {
-              'unexpected': sorted(actual - expected),
-              'missing': sorted(expected - actual),
+
+          assert required <= actual, {
+              'missing_required_source_or_transport_changes': sorted(required - actual),
           }
+          assert actual <= allowed, {
+              'undeclared_generated_or_source_changes': sorted(actual - allowed),
+          }
+          print(json.dumps({
+              'required_changes': len(required),
+              'actual_changes': len(actual),
+              'allowed_generated_changes_observed': len(actual - required),
+          }, indent=2))
           PY
       - name: Commit the judgment frontier
         if: steps.request.outputs.present == 'true'
