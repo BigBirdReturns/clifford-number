@@ -1,5 +1,5 @@
 name: Temporary materialize K0 Wave 05 field adjudication
-# Repair pass: reuse the validated mainline materializer, but stage only the permanent allowlist.
+# Repair pass: assemble the previously validated source fragments, then stage only the permanent allowlist.
 
 on:
   pull_request:
@@ -30,28 +30,24 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Recover and execute the already-validated source materializer
+      - name: Assemble and verify the already-validated source files
         run: |
           set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          import runpy
-          import subprocess
-          import textwrap
+          mkdir -p data/research
+          cat .github/tmp/k0-wave05-field-json-part-*.txt > data/research/k0-wave05-field-adjudication.json
+          cat .github/tmp/k0-wave05-field-patch-part-*.txt > /tmp/k0-wave05-field-patch.py
 
-          text = subprocess.check_output(
-              ['git', 'show', 'origin/main:.github/workflows/temporary-materialize-k0-wave05-field.yml'],
-              text=True,
-          )
-          marker = "cat > /tmp/materialize-k0-wave05-field.py <<'PY'"
-          lines = text.splitlines()
-          start = next(i for i, line in enumerate(lines) if marker in line) + 1
-          end = next(i for i in range(start, len(lines)) if lines[i].strip() == 'PY')
-          script = textwrap.dedent('\n'.join(lines[start:end])) + '\n'
-          target = Path('/tmp/materialize-k0-wave05-field.py')
-          target.write_text(script)
-          runpy.run_path(str(target), run_name='__main__')
-          PY
+          test "$(sha256sum data/research/k0-wave05-field-adjudication.json | awk '{print $1}')" = "2caadb342246b9f0720814180ee1d023c7cf5928474749171d6ea0b228f9e0b2"
+          test "$(sha256sum /tmp/k0-wave05-field-patch.py | awk '{print $1}')" = "5496e5e7eeb6d1fea22dc8fa77a5da6cc5cf8c485c9f238fac7d71811fd457a8"
+          test "$(sha256sum .github/workflows/k0-wave05-field-adjudication.yml | awk '{print $1}')" = "8d9e498662ae9e1feea1db800ccc4e6bccc4cc482516a27deaee9eeda6f90316"
+          test "$(sha256sum docs/milestones/m05-k0-wave05-field-adjudication.md | awk '{print $1}')" = "28595f8b2f591989e0901821a3be89bdf5c576b5aa8dd22ab1bcd0440a5b9db9"
+          test "$(sha256sum tools/build-k0-wave05-field-adjudication.mjs | awk '{print $1}')" = "fd226ab614ef05ae74b501ddcb9831ad03f1c3603fd95c17bad5e572546ac481"
+          test "$(sha256sum tools/validate-k0-wave05-field-adjudication.mjs | awk '{print $1}')" = "566caedc4c0f99e4105f3f82b57b891b4b64fa93bac33bcc546ce14687bdb534"
+          test "$(sha256sum test/k0-wave05-field-adjudication.test.js | awk '{print $1}')" = "08b61a4b87f08c807020598ac44423b9a396a9142c6e5032cfd751e3e29eca5a"
+
+          python -m json.tool data/research/k0-wave05-field-adjudication.json >/dev/null
+          python -m py_compile /tmp/k0-wave05-field-patch.py
+          python /tmp/k0-wave05-field-patch.py
 
       - name: Validate focused and aggregate products
         run: |
