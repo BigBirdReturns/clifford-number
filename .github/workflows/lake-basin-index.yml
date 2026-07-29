@@ -1,0 +1,65 @@
+name: Evidence lake basin index
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/lake-basin-registry.json'
+      - 'tools/build-lake-basin-index.mjs'
+      - 'tools/validate-lake-basin-index.mjs'
+      - 'test/lake-basin-index.test.js'
+      - 'build/lake-index/basins.json'
+      - 'build/lake-index/basin-membership.jsonl'
+      - 'build/lake-index/basin-gaps.jsonl'
+      - 'build/lake-index/basin-manifest.json'
+      - 'reports/lake-basin-index.md'
+      - '.github/workflows/lake-basin-index.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/lake-basin-registry.json'
+      - 'tools/build-lake-basin-index.mjs'
+      - 'tools/validate-lake-basin-index.mjs'
+      - 'test/lake-basin-index.test.js'
+      - 'build/lake-index/basins.json'
+      - 'build/lake-index/basin-membership.jsonl'
+      - 'build/lake-index/basin-gaps.jsonl'
+      - 'build/lake-index/basin-manifest.json'
+      - 'reports/lake-basin-index.md'
+      - '.github/workflows/lake-basin-index.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build and validate semantic lake basins
+        run: |
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-basin-index.mjs
+          node test/lake-basin-index.test.js
+      - name: Prove deterministic basin products
+        run: |
+          mkdir -p /tmp/lake-basin-proof/build/lake-index /tmp/lake-basin-proof/reports
+          cp build/lake-index/basins.json /tmp/lake-basin-proof/build/lake-index/
+          cp build/lake-index/basin-membership.jsonl /tmp/lake-basin-proof/build/lake-index/
+          cp build/lake-index/basin-gaps.jsonl /tmp/lake-basin-proof/build/lake-index/
+          cp build/lake-index/basin-manifest.json /tmp/lake-basin-proof/build/lake-index/
+          cp reports/lake-basin-index.md /tmp/lake-basin-proof/reports/
+          node tools/build-lake-basin-index.mjs
+          cmp build/lake-index/basins.json /tmp/lake-basin-proof/build/lake-index/basins.json
+          cmp build/lake-index/basin-membership.jsonl /tmp/lake-basin-proof/build/lake-index/basin-membership.jsonl
+          cmp build/lake-index/basin-gaps.jsonl /tmp/lake-basin-proof/build/lake-index/basin-gaps.jsonl
+          cmp build/lake-index/basin-manifest.json /tmp/lake-basin-proof/build/lake-index/basin-manifest.json
+          cmp reports/lake-basin-index.md /tmp/lake-basin-proof/reports/lake-basin-index.md
+          node tools/validate-lake-basin-index.mjs
+          node test/lake-basin-index.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
