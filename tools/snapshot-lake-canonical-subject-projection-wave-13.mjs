@@ -50,6 +50,8 @@ const VOLATILE_LAKE_KEYS = new Set([
   'file_sha256',
   'content_sha256',
   'source_fingerprint_sha256',
+  'object_hash',
+  'occurrence_hash',
   'bytes',
   'file_bytes',
   'size',
@@ -68,7 +70,10 @@ function normalizeLakeMetadata(value) {
   if (!value || typeof value !== 'object') return value;
   const out = {};
   for (const [key, item] of Object.entries(value)) {
-    if (VOLATILE_LAKE_KEYS.has(key) || /(?:^|_)sha256$/i.test(key) || /(?:^|_)bytes$/i.test(key)) continue;
+    if (VOLATILE_LAKE_KEYS.has(key)
+      || /(?:^|_)sha256$/i.test(key)
+      || /(?:^|_)bytes$/i.test(key)
+      || /(?:^|_)(?:hash|digest)$/i.test(key)) continue;
     out[key] = normalizeLakeMetadata(item);
   }
   return out;
@@ -126,7 +131,7 @@ const relevantLakeObjects = lakeObjects
 
 const snapshot = {
   schema_version: 'canonical-subject-projection-wave-13-semantic-snapshot@1',
-  purpose: 'Compare semantic projection state across deterministic replay while excluding wall-clock timestamps and byte hashes that are expected to change when timestamp-bearing generated wrappers are rebuilt.',
+  purpose: 'Compare semantic projection state across deterministic replay while excluding wall-clock timestamps and byte or object hashes that are expected to change when timestamp-bearing generated wrappers are rebuilt.',
   cases,
   public_catalog: publicCatalog,
   surface_graph: omitTopLevel(surfaceGraph, ['generated']),
