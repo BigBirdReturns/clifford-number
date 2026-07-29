@@ -22,6 +22,23 @@ assert.equal(compiled.relations.find(relation => relation.relation_id === 'rel-c
 assert.equal(compiled.beacons[0].evidence_coverage.ratio, 0);
 assert.match(compiled.beacons[0].prohibited_interpretation, /not a guilt/i);
 assert.ok(compiled.claims.every(claim => claim.receipts.length === claim.receipt_ids.length));
+assert.equal(compiled.counts.subject_references, compiled.counts.claims);
+assert.equal(compiled.counts.resolved_subject_references + compiled.counts.unresolved_subject_references, compiled.counts.subject_references);
+assert.equal(compiled.subject_identity_projection.scope, 'claim_subject_only');
+assert.equal(compiled.subject_identity_projection.boundaries.subject_id_preserved, true);
+assert.equal(compiled.subject_identity_projection.boundaries.claim_text_mutated, false);
+assert.equal(compiled.subject_identity_projection.boundaries.graph_effect, 'none');
+assert.ok(compiled.claims.every(claim => claim.subject_identity.local_subject_id === claim.subject_id));
+assert.ok(compiled.claims.every(claim => claim.subject_identity.source_records_mutated === false && claim.subject_identity.graph_effect === 'none'));
+
+const dataBlanket = compiled.claims.find(claim => claim.claim_id === 'clm-fit-data-blanket');
+assert.equal(dataBlanket.subject_id, 'org-data-blanket');
+assert.equal(dataBlanket.subject_identity.canonical_subject_id, 'data-blanket');
+assert.equal(dataBlanket.subject_identity.canonical_kind, 'organization');
+assert.equal(dataBlanket.subject_identity.resolution_status, 'resolved_local_to_canonical');
+const unresolved = compiled.claims.find(claim => claim.claim_id === 'clm-submissions-133');
+assert.equal(unresolved.subject_identity.resolution_status, 'local_only_unresolved');
+assert.equal(unresolved.subject_identity.canonical_subject_id, null);
 
 const bad = structuredClone(source);
 bad.claims[0].receipt_ids = [];
@@ -45,6 +62,12 @@ assert.ok(graphActiveTrailErrors.some(error => /candidate_only/.test(error)));
 compileAllCases();
 const artifact = JSON.parse(fs.readFileSync('build/cases/field-autopsy-03.json', 'utf8'));
 assert.deepEqual(artifact, compiled, 'compiled case must be deterministic');
+const caseIndex = JSON.parse(fs.readFileSync('build/cases/index.json', 'utf8'));
+assert.equal(caseIndex.subject_identity_projection.graph_effect, 'none');
+assert.equal(caseIndex.subject_identity_projection.counts.subject_references,
+  caseIndex.cases.reduce((total, item) => total + item.counts.subject_references, 0));
+assert.equal(caseIndex.subject_identity_projection.counts.resolved_subject_references,
+  caseIndex.cases.reduce((total, item) => total + item.counts.resolved_subject_references, 0));
 const arcadiaArtifact = JSON.parse(fs.readFileSync('build/cases/arcadia-field-autopsy.json', 'utf8'));
 assert.equal(arcadiaArtifact.presentation, 'reporter_briefing');
 assert.equal(arcadiaArtifact.briefing.schema_version, 'reporter-briefing@2');
@@ -57,6 +80,9 @@ assert.ok(arcadiaArtifact.claims.find(claim => claim.claim_id === 'clm-growth-ma
 assert.equal(arcadiaArtifact.counts.trails, 10);
 assert.equal(arcadiaArtifact.trails.length, 10);
 assert.ok(arcadiaArtifact.trails.every(trail => trail.graph_effect === 'none' && trail.promotes_to === 'candidate_only'));
+const daia = arcadiaArtifact.claims.find(claim => claim.claim_id === 'clm-daia-assessment-bookends');
+assert.equal(daia.subject_id, 'org-daia');
+assert.equal(daia.subject_identity.canonical_subject_id, 'arcadia-improvement-association');
 
 /* Reporter briefings are a case presentation contract, so the standard case test
  * regenerates and verifies them instead of relying only on a path-filtered workflow. */
