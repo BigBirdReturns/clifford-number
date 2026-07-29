@@ -1,6 +1,6 @@
 # Lake index census
 
-Source fingerprint: `b178819c1100628cf6cd6cc73e5fd384aee4ada28b4229308409d08d0cd2e429`
+Source fingerprint: `fd6de200bad29e0d53f44b747cc4ef59acaf1ebde0429352a2d3fbfb9da95fd7`
 
 ## The six waterlines
 
@@ -21,9 +21,12 @@ unindexed machine-addressable IDs:      10031
 divergent identifier projections:       3366
 source IDs without a projection:         4854
 projection IDs without a source object:  3686
-receipt IDs:                             382
-undefined receipt references:            41
-unused receipt definitions:              50
+receipt IDs:                             350
+undefined receipt references:            0
+unused receipt definitions:              49
+receipt locator tokens:                   11
+receipt content-hash tokens:              30
+inline receipt-use IDs:                   224
 program IDs:                             15
 case IDs:                                27
 case IDs absent from public catalog:      23
@@ -34,7 +37,7 @@ report IDs:                              5
 
 ```text
 open pull requests observed:              13
-changed paths across open pull requests:  127
+changed paths across open pull requests:  139
 branch-only paths observed:               102
 ```
 
