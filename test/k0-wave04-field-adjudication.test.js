@@ -17,6 +17,8 @@ const baseline = validateWave04Field({ root });
 assert.equal(baseline.ok, true, baseline.failures.join('\n'));
 
 const audit = JSON.parse(fs.readFileSync(path.join(root, 'data/research/k0-wave04-field-adjudication.json'), 'utf8'));
+const neutral = JSON.parse(fs.readFileSync(path.join(root, 'data/research/k0-role-neutral-denominator.json'), 'utf8'));
+const coverage = JSON.parse(fs.readFileSync(path.join(root, 'data/research/corpus-coverage.json'), 'utf8'));
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'k0-wave04-field-test-'));
 const write = (name, value) => {
   const file = path.join(tmp, name);
@@ -56,6 +58,19 @@ controlCcd.rows.find(row => row.record_id === 'K0-W04-R005').provisional_ccd_cha
 result = validateWave04Field({ root, auditPath: write('control-ccd.json', controlCcd) });
 assert.equal(result.ok, false);
 assert.ok(result.failures.some(row => row.includes('control assigned CCD')));
+
+const missingWave04 = structuredClone(neutral);
+missingWave04.execution.executed_wave_ids = missingWave04.execution.executed_wave_ids.filter(id => id !== 'K0-W04');
+result = validateWave04Field({ root, neutralPath: write('missing-wave04.json', missingWave04) });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some(row => row.includes('aggregate Wave 04 reconciliation drift')));
+
+const malformedPending = structuredClone(coverage);
+const coverageRow = malformedPending.lanes.find(row => row.lane_id === 'epistemic-admissibility-ceiling-events');
+coverageRow.metrics.find(row => row.metric_id === 'candidate_records_pending_field_audit').observed = -1;
+result = validateWave04Field({ root, coveragePath: write('malformed-pending.json', malformedPending) });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some(row => row.includes('coverage pending-field metric shape drift')));
 
 const graph = structuredClone(audit);
 graph.rows.find(row => row.record_id === 'K0-W04-R006').graph_effect = 'create_hop';

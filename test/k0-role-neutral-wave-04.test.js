@@ -50,6 +50,18 @@ result = validateWave04({ root, neutralPath: write('stale-neutral.json', stale) 
 assert.equal(result.ok, false);
 assert.ok(result.failures.some(row => row.includes('Wave 03 reconciliation drift')));
 
+const missingWave04 = structuredClone(neutral);
+missingWave04.execution.executed_wave_ids = missingWave04.execution.executed_wave_ids.filter(id => id !== 'K0-W04');
+result = validateWave04({ root, neutralPath: write('missing-wave04.json', missingWave04) });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some(row => row.includes('aggregate wave linkage drift')));
+
+const undercount = structuredClone(neutral);
+undercount.execution.searches_executed = 15;
+result = validateWave04({ root, neutralPath: write('undercount.json', undercount) });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some(row => row.includes('aggregate execution count drift')));
+
 const capture = structuredClone(wave);
 capture.boundaries.committee_reset_proves_capture = true;
 result = validateWave04({ root, wavePath: write('capture.json', capture) });
