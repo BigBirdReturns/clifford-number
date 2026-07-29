@@ -1,6 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { readJson, readJsonl, root, writeJson } from './ledger.mjs';
+import {
+  loadLocalCanonicalResolutionIndex,
+  resolveSubjectIdentity,
+  summarizeSubjectIdentities
+} from './local-canonical-resolution.mjs';
 
 export const CLAIM_STATUSES = new Set(['verified', 'review_required', 'disputed', 'superseded', 'rejected']);
 export const CAUSAL_STATUSES = new Set(['source_explicit', 'institutionally_attributed', 'temporal_association', 'not_established']);
@@ -108,7 +113,7 @@ function claimValue(claim) {
   return claim.object ?? null;
 }
 
-export function compileCaseLedger(data) {
+export function compileCaseLedger(data, { subjectIdentityIndex = loadLocalCanonicalResolutionIndex() } = {}) {
   const errors = validateCaseLedger(data);
   if (errors.length) throw new Error(errors.join('\n'));
 
@@ -116,8 +121,13 @@ export function compileCaseLedger(data) {
   const hydratedClaims = data.claims.map(claim => ({
     ...claim,
     value: claimValue(claim),
+    subject_identity: resolveSubjectIdentity(data.case.case_id, claim.subject_id, subjectIdentityIndex),
     receipts: claim.receipt_ids.map(receiptId => receipts.get(receiptId))
   }));
+  const subjectIdentityProjection = summarizeSubjectIdentities(hydratedClaims, {
+    caseId: data.case.case_id,
+    registryPaths: subjectIdentityIndex.registry_paths
+  });
   const claims = new Map(hydratedClaims.map(row => [row.claim_id, row]));
   const eventClaimIds = new Set(data.events.flatMap(event => event.claim_ids ?? []));
   const unsequencedClaimIds = hydratedClaims
@@ -150,9 +160,11 @@ export function compileCaseLedger(data) {
       receipts: data.receipts.length,
       relations: data.relations.length,
       beacons: data.beacons.length,
-      trails: (data.trails ?? []).length
+      trails: (data.trails ?? []).length,
+      ...subjectIdentityProjection.counts
     },
     claim_status_counts: statusCounts,
+    subject_identity_projection: subjectIdentityProjection,
     sections: data.case.sections.map(section => ({ ...section, records: section.record_ids.map(id => hydratedById.get(id)) })),
     claims: hydratedClaims,
     unsequenced_claim_ids: unsequencedClaimIds,
@@ -182,10 +194,23 @@ export function compileAllCases() {
   const directories = fs.readdirSync(caseRoot, { withFileTypes: true })
     .filter(entry => entry.isDirectory() && fs.existsSync(path.join(caseRoot, entry.name, 'case.json')))
     .map(entry => path.join(caseRoot, entry.name));
-  const compiled = directories.map(directory => compileCaseLedger(loadCaseLedger(directory)));
+  const subjectIdentityIndex = loadLocalCanonicalResolutionIndex({ refresh: true });
+  const compiled = directories.map(directory => compileCaseLedger(loadCaseLedger(directory), { subjectIdentityIndex }));
   for (const item of compiled) writeJson(`build/cases/${item.case_id}.json`, item);
   writeJson('build/cases/index.json', {
     schema_version: 'compiled-case-index@1',
+    subject_identity_projection: {
+      schema_version: 'compiled-case-subject-identity-index@1',
+      registry_paths: subjectIdentityIndex.registry_paths,
+      counts: {
+        subject_references: compiled.reduce((total, item) => total + item.counts.subject_references, 0),
+        resolved_subject_references: compiled.reduce((total, item) => total + item.counts.resolved_subject_references, 0),
+        unresolved_subject_references: compiled.reduce((total, item) => total + item.counts.unresolved_subject_references, 0),
+        distinct_case_local_subjects: compiled.reduce((total, item) => total + item.counts.distinct_local_subjects, 0),
+        canonical_subjects: new Set(compiled.flatMap(item => item.subject_identity_projection.subjects.map(subject => subject.canonical_subject_id).filter(Boolean))).size
+      },
+      graph_effect: 'none'
+    },
     cases: compiled.map(item => ({
       case_id: item.case_id,
       tracking_id: item.tracking_id,
@@ -199,6 +224,7 @@ export function compileAllCases() {
       briefing: item.briefing,
       counts: item.counts,
       claim_status_counts: item.claim_status_counts,
+      subject_identity_counts: item.subject_identity_projection.counts,
       href: `build/cases/${item.case_id}.json`
     }))
   });
