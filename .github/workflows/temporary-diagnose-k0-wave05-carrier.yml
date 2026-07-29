@@ -5,6 +5,12 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/temporary-diagnose-k0-wave05-carrier.yml'
+  push:
+    branches:
+      - agent/k0-role-neutral-wave-05
+    paths:
+      - '.github/workflows/temporary-diagnose-k0-wave05-carrier.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,11 +22,30 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: agent/k0-role-neutral-wave-05
-      - name: Reconstruct and inspect carrier
+      - name: Inspect carrier bytes without decoding
         run: |
-          set -euxo pipefail
-          wc -c .github/tmp/k0-wave05-materializer-part-*.b64
-          cat .github/tmp/k0-wave05-materializer-part-*.b64 | base64 -d > /tmp/k0-wave05-materializer.tgz
-          sha256sum /tmp/k0-wave05-materializer.tgz
-          wc -c /tmp/k0-wave05-materializer.tgz
-          tar -tzf /tmp/k0-wave05-materializer.tgz | sed -n '1,80p'
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import base64, hashlib
+          files = sorted(Path('.github/tmp').glob('k0-wave05-materializer-part-*.b64'))
+          valid = set(b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\r\n\t ')
+          merged = b''
+          for path in files:
+              raw = path.read_bytes()
+              bad = [(i, byte) for i, byte in enumerate(raw) if byte not in valid]
+              compact = b''.join(raw.split())
+              print(f'{path}: bytes={len(raw)} compact={len(compact)} mod4={len(compact)%4} bad={bad[:20]}')
+              print(f'  head={raw[:24]!r}')
+              print(f'  tail={raw[-24:]!r}')
+              merged += compact
+          print(f'merged compact bytes={len(merged)} mod4={len(merged)%4}')
+          bad = [(i, byte) for i, byte in enumerate(merged) if byte not in set(b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=')]
+          print(f'merged invalid={bad[:50]} count={len(bad)}')
+          for padding in (b'', b'=', b'==', b'==='):
+              try:
+                  decoded = base64.b64decode(merged + padding, validate=True)
+                  print(f'padding={padding!r} decoded={len(decoded)} sha256={hashlib.sha256(decoded).hexdigest()} gzip_magic={decoded[:3]!r}')
+              except Exception as exc:
+                  print(f'padding={padding!r} decode_error={exc}')
+          PY
