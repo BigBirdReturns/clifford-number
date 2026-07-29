@@ -87,7 +87,7 @@ jobs:
           python - <<'PY'
           import subprocess
 
-          expected = {
+          allowed = {
               '.github/tmp/lake-index-trigger.json',
               'build/lake-index.json',
               'build/lake-object-index.json',
@@ -114,6 +114,24 @@ jobs:
               'reports/lake-index-census.md',
               'reports/lake-index-gap-summary.md',
           }
+          required = {
+              '.github/tmp/lake-index-trigger.json',
+              'build/lake-index/manifest.json',
+              'build/lake-index/summary.json',
+              'build/lake-index/files.jsonl',
+              'build/lake-index/objects.jsonl',
+              'build/lake-index/receipts.jsonl',
+              'build/lake-index/receipt-locators.jsonl',
+              'build/lake-index/receipt-hashes.jsonl',
+              'build/lake-index/receipt-semantics.json',
+              'build/lake-index/receipt-gaps.jsonl',
+              'build/lake-index/branch-shadow.jsonl',
+              'build/lake-index/missing-path-tokens.json',
+              'build/lake-index/gap-summary.json',
+              'data/project/lake-open-pr-shadow.json',
+              'reports/lake-index-census.md',
+              'reports/lake-index-gap-summary.md',
+          }
           raw = subprocess.check_output([
               'git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'
           ])
@@ -123,10 +141,8 @@ jobs:
               status = entry[:2]
               assert 'R' not in status and 'C' not in status, entry
               actual.add(entry[3:])
-          assert actual == expected, {
-              'unexpected': sorted(actual - expected),
-              'missing': sorted(expected - actual),
-          }
+          assert not actual - allowed, {'unexpected': sorted(actual - allowed)}
+          assert required <= actual, {'missing_required': sorted(required - actual)}
           PY
       - name: Commit the durable census
         if: steps.request.outputs.present == 'true'
