@@ -61,6 +61,8 @@ assert.equal(report.counts.normalized_seed_events, 13);
 assert.equal(report.counts.field_audit_supported_for_human_review, 6);
 assert.equal(report.counts.field_audit_retained_candidate_only, 7);
 assert.equal(report.counts.common_purpose_network_edges, 0);
+assert.equal(report.counts.role_neutral_retained_records, 48);
+assert.equal(report.counts.role_neutral_wave_06_candidate_records, 3);
 assert.equal(report.current_result.maintainer_source_retrieval_audit_complete, true);
 assert.equal(report.current_result.independent_second_party_review_complete, false);
 assert.equal(report.current_result.graph_effect, 'none');

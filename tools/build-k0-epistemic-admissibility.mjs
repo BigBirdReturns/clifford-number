@@ -23,6 +23,7 @@ export const releaseScope = [
   '.github/workflows/k0-role-neutral-wave-03.yml',
   '.github/workflows/k0-role-neutral-wave-04.yml',
   '.github/workflows/k0-role-neutral-wave-05.yml',
+  '.github/workflows/k0-role-neutral-wave-06.yml',
   'data/intake/k0-epistemic-admissibility-source.txt',
   'data/intake/k0-ceiling-conversion-seed-events.json',
   'data/project/k0-epistemic-admissibility-methodology.json',
@@ -35,6 +36,7 @@ export const releaseScope = [
   'data/research/k0-role-neutral-wave-03.json',
   'data/research/k0-role-neutral-wave-04.json',
   'data/research/k0-role-neutral-wave-05.json',
+  'data/research/k0-role-neutral-wave-06.json',
   'schemas/k0-ceiling-conversion-event.schema.json',
   'docs/methods/k0-epistemic-admissibility.md',
   'docs/milestones/m05-k0-epistemic-admissibility.md',
@@ -44,6 +46,7 @@ export const releaseScope = [
   'docs/milestones/m05-k0-role-neutral-wave-03.md',
   'docs/milestones/m05-k0-role-neutral-wave-04.md',
   'docs/milestones/m05-k0-role-neutral-wave-05.md',
+  'docs/milestones/m05-k0-role-neutral-wave-06.md',
   'tools/build-k0-epistemic-admissibility.mjs',
   'tools/validate-k0-epistemic-admissibility.mjs',
   'tools/validate-k0-role-neutral-wave-01.mjs',
@@ -55,12 +58,15 @@ export const releaseScope = [
   'tools/validate-k0-role-neutral-wave-04.mjs',
   'tools/build-k0-role-neutral-wave-05.mjs',
   'tools/validate-k0-role-neutral-wave-05.mjs',
+  'tools/build-k0-role-neutral-wave-06.mjs',
+  'tools/validate-k0-role-neutral-wave-06.mjs',
   'test/k0-epistemic-admissibility.test.js',
   'test/k0-role-neutral-wave-01.test.js',
   'test/k0-role-neutral-wave-02.test.js',
   'test/k0-role-neutral-wave-03.test.js',
   'test/k0-role-neutral-wave-04.test.js',
-  'test/k0-role-neutral-wave-05.test.js'
+  'test/k0-role-neutral-wave-05.test.js',
+  'test/k0-role-neutral-wave-06.test.js'
 ];
 
 export function computeK0ReleaseManifest() {
@@ -99,6 +105,7 @@ const neutralWave02 = read('data/research/k0-role-neutral-wave-02.json');
 const neutralWave03 = read('data/research/k0-role-neutral-wave-03.json');
 const neutralWave04 = read('data/research/k0-role-neutral-wave-04.json');
 const neutralWave05 = read('data/research/k0-role-neutral-wave-05.json');
+const neutralWave06 = read('data/research/k0-role-neutral-wave-06.json');
 const wave05Field = read('data/research/k0-wave05-field-adjudication.json');
 const registry = read('data/project/m05-answerable-power-story-registry.json');
 const fanout = read('data/project/m05-answerable-power-fanout.json');
@@ -167,6 +174,9 @@ const report = {
     role_neutral_wave_05_query_executions: neutralWave05.counts.query_executions,
     role_neutral_wave_05_retained_records: neutralWave05.counts.retained_records,
     role_neutral_wave_05_candidate_records: neutralWave05.counts.candidate_requires_field_audit,
+    role_neutral_wave_06_query_executions: neutralWave06.counts.query_executions,
+    role_neutral_wave_06_retained_records: neutralWave06.counts.retained_records,
+    role_neutral_wave_06_candidate_records: neutralWave06.counts.candidate_requires_field_audit,
     role_neutral_wave_05_field_records_reviewed: wave05Field.counts.retained_records_reviewed,
     role_neutral_wave_05_field_supported_for_human_review: wave05Field.counts.supported_for_human_review,
     role_neutral_wave_05_field_retained_candidate_only: wave05Field.counts.retained_candidate_only,
@@ -197,6 +207,7 @@ const report = {
   role_neutral_wave_03: neutralWave03,
   role_neutral_wave_04: neutralWave04,
   role_neutral_wave_05: neutralWave05,
+  role_neutral_wave_06: neutralWave06,
   role_neutral_wave_05_field_adjudication: wave05Field,
   ecosystem_wiring: wiring,
   selection: { lane: selectionLane, coverage: coverageRow, review },
