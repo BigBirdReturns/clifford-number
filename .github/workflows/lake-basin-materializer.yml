@@ -1,0 +1,85 @@
+name: Materialize evidence lake basin index
+
+on:
+  push:
+    branches:
+      - agent/lake-index-census
+    paths:
+      - '.github/tmp/lake-basin-trigger.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lake-basin-index-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lake-index-census
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build, validate, and prove basin products
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-basin-index.mjs
+          node test/lake-basin-index.test.js
+
+          mkdir -p /tmp/lake-basin-proof/build/lake-index /tmp/lake-basin-proof/reports
+          cp build/lake-index/basins.json /tmp/lake-basin-proof/build/lake-index/
+          cp build/lake-index/basin-membership.jsonl /tmp/lake-basin-proof/build/lake-index/
+          cp build/lake-index/basin-gaps.jsonl /tmp/lake-basin-proof/build/lake-index/
+          cp build/lake-index/basin-manifest.json /tmp/lake-basin-proof/build/lake-index/
+          cp reports/lake-basin-index.md /tmp/lake-basin-proof/reports/
+
+          node tools/build-lake-basin-index.mjs
+          cmp build/lake-index/basins.json /tmp/lake-basin-proof/build/lake-index/basins.json
+          cmp build/lake-index/basin-membership.jsonl /tmp/lake-basin-proof/build/lake-index/basin-membership.jsonl
+          cmp build/lake-index/basin-gaps.jsonl /tmp/lake-basin-proof/build/lake-index/basin-gaps.jsonl
+          cmp build/lake-index/basin-manifest.json /tmp/lake-basin-proof/build/lake-index/basin-manifest.json
+          cmp reports/lake-basin-index.md /tmp/lake-basin-proof/reports/lake-basin-index.md
+          node tools/validate-lake-basin-index.mjs
+          node test/lake-basin-index.test.js
+
+          rm -f .github/tmp/lake-basin-trigger.json
+          rm -f .github/workflows/lake-basin-materializer.yml
+          git diff --check
+
+          python - <<'PY'
+          import subprocess
+          allowed = {
+              '.github/tmp/lake-basin-trigger.json',
+              '.github/workflows/lake-basin-materializer.yml',
+              'build/lake-index/basins.json',
+              'build/lake-index/basin-membership.jsonl',
+              'build/lake-index/basin-gaps.jsonl',
+              'build/lake-index/basin-manifest.json',
+              'reports/lake-basin-index.md',
+          }
+          required = allowed.copy()
+          raw = subprocess.check_output(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'])
+          entries = [entry for entry in raw.decode().split('\0') if entry]
+          actual = set()
+          for entry in entries:
+              status = entry[:2]
+              if 'R' in status or 'C' in status:
+                  raise SystemExit(f'unexpected rename/copy: {entry}')
+              actual.add(entry[3:])
+          if actual != allowed:
+              raise SystemExit({'unexpected': sorted(actual - allowed), 'missing': sorted(required - actual)})
+          PY
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Materialize evidence lake basin index'
+          git push origin HEAD:agent/lake-index-census
