@@ -124,8 +124,27 @@ const decisionRows = [
   result.hop_decision
 ].sort((left, right) => `${left.row_type}:${left.decision_id}`.localeCompare(`${right.row_type}:${right.decision_id}`));
 assert.equal(decisionRows.length, policy.expected.decision_registry_rows, 'decision registry row count drift');
+assert.equal(decisionRows.length, policy.expected.decision_projection_rows, 'decision projection row count drift');
 assert.equal(new Set(decisionRows.map(row => row.decision_id)).size, decisionRows.length, 'duplicate Wave 07 decision IDs');
 writeJsonl(policy.decision_registry_path, decisionRows);
+writeJson(policy.decision_projection_path, {
+  schema_version: 'axm-cross-case-join-decision-index@1',
+  program_key: policy.program_key,
+  source_fingerprint_sha256: sourceFingerprint,
+  source_registry_path: policy.decision_registry_path,
+  fixture_path: policy.fixture_path,
+  authorized_scope: policy.authorized_scope,
+  counts: {
+    decisions: decisionRows.length,
+    accepted_assertions: accepted.length,
+    rejected_assertions: rejected.length,
+    unasserted_controls: result.unasserted_decisions.length,
+    temporal_controls: result.temporal_decisions.length,
+    hop_control_summaries: 1
+  },
+  decisions: decisionRows,
+  boundaries: policy.boundaries
+});
 
 const receipt = {
   schema_version: 'lake-axm-cross-case-acceptance-wave-07@1',
@@ -135,6 +154,7 @@ const receipt = {
   fixture_key: fixture.fixture_key,
   fixture_path: policy.fixture_path,
   decision_registry_path: policy.decision_registry_path,
+  decision_projection_path: policy.decision_projection_path,
   authorized_scope: policy.authorized_scope,
   counts: result.counts,
   accepted_identity_bridge_keys: accepted.map(row => row.identity_bridge_key),
@@ -165,6 +185,12 @@ const plan = {
     cross_case_hop_creation_authorized: false
   },
   fixture_result: result,
+  decision_projection: {
+    path: policy.decision_projection_path,
+    rows: decisionRows.length,
+    generated: true,
+    graph_effect: 'none'
+  },
   decisions: [
     {
       decision_key: 'W07-EXPLICIT-IDENTITY-RESOLUTION',
@@ -201,6 +227,7 @@ const plan = {
     unasserted_same_label_negative_control_passed: true,
     temporal_controls_passed: true,
     density_and_broad_context_controls_passed: true,
+    decision_projection_built: true,
     explicit_cross_case_identity_resolution_authorized: true,
     automatic_cross_case_join_authorized: false,
     cross_case_graph_join_authorized: false,
@@ -215,7 +242,7 @@ const plan = {
 };
 writeJson(policy.plan_path, plan);
 
-const report = `# AXM cross-case acceptance Wave 07\n\nSource fingerprint: \`${sourceFingerprint}\`\n\n## Result\n\nThe synthetic fixture authorizes one narrow operation: an explicit, source-custodied, unambiguous, same-namespace identity assertion may produce a graph-inert identity bridge. Same-label recurrence, alias recurrence, namespace mismatch, ambiguity, missing custody, temporal overlap, and bounded-surface overlap do not independently authorize a graph relation or hop.\n\n\`\`\`text\nfixture cases:                                 ${result.counts.cases}\njoin assertions:                              ${result.counts.join_assertions}\naccepted explicit assertions:                  ${result.counts.accepted_join_assertions}\nrejected assertions:                           ${result.counts.rejected_join_assertions}\nunasserted same-label controls:                ${result.counts.unasserted_overlap_controls}\ntemporal claim controls:                       ${result.counts.temporal_claim_controls}\nhop positive-control edges:                    ${result.counts.hop_control_edges}\nhop rejected surfaces:                         ${result.counts.hop_control_rejected_surfaces}\nhop rejected temporal pairs:                   ${result.counts.hop_control_rejected_pairs}\ndecision registry rows:                        ${decisionRows.length}\nexplicit identity resolution authorized:       true\nautomatic cross-case join authorized:          false\ncross-case graph join authorized:              false\ncross-case hop creation authorized:            false\nactive projection broad join flag:             false\ndecisions requiring human permission:          0\n\`\`\`\n\n## Authorized scope\n\n\`${policy.authorized_scope}\`\n\nThe accepted bridge does not merge source entities. It records a reversible identity-resolution decision with both source-custody records and the assertion custody. Every rejected control remains in the same registry.\n\n## Boundary\n\nThis synthetic acceptance result does not prove any real-world identity or relationship. Production rows must independently satisfy the same custody, namespace, explicit-assertion, and unambiguous-token requirements. Automatic same-label joins and all graph/hop creation remain disabled.\n`;
+const report = `# AXM cross-case acceptance Wave 07\n\nSource fingerprint: \`${sourceFingerprint}\`\n\n## Result\n\nThe synthetic fixture authorizes one narrow operation: an explicit, source-custodied, unambiguous, same-namespace identity assertion may produce a graph-inert identity bridge. Same-label recurrence, alias recurrence, namespace mismatch, ambiguity, missing custody, temporal overlap, and bounded-surface overlap do not independently authorize a graph relation or hop.\n\n\`\`\`text\nfixture cases:                                 ${result.counts.cases}\njoin assertions:                              ${result.counts.join_assertions}\naccepted explicit assertions:                  ${result.counts.accepted_join_assertions}\nrejected assertions:                           ${result.counts.rejected_join_assertions}\nunasserted same-label controls:                ${result.counts.unasserted_overlap_controls}\ntemporal claim controls:                       ${result.counts.temporal_claim_controls}\nhop positive-control edges:                    ${result.counts.hop_control_edges}\nhop rejected surfaces:                         ${result.counts.hop_control_rejected_surfaces}\nhop rejected temporal pairs:                   ${result.counts.hop_control_rejected_pairs}\ndecision registry rows:                        ${decisionRows.length}\ndecision projection rows:                      ${decisionRows.length}\nexplicit identity resolution authorized:       true\nautomatic cross-case join authorized:          false\ncross-case graph join authorized:              false\ncross-case hop creation authorized:            false\nactive projection broad join flag:             false\ndecisions requiring human permission:          0\n\`\`\`\n\n## Authorized scope\n\n\`${policy.authorized_scope}\`\n\nThe accepted bridge does not merge source entities. It records a reversible identity-resolution decision with both source-custody records and the assertion custody. Every rejected control remains in the same registry and generated decision index.\n\n## Boundary\n\nThis synthetic acceptance result does not prove any real-world identity or relationship. Production rows must independently satisfy the same custody, namespace, explicit-assertion, and unambiguous-token requirements. Automatic same-label joins and all graph/hop creation remain disabled.\n`;
 fs.mkdirSync(path.dirname(full(policy.report_path)), { recursive: true });
 fs.writeFileSync(full(policy.report_path), report);
 
@@ -225,5 +252,6 @@ console.log(`  rejected assertions: ${rejected.length}`);
 console.log(`  unasserted controls: ${result.unasserted_decisions.length}`);
 console.log(`  temporal controls: ${result.temporal_decisions.length}`);
 console.log(`  hop edges / rejected surfaces / rejected pairs: ${result.hop_decision.edges.length} / ${result.hop_decision.rejected_surfaces.length} / ${result.hop_decision.rejected_pairs.length}`);
+console.log(`  source / projection decision rows: ${decisionRows.length} / ${decisionRows.length}`);
 console.log('  explicit identity resolution authorized: true');
 console.log('  automatic and graph joins authorized: false');
