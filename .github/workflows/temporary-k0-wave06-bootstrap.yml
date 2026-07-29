@@ -1,0 +1,37 @@
+name: Temporary K0 Wave 06 exact-checkout bootstrap
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-k0-wave06-bootstrap.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/k0-role-neutral-wave-06
+          fetch-depth: 0
+      - name: Package exact checkout
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > /tmp/HEAD_SHA
+          git status --porcelain=v1 > /tmp/WORKTREE_STATUS
+          tar --exclude=.git -czf /tmp/k0-wave06-checkout.tar.gz .
+          sha256sum /tmp/k0-wave06-checkout.tar.gz > /tmp/CHECKOUT_SHA256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: k0-wave06-exact-checkout
+          path: |
+            /tmp/k0-wave06-checkout.tar.gz
+            /tmp/HEAD_SHA
+            /tmp/WORKTREE_STATUS
+            /tmp/CHECKOUT_SHA256
+          if-no-files-found: error
+          retention-days: 3
