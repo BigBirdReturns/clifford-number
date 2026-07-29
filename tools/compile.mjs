@@ -11,6 +11,7 @@ const steps = [
   ['build-public-catalog', 'tools/build-public-catalog.mjs'],
   ['build-report-frontier', 'tools/build-report-frontier.mjs'],
   ['render-report-frontier', 'tools/render-report-frontier.mjs'],
+  ['build-evidence-grounded-judgments', 'tools/build-evidence-grounded-judgments.mjs'],
   ['build-next-ten-estates', 'tools/build-next-ten-estates.mjs'],
   ['build-estate-expansion', 'tools/build-estate-expansion.mjs'],
   ['build-estates', 'tools/build-estates.mjs'],
