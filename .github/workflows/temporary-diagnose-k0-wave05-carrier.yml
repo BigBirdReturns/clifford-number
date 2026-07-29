@@ -1,4 +1,4 @@
-name: Temporary diagnose K0 Wave 05 carrier
+name: Temporary repair K0 Wave 05 carrier
 
 on:
   pull_request:
@@ -13,39 +13,74 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  diagnose:
+  repair:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/k0-role-neutral-wave-05
-      - name: Inspect carrier bytes without decoding
+          fetch-depth: 0
+      - name: Repair exactly one missing Base64 character by frozen archive hash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
           import base64, hashlib
-          files = sorted(Path('.github/tmp').glob('k0-wave05-materializer-part-*.b64'))
-          valid = set(b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\r\n\t ')
-          merged = b''
-          for path in files:
-              raw = path.read_bytes()
-              bad = [(i, byte) for i, byte in enumerate(raw) if byte not in valid]
-              compact = b''.join(raw.split())
-              print(f'{path}: bytes={len(raw)} compact={len(compact)} mod4={len(compact)%4} bad={bad[:20]}')
-              print(f'  head={raw[:24]!r}')
-              print(f'  tail={raw[-24:]!r}')
-              merged += compact
-          print(f'merged compact bytes={len(merged)} mod4={len(merged)%4}')
-          bad = [(i, byte) for i, byte in enumerate(merged) if byte not in set(b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=')]
-          print(f'merged invalid={bad[:50]} count={len(bad)}')
-          for padding in (b'', b'=', b'==', b'==='):
+
+          target = '229b15062e72d756d7fbda7eec1c6345530f00edfe4462cff403826be00b76a5'
+          paths = sorted(Path('.github/tmp').glob('k0-wave05-materializer-part-*.b64'))
+          assert len(paths) == 4, paths
+          chunks = [b''.join(path.read_bytes().split()) for path in paths]
+          merged = b''.join(chunks)
+
+          def digest(encoded: bytes):
               try:
-                  decoded = base64.b64decode(merged + padding, validate=True)
-                  print(f'padding={padding!r} decoded={len(decoded)} sha256={hashlib.sha256(decoded).hexdigest()} gzip_magic={decoded[:3]!r}')
-              except Exception as exc:
-                  print(f'padding={padding!r} decode_error={exc}')
+                  decoded = base64.b64decode(encoded, validate=True)
+              except Exception:
+                  return None
+              return hashlib.sha256(decoded).hexdigest()
+
+          if len(merged) % 4 == 0 and digest(merged) == target:
+              print('carrier already matches frozen source-package hash')
+              raise SystemExit(0)
+
+          assert len(chunks[0]) % 4 == 3, len(chunks[0])
+          assert all(len(chunk) % 4 == 0 for chunk in chunks[1:])
+          alphabet = b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+          tail = b''.join(chunks[1:])
+          found = []
+          for pos in range(len(chunks[0]) + 1):
+              prefix = chunks[0][:pos]
+              suffix = chunks[0][pos:]
+              for char in alphabet:
+                  candidate0 = prefix + bytes([char]) + suffix
+                  if digest(candidate0 + tail) == target:
+                      found.append((pos, char, candidate0))
+                      print(f'found exact repair at byte offset {pos} with character {chr(char)!r}')
+                      break
+              if found:
+                  break
+
+          assert len(found) == 1, f'exact repair count={len(found)}'
+          pos, char, repaired = found[0]
+          paths[0].write_bytes(repaired)
+          final = b''.join([repaired, *chunks[1:]])
+          assert len(final) % 4 == 0
+          assert digest(final) == target
+          print(f'repaired fragment bytes={len(repaired)} merged={len(final)} sha256={target}')
           PY
+
+          if git diff --quiet -- .github/tmp/k0-wave05-materializer-part-00.b64; then
+            echo 'No repair commit required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/tmp/k0-wave05-materializer-part-00.b64
+          git commit -m 'Repair exact Wave 05 carrier fragment'
+          git push origin HEAD:agent/k0-role-neutral-wave-05
