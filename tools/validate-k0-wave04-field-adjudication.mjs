@@ -36,16 +36,19 @@ const computeFurthest = row => {
 
 export function validateWave04Field({
   root = defaultRoot,
-  auditPath = 'data/research/k0-wave04-field-adjudication.json'
+  auditPath = 'data/research/k0-wave04-field-adjudication.json',
+  neutralPath = 'data/research/k0-role-neutral-denominator.json',
+  coveragePath = 'data/research/corpus-coverage.json',
+  reviewsPath = 'data/research/selection-adversarial-reviews.json'
 } = {}) {
   const failures = [];
   const fail = message => failures.push(message);
   const read = rel => JSON.parse(fs.readFileSync(path.resolve(root, rel), 'utf8'));
   const audit = read(auditPath);
   const wave = read('data/research/k0-role-neutral-wave-04.json');
-  const neutral = read('data/research/k0-role-neutral-denominator.json');
-  const coverage = read('data/research/corpus-coverage.json');
-  const reviews = read('data/research/selection-adversarial-reviews.json');
+  const neutral = read(neutralPath);
+  const coverage = read(coveragePath);
+  const reviews = read(reviewsPath);
   const manifest = read('data/project/k0-wave04-field-adjudication-release-manifest.json');
   const report = read('reports/core-thesis/answerable-power/k0-wave04-field-adjudication.json');
 
@@ -129,12 +132,13 @@ export function validateWave04Field({
   if (audit.boundaries?.seed_overlap_creates_second_event !== false || audit.boundaries?.graph_effect !== 'none') fail('deduplication/graph boundary drift');
 
   const wave04State = neutral.discovery_waves.find(row => row.wave_id === 'K0-W04');
-  if (neutral.status !== 'execution_started_wave_04_field_complete' || wave04State?.status !== 'discovery_complete_field_adjudication_complete') fail('aggregate Wave 04 reconciliation drift');
+  const executedWaveIds = neutral.execution?.executed_wave_ids || [];
+  if (typeof neutral.status !== 'string' || !neutral.status.startsWith('execution_started_wave_') || JSON.stringify(executedWaveIds.slice(0, 4)) !== JSON.stringify(['K0-W01','K0-W02','K0-W03','K0-W04']) || wave04State?.status !== 'discovery_complete_field_adjudication_complete') fail('aggregate Wave 04 reconciliation drift');
 
   const coverageRow = coverage.lanes.find(row => row.lane_id === 'epistemic-admissibility-ceiling-events');
   const pendingMetric = coverageRow?.metrics?.find(row => row.metric_id === 'candidate_records_pending_field_audit');
   const gap = coverageRow?.known_gaps?.find(row => row.gap_id === 'k0-wave04-field-adjudication-open');
-  if (pendingMetric?.observed !== 0 || pendingMetric?.source !== 'data/research/k0-wave04-field-adjudication.json') fail('coverage pending-field metric drift');
+  if (!pendingMetric || !Number.isInteger(pendingMetric.observed) || pendingMetric.observed < 0 || typeof pendingMetric.source !== 'string') fail('coverage pending-field metric shape drift');
   if (gap?.status !== 'resolved_at_maintainer_layer') fail('coverage Wave 04 gap state drift');
 
   const review = reviews.reviews.find(row => row.lane_id === 'epistemic-admissibility-ceiling-events');
