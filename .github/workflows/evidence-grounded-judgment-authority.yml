@@ -12,12 +12,16 @@ on:
     paths:
       - 'data/project/evidence-grounded-judgment-authority.json'
       - 'data/project/lake-judgment-shadow-snapshot.json'
+      - 'data/project/human-permission-gate-audit-policy.json'
       - 'docs/methods/evidence-grounded-judgment-authority.md'
       - 'tools/build-evidence-grounded-judgments.mjs'
       - 'tools/augment-evidence-grounded-judgments-with-lake.mjs'
       - 'tools/validate-evidence-grounded-judgments.mjs'
       - 'tools/validate-evidence-grounded-lake-judgments.mjs'
+      - 'tools/build-human-permission-gate-audit.mjs'
+      - 'tools/validate-human-permission-gate-audit.mjs'
       - 'test/evidence-grounded-judgments.test.js'
+      - 'test/human-permission-gate-audit.test.js'
       - 'tools/compile.mjs'
       - '.github/workflows/evidence-grounded-judgment-authority.yml'
   workflow_dispatch:
@@ -65,18 +69,26 @@ jobs:
           node tools/validate-evidence-grounded-judgments.mjs
           node tools/validate-evidence-grounded-lake-judgments.mjs
           node test/evidence-grounded-judgments.test.js
-      - name: Prove deterministic judgment products
+          node tools/build-human-permission-gate-audit.mjs
+          node tools/validate-human-permission-gate-audit.mjs
+          node test/human-permission-gate-audit.test.js
+      - name: Prove deterministic judgment and audit products
         if: steps.request.outputs.present == 'true'
         run: |
           sha256sum \
             build/evidence-grounded-judgments.json \
+            build/human-permission-gate-audit.json \
             reports/evidence-grounded-judgments.md \
-            reports/evidence-grounded-lake-decisions.md > /tmp/judgments-first.sha256
+            reports/evidence-grounded-lake-decisions.md \
+            reports/human-permission-gate-audit.md > /tmp/judgments-first.sha256
           node tools/build-evidence-grounded-judgments.mjs
           node tools/augment-evidence-grounded-judgments-with-lake.mjs
           node tools/validate-evidence-grounded-judgments.mjs
           node tools/validate-evidence-grounded-lake-judgments.mjs
           node test/evidence-grounded-judgments.test.js
+          node tools/build-human-permission-gate-audit.mjs
+          node tools/validate-human-permission-gate-audit.mjs
+          node test/human-permission-gate-audit.test.js
           sha256sum --check --strict /tmp/judgments-first.sha256
           git diff --check
       - name: Enforce exact generated change set
@@ -90,8 +102,10 @@ jobs:
           expected = {
               '.github/tmp/evidence-grounded-judgment-trigger.json',
               'build/evidence-grounded-judgments.json',
+              'build/human-permission-gate-audit.json',
               'reports/evidence-grounded-judgments.md',
               'reports/evidence-grounded-lake-decisions.md',
+              'reports/human-permission-gate-audit.md',
           }
           raw = subprocess.check_output([
               'git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'
@@ -113,5 +127,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -m 'Execute evidence-grounded judgment fan-out'
+          git commit -m 'Audit and execute evidence-grounded judgments'
           git push origin HEAD:agent/evidence-grounded-judgment-authority
