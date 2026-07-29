@@ -254,8 +254,9 @@ export function evaluateTemporalControl(control, caseById) {
     claim_identity_equal: claimIdentityEqual,
     temporal_overlap: temporalOverlap,
     hop_basis_candidate: claimIdentityEqual && temporalOverlap,
-    cross_case_hop_creation_authorized: false,
+    automatic_cross_case_join_authorized: false,
     cross_case_graph_join_authorized: false,
+    cross_case_hop_creation_authorized: false,
     graph_effect: 'none'
   };
 }

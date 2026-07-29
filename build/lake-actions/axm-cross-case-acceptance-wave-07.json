@@ -1,0 +1,1042 @@
+{
+  "schema_version": "lake-axm-cross-case-acceptance-wave-07-plan@1",
+  "program_key": "CN-LAKE-AXM-CROSS-CASE-W07",
+  "source_fingerprint_sha256": "67e4912fa381a3ebd2dd9964cd428049396a16e7562053b8806acccb54cd2488",
+  "input_manifest": [
+    {
+      "path": "BUILD-INSTRUCTIONS.md",
+      "bytes": 17385,
+      "sha256": "1c6364e5bc8e6c645078506fd9f33496c2ce833a3c486d3b9d070c803bc97e0f"
+    },
+    {
+      "path": "README.md",
+      "bytes": 9912,
+      "sha256": "f1bf5095cfaf8bccadca9a4106bad6914ff1c1d06201b52dbbe9f9dd8fd13317"
+    },
+    {
+      "path": "build/axm-identity.json",
+      "bytes": 212883,
+      "sha256": "84464e6e574aee1502ced0d65ea09631a240c55c2d312818c676d5404402c074"
+    },
+    {
+      "path": "build/lake-actions/axm-active-projection-wave-06-reconciliation.json",
+      "bytes": 6392,
+      "sha256": "53ff2976fe99f27cf5cbe20dfcfd75245f53b06e44d6f88ce3fb54123e4ca05d"
+    },
+    {
+      "path": "data/project/lake-axm-cross-case-acceptance-wave-07-fixture.json",
+      "bytes": 16237,
+      "sha256": "5c3168f7e7b50c5a9a295ce265ac53b1972936c9c5f87a1a5aed11aa34ce737f"
+    },
+    {
+      "path": "data/project/lake-axm-cross-case-acceptance-wave-07-policy.json",
+      "bytes": 3621,
+      "sha256": "41c116844d9a55a7db36094401202e67e4c01eb948ebead0cd37c14eabe97ae5"
+    },
+    {
+      "path": "test/lake-axm-cross-case-acceptance-wave-07.test.js",
+      "bytes": 7032,
+      "sha256": "38d630d4dc7ff2e9b9f374dd4748393fbd29d9b2662ae9456cec3a784f5150a2"
+    },
+    {
+      "path": "tools/build-lake-axm-cross-case-acceptance-wave-07.mjs",
+      "bytes": 16203,
+      "sha256": "925e9e56a933486d75007aaa0502bfc30e2135cd8053cb1bb77c9848e923aa9e"
+    },
+    {
+      "path": "tools/lib/axm-cross-case-join.mjs",
+      "bytes": 14971,
+      "sha256": "66550522e37614550c1f42be272a38a87f74dafdc7d62d07afdbee7cc0be833a"
+    },
+    {
+      "path": "tools/lib/axm-id.mjs",
+      "bytes": 2567,
+      "sha256": "b2cf513b83c24e397bc779763b72fee36bc262892cb3db35abc77ada792d46fc"
+    },
+    {
+      "path": "tools/lib/hops.mjs",
+      "bytes": 10573,
+      "sha256": "e6b2c4156f77584131a5a55b0806539f137b3e1e66332e7077f1f2537ba68946"
+    },
+    {
+      "path": "tools/lib/temporal.mjs",
+      "bytes": 4534,
+      "sha256": "1cb1e2a6d41e99ef686b43113e4b6c55914568ae256261062b5a633d9651c97c"
+    },
+    {
+      "path": "tools/reconcile-lake-axm-cross-case-acceptance-wave-07.mjs",
+      "bytes": 15229,
+      "sha256": "2125f93540ccf51628bc9166fe40f207e798ac93587ba516da47757f9952cc47"
+    },
+    {
+      "path": "tools/validate-lake-axm-cross-case-acceptance-wave-07.mjs",
+      "bytes": 17063,
+      "sha256": "b898556a89020e7accf7766b9d6626dfe67a9adced5cbc377cb2bb3874e05c4a"
+    }
+  ],
+  "before": {
+    "active_identity_scheme_status": "reconciled_genesis_v1",
+    "external_axm_gate_complete": true,
+    "active_projection_cross_case_join_authorized": false,
+    "explicit_cross_case_identity_resolution_authorized": false,
+    "automatic_cross_case_join_authorized": false,
+    "cross_case_graph_join_authorized": false,
+    "cross_case_hop_creation_authorized": false
+  },
+  "fixture_result": {
+    "schema_version": "axm-cross-case-acceptance-result@1",
+    "fixture_key": "CN-AXM-CROSS-CASE-FIXTURE-W07",
+    "authorized_scope": "explicit_source_custodied_graph_inert_identity_resolution_only",
+    "counts": {
+      "cases": 3,
+      "join_assertions": 5,
+      "accepted_join_assertions": 1,
+      "rejected_join_assertions": 4,
+      "unasserted_overlap_controls": 1,
+      "temporal_claim_controls": 2,
+      "hop_control_edges": 1,
+      "hop_control_rejected_surfaces": 2,
+      "hop_control_rejected_pairs": 1,
+      "decision_registry_rows": 9
+    },
+    "cases": [
+      {
+        "case_id": "fixture-alpha",
+        "identity_namespace": "cn-fixture-shared-v1",
+        "entities": [
+          {
+            "case_id": "fixture-alpha",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "alpha-alias-person",
+            "kind": "actor",
+            "label": "Fixture Person Alpha",
+            "aliases": [
+              "Fixture Alias Alpha"
+            ],
+            "axm_entity_id": "e1_ts3catt5znlpddswoc32yd6qtdrlj7a43ebnv6he4pegbh22h2lq",
+            "alias_axm_ids": [
+              "e1_gcb2tdjobaupop7y7p7pve5ypbfnzaaqam76xkzdrklbbr7gcuoa"
+            ],
+            "identity_tokens": [
+              "e1_gcb2tdjobaupop7y7p7pve5ypbfnzaaqam76xkzdrklbbr7gcuoa",
+              "e1_ts3catt5znlpddswoc32yd6qtdrlj7a43ebnv6he4pegbh22h2lq"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-alpha-person-source",
+                "source_path": "fixture://alpha/person"
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-alpha",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "alpha-ambiguous",
+            "kind": "actor",
+            "label": "Fixture Ambiguous Alpha",
+            "aliases": [
+              "Fixture Ambiguous Alias"
+            ],
+            "axm_entity_id": "e1_l2nltglaqb6xxrng5qpni3hjomkxi3fxrhokva6tsjpl66mljgfq",
+            "alias_axm_ids": [
+              "e1_wrlrtb4r26vtuiwxmplqsmlulsdacsqi434ne7p6i4uvrqos5mra"
+            ],
+            "identity_tokens": [
+              "e1_l2nltglaqb6xxrng5qpni3hjomkxi3fxrhokva6tsjpl66mljgfq",
+              "e1_wrlrtb4r26vtuiwxmplqsmlulsdacsqi434ne7p6i4uvrqos5mra"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-alpha-ambiguous-source",
+                "source_path": "fixture://alpha/ambiguous"
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-alpha",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "alpha-custody",
+            "kind": "actor",
+            "label": "Fixture Custody Person",
+            "aliases": [],
+            "axm_entity_id": "e1_pxzbojy4evq7ugqnphnqgx6wdax3ai7ugu3zghmfot2rkv7p2fga",
+            "alias_axm_ids": [],
+            "identity_tokens": [
+              "e1_pxzbojy4evq7ugqnphnqgx6wdax3ai7ugu3zghmfot2rkv7p2fga"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-alpha-custody-source",
+                "source_path": "fixture://alpha/custody"
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-alpha",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "alpha-different",
+            "kind": "actor",
+            "label": "Fixture Different One",
+            "aliases": [],
+            "axm_entity_id": "e1_aq7serw6rz4vv2eeb6mgmo4ig5hntjnyw73v6duzgoq4ked4awda",
+            "alias_axm_ids": [],
+            "identity_tokens": [
+              "e1_aq7serw6rz4vv2eeb6mgmo4ig5hntjnyw73v6duzgoq4ked4awda"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-alpha-different-source",
+                "source_path": "fixture://alpha/different"
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-alpha",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "alpha-overlap-person",
+            "kind": "actor",
+            "label": "Fixture Overlap Person",
+            "aliases": [],
+            "axm_entity_id": "e1_7urrazd7pkhljzo3xkiijfflyd35hblbd4rckpszizsgxu2xy4aq",
+            "alias_axm_ids": [],
+            "identity_tokens": [
+              "e1_7urrazd7pkhljzo3xkiijfflyd35hblbd4rckpszizsgxu2xy4aq"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-alpha-overlap-person-source",
+                "source_path": "fixture://alpha/overlap-person"
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-alpha",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "alpha-overlap-surface",
+            "kind": "surface",
+            "label": "Fixture Overlap Surface",
+            "aliases": [],
+            "axm_entity_id": "e1_iefcx5uwzpqo3qdjjjx755dixomgat2d2ffzft6rgevnbg5ltg3q",
+            "alias_axm_ids": [],
+            "identity_tokens": [
+              "e1_iefcx5uwzpqo3qdjjjx755dixomgat2d2ffzft6rgevnbg5ltg3q"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-alpha-overlap-surface-source",
+                "source_path": "fixture://alpha/overlap-surface"
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-alpha",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "alpha-temporal-person",
+            "kind": "actor",
+            "label": "Fixture Temporal Person",
+            "aliases": [],
+            "axm_entity_id": "e1_vvgji3ltxeo5ecaznog5s3oxhm5xy6yt5vsqfpjgsnl5o7ixpshq",
+            "alias_axm_ids": [],
+            "identity_tokens": [
+              "e1_vvgji3ltxeo5ecaznog5s3oxhm5xy6yt5vsqfpjgsnl5o7ixpshq"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-alpha-temporal-person-source",
+                "source_path": "fixture://alpha/temporal-person"
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-alpha",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "alpha-temporal-surface",
+            "kind": "surface",
+            "label": "Fixture Temporal Surface",
+            "aliases": [],
+            "axm_entity_id": "e1_bfpudvonscds72pf6ehgzjmsbvo53jvlekp753nx3mna437uecvq",
+            "alias_axm_ids": [],
+            "identity_tokens": [
+              "e1_bfpudvonscds72pf6ehgzjmsbvo53jvlekp753nx3mna437uecvq"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-alpha-temporal-surface-source",
+                "source_path": "fixture://alpha/temporal-surface"
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-alpha",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "alpha-unasserted",
+            "kind": "actor",
+            "label": "Fixture Unasserted Label",
+            "aliases": [],
+            "axm_entity_id": "e1_cwmplkxmqc6o5aqcggruzyiqmxnmncwucsqrsqrpqfqpfj3b7noa",
+            "alias_axm_ids": [],
+            "identity_tokens": [
+              "e1_cwmplkxmqc6o5aqcggruzyiqmxnmncwucsqrsqrpqfqpfj3b7noa"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-alpha-unasserted-source",
+                "source_path": "fixture://alpha/unasserted"
+              }
+            ]
+          }
+        ],
+        "claims": [
+          {
+            "case_id": "fixture-alpha",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "claim_key": "alpha-overlap-claim",
+            "claim_id": "c1_eu2ykpzlytynbz5hgz4o5ynkaw5bktxwoobmpkp2pnjoydhavs7a",
+            "subject_entity_key": "alpha-overlap-person",
+            "subject_axm_entity_id": "e1_7urrazd7pkhljzo3xkiijfflyd35hblbd4rckpszizsgxu2xy4aq",
+            "predicate": "participates_in",
+            "object_entity_key": "alpha-overlap-surface",
+            "object_axm_entity_id": "e1_iefcx5uwzpqo3qdjjjx755dixomgat2d2ffzft6rgevnbg5ltg3q",
+            "object_type": "entity",
+            "windows": [
+              {
+                "valid_from": "2020-01-01",
+                "valid_until": "2020-12-31",
+                "dated": true,
+                "source_custody": [
+                  "fixture-alpha-overlap-window-source"
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-alpha",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "claim_key": "alpha-temporal-claim",
+            "claim_id": "c1_tmfyfuuee4kyc2xs5kftrcpqqugqqmzv23t57kzk36bscjtcxvsa",
+            "subject_entity_key": "alpha-temporal-person",
+            "subject_axm_entity_id": "e1_vvgji3ltxeo5ecaznog5s3oxhm5xy6yt5vsqfpjgsnl5o7ixpshq",
+            "predicate": "participates_in",
+            "object_entity_key": "alpha-temporal-surface",
+            "object_axm_entity_id": "e1_bfpudvonscds72pf6ehgzjmsbvo53jvlekp753nx3mna437uecvq",
+            "object_type": "entity",
+            "windows": [
+              {
+                "valid_from": "2020-01-01",
+                "valid_until": "2020-12-31",
+                "dated": true,
+                "source_custody": [
+                  "fixture-alpha-temporal-window-source"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "case_id": "fixture-beta",
+        "identity_namespace": "cn-fixture-shared-v1",
+        "entities": [
+          {
+            "case_id": "fixture-beta",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "beta-alias-person",
+            "kind": "actor",
+            "label": "Fixture Alias Alpha",
+            "aliases": [
+              "Fixture Person Alpha"
+            ],
+            "axm_entity_id": "e1_gcb2tdjobaupop7y7p7pve5ypbfnzaaqam76xkzdrklbbr7gcuoa",
+            "alias_axm_ids": [
+              "e1_ts3catt5znlpddswoc32yd6qtdrlj7a43ebnv6he4pegbh22h2lq"
+            ],
+            "identity_tokens": [
+              "e1_gcb2tdjobaupop7y7p7pve5ypbfnzaaqam76xkzdrklbbr7gcuoa",
+              "e1_ts3catt5znlpddswoc32yd6qtdrlj7a43ebnv6he4pegbh22h2lq"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-beta-person-source",
+                "source_path": "fixture://beta/person"
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-beta",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "beta-ambiguous-one",
+            "kind": "actor",
+            "label": "Fixture Ambiguous Beta One",
+            "aliases": [
+              "Fixture Ambiguous Alias"
+            ],
+            "axm_entity_id": "e1_6gphxuezi2q2oiz3uysvzbdxyctmkf242ip4viafnwcvokisb47a",
+            "alias_axm_ids": [
+              "e1_wrlrtb4r26vtuiwxmplqsmlulsdacsqi434ne7p6i4uvrqos5mra"
+            ],
+            "identity_tokens": [
+              "e1_6gphxuezi2q2oiz3uysvzbdxyctmkf242ip4viafnwcvokisb47a",
+              "e1_wrlrtb4r26vtuiwxmplqsmlulsdacsqi434ne7p6i4uvrqos5mra"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-beta-ambiguous-one-source",
+                "source_path": "fixture://beta/ambiguous-one"
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-beta",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "beta-ambiguous-two",
+            "kind": "actor",
+            "label": "Fixture Ambiguous Beta Two",
+            "aliases": [
+              "Fixture Ambiguous Alias"
+            ],
+            "axm_entity_id": "e1_aygwnq6kuqlfn7nsta6bqq6u3a4xpkzsyzozledjvqyuhxei2p4a",
+            "alias_axm_ids": [
+              "e1_wrlrtb4r26vtuiwxmplqsmlulsdacsqi434ne7p6i4uvrqos5mra"
+            ],
+            "identity_tokens": [
+              "e1_aygwnq6kuqlfn7nsta6bqq6u3a4xpkzsyzozledjvqyuhxei2p4a",
+              "e1_wrlrtb4r26vtuiwxmplqsmlulsdacsqi434ne7p6i4uvrqos5mra"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-beta-ambiguous-two-source",
+                "source_path": "fixture://beta/ambiguous-two"
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-beta",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "beta-custody",
+            "kind": "actor",
+            "label": "Fixture Custody Person",
+            "aliases": [],
+            "axm_entity_id": "e1_pxzbojy4evq7ugqnphnqgx6wdax3ai7ugu3zghmfot2rkv7p2fga",
+            "alias_axm_ids": [],
+            "identity_tokens": [
+              "e1_pxzbojy4evq7ugqnphnqgx6wdax3ai7ugu3zghmfot2rkv7p2fga"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-beta-custody-source",
+                "source_path": "fixture://beta/custody"
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-beta",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "beta-different",
+            "kind": "actor",
+            "label": "Fixture Different Two",
+            "aliases": [],
+            "axm_entity_id": "e1_uanpsh7x5xvgdtir52x5a6a5u5t56sn4mshagml57w2wy2scut2q",
+            "alias_axm_ids": [],
+            "identity_tokens": [
+              "e1_uanpsh7x5xvgdtir52x5a6a5u5t56sn4mshagml57w2wy2scut2q"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-beta-different-source",
+                "source_path": "fixture://beta/different"
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-beta",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "beta-overlap-person",
+            "kind": "actor",
+            "label": "Fixture Overlap Person",
+            "aliases": [],
+            "axm_entity_id": "e1_7urrazd7pkhljzo3xkiijfflyd35hblbd4rckpszizsgxu2xy4aq",
+            "alias_axm_ids": [],
+            "identity_tokens": [
+              "e1_7urrazd7pkhljzo3xkiijfflyd35hblbd4rckpszizsgxu2xy4aq"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-beta-overlap-person-source",
+                "source_path": "fixture://beta/overlap-person"
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-beta",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "beta-overlap-surface",
+            "kind": "surface",
+            "label": "Fixture Overlap Surface",
+            "aliases": [],
+            "axm_entity_id": "e1_iefcx5uwzpqo3qdjjjx755dixomgat2d2ffzft6rgevnbg5ltg3q",
+            "alias_axm_ids": [],
+            "identity_tokens": [
+              "e1_iefcx5uwzpqo3qdjjjx755dixomgat2d2ffzft6rgevnbg5ltg3q"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-beta-overlap-surface-source",
+                "source_path": "fixture://beta/overlap-surface"
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-beta",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "beta-temporal-person",
+            "kind": "actor",
+            "label": "Fixture Temporal Person",
+            "aliases": [],
+            "axm_entity_id": "e1_vvgji3ltxeo5ecaznog5s3oxhm5xy6yt5vsqfpjgsnl5o7ixpshq",
+            "alias_axm_ids": [],
+            "identity_tokens": [
+              "e1_vvgji3ltxeo5ecaznog5s3oxhm5xy6yt5vsqfpjgsnl5o7ixpshq"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-beta-temporal-person-source",
+                "source_path": "fixture://beta/temporal-person"
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-beta",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "beta-temporal-surface",
+            "kind": "surface",
+            "label": "Fixture Temporal Surface",
+            "aliases": [],
+            "axm_entity_id": "e1_bfpudvonscds72pf6ehgzjmsbvo53jvlekp753nx3mna437uecvq",
+            "alias_axm_ids": [],
+            "identity_tokens": [
+              "e1_bfpudvonscds72pf6ehgzjmsbvo53jvlekp753nx3mna437uecvq"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-beta-temporal-surface-source",
+                "source_path": "fixture://beta/temporal-surface"
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-beta",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "entity_key": "beta-unasserted",
+            "kind": "actor",
+            "label": "Fixture Unasserted Label",
+            "aliases": [],
+            "axm_entity_id": "e1_cwmplkxmqc6o5aqcggruzyiqmxnmncwucsqrsqrpqfqpfj3b7noa",
+            "alias_axm_ids": [],
+            "identity_tokens": [
+              "e1_cwmplkxmqc6o5aqcggruzyiqmxnmncwucsqrsqrpqfqpfj3b7noa"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-beta-unasserted-source",
+                "source_path": "fixture://beta/unasserted"
+              }
+            ]
+          }
+        ],
+        "claims": [
+          {
+            "case_id": "fixture-beta",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "claim_key": "beta-overlap-claim",
+            "claim_id": "c1_eu2ykpzlytynbz5hgz4o5ynkaw5bktxwoobmpkp2pnjoydhavs7a",
+            "subject_entity_key": "beta-overlap-person",
+            "subject_axm_entity_id": "e1_7urrazd7pkhljzo3xkiijfflyd35hblbd4rckpszizsgxu2xy4aq",
+            "predicate": "participates_in",
+            "object_entity_key": "beta-overlap-surface",
+            "object_axm_entity_id": "e1_iefcx5uwzpqo3qdjjjx755dixomgat2d2ffzft6rgevnbg5ltg3q",
+            "object_type": "entity",
+            "windows": [
+              {
+                "valid_from": "2020-06-01",
+                "valid_until": "2021-06-30",
+                "dated": true,
+                "source_custody": [
+                  "fixture-beta-overlap-window-source"
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "fixture-beta",
+            "identity_namespace": "cn-fixture-shared-v1",
+            "claim_key": "beta-temporal-claim",
+            "claim_id": "c1_tmfyfuuee4kyc2xs5kftrcpqqugqqmzv23t57kzk36bscjtcxvsa",
+            "subject_entity_key": "beta-temporal-person",
+            "subject_axm_entity_id": "e1_vvgji3ltxeo5ecaznog5s3oxhm5xy6yt5vsqfpjgsnl5o7ixpshq",
+            "predicate": "participates_in",
+            "object_entity_key": "beta-temporal-surface",
+            "object_axm_entity_id": "e1_bfpudvonscds72pf6ehgzjmsbvo53jvlekp753nx3mna437uecvq",
+            "object_type": "entity",
+            "windows": [
+              {
+                "valid_from": "2022-01-01",
+                "valid_until": "2022-12-31",
+                "dated": true,
+                "source_custody": [
+                  "fixture-beta-temporal-window-source"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "case_id": "fixture-gamma",
+        "identity_namespace": "cn-fixture-isolated-v1",
+        "entities": [
+          {
+            "case_id": "fixture-gamma",
+            "identity_namespace": "cn-fixture-isolated-v1",
+            "entity_key": "gamma-alias-person",
+            "kind": "actor",
+            "label": "Fixture Person Alpha",
+            "aliases": [
+              "Fixture Alias Alpha"
+            ],
+            "axm_entity_id": "e1_cfybpbqwusrjk35ptnuvfdybdftky5r7uqqfsvgpoy5dkivjjbwq",
+            "alias_axm_ids": [
+              "e1_ylnfsdd7amxb4sxvmgzxepb6hzq2wf7fbrf5wfk6sohmqxjzbs4q"
+            ],
+            "identity_tokens": [
+              "e1_cfybpbqwusrjk35ptnuvfdybdftky5r7uqqfsvgpoy5dkivjjbwq",
+              "e1_ylnfsdd7amxb4sxvmgzxepb6hzq2wf7fbrf5wfk6sohmqxjzbs4q"
+            ],
+            "source_custody": [
+              {
+                "source_key": "fixture-gamma-person-source",
+                "source_path": "fixture://gamma/person"
+              }
+            ]
+          }
+        ],
+        "claims": []
+      }
+    ],
+    "assertion_decisions": [
+      {
+        "schema_version": "axm-cross-case-join-decision@1",
+        "row_type": "join_assertion",
+        "decision_id": "fixture-join-accept-reciprocal-alias",
+        "status": "accepted",
+        "reason": "explicit_unambiguous_token_overlap",
+        "identity_bridge_key": "AXMBRIDGE-7ddc8db1fdabe40c95dd6c99",
+        "authorized_scope": "explicit_source_custodied_graph_inert_identity_resolution_only",
+        "left_case_id": "fixture-alpha",
+        "left_entity_key": "alpha-alias-person",
+        "left_identity_namespace": "cn-fixture-shared-v1",
+        "left_axm_entity_id": "e1_ts3catt5znlpddswoc32yd6qtdrlj7a43ebnv6he4pegbh22h2lq",
+        "left_source_custody": [
+          {
+            "source_key": "fixture-alpha-person-source",
+            "source_path": "fixture://alpha/person"
+          }
+        ],
+        "right_case_id": "fixture-beta",
+        "right_entity_key": "beta-alias-person",
+        "right_identity_namespace": "cn-fixture-shared-v1",
+        "right_axm_entity_id": "e1_gcb2tdjobaupop7y7p7pve5ypbfnzaaqam76xkzdrklbbr7gcuoa",
+        "right_source_custody": [
+          {
+            "source_key": "fixture-beta-person-source",
+            "source_path": "fixture://beta/person"
+          }
+        ],
+        "overlapping_identity_tokens": [
+          "e1_gcb2tdjobaupop7y7p7pve5ypbfnzaaqam76xkzdrklbbr7gcuoa",
+          "e1_ts3catt5znlpddswoc32yd6qtdrlj7a43ebnv6he4pegbh22h2lq"
+        ],
+        "assertion_custody": [
+          {
+            "source_key": "fixture-join-alias-assertion-source",
+            "source_path": "fixture://assertions/alias"
+          }
+        ],
+        "entities_merged": false,
+        "explicit_cross_case_identity_resolution_authorized": true,
+        "automatic_cross_case_join_authorized": false,
+        "cross_case_graph_join_authorized": false,
+        "cross_case_hop_creation_authorized": false,
+        "correction_mode": "append_preserving_supersession",
+        "graph_effect": "none"
+      },
+      {
+        "schema_version": "axm-cross-case-join-decision@1",
+        "row_type": "join_assertion",
+        "decision_id": "fixture-join-reject-namespace",
+        "status": "rejected",
+        "reason": "identity_namespace_mismatch",
+        "left_case_id": "fixture-alpha",
+        "left_entity_key": "alpha-alias-person",
+        "left_identity_namespace": "cn-fixture-shared-v1",
+        "left_axm_entity_id": "e1_ts3catt5znlpddswoc32yd6qtdrlj7a43ebnv6he4pegbh22h2lq",
+        "right_case_id": "fixture-gamma",
+        "right_entity_key": "gamma-alias-person",
+        "right_identity_namespace": "cn-fixture-isolated-v1",
+        "right_axm_entity_id": "e1_cfybpbqwusrjk35ptnuvfdybdftky5r7uqqfsvgpoy5dkivjjbwq",
+        "overlapping_identity_tokens": [],
+        "assertion_custody": [
+          {
+            "source_key": "fixture-join-namespace-assertion-source",
+            "source_path": "fixture://assertions/namespace"
+          }
+        ],
+        "explicit_cross_case_identity_resolution_authorized": false,
+        "automatic_cross_case_join_authorized": false,
+        "cross_case_graph_join_authorized": false,
+        "cross_case_hop_creation_authorized": false,
+        "graph_effect": "none"
+      },
+      {
+        "schema_version": "axm-cross-case-join-decision@1",
+        "row_type": "join_assertion",
+        "decision_id": "fixture-join-reject-no-token",
+        "status": "rejected",
+        "reason": "no_declared_token_overlap",
+        "left_case_id": "fixture-alpha",
+        "left_entity_key": "alpha-different",
+        "left_identity_namespace": "cn-fixture-shared-v1",
+        "left_axm_entity_id": "e1_aq7serw6rz4vv2eeb6mgmo4ig5hntjnyw73v6duzgoq4ked4awda",
+        "right_case_id": "fixture-beta",
+        "right_entity_key": "beta-different",
+        "right_identity_namespace": "cn-fixture-shared-v1",
+        "right_axm_entity_id": "e1_uanpsh7x5xvgdtir52x5a6a5u5t56sn4mshagml57w2wy2scut2q",
+        "overlapping_identity_tokens": [],
+        "assertion_custody": [
+          {
+            "source_key": "fixture-join-no-token-assertion-source",
+            "source_path": "fixture://assertions/no-token"
+          }
+        ],
+        "explicit_cross_case_identity_resolution_authorized": false,
+        "automatic_cross_case_join_authorized": false,
+        "cross_case_graph_join_authorized": false,
+        "cross_case_hop_creation_authorized": false,
+        "graph_effect": "none"
+      },
+      {
+        "schema_version": "axm-cross-case-join-decision@1",
+        "row_type": "join_assertion",
+        "decision_id": "fixture-join-reject-ambiguous",
+        "status": "rejected",
+        "reason": "ambiguous_token_overlap",
+        "left_case_id": "fixture-alpha",
+        "left_entity_key": "alpha-ambiguous",
+        "left_identity_namespace": "cn-fixture-shared-v1",
+        "left_axm_entity_id": "e1_l2nltglaqb6xxrng5qpni3hjomkxi3fxrhokva6tsjpl66mljgfq",
+        "right_case_id": "fixture-beta",
+        "right_entity_key": "beta-ambiguous-one",
+        "right_identity_namespace": "cn-fixture-shared-v1",
+        "right_axm_entity_id": "e1_6gphxuezi2q2oiz3uysvzbdxyctmkf242ip4viafnwcvokisb47a",
+        "overlapping_identity_tokens": [
+          "e1_wrlrtb4r26vtuiwxmplqsmlulsdacsqi434ne7p6i4uvrqos5mra"
+        ],
+        "assertion_custody": [
+          {
+            "source_key": "fixture-join-ambiguous-assertion-source",
+            "source_path": "fixture://assertions/ambiguous"
+          }
+        ],
+        "explicit_cross_case_identity_resolution_authorized": false,
+        "automatic_cross_case_join_authorized": false,
+        "cross_case_graph_join_authorized": false,
+        "cross_case_hop_creation_authorized": false,
+        "graph_effect": "none"
+      },
+      {
+        "schema_version": "axm-cross-case-join-decision@1",
+        "row_type": "join_assertion",
+        "decision_id": "fixture-join-reject-custody",
+        "status": "rejected",
+        "reason": "missing_assertion_custody",
+        "left_case_id": "fixture-alpha",
+        "left_entity_key": "alpha-custody",
+        "left_identity_namespace": "cn-fixture-shared-v1",
+        "left_axm_entity_id": "e1_pxzbojy4evq7ugqnphnqgx6wdax3ai7ugu3zghmfot2rkv7p2fga",
+        "right_case_id": "fixture-beta",
+        "right_entity_key": "beta-custody",
+        "right_identity_namespace": "cn-fixture-shared-v1",
+        "right_axm_entity_id": "e1_pxzbojy4evq7ugqnphnqgx6wdax3ai7ugu3zghmfot2rkv7p2fga",
+        "overlapping_identity_tokens": [],
+        "assertion_custody": [],
+        "explicit_cross_case_identity_resolution_authorized": false,
+        "automatic_cross_case_join_authorized": false,
+        "cross_case_graph_join_authorized": false,
+        "cross_case_hop_creation_authorized": false,
+        "graph_effect": "none"
+      }
+    ],
+    "unasserted_decisions": [
+      {
+        "schema_version": "axm-cross-case-join-decision@1",
+        "row_type": "unasserted_overlap_control",
+        "decision_id": "fixture-unasserted-same-label",
+        "status": "rejected",
+        "reason": "explicit_assertion_missing",
+        "left_case_id": "fixture-alpha",
+        "left_entity_key": "alpha-unasserted",
+        "right_case_id": "fixture-beta",
+        "right_entity_key": "beta-unasserted",
+        "same_identity_namespace": true,
+        "overlapping_identity_tokens": [
+          "e1_cwmplkxmqc6o5aqcggruzyiqmxnmncwucsqrsqrpqfqpfj3b7noa"
+        ],
+        "token_overlap_observed": true,
+        "explicit_cross_case_identity_resolution_authorized": false,
+        "automatic_cross_case_join_authorized": false,
+        "cross_case_graph_join_authorized": false,
+        "cross_case_hop_creation_authorized": false,
+        "graph_effect": "none"
+      }
+    ],
+    "temporal_decisions": [
+      {
+        "schema_version": "axm-cross-case-join-decision@1",
+        "row_type": "temporal_claim_control",
+        "decision_id": "fixture-temporal-disjoint",
+        "status": "control_passed",
+        "left_case_id": "fixture-alpha",
+        "left_claim_key": "alpha-temporal-claim",
+        "left_claim_id": "c1_tmfyfuuee4kyc2xs5kftrcpqqugqqmzv23t57kzk36bscjtcxvsa",
+        "left_windows": [
+          {
+            "valid_from": "2020-01-01",
+            "valid_until": "2020-12-31",
+            "dated": true,
+            "source_custody": [
+              "fixture-alpha-temporal-window-source"
+            ]
+          }
+        ],
+        "right_case_id": "fixture-beta",
+        "right_claim_key": "beta-temporal-claim",
+        "right_claim_id": "c1_tmfyfuuee4kyc2xs5kftrcpqqugqqmzv23t57kzk36bscjtcxvsa",
+        "right_windows": [
+          {
+            "valid_from": "2022-01-01",
+            "valid_until": "2022-12-31",
+            "dated": true,
+            "source_custody": [
+              "fixture-beta-temporal-window-source"
+            ]
+          }
+        ],
+        "claim_identity_equal": true,
+        "temporal_overlap": false,
+        "hop_basis_candidate": false,
+        "automatic_cross_case_join_authorized": false,
+        "cross_case_graph_join_authorized": false,
+        "cross_case_hop_creation_authorized": false,
+        "graph_effect": "none"
+      },
+      {
+        "schema_version": "axm-cross-case-join-decision@1",
+        "row_type": "temporal_claim_control",
+        "decision_id": "fixture-temporal-overlap",
+        "status": "control_passed",
+        "left_case_id": "fixture-alpha",
+        "left_claim_key": "alpha-overlap-claim",
+        "left_claim_id": "c1_eu2ykpzlytynbz5hgz4o5ynkaw5bktxwoobmpkp2pnjoydhavs7a",
+        "left_windows": [
+          {
+            "valid_from": "2020-01-01",
+            "valid_until": "2020-12-31",
+            "dated": true,
+            "source_custody": [
+              "fixture-alpha-overlap-window-source"
+            ]
+          }
+        ],
+        "right_case_id": "fixture-beta",
+        "right_claim_key": "beta-overlap-claim",
+        "right_claim_id": "c1_eu2ykpzlytynbz5hgz4o5ynkaw5bktxwoobmpkp2pnjoydhavs7a",
+        "right_windows": [
+          {
+            "valid_from": "2020-06-01",
+            "valid_until": "2021-06-30",
+            "dated": true,
+            "source_custody": [
+              "fixture-beta-overlap-window-source"
+            ]
+          }
+        ],
+        "claim_identity_equal": true,
+        "temporal_overlap": true,
+        "hop_basis_candidate": true,
+        "automatic_cross_case_join_authorized": false,
+        "cross_case_graph_join_authorized": false,
+        "cross_case_hop_creation_authorized": false,
+        "graph_effect": "none"
+      }
+    ],
+    "hop_decision": {
+      "schema_version": "axm-cross-case-hop-controls@1",
+      "row_type": "hop_control_summary",
+      "decision_id": "fixture-hop-controls",
+      "status": "control_passed",
+      "edges": [
+        {
+          "actor_a": "fixture-bounded-a",
+          "actor_b": "fixture-bounded-b",
+          "surfaces": [
+            {
+              "surface_id": "fixture-bounded-surface",
+              "surface_label": "Fixture bounded surface",
+              "surface_type": "working_group",
+              "secondary_surface_types": [],
+              "evidence_class": "official",
+              "receipt_ids": [],
+              "valid_from": "2020-06-01",
+              "valid_until": "2020-12-31",
+              "temporal_status": "dated"
+            }
+          ],
+          "evidence_weight": 1,
+          "surface_count": 1,
+          "temporal_envelope": {
+            "valid_from": "2020-06-01",
+            "valid_until": "2020-12-31"
+          },
+          "temporal_status": "dated"
+        }
+      ],
+      "rejected_surfaces": [
+        {
+          "surface_id": "fixture-dense-surface",
+          "reason": "density_limit_exceeded",
+          "actor_count": 4,
+          "max_hop_actor_count": 3
+        },
+        {
+          "surface_id": "fixture-broad-surface",
+          "reason": "broad_institution_context_only"
+        }
+      ],
+      "rejected_pairs": [
+        {
+          "surface_id": "fixture-disjoint-surface",
+          "actor_a": "fixture-disjoint-a",
+          "actor_b": "fixture-disjoint-b",
+          "reason": "no_temporal_overlap",
+          "actor_a_window": {
+            "valid_from": "2020-01-01",
+            "valid_until": "2020-12-31",
+            "dated": true
+          },
+          "actor_b_window": {
+            "valid_from": "2022-01-01",
+            "valid_until": "2022-12-31",
+            "dated": true
+          },
+          "surface_window": {
+            "valid_from": "2020-01-01",
+            "valid_until": "2022-12-31",
+            "dated": true
+          },
+          "actor_a_receipt_ids": [],
+          "actor_b_receipt_ids": [],
+          "surface_receipt_ids": [],
+          "receipt_ids": [],
+          "evidence_class": "official",
+          "actor_a_window_reverifiable": false,
+          "actor_b_window_reverifiable": false,
+          "publication_status": "review_required",
+          "publication_reason": "actor_window_receipts_not_publicly_reverifiable"
+        }
+      ],
+      "automatic_cross_case_join_authorized": false,
+      "cross_case_graph_join_authorized": false,
+      "cross_case_hop_creation_authorized": false,
+      "graph_effect": "none"
+    },
+    "explicit_cross_case_identity_resolution_authorized": true,
+    "automatic_cross_case_join_authorized": false,
+    "cross_case_graph_join_authorized": false,
+    "cross_case_hop_creation_authorized": false,
+    "graph_effect": "none"
+  },
+  "decision_projection": {
+    "path": "build/axm-cross-case-join-decision-index-wave-07.json",
+    "rows": 9,
+    "generated": true,
+    "graph_effect": "none"
+  },
+  "decisions": [
+    {
+      "decision_key": "W07-EXPLICIT-IDENTITY-RESOLUTION",
+      "judgment": "an_explicit_source_custodied_unambiguous_same_namespace_assertion_may_create_a_graph_inert_identity_bridge",
+      "action": "retain_accepted_and_rejected_decisions_in:data/project/lake-axm-cross-case-join-registry-wave-07.jsonl",
+      "evidence_count": 5,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_key": "W07-SAME-LABEL-NEGATIVE-CONTROL",
+      "judgment": "token_overlap_without_an_explicit_assertion_does_not_authorize_resolution",
+      "action": "retain_unasserted_overlap_as_rejected_control",
+      "evidence_count": 1,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_key": "W07-TEMPORAL-AND-DENSITY-CONTROLS",
+      "judgment": "claim_identity_is_time_stable_but_hop_basis_requires_temporal_overlap_and_density_discipline",
+      "action": "retain_disjoint_dense_and_broad_context_rejections_without_creating_cross_case_hops",
+      "evidence_count": 5,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    }
+  ],
+  "completion": {
+    "synthetic_fixture_complete": true,
+    "positive_identity_resolution_control_passed": true,
+    "namespace_negative_control_passed": true,
+    "no_token_negative_control_passed": true,
+    "ambiguity_negative_control_passed": true,
+    "source_custody_negative_control_passed": true,
+    "unasserted_same_label_negative_control_passed": true,
+    "temporal_controls_passed": true,
+    "density_and_broad_context_controls_passed": true,
+    "decision_projection_built": true,
+    "explicit_cross_case_identity_resolution_authorized": true,
+    "automatic_cross_case_join_authorized": false,
+    "cross_case_graph_join_authorized": false,
+    "cross_case_hop_creation_authorized": false,
+    "active_projection_cross_case_join_authorized": false,
+    "post_execution_reconciliation_complete": false,
+    "evidence_truth_determined": false,
+    "publication_cleared": false,
+    "decisions_requiring_human_permission": 0
+  },
+  "boundaries": {
+    "synthetic_fixture_proves_real_world_identity": false,
+    "same_label_proves_same_entity": false,
+    "declared_alias_alone_proves_same_entity": false,
+    "identity_token_overlap_proves_evidence_truth": false,
+    "explicit_identity_resolution_merges_entities": false,
+    "explicit_identity_resolution_creates_relationship": false,
+    "explicit_identity_resolution_creates_hop": false,
+    "explicit_cross_case_identity_resolution_authorized": true,
+    "automatic_cross_case_join_authorized": false,
+    "cross_case_graph_join_authorized": false,
+    "cross_case_hop_creation_authorized": false,
+    "active_projection_cross_case_join_authorized": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}

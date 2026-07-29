@@ -121,14 +121,19 @@ This release must pass five fixtures before the full database can be trusted:
 
 ## Temporal identity layer (AXM Genesis v1)
 
-`tools/lib/axm-id.mjs` now delegates active identity to the commit-pinned AXM Genesis v1 rules: NFC normalization, ASCII-only lowering, frozen whitespace handling, NUL-separated preimages, full 32-byte SHA-256 digests, and versioned `e1_` / `c1_` prefixes. The cross-runtime fixture and attestation are committed under `data/project/`; the exact 176-entity and 164-claim predecessor map is in `build/axm-identity-genesis-v1-migration.json`.
+`tools/lib/axm-id.mjs` delegates active identity to the commit-pinned AXM Genesis v1 rules: NFC normalization, ASCII-only lowering, frozen whitespace handling, NUL-separated preimages, full 32-byte SHA-256 digests, and versioned `e1_` / `c1_` prefixes. The cross-runtime fixture and attestation are committed under `data/project/`; the exact 176-entity and 164-claim predecessor map is in `build/axm-identity-genesis-v1-migration.json`.
 
 `tools/lib/axm-identity.mjs` materializes the reconciled active projection in `build/axm-identity.json`:
 
 - **Entities.** Every canonical actor, organization, and surface carries a current Genesis v1 `axm_entity_id`, plus its retired `legacy_provisional_entity_id`. Current and legacy alias-derived IDs remain attached to the same local registry object.
 - **Time-qualified claims.** Each participation pair carries a current `c1_` claim and a retired `legacy_provisional_claim_id`. Temporal windows, roles, evidence classes, receipts, local IDs, and hop semantics are unchanged.
 - **Append-preserving migration.** `data/project/lake-axm-active-identity-registry-wave-06.jsonl` records every one-to-one predecessor/successor transition. Old IDs resolve; they do not remain current and do not merge entities.
-- **Honesty markers.** The external AXM gate is complete and the active projection is no longer quarantined. Real-world identity is still not inferred from matching labels, and cross-case joins remain disabled pending a separate multi-case acceptance fixture.
+
+### Explicit cross-case identity resolution
+
+`tools/lib/axm-cross-case-join.mjs` implements one graph-inert resolution lane proved by the Wave 07 synthetic fixture. A bridge is accepted only when both local records carry source custody, a separate same-entity assertion carries its own custody, both records use the same identity namespace, and their canonical or declared-alias token overlap is unambiguous. The complete accepted/rejected decision ledger is `data/project/lake-axm-cross-case-join-registry-wave-07.jsonl`.
+
+This lane does not create a graph edge or hop, does not merge source entities, and does not treat matching labels as proof. Automatic same-label joins, different-namespace joins, ambiguous aliases, missing-custody assertions, cross-case graph joins, and cross-case hop creation remain prohibited. The broad active projection flag remains `cross_case_join_authorized: false`; the accepted scope is `explicit_source_custodied_graph_inert_identity_resolution_only`.
 
 `query:hops --from` / `--to` accept local IDs, current Genesis IDs, and retired predecessor IDs:
 

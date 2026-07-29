@@ -168,7 +168,7 @@ for (const row of registry) {
   else {
     if (object.source_occurrence !== true || object.projection_occurrence !== true || object.indexed !== true) fail(`${row.decision_id}: source/projection/index state drift`);
     if (!object.occurrences.some(item => item.path === policy.decision_registry_path && item.generated === false)) fail(`${row.decision_id}: registry occurrence missing`);
-    if (!object.occurrences.some(item => item.path === policy.plan_path && item.generated === true)) fail(`${row.decision_id}: plan occurrence missing`);
+    if (!object.occurrences.some(item => item.path === policy.decision_projection_path && item.generated === true)) fail(`${row.decision_id}: generated decision projection occurrence missing`);
     observed += 1;
   }
 }

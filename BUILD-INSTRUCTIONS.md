@@ -96,20 +96,32 @@ pending lane represented as cleared.
 
 Goal: everything that later phases join against is made exact.
 
-2.1 **AXM identity reconciliation — completed 2026-07-29.** The repository
-pins `BigBirdReturns/axm-genesis` commit
+2.1 **AXM identity and bounded cross-case resolution — completed 2026-07-29.**
+The repository pins `BigBirdReturns/axm-genesis` commit
 `411ef40e6cfc3ecb97ac3e256c8151be678347c8`, preserves the exact Genesis v1
 identity fixture at `data/project/axm-genesis-v1-identity-vectors.json`, and
 records identical Python/Node runtime output in
 `data/project/axm-genesis-v1-runtime-attestation.json`. The active
-`build/axm-identity.json` projection now uses full-digest, versioned
-`e1_`/`c1_` IDs. Every retired `e_`/`c_` token remains an explicit,
-resolvable predecessor in
-`data/project/lake-axm-active-identity-registry-wave-06.jsonl`. This closes
-the external reproducibility and active-migration gate; it does **not** prove
-real-world identity. Cross-case joins remain disabled until a separate
-multi-case acceptance fixture proves namespace, alias, and claim behavior
-without changing any source evidence or graph semantics.
+`build/axm-identity.json` projection uses full-digest, versioned `e1_`/`c1_`
+IDs, and every retired `e_`/`c_` token remains a resolvable predecessor in
+`data/project/lake-axm-active-identity-registry-wave-06.jsonl`.
+
+The synthetic multi-case fixture in
+`data/project/lake-axm-cross-case-acceptance-wave-07-fixture.json` authorizes
+one narrower lane: **explicit, source-custodied, graph-inert cross-case identity resolution**.
+A conforming bridge requires source custody on both local records, a separately
+custodied same-entity assertion, the same identity namespace, and an unambiguous
+overlap between canonical or declared-alias AXM tokens. Accepted and rejected
+decisions travel together in
+`data/project/lake-axm-cross-case-join-registry-wave-07.jsonl`.
+
+Automatic same-label joins remain prohibited. Different namespaces do not join.
+Ambiguous aliases and missing custody are rejected. An accepted bridge does not
+merge source entities, create a relationship, enter the hop graph, or authorize
+a cross-case graph edge. The broad active-projection
+`cross_case_join_authorized` flag therefore remains `false`; the authorized
+scope is exactly
+`explicit_source_custodied_graph_inert_identity_resolution_only`.
 
 2.2 **Surface-type audit for density.** Classify every existing surface against
 1.7. The Dialog roster and any future 100-name list get `hop_eligible: false`
