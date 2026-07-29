@@ -18,7 +18,7 @@ evidence payload changes permitted:    0
 local identifier changes permitted:    0
 active projection migration declared:  true
 external AXM gate target:              complete
-cross-case join authorized:            false
+cross-case join authorized:              false
 decisions requiring human permission:  0
 ```
 
