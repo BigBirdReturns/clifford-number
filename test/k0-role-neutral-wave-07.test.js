@@ -48,9 +48,28 @@ result = validateWave07({ root, wavePath: rel(write('resignation-launder.json', 
 assert.equal(result.ok, false); assert.ok(result.failures.some(row => row.includes('boundaries drift')));
 
 const aggregateDrift = structuredClone(neutral);
-aggregateDrift.execution.returned_records = 58;
+aggregateDrift.execution.returned_records = 56;
 result = validateWave07({ root, neutralPath: rel(write('aggregate-drift.json', aggregateDrift)) });
 assert.equal(result.ok, false); assert.ok(result.failures.some(row => row.includes('aggregate execution count')));
+
+
+const coverage = JSON.parse(fs.readFileSync(path.join(root, 'data/research/corpus-coverage.json'), 'utf8'));
+const futureNeutral = structuredClone(neutral);
+futureNeutral.status = 'execution_started_wave_08_discovery_only';
+futureNeutral.execution.executed_wave_ids.push('K0-W08');
+futureNeutral.discovery_waves.push({ wave_id:'K0-W08', path:'data/research/k0-role-neutral-wave-08.json', status:'discovery_complete_field_adjudication_pending', query_templates_touched:['K0-Q02'], gate_strata_touched:['K0-G03'], graph_effect:'none' });
+const futureCoverage = structuredClone(coverage);
+const lane = futureCoverage.lanes.find(row => row.lane_id === 'epistemic-admissibility-ceiling-events');
+const metric = lane.metrics.find(row => row.metric_id === 'candidate_records_pending_field_audit');
+metric.observed = 2; metric.source = 'data/research/k0-role-neutral-wave-08.json';
+const futureCoveragePath = rel(write('future-coverage.json', futureCoverage));
+const futureNeutralPath = rel(write('future-neutral.json', futureNeutral));
+result = validateWave07({ root, neutralPath: futureNeutralPath, coveragePath: futureCoveragePath });
+assert.equal(result.ok, true, result.failures.join('\n'));
+
+metric.source = 'data/research/k0-wave07-field-adjudication.json';
+result = validateWave07({ root, neutralPath: futureNeutralPath, coveragePath: rel(write('stale-coverage.json', futureCoverage)) });
+assert.equal(result.ok, false); assert.ok(result.failures.some(row => row.includes('Wave 07 coverage metric drift')));
 
 const report = JSON.parse(fs.readFileSync(path.join(root, 'reports/core-thesis/answerable-power/k0-role-neutral-wave-07.json'), 'utf8'));
 assert.equal(report.counts.retained_records, 9);

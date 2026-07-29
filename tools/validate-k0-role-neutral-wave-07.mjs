@@ -14,15 +14,17 @@ const bannedQueryTerms = [
 export function validateWave07({
   root = defaultRoot,
   wavePath = 'data/research/k0-role-neutral-wave-07.json',
-  neutralPath = 'data/research/k0-role-neutral-denominator.json'
+  neutralPath = 'data/research/k0-role-neutral-denominator.json',
+  coveragePath = 'data/research/corpus-coverage.json',
+  reviewsPath = 'data/research/selection-adversarial-reviews.json'
 } = {}) {
   const failures = [];
   const fail = message => failures.push(message);
   const read = rel => JSON.parse(fs.readFileSync(path.join(root, rel), 'utf8'));
   const wave = read(wavePath);
   const neutral = read(neutralPath);
-  const coverage = read('data/research/corpus-coverage.json');
-  const reviews = read('data/research/selection-adversarial-reviews.json');
+  const coverage = read(coveragePath);
+  const reviews = read(reviewsPath);
   const manifest = read('data/project/k0-role-neutral-wave-07-release-manifest.json');
   const report = read('reports/core-thesis/answerable-power/k0-role-neutral-wave-07.json');
 
@@ -92,19 +94,23 @@ export function validateWave07({
   if (b.query_hit_is_event !== false || b.blocked_action_proves_authorship_transfer !== false || b.accepted_resignation_proves_voluntary_departure !== false || b.constructive_discharge_finding_proves_complete_k0_chain !== false || b.ownership_decision_proves_comprehension_failure !== false || b.court_allegation_proves_merits !== false || b.staff_disagreement_proves_qualified_contradiction !== false || b.seed_overlap_creates_second_event !== false || b.genuine_resignation_is_ceiling_conversion !== false || b.same_explanation_form_proves_coordination !== false || b.maintainer_retention_proves_independent_review !== false || b.graph_effect !== 'none') fail('wave boundaries drift');
 
   const executedWaveIds = neutral.execution?.executed_wave_ids || [];
-  if (neutral.status !== 'execution_started_wave_07_field_pending' || neutral.execution?.searches_executed !== 44 || neutral.execution?.query_templates_executed !== 8 || neutral.execution?.raw_results_observed !== 206 || neutral.execution?.returned_records !== 57 || neutral.execution?.candidate_records !== 24 || neutral.execution?.positive_controls !== 13 || neutral.execution?.negative_controls !== 10 || neutral.execution?.coverage_controls !== 7 || neutral.execution?.included_events !== 0 || neutral.execution?.non_events !== 30) fail('aggregate execution count drift');
-  if (JSON.stringify(executedWaveIds) !== JSON.stringify(['K0-W01','K0-W02','K0-W03','K0-W04','K0-W05','K0-W06','K0-W07'])) fail('aggregate wave linkage drift');
+  if (typeof neutral.status !== 'string' || !neutral.status.startsWith('execution_started_wave_') || neutral.execution?.searches_executed < 44 || neutral.execution?.query_templates_executed < 8 || neutral.execution?.raw_results_observed < 206 || neutral.execution?.returned_records < 57 || neutral.execution?.candidate_records < 24 || neutral.execution?.positive_controls < 13 || neutral.execution?.negative_controls < 10 || neutral.execution?.coverage_controls < 7 || neutral.execution?.included_events !== 0 || neutral.execution?.non_events < 30) fail('aggregate execution count drift');
+  if (JSON.stringify(executedWaveIds.slice(0, 7)) !== JSON.stringify(['K0-W01','K0-W02','K0-W03','K0-W04','K0-W05','K0-W06','K0-W07'])) fail('aggregate wave linkage drift');
   const waveState = neutral.discovery_waves.find(row => row.wave_id === 'K0-W07');
-  if (waveState?.status !== 'discovery_complete_field_adjudication_pending' || waveState?.path !== 'data/research/k0-role-neutral-wave-07.json') fail('aggregate Wave 07 state drift');
+  if (waveState?.status !== 'discovery_complete_field_adjudication_complete' || waveState?.path !== 'data/research/k0-role-neutral-wave-07.json' || waveState?.field_adjudication_path !== 'data/research/k0-wave07-field-adjudication.json') fail('aggregate Wave 07 state drift');
 
   const coverageRow = coverage.lanes.find(row => row.lane_id === 'epistemic-admissibility-ceiling-events');
   const pendingMetric = coverageRow?.metrics?.find(row => row.metric_id === 'candidate_records_pending_field_audit');
   const gap = coverageRow?.known_gaps?.find(row => row.gap_id === 'k0-wave07-field-adjudication-open');
-  if (pendingMetric?.observed !== 3 || pendingMetric?.source !== 'data/research/k0-role-neutral-wave-07.json') fail('Wave 07 coverage metric drift');
-  if (gap?.status !== 'open') fail('Wave 07 coverage gap drift');
+  const wave07PendingSources = new Set(['data/research/k0-role-neutral-wave-07.json','data/research/k0-wave07-field-adjudication.json']);
+  if (!pendingMetric || !Number.isInteger(pendingMetric.observed) || pendingMetric.observed < 0 || typeof pendingMetric.source !== 'string') fail('Wave 07 coverage metric drift');
+  if (executedWaveIds.length === 7) {
+    if (pendingMetric.observed !== 0 || pendingMetric.source !== 'data/research/k0-wave07-field-adjudication.json') fail('Wave 07 coverage metric drift');
+  } else if (wave07PendingSources.has(pendingMetric.source)) fail('Wave 07 coverage metric drift');
+  if (gap?.status !== 'resolved_at_maintainer_layer') fail('Wave 07 coverage gap drift');
   const review = reviews.reviews.find(row => row.lane_id === 'epistemic-admissibility-ceiling-events');
   const comparator = review?.comparator_tests?.find(row => row.test_id === 'authorship-transfer-resignation-and-correction-controls');
-  if (comparator?.status !== 'discovery_complete_field_pending' || !comparator?.blocking_conditions?.some(value => /(?:field|stage) adjudication/i.test(value))) fail('authorship-transfer comparator drift');
+  if (comparator?.status !== 'maintainer_field_complete' || comparator?.blocking_conditions?.some(value => /await field adjudication|field review open|three candidate packets/i.test(value))) fail('authorship-transfer comparator drift');
 
   const expectedManifest = computeWave07Manifest();
   if (JSON.stringify(manifest) !== JSON.stringify(expectedManifest)) fail('exact-byte manifest drift');
