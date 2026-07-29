@@ -1,6 +1,6 @@
 # Lake index gap summary
 
-Source fingerprint: `57b1875c3073af6993cd320566ba835d9d53be68aaebd0e1c1f681f1b890b42a`
+Source fingerprint: `b178819c1100628cf6cd6cc73e5fd384aee4ada28b4229308409d08d0cd2e429`
 
 ## Finding
 
@@ -51,7 +51,7 @@ The current Git tree is physically censused, but the evidence lake is not semant
 parse errors:                   0
 undefined receipt references:   41
 projection IDs without source:  3686
-missing repository path tokens: 57
+missing repository path tokens: 71
 ```
 
 ### P1 — exact orphan evidence
