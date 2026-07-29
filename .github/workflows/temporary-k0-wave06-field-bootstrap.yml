@@ -1,7 +1,11 @@
 name: Temporary K0 Wave 06 field exact-checkout bootstrap
-# Registration trigger after workflow creation.
+# Pull-request trigger added after workflow registration.
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-k0-wave06-field-bootstrap.yml'
   push:
     branches: [agent/k0-wave06-field-adjudication]
     paths:
