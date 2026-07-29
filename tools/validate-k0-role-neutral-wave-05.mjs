@@ -13,13 +13,14 @@ const bannedQueryTerms = [
 
 export function validateWave05({
   root = defaultRoot,
-  wavePath = 'data/research/k0-role-neutral-wave-05.json'
+  wavePath = 'data/research/k0-role-neutral-wave-05.json',
+  neutralPath = 'data/research/k0-role-neutral-denominator.json'
 } = {}) {
   const failures = [];
   const fail = message => failures.push(message);
   const read = rel => JSON.parse(fs.readFileSync(path.join(root, rel), 'utf8'));
   const wave = read(wavePath);
-  const neutral = read('data/research/k0-role-neutral-denominator.json');
+  const neutral = read(neutralPath);
   const manifest = read('data/project/k0-role-neutral-wave-05-release-manifest.json');
   const report = read('reports/core-thesis/answerable-power/k0-role-neutral-wave-05.json');
 
@@ -80,9 +81,12 @@ export function validateWave05({
 
   if (wave.boundaries.query_hit_is_event !== false || wave.boundaries.retraction_proves_ceiling_conversion !== false || wave.boundaries.misconduct_finding_proves_epistemic_suppression !== false || wave.boundaries.later_vindication_proves_prior_knowledge !== false || wave.boundaries.policy_proves_observed_effectiveness !== false || wave.boundaries.graph_effect !== 'none') fail('wave boundaries drift');
 
-  if (neutral.status !== 'execution_started_wave_05_discovery_only') fail('aggregate neutral status drift');
+  const executedWaveIds = neutral.execution?.executed_wave_ids || [];
+  if (typeof neutral.status !== 'string' || !neutral.status.startsWith('execution_started_wave_')) fail('aggregate neutral status drift');
+  if (!Number.isInteger(neutral.execution?.searches_executed) || neutral.execution.searches_executed < 20 || !Number.isInteger(neutral.execution?.query_templates_executed) || neutral.execution.query_templates_executed < 6 || !Number.isInteger(neutral.execution?.raw_results_observed) || neutral.execution.raw_results_observed < 86 || !Number.isInteger(neutral.execution?.returned_records) || neutral.execution.returned_records < 40) fail('aggregate execution count drift');
+  if (JSON.stringify(executedWaveIds.slice(0, 5)) !== JSON.stringify(['K0-W01','K0-W02','K0-W03','K0-W04','K0-W05'])) fail('aggregate wave linkage drift');
   const waveState = neutral.discovery_waves.find(row => row.wave_id === 'K0-W05');
-  if (waveState?.status !== 'discovery_complete_field_adjudication_pending') fail('aggregate Wave 05 state drift');
+  if (!['discovery_complete_field_adjudication_pending','discovery_complete_field_adjudication_complete'].includes(waveState?.status)) fail('aggregate Wave 05 state drift');
 
   const expectedManifest = computeWave05Manifest();
   if (JSON.stringify(manifest) !== JSON.stringify(expectedManifest)) fail('exact-byte manifest drift');

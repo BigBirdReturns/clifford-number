@@ -17,6 +17,7 @@ const baseline = validateWave05({ root });
 assert.equal(baseline.ok, true, baseline.failures.join('\n'));
 
 const wave = JSON.parse(fs.readFileSync(path.join(root, 'data/research/k0-role-neutral-wave-05.json'), 'utf8'));
+const neutral = JSON.parse(fs.readFileSync(path.join(root, 'data/research/k0-role-neutral-denominator.json'), 'utf8'));
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'k0-wave05-test-'));
 const write = (name, value) => {
   const file = path.join(tmp, name);
@@ -53,6 +54,18 @@ correctionPromote.records.find(row => row.record_id === 'K0-W05-R007').ccd_chain
 result = validateWave05({ root, wavePath: write('correction.json', correctionPromote) });
 assert.equal(result.ok, false);
 assert.ok(result.failures.some(row => row.includes('discovery promoted')));
+
+const missingWave05 = structuredClone(neutral);
+missingWave05.execution.executed_wave_ids = missingWave05.execution.executed_wave_ids.filter(id => id !== 'K0-W05');
+result = validateWave05({ root, neutralPath: write('missing-wave05.json', missingWave05) });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some(row => row.includes('aggregate wave linkage drift')));
+
+const undercount = structuredClone(neutral);
+undercount.execution.searches_executed = 19;
+result = validateWave05({ root, neutralPath: write('undercount.json', undercount) });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some(row => row.includes('aggregate execution count drift')));
 
 const graph = structuredClone(wave);
 graph.records[0].graph_effect = 'create_hop';
