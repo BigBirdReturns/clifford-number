@@ -10,6 +10,7 @@ const steps = [
   ['compile-reporter-briefings', 'tools/compile-reporter-briefings.mjs'],
   ['build-public-catalog', 'tools/build-public-catalog.mjs'],
   ['build-canonical-subject-projection-wave-13', 'tools/build-lake-canonical-subject-projection-wave-13.mjs'],
+  ['build-exact-canonical-subject-wave-14', 'tools/build-lake-exact-canonical-subject-wave-14.mjs'],
   ['build-report-frontier', 'tools/build-report-frontier.mjs'],
   ['render-report-frontier', 'tools/render-report-frontier.mjs'],
   ['build-next-ten-estates', 'tools/build-next-ten-estates.mjs'],
