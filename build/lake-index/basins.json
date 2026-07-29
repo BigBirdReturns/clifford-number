@@ -1,17 +1,17 @@
 {
   "schema_version": "lake-basin-index@1",
   "registry_id": "CN-LAKE-BASINS-2026-07",
-  "source_fingerprint": "d38c9c13463c7578a680e92d8fd5c9bc07a25f5189709dd33c76784d557adf58",
+  "source_fingerprint": "f6b96ba6811f5aaee0b7e6c29194654c2d8effb4b1652447092726b9f92c6bda",
   "source_census_path": "build/lake-index/files.jsonl",
   "counts": {
-    "source_rows": 1884,
+    "source_rows": 1899,
     "basin_count": 37,
-    "classified_without_default": 1884,
+    "classified_without_default": 1899,
     "unclassified_paths": 0,
-    "evidence_bearing_files": 1280,
-    "evidence_files_with_registry_owner": 1280,
-    "evidence_files_previously_unowned": 1280,
-    "exact_orphan_evidence_files": 142,
+    "evidence_bearing_files": 1290,
+    "evidence_files_with_registry_owner": 1290,
+    "evidence_files_previously_unowned": 1290,
+    "exact_orphan_evidence_files": 143,
     "gap_rows": 80,
     "gap_type_counts": {
       "public_reachability_requires_authorization_review": 50,
@@ -138,13 +138,13 @@
       "publication_disposition": "internal_or_explicitly_authorized",
       "retention_disposition": "canonical_governance",
       "counts": {
-        "files": 102,
-        "evidence_bearing": 102,
-        "index_reachable": 101,
+        "files": 105,
+        "evidence_bearing": 105,
+        "index_reachable": 103,
         "public_reachable": 0,
-        "exact_orphans": 1,
-        "previously_unowned": 102,
-        "registry_owner_added": 102
+        "exact_orphans": 2,
+        "previously_unowned": 105,
+        "registry_owner_added": 105
       },
       "entrypoint_state": [
         {
@@ -338,6 +338,46 @@
       "entrypoint_complete": true
     },
     {
+      "basin_id": "case-sources",
+      "label": "Case source ledgers",
+      "semantic_role": "case_source",
+      "owner_program_id": "case-ledger-program",
+      "ownership_status": "declared_by_case",
+      "path_prefixes": [
+        "cases/"
+      ],
+      "authoritative_entrypoints": [
+        "cases.json",
+        "build/cases/index.json"
+      ],
+      "source_basin_ids": [
+        "receipt-artifacts",
+        "research-records"
+      ],
+      "publication_disposition": "status_bound",
+      "retention_disposition": "canonical_case_source",
+      "counts": {
+        "files": 43,
+        "evidence_bearing": 43,
+        "index_reachable": 42,
+        "public_reachable": 9,
+        "exact_orphans": 1,
+        "previously_unowned": 43,
+        "registry_owner_added": 43
+      },
+      "entrypoint_state": [
+        {
+          "path": "cases.json",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "build/cases/index.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
       "basin_id": "estate-source-data",
       "label": "Estate source and task data",
       "semantic_role": "estate_source",
@@ -377,46 +417,6 @@
         },
         {
           "path": "build/estate-game-trails/manifest.json",
-          "present_in_census_snapshot": true
-        }
-      ],
-      "entrypoint_complete": true
-    },
-    {
-      "basin_id": "case-sources",
-      "label": "Case source ledgers",
-      "semantic_role": "case_source",
-      "owner_program_id": "case-ledger-program",
-      "ownership_status": "declared_by_case",
-      "path_prefixes": [
-        "cases/"
-      ],
-      "authoritative_entrypoints": [
-        "cases.json",
-        "build/cases/index.json"
-      ],
-      "source_basin_ids": [
-        "receipt-artifacts",
-        "research-records"
-      ],
-      "publication_disposition": "status_bound",
-      "retention_disposition": "canonical_case_source",
-      "counts": {
-        "files": 36,
-        "evidence_bearing": 36,
-        "index_reachable": 35,
-        "public_reachable": 9,
-        "exact_orphans": 1,
-        "previously_unowned": 36,
-        "registry_owner_added": 36
-      },
-      "entrypoint_state": [
-        {
-          "path": "cases.json",
-          "present_in_census_snapshot": true
-        },
-        {
-          "path": "build/cases/index.json",
           "present_in_census_snapshot": true
         }
       ],
@@ -1084,13 +1084,13 @@
       "publication_disposition": "not_evidence",
       "retention_disposition": "tooling",
       "counts": {
-        "files": 269,
+        "files": 272,
         "evidence_bearing": 0,
         "index_reachable": 205,
         "public_reachable": 45,
         "exact_orphans": 21,
-        "previously_unowned": 269,
-        "registry_owner_added": 269
+        "previously_unowned": 272,
+        "registry_owner_added": 272
       },
       "entrypoint_state": [
         {
@@ -1116,13 +1116,13 @@
       "publication_disposition": "not_evidence",
       "retention_disposition": "regression",
       "counts": {
-        "files": 149,
+        "files": 150,
         "evidence_bearing": 0,
         "index_reachable": 111,
         "public_reachable": 1,
         "exact_orphans": 6,
-        "previously_unowned": 149,
-        "registry_owner_added": 149
+        "previously_unowned": 150,
+        "registry_owner_added": 150
       },
       "entrypoint_state": [
         {
@@ -1148,13 +1148,13 @@
       "publication_disposition": "not_evidence",
       "retention_disposition": "tooling",
       "counts": {
-        "files": 59,
+        "files": 60,
         "evidence_bearing": 0,
         "index_reachable": 28,
         "public_reachable": 0,
-        "exact_orphans": 28,
-        "previously_unowned": 59,
-        "registry_owner_added": 59
+        "exact_orphans": 29,
+        "previously_unowned": 60,
+        "registry_owner_added": 60
       },
       "entrypoint_state": [
         {

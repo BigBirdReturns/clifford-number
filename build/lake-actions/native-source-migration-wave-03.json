@@ -1,0 +1,160 @@
+{
+  "schema_version": "lake-native-source-migration-wave-03-plan@1",
+  "program_key": "CN-LAKE-NATIVE-SOURCE-W03",
+  "source_fingerprint_sha256": "3abccaffcebdcf759c3cb6a51d935f0211be2194a25ccb038c6f95811cd36f97",
+  "input_manifest": [
+    {
+      "path": "build/cases/uk-ai-policy.json",
+      "bytes": 1255518,
+      "sha256": "14aaf207f9e3fa0dc7965d11e61a9131d5b54dc0c16ebaf770a8dfaf5956a9b7"
+    },
+    {
+      "path": "build/lake-actions/identifier-repair-wave-02-reconciliation.json",
+      "bytes": 5648,
+      "sha256": "a2ef52ecc9ca4256e5ef86f86d14fd3a9bf82c990def72f0bcabc4cc44ab1ab0"
+    },
+    {
+      "path": "cases/uk-ai-policy.json",
+      "bytes": 181776,
+      "sha256": "062d72d61076c5f63b56327fc095931d9ad568d175b1c7d3d48c85f450cd0361"
+    },
+    {
+      "path": "data/project/lake-identifier-source-registry-wave-02.jsonl",
+      "bytes": 2430970,
+      "sha256": "4fef5260750f2ca5a852c6b045586823e6999f94c55af6a99a6d067ce68ba7a5"
+    },
+    {
+      "path": "data/project/lake-native-source-migration-wave-03-policy.json",
+      "bytes": 2785,
+      "sha256": "b50556f882b196603800899c8c172d1e1f82ff20ac5bbb5eeccea2a1b48266f4"
+    },
+    {
+      "path": "tools/build-public-catalog.mjs",
+      "bytes": 13216,
+      "sha256": "0ebfee63df49daed45b522d9544bae2ffaf25c2766b136624fbbcade1df17f3c"
+    },
+    {
+      "path": "tools/lib/case-ledger.mjs",
+      "bytes": 10558,
+      "sha256": "aa626f4d7639c8e03e8c32346480f2d0e9d8faee7355437123e974acac7e4a46"
+    }
+  ],
+  "legacy_projection": {
+    "path": "build/cases/uk-ai-policy.json",
+    "sha256": "14aaf207f9e3fa0dc7965d11e61a9131d5b54dc0c16ebaf770a8dfaf5956a9b7",
+    "claims": 224,
+    "events": 224,
+    "receipts": 15,
+    "claim_status_counts": {
+      "verified": 37,
+      "review_required": 187,
+      "disputed": 0,
+      "superseded": 0,
+      "rejected": 0
+    }
+  },
+  "native_source": {
+    "directory": "cases/uk-ai-policy",
+    "source_files": [
+      {
+        "path": "cases/uk-ai-policy/case.json",
+        "bytes": 12752,
+        "sha256": "fbac509ad7db77b1ef8f5e9fc9efa9e539e8fe713bb6040e10fcc50c9447dcdf"
+      },
+      {
+        "path": "cases/uk-ai-policy/receipts.jsonl",
+        "bytes": 5897,
+        "sha256": "307fd7de5944a2cb1b32ba0e1c89ee8a7b62974a38ce5bbe44e9e206d13d8337"
+      },
+      {
+        "path": "cases/uk-ai-policy/claims.jsonl",
+        "bytes": 124310,
+        "sha256": "f4d9d2d9d233e37e246f9a40bc8f5236a7b079f38f21f703383545e370894f3a"
+      },
+      {
+        "path": "cases/uk-ai-policy/events.jsonl",
+        "bytes": 52103,
+        "sha256": "691f67f370525a7272e5bfd9afeb2b1b67552a6d59981714bd00cf806f448322"
+      },
+      {
+        "path": "cases/uk-ai-policy/relations.jsonl",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "cases/uk-ai-policy/beacons.jsonl",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "cases/uk-ai-policy/trails.jsonl",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "source_semantic_digest_sha256": "a3b337be6462be8bb86c4ea9c3575bbeae42fa415a8d9ebe411e95d943dfa5a3",
+    "receipt_evidence_classes_filled": 12,
+    "validation_errors": 0
+  },
+  "supersessions": {
+    "rows": 448,
+    "ledger_path": "data/project/lake-identifier-source-supersessions-wave-03.jsonl",
+    "prior_rule": "legacy-uk-ai-case-projection",
+    "by_identifier_key": {
+      "claim_id": 224,
+      "event_id": 224
+    }
+  },
+  "decisions": [
+    {
+      "decision_key": "W03-NATIVE-CASE-SOURCE",
+      "judgment": "the_deterministic_legacy_projection_can_be_losslessly_represented_at_the_source_semantic_level_as_a_native_case_ledger",
+      "action": "write:cases/uk-ai-policy",
+      "evidence_count": 463,
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_correct_the_native_lineage_but_does_not_block_the_reversible_migration"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "a_later_native_source_migration_may_supersede_this_record_without_deleting_the_prior_registration_or_source_rows"
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_key": "W03-REGISTRATION-SUPERSESSION",
+      "judgment": "the_448_legacy_uk_ai_identifier_registrations_now_have_native_case_source_rows",
+      "action": "write:data/project/lake-identifier-source-supersessions-wave-03.jsonl",
+      "evidence_count": 448,
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_correct_the_native_lineage_but_does_not_block_the_reversible_migration"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "a_later_native_source_migration_may_supersede_this_record_without_deleting_the_prior_registration_or_source_rows"
+      },
+      "graph_effect": "none"
+    }
+  ],
+  "completion": {
+    "native_source_files_written": 7,
+    "source_semantic_equivalence_proved": true,
+    "targeted_identifier_supersessions_written": 448,
+    "native_case_compiled_and_catalogued": false,
+    "post_execution_reconciliation_complete": false,
+    "evidence_truth_determined": false,
+    "publication_cleared": false,
+    "decisions_requiring_human_permission": 0
+  },
+  "boundaries": {
+    "native_source_migration_proves_evidence_truth": false,
+    "native_source_migration_resolves_identity": false,
+    "compiled_equivalence_is_independent_corroboration": false,
+    "compiler_hydration_is_a_new_factual_claim": false,
+    "verified_claim_is_wrongdoing_finding": false,
+    "legacy_graph_edge_is_coordination_or_causation": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}

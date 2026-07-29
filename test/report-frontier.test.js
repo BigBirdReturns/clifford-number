@@ -64,10 +64,12 @@ assert.ok(swarmForge.blockers.includes('no_verified_claims'));
 
 const ukAi = byCase.get('uk-ai-policy');
 assert.ok(ukAi);
-assert.equal(ukAi.case_state, 'legacy_projection');
-assert.equal(ukAi.current_stage, 'intake_or_projection');
-assert.equal(ukAi.next_transition, 'case_ledger_migration');
-assert.ok(ukAi.blockers.includes('canonical_case_ledger_missing'));
+assert.equal(ukAi.case_state, 'case_ledger');
+assert.equal(ukAi.current_stage, 'case_ledger');
+assert.equal(ukAi.next_transition, 'structured_report_specification');
+assert.ok(ukAi.blockers.includes('187_claims_review_required'));
+assert.ok(ukAi.blockers.includes('structured_report_not_declared'));
+assert.ok(!ukAi.blockers.includes('canonical_case_ledger_missing'));
 
 const byProgram = new Map(frontier.trail_programs.map(item => [item.program_id, item]));
 const arcadiaTrails = byProgram.get('case:arcadia-field-autopsy');

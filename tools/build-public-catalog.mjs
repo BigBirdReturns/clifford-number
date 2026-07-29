@@ -236,7 +236,8 @@ function compilePublicCatalog() {
   const claims = new Map();
   const receipts = new Map();
 
-  const projectedUkAiCase = compileUkAiPolicyCase();
+  const nativeUkAiCase = (caseIndex.cases ?? []).find(entry => entry.case_id === UK_AI_CASE_ID);
+  const projectedUkAiCase = nativeUkAiCase ?? compileUkAiPolicyCase();
 
   const cases = [projectedUkAiCase, ...(caseIndex.cases ?? []).filter(entry => entry.case_id !== UK_AI_CASE_ID)].map(entry => {
     const caseItem = readJson(entry.href);
@@ -282,6 +283,7 @@ function compilePublicCatalog() {
     const featured = firstVerifiedClaim(caseItem);
     return {
       ...entry,
+      source_counts: entry.source_counts ?? caseItem.source_counts,
       featured_claim: featured ? {
         key: `${caseItem.case_id}::${featured.claim.claim_id}`,
         claim_id: featured.claim.claim_id,
