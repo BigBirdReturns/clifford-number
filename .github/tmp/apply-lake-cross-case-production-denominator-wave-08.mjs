@@ -126,7 +126,7 @@ for (const file of [
   'data/project/lake-cross-case-production-denominator-wave-08-policy.json',
   'data/project/lake-cross-case-production-entity-registry-wave-08.jsonl',
   'data/project/lake-cross-case-production-pair-denominator-wave-08.jsonl',
-  'data/project/lake-cross-case-production-join-decisions-wave-08.jsonl',
+  'data/project/lake-cross-case-production-join-decision-registry-wave-08.jsonl',
   'data/project/lake-cross-case-production-denominator-wave-08.json'
 ]) {
   if (!lakePolicy.authoritative_roots.includes(file)) lakePolicy.authoritative_roots.push(file);
