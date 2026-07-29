@@ -10,6 +10,7 @@ const policy = JSON.parse(fs.readFileSync(path.join(root, 'data/project/lake-ind
 const manifest = JSON.parse(fs.readFileSync(path.join(shardRoot, 'manifest.json'), 'utf8'));
 const summary = JSON.parse(fs.readFileSync(path.join(shardRoot, 'summary.json'), 'utf8'));
 const gapSummary = JSON.parse(fs.readFileSync(path.join(shardRoot, 'gap-summary.json'), 'utf8'));
+const receiptSemantics = JSON.parse(fs.readFileSync(path.join(shardRoot, 'receipt-semantics.json'), 'utf8'));
 const errors = [];
 
 function assert(condition, message) {
@@ -44,6 +45,7 @@ function trackedFiles() {
 assert(manifest.schema_version === 'lake-index-shard-manifest@1', 'unexpected shard manifest schema');
 assert(summary.schema_version === 'lake-index-shard-summary@1', 'unexpected shard summary schema');
 assert(gapSummary.schema_version === 'lake-index-gap-summary@1', 'unexpected gap-summary schema');
+assert(receiptSemantics.schema_version === 'lake-receipt-semantics@1', 'unexpected receipt-semantics schema');
 assert(manifest.census_id === summary.census_id && summary.census_id === gapSummary.census_id, 'census IDs disagree');
 assert(manifest.source_fingerprint_sha256 === summary.source_fingerprint_sha256, 'manifest and summary fingerprints disagree');
 assert(summary.source_fingerprint_sha256 === gapSummary.source_fingerprint_sha256, 'summary and gap-summary fingerprints disagree');
@@ -64,6 +66,8 @@ assert(JSON.stringify(manifestPaths) === JSON.stringify([...manifestPaths].sort(
 const files = readJsonl('files.jsonl');
 const objects = readJsonl('objects.jsonl');
 const receipts = readJsonl('receipts.jsonl');
+const receiptLocators = readJsonl('receipt-locators.jsonl');
+const receiptHashes = readJsonl('receipt-hashes.jsonl');
 const pathGaps = readJsonl('path-gaps.jsonl');
 const idGaps = readJsonl('id-gaps.jsonl');
 const receiptGaps = readJsonl('receipt-gaps.jsonl');
@@ -76,6 +80,8 @@ const missingTokens = JSON.parse(fs.readFileSync(path.join(shardRoot, 'missing-p
 assert(files.length === manifest.row_counts.files, 'file-row count mismatch');
 assert(objects.length === manifest.row_counts.objects, 'object-row count mismatch');
 assert(receipts.length === manifest.row_counts.receipts, 'receipt-row count mismatch');
+assert(receiptLocators.length === manifest.row_counts.receipt_locators, 'receipt-locator count mismatch');
+assert(receiptHashes.length === manifest.row_counts.receipt_hashes, 'receipt-hash count mismatch');
 assert(pathGaps.length === manifest.row_counts.path_gaps, 'path-gap count mismatch');
 assert(idGaps.length === manifest.row_counts.id_gaps, 'id-gap count mismatch');
 assert(receiptGaps.length === manifest.row_counts.receipt_gaps, 'receipt-gap count mismatch');
@@ -99,6 +105,9 @@ const c = summary.counts;
 assert(c.tracked_files_indexed === files.length, 'summary tracked-file count mismatch');
 assert(c.distinct_machine_ids === objects.length, 'summary object count mismatch');
 assert(c.receipt_ids === receipts.length, 'summary receipt count mismatch');
+assert(c.receipt_locator_tokens === receiptLocators.length, 'summary receipt-locator count mismatch');
+assert(c.receipt_content_hash_tokens === receiptHashes.length, 'summary receipt-hash count mismatch');
+assert(c.inline_receipt_use_ids === receipts.filter(row => row.inline_used).length, 'summary inline receipt-use count mismatch');
 assert(c.program_ids === (programs.programs ?? []).length, 'summary program count mismatch');
 assert(c.case_ids === (cases.cases ?? []).length, 'summary case count mismatch');
 assert(c.report_ids === (reports.reports ?? []).length, 'summary report count mismatch');
@@ -118,11 +127,23 @@ assert(idGaps.filter(row => row.gap_class === 'projection_id_without_source').le
 assert(receiptGaps.filter(row => row.gap_class === 'undefined_receipt_reference').length === c.undefined_receipt_references, 'undefined-receipt count mismatch');
 assert(receiptGaps.filter(row => row.gap_class === 'unused_receipt_definition').length === c.unused_receipt_definitions, 'unused-receipt count mismatch');
 
+assert(receipts.every(row => !/^https?:\/\//i.test(row.receipt_id) && !/^sha256:/i.test(row.receipt_id)), 'non-identity token remains in receipt-ID shard');
+assert(receiptLocators.every(row => /^https?:\/\//i.test(row.locator)), 'non-URL token appears in receipt-locator shard');
+assert(receiptHashes.every(row => /^sha256:[0-9a-f]{64}$/i.test(row.content_hash)), 'malformed receipt-hash token');
+assert(receiptSemantics.canonical_receipt_ids === receipts.length, 'receipt-semantics canonical count mismatch');
+assert(receiptSemantics.source_locator_tokens === receiptLocators.length, 'receipt-semantics locator count mismatch');
+assert(receiptSemantics.content_hash_tokens === receiptHashes.length, 'receipt-semantics hash count mismatch');
+assert(receiptSemantics.inline_receipt_use_ids === receipts.filter(row => row.inline_used).length, 'receipt-semantics inline-use count mismatch');
+assert(receiptSemantics.boundaries.receipt_ids_field_is_semantically_uniform === false, 'receipt-field boundary missing');
+assert(receiptSemantics.boundaries.url_token_is_missing_receipt === false, 'URL-missing-receipt boundary missing');
+assert(receiptSemantics.boundaries.sha256_token_is_missing_receipt === false, 'hash-missing-receipt boundary missing');
+
 assert(summary.boundaries.current_tracked_path_census_complete === true, 'tracked-path boundary missing');
 assert(summary.boundaries.current_tree_semantic_index_complete === false, 'semantic completeness must remain false');
 assert(summary.boundaries.historical_git_object_index_complete === false, 'history completeness must remain false');
 assert(summary.boundaries.source_truth_determined === false, 'source-truth boundary must remain false');
 assert(summary.boundaries.publication_cleared === false, 'publication boundary must remain false');
+assert(summary.boundaries.receipt_field_semantics_fully_uniform === false, 'receipt-field semantic boundary missing');
 assert(manifest.boundaries.shard_manifest_proves_semantic_completeness === false, 'manifest semantic boundary missing');
 assert(manifest.boundaries.shard_hash_proves_evidence_truth === false, 'manifest truth boundary missing');
 assert(manifest.boundaries.open_branch_shadow_is_merged_corpus === false, 'branch-shadow merge boundary missing');
@@ -145,4 +166,6 @@ console.log('lake shard validation: OK');
 console.log(`  manifest entries: ${manifest.entries.length}`);
 console.log(`  file rows: ${files.length}`);
 console.log(`  object rows: ${objects.length}`);
+console.log(`  receipt locators: ${receiptLocators.length}`);
+console.log(`  receipt hashes: ${receiptHashes.length}`);
 console.log(`  total gap rows: ${pathGaps.length + idGaps.length + receiptGaps.length}`);
