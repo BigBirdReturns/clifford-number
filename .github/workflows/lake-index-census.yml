@@ -43,7 +43,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node tools/build-lake-open-pr-shadow.mjs
-      - name: Build and stabilize the current-tree lake census
+      - name: Build, classify, and validate the current-tree lake census
         if: steps.request.outputs.present == 'true'
         run: |
           node tools/build-lake-index.mjs
@@ -52,22 +52,26 @@ jobs:
           node tools/validate-lake-index.mjs
           node tools/validate-lake-gap-summary.mjs
           node test/lake-index.test.js
-      - name: Prove deterministic census products
+          node tools/shard-lake-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node test/lake-index.test.js
+      - name: Prove deterministic line-addressable products
         if: steps.request.outputs.present == 'true'
+        shell: bash
         run: |
+          set -euo pipefail
+          find build/lake-index -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/lake-index-first.sha256
           sha256sum \
-            build/lake-index.json \
-            build/lake-object-index.json \
-            build/lake-index-gaps.json \
-            build/lake-index-gap-summary.json \
             reports/lake-index-census.md \
-            reports/lake-index-gap-summary.md > /tmp/lake-index-first.sha256
+            reports/lake-index-gap-summary.md >> /tmp/lake-index-first.sha256
           node tools/build-lake-index.mjs
           node tools/stabilize-lake-index.mjs
           node tools/build-lake-gap-summary.mjs
-          sha256sum --check --strict /tmp/lake-index-first.sha256
           node tools/validate-lake-index.mjs
           node tools/validate-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          sha256sum --check --strict /tmp/lake-index-first.sha256
+          node tools/validate-lake-index-shards.mjs
           node test/lake-index.test.js
           git diff --check
       - name: Enforce the exact generated change set
@@ -84,7 +88,20 @@ jobs:
               'build/lake-index.json',
               'build/lake-object-index.json',
               'build/lake-index-gaps.json',
-              'build/lake-index-gap-summary.json',
+              'build/lake-index/manifest.json',
+              'build/lake-index/summary.json',
+              'build/lake-index/files.jsonl',
+              'build/lake-index/objects.jsonl',
+              'build/lake-index/receipts.jsonl',
+              'build/lake-index/programs.json',
+              'build/lake-index/cases.json',
+              'build/lake-index/reports.json',
+              'build/lake-index/path-gaps.jsonl',
+              'build/lake-index/id-gaps.jsonl',
+              'build/lake-index/receipt-gaps.jsonl',
+              'build/lake-index/branch-shadow.jsonl',
+              'build/lake-index/missing-path-tokens.json',
+              'build/lake-index/gap-summary.json',
               'data/project/lake-open-pr-shadow.json',
               'reports/lake-index-census.md',
               'reports/lake-index-gap-summary.md',
@@ -109,5 +126,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -m 'Classify the current evidence lake'
+          git commit -m 'Shard the current evidence lake index'
           git push origin HEAD:agent/lake-index-census
