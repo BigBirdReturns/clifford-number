@@ -10,6 +10,8 @@ on:
     branches:
       - main
     paths:
+      - 'BUILD-INSTRUCTIONS.md'
+      - 'package.json'
       - 'data/project/evidence-grounded-judgment-authority.json'
       - 'data/project/lake-judgment-shadow-snapshot.json'
       - 'data/project/human-permission-gate-audit-policy.json'
@@ -40,32 +42,42 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent/evidence-grounded-judgment-authority
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-      - name: Detect a live materialization request
-        id: request
+      - name: Determine validation and materialization mode
+        id: mode
         shell: bash
         run: |
           if test -f .github/tmp/evidence-grounded-judgment-trigger.json; then
-            echo 'present=true' >> "$GITHUB_OUTPUT"
+            echo 'validate=true' >> "$GITHUB_OUTPUT"
+            echo 'materialize=true' >> "$GITHUB_OUTPUT"
+          elif test "$GITHUB_EVENT_NAME" = 'pull_request' || test "$GITHUB_EVENT_NAME" = 'workflow_dispatch'; then
+            echo 'validate=true' >> "$GITHUB_OUTPUT"
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
           else
-            echo 'present=false' >> "$GITHUB_OUTPUT"
+            echo 'validate=false' >> "$GITHUB_OUTPUT"
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
           fi
       - uses: actions/setup-node@v4
-        if: steps.request.outputs.present == 'true'
+        if: steps.mode.outputs.validate == 'true'
         with:
           node-version: '24'
-      - name: Repair the migration carrier
-        if: steps.request.outputs.present == 'true'
-        run: node .github/tmp/fix-no-human-gate-migration.mjs
-      - name: Apply the no-human-gate source migration
-        if: steps.request.outputs.present == 'true'
-        run: node .github/tmp/apply-no-human-gate-migration.mjs
+      - name: Apply an optional checked source migration
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -f .github/tmp/apply-judgment-source-migration.mjs; then
+            node .github/tmp/apply-judgment-source-migration.mjs
+          fi
       - name: Run the complete repository release gate
-        if: steps.request.outputs.present == 'true'
+        if: steps.mode.outputs.validate == 'true'
         run: npm run release:check
+      - name: Restore committed bytes before focused pull-request validation
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.materialize != 'true'
+        run: git restore --staged --worktree .
       - name: Build and validate evidence-grounded judgments
-        if: steps.request.outputs.present == 'true'
+        if: steps.mode.outputs.validate == 'true'
         run: |
           node tools/build-evidence-grounded-judgments.mjs
           node tools/augment-evidence-grounded-judgments-with-lake.mjs
@@ -76,8 +88,10 @@ jobs:
           node tools/validate-human-permission-gate-audit.mjs
           node test/human-permission-gate-audit.test.js
       - name: Prove deterministic judgment and audit products
-        if: steps.request.outputs.present == 'true'
+        if: steps.mode.outputs.validate == 'true'
+        shell: bash
         run: |
+          set -euo pipefail
           sha256sum \
             build/evidence-grounded-judgments.json \
             build/human-permission-gate-audit.json \
@@ -94,28 +108,39 @@ jobs:
           node test/human-permission-gate-audit.test.js
           sha256sum --check --strict /tmp/judgments-first.sha256
           git diff --check
+          if test '${{ steps.mode.outputs.materialize }}' != 'true'; then
+            git diff --exit-code
+          fi
       - name: Enforce required migration and generated allowlist
-        if: steps.request.outputs.present == 'true'
+        if: steps.mode.outputs.materialize == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          cp .github/tmp/no-human-gate-migration-paths.json /tmp/no-human-gate-migration-paths.json
+          if test -f .github/tmp/judgment-source-migration-paths.json; then
+            cp .github/tmp/judgment-source-migration-paths.json /tmp/judgment-source-migration-paths.json
+          else
+            printf '%s\n' '{"changed_paths":[]}' > /tmp/judgment-source-migration-paths.json
+          fi
           rm -f \
             .github/tmp/evidence-grounded-judgment-trigger.json \
-            .github/tmp/apply-no-human-gate-migration.mjs \
-            .github/tmp/fix-no-human-gate-migration.mjs \
-            .github/tmp/no-human-gate-migration-paths.json
+            .github/tmp/apply-judgment-source-migration.mjs \
+            .github/tmp/judgment-source-migration-paths.json
           python - <<'PY'
           import json
           import subprocess
 
-          migration = json.load(open('/tmp/no-human-gate-migration-paths.json'))
+          migration = json.load(open('/tmp/judgment-source-migration-paths.json'))
           transport_deletions = {
               '.github/tmp/evidence-grounded-judgment-trigger.json',
-              '.github/tmp/apply-no-human-gate-migration.mjs',
-              '.github/tmp/fix-no-human-gate-migration.mjs',
           }
-          required = set(migration['changed_paths']) | transport_deletions
+          for optional in [
+              '.github/tmp/apply-judgment-source-migration.mjs',
+              '.github/tmp/judgment-source-migration-paths.json',
+          ]:
+              tracked = subprocess.run(['git', 'ls-files', '--error-unmatch', optional], capture_output=True).returncode == 0
+              if tracked:
+                  transport_deletions.add(optional)
+          required = set(migration.get('changed_paths', [])) | transport_deletions
           generated_allowlist = {
               'briefs/anduril-access-ownership.html',
               'briefs/arcadia-field-autopsy.html',
@@ -177,10 +202,14 @@ jobs:
           }, indent=2))
           PY
       - name: Commit the judgment frontier
-        if: steps.request.outputs.present == 'true'
+        if: steps.mode.outputs.materialize == 'true'
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -m 'Remove magic-human permission gates'
+          git commit -m 'Materialize evidence-grounded judgment authority'
+          git pull --rebase origin agent/evidence-grounded-judgment-authority
+          node tools/validate-evidence-grounded-judgments.mjs
+          node tools/validate-evidence-grounded-lake-judgments.mjs
+          node tools/validate-human-permission-gate-audit.mjs
           git push origin HEAD:agent/evidence-grounded-judgment-authority
