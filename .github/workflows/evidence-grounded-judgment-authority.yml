@@ -6,13 +6,25 @@ on:
       - agent/evidence-grounded-judgment-authority
     paths:
       - '.github/tmp/evidence-grounded-judgment-trigger.json'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'data/project/evidence-grounded-judgment-authority.json'
+      - 'docs/methods/evidence-grounded-judgment-authority.md'
+      - 'tools/build-evidence-grounded-judgments.mjs'
+      - 'tools/validate-evidence-grounded-judgments.mjs'
+      - 'test/evidence-grounded-judgments.test.js'
+      - 'tools/compile.mjs'
+      - '.github/workflows/evidence-grounded-judgment-authority.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
+  pull-requests: read
 
 concurrency:
-  group: evidence-grounded-judgment-authority
+  group: evidence-grounded-judgment-authority-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -46,6 +58,7 @@ jobs:
           sha256sum --check --strict /tmp/judgments-first.sha256
           git diff --check
       - name: Enforce exact generated change set
+        if: github.event_name == 'push'
         shell: bash
         run: |
           set -euo pipefail
@@ -72,6 +85,7 @@ jobs:
           }
           PY
       - name: Commit the judgment frontier
+        if: github.event_name == 'push'
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
