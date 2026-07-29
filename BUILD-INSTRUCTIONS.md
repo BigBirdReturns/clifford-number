@@ -324,3 +324,17 @@ Canonical expansion does not create participation, a relationship, a graph edge,
 a hop, or a cross-case identity bridge. New active AXM identities are recorded in
 `data/project/lake-canonical-identity-extension-registry-wave-11.jsonl` while the
 Wave 06 migration registry remains an immutable 176-entity / 164-claim baseline.
+
+3.12 **Bounded-hold resolution — Wave 12.**
+A bounded hold is an acquisition target, not a permission gate. The complete hold
+denominator must be attacked with repository-preserved or publicly inspectable
+source custody. An explicit local-to-canonical assertion may be executed when the
+local record, canonical reference, shared identity namespace, and unique target are
+all present. Every accepted resolution remains reversible and source records are
+not merged.
+
+Local-to-canonical resolution is graph-inert. It does not create participation, a
+relationship, a graph edge, a hop, or a cross-case identity bridge. Selection or
+invitation to a program does not prove performance, acceptance, deployment, or a
+particular award. New identities and aliases travel in a separate append-preserving
+AXM extension registry.

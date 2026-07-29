@@ -158,3 +158,15 @@ The expansion is identity-only and graph-inert: it creates no participation,
 relationship, edge, hop, or automatic cross-case join. The original AXM Genesis
 migration remains the historical baseline; later entities and aliases are carried
 by a separate append-preserving extension registry.
+
+## Bounded-hold resolution
+
+Wave 12 attacks the prior bounded holds directly. Acronyms, contextual local IDs,
+municipal duplicates, and private-only company references receive explicit public
+or repository-preserved source custody, local-to-canonical assertions, and named
+correction routes. The two Arcadia municipal IDs resolve to one City of Arcadia
+record; public company and CDAO sources replace private-only identity custody.
+
+These are identity-resolution decisions only. They do not merge source records,
+validate every case claim, establish program performance, create participation or
+relationships, or enter the hop graph.

@@ -1,24 +1,24 @@
 {
   "schema_version": "lake-index-gap-summary@1",
   "census_id": "CN-LAKE-INDEX-2026-07",
-  "source_fingerprint_sha256": "26264c5f254d2f43f330e225a592081d05c041bda06e051b6314c492ca475a3d",
+  "source_fingerprint_sha256": "d5b6ce867216946d15acbc5ad967eaca237b77c5fee3f4a275258c42a6e881ab",
   "counts": {
-    "tracked_files_indexed": 1979,
-    "evidence_bearing_files": 1326,
-    "text_or_structured_files_parsed": 1951,
+    "tracked_files_indexed": 1993,
+    "evidence_bearing_files": 1334,
+    "text_or_structured_files_parsed": 1965,
     "parse_errors": 0,
-    "index_files": 208,
-    "authoritative_roots_present": 62,
-    "authoritative_reachable_evidence_files": 1172,
-    "index_reachable_evidence_files": 1180,
+    "index_files": 213,
+    "authoritative_roots_present": 70,
+    "authoritative_reachable_evidence_files": 1180,
+    "index_reachable_evidence_files": 1188,
     "public_reachable_evidence_files": 241,
     "exact_orphan_evidence_files": 106,
-    "no_program_owner_detected": 567,
-    "distinct_machine_ids": 14317,
-    "unindexed_machine_ids": 8246,
-    "divergent_identifier_projections": 2061,
-    "source_ids_without_projection": 5598,
-    "projection_ids_without_source": 1454,
+    "no_program_owner_detected": 575,
+    "distinct_machine_ids": 14495,
+    "unindexed_machine_ids": 8257,
+    "divergent_identifier_projections": 2108,
+    "source_ids_without_projection": 5612,
+    "projection_ids_without_source": 1465,
     "receipt_ids": 350,
     "undefined_receipt_references": 0,
     "unused_receipt_definitions": 49,
@@ -26,12 +26,12 @@
     "case_ids": 30,
     "case_ids_not_in_public_catalog": 26,
     "report_ids": 5,
-    "missing_repo_path_tokens": 154,
-    "open_pull_requests_observed": 25,
-    "open_pr_changed_paths_observed": 373,
-    "open_pr_branch_only_paths_observed": 120,
-    "local_identifier_values_observed": 1144,
-    "local_identifier_occurrences_observed": 8031,
+    "missing_repo_path_tokens": 158,
+    "open_pull_requests_observed": 30,
+    "open_pr_changed_paths_observed": 446,
+    "open_pr_branch_only_paths_observed": 158,
+    "local_identifier_values_observed": 1152,
+    "local_identifier_occurrences_observed": 8072,
     "receipt_locator_tokens": 11,
     "receipt_content_hash_tokens": 30,
     "inline_receipt_use_ids": 224
@@ -39,12 +39,21 @@
   "by_role": [
     {
       "role": "generated_artifact",
-      "files": 566,
-      "authoritative_reachable": 566,
-      "index_reachable": 566,
+      "files": 567,
+      "authoritative_reachable": 567,
+      "index_reachable": 567,
       "public_reachable": 44,
       "exact_orphans": 0,
-      "no_program_owner": 66
+      "no_program_owner": 67
+    },
+    {
+      "role": "project_governance",
+      "files": 144,
+      "authoritative_reachable": 139,
+      "index_reachable": 139,
+      "public_reachable": 6,
+      "exact_orphans": 0,
+      "no_program_owner": 51
     },
     {
       "role": "intake",
@@ -54,15 +63,6 @@
       "public_reachable": 34,
       "exact_orphans": 19,
       "no_program_owner": 107
-    },
-    {
-      "role": "project_governance",
-      "files": 137,
-      "authoritative_reachable": 132,
-      "index_reachable": 132,
-      "public_reachable": 6,
-      "exact_orphans": 0,
-      "no_program_owner": 44
     },
     {
       "role": "documentation",
@@ -202,6 +202,15 @@
       "no_program_owner": 0
     },
     {
+      "cluster": "data/project",
+      "files": 144,
+      "authoritative_reachable": 139,
+      "index_reachable": 139,
+      "public_reachable": 6,
+      "exact_orphans": 0,
+      "no_program_owner": 51
+    },
+    {
       "cluster": "data/intake",
       "files": 141,
       "authoritative_reachable": 117,
@@ -209,15 +218,6 @@
       "public_reachable": 34,
       "exact_orphans": 19,
       "no_program_owner": 107
-    },
-    {
-      "cluster": "data/project",
-      "files": 137,
-      "authoritative_reachable": 132,
-      "index_reachable": 132,
-      "public_reachable": 6,
-      "exact_orphans": 0,
-      "no_program_owner": 44
     },
     {
       "cluster": "reports/core-thesis",
@@ -500,6 +500,15 @@
     },
     {
       "cluster": "build/axm-production-cross-case-candidate-index-wave-08.json",
+      "files": 1,
+      "authoritative_reachable": 1,
+      "index_reachable": 1,
+      "public_reachable": 0,
+      "exact_orphans": 0,
+      "no_program_owner": 1
+    },
+    {
+      "cluster": "build/bounded-hold-resolution-index-wave-12.json",
       "files": 1,
       "authoritative_reachable": 1,
       "index_reachable": 1,
@@ -1215,7 +1224,7 @@
       },
       {
         "id_key": "actor_id",
-        "count": 385
+        "count": 387
       },
       {
         "id_key": "subject_id",
@@ -1290,6 +1299,10 @@
         "count": 67
       },
       {
+        "id_key": "organization_id",
+        "count": 64
+      },
+      {
         "id_key": "rule_id",
         "count": 64
       },
@@ -1300,10 +1313,6 @@
       {
         "id_key": "issue_id",
         "count": 61
-      },
-      {
-        "id_key": "organization_id",
-        "count": 55
       },
       {
         "id_key": "system_id",
@@ -2012,6 +2021,10 @@
         "count": 26
       },
       {
+        "id_key": "canonical_id",
+        "count": 25
+      },
+      {
         "id_key": "origin_estate_id",
         "count": 24
       },
@@ -2040,10 +2053,6 @@
         "count": 15
       },
       {
-        "id_key": "canonical_id",
-        "count": 14
-      },
-      {
         "id_key": "obj_local_id",
         "count": 14
       },
@@ -2064,6 +2073,14 @@
         "count": 12
       },
       {
+        "id_key": "local_subject_id",
+        "count": 12
+      },
+      {
+        "id_key": "resolution_id",
+        "count": 12
+      },
+      {
         "id_key": "column_id",
         "count": 10
       },
@@ -2081,6 +2098,10 @@
       },
       {
         "id_key": "primary_estate_id",
+        "count": 8
+      },
+      {
+        "id_key": "source_local_subject_id",
         "count": 8
       },
       {
@@ -2164,6 +2185,10 @@
         "count": 4
       },
       {
+        "id_key": "source_case_id",
+        "count": 4
+      },
+      {
         "id_key": "tracking_id",
         "count": 4
       },
@@ -2180,11 +2205,11 @@
         "count": 3
       },
       {
-        "id_key": "source_case_id",
+        "id_key": "source_route_id",
         "count": 3
       },
       {
-        "id_key": "source_route_id",
+        "id_key": "source_wave11_adjudication_id",
         "count": 3
       },
       {
@@ -2494,6 +2519,14 @@
         "count": 10
       },
       {
+        "id_key": "axm_alias_id",
+        "count": 8
+      },
+      {
+        "id_key": "legacy_provisional_alias_id",
+        "count": 8
+      },
+      {
         "id_key": "person_id",
         "count": 8
       },
@@ -2650,10 +2683,6 @@
         "count": 1
       },
       {
-        "id_key": "axm_alias_id",
-        "count": 1
-      },
-      {
         "id_key": "canonical_actor_id",
         "count": 1
       },
@@ -2691,10 +2720,6 @@
       },
       {
         "id_key": "ledger_id",
-        "count": 1
-      },
-      {
-        "id_key": "legacy_provisional_alias_id",
         "count": 1
       },
       {
@@ -2780,16 +2805,16 @@
         "count": 61
       },
       {
+        "id_key": "organization_id",
+        "count": 47
+      },
+      {
         "id_key": "decision_id",
         "count": 43
       },
       {
-        "id_key": "organization_id",
-        "count": 38
-      },
-      {
         "id_key": "actor_id",
-        "count": 26
+        "count": 28
       },
       {
         "id_key": "target_estate_id",
@@ -3684,8 +3709,8 @@
       "counts": {
         "parse_errors": 0,
         "undefined_receipt_references": 0,
-        "projection_ids_without_source": 1454,
-        "missing_repo_path_tokens": 154
+        "projection_ids_without_source": 1465,
+        "missing_repo_path_tokens": 158
       }
     },
     "p1_exact_orphan_sources": {
@@ -3818,7 +3843,7 @@
     },
     "p2_unowned_evidence": {
       "description": "Evidence-bearing paths without a detected program ID or reference from a program-bearing file.",
-      "count": 567,
+      "count": 575,
       "by_role": [
         {
           "key": "intake",
@@ -3830,7 +3855,7 @@
         },
         {
           "key": "generated_artifact",
-          "count": 66
+          "count": 67
         },
         {
           "key": "report_product",
@@ -3842,7 +3867,7 @@
         },
         {
           "key": "project_governance",
-          "count": 44
+          "count": 51
         },
         {
           "key": "case_source",
@@ -3891,12 +3916,12 @@
           "count": 59
         },
         {
-          "key": "docs/milestones",
-          "count": 49
+          "key": "data/project",
+          "count": 51
         },
         {
-          "key": "data/project",
-          "count": 44
+          "key": "docs/milestones",
+          "count": 49
         },
         {
           "key": "data/research-tracks",
@@ -4012,6 +4037,10 @@
         },
         {
           "key": "build/axm-production-cross-case-candidate-index-wave-08.json",
+          "count": 1
+        },
+        {
+          "key": "build/bounded-hold-resolution-index-wave-12.json",
           "count": 1
         },
         {
@@ -4313,16 +4342,16 @@
       "counts": {
         "not_index_reachable": 146,
         "not_authoritative_reachable": 154,
-        "not_public_reachable": 1085,
+        "not_public_reachable": 1093,
         "case_ids_not_in_public_catalog": 26
       }
     },
     "p4_branch_shadow": {
       "description": "Open-pull-request paths absent from the current main tree; these require active, superseded, abandoned, or merged dispositions.",
       "counts": {
-        "open_pull_requests": 25,
-        "branch_only_paths": 120,
-        "branch_only_evidence_paths": 26
+        "open_pull_requests": 30,
+        "branch_only_paths": 158,
+        "branch_only_evidence_paths": 42
       },
       "by_pr": [
         {
@@ -4336,6 +4365,18 @@
         {
           "key": "#386 Make evidence-grounded judgments without a human-permission gate",
           "count": 18
+        },
+        {
+          "key": "#403 Measure the production cross-case identity denominator",
+          "count": 16
+        },
+        {
+          "key": "#404 Recover exact source-bound cross-case mention recurrence",
+          "count": 11
+        },
+        {
+          "key": "#406 noop",
+          "count": 10
         },
         {
           "key": "#245 Close the seven M-04F vertical joins",
@@ -4376,32 +4417,48 @@
         {
           "key": "#356 Reconcile the observed M-04G source ecology v2 orbit",
           "count": 1
+        },
+        {
+          "key": "#405 Execute K0 role-neutral denominator Wave 08",
+          "count": 1
         }
       ],
       "by_cluster": [
         {
           "key": ".github",
-          "count": 72
+          "count": 80
         },
         {
           "key": "tools",
-          "count": 13
+          "count": 24
+        },
+        {
+          "key": "data/project",
+          "count": 11
         },
         {
           "key": "contributions/inbox",
           "count": 9
         },
         {
+          "key": "test",
+          "count": 7
+        },
+        {
           "key": "comprehension",
           "count": 5
         },
         {
-          "key": "data/project",
-          "count": 4
+          "key": "build/lake-actions",
+          "count": 2
         },
         {
-          "key": "test",
-          "count": 4
+          "key": "reports/core-thesis",
+          "count": 2
+        },
+        {
+          "key": "build/cross-case-production-join-decision-index-wave-08.json",
+          "count": 1
         },
         {
           "key": "build/evidence-grounded-judgments.json",
@@ -4409,6 +4466,10 @@
         },
         {
           "key": "build/human-permission-gate-audit.json",
+          "count": 1
+        },
+        {
+          "key": "data/research",
           "count": 1
         },
         {
@@ -4432,6 +4493,10 @@
           "count": 1
         },
         {
+          "key": "docs/milestones",
+          "count": 1
+        },
+        {
           "key": "docs/synthetic-population-program.md",
           "count": 1
         },
@@ -4449,6 +4514,14 @@
         },
         {
           "key": "reports/human-permission-gate-audit.md",
+          "count": 1
+        },
+        {
+          "key": "reports/lake-cross-case-production-denominator-wave-08-reconciliation.md",
+          "count": 1
+        },
+        {
+          "key": "reports/lake-cross-case-production-denominator-wave-08.md",
           "count": 1
         },
         {
@@ -4587,6 +4660,7 @@
     "build/axm-cross-case-join-decision-index-wave-07.json",
     "build/axm-identity.json",
     "build/axm-production-cross-case-candidate-index-wave-08.json",
+    "build/bounded-hold-resolution-index-wave-12.json",
     "build/briefings/anduril-access-ownership.json",
     "build/briefings/arcadia-field-autopsy.json",
     "build/briefings/index.json",
@@ -4781,8 +4855,7 @@
     "data/intake/natsec100-pathways/seed/claims.jsonl",
     "data/intake/natsec100-pathways/seed/conversion_events.jsonl",
     "data/intake/natsec100-pathways/seed/myth_to_market_scores.jsonl",
-    "data/intake/next-ten-estates/README.md",
-    "data/intake/next-ten-estates/estates.jsonl"
+    "data/intake/next-ten-estates/README.md"
   ],
   "branch_only_paths": [
     {
@@ -6584,6 +6657,576 @@
       "pr_title": "Make evidence-grounded judgments without a human-permission gate",
       "head_ref": "agent/evidence-grounded-judgment-authority",
       "head_sha": "e631885fe3b11362a35e21e14e5bed5fe78268c4"
+    },
+    {
+      "path": ".github/workflows/lake-cross-case-production-denominator-wave-08.yml",
+      "status": "added",
+      "blob_sha": "a9241bff02f0386693a688c281bde05765b512d3",
+      "previous_path": null,
+      "additions": 252,
+      "deletions": 0,
+      "changes": 252,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 403,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-cross-case-production-denominator-wave-08",
+      "head_sha": "da2db731ba5ae061bb98679ab2926050a8641788"
+    },
+    {
+      "path": "build/cross-case-production-join-decision-index-wave-08.json",
+      "status": "added",
+      "blob_sha": "e3bc454c1ac331b0853534355b96e3c39d38bbae",
+      "previous_path": null,
+      "additions": 22,
+      "deletions": 0,
+      "changes": 22,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 403,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-cross-case-production-denominator-wave-08",
+      "head_sha": "da2db731ba5ae061bb98679ab2926050a8641788"
+    },
+    {
+      "path": "build/lake-actions/cross-case-production-denominator-wave-08-reconciliation.json",
+      "status": "added",
+      "blob_sha": "e7021b6fce45923691b1c41a40d9b7858caa5a7c",
+      "previous_path": null,
+      "additions": 242,
+      "deletions": 0,
+      "changes": 242,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 403,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-cross-case-production-denominator-wave-08",
+      "head_sha": "da2db731ba5ae061bb98679ab2926050a8641788"
+    },
+    {
+      "path": "build/lake-actions/cross-case-production-denominator-wave-08.json",
+      "status": "added",
+      "blob_sha": "f2bae1e8201459fa54711a59b7998315443f9332",
+      "previous_path": null,
+      "additions": 475,
+      "deletions": 0,
+      "changes": 475,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 403,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-cross-case-production-denominator-wave-08",
+      "head_sha": "da2db731ba5ae061bb98679ab2926050a8641788"
+    },
+    {
+      "path": "data/project/lake-cross-case-production-denominator-wave-08-policy.json",
+      "status": "added",
+      "blob_sha": "b8d0b14f568f62f859656d6ff9365cb3b207e516",
+      "previous_path": null,
+      "additions": 80,
+      "deletions": 0,
+      "changes": 80,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 403,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-cross-case-production-denominator-wave-08",
+      "head_sha": "da2db731ba5ae061bb98679ab2926050a8641788"
+    },
+    {
+      "path": "data/project/lake-cross-case-production-denominator-wave-08.json",
+      "status": "added",
+      "blob_sha": "244788b554bcc77ef868b8698cdda34046a155b3",
+      "previous_path": null,
+      "additions": 260,
+      "deletions": 0,
+      "changes": 260,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 403,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-cross-case-production-denominator-wave-08",
+      "head_sha": "da2db731ba5ae061bb98679ab2926050a8641788"
+    },
+    {
+      "path": "data/project/lake-cross-case-production-entity-registry-wave-08.jsonl",
+      "status": "added",
+      "blob_sha": "aeb277ac99cd9e4b6dd211655d9c9c0909543baf",
+      "previous_path": null,
+      "additions": 229,
+      "deletions": 0,
+      "changes": 229,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 403,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-cross-case-production-denominator-wave-08",
+      "head_sha": "da2db731ba5ae061bb98679ab2926050a8641788"
+    },
+    {
+      "path": "data/project/lake-cross-case-production-join-decision-registry-wave-08.jsonl",
+      "status": "added",
+      "blob_sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "previous_path": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 403,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-cross-case-production-denominator-wave-08",
+      "head_sha": "da2db731ba5ae061bb98679ab2926050a8641788"
+    },
+    {
+      "path": "data/project/lake-cross-case-production-pair-denominator-wave-08.jsonl",
+      "status": "added",
+      "blob_sha": "5d4d988b0304d3f341a7259d9be53c0f8dc33a55",
+      "previous_path": null,
+      "additions": 6,
+      "deletions": 0,
+      "changes": 6,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 403,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-cross-case-production-denominator-wave-08",
+      "head_sha": "da2db731ba5ae061bb98679ab2926050a8641788"
+    },
+    {
+      "path": "reports/lake-cross-case-production-denominator-wave-08-reconciliation.md",
+      "status": "added",
+      "blob_sha": "8389094aa2a152b50916b46cdf421ac94d1e6c24",
+      "previous_path": null,
+      "additions": 35,
+      "deletions": 0,
+      "changes": 35,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 403,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-cross-case-production-denominator-wave-08",
+      "head_sha": "da2db731ba5ae061bb98679ab2926050a8641788"
+    },
+    {
+      "path": "reports/lake-cross-case-production-denominator-wave-08.md",
+      "status": "added",
+      "blob_sha": "08d2b69635c166ef3f68a982297aaab3428d5149",
+      "previous_path": null,
+      "additions": 31,
+      "deletions": 0,
+      "changes": 31,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 403,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-cross-case-production-denominator-wave-08",
+      "head_sha": "da2db731ba5ae061bb98679ab2926050a8641788"
+    },
+    {
+      "path": "test/lake-cross-case-production-denominator-wave-08.test.js",
+      "status": "added",
+      "blob_sha": "4f5dc71385fbbb122e989e55638421079518fa3b",
+      "previous_path": null,
+      "additions": 93,
+      "deletions": 0,
+      "changes": 93,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 403,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-cross-case-production-denominator-wave-08",
+      "head_sha": "da2db731ba5ae061bb98679ab2926050a8641788"
+    },
+    {
+      "path": "tools/build-lake-cross-case-production-denominator-wave-08.mjs",
+      "status": "added",
+      "blob_sha": "195bcfd9639d3ecf661317be52081d97142debb1",
+      "previous_path": null,
+      "additions": 222,
+      "deletions": 0,
+      "changes": 222,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 403,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-cross-case-production-denominator-wave-08",
+      "head_sha": "da2db731ba5ae061bb98679ab2926050a8641788"
+    },
+    {
+      "path": "tools/lib/cross-case-production-denominator.mjs",
+      "status": "added",
+      "blob_sha": "838da7459651d5061affc61ad666a0ee34870c1e",
+      "previous_path": null,
+      "additions": 533,
+      "deletions": 0,
+      "changes": 533,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 403,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-cross-case-production-denominator-wave-08",
+      "head_sha": "da2db731ba5ae061bb98679ab2926050a8641788"
+    },
+    {
+      "path": "tools/reconcile-lake-cross-case-production-denominator-wave-08.mjs",
+      "status": "added",
+      "blob_sha": "94887fc36ace5701db0d76c28f117649d7cd0bbe",
+      "previous_path": null,
+      "additions": 254,
+      "deletions": 0,
+      "changes": 254,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 403,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-cross-case-production-denominator-wave-08",
+      "head_sha": "da2db731ba5ae061bb98679ab2926050a8641788"
+    },
+    {
+      "path": "tools/validate-lake-cross-case-production-denominator-wave-08.mjs",
+      "status": "added",
+      "blob_sha": "659cdbdfb69bab29c09be91c0b92deb5575effc4",
+      "previous_path": null,
+      "additions": 248,
+      "deletions": 0,
+      "changes": 248,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 403,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-cross-case-production-denominator-wave-08",
+      "head_sha": "da2db731ba5ae061bb98679ab2926050a8641788"
+    },
+    {
+      "path": ".github/tmp/lake-cross-case-mention-denominator-wave-09-finalize-trigger.json",
+      "status": "added",
+      "blob_sha": "144a782b6ecc0462d732616b73181510176af9d5",
+      "previous_path": null,
+      "additions": 6,
+      "deletions": 0,
+      "changes": 6,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 404,
+      "pr_title": "Recover exact source-bound cross-case mention recurrence",
+      "head_ref": "agent/lake-cross-case-mention-denominator-wave-09",
+      "head_sha": "5cf0697fe7ac83f217fa01e5418fe806aeb51089"
+    },
+    {
+      "path": ".github/tmp/lake-cross-case-mention-denominator-wave-09-trigger.json",
+      "status": "added",
+      "blob_sha": "66f189c84313e75ae099b9afa5d9b9e887290f59",
+      "previous_path": null,
+      "additions": 6,
+      "deletions": 0,
+      "changes": 6,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 404,
+      "pr_title": "Recover exact source-bound cross-case mention recurrence",
+      "head_ref": "agent/lake-cross-case-mention-denominator-wave-09",
+      "head_sha": "5cf0697fe7ac83f217fa01e5418fe806aeb51089"
+    },
+    {
+      "path": ".github/workflows/lake-cross-case-mention-denominator-wave-09-finalize.yml",
+      "status": "added",
+      "blob_sha": "2c147df7bfeae098374bcfa17b3bf92662a718de",
+      "previous_path": null,
+      "additions": 14,
+      "deletions": 0,
+      "changes": 14,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 404,
+      "pr_title": "Recover exact source-bound cross-case mention recurrence",
+      "head_ref": "agent/lake-cross-case-mention-denominator-wave-09",
+      "head_sha": "5cf0697fe7ac83f217fa01e5418fe806aeb51089"
+    },
+    {
+      "path": ".github/workflows/lake-cross-case-mention-denominator-wave-09.yml",
+      "status": "added",
+      "blob_sha": "4fcb618ec35a16255c39f3ca343b17a8440d67a6",
+      "previous_path": null,
+      "additions": 303,
+      "deletions": 0,
+      "changes": 303,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 404,
+      "pr_title": "Recover exact source-bound cross-case mention recurrence",
+      "head_ref": "agent/lake-cross-case-mention-denominator-wave-09",
+      "head_sha": "5cf0697fe7ac83f217fa01e5418fe806aeb51089"
+    },
+    {
+      "path": "data/project/lake-cross-case-mention-denominator-wave-09-policy.json",
+      "status": "added",
+      "blob_sha": "b42b12dad3add580d19b919eefaeca9707a5b9ad",
+      "previous_path": null,
+      "additions": 113,
+      "deletions": 0,
+      "changes": 113,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 404,
+      "pr_title": "Recover exact source-bound cross-case mention recurrence",
+      "head_ref": "agent/lake-cross-case-mention-denominator-wave-09",
+      "head_sha": "5cf0697fe7ac83f217fa01e5418fe806aeb51089"
+    },
+    {
+      "path": "test/lake-cross-case-mention-denominator-wave-09.test.js",
+      "status": "added",
+      "blob_sha": "7ad233a37176ead17c1cc07bdc740acbfb84ab0c",
+      "previous_path": null,
+      "additions": 126,
+      "deletions": 0,
+      "changes": 126,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 404,
+      "pr_title": "Recover exact source-bound cross-case mention recurrence",
+      "head_ref": "agent/lake-cross-case-mention-denominator-wave-09",
+      "head_sha": "5cf0697fe7ac83f217fa01e5418fe806aeb51089"
+    },
+    {
+      "path": "tools/apply-lake-cross-case-mention-denominator-wave-09.mjs",
+      "status": "added",
+      "blob_sha": "3fe3039fee8a0a8994f38788ac00e8b007d7efc9",
+      "previous_path": null,
+      "additions": 86,
+      "deletions": 0,
+      "changes": 86,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 404,
+      "pr_title": "Recover exact source-bound cross-case mention recurrence",
+      "head_ref": "agent/lake-cross-case-mention-denominator-wave-09",
+      "head_sha": "5cf0697fe7ac83f217fa01e5418fe806aeb51089"
+    },
+    {
+      "path": "tools/build-lake-cross-case-mention-denominator-wave-09.mjs",
+      "status": "added",
+      "blob_sha": "5a5bb3722d8d5ef48c108c28afe1e2fa156ce2e3",
+      "previous_path": null,
+      "additions": 258,
+      "deletions": 0,
+      "changes": 258,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 404,
+      "pr_title": "Recover exact source-bound cross-case mention recurrence",
+      "head_ref": "agent/lake-cross-case-mention-denominator-wave-09",
+      "head_sha": "5cf0697fe7ac83f217fa01e5418fe806aeb51089"
+    },
+    {
+      "path": "tools/lib/cross-case-mention-denominator.mjs",
+      "status": "added",
+      "blob_sha": "7d0053774b0c4053f7f04f592531a9132306e8e8",
+      "previous_path": null,
+      "additions": 711,
+      "deletions": 0,
+      "changes": 711,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 404,
+      "pr_title": "Recover exact source-bound cross-case mention recurrence",
+      "head_ref": "agent/lake-cross-case-mention-denominator-wave-09",
+      "head_sha": "5cf0697fe7ac83f217fa01e5418fe806aeb51089"
+    },
+    {
+      "path": "tools/reconcile-lake-cross-case-mention-denominator-wave-09.mjs",
+      "status": "added",
+      "blob_sha": "36d1ae84a849bf4e54909ff57ea2f12db8b9c1ed",
+      "previous_path": null,
+      "additions": 289,
+      "deletions": 0,
+      "changes": 289,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 404,
+      "pr_title": "Recover exact source-bound cross-case mention recurrence",
+      "head_ref": "agent/lake-cross-case-mention-denominator-wave-09",
+      "head_sha": "5cf0697fe7ac83f217fa01e5418fe806aeb51089"
+    },
+    {
+      "path": "tools/validate-lake-cross-case-mention-denominator-wave-09.mjs",
+      "status": "added",
+      "blob_sha": "5d8657563eef1e910eaa60e2e1e8ba67f56de08f",
+      "previous_path": null,
+      "additions": 302,
+      "deletions": 0,
+      "changes": 302,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 404,
+      "pr_title": "Recover exact source-bound cross-case mention recurrence",
+      "head_ref": "agent/lake-cross-case-mention-denominator-wave-09",
+      "head_sha": "5cf0697fe7ac83f217fa01e5418fe806aeb51089"
+    },
+    {
+      "path": ".github/workflows/temporary-k0-wave08-bootstrap.yml",
+      "status": "added",
+      "blob_sha": "870fad54e2acd0bdb92e6dd159cbee69d6dab750",
+      "previous_path": null,
+      "additions": 41,
+      "deletions": 0,
+      "changes": 41,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 405,
+      "pr_title": "Execute K0 role-neutral denominator Wave 08",
+      "head_ref": "agent/k0-role-neutral-wave-08",
+      "head_sha": "a0c059983e864a690e50c5fd986c1622a1893edc"
+    },
+    {
+      "path": ".github/workflows/k0-wave07-field-adjudication.yml",
+      "status": "added",
+      "blob_sha": "f67ae22aec3e8b707d76bb0e46b239fa4fadefc5",
+      "previous_path": null,
+      "additions": 81,
+      "deletions": 0,
+      "changes": 81,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 406,
+      "pr_title": "noop",
+      "head_ref": "agent/k0-wave07-field-adjudication",
+      "head_sha": "e90805bf12cd67661bd1b44cf6ce59cc208c52e1"
+    },
+    {
+      "path": ".github/workflows/temporary-materialize-k0-wave07-field-from-blobs.yml",
+      "status": "added",
+      "blob_sha": "55b8cfb26ccd054f95b4ba7eb15c967dd5334e1d",
+      "previous_path": null,
+      "additions": 295,
+      "deletions": 0,
+      "changes": 295,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 406,
+      "pr_title": "noop",
+      "head_ref": "agent/k0-wave07-field-adjudication",
+      "head_sha": "e90805bf12cd67661bd1b44cf6ce59cc208c52e1"
+    },
+    {
+      "path": "data/project/k0-wave07-field-adjudication-release-manifest.json",
+      "status": "added",
+      "blob_sha": "c4bea8baea1216eddef96da5de95a2215d577f01",
+      "previous_path": null,
+      "additions": 51,
+      "deletions": 0,
+      "changes": 51,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 406,
+      "pr_title": "noop",
+      "head_ref": "agent/k0-wave07-field-adjudication",
+      "head_sha": "e90805bf12cd67661bd1b44cf6ce59cc208c52e1"
+    },
+    {
+      "path": "data/research/k0-wave07-field-adjudication.json",
+      "status": "added",
+      "blob_sha": "7a3d9fd317c12ddc4acb7d4818287de905a61f2e",
+      "previous_path": null,
+      "additions": 555,
+      "deletions": 0,
+      "changes": 555,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 406,
+      "pr_title": "noop",
+      "head_ref": "agent/k0-wave07-field-adjudication",
+      "head_sha": "e90805bf12cd67661bd1b44cf6ce59cc208c52e1"
+    },
+    {
+      "path": "docs/milestones/m05-k0-wave07-field-adjudication.md",
+      "status": "added",
+      "blob_sha": "2a86dbfd88e1b9c721506694eb696d30338109d4",
+      "previous_path": null,
+      "additions": 86,
+      "deletions": 0,
+      "changes": 86,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 406,
+      "pr_title": "noop",
+      "head_ref": "agent/k0-wave07-field-adjudication",
+      "head_sha": "e90805bf12cd67661bd1b44cf6ce59cc208c52e1"
+    },
+    {
+      "path": "reports/core-thesis/answerable-power/k0-wave07-field-adjudication.html",
+      "status": "added",
+      "blob_sha": "7751001ea0fc0f03f3eaca0a880e4192adae0979",
+      "previous_path": null,
+      "additions": 22,
+      "deletions": 0,
+      "changes": 22,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 406,
+      "pr_title": "noop",
+      "head_ref": "agent/k0-wave07-field-adjudication",
+      "head_sha": "e90805bf12cd67661bd1b44cf6ce59cc208c52e1"
+    },
+    {
+      "path": "reports/core-thesis/answerable-power/k0-wave07-field-adjudication.json",
+      "status": "added",
+      "blob_sha": "3044f9f0fc8a75427096d3107f592b02b697876c",
+      "previous_path": null,
+      "additions": 571,
+      "deletions": 0,
+      "changes": 571,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 406,
+      "pr_title": "noop",
+      "head_ref": "agent/k0-wave07-field-adjudication",
+      "head_sha": "e90805bf12cd67661bd1b44cf6ce59cc208c52e1"
+    },
+    {
+      "path": "test/k0-wave07-field-adjudication.test.js",
+      "status": "added",
+      "blob_sha": "8606d77b9c208b4e20ae3d3a49e3860f0c075b2b",
+      "previous_path": null,
+      "additions": 73,
+      "deletions": 0,
+      "changes": 73,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 406,
+      "pr_title": "noop",
+      "head_ref": "agent/k0-wave07-field-adjudication",
+      "head_sha": "e90805bf12cd67661bd1b44cf6ce59cc208c52e1"
+    },
+    {
+      "path": "tools/build-k0-wave07-field-adjudication.mjs",
+      "status": "added",
+      "blob_sha": "417b231842f4fd0904cb455b1fc83766a94dad2c",
+      "previous_path": null,
+      "additions": 131,
+      "deletions": 0,
+      "changes": 131,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 406,
+      "pr_title": "noop",
+      "head_ref": "agent/k0-wave07-field-adjudication",
+      "head_sha": "e90805bf12cd67661bd1b44cf6ce59cc208c52e1"
+    },
+    {
+      "path": "tools/validate-k0-wave07-field-adjudication.mjs",
+      "status": "added",
+      "blob_sha": "ee020b3ac8645d880a07c05a681cf81d46a17b60",
+      "previous_path": null,
+      "additions": 161,
+      "deletions": 0,
+      "changes": 161,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 406,
+      "pr_title": "noop",
+      "head_ref": "agent/k0-wave07-field-adjudication",
+      "head_sha": "e90805bf12cd67661bd1b44cf6ce59cc208c52e1"
     }
   ],
   "boundaries": {
