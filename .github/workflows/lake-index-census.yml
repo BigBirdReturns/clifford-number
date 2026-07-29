@@ -48,8 +48,10 @@ jobs:
         run: |
           node tools/build-lake-index.mjs
           node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
           node tools/build-lake-gap-summary.mjs
           node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
           node tools/validate-lake-gap-summary.mjs
           node test/lake-index.test.js
           node tools/shard-lake-index.mjs
@@ -66,8 +68,10 @@ jobs:
             reports/lake-index-gap-summary.md >> /tmp/lake-index-first.sha256
           node tools/build-lake-index.mjs
           node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
           node tools/build-lake-gap-summary.mjs
           node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
           node tools/validate-lake-gap-summary.mjs
           node tools/shard-lake-index.mjs
           sha256sum --check --strict /tmp/lake-index-first.sha256
@@ -94,6 +98,9 @@ jobs:
               'build/lake-index/files.jsonl',
               'build/lake-index/objects.jsonl',
               'build/lake-index/receipts.jsonl',
+              'build/lake-index/receipt-locators.jsonl',
+              'build/lake-index/receipt-hashes.jsonl',
+              'build/lake-index/receipt-semantics.json',
               'build/lake-index/programs.json',
               'build/lake-index/cases.json',
               'build/lake-index/reports.json',
@@ -127,5 +134,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -m 'Shard the current evidence lake index'
+          git commit -m 'Reconcile lake receipt semantics'
           git push origin HEAD:agent/lake-index-census
