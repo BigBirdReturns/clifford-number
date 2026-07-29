@@ -1,28 +1,28 @@
 # Lake index census
 
-Source fingerprint: `d5b6ce867216946d15acbc5ad967eaca237b77c5fee3f4a275258c42a6e881ab`
+Source fingerprint: `a850eeab611b75e2690ac731f0c54c1e73824845d781b2ed23fc8e0b4c4c7975`
 
 ## The six waterlines
 
 | Waterline | Count | Share of evidence files |
 |---|---:|---:|
-| Tracked evidence-bearing files physically present | 1334 | 100.0% |
-| Reachable from declared authoritative roots | 1180 | 88.5% |
-| Reachable from any detected index or manifest | 1188 | 89.1% |
-| Reachable from current public entry roots | 241 | 18.1% |
+| Tracked evidence-bearing files physically present | 1340 | 100.0% |
+| Reachable from declared authoritative roots | 1186 | 88.5% |
+| Reachable from any detected index or manifest | 1194 | 89.1% |
+| Reachable from current public entry roots | 242 | 18.1% |
 | Exact orphan evidence files with no inbound repository reference | 106 | 7.9% |
-| Evidence files with no detected program owner | 575 | 43.1% |
+| Evidence files with no detected program owner | 581 | 43.4% |
 
 ## Object and receipt census
 
 ```text
-distinct machine-addressable IDs:       14495
+distinct machine-addressable IDs:       14732
 local-only identifier values observed:   1152
 local-only identifier occurrences:       8072
-unindexed machine-addressable IDs:      8257
-divergent identifier projections:       2108
+unindexed machine-addressable IDs:      8037
+divergent identifier projections:       2502
 source IDs without a projection:         5612
-projection IDs without a source object:  1465
+projection IDs without a source object:  1702
 receipt IDs:                             350
 undefined receipt references:            0
 unused receipt definitions:              49
@@ -38,9 +38,9 @@ report IDs:                              5
 ## Branch-shadow census
 
 ```text
-open pull requests observed:              30
-changed paths across open pull requests:  446
-branch-only paths observed:               158
+open pull requests observed:              31
+changed paths across open pull requests:  470
+branch-only paths observed:               163
 ```
 
 Open-PR paths are a shadow inventory only. They are not merged corpus, evidence truth, or publication state.

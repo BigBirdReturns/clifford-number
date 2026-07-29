@@ -1,20 +1,20 @@
 {
   "schema_version": "lake-basin-index@1",
   "registry_id": "CN-LAKE-BASINS-2026-07",
-  "source_fingerprint": "c073f4da787cddca92bdb3ee212ec25260206d13f9be39a83b81606a624a42e1",
+  "source_fingerprint": "df6006f838604c22744dfae79d5f188489fdd36f82acb42453320fb0b3ce7673",
   "source_census_path": "build/lake-index/files.jsonl",
   "counts": {
-    "source_rows": 1993,
+    "source_rows": 2006,
     "basin_count": 37,
-    "classified_without_default": 1993,
+    "classified_without_default": 2006,
     "unclassified_paths": 0,
-    "evidence_bearing_files": 1334,
-    "evidence_files_with_registry_owner": 1334,
-    "evidence_files_previously_unowned": 1334,
+    "evidence_bearing_files": 1340,
+    "evidence_files_with_registry_owner": 1340,
+    "evidence_files_previously_unowned": 1340,
     "exact_orphan_evidence_files": 146,
-    "gap_rows": 86,
+    "gap_rows": 87,
     "gap_type_counts": {
-      "public_reachability_requires_authorization_review": 56,
+      "public_reachability_requires_authorization_review": 57,
       "source_record_without_authoritative_reachability": 30
     }
   },
@@ -112,13 +112,13 @@
       "publication_disposition": "internal_or_explicitly_authorized",
       "retention_disposition": "canonical_governance",
       "counts": {
-        "files": 144,
-        "evidence_bearing": 144,
-        "index_reachable": 139,
-        "public_reachable": 6,
+        "files": 145,
+        "evidence_bearing": 145,
+        "index_reachable": 140,
+        "public_reachable": 7,
         "exact_orphans": 5,
-        "previously_unowned": 144,
-        "registry_owner_added": 144
+        "previously_unowned": 145,
+        "registry_owner_added": 145
       },
       "entrypoint_state": [
         {
@@ -423,6 +423,43 @@
       "entrypoint_complete": true
     },
     {
+      "basin_id": "general-build-products",
+      "label": "Other generated build products",
+      "semantic_role": "generated_projection",
+      "owner_program_id": "build-system",
+      "ownership_status": "provisional_path_convention",
+      "path_prefixes": [
+        "build/"
+      ],
+      "authoritative_entrypoints": [
+        "package.json"
+      ],
+      "source_basin_ids": [
+        "canonical-registries",
+        "canonical-ledgers",
+        "research-records",
+        "project-governance"
+      ],
+      "publication_disposition": "internal_or_explicitly_authorized",
+      "retention_disposition": "reproducible_generated",
+      "counts": {
+        "files": 32,
+        "evidence_bearing": 32,
+        "index_reachable": 32,
+        "public_reachable": 11,
+        "exact_orphans": 0,
+        "previously_unowned": 32,
+        "registry_owner_added": 32
+      },
+      "entrypoint_state": [
+        {
+          "path": "package.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
       "basin_id": "receipt-artifacts",
       "label": "Preserved receipt artifacts",
       "semantic_role": "receipt_artifact",
@@ -454,43 +491,6 @@
         },
         {
           "path": "build/receipt-graph.json",
-          "present_in_census_snapshot": true
-        }
-      ],
-      "entrypoint_complete": true
-    },
-    {
-      "basin_id": "general-build-products",
-      "label": "Other generated build products",
-      "semantic_role": "generated_projection",
-      "owner_program_id": "build-system",
-      "ownership_status": "provisional_path_convention",
-      "path_prefixes": [
-        "build/"
-      ],
-      "authoritative_entrypoints": [
-        "package.json"
-      ],
-      "source_basin_ids": [
-        "canonical-registries",
-        "canonical-ledgers",
-        "research-records",
-        "project-governance"
-      ],
-      "publication_disposition": "internal_or_explicitly_authorized",
-      "retention_disposition": "reproducible_generated",
-      "counts": {
-        "files": 31,
-        "evidence_bearing": 31,
-        "index_reachable": 31,
-        "public_reachable": 11,
-        "exact_orphans": 0,
-        "previously_unowned": 31,
-        "registry_owner_added": 31
-      },
-      "entrypoint_state": [
-        {
-          "path": "package.json",
           "present_in_census_snapshot": true
         }
       ],
@@ -684,6 +684,42 @@
       "entrypoint_complete": true
     },
     {
+      "basin_id": "lake-action-products",
+      "label": "Evidence-lake action and disposition products",
+      "semantic_role": "operational_decision_projection",
+      "owner_program_id": "CN-LAKE-EXECUTION-W01",
+      "ownership_status": "declared_by_wave_01_builder",
+      "path_prefixes": [
+        "build/lake-actions/",
+        "reports/lake-basin-execution-wave-01.md"
+      ],
+      "authoritative_entrypoints": [
+        "build/lake-actions/waterline.json"
+      ],
+      "source_basin_ids": [
+        "project-governance",
+        "core-thesis-build-products"
+      ],
+      "publication_disposition": "internal_or_explicitly_authorized",
+      "retention_disposition": "reproducible_generated",
+      "counts": {
+        "files": 8,
+        "evidence_bearing": 8,
+        "index_reachable": 8,
+        "public_reachable": 0,
+        "exact_orphans": 0,
+        "previously_unowned": 8,
+        "registry_owner_added": 8
+      },
+      "entrypoint_state": [
+        {
+          "path": "build/lake-actions/waterline.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
       "basin_id": "crawl-state",
       "label": "Crawler state and observation queues",
       "semantic_role": "crawler_state",
@@ -710,42 +746,6 @@
       "entrypoint_state": [
         {
           "path": "docs/official-record-crawler.md",
-          "present_in_census_snapshot": true
-        }
-      ],
-      "entrypoint_complete": true
-    },
-    {
-      "basin_id": "lake-action-products",
-      "label": "Evidence-lake action and disposition products",
-      "semantic_role": "operational_decision_projection",
-      "owner_program_id": "CN-LAKE-EXECUTION-W01",
-      "ownership_status": "declared_by_wave_01_builder",
-      "path_prefixes": [
-        "build/lake-actions/",
-        "reports/lake-basin-execution-wave-01.md"
-      ],
-      "authoritative_entrypoints": [
-        "build/lake-actions/waterline.json"
-      ],
-      "source_basin_ids": [
-        "project-governance",
-        "core-thesis-build-products"
-      ],
-      "publication_disposition": "internal_or_explicitly_authorized",
-      "retention_disposition": "reproducible_generated",
-      "counts": {
-        "files": 6,
-        "evidence_bearing": 6,
-        "index_reachable": 6,
-        "public_reachable": 0,
-        "exact_orphans": 0,
-        "previously_unowned": 6,
-        "registry_owner_added": 6
-      },
-      "entrypoint_state": [
-        {
-          "path": "build/lake-actions/waterline.json",
           "present_in_census_snapshot": true
         }
       ],
@@ -921,6 +921,46 @@
       "entrypoint_complete": true
     },
     {
+      "basin_id": "general-report-products",
+      "label": "Other report products",
+      "semantic_role": "report_projection",
+      "owner_program_id": "report-frontier-program",
+      "ownership_status": "provisional_path_convention",
+      "path_prefixes": [
+        "reports/"
+      ],
+      "authoritative_entrypoints": [
+        "reports/index.html",
+        "build/report-frontier.json"
+      ],
+      "source_basin_ids": [
+        "research-records",
+        "case-sources"
+      ],
+      "publication_disposition": "status_bound",
+      "retention_disposition": "generated_report",
+      "counts": {
+        "files": 3,
+        "evidence_bearing": 3,
+        "index_reachable": 3,
+        "public_reachable": 1,
+        "exact_orphans": 0,
+        "previously_unowned": 3,
+        "registry_owner_added": 3
+      },
+      "entrypoint_state": [
+        {
+          "path": "reports/index.html",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "build/report-frontier.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
       "basin_id": "legacy-history",
       "label": "Retired legacy architecture",
       "semantic_role": "historical_legacy",
@@ -1029,46 +1069,6 @@
       "entrypoint_complete": true
     },
     {
-      "basin_id": "general-report-products",
-      "label": "Other report products",
-      "semantic_role": "report_projection",
-      "owner_program_id": "report-frontier-program",
-      "ownership_status": "provisional_path_convention",
-      "path_prefixes": [
-        "reports/"
-      ],
-      "authoritative_entrypoints": [
-        "reports/index.html",
-        "build/report-frontier.json"
-      ],
-      "source_basin_ids": [
-        "research-records",
-        "case-sources"
-      ],
-      "publication_disposition": "status_bound",
-      "retention_disposition": "generated_report",
-      "counts": {
-        "files": 1,
-        "evidence_bearing": 1,
-        "index_reachable": 1,
-        "public_reachable": 1,
-        "exact_orphans": 0,
-        "previously_unowned": 1,
-        "registry_owner_added": 1
-      },
-      "entrypoint_state": [
-        {
-          "path": "reports/index.html",
-          "present_in_census_snapshot": true
-        },
-        {
-          "path": "build/report-frontier.json",
-          "present_in_census_snapshot": true
-        }
-      ],
-      "entrypoint_complete": true
-    },
-    {
       "basin_id": "toolchain",
       "label": "Compiler and maintenance toolchain",
       "semantic_role": "tooling",
@@ -1084,13 +1084,13 @@
       "publication_disposition": "not_evidence",
       "retention_disposition": "tooling",
       "counts": {
-        "files": 304,
+        "files": 309,
         "evidence_bearing": 0,
-        "index_reachable": 221,
-        "public_reachable": 46,
+        "index_reachable": 225,
+        "public_reachable": 47,
         "exact_orphans": 21,
-        "previously_unowned": 304,
-        "registry_owner_added": 304
+        "previously_unowned": 309,
+        "registry_owner_added": 309
       },
       "entrypoint_state": [
         {
@@ -1116,13 +1116,13 @@
       "publication_disposition": "not_evidence",
       "retention_disposition": "regression",
       "counts": {
-        "files": 159,
+        "files": 160,
         "evidence_bearing": 0,
-        "index_reachable": 115,
+        "index_reachable": 116,
         "public_reachable": 1,
         "exact_orphans": 6,
-        "previously_unowned": 159,
-        "registry_owner_added": 159
+        "previously_unowned": 160,
+        "registry_owner_added": 160
       },
       "entrypoint_state": [
         {
@@ -1148,13 +1148,13 @@
       "publication_disposition": "not_evidence",
       "retention_disposition": "tooling",
       "counts": {
-        "files": 69,
+        "files": 70,
         "evidence_bearing": 0,
         "index_reachable": 30,
         "public_reachable": 0,
-        "exact_orphans": 36,
-        "previously_unowned": 69,
-        "registry_owner_added": 69
+        "exact_orphans": 37,
+        "previously_unowned": 70,
+        "registry_owner_added": 70
       },
       "entrypoint_state": [
         {
