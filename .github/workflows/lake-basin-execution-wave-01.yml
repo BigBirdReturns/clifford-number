@@ -55,8 +55,8 @@ jobs:
       - name: Run the complete repository release gate before the census decision snapshot
         if: steps.mode.outputs.validate == 'true'
         run: npm run release:check
-      - name: Restore committed bytes before pull-request-only focused validation
-        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.materialize != 'true'
+      - name: Restore committed bytes before observing the census snapshot
+        if: steps.mode.outputs.validate == 'true'
         run: git restore --staged --worktree .
       - name: Observe current open-PR shadow
         if: steps.mode.outputs.validate == 'true'
