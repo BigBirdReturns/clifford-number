@@ -135,6 +135,22 @@ This release must pass five fixtures before the full database can be trusted:
 
 This lane does not create a graph edge or hop, does not merge source entities, and does not treat matching labels as proof. Automatic same-label joins, different-namespace joins, ambiguous aliases, missing-custody assertions, cross-case graph joins, and cross-case hop creation remain prohibited. The broad active projection flag remains `cross_case_join_authorized: false`; the accepted scope is `explicit_source_custodied_graph_inert_identity_resolution_only`.
 
+### Production cross-case identity decisions
+
+Wave 08 applies the bounded Wave 07 law to every current native case pair. The
+entity registry, complete pair denominator, and accepted/unresolved/rejected
+decisions are committed under `data/project/lake-cross-case-production-*wave-08*`.
+The denominator includes all noncandidate Cartesian pairs as counts, so the visible
+bridges cannot impersonate the whole search universe.
+
+A decision can accept a graph-inert identity bridge when both case occurrences
+resolve to the same canonical identity and both carry public receipt custody on
+identity-eligible claims. Independent source families are measured and reported as
+stronger corroboration, not treated as an external permission gate. Missing
+canonical identity or custody remains a named unresolved state; conflicting
+identity or kind is rejected. No accepted row merges records or creates a graph
+edge or hop, and all automatic cross-case joins remain disabled.
+
 `query:hops --from` / `--to` accept local IDs, current Genesis IDs, and retired predecessor IDs:
 
 ```bash

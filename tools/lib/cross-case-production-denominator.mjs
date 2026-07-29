@@ -8,7 +8,14 @@ function sha256(value) {
 }
 
 function uniqueSorted(values) {
-  return [...new Set((values ?? []).filter(value => value !== null && value !== undefined && String(value).length > 0).map(String))]
+  const iterable = values === null || values === undefined
+    ? []
+    : Array.isArray(values)
+      ? values
+      : typeof values[Symbol.iterator] === 'function'
+        ? [...values]
+        : [values];
+  return [...new Set(iterable.filter(value => value !== null && value !== undefined && String(value).length > 0).map(String))]
     .sort((left, right) => left.localeCompare(right));
 }
 
@@ -212,13 +219,23 @@ export function buildCaseEntityOccurrences({ caseId, caseTitle, claims = [], rec
     const publicReceipts = claimReceipts.filter(receipt => Boolean(locatorOf(receipt)));
     const publicReceiptIds = publicReceipts.map(receipt => receipt.receipt_id);
     const publicFamilies = publicReceipts.map(receiptSourceFamily).filter(Boolean);
-    const identityEligible = !DISALLOWED_IDENTITY_EVIDENCE.has(claim.evidence_class)
+    const effectiveEvidenceClass = claim.evidence_class
+      ?? strongestEvidence(claimReceipts.map(receipt => receipt.evidence_class))
+      ?? null;
+    const evidenceClassSource = claim.evidence_class
+      ? 'claim'
+      : effectiveEvidenceClass
+        ? 'attached_receipt'
+        : 'missing';
+    const identityEligible = Boolean(effectiveEvidenceClass)
+      && !DISALLOWED_IDENTITY_EVIDENCE.has(effectiveEvidenceClass)
       && publicReceipts.length > 0
       && !['rejected', 'superseded'].includes(claim.claim_status);
     occurrence.claim_refs.set(`${claim.claim_id}\0${referenceRole}\0${referencePath}`, {
       claim_id: claim.claim_id,
       claim_status: claim.claim_status,
-      evidence_class: claim.evidence_class,
+      evidence_class: effectiveEvidenceClass,
+      evidence_class_source: evidenceClassSource,
       predicate: claim.predicate,
       reference_role: referenceRole,
       reference_path: referencePath,

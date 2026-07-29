@@ -1,19 +1,19 @@
 # Lake index gap summary
 
-Source fingerprint: `6018ecf7fcedb57f7358c98eee53acf2c4a4e5e3baced00aeb033d850521646d`
+Source fingerprint: `9a962d022fe8ee4512ba803757f295498d3b8db42104fe6ab3a46938bad496b3`
 
 ## Finding
 
-The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1304 evidence-bearing files, 147 (11.3%) are not reachable from any detected index, 106 (8.1%) have no inbound repository reference, and 545 (41.8%) have no detected program owner.
+The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1310 evidence-bearing files, 147 (11.2%) are not reachable from any detected index, 106 (8.1%) have no inbound repository reference, and 551 (42.1%) have no detected program owner.
 
 ## By evidence role
 
 | Role | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
-| generated_artifact | 562 | 562 | 0 | 62 |
+| generated_artifact | 563 | 563 | 0 | 63 |
 | intake | 141 | 120 | 19 | 107 |
+| project_governance | 124 | 118 | 0 | 31 |
 | documentation | 123 | 51 | 55 | 101 |
-| project_governance | 119 | 113 | 0 | 26 |
 | repository_root | 109 | 80 | 28 | 61 |
 | report_product | 98 | 83 | 0 | 61 |
 | research_record | 48 | 48 | 0 | 31 |
@@ -30,7 +30,7 @@ The current Git tree is physically censused, but the evidence lake is not semant
 | build/estate-game-trails | 313 | 313 | 0 | 5 |
 | build/core-thesis | 184 | 184 | 0 | 0 |
 | data/intake | 141 | 120 | 19 | 107 |
-| data/project | 119 | 113 | 0 | 26 |
+| data/project | 124 | 118 | 0 | 31 |
 | reports/core-thesis | 96 | 81 | 0 | 59 |
 | docs/milestones | 65 | 19 | 37 | 49 |
 | data/research-tracks | 52 | 25 | 27 | 42 |
@@ -50,8 +50,8 @@ The current Git tree is physically censused, but the evidence lake is not semant
 ```text
 parse errors:                   0
 undefined receipt references:   0
-projection IDs without source:  1407
-missing repository path tokens: 138
+projection IDs without source:  1403
+missing repository path tokens: 142
 ```
 
 ### P1 — exact orphan evidence
@@ -76,14 +76,14 @@ missing repository path tokens: 138
 
 ### P2 — unowned evidence
 
-545 evidence-bearing files have no detected program owner. Ownership here means a declared program ID or an inbound reference from a program-bearing file; it does not mean that every unowned file is erroneous.
+551 evidence-bearing files have no detected program owner. Ownership here means a declared program ID or an inbound reference from a program-bearing file; it does not mean that every unowned file is erroneous.
 
 ### P3 — index and publication gaps
 
 ```text
 not reachable from any detected index: 147
 not reachable from authoritative roots: 155
-not reachable from public roots: 1064
+not reachable from public roots: 1069
 case IDs absent from public catalog: 26
 ```
 
@@ -94,7 +94,10 @@ case IDs absent from public catalog: 26
 | #365 Build M-05 Sprint 08 A1 support lifecycle | 29 |
 | #382 Harden release integrity after top-to-bottom adversarial review | 22 |
 | #386 Make evidence-grounded judgments without a human-permission gate | 18 |
-| #394 Execute K0 role-neutral denominator Wave 07 | 10 |
+| #401 Adjudicate and materialize the bounded canonical identity subset | 16 |
+| #400 Type and route the non-covered subject denominator | 15 |
+| #398 Measure the production cross-case identity denominator | 14 |
+| #399 Classify production identities against canonical registries | 14 |
 | #245 Close the seven M-04F vertical joins | 9 |
 | #362 Stage biological Omega control-surface research program | 9 |
 | #50 Stage synthetic-population research program | 8 |
@@ -105,6 +108,7 @@ case IDs absent from public catalog: 26
 | #211 Map every case and report membership across the estates | 2 |
 | #379 Run corrected WebsiteIQ landing-path audit | 2 |
 | #356 Reconcile the observed M-04G source ecology v2 orbit | 1 |
+| #402 Adjudicate K0 Wave 07 authorship-transfer records | 1 |
 
 ### P5 — history and semantics
 

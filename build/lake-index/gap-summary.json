@@ -1,24 +1,24 @@
 {
   "schema_version": "lake-index-gap-summary@1",
   "census_id": "CN-LAKE-INDEX-2026-07",
-  "source_fingerprint_sha256": "6018ecf7fcedb57f7358c98eee53acf2c4a4e5e3baced00aeb033d850521646d",
+  "source_fingerprint_sha256": "9a962d022fe8ee4512ba803757f295498d3b8db42104fe6ab3a46938bad496b3",
   "counts": {
-    "tracked_files_indexed": 1936,
-    "evidence_bearing_files": 1304,
-    "text_or_structured_files_parsed": 1908,
+    "tracked_files_indexed": 1948,
+    "evidence_bearing_files": 1310,
+    "text_or_structured_files_parsed": 1920,
     "parse_errors": 0,
-    "index_files": 181,
-    "authoritative_roots_present": 40,
-    "authoritative_reachable_evidence_files": 1149,
-    "index_reachable_evidence_files": 1157,
-    "public_reachable_evidence_files": 240,
+    "index_files": 184,
+    "authoritative_roots_present": 45,
+    "authoritative_reachable_evidence_files": 1155,
+    "index_reachable_evidence_files": 1163,
+    "public_reachable_evidence_files": 241,
     "exact_orphan_evidence_files": 106,
-    "no_program_owner_detected": 545,
-    "distinct_machine_ids": 13017,
-    "unindexed_machine_ids": 8200,
+    "no_program_owner_detected": 551,
+    "distinct_machine_ids": 13498,
+    "unindexed_machine_ids": 8206,
     "divergent_identifier_projections": 1751,
-    "source_ids_without_projection": 5545,
-    "projection_ids_without_source": 1407,
+    "source_ids_without_projection": 6026,
+    "projection_ids_without_source": 1403,
     "receipt_ids": 350,
     "undefined_receipt_references": 0,
     "unused_receipt_definitions": 49,
@@ -26,10 +26,10 @@
     "case_ids": 30,
     "case_ids_not_in_public_catalog": 26,
     "report_ids": 5,
-    "missing_repo_path_tokens": 138,
-    "open_pull_requests_observed": 22,
-    "open_pr_changed_paths_observed": 325,
-    "open_pr_branch_only_paths_observed": 130,
+    "missing_repo_path_tokens": 142,
+    "open_pull_requests_observed": 27,
+    "open_pr_changed_paths_observed": 394,
+    "open_pr_branch_only_paths_observed": 180,
     "local_identifier_values_observed": 1131,
     "local_identifier_occurrences_observed": 7863,
     "receipt_locator_tokens": 11,
@@ -39,12 +39,12 @@
   "by_role": [
     {
       "role": "generated_artifact",
-      "files": 562,
-      "authoritative_reachable": 562,
-      "index_reachable": 562,
+      "files": 563,
+      "authoritative_reachable": 563,
+      "index_reachable": 563,
       "public_reachable": 44,
       "exact_orphans": 0,
-      "no_program_owner": 62
+      "no_program_owner": 63
     },
     {
       "role": "intake",
@@ -56,6 +56,15 @@
       "no_program_owner": 107
     },
     {
+      "role": "project_governance",
+      "files": 124,
+      "authoritative_reachable": 118,
+      "index_reachable": 118,
+      "public_reachable": 6,
+      "exact_orphans": 0,
+      "no_program_owner": 31
+    },
+    {
       "role": "documentation",
       "files": 123,
       "authoritative_reachable": 47,
@@ -63,15 +72,6 @@
       "public_reachable": 13,
       "exact_orphans": 55,
       "no_program_owner": 101
-    },
-    {
-      "role": "project_governance",
-      "files": 119,
-      "authoritative_reachable": 113,
-      "index_reachable": 113,
-      "public_reachable": 5,
-      "exact_orphans": 0,
-      "no_program_owner": 26
     },
     {
       "role": "repository_root",
@@ -212,12 +212,12 @@
     },
     {
       "cluster": "data/project",
-      "files": 119,
-      "authoritative_reachable": 113,
-      "index_reachable": 113,
-      "public_reachable": 5,
+      "files": 124,
+      "authoritative_reachable": 118,
+      "index_reachable": 118,
+      "public_reachable": 6,
       "exact_orphans": 0,
-      "no_program_owner": 26
+      "no_program_owner": 31
     },
     {
       "cluster": "reports/core-thesis",
@@ -491,6 +491,15 @@
     },
     {
       "cluster": "build/build-hop-report.json",
+      "files": 1,
+      "authoritative_reachable": 1,
+      "index_reachable": 1,
+      "public_reachable": 0,
+      "exact_orphans": 0,
+      "no_program_owner": 1
+    },
+    {
+      "cluster": "build/cross-case-production-join-decision-index-wave-08.json",
       "files": 1,
       "authoritative_reachable": 1,
       "index_reachable": 1,
@@ -1338,10 +1347,6 @@
         "count": 24
       },
       {
-        "id_key": "canonical_id",
-        "count": 22
-      },
-      {
         "id_key": "org_id",
         "count": 22
       },
@@ -1376,6 +1381,10 @@
       {
         "id_key": "to_event_id",
         "count": 17
+      },
+      {
+        "id_key": "canonical_id",
+        "count": 16
       },
       {
         "id_key": "expected_id",
@@ -1574,6 +1583,10 @@
         "count": 6
       },
       {
+        "id_key": "pair_id",
+        "count": 6
+      },
+      {
         "id_key": "path_id",
         "count": 6
       },
@@ -1734,7 +1747,15 @@
         "count": 3
       },
       {
+        "id_key": "left_case_id",
+        "count": 3
+      },
+      {
         "id_key": "report_id",
+        "count": 3
+      },
+      {
+        "id_key": "right_case_id",
         "count": 3
       },
       {
@@ -2226,6 +2247,10 @@
         "count": 298
       },
       {
+        "id_key": "occurrence_id",
+        "count": 229
+      },
+      {
         "id_key": "actor_id",
         "count": 218
       },
@@ -2256,6 +2281,14 @@
       {
         "id_key": "search_id",
         "count": 128
+      },
+      {
+        "id_key": "axm_entity_id",
+        "count": 123
+      },
+      {
+        "id_key": "canonical_id",
+        "count": 117
       },
       {
         "id_key": "poll_id",
@@ -2454,6 +2487,10 @@
         "count": 7
       },
       {
+        "id_key": "pair_id",
+        "count": 6
+      },
+      {
         "id_key": "path_id",
         "count": 6
       },
@@ -2530,7 +2567,15 @@
         "count": 3
       },
       {
+        "id_key": "left_case_id",
+        "count": 3
+      },
+      {
         "id_key": "packet_id",
+        "count": 3
+      },
+      {
+        "id_key": "right_case_id",
         "count": 3
       },
       {
@@ -2736,12 +2781,12 @@
         "count": 11
       },
       {
-        "id_key": "canonical_id",
-        "count": 10
-      },
-      {
         "id_key": "organization_id",
         "count": 9
+      },
+      {
+        "id_key": "canonical_id",
+        "count": 6
       },
       {
         "id_key": "workstream_id",
@@ -3608,8 +3653,8 @@
       "counts": {
         "parse_errors": 0,
         "undefined_receipt_references": 0,
-        "projection_ids_without_source": 1407,
-        "missing_repo_path_tokens": 138
+        "projection_ids_without_source": 1403,
+        "missing_repo_path_tokens": 142
       }
     },
     "p1_exact_orphan_sources": {
@@ -3742,7 +3787,7 @@
     },
     "p2_unowned_evidence": {
       "description": "Evidence-bearing paths without a detected program ID or reference from a program-bearing file.",
-      "count": 545,
+      "count": 551,
       "by_role": [
         {
           "key": "intake",
@@ -3754,7 +3799,7 @@
         },
         {
           "key": "generated_artifact",
-          "count": 62
+          "count": 63
         },
         {
           "key": "report_product",
@@ -3773,12 +3818,12 @@
           "count": 32
         },
         {
-          "key": "research_record",
+          "key": "project_governance",
           "count": 31
         },
         {
-          "key": "project_governance",
-          "count": 26
+          "key": "research_record",
+          "count": 31
         },
         {
           "key": "canonical_registry",
@@ -3823,12 +3868,12 @@
           "count": 42
         },
         {
-          "key": "data/research",
+          "key": "data/project",
           "count": 31
         },
         {
-          "key": "data/project",
-          "count": 26
+          "key": "data/research",
+          "count": 31
         },
         {
           "key": "cases/arcadia-field-autopsy",
@@ -3936,6 +3981,10 @@
         },
         {
           "key": "build/cases",
+          "count": 1
+        },
+        {
+          "key": "build/cross-case-production-join-decision-index-wave-08.json",
           "count": 1
         },
         {
@@ -4221,16 +4270,16 @@
       "counts": {
         "not_index_reachable": 147,
         "not_authoritative_reachable": 155,
-        "not_public_reachable": 1064,
+        "not_public_reachable": 1069,
         "case_ids_not_in_public_catalog": 26
       }
     },
     "p4_branch_shadow": {
       "description": "Open-pull-request paths absent from the current main tree; these require active, superseded, abandoned, or merged dispositions.",
       "counts": {
-        "open_pull_requests": 22,
-        "branch_only_paths": 130,
-        "branch_only_evidence_paths": 26
+        "open_pull_requests": 27,
+        "branch_only_paths": 180,
+        "branch_only_evidence_paths": 64
       },
       "by_pr": [
         {
@@ -4246,8 +4295,20 @@
           "count": 18
         },
         {
-          "key": "#394 Execute K0 role-neutral denominator Wave 07",
-          "count": 10
+          "key": "#401 Adjudicate and materialize the bounded canonical identity subset",
+          "count": 16
+        },
+        {
+          "key": "#400 Type and route the non-covered subject denominator",
+          "count": 15
+        },
+        {
+          "key": "#398 Measure the production cross-case identity denominator",
+          "count": 14
+        },
+        {
+          "key": "#399 Classify production identities against canonical registries",
+          "count": 14
         },
         {
           "key": "#245 Close the seven M-04F vertical joins",
@@ -4288,32 +4349,52 @@
         {
           "key": "#356 Reconcile the observed M-04G source ecology v2 orbit",
           "count": 1
+        },
+        {
+          "key": "#402 Adjudicate K0 Wave 07 authorship-transfer records",
+          "count": 1
         }
       ],
       "by_cluster": [
         {
           "key": ".github",
-          "count": 82
+          "count": 77
         },
         {
           "key": "tools",
-          "count": 13
+          "count": 26
+        },
+        {
+          "key": "data/project",
+          "count": 22
         },
         {
           "key": "contributions/inbox",
           "count": 9
         },
         {
+          "key": "build/lake-actions",
+          "count": 8
+        },
+        {
+          "key": "test",
+          "count": 8
+        },
+        {
           "key": "comprehension",
           "count": 5
         },
         {
-          "key": "data/project",
-          "count": 4
+          "key": "build/axm-canonical-identity-candidate-index-wave-09.json",
+          "count": 1
         },
         {
-          "key": "test",
-          "count": 4
+          "key": "build/axm-production-cross-case-candidate-index-wave-08.json",
+          "count": 1
+        },
+        {
+          "key": "build/canonical-adjudication-index-wave-11.json",
+          "count": 1
         },
         {
           "key": "build/evidence-grounded-judgments.json",
@@ -4321,6 +4402,10 @@
         },
         {
           "key": "build/human-permission-gate-audit.json",
+          "count": 1
+        },
+        {
+          "key": "build/subject-ontology-routing-index-wave-10.json",
           "count": 1
         },
         {
@@ -4361,6 +4446,38 @@
         },
         {
           "key": "reports/human-permission-gate-audit.md",
+          "count": 1
+        },
+        {
+          "key": "reports/lake-canonical-adjudication-wave-11-reconciliation.md",
+          "count": 1
+        },
+        {
+          "key": "reports/lake-canonical-adjudication-wave-11.md",
+          "count": 1
+        },
+        {
+          "key": "reports/lake-canonical-identity-census-wave-09-reconciliation.md",
+          "count": 1
+        },
+        {
+          "key": "reports/lake-canonical-identity-census-wave-09.md",
+          "count": 1
+        },
+        {
+          "key": "reports/lake-production-cross-case-census-wave-08-reconciliation.md",
+          "count": 1
+        },
+        {
+          "key": "reports/lake-production-cross-case-census-wave-08.md",
+          "count": 1
+        },
+        {
+          "key": "reports/lake-subject-ontology-routing-wave-10-reconciliation.md",
+          "count": 1
+        },
+        {
+          "key": "reports/lake-subject-ontology-routing-wave-10.md",
           "count": 1
         },
         {
@@ -4502,6 +4619,7 @@
     "build/briefings/index.json",
     "build/build-hop-report.json",
     "build/cases/index.json",
+    "build/cross-case-production-join-decision-index-wave-08.json",
     "build/estate-closures/dialog-estate.json",
     "build/estate-closures/local-development-estate.json",
     "build/estate-closures/manifest.json",
@@ -4693,8 +4811,7 @@
     "data/intake/next-ten-estates/estates.jsonl",
     "data/intake/next-ten-estates/raw/commerce-pas-oge278-2021-2026.json",
     "data/intake/next-ten-estates/raw/cortland-chicago-river-tif.json",
-    "data/intake/next-ten-estates/raw/district-noho-joint-development.json",
-    "data/intake/next-ten-estates/raw/fda-senior-leadership-2021-2026.json"
+    "data/intake/next-ten-estates/raw/district-noho-joint-development.json"
   ],
   "branch_only_paths": [
     {
@@ -6498,154 +6615,904 @@
       "head_sha": "e631885fe3b11362a35e21e14e5bed5fe78268c4"
     },
     {
-      "path": ".github/tmp/k0-wave07-exact-00a.b64",
+      "path": ".github/workflows/lake-production-cross-case-census-wave-08.yml",
       "status": "added",
-      "blob_sha": "662b9939fc2ff8e1e07a679eccdf2c3d2e0076b6",
+      "blob_sha": "0c6783baa7dafc02aeddc33a6550476a8cbcb05c",
       "previous_path": null,
-      "additions": 1,
+      "additions": 262,
       "deletions": 0,
-      "changes": 1,
+      "changes": 262,
       "evidence_like": false,
       "branch_only_path": true,
-      "pr_number": 394,
-      "pr_title": "Execute K0 role-neutral denominator Wave 07",
-      "head_ref": "agent/k0-role-neutral-wave-07",
-      "head_sha": "564d5d599c16028282e8d7887f0f7941164fe6c2"
+      "pr_number": 398,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-production-cross-case-census-wave-08",
+      "head_sha": "37b93242e2524fc857075521dce73eb9a87fe16d"
     },
     {
-      "path": ".github/tmp/k0-wave07-exact-00b.b64",
+      "path": "build/axm-production-cross-case-candidate-index-wave-08.json",
       "status": "added",
-      "blob_sha": "19791e3337eeb472d782e8a5f98c5a87d9f0e536",
+      "blob_sha": "3e00de20e74a7aaa0b7812616a95b3e3051dcfd8",
       "previous_path": null,
-      "additions": 1,
+      "additions": 109,
       "deletions": 0,
-      "changes": 1,
-      "evidence_like": false,
+      "changes": 109,
+      "evidence_like": true,
       "branch_only_path": true,
-      "pr_number": 394,
-      "pr_title": "Execute K0 role-neutral denominator Wave 07",
-      "head_ref": "agent/k0-role-neutral-wave-07",
-      "head_sha": "564d5d599c16028282e8d7887f0f7941164fe6c2"
+      "pr_number": 398,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-production-cross-case-census-wave-08",
+      "head_sha": "37b93242e2524fc857075521dce73eb9a87fe16d"
     },
     {
-      "path": ".github/tmp/k0-wave07-exact-00c.b64",
+      "path": "build/lake-actions/production-cross-case-census-wave-08-reconciliation.json",
       "status": "added",
-      "blob_sha": "189b7f7a19d1485554c05df149cf1deace7617ef",
+      "blob_sha": "ea57b01600ac1ed510af05d15731d32ade717203",
       "previous_path": null,
-      "additions": 1,
+      "additions": 200,
       "deletions": 0,
-      "changes": 1,
-      "evidence_like": false,
+      "changes": 200,
+      "evidence_like": true,
       "branch_only_path": true,
-      "pr_number": 394,
-      "pr_title": "Execute K0 role-neutral denominator Wave 07",
-      "head_ref": "agent/k0-role-neutral-wave-07",
-      "head_sha": "564d5d599c16028282e8d7887f0f7941164fe6c2"
+      "pr_number": 398,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-production-cross-case-census-wave-08",
+      "head_sha": "37b93242e2524fc857075521dce73eb9a87fe16d"
     },
     {
-      "path": ".github/tmp/k0-wave07-source-part-00.b64",
+      "path": "build/lake-actions/production-cross-case-census-wave-08.json",
       "status": "added",
-      "blob_sha": "6c25456a64de60b8f554de8467623926cd084318",
+      "blob_sha": "fa35025389d5c1335649dedb1ccdbdba12b058b7",
       "previous_path": null,
-      "additions": 1,
+      "additions": 10415,
       "deletions": 0,
-      "changes": 1,
-      "evidence_like": false,
+      "changes": 10415,
+      "evidence_like": true,
       "branch_only_path": true,
-      "pr_number": 394,
-      "pr_title": "Execute K0 role-neutral denominator Wave 07",
-      "head_ref": "agent/k0-role-neutral-wave-07",
-      "head_sha": "564d5d599c16028282e8d7887f0f7941164fe6c2"
+      "pr_number": 398,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-production-cross-case-census-wave-08",
+      "head_sha": "37b93242e2524fc857075521dce73eb9a87fe16d"
     },
     {
-      "path": ".github/tmp/k0-wave07-source-part-01.b64",
+      "path": "data/project/lake-production-cross-case-candidate-registry-wave-08.jsonl",
       "status": "added",
-      "blob_sha": "f0fdd33474715491f764616aea2cf8db61422604",
+      "blob_sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
       "previous_path": null,
-      "additions": 1,
+      "additions": 0,
       "deletions": 0,
-      "changes": 1,
-      "evidence_like": false,
+      "changes": 0,
+      "evidence_like": true,
       "branch_only_path": true,
-      "pr_number": 394,
-      "pr_title": "Execute K0 role-neutral denominator Wave 07",
-      "head_ref": "agent/k0-role-neutral-wave-07",
-      "head_sha": "564d5d599c16028282e8d7887f0f7941164fe6c2"
+      "pr_number": 398,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-production-cross-case-census-wave-08",
+      "head_sha": "37b93242e2524fc857075521dce73eb9a87fe16d"
     },
     {
-      "path": ".github/tmp/k0-wave07-source-part-02.b64",
+      "path": "data/project/lake-production-cross-case-case-pair-registry-wave-08.jsonl",
       "status": "added",
-      "blob_sha": "134dccd1e34552c0aecf81307542f5223c55ec67",
+      "blob_sha": "ccfdb230f4a42532cbb131f9636e8eabb63538c1",
       "previous_path": null,
-      "additions": 1,
+      "additions": 6,
       "deletions": 0,
-      "changes": 1,
-      "evidence_like": false,
+      "changes": 6,
+      "evidence_like": true,
       "branch_only_path": true,
-      "pr_number": 394,
-      "pr_title": "Execute K0 role-neutral denominator Wave 07",
-      "head_ref": "agent/k0-role-neutral-wave-07",
-      "head_sha": "564d5d599c16028282e8d7887f0f7941164fe6c2"
+      "pr_number": 398,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-production-cross-case-census-wave-08",
+      "head_sha": "37b93242e2524fc857075521dce73eb9a87fe16d"
     },
     {
-      "path": ".github/tmp/k0-wave07-source-part-03.b64",
+      "path": "data/project/lake-production-cross-case-census-wave-08-policy.json",
       "status": "added",
-      "blob_sha": "bcdb1b7f6c6ead88b80ac56df6cc77bf2614ad5e",
+      "blob_sha": "e82ff4f84e45f400cdc3f65b25a0aab4c0acdff3",
       "previous_path": null,
-      "additions": 1,
+      "additions": 67,
       "deletions": 0,
-      "changes": 1,
-      "evidence_like": false,
+      "changes": 67,
+      "evidence_like": true,
       "branch_only_path": true,
-      "pr_number": 394,
-      "pr_title": "Execute K0 role-neutral denominator Wave 07",
-      "head_ref": "agent/k0-role-neutral-wave-07",
-      "head_sha": "564d5d599c16028282e8d7887f0f7941164fe6c2"
+      "pr_number": 398,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-production-cross-case-census-wave-08",
+      "head_sha": "37b93242e2524fc857075521dce73eb9a87fe16d"
     },
     {
-      "path": ".github/tmp/k0-wave07-source-part-04.b64",
+      "path": "data/project/lake-production-cross-case-census-wave-08.json",
       "status": "added",
-      "blob_sha": "2cf42ef72010f159a9ad391dbe1acacdffa9ae4d",
+      "blob_sha": "277ddf48b659e74d248481c5ec9e7afa519ffa90",
       "previous_path": null,
-      "additions": 1,
+      "additions": 38,
       "deletions": 0,
-      "changes": 1,
-      "evidence_like": false,
+      "changes": 38,
+      "evidence_like": true,
       "branch_only_path": true,
-      "pr_number": 394,
-      "pr_title": "Execute K0 role-neutral denominator Wave 07",
-      "head_ref": "agent/k0-role-neutral-wave-07",
-      "head_sha": "564d5d599c16028282e8d7887f0f7941164fe6c2"
+      "pr_number": 398,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-production-cross-case-census-wave-08",
+      "head_sha": "37b93242e2524fc857075521dce73eb9a87fe16d"
     },
     {
-      "path": ".github/workflows/temporary-k0-wave07-bootstrap.yml",
+      "path": "reports/lake-production-cross-case-census-wave-08-reconciliation.md",
       "status": "added",
-      "blob_sha": "d64503213808def6003a2da43f1935fd8649426f",
+      "blob_sha": "0e9a602e8e78657467bae38212d837ebe14220c1",
       "previous_path": null,
-      "additions": 42,
+      "additions": 32,
       "deletions": 0,
-      "changes": 42,
-      "evidence_like": false,
+      "changes": 32,
+      "evidence_like": true,
       "branch_only_path": true,
-      "pr_number": 394,
-      "pr_title": "Execute K0 role-neutral denominator Wave 07",
-      "head_ref": "agent/k0-role-neutral-wave-07",
-      "head_sha": "564d5d599c16028282e8d7887f0f7941164fe6c2"
+      "pr_number": 398,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-production-cross-case-census-wave-08",
+      "head_sha": "37b93242e2524fc857075521dce73eb9a87fe16d"
     },
     {
-      "path": ".github/workflows/temporary-materialize-k0-wave07.yml",
+      "path": "reports/lake-production-cross-case-census-wave-08.md",
       "status": "added",
-      "blob_sha": "d5e608884da30047b891ff13b80af867ecb0a8bd",
+      "blob_sha": "b51c7339308e4a6aec800aec04546163601ef09f",
       "previous_path": null,
-      "additions": 216,
+      "additions": 28,
       "deletions": 0,
-      "changes": 216,
+      "changes": 28,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 398,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-production-cross-case-census-wave-08",
+      "head_sha": "37b93242e2524fc857075521dce73eb9a87fe16d"
+    },
+    {
+      "path": "test/lake-production-cross-case-census-wave-08.test.js",
+      "status": "added",
+      "blob_sha": "d9b0758f3bb7b1b4e22b7d060866a610ed174a10",
+      "previous_path": null,
+      "additions": 89,
+      "deletions": 0,
+      "changes": 89,
       "evidence_like": false,
       "branch_only_path": true,
-      "pr_number": 394,
-      "pr_title": "Execute K0 role-neutral denominator Wave 07",
-      "head_ref": "agent/k0-role-neutral-wave-07",
-      "head_sha": "564d5d599c16028282e8d7887f0f7941164fe6c2"
+      "pr_number": 398,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-production-cross-case-census-wave-08",
+      "head_sha": "37b93242e2524fc857075521dce73eb9a87fe16d"
+    },
+    {
+      "path": "tools/build-lake-production-cross-case-census-wave-08.mjs",
+      "status": "added",
+      "blob_sha": "a59f737c94bb28f7958ed19ae2fce53249d33b9f",
+      "previous_path": null,
+      "additions": 446,
+      "deletions": 0,
+      "changes": 446,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 398,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-production-cross-case-census-wave-08",
+      "head_sha": "37b93242e2524fc857075521dce73eb9a87fe16d"
+    },
+    {
+      "path": "tools/reconcile-lake-production-cross-case-census-wave-08.mjs",
+      "status": "added",
+      "blob_sha": "1efa5900c6fce0f9b87d4378cb1866cc3da00d97",
+      "previous_path": null,
+      "additions": 305,
+      "deletions": 0,
+      "changes": 305,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 398,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-production-cross-case-census-wave-08",
+      "head_sha": "37b93242e2524fc857075521dce73eb9a87fe16d"
+    },
+    {
+      "path": "tools/validate-lake-production-cross-case-census-wave-08.mjs",
+      "status": "added",
+      "blob_sha": "1650712633cdbee0311f60494c829a593f21ca6d",
+      "previous_path": null,
+      "additions": 259,
+      "deletions": 0,
+      "changes": 259,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 398,
+      "pr_title": "Measure the production cross-case identity denominator",
+      "head_ref": "agent/lake-production-cross-case-census-wave-08",
+      "head_sha": "37b93242e2524fc857075521dce73eb9a87fe16d"
+    },
+    {
+      "path": ".github/workflows/lake-canonical-identity-census-wave-09.yml",
+      "status": "added",
+      "blob_sha": "4239a363ef9bcf820720d9aebdfd0eebae52250c",
+      "previous_path": null,
+      "additions": 262,
+      "deletions": 0,
+      "changes": 262,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 399,
+      "pr_title": "Classify production identities against canonical registries",
+      "head_ref": "agent/lake-canonical-identity-census-wave-09",
+      "head_sha": "28e4152e4a0499b99a03e9cca7bcc8929f57dba6"
+    },
+    {
+      "path": "build/axm-canonical-identity-candidate-index-wave-09.json",
+      "status": "added",
+      "blob_sha": "578daeb2195ceaf82aa5db541de408209008232a",
+      "previous_path": null,
+      "additions": 14695,
+      "deletions": 0,
+      "changes": 14695,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 399,
+      "pr_title": "Classify production identities against canonical registries",
+      "head_ref": "agent/lake-canonical-identity-census-wave-09",
+      "head_sha": "28e4152e4a0499b99a03e9cca7bcc8929f57dba6"
+    },
+    {
+      "path": "build/lake-actions/canonical-identity-census-wave-09-reconciliation.json",
+      "status": "added",
+      "blob_sha": "81830cd4182f807759a2d681d21b768d7daa15ad",
+      "previous_path": null,
+      "additions": 201,
+      "deletions": 0,
+      "changes": 201,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 399,
+      "pr_title": "Classify production identities against canonical registries",
+      "head_ref": "agent/lake-canonical-identity-census-wave-09",
+      "head_sha": "28e4152e4a0499b99a03e9cca7bcc8929f57dba6"
+    },
+    {
+      "path": "build/lake-actions/canonical-identity-census-wave-09.json",
+      "status": "added",
+      "blob_sha": "f92e34fd2dcbb4775fa4d488ef49e591f507c341",
+      "previous_path": null,
+      "additions": 203,
+      "deletions": 0,
+      "changes": 203,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 399,
+      "pr_title": "Classify production identities against canonical registries",
+      "head_ref": "agent/lake-canonical-identity-census-wave-09",
+      "head_sha": "28e4152e4a0499b99a03e9cca7bcc8929f57dba6"
+    },
+    {
+      "path": "data/project/lake-canonical-cross-case-candidate-registry-wave-09.jsonl",
+      "status": "added",
+      "blob_sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "previous_path": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 399,
+      "pr_title": "Classify production identities against canonical registries",
+      "head_ref": "agent/lake-canonical-identity-census-wave-09",
+      "head_sha": "28e4152e4a0499b99a03e9cca7bcc8929f57dba6"
+    },
+    {
+      "path": "data/project/lake-canonical-identity-census-wave-09-policy.json",
+      "status": "added",
+      "blob_sha": "96f4c9df3fe1543cd6a0ece4b035ff1dd0727416",
+      "previous_path": null,
+      "additions": 115,
+      "deletions": 0,
+      "changes": 115,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 399,
+      "pr_title": "Classify production identities against canonical registries",
+      "head_ref": "agent/lake-canonical-identity-census-wave-09",
+      "head_sha": "28e4152e4a0499b99a03e9cca7bcc8929f57dba6"
+    },
+    {
+      "path": "data/project/lake-canonical-identity-census-wave-09.json",
+      "status": "added",
+      "blob_sha": "ae229bde934b6b48cd5e6aeeed24a4cb39a36d36",
+      "previous_path": null,
+      "additions": 53,
+      "deletions": 0,
+      "changes": 53,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 399,
+      "pr_title": "Classify production identities against canonical registries",
+      "head_ref": "agent/lake-canonical-identity-census-wave-09",
+      "head_sha": "28e4152e4a0499b99a03e9cca7bcc8929f57dba6"
+    },
+    {
+      "path": "data/project/lake-canonical-identity-mention-registry-wave-09.jsonl",
+      "status": "added",
+      "blob_sha": "1768eb1788200390a8d697ebd86ae12ab29ccc65",
+      "previous_path": null,
+      "additions": 229,
+      "deletions": 0,
+      "changes": 229,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 399,
+      "pr_title": "Classify production identities against canonical registries",
+      "head_ref": "agent/lake-canonical-identity-census-wave-09",
+      "head_sha": "28e4152e4a0499b99a03e9cca7bcc8929f57dba6"
+    },
+    {
+      "path": "reports/lake-canonical-identity-census-wave-09-reconciliation.md",
+      "status": "added",
+      "blob_sha": "78e69a162d4e41e043c9269e5bc8e052018d53fe",
+      "previous_path": null,
+      "additions": 29,
+      "deletions": 0,
+      "changes": 29,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 399,
+      "pr_title": "Classify production identities against canonical registries",
+      "head_ref": "agent/lake-canonical-identity-census-wave-09",
+      "head_sha": "28e4152e4a0499b99a03e9cca7bcc8929f57dba6"
+    },
+    {
+      "path": "reports/lake-canonical-identity-census-wave-09.md",
+      "status": "added",
+      "blob_sha": "7e91a5f6a11cefe25f3e976359207419ff1accab",
+      "previous_path": null,
+      "additions": 34,
+      "deletions": 0,
+      "changes": 34,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 399,
+      "pr_title": "Classify production identities against canonical registries",
+      "head_ref": "agent/lake-canonical-identity-census-wave-09",
+      "head_sha": "28e4152e4a0499b99a03e9cca7bcc8929f57dba6"
+    },
+    {
+      "path": "test/lake-canonical-identity-census-wave-09.test.js",
+      "status": "added",
+      "blob_sha": "335a7d55e7b6c9e619f60f20ae3cf1af7efca640",
+      "previous_path": null,
+      "additions": 102,
+      "deletions": 0,
+      "changes": 102,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 399,
+      "pr_title": "Classify production identities against canonical registries",
+      "head_ref": "agent/lake-canonical-identity-census-wave-09",
+      "head_sha": "28e4152e4a0499b99a03e9cca7bcc8929f57dba6"
+    },
+    {
+      "path": "tools/build-lake-canonical-identity-census-wave-09.mjs",
+      "status": "added",
+      "blob_sha": "19550104b0308e13d27cd554d400e6b502850195",
+      "previous_path": null,
+      "additions": 611,
+      "deletions": 0,
+      "changes": 611,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 399,
+      "pr_title": "Classify production identities against canonical registries",
+      "head_ref": "agent/lake-canonical-identity-census-wave-09",
+      "head_sha": "28e4152e4a0499b99a03e9cca7bcc8929f57dba6"
+    },
+    {
+      "path": "tools/reconcile-lake-canonical-identity-census-wave-09.mjs",
+      "status": "added",
+      "blob_sha": "5a0ea0c992db7a680b156d372e04138ca568d2fa",
+      "previous_path": null,
+      "additions": 277,
+      "deletions": 0,
+      "changes": 277,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 399,
+      "pr_title": "Classify production identities against canonical registries",
+      "head_ref": "agent/lake-canonical-identity-census-wave-09",
+      "head_sha": "28e4152e4a0499b99a03e9cca7bcc8929f57dba6"
+    },
+    {
+      "path": "tools/validate-lake-canonical-identity-census-wave-09.mjs",
+      "status": "added",
+      "blob_sha": "333e2a46b76ad7914a97b61bb4047e0ff584fc8f",
+      "previous_path": null,
+      "additions": 287,
+      "deletions": 0,
+      "changes": 287,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 399,
+      "pr_title": "Classify production identities against canonical registries",
+      "head_ref": "agent/lake-canonical-identity-census-wave-09",
+      "head_sha": "28e4152e4a0499b99a03e9cca7bcc8929f57dba6"
+    },
+    {
+      "path": ".github/workflows/lake-subject-ontology-routing-wave-10.yml",
+      "status": "added",
+      "blob_sha": "6cd82080f44f8251c25c42e18ecbd1abc1eed7dc",
+      "previous_path": null,
+      "additions": 266,
+      "deletions": 0,
+      "changes": 266,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 400,
+      "pr_title": "Type and route the non-covered subject denominator",
+      "head_ref": "agent/lake-subject-ontology-routing-wave-10",
+      "head_sha": "76cd5176762ad23a59098586366dd5339d85e4a5"
+    },
+    {
+      "path": "build/lake-actions/subject-ontology-routing-wave-10-reconciliation.json",
+      "status": "added",
+      "blob_sha": "33cc10442d260978fd896715417697d5c6226401",
+      "previous_path": null,
+      "additions": 248,
+      "deletions": 0,
+      "changes": 248,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 400,
+      "pr_title": "Type and route the non-covered subject denominator",
+      "head_ref": "agent/lake-subject-ontology-routing-wave-10",
+      "head_sha": "76cd5176762ad23a59098586366dd5339d85e4a5"
+    },
+    {
+      "path": "build/lake-actions/subject-ontology-routing-wave-10.json",
+      "status": "added",
+      "blob_sha": "889abe00e9e86ab87ed0a3e638778443ac896c36",
+      "previous_path": null,
+      "additions": 179,
+      "deletions": 0,
+      "changes": 179,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 400,
+      "pr_title": "Type and route the non-covered subject denominator",
+      "head_ref": "agent/lake-subject-ontology-routing-wave-10",
+      "head_sha": "76cd5176762ad23a59098586366dd5339d85e4a5"
+    },
+    {
+      "path": "build/subject-ontology-routing-index-wave-10.json",
+      "status": "added",
+      "blob_sha": "6a9c86bbfc646f8185a1c927b475be7dad79a438",
+      "previous_path": null,
+      "additions": 10218,
+      "deletions": 0,
+      "changes": 10218,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 400,
+      "pr_title": "Type and route the non-covered subject denominator",
+      "head_ref": "agent/lake-subject-ontology-routing-wave-10",
+      "head_sha": "76cd5176762ad23a59098586366dd5339d85e4a5"
+    },
+    {
+      "path": "data/project/lake-canonical-acquisition-registry-wave-10.jsonl",
+      "status": "added",
+      "blob_sha": "04b54d639da004c7340456669cf3ec48ac0a05f9",
+      "previous_path": null,
+      "additions": 67,
+      "deletions": 0,
+      "changes": 67,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 400,
+      "pr_title": "Type and route the non-covered subject denominator",
+      "head_ref": "agent/lake-subject-ontology-routing-wave-10",
+      "head_sha": "76cd5176762ad23a59098586366dd5339d85e4a5"
+    },
+    {
+      "path": "data/project/lake-noncanonical-subject-routing-registry-wave-10.jsonl",
+      "status": "added",
+      "blob_sha": "464ecf3d9f89b389adf84fb210fb28fdc2e9f0bc",
+      "previous_path": null,
+      "additions": 39,
+      "deletions": 0,
+      "changes": 39,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 400,
+      "pr_title": "Type and route the non-covered subject denominator",
+      "head_ref": "agent/lake-subject-ontology-routing-wave-10",
+      "head_sha": "76cd5176762ad23a59098586366dd5339d85e4a5"
+    },
+    {
+      "path": "data/project/lake-subject-ontology-routing-registry-wave-10.jsonl",
+      "status": "added",
+      "blob_sha": "80554aa49e2254eb1276effeda0802d898c6760d",
+      "previous_path": null,
+      "additions": 106,
+      "deletions": 0,
+      "changes": 106,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 400,
+      "pr_title": "Type and route the non-covered subject denominator",
+      "head_ref": "agent/lake-subject-ontology-routing-wave-10",
+      "head_sha": "76cd5176762ad23a59098586366dd5339d85e4a5"
+    },
+    {
+      "path": "data/project/lake-subject-ontology-routing-wave-10-policy.json",
+      "status": "added",
+      "blob_sha": "19944697cc1c2a2494dd390049f981cc62138367",
+      "previous_path": null,
+      "additions": 200,
+      "deletions": 0,
+      "changes": 200,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 400,
+      "pr_title": "Type and route the non-covered subject denominator",
+      "head_ref": "agent/lake-subject-ontology-routing-wave-10",
+      "head_sha": "76cd5176762ad23a59098586366dd5339d85e4a5"
+    },
+    {
+      "path": "data/project/lake-subject-ontology-routing-wave-10.json",
+      "status": "added",
+      "blob_sha": "2f2d6b67dc8ba7fda37559850e9329f563c2b75b",
+      "previous_path": null,
+      "additions": 72,
+      "deletions": 0,
+      "changes": 72,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 400,
+      "pr_title": "Type and route the non-covered subject denominator",
+      "head_ref": "agent/lake-subject-ontology-routing-wave-10",
+      "head_sha": "76cd5176762ad23a59098586366dd5339d85e4a5"
+    },
+    {
+      "path": "reports/lake-subject-ontology-routing-wave-10-reconciliation.md",
+      "status": "added",
+      "blob_sha": "2d4cab04d7337104a7b694001a974208ce203b1b",
+      "previous_path": null,
+      "additions": 28,
+      "deletions": 0,
+      "changes": 28,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 400,
+      "pr_title": "Type and route the non-covered subject denominator",
+      "head_ref": "agent/lake-subject-ontology-routing-wave-10",
+      "head_sha": "76cd5176762ad23a59098586366dd5339d85e4a5"
+    },
+    {
+      "path": "reports/lake-subject-ontology-routing-wave-10.md",
+      "status": "added",
+      "blob_sha": "16cf3cd21cc4a1d3a5dc9f5ebdfc4010748b6d77",
+      "previous_path": null,
+      "additions": 40,
+      "deletions": 0,
+      "changes": 40,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 400,
+      "pr_title": "Type and route the non-covered subject denominator",
+      "head_ref": "agent/lake-subject-ontology-routing-wave-10",
+      "head_sha": "76cd5176762ad23a59098586366dd5339d85e4a5"
+    },
+    {
+      "path": "test/lake-subject-ontology-routing-wave-10.test.js",
+      "status": "added",
+      "blob_sha": "ac3bac7b9e09c952523b87db67ff07f45f5f5100",
+      "previous_path": null,
+      "additions": 122,
+      "deletions": 0,
+      "changes": 122,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 400,
+      "pr_title": "Type and route the non-covered subject denominator",
+      "head_ref": "agent/lake-subject-ontology-routing-wave-10",
+      "head_sha": "76cd5176762ad23a59098586366dd5339d85e4a5"
+    },
+    {
+      "path": "tools/build-lake-subject-ontology-routing-wave-10.mjs",
+      "status": "added",
+      "blob_sha": "f08f8395ce9a8697eb75df5f51e3c865b01d6844",
+      "previous_path": null,
+      "additions": 494,
+      "deletions": 0,
+      "changes": 494,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 400,
+      "pr_title": "Type and route the non-covered subject denominator",
+      "head_ref": "agent/lake-subject-ontology-routing-wave-10",
+      "head_sha": "76cd5176762ad23a59098586366dd5339d85e4a5"
+    },
+    {
+      "path": "tools/reconcile-lake-subject-ontology-routing-wave-10.mjs",
+      "status": "added",
+      "blob_sha": "26c098e83d796b85e19baaf7a1eb23d479e9fab8",
+      "previous_path": null,
+      "additions": 328,
+      "deletions": 0,
+      "changes": 328,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 400,
+      "pr_title": "Type and route the non-covered subject denominator",
+      "head_ref": "agent/lake-subject-ontology-routing-wave-10",
+      "head_sha": "76cd5176762ad23a59098586366dd5339d85e4a5"
+    },
+    {
+      "path": "tools/validate-lake-subject-ontology-routing-wave-10.mjs",
+      "status": "added",
+      "blob_sha": "530ff0401d7d8c8ab85b8b4ca98c5385a2e3331b",
+      "previous_path": null,
+      "additions": 285,
+      "deletions": 0,
+      "changes": 285,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 400,
+      "pr_title": "Type and route the non-covered subject denominator",
+      "head_ref": "agent/lake-subject-ontology-routing-wave-10",
+      "head_sha": "76cd5176762ad23a59098586366dd5339d85e4a5"
+    },
+    {
+      "path": ".github/workflows/lake-canonical-adjudication-wave-11.yml",
+      "status": "added",
+      "blob_sha": "b9341ec2aec24d0f6bd5cafb4e9c19375a27f94f",
+      "previous_path": null,
+      "additions": 272,
+      "deletions": 0,
+      "changes": 272,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 401,
+      "pr_title": "Adjudicate and materialize the bounded canonical identity subset",
+      "head_ref": "agent/lake-canonical-adjudication-wave-11",
+      "head_sha": "74375f801626cdd7e754fcf5ebdfd0c8fb7aaaa3"
+    },
+    {
+      "path": "build/canonical-adjudication-index-wave-11.json",
+      "status": "added",
+      "blob_sha": "dc16ba0fc3593391ba736d29e3ddbb96496ecbd5",
+      "previous_path": null,
+      "additions": 4710,
+      "deletions": 0,
+      "changes": 4710,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 401,
+      "pr_title": "Adjudicate and materialize the bounded canonical identity subset",
+      "head_ref": "agent/lake-canonical-adjudication-wave-11",
+      "head_sha": "74375f801626cdd7e754fcf5ebdfd0c8fb7aaaa3"
+    },
+    {
+      "path": "build/lake-actions/canonical-adjudication-wave-11-reconciliation.json",
+      "status": "added",
+      "blob_sha": "b4c13cf13776cb70e814f000aa34c71a57c1ff13",
+      "previous_path": null,
+      "additions": 240,
+      "deletions": 0,
+      "changes": 240,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 401,
+      "pr_title": "Adjudicate and materialize the bounded canonical identity subset",
+      "head_ref": "agent/lake-canonical-adjudication-wave-11",
+      "head_sha": "74375f801626cdd7e754fcf5ebdfd0c8fb7aaaa3"
+    },
+    {
+      "path": "build/lake-actions/canonical-adjudication-wave-11.json",
+      "status": "added",
+      "blob_sha": "bedb458e43badb053f67547cbf14aaad0aaf5986",
+      "previous_path": null,
+      "additions": 159,
+      "deletions": 0,
+      "changes": 159,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 401,
+      "pr_title": "Adjudicate and materialize the bounded canonical identity subset",
+      "head_ref": "agent/lake-canonical-adjudication-wave-11",
+      "head_sha": "74375f801626cdd7e754fcf5ebdfd0c8fb7aaaa3"
+    },
+    {
+      "path": "data/project/lake-canonical-adjudication-registry-wave-11.jsonl",
+      "status": "added",
+      "blob_sha": "082348d44c467b820ab82a46334a56f4f8f8d982",
+      "previous_path": null,
+      "additions": 67,
+      "deletions": 0,
+      "changes": 67,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 401,
+      "pr_title": "Adjudicate and materialize the bounded canonical identity subset",
+      "head_ref": "agent/lake-canonical-adjudication-wave-11",
+      "head_sha": "74375f801626cdd7e754fcf5ebdfd0c8fb7aaaa3"
+    },
+    {
+      "path": "data/project/lake-canonical-adjudication-wave-11-policy.json",
+      "status": "added",
+      "blob_sha": "5771a78a215a9dcdd927c7dcdbc9dd2d055dd04b",
+      "previous_path": null,
+      "additions": 188,
+      "deletions": 0,
+      "changes": 188,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 401,
+      "pr_title": "Adjudicate and materialize the bounded canonical identity subset",
+      "head_ref": "agent/lake-canonical-adjudication-wave-11",
+      "head_sha": "74375f801626cdd7e754fcf5ebdfd0c8fb7aaaa3"
+    },
+    {
+      "path": "data/project/lake-canonical-adjudication-wave-11.json",
+      "status": "added",
+      "blob_sha": "8b6311681ecbaeee2120f03cc82e5b6b08fa60f9",
+      "previous_path": null,
+      "additions": 101,
+      "deletions": 0,
+      "changes": 101,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 401,
+      "pr_title": "Adjudicate and materialize the bounded canonical identity subset",
+      "head_ref": "agent/lake-canonical-adjudication-wave-11",
+      "head_sha": "74375f801626cdd7e754fcf5ebdfd0c8fb7aaaa3"
+    },
+    {
+      "path": "data/project/lake-canonical-identity-extension-registry-wave-11.jsonl",
+      "status": "added",
+      "blob_sha": "67c5021385e6241cf56c63e08913c6df0b32f5ae",
+      "previous_path": null,
+      "additions": 52,
+      "deletions": 0,
+      "changes": 52,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 401,
+      "pr_title": "Adjudicate and materialize the bounded canonical identity subset",
+      "head_ref": "agent/lake-canonical-adjudication-wave-11",
+      "head_sha": "74375f801626cdd7e754fcf5ebdfd0c8fb7aaaa3"
+    },
+    {
+      "path": "data/project/lake-canonical-mutation-plan-wave-11.json",
+      "status": "added",
+      "blob_sha": "620af29a8a750b0a0e597708c649d6bed5354d30",
+      "previous_path": null,
+      "additions": 983,
+      "deletions": 0,
+      "changes": 983,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 401,
+      "pr_title": "Adjudicate and materialize the bounded canonical identity subset",
+      "head_ref": "agent/lake-canonical-adjudication-wave-11",
+      "head_sha": "74375f801626cdd7e754fcf5ebdfd0c8fb7aaaa3"
+    },
+    {
+      "path": "reports/lake-canonical-adjudication-wave-11-reconciliation.md",
+      "status": "added",
+      "blob_sha": "ece8b7e5cef8f4170858f7d436d4e3b00ab75e85",
+      "previous_path": null,
+      "additions": 26,
+      "deletions": 0,
+      "changes": 26,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 401,
+      "pr_title": "Adjudicate and materialize the bounded canonical identity subset",
+      "head_ref": "agent/lake-canonical-adjudication-wave-11",
+      "head_sha": "74375f801626cdd7e754fcf5ebdfd0c8fb7aaaa3"
+    },
+    {
+      "path": "reports/lake-canonical-adjudication-wave-11.md",
+      "status": "added",
+      "blob_sha": "52dafe66ccfdeca05152a8421744700705424665",
+      "previous_path": null,
+      "additions": 30,
+      "deletions": 0,
+      "changes": 30,
+      "evidence_like": true,
+      "branch_only_path": true,
+      "pr_number": 401,
+      "pr_title": "Adjudicate and materialize the bounded canonical identity subset",
+      "head_ref": "agent/lake-canonical-adjudication-wave-11",
+      "head_sha": "74375f801626cdd7e754fcf5ebdfd0c8fb7aaaa3"
+    },
+    {
+      "path": "test/lake-canonical-adjudication-wave-11.test.js",
+      "status": "added",
+      "blob_sha": "9e81b528091fcbcb5fccd969783f2a587c4831c2",
+      "previous_path": null,
+      "additions": 100,
+      "deletions": 0,
+      "changes": 100,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 401,
+      "pr_title": "Adjudicate and materialize the bounded canonical identity subset",
+      "head_ref": "agent/lake-canonical-adjudication-wave-11",
+      "head_sha": "74375f801626cdd7e754fcf5ebdfd0c8fb7aaaa3"
+    },
+    {
+      "path": "tools/build-lake-canonical-adjudication-wave-11.mjs",
+      "status": "added",
+      "blob_sha": "3871e28d12837043bc3be23039b37d3bce2dcb7e",
+      "previous_path": null,
+      "additions": 547,
+      "deletions": 0,
+      "changes": 547,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 401,
+      "pr_title": "Adjudicate and materialize the bounded canonical identity subset",
+      "head_ref": "agent/lake-canonical-adjudication-wave-11",
+      "head_sha": "74375f801626cdd7e754fcf5ebdfd0c8fb7aaaa3"
+    },
+    {
+      "path": "tools/build-lake-canonical-identity-extension-wave-11.mjs",
+      "status": "added",
+      "blob_sha": "6c5f4a73822c27b0c6bff7a63f14e5393a3b0936",
+      "previous_path": null,
+      "additions": 198,
+      "deletions": 0,
+      "changes": 198,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 401,
+      "pr_title": "Adjudicate and materialize the bounded canonical identity subset",
+      "head_ref": "agent/lake-canonical-adjudication-wave-11",
+      "head_sha": "74375f801626cdd7e754fcf5ebdfd0c8fb7aaaa3"
+    },
+    {
+      "path": "tools/reconcile-lake-canonical-adjudication-wave-11.mjs",
+      "status": "added",
+      "blob_sha": "8781de59a1ac1e588c5d6306d553f48c4924f818",
+      "previous_path": null,
+      "additions": 279,
+      "deletions": 0,
+      "changes": 279,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 401,
+      "pr_title": "Adjudicate and materialize the bounded canonical identity subset",
+      "head_ref": "agent/lake-canonical-adjudication-wave-11",
+      "head_sha": "74375f801626cdd7e754fcf5ebdfd0c8fb7aaaa3"
+    },
+    {
+      "path": "tools/validate-lake-canonical-adjudication-wave-11.mjs",
+      "status": "added",
+      "blob_sha": "d28c38751bf45915540cb18c54a93ebc1ed1b5cc",
+      "previous_path": null,
+      "additions": 249,
+      "deletions": 0,
+      "changes": 249,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 401,
+      "pr_title": "Adjudicate and materialize the bounded canonical identity subset",
+      "head_ref": "agent/lake-canonical-adjudication-wave-11",
+      "head_sha": "74375f801626cdd7e754fcf5ebdfd0c8fb7aaaa3"
+    },
+    {
+      "path": ".github/workflows/temporary-k0-wave07-field-bootstrap.yml",
+      "status": "added",
+      "blob_sha": "3df4745ca07e617a75bca2897512623992c0680e",
+      "previous_path": null,
+      "additions": 41,
+      "deletions": 0,
+      "changes": 41,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 402,
+      "pr_title": "Adjudicate K0 Wave 07 authorship-transfer records",
+      "head_ref": "agent/k0-wave07-field-adjudication",
+      "head_sha": "482d7f7178b3a12626dd20c6a391bc906130b98f"
     }
   ],
   "boundaries": {

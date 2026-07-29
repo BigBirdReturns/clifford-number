@@ -123,6 +123,28 @@ a cross-case graph edge. The broad active-projection
 scope is exactly
 `explicit_source_custodied_graph_inert_identity_resolution_only`.
 
+2.1.1 **Production cross-case identity denominator — executed 2026-07-29.**
+The Wave 08 program scans every current native case directory under one declared
+extraction law, measures every case pair, and preserves the complete current
+candidate denominator in
+`data/project/lake-cross-case-production-pair-denominator-wave-08.jsonl`.
+Entity occurrences, accepted judgments, unresolved candidates, and rejections are
+separate append-preserving registries rather than a hand-selected list of notable
+overlaps.
+
+A production identity resolution is accepted only when both case occurrences map
+to the same canonical identity and each side has public receipt custody attached
+to an identity-eligible claim. Distinct source families raise the recorded
+confidence; they are not permission to decide. Matching labels, slugs, or AXM
+tokens without canonical identity remain unresolved. Canonical or kind conflicts
+are rejected. Every decision records its reason and correction route.
+
+Accepted production identity decisions remain graph-inert. They merge no records,
+create no relationship, add no edge or hop, and do not enable automatic joining.
+The broad `cross_case_join_authorized` flag remains `false`; the production lane
+is the same bounded scope proved in Wave 07:
+`explicit_source_custodied_graph_inert_identity_resolution_only`.
+
 2.2 **Surface-type audit for density.** Classify every existing surface against
 1.7. The Dialog roster and any future 100-name list get `hop_eligible: false`
 or an explicit population-weighted eligibility rule. Acceptance: a fixture
