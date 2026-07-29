@@ -31,7 +31,7 @@ jobs:
       - name: Reconstruct and verify exact source
         run: |
           set -euo pipefail
-          test "$(find .github/tmp -maxdepth 1 -name 'k0-wave06-field-source-part-*.b64' -type f | wc -l)" -eq 9
+          test "$(find .github/tmp -maxdepth 1 -name 'k0-wave06-field-source-part-*.b64' -type f | wc -l)" -eq 11
           cat .github/tmp/k0-wave06-field-source-part-*.b64 > /tmp/k0-wave06-field-source.b64
           base64 -d /tmp/k0-wave06-field-source.b64 > /tmp/k0-wave06-field-source.tar.gz
           test "$(sha256sum /tmp/k0-wave06-field-source.tar.gz | awk '{print $1}')" = "94d472a9b35c98e40d47d3d024011ce86ad1a0708436f6fb0e427b497aac2346"
@@ -176,13 +176,13 @@ jobs:
             'tools/validate-k0-epistemic-admissibility.mjs',
             'tools/validate-k0-role-neutral-wave-06.mjs',
           }
-          transport = {f'.github/tmp/k0-wave06-field-source-part-{i:02d}.b64' for i in range(9)}
+          transport = {f'.github/tmp/k0-wave06-field-source-part-{i:02d}.b64' for i in range(11)}
           actual = set(subprocess.check_output(['git','diff','--cached','--name-only'], text=True).splitlines())
           expected = permanent | transport
           assert actual == expected, f'path mismatch\nmissing={sorted(expected-actual)}\nextra={sorted(actual-expected)}'
-          assert len(permanent) == 21 and len(transport) == 9 and len(actual) == 30
+          assert len(permanent) == 21 and len(transport) == 11 and len(actual) == 32
           assert not any(p.startswith('build/') or p.startswith('dist/') or p.startswith('.github/workflows/') for p in actual)
-          print('exact staged denominator: 21 non-workflow permanent paths + 9 carrier deletions')
+          print('exact staged denominator: 21 non-workflow permanent paths + 11 carrier deletions')
           PY
 
           git diff --cached --check
