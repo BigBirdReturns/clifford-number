@@ -1,0 +1,80 @@
+name: Evidence-grounded judgment authority
+
+on:
+  push:
+    branches:
+      - agent/evidence-grounded-judgment-authority
+    paths:
+      - '.github/tmp/evidence-grounded-judgment-trigger.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: evidence-grounded-judgment-authority
+  cancel-in-progress: false
+
+jobs:
+  judgment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/evidence-grounded-judgment-authority
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run the complete repository release gate
+        run: npm run release:check
+      - name: Restore the exact committed branch before focused reconstruction
+        run: git restore --staged --worktree .
+      - name: Build and validate evidence-grounded judgments
+        run: |
+          node tools/build-evidence-grounded-judgments.mjs
+          node tools/validate-evidence-grounded-judgments.mjs
+          node test/evidence-grounded-judgments.test.js
+      - name: Prove deterministic judgment products
+        run: |
+          sha256sum \
+            build/evidence-grounded-judgments.json \
+            reports/evidence-grounded-judgments.md > /tmp/judgments-first.sha256
+          node tools/build-evidence-grounded-judgments.mjs
+          node tools/validate-evidence-grounded-judgments.mjs
+          node test/evidence-grounded-judgments.test.js
+          sha256sum --check --strict /tmp/judgments-first.sha256
+          git diff --check
+      - name: Enforce exact generated change set
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .github/tmp
+          python - <<'PY'
+          import subprocess
+          expected = {
+              '.github/tmp/evidence-grounded-judgment-trigger.json',
+              'build/evidence-grounded-judgments.json',
+              'reports/evidence-grounded-judgments.md',
+          }
+          raw = subprocess.check_output([
+              'git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'
+          ])
+          entries = [entry for entry in raw.decode().split('\0') if entry]
+          actual = set()
+          for entry in entries:
+              status = entry[:2]
+              assert 'R' not in status and 'C' not in status, entry
+              actual.add(entry[3:])
+          assert actual == expected, {
+              'unexpected': sorted(actual - expected),
+              'missing': sorted(expected - actual),
+          }
+          PY
+      - name: Commit the judgment frontier
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Execute evidence-grounded judgment fan-out'
+          git push origin HEAD:agent/evidence-grounded-judgment-authority
