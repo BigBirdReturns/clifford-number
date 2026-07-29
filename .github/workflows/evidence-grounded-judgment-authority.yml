@@ -55,6 +55,9 @@ jobs:
         if: steps.request.outputs.present == 'true'
         with:
           node-version: '24'
+      - name: Repair the migration carrier
+        if: steps.request.outputs.present == 'true'
+        run: node .github/tmp/fix-no-human-gate-migration.mjs
       - name: Apply the no-human-gate source migration
         if: steps.request.outputs.present == 'true'
         run: node .github/tmp/apply-no-human-gate-migration.mjs
@@ -100,6 +103,7 @@ jobs:
           rm -f \
             .github/tmp/evidence-grounded-judgment-trigger.json \
             .github/tmp/apply-no-human-gate-migration.mjs \
+            .github/tmp/fix-no-human-gate-migration.mjs \
             .github/tmp/no-human-gate-migration-paths.json
           python - <<'PY'
           import json
@@ -108,6 +112,7 @@ jobs:
           expected = set(migration['changed_paths']) | {
               '.github/tmp/evidence-grounded-judgment-trigger.json',
               '.github/tmp/apply-no-human-gate-migration.mjs',
+              '.github/tmp/fix-no-human-gate-migration.mjs',
               'build/briefings/anduril-access-ownership.json',
               'build/briefings/arcadia-field-autopsy.json',
               'build/briefings/index.json',
