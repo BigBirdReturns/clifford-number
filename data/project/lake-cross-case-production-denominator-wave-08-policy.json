@@ -1,0 +1,78 @@
+{
+  "schema_version": "lake-cross-case-production-denominator-wave-08-policy@1",
+  "program_key": "CN-LAKE-CROSS-CASE-PRODUCTION-W08",
+  "as_of": "2026-07-29",
+  "purpose": "Enumerate the complete current native-case identity-candidate denominator, make evidence-grounded graph-inert identity judgments from existing canonical identity and receipt custody, retain every rejection and unresolved candidate, and measure independent source-family support without waiting for an unspecified reviewer.",
+  "case_scope": "all_case_directories_with_case_json",
+  "shared_identity_namespace": "clifford-number-public-entities-v1",
+  "input_paths": [
+    "build/cases/index.json",
+    "data/canonical/actors.json",
+    "data/canonical/organizations.json",
+    "data/canonical/aliases.json",
+    "build/axm-identity.json",
+    "build/lake-actions/axm-cross-case-acceptance-wave-07-reconciliation.json",
+    "BUILD-INSTRUCTIONS.md",
+    "README.md"
+  ],
+  "entity_registry_path": "data/project/lake-cross-case-production-entity-registry-wave-08.jsonl",
+  "pair_denominator_path": "data/project/lake-cross-case-production-pair-denominator-wave-08.jsonl",
+  "decision_registry_path": "data/project/lake-cross-case-production-join-decisions-wave-08.jsonl",
+  "decision_index_path": "build/cross-case-production-join-decision-index-wave-08.json",
+  "receipt_path": "data/project/lake-cross-case-production-denominator-wave-08.json",
+  "plan_path": "build/lake-actions/cross-case-production-denominator-wave-08.json",
+  "reconciliation_path": "build/lake-actions/cross-case-production-denominator-wave-08-reconciliation.json",
+  "report_path": "reports/lake-cross-case-production-denominator-wave-08.md",
+  "reconciliation_report_path": "reports/lake-cross-case-production-denominator-wave-08-reconciliation.md",
+  "source_custody": {
+    "public_locator_fields": ["url", "archive_url"],
+    "minimum_distinct_source_families_for_independent_corroboration": 2,
+    "private_content_hash_counts_as_public_locator": false,
+    "judgment_or_open_claim_alone_is_identity_eligible": false
+  },
+  "candidate_rules": [
+    "same_canonical_id",
+    "same_exact_local_identifier",
+    "same_normalized_local_identifier",
+    "same_shared_namespace_axm_token"
+  ],
+  "expected": {
+    "minimum_native_cases": 4,
+    "minimum_case_pairs": 6,
+    "minimum_entity_occurrences": 1,
+    "minimum_candidate_decisions": 1,
+    "active_projection_cross_case_join_authorized": false
+  },
+  "decision_law": {
+    "review_required_to_decide": false,
+    "missing_reviewer_blocks_bounded_judgment": false,
+    "same_canonical_id_and_bilateral_public_custody_authorizes_graph_inert_resolution": true,
+    "independent_source_families_raise_confidence_but_are_not_permission_to_decide": true,
+    "same_label_or_slug_alone_authorizes_resolution": false,
+    "missing_canonical_identity_authorizes_resolution": false,
+    "kind_conflict_authorizes_resolution": false,
+    "accepted_resolution_merges_source_entities": false,
+    "accepted_resolution_creates_relationship": false,
+    "accepted_resolution_creates_graph_edge": false,
+    "accepted_resolution_creates_hop": false,
+    "correction_mode": "append_preserving_supersession"
+  },
+  "boundaries": {
+    "candidate_recurrence_proves_same_entity": false,
+    "canonical_registry_match_proves_evidence_truth": false,
+    "public_receipt_proves_identity_claim": false,
+    "independent_source_families_prove_relationship": false,
+    "accepted_identity_resolution_merges_entities": false,
+    "accepted_identity_resolution_creates_relationship": false,
+    "accepted_identity_resolution_creates_graph_edge": false,
+    "accepted_identity_resolution_creates_hop": false,
+    "automatic_cross_case_join_authorized": false,
+    "cross_case_graph_join_authorized": false,
+    "cross_case_hop_creation_authorized": false,
+    "active_projection_cross_case_join_authorized": false,
+    "semantic_lake_complete": false,
+    "evidence_truth_determined": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}
