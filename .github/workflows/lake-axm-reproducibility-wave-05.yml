@@ -1,0 +1,386 @@
+name: Evidence lake AXM reproducibility Wave 05
+
+on:
+  push:
+    branches:
+      - agent/lake-axm-reproducibility-wave-05
+    paths:
+      - '.github/tmp/lake-axm-reproducibility-wave-05-trigger.json'
+  pull_request:
+    branches:
+      - agent/lake-axm-lineage-wave-04
+    paths:
+      - 'data/project/lake-axm-reproducibility-wave-05-policy.json'
+      - 'data/project/lake-index-policy.json'
+      - 'tools/lib/axm-genesis-identity-v1.mjs'
+      - 'tools/emit-axm-genesis-v1-vectors.mjs'
+      - 'tools/build-lake-axm-reproducibility-wave-05.mjs'
+      - 'tools/reconcile-lake-axm-reproducibility-wave-05.mjs'
+      - 'tools/validate-lake-axm-reproducibility-wave-05.mjs'
+      - 'test/lake-axm-reproducibility-wave-05.test.js'
+      - '.github/workflows/lake-axm-reproducibility-wave-05.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: lake-axm-reproducibility-wave-05-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Clifford Number
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Determine execution mode
+        id: mode
+        shell: bash
+        run: |
+          echo "original_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if test -f .github/tmp/lake-axm-reproducibility-wave-05-trigger.json; then
+            echo 'validate=true' >> "$GITHUB_OUTPUT"
+            echo 'materialize=true' >> "$GITHUB_OUTPUT"
+            echo 'phase=execute' >> "$GITHUB_OUTPUT"
+          elif test "$GITHUB_EVENT_NAME" = 'pull_request' || test "$GITHUB_EVENT_NAME" = 'workflow_dispatch'; then
+            echo 'validate=true' >> "$GITHUB_OUTPUT"
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+            if git ls-files --error-unmatch data/project/axm-genesis-v1-runtime-attestation.json >/dev/null 2>&1; then
+              echo 'phase=post' >> "$GITHUB_OUTPUT"
+            else
+              echo 'phase=execute' >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo 'validate=false' >> "$GITHUB_OUTPUT"
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+            echo 'phase=none' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.mode.outputs.validate == 'true'
+        with:
+          node-version: '24'
+      - name: Run the complete repository release gate before external reconciliation
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        run: npm run release:check
+      - name: Restore committed bytes before external reconciliation
+        if: steps.mode.outputs.validate == 'true'
+        run: |
+          git restore --staged --worktree .
+          git clean -fd
+      - name: Apply checked Wave 05 lake policy
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        run: node .github/tmp/apply-lake-axm-reproducibility-wave-05-policy.mjs
+      - name: Check out pinned AXM Genesis
+        if: steps.mode.outputs.validate == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: BigBirdReturns/axm-genesis
+          ref: 411ef40e6cfc3ecb97ac3e256c8151be678347c8
+          path: .external/axm-genesis
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Copy and execute the shared identity fixture across both runtimes
+        if: steps.mode.outputs.validate == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C .external/axm-genesis rev-parse HEAD)" = '411ef40e6cfc3ecb97ac3e256c8151be678347c8'
+          if test "${{ steps.mode.outputs.phase }}" = 'execute'; then
+            cp .external/axm-genesis/tests/vectors/identity.json data/project/axm-genesis-v1-identity-vectors.json
+          fi
+          cmp --silent \
+            .external/axm-genesis/tests/vectors/identity.json \
+            data/project/axm-genesis-v1-identity-vectors.json
+          node tools/emit-axm-genesis-v1-vectors.mjs \
+            data/project/axm-genesis-v1-identity-vectors.json > /tmp/axm-node-runtime.json
+          PYTHONPATH=.external/axm-genesis/src python - <<'PY'
+          import json
+          from axm_verify.identity import (
+              canonicalize,
+              derive_provenance_id,
+              derive_span_id,
+              recompute_claim_id,
+              recompute_entity_id,
+          )
+
+          fixture = 'data/project/axm-genesis-v1-identity-vectors.json'
+          vectors = json.load(open(fixture, encoding='utf-8'))
+          canonicalization = []
+          for item in vectors['canonicalization']:
+              try:
+                  canonicalization.append({'input': item['input'], 'result': canonicalize(item['input'])})
+              except ValueError:
+                  canonicalization.append({'input': item['input'], 'error': 'ValueError'})
+          output = {
+              'schema_version': 'axm-genesis-identity-runtime-results@1',
+              'canonicalization': canonicalization,
+              'entity_ids': [
+                  {
+                      'namespace': item['namespace'],
+                      'label': item['label'],
+                      'id': recompute_entity_id(item['namespace'], item['label']),
+                  }
+                  for item in vectors['entity_ids']
+              ],
+              'claim_ids': [
+                  {
+                      'subject': item['subject'],
+                      'predicate': item['predicate'],
+                      'object': item['object'],
+                      'object_type': item['object_type'],
+                      'id': recompute_claim_id(item['subject'], item['predicate'], item['object'], item['object_type']),
+                  }
+                  for item in vectors['claim_ids']
+              ],
+              'provenance_ids': [
+                  {
+                      'claim_id': item['claim_id'],
+                      'source_hash': item['source_hash'],
+                      'byte_start': item['byte_start'],
+                      'byte_end': item['byte_end'],
+                      'id': derive_provenance_id(item['claim_id'], item['source_hash'], item['byte_start'], item['byte_end']),
+                  }
+                  for item in vectors['provenance_ids']
+              ],
+              'span_ids': [
+                  {
+                      'source_hash': item['source_hash'],
+                      'byte_start': item['byte_start'],
+                      'byte_end': item['byte_end'],
+                      'text': item['text'],
+                      'id': derive_span_id(item['source_hash'], item['byte_start'], item['byte_end'], item['text']),
+                  }
+                  for item in vectors['span_ids']
+              ],
+          }
+          with open('/tmp/axm-python-runtime.json', 'w', encoding='utf-8') as handle:
+              json.dump(output, handle, indent=2, ensure_ascii=False)
+              handle.write('\n')
+          PY
+          python - <<'PY'
+          import hashlib
+          import json
+
+          fixture_path = 'data/project/axm-genesis-v1-identity-vectors.json'
+          python_output = json.load(open('/tmp/axm-python-runtime.json', encoding='utf-8'))
+          node_output = json.load(open('/tmp/axm-node-runtime.json', encoding='utf-8'))
+          assert python_output == node_output, 'pinned AXM Genesis Python and local Node outputs differ'
+
+          canonical = json.dumps(python_output, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+          digest = hashlib.sha256(canonical).hexdigest()
+          fixture_bytes = open(fixture_path, 'rb').read()
+          vector_counts = {
+              'canonicalization': len(python_output['canonicalization']),
+              'entity_ids': len(python_output['entity_ids']),
+              'claim_ids': len(python_output['claim_ids']),
+              'provenance_ids': len(python_output['provenance_ids']),
+              'span_ids': len(python_output['span_ids']),
+          }
+          attestation = {
+              'schema_version': 'axm-genesis-v1-runtime-attestation@1',
+              'external_repository': 'BigBirdReturns/axm-genesis',
+              'external_commit': '411ef40e6cfc3ecb97ac3e256c8151be678347c8',
+              'identity_module_path': 'src/axm_verify/identity.py',
+              'fixture_source_path': 'tests/vectors/identity.json',
+              'fixture_local_path': fixture_path,
+              'fixture_sha256': hashlib.sha256(fixture_bytes).hexdigest(),
+              'fixture_bytes_equal': True,
+              'python_runtime_sha256': digest,
+              'node_runtime_sha256': digest,
+              'runtime_outputs_equal': True,
+              'vector_counts': vector_counts,
+              'boundaries': {
+                  'runtime_parity_migrates_active_projection': False,
+                  'runtime_parity_authorizes_cross_case_join': False,
+                  'fixture_proves_evidence_truth': False,
+                  'graph_effect': 'none',
+              },
+          }
+          with open('data/project/axm-genesis-v1-runtime-attestation.json', 'w', encoding='utf-8') as handle:
+              json.dump(attestation, handle, indent=2, ensure_ascii=False)
+              handle.write('\n')
+          print(json.dumps({'runtime_digest': digest, 'vector_counts': vector_counts}, indent=2))
+          PY
+      - name: Build and deterministically prove the migration map
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-lake-axm-reproducibility-wave-05.mjs
+          sha256sum \
+            data/project/axm-genesis-v1-identity-vectors.json \
+            data/project/axm-genesis-v1-runtime-attestation.json \
+            data/project/lake-axm-reproducibility-wave-05.json \
+            build/axm-identity-genesis-v1-migration.json \
+            build/lake-actions/axm-reproducibility-wave-05.json \
+            reports/lake-axm-reproducibility-wave-05.md > /tmp/lake-axm-wave-05-first.sha256
+          node tools/build-lake-axm-reproducibility-wave-05.mjs
+          sha256sum --check --strict /tmp/lake-axm-wave-05-first.sha256
+          git diff --check
+      - name: Stage source controls and migration products
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        run: |
+          cp .github/tmp/lake-axm-reproducibility-wave-05-source-paths.json /tmp/lake-axm-reproducibility-wave-05-source-paths.json
+          git add \
+            data/project/lake-index-policy.json \
+            data/project/axm-genesis-v1-identity-vectors.json \
+            data/project/axm-genesis-v1-runtime-attestation.json \
+            data/project/lake-axm-reproducibility-wave-05.json \
+            build/axm-identity-genesis-v1-migration.json \
+            build/lake-actions/axm-reproducibility-wave-05.json \
+            reports/lake-axm-reproducibility-wave-05.md
+      - name: Run the complete repository release gate with reproducibility controls active
+        if: steps.mode.outputs.validate == 'true'
+        run: npm run release:check
+      - name: Restore staged controls before the lake census
+        if: steps.mode.outputs.validate == 'true'
+        run: |
+          git restore --worktree .
+          rm -rf .external
+          git clean -fd
+      - name: Observe current open-PR shadow
+        if: steps.mode.outputs.validate == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/build-lake-open-pr-shadow.mjs
+      - name: Rebuild and reconcile the post-reproducibility lake
+        if: steps.mode.outputs.validate == 'true'
+        run: |
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/reconcile-lake-axm-reproducibility-wave-05.mjs
+          node tools/validate-lake-axm-reproducibility-wave-05.mjs
+          node test/lake-index.test.js
+          node test/lake-basin-index.test.js
+          node test/lake-axm-reproducibility-wave-05.test.js
+      - name: Prove deterministic post-reproducibility products
+        if: steps.mode.outputs.validate == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          find build/lake-index -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/lake-axm-wave-05-post.sha256
+          sha256sum \
+            data/project/axm-genesis-v1-runtime-attestation.json \
+            data/project/lake-axm-reproducibility-wave-05.json \
+            build/axm-identity-genesis-v1-migration.json \
+            build/lake-actions/axm-reproducibility-wave-05.json \
+            build/lake-actions/axm-reproducibility-wave-05-reconciliation.json \
+            reports/lake-index-census.md \
+            reports/lake-index-gap-summary.md \
+            reports/lake-basin-index.md \
+            reports/lake-axm-reproducibility-wave-05.md \
+            reports/lake-axm-reproducibility-wave-05-reconciliation.md >> /tmp/lake-axm-wave-05-post.sha256
+          node tools/build-lake-axm-reproducibility-wave-05.mjs
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/reconcile-lake-axm-reproducibility-wave-05.mjs
+          sha256sum --check --strict /tmp/lake-axm-wave-05-post.sha256
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-axm-reproducibility-wave-05.mjs
+          node test/lake-axm-reproducibility-wave-05.test.js
+          git diff --check
+      - name: Restore the non-materializing validation surface
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.materialize != 'true'
+        run: |
+          git reset --hard HEAD
+          rm -rf .external
+          git clean -fd
+          test -z "$(git status --porcelain)"
+      - name: Enforce source-control and generated-output boundaries
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .external
+          rm -f \
+            .github/tmp/lake-axm-reproducibility-wave-05-trigger.json \
+            .github/tmp/apply-lake-axm-reproducibility-wave-05-policy.mjs \
+            .github/tmp/lake-axm-reproducibility-wave-05-source-paths.json
+          python - <<'PY'
+          import json
+          import re
+          import subprocess
+
+          migration = json.load(open('/tmp/lake-axm-reproducibility-wave-05-source-paths.json'))
+          required = set(migration['changed_paths']) | {
+              '.github/tmp/lake-axm-reproducibility-wave-05-trigger.json',
+              '.github/tmp/apply-lake-axm-reproducibility-wave-05-policy.mjs',
+              'data/project/axm-genesis-v1-identity-vectors.json',
+              'data/project/axm-genesis-v1-runtime-attestation.json',
+              'data/project/lake-axm-reproducibility-wave-05.json',
+              'build/axm-identity-genesis-v1-migration.json',
+              'build/lake-actions/axm-reproducibility-wave-05.json',
+              'build/lake-actions/axm-reproducibility-wave-05-reconciliation.json',
+              'reports/lake-axm-reproducibility-wave-05.md',
+              'reports/lake-axm-reproducibility-wave-05-reconciliation.md',
+          }
+          exact_allowed_sources = required | {
+              'data/project/lake-open-pr-shadow.json',
+          }
+          generated_prefixes = (
+              'build/',
+              'reports/',
+              'briefs/',
+              'estates/',
+              'gametrails/',
+          )
+          generated_root = re.compile(r'^(?:Clifford-.*\.html|[^/]+-standalone\.html)$')
+
+          raw = subprocess.check_output([
+              'git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'
+          ])
+          entries = [entry for entry in raw.decode().split('\0') if entry]
+          actual = set()
+          for entry in entries:
+              status = entry[:2]
+              assert 'R' not in status and 'C' not in status, entry
+              actual.add(entry[3:])
+
+          unexpected = sorted(path for path in actual
+              if path not in exact_allowed_sources
+              and not path.startswith(generated_prefixes)
+              and not generated_root.match(path))
+          assert required <= actual, {
+              'missing_required_reproducibility_or_reconciliation_changes': sorted(required - actual),
+          }
+          assert not unexpected, {
+              'undeclared_source_changes': unexpected,
+          }
+          print(json.dumps({
+              'required_changes': len(required),
+              'actual_changes': len(actual),
+              'generated_changes': len(actual - exact_allowed_sources),
+          }, indent=2))
+          PY
+      - name: Commit the executed AXM reproducibility wave
+        if: steps.mode.outputs.materialize == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Execute evidence lake AXM reproducibility Wave 05'
+          git fetch origin agent/lake-axm-reproducibility-wave-05
+          test "$(git rev-parse origin/agent/lake-axm-reproducibility-wave-05)" = "${{ steps.mode.outputs.original_sha }}"
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-axm-reproducibility-wave-05.mjs
+          git push origin HEAD:agent/lake-axm-reproducibility-wave-05
