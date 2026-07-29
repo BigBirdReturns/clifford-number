@@ -1,0 +1,74 @@
+typeof neutral.status !== 'string' || !neutral.status.startsWith('execution_started_wave_')) fail('aggregate neutral status drift');
+  if (!Number.isInteger(neutral.execution?.searches_executed) || neutral.execution.searches_executed < 20 || !Number.isInteger(neutral.execution?.query_templates_executed) || neutral.execution.query_templates_executed < 6 || !Number.isInteger(neutral.execution?.raw_results_observed) || neutral.execution.raw_results_observed < 86 || !Number.isInteger(neutral.execution?.returned_records) || neutral.execution.returned_records < 40) fail('aggregate execution count drift');
+  if (JSON.stringify(executedWaveIds.slice(0, 5)) !== JSON.stringify(['K0-W01','K0-W02','K0-W03','K0-W04','K0-W05'])) fail('aggregate wave linkage drift');
+  const waveState = neutral.discovery_waves.find(row => row.wave_id === 'K0-W05');
+  if (!['discovery_complete_field_adjudication_pending','discovery_complete_field_adjudication_complete'].includes(waveState?.status)) fail('aggregate Wave 05 state drift');"""
+)
+
+replace_once(
+    'test/k0-role-neutral-wave-05.test.js',
+    """const wave = JSON.parse(fs.readFileSync(path.join(root, 'data/research/k0-role-neutral-wave-05.json'), 'utf8'));
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'k0-wave05-test-'));""",
+    """const wave = JSON.parse(fs.readFileSync(path.join(root, 'data/research/k0-role-neutral-wave-05.json'), 'utf8'));
+const neutral = JSON.parse(fs.readFileSync(path.join(root, 'data/research/k0-role-neutral-denominator.json'), 'utf8'));
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'k0-wave05-test-'));"""
+)
+replace_once(
+    'test/k0-role-neutral-wave-05.test.js',
+    """const graph = structuredClone(wave);""",
+    """const missingWave05 = structuredClone(neutral);
+missingWave05.execution.executed_wave_ids = missingWave05.execution.executed_wave_ids.filter(id => id !== 'K0-W05');
+result = validateWave05({ root, neutralPath: write('missing-wave05.json', missingWave05) });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some(row => row.includes('aggregate wave linkage drift')));
+
+const undercount = structuredClone(neutral);
+undercount.execution.searches_executed = 19;
+result = validateWave05({ root, neutralPath: write('undercount.json', undercount) });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some(row => row.includes('aggregate execution count drift')));
+
+const graph = structuredClone(wave);"""
+)
+
+# Core report now exposes the completed Wave 05 field layer.
+replace_once(
+    'tools/build-k0-epistemic-admissibility.mjs',
+    """const neutralWave05 = read('data/research/k0-role-neutral-wave-05.json');""",
+    """const neutralWave05 = read('data/research/k0-role-neutral-wave-05.json');
+const wave05Field = read('data/research/k0-wave05-field-adjudication.json');"""
+)
+replace_once(
+    'tools/build-k0-epistemic-admissibility.mjs',
+    """    role_neutral_wave_05_candidate_records: neutralWave05.counts.candidate_requires_field_audit,""",
+    """    role_neutral_wave_05_candidate_records: neutralWave05.counts.candidate_requires_field_audit,
+    role_neutral_wave_05_field_records_reviewed: wave05Field.counts.retained_records_reviewed,
+    role_neutral_wave_05_field_supported_for_human_review: wave05Field.counts.supported_for_human_review,
+    role_neutral_wave_05_field_retained_candidate_only: wave05Field.counts.retained_candidate_only,"""
+)
+replace_once(
+    'tools/build-k0-epistemic-admissibility.mjs',
+    """  role_neutral_wave_05: neutralWave05,""",
+    """  role_neutral_wave_05: neutralWave05,
+  role_neutral_wave_05_field_adjudication: wave05Field,"""
+)
+replace_once(
+    'tools/build-k0-epistemic-admissibility.mjs',
+    """    role_neutral_universe_execution_started: neutral.execution.name_blind_execution_started,
+    role_neutral_universe_executed: false,""",
+    """    role_neutral_universe_execution_started: neutral.execution.name_blind_execution_started,
+    role_neutral_wave_05_field_adjudication_complete: true,
+    role_neutral_universe_executed: false,"""
+)
+
+# Core validator reconciles the field packet and aggregate state.
+replace_once(
+    'tools/validate-k0-epistemic-admissibility.mjs',
+    """  const wave04Field = read('data/research/k0-wave04-field-adjudication.json');""",
+    """  const wave04Field = read('data/research/k0-wave04-field-adjudication.json');
+  const wave05Field = read('data/research/k0-wave05-field-adjudication.json');"""
+)
+replace_once(
+    'tools/validate-k0-epistemic-admissibility.mjs',
+    """  if (neutral.status !== 'execution_started_wave_05_discovery_only' || neutral.execution.name_blind_execution_started !== true || neutral.execution.searches_executed !== 20 || neutral.execution.query_templates_executed !== 6 || neutral.execution.raw_results_observed !== 86 || neutral.execution.returned_records !== 40 || neutral.execution.included_events !== 0) fail('neutral execution state drift');""",
+    """  if (neutral.status !== 'execution_started_wave_05_field_complete' || neutral.execution.name_blin
