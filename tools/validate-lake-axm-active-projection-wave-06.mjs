@@ -9,7 +9,6 @@ import { buildIdentityLayer, resolveLocalId } from './lib/axm-identity.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const policyPath = 'data/project/lake-axm-active-projection-wave-06-policy.json';
-const extensionPath = 'data/project/lake-canonical-identity-extension-registry-wave-11.jsonl';
 const full = relative => path.join(root, relative);
 const errors = [];
 const fail = message => errors.push(message);
@@ -30,6 +29,15 @@ function readJsonl(relative, optional = false) {
     fail(`${relative}: ${error.message}`);
     return [];
   }
+}
+
+function extensionRegistryPaths() {
+  const directory = full('data/project');
+  if (!fs.existsSync(directory)) return [];
+  return fs.readdirSync(directory)
+    .filter(name => /^lake-canonical-identity-extension-registry-wave-\d+\.jsonl$/.test(name))
+    .sort((left, right) => left.localeCompare(right))
+    .map(name => `data/project/${name}`);
 }
 
 function sha256(value) {
@@ -62,7 +70,9 @@ const reconciliation = readJson(policy.reconciliation_path);
 const active = readJson(policy.active_projection_path);
 const migration = readJson('build/axm-identity-genesis-v1-migration.json');
 const baselineRegistry = readJsonl(policy.migration_registry_path);
-const extensionRegistry = readJsonl(extensionPath, true);
+const extensionPaths = extensionRegistryPaths();
+const extensionEntries = extensionPaths.flatMap(sourcePath => readJsonl(sourcePath).map(row => ({ row, sourcePath })));
+const extensionRegistry = extensionEntries.map(entry => entry.row);
 const objects = readJsonl('build/lake-index/objects.jsonl');
 const files = readJsonl('build/lake-index/files.jsonl');
 const hopGraph = readJson('build/hop-graph.json');
@@ -112,47 +122,53 @@ if (baselineClaimRows.length !== policy.expected.claim_migrations) fail('baselin
 if (baselineRegistry.length !== policy.expected.migration_registry_rows) fail('baseline migration registry count drift');
 if (new Set(baselineRegistry.map(row => row.registry_key)).size !== baselineRegistry.length) fail('duplicate Wave 06 registry key');
 
-const extensionEntityRows = extensionRegistry.filter(row => row.registry_row_type === 'entity_extension');
-const extensionAliasRows = extensionRegistry.filter(row => row.registry_row_type === 'alias_extension');
+const extensionEntityEntries = extensionEntries.filter(entry => entry.row.registry_row_type === 'entity_extension');
+const extensionAliasEntries = extensionEntries.filter(entry => entry.row.registry_row_type === 'alias_extension');
+const extensionEntityRows = extensionEntityEntries.map(entry => entry.row);
+const extensionAliasRows = extensionAliasEntries.map(entry => entry.row);
 if (new Set(extensionRegistry.map(row => row.registry_key)).size !== extensionRegistry.length) fail('duplicate post-Wave-06 extension registry key');
-for (const row of extensionRegistry) {
-  if (row.active_projection_extension !== true) fail(`${row.registry_key}: extension marker missing`);
-  if (row.external_axm_gate_complete !== true || row.cross_case_join_authorized !== false) fail(`${row.registry_key}: external/join gate drift`);
-  if (row.accepted_identity_bridge !== false || row.participation_created !== false || row.graph_effect !== 'none') fail(`${row.registry_key}: semantic effect drift`);
-  if (row.review_dependency?.required_to_decide !== false || row.reversibility?.mode !== 'append_preserving_supersession') fail(`${row.registry_key}: judgment contract drift`);
+for (const { row, sourcePath } of extensionEntries) {
+  if (row.active_projection_extension !== true) fail(`${sourcePath}:${row.registry_key}: extension marker missing`);
+  if (row.external_axm_gate_complete !== true || row.cross_case_join_authorized !== false) fail(`${sourcePath}:${row.registry_key}: external/join gate drift`);
+  const bridgeValue = row.accepted_cross_case_identity_bridge ?? row.accepted_identity_bridge;
+  if (bridgeValue !== false || row.participation_created !== false || row.graph_effect !== 'none') fail(`${sourcePath}:${row.registry_key}: semantic effect drift`);
+  if (row.review_dependency?.required_to_decide !== false || row.reversibility?.mode !== 'append_preserving_supersession') fail(`${sourcePath}:${row.registry_key}: judgment contract drift`);
 }
 
 const baselineEntityByLocal = new Map(baselineEntityRows.map(row => [row.local_id, row]));
-const extensionEntityByLocal = new Map(extensionEntityRows.map(row => [row.local_id, row]));
-for (const localId of extensionEntityByLocal.keys()) if (baselineEntityByLocal.has(localId)) fail(`${localId}: extension overlaps Wave 06 baseline entity`);
+const extensionEntityEntryByLocal = new Map();
+for (const entry of extensionEntityEntries) {
+  const localId = entry.row.local_id;
+  if (extensionEntityEntryByLocal.has(localId)) fail(`${localId}: duplicate extension entity across registries`);
+  extensionEntityEntryByLocal.set(localId, entry);
+  if (baselineEntityByLocal.has(localId)) fail(`${localId}: extension overlaps Wave 06 baseline entity`);
+}
 const aliasExtensionsByLocal = new Map();
-for (const row of extensionAliasRows) {
-  if (!aliasExtensionsByLocal.has(row.canonical_id)) aliasExtensionsByLocal.set(row.canonical_id, []);
-  aliasExtensionsByLocal.get(row.canonical_id).push(row);
+for (const entry of extensionAliasEntries) {
+  const localId = entry.row.canonical_id;
+  if (!aliasExtensionsByLocal.has(localId)) aliasExtensionsByLocal.set(localId, []);
+  aliasExtensionsByLocal.get(localId).push(entry);
 }
 
 const activeEntityByLocal = new Map((active?.entities ?? []).map(row => [row.local_id, row]));
-if (activeEntityByLocal.size !== policy.expected.entity_migrations + extensionEntityRows.length) fail('active entity count does not equal Wave 06 baseline plus extensions');
+if (activeEntityByLocal.size !== policy.expected.entity_migrations + extensionEntityRows.length) fail('active entity count does not equal Wave 06 baseline plus all append extensions');
 if ((active?.claims ?? []).length !== policy.expected.claim_migrations) fail('post-Wave-06 canonical extension changed claim count');
 
 let currentEntityTokens = 0;
 let legacyEntityTokens = 0;
 for (const entity of active?.entities ?? []) {
   const baseline = baselineEntityByLocal.get(entity.local_id);
-  const extension = extensionEntityByLocal.get(entity.local_id);
-  if (!baseline && !extension) { fail(`${entity.local_id}: no Wave 06 baseline or append extension row`); continue; }
-  const source = baseline ?? extension;
+  const extensionEntry = extensionEntityEntryByLocal.get(entity.local_id);
+  if (!baseline && !extensionEntry) { fail(`${entity.local_id}: no Wave 06 baseline or append extension row`); continue; }
+  const source = baseline ?? extensionEntry.row;
   if (!/^e1_[a-z2-7]{52}$/.test(entity.axm_entity_id)) fail(`${entity.local_id}: malformed Genesis entity ID`);
   if (!/^e_[a-z2-7]{24}$/.test(entity.legacy_provisional_entity_id)) fail(`${entity.local_id}: malformed legacy entity ID`);
   if (entity.axm_entity_id !== source.axm_entity_id) fail(`${entity.local_id}: current entity ID registry mismatch`);
   if (entity.legacy_provisional_entity_id !== source.legacy_provisional_entity_id) fail(`${entity.local_id}: legacy entity ID registry mismatch`);
 
-  let expectedCurrentAliases = source.alias_axm_ids ?? [];
-  let expectedLegacyAliases = source.legacy_provisional_alias_ids ?? [];
-  if (baseline) {
-    expectedCurrentAliases = uniqueSorted([...expectedCurrentAliases, ...(aliasExtensionsByLocal.get(entity.local_id) ?? []).map(row => row.axm_alias_id)]);
-    expectedLegacyAliases = uniqueSorted([...expectedLegacyAliases, ...(aliasExtensionsByLocal.get(entity.local_id) ?? []).map(row => row.legacy_provisional_alias_id)]);
-  }
+  const aliasEntries = aliasExtensionsByLocal.get(entity.local_id) ?? [];
+  const expectedCurrentAliases = uniqueSorted([...(source.alias_axm_ids ?? []), ...aliasEntries.map(entry => entry.row.axm_alias_id)]);
+  const expectedLegacyAliases = uniqueSorted([...(source.legacy_provisional_alias_ids ?? []), ...aliasEntries.map(entry => entry.row.legacy_provisional_alias_id)]);
   try {
     assert.deepEqual(entity.alias_axm_ids, expectedCurrentAliases);
     assert.deepEqual(entity.legacy_provisional_alias_ids, expectedLegacyAliases);
@@ -206,9 +222,9 @@ for (const row of baselineClaimRows) {
   validateLakeObject('claim_id', row.claim_id, policy.migration_registry_path, `baseline claim ${row.claim_id}`);
   validateLakeObject('legacy_provisional_claim_id', row.legacy_provisional_claim_id, policy.migration_registry_path, `baseline legacy claim ${row.legacy_provisional_claim_id}`);
 }
-for (const row of extensionEntityRows) {
-  validateLakeObject('axm_entity_id', row.axm_entity_id, extensionPath, `extension entity ${row.local_id}`);
-  validateLakeObject('legacy_provisional_entity_id', row.legacy_provisional_entity_id, extensionPath, `extension legacy entity ${row.local_id}`);
+for (const entry of extensionEntityEntries) {
+  validateLakeObject('axm_entity_id', entry.row.axm_entity_id, entry.sourcePath, `extension entity ${entry.row.local_id}`);
+  validateLakeObject('legacy_provisional_entity_id', entry.row.legacy_provisional_entity_id, entry.sourcePath, `extension legacy entity ${entry.row.local_id}`);
 }
 
 const fileByPath = new Map(files.map(row => [row.path, row]));
@@ -218,12 +234,10 @@ for (const relative of [policy.migration_registry_path, policy.migration_receipt
   else if (row.generated !== false || row.authoritative_reachable !== true) fail(`${relative}: baseline source-control state drift`);
 }
 if (fileByPath.get(policy.migration_registry_path)?.index_file !== true) fail('Wave 06 registry is not an index surface');
-if (extensionRegistry.length) {
-  const row = fileByPath.get(extensionPath);
-  if (!row) fail(`${extensionPath}: extension registry missing from lake`);
-  else {
-    if (row.generated !== false || row.authoritative_reachable !== true || row.index_file !== true) fail(`${extensionPath}: extension registry source-control state drift`);
-  }
+for (const relative of extensionPaths) {
+  const row = fileByPath.get(relative);
+  if (!row) fail(`${relative}: extension registry missing from lake`);
+  else if (row.generated !== false || row.authoritative_reachable !== true || row.index_file !== true) fail(`${relative}: extension registry source-control state drift`);
 }
 
 if (/"(?:axm_entity_id|legacy_provisional_entity_id|claim_id|legacy_provisional_claim_id)"/.test(JSON.stringify(hopGraph))) fail('identity fields leaked into hop graph');
@@ -257,6 +271,7 @@ if (errors.length) {
 
 console.log('lake AXM active projection Wave 06 validation: OK');
 console.log(`  baseline entities / claims: ${baselineEntityRows.length} / ${baselineClaimRows.length}`);
+console.log(`  extension registries: ${extensionPaths.length}`);
 console.log(`  extension entities / aliases: ${extensionEntityRows.length} / ${extensionAliasRows.length}`);
 console.log(`  active entities / claims: ${active.entities.length} / ${active.claims.length}`);
 console.log(`  current / legacy resolver tokens: ${currentEntityTokens} / ${legacyEntityTokens}`);
