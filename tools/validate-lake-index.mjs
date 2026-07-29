@@ -11,6 +11,7 @@ const objects = JSON.parse(fs.readFileSync(path.join(root, 'build/lake-object-in
 const gaps = JSON.parse(fs.readFileSync(path.join(root, 'build/lake-index-gaps.json'), 'utf8'));
 const report = fs.readFileSync(path.join(root, 'reports/lake-index-census.md'), 'utf8');
 const excluded = new Set(policy.excluded_paths ?? []);
+const localIdentifierKeys = new Set(policy.local_identifier_keys ?? ['id']);
 const errors = [];
 
 function assert(condition, message) {
@@ -31,6 +32,7 @@ assert(index.schema_version === 'lake-index@1', 'unexpected lake-index schema');
 assert(index.summary?.schema_version === 'lake-index-summary@1', 'unexpected lake-index summary schema');
 assert(objects.schema_version === 'lake-object-index@1', 'unexpected lake-object-index schema');
 assert(gaps.schema_version === 'lake-index-gaps@1', 'unexpected lake-index-gaps schema');
+assert(objects.identifier_semantics?.schema_version === 'lake-identifier-semantics@1', 'identifier semantics missing');
 assert(index.census_id === policy.census_id && objects.census_id === policy.census_id && gaps.census_id === policy.census_id, 'census IDs disagree');
 
 const expectedPaths = trackedFiles();
@@ -52,6 +54,8 @@ for (const file of index.files ?? []) {
   assert(typeof file.authoritative_reachable === 'boolean', `missing authoritative reachability: ${file.path}`);
   assert(typeof file.index_reachable === 'boolean', `missing index reachability: ${file.path}`);
   assert(typeof file.public_reachable === 'boolean', `missing public reachability: ${file.path}`);
+  assert(Number.isInteger(file.local_identifier_count) && file.local_identifier_count >= 0, `invalid local identifier count: ${file.path}`);
+  assert(Number.isInteger(file.machine_id_count) && file.machine_id_count >= 0, `invalid global machine identifier count: ${file.path}`);
   assert(['declared_program_id', 'referenced_by_program_file', 'no_program_owner_detected'].includes(file.ownership_state), `invalid ownership state: ${file.path}`);
 }
 
@@ -70,6 +74,7 @@ assert(report.includes(`Source fingerprint: \`${fingerprint}\``), 'markdown repo
 
 const evidenceFiles = index.files.filter(file => file.evidence_bearing);
 const c = index.summary.counts;
+const localOccurrences = index.files.reduce((sum, file) => sum + file.local_identifier_count, 0);
 assert(c.tracked_files_indexed === index.files.length, 'tracked file count mismatch');
 assert(c.evidence_bearing_files === evidenceFiles.length, 'evidence file count mismatch');
 assert(c.index_files === index.files.filter(file => file.index_file).length, 'index file count mismatch');
@@ -79,10 +84,25 @@ assert(c.public_reachable_evidence_files === evidenceFiles.filter(file => file.p
 assert(c.exact_orphan_evidence_files === evidenceFiles.filter(file => file.exact_orphan).length, 'orphan count mismatch');
 assert(c.no_program_owner_detected === evidenceFiles.filter(file => file.ownership_state === 'no_program_owner_detected').length, 'program-owner count mismatch');
 assert(c.distinct_machine_ids === objects.objects.length, 'object count mismatch');
+assert(c.local_identifier_occurrences_observed === localOccurrences, 'local identifier occurrence count mismatch');
+assert(c.local_identifier_values_observed === objects.identifier_semantics.local_identifier_values_excluded_from_global_join, 'local identifier value count mismatch');
 assert(c.receipt_ids === objects.receipts.length, 'receipt count mismatch');
 assert(c.program_ids === objects.programs.length, 'program count mismatch');
 assert(c.case_ids === objects.cases.length, 'case count mismatch');
 assert(c.report_ids === objects.reports.length, 'report count mismatch');
+assert(c.unindexed_machine_ids === gaps.unindexed_machine_ids.length, 'unindexed identifier count mismatch');
+assert(c.divergent_identifier_projections === gaps.divergent_identifier_projections.length, 'divergent projection count mismatch');
+assert(c.source_ids_without_projection === gaps.source_ids_without_projection.length, 'source-without-projection count mismatch');
+assert(c.projection_ids_without_source === gaps.projection_ids_without_source.length, 'projection-without-source count mismatch');
+
+for (const object of objects.objects ?? []) {
+  assert(!localIdentifierKeys.has(object.id_key), `local identifier leaked into global object index: ${object.id_key}:${object.id_value}`);
+  assert(object.divergent_projections === (object.distinct_projection_hashes > 1), `projection divergence semantics drift: ${object.id_key}:${object.id_value}`);
+}
+assert(objects.identifier_semantics.local_identifier_keys.every(key => localIdentifierKeys.has(key)), 'identifier semantics local-key declaration drift');
+assert(objects.identifier_semantics.boundaries.repeated_local_id_proves_same_object === false, 'local identifier non-identity boundary missing');
+assert(objects.identifier_semantics.boundaries.source_projection_shape_difference_is_projection_divergence === false, 'source/projection shape boundary missing');
+assert(gaps.local_identifier_semantics?.boundaries?.repeated_local_id_proves_same_object === false, 'gap index local identifier boundary missing');
 
 function sorted(values) {
   return [...values].sort();
@@ -101,6 +121,11 @@ assert(index.summary.boundaries.open_pull_request_content_semantically_indexed =
 assert(index.summary.boundaries.source_truth_determined === false, 'source truth boundary must remain false');
 assert(index.summary.boundaries.publication_cleared === false, 'publication boundary must remain false');
 assert(index.summary.boundaries.common_purpose_conclusion_generated === false, 'common-purpose conclusion boundary must remain false');
+assert(index.summary.boundaries.bare_local_identifier_globally_joined === false, 'bare local identifier global-join boundary missing');
+assert(index.summary.boundaries.projection_divergence_includes_source_shape_difference === false, 'projection divergence boundary missing');
+assert(policy.boundaries?.bare_local_id_is_globally_joinable === false, 'policy must forbid global joins on bare local identifiers');
+assert(policy.boundaries?.registered_identifier_proves_source_truth === false, 'policy must deny source truth from registration alone');
+assert(report.includes('local-only identifier values observed:'), 'reader report lacks local identifier semantics');
 
 const shadowPath = path.join(root, 'data/project/lake-open-pr-shadow.json');
 if (fs.existsSync(shadowPath)) {
@@ -120,4 +145,6 @@ console.log('lake index validation: OK');
 console.log(`  tracked paths: ${index.files.length}`);
 console.log(`  evidence paths: ${evidenceFiles.length}`);
 console.log(`  orphan evidence paths: ${c.exact_orphan_evidence_files}`);
-console.log(`  unindexed machine IDs: ${c.unindexed_machine_ids}`);
+console.log(`  global machine IDs: ${c.distinct_machine_ids}`);
+console.log(`  local identifier values excluded from global joins: ${c.local_identifier_values_observed}`);
+console.log(`  projection IDs without source: ${c.projection_ids_without_source}`);
