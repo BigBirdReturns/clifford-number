@@ -1,0 +1,89 @@
+name: Lake index census
+
+on:
+  push:
+    branches:
+      - agent/lake-index-census
+    paths:
+      - '.github/tmp/lake-index-trigger.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: lake-index-census
+  cancel-in-progress: false
+
+jobs:
+  census:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lake-index-census
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Observe the open-pull-request shadow
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/build-lake-open-pr-shadow.mjs
+      - name: Build and stabilize the current-tree lake census
+        run: |
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/validate-lake-index.mjs
+          node test/lake-index.test.js
+      - name: Prove deterministic census products
+        run: |
+          sha256sum \
+            build/lake-index.json \
+            build/lake-object-index.json \
+            build/lake-index-gaps.json \
+            reports/lake-index-census.md > /tmp/lake-index-first.sha256
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          sha256sum --check --strict /tmp/lake-index-first.sha256
+          node tools/validate-lake-index.mjs
+          node test/lake-index.test.js
+          git diff --check
+      - name: Enforce the exact generated change set
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .github/tmp
+          python - <<'PY'
+          import subprocess
+
+          expected = {
+              '.github/tmp/lake-index-trigger.json',
+              'build/lake-index.json',
+              'build/lake-object-index.json',
+              'build/lake-index-gaps.json',
+              'data/project/lake-open-pr-shadow.json',
+              'reports/lake-index-census.md',
+          }
+          raw = subprocess.check_output([
+              'git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'
+          ])
+          entries = [entry for entry in raw.decode().split('\0') if entry]
+          actual = set()
+          for entry in entries:
+              status = entry[:2]
+              assert 'R' not in status and 'C' not in status, entry
+              actual.add(entry[3:])
+          assert actual == expected, {
+              'unexpected': sorted(actual - expected),
+              'missing': sorted(expected - actual),
+          }
+          PY
+      - name: Commit the durable census
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Index the current evidence lake'
+          git push origin HEAD:agent/lake-index-census
