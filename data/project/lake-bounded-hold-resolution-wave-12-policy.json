@@ -1,0 +1,182 @@
+{
+  "schema_version": "lake-bounded-hold-resolution-wave-12-policy@1",
+  "program_key": "CN-LAKE-BOUNDED-HOLD-W12",
+  "as_of": "2026-07-29",
+  "purpose": "Resolve the complete twelve-row Wave 11 bounded-hold denominator with public or repository-preserved source custody, explicit local-to-canonical assertions, reversible canonical mutations, and graph-inert identity resolutions. Materialize every evidence-sufficient row now; preserve any failed gate as a named nonlink rather than waiting for unspecified human permission.",
+  "input_paths": [
+    "data/project/lake-canonical-adjudication-registry-wave-11.jsonl",
+    "data/project/lake-canonical-mutation-plan-wave-11.json",
+    "data/project/lake-canonical-identity-extension-registry-wave-11.jsonl",
+    "data/project/lake-bounded-hold-source-registry-wave-12.jsonl",
+    "data/canonical/actors.json",
+    "data/canonical/organizations.json",
+    "data/canonical/aliases.json",
+    "data/research/clifford-cross-corpus-public-interest-map.json",
+    "data/ledger/participation.jsonl",
+    "build/axm-identity.json",
+    "build/hop-graph.json",
+    "BUILD-INSTRUCTIONS.md"
+  ],
+  "expected": {
+    "bounded_hold_rows": 12,
+    "resolved_local_subjects": 12,
+    "new_actor_records": 2,
+    "new_organization_records": 9,
+    "new_entity_records": 11,
+    "accepted_cross_case_identity_bridges": 0,
+    "participation_rows_added": 0,
+    "claim_delta": 0,
+    "graph_edge_delta": 0
+  },
+  "source_registry_path": "data/project/lake-bounded-hold-source-registry-wave-12.jsonl",
+  "decision_registry_path": "data/project/lake-bounded-hold-resolution-registry-wave-12.jsonl",
+  "local_resolution_registry_path": "data/project/lake-local-canonical-resolution-registry-wave-12.jsonl",
+  "mutation_plan_path": "data/project/lake-bounded-hold-mutation-plan-wave-12.json",
+  "extension_registry_path": "data/project/lake-canonical-identity-extension-registry-wave-12.jsonl",
+  "receipt_path": "data/project/lake-bounded-hold-resolution-wave-12.json",
+  "projection_path": "build/bounded-hold-resolution-index-wave-12.json",
+  "plan_path": "build/lake-actions/bounded-hold-resolution-wave-12.json",
+  "reconciliation_path": "build/lake-actions/bounded-hold-resolution-wave-12-reconciliation.json",
+  "report_path": "reports/lake-bounded-hold-resolution-wave-12.md",
+  "reconciliation_report_path": "reports/lake-bounded-hold-resolution-wave-12-reconciliation.md",
+  "resolutions": {
+    "adl": {
+      "canonical_id": "anti-defamation-league",
+      "canonical_kind": "organization",
+      "canonical_label": "Anti-Defamation League",
+      "organization_kind": "nonprofit",
+      "aliases": ["ADL"],
+      "source_ids": ["W12-SRC-ADL-CASE"],
+      "materialize_record": true
+    },
+    "org-daia": {
+      "canonical_id": "arcadia-improvement-association",
+      "canonical_kind": "organization",
+      "canonical_label": "Arcadia Improvement Association",
+      "organization_kind": "nonprofit",
+      "aliases": ["Downtown Arcadia Improvement Association", "DAIA"],
+      "source_ids": ["W12-SRC-DAIA-CASE"],
+      "materialize_record": true
+    },
+    "org-tcr": {
+      "canonical_id": "trammell-crow-residential",
+      "canonical_kind": "organization",
+      "canonical_label": "Trammell Crow Residential",
+      "organization_kind": "company",
+      "aliases": ["TCR"],
+      "source_ids": ["W12-SRC-TCR-CASE"],
+      "materialize_record": true
+    },
+    "org-city-of-arcadia": {
+      "canonical_id": "city-of-arcadia",
+      "canonical_kind": "organization",
+      "canonical_label": "City of Arcadia",
+      "organization_kind": "municipal_government",
+      "broad_institution": true,
+      "aliases": ["Arcadia, CA"],
+      "source_ids": ["W12-SRC-CITY-CASE", "W12-SRC-CITY-OFFICIAL"],
+      "materialize_record": true
+    },
+    "org-city-arcadia": {
+      "canonical_id": "city-of-arcadia",
+      "canonical_kind": "organization",
+      "canonical_label": "City of Arcadia",
+      "organization_kind": "municipal_government",
+      "broad_institution": true,
+      "aliases": [],
+      "source_ids": ["W12-SRC-CITY-CASE", "W12-SRC-CITY-OFFICIAL"],
+      "materialize_record": false
+    },
+    "p-ben-zhang-atc": {
+      "canonical_id": "ben-zhang",
+      "canonical_kind": "actor",
+      "canonical_label": "Ben Zhang",
+      "aliases": [],
+      "source_ids": ["W12-SRC-BEN-ZHANG-CASE"],
+      "materialize_record": true
+    },
+    "p-erik-wahl-arcadia": {
+      "canonical_id": "erik-wahl",
+      "canonical_kind": "actor",
+      "canonical_label": "Erik Wahl",
+      "aliases": [],
+      "source_ids": ["W12-SRC-ERIK-WAHL-CASE"],
+      "materialize_record": true
+    },
+    "liveramp": {
+      "canonical_id": "liveramp",
+      "canonical_kind": "organization",
+      "canonical_label": "LiveRamp",
+      "organization_kind": "company",
+      "aliases": [],
+      "source_ids": ["W12-SRC-UKAI-COMPANY-CASE", "W12-SRC-LIVERAMP-OFFICIAL"],
+      "materialize_record": true
+    },
+    "safegraph": {
+      "canonical_id": "safegraph",
+      "canonical_kind": "organization",
+      "canonical_label": "SafeGraph",
+      "organization_kind": "company",
+      "aliases": [],
+      "source_ids": ["W12-SRC-UKAI-COMPANY-CASE", "W12-SRC-SAFEGRAPH-OFFICIAL"],
+      "materialize_record": true
+    },
+    "org-data-blanket": {
+      "canonical_id": "data-blanket",
+      "canonical_kind": "organization",
+      "canonical_label": "Data Blanket",
+      "organization_kind": "company",
+      "aliases": ["Data Blanket Inc."],
+      "source_ids": ["W12-SRC-CDAO-CRUCIBLE-2", "W12-SRC-DATA-BLANKET-OFFICIAL"],
+      "materialize_record": true
+    },
+    "org-opendefense": {
+      "canonical_id": "opendefense",
+      "canonical_kind": "organization",
+      "canonical_label": "OpenDefense",
+      "organization_kind": "company",
+      "aliases": [],
+      "source_ids": ["W12-SRC-CDAO-CRUCIBLE-2", "W12-SRC-OPENDEFENSE-OFFICIAL"],
+      "materialize_record": true
+    },
+    "org-regent-defense": {
+      "canonical_id": "regent-defense",
+      "canonical_kind": "organization",
+      "canonical_label": "REGENT Defense",
+      "organization_kind": "company_division",
+      "aliases": ["Regent Defense"],
+      "source_ids": ["W12-SRC-CDAO-CRUCIBLE-2", "W12-SRC-REGENT-DEFENSE-OFFICIAL"],
+      "materialize_record": true
+    }
+  },
+  "decision_law": {
+    "review_required_to_decide": false,
+    "missing_reviewer_blocks_resolution": false,
+    "source_custody_required_on_local_record": true,
+    "source_custody_required_on_canonical_reference": true,
+    "explicit_same_entity_assertion_required": true,
+    "shared_identity_namespace_required": true,
+    "unambiguous_target_required": true,
+    "materialize_only_one_record_per_canonical_id": true,
+    "local_resolution_creates_relationship": false,
+    "local_resolution_creates_participation": false,
+    "local_resolution_creates_hop": false,
+    "correction_mode": "append_preserving_supersession"
+  },
+  "boundaries": {
+    "public_source_proves_every_case_claim": false,
+    "local_canonical_resolution_is_cross_case_bridge": false,
+    "local_canonical_resolution_merges_source_records": false,
+    "local_canonical_resolution_creates_relationship": false,
+    "local_canonical_resolution_creates_participation": false,
+    "local_canonical_resolution_creates_hop": false,
+    "canonical_record_proves_program_selection": false,
+    "cdao_selection_proves_performance_or_acceptance": false,
+    "automatic_cross_case_join_authorized": false,
+    "cross_case_graph_join_authorized": false,
+    "cross_case_hop_creation_authorized": false,
+    "evidence_truth_determined": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}
