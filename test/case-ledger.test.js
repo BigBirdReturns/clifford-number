@@ -88,5 +88,6 @@ assert.equal(daia.subject_identity.canonical_subject_id, 'arcadia-improvement-as
  * regenerates and verifies them instead of relying only on a path-filtered workflow. */
 await import('../tools/compile-reporter-briefings.mjs');
 await import('./reporter-briefing.test.js');
+await import('./lake-canonical-subject-projection-wave-13.test.js');
 
 console.log('case-ledger.test.js: OK');
