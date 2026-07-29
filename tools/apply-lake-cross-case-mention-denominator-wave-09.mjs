@@ -55,7 +55,8 @@ if (phase === 'source') {
       'build/lake-actions/cross-case-mention-denominator-wave-09-reconciliation.json',
       'reports/lake-cross-case-mention-denominator-wave-09.md',
       'reports/lake-cross-case-mention-denominator-wave-09-reconciliation.md',
-      '.github/tmp/lake-cross-case-mention-denominator-wave-09-trigger.json'
+      '.github/tmp/lake-cross-case-mention-denominator-wave-09-trigger.json',
+      '.github/tmp/lake-cross-case-mention-denominator-wave-09-finalize-trigger.json'
     ]) {
       if (!policy.excluded_paths.includes(file)) policy.excluded_paths.push(file);
     }
