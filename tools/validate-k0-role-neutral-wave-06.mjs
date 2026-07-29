@@ -87,11 +87,14 @@ export function validateWave06({
   if (wave.boundaries?.query_hit_is_event !== false || wave.boundaries?.professional_disagreement_proves_reclassification !== false || wave.boundaries?.chain_of_command_violation_proves_reprisal !== false || wave.boundaries?.reprisal_finding_proves_complete_k0_chain !== false || wave.boundaries?.roadblock_label_proves_illegitimate_legal_advice !== false || wave.boundaries?.lawful_discipline_is_ceiling_conversion !== false || wave.boundaries?.policy_violation_proves_bounded_event !== false || wave.boundaries?.stay_proves_final_merits !== false || wave.boundaries?.graph_effect !== 'none') fail('wave boundaries drift');
 
   const executedWaveIds = neutral.execution?.executed_wave_ids || [];
+  const wave06Prefix = ['K0-W01','K0-W02','K0-W03','K0-W04','K0-W05','K0-W06'];
   if (typeof neutral.status !== 'string' || !neutral.status.startsWith('execution_started_wave_')) fail('aggregate neutral status drift');
-  if (neutral.execution?.searches_executed !== 28 || neutral.execution?.query_templates_executed !== 7 || neutral.execution?.raw_results_observed !== 127 || neutral.execution?.returned_records !== 48) fail('aggregate execution count drift');
-  if (JSON.stringify(executedWaveIds) !== JSON.stringify(['K0-W01','K0-W02','K0-W03','K0-W04','K0-W05','K0-W06'])) fail('aggregate wave linkage drift');
+  if (JSON.stringify(executedWaveIds.slice(0, 6)) !== JSON.stringify(wave06Prefix)) fail('aggregate wave linkage drift');
+  if (executedWaveIds.length === 6) {
+    if (neutral.execution?.searches_executed !== 28 || neutral.execution?.query_templates_executed !== 7 || neutral.execution?.raw_results_observed !== 127 || neutral.execution?.returned_records !== 48) fail('aggregate execution count drift');
+  } else if (neutral.execution?.searches_executed < 28 || neutral.execution?.query_templates_executed < 7 || neutral.execution?.raw_results_observed < 127 || neutral.execution?.returned_records < 48) fail('aggregate append-only execution count drift');
   const waveState = neutral.discovery_waves.find(row => row.wave_id === 'K0-W06');
-  if (!['discovery_complete_field_adjudication_pending','discovery_complete_field_adjudication_complete'].includes(waveState?.status)) fail('aggregate Wave 06 state drift');
+  if (waveState?.status !== 'discovery_complete_field_adjudication_complete') fail('aggregate Wave 06 state drift');
 
   const expectedManifest = computeWave06Manifest();
   if (JSON.stringify(manifest) !== JSON.stringify(expectedManifest)) fail('exact-byte manifest drift');
