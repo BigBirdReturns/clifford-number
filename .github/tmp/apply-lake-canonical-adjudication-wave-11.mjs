@@ -23,14 +23,18 @@ function writeJson(file, value) {
   changedPaths.add(file);
 }
 
-for (const file of ['data/canonical/actors.json', 'data/canonical/organizations.json', 'data/canonical/aliases.json']) verifyBaseline(file);
+const publicInterestMapPath = 'data/research/clifford-cross-corpus-public-interest-map.json';
+for (const file of ['data/canonical/actors.json', 'data/canonical/organizations.json', 'data/canonical/aliases.json', publicInterestMapPath]) verifyBaseline(file);
 
 const actorsDoc = JSON.parse(fs.readFileSync('data/canonical/actors.json', 'utf8'));
 const organizationsDoc = JSON.parse(fs.readFileSync('data/canonical/organizations.json', 'utf8'));
 const aliasesDoc = JSON.parse(fs.readFileSync('data/canonical/aliases.json', 'utf8'));
+const publicInterestMap = JSON.parse(fs.readFileSync(publicInterestMapPath, 'utf8'));
 assert.equal(actorsDoc.actors.length, mutationPlan.before.actor_rows);
 assert.equal(organizationsDoc.organizations.length, mutationPlan.before.organization_rows);
 assert.equal(aliasesDoc.aliases.length, mutationPlan.before.alias_rows);
+assert.equal(publicInterestMap.inventory.canonical.actors, mutationPlan.before.actor_rows);
+assert.equal(publicInterestMap.inventory.canonical.organizations, mutationPlan.before.organization_rows);
 
 const allIds = new Set([...actorsDoc.actors.map(row => row.id), ...organizationsDoc.organizations.map(row => row.id)]);
 for (const row of mutationPlan.mutations.actor_additions) {
@@ -64,9 +68,12 @@ for (const row of mutationPlan.mutations.alias_additions) {
 assert.equal(actorsDoc.actors.length, mutationPlan.expected_after.actor_rows);
 assert.equal(organizationsDoc.organizations.length, mutationPlan.expected_after.organization_rows);
 assert.equal(aliasesDoc.aliases.length, mutationPlan.expected_after.alias_rows);
+publicInterestMap.inventory.canonical.actors = mutationPlan.expected_after.actor_rows;
+publicInterestMap.inventory.canonical.organizations = mutationPlan.expected_after.organization_rows;
 writeJson('data/canonical/actors.json', actorsDoc);
 writeJson('data/canonical/organizations.json', organizationsDoc);
 writeJson('data/canonical/aliases.json', aliasesDoc);
+writeJson(publicInterestMapPath, publicInterestMap);
 
 const lakePolicyPath = 'data/project/lake-index-policy.json';
 const lakePolicy = JSON.parse(fs.readFileSync(lakePolicyPath, 'utf8'));
@@ -141,3 +148,4 @@ fs.writeFileSync(sourcePathFile, `${JSON.stringify({
 
 console.log(`Wave 11 canonical mutations, documentation, and lake policy applied: ${changedPaths.size} paths`);
 console.log(`  actors / organizations / aliases added: ${mutationPlan.mutations.actor_additions.length} / ${mutationPlan.mutations.organization_additions.length} / ${mutationPlan.mutations.alias_additions.length}`);
+console.log(`  cross-corpus canonical inventory: ${publicInterestMap.inventory.canonical.actors} actors / ${publicInterestMap.inventory.canonical.organizations} organizations`);
