@@ -1,0 +1,1398 @@
+{
+  "schema_version": "evidence-grounded-judgment-ledger@1",
+  "authority_id": "CN-JUDGMENT-01",
+  "source_fingerprint_sha256": "58186780942c9135fc78cc8d7e0cfbd71a13edb4e48015346e424d7efb73939f",
+  "input_manifest": [
+    {
+      "path": "build/report-frontier.json",
+      "bytes": 9336,
+      "sha256": "c1b1c0fce1b977866f263d01e70e4a83c4cafe9fe713a7382aa99d306fa1b57f"
+    },
+    {
+      "path": "data/canonical/corpus-selection.json",
+      "bytes": 30952,
+      "sha256": "32c9d8e03036236a3984a456b26298ffa2f3f5ab04e454722b077c1f53b8416e"
+    },
+    {
+      "path": "data/intake/k0-ceiling-conversion-seed-events.json",
+      "bytes": 73651,
+      "sha256": "214f934932bd96c364cea740a4384670a416efd9fa86248adffbdb262284bbfb"
+    },
+    {
+      "path": "data/project/evidence-grounded-judgment-authority.json",
+      "bytes": 6520,
+      "sha256": "bc307689e1685c5c87683cc64cb577853419b8f563e217a42c3819c08dd9c4ff"
+    },
+    {
+      "path": "data/project/lake-judgment-shadow-snapshot.json",
+      "bytes": 4383,
+      "sha256": "630dbcc219b295d35e8983cc10d8f5ad017965391cf4beed04c4fd035da694fe"
+    },
+    {
+      "path": "data/research/corpus-coverage.json",
+      "bytes": 45720,
+      "sha256": "d1a64f02fcea167148ac72eb671e1a3f6f2eb2144170418571816b4f5498f4ac"
+    },
+    {
+      "path": "data/research/k0-field-audit.json",
+      "bytes": 14348,
+      "sha256": "e6477c23a71c2728d4d8ea22fd39f39225ab5c6bc7f0978a595be04297e462b5"
+    },
+    {
+      "path": "data/research/selection-adversarial-reviews.json",
+      "bytes": 19363,
+      "sha256": "bfb4688d3f55fc2a4d9fedbe24f5b24714edcca5841be3643189e9fa43aec5bf"
+    }
+  ],
+  "summary": {
+    "decisions": 31,
+    "by_domain": {
+      "k0_event": 13,
+      "lake_basin": 6,
+      "report": 4,
+      "selection_lane": 8
+    },
+    "by_level": {
+      "J2": 11,
+      "J1": 7,
+      "J4": 13
+    },
+    "decisions_requiring_human_permission": 0,
+    "k0_bounded_working_judgments": 9,
+    "selection_lanes_with_operational_decisions": 7,
+    "lake_layer_present": true,
+    "independent_review_is_evidence_not_permission": true,
+    "lake_shadow_snapshot_present": true,
+    "lake_operational_decisions": 6
+  },
+  "decisions": [
+    {
+      "decision_id": "JDG-K0-K0-SEED-001",
+      "domain": "k0_event",
+      "subject_id": "K0-SEED-001",
+      "judgment_level": "J2",
+      "judgment": "bounded_ceiling_conversion_mechanism_supported",
+      "evidence_basis": {
+        "field_audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+        "field_audit_disposition": "supported_for_human_review",
+        "contiguous_ccd": 6,
+        "furthest_documented_stage": 6,
+        "source_count": 2,
+        "counterevidence_count": 1,
+        "alternative_explanation_count": 2,
+        "confidence_band": "high",
+        "rationale": "The public contradiction, reclassification, firing, material consequence, and feedback removal are documented; the terminal correction/exit stage remains partial."
+      },
+      "counterevidence": [
+        "No complete personnel record or independent merits adjudication is public in this source set.",
+        "A manager may regard public disagreement as a communications or performance issue independent of technical merit.",
+        "The public record may omit prior performance evidence."
+      ],
+      "uncertainties": [
+        "Complete personnel record",
+        "Independent merits review or appeal record",
+        "Proof that every correction route was unavailable"
+      ],
+      "action": "use_as_a_working_case_with_receipts_counterevidence_and_remaining_gaps_attached",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "preserves_existing_publication_boundary_while_allowing_bounded_working_judgment",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-K0-K0-SEED-002",
+      "domain": "k0_event",
+      "subject_id": "K0-SEED-002",
+      "judgment_level": "J2",
+      "judgment": "bounded_ceiling_conversion_mechanism_supported",
+      "evidence_basis": {
+        "field_audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+        "field_audit_disposition": "supported_for_human_review",
+        "contiguous_ccd": 7,
+        "furthest_documented_stage": 7,
+        "source_count": 6,
+        "counterevidence_count": 1,
+        "alternative_explanation_count": 2,
+        "confidence_band": "high",
+        "rationale": "The source set supports the complete reported chain while leaving code-level truth and internal causation unadjudicated."
+      },
+      "counterevidence": [
+        "No public independent audit of the ranking change is included.",
+        "The intervention could be defended as correcting a product defect or testing distribution.",
+        "Public reporting may omit other engineering reasons."
+      ],
+      "uncertainties": [
+        "Independent audit of the ranking code",
+        "Complete internal engineering record"
+      ],
+      "action": "use_as_a_working_case_with_receipts_counterevidence_and_remaining_gaps_attached",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "preserves_existing_publication_boundary_while_allowing_bounded_working_judgment",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-K0-K0-SEED-003",
+      "domain": "k0_event",
+      "subject_id": "K0-SEED-003",
+      "judgment_level": "J2",
+      "judgment": "partial_mechanism_supported_but_the_complete_event_is_not",
+      "evidence_basis": {
+        "field_audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+        "field_audit_disposition": "retained_candidate_only",
+        "contiguous_ccd": 6,
+        "furthest_documented_stage": 6,
+        "source_count": 4,
+        "counterevidence_count": 1,
+        "alternative_explanation_count": 2,
+        "confidence_band": "high",
+        "rationale": "The gate action and competing explanations are documented, but institutional and personal attribution remain materially contested."
+      },
+      "counterevidence": [
+        "Google disputed Gebru’s account and described the departure as resignation.",
+        "Internal publication standards may be legitimate and apply independently of conclusions.",
+        "The complete paper-review file is not public."
+      ],
+      "uncertainties": [
+        "Complete internal review file",
+        "Independent appeal authority",
+        "Resolved firing-versus-resignation disposition",
+        "Decision-by-decision personal attribution"
+      ],
+      "action": "use_the_supported_prefix_and_acquire_the_first_missing_transition",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "preserves_existing_publication_boundary_while_allowing_bounded_working_judgment",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-K0-K0-SEED-004",
+      "domain": "k0_event",
+      "subject_id": "K0-SEED-004",
+      "judgment_level": "J2",
+      "judgment": "bounded_ceiling_conversion_mechanism_supported",
+      "evidence_basis": {
+        "field_audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+        "field_audit_disposition": "supported_for_human_review",
+        "contiguous_ccd": 7,
+        "furthest_documented_stage": 7,
+        "source_count": 3,
+        "counterevidence_count": 1,
+        "alternative_explanation_count": 2,
+        "confidence_band": "high",
+        "rationale": "The proposed endorsement, owner veto, competing authorship account, resignations, and publication blockage are directly reported."
+      },
+      "counterevidence": [
+        "The owner described the action as a request for nonpartisan analysis rather than suppression.",
+        "An owner may legitimately redefine editorial strategy.",
+        "The board’s jurisdiction over endorsements is a governance norm, not an uncontested legal right."
+      ],
+      "uncertainties": [
+        "Independent governance review of owner and board authority"
+      ],
+      "action": "use_as_a_working_case_with_receipts_counterevidence_and_remaining_gaps_attached",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "preserves_existing_publication_boundary_while_allowing_bounded_working_judgment",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-K0-K0-SEED-005",
+      "domain": "k0_event",
+      "subject_id": "K0-SEED-005",
+      "judgment_level": "J1",
+      "judgment": "defining_mechanism_not_yet_supported",
+      "evidence_basis": {
+        "field_audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+        "field_audit_disposition": "retained_candidate_only",
+        "contiguous_ccd": 0,
+        "furthest_documented_stage": 6,
+        "source_count": 5,
+        "counterevidence_count": 2,
+        "alternative_explanation_count": 2,
+        "confidence_band": "low",
+        "rationale": "The removal and rationale are documented, but the current source set does not close the defining contradiction transition."
+      },
+      "counterevidence": [
+        "The later JAMA analysis cannot establish Kennedy saw and rejected that analysis.",
+        "The record does not establish absence of every relevant conflict.",
+        "A new administration may lawfully reconstitute advisory bodies to change policy direction.",
+        "Some conflicts may be nonfinancial or not captured by disclosure prevalence."
+      ],
+      "uncertainties": [
+        "A dated contradiction delivered by the sitting committee or members before removal",
+        "Person-specific conflict findings",
+        "Observed downstream effects"
+      ],
+      "action": "acquire_the_earliest_missing_causal_transition",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "preserves_existing_publication_boundary_while_allowing_bounded_working_judgment",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-K0-K0-SEED-006",
+      "domain": "k0_event",
+      "subject_id": "K0-SEED-006",
+      "judgment_level": "J2",
+      "judgment": "bounded_ceiling_conversion_mechanism_supported",
+      "evidence_basis": {
+        "field_audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+        "field_audit_disposition": "supported_for_human_review",
+        "contiguous_ccd": 7,
+        "furthest_documented_stage": 7,
+        "source_count": 5,
+        "counterevidence_count": 1,
+        "alternative_explanation_count": 2,
+        "confidence_band": "high",
+        "rationale": "The owner directive, commitment condition, declined dissent, departures, and control of the publication gate are documented."
+      },
+      "counterevidence": [
+        "The change may be an explicit ideological strategy rather than sincere comprehension failure.",
+        "Owners have strategic authority to reposition a publication.",
+        "A declined column alone does not establish inability to understand editorial expertise."
+      ],
+      "uncertainties": [
+        "Independent test of editorial-product effects",
+        "Formal internal appeal and publication-governance record"
+      ],
+      "action": "use_as_a_working_case_with_receipts_counterevidence_and_remaining_gaps_attached",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "preserves_existing_publication_boundary_while_allowing_bounded_working_judgment",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-K0-K0-SEED-007",
+      "domain": "k0_event",
+      "subject_id": "K0-SEED-007",
+      "judgment_level": "J1",
+      "judgment": "defining_mechanism_not_yet_supported",
+      "evidence_basis": {
+        "field_audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+        "field_audit_disposition": "retained_candidate_only",
+        "contiguous_ccd": 1,
+        "furthest_documented_stage": 7,
+        "source_count": 4,
+        "counterevidence_count": 1,
+        "alternative_explanation_count": 2,
+        "confidence_band": "low",
+        "rationale": "The access action and regulator disagreement are documented; the defining reclassification remains contested."
+      },
+      "counterevidence": [
+        "The privacy dispute was not finally adjudicated in the supplied record.",
+        "Research methods may have implicated legitimate privacy and nonparticipant concerns.",
+        "Meta states that more privacy-protective mechanisms were offered."
+      ],
+      "uncertainties": [
+        "Final adjudication of privacy and nonparticipant-data claims",
+        "Evidence of personal direction by Zuckerberg",
+        "Proof that the conduct classification was a competence reclassification"
+      ],
+      "action": "acquire_the_earliest_missing_causal_transition",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "preserves_existing_publication_boundary_while_allowing_bounded_working_judgment",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-K0-K0-SEED-008",
+      "domain": "k0_event",
+      "subject_id": "K0-SEED-008",
+      "judgment_level": "J2",
+      "judgment": "partial_mechanism_supported_but_the_complete_event_is_not",
+      "evidence_basis": {
+        "field_audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+        "field_audit_disposition": "retained_candidate_only",
+        "contiguous_ccd": 3,
+        "furthest_documented_stage": 3,
+        "source_count": 4,
+        "counterevidence_count": 1,
+        "alternative_explanation_count": 2,
+        "confidence_band": "moderate",
+        "rationale": "The record strongly supports deliberate category engineering but not a complete ceiling-conversion event in this bounded unit."
+      },
+      "counterevidence": [
+        "This is deliberately designed and therefore not a pure comprehension-failure fixture.",
+        "Political messaging commonly compresses heterogeneous policies.",
+        "A broad category may still identify shared normative commitments."
+      ],
+      "uncertainties": [
+        "Specific institutional gate action",
+        "Bounded material consequence",
+        "Feedback removal",
+        "Blocked correction route"
+      ],
+      "action": "use_the_supported_prefix_and_acquire_the_first_missing_transition",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "preserves_existing_publication_boundary_while_allowing_bounded_working_judgment",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-K0-K0-SEED-009",
+      "domain": "k0_event",
+      "subject_id": "K0-SEED-009",
+      "judgment_level": "J2",
+      "judgment": "bounded_ceiling_conversion_mechanism_supported",
+      "evidence_basis": {
+        "field_audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+        "field_audit_disposition": "supported_for_human_review",
+        "contiguous_ccd": 6,
+        "furthest_documented_stage": 6,
+        "source_count": 2,
+        "counterevidence_count": 1,
+        "alternative_explanation_count": 2,
+        "confidence_band": "high",
+        "rationale": "AAUP documents the tenure gate, absence of individualized merits discussion, self-selection framing, consequences, and loss of durable faculty standing."
+      },
+      "counterevidence": [
+        "AAUP sanctions are authoritative within academic governance but are not judicial findings.",
+        "Boards may exercise lawful discretion over tenure and mission.",
+        "The source summary does not reproduce every tenure file."
+      ],
+      "uncertainties": [
+        "Complete tenure files",
+        "Individualized board rationales",
+        "Judicial or equivalent merits disposition"
+      ],
+      "action": "use_as_a_working_case_with_receipts_counterevidence_and_remaining_gaps_attached",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "preserves_existing_publication_boundary_while_allowing_bounded_working_judgment",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-K0-K0-SEED-010",
+      "domain": "k0_event",
+      "subject_id": "K0-SEED-010",
+      "judgment_level": "J2",
+      "judgment": "bounded_ceiling_conversion_mechanism_supported",
+      "evidence_basis": {
+        "field_audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+        "field_audit_disposition": "supported_for_human_review",
+        "contiguous_ccd": 6,
+        "furthest_documented_stage": 6,
+        "source_count": 3,
+        "counterevidence_count": 1,
+        "alternative_explanation_count": 2,
+        "confidence_band": "high",
+        "rationale": "Official executive language and AAUP records support the category-to-appointment-to-control sequence while leaving legal merits open."
+      },
+      "counterevidence": [
+        "The official account describes restoration of standards and viewpoint neutrality.",
+        "Elected officials may lawfully redirect public institutions through appointments and appropriations.",
+        "Political identity can sometimes be relevant to a mission dispute."
+      ],
+      "uncertainties": [
+        "Final judicial dispositions",
+        "Decision-specific causal allocation across governor, board, and administration"
+      ],
+      "action": "use_as_a_working_case_with_receipts_counterevidence_and_remaining_gaps_attached",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "preserves_existing_publication_boundary_while_allowing_bounded_working_judgment",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-K0-K0-SEED-011",
+      "domain": "k0_event",
+      "subject_id": "K0-SEED-011",
+      "judgment_level": "J1",
+      "judgment": "defining_mechanism_not_yet_supported",
+      "evidence_basis": {
+        "field_audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+        "field_audit_disposition": "retained_candidate_only",
+        "contiguous_ccd": 0,
+        "furthest_documented_stage": 6,
+        "source_count": 3,
+        "counterevidence_count": 1,
+        "alternative_explanation_count": 2,
+        "confidence_band": "low",
+        "rationale": "Removal and qualifications are documented, but the event lacks the defining contradiction and causal reclassification links."
+      },
+      "counterevidence": [
+        "Ceremonial praise is compatible with a legitimate leadership change.",
+        "Presidents possess broad authority to select senior advisers.",
+        "The record does not identify a specific professional contradiction that triggered removal."
+      ],
+      "uncertainties": [
+        "Specific contrary military advice",
+        "Removal decision record",
+        "Causal link between prior framing and gate action"
+      ],
+      "action": "acquire_the_earliest_missing_causal_transition",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "preserves_existing_publication_boundary_while_allowing_bounded_working_judgment",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-K0-K0-SEED-012",
+      "domain": "k0_event",
+      "subject_id": "K0-SEED-012",
+      "judgment_level": "J1",
+      "judgment": "defining_mechanism_not_yet_supported",
+      "evidence_basis": {
+        "field_audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+        "field_audit_disposition": "retained_candidate_only",
+        "contiguous_ccd": 0,
+        "furthest_documented_stage": 6,
+        "source_count": 4,
+        "counterevidence_count": 1,
+        "alternative_explanation_count": 2,
+        "confidence_band": "low",
+        "rationale": "The case remains a strong counterpower-target boundary fixture, not a completed ceiling-conversion positive."
+      },
+      "counterevidence": [
+        "No specific instance of improper advice by removed lawyers is supplied.",
+        "A secretary may replace senior lawyers based on management confidence.",
+        "The statement also sought the best advice on lawful orders."
+      ],
+      "uncertainties": [
+        "Specific legal advice preceding removal",
+        "Decision record",
+        "Evidence that removed lawyers were treated as defective because of that advice"
+      ],
+      "action": "acquire_the_earliest_missing_causal_transition",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "preserves_existing_publication_boundary_while_allowing_bounded_working_judgment",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-K0-K0-SEED-013",
+      "domain": "k0_event",
+      "subject_id": "K0-SEED-013",
+      "judgment_level": "J2",
+      "judgment": "bounded_strategic_bypass_chain_supported_without_completed_feedback_suppression",
+      "evidence_basis": {
+        "field_audit_id": "K0-AUDIT-2026-07-27-MAINTAINER",
+        "field_audit_disposition": "retained_candidate_only",
+        "contiguous_ccd": 5,
+        "furthest_documented_stage": 5,
+        "source_count": 7,
+        "counterevidence_count": 1,
+        "alternative_explanation_count": 2,
+        "confidence_band": "moderate",
+        "rationale": "The strategic-bypass chain is strongly documented through attempted material consequence, but institutional resistance prevented stages six and seven from completing."
+      },
+      "counterevidence": [
+        "The request for an unsupported institutional declaration supports strategic instrumentalization rather than pure comprehension failure.",
+        "A political leader may sincerely believe fragmented allegations despite official rebuttals.",
+        "Some isolated irregularities existed, though officials said none approached outcome-changing scale."
+      ],
+      "uncertainties": [
+        "Completed feedback-source removal",
+        "Completed blockage of correction or certification",
+        "Separation of each pressured institution into bounded subevents"
+      ],
+      "action": "use_the_supported_prefix_and_acquire_the_first_missing_transition",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "preserves_existing_publication_boundary_while_allowing_bounded_working_judgment",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-BASIN-lake-branch-shadow",
+      "domain": "lake_basin",
+      "subject_id": "lake-branch-shadow",
+      "judgment_level": "J4",
+      "judgment": "open branches contain a material unmerged shadow corpus",
+      "evidence_basis": {
+        "snapshot_id": "CN-LAKE-JUDGMENT-SHADOW-2026-07-29",
+        "source_branch": "agent/lake-index-census",
+        "source_pull_request": 384,
+        "source_fingerprint_sha256": "fd6de200bad29e0d53f44b747cc4ef59acaf1ebde0429352a2d3fbfb9da95fd7",
+        "priority": 6,
+        "evidence_count": 102,
+        "lake_counts": {
+          "evidence_bearing_files": 1266,
+          "index_reachable_evidence_files": 496,
+          "not_index_reachable": 770,
+          "authoritative_reachable_evidence_files": 340,
+          "not_authoritative_reachable": 926,
+          "public_reachable_evidence_files": 235,
+          "not_public_reachable": 1031,
+          "exact_orphan_evidence_files": 372,
+          "no_detected_program_owner": 1096,
+          "distinct_machine_ids": 11972,
+          "unindexed_machine_ids": 10031,
+          "divergent_identifier_projections": 3366,
+          "source_ids_without_projection": 4854,
+          "projection_ids_without_source": 3686,
+          "unused_receipt_definitions": 49,
+          "missing_repository_path_tokens": 74,
+          "case_ids_absent_from_public_catalog": 23,
+          "open_pull_requests_observed": 13,
+          "branch_only_paths_observed": 102
+        }
+      },
+      "counterevidence": [
+        "The source is an open-branch shadow snapshot, not merged corpus.",
+        "Mechanical orphan and ownership classifications require semantic disposition."
+      ],
+      "uncertainties": [
+        "Closed and deleted branches are not covered by this snapshot.",
+        "A detected gap can represent important evidence, deliberate isolation, generated output, duplication, or obsolete material.",
+        "The snapshot does not determine evidence truth or publication clearance."
+      ],
+      "action": "assign each branch-only path an active, salvage, superseded, abandon, or merge disposition",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "regenerate_from_a_newer_lake_census_or_replace_with_the_merged_basin_waterline"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "open_branch_shadow",
+        "effect": "semantic_review_may_reorder_or_overturn_priority_but_does_not_block_reversible_repair"
+      },
+      "publication_effect": "none_internal_repair_priority",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-BASIN-lake-case-catalog",
+      "domain": "lake_basin",
+      "subject_id": "lake-case-catalog",
+      "judgment_level": "J4",
+      "judgment": "the public case catalog materially understates the internal case universe",
+      "evidence_basis": {
+        "snapshot_id": "CN-LAKE-JUDGMENT-SHADOW-2026-07-29",
+        "source_branch": "agent/lake-index-census",
+        "source_pull_request": 384,
+        "source_fingerprint_sha256": "fd6de200bad29e0d53f44b747cc4ef59acaf1ebde0429352a2d3fbfb9da95fd7",
+        "priority": 5,
+        "evidence_count": 23,
+        "lake_counts": {
+          "evidence_bearing_files": 1266,
+          "index_reachable_evidence_files": 496,
+          "not_index_reachable": 770,
+          "authoritative_reachable_evidence_files": 340,
+          "not_authoritative_reachable": 926,
+          "public_reachable_evidence_files": 235,
+          "not_public_reachable": 1031,
+          "exact_orphan_evidence_files": 372,
+          "no_detected_program_owner": 1096,
+          "distinct_machine_ids": 11972,
+          "unindexed_machine_ids": 10031,
+          "divergent_identifier_projections": 3366,
+          "source_ids_without_projection": 4854,
+          "projection_ids_without_source": 3686,
+          "unused_receipt_definitions": 49,
+          "missing_repository_path_tokens": 74,
+          "case_ids_absent_from_public_catalog": 23,
+          "open_pull_requests_observed": 13,
+          "branch_only_paths_observed": 102
+        }
+      },
+      "counterevidence": [
+        "The source is an open-branch shadow snapshot, not merged corpus.",
+        "Mechanical orphan and ownership classifications require semantic disposition."
+      ],
+      "uncertainties": [
+        "Closed and deleted branches are not covered by this snapshot.",
+        "A detected gap can represent important evidence, deliberate isolation, generated output, duplication, or obsolete material.",
+        "The snapshot does not determine evidence truth or publication clearance."
+      ],
+      "action": "classify the 23 absent case IDs as publishable, internal, candidate, superseded, or malformed",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "regenerate_from_a_newer_lake_census_or_replace_with_the_merged_basin_waterline"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "open_branch_shadow",
+        "effect": "semantic_review_may_reorder_or_overturn_priority_but_does_not_block_reversible_repair"
+      },
+      "publication_effect": "none_internal_repair_priority",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-BASIN-lake-core-thesis-orphans",
+      "domain": "lake_basin",
+      "subject_id": "lake-core-thesis-orphans",
+      "judgment_level": "J4",
+      "judgment": "core-thesis generated and report products contain the largest concentrated orphan burden",
+      "evidence_basis": {
+        "snapshot_id": "CN-LAKE-JUDGMENT-SHADOW-2026-07-29",
+        "source_branch": "agent/lake-index-census",
+        "source_pull_request": 384,
+        "source_fingerprint_sha256": "fd6de200bad29e0d53f44b747cc4ef59acaf1ebde0429352a2d3fbfb9da95fd7",
+        "priority": 3,
+        "evidence_count": 193,
+        "lake_counts": {
+          "evidence_bearing_files": 1266,
+          "index_reachable_evidence_files": 496,
+          "not_index_reachable": 770,
+          "authoritative_reachable_evidence_files": 340,
+          "not_authoritative_reachable": 926,
+          "public_reachable_evidence_files": 235,
+          "not_public_reachable": 1031,
+          "exact_orphan_evidence_files": 372,
+          "no_detected_program_owner": 1096,
+          "distinct_machine_ids": 11972,
+          "unindexed_machine_ids": 10031,
+          "divergent_identifier_projections": 3366,
+          "source_ids_without_projection": 4854,
+          "projection_ids_without_source": 3686,
+          "unused_receipt_definitions": 49,
+          "missing_repository_path_tokens": 74,
+          "case_ids_absent_from_public_catalog": 23,
+          "open_pull_requests_observed": 13,
+          "branch_only_paths_observed": 102
+        }
+      },
+      "counterevidence": [
+        "The source is an open-branch shadow snapshot, not merged corpus.",
+        "Mechanical orphan and ownership classifications require semantic disposition."
+      ],
+      "uncertainties": [
+        "Closed and deleted branches are not covered by this snapshot.",
+        "A detected gap can represent important evidence, deliberate isolation, generated output, duplication, or obsolete material.",
+        "The snapshot does not determine evidence truth or publication clearance."
+      ],
+      "action": "build authoritative core-thesis manifests and source-to-projection lineage before another narrative expansion",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "regenerate_from_a_newer_lake_census_or_replace_with_the_merged_basin_waterline"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "open_branch_shadow",
+        "effect": "semantic_review_may_reorder_or_overturn_priority_but_does_not_block_reversible_repair"
+      },
+      "publication_effect": "none_internal_repair_priority",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-BASIN-lake-identifier-projection-integrity",
+      "domain": "lake_basin",
+      "subject_id": "lake-identifier-projection-integrity",
+      "judgment_level": "J4",
+      "judgment": "identifier projection integrity is a material machine-addressability defect",
+      "evidence_basis": {
+        "snapshot_id": "CN-LAKE-JUDGMENT-SHADOW-2026-07-29",
+        "source_branch": "agent/lake-index-census",
+        "source_pull_request": 384,
+        "source_fingerprint_sha256": "fd6de200bad29e0d53f44b747cc4ef59acaf1ebde0429352a2d3fbfb9da95fd7",
+        "priority": 2,
+        "evidence_count": 8540,
+        "lake_counts": {
+          "evidence_bearing_files": 1266,
+          "index_reachable_evidence_files": 496,
+          "not_index_reachable": 770,
+          "authoritative_reachable_evidence_files": 340,
+          "not_authoritative_reachable": 926,
+          "public_reachable_evidence_files": 235,
+          "not_public_reachable": 1031,
+          "exact_orphan_evidence_files": 372,
+          "no_detected_program_owner": 1096,
+          "distinct_machine_ids": 11972,
+          "unindexed_machine_ids": 10031,
+          "divergent_identifier_projections": 3366,
+          "source_ids_without_projection": 4854,
+          "projection_ids_without_source": 3686,
+          "unused_receipt_definitions": 49,
+          "missing_repository_path_tokens": 74,
+          "case_ids_absent_from_public_catalog": 23,
+          "open_pull_requests_observed": 13,
+          "branch_only_paths_observed": 102
+        }
+      },
+      "counterevidence": [
+        "The source is an open-branch shadow snapshot, not merged corpus.",
+        "Mechanical orphan and ownership classifications require semantic disposition."
+      ],
+      "uncertainties": [
+        "Closed and deleted branches are not covered by this snapshot.",
+        "A detected gap can represent important evidence, deliberate isolation, generated output, duplication, or obsolete material.",
+        "The snapshot does not determine evidence truth or publication clearance."
+      ],
+      "action": "resolve projection-without-source and source-without-projection classes by identifier family",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "regenerate_from_a_newer_lake_census_or_replace_with_the_merged_basin_waterline"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "open_branch_shadow",
+        "effect": "semantic_review_may_reorder_or_overturn_priority_but_does_not_block_reversible_repair"
+      },
+      "publication_effect": "none_internal_repair_priority",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-BASIN-lake-index-reachability",
+      "domain": "lake_basin",
+      "subject_id": "lake-index-reachability",
+      "judgment_level": "J4",
+      "judgment": "most evidence-bearing files are outside detected indexes",
+      "evidence_basis": {
+        "snapshot_id": "CN-LAKE-JUDGMENT-SHADOW-2026-07-29",
+        "source_branch": "agent/lake-index-census",
+        "source_pull_request": 384,
+        "source_fingerprint_sha256": "fd6de200bad29e0d53f44b747cc4ef59acaf1ebde0429352a2d3fbfb9da95fd7",
+        "priority": 4,
+        "evidence_count": 770,
+        "lake_counts": {
+          "evidence_bearing_files": 1266,
+          "index_reachable_evidence_files": 496,
+          "not_index_reachable": 770,
+          "authoritative_reachable_evidence_files": 340,
+          "not_authoritative_reachable": 926,
+          "public_reachable_evidence_files": 235,
+          "not_public_reachable": 1031,
+          "exact_orphan_evidence_files": 372,
+          "no_detected_program_owner": 1096,
+          "distinct_machine_ids": 11972,
+          "unindexed_machine_ids": 10031,
+          "divergent_identifier_projections": 3366,
+          "source_ids_without_projection": 4854,
+          "projection_ids_without_source": 3686,
+          "unused_receipt_definitions": 49,
+          "missing_repository_path_tokens": 74,
+          "case_ids_absent_from_public_catalog": 23,
+          "open_pull_requests_observed": 13,
+          "branch_only_paths_observed": 102
+        }
+      },
+      "counterevidence": [
+        "The source is an open-branch shadow snapshot, not merged corpus.",
+        "Mechanical orphan and ownership classifications require semantic disposition."
+      ],
+      "uncertainties": [
+        "Closed and deleted branches are not covered by this snapshot.",
+        "A detected gap can represent important evidence, deliberate isolation, generated output, duplication, or obsolete material.",
+        "The snapshot does not determine evidence truth or publication clearance."
+      ],
+      "action": "attach every retained evidence file to an index, manifest, explicit isolation record, or deletion disposition",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "regenerate_from_a_newer_lake_census_or_replace_with_the_merged_basin_waterline"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "open_branch_shadow",
+        "effect": "semantic_review_may_reorder_or_overturn_priority_but_does_not_block_reversible_repair"
+      },
+      "publication_effect": "none_internal_repair_priority",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-BASIN-lake-program-ownership",
+      "domain": "lake_basin",
+      "subject_id": "lake-program-ownership",
+      "judgment_level": "J4",
+      "judgment": "program ownership is the dominant current-tree semantic gap",
+      "evidence_basis": {
+        "snapshot_id": "CN-LAKE-JUDGMENT-SHADOW-2026-07-29",
+        "source_branch": "agent/lake-index-census",
+        "source_pull_request": 384,
+        "source_fingerprint_sha256": "fd6de200bad29e0d53f44b747cc4ef59acaf1ebde0429352a2d3fbfb9da95fd7",
+        "priority": 1,
+        "evidence_count": 1096,
+        "lake_counts": {
+          "evidence_bearing_files": 1266,
+          "index_reachable_evidence_files": 496,
+          "not_index_reachable": 770,
+          "authoritative_reachable_evidence_files": 340,
+          "not_authoritative_reachable": 926,
+          "public_reachable_evidence_files": 235,
+          "not_public_reachable": 1031,
+          "exact_orphan_evidence_files": 372,
+          "no_detected_program_owner": 1096,
+          "distinct_machine_ids": 11972,
+          "unindexed_machine_ids": 10031,
+          "divergent_identifier_projections": 3366,
+          "source_ids_without_projection": 4854,
+          "projection_ids_without_source": 3686,
+          "unused_receipt_definitions": 49,
+          "missing_repository_path_tokens": 74,
+          "case_ids_absent_from_public_catalog": 23,
+          "open_pull_requests_observed": 13,
+          "branch_only_paths_observed": 102
+        }
+      },
+      "counterevidence": [
+        "The source is an open-branch shadow snapshot, not merged corpus.",
+        "Mechanical orphan and ownership classifications require semantic disposition."
+      ],
+      "uncertainties": [
+        "Closed and deleted branches are not covered by this snapshot.",
+        "A detected gap can represent important evidence, deliberate isolation, generated output, duplication, or obsolete material.",
+        "The snapshot does not determine evidence truth or publication clearance."
+      ],
+      "action": "assign explicit program ownership and authoritative entrypoints before broadening acquisition",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "regenerate_from_a_newer_lake_census_or_replace_with_the_merged_basin_waterline"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "open_branch_shadow",
+        "effect": "semantic_review_may_reorder_or_overturn_priority_but_does_not_block_reversible_repair"
+      },
+      "publication_effect": "none_internal_repair_priority",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-REPORT-anduril-access-ownership",
+      "domain": "report",
+      "subject_id": "anduril-access-ownership",
+      "judgment_level": "J2",
+      "judgment": "verified_claim_subset_supports_a_bounded_working_report",
+      "evidence_basis": {
+        "current_stage": "structured_report",
+        "report_state": "review_required",
+        "verified_claims": 15,
+        "review_required_claims": 9,
+        "receipt_count": 22
+      },
+      "counterevidence": [
+        "publication_status_review_required",
+        "9_claims_review_required",
+        "independent_reviewer_missing",
+        "review_date_missing"
+      ],
+      "uncertainties": [
+        "publication_status_review_required",
+        "9_claims_review_required",
+        "independent_reviewer_missing",
+        "review_date_missing"
+      ],
+      "action": "use_verified_claim_subset_and_continue_claim_level_resolution",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "review_required",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "provisional_or_internal_only",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-REPORT-arcadia-field-autopsy",
+      "domain": "report",
+      "subject_id": "arcadia-field-autopsy",
+      "judgment_level": "J2",
+      "judgment": "verified_claim_subset_supports_a_bounded_working_report",
+      "evidence_basis": {
+        "current_stage": "structured_report",
+        "report_state": "review_required",
+        "verified_claims": 38,
+        "review_required_claims": 37,
+        "receipt_count": 142
+      },
+      "counterevidence": [
+        "publication_status_review_required",
+        "21_claims_review_required",
+        "18_qualifications_inherited_from_case_boundary",
+        "22_unsequenced_case_claims",
+        "independent_reviewer_missing",
+        "review_date_missing"
+      ],
+      "uncertainties": [
+        "publication_status_review_required",
+        "21_claims_review_required",
+        "18_qualifications_inherited_from_case_boundary",
+        "22_unsequenced_case_claims",
+        "independent_reviewer_missing",
+        "review_date_missing"
+      ],
+      "action": "use_verified_claim_subset_and_continue_claim_level_resolution",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "review_required",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "provisional_or_internal_only",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-REPORT-field-autopsy-03",
+      "domain": "report",
+      "subject_id": "field-autopsy-03",
+      "judgment_level": "J1",
+      "judgment": "case_or_projection_requires_evidence_upgrade_before_report_judgment",
+      "evidence_basis": {
+        "current_stage": "case_ledger",
+        "report_state": "not_declared",
+        "verified_claims": 0,
+        "review_required_claims": 13,
+        "receipt_count": 1
+      },
+      "counterevidence": [
+        "no_verified_claims",
+        "13_claims_review_required",
+        "structured_report_not_declared"
+      ],
+      "uncertainties": [
+        "no_verified_claims",
+        "13_claims_review_required",
+        "structured_report_not_declared"
+      ],
+      "action": "execute_the_next_declared_evidence_upgrade",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "not_declared",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "provisional_or_internal_only",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-REPORT-uk-ai-policy",
+      "domain": "report",
+      "subject_id": "uk-ai-policy",
+      "judgment_level": "J1",
+      "judgment": "case_or_projection_requires_evidence_upgrade_before_report_judgment",
+      "evidence_basis": {
+        "current_stage": "intake_or_projection",
+        "report_state": "not_declared",
+        "verified_claims": 37,
+        "review_required_claims": 187,
+        "receipt_count": 15
+      },
+      "counterevidence": [
+        "canonical_case_ledger_missing",
+        "187_claims_review_required",
+        "structured_report_not_declared"
+      ],
+      "uncertainties": [
+        "canonical_case_ledger_missing",
+        "187_claims_review_required",
+        "structured_report_not_declared"
+      ],
+      "action": "execute_the_next_declared_evidence_upgrade",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "not_declared",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "provisional_or_internal_only",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-LANE-ai-policy-public-private-topology",
+      "domain": "selection_lane",
+      "subject_id": "ai-policy-public-private-topology",
+      "judgment_level": "J4",
+      "judgment": "continue_active_lane_and_publish_only_at_its_current_caveated_status",
+      "evidence_basis": {
+        "lane_status": "active",
+        "lane_kind": "case",
+        "comparison_method": "matched_comparator",
+        "public_reproducible": true,
+        "coverage_metric_count": 5,
+        "incomplete_metric_count": 0,
+        "material_gap_count": 1,
+        "review_only_gap_count": 0
+      },
+      "counterevidence": [
+        "Declared UK/US case sources may overrepresent English-language and digitally durable institutions.",
+        "Receipt-led expansion can inherit the seed case's institutional boundary."
+      ],
+      "uncertainties": [
+        "AXM identity reconciliation remains open, so no cross-case join may ship."
+      ],
+      "action": "execute_gap:selection-gap-axm-identity-lock",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "provisional",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-LANE-epistemic-admissibility-ceiling-events",
+      "domain": "selection_lane",
+      "subject_id": "epistemic-admissibility-ceiling-events",
+      "judgment_level": "J4",
+      "judgment": "execute_next_bounded_acquisition_or_comparator_step",
+      "evidence_basis": {
+        "lane_status": "proposed",
+        "lane_kind": "corpus",
+        "comparison_method": "rule_based_universe",
+        "public_reproducible": true,
+        "coverage_metric_count": 20,
+        "incomplete_metric_count": 4,
+        "material_gap_count": 5,
+        "review_only_gap_count": 5
+      },
+      "counterevidence": [
+        "The supplied ten are famous, recent, and U.S.-heavy, so they cannot define the event universe.",
+        "Actor-centered stories can compress multi-person institutions into one gateholder without sufficient attribution evidence.",
+        "Strategic deception and designed exclusion can be mislabeled as sincere comprehension failure.",
+        "Paywalled, changed, or later-published sources can make apparent evidence symmetry illusory.",
+        "Credential bias can exclude situated and affected-party knowledge while overcrediting formal status.",
+        "Maintainer corrections can improve internal discipline while still reproducing the project author’s selection assumptions.",
+        "English-language and digitally durable sources remain overrepresented.",
+        "A source-present event can still lack the causal transition required by K0."
+      ],
+      "uncertainties": [
+        "The maintainer audit retrieved or substituted all source rows but retained zero exact remote response hashes, so source custody is not complete.",
+        "Six of nine frozen query templates have now been executed across U.S. oversight, EU DSA researcher-access, U.S./UK safety-warning, U.S./UK advisory-committee, and publication-gate planes; three templates and additional jurisdictions remain unexecuted.",
+        "Waves 01 through 05 executed K0-Q01, K0-Q03, K0-Q04, K0-Q05, K0-Q06, and K0-Q08. Appointment, professional-judgment, and editorial-veto templates remain open.",
+        "The public source URLs are reproducible, but search-provider ordering and completeness are not; the observed result set is a dated discovery capture rather than a complete denominator.",
+        "Two publication-gate candidates require field-level causal adjudication; misconduct, authorship, scientific-integrity, correction, and coverage controls must remain in the denominator."
+      ],
+      "action": "execute_gap:k0-gap-remote-exact-byte-custody",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "blocked",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-LANE-epstein-public-corpus",
+      "domain": "selection_lane",
+      "subject_id": "epstein-public-corpus",
+      "judgment_level": "J4",
+      "judgment": "execute_next_bounded_acquisition_or_comparator_step",
+      "evidence_basis": {
+        "lane_status": "proposed",
+        "lane_kind": "corpus",
+        "comparison_method": "source_complete",
+        "public_reproducible": true,
+        "coverage_metric_count": 4,
+        "incomplete_metric_count": 3,
+        "material_gap_count": 2,
+        "review_only_gap_count": 0
+      },
+      "counterevidence": [
+        "Government release boundaries reflect institutional disclosure and redaction decisions rather than the universe of conduct.",
+        "Survivorship and publicity can overrepresent famous names and durable institutions."
+      ],
+      "uncertainties": [
+        "Zero DOJ or House artifacts have been enumerated, hashed, deduplicated, or assigned artifact-level provenance in the repository.",
+        "Victim-adjacent redaction and inadvertent-PII quarantine have not been exercised against live corpus material."
+      ],
+      "action": "execute_gap:selection-gap-epstein-manifest",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "blocked",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-LANE-linkedin-private-attention",
+      "domain": "selection_lane",
+      "subject_id": "linkedin-private-attention",
+      "judgment_level": "J1",
+      "judgment": "retain_as_private_support_only",
+      "evidence_basis": {
+        "lane_status": "support_only",
+        "lane_kind": "support_only",
+        "comparison_method": "support_only",
+        "public_reproducible": false,
+        "coverage_metric_count": 3,
+        "incomplete_metric_count": 0,
+        "material_gap_count": 1,
+        "review_only_gap_count": 0
+      },
+      "counterevidence": [
+        "The archive is egocentric and attention-selected, so it cannot support population or absence inference."
+      ],
+      "uncertainties": [
+        "The local archive is not publicly reproducible and cannot narrate public corpus progress."
+      ],
+      "action": "preserve_without_public_evidence_or_population_inference",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "not_applicable_private_support",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "support_only",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-LANE-official-record-cross-cutting",
+      "domain": "selection_lane",
+      "subject_id": "official-record-cross-cutting",
+      "judgment_level": "J4",
+      "judgment": "continue_active_lane_and_publish_only_at_its_current_caveated_status",
+      "evidence_basis": {
+        "lane_status": "active",
+        "lane_kind": "source_plane",
+        "comparison_method": "rule_based_universe",
+        "public_reproducible": true,
+        "coverage_metric_count": 4,
+        "incomplete_metric_count": 1,
+        "material_gap_count": 1,
+        "review_only_gap_count": 0
+      },
+      "counterevidence": [
+        "Configured APIs privilege digitized US records and sources that permit stable automated access.",
+        "Query-term choice can make an apparently complete source matrix target-first."
+      ],
+      "uncertainties": [
+        "The SAM.gov adapter is configured but not observed because its credential is unavailable."
+      ],
+      "action": "execute_gap:selection-gap-sam-credential",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "provisional",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-LANE-panama-offshore-service-providers",
+      "domain": "selection_lane",
+      "subject_id": "panama-offshore-service-providers",
+      "judgment_level": "J4",
+      "judgment": "execute_next_bounded_acquisition_or_comparator_step",
+      "evidence_basis": {
+        "lane_status": "proposed",
+        "lane_kind": "corpus",
+        "comparison_method": "source_complete",
+        "public_reproducible": true,
+        "coverage_metric_count": 4,
+        "incomplete_metric_count": 2,
+        "material_gap_count": 2,
+        "review_only_gap_count": 0
+      },
+      "counterevidence": [
+        "One leak's service-provider and jurisdiction footprint is not the universe of offshore finance.",
+        "Registry accessibility varies by jurisdiction and can create false asymmetry in validation rates."
+      ],
+      "uncertainties": [
+        "No licensed ICIJ dataset snapshot, hash manifest, importer, or node/relationship rows exist in the repository.",
+        "No live fixtures test suppression of leaked passport, account, signature, email, or residential data."
+      ],
+      "action": "execute_gap:selection-gap-panama-importer",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "blocked",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-LANE-trump-office-business-capital",
+      "domain": "selection_lane",
+      "subject_id": "trump-office-business-capital",
+      "judgment_level": "J4",
+      "judgment": "execute_next_bounded_acquisition_or_comparator_step",
+      "evidence_basis": {
+        "lane_status": "proposed",
+        "lane_kind": "corpus",
+        "comparison_method": "matched_comparator",
+        "public_reproducible": true,
+        "coverage_metric_count": 35,
+        "incomplete_metric_count": 5,
+        "material_gap_count": 6,
+        "review_only_gap_count": 0
+      },
+      "counterevidence": [
+        "A named reference case can silently become target-first even when its predicates are written symmetrically.",
+        "Target-shaped predicates can force structural nulls for comparators even after an entity cohort is added.",
+        "Historical digitization and disclosure access vary sharply across the cohort and can masquerade as conduct differences."
+      ],
+      "uncertainties": [
+        "No provisioned OpenFEC API key is present, but this is not a discovery blocker: the FEC publishes no-key bulk database dumps covering Schedule B from 1975 forward and narrower no-key operating-expenditure cycle files from 2003 forward.",
+        "Sponsored leadership PACs and joint fundraising committees are outside the first authorized-presidential-campaign-committee subset and must not be narrated as searched.",
+        "Electronic campaign-finance, disclosure, spending, registry, and policy coverage attenuates across earlier administrations, so raw footprint counts are not temporally comparable. The initial four-family, 32-cell source matrix now makes that asymmetry explicit.",
+        "Twenty-six current-window OGE PDFs are hash-verified and yield 5,945 machine-extracted intake rows, but older-era NARA disclosure artifacts remain unresolved search hits with zero durable hash-bearing documents.",
+        "The FEC corpus now contains 46,926 unresolved normalized payee candidates and the OGE corpus 5,945 unresolved reported-interest rows. A lexical pass produced 1,172 candidate pairs; after source-page visual correction, strict temporal screening found 0 overlapping, 177 non-overlapping, and 995 temporally unknown. None entered identity review.",
+        "The live SEC adapter covers Form D searches, not the required issuer submissions and ownership filings."
+      ],
+      "action": "execute_gap:selection-gap-trump-schedule-b-api-key",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "blocked",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "JDG-LANE-us-defense-natsec100",
+      "domain": "selection_lane",
+      "subject_id": "us-defense-natsec100",
+      "judgment_level": "J4",
+      "judgment": "execute_next_bounded_acquisition_or_comparator_step",
+      "evidence_basis": {
+        "lane_status": "staged",
+        "lane_kind": "case",
+        "comparison_method": "source_complete",
+        "public_reproducible": true,
+        "coverage_metric_count": 4,
+        "incomplete_metric_count": 2,
+        "material_gap_count": 2,
+        "review_only_gap_count": 0
+      },
+      "counterevidence": [
+        "A publisher-defined ranking universe may encode editorial and sponsor choices before this project applies its own rules.",
+        "The unrecovered 2025 image roster can distort longitudinal inclusion."
+      ],
+      "uncertainties": [
+        "Fifty-eight 2025 company-year rows remain unrecovered because the official roster is image-rendered.",
+        "Staged NatSec100 data has not been converted into the case ledger quartet."
+      ],
+      "action": "execute_gap:selection-gap-natsec100-2025-roster",
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_receipt_or_counterevidence_may_replace_this_judgment_without_deleting_the_prior_record"
+      },
+      "review_dependency": {
+        "required_to_decide": false,
+        "current_review_status": "pending_second_party",
+        "effect": "may_raise_lower_or_overturn_confidence_but_does_not_create_permission_to_judge"
+      },
+      "publication_effect": "blocked",
+      "graph_effect": "none"
+    }
+  ],
+  "boundaries": {
+    "judgment_ledger_proves_evidence_truth": false,
+    "working_judgment_is_clearance": false,
+    "operational_decision_is_irreversible": false,
+    "independent_review_is_ignored": false,
+    "common_purpose_conclusion_generated": false,
+    "graph_effect": "none",
+    "open_branch_shadow_is_merged_corpus": false,
+    "lake_priority_proves_materiality": false
+  }
+}
