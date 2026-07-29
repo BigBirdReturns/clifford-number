@@ -1,23 +1,23 @@
 {
   "schema_version": "lake-index-gap-summary@1",
   "census_id": "CN-LAKE-INDEX-2026-07",
-  "source_fingerprint_sha256": "bbba27ead67e75dcc8eca04f4e4e689994f2b05553b3e92d090e9bbc12acd4ac",
+  "source_fingerprint_sha256": "2fc4116edb0ac4cd5b4827350e188d082c389619730f7268aa2be8ab815c2c08",
   "counts": {
-    "tracked_files_indexed": 1907,
-    "evidence_bearing_files": 1293,
-    "text_or_structured_files_parsed": 1879,
+    "tracked_files_indexed": 1918,
+    "evidence_bearing_files": 1297,
+    "text_or_structured_files_parsed": 1890,
     "parse_errors": 0,
     "index_files": 178,
-    "authoritative_roots_present": 32,
-    "authoritative_reachable_evidence_files": 1141,
-    "index_reachable_evidence_files": 1149,
+    "authoritative_roots_present": 35,
+    "authoritative_reachable_evidence_files": 1144,
+    "index_reachable_evidence_files": 1152,
     "public_reachable_evidence_files": 235,
     "exact_orphan_evidence_files": 106,
-    "no_program_owner_detected": 533,
-    "distinct_machine_ids": 12121,
-    "unindexed_machine_ids": 8841,
+    "no_program_owner_detected": 537,
+    "distinct_machine_ids": 12137,
+    "unindexed_machine_ids": 8857,
     "divergent_identifier_projections": 1748,
-    "source_ids_without_projection": 5018,
+    "source_ids_without_projection": 5034,
     "projection_ids_without_source": 1759,
     "receipt_ids": 350,
     "undefined_receipt_references": 0,
@@ -26,10 +26,10 @@
     "case_ids": 27,
     "case_ids_not_in_public_catalog": 23,
     "report_ids": 5,
-    "missing_repo_path_tokens": 124,
-    "open_pull_requests_observed": 18,
+    "missing_repo_path_tokens": 129,
+    "open_pull_requests_observed": 19,
     "open_pr_changed_paths_observed": 271,
-    "open_pr_branch_only_paths_observed": 133,
+    "open_pr_branch_only_paths_observed": 121,
     "local_identifier_values_observed": 1131,
     "local_identifier_occurrences_observed": 7863,
     "receipt_locator_tokens": 11,
@@ -65,6 +65,15 @@
       "no_program_owner": 101
     },
     {
+      "role": "project_governance",
+      "files": 112,
+      "authoritative_reachable": 108,
+      "index_reachable": 108,
+      "public_reachable": 0,
+      "exact_orphans": 0,
+      "no_program_owner": 19
+    },
+    {
       "role": "repository_root",
       "files": 109,
       "authoritative_reachable": 80,
@@ -72,15 +81,6 @@
       "public_reachable": 38,
       "exact_orphans": 28,
       "no_program_owner": 61
-    },
-    {
-      "role": "project_governance",
-      "files": 108,
-      "authoritative_reachable": 105,
-      "index_reachable": 105,
-      "public_reachable": 0,
-      "exact_orphans": 0,
-      "no_program_owner": 15
     },
     {
       "role": "report_product",
@@ -212,12 +212,12 @@
     },
     {
       "cluster": "data/project",
-      "files": 108,
-      "authoritative_reachable": 105,
-      "index_reachable": 105,
+      "files": 112,
+      "authoritative_reachable": 108,
+      "index_reachable": 108,
       "public_reachable": 0,
       "exact_orphans": 0,
-      "no_program_owner": 15
+      "no_program_owner": 19
     },
     {
       "cluster": "reports/core-thesis",
@@ -1162,7 +1162,7 @@
       },
       {
         "id_key": "claim_id",
-        "count": 447
+        "count": 448
       },
       {
         "id_key": "record_id",
@@ -1387,6 +1387,10 @@
       {
         "id_key": "to_event_id",
         "count": 17
+      },
+      {
+        "id_key": "expected_id",
+        "count": 15
       },
       {
         "id_key": "generated_internal_id",
@@ -2198,7 +2202,7 @@
       },
       {
         "id_key": "claim_id",
-        "count": 444
+        "count": 445
       },
       {
         "id_key": "event_id",
@@ -2343,6 +2347,10 @@
       {
         "id_key": "owner_program_id",
         "count": 17
+      },
+      {
+        "id_key": "expected_id",
+        "count": 15
       },
       {
         "id_key": "generated_internal_id",
@@ -3555,7 +3563,7 @@
         "parse_errors": 0,
         "undefined_receipt_references": 0,
         "projection_ids_without_source": 1759,
-        "missing_repo_path_tokens": 124
+        "missing_repo_path_tokens": 129
       }
     },
     "p1_exact_orphan_sources": {
@@ -3688,7 +3696,7 @@
     },
     "p2_unowned_evidence": {
       "description": "Evidence-bearing paths without a detected program ID or reference from a program-bearing file.",
-      "count": 533,
+      "count": 537,
       "by_role": [
         {
           "key": "intake",
@@ -3724,7 +3732,7 @@
         },
         {
           "key": "project_governance",
-          "count": 15
+          "count": 19
         },
         {
           "key": "canonical_registry",
@@ -3777,15 +3785,15 @@
           "count": 20
         },
         {
+          "key": "data/project",
+          "count": 19
+        },
+        {
           "key": "receipts/crawl",
           "count": 19
         },
         {
           "key": "build/estate-closures",
-          "count": 15
-        },
-        {
-          "key": "data/project",
           "count": 15
         },
         {
@@ -4161,17 +4169,17 @@
     "p3_index_and_publication_gaps": {
       "description": "Known paths that remain outside an index, authoritative root, public entry surface, or current public case catalog.",
       "counts": {
-        "not_index_reachable": 144,
-        "not_authoritative_reachable": 152,
-        "not_public_reachable": 1058,
+        "not_index_reachable": 145,
+        "not_authoritative_reachable": 153,
+        "not_public_reachable": 1062,
         "case_ids_not_in_public_catalog": 23
       }
     },
     "p4_branch_shadow": {
       "description": "Open-pull-request paths absent from the current main tree; these require active, superseded, abandoned, or merged dispositions.",
       "counts": {
-        "open_pull_requests": 18,
-        "branch_only_paths": 133,
+        "open_pull_requests": 19,
+        "branch_only_paths": 121,
         "branch_only_evidence_paths": 26
       },
       "by_pr": [
@@ -4186,10 +4194,6 @@
         {
           "key": "#386 Make evidence-grounded judgments without a human-permission gate",
           "count": 18
-        },
-        {
-          "key": "#390 Adjudicate K0 Wave 06 professional-judgment records",
-          "count": 13
         },
         {
           "key": "#245 Close the seven M-04F vertical joins",
@@ -4230,12 +4234,16 @@
         {
           "key": "#356 Reconcile the observed M-04G source ecology v2 orbit",
           "count": 1
+        },
+        {
+          "key": "#394 Execute K0 role-neutral denominator Wave 07",
+          "count": 1
         }
       ],
       "by_cluster": [
         {
           "key": ".github",
-          "count": 85
+          "count": 73
         },
         {
           "key": "tools",
@@ -6440,199 +6448,19 @@
       "head_sha": "e631885fe3b11362a35e21e14e5bed5fe78268c4"
     },
     {
-      "path": ".github/tmp/k0-wave06-field-source-part-00.b64",
+      "path": ".github/workflows/temporary-k0-wave07-bootstrap.yml",
       "status": "added",
-      "blob_sha": "7e1e5cda821114f850eab82db176451be88531ac",
+      "blob_sha": "88e8b4fc686f58cfd62493caf7253dea0940c84e",
       "previous_path": null,
-      "additions": 1,
+      "additions": 41,
       "deletions": 0,
-      "changes": 1,
+      "changes": 41,
       "evidence_like": false,
       "branch_only_path": true,
-      "pr_number": 390,
-      "pr_title": "Adjudicate K0 Wave 06 professional-judgment records",
-      "head_ref": "agent/k0-wave06-field-adjudication",
-      "head_sha": "eca7529c7d5dd082d9c8b88692c3ce2c1fe6f41e"
-    },
-    {
-      "path": ".github/tmp/k0-wave06-field-source-part-01.b64",
-      "status": "added",
-      "blob_sha": "dd5e8134abb15db72bd106a284a899c5055e892b",
-      "previous_path": null,
-      "additions": 1,
-      "deletions": 0,
-      "changes": 1,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 390,
-      "pr_title": "Adjudicate K0 Wave 06 professional-judgment records",
-      "head_ref": "agent/k0-wave06-field-adjudication",
-      "head_sha": "eca7529c7d5dd082d9c8b88692c3ce2c1fe6f41e"
-    },
-    {
-      "path": ".github/tmp/k0-wave06-field-source-part-02.b64",
-      "status": "added",
-      "blob_sha": "65bab96ab64f2f5372e3318c8de0539c158dbdf4",
-      "previous_path": null,
-      "additions": 1,
-      "deletions": 0,
-      "changes": 1,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 390,
-      "pr_title": "Adjudicate K0 Wave 06 professional-judgment records",
-      "head_ref": "agent/k0-wave06-field-adjudication",
-      "head_sha": "eca7529c7d5dd082d9c8b88692c3ce2c1fe6f41e"
-    },
-    {
-      "path": ".github/tmp/k0-wave06-field-source-part-03.b64",
-      "status": "added",
-      "blob_sha": "d89df19dfca288ff4dbf2346c4130941bf0c5b6c",
-      "previous_path": null,
-      "additions": 1,
-      "deletions": 0,
-      "changes": 1,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 390,
-      "pr_title": "Adjudicate K0 Wave 06 professional-judgment records",
-      "head_ref": "agent/k0-wave06-field-adjudication",
-      "head_sha": "eca7529c7d5dd082d9c8b88692c3ce2c1fe6f41e"
-    },
-    {
-      "path": ".github/tmp/k0-wave06-field-source-part-04.b64",
-      "status": "added",
-      "blob_sha": "9f7033f40b8b51be17bc963a397a1a00a87d4bbd",
-      "previous_path": null,
-      "additions": 1,
-      "deletions": 0,
-      "changes": 1,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 390,
-      "pr_title": "Adjudicate K0 Wave 06 professional-judgment records",
-      "head_ref": "agent/k0-wave06-field-adjudication",
-      "head_sha": "eca7529c7d5dd082d9c8b88692c3ce2c1fe6f41e"
-    },
-    {
-      "path": ".github/tmp/k0-wave06-field-source-part-05.b64",
-      "status": "added",
-      "blob_sha": "51c0e73315d768f703668ee38e0b749088853eb3",
-      "previous_path": null,
-      "additions": 1,
-      "deletions": 0,
-      "changes": 1,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 390,
-      "pr_title": "Adjudicate K0 Wave 06 professional-judgment records",
-      "head_ref": "agent/k0-wave06-field-adjudication",
-      "head_sha": "eca7529c7d5dd082d9c8b88692c3ce2c1fe6f41e"
-    },
-    {
-      "path": ".github/tmp/k0-wave06-field-source-part-06.b64",
-      "status": "added",
-      "blob_sha": "4954d89303473a47307fe01c92b983f47513f4ed",
-      "previous_path": null,
-      "additions": 1,
-      "deletions": 0,
-      "changes": 1,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 390,
-      "pr_title": "Adjudicate K0 Wave 06 professional-judgment records",
-      "head_ref": "agent/k0-wave06-field-adjudication",
-      "head_sha": "eca7529c7d5dd082d9c8b88692c3ce2c1fe6f41e"
-    },
-    {
-      "path": ".github/tmp/k0-wave06-field-source-part-07.b64",
-      "status": "added",
-      "blob_sha": "5b8d6e2dfcf0b29eeea1aee7a5b94530837086d8",
-      "previous_path": null,
-      "additions": 1,
-      "deletions": 0,
-      "changes": 1,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 390,
-      "pr_title": "Adjudicate K0 Wave 06 professional-judgment records",
-      "head_ref": "agent/k0-wave06-field-adjudication",
-      "head_sha": "eca7529c7d5dd082d9c8b88692c3ce2c1fe6f41e"
-    },
-    {
-      "path": ".github/tmp/k0-wave06-field-source-part-08.b64",
-      "status": "added",
-      "blob_sha": "3310c10e4461745a35c29ffb70fed280f1e15955",
-      "previous_path": null,
-      "additions": 1,
-      "deletions": 0,
-      "changes": 1,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 390,
-      "pr_title": "Adjudicate K0 Wave 06 professional-judgment records",
-      "head_ref": "agent/k0-wave06-field-adjudication",
-      "head_sha": "eca7529c7d5dd082d9c8b88692c3ce2c1fe6f41e"
-    },
-    {
-      "path": ".github/tmp/k0-wave06-field-source-part-09.b64",
-      "status": "added",
-      "blob_sha": "18350975631421c2f7cc21c533cd73c6eba844d8",
-      "previous_path": null,
-      "additions": 1,
-      "deletions": 0,
-      "changes": 1,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 390,
-      "pr_title": "Adjudicate K0 Wave 06 professional-judgment records",
-      "head_ref": "agent/k0-wave06-field-adjudication",
-      "head_sha": "eca7529c7d5dd082d9c8b88692c3ce2c1fe6f41e"
-    },
-    {
-      "path": ".github/tmp/k0-wave06-field-source-part-10.b64",
-      "status": "added",
-      "blob_sha": "394d087d12411e60f8969fd25331dc23f3634fd0",
-      "previous_path": null,
-      "additions": 1,
-      "deletions": 0,
-      "changes": 1,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 390,
-      "pr_title": "Adjudicate K0 Wave 06 professional-judgment records",
-      "head_ref": "agent/k0-wave06-field-adjudication",
-      "head_sha": "eca7529c7d5dd082d9c8b88692c3ce2c1fe6f41e"
-    },
-    {
-      "path": ".github/workflows/temporary-k0-wave06-field-bootstrap.yml",
-      "status": "added",
-      "blob_sha": "7ec0c68b83d1dfc9d38c6eb4bba7e8cc14acc4a0",
-      "previous_path": null,
-      "additions": 42,
-      "deletions": 0,
-      "changes": 42,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 390,
-      "pr_title": "Adjudicate K0 Wave 06 professional-judgment records",
-      "head_ref": "agent/k0-wave06-field-adjudication",
-      "head_sha": "eca7529c7d5dd082d9c8b88692c3ce2c1fe6f41e"
-    },
-    {
-      "path": ".github/workflows/temporary-materialize-k0-wave06-field.yml",
-      "status": "added",
-      "blob_sha": "57aa0c35f5759ec2a7e7b628610d1bc9f2e1d267",
-      "previous_path": null,
-      "additions": 190,
-      "deletions": 0,
-      "changes": 190,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 390,
-      "pr_title": "Adjudicate K0 Wave 06 professional-judgment records",
-      "head_ref": "agent/k0-wave06-field-adjudication",
-      "head_sha": "eca7529c7d5dd082d9c8b88692c3ce2c1fe6f41e"
+      "pr_number": 394,
+      "pr_title": "Execute K0 role-neutral denominator Wave 07",
+      "head_ref": "agent/k0-role-neutral-wave-07",
+      "head_sha": "3548282d0d21cb0f1c9402778d666cb009d3c0d4"
     }
   ],
   "boundaries": {

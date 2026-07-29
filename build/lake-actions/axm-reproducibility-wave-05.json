@@ -1,0 +1,165 @@
+{
+  "schema_version": "lake-axm-reproducibility-wave-05-plan@1",
+  "program_key": "CN-LAKE-AXM-REPRO-W05",
+  "source_fingerprint_sha256": "4c3c099e3a4d8ee5d61321c9cc0d9e9d91dcfb7557dd79b53353ab0eb191e9fa",
+  "input_manifest": [
+    {
+      "path": "BUILD-INSTRUCTIONS.md",
+      "bytes": 15729,
+      "sha256": "41d7bb36b8b09a0dea469c12cf51fe3d59938db168ac071c37f15e3d10cc8662"
+    },
+    {
+      "path": "build/axm-identity.json",
+      "bytes": 140587,
+      "sha256": "9012feb108a519560b0c1dad9b4b3fdd9faf90bed0e87720bfa6c5b0c001b180"
+    },
+    {
+      "path": "build/lake-actions/axm-lineage-wave-04-reconciliation.json",
+      "bytes": 5192,
+      "sha256": "94c0fffb7b55fc7bbe5fdd0809dda2931dc290e321d755e79fdd0e865dc1d70b"
+    },
+    {
+      "path": "cases.json",
+      "bytes": 469,
+      "sha256": "96e5c061b44ee3a0a7e2200a96e05ec18ea1ce37a932d0e8c02b25b1a32a0de7"
+    },
+    {
+      "path": "data/canonical/actors.json",
+      "bytes": 13881,
+      "sha256": "7c05810fa4e565fcd1ee27f0bd7d2f47f98c112bbf0e45704928a13287f6ef83"
+    },
+    {
+      "path": "data/canonical/aliases.json",
+      "bytes": 2399,
+      "sha256": "c580d6c410f4b5affa41221549fd24b9b04fa8dd45a99fe58863c5be74008596"
+    },
+    {
+      "path": "data/canonical/organizations.json",
+      "bytes": 2928,
+      "sha256": "fa21dd778b1171a8c1d067255bcbdf5857b71a90a5c0778fa5b69df064e97087"
+    },
+    {
+      "path": "data/ledger/participation.jsonl",
+      "bytes": 50196,
+      "sha256": "3f4d454a15961e0088a02ab712a66875c073b8263876e98b2f2092fcf8e71097"
+    },
+    {
+      "path": "data/ledger/surfaces.jsonl",
+      "bytes": 9432,
+      "sha256": "9a8615d5836ad24f429ebd2472a7cd42d0a094f9f2145cce793b36f0083625c6"
+    },
+    {
+      "path": "data/project/axm-genesis-v1-identity-vectors.json",
+      "bytes": 6926,
+      "sha256": "0104c9492c41a16f19e893f2d7be3b24f79456b49325a55c1885c6324fcc171e"
+    },
+    {
+      "path": "data/project/axm-genesis-v1-runtime-attestation.json",
+      "bytes": 1057,
+      "sha256": "6d06452c4d12f855dcfcdd658312a1b1d96068b40f7ebbf3f05f237f1df6f08c"
+    },
+    {
+      "path": "data/project/lake-axm-reproducibility-wave-05-policy.json",
+      "bytes": 3386,
+      "sha256": "b872e95ff4e493d8d7ca954b1d0177739c8d743c79e5d345676b94f9c295f198"
+    },
+    {
+      "path": "tools/build-lake-axm-reproducibility-wave-05.mjs",
+      "bytes": 17572,
+      "sha256": "cf5514ba717afa6104e7d8c4115f2f4a68d19e39b3571339785db6b12aafbce8"
+    },
+    {
+      "path": "tools/emit-axm-genesis-v1-vectors.mjs",
+      "bytes": 1743,
+      "sha256": "cec06017a0eef90fa794e185ef904395ae44b86aabf57e24e8769980f6dc2f26"
+    },
+    {
+      "path": "tools/lib/axm-genesis-identity-v1.mjs",
+      "bytes": 2972,
+      "sha256": "5ec1eb1f0426808f71dfc1a4f89594d90ec3c2bd6eb7749031b8b8f147ed8b84"
+    }
+  ],
+  "before": {
+    "active_projection_scheme_status": "provisional",
+    "active_projection_migrated": false,
+    "external_runtime_parity_complete": false,
+    "cross_case_join_authorized": false,
+    "provisional_claim_ids": 164
+  },
+  "reference_parity": {
+    "external_commit": "411ef40e6cfc3ecb97ac3e256c8151be678347c8",
+    "fixture_bytes_equal": true,
+    "python_and_node_runtime_outputs_equal": true,
+    "vector_counts": {
+      "canonicalization": 20,
+      "entity_ids": 12,
+      "claim_ids": 3,
+      "provenance_ids": 1,
+      "span_ids": 1
+    },
+    "runtime_digest_sha256": "16f6c1d45d46991fa9df2016217e5cc6ad8af432a695c8504a743f165385b809"
+  },
+  "migration": {
+    "migration_map_path": "build/axm-identity-genesis-v1-migration.json",
+    "entity_rows": 176,
+    "claim_rows": 164,
+    "one_to_one": true,
+    "active_projection_migrated": false
+  },
+  "decisions": [
+    {
+      "decision_key": "W05-REFERENCE-PARITY",
+      "judgment": "the_pinned_node_implementation_matches_axm_genesis_v1_across_the_shared_fixture_and_direct_python_runtime",
+      "action": "retain_the_pinned_vectors_and_runtime_attestation_as_the_external_reproducibility_control",
+      "evidence_count": 37,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_key": "W05-MIGRATION-MAP",
+      "judgment": "every_active_provisional_entity_and_claim_has_exactly_one_genesis_v1_successor",
+      "action": "write:build/axm-identity-genesis-v1-migration.json",
+      "evidence_count": 340,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_key": "W05-ACTIVE-PROJECTION-BOUNDARY",
+      "judgment": "reference_parity_does_not_itself_migrate_the_active_projection_or_authorize_cross_case_joins",
+      "action": "execute_a_separate_append_preserving_active_projection_migration_before_closing_the_join_gate",
+      "evidence_count": 164,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    }
+  ],
+  "completion": {
+    "pinned_external_reference_reproduced": true,
+    "shared_fixture_bytes_equal": true,
+    "python_and_node_runtime_outputs_equal": true,
+    "complete_one_to_one_migration_map_built": true,
+    "active_projection_migrated": false,
+    "external_axm_gate_complete": false,
+    "cross_case_join_authorized": false,
+    "post_execution_reconciliation_complete": false,
+    "evidence_truth_determined": false,
+    "publication_cleared": false,
+    "decisions_requiring_human_permission": 0
+  },
+  "boundaries": {
+    "reference_runtime_parity_migrates_the_active_projection": false,
+    "migration_map_authorizes_cross_case_join": false,
+    "genesis_id_proves_entity_identity": false,
+    "same_label_across_namespaces_proves_same_entity": false,
+    "external_fixture_proves_evidence_truth": false,
+    "active_projection_migrated": false,
+    "cross_case_join_authorized": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}

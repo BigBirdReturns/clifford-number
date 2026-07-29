@@ -1,0 +1,177 @@
+{
+  "schema_version": "lake-axm-reproducibility-wave-05-reconciliation@1",
+  "program_key": "CN-LAKE-AXM-REPRO-W05",
+  "source_fingerprint_sha256": "4e653ab5fe04e144ab3e91dc117fc8b41624e92e69f9c9a0a6057f1222f2fab7",
+  "input_manifest": [
+    {
+      "path": "BUILD-INSTRUCTIONS.md",
+      "bytes": 15729,
+      "sha256": "41d7bb36b8b09a0dea469c12cf51fe3d59938db168ac071c37f15e3d10cc8662"
+    },
+    {
+      "path": "build/axm-identity-genesis-v1-migration.json",
+      "bytes": 212697,
+      "sha256": "256f310ff8e85dc3c78894418774eca6d323602dadc54a7dade1e5ad65841338"
+    },
+    {
+      "path": "build/axm-identity.json",
+      "bytes": 140587,
+      "sha256": "9012feb108a519560b0c1dad9b4b3fdd9faf90bed0e87720bfa6c5b0c001b180"
+    },
+    {
+      "path": "build/lake-actions/axm-lineage-wave-04-reconciliation.json",
+      "bytes": 5192,
+      "sha256": "94c0fffb7b55fc7bbe5fdd0809dda2931dc290e321d755e79fdd0e865dc1d70b"
+    },
+    {
+      "path": "build/lake-actions/axm-reproducibility-wave-05.json",
+      "bytes": 5869,
+      "sha256": "dc9ae4c904d0730c7dbeba4ff76ec397f57c18f622765b3aa8f8da43aabbf72c"
+    },
+    {
+      "path": "build/lake-index/files.jsonl",
+      "bytes": 4913342,
+      "sha256": "de968d270a94c969c911b58747e94458c8a309706979545c34376166ea67867c"
+    },
+    {
+      "path": "build/lake-index/summary.json",
+      "bytes": 13637,
+      "sha256": "caa9de10ca2fc959ff5a9cc09a2502228c9e2f595a55708f1a6cfcb4a91e75e8"
+    },
+    {
+      "path": "data/project/axm-genesis-v1-identity-vectors.json",
+      "bytes": 6926,
+      "sha256": "0104c9492c41a16f19e893f2d7be3b24f79456b49325a55c1885c6324fcc171e"
+    },
+    {
+      "path": "data/project/axm-genesis-v1-runtime-attestation.json",
+      "bytes": 1057,
+      "sha256": "6d06452c4d12f855dcfcdd658312a1b1d96068b40f7ebbf3f05f237f1df6f08c"
+    },
+    {
+      "path": "data/project/lake-axm-reproducibility-wave-05-policy.json",
+      "bytes": 3386,
+      "sha256": "b872e95ff4e493d8d7ca954b1d0177739c8d743c79e5d345676b94f9c295f198"
+    },
+    {
+      "path": "data/project/lake-axm-reproducibility-wave-05.json",
+      "bytes": 1558,
+      "sha256": "d235d6c9a9e12de1761abf2b5550ffc0769e3825d5bbd226280ec194f684291d"
+    }
+  ],
+  "before": {
+    "active_projection_scheme_status": "provisional",
+    "active_projection_migrated": false,
+    "external_runtime_parity_complete": false,
+    "cross_case_join_authorized": false,
+    "provisional_claim_ids": 164
+  },
+  "after": {
+    "external_repository": "BigBirdReturns/axm-genesis",
+    "external_commit": "411ef40e6cfc3ecb97ac3e256c8151be678347c8",
+    "fixture_bytes_equal": true,
+    "python_and_node_runtime_outputs_equal": true,
+    "migration_map_entity_rows": 176,
+    "migration_map_claim_rows": 164,
+    "entity_migration_one_to_one": true,
+    "claim_migration_one_to_one": true,
+    "source_control_paths_ready": true,
+    "source_control_states": [
+      {
+        "path": "data/project/axm-genesis-v1-identity-vectors.json",
+        "present_in_lake": true,
+        "generated": false,
+        "authoritative_reachable": true,
+        "index_reachable": true,
+        "public_reachable": false
+      },
+      {
+        "path": "data/project/axm-genesis-v1-runtime-attestation.json",
+        "present_in_lake": true,
+        "generated": false,
+        "authoritative_reachable": true,
+        "index_reachable": true,
+        "public_reachable": false
+      },
+      {
+        "path": "data/project/lake-axm-reproducibility-wave-05.json",
+        "present_in_lake": true,
+        "generated": false,
+        "authoritative_reachable": true,
+        "index_reachable": true,
+        "public_reachable": false
+      }
+    ],
+    "active_projection_scheme_status": "provisional",
+    "active_projection_migrated": false,
+    "active_projection_quarantined": true,
+    "external_axm_gate_present": true,
+    "external_axm_gate_complete": false,
+    "cross_case_join_authorized": false,
+    "global_machine_ids": 12137
+  },
+  "deltas": {
+    "reference_runtime_parity": 1,
+    "mapped_entity_successors": 176,
+    "mapped_claim_successors": 164,
+    "active_projection_migrations": 0,
+    "cross_case_join_authorizations": 0
+  },
+  "decisions": [
+    {
+      "decision_key": "W05-RECONCILE-REFERENCE",
+      "judgment": "the_pinned_axm_genesis_python_runtime_and_local_node_runtime_are_identical_for_the_shared_fixture",
+      "action": "retain_the_commit_pin_fixture_and_runtime_attestation",
+      "evidence_count": 37,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_key": "W05-RECONCILE-MIGRATION",
+      "judgment": "the_active_provisional_projection_has_a_complete_one_to_one_genesis_v1_successor_map",
+      "action": "execute_the_active_projection_migration_as_a_separate_append_preserving_wave",
+      "evidence_count": 340,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_key": "W05-RECONCILE-JOIN-GATE",
+      "judgment": "the_target_algorithm_is_reproduced_but_the_active_projection_is_still_legacy_and_quarantined",
+      "action": "keep_cross_case_joins_disabled_until_the_active_projection_and_downstream_references_are_migrated_and_revalidated",
+      "evidence_count": 164,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    }
+  ],
+  "completion": {
+    "pinned_external_reference_reproduced": true,
+    "shared_fixture_bytes_equal": true,
+    "python_and_node_runtime_outputs_equal": true,
+    "source_controls_indexed": true,
+    "complete_one_to_one_migration_map_built": true,
+    "active_projection_migrated": false,
+    "external_axm_gate_complete": false,
+    "cross_case_join_authorized": false,
+    "post_execution_reconciliation_complete": true,
+    "evidence_truth_determined": false,
+    "publication_cleared": false,
+    "decisions_requiring_human_permission": 0
+  },
+  "boundaries": {
+    "reference_runtime_parity_migrates_the_active_projection": false,
+    "migration_map_authorizes_cross_case_join": false,
+    "genesis_id_proves_entity_identity": false,
+    "same_label_across_namespaces_proves_same_entity": false,
+    "external_fixture_proves_evidence_truth": false,
+    "active_projection_migrated": false,
+    "cross_case_join_authorized": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}
