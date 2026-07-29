@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import fs from 'node:fs';
 import { loadAll, readJson, writeJson, indexBy } from './lib/ledger.mjs';
 import { deriveHopEdges, buildAdjacency, shortestPath } from './lib/hops.mjs';
 import { buildIdentityLayer } from './lib/axm-identity.mjs';
@@ -16,6 +17,39 @@ const typeById = indexBy(data.surfaceTypes, 'id');
 
 const errors = [];
 const warnings = [];
+
+function readJsonl(relative) {
+  return fs.readFileSync(relative, 'utf8').split(/\r?\n/).filter(Boolean).map((line, index) => {
+    try { return JSON.parse(line); }
+    catch (error) { throw new Error(`${relative}:${index + 1}: ${error.message}`); }
+  });
+}
+
+function loadLocalCanonicalResolutions() {
+  const directory = 'data/project';
+  if (!fs.existsSync(directory)) return { rows: [], byLocal: new Map() };
+  const paths = fs.readdirSync(directory)
+    .filter(name => /^lake-local-canonical-resolution-registry-wave-\d+\.jsonl$/.test(name))
+    .sort()
+    .map(name => `${directory}/${name}`);
+  const rows = [];
+  const byLocal = new Map();
+  for (const relative of paths) {
+    for (const row of readJsonl(relative)) {
+      if (!row.local_subject_id || !row.canonical_id) continue;
+      if (!String(row.status ?? '').startsWith('accepted_')) continue;
+      const prior = byLocal.get(row.local_subject_id);
+      if (prior && prior.canonical_id !== row.canonical_id) {
+        errors.push(`local canonical resolution conflict for ${row.local_subject_id}: ${prior.canonical_id} vs ${row.canonical_id}`);
+        continue;
+      }
+      const bound = { ...row, source_registry_path: relative };
+      byLocal.set(row.local_subject_id, bound);
+      rows.push(bound);
+    }
+  }
+  return { rows, byLocal };
+}
 
 for (const surface of data.surfaces) {
   if (!typeById.has(surface.surface_type)) errors.push(`surface ${surface.surface_id} has unknown surface_type ${surface.surface_type}`);
@@ -70,14 +104,52 @@ for (const actor of data.actors) shortestPaths[actor.id] = shortestPath(adjacenc
 const actorIds = new Set(data.actors.map(actor => actor.id));
 const orgIds = new Set(data.organizations.map(org => org.id));
 const aliases = [...data.aliases];
+const aliasKeys = new Set(aliases.map(row => `${row.kind}:${row.canonical_id}:${String(row.alias).toLowerCase()}`));
 const legacyActors = [];
 const legacyOrganizations = [];
 const legacyNodeById = new Map((legacyGraph.nodes ?? []).map(node => [node.id, node]));
+const { rows: localResolutionRows, byLocal: localResolutionByLocal } = loadLocalCanonicalResolutions();
+const legacyContextsByCanonical = new Map();
+
+function pushAlias(row) {
+  const key = `${row.kind}:${row.canonical_id}:${String(row.alias).toLowerCase()}`;
+  if (aliasKeys.has(key)) return;
+  aliasKeys.add(key);
+  aliases.push(row);
+}
+
+function addLegacyContext(canonicalId, node, resolution = null) {
+  if (!legacyContextsByCanonical.has(canonicalId)) legacyContextsByCanonical.set(canonicalId, []);
+  legacyContextsByCanonical.get(canonicalId).push({
+    node,
+    local_subject_id: node.id,
+    resolution_id: resolution?.resolution_id ?? null,
+    source_registry_path: resolution?.source_registry_path ?? null,
+  });
+}
 
 for (const node of legacyGraph.nodes ?? []) {
-  if (node.type === 'person' && !actorIds.has(node.id)) {
+  const resolution = localResolutionByLocal.get(node.id) ?? null;
+  let targetId = resolution?.canonical_id ?? node.id;
+  const targetIsActor = actorById.has(targetId);
+  const targetIsOrganization = orgById.has(targetId);
+  const expectedKind = node.type === 'person' ? 'actor' : 'organization';
+
+  if (resolution) {
+    if (!targetIsActor && !targetIsOrganization) {
+      errors.push(`resolved legacy node ${node.id} targets missing canonical record ${targetId}`);
+      targetId = node.id;
+    } else if ((expectedKind === 'actor' && !targetIsActor) || (expectedKind === 'organization' && !targetIsOrganization)) {
+      errors.push(`resolved legacy node ${node.id} kind ${expectedKind} conflicts with canonical target ${targetId}`);
+      targetId = node.id;
+    }
+  }
+
+  if ((node.type === 'person' && actorById.has(targetId)) || (node.type !== 'person' && orgById.has(targetId))) {
+    addLegacyContext(targetId, node, resolution);
+  } else if (node.type === 'person' && !actorIds.has(targetId)) {
     legacyActors.push({
-      id: node.id,
+      id: targetId,
       label: node.label,
       kind: 'person',
       source: 'legacy_graph',
@@ -85,10 +157,10 @@ for (const node of legacyGraph.nodes ?? []) {
       description: node.description,
       tags: node.tags ?? [],
     });
-    actorIds.add(node.id);
-  } else if (node.type !== 'person' && !orgIds.has(node.id)) {
+    actorIds.add(targetId);
+  } else if (node.type !== 'person' && !orgIds.has(targetId)) {
     legacyOrganizations.push({
-      id: node.id,
+      id: targetId,
       label: node.label,
       kind: node.type,
       source: 'legacy_graph',
@@ -96,54 +168,74 @@ for (const node of legacyGraph.nodes ?? []) {
       description: node.description,
       tags: node.tags ?? [],
     });
-    orgIds.add(node.id);
+    orgIds.add(targetId);
   }
 
   for (const alias of node.aliases ?? []) {
-    aliases.push({
+    pushAlias({
       alias,
-      canonical_id: node.id,
+      canonical_id: targetId,
       kind: node.type === 'person' ? 'actor' : 'organization',
-      source: 'legacy_graph',
+      source: resolution ? 'legacy_graph_retargeted_by_local_canonical_resolution' : 'legacy_graph',
+      ...(resolution ? {
+        legacy_local_id: node.id,
+        local_resolution_id: resolution.resolution_id,
+      } : {}),
     });
   }
 }
 
 function withLegacyContext(record, expectedType) {
-  const legacy = legacyNodeById.get(record.id);
-  if (!legacy || legacy.type !== expectedType) return record;
+  const contexts = legacyContextsByCanonical.get(record.id) ?? [];
+  const sameIdLegacy = legacyNodeById.get(record.id);
+  if (sameIdLegacy && sameIdLegacy.type === expectedType && !contexts.some(context => context.node.id === sameIdLegacy.id)) {
+    contexts.push({ node: sameIdLegacy, local_subject_id: sameIdLegacy.id, resolution_id: null, source_registry_path: null });
+  }
+  const valid = contexts.filter(context => context.node.type === expectedType);
+  if (!valid.length) return record;
   const description = record.description
     ?? record.plain?.who
-    ?? legacy.description
+    ?? valid.find(context => context.node.description)?.node.description
     ?? '';
-  const tags = Array.isArray(record.tags) && record.tags.length
-    ? record.tags
-    : (legacy.tags ?? []);
+  const tags = [...new Set([
+    ...(Array.isArray(record.tags) ? record.tags : []),
+    ...valid.flatMap(context => context.node.tags ?? []),
+  ])];
+  const legacyLocalIds = [...new Set(valid.map(context => context.local_subject_id).filter(id => id !== record.id))].sort();
+  const resolutionIds = [...new Set(valid.map(context => context.resolution_id).filter(Boolean))].sort();
   return {
     ...record,
     description,
     tags,
     legacy_bridge: true,
-    legacy_type: legacy.type,
+    legacy_types: [...new Set(valid.map(context => context.node.type))].sort(),
+    ...(legacyLocalIds.length ? { legacy_local_ids: legacyLocalIds } : {}),
+    ...(resolutionIds.length ? { local_canonical_resolution_ids: resolutionIds } : {}),
   };
 }
 
 const canonicalActors = data.actors.map(actor => withLegacyContext(actor, 'person'));
-const canonicalOrganizations = data.organizations.map(organization => {
-  const legacy = legacyNodeById.get(organization.id);
-  if (!legacy || legacy.type === 'person') return organization;
-  const description = organization.description ?? legacy.description ?? '';
-  const tags = Array.isArray(organization.tags) && organization.tags.length
-    ? organization.tags
-    : (legacy.tags ?? []);
-  return {
-    ...organization,
-    description,
-    tags,
-    legacy_bridge: true,
-    legacy_type: legacy.type,
-  };
-});
+const canonicalOrganizations = data.organizations.map(organization => withLegacyContext(organization, legacyNodeById.get(organization.id)?.type ?? 'organization'))
+  .map(organization => {
+    if (organization.legacy_bridge) return organization;
+    const contexts = legacyContextsByCanonical.get(organization.id) ?? [];
+    if (!contexts.length) return organization;
+    const valid = contexts.filter(context => context.node.type !== 'person');
+    if (!valid.length) return organization;
+    const description = organization.description ?? valid.find(context => context.node.description)?.node.description ?? '';
+    const tags = [...new Set([...(organization.tags ?? []), ...valid.flatMap(context => context.node.tags ?? [])])];
+    const legacyLocalIds = [...new Set(valid.map(context => context.local_subject_id).filter(id => id !== organization.id))].sort();
+    const resolutionIds = [...new Set(valid.map(context => context.resolution_id).filter(Boolean))].sort();
+    return {
+      ...organization,
+      description,
+      tags,
+      legacy_bridge: true,
+      legacy_types: [...new Set(valid.map(context => context.node.type))].sort(),
+      ...(legacyLocalIds.length ? { legacy_local_ids: legacyLocalIds } : {}),
+      ...(resolutionIds.length ? { local_canonical_resolution_ids: resolutionIds } : {}),
+    };
+  });
 
 const surfaceGraph = {
   generated: new Date().toISOString(),
@@ -154,6 +246,14 @@ const surfaceGraph = {
   actors: [...canonicalActors, ...legacyActors],
   organizations: [...canonicalOrganizations, ...legacyOrganizations],
   aliases,
+  local_canonical_resolutions: localResolutionRows.map(row => ({
+    resolution_id: row.resolution_id,
+    local_subject_id: row.local_subject_id,
+    canonical_id: row.canonical_id,
+    canonical_kind: row.canonical_kind,
+    status: row.status,
+    graph_effect: row.graph_effect,
+  })),
   candidates: intakeCandidates,
 };
 
@@ -168,9 +268,6 @@ const hopGraph = {
   rejected_hop_pairs: rejectedHopPairs,
 };
 
-// Provisional temporal identity layer: content-addressed entity ids for the
-// canonical registries plus time-qualified participates_in claims. Kept in
-// its own artifact so the provisional ids stay quarantined from the graphs.
 const identityLayer = buildIdentityLayer({
   namespace: readJson('cases.json').default_case_id,
   actors: data.actors,
@@ -200,4 +297,5 @@ if (errors.length) {
 }
 console.log(`build-hop-graph: ${data.surfaces.length} surfaces, ${hopEdges.length} actor-hop edges.`);
 console.log(`axm identity (provisional): ${identityLayer.entities.length} entities, ${identityLayer.claims.length} participates_in claims.`);
+console.log(`local canonical resolutions observed: ${localResolutionRows.length}.`);
 console.log(`rejected hop surfaces: ${rejectedHopSurfaces.length}, rejected hop pairs (no temporal overlap): ${rejectedHopPairs.length}`);
