@@ -72,6 +72,7 @@ const orgIds = new Set(data.organizations.map(org => org.id));
 const aliases = [...data.aliases];
 const legacyActors = [];
 const legacyOrganizations = [];
+const legacyNodeById = new Map((legacyGraph.nodes ?? []).map(node => [node.id, node]));
 
 for (const node of legacyGraph.nodes ?? []) {
   if (node.type === 'person' && !actorIds.has(node.id)) {
@@ -108,14 +109,50 @@ for (const node of legacyGraph.nodes ?? []) {
   }
 }
 
+function withLegacyContext(record, expectedType) {
+  const legacy = legacyNodeById.get(record.id);
+  if (!legacy || legacy.type !== expectedType) return record;
+  const description = record.description
+    ?? record.plain?.who
+    ?? legacy.description
+    ?? '';
+  const tags = Array.isArray(record.tags) && record.tags.length
+    ? record.tags
+    : (legacy.tags ?? []);
+  return {
+    ...record,
+    description,
+    tags,
+    legacy_bridge: true,
+    legacy_type: legacy.type,
+  };
+}
+
+const canonicalActors = data.actors.map(actor => withLegacyContext(actor, 'person'));
+const canonicalOrganizations = data.organizations.map(organization => {
+  const legacy = legacyNodeById.get(organization.id);
+  if (!legacy || legacy.type === 'person') return organization;
+  const description = organization.description ?? legacy.description ?? '';
+  const tags = Array.isArray(organization.tags) && organization.tags.length
+    ? organization.tags
+    : (legacy.tags ?? []);
+  return {
+    ...organization,
+    description,
+    tags,
+    legacy_bridge: true,
+    legacy_type: legacy.type,
+  };
+});
+
 const surfaceGraph = {
   generated: new Date().toISOString(),
   surfaces: data.surfaces.map(surface => ({
     ...surface,
     participants: participationBySurface.get(surface.surface_id) ?? [],
   })),
-  actors: [...data.actors, ...legacyActors],
-  organizations: [...data.organizations, ...legacyOrganizations],
+  actors: [...canonicalActors, ...legacyActors],
+  organizations: [...canonicalOrganizations, ...legacyOrganizations],
   aliases,
   candidates: intakeCandidates,
 };
