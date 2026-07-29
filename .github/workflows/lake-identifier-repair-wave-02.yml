@@ -1,0 +1,237 @@
+name: Evidence lake identifier repair Wave 02
+
+on:
+  push:
+    branches:
+      - agent/lake-identifier-repair-wave-02
+    paths:
+      - '.github/tmp/lake-identifier-repair-wave-02-trigger.json'
+  pull_request:
+    branches:
+      - agent/lake-basin-execution-wave-01
+    paths:
+      - 'data/project/lake-identifier-repair-wave-02-policy.json'
+      - 'data/project/lake-index-policy.json'
+      - 'tools/stabilize-lake-index.mjs'
+      - 'tools/validate-lake-index.mjs'
+      - 'tools/validate-lake-index-shards.mjs'
+      - 'tools/build-lake-identifier-repair-wave-02.mjs'
+      - 'tools/reconcile-lake-identifier-repair-wave-02.mjs'
+      - 'tools/validate-lake-identifier-repair-wave-02.mjs'
+      - 'test/lake-index.test.js'
+      - 'test/lake-identifier-repair-wave-02.test.js'
+      - '.github/workflows/lake-identifier-repair-wave-02.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: lake-identifier-repair-wave-02-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Determine execution mode
+        id: mode
+        shell: bash
+        run: |
+          echo "original_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if test -f .github/tmp/lake-identifier-repair-wave-02-trigger.json; then
+            echo 'validate=true' >> "$GITHUB_OUTPUT"
+            echo 'materialize=true' >> "$GITHUB_OUTPUT"
+            echo 'phase=execute' >> "$GITHUB_OUTPUT"
+          elif test "$GITHUB_EVENT_NAME" = 'pull_request' || test "$GITHUB_EVENT_NAME" = 'workflow_dispatch'; then
+            echo 'validate=true' >> "$GITHUB_OUTPUT"
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+            if git ls-files --error-unmatch data/project/lake-identifier-source-registry-wave-02.jsonl >/dev/null 2>&1; then
+              echo 'phase=post' >> "$GITHUB_OUTPUT"
+            else
+              echo 'phase=execute' >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo 'validate=false' >> "$GITHUB_OUTPUT"
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+            echo 'phase=none' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.mode.outputs.validate == 'true'
+        with:
+          node-version: '24'
+      - name: Run the complete repository release gate before the identifier snapshot
+        if: steps.mode.outputs.validate == 'true'
+        run: npm run release:check
+      - name: Restore committed bytes before observing the identifier snapshot
+        if: steps.mode.outputs.validate == 'true'
+        run: git restore --staged --worktree .
+      - name: Observe current open-PR shadow
+        if: steps.mode.outputs.validate == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/build-lake-open-pr-shadow.mjs
+      - name: Rebuild the pre-registration lake
+        if: steps.mode.outputs.validate == 'true'
+        run: |
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node test/lake-index.test.js
+          node test/lake-basin-index.test.js
+      - name: Build and deterministically prove Wave 02 source registrations
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-lake-identifier-repair-wave-02.mjs
+          sha256sum \
+            data/project/lake-identifier-source-registry-wave-02.jsonl \
+            data/project/lake-identifier-repair-wave-02.json \
+            build/lake-actions/identifier-repair-wave-02.json \
+            reports/lake-identifier-repair-wave-02.md > /tmp/lake-id-wave-02-first.sha256
+          node tools/build-lake-identifier-repair-wave-02.mjs
+          sha256sum --check --strict /tmp/lake-id-wave-02-first.sha256
+          git diff --check
+      - name: Stage the source registrations for the post-registration census
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        run: |
+          git add \
+            data/project/lake-identifier-source-registry-wave-02.jsonl \
+            data/project/lake-identifier-repair-wave-02.json \
+            build/lake-actions/identifier-repair-wave-02.json \
+            reports/lake-identifier-repair-wave-02.md
+      - name: Rebuild and reconcile the post-registration lake
+        if: steps.mode.outputs.validate == 'true'
+        run: |
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/reconcile-lake-identifier-repair-wave-02.mjs
+          node tools/validate-lake-identifier-repair-wave-02.mjs
+          node test/lake-index.test.js
+          node test/lake-basin-index.test.js
+          node test/lake-identifier-repair-wave-02.test.js
+      - name: Prove deterministic post-registration products
+        if: steps.mode.outputs.validate == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          find build/lake-index -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/lake-id-wave-02-post.sha256
+          sha256sum \
+            build/lake-actions/identifier-repair-wave-02-reconciliation.json \
+            reports/lake-index-census.md \
+            reports/lake-index-gap-summary.md \
+            reports/lake-basin-index.md \
+            reports/lake-identifier-repair-wave-02-reconciliation.md >> /tmp/lake-id-wave-02-post.sha256
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/reconcile-lake-identifier-repair-wave-02.mjs
+          sha256sum --check --strict /tmp/lake-id-wave-02-post.sha256
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-identifier-repair-wave-02.mjs
+          node test/lake-identifier-repair-wave-02.test.js
+          git diff --check
+      - name: Restore the non-materializing validation surface
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.materialize != 'true'
+        run: |
+          git reset --hard HEAD
+          git clean -fd
+          test -z "$(git status --porcelain)"
+      - name: Enforce source registrations and generated-output boundaries
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/tmp/lake-identifier-repair-wave-02-trigger.json
+          python - <<'PY'
+          import json
+          import re
+          import subprocess
+
+          required = {
+              '.github/tmp/lake-identifier-repair-wave-02-trigger.json',
+              'data/project/lake-identifier-source-registry-wave-02.jsonl',
+              'data/project/lake-identifier-repair-wave-02.json',
+              'build/lake-actions/identifier-repair-wave-02.json',
+              'build/lake-actions/identifier-repair-wave-02-reconciliation.json',
+              'reports/lake-identifier-repair-wave-02.md',
+              'reports/lake-identifier-repair-wave-02-reconciliation.md',
+          }
+          exact_allowed_sources = required | {
+              'data/project/lake-open-pr-shadow.json',
+          }
+          generated_prefixes = (
+              'build/',
+              'reports/',
+              'briefs/',
+              'estates/',
+              'gametrails/',
+          )
+          generated_root = re.compile(r'^(?:Clifford-.*\.html|[^/]+-standalone\.html)$')
+
+          raw = subprocess.check_output([
+              'git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'
+          ])
+          entries = [entry for entry in raw.decode().split('\0') if entry]
+          actual = set()
+          for entry in entries:
+              status = entry[:2]
+              assert 'R' not in status and 'C' not in status, entry
+              actual.add(entry[3:])
+
+          unexpected = sorted(path for path in actual
+              if path not in exact_allowed_sources
+              and not path.startswith(generated_prefixes)
+              and not generated_root.match(path))
+          assert required <= actual, {
+              'missing_required_registration_or_reconciliation_changes': sorted(required - actual),
+          }
+          assert not unexpected, {
+              'undeclared_source_changes': unexpected,
+          }
+          print(json.dumps({
+              'required_changes': len(required),
+              'actual_changes': len(actual),
+              'generated_changes': len(actual - exact_allowed_sources),
+          }, indent=2))
+          PY
+      - name: Commit the executed identifier repair
+        if: steps.mode.outputs.materialize == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Execute evidence lake identifier repair Wave 02'
+          git fetch origin agent/lake-identifier-repair-wave-02
+          test "$(git rev-parse origin/agent/lake-identifier-repair-wave-02)" = "${{ steps.mode.outputs.original_sha }}"
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-identifier-repair-wave-02.mjs
+          git push origin HEAD:agent/lake-identifier-repair-wave-02
