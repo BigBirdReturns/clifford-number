@@ -1,0 +1,62 @@
+{
+  "schema_version": "lake-native-source-migration-wave-03-policy@1",
+  "program_key": "CN-LAKE-NATIVE-SOURCE-W03",
+  "as_of": "2026-07-29",
+  "purpose": "Migrate the deterministic legacy UK-AI case projection into a native typed case ledger, preserve byte-equivalent compiled semantics, and supersede 448 identifier registrations' native-source debt without deleting the prior registration record.",
+  "input_paths": [
+    "build/cases/uk-ai-policy.json",
+    "cases/uk-ai-policy.json",
+    "data/project/lake-identifier-source-registry-wave-02.jsonl",
+    "build/lake-actions/identifier-repair-wave-02-reconciliation.json",
+    "tools/lib/case-ledger.mjs",
+    "tools/build-public-catalog.mjs"
+  ],
+  "legacy_compiled_path": "build/cases/uk-ai-policy.json",
+  "native_case_directory": "cases/uk-ai-policy",
+  "native_source_paths": [
+    "cases/uk-ai-policy/case.json",
+    "cases/uk-ai-policy/receipts.jsonl",
+    "cases/uk-ai-policy/claims.jsonl",
+    "cases/uk-ai-policy/events.jsonl",
+    "cases/uk-ai-policy/relations.jsonl",
+    "cases/uk-ai-policy/beacons.jsonl",
+    "cases/uk-ai-policy/trails.jsonl"
+  ],
+  "supersession_ledger_path": "data/project/lake-identifier-source-supersessions-wave-03.jsonl",
+  "migration_receipt_path": "data/project/lake-native-source-migration-wave-03.json",
+  "plan_path": "build/lake-actions/native-source-migration-wave-03.json",
+  "reconciliation_path": "build/lake-actions/native-source-migration-wave-03-reconciliation.json",
+  "report_path": "reports/lake-native-source-migration-wave-03.md",
+  "reconciliation_report_path": "reports/lake-native-source-migration-wave-03-reconciliation.md",
+  "target_prior_rule": "legacy-uk-ai-case-projection",
+  "target_identifier_keys": [
+    "claim_id",
+    "event_id"
+  ],
+  "expected": {
+    "claims": 224,
+    "events": 224,
+    "receipts": 15,
+    "relations": 0,
+    "beacons": 0,
+    "trails": 0,
+    "superseded_identifier_registrations": 448
+  },
+  "decision_law": {
+    "review_required_to_decide": false,
+    "missing_reviewer_blocks_native_migration": false,
+    "compiled_equivalence_required": true,
+    "source_rows_may_invent_new_claims": false,
+    "prior_registration_rows_may_be_deleted": false,
+    "correction_mode": "append_preserving_supersession"
+  },
+  "boundaries": {
+    "native_source_migration_proves_evidence_truth": false,
+    "native_source_migration_resolves_identity": false,
+    "compiled_equivalence_is_independent_corroboration": false,
+    "verified_claim_is_wrongdoing_finding": false,
+    "legacy_graph_edge_is_coordination_or_causation": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}
