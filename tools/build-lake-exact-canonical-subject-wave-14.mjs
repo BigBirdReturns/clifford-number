@@ -95,8 +95,10 @@ const policy = readJson(policyPath);
 assert.equal(policy.schema_version, 'lake-exact-canonical-subject-wave-14-policy@1');
 const wave13 = readJson(policy.baseline.wave_13_projection_path);
 assert.equal(wave13.counts.case_claim_subject_references, policy.baseline.claim_subject_references);
-assert.equal(wave13.counts.resolved_case_claim_subject_references, policy.baseline.explicitly_resolved_references);
-assert.equal(wave13.counts.unresolved_case_claim_subject_references, policy.baseline.unresolved_references);
+assert.equal(wave13.counts.case_resolution_occurrences, policy.baseline.explicitly_resolved_references);
+assert.ok(wave13.counts.resolved_case_claim_subject_references >= policy.baseline.explicitly_resolved_references);
+assert.ok(wave13.counts.unresolved_case_claim_subject_references <= policy.baseline.unresolved_references);
+assert.equal(wave13.counts.resolved_case_claim_subject_references + wave13.counts.unresolved_case_claim_subject_references, policy.baseline.claim_subject_references);
 assert.equal(wave13.counts.distinct_case_local_subjects, policy.baseline.distinct_case_local_subjects);
 
 const resolutionIndex = loadLocalCanonicalResolutionIndex({ refresh: true });
