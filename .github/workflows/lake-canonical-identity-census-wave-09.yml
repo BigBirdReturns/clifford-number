@@ -1,0 +1,262 @@
+name: Evidence lake canonical identity census Wave 09
+
+on:
+  push:
+    branches:
+      - agent/lake-canonical-identity-census-wave-09
+    paths:
+      - '.github/tmp/lake-canonical-identity-census-wave-09-trigger.json'
+  pull_request:
+    branches:
+      - agent/lake-production-cross-case-census-wave-08
+    paths:
+      - 'data/project/lake-canonical-identity-census-wave-09-policy.json'
+      - 'tools/build-lake-canonical-identity-census-wave-09.mjs'
+      - 'tools/reconcile-lake-canonical-identity-census-wave-09.mjs'
+      - 'tools/validate-lake-canonical-identity-census-wave-09.mjs'
+      - 'test/lake-canonical-identity-census-wave-09.test.js'
+      - '.github/workflows/lake-canonical-identity-census-wave-09.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: lake-canonical-identity-census-wave-09-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Determine execution mode
+        id: mode
+        shell: bash
+        run: |
+          echo "original_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if test -f .github/tmp/lake-canonical-identity-census-wave-09-trigger.json; then
+            echo 'validate=true' >> "$GITHUB_OUTPUT"
+            echo 'materialize=true' >> "$GITHUB_OUTPUT"
+            echo 'phase=execute' >> "$GITHUB_OUTPUT"
+          elif test "$GITHUB_EVENT_NAME" = 'pull_request' || test "$GITHUB_EVENT_NAME" = 'workflow_dispatch'; then
+            echo 'validate=true' >> "$GITHUB_OUTPUT"
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+            if git ls-files --error-unmatch data/project/lake-canonical-identity-mention-registry-wave-09.jsonl >/dev/null 2>&1; then
+              echo 'phase=post' >> "$GITHUB_OUTPUT"
+            else
+              echo 'phase=execute' >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo 'validate=false' >> "$GITHUB_OUTPUT"
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+            echo 'phase=none' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.mode.outputs.validate == 'true'
+        with:
+          node-version: '24'
+      - name: Restore committed bytes before canonical classification
+        if: steps.mode.outputs.validate == 'true'
+        run: |
+          git restore --staged --worktree .
+          git clean -fd
+      - name: Build and deterministically prove canonical classification
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-lake-canonical-identity-census-wave-09.mjs
+          sha256sum \
+            data/project/lake-canonical-identity-mention-registry-wave-09.jsonl \
+            data/project/lake-canonical-cross-case-candidate-registry-wave-09.jsonl \
+            data/project/lake-canonical-identity-census-wave-09.json \
+            build/axm-canonical-identity-candidate-index-wave-09.json \
+            build/lake-actions/canonical-identity-census-wave-09.json \
+            reports/lake-canonical-identity-census-wave-09.md > /tmp/lake-canonical-wave-09-first.sha256
+          node tools/build-lake-canonical-identity-census-wave-09.mjs
+          sha256sum --check --strict /tmp/lake-canonical-wave-09-first.sha256
+          git diff --check
+      - name: Stage canonical census sources and products
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        run: git add -A
+      - name: Apply checked Wave 09 lake authority changes
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        run: |
+          node .github/tmp/apply-lake-canonical-identity-census-wave-09.mjs
+          cp .github/tmp/lake-canonical-identity-census-wave-09-source-paths.json /tmp/lake-canonical-identity-census-wave-09-source-paths.json
+          git add -A
+      - name: Run the complete repository release gate with canonical classification active
+        if: steps.mode.outputs.validate == 'true'
+        run: npm run release:check
+      - name: Rebuild canonical classification against release-normalized inputs
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-lake-canonical-identity-census-wave-09.mjs
+          sha256sum \
+            data/project/lake-canonical-identity-mention-registry-wave-09.jsonl \
+            data/project/lake-canonical-cross-case-candidate-registry-wave-09.jsonl \
+            data/project/lake-canonical-identity-census-wave-09.json \
+            build/axm-canonical-identity-candidate-index-wave-09.json \
+            build/lake-actions/canonical-identity-census-wave-09.json \
+            reports/lake-canonical-identity-census-wave-09.md > /tmp/lake-canonical-wave-09-normalized.sha256
+          node tools/build-lake-canonical-identity-census-wave-09.mjs
+          sha256sum --check --strict /tmp/lake-canonical-wave-09-normalized.sha256
+          git add -A
+          git diff --check
+      - name: Stabilize the source and generated tree before the lake census
+        if: steps.mode.outputs.validate == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test "${{ steps.mode.outputs.phase }}" = 'execute'; then
+            git add -A
+            git restore --worktree .
+            git clean -fd
+          else
+            git reset --hard HEAD
+            git clean -fd
+          fi
+      - name: Observe current open-PR shadow
+        if: steps.mode.outputs.validate == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/build-lake-open-pr-shadow.mjs
+      - name: Rebuild and reconcile the canonical identity lake
+        if: steps.mode.outputs.validate == 'true'
+        run: |
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/reconcile-lake-canonical-identity-census-wave-09.mjs
+          node tools/validate-lake-canonical-identity-census-wave-09.mjs
+          node test/lake-index.test.js
+          node test/lake-basin-index.test.js
+          node test/lake-canonical-identity-census-wave-09.test.js
+      - name: Prove deterministic post-census products
+        if: steps.mode.outputs.validate == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          find build/lake-index -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/lake-canonical-wave-09-post.sha256
+          sha256sum \
+            data/project/lake-canonical-identity-mention-registry-wave-09.jsonl \
+            data/project/lake-canonical-cross-case-candidate-registry-wave-09.jsonl \
+            data/project/lake-canonical-identity-census-wave-09.json \
+            build/axm-canonical-identity-candidate-index-wave-09.json \
+            build/lake-actions/canonical-identity-census-wave-09.json \
+            build/lake-actions/canonical-identity-census-wave-09-reconciliation.json \
+            reports/lake-canonical-identity-census-wave-09.md \
+            reports/lake-canonical-identity-census-wave-09-reconciliation.md >> /tmp/lake-canonical-wave-09-post.sha256
+          node tools/build-lake-canonical-identity-census-wave-09.mjs
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/reconcile-lake-canonical-identity-census-wave-09.mjs
+          sha256sum --check --strict /tmp/lake-canonical-wave-09-post.sha256
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-canonical-identity-census-wave-09.mjs
+          node test/lake-canonical-identity-census-wave-09.test.js
+          git diff --check
+      - name: Restore the non-materializing validation surface
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.materialize != 'true'
+        run: |
+          git reset --hard HEAD
+          git clean -fd
+          test -z "$(git status --porcelain)"
+      - name: Enforce canonical-census source and generated-output boundaries
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f \
+            .github/tmp/lake-canonical-identity-census-wave-09-trigger.json \
+            .github/tmp/apply-lake-canonical-identity-census-wave-09.mjs \
+            .github/tmp/lake-canonical-identity-census-wave-09-source-paths.json
+          python - <<'PY'
+          import json
+          import re
+          import subprocess
+
+          migration = json.load(open('/tmp/lake-canonical-identity-census-wave-09-source-paths.json'))
+          required = set(migration['changed_paths']) | {
+              '.github/tmp/lake-canonical-identity-census-wave-09-trigger.json',
+              '.github/tmp/apply-lake-canonical-identity-census-wave-09.mjs',
+              'data/project/lake-canonical-identity-mention-registry-wave-09.jsonl',
+              'data/project/lake-canonical-cross-case-candidate-registry-wave-09.jsonl',
+              'data/project/lake-canonical-identity-census-wave-09.json',
+              'build/axm-canonical-identity-candidate-index-wave-09.json',
+              'build/lake-actions/canonical-identity-census-wave-09.json',
+              'build/lake-actions/canonical-identity-census-wave-09-reconciliation.json',
+              'reports/lake-canonical-identity-census-wave-09.md',
+              'reports/lake-canonical-identity-census-wave-09-reconciliation.md',
+          }
+          exact_allowed_sources = required | {
+              'data/project/lake-open-pr-shadow.json',
+          }
+          generated_prefixes = (
+              'build/',
+              'reports/',
+              'briefs/',
+              'estates/',
+              'gametrails/',
+          )
+          generated_root = re.compile(r'^(?:Clifford-.*\.html|[^/]+-standalone\.html)$')
+
+          raw = subprocess.check_output([
+              'git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'
+          ])
+          entries = [entry for entry in raw.decode().split('\0') if entry]
+          actual = set()
+          for entry in entries:
+              status = entry[:2]
+              assert 'R' not in status and 'C' not in status, entry
+              actual.add(entry[3:])
+
+          unexpected = sorted(path for path in actual
+              if path not in exact_allowed_sources
+              and not path.startswith(generated_prefixes)
+              and not generated_root.match(path))
+          assert required <= actual, {
+              'missing_required_canonical_census_or_reconciliation_changes': sorted(required - actual),
+          }
+          assert not unexpected, {
+              'undeclared_source_changes': unexpected,
+          }
+          print(json.dumps({
+              'required_changes': len(required),
+              'actual_changes': len(actual),
+              'generated_changes': len(actual - exact_allowed_sources),
+          }, indent=2))
+          PY
+      - name: Commit the executed canonical identity census
+        if: steps.mode.outputs.materialize == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Execute canonical identity census Wave 09'
+          git fetch origin agent/lake-canonical-identity-census-wave-09
+          test "$(git rev-parse origin/agent/lake-canonical-identity-census-wave-09)" = "${{ steps.mode.outputs.original_sha }}"
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-canonical-identity-census-wave-09.mjs
+          git push origin HEAD:agent/lake-canonical-identity-census-wave-09
