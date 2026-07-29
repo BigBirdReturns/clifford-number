@@ -1,4 +1,5 @@
 name: Temporary materialize K0 Wave 06
+# Fragmented transport repair: concatenate the ten exact Base64 fragments, verify the source archive, and publish only the permanent tree.
 
 on:
   pull_request:
@@ -29,10 +30,12 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Decode and verify exact source bundle
+      - name: Assemble, decode, and verify exact source bundle
         run: |
           set -euo pipefail
-          base64 -d .github/tmp/k0-wave06-source.tar.gz.b64 > /tmp/k0-wave06-source.tar.gz
+          test "$(find .github/tmp -maxdepth 1 -name 'k0-wave06-source-part-*.b64' -type f | wc -l)" -eq 10
+          cat .github/tmp/k0-wave06-source-part-*.b64 > /tmp/k0-wave06-source.b64
+          base64 -d /tmp/k0-wave06-source.b64 > /tmp/k0-wave06-source.tar.gz
           test "$(sha256sum /tmp/k0-wave06-source.tar.gz | awk '{print $1}')" = "efa32db6bd3537d5a34a31661eecfd53a0903eaff5efd98dc3addf9cf9420cfa"
           python - <<'PY'
           import tarfile
@@ -81,7 +84,9 @@ jobs:
           set -euo pipefail
           git restore --staged --worktree .
           git clean -fd
-          base64 -d .github/tmp/k0-wave06-source.tar.gz.b64 > /tmp/k0-wave06-source.tar.gz
+          test "$(find .github/tmp -maxdepth 1 -name 'k0-wave06-source-part-*.b64' -type f | wc -l)" -eq 10
+          cat .github/tmp/k0-wave06-source-part-*.b64 > /tmp/k0-wave06-source.b64
+          base64 -d /tmp/k0-wave06-source.b64 > /tmp/k0-wave06-source.tar.gz
           test "$(sha256sum /tmp/k0-wave06-source.tar.gz | awk '{print $1}')" = "efa32db6bd3537d5a34a31661eecfd53a0903eaff5efd98dc3addf9cf9420cfa"
           tar -xzf /tmp/k0-wave06-source.tar.gz
           node tools/build-k0-role-neutral-wave-06.mjs
@@ -135,6 +140,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 
           git rm .github/tmp/k0-wave06-source.tar.gz.b64
+          git rm .github/tmp/k0-wave06-source-part-*.b64
           git rm .github/workflows/temporary-k0-wave06-bootstrap.yml
           git rm .github/workflows/temporary-materialize-k0-wave06.yml
 
@@ -161,10 +167,7 @@ jobs:
 
           python - <<'PY'
           import subprocess
-          expected = {
-            '.github/tmp/k0-wave06-source.tar.gz.b64',
-            '.github/workflows/temporary-k0-wave06-bootstrap.yml',
-            '.github/workflows/temporary-materialize-k0-wave06.yml',
+          permanent = {
             '.github/workflows/k0-role-neutral-wave-06.yml',
             'data/project/k0-epistemic-admissibility-methodology.json',
             'data/project/k0-epistemic-admissibility-release-manifest.json',
@@ -185,10 +188,18 @@ jobs:
             'tools/validate-k0-epistemic-admissibility.mjs',
             'tools/validate-k0-role-neutral-wave-06.mjs',
           }
+          transport = {
+            '.github/tmp/k0-wave06-source.tar.gz.b64',
+            '.github/workflows/temporary-k0-wave06-bootstrap.yml',
+            '.github/workflows/temporary-materialize-k0-wave06.yml',
+          }
+          transport.update({f'.github/tmp/k0-wave06-source-part-{i:02d}.b64' for i in range(10)})
+          expected = permanent | transport
           actual = set(subprocess.check_output(['git','diff','--cached','--name-only'], text=True).splitlines())
           assert actual == expected, f'path mismatch\nmissing={sorted(expected-actual)}\nextra={sorted(actual-expected)}'
+          assert len(permanent) == 19 and len(transport) == 13 and len(actual) == 32
           assert not any(p.startswith('build/') or p.startswith('dist/') for p in actual)
-          print(f'exact staged denominator: {len(actual)}')
+          print('exact staged denominator: 19 permanent paths + 13 transport deletions')
           PY
 
           git diff --cached --check
