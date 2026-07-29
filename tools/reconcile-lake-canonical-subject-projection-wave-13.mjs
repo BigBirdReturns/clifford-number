@@ -29,7 +29,7 @@ function inputManifest(paths) {
   });
 }
 function fingerprint(rows) {
-  return sha256(Buffer.from(rows.map(row => `${row.path}\0${row.sha256}\0${row.bytes}\n`).join(''));
+  return sha256(Buffer.from(rows.map(row => `${row.path}\0${row.sha256}\0${row.bytes}\n`).join('')));
 }
 
 const policy = readJson(policyPath);
