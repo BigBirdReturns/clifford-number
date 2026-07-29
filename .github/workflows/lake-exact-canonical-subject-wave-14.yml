@@ -1,0 +1,60 @@
+name: Evidence lake exact canonical subject Wave 14
+
+on:
+  pull_request:
+    branches:
+      - agent/lake-canonical-subject-projection-wave-13
+    paths:
+      - 'data/project/lake-exact-canonical-subject-wave-14-policy.json'
+      - 'tools/lib/local-canonical-resolution.mjs'
+      - 'tools/build-lake-exact-canonical-subject-wave-14.mjs'
+      - 'tools/compile.mjs'
+      - 'test/case-ledger.test.js'
+      - 'test/lake-exact-canonical-subject-wave-14.test.js'
+      - '.github/workflows/lake-exact-canonical-subject-wave-14.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: lake-exact-canonical-subject-wave-14-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Restore committed bytes
+        run: |
+          git reset --hard HEAD
+          git clean -fd
+      - name: Run the complete repository release gate
+        run: npm run release:check
+      - name: Prove the exact-subject census deterministically
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-lake-exact-canonical-subject-wave-14.mjs
+          sha256sum \
+            build/exact-canonical-subject-projection-wave-14.json \
+            build/lake-actions/exact-canonical-subject-wave-14.json \
+            data/project/lake-unresolved-subject-registry-wave-14.jsonl \
+            reports/lake-exact-canonical-subject-wave-14.md > /tmp/lake-exact-subject-wave-14-first.sha256
+          node tools/build-lake-exact-canonical-subject-wave-14.mjs
+          sha256sum --check --strict /tmp/lake-exact-subject-wave-14-first.sha256
+          node test/lake-exact-canonical-subject-wave-14.test.js
+          git diff --check
+      - name: Restore nonmaterializing validation surface
+        run: |
+          git reset --hard HEAD
+          git clean -fd
+          test -z "$(git status --porcelain)"
