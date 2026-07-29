@@ -13,6 +13,27 @@ const safeArray = value => Array.isArray(value) ? value : [];
 const failures = [];
 const fail = message => failures.push(message);
 
+const charterPath = 'BUILD-INSTRUCTIONS.md';
+const charterBytes = bytes(charterPath);
+let charter = '';
+try {
+  charter = new TextDecoder('utf-8', { fatal: true }).decode(charterBytes);
+} catch (error) {
+  fail(`governing charter is not valid UTF-8: ${error.message}`);
+}
+for (let index = 0; index < charterBytes.length; index++) {
+  const byte = charterBytes[index];
+  if (byte < 0x20 && ![0x09, 0x0a, 0x0d].includes(byte)) {
+    fail(`governing charter contains forbidden control byte 0x${byte.toString(16).padStart(2, '0')} at offset ${index}`);
+    break;
+  }
+}
+if (!charter.includes('1.12 **Judgment authority cannot be outsourced.**')) fail('BUILD-INSTRUCTIONS 1.12 judgment-authority invariant missing');
+if (!charter.includes('`validate:judgments` fails on outsourced permission')) fail('BUILD-INSTRUCTIONS does not name the judgment gate');
+if (charter.includes('then a human gate')) fail('legacy contribution human gate remains in the governing charter');
+if (charter.includes('requires human sign-off')) fail('legacy intake human sign-off gate remains in the governing charter');
+if (!charter.includes('Not dependent on an unspecified future human')) fail('governing anti-goal against outsourced permission missing');
+
 const policy = read('data/project/evidence-grounded-judgment-authority.json');
 const ledger = read('build/evidence-grounded-judgments.json');
 const selection = read('data/canonical/corpus-selection.json');
@@ -110,6 +131,7 @@ if (failures.length) {
   process.exit(1);
 }
 console.log('evidence-grounded judgment validation: OK');
+console.log('  governing charter: valid UTF-8, no forbidden control bytes, Section 1.12 present');
 console.log(`  decisions: ${ledger.decisions.length}`);
 console.log(`  K0 bounded working judgments: ${ledger.summary.k0_bounded_working_judgments}`);
 console.log(`  selection operational decisions: ${ledger.summary.selection_lanes_with_operational_decisions}`);
