@@ -140,7 +140,6 @@ validate every case claim, establish program performance, create participation o
 relationships, or enter the hop graph.`);
 
 const sourcePathFile = '.github/tmp/lake-bounded-hold-resolution-wave-12-source-paths.json';
-changedPaths.add(sourcePathFile);
 fs.writeFileSync(sourcePathFile, `${JSON.stringify({
   schema_version: 'lake-bounded-hold-resolution-wave-12-source-paths@1',
   changed_paths: [...changedPaths].sort()
