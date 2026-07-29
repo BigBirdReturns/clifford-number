@@ -35,7 +35,7 @@ function manifest(paths) {
   });
 }
 function manifestFingerprint(rows) {
-  return sha256(Buffer.from(rows.map(row => `${row.path}\0${row.sha256}\0${row.bytes}\n`).join(''));
+  return sha256(Buffer.from(rows.map(row => `${row.path}\0${row.sha256}\0${row.bytes}\n`).join('')));
 }
 function normalized(value) {
   return String(value ?? '').toLowerCase();
@@ -104,7 +104,7 @@ for (const claim of publicCatalog.claims ?? []) {
 const catalogSubjectByKey = new Map((publicCatalog.subjects ?? []).map(row => [row.key, row]));
 const briefingManifestByCase = new Map();
 for (const entry of briefingIndex.briefings ?? []) {
-  const manifestPath = `build/briefings/${entry.briefing_id}.json`;
+  const manifestPath = `build/briefings/${entry.case_id}.json`;
   briefingManifestByCase.set(entry.case_id, readJson(manifestPath));
 }
 
