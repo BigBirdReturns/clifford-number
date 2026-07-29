@@ -5,15 +5,15 @@ This report partitions the current tracked lake census into declared semantic ba
 ## Current assignment
 
 ```text
-source rows:                         1918
+source rows:                         1925
 semantic basins:                    37
-classified without default:         1918
+classified without default:         1925
 unclassified paths:                 0
-evidence-bearing files:             1297
-evidence files with registry owner: 1297
-evidence files previously unowned:  1297
-exact orphan evidence files:        145
-gap rows:                           80
+evidence-bearing files:             1299
+evidence files with registry owner: 1299
+evidence files previously unowned:  1299
+exact orphan evidence files:        146
+gap rows:                           83
 ```
 
 ## Basin waterline
@@ -21,9 +21,9 @@ gap rows:                           80
 | Basin | Role | Files | Evidence | Index reachable | Exact orphans | Previously unowned | Entrypoints present |
 |---|---|---:|---:|---:|---:|---:|---|
 | estate-game-trail-products | generated_projection | 313 | 313 | 313 | 0 | 313 | yes |
-| core-thesis-build-products | generated_projection | 185 | 185 | 185 | 0 | 185 | yes |
+| core-thesis-build-products | generated_projection | 184 | 184 | 184 | 0 | 184 | yes |
 | intake-custody | intake_only | 142 | 142 | 120 | 22 | 142 | yes |
-| project-governance | project_governance | 112 | 112 | 108 | 4 | 112 | yes |
+| project-governance | project_governance | 115 | 115 | 110 | 5 | 115 | yes |
 | core-thesis-report-products | report_projection | 96 | 96 | 81 | 15 | 96 | yes |
 | milestone-governance | governance_history | 65 | 65 | 19 | 46 | 65 | yes |
 | documentation | documentation | 58 | 58 | 32 | 26 | 58 | yes |
@@ -47,9 +47,9 @@ gap rows:                           80
 | gametrail-public-products | public_projection | 2 | 2 | 2 | 0 | 2 | yes |
 | contribution-pipeline | contribution_source_or_template | 1 | 1 | 1 | 0 | 1 | yes |
 | general-report-products | report_projection | 1 | 1 | 1 | 0 | 1 | yes |
-| toolchain | tooling | 280 | 0 | 205 | 21 | 280 | yes |
-| regressions | test_fixture | 152 | 0 | 111 | 6 | 152 | yes |
-| automation | automation | 62 | 0 | 28 | 31 | 62 | yes |
+| toolchain | tooling | 283 | 0 | 206 | 21 | 283 | yes |
+| regressions | test_fixture | 153 | 0 | 111 | 6 | 153 | yes |
+| automation | automation | 63 | 0 | 28 | 32 | 63 | yes |
 | public-runtime | public_runtime | 52 | 0 | 41 | 10 | 52 | yes |
 | temporary-transport | temporary_transport | 17 | 0 | 1 | 16 | 17 | yes |
 | comprehension-protocol | method_and_fixture | 8 | 0 | 8 | 0 | 8 | yes |
@@ -62,7 +62,7 @@ gap rows:                           80
 
 | Gap type | Count |
 |---|---:|
-| public_reachability_requires_authorization_review | 50 |
+| public_reachability_requires_authorization_review | 53 |
 | source_record_without_authoritative_reachability | 30 |
 
 ## Honest terminal state

@@ -119,21 +119,24 @@ This release must pass five fixtures before the full database can be trusted:
 5. Broad institutions never create Clifford Number hops.
 6. Hop bases carry validity windows; disjoint dated participations on a shared surface create no hop (e.g. Rosenfield and Cummings, who were in No. 10 in non-overlapping windows).
 
-## Temporal identity layer (provisional)
+## Temporal identity layer (AXM Genesis v1)
 
-`tools/lib/axm-id.mjs` vendors the AXM content-addressed identity envelope (axm-core `IDENTITY.md`: SHA-256 → first 15 bytes → base32 lowercase, no padding, type prefix) so that two independently built cases mentioning the same entity can produce the same ID — the precondition for cross-case joins and dark-network deltas. The envelope is authoritative; the namespace/label input serialization is **provisional** and must be reconciled byte-for-byte against `axm-genesis` (`axm_verify.identity`) before these IDs are used as cross-system join keys.
+`tools/lib/axm-id.mjs` now delegates active identity to the commit-pinned AXM Genesis v1 rules: NFC normalization, ASCII-only lowering, frozen whitespace handling, NUL-separated preimages, full 32-byte SHA-256 digests, and versioned `e1_` / `c1_` prefixes. The cross-runtime fixture and attestation are committed under `data/project/`; the exact 176-entity and 164-claim predecessor map is in `build/axm-identity-genesis-v1-migration.json`.
 
-`tools/lib/axm-identity.mjs` wires that envelope into exactly one artifact, `build/axm-identity.json`, so the provisional IDs stay quarantined from the hop/surface/receipt graphs:
+`tools/lib/axm-identity.mjs` materializes the reconciled active projection in `build/axm-identity.json`:
 
-- **Entities.** Every canonical actor, organization, and surface gets a provisional AXM entity ID derived from `(case namespace, label)`. Registry aliases yield additional alias-derived IDs on the same entity — a corpus that says "Sir Simon Case" and one that says "Simon Case" still join.
-- **Time-qualified claims.** Each participation row becomes a `participates_in` claim. The claim ID is content-addressed over `(subject, predicate, object)` only — **identity is time-stable** — while temporal validity attaches as windows in the `temporal@1` vocabulary. Multiple stints of the same participant on the same surface are one claim with several windows, never several claims. An undated participation is preserved as `dated: false` with open bounds, not invented.
-- **Honesty markers.** The artifact's `scheme` block carries the provisional status and the reconciliation obligation; `validate:release` recomputes the whole layer from the ledger and fails on any drift, staleness, or a stripped caveat.
+- **Entities.** Every canonical actor, organization, and surface carries a current Genesis v1 `axm_entity_id`, plus its retired `legacy_provisional_entity_id`. Current and legacy alias-derived IDs remain attached to the same local registry object.
+- **Time-qualified claims.** Each participation pair carries a current `c1_` claim and a retired `legacy_provisional_claim_id`. Temporal windows, roles, evidence classes, receipts, local IDs, and hop semantics are unchanged.
+- **Append-preserving migration.** `data/project/lake-axm-active-identity-registry-wave-06.jsonl` records every one-to-one predecessor/successor transition. Old IDs resolve; they do not remain current and do not merge entities.
+- **Honesty markers.** The external AXM gate is complete and the active projection is no longer quarantined. Real-world identity is still not inferred from matching labels, and cross-case joins remain disabled pending a separate multi-case acceptance fixture.
 
-`query:hops --from` / `--to` also accept a provisional AXM entity ID (canonical or alias-derived) and resolve it to the local actor before traversal:
+`query:hops --from` / `--to` accept local IDs, current Genesis IDs, and retired predecessor IDs:
 
 ```bash
-npm run query:hops -- --from e_cxoy37udrurtowdj47suemrw   # "Ben Warner" (alias-derived)
+npm run query:hops -- --from e1_36m7cjmqzlwdou4gr37cqy7jnckjsr6behzpbfmp7zphwzfynx7a  # Dr. Ben Warner
+npm run query:hops -- --from e_gkmzucjlt7bu6i3s2nmqddmm                              # retired predecessor
 ```
+
 ## Estate frontier and game trails
 
 M-02 surveys ten additional macro estates and reruns all preserved, source-route, and custody trails through the [Game-Trail Aperture](gametrails/). See [the milestone record](docs/milestones/estate-frontier-game-trails-v1.md).

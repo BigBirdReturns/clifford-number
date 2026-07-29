@@ -274,13 +274,20 @@ for (const c of (scores.chains ?? [])) assert(c.machine_score >= 0 && c.machine_
 // and no Clifford hop, OR the chain itself (which never hops). This is the whole point of the dimension.
 assert((scores.chains ?? []).some(c => c.laundering_chain_score >= 3), 'expected at least one laundering chain with score >= 3');
 
-// Temporal identity layer (provisional AXM ids). The artifact must be a
-// deterministic function of the ledger — recompute it and require exact
-// agreement — and must carry its provisional caveat, so a stale or hand-edited
-// artifact, or one silently stripped of the caveat, fails the release.
+// Temporal identity layer (AXM Genesis v1 active projection). Recompute the
+// complete layer from canonical sources, require exact agreement, preserve the
+// retired IDs as predecessor aliases, and keep cross-case joins disabled until
+// a separate multi-case join acceptance test authorizes them.
 {
   const identity = readJson('build/axm-identity.json');
-  assert(identity.scheme?.status === 'provisional', 'axm-identity scheme.status must remain "provisional" until reconciled against axm-genesis');
+  assert(identity.scheme?.status === 'reconciled_genesis_v1', 'axm-identity scheme.status must be reconciled_genesis_v1');
+  assert(identity.scheme?.version === 'axm-genesis-v1', 'axm-identity scheme.version must be axm-genesis-v1');
+  assert(identity.scheme?.external_commit === '411ef40e6cfc3ecb97ac3e256c8151be678347c8', 'axm-identity Genesis commit pin drift');
+  assert(identity.scheme?.active_projection_migrated === true, 'axm-identity active migration marker missing');
+  assert(identity.scheme?.legacy_provisional_ids_resolvable === true, 'axm-identity legacy resolver marker missing');
+  assert(identity.scheme?.active_projection_quarantined === false, 'migrated axm-identity must not remain quarantined');
+  assert(identity.scheme?.external_axm_gate_complete === true, 'external AXM reconciliation gate must be complete');
+  assert(identity.scheme?.cross_case_join_authorized === false, 'cross-case joins remain disabled pending multi-case acceptance');
   assert(identity.scheme?.namespace === readJson('cases.json').default_case_id, `axm-identity namespace ${identity.scheme?.namespace} does not match the default case id`);
   const recomputed = buildIdentityLayer({
     namespace: readJson('cases.json').default_case_id,
@@ -291,18 +298,49 @@ assert((scores.chains ?? []).some(c => c.laundering_chain_score >= 3), 'expected
     aliases: data.aliases,
   });
   assert(JSON.stringify({ scheme: identity.scheme, entities: identity.entities, claims: identity.claims }) === JSON.stringify(recomputed),
-    'build/axm-identity.json does not match the identity layer recomputed from the ledger — rebuild (npm run build:hops)');
-  const idRe = /^e_[a-z2-7]{24}$/;
-  for (const e of identity.entities) assert(idRe.test(e.axm_entity_id), `entity ${e.local_id} has malformed axm id ${e.axm_entity_id}`);
-  for (const c of identity.claims) {
-    assert(/^c_[a-z2-7]{24}$/.test(c.claim_id), `claim ${c.claim_id} is malformed`);
-    assert(c.windows.length > 0, `claim ${c.claim_id} carries no temporal windows`);
-    for (const w of c.windows) {
-      assert(w.dated === Boolean(w.valid_from || w.valid_until), `claim ${c.claim_id} window dated flag disagrees with its bounds`);
+    'build/axm-identity.json does not match the Genesis v1 identity layer recomputed from the ledger — rebuild (npm run build:hops)');
+
+  const entityByLocal = new Map(identity.entities.map(entity => [entity.local_id, entity]));
+  const currentEntityTokens = new Set();
+  const legacyEntityTokens = new Set();
+  for (const entity of identity.entities) {
+    assert(/^e1_[a-z2-7]{52}$/.test(entity.axm_entity_id), `entity ${entity.local_id} has malformed Genesis id ${entity.axm_entity_id}`);
+    assert(/^e_[a-z2-7]{24}$/.test(entity.legacy_provisional_entity_id), `entity ${entity.local_id} has malformed legacy id ${entity.legacy_provisional_entity_id}`);
+    assert(entity.axm_entity_id !== entity.legacy_provisional_entity_id, `entity ${entity.local_id} did not migrate`);
+    for (const token of [entity.axm_entity_id, ...(entity.alias_axm_ids ?? [])]) {
+      assert(/^e1_[a-z2-7]{52}$/.test(token), `entity ${entity.local_id} has malformed Genesis alias ${token}`);
+      assert(!currentEntityTokens.has(token), `duplicate Genesis entity token ${token}`);
+      currentEntityTokens.add(token);
+    }
+    for (const token of [entity.legacy_provisional_entity_id, ...(entity.legacy_provisional_alias_ids ?? [])]) {
+      assert(/^e_[a-z2-7]{24}$/.test(token), `entity ${entity.local_id} has malformed legacy alias ${token}`);
+      assert(!legacyEntityTokens.has(token), `duplicate legacy entity token ${token}`);
+      legacyEntityTokens.add(token);
     }
   }
-  // Identity is time-stable: one claim per (subj, obj), stints as windows.
-  const pairs = new Set(identity.claims.map(c => `${c.subj}||${c.obj}`));
+
+  const currentClaims = new Set();
+  const legacyClaims = new Set();
+  for (const claim of identity.claims) {
+    assert(/^c1_[a-z2-7]{52}$/.test(claim.claim_id), `claim ${claim.claim_id} is malformed`);
+    assert(/^c_[a-z2-7]{24}$/.test(claim.legacy_provisional_claim_id), `claim ${claim.claim_id} has malformed legacy predecessor`);
+    assert(claim.claim_id !== claim.legacy_provisional_claim_id, `claim ${claim.claim_id} did not migrate`);
+    assert(!currentClaims.has(claim.claim_id), `duplicate Genesis claim ${claim.claim_id}`);
+    assert(!legacyClaims.has(claim.legacy_provisional_claim_id), `duplicate legacy claim predecessor ${claim.legacy_provisional_claim_id}`);
+    currentClaims.add(claim.claim_id);
+    legacyClaims.add(claim.legacy_provisional_claim_id);
+    const subject = entityByLocal.get(claim.subj_local_id);
+    const object = entityByLocal.get(claim.obj_local_id);
+    assert(subject && object, `claim ${claim.claim_id} lacks migrated endpoint entities`);
+    assert(claim.subj === subject?.axm_entity_id && claim.obj === object?.axm_entity_id, `claim ${claim.claim_id} current endpoints drift`);
+    assert(claim.legacy_provisional_subj === subject?.legacy_provisional_entity_id && claim.legacy_provisional_obj === object?.legacy_provisional_entity_id,
+      `claim ${claim.claim_id} legacy endpoints drift`);
+    assert(claim.windows.length > 0, `claim ${claim.claim_id} carries no temporal windows`);
+    for (const window of claim.windows) {
+      assert(window.dated === Boolean(window.valid_from || window.valid_until), `claim ${claim.claim_id} window dated flag disagrees with its bounds`);
+    }
+  }
+  const pairs = new Set(identity.claims.map(claim => `${claim.subj}||${claim.obj}`));
   assert(pairs.size === identity.claims.length, 'duplicate (subj, obj) participates_in claims — stints must be windows on one claim');
 }
 

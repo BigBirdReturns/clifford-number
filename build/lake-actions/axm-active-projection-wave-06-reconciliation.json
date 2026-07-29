@@ -1,0 +1,175 @@
+{
+  "schema_version": "lake-axm-active-projection-wave-06-reconciliation@1",
+  "program_key": "CN-LAKE-AXM-ACTIVE-W06",
+  "source_fingerprint_sha256": "ea1d2eeed49184343df162a0adc8c1a7726fa3f10cf2f3e9377362ba6d7ac222",
+  "input_manifest": [
+    {
+      "path": "BUILD-INSTRUCTIONS.md",
+      "bytes": 16674,
+      "sha256": "e640a20e14e5c38e8688da1c9b3c341e714b917e00c4515cb6423fbb02cd0f0f"
+    },
+    {
+      "path": "build/axm-identity-genesis-v1-migration.json",
+      "bytes": 212697,
+      "sha256": "256f310ff8e85dc3c78894418774eca6d323602dadc54a7dade1e5ad65841338"
+    },
+    {
+      "path": "build/axm-identity.json",
+      "bytes": 212883,
+      "sha256": "84464e6e574aee1502ced0d65ea09631a240c55c2d312818c676d5404402c074"
+    },
+    {
+      "path": "build/hop-graph.json",
+      "bytes": 59001,
+      "sha256": "3e816b903f052ebebbfbd8c51191e00aa0d212321ff808937be87a963a0c4cec"
+    },
+    {
+      "path": "build/lake-actions/axm-active-projection-wave-06.json",
+      "bytes": 7443,
+      "sha256": "8dfb9dd9a58a4b39b2fb8956903a65391086c496fbe3b18ba2aad10e067f7423"
+    },
+    {
+      "path": "build/lake-index/files.jsonl",
+      "bytes": 4952950,
+      "sha256": "c5abd41f88e5744a980530920b17c796cfdb5f1e7ad7ec69d085cf7acdf7ea03"
+    },
+    {
+      "path": "build/lake-index/objects.jsonl",
+      "bytes": 17806809,
+      "sha256": "39502df3796a799e75cdf7f367d5492f52d70413a3ad6197c407fad2c3b071b0"
+    },
+    {
+      "path": "build/lake-index/summary.json",
+      "bytes": 13833,
+      "sha256": "33cdfbd55268e350ec4123ac56e79cd105c8269ea07fe2cc93d23569ba2c56e7"
+    },
+    {
+      "path": "data/project/lake-axm-active-identity-registry-wave-06.jsonl",
+      "bytes": 625032,
+      "sha256": "8eeff00eb6732e126fb3a3562a37e838f8dbe1bcb826e7cf5809b6bda6372dd4"
+    },
+    {
+      "path": "data/project/lake-axm-active-projection-wave-06-policy.json",
+      "bytes": 3198,
+      "sha256": "5766bed2a1df88e40b7ce635b27779a5c60c9b9fae72af072abc176c8e128cbf"
+    },
+    {
+      "path": "data/project/lake-axm-active-projection-wave-06.json",
+      "bytes": 1632,
+      "sha256": "99eff7a07469b4350f144c0ae6bdc7cc9b310b7580776c6b00cf3075224684af"
+    },
+    {
+      "path": "README.md",
+      "bytes": 9188,
+      "sha256": "d40016b6fa40ec27b03293104ea6323d661912512c8dfb15afa014d78244b100"
+    }
+  ],
+  "before": {
+    "scheme_status": "provisional",
+    "active_projection_migrated": false,
+    "active_projection_quarantined": true,
+    "external_axm_gate_complete": false,
+    "cross_case_join_authorized": false,
+    "entity_ids": 176,
+    "claim_ids": 164
+  },
+  "after": {
+    "scheme_status": "reconciled_genesis_v1",
+    "scheme_version": "axm-genesis-v1",
+    "external_commit": "411ef40e6cfc3ecb97ac3e256c8151be678347c8",
+    "active_projection_migrated": true,
+    "active_projection_quarantined": false,
+    "external_axm_gate_complete": true,
+    "cross_case_join_authorized": false,
+    "entity_rows": 176,
+    "alias_rows": 21,
+    "claim_rows": 164,
+    "registry_rows": 340,
+    "legacy_entity_tokens_resolved": 197,
+    "current_entity_tokens_resolved": 197,
+    "legacy_claim_tokens_mapped": 164,
+    "registry_current_entity_ids_source_and_projection_observed": 176,
+    "registry_legacy_entity_ids_source_and_projection_observed": 176,
+    "registry_current_claim_ids_source_and_projection_observed": 164,
+    "registry_legacy_claim_ids_source_and_projection_observed": 164,
+    "temporal_payload_changes": 0,
+    "evidence_payload_changes": 0,
+    "local_identifier_changes": 0,
+    "hop_graph_identity_fields": 0,
+    "global_machine_ids": 12967
+  },
+  "deltas": {
+    "active_projection_migrated": 1,
+    "active_projection_quarantined": -1,
+    "external_axm_gate_complete": 1,
+    "current_entity_ids_activated": 176,
+    "current_claim_ids_activated": 164,
+    "predecessor_tokens_deleted": 0,
+    "temporal_payload_changes": 0,
+    "evidence_payload_changes": 0,
+    "graph_effects_created": 0,
+    "cross_case_join_authorizations": 0
+  },
+  "decisions": [
+    {
+      "decision_key": "W06-RECONCILE-ACTIVE-PROJECTION",
+      "judgment": "the_active_projection_exactly_matches_the_pinned_genesis_v1_recomputation_and_wave_05_successor_map",
+      "action": "retain_genesis_v1_as_the_active_identity_projection",
+      "evidence_count": 340,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_key": "W06-RECONCILE-PREDECESSORS",
+      "judgment": "every_retired_entity_alias_and_claim_identifier_remains_uniquely_resolvable_or_mapped",
+      "action": "retain_predecessor_fields_and_the_wave_06_registry",
+      "evidence_count": 361,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_key": "W06-RECONCILE-CROSS-CASE-GATE",
+      "judgment": "external_reconciliation_is_complete_but_no_multi_case_join_acceptance_fixture_has_run",
+      "action": "keep_cross_case_join_authorized_false",
+      "evidence_count": 164,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    }
+  ],
+  "completion": {
+    "migration_registry_built": true,
+    "active_projection_rebuilt": true,
+    "migration_map_applied": true,
+    "active_projection_migrated": true,
+    "active_projection_quarantined": false,
+    "legacy_identifiers_resolvable": true,
+    "every_current_identifier_source_and_projection_observed": true,
+    "every_legacy_identifier_source_and_projection_observed": true,
+    "temporal_and_evidence_payloads_preserved": true,
+    "local_identifiers_preserved": true,
+    "external_axm_gate_complete": true,
+    "cross_case_join_authorized": false,
+    "post_execution_reconciliation_complete": true,
+    "evidence_truth_determined": false,
+    "publication_cleared": false,
+    "decisions_requiring_human_permission": 0
+  },
+  "boundaries": {
+    "active_projection_migration_proves_entity_identity": false,
+    "active_projection_migration_proves_evidence_truth": false,
+    "legacy_identifier_resolution_merges_entities": false,
+    "genesis_identifier_authorizes_cross_case_join": false,
+    "same_label_across_namespaces_proves_same_entity": false,
+    "external_axm_gate_complete": true,
+    "active_projection_migrated": true,
+    "cross_case_join_authorized": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}

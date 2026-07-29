@@ -96,12 +96,20 @@ pending lane represented as cleared.
 
 Goal: everything that later phases join against is made exact.
 
-2.1 **AXM identity reconciliation.** Reconcile the provisional identity
-serialization in `tools/lib/axm-id.mjs` byte-for-byte against `axm-genesis`
-(`axm_verify.identity`). Until this gate closes, `build/axm-identity.json`
-stays quarantined and no cross-case join ships. Acceptance: a shared fixture
-file of (namespace, label) pairs produces identical IDs in both repositories,
-committed to both.
+2.1 **AXM identity reconciliation â€” completed 2026-07-29.** The repository
+pins `BigBirdReturns/axm-genesis` commit
+`411ef40e6cfc3ecb97ac3e256c8151be678347c8`, preserves the exact Genesis v1
+identity fixture at `data/project/axm-genesis-v1-identity-vectors.json`, and
+records identical Python/Node runtime output in
+`data/project/axm-genesis-v1-runtime-attestation.json`. The active
+`build/axm-identity.json` projection now uses full-digest, versioned
+`e1_`/`c1_` IDs. Every retired `e_`/`c_` token remains an explicit,
+resolvable predecessor in
+`data/project/lake-axm-active-identity-registry-wave-06.jsonl`. This closes
+the external reproducibility and active-migration gate; it does **not** prove
+real-world identity. Cross-case joins remain disabled until a separate
+multi-case acceptance fixture proves namespace, alias, and claim behavior
+without changing any source evidence or graph semantics.
 
 2.2 **Surface-type audit for density.** Classify every existing surface against
 1.7. The Dialog roster and any future 100-name list get `hop_eligible: false`
@@ -280,14 +288,14 @@ inconvenient. Silence is not consent; unreviewed drift is reverted.
   conclusions against receipts, in their own names.
 - Not an identity-clustering instrument, per 1.6, under any framing.
 - Not a subscription oracle whose facts are checkable only by customers.
-- Not dependent m½ß¿m¢G§²ÚîÆ­yØ]\İXÛ\™HHØ[YH[™HQË‰ÊJNÂˆB‚ˆ™]\›ˆÈÚÎˆ\œ›ÜœË›[™İOOH\œ›ÜœÈNÂŸB‚™^Ü[˜İ[Ûˆ›Ü›X]ÛÛœİ[\[Û‘\œ›ÜœÊ\œ›ÜœÊHÂˆ™]\›ˆ\œ›ÜœË›X\
-\œ›ÜˆOˆHÉÙ\œ›Ü‹˜ÛÙ_WH	Ù\œ›Ü‹™š[_Nˆ	Ù\œ›Ü‹›Y\ÜØYÙ_X
-Kš›Ú[Š	×‰ÊNÂŸB‚˜ÛÛœİ[›ÚÙYH›ØÙ\ÜË˜\™İ–ÌWHÈ]œ™\ÛÛ™J›ØÙ\ÜË˜\™İ–ÌWJHˆ	ÉÎÂšYˆ
-[›ÚÙYOOHš[UT“Ô]
-[\Ü›Y]K\›
-JHÂˆÛÛœİ›ÛİH›ØÙ\ÜË˜\™İ–Ì—HÈ]œ™\ÛÛ™J›ØÙ\ÜË˜\™İ–Ì—JHˆ›ØÙ\ÜË˜İÙ
+- Not dependent mï¿½ß¿mï¿½Gï¿½ï¿½ï¿½ï¿½Æ­yï¿½]\ï¿½Xï¿½\ï¿½HHï¿½[YH[ï¿½HQË‰ï¿½JNÂˆBï¿½ï¿½ï¿½]\ï¿½ï¿½ï¿½ï¿½Îˆ\ï¿½ï¿½ÜœË›[ï¿½ï¿½OOH\ï¿½ï¿½Üœï¿½NÂŸBï¿½ï¿½^Üï¿½[ï¿½ï¿½[Ûˆï¿½Ü›X]ï¿½Ûœï¿½[\[Û‘\ï¿½ï¿½Üœï¿½\ï¿½ï¿½Üœï¿½HÂˆï¿½]\ï¿½ï¿½\ï¿½ï¿½ÜœË›X\
+\ï¿½ï¿½ÜˆOï¿½Hï¿½ï¿½\ï¿½ï¿½Ü‹ï¿½ï¿½ï¿½_WH	ï¿½\ï¿½ï¿½Ü‹ï¿½ï¿½[_Nï¿½	ï¿½\ï¿½ï¿½Ü‹ï¿½Y\ï¿½ï¿½Yï¿½_X
+Kï¿½ï¿½ï¿½[ï¿½	ï¿½ï¿½ï¿½NÂŸBï¿½ï¿½ï¿½Ûœï¿½[ï¿½ï¿½ï¿½ï¿½YHï¿½ï¿½ï¿½\ï¿½Ë˜\ï¿½İ–ï¿½WHï¿½]ï¿½ï¿½\ï¿½ï¿½ï¿½Jï¿½ï¿½ï¿½\ï¿½Ë˜\ï¿½İ–ï¿½WJHï¿½	ï¿½ï¿½ÂšYï¿½
+[ï¿½ï¿½ï¿½ï¿½YOOHï¿½[UTï¿½ï¿½]
+[\Üï¿½Y]Kï¿½\ï¿½
+JHÂˆï¿½Ûœï¿½ï¿½ï¿½ï¿½Hï¿½ï¿½ï¿½\ï¿½Ë˜\ï¿½İ–Ì—Hï¿½]ï¿½ï¿½\ï¿½ï¿½ï¿½Jï¿½ï¿½ï¿½\ï¿½Ë˜\ï¿½İ–Ì—JHï¿½ï¿½ï¿½ï¿½\ï¿½Ë˜ï¿½ï¿½
 
-NÂˆÛÛœİ™\İ[H˜[Y]PÛÛœİ[\[ÛÛÛ˜Xİ
-È›ÛİJNÂˆYˆ
-\™\İ[›ÚÊHÂˆÛÛœÛÛK™\œ›ÜŠÛÛœİ[\[ÛˆÛÛ˜Xİ˜Z[YÚ]	Ü™\İ[™\œ›ÜœË›[™İH\œ›ÜŠÊN—‰Ù›Ü›X]ÛÛœİ[\[Û‘\œ›ÜœÊ™\İ[™\œ›ÜœÊ_X
-NÂˆ›ØÙ\ÜË™^]ÛÙHHNÂˆH[ÙHÂˆÛÛœÛÛK›ÙÊ	ĞÛÛœİ[\[ÛˆÛÛ˜XİˆÒÉÊNÂˆBŸB
+NÂˆï¿½Ûœï¿½ï¿½\ï¿½[Hï¿½[Y]Pï¿½Ûœï¿½[\[Ûï¿½Ûï¿½Xï¿½
+ï¿½ï¿½ï¿½ï¿½JNÂˆYï¿½
+\ï¿½\ï¿½[ï¿½ï¿½ï¿½HÂˆï¿½Ûœï¿½ï¿½Kï¿½\ï¿½ï¿½ÜŠï¿½Ûœï¿½[\[Ûˆï¿½Ûï¿½Xï¿½ï¿½Z[Yï¿½]	Ü™\ï¿½[ï¿½\ï¿½ï¿½ÜœË›[ï¿½ï¿½H\ï¿½ï¿½ÜŠï¿½Nï¿½ï¿½Ù›Ü›X]ï¿½Ûœï¿½[\[Û‘\ï¿½ï¿½Üœï¿½ï¿½\ï¿½[ï¿½\ï¿½ï¿½Üœï¿½_X
+NÂˆï¿½ï¿½ï¿½\ï¿½Ë™^]ï¿½ï¿½HHNÂˆH[ï¿½HÂˆï¿½Ûœï¿½ï¿½Kï¿½ï¿½ï¿½	ï¿½ï¿½Ûœï¿½[\[Ûˆï¿½Ûï¿½Xï¿½ï¿½ï¿½ï¿½ï¿½NÂˆBï¿½B
