@@ -1,0 +1,983 @@
+{
+  "schema_version": "lake-canonical-mutation-plan-wave-11@1",
+  "program_key": "CN-LAKE-CANONICAL-ADJUDICATION-W11",
+  "source_fingerprint_sha256": "80339000dbd4938566ef5cbc83a3fc55295d67c754601855d4e270bfb36fe0d2",
+  "input_manifest": [
+    {
+      "path": "BUILD-INSTRUCTIONS.md",
+      "bytes": 17385,
+      "sha256": "1c6364e5bc8e6c645078506fd9f33496c2ce833a3c486d3b9d070c803bc97e0f"
+    },
+    {
+      "path": "build/axm-identity.json",
+      "bytes": 212883,
+      "sha256": "02640f129f08c45ab1e90ec58151b7beb3893320a9728bd7a6311b621220c024"
+    },
+    {
+      "path": "build/hop-graph.json",
+      "bytes": 59001,
+      "sha256": "2f91dfcb5b050e5abd7282de35ba249025403549ea0fb7662c4d48c52e29556f"
+    },
+    {
+      "path": "data/canonical/actors.json",
+      "bytes": 13881,
+      "sha256": "7c05810fa4e565fcd1ee27f0bd7d2f47f98c112bbf0e45704928a13287f6ef83"
+    },
+    {
+      "path": "data/canonical/aliases.json",
+      "bytes": 2399,
+      "sha256": "c580d6c410f4b5affa41221549fd24b9b04fa8dd45a99fe58863c5be74008596"
+    },
+    {
+      "path": "data/canonical/organizations.json",
+      "bytes": 2928,
+      "sha256": "fa21dd778b1171a8c1d067255bcbdf5857b71a90a5c0778fa5b69df064e97087"
+    },
+    {
+      "path": "data/ledger/participation.jsonl",
+      "bytes": 50196,
+      "sha256": "3f4d454a15961e0088a02ab712a66875c073b8263876e98b2f2092fcf8e71097"
+    },
+    {
+      "path": "data/project/lake-canonical-acquisition-registry-wave-10.jsonl",
+      "bytes": 95102,
+      "sha256": "45e587454f23e700aa34826af2827559e294f4668187de5e47b905376ae5effd"
+    },
+    {
+      "path": "data/project/lake-canonical-adjudication-wave-11-policy.json",
+      "bytes": 7314,
+      "sha256": "fcd976ba52405ec1fd5139a08fbd516d5fab839241a9cbb165833daa1e85552a"
+    },
+    {
+      "path": "data/project/lake-subject-ontology-routing-registry-wave-10.jsonl",
+      "bytes": 196648,
+      "sha256": "5e5302d0422849dc1703b07928ce5b7e889dd5700c7782c91b8a193716964e09"
+    },
+    {
+      "path": "data/project/lake-subject-ontology-routing-wave-10.json",
+      "bytes": 2380,
+      "sha256": "cf2e9851b24c4f81636f3542189fbe709b68a3a2ff1631d18b2e9036884db6aa"
+    },
+    {
+      "path": "data/research/clifford-cross-corpus-public-interest-map.json",
+      "bytes": 17133,
+      "sha256": "23f0fce3e022c107aa2b6f97f04462dc1a2c1a17b61d8eaeb6f1c912d0512acb"
+    },
+    {
+      "path": "test/lake-canonical-adjudication-wave-11.test.js",
+      "bytes": 6457,
+      "sha256": "b879389e89232a083bd5ad1879458b9225a10839d75f8fb0a1dc184197fc7f26"
+    },
+    {
+      "path": "tools/build-lake-canonical-adjudication-wave-11.mjs",
+      "bytes": 26442,
+      "sha256": "d1e7e50714feec3dd5a6796b85bb836600afced0678eab3024c6126dad31a87a"
+    },
+    {
+      "path": "tools/build-lake-canonical-identity-extension-wave-11.mjs",
+      "bytes": 10085,
+      "sha256": "0ab755d17d70c038a99cb37c9afb1cd12cc749d9a4f885f937b7b9418209fe24"
+    },
+    {
+      "path": "tools/reconcile-lake-canonical-adjudication-wave-11.mjs",
+      "bytes": 16570,
+      "sha256": "544eb9ef7c329855bddffa5371375d34dca24e32d3b7c492fccd0ae888c4c0e7"
+    },
+    {
+      "path": "tools/validate-lake-canonical-adjudication-wave-11.mjs",
+      "bytes": 19177,
+      "sha256": "f6b4ab4a3df1b149e65cc0a76ef47fa28a41b3c00acc497c97153384965efa95"
+    }
+  ],
+  "before": {
+    "actor_rows": 137,
+    "organization_rows": 25,
+    "alias_rows": 22,
+    "participation_rows": 164,
+    "active_entities": 176,
+    "active_claims": 164,
+    "hop_edges": 31,
+    "hop_edge_digest_sha256": "aa080592cb62dee1f7d39ed6d8a0d7c2d3f674c1bb2a0bacbc959c84f8a601cd",
+    "hop_rejected_surface_digest_sha256": "82774168d65b67ba1b3c3071a67142bf454bab75b82fa21bbf193642bc05c7a5",
+    "hop_rejected_pair_digest_sha256": "e8511b978ddfaae049cd4673ef98946932fc354050d6b5259218794ad7bf38ab",
+    "participation_digest_sha256": "4d3251dca3760bae9459cd46ac33455663ae7943680fb6184d6c517e026ad83a",
+    "active_claim_digest_sha256": "3ccda11961cc6e1bec1b5675418004a8cb98d62a891f710599f81c36a8e0eaf7"
+  },
+  "decision_counts": {
+    "candidates": 67,
+    "by_status": {
+      "bounded_hold": 12,
+      "materialize_new_canonical_record": 45,
+      "materialize_type_corrected_canonical_record": 6,
+      "reroute_nonidentity": 4
+    },
+    "by_mutation_type": {
+      "new_actor": 22,
+      "new_organization": 29,
+      "none": 16
+    },
+    "materialization_authorized": 51,
+    "held_or_rerouted": 16
+  },
+  "mutations": {
+    "actor_additions": [
+      {
+        "id": "alex-karp",
+        "label": "Alex Karp",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-9c81c35b2fc079122c903f5d",
+        "source_routing_id": "SUBJROUTE-86bdb01b1fe7db8975aea78b",
+        "receipt_ids": [
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "alice-bentinck",
+        "label": "Alice Bentinck",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-6b60ae5c965b5f453a37ecde",
+        "source_routing_id": "SUBJROUTE-66701feebe60a7ca94ca4218",
+        "receipt_ids": [
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "andrew-bosworth",
+        "label": "Andrew Bosworth",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-f57db67da23f9216da0f69ba",
+        "source_routing_id": "SUBJROUTE-0424b3703b198f32ef736b9e",
+        "receipt_ids": [
+          "s-army-det201",
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "anita-baldwin",
+        "label": "Anita Baldwin",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "arcadia-field-autopsy",
+        "source_acquisition_id": "CANACQ-923ea5fa11209e21768665df",
+        "source_routing_id": "SUBJROUTE-e15eb843274ad8aa268c8793",
+        "receipt_ids": [
+          "lh-r09"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "bob-mcgrew",
+        "label": "Bob McGrew",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-8dd8852731f4dd06acb10ebd",
+        "source_routing_id": "SUBJROUTE-5487c9732386a1b97aa6d0dc",
+        "receipt_ids": [
+          "s-army-det201"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "charles-koch",
+        "label": "Charles Koch",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-ac010aff00a8ee3bf734d269",
+        "source_routing_id": "SUBJROUTE-f451426352fb975ae4318d76",
+        "receipt_ids": [
+          "s-propublica"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "demis-hassabis",
+        "label": "Demis Hassabis",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-1caf10db98bcfb3caf5e1a7d",
+        "source_routing_id": "SUBJROUTE-6441d810c164c63be76dfb57",
+        "receipt_ids": [
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "frederic-hsieh",
+        "label": "Frederic Hsieh",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "arcadia-field-autopsy",
+        "source_acquisition_id": "CANACQ-236c9c8fcb0b0e961005799f",
+        "source_routing_id": "SUBJROUTE-e57c8e6164ceb43e172d8cb8",
+        "receipt_ids": [
+          "gm-r08",
+          "gm-r13",
+          "gm-r14"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "gregory-kausner",
+        "label": "Gregory Kausner",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "anduril-access-ownership",
+        "source_acquisition_id": "CANACQ-0a8cd9d657fc149a5695bcac",
+        "source_routing_id": "SUBJROUTE-49f11c0378b0c538e9a15b93",
+        "receipt_ids": [
+          "anduril-kausner-2022"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "jacob-dewitte",
+        "label": "Jacob Dewitte",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-82fdd8dc52d32b948a11147f",
+        "source_routing_id": "SUBJROUTE-1123c230c7291d782a5863df",
+        "receipt_ids": [
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "jeremy-obrien",
+        "label": "Jeremy O'Brien",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-59dcc83c810b9cdf37540747",
+        "source_routing_id": "SUBJROUTE-a0dac09926040c2fd2afb496",
+        "receipt_ids": [
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "jonathan-greenblatt",
+        "label": "Jonathan Greenblatt",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-f1a7497c092036eadf75032d",
+        "source_routing_id": "SUBJROUTE-7753a8c7c41016f09d819eb7",
+        "receipt_ids": [
+          "s-propublica"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "kevin-weil",
+        "label": "Kevin Weil",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-d5e1b13e3a9dbf10f929495b",
+        "source_routing_id": "SUBJROUTE-146f19030e3b20d460f07938",
+        "receipt_ids": [
+          "s-army-det201",
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "lucky-baldwin",
+        "label": "Lucky Baldwin",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "arcadia-field-autopsy",
+        "source_acquisition_id": "CANACQ-fe92f01dcbe0ec2eab3263a9",
+        "source_routing_id": "SUBJROUTE-e732b70e657f67b26db06983",
+        "receipt_ids": [
+          "lh-r01",
+          "lh-r02",
+          "lh-r15",
+          "lh-r17",
+          "lh-r19"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "mark-zuckerberg",
+        "label": "Mark Zuckerberg",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-3d71b500ae88066056a5078a",
+        "source_routing_id": "SUBJROUTE-901f30018c249c8f9ad753f1",
+        "receipt_ids": [
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "max-jaderberg",
+        "label": "Max Jaderberg",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-3c7e4d10707b5cf306142650",
+        "source_routing_id": "SUBJROUTE-7b4c21e257cb4855ab0781e5",
+        "receipt_ids": [
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "michael-obadal",
+        "label": "Michael Obadal",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "anduril-access-ownership",
+        "source_acquisition_id": "CANACQ-bc11a95ace46ff7923a4c2f4",
+        "source_routing_id": "SUBJROUTE-b350f0c6e5b27330c8b72461",
+        "receipt_ids": [
+          "army-obadal-bio-2025"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "robert-mercer",
+        "label": "Robert Mercer",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-ddc643ec42dd806ab469cc59",
+        "source_routing_id": "SUBJROUTE-4b8f3721e957891f7367cc9e",
+        "receipt_ids": [
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "ryan-stowers",
+        "label": "Ryan Stowers",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-6beead6aa9011d72f59cea0d",
+        "source_routing_id": "SUBJROUTE-b3a9157fe8a229a1646c2307",
+        "receipt_ids": [
+          "s-propublica"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "sam-altman",
+        "label": "Sam Altman",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-0ed6d6463859dce1cfc63710",
+        "source_routing_id": "SUBJROUTE-81d883e6da483d804d29f0b0",
+        "receipt_ids": [
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "shyam-sankar",
+        "label": "Shyam Sankar",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-e69dd8d833c74daeffd2a2d6",
+        "source_routing_id": "SUBJROUTE-cff8882949f460fcfe3b812b",
+        "receipt_ids": [
+          "s-army-det201",
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "yasmin-green",
+        "label": "Yasmin Green",
+        "kind": "person",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-ceb3661afb58224fd5fdd290",
+        "source_routing_id": "SUBJROUTE-20817f4a83ccb593f36e7b92",
+        "receipt_ids": [
+          "s-propublica"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      }
+    ],
+    "organization_additions": [
+      {
+        "id": "ai-opportunities-unit",
+        "label": "AI Opportunities Unit",
+        "kind": "government_unit",
+        "broad_institution": true,
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-8f2a9d1f2af5f4a9123fa379",
+        "source_routing_id": "SUBJROUTE-3f920d434601c6202c249b6a",
+        "receipt_ids": [
+          "gov-clifford-commission"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "anduril",
+        "label": "Anduril Industries",
+        "kind": "company",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "anduril-access-ownership",
+        "source_acquisition_id": "CANACQ-c6acce40476666c45bb9f52c",
+        "source_routing_id": "SUBJROUTE-174d3559818ce58fe4531011",
+        "receipt_ids": [
+          "anduril-adranos-2023",
+          "anduril-area-i-2021",
+          "anduril-bundle-r3",
+          "anduril-numerica-2025",
+          "dod-dpa-rocket-motors-2025",
+          "lda-anduril-2025-q2"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "anduril-pac",
+        "label": "Anduril PAC",
+        "kind": "political_committee",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "anduril-access-ownership",
+        "source_acquisition_id": "CANACQ-0411c92510f914d1face8f94",
+        "source_routing_id": "SUBJROUTE-0b8c6f328fa38dc73131aa3b",
+        "receipt_ids": [
+          "fec-anduril-pac"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "anthropic",
+        "label": "Anthropic",
+        "kind": "company",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-1813e866182cb8e7f2cfd385",
+        "source_routing_id": "SUBJROUTE-812448201be27fa13830dd55",
+        "receipt_ids": [
+          "gov-ai-action-plan"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "arcadia-successor-agency",
+        "label": "Arcadia Successor Agency",
+        "kind": "organization",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "arcadia-field-autopsy",
+        "source_acquisition_id": "CANACQ-457fe4efdec78da4ba7b1175",
+        "source_routing_id": "SUBJROUTE-67bd3a34271ad4052ee7b379",
+        "receipt_ids": [
+          "pl-r01",
+          "pl-r02"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "arcadia-town-center-llc",
+        "label": "Arcadia Town Center LLC",
+        "kind": "organization",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "arcadia-field-autopsy",
+        "source_acquisition_id": "CANACQ-c036d1df45816e44f2da765d",
+        "source_routing_id": "SUBJROUTE-b8e4ac59856ea2ddfaf2b71f",
+        "receipt_ids": [
+          "af-r25"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "chandler-syndicate",
+        "label": "Chandler Syndicate",
+        "kind": "organization",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "arcadia-field-autopsy",
+        "source_acquisition_id": "CANACQ-3e8a025cc194c78622c9c699",
+        "source_routing_id": "SUBJROUTE-51e75fff91a7570f4aed195a",
+        "receipt_ids": [
+          "lh-r09"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "charles-koch-foundation",
+        "label": "Charles Koch Foundation",
+        "kind": "foundation",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-3ee81ea4d7073befb95a3971",
+        "source_routing_id": "SUBJROUTE-8143fd01bcaf9650a8b38be7",
+        "receipt_ids": [
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "digital-centre-of-government",
+        "label": "Digital Centre of Government",
+        "kind": "government_unit",
+        "broad_institution": true,
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-ce954febdba04b33cf618d3e",
+        "source_routing_id": "SUBJROUTE-add98c43b3a909beb0232f12",
+        "receipt_ids": [
+          "gov-ai-action-plan"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "federalist-society",
+        "label": "Federalist Society",
+        "kind": "nonprofit",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-ab7d58ba847328207faad2e5",
+        "source_routing_id": "SUBJROUTE-382624767826f71924eb95ba",
+        "receipt_ids": [
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "founders-fund",
+        "label": "Founders Fund",
+        "kind": "fund",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-25d5a5d87c9e54151cadc93a",
+        "source_routing_id": "SUBJROUTE-a0ab4e55140fc3f7fc1ff0fc",
+        "receipt_ids": [
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "google-deepmind",
+        "label": "Google DeepMind",
+        "kind": "company",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-eb02e772f1497f469479e5e6",
+        "source_routing_id": "SUBJROUTE-f7effb6c32d6e93caf1a2560",
+        "receipt_ids": [
+          "gov-ai-action-plan"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "groq",
+        "label": "Groq",
+        "kind": "company",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-1fa6a8e148857cb53258774b",
+        "source_routing_id": "SUBJROUTE-c10fd7f8e80244f22ffd1eef",
+        "receipt_ids": [
+          "s-public-record",
+          "s-reuters-procurement"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "hm-treasury",
+        "label": "HM Treasury",
+        "kind": "agency",
+        "broad_institution": true,
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-fed60f575b22ec474f2e5629",
+        "source_routing_id": "SUBJROUTE-514b3da41577825df555008c",
+        "receipt_ids": [
+          "gov-clifford-commission"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "la-turf-club",
+        "label": "La Turf Club",
+        "kind": "organization",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "arcadia-field-autopsy",
+        "source_acquisition_id": "CANACQ-ada18c20ababb222ea758964",
+        "source_routing_id": "SUBJROUTE-27b88b58ffbef494260f89e8",
+        "receipt_ids": [
+          "lh-r05",
+          "lh-r06",
+          "lh-r16"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "mercatus-center",
+        "label": "Mercatus Center",
+        "kind": "nonprofit",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-8d3b6704f1f9e4498be91c30",
+        "source_routing_id": "SUBJROUTE-5ada01d34411d7ed0f797907",
+        "receipt_ids": [
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "meta-ai",
+        "label": "Meta AI",
+        "kind": "company_division",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-ba84c6d4e4824a0088007470",
+        "source_routing_id": "SUBJROUTE-c506dea5d29bcfd3076a031c",
+        "receipt_ids": [
+          "gov-ai-action-plan",
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "microsoft-ai",
+        "label": "Microsoft AI",
+        "kind": "company_division",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-18dbe3834c95c93c138be949",
+        "source_routing_id": "SUBJROUTE-f190198eac68be2c96bdcabd",
+        "receipt_ids": [
+          "gov-ai-action-plan"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "new-america",
+        "label": "New America",
+        "kind": "nonprofit",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-d1a3cf966f3308a8014f1fb5",
+        "source_routing_id": "SUBJROUTE-c07dabe565fb55edaa90f0b7",
+        "receipt_ids": [
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "oklo",
+        "label": "Oklo",
+        "kind": "company",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-32aa6471d8ec3ab72c85afb2",
+        "source_routing_id": "SUBJROUTE-2ca96212965be9d73d11d248",
+        "receipt_ids": [
+          "s-reuters-procurement"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "pi-properties-111",
+        "label": "PI Properties 111",
+        "kind": "organization",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "arcadia-field-autopsy",
+        "source_acquisition_id": "CANACQ-ccabe3a2a4097af9ce27646d",
+        "source_routing_id": "SUBJROUTE-be53ee8fffe50f8a154400a3",
+        "receipt_ids": [
+          "af-r30"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "positive-investments",
+        "label": "Positive Investments",
+        "kind": "organization",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "arcadia-field-autopsy",
+        "source_acquisition_id": "CANACQ-eaccbdfa6d55bf5024c87d93",
+        "source_routing_id": "SUBJROUTE-1ced71263688e4c63e3ea6d8",
+        "receipt_ids": [
+          "af-r14",
+          "af-r28",
+          "af-r29",
+          "af-r31",
+          "ow-r01"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "psiquantum",
+        "label": "PsiQuantum",
+        "kind": "company",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-2399224a275974a7c6e51d4c",
+        "source_routing_id": "SUBJROUTE-7942a65cd95e43dde181a2e8",
+        "receipt_ids": [
+          "s-public-record",
+          "s-reuters-procurement"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "sanabil",
+        "label": "Sanabil",
+        "kind": "fund",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-b2deba9912fafdd5be2fb999",
+        "source_routing_id": "SUBJROUTE-8f4faf9d86de2480aa5a9751",
+        "receipt_ids": [
+          "s-pif-sanabil",
+          "s-public-record",
+          "s-reuters-procurement"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "sanyao-pds",
+        "label": "Sanyao PDS",
+        "kind": "organization",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "arcadia-field-autopsy",
+        "source_acquisition_id": "CANACQ-0b6228ede0295c48d3ba24ca",
+        "source_routing_id": "SUBJROUTE-ce032330ff349985dc43b1db",
+        "receipt_ids": [
+          "gm-r01",
+          "gm-r02",
+          "gm-r03",
+          "gm-r04",
+          "gm-r09",
+          "gm-r10",
+          "gm-r11",
+          "gm-r12"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "saudi-pif",
+        "label": "Saudi PIF",
+        "kind": "fund",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-7637a9d74291ea0c221906e5",
+        "source_routing_id": "SUBJROUTE-1fbfa3c44a52f1b161ab3c38",
+        "receipt_ids": [
+          "s-public-record"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "spacex",
+        "label": "SpaceX",
+        "kind": "company",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-0fb884c0f9c901f6196e8636",
+        "source_routing_id": "SUBJROUTE-31e3704fd9a05b21c095f830",
+        "receipt_ids": [
+          "s-reuters-procurement"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "stronach-group",
+        "label": "Stronach Group",
+        "kind": "organization",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "arcadia-field-autopsy",
+        "source_acquisition_id": "CANACQ-28ca1871a948c42c81152341",
+        "source_routing_id": "SUBJROUTE-6a03603104ea7f43b3844fcf",
+        "receipt_ids": [
+          "lh-r11",
+          "lh-r16"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      },
+      {
+        "id": "wayve",
+        "label": "Wayve",
+        "kind": "company",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_case_id": "uk-ai-policy",
+        "source_acquisition_id": "CANACQ-f71d1ec703dd1c63fca002b9",
+        "source_routing_id": "SUBJROUTE-db3f5e2a711b4b6eb0889ae3",
+        "receipt_ids": [
+          "gov-ai-action-plan"
+        ],
+        "canonical_status": "bounded_provisional_canonical_record",
+        "graph_effect": "none"
+      }
+    ],
+    "alias_additions": [
+      {
+        "alias": "Anduril",
+        "canonical_id": "anduril",
+        "kind": "organization",
+        "source": "lake-canonical-adjudication-wave-11",
+        "source_acquisition_id": "CANACQ-c6acce40476666c45bb9f52c",
+        "receipt_ids": [
+          "anduril-adranos-2023",
+          "anduril-area-i-2021",
+          "anduril-bundle-r3",
+          "anduril-numerica-2025",
+          "dod-dpa-rocket-motors-2025",
+          "lda-anduril-2025-q2"
+        ],
+        "graph_effect": "none"
+      }
+    ],
+    "nonidentity_reroutes": [
+      {
+        "schema_version": "canonical-adjudication-reroute@1",
+        "reroute_id": "CANREROUTE-5b6b6fd8295fb83075b15959",
+        "acquisition_id": "CANACQ-05eea773ae419966977be1ca",
+        "identity_value": "starmer-adoption-layer",
+        "destination_registry": "case_internal_object_registry",
+        "reason": "subject_type_corrected_outside_actor_organization_identity",
+        "receipt_ids": [
+          "guardian-clifford-stepdown",
+          "reuters-starmer-accepts-50"
+        ],
+        "source_custody_present": true,
+        "canonical_mutation_applied": false,
+        "graph_effect": "none"
+      },
+      {
+        "schema_version": "canonical-adjudication-reroute@1",
+        "reroute_id": "CANREROUTE-621f222d9b7e73cf6e57c7bd",
+        "acquisition_id": "CANACQ-5934e0e05cd9e52559d061eb",
+        "identity_value": "nato-eairc2-2026",
+        "destination_registry": "case_program_capability_registry",
+        "reason": "subject_type_corrected_outside_actor_organization_identity",
+        "receipt_ids": [
+          "ncia-eairc2-2026"
+        ],
+        "source_custody_present": true,
+        "canonical_mutation_applied": false,
+        "graph_effect": "none"
+      },
+      {
+        "schema_version": "canonical-adjudication-reroute@1",
+        "reroute_id": "CANREROUTE-d35b9f918d84db64371d890a",
+        "acquisition_id": "CANACQ-6de4f227941cdd48de26d4fd",
+        "identity_value": "national-data-library",
+        "destination_registry": "case_program_capability_registry",
+        "reason": "subject_type_corrected_outside_actor_organization_identity",
+        "receipt_ids": [
+          "gov-ai-action-plan"
+        ],
+        "source_custody_present": true,
+        "canonical_mutation_applied": false,
+        "graph_effect": "none"
+      },
+      {
+        "schema_version": "canonical-adjudication-reroute@1",
+        "reroute_id": "CANREROUTE-ed6a433cc7497c3d380d5868",
+        "acquisition_id": "CANACQ-cd633feb16c649284033b58c",
+        "identity_value": "uk-sovereign-ai",
+        "destination_registry": "case_program_capability_registry",
+        "reason": "subject_type_corrected_outside_actor_organization_identity",
+        "receipt_ids": [
+          "gov-ai-action-plan"
+        ],
+        "source_custody_present": true,
+        "canonical_mutation_applied": false,
+        "graph_effect": "none"
+      }
+    ],
+    "participation_additions": []
+  },
+  "expected_after": {
+    "actor_rows": 159,
+    "organization_rows": 54,
+    "alias_rows": 23,
+    "participation_rows": 164,
+    "active_entities": 227,
+    "active_claims": 164,
+    "accepted_identity_bridges": 0,
+    "graph_edge_delta": 0,
+    "claim_delta": 0
+  },
+  "boundaries": {
+    "canonical_record_proves_all_case_claims": false,
+    "canonical_record_is_identity_bridge": false,
+    "alias_addition_merges_case_entities": false,
+    "candidate_refusal_proves_distinct_entity": false,
+    "canonical_mutation_creates_participation": false,
+    "canonical_mutation_creates_relationship": false,
+    "canonical_mutation_creates_hop": false,
+    "automatic_cross_case_join_authorized": false,
+    "cross_case_graph_join_authorized": false,
+    "cross_case_hop_creation_authorized": false,
+    "evidence_truth_determined": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}

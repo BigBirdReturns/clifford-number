@@ -1,0 +1,240 @@
+{
+  "schema_version": "lake-canonical-adjudication-wave-11-reconciliation@1",
+  "program_key": "CN-LAKE-CANONICAL-ADJUDICATION-W11",
+  "source_fingerprint_sha256": "643975578b1cdadca17545f73a96ca07bc6ee88cdc4e7750f1e222c13515e3fb",
+  "input_manifest": [
+    {
+      "path": "build/axm-identity.json",
+      "bytes": 229598,
+      "sha256": "cf50e5a3ea042253f19cb99db66a2f4e050dcaf2a27b063f58560ed60f793f2b"
+    },
+    {
+      "path": "build/canonical-adjudication-index-wave-11.json",
+      "bytes": 186085,
+      "sha256": "f28887929af3e41d41451b02e714cc38cbde4b6362db464cf6b95e72bfdfdf3e"
+    },
+    {
+      "path": "build/hop-graph.json",
+      "bytes": 61046,
+      "sha256": "aeec58ee64128bbfd4ab9a23781d7a2f5358998c0252ef903fd59e78165a0593"
+    },
+    {
+      "path": "build/lake-index/files.jsonl",
+      "bytes": 5177432,
+      "sha256": "97b185d4dfb8a4a769864a6537da51da820f498fedffcfbe564daee4d7ab64ff"
+    },
+    {
+      "path": "build/lake-index/objects.jsonl",
+      "bytes": 19713275,
+      "sha256": "5ffee6683d70e87bc144e6cfc76fbe11ff5f1761ae9f587bbd4020d2a90b1758"
+    },
+    {
+      "path": "build/lake-index/summary.json",
+      "bytes": 17551,
+      "sha256": "fdb78a91992b695cd622f1c75d2bcca524f10c886005afcbc703fefdec03ab62"
+    },
+    {
+      "path": "data/canonical/actors.json",
+      "bytes": 24577,
+      "sha256": "262fddda3e0b37bc2cac46c824ecc9ef17fca4461e4a86f1ee4947960b5dda30"
+    },
+    {
+      "path": "data/canonical/aliases.json",
+      "bytes": 2876,
+      "sha256": "cec5a5bd2a2184a0658d8fbd26d970340432609aa6127a1a6922b5bd54d5d503"
+    },
+    {
+      "path": "data/canonical/organizations.json",
+      "bytes": 17657,
+      "sha256": "6bd04ba802dbef7554547459472c8f242a14289bf4bd5a34a4fe4d55ae6a49b3"
+    },
+    {
+      "path": "data/ledger/participation.jsonl",
+      "bytes": 50196,
+      "sha256": "3f4d454a15961e0088a02ab712a66875c073b8263876e98b2f2092fcf8e71097"
+    },
+    {
+      "path": "data/project/lake-canonical-adjudication-registry-wave-11.jsonl",
+      "bytes": 124292,
+      "sha256": "7f2527ff2ec6b92ce248a446c732f4d8f53a6591beb4c273df35ffb08ae62a08"
+    },
+    {
+      "path": "data/project/lake-canonical-adjudication-wave-11-policy.json",
+      "bytes": 7314,
+      "sha256": "fcd976ba52405ec1fd5139a08fbd516d5fab839241a9cbb165833daa1e85552a"
+    },
+    {
+      "path": "data/project/lake-canonical-adjudication-wave-11.json",
+      "bytes": 3627,
+      "sha256": "24e678b710316e9c152589ab8283367826c191417fc459d379c6515231094292"
+    },
+    {
+      "path": "data/project/lake-canonical-identity-extension-registry-wave-11.jsonl",
+      "bytes": 53759,
+      "sha256": "44ad1ea7bdb4e882e237aa21895f1ea04ef07e0ece258ce53b682434a85d5446"
+    },
+    {
+      "path": "data/project/lake-canonical-mutation-plan-wave-11.json",
+      "bytes": 35320,
+      "sha256": "6f4e0149a80dde59bc4bdc8cf7c52beb16f6c5f62cdbc1da6b018322097245a7"
+    }
+  ],
+  "before": {
+    "actor_rows": 137,
+    "organization_rows": 25,
+    "alias_rows": 22,
+    "participation_rows": 164,
+    "active_entities": 176,
+    "active_claims": 164,
+    "hop_edges": 31,
+    "hop_edge_digest_sha256": "aa080592cb62dee1f7d39ed6d8a0d7c2d3f674c1bb2a0bacbc959c84f8a601cd",
+    "hop_rejected_surface_digest_sha256": "82774168d65b67ba1b3c3071a67142bf454bab75b82fa21bbf193642bc05c7a5",
+    "hop_rejected_pair_digest_sha256": "e8511b978ddfaae049cd4673ef98946932fc354050d6b5259218794ad7bf38ab",
+    "participation_digest_sha256": "4d3251dca3760bae9459cd46ac33455663ae7943680fb6184d6c517e026ad83a",
+    "active_claim_digest_sha256": "3ccda11961cc6e1bec1b5675418004a8cb98d62a891f710599f81c36a8e0eaf7"
+  },
+  "after": {
+    "actor_rows": 159,
+    "organization_rows": 54,
+    "alias_rows": 23,
+    "participation_rows": 164,
+    "active_entities": 227,
+    "active_claims": 164,
+    "hop_edges": 31,
+    "decision_rows": 67,
+    "decision_status_counts": {
+      "bounded_hold": 12,
+      "materialize_new_canonical_record": 45,
+      "materialize_type_corrected_canonical_record": 6,
+      "reroute_nonidentity": 4
+    },
+    "actor_records_added": 22,
+    "organization_records_added": 29,
+    "aliases_added": 1,
+    "nonidentity_reroutes": 4,
+    "extension_entity_rows": 51,
+    "extension_alias_rows": 1,
+    "adjudication_ids_source_projection_and_index_observed": 67,
+    "extension_entity_ids_source_projection_and_index_observed": 51,
+    "source_controls_authoritative_reachable": true,
+    "source_control_states": [
+      {
+        "path": "data/project/lake-canonical-adjudication-registry-wave-11.jsonl",
+        "present": true,
+        "generated": false,
+        "index_file": true,
+        "authoritative_reachable": true,
+        "public_reachable": false
+      },
+      {
+        "path": "data/project/lake-canonical-mutation-plan-wave-11.json",
+        "present": true,
+        "generated": false,
+        "index_file": false,
+        "authoritative_reachable": true,
+        "public_reachable": false
+      },
+      {
+        "path": "data/project/lake-canonical-identity-extension-registry-wave-11.jsonl",
+        "present": true,
+        "generated": false,
+        "index_file": true,
+        "authoritative_reachable": true,
+        "public_reachable": true
+      },
+      {
+        "path": "data/project/lake-canonical-adjudication-wave-11.json",
+        "present": true,
+        "generated": false,
+        "index_file": false,
+        "authoritative_reachable": true,
+        "public_reachable": false
+      }
+    ],
+    "accepted_identity_bridges": 0,
+    "participation_rows_added": 0,
+    "graph_edge_delta": 0,
+    "active_claim_delta": 0,
+    "global_machine_ids": 14317,
+    "unindexed_machine_ids": 8246,
+    "exact_orphan_evidence_files": 106
+  },
+  "deltas": {
+    "actor_rows": 22,
+    "organization_rows": 29,
+    "alias_rows": 1,
+    "active_entities": 51,
+    "active_claims": 0,
+    "participation_rows": 0,
+    "hop_edges": 0,
+    "accepted_identity_bridges": 0,
+    "graph_effects_created": 0
+  },
+  "decisions": [
+    {
+      "decision_key": "W11-RECONCILE-CANONICAL-MUTATIONS",
+      "judgment": "the_unambiguous_source_custodied_public_subset_was_materialized_and_every_other_candidate_retains_a_named_refusal_or_reroute",
+      "action": "retain_new_records_aliases_decisions_and_refusals_as_append_preserving_registry_state",
+      "evidence_count": 67,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_key": "W11-RECONCILE-IDENTITY-EXTENSION",
+      "judgment": "new_canonical_records_extend_active_axm_identity_without_changing_any_participation_claim",
+      "action": "retain_the_extension_registry_and_legacy_predecessor_resolution",
+      "evidence_count": 52,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_key": "W11-RECONCILE-GRAPH-GATE",
+      "judgment": "canonical_registry_expansion_does_not_create_relationships_graph_edges_or_hops",
+      "action": "keep_all_cross_case_graph_and_hop_authorizations_false",
+      "evidence_count": 31,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    }
+  ],
+  "completion": {
+    "candidate_denominator_adjudicated": true,
+    "authorized_canonical_mutations_applied": true,
+    "every_refusal_or_reroute_preserved": true,
+    "identity_extension_registry_built": true,
+    "every_adjudication_id_source_projection_and_index_observed": true,
+    "every_extension_entity_id_source_projection_and_index_observed": true,
+    "source_controls_authoritative_reachable": true,
+    "participation_payload_unchanged": true,
+    "active_claim_payload_unchanged": true,
+    "hop_edge_payload_unchanged": true,
+    "accepted_identity_bridges": 0,
+    "automatic_cross_case_join_authorized": false,
+    "cross_case_graph_join_authorized": false,
+    "cross_case_hop_creation_authorized": false,
+    "post_execution_reconciliation_complete": true,
+    "evidence_truth_determined": false,
+    "publication_cleared": false,
+    "decisions_requiring_human_permission": 0
+  },
+  "boundaries": {
+    "canonical_record_proves_all_case_claims": false,
+    "canonical_record_is_identity_bridge": false,
+    "alias_addition_merges_case_entities": false,
+    "candidate_refusal_proves_distinct_entity": false,
+    "canonical_mutation_creates_participation": false,
+    "canonical_mutation_creates_relationship": false,
+    "canonical_mutation_creates_hop": false,
+    "automatic_cross_case_join_authorized": false,
+    "cross_case_graph_join_authorized": false,
+    "cross_case_hop_creation_authorized": false,
+    "evidence_truth_determined": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}

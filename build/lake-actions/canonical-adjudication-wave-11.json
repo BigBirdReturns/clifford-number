@@ -1,0 +1,159 @@
+{
+  "schema_version": "lake-canonical-adjudication-wave-11-plan@1",
+  "program_key": "CN-LAKE-CANONICAL-ADJUDICATION-W11",
+  "source_fingerprint_sha256": "80339000dbd4938566ef5cbc83a3fc55295d67c754601855d4e270bfb36fe0d2",
+  "input_manifest": [
+    {
+      "path": "BUILD-INSTRUCTIONS.md",
+      "bytes": 17385,
+      "sha256": "1c6364e5bc8e6c645078506fd9f33496c2ce833a3c486d3b9d070c803bc97e0f"
+    },
+    {
+      "path": "build/axm-identity.json",
+      "bytes": 212883,
+      "sha256": "02640f129f08c45ab1e90ec58151b7beb3893320a9728bd7a6311b621220c024"
+    },
+    {
+      "path": "build/hop-graph.json",
+      "bytes": 59001,
+      "sha256": "2f91dfcb5b050e5abd7282de35ba249025403549ea0fb7662c4d48c52e29556f"
+    },
+    {
+      "path": "data/canonical/actors.json",
+      "bytes": 13881,
+      "sha256": "7c05810fa4e565fcd1ee27f0bd7d2f47f98c112bbf0e45704928a13287f6ef83"
+    },
+    {
+      "path": "data/canonical/aliases.json",
+      "bytes": 2399,
+      "sha256": "c580d6c410f4b5affa41221549fd24b9b04fa8dd45a99fe58863c5be74008596"
+    },
+    {
+      "path": "data/canonical/organizations.json",
+      "bytes": 2928,
+      "sha256": "fa21dd778b1171a8c1d067255bcbdf5857b71a90a5c0778fa5b69df064e97087"
+    },
+    {
+      "path": "data/ledger/participation.jsonl",
+      "bytes": 50196,
+      "sha256": "3f4d454a15961e0088a02ab712a66875c073b8263876e98b2f2092fcf8e71097"
+    },
+    {
+      "path": "data/project/lake-canonical-acquisition-registry-wave-10.jsonl",
+      "bytes": 95102,
+      "sha256": "45e587454f23e700aa34826af2827559e294f4668187de5e47b905376ae5effd"
+    },
+    {
+      "path": "data/project/lake-canonical-adjudication-wave-11-policy.json",
+      "bytes": 7314,
+      "sha256": "fcd976ba52405ec1fd5139a08fbd516d5fab839241a9cbb165833daa1e85552a"
+    },
+    {
+      "path": "data/project/lake-subject-ontology-routing-registry-wave-10.jsonl",
+      "bytes": 196648,
+      "sha256": "5e5302d0422849dc1703b07928ce5b7e889dd5700c7782c91b8a193716964e09"
+    },
+    {
+      "path": "data/project/lake-subject-ontology-routing-wave-10.json",
+      "bytes": 2380,
+      "sha256": "cf2e9851b24c4f81636f3542189fbe709b68a3a2ff1631d18b2e9036884db6aa"
+    },
+    {
+      "path": "data/research/clifford-cross-corpus-public-interest-map.json",
+      "bytes": 17133,
+      "sha256": "23f0fce3e022c107aa2b6f97f04462dc1a2c1a17b61d8eaeb6f1c912d0512acb"
+    },
+    {
+      "path": "test/lake-canonical-adjudication-wave-11.test.js",
+      "bytes": 6457,
+      "sha256": "b879389e89232a083bd5ad1879458b9225a10839d75f8fb0a1dc184197fc7f26"
+    },
+    {
+      "path": "tools/build-lake-canonical-adjudication-wave-11.mjs",
+      "bytes": 26442,
+      "sha256": "d1e7e50714feec3dd5a6796b85bb836600afced0678eab3024c6126dad31a87a"
+    },
+    {
+      "path": "tools/build-lake-canonical-identity-extension-wave-11.mjs",
+      "bytes": 10085,
+      "sha256": "0ab755d17d70c038a99cb37c9afb1cd12cc749d9a4f885f937b7b9418209fe24"
+    },
+    {
+      "path": "tools/reconcile-lake-canonical-adjudication-wave-11.mjs",
+      "bytes": 16570,
+      "sha256": "544eb9ef7c329855bddffa5371375d34dca24e32d3b7c492fccd0ae888c4c0e7"
+    },
+    {
+      "path": "tools/validate-lake-canonical-adjudication-wave-11.mjs",
+      "bytes": 19177,
+      "sha256": "f6b4ab4a3df1b149e65cc0a76ef47fa28a41b3c00acc497c97153384965efa95"
+    }
+  ],
+  "before": {
+    "actor_rows": 137,
+    "organization_rows": 25,
+    "alias_rows": 22,
+    "participation_rows": 164,
+    "active_entities": 176,
+    "active_claims": 164,
+    "hop_edges": 31,
+    "hop_edge_digest_sha256": "aa080592cb62dee1f7d39ed6d8a0d7c2d3f674c1bb2a0bacbc959c84f8a601cd",
+    "hop_rejected_surface_digest_sha256": "82774168d65b67ba1b3c3071a67142bf454bab75b82fa21bbf193642bc05c7a5",
+    "hop_rejected_pair_digest_sha256": "e8511b978ddfaae049cd4673ef98946932fc354050d6b5259218794ad7bf38ab",
+    "participation_digest_sha256": "4d3251dca3760bae9459cd46ac33455663ae7943680fb6184d6c517e026ad83a",
+    "active_claim_digest_sha256": "3ccda11961cc6e1bec1b5675418004a8cb98d62a891f710599f81c36a8e0eaf7"
+  },
+  "decision_counts": {
+    "candidates": 67,
+    "by_status": {
+      "bounded_hold": 12,
+      "materialize_new_canonical_record": 45,
+      "materialize_type_corrected_canonical_record": 6,
+      "reroute_nonidentity": 4
+    },
+    "by_mutation_type": {
+      "new_actor": 22,
+      "new_organization": 29,
+      "none": 16
+    },
+    "materialization_authorized": 51,
+    "held_or_rerouted": 16
+  },
+  "expected_after": {
+    "actor_rows": 159,
+    "organization_rows": 54,
+    "alias_rows": 23,
+    "participation_rows": 164,
+    "active_entities": 227,
+    "active_claims": 164,
+    "accepted_identity_bridges": 0,
+    "graph_edge_delta": 0,
+    "claim_delta": 0
+  },
+  "completion": {
+    "candidate_denominator_adjudicated": true,
+    "every_decision_has_counterevidence_or_materialization_basis": true,
+    "reversible_materialization_plan_present": true,
+    "canonical_mutations_applied": false,
+    "identity_extension_registry_built": false,
+    "accepted_identity_bridges": 0,
+    "participation_rows_added": 0,
+    "graph_effects_created": 0,
+    "decisions_requiring_human_permission": 0
+  },
+  "boundaries": {
+    "canonical_record_proves_all_case_claims": false,
+    "canonical_record_is_identity_bridge": false,
+    "alias_addition_merges_case_entities": false,
+    "candidate_refusal_proves_distinct_entity": false,
+    "canonical_mutation_creates_participation": false,
+    "canonical_mutation_creates_relationship": false,
+    "canonical_mutation_creates_hop": false,
+    "automatic_cross_case_join_authorized": false,
+    "cross_case_graph_join_authorized": false,
+    "cross_case_hop_creation_authorized": false,
+    "evidence_truth_determined": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}

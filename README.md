@@ -146,3 +146,15 @@ npm run query:hops -- --from e_gkmzucjlt7bu6i3s2nmqddmm                         
 
 M-02 surveys ten additional macro estates and reruns all preserved, source-route, and custody trails through the [Game-Trail Aperture](gametrails/). See [the milestone record](docs/milestones/estate-frontier-game-trails-v1.md).
 
+## Canonical acquisition adjudication
+
+Wave 11 converts the typed acquisition queue into explicit canonical decisions.
+Each candidate is classified as a new record, alias, duplicate, collision, bounded
+hold, or nonidentity reroute. Only the source-custodied, publicly inspectable,
+unambiguous subset is appended to the actor, organization, and alias registries.
+Every refusal remains queryable with its blocker and correction route.
+
+The expansion is identity-only and graph-inert: it creates no participation,
+relationship, edge, hop, or automatic cross-case join. The original AXM Genesis
+migration remains the historical baseline; later entities and aliases are carried
+by a separate append-preserving extension registry.

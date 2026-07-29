@@ -311,3 +311,16 @@ N�ۜ��\�[H�[Y]P�ۜ�[\[ې�۝�X�
 ����JNY�
 \�\�[���H�ۜ��K�\��܊�ۜ�[\[ۈ�۝�X��Z[Y�]	ܙ\�[�\��ܜ˛[��H\��܊�N��ٛܛX]�ۜ�[\[ۑ\��ܜ��\�[�\��ܜ�_X
 N���\�˙^]��HHNH[�H�ۜ��K���	��ۜ�[\[ۈ�۝�X�����NB�B
+
+3.11 **Canonical acquisition adjudication — Wave 11.**
+Every canonical-acquisition candidate must receive a named decision against existing
+IDs, labels, aliases, candidate collisions, custody, semantic type, and source
+context. The evidence-sufficient, publicly inspectable, unambiguous subset may be
+materialized immediately as reversible canonical records or aliases. Acronym-only,
+contextual, conflicting, private-only, and nonidentity rows remain explicit holds
+or typed reroutes; they do not wait for unspecified human permission.
+
+Canonical expansion does not create participation, a relationship, a graph edge,
+a hop, or a cross-case identity bridge. New active AXM identities are recorded in
+`data/project/lake-canonical-identity-extension-registry-wave-11.jsonl` while the
+Wave 06 migration registry remains an immutable 176-entity / 164-claim baseline.
