@@ -43,6 +43,15 @@ jobs:
       - name: Materialize and validate Wave 05
         run: |
           node /tmp/k0-wave05-materializer/materialize-k0-role-neutral-wave-05.mjs
+          python - <<'PYSTALE'
+          from pathlib import Path
+          path = Path('tools/validate-k0-epistemic-admissibility.mjs')
+          text = path.read_text()
+          old = "if (pendingFieldMetric?.observed !== 0 || pendingFieldMetric?.source !== 'data/research/k0-wave04-field-adjudication.json') fail('Wave 04 coverage metric drift');"
+          new = "if (pendingFieldMetric?.observed !== 2 || pendingFieldMetric?.source !== 'data/research/k0-role-neutral-wave-05.json') fail('Wave 05 coverage metric drift');"
+          assert text.count(old) == 1, 'stale Wave 04 metric anchor missing or duplicated'
+          path.write_text(text.replace(old, new))
+          PYSTALE
           node tools/build-k0-role-neutral-wave-05.mjs
           node tools/validate-k0-role-neutral-wave-05.mjs
           node test/k0-role-neutral-wave-05.test.js
@@ -60,6 +69,15 @@ jobs:
           git restore --staged --worktree .
           git clean -fd
           node /tmp/k0-wave05-materializer/materialize-k0-role-neutral-wave-05.mjs
+          python - <<'PYSTALE'
+          from pathlib import Path
+          path = Path('tools/validate-k0-epistemic-admissibility.mjs')
+          text = path.read_text()
+          old = "if (pendingFieldMetric?.observed !== 0 || pendingFieldMetric?.source !== 'data/research/k0-wave04-field-adjudication.json') fail('Wave 04 coverage metric drift');"
+          new = "if (pendingFieldMetric?.observed !== 2 || pendingFieldMetric?.source !== 'data/research/k0-role-neutral-wave-05.json') fail('Wave 05 coverage metric drift');"
+          assert text.count(old) == 1, 'stale Wave 04 metric anchor missing or duplicated'
+          path.write_text(text.replace(old, new))
+          PYSTALE
           node tools/build-k0-role-neutral-wave-05.mjs
           node tools/validate-k0-role-neutral-wave-05.mjs
           node test/k0-role-neutral-wave-05.test.js
@@ -168,6 +186,7 @@ jobs:
               'rejected_claimed_sha256': '58848239eaff432d0ff4c6f164bff3e4e1e4cefaec8288b7629feb8d5fb3c674',
               'unsupported_intermediate_sha256': '229b15062e72d756d7fbda7eec1c6345530f00edfe4462cff403826be00b76a5',
               'carrier_repair': {'fragment': 0, 'byte_offset': 293, 'inserted_character': 'O', 'unique_valid_gzip_tar_reconstruction': True},
+              'aggregate_repair': {'old_metric': 'Wave04 field pending = 0', 'new_metric': 'Wave05 discovery pending = 2', 'anchor_count': 1},
               'included_events': 0,
               'publication_cleared': False,
               'graph_effect': 'none',
