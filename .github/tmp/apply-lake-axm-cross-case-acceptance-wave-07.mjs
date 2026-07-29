@@ -29,11 +29,11 @@ IDs, and every retired \`e_\`/\`c_\` token remains a resolvable predecessor in
 
 The synthetic multi-case fixture in
 \`data/project/lake-axm-cross-case-acceptance-wave-07-fixture.json\` authorizes
-one narrower lane: **explicit, source-custodied, graph-inert cross-case identity
-resolution**. A conforming bridge requires source custody on both local records,
-a separately custodied same-entity assertion, the same identity namespace, and
-an unambiguous overlap between canonical or declared-alias AXM tokens. Accepted
-and rejected decisions travel together in
+one narrower lane: **explicit, source-custodied, graph-inert cross-case identity resolution**.
+A conforming bridge requires source custody on both local records, a separately
+custodied same-entity assertion, the same identity namespace, and an unambiguous
+overlap between canonical or declared-alias AXM tokens. Accepted and rejected
+decisions travel together in
 \`data/project/lake-axm-cross-case-join-registry-wave-07.jsonl\`.
 
 Automatic same-label joins remain prohibited. Different namespaces do not join.
