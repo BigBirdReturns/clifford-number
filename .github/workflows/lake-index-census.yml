@@ -1,11 +1,12 @@
 name: Lake index census
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/lake-index-census
+      - main
     paths:
       - '.github/tmp/lake-index-trigger.json'
+      - '.github/workflows/lake-index-census.yml'
   workflow_dispatch:
 
 permissions:
@@ -24,14 +25,26 @@ jobs:
         with:
           ref: agent/lake-index-census
           fetch-depth: 0
+      - name: Detect a live census request
+        id: request
+        shell: bash
+        run: |
+          if test -f .github/tmp/lake-index-trigger.json; then
+            echo 'present=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'present=false' >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-node@v4
+        if: steps.request.outputs.present == 'true'
         with:
           node-version: '24'
       - name: Observe the open-pull-request shadow
+        if: steps.request.outputs.present == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node tools/build-lake-open-pr-shadow.mjs
       - name: Build and stabilize the current-tree lake census
+        if: steps.request.outputs.present == 'true'
         run: |
           node tools/build-lake-index.mjs
           node tools/stabilize-lake-index.mjs
@@ -40,6 +53,7 @@ jobs:
           node tools/validate-lake-gap-summary.mjs
           node test/lake-index.test.js
       - name: Prove deterministic census products
+        if: steps.request.outputs.present == 'true'
         run: |
           sha256sum \
             build/lake-index.json \
@@ -57,6 +71,7 @@ jobs:
           node test/lake-index.test.js
           git diff --check
       - name: Enforce the exact generated change set
+        if: steps.request.outputs.present == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -89,6 +104,7 @@ jobs:
           }
           PY
       - name: Commit the durable census
+        if: steps.request.outputs.present == 'true'
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
