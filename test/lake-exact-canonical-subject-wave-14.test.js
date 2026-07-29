@@ -41,10 +41,14 @@ const hopGraphText = fs.readFileSync('build/hop-graph.json', 'utf8');
 
 assert.equal(projection.schema_version, 'exact-canonical-subject-projection-wave-14@1');
 assert.equal(plan.schema_version, 'exact-canonical-subject-wave-14-plan@1');
-assert.equal(projection.counts.claim_subject_references, 336);
-assert.equal(projection.counts.explicit_resolution_references, 31);
-assert.ok(projection.counts.exact_canonical_id_references > 0);
-assert.ok(projection.counts.exact_canonical_subjects > 0);
+assert.equal(projection.counts.claim_subject_references, policy.expected.claim_subject_references);
+assert.equal(projection.counts.explicit_resolution_references, policy.expected.explicitly_resolved_references);
+assert.equal(projection.counts.exact_canonical_id_references, policy.expected.exact_canonical_references);
+assert.equal(projection.counts.exact_canonical_subjects, policy.expected.exact_canonical_subjects);
+assert.equal(projection.counts.unresolved_subject_references, policy.expected.unresolved_subject_references);
+assert.equal(projection.counts.unresolved_distinct_subjects, policy.expected.unresolved_distinct_subjects);
+assert.equal(projection.counts.briefing_exact_canonical_references, policy.expected.briefing_exact_canonical_references);
+assert.deepEqual(projection.unresolved_classification_counts, policy.expected.unresolved_classification_counts);
 assert.equal(
   projection.counts.explicit_resolution_references
     + projection.counts.exact_canonical_id_references
@@ -53,9 +57,9 @@ assert.equal(
 );
 assert.equal(projection.counts.unresolved_distinct_subjects, unresolved.length);
 assert.equal(Object.values(projection.unresolved_classification_counts).reduce((total, count) => total + count, 0), unresolved.length);
-assert.equal(projection.counts.source_subject_id_changes, 0);
-assert.equal(projection.counts.source_claim_text_changes, 0);
-assert.equal(projection.counts.accepted_cross_case_identity_bridges, 0);
+assert.equal(projection.counts.source_subject_id_changes, policy.expected.source_subject_id_changes);
+assert.equal(projection.counts.source_claim_text_changes, policy.expected.source_claim_text_changes);
+assert.equal(projection.counts.accepted_cross_case_identity_bridges, policy.expected.accepted_cross_case_identity_bridges);
 assert.equal(projection.counts.decisions_requiring_human_permission, 0);
 
 function claim(caseId, claimId) {
