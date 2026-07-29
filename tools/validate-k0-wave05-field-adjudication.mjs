@@ -138,7 +138,14 @@ export function validateWave05Field({
   const coverageRow = coverage.lanes.find(row => row.lane_id === 'epistemic-admissibility-ceiling-events');
   const pendingMetric = coverageRow?.metrics?.find(row => row.metric_id === 'candidate_records_pending_field_audit');
   const gap = coverageRow?.known_gaps?.find(row => row.gap_id === 'k0-wave05-field-adjudication-open');
-  if (pendingMetric?.observed !== 0 || pendingMetric?.source !== 'data/research/k0-wave05-field-adjudication.json') fail('coverage pending-field metric drift');
+  const wave05PendingSources = new Set([
+    'data/research/k0-role-neutral-wave-05.json',
+    'data/research/k0-wave05-field-adjudication.json'
+  ]);
+  if (!pendingMetric || !Number.isInteger(pendingMetric.observed) || pendingMetric.observed < 0 || typeof pendingMetric.source !== 'string' || pendingMetric.source.length < 1) fail('coverage pending-field metric drift');
+  if (executedWaveIds.length === 5) {
+    if (pendingMetric?.observed !== 0 || pendingMetric?.source !== 'data/research/k0-wave05-field-adjudication.json') fail('coverage pending-field metric drift');
+  } else if (wave05PendingSources.has(pendingMetric?.source)) fail('coverage pending-field metric drift');
   if (gap?.status !== 'resolved_at_maintainer_layer') fail('coverage Wave 05 gap state drift');
 
   const review = reviews.reviews.find(row => row.lane_id === 'epistemic-admissibility-ceiling-events');
