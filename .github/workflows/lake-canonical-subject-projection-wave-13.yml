@@ -100,6 +100,7 @@ jobs:
         run: |
           set -euo pipefail
           if test "${{ steps.mode.outputs.phase }}" = 'execute'; then
+            rm -f .github/tmp/lake-canonical-subject-projection-wave-13-trigger.json
             git add -A
             git restore --worktree .
             git clean -fd
