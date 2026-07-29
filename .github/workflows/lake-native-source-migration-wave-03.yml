@@ -115,6 +115,13 @@ jobs:
       - name: Restore the staged native-source tree before the lake census
         if: steps.mode.outputs.validate == 'true'
         run: git restore --worktree .
+      - name: Rebuild native case projections from the staged source
+        if: steps.mode.outputs.validate == 'true'
+        run: |
+          node tools/compile-cases.mjs
+          node tools/build-public-catalog.mjs
+          node tools/build-report-frontier.mjs
+          node tools/render-report-frontier.mjs
       - name: Observe current open-PR shadow
         if: steps.mode.outputs.validate == 'true'
         env:
