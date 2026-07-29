@@ -1,0 +1,292 @@
+name: Evidence lake exact cross-case mention denominator Wave 09
+
+on:
+  push:
+    branches:
+      - agent/lake-cross-case-mention-denominator-wave-09
+    paths:
+      - '.github/tmp/lake-cross-case-mention-denominator-wave-09-trigger.json'
+  pull_request:
+    branches:
+      - agent/lake-cross-case-production-denominator-wave-08
+    paths:
+      - 'data/project/lake-cross-case-mention-denominator-wave-09-policy.json'
+      - 'tools/lib/cross-case-mention-denominator.mjs'
+      - 'tools/build-lake-cross-case-mention-denominator-wave-09.mjs'
+      - 'tools/reconcile-lake-cross-case-mention-denominator-wave-09.mjs'
+      - 'tools/validate-lake-cross-case-mention-denominator-wave-09.mjs'
+      - 'tools/apply-lake-cross-case-mention-denominator-wave-09.mjs'
+      - 'test/lake-cross-case-mention-denominator-wave-09.test.js'
+      - '.github/workflows/lake-cross-case-mention-denominator-wave-09.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: lake-cross-case-mention-denominator-wave-09-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Determine execution mode
+        id: mode
+        shell: bash
+        run: |
+          echo "original_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if test -f .github/tmp/lake-cross-case-mention-denominator-wave-09-trigger.json; then
+            echo 'validate=true' >> "$GITHUB_OUTPUT"
+            echo 'materialize=true' >> "$GITHUB_OUTPUT"
+            echo 'phase=execute' >> "$GITHUB_OUTPUT"
+          elif test "$GITHUB_EVENT_NAME" = 'pull_request' || test "$GITHUB_EVENT_NAME" = 'workflow_dispatch'; then
+            echo 'validate=true' >> "$GITHUB_OUTPUT"
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+            if git ls-files --error-unmatch data/project/lake-cross-case-mention-decision-registry-wave-09.jsonl >/dev/null 2>&1; then
+              echo 'phase=post' >> "$GITHUB_OUTPUT"
+            else
+              echo 'phase=execute' >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo 'validate=false' >> "$GITHUB_OUTPUT"
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+            echo 'phase=none' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.mode.outputs.validate == 'true'
+        with:
+          node-version: '24'
+      - name: Restore committed bytes before the exact mention pass
+        if: steps.mode.outputs.validate == 'true'
+        run: |
+          git restore --staged --worktree .
+          git clean -fd
+      - name: Apply checked Wave 09 source contract
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        run: node tools/apply-lake-cross-case-mention-denominator-wave-09.mjs --phase=source
+      - name: Build and deterministically prove exact mention products
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-lake-cross-case-mention-denominator-wave-09.mjs
+          sha256sum \
+            build/cross-case-mention-lexicon-wave-09.json \
+            data/project/lake-cross-case-mention-registry-wave-09.jsonl \
+            data/project/lake-cross-case-mentioned-entity-registry-wave-09.jsonl \
+            data/project/lake-cross-case-mention-pair-denominator-wave-09.jsonl \
+            data/project/lake-cross-case-mention-decision-registry-wave-09.jsonl \
+            build/cross-case-mention-decision-index-wave-09.json \
+            data/project/lake-cross-case-mention-denominator-wave-09.json \
+            build/lake-actions/cross-case-mention-denominator-wave-09.json \
+            reports/lake-cross-case-mention-denominator-wave-09.md > /tmp/lake-cross-case-wave-09-first.sha256
+          node tools/build-lake-cross-case-mention-denominator-wave-09.mjs
+          sha256sum --check --strict /tmp/lake-cross-case-wave-09-first.sha256
+          git diff --check
+      - name: Stage Wave 09 source and generated products
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        run: git add -A
+      - name: Run the existing complete release gate before permanent Wave 09 registration
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        run: npm run release:check
+      - name: Stabilize the staged Wave 09 tree before the lake census
+        if: steps.mode.outputs.validate == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test "${{ steps.mode.outputs.phase }}" = 'execute'; then
+            git add -A
+            git restore --worktree .
+            git clean -fd
+          else
+            git reset --hard HEAD
+            git clean -fd
+          fi
+      - name: Observe current open-PR shadow
+        if: steps.mode.outputs.validate == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/build-lake-open-pr-shadow.mjs
+      - name: Build the first reconciled Wave 09 lake
+        if: steps.mode.outputs.validate == 'true'
+        run: |
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/reconcile-lake-cross-case-mention-denominator-wave-09.mjs
+          node tools/validate-lake-cross-case-mention-denominator-wave-09.mjs
+          node test/lake-index.test.js
+          node test/lake-basin-index.test.js
+          node test/lake-cross-case-mention-denominator-wave-09.test.js
+      - name: Register Wave 09 in the permanent one-command gate
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        run: |
+          node tools/apply-lake-cross-case-mention-denominator-wave-09.mjs --phase=gate
+          git add -A
+      - name: Run the complete repository gate with permanent Wave 09 validation
+        if: steps.mode.outputs.validate == 'true'
+        run: npm run release:check
+      - name: Stabilize and rebuild the lake after permanent-gate registration
+        if: steps.mode.outputs.validate == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test "${{ steps.mode.outputs.phase }}" = 'execute'; then
+            git add -A
+            git restore --worktree .
+            git clean -fd
+          else
+            git reset --hard HEAD
+            git clean -fd
+          fi
+          node tools/build-lake-open-pr-shadow.mjs
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/reconcile-lake-cross-case-mention-denominator-wave-09.mjs
+          node tools/validate-lake-cross-case-mention-denominator-wave-09.mjs
+          node test/lake-cross-case-mention-denominator-wave-09.test.js
+      - name: Prove deterministic post-mention products
+        if: steps.mode.outputs.validate == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          find build/lake-index -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/lake-cross-case-wave-09-post.sha256
+          sha256sum \
+            build/cross-case-mention-lexicon-wave-09.json \
+            data/project/lake-cross-case-mention-registry-wave-09.jsonl \
+            data/project/lake-cross-case-mentioned-entity-registry-wave-09.jsonl \
+            data/project/lake-cross-case-mention-pair-denominator-wave-09.jsonl \
+            data/project/lake-cross-case-mention-decision-registry-wave-09.jsonl \
+            build/cross-case-mention-decision-index-wave-09.json \
+            data/project/lake-cross-case-mention-denominator-wave-09.json \
+            build/lake-actions/cross-case-mention-denominator-wave-09.json \
+            build/lake-actions/cross-case-mention-denominator-wave-09-reconciliation.json \
+            reports/lake-index-census.md \
+            reports/lake-index-gap-summary.md \
+            reports/lake-basin-index.md \
+            reports/lake-cross-case-mention-denominator-wave-09.md \
+            reports/lake-cross-case-mention-denominator-wave-09-reconciliation.md >> /tmp/lake-cross-case-wave-09-post.sha256
+          node tools/build-lake-cross-case-mention-denominator-wave-09.mjs
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/reconcile-lake-cross-case-mention-denominator-wave-09.mjs
+          sha256sum --check --strict /tmp/lake-cross-case-wave-09-post.sha256
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-cross-case-mention-denominator-wave-09.mjs
+          node test/lake-cross-case-mention-denominator-wave-09.test.js
+          npm run release:check
+          git diff --check
+      - name: Restore the non-materializing validation surface
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.materialize != 'true'
+        run: |
+          git reset --hard HEAD
+          git clean -fd
+          test -z "$(git status --porcelain)"
+      - name: Enforce Wave 09 source and generated-output boundaries
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/tmp/lake-cross-case-mention-denominator-wave-09-trigger.json
+          python - <<'PY'
+          import re
+          import subprocess
+
+          required = {
+              '.github/tmp/lake-cross-case-mention-denominator-wave-09-trigger.json',
+              'BUILD-INSTRUCTIONS.md',
+              'README.md',
+              'package.json',
+              'data/project/lake-index-policy.json',
+              'build/cross-case-mention-lexicon-wave-09.json',
+              'data/project/lake-cross-case-mention-registry-wave-09.jsonl',
+              'data/project/lake-cross-case-mentioned-entity-registry-wave-09.jsonl',
+              'data/project/lake-cross-case-mention-pair-denominator-wave-09.jsonl',
+              'data/project/lake-cross-case-mention-decision-registry-wave-09.jsonl',
+              'build/cross-case-mention-decision-index-wave-09.json',
+              'data/project/lake-cross-case-mention-denominator-wave-09.json',
+              'build/lake-actions/cross-case-mention-denominator-wave-09.json',
+              'build/lake-actions/cross-case-mention-denominator-wave-09-reconciliation.json',
+              'reports/lake-cross-case-mention-denominator-wave-09.md',
+              'reports/lake-cross-case-mention-denominator-wave-09-reconciliation.md',
+          }
+          exact_allowed_sources = required | {
+              'data/project/lake-open-pr-shadow.json',
+          }
+          generated_prefixes = (
+              'build/',
+              'reports/',
+              'briefs/',
+              'estates/',
+              'gametrails/',
+          )
+          generated_root = re.compile(r'^(?:Clifford-.*\.html|[^/]+-standalone\.html)$')
+
+          raw = subprocess.check_output([
+              'git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'
+          ])
+          entries = [entry for entry in raw.decode().split('\0') if entry]
+          actual = set()
+          for entry in entries:
+              status = entry[:2]
+              assert 'R' not in status and 'C' not in status, entry
+              actual.add(entry[3:])
+
+          unexpected = sorted(path for path in actual
+              if path not in exact_allowed_sources
+              and not path.startswith(generated_prefixes)
+              and not generated_root.match(path))
+          assert required <= actual, {
+              'missing_required_wave09_changes': sorted(required - actual),
+          }
+          assert not unexpected, {
+              'undeclared_source_changes': unexpected,
+          }
+          print({
+              'required_changes': len(required),
+              'actual_changes': len(actual),
+              'generated_changes': len(actual - exact_allowed_sources),
+          })
+          PY
+      - name: Commit the executed exact cross-case mention denominator
+        if: steps.mode.outputs.materialize == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Execute exact cross-case mention denominator Wave 09'
+          git fetch origin agent/lake-cross-case-mention-denominator-wave-09
+          test "$(git rev-parse origin/agent/lake-cross-case-mention-denominator-wave-09)" = "${{ steps.mode.outputs.original_sha }}"
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-cross-case-mention-denominator-wave-09.mjs
+          npm run validate:cross-case-mentions
+          git push origin HEAD:agent/lake-cross-case-mention-denominator-wave-09
