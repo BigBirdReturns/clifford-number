@@ -113,8 +113,40 @@ if ((registry?.boundaries ?? {}).generated_projection_is_independent_evidence !=
 
 const gapIds = gaps.map(row => row.gap_id);
 if (new Set(gapIds).size !== gapIds.length) issue('basin gap IDs must be unique');
-if (!gaps.some(row => row.gap_type === 'missing_authoritative_entrypoint')) issue('the first basin pass must preserve missing authoritative entrypoint gaps');
-if (!gaps.some(row => row.gap_type === 'source_record_without_authoritative_reachability')) issue('the first basin pass must preserve source-orphan gaps');
+
+const expectedMissingEntrypointGapIds = [...summaryById.values()]
+  .flatMap(summary => (summary.entrypoint_state ?? [])
+    .filter(state => state.present_in_census_snapshot !== true)
+    .map(state => `missing-entrypoint:${summary.basin_id}:${state.path}`))
+  .sort();
+const actualMissingEntrypointGapIds = gaps
+  .filter(row => row.gap_type === 'missing_authoritative_entrypoint')
+  .map(row => row.gap_id)
+  .sort();
+if (JSON.stringify(expectedMissingEntrypointGapIds) !== JSON.stringify(actualMissingEntrypointGapIds)) {
+  issue('missing-authoritative-entrypoint gaps must exactly match absent declared entrypoints');
+}
+
+const sourceSemanticRoles = new Set([
+  'canonical_registry',
+  'canonical_ledger',
+  'research_source',
+  'research_program_source',
+  'case_source',
+  'receipt_artifact',
+  'estate_source',
+]);
+const expectedSourceOrphanPaths = membership
+  .filter(row => row.evidence_bearing && row.exact_orphan && sourceSemanticRoles.has(row.semantic_role))
+  .map(row => row.path)
+  .sort();
+const actualSourceOrphanPaths = gaps
+  .filter(row => row.gap_type === 'source_record_without_authoritative_reachability')
+  .map(row => row.path)
+  .sort();
+if (JSON.stringify(expectedSourceOrphanPaths) !== JSON.stringify(actualSourceOrphanPaths)) {
+  issue('source-orphan gaps must exactly match exact-orphan source records');
+}
 
 const requiredManifestPaths = [
   'build/lake-index/basins.json',
