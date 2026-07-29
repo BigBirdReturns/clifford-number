@@ -99,6 +99,7 @@ const neutralWave02 = read('data/research/k0-role-neutral-wave-02.json');
 const neutralWave03 = read('data/research/k0-role-neutral-wave-03.json');
 const neutralWave04 = read('data/research/k0-role-neutral-wave-04.json');
 const neutralWave05 = read('data/research/k0-role-neutral-wave-05.json');
+const wave05Field = read('data/research/k0-wave05-field-adjudication.json');
 const registry = read('data/project/m05-answerable-power-story-registry.json');
 const fanout = read('data/project/m05-answerable-power-fanout.json');
 const selection = read('data/canonical/corpus-selection.json');
@@ -166,6 +167,9 @@ const report = {
     role_neutral_wave_05_query_executions: neutralWave05.counts.query_executions,
     role_neutral_wave_05_retained_records: neutralWave05.counts.retained_records,
     role_neutral_wave_05_candidate_records: neutralWave05.counts.candidate_requires_field_audit,
+    role_neutral_wave_05_field_records_reviewed: wave05Field.counts.retained_records_reviewed,
+    role_neutral_wave_05_field_supported_for_human_review: wave05Field.counts.supported_for_human_review,
+    role_neutral_wave_05_field_retained_candidate_only: wave05Field.counts.retained_candidate_only,
     unique_external_urls_in_events: uniqueExternalUrls.size,
     natural_k0_fixtures: wiring.natural_k0_fixture_count,
     clean_first_class_estate_routes: wiring.clean_first_class_estate_route_count,
@@ -193,6 +197,7 @@ const report = {
   role_neutral_wave_03: neutralWave03,
   role_neutral_wave_04: neutralWave04,
   role_neutral_wave_05: neutralWave05,
+  role_neutral_wave_05_field_adjudication: wave05Field,
   ecosystem_wiring: wiring,
   selection: { lane: selectionLane, coverage: coverageRow, review },
   seed_events: seeds.events,
@@ -207,6 +212,7 @@ const report = {
     central_selection_lane_installed: Boolean(selectionLane),
     role_neutral_universe_protocol_frozen: true,
     role_neutral_universe_execution_started: neutral.execution.name_blind_execution_started,
+    role_neutral_wave_05_field_adjudication_complete: true,
     role_neutral_universe_executed: false,
     independent_second_party_review_complete: false,
     evidence_truth_determined: false,

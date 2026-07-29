@@ -46,6 +46,7 @@ export function validateK0({
   const neutralWave04 = read('data/research/k0-role-neutral-wave-04.json');
   const neutralWave05 = read('data/research/k0-role-neutral-wave-05.json');
   const wave04Field = read('data/research/k0-wave04-field-adjudication.json');
+  const wave05Field = read('data/research/k0-wave05-field-adjudication.json');
   const registry = read('data/project/m05-answerable-power-story-registry.json');
   const fanout = read('data/project/m05-answerable-power-fanout.json');
   const selection = read('data/canonical/corpus-selection.json');
@@ -113,7 +114,7 @@ export function validateK0({
   if (seeds.events.find(row => row.event_id === 'K0-SEED-013')?.ccd_chain_depth !== 5) fail('strategic-bypass CCD drift');
 
   if (neutral.schema_version !== 'k0-role-neutral-denominator@1' || neutral.gate_strata.length !== 9 || neutral.synthetic_controls.length !== 8 || neutral.search_battery.length !== 9) fail('neutral denominator drift');
-  if (neutral.status !== 'execution_started_wave_05_discovery_only' || neutral.execution.name_blind_execution_started !== true || neutral.execution.searches_executed !== 20 || neutral.execution.query_templates_executed !== 6 || neutral.execution.raw_results_observed !== 86 || neutral.execution.returned_records !== 40 || neutral.execution.included_events !== 0) fail('neutral execution state drift');
+  if (neutral.status !== 'execution_started_wave_05_field_complete' || neutral.execution.name_blind_execution_started !== true || neutral.execution.searches_executed !== 20 || neutral.execution.query_templates_executed !== 6 || neutral.execution.raw_results_observed !== 86 || neutral.execution.returned_records !== 40 || neutral.execution.included_events !== 0) fail('neutral execution state drift');
   if (neutral.execution.candidate_records !== 18 || neutral.execution.positive_controls !== 9 || neutral.execution.negative_controls !== 6 || neutral.execution.coverage_controls !== 4 || neutral.execution.requires_additional_acquisition !== 3 || neutral.execution.resolved_additional_acquisition !== 2 || neutral.execution.open_additional_acquisition !== 1 || neutral.execution.non_events !== 19) fail('neutral execution classification drift');
   if (JSON.stringify(neutral.execution.executed_wave_ids) !== JSON.stringify(['K0-W01','K0-W02','K0-W03','K0-W04','K0-W05']) || neutral.execution.independent_second_party_review_complete !== false) fail('neutral wave/independence drift');
   if (neutralWave01.schema_version !== 'k0-role-neutral-wave@1' || neutralWave01.wave_id !== 'K0-W01' || neutralWave01.records.length !== 10 || neutralWave01.excluded_results.length !== 8) fail('neutral wave-01 denominator drift');
@@ -140,12 +141,19 @@ export function validateK0({
   if (neutralWave05.counts.query_executions !== 4 || neutralWave05.counts.raw_results_observed !== 18 || neutralWave05.counts.candidate_requires_field_audit !== 2 || neutralWave05.counts.positive_controls !== 4 || neutralWave05.counts.negative_controls !== 1 || neutralWave05.counts.coverage_controls !== 1 || neutralWave05.counts.included_events !== 0) fail('neutral wave-05 count drift');
   if (neutralWave05.boundaries.query_hit_is_event !== false || neutralWave05.boundaries.retraction_proves_ceiling_conversion !== false || neutralWave05.boundaries.misconduct_finding_proves_epistemic_suppression !== false || neutralWave05.boundaries.later_vindication_proves_prior_knowledge !== false || neutralWave05.boundaries.publication_cleared !== false || neutralWave05.boundaries.graph_effect !== 'none') fail('neutral wave-05 boundary drift');
   for (const row of neutralWave05.records) if (row.included_event !== false || row.ccd_chain_depth !== null || row.evidence_truth_determined !== false || row.independent_review_complete !== false || row.publication_status !== 'blocked' || row.graph_effect !== 'none') fail(`${row.record_id}: wave-05 promotion boundary drift`);
+  if (wave05Field.schema_version !== 'k0-wave05-field-adjudication@1' || wave05Field.audit_id !== 'K0-W05-FIELD-2026-07-28-MAINTAINER' || wave05Field.rows.length !== 8) fail('Wave 05 field package drift');
+  if (wave05Field.counts.stage_adjudicated_records !== 2 || wave05Field.counts.control_records_reviewed !== 6 || wave05Field.counts.supported_for_human_review !== 1 || wave05Field.counts.retained_candidate_only !== 1 || wave05Field.counts.included_events !== 0) fail('Wave 05 field count drift');
+  for (const row of wave05Field.rows) if (row.included_event !== false || row.evidence_truth_determined !== false || row.independent_review_complete !== false || row.publication_status !== 'blocked' || row.graph_effect !== 'none') fail(`${row.record_id}: Wave 05 field promotion boundary drift`);
+  const wave05Karolinska = wave05Field.rows.find(row => row.record_id === 'K0-W05-R001');
+  const wave05Olivieri = wave05Field.rows.find(row => row.record_id === 'K0-W05-R002');
+  if (wave05Karolinska?.candidate_disposition !== 'retained_candidate_only' || wave05Karolinska?.provisional_ccd_chain_depth !== 1 || wave05Karolinska?.stage_assessments?.[2]?.status !== 'not_established') fail('Wave 05 Karolinska boundary drift');
+  if (wave05Olivieri?.candidate_disposition !== 'supported_for_human_review' || wave05Olivieri?.provisional_ccd_chain_depth !== 6 || wave05Olivieri?.stage_assessments?.[7]?.status !== 'partial') fail('Wave 05 Olivieri boundary drift');
   const denominatorWave03 = neutral.discovery_waves.find(row => row.wave_id === 'K0-W03');
   const denominatorWave04 = neutral.discovery_waves.find(row => row.wave_id === 'K0-W04');
   const denominatorWave05 = neutral.discovery_waves.find(row => row.wave_id === 'K0-W05');
   if (denominatorWave03?.status !== 'discovery_complete_field_adjudication_complete') fail('Wave 03 reconciliation drift');
   if (denominatorWave04?.status !== 'discovery_complete_field_adjudication_complete') fail('Wave 04 denominator state drift');
-  if (denominatorWave05?.status !== 'discovery_complete_field_adjudication_pending') fail('Wave 05 denominator state drift');
+  if (denominatorWave05?.status !== 'discovery_complete_field_adjudication_complete') fail('Wave 05 denominator state drift');
   if (neutral.boundaries.seed_ten_are_denominator !== false || neutral.boundaries.graph_effect !== 'none') fail('neutral denominator boundary drift');
 
   if (wiring.schema_version !== 'k0-existing-ecosystem-wiring@2' || wiring.rows.length !== 10) fail('wiring denominator drift');
@@ -170,10 +178,14 @@ export function validateK0({
   if (review.maintainer_audit?.independence_effect !== 'does_not_satisfy_second_party_clearance') fail('maintainer audit review boundary missing');
   const pendingFieldMetric = coverageRow.metrics?.find(row => row.metric_id === 'candidate_records_pending_field_audit');
   const wave04CoverageGap = coverageRow.known_gaps?.find(row => row.gap_id === 'k0-wave04-field-adjudication-open');
+  const wave05CoverageGap = coverageRow.known_gaps?.find(row => row.gap_id === 'k0-wave05-field-adjudication-open');
   const committeeComparator = review.comparator_tests?.find(row => row.test_id === 'committee-capture-reset-and-conflict-controls');
-  if (pendingFieldMetric?.observed !== 2 || pendingFieldMetric?.source !== 'data/research/k0-role-neutral-wave-05.json') fail('Wave 05 coverage metric drift');
+  const publicationComparator = review.comparator_tests?.find(row => row.test_id === 'publication-gate-and-correction-controls');
+  if (pendingFieldMetric?.observed !== 0 || pendingFieldMetric?.source !== 'data/research/k0-wave05-field-adjudication.json') fail('Wave 05 coverage metric drift');
   if (wave04CoverageGap?.status !== 'resolved_at_maintainer_layer') fail('Wave 04 coverage gap drift');
+  if (wave05CoverageGap?.status !== 'resolved_at_maintainer_layer') fail('Wave 05 coverage gap drift');
   if (committeeComparator?.status !== 'maintainer_field_complete' || committeeComparator.blocking_conditions?.some(value => value.includes('await field adjudication'))) fail('Wave 04 comparator review drift');
+  if (publicationComparator?.status !== 'maintainer_field_complete' || publicationComparator.blocking_conditions?.some(value => /await field adjudication|field review open/i.test(value))) fail('Wave 05 comparator review drift');
 
 
   for (const rel of ['data/ledger/surfaces.jsonl','data/ledger/participation.jsonl','data/ledger/chains.jsonl']) {
@@ -188,7 +200,7 @@ export function validateK0({
   if (report.counts.top_ten_people !== 10 || report.counts.normalized_seed_events !== 13 || report.counts.common_purpose_network_edges !== 0) fail('report denominator drift');
   if (report.counts.field_audit_supported_for_human_review !== 6 || report.counts.field_audit_retained_candidate_only !== 7) fail('report field audit count drift');
   if (report.current_result.maintainer_source_retrieval_audit_complete !== true || report.current_result.maintainer_field_audit_complete !== true) fail('report audit state drift');
-  if (report.current_result.role_neutral_universe_execution_started !== true || report.counts.role_neutral_query_executions !== 20 || report.counts.role_neutral_retained_records !== 40 || report.counts.role_neutral_candidate_records !== 18 || report.counts.role_neutral_positive_controls !== 9 || report.counts.role_neutral_negative_controls !== 6 || report.counts.role_neutral_coverage_controls !== 4 || report.counts.role_neutral_requires_additional_acquisition !== 1 || report.counts.role_neutral_resolved_additional_acquisition !== 2 || report.counts.role_neutral_wave_02_retained_records !== 7 || report.counts.role_neutral_wave_03_query_executions !== 4 || report.counts.role_neutral_wave_03_retained_records !== 7 || report.counts.role_neutral_wave_03_candidate_records !== 5 || report.counts.role_neutral_wave_04_query_executions !== 4 || report.counts.role_neutral_wave_04_retained_records !== 8 || report.counts.role_neutral_wave_04_candidate_records !== 3 || report.counts.role_neutral_wave_05_query_executions !== 4 || report.counts.role_neutral_wave_05_retained_records !== 8 || report.counts.role_neutral_wave_05_candidate_records !== 2) fail('report role-neutral execution drift');
+  if (report.current_result.role_neutral_universe_execution_started !== true || report.current_result.role_neutral_wave_05_field_adjudication_complete !== true || report.counts.role_neutral_query_executions !== 20 || report.counts.role_neutral_retained_records !== 40 || report.counts.role_neutral_candidate_records !== 18 || report.counts.role_neutral_positive_controls !== 9 || report.counts.role_neutral_negative_controls !== 6 || report.counts.role_neutral_coverage_controls !== 4 || report.counts.role_neutral_requires_additional_acquisition !== 1 || report.counts.role_neutral_resolved_additional_acquisition !== 2 || report.counts.role_neutral_wave_02_retained_records !== 7 || report.counts.role_neutral_wave_03_query_executions !== 4 || report.counts.role_neutral_wave_03_retained_records !== 7 || report.counts.role_neutral_wave_03_candidate_records !== 5 || report.counts.role_neutral_wave_04_query_executions !== 4 || report.counts.role_neutral_wave_04_retained_records !== 8 || report.counts.role_neutral_wave_04_candidate_records !== 3 || report.counts.role_neutral_wave_05_query_executions !== 4 || report.counts.role_neutral_wave_05_retained_records !== 8 || report.counts.role_neutral_wave_05_candidate_records !== 2 || report.counts.role_neutral_wave_05_field_records_reviewed !== 8 || report.counts.role_neutral_wave_05_field_supported_for_human_review !== 1 || report.counts.role_neutral_wave_05_field_retained_candidate_only !== 1) fail('report role-neutral execution drift');
   if (report.current_result.source_receipt_exact_hash_custody_complete !== false || report.current_result.independent_second_party_review_complete !== false) fail('report independence/custody laundering');
   if (report.current_result.evidence_truth_determined !== false || report.current_result.graph_effect !== 'none' || report.current_result.project_complete !== false) fail('report result boundary drift');
 
