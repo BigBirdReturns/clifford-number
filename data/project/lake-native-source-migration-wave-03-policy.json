@@ -2,7 +2,7 @@
   "schema_version": "lake-native-source-migration-wave-03-policy@1",
   "program_key": "CN-LAKE-NATIVE-SOURCE-W03",
   "as_of": "2026-07-29",
-  "purpose": "Migrate the deterministic legacy UK-AI case projection into a native typed case ledger, preserve byte-equivalent compiled semantics, and supersede 448 identifier registrations' native-source debt without deleting the prior registration record.",
+  "purpose": "Migrate the deterministic legacy UK-AI case projection into a native typed case ledger, preserve claim/event/receipt semantics under the native compiler, and supersede 448 identifier registrations' native-source debt without deleting the prior registration record.",
   "input_paths": [
     "build/cases/uk-ai-policy.json",
     "cases/uk-ai-policy.json",
@@ -45,7 +45,8 @@
   "decision_law": {
     "review_required_to_decide": false,
     "missing_reviewer_blocks_native_migration": false,
-    "compiled_equivalence_required": true,
+    "compiled_semantic_equivalence_required": true,
+    "compiler_hydration_may_add_derived_value_fields": true,
     "source_rows_may_invent_new_claims": false,
     "prior_registration_rows_may_be_deleted": false,
     "correction_mode": "append_preserving_supersession"
@@ -54,6 +55,7 @@
     "native_source_migration_proves_evidence_truth": false,
     "native_source_migration_resolves_identity": false,
     "compiled_equivalence_is_independent_corroboration": false,
+    "compiler_hydration_is_a_new_factual_claim": false,
     "verified_claim_is_wrongdoing_finding": false,
     "legacy_graph_edge_is_coordination_or_causation": false,
     "publication_cleared": false,
