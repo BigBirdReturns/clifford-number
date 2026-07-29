@@ -90,6 +90,20 @@ attacks, plausible alternative universes, comparator tests, and a disposition.
 missing review records, self-review represented as independent review, or a
 pending lane represented as cleared.
 
+1.12 **Judgment authority cannot be outsourced.** The project forms bounded,
+reversible judgments from the receipted evidence it has. Independent review is
+adversarial evidence: it may strengthen, weaken, or overturn a judgment, and it
+may control whether the word `cleared` is justified. It is not permission to
+think, publish a clearly provisional verified subset, or execute reversible
+research and governance work. A decision may be blocked only by a material
+evidence, custody, identity, selection, privacy, legal, reproducibility, or
+reversibility defect. A missing human, reviewer, expert, or second party is
+never a sufficient blocker by itself. Every judgment records its evidence
+basis, counterevidence, uncertainty, action, consequence class, and append-only
+correction route. `validate:judgments` fails on outsourced permission, silent
+wait states, unsupported irreversible action, or review metadata represented as
+the source of decision authority.
+
 ---
 
 ## 2. Phase 0: Foundation Lock (now through end of 2026)
@@ -154,10 +168,14 @@ the FA series consumes them. Acceptance: a delta between two dated compiles of
 the same case renders as a narrated changelog with receipts.
 
 3.4 **Contribution pipeline.** Harden `contributions/inbox`: submissions arrive
-as ledger-shaped rows plus receipts, pass a machine gate (schema, receipt
-resolvability, forbidden-inference scan), then a human gate. No contribution
-edits canonical directly. Acceptance: one external contribution lands through
-the full pipeline.
+as ledger-shaped rows plus receipts and pass machine checks for schema,
+receipt resolvability, selection neutrality, privacy, and forbidden inference.
+Promotion requires a named, evidence-grounded decision record with the basis,
+counterevidence, uncertainties, consequence class, and correction route. The
+decision may be executed by an accountable maintainer or policy-constrained
+automation; an unspecified future human is not a gate. No contribution edits
+canonical directly. Acceptance: one external contribution lands through the
+full pipeline with its promotion decision and rejected alternatives preserved.
 
 ---
 
@@ -200,12 +218,17 @@ support) live as sibling case directories sharing canonical vocabularies but
 owning their own ledgers. Joins run only through reconciled AXM identities.
 No case may edit another case's ledger.
 
-5.2 **Agent-assisted intake with human gates.** Per
+5.2 **Agent-assisted intake with accountable promotion.** Per
 `docs/self-assembling-architecture.md`: agents may propose surfaces,
-participations, and receipts into `data/import-queues/`; promotion to ledger
-requires human sign-off recorded in the promotion log. The scout suggests; it
-never commits. Acceptance: the promotion log shows author, date, and receipt
-check for every promoted row, with rejects preserved.
+participations, receipts, classifications, and bounded judgments into
+`data/import-queues/`. Promotion to a ledger requires the checked-in policy
+thresholds and a named decision record; it does not require an unspecified
+human sign-off. Policy-constrained automation may promote reversible,
+receipt-complete rows, while privacy-sensitive, identity-ambiguous, legally
+restricted, or irreversible changes remain blocked by their material defect.
+Acceptance: the promotion log records decision authority, date, evidence basis,
+counterevidence, uncertainty, consequence class, and correction route for every
+promoted row, with rejects and superseded decisions preserved.
 
 5.3 **Evidence decay and refresh.** Receipts get a review-by date scaled to
 volatility (a statute rarely moves; a portfolio page moves quarterly). The
@@ -280,14 +303,12 @@ inconvenient. Silence is not consent; unreviewed drift is reverted.
   conclusions against receipts, in their own names.
 - Not an identity-clustering instrument, per 1.6, under any framing.
 - Not a subscription oracle whose facts are checkable only by customers.
-- Not dependent m½ß¿m¢G§²ÚîÆ­yØ]\İXÛ\™HHØ[YH[™HQË‰ÊJNÂˆB‚ˆ™]\›ˆÈÚÎˆ\œ›ÜœË›[™İOOH\œ›ÜœÈNÂŸB‚™^Ü[˜İ[Ûˆ›Ü›X]ÛÛœİ[\[Û‘\œ›ÜœÊ\œ›ÜœÊHÂˆ™]\›ˆ\œ›ÜœË›X\
-\œ›ÜˆOˆHÉÙ\œ›Ü‹˜ÛÙ_WH	Ù\œ›Ü‹™š[_Nˆ	Ù\œ›Ü‹›Y\ÜØYÙ_X
-Kš›Ú[Š	×‰ÊNÂŸB‚˜ÛÛœİ[›ÚÙYH›ØÙ\ÜË˜\™İ–ÌWHÈ]œ™\ÛÛ™J›ØÙ\ÜË˜\™İ–ÌWJHˆ	ÉÎÂšYˆ
-[›ÚÙYOOHš[UT“Ô]
-[\Ü›Y]K\›
-JHÂˆÛÛœİ›ÛİH›ØÙ\ÜË˜\™İ–Ì—HÈ]œ™\ÛÛ™J›ØÙ\ÜË˜\™İ–Ì—JHˆ›ØÙ\ÜË˜İÙ
+- Not dependent on any single AI vendor: agents accelerate intake and
+  narration, but every pipeline must be executable with ordinary open tools and
+  the documented commands.
+- Not dependent on an unspecified future human to supply permission for a
+  bounded, reversible judgment that the current evidence already supports.
 
-NÂˆÛÛœİ™\İ[H˜[Y]PÛÛœİ[\[ÛÛÛ˜Xİ
-È›ÛİJNÂˆYˆ
-\™\İ[›ÚÊHÂˆÛÛœÛÛK™\œ›ÜŠÛÛœİ[\[ÛˆÛÛ˜Xİ˜Z[YÚ]	Ü™\İ[™\œ›ÜœË›[™İH\œ›ÜŠÊN—‰Ù›Ü›X]ÛÛœİ[\[Û‘\œ›ÜœÊ™\İ[™\œ›ÜœÊ_X
-NÂˆ›ØÙ\ÜË™^]ÛÙHHNÂˆH[ÙHÂˆÛÛœÛÛK›ÙÊ	ĞÛÛœİ[\[ÛˆÛÛ˜XİˆÒÉÊNÂˆBŸB
+The instrument's authority comes from one property and one property only:
+anyone can check it. Protect that property and the rest survives to 2037.
+Lose it and nothing else here matters.
