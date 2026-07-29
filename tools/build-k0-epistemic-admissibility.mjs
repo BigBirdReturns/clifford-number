@@ -115,6 +115,7 @@ const neutralWave06 = read('data/research/k0-role-neutral-wave-06.json');
 const neutralWave07 = read('data/research/k0-role-neutral-wave-07.json');
 const wave05Field = read('data/research/k0-wave05-field-adjudication.json');
 const wave06Field = read('data/research/k0-wave06-field-adjudication.json');
+const wave07Field = read('data/research/k0-wave07-field-adjudication.json');
 const registry = read('data/project/m05-answerable-power-story-registry.json');
 const fanout = read('data/project/m05-answerable-power-fanout.json');
 const selection = read('data/canonical/corpus-selection.json');
@@ -194,6 +195,10 @@ const report = {
     role_neutral_wave_06_field_records_reviewed: wave06Field.counts.retained_records_reviewed,
     role_neutral_wave_06_field_supported_for_human_review: wave06Field.counts.supported_for_human_review,
     role_neutral_wave_06_field_retained_candidate_only: wave06Field.counts.retained_candidate_only,
+    role_neutral_wave_07_field_records_reviewed: wave07Field.counts.retained_records_reviewed,
+    role_neutral_wave_07_field_supported_for_human_review: wave07Field.counts.supported_for_human_review,
+    role_neutral_wave_07_field_bounded_non_link: wave07Field.counts.bounded_non_link,
+    role_neutral_wave_07_field_retained_candidate_only: wave07Field.counts.retained_candidate_only,
     unique_external_urls_in_events: uniqueExternalUrls.size,
     natural_k0_fixtures: wiring.natural_k0_fixture_count,
     clean_first_class_estate_routes: wiring.clean_first_class_estate_route_count,
@@ -225,6 +230,7 @@ const report = {
   role_neutral_wave_07: neutralWave07,
   role_neutral_wave_05_field_adjudication: wave05Field,
   role_neutral_wave_06_field_adjudication: wave06Field,
+  role_neutral_wave_07_field_adjudication: wave07Field,
   ecosystem_wiring: wiring,
   selection: { lane: selectionLane, coverage: coverageRow, review },
   seed_events: seeds.events,
@@ -242,7 +248,7 @@ const report = {
     role_neutral_wave_05_field_adjudication_complete: true,
     role_neutral_wave_06_field_adjudication_complete: true,
     role_neutral_wave_07_discovery_complete: true,
-    role_neutral_wave_07_field_adjudication_complete: false,
+    role_neutral_wave_07_field_adjudication_complete: true,
     role_neutral_universe_executed: false,
     independent_second_party_review_complete: false,
     evidence_truth_determined: false,
