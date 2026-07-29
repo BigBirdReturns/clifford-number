@@ -1,0 +1,32 @@
+name: Temporary POOF ecology checkout export
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/poof-ecology-bootstrap-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Record exact checkout
+        run: |
+          mkdir -p bootstrap-receipt
+          git rev-parse HEAD > bootstrap-receipt/HEAD.txt
+          git status --porcelain=v1 > bootstrap-receipt/status.txt
+          git ls-files -z | tar --null -T - -czf bootstrap-receipt/clifford-number-source.tar.gz
+          sha256sum bootstrap-receipt/clifford-number-source.tar.gz > bootstrap-receipt/clifford-number-source.tar.gz.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: poof-ecology-checkout
+          path: bootstrap-receipt/
+          retention-days: 1
