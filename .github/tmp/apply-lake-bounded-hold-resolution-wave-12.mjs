@@ -140,6 +140,10 @@ validate every case claim, establish program performance, create participation o
 relationships, or enter the hop graph.`);
 
 const sourcePathFile = '.github/tmp/lake-bounded-hold-resolution-wave-12-source-paths.json';
+// The manifest is staged during execution and removed before the materialized
+// commit. Include it in the transport boundary so that its transient AD state is
+// accounted for without allowing it into the final tree.
+changedPaths.add(sourcePathFile);
 fs.writeFileSync(sourcePathFile, `${JSON.stringify({
   schema_version: 'lake-bounded-hold-resolution-wave-12-source-paths@1',
   changed_paths: [...changedPaths].sort()
