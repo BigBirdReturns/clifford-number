@@ -141,6 +141,7 @@ migration remains the historical baseline; later entities and aliases are carrie
 by a separate append-preserving extension registry.`);
 
 const sourcePathFile = '.github/tmp/lake-canonical-adjudication-wave-11-source-paths.json';
+changedPaths.add(sourcePathFile);
 fs.writeFileSync(sourcePathFile, `${JSON.stringify({
   schema_version: 'lake-canonical-adjudication-wave-11-source-paths@1',
   changed_paths: [...changedPaths].sort()
