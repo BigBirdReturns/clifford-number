@@ -1,0 +1,252 @@
+name: Evidence lake AXM active projection Wave 06
+
+on:
+  push:
+    branches:
+      - agent/lake-axm-active-projection-wave-06
+    paths:
+      - '.github/tmp/lake-axm-active-projection-wave-06-trigger.json'
+  pull_request:
+    branches:
+      - agent/lake-axm-reproducibility-wave-05
+    paths:
+      - 'data/project/lake-axm-active-projection-wave-06-policy.json'
+      - 'data/project/lake-index-policy.json'
+      - 'tools/lib/axm-id.mjs'
+      - 'tools/lib/axm-identity.mjs'
+      - 'tools/build-lake-axm-active-projection-wave-06.mjs'
+      - 'tools/reconcile-lake-axm-active-projection-wave-06.mjs'
+      - 'tools/validate-lake-axm-active-projection-wave-06.mjs'
+      - 'tools/validate-release.mjs'
+      - 'tools/query-hops.mjs'
+      - 'test/axm-id.test.js'
+      - 'test/axm-identity.test.js'
+      - 'test/lake-axm-active-projection-wave-06.test.js'
+      - 'BUILD-INSTRUCTIONS.md'
+      - 'README.md'
+      - '.github/workflows/lake-axm-active-projection-wave-06.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: lake-axm-active-projection-wave-06-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Determine execution mode
+        id: mode
+        shell: bash
+        run: |
+          echo "original_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if test -f .github/tmp/lake-axm-active-projection-wave-06-trigger.json; then
+            echo 'validate=true' >> "$GITHUB_OUTPUT"
+            echo 'materialize=true' >> "$GITHUB_OUTPUT"
+            echo 'phase=execute' >> "$GITHUB_OUTPUT"
+          elif test "$GITHUB_EVENT_NAME" = 'pull_request' || test "$GITHUB_EVENT_NAME" = 'workflow_dispatch'; then
+            echo 'validate=true' >> "$GITHUB_OUTPUT"
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+            if git ls-files --error-unmatch data/project/lake-axm-active-identity-registry-wave-06.jsonl >/dev/null 2>&1; then
+              echo 'phase=post' >> "$GITHUB_OUTPUT"
+            else
+              echo 'phase=execute' >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo 'validate=false' >> "$GITHUB_OUTPUT"
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+            echo 'phase=none' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.mode.outputs.validate == 'true'
+        with:
+          node-version: '24'
+      - name: Restore committed bytes before active migration
+        if: steps.mode.outputs.validate == 'true'
+        run: |
+          git restore --staged --worktree .
+          git clean -fd
+      - name: Apply checked active-projection source migration
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        run: |
+          node .github/tmp/apply-lake-axm-active-projection-wave-06.mjs
+          cp .github/tmp/lake-axm-active-projection-wave-06-source-paths.json /tmp/lake-axm-active-projection-wave-06-source-paths.json
+      - name: Build and deterministically prove the predecessor registry
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-lake-axm-active-projection-wave-06.mjs
+          sha256sum \
+            data/project/lake-axm-active-identity-registry-wave-06.jsonl \
+            data/project/lake-axm-active-projection-wave-06.json \
+            build/lake-actions/axm-active-projection-wave-06.json \
+            reports/lake-axm-active-projection-wave-06.md > /tmp/lake-axm-wave-06-first.sha256
+          node tools/build-lake-axm-active-projection-wave-06.mjs
+          sha256sum --check --strict /tmp/lake-axm-wave-06-first.sha256
+          git diff --check
+      - name: Stage migration sources and checked source changes
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        run: git add -A
+      - name: Run the complete repository release gate with Genesis v1 active
+        if: steps.mode.outputs.validate == 'true'
+        run: npm run release:check
+      - name: Stabilize the tree before the lake census
+        if: steps.mode.outputs.validate == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test "${{ steps.mode.outputs.phase }}" = 'execute'; then
+            git add -A
+            git restore --worktree .
+            git clean -fd
+          else
+            git reset --hard HEAD
+            git clean -fd
+          fi
+      - name: Observe current open-PR shadow
+        if: steps.mode.outputs.validate == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/build-lake-open-pr-shadow.mjs
+      - name: Rebuild and reconcile the migrated lake
+        if: steps.mode.outputs.validate == 'true'
+        run: |
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/reconcile-lake-axm-active-projection-wave-06.mjs
+          node tools/validate-lake-axm-active-projection-wave-06.mjs
+          node test/lake-index.test.js
+          node test/lake-basin-index.test.js
+          node test/lake-axm-active-projection-wave-06.test.js
+      - name: Prove deterministic post-migration products
+        if: steps.mode.outputs.validate == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          find build/lake-index -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/lake-axm-wave-06-post.sha256
+          sha256sum \
+            build/axm-identity.json \
+            data/project/lake-axm-active-identity-registry-wave-06.jsonl \
+            data/project/lake-axm-active-projection-wave-06.json \
+            build/lake-actions/axm-active-projection-wave-06.json \
+            build/lake-actions/axm-active-projection-wave-06-reconciliation.json \
+            reports/lake-index-census.md \
+            reports/lake-index-gap-summary.md \
+            reports/lake-basin-index.md \
+            reports/lake-axm-active-projection-wave-06.md \
+            reports/lake-axm-active-projection-wave-06-reconciliation.md >> /tmp/lake-axm-wave-06-post.sha256
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/reconcile-lake-axm-active-projection-wave-06.mjs
+          sha256sum --check --strict /tmp/lake-axm-wave-06-post.sha256
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-axm-active-projection-wave-06.mjs
+          node test/axm-id.test.js
+          node test/axm-identity.test.js
+          node test/lake-axm-active-projection-wave-06.test.js
+          git diff --check
+      - name: Restore the non-materializing validation surface
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.materialize != 'true'
+        run: |
+          git reset --hard HEAD
+          git clean -fd
+          test -z "$(git status --porcelain)"
+      - name: Enforce active-migration source and generated-output boundaries
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f \
+            .github/tmp/lake-axm-active-projection-wave-06-trigger.json \
+            .github/tmp/apply-lake-axm-active-projection-wave-06.mjs \
+            .github/tmp/lake-axm-active-projection-wave-06-source-paths.json
+          python - <<'PY'
+          import json
+          import re
+          import subprocess
+
+          migration = json.load(open('/tmp/lake-axm-active-projection-wave-06-source-paths.json'))
+          required = set(migration['changed_paths']) | {
+              '.github/tmp/lake-axm-active-projection-wave-06-trigger.json',
+              '.github/tmp/apply-lake-axm-active-projection-wave-06.mjs',
+              'data/project/lake-axm-active-identity-registry-wave-06.jsonl',
+              'data/project/lake-axm-active-projection-wave-06.json',
+              'build/lake-actions/axm-active-projection-wave-06.json',
+              'build/lake-actions/axm-active-projection-wave-06-reconciliation.json',
+              'reports/lake-axm-active-projection-wave-06.md',
+              'reports/lake-axm-active-projection-wave-06-reconciliation.md',
+          }
+          exact_allowed_sources = required | {
+              'data/project/lake-open-pr-shadow.json',
+          }
+          generated_prefixes = (
+              'build/',
+              'reports/',
+              'briefs/',
+              'estates/',
+              'gametrails/',
+          )
+          generated_root = re.compile(r'^(?:Clifford-.*\.html|[^/]+-standalone\.html)$')
+
+          raw = subprocess.check_output([
+              'git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'
+          ])
+          entries = [entry for entry in raw.decode().split('\0') if entry]
+          actual = set()
+          for entry in entries:
+              status = entry[:2]
+              assert 'R' not in status and 'C' not in status, entry
+              actual.add(entry[3:])
+
+          unexpected = sorted(path for path in actual
+              if path not in exact_allowed_sources
+              and not path.startswith(generated_prefixes)
+              and not generated_root.match(path))
+          assert required <= actual, {
+              'missing_required_active_migration_or_reconciliation_changes': sorted(required - actual),
+          }
+          assert not unexpected, {
+              'undeclared_source_changes': unexpected,
+          }
+          print(json.dumps({
+              'required_changes': len(required),
+              'actual_changes': len(actual),
+              'generated_changes': len(actual - exact_allowed_sources),
+          }, indent=2))
+          PY
+      - name: Commit the executed AXM active projection migration
+        if: steps.mode.outputs.materialize == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Execute evidence lake AXM active projection Wave 06'
+          git fetch origin agent/lake-axm-active-projection-wave-06
+          test "$(git rev-parse origin/agent/lake-axm-active-projection-wave-06)" = "${{ steps.mode.outputs.original_sha }}"
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-axm-active-projection-wave-06.mjs
+          git push origin HEAD:agent/lake-axm-active-projection-wave-06
