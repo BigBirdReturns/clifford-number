@@ -66,11 +66,16 @@ const fileByPath = new Map(files.map(row => [row.path, row]));
 const policyFile = fileByPath.get(policyPath);
 assert.ok(policyFile, 'Wave 13 policy missing from lake file index');
 assert.equal(policyFile.generated, false, 'Wave 13 policy marked generated');
-for (const relative of [policy.projection_path, policy.plan_path, policy.report_path]) {
+for (const relative of [policy.projection_path, policy.plan_path]) {
   const row = fileByPath.get(relative);
   assert.ok(row, `${relative}: generated Wave 13 file missing from lake index`);
   assert.equal(row.generated, true, `${relative}: expected generated projection`);
 }
+const reportFile = fileByPath.get(policy.report_path);
+assert.ok(reportFile, `${policy.report_path}: Wave 13 report missing from lake index`);
+// The lake classifies report Markdown as a non-generated evidence surface. Preserve
+// that repository-wide semantic distinction even though this program writes it.
+assert.equal(reportFile.generated, false, `${policy.report_path}: report classification drift`);
 
 const objectByKey = new Map(objects.map(row => [`${row.id_key}:${row.id_value}`, row]));
 const observations = [];
