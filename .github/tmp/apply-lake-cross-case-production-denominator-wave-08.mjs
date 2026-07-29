@@ -27,7 +27,42 @@ updateText('tools/lib/cross-case-production-denominator.mjs', source => {
   return [...new Set(iterable.filter(value => value !== null && value !== undefined && String(value).length > 0).map(String))]
     .sort((left, right) => left.localeCompare(right));
 }`;
+  if (source.includes(after)) return source;
   if (!source.includes(before)) throw new Error('Wave 08 iterable-fix target missing');
+  return source.replace(before, after);
+});
+
+updateText('tools/lib/cross-case-production-denominator.mjs', source => {
+  const before = `    const publicReceiptIds = publicReceipts.map(receipt => receipt.receipt_id);
+    const publicFamilies = publicReceipts.map(receiptSourceFamily).filter(Boolean);
+    const identityEligible = !DISALLOWED_IDENTITY_EVIDENCE.has(claim.evidence_class)
+      && publicReceipts.length > 0
+      && !['rejected', 'superseded'].includes(claim.claim_status);
+    occurrence.claim_refs.set(\`${'${claim.claim_id}'}\\0${'${referenceRole}'}\\0${'${referencePath}'}\`, {
+      claim_id: claim.claim_id,
+      claim_status: claim.claim_status,
+      evidence_class: claim.evidence_class,`;
+  const after = `    const publicReceiptIds = publicReceipts.map(receipt => receipt.receipt_id);
+    const publicFamilies = publicReceipts.map(receiptSourceFamily).filter(Boolean);
+    const effectiveEvidenceClass = claim.evidence_class
+      ?? strongestEvidence(claimReceipts.map(receipt => receipt.evidence_class))
+      ?? null;
+    const evidenceClassSource = claim.evidence_class
+      ? 'claim'
+      : effectiveEvidenceClass
+        ? 'attached_receipt'
+        : 'missing';
+    const identityEligible = Boolean(effectiveEvidenceClass)
+      && !DISALLOWED_IDENTITY_EVIDENCE.has(effectiveEvidenceClass)
+      && publicReceipts.length > 0
+      && !['rejected', 'superseded'].includes(claim.claim_status);
+    occurrence.claim_refs.set(\`${'${claim.claim_id}'}\\0${'${referenceRole}'}\\0${'${referencePath}'}\`, {
+      claim_id: claim.claim_id,
+      claim_status: claim.claim_status,
+      evidence_class: effectiveEvidenceClass,
+      evidence_class_source: evidenceClassSource,`;
+  if (source.includes(after)) return source;
+  if (!source.includes(before)) throw new Error('Wave 08 effective-evidence target missing');
   return source.replace(before, after);
 });
 
