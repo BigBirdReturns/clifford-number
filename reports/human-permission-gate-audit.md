@@ -1,6 +1,6 @@
 # Human-permission gate audit
 
-Scanned fingerprint: `8760a28cdf737bd64340aaf10dc6be5237eab4f08aff247a53603aba65be7663`
+Scanned fingerprint: `458545af347b6cfb03e72c683a6432c90ea828fbdcad180c0119f016d633a3f2`
 
 ## Governing finding
 
