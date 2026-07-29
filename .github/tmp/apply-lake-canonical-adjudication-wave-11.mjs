@@ -43,8 +43,6 @@ for (const row of mutationPlan.mutations.organization_additions) {
   allIds.add(row.id);
   organizationsDoc.organizations.push(row);
 }
-actorsDoc.actors.sort((left, right) => left.id.localeCompare(right.id));
-organizationsDoc.organizations.sort((left, right) => left.id.localeCompare(right.id));
 
 const aliasKeys = new Set(aliasesDoc.aliases.map(row => `${row.kind}:${row.canonical_id}:${row.alias.toLowerCase()}`));
 const globalAliasTerms = new Map();
@@ -62,7 +60,6 @@ for (const row of mutationPlan.mutations.alias_additions) {
   aliasKeys.add(key);
   aliasesDoc.aliases.push(row);
 }
-aliasesDoc.aliases.sort((left, right) => `${left.kind}:${left.canonical_id}:${left.alias}`.localeCompare(`${right.kind}:${right.canonical_id}:${right.alias}`));
 
 assert.equal(actorsDoc.actors.length, mutationPlan.expected_after.actor_rows);
 assert.equal(organizationsDoc.organizations.length, mutationPlan.expected_after.organization_rows);
