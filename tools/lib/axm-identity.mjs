@@ -1,48 +1,40 @@
-// Temporal identity layer — provisional AXM integration.
+// Temporal identity layer — AXM Genesis v1 active projection.
 //
-// Builds a content-addressed identity view of the canonical registries and
-// the participation ledger:
-//
-//   entities: every actor, organization, and surface gets a provisional AXM
-//     entity id derived from (namespace, label). Aliases yield additional
-//     alias-derived ids pointing at the same entity, so a corpus that says
-//     "Sir Simon Case" and one that says "Simon Case" can still join.
-//
-//   claims: participation rows become `participates_in` claims. The claim id
-//     is content-addressed over (subject, predicate, object, obj_type) ONLY —
-//     identity is time-stable. Temporal validity attaches to the claim as
-//     windows (AXM temporal@1 vocabulary: valid_from / valid_until, null for
-//     an open end, dated=false when the row carried no temporal claim at
-//     all). Multiple stints of the same participant on the same surface are
-//     one claim with several windows, not several claims.
-//
-// PROVISIONAL: the hash envelope is authoritative (axm-core IDENTITY.md) but
-// the (namespace, label) / (subj, pred, obj, obj_type) input serialization is
-// this repo's best effort and must be reconciled byte-for-byte against
-// axm-genesis `axm_verify.identity` before any id here is used as a
-// cross-system join key. See tools/lib/axm-id.mjs. Every artifact this module
-// produces carries that caveat in its `scheme` block.
-import { entityId, claimId } from './axm-id.mjs';
+// Every actor, organization, and surface receives the commit-pinned Genesis
+// v1 entity ID. Every participation becomes one time-stable `participates_in`
+// claim whose stints remain temporal windows. Retired provisional identifiers
+// are retained as explicit predecessor fields and resolver aliases; they are
+// never deleted, treated as current IDs, or used as authority to merge entities.
+import {
+  ACTIVE_IDENTITY_SCHEME,
+  claimId,
+  entityId,
+  legacyClaimId,
+  legacyEntityId
+} from './axm-id.mjs';
 import { windowOf } from './temporal.mjs';
 
 export const PARTICIPATES_IN = 'participates_in';
 
 export const SCHEME = Object.freeze({
-  status: 'provisional',
-  envelope: 'sha256 → first 15 bytes → base32 lowercase no padding, type prefix (axm-core IDENTITY.md — authoritative)',
-  serialization: 'provisional — reconcile byte-for-byte against axm-genesis axm_verify.identity before cross-system use',
+  ...ACTIVE_IDENTITY_SCHEME,
   temporal: 'axm temporal@1: valid_from / valid_until, ISO 8601, null = open end; windows qualify claims, they are not part of claim identity',
+  migration_registry: 'data/project/lake-axm-active-identity-registry-wave-06.jsonl',
+  migration_map: 'build/axm-identity-genesis-v1-migration.json',
+  active_projection_quarantined: false,
+  external_axm_gate_complete: true,
+  cross_case_join_authorized: false
 });
 
 function claimWindow(row) {
-  const w = windowOf(row);
+  const window = windowOf(row);
   return {
-    valid_from: w.valid_from,
-    valid_until: w.valid_until,
-    dated: w.dated,
+    valid_from: window.valid_from,
+    valid_until: window.valid_until,
+    dated: window.dated,
     role: row.role ?? null,
     evidence_class: row.evidence_class ?? null,
-    receipt_ids: row.receipt_ids ?? [],
+    receipt_ids: row.receipt_ids ?? []
   };
 }
 
@@ -51,78 +43,126 @@ export function buildIdentityLayer({ namespace, actors, organizations, surfaces,
 
   const entities = [];
   const byLocalId = new Map();
-  const byAxmId = new Map();
+  const byCurrentId = new Map();
+  const byLegacyId = new Map();
+
+  function claimIdOwner(map, id, localId, label) {
+    const clash = map.get(id);
+    if (clash && clash.local_id !== localId) {
+      throw new Error(`axm entity id collision: ${clash.local_id} and ${localId} both derive ${id} (label ${JSON.stringify(label)})`);
+    }
+  }
 
   function addEntity(localId, kind, label) {
-    const axmId = entityId(namespace, label);
-    const clash = byAxmId.get(axmId);
-    if (clash && clash.local_id !== localId) {
-      throw new Error(`axm entity id collision: ${clash.local_id} and ${localId} both derive ${axmId} (label ${JSON.stringify(label)})`);
-    }
-    const entity = { local_id: localId, kind, label, axm_entity_id: axmId, alias_axm_ids: [] };
+    const currentId = entityId(namespace, label);
+    const legacyId = legacyEntityId(namespace, label);
+    claimIdOwner(byCurrentId, currentId, localId, label);
+    claimIdOwner(byLegacyId, legacyId, localId, label);
+    const entity = {
+      local_id: localId,
+      kind,
+      label,
+      axm_entity_id: currentId,
+      legacy_provisional_entity_id: legacyId,
+      alias_axm_ids: [],
+      legacy_provisional_alias_ids: []
+    };
     entities.push(entity);
     byLocalId.set(localId, entity);
-    byAxmId.set(axmId, entity);
+    byCurrentId.set(currentId, entity);
+    byLegacyId.set(legacyId, entity);
     return entity;
   }
 
-  for (const a of actors) addEntity(a.id, 'actor', a.label);
-  for (const o of organizations) addEntity(o.id, 'organization', o.label);
-  for (const s of surfaces) addEntity(s.surface_id, 'surface', s.surface_label);
+  for (const actor of actors) addEntity(actor.id, 'actor', actor.label);
+  for (const organization of organizations) addEntity(organization.id, 'organization', organization.label);
+  for (const surface of surfaces) addEntity(surface.surface_id, 'surface', surface.surface_label);
 
-  // Alias-derived ids join to the canonical entity. An alias whose derived id
-  // collides with a different entity's id is the same data error as above.
   for (const alias of aliases) {
     const entity = byLocalId.get(alias.canonical_id);
-    if (!entity) continue; // legacy-graph aliases have no canonical registry entry
-    const aliasId = entityId(namespace, alias.alias);
-    if (aliasId === entity.axm_entity_id) continue;
-    const clash = byAxmId.get(aliasId);
-    if (clash && clash.local_id !== entity.local_id) {
-      throw new Error(`axm alias id collision: alias ${JSON.stringify(alias.alias)} of ${entity.local_id} derives ${clash.local_id}'s id ${aliasId}`);
+    if (!entity) continue;
+
+    const currentAliasId = entityId(namespace, alias.alias);
+    if (currentAliasId !== entity.axm_entity_id) {
+      claimIdOwner(byCurrentId, currentAliasId, entity.local_id, alias.alias);
+      if (!entity.alias_axm_ids.includes(currentAliasId)) entity.alias_axm_ids.push(currentAliasId);
+      byCurrentId.set(currentAliasId, entity);
     }
-    if (!entity.alias_axm_ids.includes(aliasId)) entity.alias_axm_ids.push(aliasId);
-    byAxmId.set(aliasId, entity);
+
+    const legacyAliasId = legacyEntityId(namespace, alias.alias);
+    if (legacyAliasId !== entity.legacy_provisional_entity_id) {
+      claimIdOwner(byLegacyId, legacyAliasId, entity.local_id, alias.alias);
+      if (!entity.legacy_provisional_alias_ids.includes(legacyAliasId)) entity.legacy_provisional_alias_ids.push(legacyAliasId);
+      byLegacyId.set(legacyAliasId, entity);
+    }
   }
 
-  // One claim per (participant, surface); stints become windows on the claim.
-  const claimById = new Map();
+  const claimByCurrentId = new Map();
+  const currentByLegacyClaimId = new Map();
   for (const row of participation) {
-    const subjLocal = row.participant_type === 'actor' ? row.actor_id : row.organization_id;
-    const subj = byLocalId.get(subjLocal);
-    const obj = byLocalId.get(row.surface_id);
-    if (!subj) throw new Error(`participation references unknown participant ${subjLocal}`);
-    if (!obj) throw new Error(`participation references unknown surface ${row.surface_id}`);
-    const id = claimId(subj.axm_entity_id, PARTICIPATES_IN, obj.axm_entity_id, 'entity');
-    if (!claimById.has(id)) {
-      claimById.set(id, {
-        claim_id: id,
-        subj: subj.axm_entity_id,
-        subj_local_id: subj.local_id,
-        predicate: PARTICIPATES_IN,
-        obj: obj.axm_entity_id,
-        obj_local_id: obj.local_id,
-        obj_type: 'entity',
-        windows: [],
-      });
+    const subjectLocalId = row.participant_type === 'actor' ? row.actor_id : row.organization_id;
+    const subject = byLocalId.get(subjectLocalId);
+    const object = byLocalId.get(row.surface_id);
+    if (!subject) throw new Error(`participation references unknown participant ${subjectLocalId}`);
+    if (!object) throw new Error(`participation references unknown surface ${row.surface_id}`);
+
+    const currentClaimId = claimId(subject.axm_entity_id, PARTICIPATES_IN, object.axm_entity_id, 'entity');
+    const legacyProvisionalClaimId = legacyClaimId(
+      subject.legacy_provisional_entity_id,
+      PARTICIPATES_IN,
+      object.legacy_provisional_entity_id,
+      'entity'
+    );
+    const priorCurrent = currentByLegacyClaimId.get(legacyProvisionalClaimId);
+    if (priorCurrent && priorCurrent !== currentClaimId) {
+      throw new Error(`legacy AXM claim collision: ${legacyProvisionalClaimId} maps to ${priorCurrent} and ${currentClaimId}`);
     }
-    claimById.get(id).windows.push(claimWindow(row));
+    currentByLegacyClaimId.set(legacyProvisionalClaimId, currentClaimId);
+
+    if (!claimByCurrentId.has(currentClaimId)) {
+      claimByCurrentId.set(currentClaimId, {
+        claim_id: currentClaimId,
+        legacy_provisional_claim_id: legacyProvisionalClaimId,
+        subj: subject.axm_entity_id,
+        legacy_provisional_subj: subject.legacy_provisional_entity_id,
+        subj_local_id: subject.local_id,
+        predicate: PARTICIPATES_IN,
+        obj: object.axm_entity_id,
+        legacy_provisional_obj: object.legacy_provisional_entity_id,
+        obj_local_id: object.local_id,
+        obj_type: 'entity',
+        windows: []
+      });
+    } else if (claimByCurrentId.get(currentClaimId).legacy_provisional_claim_id !== legacyProvisionalClaimId) {
+      throw new Error(`current AXM claim ${currentClaimId} has multiple legacy predecessors`);
+    }
+    claimByCurrentId.get(currentClaimId).windows.push(claimWindow(row));
   }
 
-  const claims = [...claimById.values()];
-  for (const c of claims) {
-    c.windows.sort((a, b) => String(a.valid_from ?? '').localeCompare(String(b.valid_from ?? '')));
+  const claims = [...claimByCurrentId.values()];
+  for (const claim of claims) {
+    claim.windows.sort((left, right) => String(left.valid_from ?? '').localeCompare(String(right.valid_from ?? '')));
   }
-  claims.sort((a, b) => a.claim_id.localeCompare(b.claim_id));
-  entities.sort((a, b) => a.local_id.localeCompare(b.local_id));
+  claims.sort((left, right) => left.claim_id.localeCompare(right.claim_id));
+  for (const entity of entities) {
+    entity.alias_axm_ids.sort((left, right) => left.localeCompare(right));
+    entity.legacy_provisional_alias_ids.sort((left, right) => left.localeCompare(right));
+  }
+  entities.sort((left, right) => left.local_id.localeCompare(right.local_id));
 
   return { scheme: { ...SCHEME, namespace }, entities, claims };
 }
 
-// Resolve a --from/--to style token: a local id passes through; a provisional
-// AXM entity id (canonical or alias-derived) resolves to its local id.
+// Resolve local IDs, current Genesis v1 IDs, and retired provisional IDs. A
+// predecessor token resolves to the same local registry object but never
+// changes the current identity stored in the active projection.
 export function resolveLocalId(identity, token) {
-  if (!/^e_[a-z2-7]{24}$/.test(token)) return token;
-  const entity = identity.entities.find(e => e.axm_entity_id === token || e.alias_axm_ids.includes(token));
+  if (typeof token !== 'string') return token;
+  if (!/^e1_[a-z2-7]{52}$/.test(token) && !/^e_[a-z2-7]{24}$/.test(token)) return token;
+  const entity = (identity.entities ?? []).find(item =>
+    item.axm_entity_id === token
+    || item.legacy_provisional_entity_id === token
+    || (item.alias_axm_ids ?? []).includes(token)
+    || (item.legacy_provisional_alias_ids ?? []).includes(token));
   return entity ? entity.local_id : token;
 }
