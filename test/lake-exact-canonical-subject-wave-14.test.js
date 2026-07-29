@@ -21,12 +21,16 @@ function run(file) {
   }
   assert.equal(result.status, 0, `${file} failed`);
 }
+function buildWave14() {
+  run('tools/build-lake-exact-canonical-subject-wave-14.mjs');
+  run('tools/finalize-lake-exact-canonical-subject-wave-14.mjs');
+}
 
 const policy = readJson('data/project/lake-exact-canonical-subject-wave-14-policy.json');
-run('tools/build-lake-exact-canonical-subject-wave-14.mjs');
+buildWave14();
 const deterministicPaths = [policy.projection_path, policy.plan_path, policy.report_path, policy.unresolved_registry_path];
 const firstHashes = Object.fromEntries(deterministicPaths.map(file => [file, sha256(file)]));
-run('tools/build-lake-exact-canonical-subject-wave-14.mjs');
+buildWave14();
 for (const file of deterministicPaths) assert.equal(sha256(file), firstHashes[file], `${file}: Wave 14 build is not deterministic`);
 
 const projection = readJson(policy.projection_path);
@@ -48,6 +52,8 @@ assert.equal(projection.counts.exact_canonical_subjects, policy.expected.exact_c
 assert.equal(projection.counts.unresolved_subject_references, policy.expected.unresolved_subject_references);
 assert.equal(projection.counts.unresolved_distinct_subjects, policy.expected.unresolved_distinct_subjects);
 assert.equal(projection.counts.briefing_exact_canonical_references, policy.expected.briefing_exact_canonical_references);
+assert.equal(projection.counts.exact_subject_observation_rows, policy.expected.exact_canonical_subjects);
+assert.equal(projection.counts.unresolved_registry_rows, policy.expected.unresolved_distinct_subjects);
 assert.deepEqual(projection.unresolved_classification_counts, policy.expected.unresolved_classification_counts);
 assert.equal(
   projection.counts.explicit_resolution_references
@@ -61,6 +67,14 @@ assert.equal(projection.counts.source_subject_id_changes, policy.expected.source
 assert.equal(projection.counts.source_claim_text_changes, policy.expected.source_claim_text_changes);
 assert.equal(projection.counts.accepted_cross_case_identity_bridges, policy.expected.accepted_cross_case_identity_bridges);
 assert.equal(projection.counts.decisions_requiring_human_permission, 0);
+assert.equal(projection.finalization.exact_subject_observations_projected, true);
+assert.equal(projection.finalization.unresolved_registry_projected, true);
+assert.equal(projection.finalization.graph_effect, 'none');
+assert.equal(projection.exact_subject_observations.length, policy.expected.exact_canonical_subjects);
+assert.equal(projection.unresolved_subjects.length, policy.expected.unresolved_distinct_subjects);
+assert.deepEqual(projection.unresolved_subjects, unresolved);
+assert.equal(new Set(projection.exact_subject_observations.map(row => row.exact_subject_observation_id)).size, projection.exact_subject_observations.length);
+assert.equal(new Set(projection.unresolved_subjects.map(row => row.unresolved_subject_id)).size, projection.unresolved_subjects.length);
 
 function claim(caseId, claimId) {
   const row = cases.get(caseId)?.claims.find(item => item.claim_id === claimId);
@@ -104,17 +118,21 @@ assert.equal(catalog.counts.unresolved_subject_references, projection.counts.unr
 assert.equal(briefingIndex.counts.resolved_subject_references + briefingIndex.counts.unresolved_subject_references,
   briefingIndex.counts.subject_references);
 
-for (const subject of projection.exact_subjects) {
+for (const subject of projection.exact_subject_observations) {
+  assert.ok(subject.exact_subject_observation_id);
   assert.equal(subject.exact_string_equality, true);
   assert.equal(subject.explicit_case_resolution_used, false);
   assert.equal(subject.normalized_name_match_used, false);
   assert.equal(subject.alias_match_used, false);
+  assert.equal(subject.fuzzy_match_used, false);
   assert.equal(subject.source_records_mutated, false);
   assert.equal(subject.source_records_merged, false);
   assert.equal(subject.relationship_created, false);
   assert.equal(subject.participation_created, false);
   assert.equal(subject.accepted_cross_case_identity_bridge, false);
   assert.equal(subject.automatic_cross_case_join_authorized, false);
+  assert.equal(subject.review_dependency.required_to_decide, false);
+  assert.equal(subject.reversibility.mode, 'append_preserving_supersession');
   assert.equal(subject.graph_effect, 'none');
 }
 
