@@ -88,6 +88,12 @@ const organizationAdditions = [];
 const aliasAdditions = [];
 const materializedIds = new Set();
 const canonicalOwnerById = new Map();
+const plannedMaterializedIds = new Set(
+  Object.values(policy.resolutions)
+    .filter(row => row.materialize_record)
+    .map(row => row.canonical_id)
+);
+assert.equal(plannedMaterializedIds.size, policy.expected.new_entity_records, 'Wave 12 planned canonical target denominator drift');
 
 for (const [localSubjectId, resolution] of Object.entries(policy.resolutions).sort(([left], [right]) => left.localeCompare(right))) {
   const hold = holdByIdentity.get(localSubjectId);
@@ -146,7 +152,7 @@ for (const [localSubjectId, resolution] of Object.entries(policy.resolutions).so
       });
     }
   } else {
-    assert.ok(materializedIds.has(resolution.canonical_id) || currentIds.has(resolution.canonical_id), `${localSubjectId}: non-owner resolution target is not materialized`);
+    assert.ok(plannedMaterializedIds.has(resolution.canonical_id) || currentIds.has(resolution.canonical_id), `${localSubjectId}: non-owner resolution target is not materialized`);
   }
 
   const decisionId = stableId('HOLDDEC', [localSubjectId, resolution.canonical_id, ...resolution.source_ids]);
@@ -343,7 +349,30 @@ writeJsonl(policy.local_resolution_registry_path, localResolutionRows);
 writeJson(policy.mutation_plan_path, mutationPlan);
 writeJson(policy.projection_path, projection);
 writeJson(policy.plan_path, plan);
-const report = `# Bounded-hold resolution Wave 12\n\nSource fingerprint: \`${sourceFingerprint}\`\n\n## Resolution denominator\n\n\`\`\`text\nWave 11 bounded holds:               ${holds.length}\nsource records:                      ${sources.length}\naccepted local/canonical resolutions:${localResolutionRows.length}\nnew actor records planned:           ${actorAdditions.length}\nnew organization records planned:    ${organizationAdditions.length}\naliases planned:                     ${aliasAdditions.length}\naccepted cross-case identity bridges:0\nparticipation additions:             0\nclaim delta:                         0\ngraph edge delta:                    0\nhuman-permission dependencies:       0\n\`\`\`\n\n## Judgment\n\nAll twelve former holds now have public or repository-preserved source custody, explicit same-entity assertions, unique canonical targets, and reversible actions. The two City of Arcadia local IDs resolve to one canonical municipal record. Company-source replacements cure private-only custody without treating Crucible selection as performance, acceptance, or deployment.\n`;
+const report = `# Bounded-hold resolution Wave 12
+
+Source fingerprint: \`${sourceFingerprint}\`
+
+## Resolution denominator
+
+\`\`\`text
+Wave 11 bounded holds:               ${holds.length}
+source records:                      ${sources.length}
+accepted local/canonical resolutions:${localResolutionRows.length}
+new actor records planned:           ${actorAdditions.length}
+new organization records planned:    ${organizationAdditions.length}
+aliases planned:                     ${aliasAdditions.length}
+accepted cross-case identity bridges:0
+participation additions:             0
+claim delta:                         0
+graph edge delta:                    0
+human-permission dependencies:       0
+\`\`\`
+
+## Judgment
+
+All twelve former holds now have public or repository-preserved source custody, explicit same-entity assertions, unique canonical targets, and reversible actions. The two City of Arcadia local IDs resolve to one canonical municipal record. Company-source replacements cure private-only custody without treating Crucible selection as performance, acceptance, or deployment.
+`;
 fs.mkdirSync(path.dirname(full(policy.report_path)), { recursive: true });
 fs.writeFileSync(full(policy.report_path), report);
 console.log('bounded-hold resolution Wave 12 built');
