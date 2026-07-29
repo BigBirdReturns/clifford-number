@@ -1,0 +1,295 @@
+name: Temporary materialize K0 Wave 07 field adjudication from verified blobs
+
+on:
+  push:
+    branches: [agent/k0-wave07-field-adjudication]
+    paths:
+      - '.github/workflows/temporary-materialize-k0-wave07-field-from-blobs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/k0-wave07-field-adjudication
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct the exact frozen source from verified Git blobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import tarfile
+          import urllib.request
+
+          repository = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GH_TOKEN']
+          ordered_shas = [
+              'fe04d6750316de80f3c95f7793293146e7d946ca',
+              '630b4c595b9f9dcf450c0dbcd6305e98337e2ef5',
+              'b5fcfc1313562624ba1503f212de92cdb1d7663c',
+              '6068ada5b01bc7e3d9a3d53351c542391c3ed09a',
+              '09216844d022571e9d2d240e52dd8cf3f6e500a8',
+              '4c1af0bcf36eff4d595e90c0bcf723daea0c17ce',
+              '743c0a4eb01624ca7290cfb9eaa6a71b819caf28',
+              '3b7d6e7e5937a83afcbb323f478a15db04a0a118',
+              '8cabdfdcf788527f0786189a1e4a5e0ecccb233f',
+              '4a613ec4b4b7e1e6d848442e0a38d80167c7fb1c',
+              'c8dab7de029aaeba910aca282e9ffac07fb85fe5',
+              '26659db151efe98ff8c979fb2481ac8ad3cd51a3',
+              'ca754227ddf29200f6160b8a9e921ab72e2e859d',
+              '3ecd34a5906d2d42e34cecb7d963ca3682406e13',
+              '3307d4f7d126c937676a2e9e4fcd520cd39bf3a2',
+              '1649de075b2decd804e83408cb3e5b83990112ae',
+              '33a4ff22d6400dd4008feb54ac7c19513c0a1417',
+              'f1c812d1d0f0129433a5923429771cf5eb4fd3c9',
+              'a4653c545b50b7a6c5072a2deadc5572ac238bd3',
+              '4344affff5294784d3a9be03a1e337c84ced0f81',
+              'f8ef1559129ba7131bdcdcd7dd89b7ef5655dcaa',
+              '7e5dee6b1467b123aa5cf4c688ec87943408e14c',
+          ]
+          archive = pathlib.Path('/tmp/k0-wave07-field-source.tar.gz')
+          with archive.open('wb') as output:
+              for index, expected_sha in enumerate(ordered_shas):
+                  request = urllib.request.Request(
+                      f'https://api.github.com/repos/{repository}/git/blobs/{expected_sha}',
+                      headers={
+                          'Accept': 'application/vnd.github+json',
+                          'Authorization': f'Bearer {token}',
+                          'X-GitHub-Api-Version': '2022-11-28',
+                          'User-Agent': 'k0-wave07-field-materializer',
+                      },
+                  )
+                  with urllib.request.urlopen(request) as response:
+                      payload = json.load(response)
+                  raw = base64.b64decode(payload['content'])
+                  actual_sha = hashlib.sha1(f'blob {len(raw)}\0'.encode() + raw).hexdigest()
+                  if actual_sha != expected_sha:
+                      raise SystemExit(f'blob mismatch at {index:02d}: {actual_sha} != {expected_sha}')
+                  output.write(raw)
+
+          with tarfile.open(archive, 'r:gz') as bundle:
+              regular = [member for member in bundle.getmembers() if member.isfile()]
+              if len(regular) != 14:
+                  raise SystemExit(f'exact source denominator mismatch: {len(regular)} != 14')
+              for member in bundle.getmembers():
+                  name = member.name.removeprefix('./')
+                  if not name or name.startswith('/') or '..' in name.split('/'):
+                      raise SystemExit(f'unsafe archive member: {member.name}')
+          print(json.dumps({
+              'ordered_git_blobs': len(ordered_shas),
+              'archive_sha256': hashlib.sha256(archive.read_bytes()).hexdigest(),
+              'regular_files': len(regular),
+          }, indent=2))
+          PY
+          tar -xzf /tmp/k0-wave07-field-source.tar.gz
+          cat > /tmp/k0-wave07-field-adjudication.yml <<'YAML'
+          name: K0 Wave 07 field adjudication
+
+          on:
+            pull_request:
+              branches: [main]
+              paths:
+                - 'data/research/k0-wave07-field-adjudication.json'
+                - 'data/research/k0-role-neutral-denominator.json'
+                - 'data/research/corpus-coverage.json'
+                - 'data/research/selection-adversarial-reviews.json'
+                - 'data/project/k0-wave07-field-adjudication-release-manifest.json'
+                - 'docs/milestones/m05-k0-wave07-field-adjudication.md'
+                - 'reports/core-thesis/answerable-power/k0-wave07-field-adjudication.*'
+                - 'tools/build-k0-wave07-field-adjudication.mjs'
+                - 'tools/validate-k0-wave07-field-adjudication.mjs'
+                - 'test/k0-wave07-field-adjudication.test.js'
+                - '.github/workflows/k0-wave07-field-adjudication.yml'
+            push:
+              branches: [main]
+              paths:
+                - 'data/research/k0-wave07-field-adjudication.json'
+                - 'data/research/k0-role-neutral-denominator.json'
+                - 'data/research/corpus-coverage.json'
+                - 'data/research/selection-adversarial-reviews.json'
+                - 'data/project/k0-wave07-field-adjudication-release-manifest.json'
+                - 'docs/milestones/m05-k0-wave07-field-adjudication.md'
+                - 'reports/core-thesis/answerable-power/k0-wave07-field-adjudication.*'
+                - 'tools/build-k0-wave07-field-adjudication.mjs'
+                - 'tools/validate-k0-wave07-field-adjudication.mjs'
+                - 'test/k0-wave07-field-adjudication.test.js'
+                - '.github/workflows/k0-wave07-field-adjudication.yml'
+            workflow_dispatch:
+
+          permissions:
+            contents: read
+
+          jobs:
+            validate:
+              runs-on: ubuntu-latest
+              timeout-minutes: 60
+              steps:
+                - uses: actions/checkout@v4
+                - uses: actions/setup-node@v4
+                  with:
+                    node-version: '24'
+                - name: Build, validate, and test Wave 07 field adjudication
+                  run: |
+                    set -euo pipefail
+                    node tools/build-k0-wave07-field-adjudication.mjs
+                    node tools/validate-k0-wave07-field-adjudication.mjs
+                    node test/k0-wave07-field-adjudication.test.js
+                    node tools/build-k0-role-neutral-wave-07.mjs
+                    node tools/validate-k0-role-neutral-wave-07.mjs
+                    node test/k0-role-neutral-wave-07.test.js
+                    node tools/build-k0-epistemic-admissibility.mjs
+                    node tools/validate-k0-epistemic-admissibility.mjs
+                    node test/k0-epistemic-admissibility.test.js
+                    node tools/validate-corpus-selection.mjs
+                    node tools/validate-consumption-contract.mjs
+                - name: Run complete repository release gate
+                  run: npm run release:check
+                - name: Prove deterministic products
+                  run: |
+                    set -euo pipefail
+                    git diff -- . ':!build/**' ':!dist/**' > /tmp/k0-wave07-field-before.patch
+                    node tools/build-k0-wave07-field-adjudication.mjs
+                    node tools/build-k0-role-neutral-wave-07.mjs
+                    node tools/build-k0-epistemic-admissibility.mjs
+                    git diff -- . ':!build/**' ':!dist/**' > /tmp/k0-wave07-field-after.patch
+                    cmp /tmp/k0-wave07-field-before.patch /tmp/k0-wave07-field-after.patch
+          YAML
+          mkdir -p .github/workflows
+          cp /tmp/k0-wave07-field-adjudication.yml .github/workflows/k0-wave07-field-adjudication.yml
+
+      - name: Build and validate focused and aggregate products
+        run: |
+          set -euo pipefail
+          node tools/build-k0-wave07-field-adjudication.mjs
+          node tools/validate-k0-wave07-field-adjudication.mjs
+          node test/k0-wave07-field-adjudication.test.js
+          node tools/build-k0-role-neutral-wave-07.mjs
+          node tools/validate-k0-role-neutral-wave-07.mjs
+          node test/k0-role-neutral-wave-07.test.js
+          node tools/build-k0-epistemic-admissibility.mjs
+          node tools/validate-k0-epistemic-admissibility.mjs
+          node test/k0-epistemic-admissibility.test.js
+          node tools/validate-corpus-selection.mjs
+          node tools/validate-consumption-contract.mjs
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Reconstruct the permanent tree from the frozen source
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          git clean -fd
+          tar -xzf /tmp/k0-wave07-field-source.tar.gz
+          mkdir -p .github/workflows
+          cp /tmp/k0-wave07-field-adjudication.yml .github/workflows/k0-wave07-field-adjudication.yml
+          node tools/build-k0-wave07-field-adjudication.mjs
+          node tools/build-k0-role-neutral-wave-07.mjs
+          node tools/build-k0-epistemic-admissibility.mjs
+          node tools/validate-k0-wave07-field-adjudication.mjs
+          node test/k0-wave07-field-adjudication.test.js
+          node tools/validate-k0-role-neutral-wave-07.mjs
+          node test/k0-role-neutral-wave-07.test.js
+          node tools/validate-k0-epistemic-admissibility.mjs
+          node test/k0-epistemic-admissibility.test.js
+          node tools/validate-corpus-selection.mjs
+          node tools/validate-consumption-contract.mjs
+
+      - name: Prove deterministic reconstruction
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import subprocess
+
+          excluded_roots = {'.git', 'build', 'dist', 'node_modules'}
+          excluded_paths = {
+              '.github/workflows/temporary-k0-wave07-field-bootstrap.yml',
+              '.github/workflows/temporary-materialize-k0-wave07-field-from-blobs.yml',
+          }
+          def fingerprint():
+              rows = {}
+              for path in sorted(Path('.').rglob('*')):
+                  if not path.is_file():
+                      continue
+                  rel = path.as_posix()
+                  if path.parts[0] in excluded_roots or rel in excluded_paths:
+                      continue
+                  rows[rel] = hashlib.sha256(path.read_bytes()).hexdigest()
+              return rows
+
+          before = fingerprint()
+          subprocess.run(['node', 'tools/build-k0-wave07-field-adjudication.mjs'], check=True)
+          subprocess.run(['node', 'tools/build-k0-role-neutral-wave-07.mjs'], check=True)
+          subprocess.run(['node', 'tools/build-k0-epistemic-admissibility.mjs'], check=True)
+          after = fingerprint()
+          if before != after:
+              changed = sorted(set(before) | set(after))
+              changed = [path for path in changed if before.get(path) != after.get(path)]
+              raise SystemExit(f'nondeterministic paths: {changed}')
+          print(json.dumps({'deterministic': True, 'files': len(before)}, indent=2))
+          PY
+
+      - name: Commit the non-workflow permanent surface
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          rm -f .github/workflows/k0-wave07-field-adjudication.yml
+          git add -A -- data docs reports test tools
+
+          python - <<'PY'
+          import subprocess
+          paths = set(subprocess.check_output(['git', 'diff', '--cached', '--name-only'], text=True).splitlines())
+          required = {
+              'data/project/k0-wave07-field-adjudication-release-manifest.json',
+              'data/research/k0-wave07-field-adjudication.json',
+              'docs/milestones/m05-k0-wave07-field-adjudication.md',
+              'reports/core-thesis/answerable-power/k0-wave07-field-adjudication.json',
+              'reports/core-thesis/answerable-power/k0-wave07-field-adjudication.html',
+              'test/k0-wave07-field-adjudication.test.js',
+              'tools/build-k0-wave07-field-adjudication.mjs',
+              'tools/validate-k0-wave07-field-adjudication.mjs',
+          }
+          missing = sorted(required - paths)
+          if missing:
+              raise SystemExit(f'missing required permanent paths: {missing}')
+          forbidden = [path for path in paths if path.startswith(('build/', 'dist/', '.github/', 'data/canonical/', 'data/ledger/'))]
+          if forbidden:
+              raise SystemExit(f'forbidden staged paths: {forbidden}')
+          if not 18 <= len(paths) <= 30:
+              raise SystemExit(f'unexpected permanent path denominator: {len(paths)}')
+          print(f'bounded staged denominator: {len(paths)} non-workflow paths')
+          PY
+
+          git diff --cached --check
+          git commit -m 'Adjudicate K0 Wave 07 authorship-transfer records'
+          git push origin HEAD:agent/k0-wave07-field-adjudication
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: k0-wave07-field-permanent-workflow
+          path: /tmp/k0-wave07-field-adjudication.yml
+          if-no-files-found: error
+          retention-days: 3
