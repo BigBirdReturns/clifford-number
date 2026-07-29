@@ -3,48 +3,22 @@ import fs from 'node:fs';
 
 const changedPaths = new Set();
 
-function replaceExact(file, before, after) {
+function replaceSection(file, startMarker, endMarker, replacement) {
   const source = fs.readFileSync(file, 'utf8');
-  const occurrences = source.split(before).length - 1;
-  if (occurrences !== 1) throw new Error(`${file}: expected one Wave 06 migration target, found ${occurrences}`);
-  fs.writeFileSync(file, source.replace(before, after));
+  const start = source.indexOf(startMarker);
+  if (start < 0) throw new Error(`${file}: missing Wave 06 start marker ${JSON.stringify(startMarker)}`);
+  const end = source.indexOf(endMarker, start + startMarker.length);
+  if (end < 0) throw new Error(`${file}: missing Wave 06 end marker ${JSON.stringify(endMarker)}`);
+  const duplicate = source.indexOf(startMarker, start + startMarker.length);
+  if (duplicate >= 0 && duplicate < end) throw new Error(`${file}: duplicate Wave 06 start marker before end marker`);
+  fs.writeFileSync(file, `${source.slice(0, start)}${replacement}${source.slice(end)}`);
   changedPaths.add(file);
 }
 
-replaceExact(
+replaceSection(
   'tools/validate-release.mjs',
-  `// Temporal identity layer (provisional AXM ids). The artifact must be a
-// deterministic function of the ledger — recompute it and require exact
-// agreement — and must carry its provisional caveat, so a stale or hand-edited
-// artifact, or one silently stripped of the caveat, fails the release.
-{
-  const identity = readJson('build/axm-identity.json');
-  assert(identity.scheme?.status === 'provisional', 'axm-identity scheme.status must remain "provisional" until reconciled against axm-genesis');
-  assert(identity.scheme?.namespace === readJson('cases.json').default_case_id, \`axm-identity namespace \${identity.scheme?.namespace} does not match the default case id\`);
-  const recomputed = buildIdentityLayer({
-    namespace: readJson('cases.json').default_case_id,
-    actors: data.actors,
-    organizations: data.organizations,
-    surfaces: data.surfaces,
-    participation: data.participation,
-    aliases: data.aliases,
-  });
-  assert(JSON.stringify({ scheme: identity.scheme, entities: identity.entities, claims: identity.claims }) === JSON.stringify(recomputed),
-    'build/axm-identity.json does not match the identity layer recomputed from the ledger — rebuild (npm run build:hops)');
-  const idRe = /^e_[a-z2-7]{24}$/;
-  for (const e of identity.entities) assert(idRe.test(e.axm_entity_id), \`entity \${e.local_id} has malformed axm id \${e.axm_entity_id}\`);
-  for (const c of identity.claims) {
-    assert(/^c_[a-z2-7]{24}$/.test(c.claim_id), \`claim \${c.claim_id} is malformed\`);
-    assert(c.windows.length > 0, \`claim \${c.claim_id} carries no temporal windows\`);
-    for (const w of c.windows) {
-      assert(w.dated === Boolean(w.valid_from || w.valid_until), \`claim \${c.claim_id} window dated flag disagrees with its bounds\`);
-    }
-  }
-  // Identity is time-stable: one claim per (subj, obj), stints as windows.
-  const pairs = new Set(identity.claims.map(c => \`\${c.subj}||\${c.obj}\`));
-  assert(pairs.size === identity.claims.length, 'duplicate (subj, obj) participates_in claims — stints must be windows on one claim');
-}
-`,
+  '// Temporal identity layer (provisional AXM ids).',
+  '// Full-database migration is required, not optional.',
   `// Temporal identity layer (AXM Genesis v1 active projection). Recompute the
 // complete layer from canonical sources, require exact agreement, preserve the
 // retired IDs as predecessor aliases, and keep cross-case joins disabled until
@@ -114,18 +88,14 @@ replaceExact(
   const pairs = new Set(identity.claims.map(claim => \`\${claim.subj}||\${claim.obj}\`));
   assert(pairs.size === identity.claims.length, 'duplicate (subj, obj) participates_in claims — stints must be windows on one claim');
 }
+
 `
 );
 
-replaceExact(
+replaceSection(
   'BUILD-INSTRUCTIONS.md',
-  `2.1 **AXM identity reconciliation.** Reconcile the provisional identity
-serialization in \`tools/lib/axm-id.mjs\` byte-for-byte against \`axm-genesis\`
-(\`axm_verify.identity\`). Until this gate closes, \`build/axm-identity.json\`
-stays quarantined and no cross-case join ships. Acceptance: a shared fixture
-file of (namespace, label) pairs produces identical IDs in both repositories,
-committed to both.
-`,
+  '2.1 **AXM identity reconciliation.**',
+  '2.2 **Surface-type audit for density.**',
   `2.1 **AXM identity reconciliation — completed 2026-07-29.** The repository
 pins \`BigBirdReturns/axm-genesis\` commit
 \`411ef40e6cfc3ecb97ac3e256c8151be678347c8\`, preserves the exact Genesis v1
@@ -140,27 +110,14 @@ the external reproducibility and active-migration gate; it does **not** prove
 real-world identity. Cross-case joins remain disabled until a separate
 multi-case acceptance fixture proves namespace, alias, and claim behavior
 without changing any source evidence or graph semantics.
+
 `
 );
 
-replaceExact(
+replaceSection(
   'README.md',
-  `## Temporal identity layer (provisional)
-
-\`tools/lib/axm-id.mjs\` vendors the AXM content-addressed identity envelope (axm-core \`IDENTITY.md\`: SHA-256 → first 15 bytes → base32 lowercase, no padding, type prefix) so that two independently built cases mentioning the same entity can produce the same ID — the precondition for cross-case joins and dark-network deltas. The envelope is authoritative; the namespace/label input serialization is **provisional** and must be reconciled byte-for-byte against \`axm-genesis\` (\`axm_verify.identity\`) before these IDs are used as cross-system join keys.
-
-\`tools/lib/axm-identity.mjs\` wires that envelope into exactly one artifact, \`build/axm-identity.json\`, so the provisional IDs stay quarantined from the hop/surface/receipt graphs:
-
-- **Entities.** Every canonical actor, organization, and surface gets a provisional AXM entity ID derived from \`(case namespace, label)\`. Registry aliases yield additional alias-derived IDs on the same entity — a corpus that says "Sir Simon Case" and one that says "Simon Case" still join.
-- **Time-qualified claims.** Each participation row becomes a \`participates_in\` claim. The claim ID is content-addressed over \`(subject, predicate, object)\` only — **identity is time-stable** — while temporal validity attaches as windows in the \`temporal@1\` vocabulary. Multiple stints of the same participant on the same surface are one claim with several windows, never several claims. An undated participation is preserved as \`dated: false\` with open bounds, not invented.
-- **Honesty markers.** The artifact's \`scheme\` block carries the provisional status and the reconciliation obligation; \`validate:release\` recomputes the whole layer from the ledger and fails on any drift, staleness, or a stripped caveat.
-
-\`query:hops --from\` / \`--to\` also accept a provisional AXM entity ID (canonical or alias-derived) and resolve it to the local actor before traversal:
-
-\`\`\`bash
-npm run query:hops -- --from e_cxoy37udrurtowdj47suemrw   # "Ben Warner" (alias-derived)
-\`\`\`
-`,
+  '## Temporal identity layer (provisional)',
+  '## Estate frontier and game trails',
   `## Temporal identity layer (AXM Genesis v1)
 
 \`tools/lib/axm-id.mjs\` now delegates active identity to the commit-pinned AXM Genesis v1 rules: NFC normalization, ASCII-only lowering, frozen whitespace handling, NUL-separated preimages, full 32-byte SHA-256 digests, and versioned \`e1_\` / \`c1_\` prefixes. The cross-runtime fixture and attestation are committed under \`data/project/\`; the exact 176-entity and 164-claim predecessor map is in \`build/axm-identity-genesis-v1-migration.json\`.
@@ -178,15 +135,14 @@ npm run query:hops -- --from e_cxoy37udrurtowdj47suemrw   # "Ben Warner" (alias-
 npm run query:hops -- --from e1_36m7cjmqzlwdou4gr37cqy7jnckjsr6behzpbfmp7zphwzfynx7a  # Dr. Ben Warner
 npm run query:hops -- --from e_gkmzucjlt7bu6i3s2nmqddmm                              # retired predecessor
 \`\`\`
+
 `
 );
 
-replaceExact(
+replaceSection(
   'tools/query-hops.mjs',
-  `// --from/--to also accept a provisional AXM entity id (e_… from
-// build/axm-identity.json, canonical or alias-derived), resolved to the
-// local actor id before traversal.
-`,
+  '// --from/--to also accept a provisional AXM entity id',
+  "import { readJson } from './lib/ledger.mjs';",
   `// --from/--to also accept a current AXM Genesis v1 entity id (e1_…) or a
 // retired provisional predecessor (e_…). Both resolve to the local registry
 // actor before traversal; only the e1_ identifier remains current.
