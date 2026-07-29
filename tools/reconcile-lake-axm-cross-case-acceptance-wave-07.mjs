@@ -36,6 +36,7 @@ const receipt = readJson(policy.acceptance_receipt_path);
 const fixture = readJson(policy.fixture_path);
 const active = readJson('build/axm-identity.json');
 const registry = readJsonl(policy.decision_registry_path);
+const projection = readJson(policy.decision_projection_path);
 const files = readJsonl('build/lake-index/files.jsonl');
 const objects = readJsonl('build/lake-index/objects.jsonl');
 const summary = readJson('build/lake-index/summary.json');
@@ -47,6 +48,7 @@ const inputs = [
   policyPath,
   policy.fixture_path,
   policy.decision_registry_path,
+  policy.decision_projection_path,
   policy.acceptance_receipt_path,
   policy.plan_path,
   'build/axm-identity.json',
@@ -71,6 +73,13 @@ const expectedRows = [
   recomputed.hop_decision
 ].sort((left, right) => `${left.row_type}:${left.decision_id}`.localeCompare(`${right.row_type}:${right.decision_id}`));
 assert.deepEqual(registry, expectedRows, 'Wave 07 decision registry does not equal the deterministic fixture result');
+assert.equal(projection.schema_version, 'axm-cross-case-join-decision-index@1', 'Wave 07 decision projection schema drift');
+assert.equal(projection.program_key, policy.program_key, 'Wave 07 decision projection program drift');
+assert.equal(projection.source_registry_path, policy.decision_registry_path, 'Wave 07 decision projection source path drift');
+assert.equal(projection.fixture_path, policy.fixture_path, 'Wave 07 decision projection fixture path drift');
+assert.equal(projection.authorized_scope, policy.authorized_scope, 'Wave 07 decision projection scope drift');
+assert.equal(projection.counts?.decisions, expectedRows.length, 'Wave 07 decision projection count drift');
+assert.deepEqual(projection.decisions, expectedRows, 'Wave 07 generated decision projection does not equal the source registry');
 
 assert.equal(active.scheme?.status, 'reconciled_genesis_v1', 'active identity scheme drift');
 assert.equal(active.scheme?.external_axm_gate_complete, true, 'external AXM gate drift');
@@ -108,6 +117,10 @@ const sourceStates = sourceControls.map(relative => {
 });
 assert.ok(sourceStates.every(row => row.present && row.generated === false && row.authoritative_reachable === true), 'Wave 07 source controls are not authoritative-reachable');
 assert.equal(fileByPath.get(policy.decision_registry_path)?.index_file, true, 'Wave 07 decision registry is not an index surface');
+const projectionFile = fileByPath.get(policy.decision_projection_path);
+assert.ok(projectionFile, 'Wave 07 decision projection is missing from the lake file index');
+assert.equal(projectionFile.generated, true, 'Wave 07 decision projection is not marked generated');
+assert.equal(projectionFile.index_file, true, 'Wave 07 decision projection is not an index surface');
 
 const objectByKey = new Map(objects.map(row => [`${row.id_key}:${row.id_value}`, row]));
 let decisionIdsObserved = 0;
@@ -118,7 +131,7 @@ for (const row of registry) {
   assert.equal(object.projection_occurrence, true, `${row.decision_id}: projection occurrence missing`);
   assert.equal(object.indexed, true, `${row.decision_id}: index occurrence missing`);
   assert.ok(object.occurrences.some(item => item.path === policy.decision_registry_path && item.generated === false), `${row.decision_id}: registry source occurrence missing`);
-  assert.ok(object.occurrences.some(item => item.path === policy.plan_path && item.generated === true), `${row.decision_id}: plan projection occurrence missing`);
+  assert.ok(object.occurrences.some(item => item.path === policy.decision_projection_path && item.generated === true), `${row.decision_id}: generated decision projection occurrence missing`);
   decisionIdsObserved += 1;
 }
 
@@ -146,9 +159,11 @@ const reconciliation = {
     hop_control_rejected_surfaces: recomputed.counts.hop_control_rejected_surfaces,
     hop_control_rejected_pairs: recomputed.counts.hop_control_rejected_pairs,
     decision_registry_rows: registry.length,
+    decision_projection_rows: projection.decisions.length,
     decision_ids_source_projection_and_index_observed: decisionIdsObserved,
     source_controls_authoritative_reachable: sourceStates.every(row => row.authoritative_reachable),
     source_control_states: sourceStates,
+    decision_projection_indexed: projectionFile.index_file,
     explicit_cross_case_identity_resolution_authorized: true,
     automatic_cross_case_join_authorized: false,
     cross_case_graph_join_authorized: false,
@@ -159,6 +174,7 @@ const reconciliation = {
   },
   deltas: {
     explicit_cross_case_identity_resolution_authorized: 1,
+    decision_projection_rows: projection.decisions.length,
     automatic_cross_case_join_authorizations: 0,
     cross_case_graph_join_authorizations: 0,
     cross_case_hop_creation_authorizations: 0,
@@ -169,7 +185,7 @@ const reconciliation = {
     {
       decision_key: 'W07-RECONCILE-EXPLICIT-LANE',
       judgment: 'the_positive_fixture_authorizes_only_explicit_source_custodied_graph_inert_identity_resolution',
-      action: 'retain_the_accepted_bridge_and_all_rejections_in_the_decision_registry',
+      action: 'retain_the_accepted_bridge_and_all_rejections_in_the_source_registry_and_generated_decision_index',
       evidence_count: accepted.length + rejected.length,
       review_dependency: { required_to_decide: false },
       graph_effect: 'none'
@@ -196,6 +212,7 @@ const reconciliation = {
     deterministic_fixture_reconstruction_complete: true,
     positive_identity_resolution_control_passed: true,
     all_negative_controls_passed: true,
+    decision_projection_built_and_indexed: true,
     all_decision_ids_source_projection_and_index_observed: decisionIdsObserved === registry.length,
     source_controls_authoritative_reachable: sourceStates.every(row => row.authoritative_reachable),
     explicit_cross_case_identity_resolution_authorized: true,
@@ -211,7 +228,7 @@ const reconciliation = {
   boundaries: policy.boundaries
 };
 
-const report = `# AXM cross-case acceptance Wave 07 reconciliation\n\nSource fingerprint: \`${sourceFingerprint}\`\n\n## Result\n\n\`\`\`text\nauthorized scope:                            ${policy.authorized_scope}\nfixture cases:                               ${recomputed.counts.cases}\naccepted explicit assertions:                ${accepted.length}\nrejected assertions:                         ${rejected.length}\nunasserted overlap controls:                 ${unasserted.length}\ntemporal claim controls:                     ${temporal.length}\nhop positive-control edges:                  ${recomputed.counts.hop_control_edges}\nhop rejected surfaces:                       ${recomputed.counts.hop_control_rejected_surfaces}\nhop rejected temporal pairs:                 ${recomputed.counts.hop_control_rejected_pairs}\ndecision registry rows:                      ${registry.length}\ndecision IDs source/projection/indexed:      ${decisionIdsObserved}\nsource controls authoritative-reachable:     ${sourceStates.every(row => row.authoritative_reachable)}\nexplicit identity resolution authorized:     true\nautomatic cross-case join authorized:        false\ncross-case graph join authorized:            false\ncross-case hop creation authorized:          false\nactive broad join flag:                      false\nsynthetic bridge tokens in active hop graph: 0\ndecisions requiring human permission:        0\n\`\`\`\n\n## Judgment\n\nThe fixture closes one narrow acceptance gate. A production identity bridge may be recorded only when an explicit same-entity assertion, source custody on both local records, assertion custody, a shared identity namespace, and an unambiguous token overlap are all present. The bridge remains graph-inert and reversible.\n\n## Boundary\n\nNo automatic same-label or alias join is authorized. No source entity is merged. No relationship, graph edge, or hop is created. The synthetic fixture is not evidence about any real person or institution.\n`;
+const report = `# AXM cross-case acceptance Wave 07 reconciliation\n\nSource fingerprint: \`${sourceFingerprint}\`\n\n## Result\n\n\`\`\`text\nauthorized scope:                            ${policy.authorized_scope}\nfixture cases:                               ${recomputed.counts.cases}\naccepted explicit assertions:                ${accepted.length}\nrejected assertions:                         ${rejected.length}\nunasserted overlap controls:                 ${unasserted.length}\ntemporal claim controls:                     ${temporal.length}\nhop positive-control edges:                  ${recomputed.counts.hop_control_edges}\nhop rejected surfaces:                       ${recomputed.counts.hop_control_rejected_surfaces}\nhop rejected temporal pairs:                 ${recomputed.counts.hop_control_rejected_pairs}\ndecision registry rows:                      ${registry.length}\ndecision projection rows:                    ${projection.decisions.length}\ndecision IDs source/projection/indexed:      ${decisionIdsObserved}\nsource controls authoritative-reachable:     ${sourceStates.every(row => row.authoritative_reachable)}\ngenerated decision projection indexed:       ${projectionFile.index_file}\nexplicit identity resolution authorized:     true\nautomatic cross-case join authorized:        false\ncross-case graph join authorized:            false\ncross-case hop creation authorized:          false\nactive broad join flag:                      false\nsynthetic bridge tokens in active hop graph: 0\ndecisions requiring human permission:        0\n\`\`\`\n\n## Judgment\n\nThe fixture closes one narrow acceptance gate. A production identity bridge may be recorded only when an explicit same-entity assertion, source custody on both local records, assertion custody, a shared identity namespace, and an unambiguous token overlap are all present. The bridge remains graph-inert and reversible.\n\n## Boundary\n\nNo automatic same-label or alias join is authorized. No source entity is merged. No relationship, graph edge, or hop is created. The synthetic fixture is not evidence about any real person or institution.\n`;
 
 writeJson(policy.reconciliation_path, reconciliation);
 fs.mkdirSync(path.dirname(full(policy.reconciliation_report_path)), { recursive: true });
@@ -219,6 +236,7 @@ fs.writeFileSync(full(policy.reconciliation_report_path), report);
 
 console.log('lake AXM cross-case acceptance Wave 07 reconciled');
 console.log(`  accepted / rejected assertions: ${accepted.length} / ${rejected.length}`);
+console.log(`  source / projection decision rows: ${registry.length} / ${projection.decisions.length}`);
 console.log(`  decision IDs observed: ${decisionIdsObserved}/${registry.length}`);
 console.log('  explicit identity resolution authorized: true');
 console.log('  automatic, graph, and hop joins authorized: false');
