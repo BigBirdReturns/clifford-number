@@ -84,6 +84,7 @@ for (const row of extensionAliasRows) {
 const migrationByLocal = new Map(migration.entity_migrations.map(row => [row.local_id, row]));
 let currentEntityTokens = 0;
 let legacyEntityTokens = 0;
+let canonicalEquivalentAliasRows = 0;
 for (const entity of active.entities) {
   const baseline = baselineByLocal.get(entity.local_id);
   const extension = extensionByLocal.get(entity.local_id);
@@ -98,8 +99,23 @@ for (const entity of active.entities) {
     assert.equal(entity.axm_entity_id, extension.axm_entity_id);
     assert.equal(entity.legacy_provisional_entity_id, extension.legacy_provisional_entity_id);
   }
-  const expectedCurrentAliases = uniqueSorted([...(source.alias_axm_ids ?? []), ...(aliasExtensionsByLocal.get(entity.local_id) ?? []).map(row => row.axm_alias_id)]);
-  const expectedLegacyAliases = uniqueSorted([...(source.legacy_provisional_alias_ids ?? []), ...(aliasExtensionsByLocal.get(entity.local_id) ?? []).map(row => row.legacy_provisional_alias_id)]);
+  const aliasRows = aliasExtensionsByLocal.get(entity.local_id) ?? [];
+  for (const row of aliasRows) {
+    const currentCollapsesToPrimary = row.axm_alias_id === entity.axm_entity_id;
+    const legacyCollapsesToPrimary = row.legacy_provisional_alias_id === entity.legacy_provisional_entity_id;
+    assert.equal(currentCollapsesToPrimary, legacyCollapsesToPrimary, `${row.registry_key}: current/legacy alias collapse mismatch`);
+    assert.ok(currentCollapsesToPrimary || entity.alias_axm_ids.includes(row.axm_alias_id), `${row.registry_key}: current alias token missing`);
+    assert.ok(legacyCollapsesToPrimary || entity.legacy_provisional_alias_ids.includes(row.legacy_provisional_alias_id), `${row.registry_key}: legacy alias token missing`);
+    if (currentCollapsesToPrimary) canonicalEquivalentAliasRows += 1;
+  }
+  const expectedCurrentAliases = uniqueSorted([
+    ...(source.alias_axm_ids ?? []),
+    ...aliasRows.map(row => row.axm_alias_id)
+  ].filter(token => token !== entity.axm_entity_id));
+  const expectedLegacyAliases = uniqueSorted([
+    ...(source.legacy_provisional_alias_ids ?? []),
+    ...aliasRows.map(row => row.legacy_provisional_alias_id)
+  ].filter(token => token !== entity.legacy_provisional_entity_id));
   assert.deepEqual(entity.alias_axm_ids, expectedCurrentAliases);
   assert.deepEqual(entity.legacy_provisional_alias_ids, expectedLegacyAliases);
   for (const token of [entity.axm_entity_id, ...entity.alias_axm_ids]) {
@@ -113,6 +129,16 @@ for (const entity of active.entities) {
 }
 assert.equal(currentEntityTokens, legacyEntityTokens);
 assert.ok(currentEntityTokens >= 197);
+
+const regentAlias = extensionAliasRows.find(row => row.canonical_id === 'regent-defense' && row.alias === 'Regent Defense');
+if (regentAlias) {
+  const regent = active.entities.find(row => row.local_id === 'regent-defense');
+  assert.ok(regent);
+  assert.equal(regentAlias.axm_alias_id, regent.axm_entity_id, 'case-only capitalization must collapse to the canonical current token');
+  assert.equal(regentAlias.legacy_provisional_alias_id, regent.legacy_provisional_entity_id, 'case-only capitalization must collapse to the canonical predecessor token');
+  assert.equal(regent.alias_axm_ids.includes(regent.axm_entity_id), false, 'primary current token must not be duplicated in alias_axm_ids');
+  assert.equal(regent.legacy_provisional_alias_ids.includes(regent.legacy_provisional_entity_id), false, 'primary predecessor token must not be duplicated in legacy alias IDs');
+}
 
 const baselineClaimByCurrent = new Map(baselineClaimRows.map(row => [row.claim_id, row]));
 const migrationClaimByCurrent = new Map(migration.claim_migrations.map(row => [row.genesis_v1_claim_id, row]));
@@ -155,4 +181,4 @@ assert.equal(reconciliation.completion.evidence_truth_determined, false);
 assert.equal(reconciliation.completion.publication_cleared, false);
 assert.equal(reconciliation.completion.decisions_requiring_human_permission, 0);
 
-console.log(`lake-axm-active-projection-wave-06.test: OK (176 baseline entities, ${extensionPaths.length} extension registries, ${extensionEntityRows.length} extensions, 164 claims; joins disabled)`);
+console.log(`lake-axm-active-projection-wave-06.test: OK (176 baseline entities, ${extensionPaths.length} extension registries, ${extensionEntityRows.length} extensions, ${canonicalEquivalentAliasRows} canonical-equivalent aliases, 164 claims; joins disabled)`);
