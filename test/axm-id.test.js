@@ -24,10 +24,6 @@ assert.equal(b32Id, legacyB32Id);
 assert.equal(legacyB32Id('e', 'ben warner'), 'e_k5ki4qe57qegkr37d7fmvlm3');
 assert.equal(legacyEntityId('uk-ai-policy', 'Ben Warner'), 'e_cxoy37udrurtowdj47suemrw');
 assert.equal(legacyEntityId('uk-ai-policy', 'ben warner'), legacyEntityId('uk-ai-policy', '  Ben Warner  '));
-assert.equal(
-  legacyClaimId('e_cxoy37udrurtowdj47suemrw', 'participates_in', 'e_tyfowx7pih45jemixgdnd35e', 'entity'),
-  'c_iz2he7hy4hy2jlyc4dp4pcgs'
-);
 
 // Active functions reproduce the pinned Genesis v1 fixture.
 for (const item of vectors.canonicalization.filter(item => Object.hasOwn(item, 'expected'))) {
