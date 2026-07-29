@@ -1,0 +1,111 @@
+{
+  "schema_version": "lake-basin-execution-wave-01-reconciliation@1",
+  "program_id": "CN-LAKE-EXECUTION-W01",
+  "source_fingerprint_sha256": "0b9bd2eefa61380bc0f2d05e58c874cb68d7a371109be3eb521438bbe4bfe326",
+  "before": {
+    "unclassified_paths": 62,
+    "missing_entrypoints": 1,
+    "source_orphan_gaps": 88,
+    "public_boundary_gaps": 55,
+    "registry_basins": 30
+  },
+  "after": {
+    "unclassified_paths": 0,
+    "missing_entrypoints": 0,
+    "core_thesis_missing_entrypoints": 0,
+    "source_orphan_gaps": 30,
+    "public_boundary_gaps": 50,
+    "registry_basins": 37,
+    "evidence_files_with_registry_owner": 1277,
+    "evidence_files_without_registry_owner": 0,
+    "core_thesis_products_in_entrypoint": 184
+  },
+  "deltas": {
+    "unclassified_paths": -62,
+    "missing_entrypoints": -1,
+    "source_orphan_gaps": -58,
+    "public_boundary_gaps": -5,
+    "registry_basins": 7
+  },
+  "decisions": [
+    {
+      "decision_id": "LAKE-W01-RECONCILE-PATHS",
+      "judgment": "current_tree_path_assignment_completed_for_the_wave_01_snapshot",
+      "action": "monitor_future_paths_and_require_an_explicit_basin_or_exact_disposition",
+      "evidence_count": 0,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-W01-RECONCILE-CORE",
+      "judgment": "core_thesis_authoritative_entrypoint_present",
+      "action": "execute_identifier_and_source_lineage_repairs_from_the_new_entrypoint",
+      "evidence_count": 184,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-W01-RECONCILE-PUBLICATION",
+      "judgment": "public_reachability_conflicts_remain_a_material_publication_safety_dependency",
+      "action": "stack_after_PR_382_then_recompute_against_the_status_aware_publication_allowlist",
+      "evidence_count": 50,
+      "blocker": "recursive_publication_on_current_main",
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    }
+  ],
+  "completion": {
+    "core_thesis_entrypoint_closed": true,
+    "current_snapshot_path_assignment_closed": true,
+    "every_evidence_file_has_registry_owner": true,
+    "identifier_repairs_complete": false,
+    "source_orphan_repairs_complete": false,
+    "public_boundary_recomputed_after_PR_382": false,
+    "semantic_lake_complete": false,
+    "evidence_truth_determined": false,
+    "decisions_requiring_human_permission": 0
+  },
+  "source_migration_receipt": {
+    "schema_version": "lake-basin-execution-wave-01@1",
+    "program_id": "CN-LAKE-EXECUTION-W01",
+    "source_decision_rows": 62,
+    "added_or_updated_basins": [
+      "comprehension-protocol",
+      "contribution-pipeline",
+      "core-thesis-build-products",
+      "lake-action-products",
+      "repository-config",
+      "residual-current-tree",
+      "root-legacy-artifact",
+      "temporary-transport"
+    ],
+    "authoritative_roots_added": [
+      "build/core-thesis/index.json",
+      "build/lake-actions/waterline.json",
+      "build/lake-actions/case-catalog-dispositions.json",
+      "build/lake-actions/branch-shadow-dispositions.json",
+      "data/project/lake-wave-01-path-decisions.jsonl",
+      "data/project/lake-basin-execution-wave-01.json"
+    ],
+    "decisions_requiring_human_permission": 0,
+    "correction_mode": "append_preserving_supersession",
+    "boundaries": {
+      "path_assignment_proves_semantic_truth": false,
+      "generated_entrypoint_is_independent_evidence": false,
+      "publication_cleared": false,
+      "graph_effect": "none"
+    }
+  },
+  "boundaries": {
+    "path_assignment_is_semantic_completeness": false,
+    "registry_owner_proves_correct_ownership": false,
+    "entrypoint_proves_evidence_truth": false,
+    "graph_effect": "none"
+  }
+}

@@ -1,0 +1,662 @@
+{
+  "schema_version": "lake-case-catalog-dispositions@1",
+  "source_fingerprint_sha256": "cae5c917b4de607e8f275382432aadb8016ae5d8bec9ff5a2b592d314ef4c8a9",
+  "counts": {
+    "cases": 27,
+    "public_cases": 4,
+    "non_public_cases": 23,
+    "by_disposition": {
+      "public_case": 4,
+      "thesis_subcase_not_public_case": 16,
+      "internal_benchmark_or_control": 5,
+      "internal_case_packet": 2
+    }
+  },
+  "cases": [
+    {
+      "decision_id": "LAKE-CASE-anduril-access-ownership",
+      "case_id": "anduril-access-ownership",
+      "source_paths": [
+        "build/briefings/anduril-access-ownership.json",
+        "build/briefings/index.json",
+        "build/cases/anduril-access-ownership.json",
+        "build/cases/index.json",
+        "build/estates/index.json",
+        "build/public-catalog.json",
+        "build/report-frontier.json",
+        "build/review/reporter-briefing-queue.json",
+        "cases/anduril-access-ownership/briefing.json",
+        "cases/anduril-access-ownership/case.json",
+        "data/estates/case-map.jsonl"
+      ],
+      "public_catalogued": true,
+      "matched_rule_id": "public-catalogued-case",
+      "disposition": "public_case",
+      "owner_program_id": "case-ledger-program",
+      "action": "retain_in_public_catalog_with_current_claim_and_publication_status",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "retain_current_public_status",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-arcadia-field-autopsy",
+      "case_id": "arcadia-field-autopsy",
+      "source_paths": [
+        "build/briefings/arcadia-field-autopsy.json",
+        "build/briefings/index.json",
+        "build/cases/arcadia-field-autopsy.json",
+        "build/cases/index.json",
+        "build/estates/index.json",
+        "build/public-catalog.json",
+        "build/report-frontier.json",
+        "build/review/reporter-briefing-queue.json",
+        "cases/arcadia-field-autopsy/briefing.json",
+        "cases/arcadia-field-autopsy/case.json",
+        "data/estates/case-map.jsonl"
+      ],
+      "public_catalogued": true,
+      "matched_rule_id": "public-catalogued-case",
+      "disposition": "public_case",
+      "owner_program_id": "case-ledger-program",
+      "action": "retain_in_public_catalog_with_current_claim_and_publication_status",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "retain_current_public_status",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-deployment-government-classified-defence",
+      "case_id": "deployment-government-classified-defence",
+      "source_paths": [
+        "data/research/theses/synthetic-population-infrastructure.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "synthetic-thesis-subcase",
+      "disposition": "thesis_subcase_not_public_case",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_as_a_thesis_dimension_and_do_not_add_to_the_public_case_catalog_without_a_native_case_ledger",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-deployment-modelled-input-replacement",
+      "case_id": "deployment-modelled-input-replacement",
+      "source_paths": [
+        "data/research/theses/synthetic-population-infrastructure.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "synthetic-thesis-subcase",
+      "disposition": "thesis_subcase_not_public_case",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_as_a_thesis_dimension_and_do_not_add_to_the_public_case_catalog_without_a_native_case_ledger",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-deployment-political-message-optimisation",
+      "case_id": "deployment-political-message-optimisation",
+      "source_paths": [
+        "data/research/theses/synthetic-population-infrastructure.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "synthetic-thesis-subcase",
+      "disposition": "thesis_subcase_not_public_case",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_as_a_thesis_dimension_and_do_not_add_to_the_public_case_catalog_without_a_native_case_ledger",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-deployment-publisher-synthetic-audiences",
+      "case_id": "deployment-publisher-synthetic-audiences",
+      "source_paths": [
+        "data/research/theses/synthetic-population-infrastructure.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "synthetic-thesis-subcase",
+      "disposition": "thesis_subcase_not_public_case",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_as_a_thesis_dimension_and_do_not_add_to_the_public_case_catalog_without_a_native_case_ledger",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-field-autopsy-03",
+      "case_id": "field-autopsy-03",
+      "source_paths": [
+        "build/cases/field-autopsy-03.json",
+        "build/cases/index.json",
+        "build/estates/index.json",
+        "build/public-catalog.json",
+        "build/report-frontier.json",
+        "cases/field-autopsy-03/case.json",
+        "data/estates/case-map.jsonl",
+        "test/audits/fa03-positive-control.json"
+      ],
+      "public_catalogued": true,
+      "matched_rule_id": "public-catalogued-case",
+      "disposition": "public_case",
+      "owner_program_id": "case-ledger-program",
+      "action": "retain_in_public_catalog_with_current_claim_and_publication_status",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "retain_current_public_status",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-legitimacy-analyst-category-formation",
+      "case_id": "legitimacy-analyst-category-formation",
+      "source_paths": [
+        "build/research/synthetic-population-vendor-denominator.json",
+        "data/research/denominators/synthetic-population-vendors.json",
+        "data/research/theses/synthetic-population-infrastructure.json",
+        "data/research/thesis-evidence/synthetic-population-infrastructure.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "synthetic-thesis-subcase",
+      "disposition": "thesis_subcase_not_public_case",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_as_a_thesis_dimension_and_do_not_add_to_the_public_case_catalog_without_a_native_case_ledger",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-legitimacy-centre-human-progress-bridge",
+      "case_id": "legitimacy-centre-human-progress-bridge",
+      "source_paths": [
+        "data/research/theses/synthetic-population-infrastructure.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "synthetic-thesis-subcase",
+      "disposition": "thesis_subcase_not_public_case",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_as_a_thesis_dimension_and_do_not_add_to_the_public_case_catalog_without_a_native_case_ledger",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-legitimacy-former-official-advisory-portfolios",
+      "case_id": "legitimacy-former-official-advisory-portfolios",
+      "source_paths": [
+        "data/research/theses/synthetic-population-infrastructure.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "synthetic-thesis-subcase",
+      "disposition": "thesis_subcase_not_public_case",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_as_a_thesis_dimension_and_do_not_add_to_the_public_case_catalog_without_a_native_case_ledger",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-legitimacy-validator-adviser-market",
+      "case_id": "legitimacy-validator-adviser-market",
+      "source_paths": [
+        "data/research/theses/synthetic-population-infrastructure.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "synthetic-thesis-subcase",
+      "disposition": "thesis_subcase_not_public_case",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_as_a_thesis_dimension_and_do_not_add_to_the_public_case_catalog_without_a_native_case_ledger",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-M05-APB-01",
+      "case_id": "M05-APB-01",
+      "source_paths": [
+        "data/project/m05-answerable-power-benchmark-wave-01.json",
+        "reports/core-thesis/answerable-power/sprint-01.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "answerable-power-benchmark",
+      "disposition": "internal_benchmark_or_control",
+      "owner_program_id": "answerable-power-program",
+      "action": "index_under_answerable_power_benchmarks_not_as_a_public_case",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-M05-APB-02",
+      "case_id": "M05-APB-02",
+      "source_paths": [
+        "data/project/m05-answerable-power-benchmark-wave-01.json",
+        "reports/core-thesis/answerable-power/sprint-01.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "answerable-power-benchmark",
+      "disposition": "internal_benchmark_or_control",
+      "owner_program_id": "answerable-power-program",
+      "action": "index_under_answerable_power_benchmarks_not_as_a_public_case",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-M05-APB-03",
+      "case_id": "M05-APB-03",
+      "source_paths": [
+        "data/project/m05-answerable-power-benchmark-wave-01.json",
+        "reports/core-thesis/answerable-power/sprint-01.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "answerable-power-benchmark",
+      "disposition": "internal_benchmark_or_control",
+      "owner_program_id": "answerable-power-program",
+      "action": "index_under_answerable_power_benchmarks_not_as_a_public_case",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-M05-APB-04",
+      "case_id": "M05-APB-04",
+      "source_paths": [
+        "data/project/m05-answerable-power-benchmark-wave-01.json",
+        "reports/core-thesis/answerable-power/sprint-01.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "answerable-power-benchmark",
+      "disposition": "internal_benchmark_or_control",
+      "owner_program_id": "answerable-power-program",
+      "action": "index_under_answerable_power_benchmarks_not_as_a_public_case",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-M05-S02-L4-ELITE-MJMA",
+      "case_id": "M05-S02-L4-ELITE-MJMA",
+      "source_paths": [
+        "data/project/m05-answerable-power-sprint-02-palantir-person-chain.json",
+        "reports/core-thesis/answerable-power/sprint-02-leg-04.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "answerable-power-benchmark",
+      "disposition": "internal_benchmark_or_control",
+      "owner_program_id": "answerable-power-program",
+      "action": "index_under_answerable_power_benchmarks_not_as_a_public_case",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-ownership-capital-board-control-strategic-rights",
+      "case_id": "ownership-capital-board-control-strategic-rights",
+      "source_paths": [
+        "data/research/theses/synthetic-population-infrastructure.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "synthetic-thesis-subcase",
+      "disposition": "thesis_subcase_not_public_case",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_as_a_thesis_dimension_and_do_not_add_to_the_public_case_catalog_without_a_native_case_ledger",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-ownership-labour-substitution-research-standards",
+      "case_id": "ownership-labour-substitution-research-standards",
+      "source_paths": [
+        "data/research/theses/synthetic-population-infrastructure.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "synthetic-thesis-subcase",
+      "disposition": "thesis_subcase_not_public_case",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_as_a_thesis_dimension_and_do_not_add_to_the_public_case_catalog_without_a_native_case_ledger",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-state-market-central-government-ai-unit-succession",
+      "case_id": "state-market-central-government-ai-unit-succession",
+      "source_paths": [
+        "build/thesis/case-packet-index.json",
+        "build/thesis/case-packets/state-market-central-government-ai-unit-succession.json",
+        "data/research/theses/synthetic-population-infrastructure.json",
+        "data/research/thesis-case-packets/state-market-central-government-ai-unit-succession.json",
+        "data/research/thesis-evidence/synthetic-population-infrastructure.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "thesis-case-packet",
+      "disposition": "internal_case_packet",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_through_the_thesis_case_packet_entrypoint",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-state-market-faculty-accenture-scaling",
+      "case_id": "state-market-faculty-accenture-scaling",
+      "source_paths": [
+        "data/research/theses/synthetic-population-infrastructure.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "synthetic-thesis-subcase",
+      "disposition": "thesis_subcase_not_public_case",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_as_a_thesis_dimension_and_do_not_add_to_the_public_case_catalog_without_a_native_case_ledger",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-state-market-no10-pandemic-data-diaspora",
+      "case_id": "state-market-no10-pandemic-data-diaspora",
+      "source_paths": [
+        "build/thesis/case-packet-index.json",
+        "build/thesis/case-packets/state-market-no10-pandemic-data-diaspora.json",
+        "data/research/theses/synthetic-population-infrastructure.json",
+        "data/research/thesis-case-packets/state-market-no10-pandemic-data-diaspora.json",
+        "data/research/thesis-evidence/synthetic-population-infrastructure.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "thesis-case-packet",
+      "disposition": "internal_case_packet",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_through_the_thesis_case_packet_entrypoint",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-state-market-pandemic-decision-commercialisation",
+      "case_id": "state-market-pandemic-decision-commercialisation",
+      "source_paths": [
+        "data/research/theses/synthetic-population-infrastructure.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "synthetic-thesis-subcase",
+      "disposition": "thesis_subcase_not_public_case",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_as_a_thesis_dimension_and_do_not_add_to_the_public_case_catalog_without_a_native_case_ledger",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-substrate-cross-cultural-extrapolation",
+      "case_id": "substrate-cross-cultural-extrapolation",
+      "source_paths": [
+        "data/research/theses/synthetic-population-infrastructure.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "synthetic-thesis-subcase",
+      "disposition": "thesis_subcase_not_public_case",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_as_a_thesis_dimension_and_do_not_add_to_the_public_case_catalog_without_a_native_case_ledger",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-substrate-data-lineage-consent-anonymisation",
+      "case_id": "substrate-data-lineage-consent-anonymisation",
+      "source_paths": [
+        "data/research/theses/synthetic-population-infrastructure.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "synthetic-thesis-subcase",
+      "disposition": "thesis_subcase_not_public_case",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_as_a_thesis_dimension_and_do_not_add_to_the_public_case_catalog_without_a_native_case_ledger",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-substrate-metric-benchmark-governance",
+      "case_id": "substrate-metric-benchmark-governance",
+      "source_paths": [
+        "data/research/theses/synthetic-population-infrastructure.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "synthetic-thesis-subcase",
+      "disposition": "thesis_subcase_not_public_case",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_as_a_thesis_dimension_and_do_not_add_to_the_public_case_catalog_without_a_native_case_ledger",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-substrate-model-cloud-subprocessor-dependence",
+      "case_id": "substrate-model-cloud-subprocessor-dependence",
+      "source_paths": [
+        "data/research/theses/synthetic-population-infrastructure.json"
+      ],
+      "public_catalogued": false,
+      "matched_rule_id": "synthetic-thesis-subcase",
+      "disposition": "thesis_subcase_not_public_case",
+      "owner_program_id": "synthetic-population-thesis-program",
+      "action": "index_as_a_thesis_dimension_and_do_not_add_to_the_public_case_catalog_without_a_native_case_ledger",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "no_public_catalogue_promotion",
+      "graph_effect": "none"
+    },
+    {
+      "decision_id": "LAKE-CASE-uk-ai-policy",
+      "case_id": "uk-ai-policy",
+      "source_paths": [
+        "build/cases/uk-ai-policy.json",
+        "build/estates/index.json",
+        "build/public-catalog.json",
+        "build/report-frontier.json",
+        "data/estates/case-map.jsonl"
+      ],
+      "public_catalogued": true,
+      "matched_rule_id": "public-catalogued-case",
+      "disposition": "public_case",
+      "owner_program_id": "case-ledger-program",
+      "action": "retain_in_public_catalog_with_current_claim_and_publication_status",
+      "review_dependency": {
+        "required_to_decide": false,
+        "effect": "challenge_may_reorder_or_overturn_but_does_not_block_reversible_execution"
+      },
+      "reversibility": {
+        "mode": "append_preserving_supersession",
+        "correction_route": "new_census_rows_or_counterevidence_may_replace_this_disposition_without_deleting_the_prior_record"
+      },
+      "publication_effect": "retain_current_public_status",
+      "graph_effect": "none"
+    }
+  ],
+  "boundaries": {
+    "disposition_is_publication_clearance": false,
+    "graph_effect": "none"
+  }
+}

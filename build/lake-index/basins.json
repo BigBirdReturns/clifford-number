@@ -1,27 +1,25 @@
 {
   "schema_version": "lake-basin-index@1",
   "registry_id": "CN-LAKE-BASINS-2026-07",
-  "source_fingerprint": "cc11f01444e394d4599c64655df32cedac5949310df15f16da5f53987f0e5ebe",
+  "source_fingerprint": "5f3182b21818bf0f44e0655d8960cf5dda799e02e36640a22027e64c552469cf",
   "source_census_path": "build/lake-index/files.jsonl",
   "counts": {
-    "source_rows": 1856,
-    "basin_count": 30,
-    "classified_without_default": 1794,
-    "unclassified_paths": 62,
-    "evidence_bearing_files": 1266,
-    "evidence_files_with_registry_owner": 1257,
-    "evidence_files_previously_unowned": 1266,
-    "exact_orphan_evidence_files": 770,
-    "gap_rows": 206,
+    "source_rows": 1876,
+    "basin_count": 37,
+    "classified_without_default": 1876,
+    "unclassified_paths": 0,
+    "evidence_bearing_files": 1277,
+    "evidence_files_with_registry_owner": 1277,
+    "evidence_files_previously_unowned": 1277,
+    "exact_orphan_evidence_files": 159,
+    "gap_rows": 80,
     "gap_type_counts": {
-      "missing_authoritative_entrypoint": 1,
-      "public_reachability_requires_authorization_review": 55,
-      "source_record_without_authoritative_reachability": 88,
-      "unclassified_path": 62
+      "public_reachability_requires_authorization_review": 50,
+      "source_record_without_authoritative_reachability": 30
     }
   },
   "completion": {
-    "current_tree_path_assignment_complete": false,
+    "current_tree_path_assignment_complete": true,
     "current_tree_semantic_index_complete": false,
     "historical_git_objects_indexed": false,
     "open_pull_request_shadow_merged": false,
@@ -48,9 +46,9 @@
       "counts": {
         "files": 313,
         "evidence_bearing": 313,
-        "index_reachable": 35,
+        "index_reachable": 313,
         "public_reachable": 3,
-        "exact_orphans": 278,
+        "exact_orphans": 0,
         "previously_unowned": 313,
         "registry_owner_added": 313
       },
@@ -67,7 +65,7 @@
       "label": "Core-thesis generated products",
       "semantic_role": "generated_projection",
       "owner_program_id": "core-thesis-program",
-      "ownership_status": "provisional_path_convention",
+      "ownership_status": "declared_by_generated_entrypoint",
       "path_prefixes": [
         "build/core-thesis/"
       ],
@@ -82,21 +80,21 @@
       "publication_disposition": "internal_or_explicitly_authorized",
       "retention_disposition": "reproducible_generated",
       "counts": {
-        "files": 184,
-        "evidence_bearing": 184,
-        "index_reachable": 9,
+        "files": 185,
+        "evidence_bearing": 185,
+        "index_reachable": 185,
         "public_reachable": 0,
-        "exact_orphans": 175,
-        "previously_unowned": 184,
-        "registry_owner_added": 184
+        "exact_orphans": 0,
+        "previously_unowned": 185,
+        "registry_owner_added": 185
       },
       "entrypoint_state": [
         {
           "path": "build/core-thesis/index.json",
-          "present_in_census_snapshot": false
+          "present_in_census_snapshot": true
         }
       ],
-      "entrypoint_complete": false
+      "entrypoint_complete": true
     },
     {
       "basin_id": "intake-custody",
@@ -115,13 +113,45 @@
       "counts": {
         "files": 142,
         "evidence_bearing": 142,
-        "index_reachable": 78,
+        "index_reachable": 120,
         "public_reachable": 34,
-        "exact_orphans": 64,
+        "exact_orphans": 22,
         "previously_unowned": 142,
         "registry_owner_added": 142
       },
       "entrypoint_state": [],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "project-governance",
+      "label": "Project governance and program state",
+      "semantic_role": "project_governance",
+      "owner_program_id": "project-governance",
+      "ownership_status": "provisional_path_convention",
+      "path_prefixes": [
+        "data/project/"
+      ],
+      "authoritative_entrypoints": [
+        "BUILD-INSTRUCTIONS.md"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "internal_or_explicitly_authorized",
+      "retention_disposition": "canonical_governance",
+      "counts": {
+        "files": 99,
+        "evidence_bearing": 99,
+        "index_reachable": 99,
+        "public_reachable": 0,
+        "exact_orphans": 0,
+        "previously_unowned": 99,
+        "registry_owner_added": 99
+      },
+      "entrypoint_state": [
+        {
+          "path": "BUILD-INSTRUCTIONS.md",
+          "present_in_census_snapshot": true
+        }
+      ],
       "entrypoint_complete": true
     },
     {
@@ -145,47 +175,15 @@
       "counts": {
         "files": 96,
         "evidence_bearing": 96,
-        "index_reachable": 40,
+        "index_reachable": 63,
         "public_reachable": 0,
-        "exact_orphans": 56,
+        "exact_orphans": 33,
         "previously_unowned": 96,
         "registry_owner_added": 96
       },
       "entrypoint_state": [
         {
           "path": "reports/core-thesis/index.html",
-          "present_in_census_snapshot": true
-        }
-      ],
-      "entrypoint_complete": true
-    },
-    {
-      "basin_id": "project-governance",
-      "label": "Project governance and program state",
-      "semantic_role": "project_governance",
-      "owner_program_id": "project-governance",
-      "ownership_status": "provisional_path_convention",
-      "path_prefixes": [
-        "data/project/"
-      ],
-      "authoritative_entrypoints": [
-        "BUILD-INSTRUCTIONS.md"
-      ],
-      "source_basin_ids": [],
-      "publication_disposition": "internal_or_explicitly_authorized",
-      "retention_disposition": "canonical_governance",
-      "counts": {
-        "files": 95,
-        "evidence_bearing": 95,
-        "index_reachable": 69,
-        "public_reachable": 0,
-        "exact_orphans": 26,
-        "previously_unowned": 95,
-        "registry_owner_added": 95
-      },
-      "entrypoint_state": [
-        {
-          "path": "BUILD-INSTRUCTIONS.md",
           "present_in_census_snapshot": true
         }
       ],
@@ -242,9 +240,9 @@
       "counts": {
         "files": 58,
         "evidence_bearing": 58,
-        "index_reachable": 26,
+        "index_reachable": 32,
         "public_reachable": 11,
-        "exact_orphans": 32,
+        "exact_orphans": 26,
         "previously_unowned": 58,
         "registry_owner_added": 58
       },
@@ -281,9 +279,9 @@
       "counts": {
         "files": 52,
         "evidence_bearing": 52,
-        "index_reachable": 12,
+        "index_reachable": 25,
         "public_reachable": 12,
-        "exact_orphans": 40,
+        "exact_orphans": 27,
         "previously_unowned": 52,
         "registry_owner_added": 52
       },
@@ -362,9 +360,9 @@
       "counts": {
         "files": 43,
         "evidence_bearing": 43,
-        "index_reachable": 21,
+        "index_reachable": 42,
         "public_reachable": 18,
-        "exact_orphans": 22,
+        "exact_orphans": 1,
         "previously_unowned": 43,
         "registry_owner_added": 43
       },
@@ -406,9 +404,9 @@
       "counts": {
         "files": 36,
         "evidence_bearing": 36,
-        "index_reachable": 11,
+        "index_reachable": 35,
         "public_reachable": 9,
-        "exact_orphans": 25,
+        "exact_orphans": 1,
         "previously_unowned": 36,
         "registry_owner_added": 36
       },
@@ -604,26 +602,85 @@
       "entrypoint_complete": true
     },
     {
-      "basin_id": "unclassified-current-tree",
-      "label": "Unclassified current-tree paths",
-      "semantic_role": "unclassified",
-      "owner_program_id": null,
-      "ownership_status": "disposition_required",
-      "path_prefixes": [],
-      "authoritative_entrypoints": [],
+      "basin_id": "residual-current-tree",
+      "label": "Residual current-tree paths with exact Wave 01 dispositions",
+      "semantic_role": "residual_current_tree_path",
+      "owner_program_id": "lake-index-program",
+      "ownership_status": "provisional_exact_path_decision",
+      "path_prefixes": [
+        ".gitattributes",
+        ".gitignore",
+        "LICENSE",
+        "data/gametrails/authored-checkpoints.json",
+        "data/gametrails/legacy-seed-map.jsonl",
+        "data/gametrails/methodology.json",
+        "data/import-queues/master-v4.import-queue.json",
+        "data/milestones/estate-aperture-v1.json",
+        "data/milestones/estate-frontier-game-trails-v1.json",
+        "data/signatures/formation-signatures.json",
+        "data/update-watchlist.json",
+        "gametrail-handoffs/ai-data-compute-infrastructure-estate.md",
+        "gametrail-handoffs/dialog-estate.md",
+        "gametrail-handoffs/energy-utilities-critical-infrastructure-estate.md",
+        "gametrail-handoffs/higher-education-research-commercialization-estate.md",
+        "gametrail-handoffs/intellectual-property-standards-data-rights-estate.md",
+        "gametrail-handoffs/judicial-administrative-adjudication-estate.md",
+        "gametrail-handoffs/labor-immigration-workforce-mobility-estate.md",
+        "gametrail-handoffs/local-development-estate.md",
+        "gametrail-handoffs/offshore-beneficial-ownership-estate.md",
+        "gametrail-handoffs/philanthropy-nonprofit-policy-estate.md",
+        "gametrail-handoffs/professional-services-intermediaries-estate.md",
+        "gametrail-handoffs/public-interest-crossing-estate.md",
+        "gametrail-handoffs/public-money-industrial-policy-estate.md",
+        "gametrail-handoffs/real-property-title-debt-estate.md",
+        "gametrail-handoffs/regulatory-markets-estate.md",
+        "gametrail-handoffs/sanctions-export-controls-foreign-investment-estate.md",
+        "gametrail-handoffs/state-municipal-authority-estate.md",
+        "gametrail-handoffs/transatlantic-defense-innovation-estate.md",
+        "gametrail-handoffs/uk-defense-estate.md",
+        "gametrail-handoffs/uk-state-market-estate.md",
+        "gametrail-handoffs/us-defense-estate.md",
+        "gametrail-handoffs/us-executive-appointments-ethics-estate.md",
+        "gametrail-handoffs/us-legislative-political-finance-estate.md",
+        "gametrail-handoffs/venture-capital-corporate-control-estate.md",
+        "issue-handoffs/85-transatlantic-defense-innovation-estate.md",
+        "issue-handoffs/86-uk-defense-estate.md",
+        "issue-handoffs/87-public-money-industrial-policy-estate.md",
+        "issue-handoffs/88-us-executive-appointments-ethics-estate.md",
+        "issue-handoffs/89-state-municipal-authority-estate.md",
+        "issue-handoffs/90-public-interest-crossing-estate.md",
+        "issue-handoffs/91-uk-state-market-estate.md",
+        "issue-handoffs/92-regulatory-markets-estate.md",
+        "issue-handoffs/93-offshore-beneficial-ownership-estate.md",
+        "issue-handoffs/94-us-defense-estate.md",
+        "issue-handoffs/95-venture-capital-corporate-control-estate.md",
+        "issue-handoffs/96-us-legislative-political-finance-estate.md",
+        "issue-handoffs/97-dialog-estate.md",
+        "issue-handoffs/98-local-development-estate.md",
+        "schemas/k0-ceiling-conversion-event.schema.json",
+        "schemas/reporter-briefing.schema.json"
+      ],
+      "authoritative_entrypoints": [
+        "data/project/lake-wave-01-path-decisions.jsonl"
+      ],
       "source_basin_ids": [],
-      "publication_disposition": "blocked_pending_classification",
-      "retention_disposition": "disposition_required",
+      "publication_disposition": "blocked_pending_specific_classification",
+      "retention_disposition": "retain_with_explicit_followup",
       "counts": {
-        "files": 62,
-        "evidence_bearing": 9,
-        "index_reachable": 10,
-        "public_reachable": 5,
-        "exact_orphans": 45,
-        "previously_unowned": 62,
-        "registry_owner_added": 0
+        "files": 51,
+        "evidence_bearing": 8,
+        "index_reachable": 51,
+        "public_reachable": 3,
+        "exact_orphans": 0,
+        "previously_unowned": 51,
+        "registry_owner_added": 51
       },
-      "entrypoint_state": [],
+      "entrypoint_state": [
+        {
+          "path": "data/project/lake-wave-01-path-decisions.jsonl",
+          "present_in_census_snapshot": true
+        }
+      ],
       "entrypoint_complete": true
     },
     {
@@ -659,6 +716,42 @@
       "entrypoint_complete": true
     },
     {
+      "basin_id": "lake-action-products",
+      "label": "Evidence-lake action and disposition products",
+      "semantic_role": "operational_decision_projection",
+      "owner_program_id": "CN-LAKE-EXECUTION-W01",
+      "ownership_status": "declared_by_wave_01_builder",
+      "path_prefixes": [
+        "build/lake-actions/",
+        "reports/lake-basin-execution-wave-01.md"
+      ],
+      "authoritative_entrypoints": [
+        "build/lake-actions/waterline.json"
+      ],
+      "source_basin_ids": [
+        "project-governance",
+        "core-thesis-build-products"
+      ],
+      "publication_disposition": "internal_or_explicitly_authorized",
+      "retention_disposition": "reproducible_generated",
+      "counts": {
+        "files": 6,
+        "evidence_bearing": 6,
+        "index_reachable": 6,
+        "public_reachable": 0,
+        "exact_orphans": 0,
+        "previously_unowned": 6,
+        "registry_owner_added": 6
+      },
+      "entrypoint_state": [
+        {
+          "path": "build/lake-actions/waterline.json",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
       "basin_id": "briefing-products",
       "label": "Reporter briefing products",
       "semantic_role": "report_projection",
@@ -681,9 +774,9 @@
       "counts": {
         "files": 5,
         "evidence_bearing": 5,
-        "index_reachable": 3,
+        "index_reachable": 5,
         "public_reachable": 2,
-        "exact_orphans": 2,
+        "exact_orphans": 0,
         "previously_unowned": 5,
         "registry_owner_added": 5
       },
@@ -899,6 +992,43 @@
       "entrypoint_complete": true
     },
     {
+      "basin_id": "contribution-pipeline",
+      "label": "Contribution pipeline sources and templates",
+      "semantic_role": "contribution_source_or_template",
+      "owner_program_id": "contribution-pipeline",
+      "ownership_status": "declared_by_wave_01_decision",
+      "path_prefixes": [
+        "contributions/"
+      ],
+      "authoritative_entrypoints": [
+        "build/lake-actions/waterline.json",
+        "data/project/lake-wave-01-path-decisions.jsonl"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "blocked_unless_explicitly_authorized",
+      "retention_disposition": "retain_and_index",
+      "counts": {
+        "files": 1,
+        "evidence_bearing": 1,
+        "index_reachable": 1,
+        "public_reachable": 1,
+        "exact_orphans": 0,
+        "previously_unowned": 1,
+        "registry_owner_added": 1
+      },
+      "entrypoint_state": [
+        {
+          "path": "build/lake-actions/waterline.json",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "data/project/lake-wave-01-path-decisions.jsonl",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
       "basin_id": "general-report-products",
       "label": "Other report products",
       "semantic_role": "report_projection",
@@ -954,13 +1084,13 @@
       "publication_disposition": "not_evidence",
       "retention_disposition": "tooling",
       "counts": {
-        "files": 261,
+        "files": 266,
         "evidence_bearing": 0,
-        "index_reachable": 191,
+        "index_reachable": 205,
         "public_reachable": 45,
         "exact_orphans": 21,
-        "previously_unowned": 261,
-        "registry_owner_added": 261
+        "previously_unowned": 266,
+        "registry_owner_added": 266
       },
       "entrypoint_state": [
         {
@@ -986,13 +1116,13 @@
       "publication_disposition": "not_evidence",
       "retention_disposition": "regression",
       "counts": {
-        "files": 146,
+        "files": 148,
         "evidence_bearing": 0,
-        "index_reachable": 105,
+        "index_reachable": 111,
         "public_reachable": 1,
-        "exact_orphans": 8,
-        "previously_unowned": 146,
-        "registry_owner_added": 146
+        "exact_orphans": 6,
+        "previously_unowned": 148,
+        "registry_owner_added": 148
       },
       "entrypoint_state": [
         {
@@ -1018,13 +1148,13 @@
       "publication_disposition": "not_evidence",
       "retention_disposition": "tooling",
       "counts": {
-        "files": 73,
+        "files": 58,
         "evidence_bearing": 0,
-        "index_reachable": 26,
+        "index_reachable": 28,
         "public_reachable": 0,
-        "exact_orphans": 44,
-        "previously_unowned": 73,
-        "registry_owner_added": 73
+        "exact_orphans": 27,
+        "previously_unowned": 58,
+        "registry_owner_added": 58
       },
       "entrypoint_state": [
         {
@@ -1058,15 +1188,90 @@
       "counts": {
         "files": 52,
         "evidence_bearing": 0,
-        "index_reachable": 39,
+        "index_reachable": 41,
         "public_reachable": 7,
-        "exact_orphans": 12,
+        "exact_orphans": 10,
         "previously_unowned": 52,
         "registry_owner_added": 52
       },
       "entrypoint_state": [
         {
           "path": "index.html",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "temporary-transport",
+      "label": "Temporary build transport",
+      "semantic_role": "temporary_transport",
+      "owner_program_id": "build-system",
+      "ownership_status": "declared_by_wave_01_decision",
+      "path_prefixes": [
+        ".github/temporary/",
+        ".github/tmp/"
+      ],
+      "authoritative_entrypoints": [
+        "build/lake-actions/waterline.json",
+        "data/project/lake-wave-01-path-decisions.jsonl"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "not_evidence",
+      "retention_disposition": "delete_when_inactive",
+      "counts": {
+        "files": 17,
+        "evidence_bearing": 0,
+        "index_reachable": 1,
+        "public_reachable": 0,
+        "exact_orphans": 16,
+        "previously_unowned": 17,
+        "registry_owner_added": 17
+      },
+      "entrypoint_state": [
+        {
+          "path": "build/lake-actions/waterline.json",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "data/project/lake-wave-01-path-decisions.jsonl",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "comprehension-protocol",
+      "label": "Comprehension protocol and fixtures",
+      "semantic_role": "method_and_fixture",
+      "owner_program_id": "comprehension-protocol",
+      "ownership_status": "declared_by_wave_01_decision",
+      "path_prefixes": [
+        "comprehension/"
+      ],
+      "authoritative_entrypoints": [
+        "build/lake-actions/waterline.json",
+        "data/project/lake-wave-01-path-decisions.jsonl"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "internal_or_explicitly_authorized",
+      "retention_disposition": "retain_and_index",
+      "counts": {
+        "files": 8,
+        "evidence_bearing": 0,
+        "index_reachable": 8,
+        "public_reachable": 0,
+        "exact_orphans": 0,
+        "previously_unowned": 8,
+        "registry_owner_added": 8
+      },
+      "entrypoint_state": [
+        {
+          "path": "build/lake-actions/waterline.json",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "data/project/lake-wave-01-path-decisions.jsonl",
           "present_in_census_snapshot": true
         }
       ],
@@ -1111,6 +1316,103 @@
           "present_in_census_snapshot": true
         }
       ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "repository-config",
+      "label": "Repository configuration artifacts",
+      "semantic_role": "repository_configuration_or_governance",
+      "owner_program_id": "project-governance",
+      "ownership_status": "declared_by_wave_01_decision",
+      "path_prefixes": [
+        "CORE-THESIS.md"
+      ],
+      "authoritative_entrypoints": [
+        "build/lake-actions/waterline.json",
+        "data/project/lake-wave-01-path-decisions.jsonl"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "documentation_or_internal",
+      "retention_disposition": "retain_and_index",
+      "counts": {
+        "files": 1,
+        "evidence_bearing": 0,
+        "index_reachable": 1,
+        "public_reachable": 0,
+        "exact_orphans": 0,
+        "previously_unowned": 1,
+        "registry_owner_added": 1
+      },
+      "entrypoint_state": [
+        {
+          "path": "build/lake-actions/waterline.json",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "data/project/lake-wave-01-path-decisions.jsonl",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "root-legacy-artifact",
+      "label": "Root legacy and configuration artifacts",
+      "semantic_role": "legacy_or_configuration_artifact",
+      "owner_program_id": "project-governance",
+      "ownership_status": "declared_by_wave_01_decision",
+      "path_prefixes": [
+        "graph.json"
+      ],
+      "authoritative_entrypoints": [
+        "build/lake-actions/waterline.json",
+        "data/project/lake-wave-01-path-decisions.jsonl"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "not_current_evidence",
+      "retention_disposition": "retain_with_explicit_retirement_or_configuration_status",
+      "counts": {
+        "files": 1,
+        "evidence_bearing": 0,
+        "index_reachable": 1,
+        "public_reachable": 1,
+        "exact_orphans": 0,
+        "previously_unowned": 1,
+        "registry_owner_added": 1
+      },
+      "entrypoint_state": [
+        {
+          "path": "build/lake-actions/waterline.json",
+          "present_in_census_snapshot": true
+        },
+        {
+          "path": "data/project/lake-wave-01-path-decisions.jsonl",
+          "present_in_census_snapshot": true
+        }
+      ],
+      "entrypoint_complete": true
+    },
+    {
+      "basin_id": "unclassified-current-tree",
+      "label": "Unclassified current-tree paths",
+      "semantic_role": "unclassified",
+      "owner_program_id": null,
+      "ownership_status": "disposition_required",
+      "path_prefixes": [],
+      "authoritative_entrypoints": [],
+      "source_basin_ids": [],
+      "publication_disposition": "blocked_pending_classification",
+      "retention_disposition": "disposition_required",
+      "counts": {
+        "files": 0,
+        "evidence_bearing": 0,
+        "index_reachable": 0,
+        "public_reachable": 0,
+        "exact_orphans": 0,
+        "previously_unowned": 0,
+        "registry_owner_added": 0
+      },
+      "entrypoint_state": [],
       "entrypoint_complete": true
     }
   ],

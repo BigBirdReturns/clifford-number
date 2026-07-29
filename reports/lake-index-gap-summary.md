@@ -1,42 +1,42 @@
 # Lake index gap summary
 
-Source fingerprint: `fd6de200bad29e0d53f44b747cc4ef59acaf1ebde0429352a2d3fbfb9da95fd7`
+Source fingerprint: `bdfeecd002f455467adfc7583e04a96fa4c86109af1c9b5b2740a5f2c53360ba`
 
 ## Finding
 
-The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1266 evidence-bearing files, 770 (60.8%) are not reachable from any detected index, 372 (29.4%) have no inbound repository reference, and 1096 (86.6%) have no detected program owner.
+The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1277 evidence-bearing files, 159 (12.5%) are not reachable from any detected index, 124 (9.7%) have no inbound repository reference, and 517 (40.5%) have no detected program owner.
 
 ## By evidence role
 
 | Role | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
-| generated_artifact | 556 | 101 | 171 | 549 |
-| intake | 141 | 78 | 53 | 127 |
-| documentation | 123 | 45 | 55 | 103 |
-| repository_root | 109 | 45 | 40 | 109 |
-| report_product | 97 | 41 | 24 | 63 |
-| project_governance | 95 | 69 | 1 | 13 |
-| research_record | 48 | 48 | 0 | 35 |
-| case_source | 36 | 11 | 25 | 36 |
+| generated_artifact | 562 | 562 | 0 | 61 |
+| intake | 141 | 120 | 19 | 107 |
+| documentation | 123 | 51 | 55 | 101 |
+| repository_root | 109 | 80 | 28 | 61 |
+| project_governance | 99 | 99 | 0 | 6 |
+| report_product | 98 | 65 | 18 | 61 |
+| research_record | 48 | 48 | 0 | 31 |
+| case_source | 36 | 35 | 1 | 33 |
 | receipt_artifact | 32 | 31 | 1 | 32 |
 | canonical_registry | 12 | 12 | 0 | 12 |
-| canonical_ledger | 5 | 5 | 0 | 5 |
+| canonical_ledger | 5 | 5 | 0 | 2 |
 | estate_projection | 3 | 3 | 0 | 3 |
 
 ## By repository cluster
 
 | Cluster | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
-| build/estate-game-trails | 313 | 35 | 0 | 313 |
-| build/core-thesis | 184 | 9 | 169 | 178 |
-| data/intake | 141 | 78 | 53 | 127 |
-| reports/core-thesis | 96 | 40 | 24 | 62 |
-| data/project | 95 | 69 | 1 | 13 |
+| build/estate-game-trails | 313 | 313 | 0 | 5 |
+| build/core-thesis | 185 | 185 | 0 | 0 |
+| data/intake | 141 | 120 | 19 | 107 |
+| data/project | 99 | 99 | 0 | 6 |
+| reports/core-thesis | 96 | 63 | 18 | 59 |
 | docs/milestones | 65 | 19 | 37 | 49 |
-| data/research-tracks | 52 | 12 | 39 | 52 |
-| data/research | 48 | 48 | 0 | 35 |
-| data/estates | 43 | 21 | 0 | 43 |
-| cases/arcadia-field-autopsy | 21 | 6 | 15 | 21 |
+| data/research-tracks | 52 | 25 | 27 | 42 |
+| data/research | 48 | 48 | 0 | 31 |
+| data/estates | 43 | 42 | 0 | 5 |
+| cases/arcadia-field-autopsy | 21 | 20 | 1 | 20 |
 | receipts/crawl | 19 | 19 | 0 | 19 |
 | build/estate-closures | 15 | 15 | 0 | 15 |
 | data/canonical | 12 | 12 | 0 | 12 |
@@ -50,40 +50,40 @@ The current Git tree is physically censused, but the evidence lake is not semant
 ```text
 parse errors:                   0
 undefined receipt references:   0
-projection IDs without source:  3686
-missing repository path tokens: 74
+projection IDs without source:  4351
+missing repository path tokens: 112
 ```
 
 ### P1 — exact orphan evidence
 
 | Cluster | Orphan paths |
 |---|---:|
-| build/core-thesis | 169 |
-| data/intake | 53 |
-| data/research-tracks | 39 |
 | docs/milestones | 37 |
-| reports/core-thesis | 24 |
-| cases/arcadia-field-autopsy | 15 |
-| cases/anduril-access-ownership | 5 |
-| cases/field-autopsy-03 | 5 |
+| data/research-tracks | 27 |
+| data/intake | 19 |
+| reports/core-thesis | 18 |
 | docs/public-site-handoff | 4 |
-| build/briefings | 2 |
+| cases/arcadia-field-autopsy | 1 |
 | contributions/inbox | 1 |
 | data/crawl | 1 |
-| data/project | 1 |
 | docs/anduril-reporter-aperture.md | 1 |
 | docs/aperture-kit.md | 1 |
+| docs/clifford-thiel-trump-wrap-up.md | 1 |
+| docs/consumption-contract.md | 1 |
+| docs/corpus-selection.md | 1 |
+| docs/design-system.md | 1 |
+| docs/edge-schema.md | 1 |
 
 ### P2 — unowned evidence
 
-1096 evidence-bearing files have no detected program owner. Ownership here means a declared program ID or an inbound reference from a program-bearing file; it does not mean that every unowned file is erroneous.
+517 evidence-bearing files have no detected program owner. Ownership here means a declared program ID or an inbound reference from a program-bearing file; it does not mean that every unowned file is erroneous.
 
 ### P3 — index and publication gaps
 
 ```text
-not reachable from any detected index: 770
-not reachable from authoritative roots: 926
-not reachable from public roots: 1031
+not reachable from any detected index: 159
+not reachable from authoritative roots: 167
+not reachable from public roots: 1042
 case IDs absent from public catalog: 23
 ```
 
@@ -93,6 +93,8 @@ case IDs absent from public catalog: 23
 |---|---:|
 | #365 Build M-05 Sprint 08 A1 support lifecycle | 29 |
 | #382 Harden release integrity after top-to-bottom adversarial review | 22 |
+| #386 Make evidence-grounded judgments without a human-permission gate | 18 |
+| #388 Execute K0 role-neutral denominator Wave 06 | 11 |
 | #245 Close the seven M-04F vertical joins | 9 |
 | #362 Stage biological Omega control-surface research program | 9 |
 | #50 Stage synthetic-population research program | 8 |

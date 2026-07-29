@@ -1,0 +1,146 @@
+{
+  "schema_version": "lake-basin-execution-waterline@1",
+  "program_id": "CN-LAKE-EXECUTION-W01",
+  "source_fingerprint_sha256": "cae5c917b4de607e8f275382432aadb8016ae5d8bec9ff5a2b592d314ef4c8a9",
+  "input_manifest": [
+    {
+      "path": "build/lake-index/basin-gaps.jsonl",
+      "bytes": 74404,
+      "sha256": "70447a269b7fcf2d73ed05375d6693328d36101d151e9fbe4ecca66225658df0"
+    },
+    {
+      "path": "build/lake-index/basin-membership.jsonl",
+      "bytes": 1338226,
+      "sha256": "823ea216ce60e31fb41b8c424fb46b7ee9cbec2acb12b3999452386a9f245b5c"
+    },
+    {
+      "path": "build/lake-index/basins.json",
+      "bytes": 32946,
+      "sha256": "1e4fd8fea927e2c6584196bee429a3e3d076ead0e46f784ac74fbd6f27fb3837"
+    },
+    {
+      "path": "build/lake-index/branch-shadow.jsonl",
+      "bytes": 111827,
+      "sha256": "bc2aebc5b96bf76434ba687951d5ea716984002cbb3ac558f22b8a16cd6fae34"
+    },
+    {
+      "path": "build/lake-index/cases.json",
+      "bytes": 7795,
+      "sha256": "a65d57955332adf9d4502a0db2b80f14acbe4cc104302af6427e04362aa9b6c6"
+    },
+    {
+      "path": "build/lake-index/files.jsonl",
+      "bytes": 4200824,
+      "sha256": "178ff68c2d1e22be58ea379fe5e7dbafdb13552c4820d3407f845bf5281764de"
+    },
+    {
+      "path": "build/lake-index/id-gaps.jsonl",
+      "bytes": 14291639,
+      "sha256": "d5c6d2ef3c0aab395c0f50d41b5bcb336f65f232fbd3c4ab814bce014011c39f"
+    },
+    {
+      "path": "build/lake-index/objects.jsonl",
+      "bytes": 16289141,
+      "sha256": "420c91a3d01ae239a4131379c32207b073b03966af0b3848d72bd1f7fd4b8731"
+    },
+    {
+      "path": "data/project/lake-basin-execution-policy.json",
+      "bytes": 8637,
+      "sha256": "df11111de173f3af3bb2b1d027179c9d6c7e7f6f807ce53cf5a6002f827ebea5"
+    },
+    {
+      "path": "data/project/lake-basin-registry.json",
+      "bytes": 16761,
+      "sha256": "b034a51376c35b49c8a47be0a0e61488b908011fadd1c5c2bb376af8c775d342"
+    }
+  ],
+  "counts": {
+    "current_basin_count": 30,
+    "current_unclassified_paths": 62,
+    "unclassified_paths_with_decisions": 62,
+    "core_thesis_products_indexed": 184,
+    "identifier_gap_rows_queued": 22024,
+    "identifier_repair_groups": 600,
+    "case_ids_classified": 27,
+    "non_public_case_ids_classified": 23,
+    "open_prs_dispositioned": 16,
+    "branch_only_paths_dispositioned": 131,
+    "public_boundary_gaps_deferred_to_release_integrity": 55,
+    "source_orphan_gaps_remaining": 88,
+    "prior_missing_entrypoints": 1,
+    "decisions_requiring_human_permission": 0
+  },
+  "work_items": [
+    {
+      "priority": 1,
+      "workstream_id": "core_thesis_entrypoint",
+      "evidence_count": 184,
+      "status": "executed_in_wave_01",
+      "decision": "create_the_authoritative_core_thesis_product_index",
+      "action": "build/core-thesis/index.json"
+    },
+    {
+      "priority": 2,
+      "workstream_id": "unclassified_path_disposition",
+      "evidence_count": 62,
+      "status": "executed_in_wave_01",
+      "decision": "assign_every_current_unclassified_path_a_bounded_owner_and_disposition",
+      "action": "apply_the_disposition_ledger_to_the_basin_registry_and_regenerate_the_census"
+    },
+    {
+      "priority": 3,
+      "workstream_id": "identifier_projection_integrity",
+      "evidence_count": 22024,
+      "status": "queued_by_identifier_family",
+      "decision": "repair_projection_and_source_joins_by_gap_class_id_key_and_path_cluster",
+      "action": "execute_identifier_repair_groups_in_priority_order"
+    },
+    {
+      "priority": 4,
+      "workstream_id": "case_catalog_disposition",
+      "evidence_count": 23,
+      "status": "executed_in_wave_01",
+      "decision": "classify_every_internal_case_identifier_without_forcing_public_catalogue_promotion",
+      "action": "attach_each_case_to_its_declared_internal_or_public_entrypoint"
+    },
+    {
+      "priority": 5,
+      "workstream_id": "branch_shadow_disposition",
+      "evidence_count": 131,
+      "status": "executed_in_wave_01",
+      "decision": "assign_each_open_branch_an_active_salvage_superseded_abandon_or_close_action",
+      "action": "apply_the_per_PR_dispositions_and_preserve_unique_receipted_rows"
+    },
+    {
+      "priority": 6,
+      "workstream_id": "public_reachability_after_release_integrity",
+      "evidence_count": 55,
+      "status": "blocked_by_material_publication_safety_dependency",
+      "decision": "do_not_publish_blocked_or_internal_artifacts_through_recursive_copy",
+      "action": "stack_after_PR_382_and_recompute_public_reachability_against_the_status_aware_allowlist",
+      "blocker": "current_main_recursive_publication_boundary"
+    }
+  ],
+  "next_action": "apply_unclassified_path_dispositions_to_the_basin_registry_then_execute_identifier_repair_priority_1",
+  "completion": {
+    "wave_01_decisions_complete": true,
+    "all_current_unclassified_paths_have_dispositions": true,
+    "all_current_case_ids_have_dispositions": true,
+    "all_current_open_prs_have_dispositions": true,
+    "core_thesis_entrypoint_built": true,
+    "identifier_repairs_completed": false,
+    "public_boundary_recomputed_after_release_integrity": false,
+    "semantic_lake_complete": false,
+    "historical_git_complete": false,
+    "evidence_truth_determined": false
+  },
+  "boundaries": {
+    "disposition_proves_evidence_truth": false,
+    "program_owner_proves_semantic_correctness": false,
+    "case_disposition_is_publication_clearance": false,
+    "branch_disposition_executes_GitHub_closure": false,
+    "identifier_repair_priority_proves_materiality": false,
+    "core_thesis_index_is_independent_evidence": false,
+    "graph_effect": "none"
+  }
+}

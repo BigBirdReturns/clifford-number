@@ -6,69 +6,387 @@
   "ownership_rule": "A basin owner is an accountable indexing program, not proof that every file in the basin has been correctly classified or adjudicated.",
   "basins": [
     {
-      "basin_id": "canonical-registries",
-      "label": "Canonical registries",
-      "path_prefixes": ["data/canonical/"],
-      "semantic_role": "canonical_registry",
-      "owner_program_id": "compiler-kernel",
+      "basin_id": "automation",
+      "label": "Repository automation",
+      "path_prefixes": [
+        ".github/"
+      ],
+      "semantic_role": "automation",
+      "owner_program_id": "build-system",
       "ownership_status": "declared",
-      "authoritative_entrypoints": ["BUILD-INSTRUCTIONS.md", "README.md"],
+      "authoritative_entrypoints": [
+        "package.json"
+      ],
       "source_basin_ids": [],
-      "publication_disposition": "public_source_with_contract",
-      "retention_disposition": "canonical"
+      "publication_disposition": "not_evidence",
+      "retention_disposition": "tooling"
+    },
+    {
+      "basin_id": "briefing-products",
+      "label": "Reporter briefing products",
+      "path_prefixes": [
+        "briefs/",
+        "build/briefings/"
+      ],
+      "semantic_role": "report_projection",
+      "owner_program_id": "reporter-briefing-program",
+      "ownership_status": "declared_by_builder",
+      "authoritative_entrypoints": [
+        "build/briefings/index.json",
+        "build/cases/index.json"
+      ],
+      "source_basin_ids": [
+        "case-sources",
+        "case-build-products"
+      ],
+      "publication_disposition": "status_bound",
+      "retention_disposition": "reproducible_generated"
     },
     {
       "basin_id": "canonical-ledgers",
       "label": "Canonical ledgers",
-      "path_prefixes": ["data/ledger/"],
+      "path_prefixes": [
+        "data/ledger/"
+      ],
       "semantic_role": "canonical_ledger",
       "owner_program_id": "surface-hop-compiler",
       "ownership_status": "declared",
-      "authoritative_entrypoints": ["README.md", "build/receipt-graph.json", "build/surface-graph.json", "build/hop-graph.json"],
-      "source_basin_ids": ["receipt-artifacts"],
+      "authoritative_entrypoints": [
+        "README.md",
+        "build/receipt-graph.json",
+        "build/surface-graph.json",
+        "build/hop-graph.json"
+      ],
+      "source_basin_ids": [
+        "receipt-artifacts"
+      ],
       "publication_disposition": "public_source_with_contract",
       "retention_disposition": "canonical"
     },
     {
-      "basin_id": "project-governance",
-      "label": "Project governance and program state",
-      "path_prefixes": ["data/project/"],
-      "semantic_role": "project_governance",
-      "owner_program_id": "project-governance",
-      "ownership_status": "provisional_path_convention",
-      "authoritative_entrypoints": ["BUILD-INSTRUCTIONS.md"],
+      "basin_id": "canonical-registries",
+      "label": "Canonical registries",
+      "path_prefixes": [
+        "data/canonical/"
+      ],
+      "semantic_role": "canonical_registry",
+      "owner_program_id": "compiler-kernel",
+      "ownership_status": "declared",
+      "authoritative_entrypoints": [
+        "BUILD-INSTRUCTIONS.md",
+        "README.md"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "public_source_with_contract",
+      "retention_disposition": "canonical"
+    },
+    {
+      "basin_id": "case-build-products",
+      "label": "Compiled case products",
+      "path_prefixes": [
+        "build/cases/"
+      ],
+      "semantic_role": "generated_projection",
+      "owner_program_id": "case-ledger-program",
+      "ownership_status": "declared_by_builder",
+      "authoritative_entrypoints": [
+        "build/cases/index.json"
+      ],
+      "source_basin_ids": [
+        "case-sources"
+      ],
+      "publication_disposition": "status_bound",
+      "retention_disposition": "reproducible_generated"
+    },
+    {
+      "basin_id": "case-sources",
+      "label": "Case source ledgers",
+      "path_prefixes": [
+        "cases/"
+      ],
+      "semantic_role": "case_source",
+      "owner_program_id": "case-ledger-program",
+      "ownership_status": "declared_by_case",
+      "authoritative_entrypoints": [
+        "cases.json",
+        "build/cases/index.json"
+      ],
+      "source_basin_ids": [
+        "receipt-artifacts",
+        "research-records"
+      ],
+      "publication_disposition": "status_bound",
+      "retention_disposition": "canonical_case_source"
+    },
+    {
+      "basin_id": "comprehension-protocol",
+      "label": "Comprehension protocol and fixtures",
+      "path_prefixes": [
+        "comprehension/"
+      ],
+      "semantic_role": "method_and_fixture",
+      "owner_program_id": "comprehension-protocol",
+      "ownership_status": "declared_by_wave_01_decision",
+      "authoritative_entrypoints": [
+        "build/lake-actions/waterline.json",
+        "data/project/lake-wave-01-path-decisions.jsonl"
+      ],
       "source_basin_ids": [],
       "publication_disposition": "internal_or_explicitly_authorized",
-      "retention_disposition": "canonical_governance"
+      "retention_disposition": "retain_and_index"
     },
     {
-      "basin_id": "research-records",
-      "label": "Research records and adjudication ledgers",
-      "path_prefixes": ["data/research/"],
-      "semantic_role": "research_source",
-      "owner_program_id": "research-program-registry",
+      "basin_id": "contribution-pipeline",
+      "label": "Contribution pipeline sources and templates",
+      "path_prefixes": [
+        "contributions/"
+      ],
+      "semantic_role": "contribution_source_or_template",
+      "owner_program_id": "contribution-pipeline",
+      "ownership_status": "declared_by_wave_01_decision",
+      "authoritative_entrypoints": [
+        "build/lake-actions/waterline.json",
+        "data/project/lake-wave-01-path-decisions.jsonl"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "blocked_unless_explicitly_authorized",
+      "retention_disposition": "retain_and_index"
+    },
+    {
+      "basin_id": "core-thesis-build-products",
+      "label": "Core-thesis generated products",
+      "path_prefixes": [
+        "build/core-thesis/"
+      ],
+      "semantic_role": "generated_projection",
+      "owner_program_id": "core-thesis-program",
+      "ownership_status": "declared_by_generated_entrypoint",
+      "authoritative_entrypoints": [
+        "build/core-thesis/index.json"
+      ],
+      "source_basin_ids": [
+        "research-records",
+        "project-governance",
+        "receipt-artifacts"
+      ],
+      "publication_disposition": "internal_or_explicitly_authorized",
+      "retention_disposition": "reproducible_generated"
+    },
+    {
+      "basin_id": "core-thesis-report-products",
+      "label": "Core-thesis reader-facing reports",
+      "path_prefixes": [
+        "reports/core-thesis/"
+      ],
+      "semantic_role": "report_projection",
+      "owner_program_id": "core-thesis-program",
       "ownership_status": "provisional_path_convention",
-      "authoritative_entrypoints": ["data/canonical/corpus-selection.json", "data/research/corpus-coverage.json", "data/research/selection-adversarial-reviews.json"],
-      "source_basin_ids": ["receipt-artifacts"],
+      "authoritative_entrypoints": [
+        "reports/core-thesis/index.html"
+      ],
+      "source_basin_ids": [
+        "core-thesis-build-products",
+        "research-records"
+      ],
       "publication_disposition": "status_bound",
-      "retention_disposition": "canonical_research"
+      "retention_disposition": "generated_report"
     },
     {
-      "basin_id": "research-tracks",
-      "label": "Declared research tracks",
-      "path_prefixes": ["data/research-tracks/"],
-      "semantic_role": "research_program_source",
-      "owner_program_id": "research-track-program",
-      "ownership_status": "declared_by_harness",
-      "authoritative_entrypoints": ["build/public-catalog.json"],
-      "source_basin_ids": ["research-records", "receipt-artifacts"],
-      "publication_disposition": "exploratory_only",
+      "basin_id": "crawl-state",
+      "label": "Crawler state and observation queues",
+      "path_prefixes": [
+        "data/crawl/"
+      ],
+      "semantic_role": "crawler_state",
+      "owner_program_id": "official-record-crawler",
+      "ownership_status": "declared",
+      "authoritative_entrypoints": [
+        "docs/official-record-crawler.md"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "blocked",
+      "retention_disposition": "operational_state"
+    },
+    {
+      "basin_id": "documentation",
+      "label": "General documentation",
+      "path_prefixes": [
+        "docs/"
+      ],
+      "semantic_role": "documentation",
+      "owner_program_id": "documentation-program",
+      "ownership_status": "provisional_path_convention",
+      "authoritative_entrypoints": [
+        "docs/README.md",
+        "README.md"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "documentation_only",
+      "retention_disposition": "maintained_documentation"
+    },
+    {
+      "basin_id": "estate-closure-products",
+      "label": "Estate closure generated products",
+      "path_prefixes": [
+        "build/estate-closures/"
+      ],
+      "semantic_role": "generated_projection",
+      "owner_program_id": "estate-aperture-program",
+      "ownership_status": "declared_by_manifest",
+      "authoritative_entrypoints": [
+        "build/estate-closures/manifest.json"
+      ],
+      "source_basin_ids": [
+        "estate-source-data"
+      ],
+      "publication_disposition": "projection_only",
+      "retention_disposition": "reproducible_generated"
+    },
+    {
+      "basin_id": "estate-frontier-products",
+      "label": "Estate frontier generated products",
+      "path_prefixes": [
+        "build/estate-frontier/"
+      ],
+      "semantic_role": "generated_projection",
+      "owner_program_id": "estate-frontier-program",
+      "ownership_status": "declared_by_manifest",
+      "authoritative_entrypoints": [
+        "build/estate-frontier/manifest.json"
+      ],
+      "source_basin_ids": [
+        "estate-source-data"
+      ],
+      "publication_disposition": "projection_only",
+      "retention_disposition": "reproducible_generated"
+    },
+    {
+      "basin_id": "estate-game-trail-products",
+      "label": "Estate game-trail generated products",
+      "path_prefixes": [
+        "build/estate-game-trails/"
+      ],
+      "semantic_role": "generated_projection",
+      "owner_program_id": "estate-game-trail-program",
+      "ownership_status": "declared_by_manifest",
+      "authoritative_entrypoints": [
+        "build/estate-game-trails/manifest.json"
+      ],
+      "source_basin_ids": [
+        "estate-source-data"
+      ],
+      "publication_disposition": "projection_only",
+      "retention_disposition": "reproducible_generated"
+    },
+    {
+      "basin_id": "estate-public-products",
+      "label": "Estate public projections",
+      "path_prefixes": [
+        "estates/"
+      ],
+      "semantic_role": "public_projection",
+      "owner_program_id": "estate-aperture-program",
+      "ownership_status": "declared_by_public_surface",
+      "authoritative_entrypoints": [
+        "estates/index.html",
+        "estates/data.json",
+        "estates/trails.json"
+      ],
+      "source_basin_ids": [
+        "estate-source-data",
+        "estate-closure-products"
+      ],
+      "publication_disposition": "public_with_contract",
+      "retention_disposition": "generated_public_projection"
+    },
+    {
+      "basin_id": "estate-source-data",
+      "label": "Estate source and task data",
+      "path_prefixes": [
+        "data/estates/"
+      ],
+      "semantic_role": "estate_source",
+      "owner_program_id": "estate-aperture-program",
+      "ownership_status": "provisional_path_convention",
+      "authoritative_entrypoints": [
+        "build/estate-closures/manifest.json",
+        "build/estate-frontier/manifest.json",
+        "build/estate-game-trails/manifest.json"
+      ],
+      "source_basin_ids": [
+        "research-records",
+        "receipt-artifacts"
+      ],
+      "publication_disposition": "status_bound",
       "retention_disposition": "canonical_program_source"
+    },
+    {
+      "basin_id": "gametrail-public-products",
+      "label": "Game-trail public projections",
+      "path_prefixes": [
+        "gametrails/"
+      ],
+      "semantic_role": "public_projection",
+      "owner_program_id": "estate-game-trail-program",
+      "ownership_status": "declared_by_public_surface",
+      "authoritative_entrypoints": [
+        "gametrails/index.html",
+        "gametrails/data.json"
+      ],
+      "source_basin_ids": [
+        "estate-game-trail-products"
+      ],
+      "publication_disposition": "public_with_contract",
+      "retention_disposition": "generated_public_projection"
+    },
+    {
+      "basin_id": "general-build-products",
+      "label": "Other generated build products",
+      "path_prefixes": [
+        "build/"
+      ],
+      "semantic_role": "generated_projection",
+      "owner_program_id": "build-system",
+      "ownership_status": "provisional_path_convention",
+      "authoritative_entrypoints": [
+        "package.json"
+      ],
+      "source_basin_ids": [
+        "canonical-registries",
+        "canonical-ledgers",
+        "research-records",
+        "project-governance"
+      ],
+      "publication_disposition": "internal_or_explicitly_authorized",
+      "retention_disposition": "reproducible_generated"
+    },
+    {
+      "basin_id": "general-report-products",
+      "label": "Other report products",
+      "path_prefixes": [
+        "reports/"
+      ],
+      "semantic_role": "report_projection",
+      "owner_program_id": "report-frontier-program",
+      "ownership_status": "provisional_path_convention",
+      "authoritative_entrypoints": [
+        "reports/index.html",
+        "build/report-frontier.json"
+      ],
+      "source_basin_ids": [
+        "research-records",
+        "case-sources"
+      ],
+      "publication_disposition": "status_bound",
+      "retention_disposition": "generated_report"
     },
     {
       "basin_id": "intake-custody",
       "label": "Unpromoted intake and candidate custody",
-      "path_prefixes": ["data/intake/", "contributions/inbox/"],
+      "path_prefixes": [
+        "data/intake/",
+        "contributions/inbox/"
+      ],
       "semantic_role": "intake_only",
       "owner_program_id": "intake-custody",
       "ownership_status": "declared",
@@ -78,280 +396,321 @@
       "retention_disposition": "review_queue"
     },
     {
-      "basin_id": "crawl-state",
-      "label": "Crawler state and observation queues",
-      "path_prefixes": ["data/crawl/"],
-      "semantic_role": "crawler_state",
-      "owner_program_id": "official-record-crawler",
-      "ownership_status": "declared",
-      "authoritative_entrypoints": ["docs/official-record-crawler.md"],
-      "source_basin_ids": [],
-      "publication_disposition": "blocked",
-      "retention_disposition": "operational_state"
-    },
-    {
-      "basin_id": "estate-source-data",
-      "label": "Estate source and task data",
-      "path_prefixes": ["data/estates/"],
-      "semantic_role": "estate_source",
-      "owner_program_id": "estate-aperture-program",
-      "ownership_status": "provisional_path_convention",
-      "authoritative_entrypoints": ["build/estate-closures/manifest.json", "build/estate-frontier/manifest.json", "build/estate-game-trails/manifest.json"],
-      "source_basin_ids": ["research-records", "receipt-artifacts"],
-      "publication_disposition": "status_bound",
-      "retention_disposition": "canonical_program_source"
-    },
-    {
-      "basin_id": "case-sources",
-      "label": "Case source ledgers",
-      "path_prefixes": ["cases/"],
-      "semantic_role": "case_source",
-      "owner_program_id": "case-ledger-program",
-      "ownership_status": "declared_by_case",
-      "authoritative_entrypoints": ["cases.json", "build/cases/index.json"],
-      "source_basin_ids": ["receipt-artifacts", "research-records"],
-      "publication_disposition": "status_bound",
-      "retention_disposition": "canonical_case_source"
-    },
-    {
-      "basin_id": "receipt-artifacts",
-      "label": "Preserved receipt artifacts",
-      "path_prefixes": ["receipts/"],
-      "semantic_role": "receipt_artifact",
-      "owner_program_id": "receipt-custody",
-      "ownership_status": "provisional_path_convention",
-      "authoritative_entrypoints": ["data/ledger/receipts.jsonl", "build/receipt-graph.json"],
-      "source_basin_ids": [],
-      "publication_disposition": "source_specific",
-      "retention_disposition": "canonical_evidence_custody"
-    },
-    {
-      "basin_id": "core-thesis-build-products",
-      "label": "Core-thesis generated products",
-      "path_prefixes": ["build/core-thesis/"],
-      "semantic_role": "generated_projection",
-      "owner_program_id": "core-thesis-program",
-      "ownership_status": "provisional_path_convention",
-      "authoritative_entrypoints": ["build/core-thesis/index.json"],
-      "source_basin_ids": ["research-records", "project-governance", "receipt-artifacts"],
-      "publication_disposition": "internal_or_explicitly_authorized",
-      "retention_disposition": "reproducible_generated"
-    },
-    {
-      "basin_id": "core-thesis-report-products",
-      "label": "Core-thesis reader-facing reports",
-      "path_prefixes": ["reports/core-thesis/"],
-      "semantic_role": "report_projection",
-      "owner_program_id": "core-thesis-program",
-      "ownership_status": "provisional_path_convention",
-      "authoritative_entrypoints": ["reports/core-thesis/index.html"],
-      "source_basin_ids": ["core-thesis-build-products", "research-records"],
-      "publication_disposition": "status_bound",
-      "retention_disposition": "generated_report"
-    },
-    {
-      "basin_id": "case-build-products",
-      "label": "Compiled case products",
-      "path_prefixes": ["build/cases/"],
-      "semantic_role": "generated_projection",
-      "owner_program_id": "case-ledger-program",
-      "ownership_status": "declared_by_builder",
-      "authoritative_entrypoints": ["build/cases/index.json"],
-      "source_basin_ids": ["case-sources"],
-      "publication_disposition": "status_bound",
-      "retention_disposition": "reproducible_generated"
-    },
-    {
-      "basin_id": "briefing-products",
-      "label": "Reporter briefing products",
-      "path_prefixes": ["briefs/", "build/briefings/"],
-      "semantic_role": "report_projection",
-      "owner_program_id": "reporter-briefing-program",
-      "ownership_status": "declared_by_builder",
-      "authoritative_entrypoints": ["build/briefings/index.json", "build/cases/index.json"],
-      "source_basin_ids": ["case-sources", "case-build-products"],
-      "publication_disposition": "status_bound",
-      "retention_disposition": "reproducible_generated"
-    },
-    {
-      "basin_id": "estate-game-trail-products",
-      "label": "Estate game-trail generated products",
-      "path_prefixes": ["build/estate-game-trails/"],
-      "semantic_role": "generated_projection",
-      "owner_program_id": "estate-game-trail-program",
-      "ownership_status": "declared_by_manifest",
-      "authoritative_entrypoints": ["build/estate-game-trails/manifest.json"],
-      "source_basin_ids": ["estate-source-data"],
-      "publication_disposition": "projection_only",
-      "retention_disposition": "reproducible_generated"
-    },
-    {
-      "basin_id": "estate-closure-products",
-      "label": "Estate closure generated products",
-      "path_prefixes": ["build/estate-closures/"],
-      "semantic_role": "generated_projection",
-      "owner_program_id": "estate-aperture-program",
-      "ownership_status": "declared_by_manifest",
-      "authoritative_entrypoints": ["build/estate-closures/manifest.json"],
-      "source_basin_ids": ["estate-source-data"],
-      "publication_disposition": "projection_only",
-      "retention_disposition": "reproducible_generated"
-    },
-    {
-      "basin_id": "estate-frontier-products",
-      "label": "Estate frontier generated products",
-      "path_prefixes": ["build/estate-frontier/"],
-      "semantic_role": "generated_projection",
-      "owner_program_id": "estate-frontier-program",
-      "ownership_status": "declared_by_manifest",
-      "authoritative_entrypoints": ["build/estate-frontier/manifest.json"],
-      "source_basin_ids": ["estate-source-data"],
-      "publication_disposition": "projection_only",
-      "retention_disposition": "reproducible_generated"
-    },
-    {
-      "basin_id": "estate-public-products",
-      "label": "Estate public projections",
-      "path_prefixes": ["estates/"],
-      "semantic_role": "public_projection",
-      "owner_program_id": "estate-aperture-program",
-      "ownership_status": "declared_by_public_surface",
-      "authoritative_entrypoints": ["estates/index.html", "estates/data.json", "estates/trails.json"],
-      "source_basin_ids": ["estate-source-data", "estate-closure-products"],
-      "publication_disposition": "public_with_contract",
-      "retention_disposition": "generated_public_projection"
-    },
-    {
-      "basin_id": "gametrail-public-products",
-      "label": "Game-trail public projections",
-      "path_prefixes": ["gametrails/"],
-      "semantic_role": "public_projection",
-      "owner_program_id": "estate-game-trail-program",
-      "ownership_status": "declared_by_public_surface",
-      "authoritative_entrypoints": ["gametrails/index.html", "gametrails/data.json"],
-      "source_basin_ids": ["estate-game-trail-products"],
-      "publication_disposition": "public_with_contract",
-      "retention_disposition": "generated_public_projection"
-    },
-    {
-      "basin_id": "milestone-governance",
-      "label": "Milestone and historical governance records",
-      "path_prefixes": ["docs/milestones/"],
-      "semantic_role": "governance_history",
-      "owner_program_id": "project-governance",
-      "ownership_status": "provisional_path_convention",
-      "authoritative_entrypoints": ["docs/README.md"],
-      "source_basin_ids": [],
-      "publication_disposition": "documentation_only",
-      "retention_disposition": "historical_governance"
-    },
-    {
-      "basin_id": "documentation",
-      "label": "General documentation",
-      "path_prefixes": ["docs/"],
-      "semantic_role": "documentation",
-      "owner_program_id": "documentation-program",
-      "ownership_status": "provisional_path_convention",
-      "authoritative_entrypoints": ["docs/README.md", "README.md"],
-      "source_basin_ids": [],
-      "publication_disposition": "documentation_only",
-      "retention_disposition": "maintained_documentation"
-    },
-    {
-      "basin_id": "general-report-products",
-      "label": "Other report products",
-      "path_prefixes": ["reports/"],
-      "semantic_role": "report_projection",
-      "owner_program_id": "report-frontier-program",
-      "ownership_status": "provisional_path_convention",
-      "authoritative_entrypoints": ["reports/index.html", "build/report-frontier.json"],
-      "source_basin_ids": ["research-records", "case-sources"],
-      "publication_disposition": "status_bound",
-      "retention_disposition": "generated_report"
-    },
-    {
-      "basin_id": "general-build-products",
-      "label": "Other generated build products",
-      "path_prefixes": ["build/"],
-      "semantic_role": "generated_projection",
-      "owner_program_id": "build-system",
-      "ownership_status": "provisional_path_convention",
-      "authoritative_entrypoints": ["package.json"],
-      "source_basin_ids": ["canonical-registries", "canonical-ledgers", "research-records", "project-governance"],
+      "basin_id": "lake-action-products",
+      "label": "Evidence-lake action and disposition products",
+      "path_prefixes": [
+        "build/lake-actions/",
+        "reports/lake-basin-execution-wave-01.md"
+      ],
+      "semantic_role": "operational_decision_projection",
+      "owner_program_id": "CN-LAKE-EXECUTION-W01",
+      "ownership_status": "declared_by_wave_01_builder",
+      "authoritative_entrypoints": [
+        "build/lake-actions/waterline.json"
+      ],
+      "source_basin_ids": [
+        "project-governance",
+        "core-thesis-build-products"
+      ],
       "publication_disposition": "internal_or_explicitly_authorized",
       "retention_disposition": "reproducible_generated"
     },
     {
       "basin_id": "legacy-history",
       "label": "Retired legacy architecture",
-      "path_prefixes": ["legacy/"],
+      "path_prefixes": [
+        "legacy/"
+      ],
       "semantic_role": "historical_legacy",
       "owner_program_id": "project-governance",
       "ownership_status": "declared",
-      "authoritative_entrypoints": ["README.md"],
+      "authoritative_entrypoints": [
+        "README.md"
+      ],
       "source_basin_ids": [],
       "publication_disposition": "historical_only",
       "retention_disposition": "retired_history"
     },
     {
-      "basin_id": "automation",
-      "label": "Repository automation",
-      "path_prefixes": [".github/"],
-      "semantic_role": "automation",
-      "owner_program_id": "build-system",
-      "ownership_status": "declared",
-      "authoritative_entrypoints": ["package.json"],
+      "basin_id": "milestone-governance",
+      "label": "Milestone and historical governance records",
+      "path_prefixes": [
+        "docs/milestones/"
+      ],
+      "semantic_role": "governance_history",
+      "owner_program_id": "project-governance",
+      "ownership_status": "provisional_path_convention",
+      "authoritative_entrypoints": [
+        "docs/README.md"
+      ],
       "source_basin_ids": [],
-      "publication_disposition": "not_evidence",
-      "retention_disposition": "tooling"
+      "publication_disposition": "documentation_only",
+      "retention_disposition": "historical_governance"
     },
     {
-      "basin_id": "toolchain",
-      "label": "Compiler and maintenance toolchain",
-      "path_prefixes": ["tools/"],
-      "semantic_role": "tooling",
-      "owner_program_id": "build-system",
-      "ownership_status": "declared",
-      "authoritative_entrypoints": ["package.json"],
+      "basin_id": "project-governance",
+      "label": "Project governance and program state",
+      "path_prefixes": [
+        "data/project/"
+      ],
+      "semantic_role": "project_governance",
+      "owner_program_id": "project-governance",
+      "ownership_status": "provisional_path_convention",
+      "authoritative_entrypoints": [
+        "BUILD-INSTRUCTIONS.md"
+      ],
       "source_basin_ids": [],
-      "publication_disposition": "not_evidence",
-      "retention_disposition": "tooling"
+      "publication_disposition": "internal_or_explicitly_authorized",
+      "retention_disposition": "canonical_governance"
+    },
+    {
+      "basin_id": "public-runtime",
+      "label": "Public runtime and assets",
+      "path_prefixes": [
+        "src/",
+        "assets/",
+        "index.html",
+        "app.js",
+        "styles.css"
+      ],
+      "semantic_role": "public_runtime",
+      "owner_program_id": "public-interface",
+      "ownership_status": "declared",
+      "authoritative_entrypoints": [
+        "index.html"
+      ],
+      "source_basin_ids": [
+        "general-build-products"
+      ],
+      "publication_disposition": "public_runtime_only",
+      "retention_disposition": "maintained_runtime"
+    },
+    {
+      "basin_id": "receipt-artifacts",
+      "label": "Preserved receipt artifacts",
+      "path_prefixes": [
+        "receipts/"
+      ],
+      "semantic_role": "receipt_artifact",
+      "owner_program_id": "receipt-custody",
+      "ownership_status": "provisional_path_convention",
+      "authoritative_entrypoints": [
+        "data/ledger/receipts.jsonl",
+        "build/receipt-graph.json"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "source_specific",
+      "retention_disposition": "canonical_evidence_custody"
     },
     {
       "basin_id": "regressions",
       "label": "Regression and adversarial fixtures",
-      "path_prefixes": ["test/"],
+      "path_prefixes": [
+        "test/"
+      ],
       "semantic_role": "test_fixture",
       "owner_program_id": "build-system",
       "ownership_status": "declared",
-      "authoritative_entrypoints": ["package.json"],
+      "authoritative_entrypoints": [
+        "package.json"
+      ],
       "source_basin_ids": [],
       "publication_disposition": "not_evidence",
       "retention_disposition": "regression"
     },
     {
-      "basin_id": "public-runtime",
-      "label": "Public runtime and assets",
-      "path_prefixes": ["src/", "assets/", "index.html", "app.js", "styles.css"],
-      "semantic_role": "public_runtime",
-      "owner_program_id": "public-interface",
-      "ownership_status": "declared",
-      "authoritative_entrypoints": ["index.html"],
-      "source_basin_ids": ["general-build-products"],
-      "publication_disposition": "public_runtime_only",
-      "retention_disposition": "maintained_runtime"
+      "basin_id": "repository-config",
+      "label": "Repository configuration artifacts",
+      "path_prefixes": [
+        "CORE-THESIS.md"
+      ],
+      "semantic_role": "repository_configuration_or_governance",
+      "owner_program_id": "project-governance",
+      "ownership_status": "declared_by_wave_01_decision",
+      "authoritative_entrypoints": [
+        "build/lake-actions/waterline.json",
+        "data/project/lake-wave-01-path-decisions.jsonl"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "documentation_or_internal",
+      "retention_disposition": "retain_and_index"
     },
     {
       "basin_id": "repository-root-governance",
       "label": "Repository-root governance and configuration",
-      "path_prefixes": ["README.md", "BUILD-INSTRUCTIONS.md", "CONTRIBUTING.md", "package.json", "cases.json"],
+      "path_prefixes": [
+        "README.md",
+        "BUILD-INSTRUCTIONS.md",
+        "CONTRIBUTING.md",
+        "package.json",
+        "cases.json"
+      ],
       "semantic_role": "repository_governance",
       "owner_program_id": "project-governance",
       "ownership_status": "declared",
-      "authoritative_entrypoints": ["README.md", "BUILD-INSTRUCTIONS.md"],
+      "authoritative_entrypoints": [
+        "README.md",
+        "BUILD-INSTRUCTIONS.md"
+      ],
       "source_basin_ids": [],
       "publication_disposition": "documentation_only",
       "retention_disposition": "canonical_governance"
+    },
+    {
+      "basin_id": "research-records",
+      "label": "Research records and adjudication ledgers",
+      "path_prefixes": [
+        "data/research/"
+      ],
+      "semantic_role": "research_source",
+      "owner_program_id": "research-program-registry",
+      "ownership_status": "provisional_path_convention",
+      "authoritative_entrypoints": [
+        "data/canonical/corpus-selection.json",
+        "data/research/corpus-coverage.json",
+        "data/research/selection-adversarial-reviews.json"
+      ],
+      "source_basin_ids": [
+        "receipt-artifacts"
+      ],
+      "publication_disposition": "status_bound",
+      "retention_disposition": "canonical_research"
+    },
+    {
+      "basin_id": "research-tracks",
+      "label": "Declared research tracks",
+      "path_prefixes": [
+        "data/research-tracks/"
+      ],
+      "semantic_role": "research_program_source",
+      "owner_program_id": "research-track-program",
+      "ownership_status": "declared_by_harness",
+      "authoritative_entrypoints": [
+        "build/public-catalog.json"
+      ],
+      "source_basin_ids": [
+        "research-records",
+        "receipt-artifacts"
+      ],
+      "publication_disposition": "exploratory_only",
+      "retention_disposition": "canonical_program_source"
+    },
+    {
+      "basin_id": "residual-current-tree",
+      "label": "Residual current-tree paths with exact Wave 01 dispositions",
+      "path_prefixes": [
+        ".gitattributes",
+        ".gitignore",
+        "LICENSE",
+        "data/gametrails/authored-checkpoints.json",
+        "data/gametrails/legacy-seed-map.jsonl",
+        "data/gametrails/methodology.json",
+        "data/import-queues/master-v4.import-queue.json",
+        "data/milestones/estate-aperture-v1.json",
+        "data/milestones/estate-frontier-game-trails-v1.json",
+        "data/signatures/formation-signatures.json",
+        "data/update-watchlist.json",
+        "gametrail-handoffs/ai-data-compute-infrastructure-estate.md",
+        "gametrail-handoffs/dialog-estate.md",
+        "gametrail-handoffs/energy-utilities-critical-infrastructure-estate.md",
+        "gametrail-handoffs/higher-education-research-commercialization-estate.md",
+        "gametrail-handoffs/intellectual-property-standards-data-rights-estate.md",
+        "gametrail-handoffs/judicial-administrative-adjudication-estate.md",
+        "gametrail-handoffs/labor-immigration-workforce-mobility-estate.md",
+        "gametrail-handoffs/local-development-estate.md",
+        "gametrail-handoffs/offshore-beneficial-ownership-estate.md",
+        "gametrail-handoffs/philanthropy-nonprofit-policy-estate.md",
+        "gametrail-handoffs/professional-services-intermediaries-estate.md",
+        "gametrail-handoffs/public-interest-crossing-estate.md",
+        "gametrail-handoffs/public-money-industrial-policy-estate.md",
+        "gametrail-handoffs/real-property-title-debt-estate.md",
+        "gametrail-handoffs/regulatory-markets-estate.md",
+        "gametrail-handoffs/sanctions-export-controls-foreign-investment-estate.md",
+        "gametrail-handoffs/state-municipal-authority-estate.md",
+        "gametrail-handoffs/transatlantic-defense-innovation-estate.md",
+        "gametrail-handoffs/uk-defense-estate.md",
+        "gametrail-handoffs/uk-state-market-estate.md",
+        "gametrail-handoffs/us-defense-estate.md",
+        "gametrail-handoffs/us-executive-appointments-ethics-estate.md",
+        "gametrail-handoffs/us-legislative-political-finance-estate.md",
+        "gametrail-handoffs/venture-capital-corporate-control-estate.md",
+        "issue-handoffs/85-transatlantic-defense-innovation-estate.md",
+        "issue-handoffs/86-uk-defense-estate.md",
+        "issue-handoffs/87-public-money-industrial-policy-estate.md",
+        "issue-handoffs/88-us-executive-appointments-ethics-estate.md",
+        "issue-handoffs/89-state-municipal-authority-estate.md",
+        "issue-handoffs/90-public-interest-crossing-estate.md",
+        "issue-handoffs/91-uk-state-market-estate.md",
+        "issue-handoffs/92-regulatory-markets-estate.md",
+        "issue-handoffs/93-offshore-beneficial-ownership-estate.md",
+        "issue-handoffs/94-us-defense-estate.md",
+        "issue-handoffs/95-venture-capital-corporate-control-estate.md",
+        "issue-handoffs/96-us-legislative-political-finance-estate.md",
+        "issue-handoffs/97-dialog-estate.md",
+        "issue-handoffs/98-local-development-estate.md",
+        "schemas/k0-ceiling-conversion-event.schema.json",
+        "schemas/reporter-briefing.schema.json"
+      ],
+      "semantic_role": "residual_current_tree_path",
+      "owner_program_id": "lake-index-program",
+      "ownership_status": "provisional_exact_path_decision",
+      "authoritative_entrypoints": [
+        "data/project/lake-wave-01-path-decisions.jsonl"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "blocked_pending_specific_classification",
+      "retention_disposition": "retain_with_explicit_followup"
+    },
+    {
+      "basin_id": "root-legacy-artifact",
+      "label": "Root legacy and configuration artifacts",
+      "path_prefixes": [
+        "graph.json"
+      ],
+      "semantic_role": "legacy_or_configuration_artifact",
+      "owner_program_id": "project-governance",
+      "ownership_status": "declared_by_wave_01_decision",
+      "authoritative_entrypoints": [
+        "build/lake-actions/waterline.json",
+        "data/project/lake-wave-01-path-decisions.jsonl"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "not_current_evidence",
+      "retention_disposition": "retain_with_explicit_retirement_or_configuration_status"
+    },
+    {
+      "basin_id": "temporary-transport",
+      "label": "Temporary build transport",
+      "path_prefixes": [
+        ".github/temporary/",
+        ".github/tmp/"
+      ],
+      "semantic_role": "temporary_transport",
+      "owner_program_id": "build-system",
+      "ownership_status": "declared_by_wave_01_decision",
+      "authoritative_entrypoints": [
+        "build/lake-actions/waterline.json",
+        "data/project/lake-wave-01-path-decisions.jsonl"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "not_evidence",
+      "retention_disposition": "delete_when_inactive"
+    },
+    {
+      "basin_id": "toolchain",
+      "label": "Compiler and maintenance toolchain",
+      "path_prefixes": [
+        "tools/"
+      ],
+      "semantic_role": "tooling",
+      "owner_program_id": "build-system",
+      "ownership_status": "declared",
+      "authoritative_entrypoints": [
+        "package.json"
+      ],
+      "source_basin_ids": [],
+      "publication_disposition": "not_evidence",
+      "retention_disposition": "tooling"
     }
   ],
   "default_basin": {
