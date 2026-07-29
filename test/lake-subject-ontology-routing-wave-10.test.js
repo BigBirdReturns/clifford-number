@@ -36,7 +36,7 @@ assert.equal(new Set(routing.map(row => row.routing_id)).size, 106);
 assert.equal(new Set(canonical.map(row => row.acquisition_id)).size, canonical.length);
 assert.equal(new Set(noncanonical.map(row => row.route_id)).size, noncanonical.length);
 assert.ok(canonical.length > 0, 'Wave 10 must identify at least one custodied canonical acquisition candidate');
-assert.ok(noncanonical.length > 0, 'Wave 10 must route at least one non-identity subject outside canonical identity');
+assert.ok(noncanonical.length > 0, 'Wave 10 must route at least one subject outside the custodied canonical registry');
 assert.deepEqual(projection.routing_rows, routing);
 assert.deepEqual(projection.canonical_acquisition_queue, canonical);
 assert.deepEqual(projection.noncanonical_routing_rows, noncanonical);
@@ -82,7 +82,9 @@ for (const row of canonical) {
 }
 
 for (const row of noncanonical) {
-  assert.equal(['actor_candidate', 'organization_candidate'].includes(row.semantic_type), false);
+  if (['actor_candidate', 'organization_candidate'].includes(row.semantic_type)) {
+    assert.equal(row.source_custody_present, false, `${row.route_id}: custodied identity candidate was kept outside canonical acquisition`);
+  }
   assert.equal(row.canonical_mutation_applied, false);
   assert.equal(row.accepted_identity_bridge, false);
   assert.equal(row.review_dependency.required_to_decide, false);
@@ -117,4 +119,4 @@ assert.equal(policy.boundaries.routing_destination_creates_relationship, false);
 assert.equal(policy.boundaries.routing_destination_creates_hop, false);
 assert.equal(policy.boundaries.graph_effect, 'none');
 
-console.log(`lake-subject-ontology-routing-wave-10.test: OK (${routing.length} routed, ${canonical.length} canonical acquisition candidates, ${noncanonical.length} nonidentity routes, 0 mutations)`);
+console.log(`lake-subject-ontology-routing-wave-10.test: OK (${routing.length} routed, ${canonical.length} custodied canonical acquisition candidates, ${noncanonical.length} other routes, 0 mutations)`);
