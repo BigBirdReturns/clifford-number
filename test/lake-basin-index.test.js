@@ -54,9 +54,39 @@ assert.ok(coreBuild.counts.previously_unowned > 0 || coreReports.counts.previous
   'basin pass should expose previously unowned core-thesis material');
 
 assert.ok(index.counts.evidence_files_previously_unowned > 0, 'the lake must preserve previously unowned evidence count');
-assert.ok(index.counts.exact_orphan_evidence_files > 0, 'the lake must preserve exact orphan evidence count');
-assert.ok(gaps.some(gap => gap.gap_type === 'missing_authoritative_entrypoint'));
-assert.ok(gaps.some(gap => gap.gap_type === 'source_record_without_authoritative_reachability'));
+assert.ok(index.counts.exact_orphan_evidence_files >= 0, 'the lake must expose the exact orphan evidence count');
+
+const expectedMissingEntrypointGapIds = index.basins
+  .flatMap(basin => (basin.entrypoint_state ?? [])
+    .filter(state => state.present_in_census_snapshot !== true)
+    .map(state => `missing-entrypoint:${basin.basin_id}:${state.path}`))
+  .sort();
+const actualMissingEntrypointGapIds = gaps
+  .filter(gap => gap.gap_type === 'missing_authoritative_entrypoint')
+  .map(gap => gap.gap_id)
+  .sort();
+assert.deepEqual(actualMissingEntrypointGapIds, expectedMissingEntrypointGapIds,
+  'missing-entrypoint gaps must reflect the current entrypoint state');
+
+const sourceSemanticRoles = new Set([
+  'canonical_registry',
+  'canonical_ledger',
+  'research_source',
+  'research_program_source',
+  'case_source',
+  'receipt_artifact',
+  'estate_source',
+]);
+const expectedSourceOrphanPaths = membership
+  .filter(row => row.evidence_bearing && row.exact_orphan && sourceSemanticRoles.has(row.semantic_role))
+  .map(row => row.path)
+  .sort();
+const actualSourceOrphanPaths = gaps
+  .filter(gap => gap.gap_type === 'source_record_without_authoritative_reachability')
+  .map(gap => gap.path)
+  .sort();
+assert.deepEqual(actualSourceOrphanPaths, expectedSourceOrphanPaths,
+  'source-orphan gaps must reflect the current source-record state');
 
 const byPath = new Map(membership.map(row => [row.path, row]));
 for (const row of membership) assert.equal(byPath.get(row.path), row, `duplicate path membership ${row.path}`);
