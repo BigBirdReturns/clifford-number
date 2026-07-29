@@ -156,6 +156,7 @@ if ((active?.claims ?? []).length !== policy.expected.claim_migrations) fail('po
 
 let currentEntityTokens = 0;
 let legacyEntityTokens = 0;
+let canonicalEquivalentAliasRows = 0;
 for (const entity of active?.entities ?? []) {
   const baseline = baselineEntityByLocal.get(entity.local_id);
   const extensionEntry = extensionEntityEntryByLocal.get(entity.local_id);
@@ -167,8 +168,22 @@ for (const entity of active?.entities ?? []) {
   if (entity.legacy_provisional_entity_id !== source.legacy_provisional_entity_id) fail(`${entity.local_id}: legacy entity ID registry mismatch`);
 
   const aliasEntries = aliasExtensionsByLocal.get(entity.local_id) ?? [];
-  const expectedCurrentAliases = uniqueSorted([...(source.alias_axm_ids ?? []), ...aliasEntries.map(entry => entry.row.axm_alias_id)]);
-  const expectedLegacyAliases = uniqueSorted([...(source.legacy_provisional_alias_ids ?? []), ...aliasEntries.map(entry => entry.row.legacy_provisional_alias_id)]);
+  for (const entry of aliasEntries) {
+    const currentCollapsesToPrimary = entry.row.axm_alias_id === entity.axm_entity_id;
+    const legacyCollapsesToPrimary = entry.row.legacy_provisional_alias_id === entity.legacy_provisional_entity_id;
+    if (currentCollapsesToPrimary !== legacyCollapsesToPrimary) fail(`${entry.sourcePath}:${entry.row.registry_key}: current/legacy alias collapse disagrees`);
+    if (!currentCollapsesToPrimary && !entity.alias_axm_ids.includes(entry.row.axm_alias_id)) fail(`${entry.sourcePath}:${entry.row.registry_key}: current alias token is not attached`);
+    if (!legacyCollapsesToPrimary && !entity.legacy_provisional_alias_ids.includes(entry.row.legacy_provisional_alias_id)) fail(`${entry.sourcePath}:${entry.row.registry_key}: legacy alias token is not attached`);
+    if (currentCollapsesToPrimary) canonicalEquivalentAliasRows += 1;
+  }
+  const expectedCurrentAliases = uniqueSorted([
+    ...(source.alias_axm_ids ?? []),
+    ...aliasEntries.map(entry => entry.row.axm_alias_id)
+  ].filter(token => token !== entity.axm_entity_id));
+  const expectedLegacyAliases = uniqueSorted([
+    ...(source.legacy_provisional_alias_ids ?? []),
+    ...aliasEntries.map(entry => entry.row.legacy_provisional_alias_id)
+  ].filter(token => token !== entity.legacy_provisional_entity_id));
   try {
     assert.deepEqual(entity.alias_axm_ids, expectedCurrentAliases);
     assert.deepEqual(entity.legacy_provisional_alias_ids, expectedLegacyAliases);
@@ -271,8 +286,8 @@ if (errors.length) {
 
 console.log('lake AXM active projection Wave 06 validation: OK');
 console.log(`  baseline entities / claims: ${baselineEntityRows.length} / ${baselineClaimRows.length}`);
-console.log(`  extension registries: ${extensionPaths.length}`);
-console.log(`  extension entities / aliases: ${extensionEntityRows.length} / ${extensionAliasRows.length}`);
+console.log(`  extension registries / entities / aliases: ${extensionPaths.length} / ${extensionEntityRows.length} / ${extensionAliasRows.length}`);
+console.log(`  canonical-equivalent alias rows: ${canonicalEquivalentAliasRows}`);
 console.log(`  active entities / claims: ${active.entities.length} / ${active.claims.length}`);
 console.log(`  current / legacy resolver tokens: ${currentEntityTokens} / ${legacyEntityTokens}`);
 console.log('  cross-case joins: false');
