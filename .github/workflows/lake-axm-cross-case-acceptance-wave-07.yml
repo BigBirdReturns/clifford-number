@@ -75,6 +75,7 @@ jobs:
           node tools/build-lake-axm-cross-case-acceptance-wave-07.mjs
           sha256sum \
             data/project/lake-axm-cross-case-join-registry-wave-07.jsonl \
+            build/axm-cross-case-join-decision-index-wave-07.json \
             data/project/lake-axm-cross-case-acceptance-wave-07.json \
             build/lake-actions/axm-cross-case-acceptance-wave-07.json \
             reports/lake-axm-cross-case-acceptance-wave-07.md > /tmp/lake-axm-wave-07-first.sha256
@@ -137,6 +138,7 @@ jobs:
           set -euo pipefail
           find build/lake-index -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/lake-axm-wave-07-post.sha256
           sha256sum \
+            build/axm-cross-case-join-decision-index-wave-07.json \
             build/lake-actions/axm-cross-case-acceptance-wave-07-reconciliation.json \
             reports/lake-index-census.md \
             reports/lake-index-gap-summary.md \
@@ -180,6 +182,7 @@ jobs:
               '.github/tmp/lake-axm-cross-case-acceptance-wave-07-trigger.json',
               '.github/tmp/apply-lake-axm-cross-case-acceptance-wave-07.mjs',
               'data/project/lake-axm-cross-case-join-registry-wave-07.jsonl',
+              'build/axm-cross-case-join-decision-index-wave-07.json',
               'data/project/lake-axm-cross-case-acceptance-wave-07.json',
               'build/lake-actions/axm-cross-case-acceptance-wave-07.json',
               'build/lake-actions/axm-cross-case-acceptance-wave-07-reconciliation.json',
