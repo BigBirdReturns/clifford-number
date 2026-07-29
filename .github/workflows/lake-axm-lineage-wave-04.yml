@@ -1,0 +1,241 @@
+name: Evidence lake AXM participation lineage Wave 04
+
+on:
+  push:
+    branches:
+      - agent/lake-axm-lineage-wave-04
+    paths:
+      - '.github/tmp/lake-axm-lineage-wave-04-trigger.json'
+  pull_request:
+    branches:
+      - agent/lake-native-source-migration-wave-03
+    paths:
+      - 'data/project/lake-axm-lineage-wave-04-policy.json'
+      - 'data/project/lake-index-policy.json'
+      - 'tools/build-lake-axm-lineage-wave-04.mjs'
+      - 'tools/reconcile-lake-axm-lineage-wave-04.mjs'
+      - 'tools/validate-lake-axm-lineage-wave-04.mjs'
+      - 'test/lake-axm-lineage-wave-04.test.js'
+      - '.github/workflows/lake-axm-lineage-wave-04.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: lake-axm-lineage-wave-04-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Determine execution mode
+        id: mode
+        shell: bash
+        run: |
+          echo "original_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if test -f .github/tmp/lake-axm-lineage-wave-04-trigger.json; then
+            echo 'validate=true' >> "$GITHUB_OUTPUT"
+            echo 'materialize=true' >> "$GITHUB_OUTPUT"
+            echo 'phase=execute' >> "$GITHUB_OUTPUT"
+          elif test "$GITHUB_EVENT_NAME" = 'pull_request' || test "$GITHUB_EVENT_NAME" = 'workflow_dispatch'; then
+            echo 'validate=true' >> "$GITHUB_OUTPUT"
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+            if git ls-files --error-unmatch data/project/lake-identifier-source-supersessions-wave-04.jsonl >/dev/null 2>&1; then
+              echo 'phase=post' >> "$GITHUB_OUTPUT"
+            else
+              echo 'phase=execute' >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo 'validate=false' >> "$GITHUB_OUTPUT"
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+            echo 'phase=none' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.mode.outputs.validate == 'true'
+        with:
+          node-version: '24'
+      - name: Run the complete repository release gate before the lineage snapshot
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        run: npm run release:check
+      - name: Restore committed bytes before lineage execution
+        if: steps.mode.outputs.validate == 'true'
+        run: |
+          git restore --staged --worktree .
+          git clean -fd
+      - name: Apply checked Wave 04 source corrections
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        run: node .github/tmp/apply-lake-axm-lineage-wave-04-source-fixes.mjs
+      - name: Build and deterministically prove the AXM lineage supersessions
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-lake-axm-lineage-wave-04.mjs
+          sha256sum \
+            data/project/lake-identifier-source-supersessions-wave-04.jsonl \
+            data/project/lake-axm-lineage-wave-04.json \
+            build/lake-actions/axm-lineage-wave-04.json \
+            reports/lake-axm-lineage-wave-04.md > /tmp/lake-axm-wave-04-first.sha256
+          node tools/build-lake-axm-lineage-wave-04.mjs
+          sha256sum --check --strict /tmp/lake-axm-wave-04-first.sha256
+          git diff --check
+      - name: Stage checked source corrections and lineage products
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        run: |
+          cp .github/tmp/lake-axm-lineage-wave-04-source-paths.json /tmp/lake-axm-lineage-wave-04-source-paths.json
+          git add \
+            data/project/lake-axm-lineage-wave-04-policy.json \
+            data/project/lake-index-policy.json \
+            tools/build-lake-axm-lineage-wave-04.mjs \
+            tools/reconcile-lake-axm-lineage-wave-04.mjs \
+            tools/validate-lake-axm-lineage-wave-04.mjs \
+            data/project/lake-identifier-source-supersessions-wave-04.jsonl \
+            data/project/lake-axm-lineage-wave-04.json \
+            build/lake-actions/axm-lineage-wave-04.json \
+            reports/lake-axm-lineage-wave-04.md
+      - name: Run the complete repository release gate with lineage sources active
+        if: steps.mode.outputs.validate == 'true'
+        run: npm run release:check
+      - name: Restore the staged lineage tree before the lake census
+        if: steps.mode.outputs.validate == 'true'
+        run: |
+          git restore --worktree .
+          git clean -fd
+      - name: Observe current open-PR shadow
+        if: steps.mode.outputs.validate == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/build-lake-open-pr-shadow.mjs
+      - name: Rebuild and reconcile the post-lineage lake
+        if: steps.mode.outputs.validate == 'true'
+        run: |
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/reconcile-lake-axm-lineage-wave-04.mjs
+          node tools/validate-lake-axm-lineage-wave-04.mjs
+          node test/lake-index.test.js
+          node test/lake-basin-index.test.js
+          node test/lake-axm-lineage-wave-04.test.js
+      - name: Prove deterministic post-lineage products
+        if: steps.mode.outputs.validate == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          find build/lake-index -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/lake-axm-wave-04-post.sha256
+          sha256sum \
+            build/lake-actions/axm-lineage-wave-04-reconciliation.json \
+            reports/lake-index-census.md \
+            reports/lake-index-gap-summary.md \
+            reports/lake-basin-index.md \
+            reports/lake-axm-lineage-wave-04-reconciliation.md >> /tmp/lake-axm-wave-04-post.sha256
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/reconcile-lake-axm-lineage-wave-04.mjs
+          sha256sum --check --strict /tmp/lake-axm-wave-04-post.sha256
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-axm-lineage-wave-04.mjs
+          node test/lake-axm-lineage-wave-04.test.js
+          git diff --check
+      - name: Restore the non-materializing validation surface
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.materialize != 'true'
+        run: |
+          git reset --hard HEAD
+          git clean -fd
+          test -z "$(git status --porcelain)"
+      - name: Enforce source-lineage and generated-output boundaries
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f \
+            .github/tmp/lake-axm-lineage-wave-04-trigger.json \
+            .github/tmp/apply-lake-axm-lineage-wave-04-source-fixes.mjs \
+            .github/tmp/lake-axm-lineage-wave-04-source-paths.json
+          python - <<'PY'
+          import json
+          import re
+          import subprocess
+
+          migration = json.load(open('/tmp/lake-axm-lineage-wave-04-source-paths.json'))
+          required = set(migration['changed_paths']) | {
+              '.github/tmp/lake-axm-lineage-wave-04-trigger.json',
+              '.github/tmp/apply-lake-axm-lineage-wave-04-source-fixes.mjs',
+              'data/project/lake-identifier-source-supersessions-wave-04.jsonl',
+              'data/project/lake-axm-lineage-wave-04.json',
+              'build/lake-actions/axm-lineage-wave-04.json',
+              'build/lake-actions/axm-lineage-wave-04-reconciliation.json',
+              'reports/lake-axm-lineage-wave-04.md',
+              'reports/lake-axm-lineage-wave-04-reconciliation.md',
+          }
+          exact_allowed_sources = required | {
+              'data/project/lake-open-pr-shadow.json',
+          }
+          generated_prefixes = (
+              'build/',
+              'reports/',
+              'briefs/',
+              'estates/',
+              'gametrails/',
+          )
+          generated_root = re.compile(r'^(?:Clifford-.*\.html|[^/]+-standalone\.html)$')
+
+          raw = subprocess.check_output([
+              'git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'
+          ])
+          entries = [entry for entry in raw.decode().split('\0') if entry]
+          actual = set()
+          for entry in entries:
+              status = entry[:2]
+              assert 'R' not in status and 'C' not in status, entry
+              actual.add(entry[3:])
+
+          unexpected = sorted(path for path in actual
+              if path not in exact_allowed_sources
+              and not path.startswith(generated_prefixes)
+              and not generated_root.match(path))
+          assert required <= actual, {
+              'missing_required_lineage_or_reconciliation_changes': sorted(required - actual),
+          }
+          assert not unexpected, {
+              'undeclared_source_changes': unexpected,
+          }
+          print(json.dumps({
+              'required_changes': len(required),
+              'actual_changes': len(actual),
+              'generated_changes': len(actual - exact_allowed_sources),
+          }, indent=2))
+          PY
+      - name: Commit the executed AXM lineage repair
+        if: steps.mode.outputs.materialize == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Execute evidence lake AXM lineage Wave 04'
+          git fetch origin agent/lake-axm-lineage-wave-04
+          test "$(git rev-parse origin/agent/lake-axm-lineage-wave-04)" = "${{ steps.mode.outputs.original_sha }}"
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-axm-lineage-wave-04.mjs
+          git push origin HEAD:agent/lake-axm-lineage-wave-04
