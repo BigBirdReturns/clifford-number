@@ -11,6 +11,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(shardRoot, 'manifest.json'
 const summary = JSON.parse(fs.readFileSync(path.join(shardRoot, 'summary.json'), 'utf8'));
 const gapSummary = JSON.parse(fs.readFileSync(path.join(shardRoot, 'gap-summary.json'), 'utf8'));
 const receiptSemantics = JSON.parse(fs.readFileSync(path.join(shardRoot, 'receipt-semantics.json'), 'utf8'));
+const localIdentifierKeys = new Set(policy.local_identifier_keys ?? ['id']);
 const errors = [];
 
 function assert(condition, message) {
@@ -99,11 +100,16 @@ for (const file of files) {
   const bytes = fs.readFileSync(full);
   assert(bytes.length === file.bytes, `source byte count drift: ${file.path}`);
   assert(sha256(bytes) === file.sha256, `source sha256 drift: ${file.path}`);
+  assert(Number.isInteger(file.local_identifier_count) && file.local_identifier_count >= 0, `invalid local identifier count: ${file.path}`);
+  assert(Number.isInteger(file.machine_id_count) && file.machine_id_count >= 0, `invalid global machine identifier count: ${file.path}`);
 }
 
 const c = summary.counts;
+const localOccurrences = files.reduce((sum, file) => sum + file.local_identifier_count, 0);
 assert(c.tracked_files_indexed === files.length, 'summary tracked-file count mismatch');
 assert(c.distinct_machine_ids === objects.length, 'summary object count mismatch');
+assert(c.local_identifier_occurrences_observed === localOccurrences, 'summary local identifier occurrence count mismatch');
+assert(c.local_identifier_values_observed >= 0, 'summary local identifier value count missing');
 assert(c.receipt_ids === receipts.length, 'summary receipt count mismatch');
 assert(c.receipt_locator_tokens === receiptLocators.length, 'summary receipt-locator count mismatch');
 assert(c.receipt_content_hash_tokens === receiptHashes.length, 'summary receipt-hash count mismatch');
@@ -112,6 +118,8 @@ assert(c.program_ids === (programs.programs ?? []).length, 'summary program coun
 assert(c.case_ids === (cases.cases ?? []).length, 'summary case count mismatch');
 assert(c.report_ids === (reports.reports ?? []).length, 'summary report count mismatch');
 assert(c.missing_repo_path_tokens === (missingTokens.tokens ?? []).length, 'summary missing-token count mismatch');
+assert(objects.every(object => !localIdentifierKeys.has(object.id_key)), 'local identifier leaked into global object shard');
+assert(objects.every(object => object.divergent_projections === (object.distinct_projection_hashes > 1)), 'projection divergence semantics drift in object shard');
 
 const countGap = gapClass => pathGaps.filter(row => row.gap_class === gapClass).length;
 assert(countGap('exact_orphan') === c.exact_orphan_evidence_files, 'exact-orphan shard count mismatch');
@@ -124,6 +132,7 @@ assert(idGaps.filter(row => row.gap_class === 'unindexed_machine_id').length ===
 assert(idGaps.filter(row => row.gap_class === 'divergent_identifier_projection').length === c.divergent_identifier_projections, 'divergent-ID shard count mismatch');
 assert(idGaps.filter(row => row.gap_class === 'source_id_without_projection').length === c.source_ids_without_projection, 'source-without-projection count mismatch');
 assert(idGaps.filter(row => row.gap_class === 'projection_id_without_source').length === c.projection_ids_without_source, 'projection-without-source count mismatch');
+assert(idGaps.every(row => !localIdentifierKeys.has(row.id_key)), 'local identifier leaked into global identifier gaps');
 assert(receiptGaps.filter(row => row.gap_class === 'undefined_receipt_reference').length === c.undefined_receipt_references, 'undefined-receipt count mismatch');
 assert(receiptGaps.filter(row => row.gap_class === 'unused_receipt_definition').length === c.unused_receipt_definitions, 'unused-receipt count mismatch');
 
@@ -144,6 +153,9 @@ assert(summary.boundaries.historical_git_object_index_complete === false, 'histo
 assert(summary.boundaries.source_truth_determined === false, 'source-truth boundary must remain false');
 assert(summary.boundaries.publication_cleared === false, 'publication boundary must remain false');
 assert(summary.boundaries.receipt_field_semantics_fully_uniform === false, 'receipt-field semantic boundary missing');
+assert(summary.boundaries.bare_local_identifier_globally_joined === false, 'local identifier join boundary missing');
+assert(summary.boundaries.projection_divergence_includes_source_shape_difference === false, 'projection divergence boundary missing');
+assert(policy.boundaries?.bare_local_id_is_globally_joinable === false, 'policy local identifier boundary missing');
 assert(manifest.boundaries.shard_manifest_proves_semantic_completeness === false, 'manifest semantic boundary missing');
 assert(manifest.boundaries.shard_hash_proves_evidence_truth === false, 'manifest truth boundary missing');
 assert(manifest.boundaries.open_branch_shadow_is_merged_corpus === false, 'branch-shadow merge boundary missing');
@@ -165,7 +177,8 @@ if (errors.length) {
 console.log('lake shard validation: OK');
 console.log(`  manifest entries: ${manifest.entries.length}`);
 console.log(`  file rows: ${files.length}`);
-console.log(`  object rows: ${objects.length}`);
+console.log(`  global object rows: ${objects.length}`);
+console.log(`  local identifier values excluded from global joins: ${c.local_identifier_values_observed}`);
 console.log(`  receipt locators: ${receiptLocators.length}`);
 console.log(`  receipt hashes: ${receiptHashes.length}`);
 console.log(`  total gap rows: ${pathGaps.length + idGaps.length + receiptGaps.length}`);
