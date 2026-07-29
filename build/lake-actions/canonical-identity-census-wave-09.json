@@ -1,0 +1,203 @@
+{
+  "schema_version": "lake-canonical-identity-census-wave-09-plan@1",
+  "program_key": "CN-LAKE-CANONICAL-IDENTITY-W09",
+  "source_fingerprint_sha256": "4eeefc7c3054a852a3eda0fd957dad490ceee722288386ccbb25b6663957f476",
+  "input_manifest": [
+    {
+      "path": "BUILD-INSTRUCTIONS.md",
+      "bytes": 17385,
+      "sha256": "1c6364e5bc8e6c645078506fd9f33496c2ce833a3c486d3b9d070c803bc97e0f"
+    },
+    {
+      "path": "build/axm-identity.json",
+      "bytes": 212883,
+      "sha256": "50ffad38c8e1719640e5f07dfce3c0a196a4acd8a272e82998aee78f374bf343"
+    },
+    {
+      "path": "build/lake-actions/production-cross-case-census-wave-08-reconciliation.json",
+      "bytes": 7608,
+      "sha256": "64555929071f31bf12cd7ce37cea277b59d8e4871b680fcb7e768d1dddc4b599"
+    },
+    {
+      "path": "build/lake-actions/production-cross-case-census-wave-08.json",
+      "bytes": 408475,
+      "sha256": "31add2e9295ca612d704a0edfcfcfa3cc31dd08c26afc629156e188b363088bc"
+    },
+    {
+      "path": "data/canonical/actors.json",
+      "bytes": 13881,
+      "sha256": "7c05810fa4e565fcd1ee27f0bd7d2f47f98c112bbf0e45704928a13287f6ef83"
+    },
+    {
+      "path": "data/canonical/aliases.json",
+      "bytes": 2399,
+      "sha256": "c580d6c410f4b5affa41221549fd24b9b04fa8dd45a99fe58863c5be74008596"
+    },
+    {
+      "path": "data/canonical/organizations.json",
+      "bytes": 2928,
+      "sha256": "fa21dd778b1171a8c1d067255bcbdf5857b71a90a5c0778fa5b69df064e97087"
+    },
+    {
+      "path": "data/project/lake-axm-cross-case-acceptance-wave-07-policy.json",
+      "bytes": 3621,
+      "sha256": "41c116844d9a55a7db36094401202e67e4c01eb948ebead0cd37c14eabe97ae5"
+    },
+    {
+      "path": "data/project/lake-canonical-identity-census-wave-09-policy.json",
+      "bytes": 4346,
+      "sha256": "f4558726363e93ce13c9598318206650daf2867728396d2f1fa31de3fc9bf9b5"
+    },
+    {
+      "path": "test/lake-canonical-identity-census-wave-09.test.js",
+      "bytes": 6143,
+      "sha256": "1865f150dd5fa1b1b86b617cf85ec4dba8eedd5c54fe7361a1846a5bed2438e9"
+    },
+    {
+      "path": "tools/build-lake-canonical-identity-census-wave-09.mjs",
+      "bytes": 29549,
+      "sha256": "a058d67b6ecf01945715bbe31fd683acfeb1094936fd8ef32e4b362b3c53a238"
+    },
+    {
+      "path": "tools/reconcile-lake-canonical-identity-census-wave-09.mjs",
+      "bytes": 18577,
+      "sha256": "8223f131298b7bebf932f024a8200035959a1bb44e09d4d1bd2607e24bf0f545"
+    },
+    {
+      "path": "tools/validate-lake-canonical-identity-census-wave-09.mjs",
+      "bytes": 21313,
+      "sha256": "8908a47fdadae5bf63edecc068e4e2edad01491f985fa7cba70d8906aacc4954"
+    }
+  ],
+  "before": {
+    "exact_cross_case_local_identifier_values": 0,
+    "canonical_identity_mentions_classified": false,
+    "canonical_cross_case_candidates_measured": false,
+    "accepted_production_identity_bridges": 0,
+    "automatic_cross_case_join_authorized": false,
+    "cross_case_graph_join_authorized": false,
+    "cross_case_hop_creation_authorized": false
+  },
+  "canonical_registry": {
+    "actors": 137,
+    "organizations": 25,
+    "aliases": 22,
+    "canonical_ids": 162,
+    "canonical_records_unmentioned": [
+      "adam-beaumont",
+      "alex-cooper",
+      "andreessen-horowitz",
+      "atomico",
+      "bae-systems",
+      "ben-henshall",
+      "ben-warner",
+      "cabinet-office",
+      "cal-henderson",
+      "dan-rosenfield",
+      "dominic-cummings",
+      "electric-twin",
+      "faculty",
+      "fiona-hill",
+      "gartner",
+      "george-robertson",
+      "ian-hogarth",
+      "jade-leung",
+      "john-healey",
+      "keir-starmer",
+      "laura-gilbert",
+      "local-council",
+      "localglobe",
+      "lord-agnew",
+      "louis-mosley",
+      "marc-andreessen",
+      "marc-warner",
+      "mercuri",
+      "mod",
+      "news-uk",
+      "no-10",
+      "richard-barrons",
+      "samos",
+      "saul-klein",
+      "simon-case",
+      "team-barrow",
+      "tom-shinner",
+      "uk-government",
+      "us-army",
+      "vote-leave"
+    ]
+  },
+  "classification": {
+    "status_counts": {
+      "exact_canonical_id": 121,
+      "exact_declared_alias": 2,
+      "opaque_identifier": 2,
+      "uncovered_name_like_identifier": 104
+    },
+    "mention_registry_path": "data/project/lake-canonical-identity-mention-registry-wave-09.jsonl",
+    "candidate_registry_path": "data/project/lake-canonical-cross-case-candidate-registry-wave-09.jsonl",
+    "candidate_projection_path": "build/axm-canonical-identity-candidate-index-wave-09.json"
+  },
+  "decisions": [
+    {
+      "decision_key": "W09-CANONICAL-COVERAGE",
+      "judgment": "every_distinct_production_case_local_identity_value_has_an_explicit_canonical_mapping_class",
+      "action": "retain:data/project/lake-canonical-identity-mention-registry-wave-09.jsonl",
+      "evidence_count": 229,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_key": "W09-CONTROLLED-NORMALIZATION",
+      "judgment": "controlled_suffix_stripping_may_generate_candidates_but_never_identity_findings",
+      "action": "retain_exact_controlled_ambiguous_uncovered_and_opaque_classes_separately",
+      "evidence_count": 104,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    },
+    {
+      "decision_key": "W09-CROSS-CASE-CANDIDATES",
+      "judgment": "shared_canonical_candidates_or_uncovered_stems_remain_graph_inert_until_the_full_wave_07_contract_is_satisfied",
+      "action": "retain:data/project/lake-canonical-cross-case-candidate-registry-wave-09.jsonl",
+      "evidence_count": 0,
+      "review_dependency": {
+        "required_to_decide": false
+      },
+      "graph_effect": "none"
+    }
+  ],
+  "completion": {
+    "every_case_local_identity_value_classified": true,
+    "ambiguous_and_uncovered_mentions_preserved": true,
+    "cross_case_candidate_denominator_measured": true,
+    "accepted_production_identity_bridges": 0,
+    "automatic_cross_case_join_authorized": false,
+    "cross_case_graph_join_authorized": false,
+    "cross_case_hop_creation_authorized": false,
+    "active_projection_cross_case_join_authorized": false,
+    "post_execution_reconciliation_complete": false,
+    "evidence_truth_determined": false,
+    "publication_cleared": false,
+    "decisions_requiring_human_permission": 0
+  },
+  "boundaries": {
+    "canonical_registry_match_proves_real_world_identity": false,
+    "exact_label_match_proves_same_entity": false,
+    "alias_match_proves_same_entity": false,
+    "controlled_stem_match_proves_same_entity": false,
+    "canonical_candidate_creates_relationship": false,
+    "canonical_candidate_creates_hop": false,
+    "uncovered_name_proves_distinct_entity": false,
+    "zero_cross_case_candidates_proves_disjointness": false,
+    "automatic_cross_case_join_authorized": false,
+    "cross_case_graph_join_authorized": false,
+    "cross_case_hop_creation_authorized": false,
+    "active_projection_cross_case_join_authorized": false,
+    "evidence_truth_determined": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}
