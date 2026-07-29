@@ -47,7 +47,6 @@ const participation = readJsonl('data/ledger/participation.jsonl');
 const activeIdentity = readJson('build/axm-identity.json');
 const files = readJsonl('build/lake-index/files.jsonl');
 const objects = readJsonl('build/lake-index/objects.jsonl');
-const summary = readJson('build/lake-index/summary.json');
 
 assert.equal(projection.counts.resolution_rows, resolutionEntries.length);
 assert.equal(plan.counts.resolution_rows, resolutionEntries.length);
@@ -129,6 +128,11 @@ const forbiddenTokens = resolutionEntries.map(entry => entry.row.resolution_id);
 const hopGraphText = JSON.stringify(hopGraph);
 assert.ok(forbiddenTokens.every(token => !hopGraphText.includes(token)), 'Wave 13 resolution token leaked into hop graph');
 
+// The reconciliation consumes the lake to prove observations, but it does not hash
+// the lake census files into its own receipt. Doing so would create a self-reference:
+// adding the reconciliation to the tracked tree changes the census that the
+// reconciliation hashes. The observation rows and dedicated validators carry the
+// lake proof without manufacturing a circular byte dependency.
 const manifestPaths = [
   policyPath,
   policy.projection_path,
@@ -140,9 +144,6 @@ const manifestPaths = [
   'build/hop-graph.json',
   'build/axm-identity.json',
   'data/ledger/participation.jsonl',
-  'build/lake-index/files.jsonl',
-  'build/lake-index/objects.jsonl',
-  'build/lake-index/summary.json',
   ...resolutionIndex.registry_paths,
   ...projection.source_claim_manifest.map(row => row.path)
 ];
@@ -174,9 +175,6 @@ const reconciliation = {
     active_claim_delta: 0,
     graph_edge_delta: 0,
     accepted_cross_case_identity_bridges: 0,
-    global_machine_ids: summary.counts.distinct_machine_ids,
-    unindexed_machine_ids: summary.counts.unindexed_machine_ids,
-    exact_orphan_evidence_files: summary.counts.exact_orphan_evidence_files,
     decisions_requiring_human_permission: 0
   },
   observations,
