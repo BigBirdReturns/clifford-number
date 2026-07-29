@@ -5,14 +5,14 @@ This report partitions the current tracked lake census into declared semantic ba
 ## Current assignment
 
 ```text
-source rows:                         1936
+source rows:                         1946
 semantic basins:                    37
-classified without default:         1936
+classified without default:         1946
 unclassified paths:                 0
-evidence-bearing files:             1304
-evidence files with registry owner: 1304
-evidence files previously unowned:  1304
-exact orphan evidence files:        147
+evidence-bearing files:             1309
+evidence files with registry owner: 1309
+evidence files previously unowned:  1309
+exact orphan evidence files:        146
 gap rows:                           85
 ```
 
@@ -23,7 +23,7 @@ gap rows:                           85
 | estate-game-trail-products | generated_projection | 313 | 313 | 313 | 0 | 313 | yes |
 | core-thesis-build-products | generated_projection | 184 | 184 | 184 | 0 | 184 | yes |
 | intake-custody | intake_only | 142 | 142 | 120 | 22 | 142 | yes |
-| project-governance | project_governance | 119 | 119 | 113 | 6 | 119 | yes |
+| project-governance | project_governance | 123 | 123 | 118 | 5 | 123 | yes |
 | core-thesis-report-products | report_projection | 96 | 96 | 81 | 15 | 96 | yes |
 | milestone-governance | governance_history | 65 | 65 | 19 | 46 | 65 | yes |
 | documentation | documentation | 58 | 58 | 32 | 26 | 58 | yes |
@@ -32,7 +32,7 @@ gap rows:                           85
 | case-sources | case_source | 43 | 43 | 42 | 1 | 43 | yes |
 | estate-source-data | estate_source | 43 | 43 | 42 | 1 | 43 | yes |
 | receipt-artifacts | receipt_artifact | 32 | 32 | 31 | 1 | 32 | yes |
-| general-build-products | generated_projection | 26 | 26 | 26 | 0 | 26 | yes |
+| general-build-products | generated_projection | 27 | 27 | 27 | 0 | 27 | yes |
 | estate-closure-products | generated_projection | 15 | 15 | 15 | 0 | 15 | yes |
 | canonical-registries | canonical_registry | 12 | 12 | 12 | 0 | 12 | yes |
 | estate-frontier-products | generated_projection | 11 | 11 | 11 | 0 | 11 | yes |
@@ -47,9 +47,9 @@ gap rows:                           85
 | gametrail-public-products | public_projection | 2 | 2 | 2 | 0 | 2 | yes |
 | contribution-pipeline | contribution_source_or_template | 1 | 1 | 1 | 0 | 1 | yes |
 | general-report-products | report_projection | 1 | 1 | 1 | 0 | 1 | yes |
-| toolchain | tooling | 287 | 0 | 207 | 21 | 287 | yes |
-| regressions | test_fixture | 154 | 0 | 111 | 6 | 154 | yes |
-| automation | automation | 64 | 0 | 28 | 33 | 64 | yes |
+| toolchain | tooling | 290 | 0 | 210 | 21 | 290 | yes |
+| regressions | test_fixture | 155 | 0 | 112 | 6 | 155 | yes |
+| automation | automation | 65 | 0 | 29 | 33 | 65 | yes |
 | public-runtime | public_runtime | 52 | 0 | 41 | 10 | 52 | yes |
 | temporary-transport | temporary_transport | 17 | 0 | 1 | 16 | 17 | yes |
 | comprehension-protocol | method_and_fixture | 8 | 0 | 8 | 0 | 8 | yes |
