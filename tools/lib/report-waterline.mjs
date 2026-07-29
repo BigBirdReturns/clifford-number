@@ -58,6 +58,7 @@ function briefingSubjectProjection(manifest, caseItem) {
   return {
     schema_version: 'reporter-briefing-subject-identity@1',
     scope: 'selected_claim_subjects_only',
+    graph_effect: 'none',
     counts: {
       subject_references: selectedClaims.length,
       resolved_subject_references: resolved,
