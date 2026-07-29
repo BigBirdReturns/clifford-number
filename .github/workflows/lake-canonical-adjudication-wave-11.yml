@@ -1,0 +1,272 @@
+name: Evidence lake canonical acquisition adjudication Wave 11
+
+on:
+  push:
+    branches:
+      - agent/lake-canonical-adjudication-wave-11
+    paths:
+      - '.github/tmp/lake-canonical-adjudication-wave-11-trigger.json'
+  pull_request:
+    branches:
+      - agent/lake-subject-ontology-routing-wave-10
+    paths:
+      - 'data/project/lake-canonical-adjudication-wave-11-policy.json'
+      - 'tools/build-lake-canonical-adjudication-wave-11.mjs'
+      - 'tools/build-lake-canonical-identity-extension-wave-11.mjs'
+      - 'tools/reconcile-lake-canonical-adjudication-wave-11.mjs'
+      - 'tools/validate-lake-canonical-adjudication-wave-11.mjs'
+      - 'tools/validate-lake-axm-active-projection-wave-06.mjs'
+      - 'test/lake-canonical-adjudication-wave-11.test.js'
+      - 'test/lake-axm-active-projection-wave-06.test.js'
+      - '.github/workflows/lake-canonical-adjudication-wave-11.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: lake-canonical-adjudication-wave-11-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Determine execution mode
+        id: mode
+        shell: bash
+        run: |
+          echo "original_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if test -f .github/tmp/lake-canonical-adjudication-wave-11-trigger.json; then
+            echo 'validate=true' >> "$GITHUB_OUTPUT"
+            echo 'materialize=true' >> "$GITHUB_OUTPUT"
+            echo 'phase=execute' >> "$GITHUB_OUTPUT"
+          elif test "$GITHUB_EVENT_NAME" = 'pull_request' || test "$GITHUB_EVENT_NAME" = 'workflow_dispatch'; then
+            echo 'validate=true' >> "$GITHUB_OUTPUT"
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+            if git ls-files --error-unmatch data/project/lake-canonical-adjudication-registry-wave-11.jsonl >/dev/null 2>&1; then
+              echo 'phase=post' >> "$GITHUB_OUTPUT"
+            else
+              echo 'phase=execute' >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo 'validate=false' >> "$GITHUB_OUTPUT"
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+            echo 'phase=none' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.mode.outputs.validate == 'true'
+        with:
+          node-version: '24'
+      - name: Restore committed bytes before canonical adjudication
+        if: steps.mode.outputs.validate == 'true'
+        run: |
+          git restore --staged --worktree .
+          git clean -fd
+      - name: Build and deterministically prove the adjudication denominator
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-lake-canonical-adjudication-wave-11.mjs
+          sha256sum \
+            data/project/lake-canonical-adjudication-registry-wave-11.jsonl \
+            data/project/lake-canonical-mutation-plan-wave-11.json \
+            build/canonical-adjudication-index-wave-11.json \
+            build/lake-actions/canonical-adjudication-wave-11.json \
+            reports/lake-canonical-adjudication-wave-11.md > /tmp/lake-canonical-wave-11-proposal.sha256
+          node tools/build-lake-canonical-adjudication-wave-11.mjs
+          sha256sum --check --strict /tmp/lake-canonical-wave-11-proposal.sha256
+          git diff --check
+      - name: Stage adjudication decisions and mutation plan
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        run: git add -A
+      - name: Apply checked canonical mutations and construct the preliminary identity extension
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node .github/tmp/apply-lake-canonical-adjudication-wave-11.mjs
+          cp .github/tmp/lake-canonical-adjudication-wave-11-source-paths.json /tmp/lake-canonical-adjudication-wave-11-source-paths.json
+          node tools/build-hop-graph.mjs
+          node tools/build-lake-canonical-identity-extension-wave-11.mjs
+          git add -A
+          git diff --check
+      - name: Run the complete repository release gate with canonical mutations active
+        if: steps.mode.outputs.validate == 'true'
+        run: npm run release:check
+      - name: Rebuild the identity extension against release-normalized outputs
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.phase == 'execute'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-lake-canonical-identity-extension-wave-11.mjs
+          sha256sum \
+            data/project/lake-canonical-identity-extension-registry-wave-11.jsonl \
+            data/project/lake-canonical-adjudication-wave-11.json > /tmp/lake-canonical-wave-11-extension.sha256
+          node tools/build-lake-canonical-identity-extension-wave-11.mjs
+          sha256sum --check --strict /tmp/lake-canonical-wave-11-extension.sha256
+          git add -A
+          git diff --check
+      - name: Stabilize the source and generated tree before the lake census
+        if: steps.mode.outputs.validate == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test "${{ steps.mode.outputs.phase }}" = 'execute'; then
+            git add -A
+            git restore --worktree .
+            git clean -fd
+          else
+            git reset --hard HEAD
+            git clean -fd
+          fi
+      - name: Observe current open-PR shadow
+        if: steps.mode.outputs.validate == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/build-lake-open-pr-shadow.mjs
+      - name: Rebuild and reconcile the post-adjudication lake
+        if: steps.mode.outputs.validate == 'true'
+        run: |
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/reconcile-lake-canonical-adjudication-wave-11.mjs
+          node tools/validate-lake-axm-active-projection-wave-06.mjs
+          node tools/validate-lake-canonical-adjudication-wave-11.mjs
+          node test/lake-index.test.js
+          node test/lake-basin-index.test.js
+          node test/lake-axm-active-projection-wave-06.test.js
+          node test/lake-canonical-adjudication-wave-11.test.js
+      - name: Prove deterministic post-adjudication products
+        if: steps.mode.outputs.validate == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          find build/lake-index -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/lake-canonical-wave-11-post.sha256
+          sha256sum \
+            data/project/lake-canonical-adjudication-registry-wave-11.jsonl \
+            data/project/lake-canonical-mutation-plan-wave-11.json \
+            data/project/lake-canonical-identity-extension-registry-wave-11.jsonl \
+            data/project/lake-canonical-adjudication-wave-11.json \
+            build/canonical-adjudication-index-wave-11.json \
+            build/lake-actions/canonical-adjudication-wave-11.json \
+            build/lake-actions/canonical-adjudication-wave-11-reconciliation.json \
+            reports/lake-canonical-adjudication-wave-11.md \
+            reports/lake-canonical-adjudication-wave-11-reconciliation.md >> /tmp/lake-canonical-wave-11-post.sha256
+          node tools/build-lake-canonical-identity-extension-wave-11.mjs
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/reconcile-lake-canonical-adjudication-wave-11.mjs
+          sha256sum --check --strict /tmp/lake-canonical-wave-11-post.sha256
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-axm-active-projection-wave-06.mjs
+          node tools/validate-lake-canonical-adjudication-wave-11.mjs
+          node test/lake-axm-active-projection-wave-06.test.js
+          node test/lake-canonical-adjudication-wave-11.test.js
+          git diff --check
+      - name: Restore the non-materializing validation surface
+        if: steps.mode.outputs.validate == 'true' && steps.mode.outputs.materialize != 'true'
+        run: |
+          git reset --hard HEAD
+          git clean -fd
+          test -z "$(git status --porcelain)"
+      - name: Enforce adjudication-source and generated-output boundaries
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f \
+            .github/tmp/lake-canonical-adjudication-wave-11-trigger.json \
+            .github/tmp/apply-lake-canonical-adjudication-wave-11.mjs \
+            .github/tmp/lake-canonical-adjudication-wave-11-source-paths.json
+          python - <<'PY'
+          import json
+          import re
+          import subprocess
+
+          migration = json.load(open('/tmp/lake-canonical-adjudication-wave-11-source-paths.json'))
+          required = set(migration['changed_paths']) | {
+              '.github/tmp/lake-canonical-adjudication-wave-11-trigger.json',
+              '.github/tmp/apply-lake-canonical-adjudication-wave-11.mjs',
+              'data/project/lake-canonical-adjudication-registry-wave-11.jsonl',
+              'data/project/lake-canonical-mutation-plan-wave-11.json',
+              'data/project/lake-canonical-identity-extension-registry-wave-11.jsonl',
+              'data/project/lake-canonical-adjudication-wave-11.json',
+              'build/canonical-adjudication-index-wave-11.json',
+              'build/lake-actions/canonical-adjudication-wave-11.json',
+              'build/lake-actions/canonical-adjudication-wave-11-reconciliation.json',
+              'reports/lake-canonical-adjudication-wave-11.md',
+              'reports/lake-canonical-adjudication-wave-11-reconciliation.md',
+          }
+          exact_allowed_sources = required | {
+              'data/project/lake-open-pr-shadow.json',
+          }
+          generated_prefixes = (
+              'build/',
+              'reports/',
+              'briefs/',
+              'estates/',
+              'gametrails/',
+          )
+          generated_root = re.compile(r'^(?:Clifford-.*\.html|[^/]+-standalone\.html)$')
+
+          raw = subprocess.check_output([
+              'git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'
+          ])
+          entries = [entry for entry in raw.decode().split('\0') if entry]
+          actual = set()
+          for entry in entries:
+              status = entry[:2]
+              assert 'R' not in status and 'C' not in status, entry
+              actual.add(entry[3:])
+
+          unexpected = sorted(path for path in actual
+              if path not in exact_allowed_sources
+              and not path.startswith(generated_prefixes)
+              and not generated_root.match(path))
+          assert required <= actual, {
+              'missing_required_canonical_adjudication_or_reconciliation_changes': sorted(required - actual),
+          }
+          assert not unexpected, {
+              'undeclared_source_changes': unexpected,
+          }
+          print(json.dumps({
+              'required_changes': len(required),
+              'actual_changes': len(actual),
+              'generated_changes': len(actual - exact_allowed_sources),
+          }, indent=2))
+          PY
+      - name: Commit the executed canonical adjudication
+        if: steps.mode.outputs.materialize == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Execute canonical acquisition adjudication Wave 11'
+          git fetch origin agent/lake-canonical-adjudication-wave-11
+          test "$(git rev-parse origin/agent/lake-canonical-adjudication-wave-11)" = "${{ steps.mode.outputs.original_sha }}"
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-axm-active-projection-wave-06.mjs
+          node tools/validate-lake-canonical-adjudication-wave-11.mjs
+          git push origin HEAD:agent/lake-canonical-adjudication-wave-11
