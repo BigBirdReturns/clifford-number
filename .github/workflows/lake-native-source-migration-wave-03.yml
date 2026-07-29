@@ -112,6 +112,9 @@ jobs:
       - name: Run the complete repository release gate with the native case
         if: steps.mode.outputs.validate == 'true'
         run: npm run release:check
+      - name: Restore the staged native-source tree before the lake census
+        if: steps.mode.outputs.validate == 'true'
+        run: git restore --worktree .
       - name: Observe current open-PR shadow
         if: steps.mode.outputs.validate == 'true'
         env:
