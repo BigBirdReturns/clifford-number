@@ -1,47 +1,23 @@
-name: Project stable-ground supersession 03
+name: Project stable-ground supersession 03 · historical
 
 on:
   pull_request:
     branches: [main]
     paths:
-      - 'data/project/project-stable-ground-governor.json'
       - 'data/project/project-stable-ground-current.json'
       - 'data/project/project-stable-ground-sg03*.json'
-      - 'docs/milestones/project-stable-ground-sg03.md'
       - 'reports/core-thesis/stable-ground/sg03/**'
-      - 'tools/build-project-stable-ground-sg03.mjs'
       - 'tools/validate-project-stable-ground-sg03.mjs'
       - 'test/project-stable-ground-sg03.test.js'
-      - 'data/project/poof-clifford-*.json'
-      - 'data/project/core-thesis.json'
-      - 'data/project/m05-answerable-power-story-registry.json'
-      - 'data/project/m05-answerable-power-fanout.json'
-      - 'data/project/dca-h01-*.json'
-      - 'data/research/k0-role-neutral-denominator.json'
-      - 'data/project/m05-answerable-power-sprint-08-plan.json'
-      - 'data/project/m05-answerable-power-sprint-09-plan.json'
-      - 'data/project/m05-answerable-power-sprint-09-field-gate.json'
       - '.github/workflows/project-stable-ground-sg03.yml'
   push:
     branches: [main]
     paths:
-      - 'data/project/project-stable-ground-governor.json'
       - 'data/project/project-stable-ground-current.json'
       - 'data/project/project-stable-ground-sg03*.json'
-      - 'docs/milestones/project-stable-ground-sg03.md'
       - 'reports/core-thesis/stable-ground/sg03/**'
-      - 'tools/build-project-stable-ground-sg03.mjs'
       - 'tools/validate-project-stable-ground-sg03.mjs'
       - 'test/project-stable-ground-sg03.test.js'
-      - 'data/project/poof-clifford-*.json'
-      - 'data/project/core-thesis.json'
-      - 'data/project/m05-answerable-power-story-registry.json'
-      - 'data/project/m05-answerable-power-fanout.json'
-      - 'data/project/dca-h01-*.json'
-      - 'data/research/k0-role-neutral-denominator.json'
-      - 'data/project/m05-answerable-power-sprint-08-plan.json'
-      - 'data/project/m05-answerable-power-sprint-09-plan.json'
-      - 'data/project/m05-answerable-power-sprint-09-field-gate.json'
       - '.github/workflows/project-stable-ground-sg03.yml'
   workflow_dispatch:
 
@@ -58,38 +34,69 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Build and validate current SG-03
+      - name: Validate immutable SG-03 record and supersession custody
         run: |
-          node tools/build-project-stable-ground-sg03.mjs
           node tools/validate-project-stable-ground-sg03.mjs
           node test/project-stable-ground-sg03.test.js
-      - name: Validate preserved SG-01 and SG-02 history
-        run: |
-          node tools/validate-project-stable-ground-alignment.mjs
-          node test/project-stable-ground-alignment.test.js
-          node tools/validate-project-stable-ground-sg02.mjs
-          node test/project-stable-ground-sg02.test.js
-      - name: Revalidate triggering authority surfaces
-        run: |
-          node tools/validate-poof-constitutional-change.mjs
-          node test/poof-constitutional-change.test.js
-          node tools/validate-poof-clifford-ecology.mjs
-          node test/poof-clifford-ecology.test.js
-          node tools/validate-m05-answerable-power.mjs
-          node test/m05-answerable-power.test.js
-          node tools/validate-dca-h01.mjs
-          node test/dca-h01.test.js
       - name: Run complete repository release gate
         run: npm run release:check
-      - name: Prove deterministic SG-03 products
+      - name: Restore verified timestamp-only compiler products
         run: |
-          git restore --staged --worktree .
-          node tools/build-project-stable-ground-sg03.mjs
-          node tools/validate-project-stable-ground-sg03.mjs
-          node test/project-stable-ground-sg03.test.js
-          node tools/validate-project-stable-ground-alignment.mjs
-          node test/project-stable-ground-alignment.test.js
-          node tools/validate-project-stable-ground-sg02.mjs
-          node test/project-stable-ground-sg02.test.js
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+
+          volatile = [
+              'build/axm-identity.json',
+              'build/build-hop-report.json',
+              'build/hop-graph.json',
+              'build/migration-review.md',
+              'build/migration-summary.json',
+              'build/receipt-graph.json',
+              'build/scores.json',
+              'build/scout-report.json',
+              'build/scout-report.md',
+              'build/surface-graph.json',
+          ]
+          changed_paths = subprocess.run(
+              ['git', 'diff', '--name-only'],
+              check=True,
+              text=True,
+              capture_output=True,
+          ).stdout.splitlines()
+          unexpected_paths = sorted(set(changed_paths) - set(volatile))
+          if unexpected_paths:
+              raise RuntimeError(f'unexpected repository mutation after release gate: {unexpected_paths}')
+          for path in changed_paths:
+              diff = subprocess.run(
+                  ['git', 'diff', '--unified=0', '--', path],
+                  check=True,
+                  text=True,
+                  capture_output=True,
+              ).stdout
+              changed_lines = [
+                  line[1:].strip()
+                  for line in diff.splitlines()
+                  if line.startswith(('+', '-')) and not line.startswith(('+++', '---'))
+              ]
+              if len(changed_lines) != 2 or not all(
+                  line.startswith('"generated": "') or line.startswith('Generated: ')
+                  for line in changed_lines
+              ):
+                  raise RuntimeError(f'unexpected compiler mutation in {path}: {changed_lines}')
+          PY
+          git restore -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json
+      - name: Refuse historical-check mutation
+        run: |
           git diff --exit-code
           test -z "$(git status --porcelain)"
