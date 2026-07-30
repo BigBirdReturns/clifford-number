@@ -45,6 +45,7 @@ For reports, a trail is not a claim, a canonical claim is not necessarily a date
 - [`consumption-contract.md`](consumption-contract.md) — copy-ready interpretation caveats and adversarial neutral-universe review.
 - [`officeholder-cohort.md`](officeholder-cohort.md) — the office-defined 1979-present presidential cohort and frozen role-neutral crossing battery.
 - [`axm-instrument-architecture.md`](axm-instrument-architecture.md) — how Clifford sits as a layer-2 instrument in the AXM sovereign-evidence stack, the custody/intake seams, the "conform late" principle, and the ten parallel research-track harnesses.
+- [`poof-clifford-ecology.md`](poof-clifford-ecology.md) — constitutional one-way evidence and challenge flow joining POOF, K0, REAL STEEL, Steel Mirror, newsroom onboarding, publication audits, and machine interfaces without creating a second factual ledger.
 - [`tiered-research-methodology.md`](tiered-research-methodology.md) — the validated operating procedure for running a research-track harness: the Haiku→Sonnet→Fable+human pipeline, the nine measured routing rules (crate+framing dominate model choice; try a UA fetcher before ScreenGhost; web-only is the costly last resort), and the rederivable-telemetry standard.
 - [`../CONTRIBUTING.md`](../CONTRIBUTING.md) — contribution expectations and examples.
 - [`../contributions/templates/candidate-surface.md`](../contributions/templates/candidate-surface.md) — submission template.

@@ -14,7 +14,7 @@ assert.equal(thesis.historical_phases.length, 5);
 assert.equal(thesis.conversion_stages.length, 7);
 assert.equal(thesis.intentionality_levels.length, 6);
 assert.equal(thesis.archetypes.length, 10);
-assert.equal(thesis.report_contracts.length, 7);
+assert.equal(thesis.report_contracts.length, 9);
 assert.equal(thesis.visualization_contracts.length, 7);
 assert.equal(alignment.estates.length, 24);
 
@@ -23,7 +23,7 @@ assert.deepEqual(manifest.counts, {
   conversion_stages: 7,
   intentionality_levels: 6,
   archetypes: 10,
-  report_contracts: 7,
+  report_contracts: 9,
   visualization_contracts: 7,
   estates: 24
 });

@@ -49,7 +49,7 @@ export function validateCoreThesis() {
       'From problem framing to reversibility',
       'Intentionality ladder',
       'Twenty-four estates under one falsifiable grammar',
-      'Seven report contracts',
+      'Nine report contracts',
       'Interpretation boundary'
     ]) {
       if (!html.includes(marker)) errors.push(`reports/core-thesis/index.html: missing ${marker}`);

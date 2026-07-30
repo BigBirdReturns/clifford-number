@@ -46,7 +46,7 @@ function validateCore(thesis, alignment) {
   assert(stages.length === 7, `expected 7 conversion stages, saw ${stages.length}`);
   assert(levels.length === 6, `expected 6 intentionality levels, saw ${levels.length}`);
   assert(archetypes.length === 10, `expected 10 archetypes, saw ${archetypes.length}`);
-  assert(reports.length === 7, `expected 7 report contracts, saw ${reports.length}`);
+  assert(reports.length === 9, `expected 9 report contracts, saw ${reports.length}`);
   assert(visuals.length === 7, `expected 7 visualization contracts, saw ${visuals.length}`);
 
   for (const [label, rows, key] of [
@@ -193,7 +193,7 @@ function renderHtml(data) {
     <section id="intent"><div class="wrap"><p class="eyebrow">Actor-specific review</p><h2>Intentionality ladder</h2><p class="section-intro">The levels are separate propositions, not a score or presumption of escalation.</p><div class="table-wrap"><table><thead><tr><th>Level</th><th>Meaning</th><th>Minimum evidence</th><th>Forbidden shortcut</th></tr></thead><tbody>${intentRows}</tbody></table></div></div></section>
     <section id="archetypes"><div class="wrap"><p class="eyebrow">Persistent functions</p><h2>Ten recurring archetypes</h2><p class="section-intro">The signal is role stacking and sequence, not the mere existence of a function.</p><div class="grid">${archetypes}</div></div></section>
     <section id="estates"><div class="wrap"><p class="eyebrow">Project realignment</p><h2>Twenty-four estates under one falsifiable grammar</h2><p class="section-intro">Alignment routes research. It does not merge estates or assign findings.</p><input class="search" id="estate-search" type="search" placeholder="Filter estates, records, or questions" aria-label="Filter estate alignment"><div class="table-wrap"><table><thead><tr><th>Estate</th><th>Phases</th><th>Stages</th><th>Priority questions</th><th>Decisive records</th><th>Falsification</th></tr></thead><tbody>${estateRows}</tbody></table></div></div></section>
-    <section id="reports"><div class="wrap"><p class="eyebrow">Outputs</p><h2>Seven report contracts</h2><div class="grid">${reportCards}</div></div></section>
+    <section id="reports"><div class="wrap"><p class="eyebrow">Outputs</p><h2>Nine report contracts</h2><div class="grid">${reportCards}</div></div></section>
     <section id="visuals"><div class="wrap"><p class="eyebrow">Visual grammar</p><h2>Seven task-specific projections</h2><div class="grid">${visualCards}</div></div></section>
     <section id="boundary"><div class="wrap"><div class="boundary"><h2>Interpretation boundary</h2><p>${escapeHtml(thesis.interpretation_contract.copy_ready_caveat)}</p><p><code>graph_effect: none</code> · <code>conclusion_generated: false</code> · <code>machine_synthesis_ceiling: eligible_for_human_synthesis</code></p></div></div></section>
   </main>

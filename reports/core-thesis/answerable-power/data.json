@@ -6,11 +6,11 @@
     "data/project/m05-answerable-power-fanout.json"
   ],
   "counts": {
-    "stories": 14,
-    "lanes": 17,
+    "stories": 15,
+    "lanes": 18,
     "standalone_actor": 3,
     "exact_overlap": 3,
-    "constitutional_mechanism": 4,
+    "constitutional_mechanism": 5,
     "answer_story": 3,
     "non_link": 1
   },
@@ -508,6 +508,37 @@
         "counterpower and exit"
       ],
       "maximum_ceiling": "source_bounded_graph_inert_ceiling_event"
+    },
+    {
+      "story_id": "M05-S15",
+      "title": "The two-tier constitution and safeguard-allocation story",
+      "mode": "constitutional_mechanism",
+      "subjects": [
+        "protected centers",
+        "affected populations",
+        "owners",
+        "operators",
+        "public gateholders",
+        "counterpower institutions"
+      ],
+      "question": "Which safeguards, contextual review, evidence access, exceptions, appeal, substitution, and exit does the center preserve for itself, which does it make practically available to others under a comparable hazard, and who bears the error when they differ?",
+      "canonical_routes": [
+        "report:R9-two-tier-constitution-safeguard-allocation",
+        "layer:K0",
+        "stages:C4-C5-C7",
+        "object:poof-projection-manifest"
+      ],
+      "must_preserve": [
+        "self-regime instrument",
+        "other-regime instrument",
+        "hazard comparability",
+        "control alignment",
+        "formal versus practical safeguard",
+        "false-positive and false-negative costs",
+        "counterevidence",
+        "remedy, exit, and succession"
+      ],
+      "maximum_ceiling": "context_bounded_safeguard_differential"
     }
   ],
   "lanes": [
@@ -957,6 +988,36 @@
         "designed_ceiling_boundary",
         "requires_additional_acquisition"
       ]
+    },
+    {
+      "lane_id": "A18",
+      "story_id": "M05-S15",
+      "title": "Steel Mirror safeguard allocation",
+      "question": "Under a materially comparable hazard, what safeguard does the center preserve, what safeguard governs affected people, does the same authority control both regimes, who bears error and delay, and which remedy or exit works in practice?",
+      "required_objects": [
+        "exact self-regime instrument",
+        "exact other-regime instrument",
+        "hazard-comparability analysis",
+        "control authority",
+        "safeguard differential",
+        "error-cost allocation",
+        "formal and practical remedy",
+        "counterevidence and context differences",
+        "succession and durability"
+      ],
+      "falsifier": "The hazards are not materially comparable, different legal or operational duties explain the differential, the center does not control both regimes, equivalent practical safeguards exist, or the alleged asymmetry does not survive exact-record review.",
+      "stopping_rule": "Terminate each pair as context-explained, unequal safeguard allocation, same-hazard safeguard reserved, insufficiently comparable, bounded non-link, falsified, source-restricted, or requiring a named additional acquisition.",
+      "allowed_terminal_states": [
+        "context_explained_differential",
+        "unequal_safeguard_allocation",
+        "same_hazard_safeguard_reserved",
+        "insufficient_comparability",
+        "bounded_non_link",
+        "falsified",
+        "source_restricted",
+        "source_unavailable",
+        "requires_additional_acquisition"
+      ]
     }
   ],
   "boundaries": {
@@ -970,6 +1031,7 @@
     "formal_safeguard_proves_effective_power": false,
     "criticism_proves_counterpower": false,
     "vendor_exit_proves_public_capacity": false,
-    "story_coherence_proves_truth": false
+    "story_coherence_proves_truth": false,
+    "steel_mirror_differential_proves_bad_faith": false
   }
 }
