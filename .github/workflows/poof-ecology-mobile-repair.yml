@@ -32,6 +32,8 @@ jobs:
           text = path.read_text()
           text = text.replace('.card{grid-column:span 4;background:', '.card{min-width:0;grid-column:span 4;background:')
           text = text.replace('.pill{display:inline-block;border:', '.pill{display:inline-block;max-width:100%;overflow-wrap:anywhere;word-break:break-word;border:')
+          text = text.replace('code,pre{font-family:', 'code,pre{font-family:')
+          text = text.replace('pre{white-space:pre-wrap;', 'code{overflow-wrap:anywhere;word-break:break-word}pre{white-space:pre-wrap;')
           path.write_text(text)
           PY
           node tools/build-poof-clifford-ecology.mjs
