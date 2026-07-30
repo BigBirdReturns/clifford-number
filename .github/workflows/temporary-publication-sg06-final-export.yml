@@ -12,10 +12,14 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: publication-sg06-historical-workflow-repair
+  cancel-in-progress: false
+
 jobs:
   repair:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,90 +31,24 @@ jobs:
       - name: Build validated workflow-neutral replacement SG-06 successor
         run: |
           set -euo pipefail
-          FINAL='076c7c2d43250d226f4b9de311427307e4cb3d98'
-          FIRST='8de31382f9e9c00a285cc093b548b19bc436a8de'
-          STAGING='agent/publication-sg06-second-historical-workflow-staging'
+          CARRIER='.github/tmp/sg06-historical-workflow-fix.patch.xz.b64'
+          ROOT='/tmp/sg06-historical-workflows'
 
-          printf '%s  %s\n' '78d525ae37701eeff85353bf95d2b5672c3292bad19c29471a058d0068caac44' .github/tmp/sg06-historical-workflow-fix.patch.xz.b64 | sha256sum --check --strict
-          base64 --decode .github/tmp/sg06-historical-workflow-fix.patch.xz.b64 > /tmp/sg06-historical-workflow-fix.patch.xz
-          printf '%s  %s\n' '21522a263740ef0dd505b2dad51362be58585a9d7786d35768e379d457113940' /tmp/sg06-historical-workflow-fix.patch.xz | sha256sum --check --strict
-          xz --decompress --stdout /tmp/sg06-historical-workflow-fix.patch.xz > /tmp/sg06-historical-workflow-fix.patch
-          printf '%s  %s\n' '92a0a8d31355541a5782bf23304c84f184dbadb6ae12eb2f8865f2432b749b00' /tmp/sg06-historical-workflow-fix.patch | sha256sum --check --strict
+          printf '%s  %s\n' '92791c956681878ae53dc7d15fc0c63ba8f0aaec89850eb1705cc52854262874' "$CARRIER" | sha256sum --check --strict
+          base64 --decode "$CARRIER" > /tmp/sg06-historical-workflows.tar.xz
+          printf '%s  %s\n' '14a35a13a6b32f54224c2ace2143ac7d5b835bb88894e8c9f96fe26a66aded42' /tmp/sg06-historical-workflows.tar.xz | sha256sum --check --strict
+          xz --decompress --stdout /tmp/sg06-historical-workflows.tar.xz > /tmp/sg06-historical-workflows.tar
+          printf '%s  %s\n' 'b70c9f15bc46ddb3ccdb412b840091fe6849e0423a8bec6108841f353037a67e' /tmp/sg06-historical-workflows.tar | sha256sum --check --strict
 
-          git cat-file -e "${FINAL}^{commit}"
-          git cat-file -e "${FIRST}^{commit}"
-          git checkout --detach "$FINAL"
-          git apply --check /tmp/sg06-historical-workflow-fix.patch
-          git apply /tmp/sg06-historical-workflow-fix.patch
+          printf '%s\n' project-stable-ground-sg05.yml project-stable-ground-sg06.yml repair.sh | sort > /tmp/expected-members
+          tar -tf /tmp/sg06-historical-workflows.tar | sort > /tmp/observed-members
+          diff -u /tmp/expected-members /tmp/observed-members
+          rm -rf "$ROOT"
+          mkdir -p "$ROOT"
+          tar -xf /tmp/sg06-historical-workflows.tar -C "$ROOT"
 
-          node tools/build-pages.mjs
-          node tools/build-standalone.mjs
-          node tools/build-project-stable-ground-sg06.mjs
-          node tools/validate-project-stable-ground-sg05.mjs
-          node test/project-stable-ground-sg05.test.js
-          node tools/validate-project-stable-ground-sg06.mjs
-          node test/project-stable-ground-sg06.test.js
-          npm run release:check
-
-          python3 - <<'PY'
-          import subprocess
-          volatile = [
-              'build/axm-identity.json','build/build-hop-report.json','build/hop-graph.json',
-              'build/migration-review.md','build/migration-summary.json','build/receipt-graph.json',
-              'build/scores.json','build/scout-report.json','build/scout-report.md','build/surface-graph.json',
-          ]
-          for path in volatile:
-              diff = subprocess.run(['git','diff','--unified=0','--',path], check=True, text=True, capture_output=True).stdout
-              if not diff:
-                  continue
-              lines = [line[1:].strip() for line in diff.splitlines() if line.startswith(('+','-')) and not line.startswith(('+++','---'))]
-              if len(lines) != 2 or not all(line.startswith('"generated": "') or line.startswith('Generated: ') for line in lines):
-                  raise RuntimeError(f'unexpected volatile mutation in {path}: {lines}')
-          PY
-          git restore --source="$FINAL" -- \
-            build/axm-identity.json build/build-hop-report.json build/hop-graph.json \
-            build/migration-review.md build/migration-summary.json build/receipt-graph.json \
-            build/scores.json build/scout-report.json build/scout-report.md build/surface-graph.json
-
-          cat > /tmp/expected-repair <<'PATHS'
-          .github/workflows/project-stable-ground-sg05.yml
-          .github/workflows/project-stable-ground-sg06.yml
-          data/project/project-stable-ground-sg06-release-manifest.json
-          reports/core-thesis/stable-ground/sg06/checkpoint.json
-          reports/core-thesis/stable-ground/sg06/index.html
-          PATHS
-          sort -o /tmp/expected-repair /tmp/expected-repair
-          git diff --name-only | sort > /tmp/observed-repair
-          diff -u /tmp/expected-repair /tmp/observed-repair
-          git diff --check
-
-          git restore --source="$FIRST" -- .github/workflows/project-stable-ground-sg05.yml
-          git rm -f .github/workflows/project-stable-ground-sg06.yml
-          git add -A
-          git reset --soft "$FIRST"
-
-          cat > /tmp/expected-second <<'PATHS'
-          data/project/project-stable-ground-current.json
-          data/project/project-stable-ground-governor.json
-          data/project/project-stable-ground-sg06-release-manifest.json
-          data/project/project-stable-ground-sg06.json
-          docs/milestones/project-stable-ground-sg06.md
-          reports/core-thesis/stable-ground/sg06/checkpoint.json
-          reports/core-thesis/stable-ground/sg06/index.html
-          test/project-stable-ground-sg05.test.js
-          test/project-stable-ground-sg06.test.js
-          tools/build-project-stable-ground-sg06.mjs
-          tools/validate-project-stable-ground-sg04.mjs
-          tools/validate-project-stable-ground-sg05.mjs
-          tools/validate-project-stable-ground-sg06.mjs
-          PATHS
-          sort -o /tmp/expected-second /tmp/expected-second
-          git diff --cached --name-only "$FIRST" | sort > /tmp/observed-second
-          diff -u /tmp/expected-second /tmp/observed-second
-
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'Append stable-ground supersession SG-06'
-          replacement="$(git rev-parse HEAD)"
-          git push --force-with-lease=refs/heads/${STAGING}:"$FIRST" origin HEAD:"$STAGING"
-          printf 'workflow_neutral_replacement=%s\n' "$replacement"
+          printf '%s  %s\n' '3c366df8c94caded415fed603a396432ca2fc7b0a1199237c582ff28dd3abd45' "$ROOT/project-stable-ground-sg05.yml" | sha256sum --check --strict
+          printf '%s  %s\n' 'e1e2f58f53cdd59d0edb22a8c99e72252f2c5268f27864b300ccc2c2ab2d65b8' "$ROOT/project-stable-ground-sg06.yml" | sha256sum --check --strict
+          printf '%s  %s\n' '309b02a021a07534f7af3b1edcf5d5802c37e44490676824c72d0d672d2e6258' "$ROOT/repair.sh" | sha256sum --check --strict
+          chmod +x "$ROOT/repair.sh"
+          CARRIER_ROOT="$ROOT" "$ROOT/repair.sh"
