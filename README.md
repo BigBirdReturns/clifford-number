@@ -224,3 +224,13 @@ case-local IDs, and domain IDs do not acquire a public projection merely to lowe
 Typed cross-family views remain distinct, and same-family variants carry generator-contract
 repair actions. No topology decision creates a relationship, participation row, graph edge,
 or automatic cross-key join.
+
+## Generator contracts
+
+Wave 19 converts the residual generator-action queue into named, enforceable sidecar
+contracts. Exact generated paths receive uniqueness or version contracts; projection
+families receive structural schema or version boundaries that do not freeze every
+payload byte. The registry closes the bounded action queue while retaining raw typed
+divergence where it is legitimate.
+No contract authorizes a cross-key join or creates a relationship, participation row,
+graph edge, truth determination, or publication clearance.

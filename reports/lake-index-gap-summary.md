@@ -1,21 +1,21 @@
 # Lake index gap summary
 
-Source fingerprint: `3c6276afabcaaa8d01fc1a271766954104d77a8790457cb3b2e3bda1c9257da8`
+Source fingerprint: `83911d7a9644f06b1bded01bba14c58fd930d3c91b1ad3649a1dcee073ad3301`
 
 ## Finding
 
-The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1373 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
+The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1379 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
 
 ## By evidence role
 
 | Role | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
-| generated_artifact | 583 | 583 | 0 | 0 |
-| project_governance | 163 | 163 | 0 | 0 |
+| generated_artifact | 585 | 585 | 0 | 0 |
+| project_governance | 166 | 166 | 0 | 0 |
 | intake | 141 | 141 | 0 | 0 |
 | documentation | 123 | 123 | 0 | 0 |
 | repository_root | 109 | 109 | 0 | 0 |
-| report_product | 102 | 102 | 0 | 0 |
+| report_product | 103 | 103 | 0 | 0 |
 | research_record | 48 | 48 | 0 | 0 |
 | case_source | 43 | 43 | 0 | 0 |
 | receipt_artifact | 32 | 32 | 0 | 0 |
@@ -29,7 +29,7 @@ The current Git tree is physically censused, but the evidence lake is not semant
 |---|---:|---:|---:|---:|
 | build/estate-game-trails | 313 | 313 | 0 | 0 |
 | build/core-thesis | 184 | 184 | 0 | 0 |
-| data/project | 163 | 163 | 0 | 0 |
+| data/project | 166 | 166 | 0 | 0 |
 | data/intake | 141 | 141 | 0 | 0 |
 | reports/core-thesis | 96 | 96 | 0 | 0 |
 | docs/milestones | 65 | 65 | 0 | 0 |
@@ -37,8 +37,8 @@ The current Git tree is physically censused, but the evidence lake is not semant
 | data/research | 48 | 48 | 0 | 0 |
 | data/estates | 43 | 43 | 0 | 0 |
 | cases/arcadia-field-autopsy | 21 | 21 | 0 | 0 |
+| build/lake-actions | 19 | 19 | 0 | 0 |
 | receipts/crawl | 19 | 19 | 0 | 0 |
-| build/lake-actions | 17 | 17 | 0 | 0 |
 | build/estate-closures | 15 | 15 | 0 | 0 |
 | data/canonical | 12 | 12 | 0 | 0 |
 | build/estate-frontier | 11 | 11 | 0 | 0 |
@@ -51,7 +51,7 @@ The current Git tree is physically censused, but the evidence lake is not semant
 parse errors:                   0
 undefined receipt references:   0
 projection IDs without source:  0
-missing repository path tokens: 175
+missing repository path tokens: 179
 ```
 
 ### P1 — exact orphan evidence
@@ -69,7 +69,7 @@ missing repository path tokens: 175
 ```text
 not reachable from any detected index: 0
 not reachable from authoritative roots: 0
-not reachable from public roots: 1129
+not reachable from public roots: 1135
 case IDs absent from public catalog: 26
 ```
 
@@ -79,7 +79,8 @@ case IDs absent from public catalog: 26
 |---|---:|
 | #386 Make evidence-grounded judgments without a human-permission gate | 18 |
 | #403 Measure the production cross-case identity denominator | 16 |
-| #478 Enforce status-aware publication safety and append SG-05 | 14 |
+| #485 Temporary SG-06 branch export | 15 |
+| #483 Enforce deterministic publication safety and append SG-06 | 13 |
 | #404 Recover exact source-bound cross-case mention recurrence | 11 |
 | #362 Stage biological Omega control-surface research program | 9 |
 | #50 Stage synthetic-population research program | 8 |
@@ -87,9 +88,8 @@ case IDs absent from public catalog: 26
 | #378 Run WebsiteIQ baseline audit before website remediation | 4 |
 | #211 Map every case and report membership across the estates | 2 |
 | #379 Run corrected WebsiteIQ landing-path audit | 2 |
-| #477 Adjudicate identifier topology after the residual lake repair | 1 |
-| #480 Execute SSC-H01 Wave 01 across grievance, allocator, and public-capital lanes | 1 |
 | #481 Export exact current main for the publication SG-06 rebuild | 1 |
+| #482 Close generator-contract actions after identifier topology | 1 |
 
 ### P5 — history and semantics
 

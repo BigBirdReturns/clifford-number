@@ -401,3 +401,15 @@ forced into byte equality.
 The topology registry is an index and custody surface. It does not authorize automatic
 cross-key joins, create relationships or participation, or establish semantic completeness.
 Missing a reviewer never blocks reversible classification, indexing, or projection refusal.
+
+3.19 **Generator contracts — Wave 19.**
+Every open Wave 18 generator-contract action is assigned to a named exact-path or
+projection-family sidecar contract. Exact-path contracts bind projection path, pointer
+template, and object hash. Projection-family contracts bind structural path and pointer
+variants; a payload-hash change inside the declared family boundary is not itself drift.
+A new exact-path hash or family structural variant requires append-preserving supersession.
+
+Cross-family typed views remain distinct and are never forced into byte equality.
+A generator contract governs serialization custody; it does not prove identity,
+evidence truth, publication status, a relationship, participation, or graph semantics.
+Missing a reviewer is not a standalone blocker for bounded contract execution.

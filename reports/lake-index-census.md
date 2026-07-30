@@ -1,32 +1,32 @@
 # Lake index census
 
-Source fingerprint: `3c6276afabcaaa8d01fc1a271766954104d77a8790457cb3b2e3bda1c9257da8`
+Source fingerprint: `83911d7a9644f06b1bded01bba14c58fd930d3c91b1ad3649a1dcee073ad3301`
 
 ## The six waterlines
 
 | Waterline | Count | Share of evidence files |
 |---|---:|---:|
-| Tracked evidence-bearing files physically present | 1373 | 100.0% |
-| Reachable from declared authoritative roots | 1373 | 100.0% |
-| Reachable from any detected index or manifest | 1373 | 100.0% |
-| Reachable from current public entry roots | 244 | 17.8% |
+| Tracked evidence-bearing files physically present | 1379 | 100.0% |
+| Reachable from declared authoritative roots | 1379 | 100.0% |
+| Reachable from any detected index or manifest | 1379 | 100.0% |
+| Reachable from current public entry roots | 244 | 17.7% |
 | Exact orphan evidence files with no inbound repository reference | 0 | 0.0% |
 | Evidence files with no detected program owner | 0 | 0.0% |
 
 ## Object and receipt census
 
 ```text
-distinct machine-addressable IDs:       25994
+distinct machine-addressable IDs:       25996
 local-only identifier values observed:   1152
 local-only identifier occurrences:       8071
 unindexed machine-addressable IDs:      0
 unindexed IDs without topology decision:0
 divergent identifier projections:       3370
 divergent projections unadjudicated:    0
-source IDs without a projection:         5612
+source IDs without a projection:         5613
 source-only IDs unadjudicated:           0
 projection IDs without a source object:  0
-identifier topology decisions:           10612
+identifier topology decisions:           10613
 generator-contract actions:              411
 receipt IDs:                             350
 undefined receipt references:            0
@@ -34,7 +34,7 @@ unused receipt definitions:              49
 receipt locator tokens:                   11
 receipt content-hash tokens:              30
 inline receipt-use IDs:                   224
-program IDs:                             19
+program IDs:                             20
 case IDs:                                30
 case IDs absent from public catalog:      26
 report IDs:                              5
@@ -43,9 +43,9 @@ report IDs:                              5
 ## Branch-shadow census
 
 ```text
-open pull requests observed:              30
-changed paths across open pull requests:  466
-branch-only paths observed:               93
+open pull requests observed:              31
+changed paths across open pull requests:  493
+branch-only paths observed:               106
 ```
 
 Open-PR paths are a shadow inventory only. They are not merged corpus, evidence truth, or publication state.
@@ -55,3 +55,19 @@ Open-PR paths are a shadow inventory only. They are not merged corpus, evidence 
 This census proves only that every currently tracked path in scope has a deterministic metadata row and that machine-readable references were extracted under the checked-in policy. It does **not** prove that the lake is semantically complete, that every object has been correctly classified, that historical Git objects are indexed, that open-branch content has been adjudicated, or that any claim is true or publication-cleared.
 
 The actionable gap queues are in `build/lake-index-gaps.json`; the complete path inventory is in `build/lake-index.json`; and identifier, receipt, program, case, and report projections are in `build/lake-object-index.json`.
+
+<!-- WAVE19-GENERATOR-CONTRACTS:START -->
+## Generator contracts — Wave 19
+
+```text
+raw generator actions:       411
+open generator actions:      0
+active generator contracts:  18
+registered variants:         1907
+action-to-contract links:    462
+review required to decide:   false
+graph effect:                none
+```
+
+The raw Wave 18 action denominator remains visible. Wave 19 closes those actions through named exact-path and projection-family serialization contracts; it does not force valid cross-family projections into byte equality or infer identity, truth, publication status, or graph semantics.
+<!-- WAVE19-GENERATOR-CONTRACTS:END -->
