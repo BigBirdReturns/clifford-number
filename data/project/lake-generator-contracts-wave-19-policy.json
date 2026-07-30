@@ -1,0 +1,49 @@
+{
+  "schema_version": "lake-generator-contracts-wave-19-policy@1",
+  "program_id": "CN-LAKE-GENERATOR-CONTRACTS-W19",
+  "as_of": "2026-07-30",
+  "purpose": "Convert every open Wave 18 generator-contract action into a named generator-family or exact-path contract. Preserve legitimate typed views, isolate only the intra-family or repeated-template defect, and execute bounded repairs without waiting for an unspecified reviewer.",
+  "baseline": {
+    "wave_18_materialization_commit": "867a2886fc15243314d1ba766cfb4d1cafe07ed4",
+    "wave_18_final_checkpoint_head": "059bd8248e25bedba6c1f4310a08721f12d23594",
+    "wave_18_registry_sha256": "8686936e846b57616bbe0a785f1172f29b3817545ef493f1350e67e70ddeebf5",
+    "wave_18_topology_records": 10612,
+    "generator_contract_actions": 411,
+    "same_path_generator_contract_candidates": 8,
+    "single_family_schema_or_version_variants": 273,
+    "mixed_typed_views_and_intra_family_variants": 130
+  },
+  "paths": {
+    "preflight": "build/lake-actions/generator-contracts-wave-19-preflight.json",
+    "preflight_report": "reports/lake-generator-contracts-wave-19-preflight.md",
+    "diagnostics": "build/lake-actions/generator-contracts-wave-19-diagnostics.json",
+    "diagnostics_report": "reports/lake-generator-contracts-wave-19-diagnostics.md",
+    "registry": "data/project/lake-generator-contract-registry-wave-19.json",
+    "projection": "build/lake-actions/generator-contracts-wave-19.json",
+    "receipt": "data/project/lake-generator-contracts-wave-19.json",
+    "reconciliation": "build/lake-actions/generator-contracts-wave-19-reconciliation.json",
+    "report": "reports/lake-generator-contracts-wave-19.md"
+  },
+  "decision_law": {
+    "review_required_to_decide": false,
+    "missing_reviewer_blocks_reversible_execution": false,
+    "cross_family_typed_views_remain_distinct": true,
+    "same_family_variants_require_declared_schema_or_version_boundaries": true,
+    "same_path_repetition_requires_a_declared_uniqueness_or_version_contract_when_context_does_not_disambiguate": true,
+    "raw_divergence_need_not_be_zero": true,
+    "open_generator_contract_actions_must_be_named_and_executable": true,
+    "correction_mode": "append_preserving_supersession"
+  },
+  "boundaries": {
+    "generator_contract_proves_identity": false,
+    "generator_contract_proves_evidence_truth": false,
+    "cross_family_hash_equality_required": false,
+    "cross_key_join_authorized": false,
+    "source_bytes_invented": false,
+    "publication_cleared": false,
+    "semantic_completeness_claimed": false,
+    "relationship_created": false,
+    "participation_created": false,
+    "graph_effect": "none"
+  }
+}
