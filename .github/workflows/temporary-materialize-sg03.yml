@@ -31,10 +31,14 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/scripts/materialize-sg03.py
-      - name: Build and validate SG-03 and preserved history
+      - name: Build the derived POOF release and SG-03
         run: |
           set -euo pipefail
+          node tools/build-poof-clifford-ecology.mjs
           node tools/build-project-stable-ground-sg03.mjs
+      - name: Validate SG-03 and preserved history
+        run: |
+          set -euo pipefail
           node tools/validate-project-stable-ground-sg03.mjs
           node test/project-stable-ground-sg03.test.js
           node tools/validate-project-stable-ground-alignment.mjs
@@ -48,22 +52,7 @@ jobs:
       - name: Freeze the exact permanent patch
         run: |
           set -euo pipefail
-          git add \
-            package.json \
-            tools/build-project-stable-ground-sg03.mjs \
-            data/project/project-stable-ground-governor.json \
-            data/project/project-stable-ground-current.json \
-            data/project/project-stable-ground-sg03.json \
-            data/project/project-stable-ground-sg03-release-manifest.json \
-            docs/milestones/project-stable-ground-sg03.md \
-            tools/validate-project-stable-ground-sg03.mjs \
-            tools/validate-project-stable-ground-sg02.mjs \
-            test/project-stable-ground-sg03.test.js \
-            test/project-stable-ground-sg02.test.js \
-            .github/workflows/project-stable-ground-sg03.yml \
-            .github/workflows/project-stable-ground-sg02.yml \
-            reports/core-thesis/stable-ground/sg03/checkpoint.json \
-            reports/core-thesis/stable-ground/sg03/index.html
+          git add -A
           git diff --cached --check
           git diff --cached --binary > /tmp/sg03.patch
           test -s /tmp/sg03.patch
@@ -75,6 +64,7 @@ jobs:
           git restore --staged --worktree .
           git clean -fd
           git apply --index /tmp/sg03.patch
+          node tools/build-poof-clifford-ecology.mjs
           node tools/build-project-stable-ground-sg03.mjs
           node tools/validate-project-stable-ground-sg03.mjs
           node test/project-stable-ground-sg03.test.js
@@ -82,6 +72,8 @@ jobs:
           node test/project-stable-ground-alignment.test.js
           node tools/validate-project-stable-ground-sg02.mjs
           node test/project-stable-ground-sg02.test.js
+          node tools/validate-poof-clifford-ecology.mjs
+          node test/poof-clifford-ecology.test.js
           git diff --exit-code
           git diff --cached --binary > /tmp/sg03-rebuilt.patch
           cmp /tmp/sg03.patch /tmp/sg03-rebuilt.patch
