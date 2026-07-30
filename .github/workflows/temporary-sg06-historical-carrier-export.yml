@@ -1,9 +1,9 @@
 name: Temporary SG-06 historical repair carrier export
 
 on:
-  push:
-    branches:
-      - agent/sg06-historical-carrier-export
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
     paths:
       - '.github/workflows/temporary-sg06-historical-carrier-export.yml'
   workflow_dispatch:
