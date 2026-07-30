@@ -1,0 +1,165 @@
+name: Temporary SGR-01 stable-ground reconciliation materializer
+
+on:
+  push:
+    branches:
+      - agent/poof-sprint09-stable-ground-reconciliation
+    paths:
+      - '.github/workflows/temporary-sgr01-materialize.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/poof-sprint09-stable-ground-reconciliation
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Merge latest POOF ecology and canonical mainline
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin agent/poof-clifford-ecology main
+          git merge --no-edit origin/agent/poof-clifford-ecology
+          git merge --no-edit origin/main
+
+      - name: Verify and extract exact SGR-01 payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat \
+            .github/tmp/sgr01-part-00.b64 \
+            .github/tmp/sgr01-part-01.b64 \
+            .github/tmp/sgr01-part-02.b64 \
+            .github/tmp/sgr01-part-03a.b64 \
+            .github/tmp/sgr01-part-03b.b64 \
+            .github/tmp/sgr01-part-04.b64 \
+            .github/tmp/sgr01-part-05.b64 \
+            | base64 -d > /tmp/sgr01.tar.gz
+          test "$(sha256sum /tmp/sgr01.tar.gz | awk '{print $1}')" = "5532c9d69e4d6b13e136f781cb3164a7f493ff23b27121165363973ba812d0a0"
+          tar -xzf /tmp/sgr01.tar.gz -C .
+
+      - name: Rebuild and validate Sprint 09, stable ground, and POOF ecology
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-m05-answerable-power-sprint-09.mjs
+          node tools/validate-m05-answerable-power-sprint-09.mjs
+          node test/m05-answerable-power-sprint-09.test.js
+          node tools/build-project-stable-ground-alignment.mjs
+          node tools/validate-project-stable-ground-alignment.mjs
+          node test/project-stable-ground-alignment.test.js
+          npm run ci:poof-ecology
+          npm run release:check
+          git diff --check
+
+      - name: Restore unrelated generated release products
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/core-thesis/security-state-organism/dispatch-receipt.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json
+
+      - name: Remove transport and commit exact permanent surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm \
+            .github/tmp/sgr01-part-00.b64 \
+            .github/tmp/sgr01-part-01.b64 \
+            .github/tmp/sgr01-part-02.b64 \
+            .github/tmp/sgr01-part-03a.b64 \
+            .github/tmp/sgr01-part-03b.b64 \
+            .github/tmp/sgr01-part-04.b64 \
+            .github/tmp/sgr01-part-05.b64 \
+            .github/workflows/temporary-sgr01-materialize.yml
+          git add \
+            data/project/project-stable-ground-alignment-release-manifest.json \
+            data/project/project-stable-ground-alignment.json \
+            docs/milestones/project-stable-ground-alignment.md \
+            reports/core-thesis/stable-ground/checkpoint.json \
+            reports/core-thesis/stable-ground/index.html \
+            test/project-stable-ground-alignment.test.js \
+            tools/build-project-stable-ground-alignment.mjs \
+            tools/validate-project-stable-ground-alignment.mjs
+          python - <<'PY'
+          import subprocess
+          permanent = {
+            'data/project/project-stable-ground-alignment-release-manifest.json',
+            'data/project/project-stable-ground-alignment.json',
+            'docs/milestones/project-stable-ground-alignment.md',
+            'reports/core-thesis/stable-ground/checkpoint.json',
+            'reports/core-thesis/stable-ground/index.html',
+            'test/project-stable-ground-alignment.test.js',
+            'tools/build-project-stable-ground-alignment.mjs',
+            'tools/validate-project-stable-ground-alignment.mjs',
+          }
+          transport = {
+            '.github/tmp/sgr01-part-00.b64',
+            '.github/tmp/sgr01-part-01.b64',
+            '.github/tmp/sgr01-part-02.b64',
+            '.github/tmp/sgr01-part-03a.b64',
+            '.github/tmp/sgr01-part-03b.b64',
+            '.github/tmp/sgr01-part-04.b64',
+            '.github/tmp/sgr01-part-05.b64',
+            '.github/workflows/temporary-sgr01-materialize.yml',
+          }
+          actual = set(subprocess.check_output(['git','diff','--cached','--name-only'], text=True).splitlines())
+          expected = permanent | transport
+          assert actual == expected, f'path mismatch\nmissing={sorted(expected-actual)}\nextra={sorted(actual-expected)}'
+          unstaged = set(subprocess.check_output(['git','diff','--name-only'], text=True).splitlines())
+          assert not unstaged, f'unstaged tracked changes: {sorted(unstaged)}'
+          print(f'exact staged denominator: {len(permanent)} permanent paths + {len(transport)} transport deletions')
+          PY
+          git diff --cached --check
+          git commit -m 'Reconcile POOF ecology with Sprint 09 stable ground'
+
+      - name: Prove committed deterministic tree and push
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-m05-answerable-power-sprint-09.mjs
+          node tools/validate-m05-answerable-power-sprint-09.mjs
+          node test/m05-answerable-power-sprint-09.test.js
+          node tools/build-project-stable-ground-alignment.mjs
+          node tools/validate-project-stable-ground-alignment.mjs
+          node test/project-stable-ground-alignment.test.js
+          npm run ci:poof-ecology
+          npm run release:check
+          git restore -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/core-thesis/security-state-organism/dispatch-receipt.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+          git push origin HEAD:agent/poof-sprint09-stable-ground-reconciliation
