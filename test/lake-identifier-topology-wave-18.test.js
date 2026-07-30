@@ -17,6 +17,13 @@ const policy = readJson('data/project/lake-identifier-topology-wave-18-policy.js
 const preflight = readJson(policy.paths.preflight);
 const registry = readJson(policy.paths.registry);
 const receipt = readJson(policy.paths.receipt);
+const triggerPath = '.github/tmp/lake-identifier-topology-wave-18-trigger.json';
+const preliminaryReceiptAuthorized = receipt.post_execution_reconciliation_complete !== true
+  && process.env.GITHUB_ACTIONS === 'true'
+  && process.env.GITHUB_WORKFLOW === 'Evidence lake identifier topology Wave 18'
+  && process.env.GITHUB_EVENT_NAME === 'push'
+  && fs.existsSync(triggerPath)
+  && receipt.after_counts === null;
 const byKey = new Map();
 for (const row of registry.records) {
   const list = byKey.get(row.id_key) ?? [];
@@ -46,12 +53,23 @@ assert.ok(byKey.get('local_subject_id')?.some(row => row.divergence?.final_class
 assert.ok(registry.records.some(row => row.divergence?.final_classification === 'typed_cross_family_projection_views'));
 assert.ok(registry.records.some(row => row.divergence?.generator_contract_action_open === true));
 
-assert.equal(receipt.counts.after.unindexed_machine_ids, 0);
-assert.equal(receipt.counts.after.unindexed_machine_ids_unadjudicated, 0);
-assert.equal(receipt.counts.after.source_ids_without_projection_unadjudicated, 0);
-assert.equal(receipt.counts.after.divergent_identifier_projections_unadjudicated, 0);
-assert.equal(receipt.counts.after.projection_ids_without_source, 0);
-assert.equal(receipt.counts.decisions_requiring_human_permission, 0);
-assert.equal(receipt.boundaries.graph_effect, 'none');
-
-console.log(`lake-identifier-topology-wave-18.test: OK (${frozenRows} frozen + ${postFreezeRows} post-freeze topology decisions, unindexed 0, source-only/divergence unadjudicated 0/0, graph effect none)`);
+if (preliminaryReceiptAuthorized) {
+  assert.equal(registry.records.length, frozenRows);
+  assert.equal(postFreezeRows, 0);
+  assert.equal(receipt.counts.records, frozenRows);
+  assert.equal(receipt.counts.unclassified_source_only_rows, 0);
+  assert.equal(receipt.counts.unadjudicated_divergence_rows, 0);
+  assert.equal(receipt.counts.decisions_requiring_human_permission, 0);
+  assert.equal(receipt.boundaries.graph_effect, 'none');
+  console.log(`lake-identifier-topology-wave-18.test: OK (${frozenRows} frozen decisions, preliminary receipt authorized only inside the push materializer, graph effect none)`);
+} else {
+  assert.equal(receipt.post_execution_reconciliation_complete, true);
+  assert.equal(receipt.counts.after.unindexed_machine_ids, 0);
+  assert.equal(receipt.counts.after.unindexed_machine_ids_unadjudicated, 0);
+  assert.equal(receipt.counts.after.source_ids_without_projection_unadjudicated, 0);
+  assert.equal(receipt.counts.after.divergent_identifier_projections_unadjudicated, 0);
+  assert.equal(receipt.counts.after.projection_ids_without_source, 0);
+  assert.equal(receipt.counts.decisions_requiring_human_permission, 0);
+  assert.equal(receipt.boundaries.graph_effect, 'none');
+  console.log(`lake-identifier-topology-wave-18.test: OK (${frozenRows} frozen + ${postFreezeRows} post-freeze topology decisions, unindexed 0, source-only/divergence unadjudicated 0/0, graph effect none)`);
+}
