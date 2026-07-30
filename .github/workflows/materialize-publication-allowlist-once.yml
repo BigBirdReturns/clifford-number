@@ -34,17 +34,19 @@ jobs:
           replacements = {
             '"    networkMode: \'research\', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null\\n"': '"  networkMode: \'research\', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null\\n"',
             '"    networkMode: \'hops\', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null\\n"': '"  networkMode: \'hops\', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null\\n"',
-            '["graph.json", "researchNetworkModel", "legacyGraph"]': '["graph.json", "researchNetworkModel"]',
           }
           for old, new in replacements.items():
               if text.count(old) != 1:
                   raise SystemExit(f'materializer anchor count for {old[:50]!r}: {text.count(old)}')
               text = text.replace(old, new, 1)
-          target.write_text(text)
+          old_assertion = 'if any(marker in read_text("app.js") for marker in ["graph.json", "researchNetworkModel", "legacyGraph"]):\n    raise RuntimeError("app.js still contains retired generic-graph runtime")\n'
+          new_assertion = 'exec(compile(read_text(".github/scripts/retire-public-graph-bridge.py"), ".github/scripts/retire-public-graph-bridge.py", "exec"))\nif any(marker in read_text("app.js") for marker in ["graph.json", "researchNetworkModel", "legacyGraph"]):\n    raise RuntimeError("app.js still contains retired generic-graph runtime")\n'
+          if text.count(old_assertion) != 1:
+              raise SystemExit(f'retirement assertion anchor count: {text.count(old_assertion)}')
+          target.write_text(text.replace(old_assertion, new_assertion, 1))
           PY
           python3 -m py_compile .github/scripts/materialize-publication-allowlist.py .github/scripts/retire-public-graph-bridge.py
           python3 .github/scripts/materialize-publication-allowlist.py
-          python3 .github/scripts/retire-public-graph-bridge.py
       - name: Prove focused constitutional and publication gates
         run: |
           node tools/validate-poof-constitutional-change.mjs origin/main
