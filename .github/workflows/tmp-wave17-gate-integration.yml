@@ -1,0 +1,53 @@
+name: Temporary Wave 17 canonical gate integration
+
+on:
+  push:
+    branches:
+      - agent/tmp-wave17-gate-integration
+    paths:
+      - '.github/tmp/tmp-wave17-gate-integration-trigger.json'
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lake-residual-frontier-wave-17
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Register Wave 17 in the canonical release gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          original_sha=$(git rev-parse HEAD)
+          test "$original_sha" = 'ce5a3b6f4091f8832d927357a3e1d9d2e6739fb0'
+          node - <<'NODE'
+          const fs = require('fs');
+          const file = 'package.json';
+          const pkg = JSON.parse(fs.readFileSync(file, 'utf8'));
+          const command = 'node tools/validate-lake-residual-frontier-wave-17.mjs && node test/lake-residual-frontier-wave-17.test.js';
+          pkg.scripts['validate:lake-residual-frontier-wave-17'] = command;
+          const gate = 'npm run validate:lake-residual-frontier-wave-17';
+          if (!pkg.scripts.check.includes(gate)) {
+            const anchor = ' && npm run build:pages';
+            if (!pkg.scripts.check.includes(anchor)) throw new Error('canonical check insertion anchor missing');
+            pkg.scripts.check = pkg.scripts.check.replace(anchor, ` && ${gate}${anchor}`);
+          }
+          fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + '\n');
+          NODE
+          npm run validate:lake-residual-frontier-wave-17
+          npm run release:check
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json
+          git commit -m 'Register residual lake Wave 17 in release gate'
+          git fetch origin agent/lake-residual-frontier-wave-17
+          test "$(git rev-parse origin/agent/lake-residual-frontier-wave-17)" = "$original_sha"
+          git push origin HEAD:agent/lake-residual-frontier-wave-17
