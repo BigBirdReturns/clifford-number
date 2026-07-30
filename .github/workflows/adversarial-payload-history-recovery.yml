@@ -6,13 +6,17 @@ on:
       - agent/adversarial-release-integrity
     paths:
       - '.github/workflows/adversarial-payload-history-recovery.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/adversarial-payload-history-recovery.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: adversarial-payload-history-recovery
+  group: adversarial-payload-history-recovery-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: false
 
 jobs:
