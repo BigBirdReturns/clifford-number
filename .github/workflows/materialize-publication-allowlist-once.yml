@@ -47,13 +47,7 @@ jobs:
               raise SystemExit(f'retirement assertion anchor count: {text.count(old_assertion)}')
           text = text.replace(old_assertion, new_assertion, 1)
           old_editorial_loop = '}.items():\n    replace_once("index.html", old, new)\n'
-          new_editorial_loop = '''}.items():
-    index_source = read_text("index.html")
-    occurrence_count = index_source.count(old)
-    if occurrence_count < 1:
-        raise RuntimeError(f"index.html: missing editorial anchor: {old[:180]!r}")
-    write_text("index.html", index_source.replace(old, new))
-'''
+          new_editorial_loop = '}.items():\n    index_source = read_text("index.html")\n    occurrence_count = index_source.count(old)\n    if occurrence_count < 1:\n        raise RuntimeError(f"index.html: missing editorial anchor: {old[:180]!r}")\n    write_text("index.html", index_source.replace(old, new))\n'
           if text.count(old_editorial_loop) != 1:
               raise SystemExit(f'editorial loop anchor count: {text.count(old_editorial_loop)}')
           target.write_text(text.replace(old_editorial_loop, new_editorial_loop, 1))
