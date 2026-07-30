@@ -17,27 +17,27 @@ prior checkpoint:  SG-2026-07-29-03
 K0 query templates:                 9 / 9
 search executions:                     52
 raw results observed:                 302
-retained records:                      66
+retained records:                      65
 candidate records:                     28
-positive controls:                     15
+positive controls:                     14
 negative controls:                     12
 coverage controls:                      8
-non-events:                            35
+non-events:                            34
 open additional acquisition:            1
 included K0 events:                     0
 independent second-party review:    false
 graph effect:                        none
 ```
 
-Wave 08 remains a separate, bounded discovery package:
+Wave 08 remains a separate, bounded discovery package. One OSC/VA stay returned by the search is excluded from this wave as a prior-wave duplicate of K0-W01-R001 and K0-W06-R007:
 
 ```text
 query:                              K0-Q02
 query executions:                         8
 raw results observed:                    96
-retained records:                         9
+retained records:                         8
 candidate records:                        4
-positive counterpower controls:           2
+positive counterpower controls:           1
 negative controls:                        2
 coverage controls:                        1
 included events:                          0

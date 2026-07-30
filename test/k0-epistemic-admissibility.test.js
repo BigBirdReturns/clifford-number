@@ -61,7 +61,7 @@ assert.equal(report.counts.normalized_seed_events, 13);
 assert.equal(report.counts.field_audit_supported_for_human_review, 6);
 assert.equal(report.counts.field_audit_retained_candidate_only, 7);
 assert.equal(report.counts.common_purpose_network_edges, 0);
-assert.equal(report.counts.role_neutral_retained_records, 66);
+assert.equal(report.counts.role_neutral_retained_records, 65);
 assert.equal(report.counts.role_neutral_wave_06_candidate_records, 3);
 assert.equal(report.counts.role_neutral_wave_06_field_records_reviewed, 8);
 assert.equal(report.counts.role_neutral_wave_06_field_supported_for_human_review, 2);
@@ -79,7 +79,7 @@ assert.equal(report.current_result.role_neutral_wave_07_field_adjudication_compl
 assert.equal(report.current_result.maintainer_source_retrieval_audit_complete, true);
 assert.equal(report.current_result.independent_second_party_review_complete, false);
 assert.equal(report.current_result.graph_effect, 'none');
-assert.equal(report.counts.role_neutral_wave_08_retained_records, 9);
+assert.equal(report.counts.role_neutral_wave_08_retained_records, 8);
 assert.equal(report.counts.role_neutral_wave_08_candidate_records, 4);
 assert.equal(report.current_result.role_neutral_wave_08_discovery_complete, true);
 assert.equal(report.current_result.role_neutral_wave_08_field_adjudication_complete, false);
