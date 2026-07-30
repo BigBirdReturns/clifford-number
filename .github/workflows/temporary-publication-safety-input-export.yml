@@ -1,0 +1,44 @@
+name: Temporary publication-safety input export
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-publication-safety-input-export.yml'
+  push:
+    branches:
+      - agent/publication-safety-reimplementation-20260729
+    paths:
+      - '.github/workflows/temporary-publication-safety-input-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/publication-safety-reimplementation-20260729
+          fetch-depth: 0
+      - name: Export exact branch snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/publication-safety-input
+          git archive --format=tar.gz --output=/tmp/publication-safety-input/repository.tar.gz HEAD
+          {
+            echo 'schema_version: publication-safety-input-export@1'
+            echo "head: $(git rev-parse HEAD)"
+            echo "main: $(git rev-parse origin/main 2>/dev/null || true)"
+            sha256sum /tmp/publication-safety-input/repository.tar.gz
+          } | tee /tmp/publication-safety-input/receipt.txt
+      - name: Upload exact input
+        uses: actions/upload-artifact@v4
+        with:
+          name: publication-safety-input-${{ github.run_id }}
+          path: /tmp/publication-safety-input/
+          if-no-files-found: error
+          retention-days: 3
