@@ -26,8 +26,7 @@ jobs:
         run: |
           set -euo pipefail
           gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/323409896/runs?branch=agent%2Flake-subject-integration-wave-16&event=push&per_page=20" \
-            --jq '{observed_at: now | todate, request: $request, runs: [.workflow_runs[] | {id, run_number, status, conclusion, head_sha, event, created_at, updated_at, html_url}]}' \
-            --arg request "$(cat .github/tmp/tmp-wave16-run-monitor-request.json)" \
+            --jq '{observed_at: now | todate, runs: [.workflow_runs[] | {id, run_number, status, conclusion, head_sha, event, created_at, updated_at, html_url}]}' \
             > data/project/tmp-wave16-push-runs.json
       - name: Commit observation
         shell: bash
