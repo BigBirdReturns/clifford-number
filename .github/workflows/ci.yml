@@ -90,7 +90,7 @@ jobs:
 
           grep -vE '^\.github/workflows/(project-stable-ground-sg05|project-stable-ground-sg06|status-sovereignty-compact|status-sovereignty-wave-01)\.yml$' \
             /tmp/ssc-wave01-payload/TRANSITION_PATHS.txt | sort > /tmp/expected-paths
-          git diff --name-only | sort > /tmp/observed-paths
+          { git diff --name-only; git ls-files --others --exclude-standard; } | sort > /tmp/observed-paths
           diff -u /tmp/expected-paths /tmp/observed-paths
           test "$(wc -l < /tmp/observed-paths)" -eq 39
           git diff --check
