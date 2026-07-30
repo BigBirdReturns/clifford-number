@@ -69,10 +69,10 @@ export function resolveCommittedPathDiff({ mergeBaseDiff, treeDiff }) {
 )
 replace_once(
     guard_path,
-    """  const committed = git(['diff', '--name-only', `${resolvedBase}...HEAD`]).split('\n').filter(Boolean);
+    r"""  const committed = git(['diff', '--name-only', `${resolvedBase}...HEAD`]).split('\n').filter(Boolean);
   const working = git(['diff', '--name-only']).split('\n').filter(Boolean);
 """,
-    """  const committedComparison = resolveCommittedPathDiff({
+    r"""  const committedComparison = resolveCommittedPathDiff({
     mergeBaseDiff: () => git(['diff', '--name-only', `${resolvedBase}...HEAD`], { allowFailure: true }),
     treeDiff: () => git(['diff', '--name-only', resolvedBase, 'HEAD'], { allowFailure: true })
   });
