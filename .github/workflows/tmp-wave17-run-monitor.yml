@@ -27,9 +27,20 @@ jobs:
           set -euo pipefail
           branch=$(node -p "require('./.github/tmp/tmp-wave17-run-monitor-request.json').branch")
           encoded=$(node -p "encodeURIComponent(process.argv[1])" "$branch")
-          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs?branch=${encoded}&event=push&per_page=30" \
-            --jq --arg branch "$branch" '{observed_at: now | todate, branch: $branch, runs: [.workflow_runs[] | {id, name, workflow_id, run_number, status, conclusion, head_sha, event, created_at, updated_at, html_url}]}' \
-            > data/project/tmp-wave17-push-runs.json
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs?branch=${encoded}&event=push&per_page=30" > /tmp/wave17-runs.json
+          node - "$branch" <<'NODE'
+          const fs = require('fs');
+          const branch = process.argv[2];
+          const source = JSON.parse(fs.readFileSync('/tmp/wave17-runs.json', 'utf8'));
+          const runs = (source.workflow_runs || []).map(({id, name, workflow_id, run_number, status, conclusion, head_sha, event, created_at, updated_at, html_url}) => ({
+            id, name, workflow_id, run_number, status, conclusion, head_sha, event, created_at, updated_at, html_url
+          }));
+          fs.writeFileSync('data/project/tmp-wave17-push-runs.json', JSON.stringify({
+            observed_at: new Date().toISOString(),
+            branch,
+            runs
+          }) + '\n');
+          NODE
       - name: Commit observation
         shell: bash
         run: |
