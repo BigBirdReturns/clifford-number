@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: publication-sg06-materializer
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   materialize:
@@ -36,7 +36,10 @@ jobs:
           set -euo pipefail
           printf '%s  %s\n' 'f18fb8fcf414b7c5521c0b85b6ab0f07fc65628086ea0468193c97e3f6c2a141' .github/tmp/publication-sg06-bundle-part-00.b64 | sha256sum --check --strict
           printf '%s  %s\n' '85d353b82d98ae03d1dcd1d7657590fab213e6547ef2deebe7f77592a345f972' .github/tmp/publication-sg06-bundle-part-01.b64 | sha256sum --check --strict
-          printf '%s  %s\n' '1080ff70a0a7ddcc813105d784d17df08968cfe60d0dd1e757463367ff800a70' .github/tmp/publication-sg06-bundle-part-02.b64 | sha256sum --check --strict
+          printf '%s  %s\n' '224343fcbaaf68f3eea3f4c3becdb737c2ae99fe55ab91f4b0c2fd5016d3c058' .github/tmp/publication-sg06-bundle-part-020.b64 | sha256sum --check --strict
+          printf '%s  %s\n' 'ca2583e9b3f2955510a70ed6f8472fb054484a5383f712bc138738ec7ac4b319' .github/tmp/publication-sg06-bundle-part-021.b64 | sha256sum --check --strict
+          printf '%s  %s\n' '8a40454b4ab202f432e3cc22e8b216ba786be4c8a86db132ee9e056ecb1bcb7b' .github/tmp/publication-sg06-bundle-part-022.b64 | sha256sum --check --strict
+          printf '%s  %s\n' '19a2cb5d04a2e68d40774f0d0b2d125d411f139714e7f2016ae4508603fd65af' .github/tmp/publication-sg06-bundle-part-023.b64 | sha256sum --check --strict
           printf '%s  %s\n' '523d5917d9d5a4e59bdbbafc2ed5e0116b901c01f065a87a6c90421f35a82e2b' .github/tmp/publication-sg06-bundle-part-03.b64 | sha256sum --check --strict
           cat .github/tmp/publication-sg06-bundle-part-*.b64 | tr -d '\n\r\t ' > /tmp/publication-sg06-bundle.tar.xz.b64
           printf '%s  %s\n' 'aacb42c926d4fb66bcb56a98239c076cfaf4387917853038f12a02596f27c66b' /tmp/publication-sg06-bundle.tar.xz.b64 | sha256sum --check --strict
