@@ -1,0 +1,100 @@
+name: Temporary materialize stable-ground alignment
+
+on:
+  push:
+    branches: [agent/project-stable-ground-alignment]
+    paths:
+      - '.github/tmp/stable-ground-package.b64'
+      - '.github/workflows/temporary-materialize-stable-ground-alignment.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stable-ground-materialize-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/project-stable-ground-alignment
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Expand exact stable-ground package
+        run: |
+          set -euo pipefail
+          test "$(sha256sum .github/tmp/stable-ground-package.b64 | awk '{print $1}')" = "0f05f7de12e2ed3edf0335609e0b73912af2be498e874ea6f230d2618cb27299"
+          base64 -d .github/tmp/stable-ground-package.b64 > /tmp/stable-ground.tgz
+          test "$(sha256sum /tmp/stable-ground.tgz | awk '{print $1}')" = "7edb17fd691aff7a933b1ebd6dea27d735e2c990b0714b4b475da701a71f5e56"
+          tar -tzf /tmp/stable-ground.tgz | sort > /tmp/archive-paths.txt
+          cat > /tmp/expected-paths.txt <<'EOF'
+          .github/workflows/project-stable-ground-alignment.yml
+          data/project/project-stable-ground-alignment-release-manifest.json
+          data/project/project-stable-ground-alignment.json
+          docs/milestones/project-stable-ground-alignment.md
+          reports/core-thesis/stable-ground/checkpoint.json
+          reports/core-thesis/stable-ground/index.html
+          test/project-stable-ground-alignment.test.js
+          tools/build-project-stable-ground-alignment.mjs
+          tools/validate-project-stable-ground-alignment.mjs
+          EOF
+          sort -o /tmp/expected-paths.txt /tmp/expected-paths.txt
+          diff -u /tmp/expected-paths.txt /tmp/archive-paths.txt
+          tar -xzf /tmp/stable-ground.tgz -C .
+      - name: Run focused alignment checks
+        run: |
+          set -euo pipefail
+          node tools/build-project-stable-ground-alignment.mjs
+          node tools/validate-project-stable-ground-alignment.mjs
+          node test/project-stable-ground-alignment.test.js
+      - name: Prove deterministic alignment products
+        run: |
+          set -euo pipefail
+          sha256sum \
+            data/project/project-stable-ground-alignment-release-manifest.json \
+            reports/core-thesis/stable-ground/checkpoint.json \
+            reports/core-thesis/stable-ground/index.html > /tmp/before.sha256
+          node tools/build-project-stable-ground-alignment.mjs
+          node tools/validate-project-stable-ground-alignment.mjs
+          sha256sum \
+            data/project/project-stable-ground-alignment-release-manifest.json \
+            reports/core-thesis/stable-ground/checkpoint.json \
+            reports/core-thesis/stable-ground/index.html > /tmp/after.sha256
+          diff -u /tmp/before.sha256 /tmp/after.sha256
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Commit permanent non-workflow checkpoint
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            data/project/project-stable-ground-alignment.json \
+            data/project/project-stable-ground-alignment-release-manifest.json \
+            docs/milestones/project-stable-ground-alignment.md \
+            reports/core-thesis/stable-ground/checkpoint.json \
+            reports/core-thesis/stable-ground/index.html \
+            test/project-stable-ground-alignment.test.js \
+            tools/build-project-stable-ground-alignment.mjs \
+            tools/validate-project-stable-ground-alignment.mjs
+          git diff --cached --name-only | sort > /tmp/staged.txt
+          cat > /tmp/expected-staged.txt <<'EOF'
+          data/project/project-stable-ground-alignment-release-manifest.json
+          data/project/project-stable-ground-alignment.json
+          docs/milestones/project-stable-ground-alignment.md
+          reports/core-thesis/stable-ground/checkpoint.json
+          reports/core-thesis/stable-ground/index.html
+          test/project-stable-ground-alignment.test.js
+          tools/build-project-stable-ground-alignment.mjs
+          tools/validate-project-stable-ground-alignment.mjs
+          EOF
+          sort -o /tmp/expected-staged.txt /tmp/expected-staged.txt
+          diff -u /tmp/expected-staged.txt /tmp/staged.txt
+          git commit -m "Record project stable-ground alignment"
+          git push origin HEAD:agent/project-stable-ground-alignment
