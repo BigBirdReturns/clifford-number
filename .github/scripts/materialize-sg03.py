@@ -9,7 +9,12 @@ from pathlib import Path
 EXPECTED = {
     "package.json": "8e33d1dd3c510f34395b98eb9a9974a290888b66",
     "tools/build-project-stable-ground-sg03.mjs": "225046cb788ad88bc55b1e5f9d4b841d2811a8d0",
+    "data/project/project-stable-ground-sg03.json": "321a6aed71b52fb319e05808f9d9a1442ccd3701",
+    "tools/validate-project-stable-ground-sg03.mjs": "096c926e4f2695252de5496e24d41622081242dd",
+    "test/project-stable-ground-sg03.test.js": "5714331cfe7633a327391f9acaac4ff620ac9a91",
 }
+
+TRIGGER_POOF_RELEASE = "26ebcd554cdc4a0c7a9b21946decf098aba8e2720c0a11121459f9fddb126248"
 
 
 def git_blob_sha(data: bytes) -> str:
@@ -67,6 +72,16 @@ def patch_builder(root: Path) -> None:
     if text.count(old) != 1:
         raise RuntimeError("SG-03 release-scope workflow anchor drifted")
     text = text.replace(old, new, 1)
+    old_middle = """  'data/project/project-stable-ground-current.json',
+  'docs/milestones/project-stable-ground-sg03.md',
+"""
+    new_middle = """  'data/project/project-stable-ground-current.json',
+  'data/project/poof-clifford-ecology-release-manifest.json',
+  'docs/milestones/project-stable-ground-sg03.md',
+"""
+    if text.count(old_middle) != 1:
+        raise RuntimeError("SG-03 release-scope POOF anchor drifted")
+    text = text.replace(old_middle, new_middle, 1)
     old_tail = """  'tools/validate-project-stable-ground-sg02.mjs',
   'test/project-stable-ground-sg03.test.js',
   'test/project-stable-ground-sg02.test.js'
@@ -82,11 +97,59 @@ def patch_builder(root: Path) -> None:
     path.write_text(text.replace(old_tail, new_tail, 1))
 
 
+def patch_checkpoint(root: Path) -> None:
+    path = root / "data/project/project-stable-ground-sg03.json"
+    require_blob(path, EXPECTED["data/project/project-stable-ground-sg03.json"])
+    checkpoint = json.loads(path.read_text())
+    poof = checkpoint["canonical_snapshot"]["poof"]
+    poof["trigger_release_sha256"] = TRIGGER_POOF_RELEASE
+    poof["current_release_manifest"] = "data/project/poof-clifford-ecology-release-manifest.json"
+    poof["current_release_digest_bound_in_report"] = True
+    path.write_text(json.dumps(checkpoint, indent=2) + "\n")
+
+
+def patch_validator(root: Path) -> None:
+    path = root / "tools/validate-project-stable-ground-sg03.mjs"
+    require_blob(path, EXPECTED["tools/validate-project-stable-ground-sg03.mjs"])
+    text = path.read_text()
+    old_snapshot = """  equal(snapshot.poof.constitutional_change_receipts, 5, 'frozen POOF change-receipt count');
+  equal(snapshot.poof.staged, true, 'frozen POOF staged state');
+"""
+    new_snapshot = f"""  equal(snapshot.poof.constitutional_change_receipts, 5, 'frozen POOF change-receipt count');
+  equal(snapshot.poof.trigger_release_sha256, '{TRIGGER_POOF_RELEASE}', 'frozen trigger POOF release digest');
+  equal(snapshot.poof.current_release_manifest, 'data/project/poof-clifford-ecology-release-manifest.json', 'current POOF release-manifest path');
+  equal(snapshot.poof.current_release_digest_bound_in_report, true, 'current POOF report-binding law');
+  equal(snapshot.poof.staged, true, 'frozen POOF staged state');
+"""
+    if text.count(old_snapshot) != 1:
+        raise RuntimeError("SG-03 validator POOF snapshot anchor drifted")
+    text = text.replace(old_snapshot, new_snapshot, 1)
+    old_release = "  equal(poofRelease.combined_sha256, checkpoint.trigger.release_sha256, 'POOF exact release digest');"
+    new_release = "  check(/^[0-9a-f]{64}$/.test(poofRelease.combined_sha256), 'current POOF release digest format');"
+    if text.count(old_release) != 1:
+        raise RuntimeError("SG-03 validator POOF release anchor drifted")
+    path.write_text(text.replace(old_release, new_release, 1))
+
+
+def patch_test(root: Path) -> None:
+    path = root / "test/project-stable-ground-sg03.test.js"
+    require_blob(path, EXPECTED["test/project-stable-ground-sg03.test.js"])
+    text = path.read_text()
+    old = "    expected: 'POOF exact release digest'"
+    new = "    expected: 'SG-03 report POOF digest'"
+    if text.count(old) != 1:
+        raise RuntimeError("SG-03 POOF digest mutation anchor drifted")
+    path.write_text(text.replace(old, new, 1))
+
+
 def main() -> int:
     root = Path(__file__).resolve().parents[2]
     patch_package(root)
     patch_builder(root)
-    print("materialize-sg03.py: release-gate integration applied")
+    patch_checkpoint(root)
+    patch_validator(root)
+    patch_test(root)
+    print("materialize-sg03.py: release-gate and derived POOF release integration applied")
     return 0
 
 
