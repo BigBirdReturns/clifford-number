@@ -1,0 +1,41 @@
+name: Temporary exact Wave 16 clean-head validation
+
+on:
+  push:
+    branches:
+      - agent/lake-subject-integration-wave-16
+    paths:
+      - '.github/tmp/tmp-wave16-exact-clean-head-validation-trigger.json'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 1d7e2ca218db1a9db4be5450e39fba8c494a7e0a
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prove the exact materialized Wave 16 commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = '1d7e2ca218db1a9db4be5450e39fba8c494a7e0a'
+          test ! -e .github/tmp/lake-subject-integration-wave-16-trigger.json
+          npm run release:check
+          git reset --hard HEAD
+          git clean -fd
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-canonical-subject-projection-wave-13.mjs
+          node tools/validate-lake-subject-integration-wave-16.mjs
+          node test/lake-canonical-subject-projection-wave-13.test.js
+          node test/lake-subject-integration-wave-16.test.js
+          git reset --hard HEAD
+          git clean -fd
+          test -z "$(git status --porcelain)"
