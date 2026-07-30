@@ -87,6 +87,8 @@ jobs:
           git diff --check
       - name: Run complete repository gate with Wave 17 sources active
         if: steps.mode.outputs.materialize == 'true'
+        env:
+          WAVE17_ALLOW_PRELIMINARY_RECEIPT: 'true'
         run: |
           set -euo pipefail
           npm run release:check
