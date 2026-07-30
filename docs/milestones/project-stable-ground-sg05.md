@@ -19,5 +19,3 @@ publication: blocked
 ```
 
 The checkpoint does not classify patriotism as white power, does not treat multiracial participation as neutrality or tokenism proof, and does not turn public industrial policy, private profit, disparity, rhetoric, topology, or issue count into a finding.
-
-<!-- final repaired exact-head trigger -->
