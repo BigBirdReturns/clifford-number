@@ -39,7 +39,7 @@ jobs:
           test "$(sha256sum /tmp/stable-ground.tgz | awk '{print $1}')" = "7edb17fd691aff7a933b1ebd6dea27d735e2c990b0714b4b475da701a71f5e56"
           rm -rf /tmp/stable-ground-extract
           mkdir -p /tmp/stable-ground-extract
-          tar -xzf /tmp/stable-ground.tgz -C /tmp/stable-ground-extract
+          tar --no-same-owner --no-same-permissions -xzf /tmp/stable-ground.tgz -C /tmp/stable-ground-extract
           find /tmp/stable-ground-extract -type f -printf '%P\n' | sort > /tmp/archive-paths.txt
           cat > /tmp/expected-paths.txt <<'EOF'
           .github/workflows/project-stable-ground-alignment.yml
@@ -54,7 +54,7 @@ jobs:
           EOF
           sort -o /tmp/expected-paths.txt /tmp/expected-paths.txt
           diff -u /tmp/expected-paths.txt /tmp/archive-paths.txt
-          cp -a /tmp/stable-ground-extract/. .
+          cp -R /tmp/stable-ground-extract/. .
       - name: Run focused alignment checks
         run: |
           set -euo pipefail
