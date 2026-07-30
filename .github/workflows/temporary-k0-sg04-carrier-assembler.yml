@@ -1,0 +1,75 @@
+name: Temporary assemble SG-04 source carrier
+
+on:
+  pull_request_target:
+    types: [synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: k0-sg04-carrier-assembler
+  cancel-in-progress: false
+
+jobs:
+  assemble:
+    if: >-
+      github.event.pull_request.number == 405 &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/k0-role-neutral-wave-08'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: BigBirdReturns/clifford-number
+          ref: agent/k0-role-neutral-wave-08
+          fetch-depth: 0
+      - name: Assemble exact ordered carrier
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          old_head="$(git rev-parse HEAD)"
+          test "$old_head" = "$EXPECTED_HEAD"
+          printf '%s\n' "$old_head" > /tmp/old-head
+
+          carrier='.github/tmp/sg04-source.tar.gz.b64'
+          mapfile -t chunks < <(find .github/tmp -maxdepth 1 -type f -name 'sg04-source-part-*.b64' | sort)
+          if test -f "$carrier" && test "${#chunks[@]}" -eq 0; then
+            printf '%s  %s\n' '116d7d7aebc8452a8b08b0a3b1244bb274ab4efffc2e795ab475049502a7f58f' "$carrier" | sha256sum --check --strict
+            echo 'exact SG-04 carrier already assembled'
+            exit 0
+          fi
+          if test "${#chunks[@]}" -ne 7; then
+            echo "carrier incomplete: observed ${#chunks[@]} of 7 ordered chunks"
+            exit 0
+          fi
+          printf '%s\n' \
+            '.github/tmp/sg04-source-part-00.b64' \
+            '.github/tmp/sg04-source-part-01.b64' \
+            '.github/tmp/sg04-source-part-02.b64' \
+            '.github/tmp/sg04-source-part-03.b64' \
+            '.github/tmp/sg04-source-part-04.b64' \
+            '.github/tmp/sg04-source-part-05.b64' \
+            '.github/tmp/sg04-source-part-06.b64' > /tmp/expected-chunks
+          printf '%s\n' "${chunks[@]}" > /tmp/observed-chunks
+          diff -u /tmp/expected-chunks /tmp/observed-chunks
+
+          cat "${chunks[@]}" > "$carrier"
+          printf '%s  %s\n' '116d7d7aebc8452a8b08b0a3b1244bb274ab4efffc2e795ab475049502a7f58f' "$carrier" | sha256sum --check --strict
+          rm -f "${chunks[@]}"
+          git add -A
+          git diff --cached --check
+          test "$(git diff --cached --name-only | wc -l)" -eq 8
+      - name: Publish assembled carrier under exact lease
+        run: |
+          set -euo pipefail
+          old_head="$(cat /tmp/old-head)"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Assemble exact SG-04 source carrier'
+          git push --force-with-lease=refs/heads/agent/k0-role-neutral-wave-08:"$old_head" origin HEAD:agent/k0-role-neutral-wave-08
