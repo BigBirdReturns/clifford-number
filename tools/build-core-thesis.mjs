@@ -41,6 +41,7 @@ function validateCore(thesis, alignment) {
   const archetypes = thesis.archetypes ?? [];
   const reports = thesis.report_contracts ?? [];
   const visuals = thesis.visualization_contracts ?? [];
+  const fieldHypotheses = thesis.field_hypothesis_bridges ?? [];
 
   assert(phases.length === 5, `expected 5 historical phases, saw ${phases.length}`);
   assert(stages.length === 7, `expected 7 conversion stages, saw ${stages.length}`);
@@ -48,6 +49,13 @@ function validateCore(thesis, alignment) {
   assert(archetypes.length === 10, `expected 10 archetypes, saw ${archetypes.length}`);
   assert(reports.length === 9, `expected 9 report contracts, saw ${reports.length}`);
   assert(visuals.length === 7, `expected 7 visualization contracts, saw ${visuals.length}`);
+  assert(fieldHypotheses.length === 2, `expected 2 field hypothesis bridges, saw ${fieldHypotheses.length}`);
+  assert(unique(fieldHypotheses.map((row) => row.hypothesis_id)), 'duplicate field hypothesis bridge');
+  for (const row of fieldHypotheses) {
+    assert(row.hypothesis_id && row.label && row.path && row.question && row.authority_ceiling, 'incomplete field hypothesis bridge');
+    assert(row.graph_effect === 'none', `${row.hypothesis_id}: graph effect must be none`);
+    assert(fs.existsSync(path.join(root, row.path)), `${row.hypothesis_id}: missing field hypothesis source ${row.path}`);
+  }
 
   for (const [label, rows, key] of [
     ['phase', phases, 'phase_id'],
@@ -110,6 +118,7 @@ function validateCore(thesis, alignment) {
     archetypes,
     reports,
     visuals,
+    fieldHypotheses,
     estateRows
   };
 }
@@ -150,6 +159,7 @@ function renderHtml(data) {
   const archetypes = thesis.archetypes.map((row) => `<article class="card"><p class="eyebrow">${escapeHtml(row.archetype_id)}</p><h3>${escapeHtml(row.label)}</h3><p>${escapeHtml(row.function)}</p></article>`).join('');
   const reportCards = thesis.report_contracts.map((row) => `<article class="card"><p class="eyebrow">${escapeHtml(row.report_type_id)}</p><h3>${escapeHtml(row.label)}</h3><p>${escapeHtml(row.question)}</p><details><summary>Required panels</summary><ul>${row.required_panels.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></details></article>`).join('');
   const visualCards = thesis.visualization_contracts.map((row) => `<article class="card"><p class="eyebrow">${escapeHtml(row.visualization_id)}</p><h3>${escapeHtml(row.label)}</h3><p>${escapeHtml(row.purpose)}</p></article>`).join('');
+  const fieldHypothesisCards = thesis.field_hypothesis_bridges.map((row) => `<article class="card"><p class="eyebrow">${escapeHtml(row.hypothesis_id)} · ${escapeHtml(row.authority_ceiling)}</p><h3>${escapeHtml(row.label)}</h3><p>${escapeHtml(row.question)}</p><p><code>${escapeHtml(row.path)}</code></p></article>`).join('');
 
   return `<!doctype html>
 <html lang="en">
@@ -162,7 +172,7 @@ function renderHtml(data) {
     :root{color-scheme:dark;--bg:#070a10;--panel:#101722;--panel2:#151f2d;--text:#edf3f8;--muted:#9fb0c2;--line:#2b3a4d;--accent:#8fd3ff;--accent2:#f2cc60;--ok:#9ee6b4;--max:1480px}
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 15% 0,#172234 0,transparent 32%),var(--bg);color:var(--text);font:16px/1.55 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     a{color:var(--accent)}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.wrap{width:min(var(--max),calc(100% - 32px));margin:auto}.top{position:sticky;top:0;z-index:10;background:rgba(7,10,16,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}.top .wrap{display:flex;gap:18px;align-items:center;justify-content:space-between;padding:12px 0}.top nav{display:flex;gap:14px;flex-wrap:wrap}.top a{text-decoration:none;color:var(--muted)}.top strong{color:var(--text)}
-    header{padding:72px 0 44px}.eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:.76rem;color:var(--accent2);font-weight:700}.hero h1{font-size:clamp(2.6rem,7vw,6.8rem);line-height:.93;max-width:1100px;margin:.16em 0}.lede{font-size:clamp(1.12rem,2vw,1.45rem);max-width:920px;color:var(--muted)}.thesis{border-left:4px solid var(--accent);padding:18px 22px;background:rgba(16,23,34,.8);font-size:1.08rem;max-width:1180px}.metrics{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:10px;margin-top:28px}.metric{padding:16px;background:var(--panel);border:1px solid var(--line);border-radius:12px}.metric b{display:block;font-size:1.8rem}.metric span{color:var(--muted);font-size:.82rem}
+    header{padding:72px 0 44px}.eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:.76rem;color:var(--accent2);font-weight:700}.hero h1{font-size:clamp(2.6rem,7vw,6.8rem);line-height:.93;max-width:1100px;margin:.16em 0}.lede{font-size:clamp(1.12rem,2vw,1.45rem);max-width:920px;color:var(--muted)}.thesis{border-left:4px solid var(--accent);padding:18px 22px;background:rgba(16,23,34,.8);font-size:1.08rem;max-width:1180px}.metrics{display:grid;grid-template-columns:repeat(7,minmax(120px,1fr));gap:10px;margin-top:28px}.metric{padding:16px;background:var(--panel);border:1px solid var(--line);border-radius:12px}.metric b{display:block;font-size:1.8rem}.metric span{color:var(--muted);font-size:.82rem}
     section{padding:42px 0;border-top:1px solid var(--line)}h2{font-size:clamp(1.8rem,4vw,3.4rem);margin:.2em 0 .45em}h3{margin:.15em 0 .5em}h4{margin-bottom:.25em}.section-intro{color:var(--muted);max-width:900px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}.card{background:linear-gradient(145deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:14px;padding:18px}.card p{color:var(--muted)}details{border-top:1px solid var(--line);padding-top:10px}summary{cursor:pointer;color:var(--accent)}
     .pipeline{display:grid;gap:10px}.stage{display:grid;grid-template-columns:56px 1fr;gap:15px;align-items:start;padding:18px;background:var(--panel);border:1px solid var(--line);border-radius:12px}.step{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:var(--accent);color:#04101a;font-weight:900}.small{font-size:.88rem;color:var(--muted)}
     .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;width:100%;min-width:1050px;background:var(--panel)}th,td{padding:12px;vertical-align:top;text-align:left;border-bottom:1px solid var(--line)}thead th{position:sticky;top:0;background:#111a27;z-index:2}.pill,.record{display:inline-block;padding:3px 7px;border:1px solid var(--line);border-radius:999px;margin:2px;font-size:.75rem;color:var(--muted)}.record{border-radius:5px}.search{width:100%;max-width:620px;padding:12px 14px;background:#0b111a;color:var(--text);border:1px solid var(--line);border-radius:9px;margin:8px 0 16px}
@@ -183,6 +193,7 @@ function renderHtml(data) {
       <div class="metric"><b>${manifest.counts.intentionality_levels}</b><span>intentionality levels</span></div>
       <div class="metric"><b>${manifest.counts.archetypes}</b><span>recurring archetypes</span></div>
       <div class="metric"><b>${manifest.counts.report_contracts}</b><span>report contracts</span></div>
+      <div class="metric"><b>${manifest.counts.field_hypothesis_bridges}</b><span>field hypotheses</span></div>
       <div class="metric"><b>${manifest.counts.estates}</b><span>aligned estates</span></div>
     </div>
   </div></header>
@@ -193,6 +204,7 @@ function renderHtml(data) {
     <section id="intent"><div class="wrap"><p class="eyebrow">Actor-specific review</p><h2>Intentionality ladder</h2><p class="section-intro">The levels are separate propositions, not a score or presumption of escalation.</p><div class="table-wrap"><table><thead><tr><th>Level</th><th>Meaning</th><th>Minimum evidence</th><th>Forbidden shortcut</th></tr></thead><tbody>${intentRows}</tbody></table></div></div></section>
     <section id="archetypes"><div class="wrap"><p class="eyebrow">Persistent functions</p><h2>Ten recurring archetypes</h2><p class="section-intro">The signal is role stacking and sequence, not the mere existence of a function.</p><div class="grid">${archetypes}</div></div></section>
     <section id="estates"><div class="wrap"><p class="eyebrow">Project realignment</p><h2>Twenty-four estates under one falsifiable grammar</h2><p class="section-intro">Alignment routes research. It does not merge estates or assign findings.</p><input class="search" id="estate-search" type="search" placeholder="Filter estates, records, or questions" aria-label="Filter estate alignment"><div class="table-wrap"><table><thead><tr><th>Estate</th><th>Phases</th><th>Stages</th><th>Priority questions</th><th>Decisive records</th><th>Falsification</th></tr></thead><tbody>${estateRows}</tbody></table></div></div></section>
+    <section id="hypotheses"><div class="wrap"><p class="eyebrow">Cross-system field hypotheses</p><h2>Two graph-inert hypothesis bridges</h2><p class="section-intro">These objects organize bounded acquisition and falsification. They do not create prevalence, coordination, racial-order, or common-purpose findings.</p><div class="grid">${fieldHypothesisCards}</div></div></section>
     <section id="reports"><div class="wrap"><p class="eyebrow">Outputs</p><h2>Nine report contracts</h2><div class="grid">${reportCards}</div></div></section>
     <section id="visuals"><div class="wrap"><p class="eyebrow">Visual grammar</p><h2>Seven task-specific projections</h2><div class="grid">${visualCards}</div></div></section>
     <section id="boundary"><div class="wrap"><div class="boundary"><h2>Interpretation boundary</h2><p>${escapeHtml(thesis.interpretation_contract.copy_ready_caveat)}</p><p><code>graph_effect: none</code> · <code>conclusion_generated: false</code> · <code>machine_synthesis_ceiling: eligible_for_human_synthesis</code></p></div></div></section>
@@ -227,6 +239,7 @@ export function buildCoreThesis({ write = true } = {}) {
       archetypes: validated.archetypes.length,
       report_contracts: validated.reports.length,
       visualization_contracts: validated.visuals.length,
+      field_hypothesis_bridges: validated.fieldHypotheses.length,
       estates: validated.estateRows.length
     },
     waterline: {

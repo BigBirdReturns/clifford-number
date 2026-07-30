@@ -49,6 +49,8 @@ export function validateCoreThesis() {
       'From problem framing to reversibility',
       'Intentionality ladder',
       'Twenty-four estates under one falsifiable grammar',
+      'Two graph-inert hypothesis bridges',
+      'SSC-H01',
       'Nine report contracts',
       'Interpretation boundary'
     ]) {

@@ -1,0 +1,143 @@
+name: Status-for-sovereignty compact
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/intake/status-sovereignty-*'
+      - 'data/project/status-sovereignty-*'
+      - 'schemas/status-sovereignty-*'
+      - 'docs/methods/status-sovereignty-*'
+      - 'docs/milestones/m05-status-sovereignty-*'
+      - 'tools/*status-sovereignty*'
+      - 'test/status-sovereignty-*'
+      - 'reports/core-thesis/status-sovereignty/**'
+      - 'build/core-thesis/status-sovereignty/**'
+      - 'data/project/core-thesis.json'
+      - 'tools/build-core-thesis.mjs'
+      - 'tools/validate-core-thesis.mjs'
+      - 'test/core-thesis.test.js'
+      - 'data/project/dca-h01-field-hypothesis.json'
+      - 'data/project/m05-answerable-power-story-registry.json'
+      - 'data/project/m05-answerable-power-fanout.json'
+      - 'data/project/security-state-organism-program.json'
+      - 'tools/build-pages.mjs'
+      - 'tools/validate-pages.mjs'
+      - 'package.json'
+      - 'data/project/project-stable-ground-governor.json'
+      - 'data/project/project-stable-ground-current.json'
+      - 'data/project/project-stable-ground-sg05*.json'
+      - 'docs/milestones/project-stable-ground-sg05.md'
+      - 'tools/build-project-stable-ground-sg05.mjs'
+      - 'tools/validate-project-stable-ground-sg05.mjs'
+      - 'test/project-stable-ground-sg05.test.js'
+      - '.github/workflows/project-stable-ground-sg05.yml'
+      - '.github/workflows/status-sovereignty-compact.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/intake/status-sovereignty-*'
+      - 'data/project/status-sovereignty-*'
+      - 'schemas/status-sovereignty-*'
+      - 'docs/methods/status-sovereignty-*'
+      - 'docs/milestones/m05-status-sovereignty-*'
+      - 'tools/*status-sovereignty*'
+      - 'test/status-sovereignty-*'
+      - 'reports/core-thesis/status-sovereignty/**'
+      - 'build/core-thesis/status-sovereignty/**'
+      - 'data/project/core-thesis.json'
+      - 'tools/build-core-thesis.mjs'
+      - 'tools/validate-core-thesis.mjs'
+      - 'test/core-thesis.test.js'
+      - 'data/project/dca-h01-field-hypothesis.json'
+      - 'data/project/m05-answerable-power-story-registry.json'
+      - 'data/project/m05-answerable-power-fanout.json'
+      - 'data/project/security-state-organism-program.json'
+      - 'tools/build-pages.mjs'
+      - 'tools/validate-pages.mjs'
+      - 'package.json'
+      - 'data/project/project-stable-ground-governor.json'
+      - 'data/project/project-stable-ground-current.json'
+      - 'data/project/project-stable-ground-sg05*.json'
+      - 'docs/milestones/project-stable-ground-sg05.md'
+      - 'tools/build-project-stable-ground-sg05.mjs'
+      - 'tools/validate-project-stable-ground-sg05.mjs'
+      - 'test/project-stable-ground-sg05.test.js'
+      - '.github/workflows/project-stable-ground-sg05.yml'
+      - '.github/workflows/status-sovereignty-compact.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build and validate SSC-H01
+        run: |
+          node tools/build-status-sovereignty-compact.mjs
+          node tools/validate-status-sovereignty-compact.mjs
+          node test/status-sovereignty-compact.test.js
+      - name: Revalidate joined constitutional surfaces
+        run: |
+          node tools/build-core-thesis.mjs
+          node tools/validate-core-thesis.mjs
+          node test/core-thesis.test.js
+          node tools/build-dca-h01.mjs
+          node tools/validate-dca-h01.mjs
+          node test/dca-h01.test.js
+          node tools/build-m05-answerable-power.mjs
+          node tools/validate-m05-answerable-power.mjs
+          node test/m05-answerable-power.test.js
+          node tools/build-security-state-organism.mjs
+          node tools/validate-security-state-organism.mjs
+          node test/security-state-organism.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic SSC-H01 and joined products
+        run: |
+          git restore --staged --worktree .
+          node tools/build-status-sovereignty-compact.mjs
+          node tools/build-core-thesis.mjs
+          node tools/build-dca-h01.mjs
+          node tools/build-m05-answerable-power.mjs
+          node tools/build-security-state-organism.mjs
+          node tools/build-project-stable-ground-sg05.mjs
+          node tools/build-k0-epistemic-admissibility.mjs
+          node tools/build-poof-clifford-ecology.mjs
+          git diff --exit-code -- \
+            data/project/status-sovereignty-release-manifest.json \
+            build/core-thesis/status-sovereignty/manifest.json \
+            build/core-thesis/status-sovereignty/data.json \
+            reports/core-thesis/status-sovereignty/data.json \
+            reports/core-thesis/status-sovereignty/index.html \
+            build/core-thesis/manifest.json \
+            build/core-thesis/data.json \
+            reports/core-thesis/data.json \
+            reports/core-thesis/index.html \
+            data/project/dca-h01-release-manifest.json \
+            reports/core-thesis/distributed-counterpower-aversion/data.json \
+            reports/core-thesis/distributed-counterpower-aversion/index.html \
+            reports/core-thesis/answerable-power/data.json \
+            reports/core-thesis/answerable-power/index.html \
+            build/core-thesis/security-state-organism/manifest.json \
+            build/core-thesis/security-state-organism/fanout.json \
+            build/core-thesis/security-state-organism/issue-plan.json \
+            reports/core-thesis/security-state-organism/data.json \
+            reports/core-thesis/security-state-organism/index.html \
+            data/project/project-stable-ground-sg05-release-manifest.json \
+            reports/core-thesis/stable-ground/sg05/checkpoint.json \
+            reports/core-thesis/stable-ground/sg05/index.html \
+            data/project/k0-epistemic-admissibility-release-manifest.json \
+            reports/core-thesis/answerable-power/k0.json \
+            reports/core-thesis/answerable-power/k0.html \
+            data/project/poof-clifford-ecology-release-manifest.json \
+            reports/core-thesis/poof-clifford-ecology/release-manifest.json

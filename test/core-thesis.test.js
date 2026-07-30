@@ -16,6 +16,9 @@ assert.equal(thesis.intentionality_levels.length, 6);
 assert.equal(thesis.archetypes.length, 10);
 assert.equal(thesis.report_contracts.length, 9);
 assert.equal(thesis.visualization_contracts.length, 7);
+assert.equal(thesis.field_hypothesis_bridges.length, 2);
+assert.deepEqual(thesis.field_hypothesis_bridges.map((row) => row.hypothesis_id), ['DCA-H01', 'SSC-H01']);
+assert(thesis.field_hypothesis_bridges.every((row) => row.graph_effect === 'none'));
 assert.equal(alignment.estates.length, 24);
 
 assert.deepEqual(manifest.counts, {
@@ -25,6 +28,7 @@ assert.deepEqual(manifest.counts, {
   archetypes: 10,
   report_contracts: 9,
   visualization_contracts: 7,
+  field_hypothesis_bridges: 2,
   estates: 24
 });
 assert.equal(manifest.graph_effect, 'none');
