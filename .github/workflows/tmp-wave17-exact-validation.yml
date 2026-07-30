@@ -8,7 +8,7 @@ on:
       - '.github/tmp/tmp-wave17-exact-validation-trigger.json'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ce5a3b6f4091f8832d927357a3e1d9d2e6739fb0
+          ref: ${{ github.sha }}
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
@@ -25,6 +25,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          original_sha=$(git rev-parse HEAD)
+          git worktree add --detach /tmp/wave17-exact ce5a3b6f4091f8832d927357a3e1d9d2e6739fb0
+          cd /tmp/wave17-exact
           test "$(git rev-parse HEAD)" = 'ce5a3b6f4091f8832d927357a3e1d9d2e6739fb0'
           npm run release:check
           git reset --hard HEAD
@@ -38,3 +41,26 @@ jobs:
           git reset --hard HEAD
           git clean -fd
           test -z "$(git status --porcelain)"
+          cd "$GITHUB_WORKSPACE"
+          mkdir -p data/project
+          cat > data/project/tmp-wave17-exact-validation-result.json <<JSON
+          {
+            "schema_version": "tmp-wave17-exact-validation-result@1",
+            "target_commit": "ce5a3b6f4091f8832d927357a3e1d9d2e6739fb0",
+            "workflow_run_id": "${GITHUB_RUN_ID}",
+            "workflow_run_attempt": "${GITHUB_RUN_ATTEMPT}",
+            "release_check_passed": true,
+            "lake_shard_validation_passed": true,
+            "lake_basin_validation_passed": true,
+            "wave_17_validation_passed": true,
+            "wave_17_regression_passed": true,
+            "clean_worktree_restored": true
+          }
+          JSON
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/project/tmp-wave17-exact-validation-result.json
+          git commit -m 'Record exact Wave 17 clean-head validation'
+          git fetch origin agent/tmp-wave17-exact-validation
+          test "$(git rev-parse origin/agent/tmp-wave17-exact-validation)" = "$original_sha"
+          git push origin HEAD:agent/tmp-wave17-exact-validation
