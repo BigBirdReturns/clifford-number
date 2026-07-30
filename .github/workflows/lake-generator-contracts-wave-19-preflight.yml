@@ -1,0 +1,114 @@
+name: Evidence lake generator contracts Wave 19 preflight
+
+on:
+  push:
+    branches:
+      - agent/lake-generator-contracts-wave-19
+    paths:
+      - '.github/tmp/lake-generator-contracts-wave-19-preflight-trigger.json'
+  pull_request:
+    branches:
+      - agent/lake-identifier-topology-wave-18
+    paths:
+      - 'data/project/lake-generator-contracts-wave-19-policy.json'
+      - 'tools/build-lake-generator-contracts-wave-19.mjs'
+      - '.github/workflows/lake-generator-contracts-wave-19-preflight.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lake-generator-contracts-wave-19-preflight-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Determine execution mode
+        id: mode
+        shell: bash
+        run: |
+          echo "original_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if test "$GITHUB_EVENT_NAME" = 'push' \
+            && test -f .github/tmp/lake-generator-contracts-wave-19-preflight-trigger.json; then
+            echo 'materialize=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Build deterministic generator-contract preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/build-lake-generator-contracts-wave-19.mjs
+          node tools/build-lake-generator-contracts-wave-19.mjs
+          sha256sum \
+            build/lake-actions/generator-contracts-wave-19-preflight.json \
+            build/lake-actions/generator-contracts-wave-19-diagnostics.json \
+            reports/lake-generator-contracts-wave-19-preflight.md \
+            reports/lake-generator-contracts-wave-19-diagnostics.md > /tmp/wave19-preflight.sha256
+          node tools/build-lake-generator-contracts-wave-19.mjs
+          sha256sum --check --strict /tmp/wave19-preflight.sha256
+          node - <<'NODE'
+          const fs = require('fs');
+          const policy = JSON.parse(fs.readFileSync('data/project/lake-generator-contracts-wave-19-policy.json'));
+          const preflight = JSON.parse(fs.readFileSync(policy.paths.preflight));
+          const c = preflight.counts;
+          if (c.generator_action_rows !== 411) throw new Error('Wave 19 action denominator drift');
+          if (c.generator_action_classifications.same_path_generator_contract_candidates !== 8) throw new Error('same-path denominator drift');
+          if (c.generator_action_classifications.single_family_schema_or_version_variants !== 273) throw new Error('single-family denominator drift');
+          if (c.generator_action_classifications.mixed_typed_views_and_intra_family_variants !== 130) throw new Error('mixed-family denominator drift');
+          if (c.unresolved_generator_scope_rows !== 0) throw new Error('unresolved generator scope remains');
+          if (!preflight.completion.all_411_actions_have_named_contracts) throw new Error('not every action has a named contract');
+          if (preflight.completion.review_required_to_decide !== false) throw new Error('human-permission dependency introduced');
+          if (preflight.completion.graph_effect !== 'none') throw new Error('graph effect introduced');
+          console.log({
+            actions: c.generator_action_rows,
+            contracts: c.distinct_generator_contracts,
+            links: c.generator_contract_links,
+            exact_path_contracts: c.exact_path_contracts,
+            projection_family_contracts: c.projection_family_contracts
+          });
+          NODE
+          test "$(stat -c %s build/lake-actions/generator-contracts-wave-19-preflight.json)" -le 8000000
+          test "$(stat -c %s build/lake-actions/generator-contracts-wave-19-diagnostics.json)" -le 8000000
+          git diff --check
+      - name: Run canonical repository gate in a clean detached worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/wave19-gate "${{ steps.mode.outputs.original_sha }}"
+          cd /tmp/wave19-gate
+          npm run release:check
+          git reset --hard HEAD
+          git clean -fd
+          test -z "$(git status --porcelain)"
+      - name: Commit preflight checkpoint
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/tmp/lake-generator-contracts-wave-19-preflight-trigger.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --check
+          git commit -m 'Census generator contracts Wave 19'
+          git fetch origin agent/lake-generator-contracts-wave-19
+          test "$(git rev-parse origin/agent/lake-generator-contracts-wave-19)" = "${{ steps.mode.outputs.original_sha }}"
+          git push origin HEAD:agent/lake-generator-contracts-wave-19
+      - name: Preserve clean nonmaterializing worktree
+        if: steps.mode.outputs.materialize != 'true'
+        shell: bash
+        run: |
+          git reset --hard HEAD
+          git clean -fd
+          test -z "$(git status --porcelain)"
