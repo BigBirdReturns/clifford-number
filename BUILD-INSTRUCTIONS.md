@@ -377,3 +377,15 @@ infrastructure, products, sites, roles, and analytic constructs are not forced i
 actor or organization joins. Integration creates no relationship, participation row,
 graph edge, hop, cross-case bridge, truth determination, or publication clearance.
 Sealed Wave 14 and Wave 15 products remain historical and are not regenerated.
+
+3.17 **Residual lake frontier — Wave 17.**
+Every baseline evidence path lacking a detected owner receives a bounded semantic or
+repository-custody owner in the Wave 17 residual-path registry. The registry is an
+index route and custody decision; it does not prove claim truth or semantic completeness.
+
+Every baseline projection-only compound identifier receives a repository-provenance
+record. A cross-key source occurrence means the same value exists under another
+repository key; it does not authorize unrestricted cross-key joins. A deterministic
+projection recipe is source custody for the generated identifier, not external evidence.
+Typed refusals remain valid executable outcomes, and missing a reviewer is never a
+standalone blocker for reversible indexing or custody work.

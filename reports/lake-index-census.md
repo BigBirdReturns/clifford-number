@@ -1,35 +1,35 @@
 # Lake index census
 
-Source fingerprint: `2acd11b4019aab774b7b9b302421ce383f6c0911253129b8f482c849559b7c12`
+Source fingerprint: `7b3756f276fca047849f7adc2ef5a7f68ea823d9c660064c2cea61fbeca0d0db`
 
 ## The six waterlines
 
 | Waterline | Count | Share of evidence files |
 |---|---:|---:|
-| Tracked evidence-bearing files physically present | 1360 | 100.0% |
-| Reachable from declared authoritative roots | 1206 | 88.7% |
-| Reachable from any detected index or manifest | 1214 | 89.3% |
-| Reachable from current public entry roots | 244 | 17.9% |
-| Exact orphan evidence files with no inbound repository reference | 106 | 7.8% |
-| Evidence files with no detected program owner | 601 | 44.2% |
+| Tracked evidence-bearing files physically present | 1367 | 100.0% |
+| Reachable from declared authoritative roots | 1367 | 100.0% |
+| Reachable from any detected index or manifest | 1367 | 100.0% |
+| Reachable from current public entry roots | 244 | 17.8% |
+| Exact orphan evidence files with no inbound repository reference | 0 | 0.0% |
+| Evidence files with no detected program owner | 0 | 0.0% |
 
 ## Object and receipt census
 
 ```text
-distinct machine-addressable IDs:       15380
+distinct machine-addressable IDs:       15381
 local-only identifier values observed:   1152
 local-only identifier occurrences:       8071
-unindexed machine-addressable IDs:      8217
-divergent identifier projections:       3128
+unindexed machine-addressable IDs:      6661
+divergent identifier projections:       3129
 source IDs without a projection:         5612
-projection IDs without a source object:  2000
+projection IDs without a source object:  0
 receipt IDs:                             350
 undefined receipt references:            0
 unused receipt definitions:              49
 receipt locator tokens:                   11
 receipt content-hash tokens:              30
 inline receipt-use IDs:                   224
-program IDs:                             17
+program IDs:                             18
 case IDs:                                30
 case IDs absent from public catalog:      26
 report IDs:                              5
@@ -38,9 +38,9 @@ report IDs:                              5
 ## Branch-shadow census
 
 ```text
-open pull requests observed:              40
-changed paths across open pull requests:  558
-branch-only paths observed:               214
+open pull requests observed:              28
+changed paths across open pull requests:  472
+branch-only paths observed:               108
 ```
 
 Open-PR paths are a shadow inventory only. They are not merged corpus, evidence truth, or publication state.

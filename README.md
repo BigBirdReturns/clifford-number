@@ -205,3 +205,12 @@ analytic construct.
 
 This projection preserves source claim bytes and creates no relationship,
 participation, graph edge, hop, or automatic cross-case join.
+
+## Residual lake frontier
+
+Wave 17 separates four residuals that must not be collapsed: program ownership,
+exact orphan status, index reachability, and projection lineage. It assigns bounded
+custody, creates explicit index routes, and records how generated identifiers arise.
+These repairs improve addressability; they do not establish evidence truth, historical
+completeness, remote source-byte custody, publication clearance, or a common-purpose
+conclusion.
