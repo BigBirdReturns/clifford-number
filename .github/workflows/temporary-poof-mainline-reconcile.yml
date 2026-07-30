@@ -1,0 +1,41 @@
+name: Temporary POOF mainline reconciliation probe
+
+on:
+  push:
+    branches:
+      - agent/poof-clifford-ecology
+    paths:
+      - '.github/workflows/temporary-poof-mainline-reconcile.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/poof-clifford-ecology
+          fetch-depth: 0
+      - name: Probe merge against canonical main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          set +e
+          git merge --no-commit --no-ff origin/main
+          merge_status=$?
+          set -e
+          echo "merge_status=${merge_status}"
+          echo '--- unresolved paths ---'
+          git diff --name-status --diff-filter=U || true
+          echo '--- all merge-state paths ---'
+          git status --short
+          if [ "$merge_status" -ne 0 ]; then
+            exit "$merge_status"
+          fi
+          git merge --abort
