@@ -1,6 +1,10 @@
 name: Temporary K0 SG-04 post-merge cleanup transport
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-k0-sg04-postmerge-cleanup-transport.yml'
   pull_request_target:
     types: [synchronize, reopened, ready_for_review]
 
@@ -14,9 +18,10 @@ concurrency:
 jobs:
   cleanup:
     if: >-
-      github.event.pull_request.number == 461 &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.head.ref == 'agent/k0-sg04-postmerge-cleanup'
+      github.event_name == 'push' ||
+      (github.event.pull_request.number == 461 &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/k0-sg04-postmerge-cleanup')
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -29,6 +34,12 @@ jobs:
         with:
           node-version: '24'
       - name: Execute exact transport-free correction
-        env:
-          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
-        run: bash .github/scripts/run-k0-sg04-postmerge-cleanup.sh
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = 'push' ]; then
+            export EXPECTED_HEAD="$(git rev-parse HEAD)"
+          else
+            export EXPECTED_HEAD='${{ github.event.pull_request.head.sha }}'
+          fi
+          bash .github/scripts/run-k0-sg04-postmerge-cleanup.sh
