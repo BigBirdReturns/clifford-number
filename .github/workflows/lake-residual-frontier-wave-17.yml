@@ -11,20 +11,29 @@ on:
       - agent/lake-subject-integration-wave-16
     paths:
       - 'data/project/lake-residual-frontier-wave-17-policy.json'
+      - 'data/project/lake-residual-path-registry-wave-17.json'
+      - 'data/project/lake-projection-lineage-registry-wave-17.json'
+      - 'data/project/lake-residual-frontier-wave-17.json'
       - 'tools/build-lake-residual-frontier-wave-17.mjs'
       - 'tools/summarize-lake-residual-frontier-wave-17.mjs'
+      - 'tools/materialize-lake-residual-frontier-wave-17.mjs'
+      - 'tools/capture-lake-residual-frontier-wave-17-baseline.mjs'
+      - 'tools/reconcile-lake-residual-frontier-wave-17.mjs'
+      - 'tools/validate-lake-residual-frontier-wave-17.mjs'
+      - 'test/lake-residual-frontier-wave-17.test.js'
       - '.github/workflows/lake-residual-frontier-wave-17.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
+  pull-requests: read
 
 concurrency:
   group: lake-residual-frontier-wave-17-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
-  preflight:
+  execute:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -45,61 +54,190 @@ jobs:
           else
             echo 'materialize=false' >> "$GITHUB_OUTPUT"
           fi
-      - name: Build deterministic residual-frontier preflight
-        shell: bash
-        run: |
-          set -euo pipefail
-          node --check tools/build-lake-residual-frontier-wave-17.mjs
-          node --check tools/summarize-lake-residual-frontier-wave-17.mjs
-          node tools/build-lake-residual-frontier-wave-17.mjs
-          node tools/summarize-lake-residual-frontier-wave-17.mjs
-          sha256sum \
-            build/lake-actions/residual-frontier-wave-17-preflight.json \
-            build/lake-actions/residual-frontier-wave-17-diagnostics.json \
-            reports/lake-residual-frontier-wave-17-preflight.md \
-            reports/lake-residual-frontier-wave-17-diagnostics.md > /tmp/wave17-preflight.sha256
-          node tools/build-lake-residual-frontier-wave-17.mjs
-          node tools/summarize-lake-residual-frontier-wave-17.mjs
-          sha256sum --check --strict /tmp/wave17-preflight.sha256
-          node - <<'NODE'
-          const fs = require('fs');
-          const policy = JSON.parse(fs.readFileSync('data/project/lake-residual-frontier-wave-17-policy.json'));
-          const preflight = JSON.parse(fs.readFileSync(policy.paths.preflight));
-          const b = policy.baseline;
-          if (preflight.baseline_counts.evidence_paths_without_program_owner !== b.evidence_paths_without_program_owner) throw new Error('owner denominator drift');
-          if (preflight.baseline_counts.exact_orphan_evidence_files !== b.exact_orphan_evidence_files) throw new Error('orphan denominator drift');
-          if (preflight.baseline_counts.evidence_paths_not_index_reachable !== b.evidence_paths_not_index_reachable) throw new Error('reachability denominator drift');
-          if (preflight.baseline_counts.projection_ids_without_source !== b.projection_ids_without_source) throw new Error('projection denominator drift');
-          if (!preflight.completion.all_residual_paths_classified) throw new Error('unclassified residual path');
-          if (!preflight.completion.all_projection_only_ids_classified) throw new Error('unclassified projection row');
-          if (preflight.completion.review_required_to_decide !== false) throw new Error('human-permission dependency introduced');
-          if (preflight.completion.graph_effect !== 'none') throw new Error('graph effect introduced');
-          console.log({
-            residual_path_union_count: preflight.residual_path_union_count,
-            path_refusals: preflight.completion.semantic_owner_refusals_preserved,
-            projection_refusals: preflight.completion.projection_refusals_preserved
-          });
-          NODE
-          git diff --check
-      - name: Run complete repository gate
-        run: npm run release:check
-      - name: Commit preflight checkpoint
+      - name: Validate current branch baseline
         if: steps.mode.outputs.materialize == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          rm -f .github/tmp/lake-residual-frontier-wave-17-trigger.json
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          git diff --check
-          git commit -m 'Refine residual lake frontier Wave 17 census'
-          git fetch origin agent/lake-residual-frontier-wave-17
-          test "$(git rev-parse origin/agent/lake-residual-frontier-wave-17)" = "${{ steps.mode.outputs.original_sha }}"
-          git push origin HEAD:agent/lake-residual-frontier-wave-17
-      - name: Preserve clean PR validation worktree
-        if: steps.mode.outputs.materialize != 'true'
+          npm run release:check
+          git restore --staged --worktree .
+          git clean -fd
+      - name: Build deterministic Wave 17 source controls
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
         run: |
+          set -euo pipefail
+          node --check tools/materialize-lake-residual-frontier-wave-17.mjs
+          node --check tools/capture-lake-residual-frontier-wave-17-baseline.mjs
+          node --check tools/reconcile-lake-residual-frontier-wave-17.mjs
+          node --check tools/validate-lake-residual-frontier-wave-17.mjs
+          node tools/materialize-lake-residual-frontier-wave-17.mjs
+          node tools/capture-lake-residual-frontier-wave-17-baseline.mjs
+          sha256sum \
+            data/project/lake-residual-path-registry-wave-17.json \
+            data/project/lake-projection-lineage-registry-wave-17.json \
+            data/project/lake-residual-frontier-wave-17.json \
+            build/lake-actions/residual-frontier-wave-17.json \
+            data/project/lake-index-policy.json \
+            BUILD-INSTRUCTIONS.md \
+            README.md > /tmp/wave17-source-first.sha256
+          node tools/materialize-lake-residual-frontier-wave-17.mjs
+          node tools/capture-lake-residual-frontier-wave-17-baseline.mjs
+          sha256sum --check --strict /tmp/wave17-source-first.sha256
+          git diff --check
+      - name: Run complete repository gate with Wave 17 sources active
+        if: steps.mode.outputs.materialize == 'true'
+        run: |
+          set -euo pipefail
+          npm run release:check
+          git diff --check
+      - name: Validate an already materialized committed head
+        if: steps.mode.outputs.materialize != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -f data/project/lake-residual-frontier-wave-17.json \
+            && node -e "const x=require('./data/project/lake-residual-frontier-wave-17.json'); process.exit(x.post_execution_reconciliation_complete ? 0 : 1)"; then
+            npm run release:check
+            node tools/validate-lake-index-shards.mjs
+            node tools/validate-lake-basin-index.mjs
+            node tools/validate-lake-residual-frontier-wave-17.mjs
+            node test/lake-residual-frontier-wave-17.test.js
+          else
+            node tools/build-lake-residual-frontier-wave-17.mjs
+            node tools/summarize-lake-residual-frontier-wave-17.mjs
+            npm run release:check
+          fi
           git reset --hard HEAD
           git clean -fd
           test -z "$(git status --porcelain)"
+      - name: Stabilize exact staged source tree
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -A
+          rm -f .github/tmp/lake-residual-frontier-wave-17-trigger.json
+          git add -A
+          git restore --worktree .
+          git clean -fd
+      - name: Observe current open-PR shadow
+        if: steps.mode.outputs.materialize == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/build-lake-open-pr-shadow.mjs
+      - name: Build and reconcile the final lake fixed point
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pass in 1 2 3; do
+            echo "Wave 17 lake pass ${pass}"
+            node tools/build-lake-index.mjs
+            node tools/stabilize-lake-index.mjs
+            node tools/reconcile-lake-receipt-semantics.mjs
+            node tools/build-lake-gap-summary.mjs
+            node tools/validate-lake-index.mjs
+            node tools/validate-lake-receipt-semantics.mjs
+            node tools/validate-lake-gap-summary.mjs
+            node tools/reconcile-lake-residual-frontier-wave-17.mjs
+            git add -A
+          done
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-residual-frontier-wave-17.mjs
+          node test/lake-index.test.js
+          node test/lake-basin-index.test.js
+          node test/lake-residual-frontier-wave-17.test.js
+          git add -A
+      - name: Prove deterministic final reconstruction
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          find build/lake-index -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/wave17-final.sha256
+          sha256sum \
+            data/project/lake-residual-path-registry-wave-17.json \
+            data/project/lake-projection-lineage-registry-wave-17.json \
+            data/project/lake-residual-frontier-wave-17.json \
+            build/lake-actions/residual-frontier-wave-17.json \
+            build/lake-actions/residual-frontier-wave-17-reconciliation.json \
+            reports/lake-residual-frontier-wave-17.md >> /tmp/wave17-final.sha256
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/reconcile-lake-residual-frontier-wave-17.mjs
+          git add -A
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/reconcile-lake-residual-frontier-wave-17.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          sha256sum --check --strict /tmp/wave17-final.sha256
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-residual-frontier-wave-17.mjs
+          node test/lake-residual-frontier-wave-17.test.js
+          git diff --check
+      - name: Enforce Wave 17 source and generated-output boundaries
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import re
+          import subprocess
+
+          required = {
+              '.github/tmp/lake-residual-frontier-wave-17-trigger.json',
+              'BUILD-INSTRUCTIONS.md',
+              'README.md',
+              'data/project/lake-index-policy.json',
+              'data/project/lake-residual-path-registry-wave-17.json',
+              'data/project/lake-projection-lineage-registry-wave-17.json',
+              'data/project/lake-residual-frontier-wave-17.json',
+          }
+          allowed_sources = required | {'data/project/lake-open-pr-shadow.json'}
+          generated_prefixes = ('build/', 'reports/', 'briefs/', 'estates/', 'gametrails/')
+          generated_root = re.compile(r'^(?:Clifford-.*\.html|[^/]+-standalone\.html)$')
+          raw = subprocess.check_output(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'])
+          entries = [entry for entry in raw.decode().split('\0') if entry]
+          actual = set()
+          for entry in entries:
+              status = entry[:2]
+              assert 'R' not in status and 'C' not in status, entry
+              actual.add(entry[3:])
+          unexpected = sorted(path for path in actual
+              if path not in allowed_sources
+              and not path.startswith(generated_prefixes)
+              and not generated_root.match(path))
+          assert required <= actual, {'missing_required_wave_17_changes': sorted(required - actual)}
+          assert not unexpected, {'undeclared_source_changes': unexpected}
+          print({'required_changes': len(required), 'actual_changes': len(actual), 'generated_changes': len(actual - allowed_sources)})
+          PY
+      - name: Commit and push Wave 17 checkpoint
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Execute residual lake frontier Wave 17'
+          git fetch origin agent/lake-residual-frontier-wave-17
+          test "$(git rev-parse origin/agent/lake-residual-frontier-wave-17)" = "${{ steps.mode.outputs.original_sha }}"
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-residual-frontier-wave-17.mjs
+          git push origin HEAD:agent/lake-residual-frontier-wave-17
