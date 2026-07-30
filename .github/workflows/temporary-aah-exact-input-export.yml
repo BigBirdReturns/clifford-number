@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Export canonical and stacked inputs
+      - name: Export canonical, stacked, and merge-base inputs
         shell: bash
         run: |
           set -euo pipefail
@@ -29,15 +29,19 @@ jobs:
           git archive --format=tar.gz --output=/tmp/aah-inputs/main.tar.gz origin/main
           git archive --format=tar.gz --output=/tmp/aah-inputs/poof.tar.gz origin/agent/poof-clifford-ecology
           git archive --format=tar.gz --output=/tmp/aah-inputs/k0-wave08.tar.gz origin/agent/k0-role-neutral-wave-08
+          git archive --format=tar.gz --output=/tmp/aah-inputs/poof-merge-base.tar.gz fdc13faf46e9a4ea273d7dce3d656b8e36d21844
+          git archive --format=tar.gz --output=/tmp/aah-inputs/k0-merge-base.tar.gz 267b40e69a85588ae517a997c5bca41c263afd81
           {
             echo "main=$(git rev-parse origin/main)"
             echo "poof=$(git rev-parse origin/agent/poof-clifford-ecology)"
+            echo "poof_merge_base=$(git rev-parse fdc13faf46e9a4ea273d7dce3d656b8e36d21844)"
             echo "k0_wave08=$(git rev-parse origin/agent/k0-role-neutral-wave-08)"
+            echo "k0_merge_base=$(git rev-parse 267b40e69a85588ae517a997c5bca41c263afd81)"
             sha256sum /tmp/aah-inputs/*.tar.gz
           } | tee /tmp/aah-inputs/receipt.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: aah-exact-inputs
+          name: aah-exact-inputs-with-bases
           path: /tmp/aah-inputs/
           if-no-files-found: error
           retention-days: 3
