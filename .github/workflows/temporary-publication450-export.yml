@@ -23,16 +23,19 @@ jobs:
         with:
           ref: agent/publication-allowlist-poof-admission-v2
           fetch-depth: 0
-      - name: Archive exact branch head
+      - name: Archive exact branch head and canonical main
         run: |
           set -euo pipefail
+          git fetch origin main
           mkdir -p /tmp/publication450-input
           git archive --format=tar.gz --output=/tmp/publication450-input/publication450-head.tar.gz HEAD
-          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/publication450-input/head.txt
-          sha256sum /tmp/publication450-input/publication450-head.tar.gz > /tmp/publication450-input/archive.sha256
+          git archive --format=tar.gz --output=/tmp/publication450-input/main-head.tar.gz origin/main
+          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/publication450-input/branch-head.txt
+          printf '%s\n' "$(git rev-parse origin/main)" > /tmp/publication450-input/main-head.txt
+          sha256sum /tmp/publication450-input/publication450-head.tar.gz /tmp/publication450-input/main-head.tar.gz > /tmp/publication450-input/archives.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: publication450-input-${{ github.run_id }}
+          name: publication450-dual-input-${{ github.run_id }}
           path: /tmp/publication450-input/
           if-no-files-found: error
           retention-days: 3
