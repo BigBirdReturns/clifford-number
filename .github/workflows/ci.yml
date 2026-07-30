@@ -37,66 +37,116 @@ jobs:
           fi
           exit "$status"
 
-  materialize-ssc-wave01:
+  bind-ssc-wave01-sg06:
     if: github.event_name == 'pull_request' && github.head_ref == 'agent/status-sovereignty-wave01-loader'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/status-sovereignty-wave01-loader
           fetch-depth: 0
-      - name: Verify carrier and publish non-workflow transition
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Bind, validate, and publish exact SG-06 custody
         shell: bash
         run: |
           set -euo pipefail
-          base='0d701692fa83a405bd0ba86e7b45c525022589f7'
           target='agent/status-sovereignty-wave-01'
-          expected_archive='f02775d52ac6340482097bd4c6faa23207d3e14a812b72c5d3094ea947f8bb08'
-
-          mapfile -t chunks < <(find .github/tmp/ssc-wave01 -maxdepth 1 -type f -name 'part-*.b64' | sort)
-          test "${#chunks[@]}" -eq 12
-          cat "${chunks[@]}" | tr -d '\n' | base64 --decode > /tmp/ssc-wave01-carrier.tar.xz
-          printf '%s  %s\n' "$expected_archive" /tmp/ssc-wave01-carrier.tar.xz | sha256sum -c -
-
-          rm -rf /tmp/ssc-wave01-payload /tmp/ssc-wave01-work
-          mkdir -p /tmp/ssc-wave01-payload
-          tar -xJf /tmp/ssc-wave01-carrier.tar.xz -C /tmp/ssc-wave01-payload
-          test "$(cat /tmp/ssc-wave01-payload/BASE.txt)" = "$base"
-          test "$(cat /tmp/ssc-wave01-payload/TRANSITION.txt)" = '3cfbb67e21458ffff34a0e18dd30545c7ec69d81'
-          test "$(cat /tmp/ssc-wave01-payload/FINAL.txt)" = '907c8b88618ca8a389d76e6848a40c18fd6b3ef2'
-          test "$(wc -l < /tmp/ssc-wave01-payload/TRANSITION_PATHS.txt)" -eq 43
-          test "$(wc -l < /tmp/ssc-wave01-payload/BINDING_PATHS.txt)" -eq 5
+          expected_base='0d701692fa83a405bd0ba86e7b45c525022589f7'
+          expected_transition='9370b4d27c756ec7b11d5f88d92eecf3a1ffe13f'
+          zero='0000000000000000000000000000000000000000'
 
           git fetch origin main "$target"
-          test "$(git rev-parse origin/main)" = "$base"
+          test "$(git rev-parse origin/main)" = "$expected_base"
           old_head="$(git rev-parse "origin/$target")"
-          test "$old_head" = "$base"
-          git worktree add --detach /tmp/ssc-wave01-work "$base"
-          cd /tmp/ssc-wave01-work
+          test "$old_head" = "$expected_transition"
+          git worktree add --detach /tmp/ssc-wave01-bind "$old_head"
+          cd /tmp/ssc-wave01-bind
+          test "$(git rev-parse HEAD^)" = "$expected_base"
 
-          while IFS= read -r rel; do
-            case "$rel" in
-              .github/workflows/project-stable-ground-sg05.yml|\
-              .github/workflows/project-stable-ground-sg06.yml|\
-              .github/workflows/status-sovereignty-compact.yml|\
-              .github/workflows/status-sovereignty-wave-01.yml)
-                continue
-                ;;
-            esac
-            mkdir -p "$(dirname "$rel")"
-            cp "/tmp/ssc-wave01-payload/transition/$rel" "$rel"
-          done < /tmp/ssc-wave01-payload/TRANSITION_PATHS.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          zero='0000000000000000000000000000000000000000'
+          transition='9370b4d27c756ec7b11d5f88d92eecf3a1ffe13f'
+          expected={
+              Path('data/project/project-stable-ground-current.json'): 2,
+              Path('data/project/project-stable-ground-sg06.json'): 4,
+          }
+          for path, count in expected.items():
+              source=path.read_text()
+              observed=source.count(zero)
+              if observed != count:
+                  raise RuntimeError(f'{path}: expected {count} placeholders, observed {observed}')
+              path.write_text(source.replace(zero, transition))
+          PY
 
-          grep -vE '^\.github/workflows/(project-stable-ground-sg05|project-stable-ground-sg06|status-sovereignty-compact|status-sovereignty-wave-01)\.yml$' \
-            /tmp/ssc-wave01-payload/TRANSITION_PATHS.txt | sort > /tmp/expected-paths
-          { git diff --name-only; git ls-files --others --exclude-standard; } | sort > /tmp/observed-paths
+          node tools/build-project-stable-ground-sg06.mjs
+          node tools/validate-status-sovereignty-wave-01.mjs
+          node test/status-sovereignty-wave-01.test.js
+          node tools/validate-status-sovereignty-compact.mjs
+          node test/status-sovereignty-compact.test.js
+          node tools/validate-project-stable-ground-sg04.mjs
+          node test/project-stable-ground-sg04.test.js
+          node tools/validate-project-stable-ground-sg05.mjs
+          node test/project-stable-ground-sg05.test.js
+          node tools/validate-project-stable-ground-sg06.mjs
+          node test/project-stable-ground-sg06.test.js
+          npm run release:check
+
+          python3 - <<'PY'
+          import subprocess
+          volatile = [
+              'build/axm-identity.json',
+              'build/build-hop-report.json',
+              'build/hop-graph.json',
+              'build/migration-review.md',
+              'build/migration-summary.json',
+              'build/receipt-graph.json',
+              'build/scores.json',
+              'build/scout-report.json',
+              'build/scout-report.md',
+              'build/surface-graph.json',
+          ]
+          for path in volatile:
+              diff = subprocess.run(['git','diff','--unified=0','--',path],check=True,text=True,capture_output=True).stdout
+              if not diff:
+                  continue
+              changed=[line[1:].strip() for line in diff.splitlines() if line.startswith(('+','-')) and not line.startswith(('+++','---'))]
+              if len(changed) != 2 or not all(line.startswith('"generated": "') or line.startswith('Generated: ') for line in changed):
+                  raise RuntimeError(f'unexpected volatile compiler diff in {path}: {changed}')
+          PY
+          git restore --source=HEAD --worktree -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json
+
+          cat > /tmp/expected-paths <<'PATHS'
+          data/project/project-stable-ground-current.json
+          data/project/project-stable-ground-sg06-release-manifest.json
+          data/project/project-stable-ground-sg06.json
+          reports/core-thesis/stable-ground/sg06/checkpoint.json
+          reports/core-thesis/stable-ground/sg06/index.html
+          PATHS
+          sort -o /tmp/expected-paths /tmp/expected-paths
+          git diff --name-only | sort > /tmp/observed-paths
           diff -u /tmp/expected-paths /tmp/observed-paths
-          test "$(wc -l < /tmp/observed-paths)" -eq 39
           git diff --check
+          git add $(cat /tmp/expected-paths)
+          test -z "$(git diff --name-only)"
+          git diff --cached --name-only | sort > /tmp/staged-paths
+          diff -u /tmp/expected-paths /tmp/staged-paths
 
-          git add -A
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'Seed SSC-H01 Wave 01 non-workflow transition'
+          git commit -m 'Bind SG-06 to SSC-H01 Wave 01 transition'
+          test "$(git rev-parse HEAD^)" = "$expected_transition"
           git push --force-with-lease="refs/heads/$target:$old_head" origin "HEAD:refs/heads/$target"
