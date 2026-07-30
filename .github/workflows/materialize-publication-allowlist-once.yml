@@ -4,20 +4,21 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - '.publication-allowlist-materialize'
-      - '.github/scripts/materialize-publication-allowlist.py'
-      - '.github/scripts/retire-public-graph-bridge.py'
-      - '.github/scripts/tighten-publication-test-predicates.py'
       - '.github/workflows/materialize-publication-allowlist-once.yml'
+      - '.github/tmp/publication450-sg05-launch'
 
 permissions:
   contents: write
+
+concurrency:
+  group: publication450-sg05-materializer
+  cancel-in-progress: false
 
 jobs:
   materialize:
     if: github.head_ref == 'agent/publication-allowlist-poof-admission-v2'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,59 +27,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Apply publication reconciliation
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          target = Path('.github/scripts/materialize-publication-allowlist.py')
-          text = target.read_text()
-          replacements = {
-            '"    networkMode: \'research\', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null\\n"': '"  networkMode: \'research\', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null\\n"',
-            '"    networkMode: \'hops\', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null\\n"': '"  networkMode: \'hops\', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null\\n"',
-            'assert "graph.json" not in read_text("app.js")': 'assert "loadJson(\'graph.json\')" not in read_text("app.js")',
-          }
-          for old, new in replacements.items():
-              if text.count(old) != 1:
-                  raise SystemExit(f'materializer anchor count for {old[:70]!r}: {text.count(old)}')
-              text = text.replace(old, new, 1)
-          old_assertion = 'if any(marker in read_text("app.js") for marker in ["graph.json", "researchNetworkModel", "legacyGraph"]):\n    raise RuntimeError("app.js still contains retired generic-graph runtime")\n'
-          new_assertion = 'exec(compile(read_text(".github/scripts/retire-public-graph-bridge.py"), ".github/scripts/retire-public-graph-bridge.py", "exec"))\nif any(marker in read_text("app.js") for marker in ["loadJson(\'graph.json\')", "researchNetworkModel", "legacyGraph", "legacyNodes"]):\n    raise RuntimeError("app.js still contains retired generic-graph runtime")\n'
-          if text.count(old_assertion) != 1:
-              raise SystemExit(f'retirement assertion anchor count: {text.count(old_assertion)}')
-          text = text.replace(old_assertion, new_assertion, 1)
-          old_editorial_loop = '}.items():\n    replace_once("index.html", old, new)\n'
-          new_editorial_loop = '}.items():\n    index_source = read_text("index.html")\n    occurrence_count = index_source.count(old)\n    if occurrence_count < 1:\n        raise RuntimeError(f"index.html: missing editorial anchor: {old[:180]!r}")\n    write_text("index.html", index_source.replace(old, new))\n'
-          if text.count(old_editorial_loop) != 1:
-              raise SystemExit(f'editorial loop anchor count: {text.count(old_editorial_loop)}')
-          target.write_text(text.replace(old_editorial_loop, new_editorial_loop, 1))
-          PY
-          python3 -m py_compile .github/scripts/materialize-publication-allowlist.py .github/scripts/retire-public-graph-bridge.py .github/scripts/tighten-publication-test-predicates.py
-          python3 .github/scripts/materialize-publication-allowlist.py
-          python3 .github/scripts/tighten-publication-test-predicates.py
-      - name: Prove focused constitutional and publication gates
-        run: |
-          node tools/validate-poof-constitutional-change.mjs origin/main
-          node test/poof-constitutional-change.test.js
-          node test/publication-manifest.test.js
-          npm run ci:poof-ecology
-          npm run release:check
-          git diff --check
-      - name: Install browser harness
-        run: |
-          npm install --no-save --no-package-lock playwright@1.55.0
-          npx playwright install --with-deps chromium
-      - name: Prove browser publication boundary
-        run: node test/publication-pages-browser.test.js
-      - name: Remove transient source machinery
-        run: |
-          rm -f .publication-allowlist-materialize
-          rm -f .github/scripts/materialize-publication-allowlist.py
-          rm -f .github/scripts/retire-public-graph-bridge.py
-          rm -f .github/scripts/tighten-publication-test-predicates.py
-      - name: Commit permanent publication surface
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          git commit -m 'Enforce status-aware publication allowlist'
-          git push origin HEAD:agent/publication-allowlist-poof-admission-v2
+          cache: npm
+      - name: Execute exact publication and SG-05 transition
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: bash .github/scripts/run-publication450-sg05.sh 2>&1 | tee /tmp/publication450-sg05.log
+      - name: Preserve materialization log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: publication450-sg05-log-${{ github.run_id }}
+          path: /tmp/publication450-sg05.log
+          if-no-files-found: warn
+          retention-days: 14
