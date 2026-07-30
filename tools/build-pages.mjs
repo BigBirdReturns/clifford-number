@@ -18,5 +18,18 @@ fs.rmSync(path.join(destination, 'data', 'crawl'), { recursive: true, force: tru
 fs.rmSync(path.join(destination, 'data', 'intake'), { recursive: true, force: true });
 fs.rmSync(path.join(destination, 'data', 'local'), { recursive: true, force: true });
 fs.rmSync(path.join(destination, 'receipts', 'crawl'), { recursive: true, force: true });
+// SSC-H01 is a canonical field hypothesis but remains publication-blocked.
+// Keep its exact source and review products in repository custody while the
+// positive publication allowlist is still an open dependency.
+for (const heldPath of [
+  ['build', 'core-thesis', 'status-sovereignty'],
+  ['reports', 'core-thesis', 'status-sovereignty'],
+  ['data', 'project', 'status-sovereignty-compact.json'],
+  ['data', 'project', 'status-sovereignty-fanout.json'],
+  ['data', 'project', 'status-sovereignty-release-manifest.json'],
+  ['data', 'project', 'status-sovereignty-source-registry.json'],
+  ['docs', 'methods', 'status-sovereignty-compact.md'],
+  ['docs', 'milestones', 'm05-status-sovereignty-fanout.md'],
+]) fs.rmSync(path.join(destination, ...heldPath), { recursive: true, force: true });
 fs.writeFileSync(path.join(destination, '.nojekyll'), '');
 console.log(`build-pages: ${files.length} files and ${directories.length} directories copied`);

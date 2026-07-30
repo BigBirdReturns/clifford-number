@@ -61,9 +61,40 @@ if (missing.length) {
   console.error(`validate-pages failed: missing ${missing.join(', ')}`);
   process.exit(1);
 }
-for (const forbidden of ['data/crawl', 'data/intake', 'data/local', 'receipts/crawl']) {
+for (const forbidden of [
+  'data/crawl',
+  'data/intake',
+  'data/local',
+  'receipts/crawl',
+  'build/core-thesis/status-sovereignty',
+  'reports/core-thesis/status-sovereignty',
+  'data/project/status-sovereignty-compact.json',
+  'data/project/status-sovereignty-fanout.json',
+  'data/project/status-sovereignty-release-manifest.json',
+  'data/project/status-sovereignty-source-registry.json',
+  'docs/methods/status-sovereignty-compact.md',
+  'docs/milestones/m05-status-sovereignty-fanout.md',
+]) {
   if (fs.existsSync(path.join(destination, forbidden))) {
     console.error(`validate-pages failed: intake path ${forbidden} must not be published`);
+    process.exit(1);
+  }
+}
+// SSC-H01 is canonical repository research but remains publication-blocked.
+// The broad Pages builder must prove that none of its source, contracts,
+// reports, or exact-byte custody products escaped into the public artifact.
+for (const held of [
+  'build/core-thesis/status-sovereignty',
+  'reports/core-thesis/status-sovereignty',
+  'data/project/status-sovereignty-compact.json',
+  'data/project/status-sovereignty-fanout.json',
+  'data/project/status-sovereignty-release-manifest.json',
+  'data/project/status-sovereignty-source-registry.json',
+  'docs/methods/status-sovereignty-compact.md',
+  'docs/milestones/m05-status-sovereignty-fanout.md',
+]) {
+  if (fs.existsSync(path.join(destination, held))) {
+    console.error(`validate-pages failed: publication-blocked SSC path ${held} must not be published`);
     process.exit(1);
   }
 }
