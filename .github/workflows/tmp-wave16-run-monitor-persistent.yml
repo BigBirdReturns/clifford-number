@@ -19,14 +19,14 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
-      - name: Query Wave 16 push runs
+      - name: Query all Wave 16 branch push runs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/323409896/runs?branch=agent%2Flake-subject-integration-wave-16&event=push&per_page=20" \
-            --jq '{observed_at: now | todate, runs: [.workflow_runs[] | {id, run_number, status, conclusion, head_sha, event, created_at, updated_at, html_url}]}' \
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs?branch=agent%2Flake-subject-integration-wave-16&event=push&per_page=50" \
+            --jq '{observed_at: now | todate, runs: [.workflow_runs[] | {id, name, workflow_id, run_number, status, conclusion, head_sha, event, created_at, updated_at, html_url}]}' \
             > data/project/tmp-wave16-push-runs.json
       - name: Commit observation
         shell: bash
