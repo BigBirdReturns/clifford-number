@@ -15,10 +15,33 @@ const k0ReleaseDigest = '373955b42246fe20abc51d7ede50c18c3af39430ac523d8dc920631
 const waveReleaseDigest = '2b26149de23b27bc51431307afa4efaedf72d055d304a00bd97508175543259c';
 const poofReleaseDigest = '81d0ea9f894cde1d673580c18adaebc5284a381cc0ce67a9e8be3dbcde1d0df5';
 
+function commitPresent(sha) {
+  return spawnSync('git', ['cat-file', '-e', `${sha}^{commit}`], {
+    cwd: root,
+    encoding: 'utf8'
+  }).status === 0;
+}
+
 function ensureCommit(sha, label) {
-  const present = spawnSync('git', ['cat-file', '-e', `${sha}^{commit}`], { cwd: root, encoding: 'utf8' });
-  if (present.status === 0) return [];
-  return [`${label} is unavailable in repository history`];
+  if (commitPresent(sha)) return [];
+  const attempts = [
+    ['fetch', '--no-tags', '--depth=1', 'origin', sha],
+    ['fetch', '--no-tags', '--depth=256', 'origin', 'main']
+  ];
+  const diagnostics = [];
+  for (const args of attempts) {
+    const fetched = spawnSync('git', args, {
+      cwd: root,
+      encoding: 'utf8',
+      maxBuffer: 8 * 1024 * 1024
+    });
+    if (commitPresent(sha)) return [];
+    if (fetched.status !== 0) {
+      diagnostics.push((fetched.stderr || fetched.stdout || `git ${args.join(' ')} failed`).trim());
+    }
+  }
+  const suffix = diagnostics.length ? ` (${diagnostics.join(' | ')})` : '';
+  return [`${label} is unavailable in repository history${suffix}`];
 }
 
 function defaultHistoricalVerifier(row) {
