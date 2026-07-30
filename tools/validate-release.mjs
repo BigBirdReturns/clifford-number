@@ -26,6 +26,21 @@ const receiptById = indexBy(data.receipts, 'receipt_id');
 const errors = [];
 const warnings = [];
 function assert(cond, msg) { if (!cond) errors.push(msg); }
+
+// Completed transport must not survive on the canonical release tree. These
+// paths were branch-local bootstrap for M-03 and M-05, both of which now have
+// permanent builders, validators, reports, and release gates on main. Keeping
+// the carriers or self-removing writers after completion creates a second,
+// stale authority surface and makes later audits mistake transport for source.
+for (const completedTransportPath of [
+  '.github/temporary',
+  '.github/workflows/temporary-m03-apply.yml',
+  '.github/workflows/temporary-m03-source-export.yml',
+  '.github/workflows/temporary-materialize-m05-s03-l7.yml',
+]) {
+  assert(!fs.existsSync(path.join(root, completedTransportPath)),
+    `completed transport remains on the release tree: ${completedTransportPath}`);
+}
 function sameWindow(left, right) {
   return (left?.valid_from ?? null) === (right?.valid_from ?? null)
     && (left?.valid_until ?? null) === (right?.valid_until ?? null)
