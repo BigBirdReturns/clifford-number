@@ -68,9 +68,15 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Validate constitutional change custody
+        run: |
+          node tools/validate-poof-constitutional-change.mjs
+          node test/poof-constitutional-change.test.js
       - name: Build and validate the ecology
         run: |
           node tools/build-core-thesis.mjs
