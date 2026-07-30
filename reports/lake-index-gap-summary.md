@@ -1,6 +1,6 @@
 # Lake index gap summary
 
-Source fingerprint: `7b3756f276fca047849f7adc2ef5a7f68ea823d9c660064c2cea61fbeca0d0db`
+Source fingerprint: `8abacfca8edb31a588de86b5b54870813991b068a3370309dbfb554778263c0e`
 
 ## Finding
 
@@ -78,9 +78,8 @@ case IDs absent from public catalog: 26
 | Open PR | Branch-only paths |
 |---|---:|
 | #386 Make evidence-grounded judgments without a human-permission gate | 18 |
-| #405 Execute K0 role-neutral denominator Wave 08 | 18 |
 | #403 Measure the production cross-case identity denominator | 16 |
-| #450 Enforce status-aware publication allowlist and admit POOF as staged | 13 |
+| #450 Enforce status-aware publication allowlist and admit POOF as staged | 14 |
 | #404 Recover exact source-bound cross-case mention recurrence | 11 |
 | #362 Stage biological Omega control-surface research program | 9 |
 | #50 Stage synthetic-population research program | 8 |

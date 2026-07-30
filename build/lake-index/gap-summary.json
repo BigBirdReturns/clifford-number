@@ -1,7 +1,7 @@
 {
   "schema_version": "lake-index-gap-summary@1",
   "census_id": "CN-LAKE-INDEX-2026-07",
-  "source_fingerprint_sha256": "7b3756f276fca047849f7adc2ef5a7f68ea823d9c660064c2cea61fbeca0d0db",
+  "source_fingerprint_sha256": "8abacfca8edb31a588de86b5b54870813991b068a3370309dbfb554778263c0e",
   "counts": {
     "tracked_files_indexed": 2062,
     "evidence_bearing_files": 1367,
@@ -27,9 +27,9 @@
     "case_ids_not_in_public_catalog": 26,
     "report_ids": 5,
     "missing_repo_path_tokens": 169,
-    "open_pull_requests_observed": 28,
-    "open_pr_changed_paths_observed": 472,
-    "open_pr_branch_only_paths_observed": 108,
+    "open_pull_requests_observed": 27,
+    "open_pr_changed_paths_observed": 445,
+    "open_pr_branch_only_paths_observed": 91,
     "local_identifier_values_observed": 1152,
     "local_identifier_occurrences_observed": 8071,
     "receipt_locator_tokens": 11,
@@ -3699,17 +3699,13 @@
     "p4_branch_shadow": {
       "description": "Open-pull-request paths absent from the current main tree; these require active, superseded, abandoned, or merged dispositions.",
       "counts": {
-        "open_pull_requests": 28,
-        "branch_only_paths": 108,
-        "branch_only_evidence_paths": 47
+        "open_pull_requests": 27,
+        "branch_only_paths": 91,
+        "branch_only_evidence_paths": 37
       },
       "by_pr": [
         {
           "key": "#386 Make evidence-grounded judgments without a human-permission gate",
-          "count": 18
-        },
-        {
-          "key": "#405 Execute K0 role-neutral denominator Wave 08",
           "count": 18
         },
         {
@@ -3718,7 +3714,7 @@
         },
         {
           "key": "#450 Enforce status-aware publication allowlist and admit POOF as staged",
-          "count": 13
+          "count": 14
         },
         {
           "key": "#404 Recover exact source-bound cross-case mention recurrence",
@@ -3756,27 +3752,23 @@
       "by_cluster": [
         {
           "key": "tools",
-          "count": 28
+          "count": 24
         },
         {
           "key": ".github",
-          "count": 22
+          "count": 21
         },
         {
           "key": "data/project",
-          "count": 14
-        },
-        {
-          "key": "test",
-          "count": 10
+          "count": 11
         },
         {
           "key": "contributions/inbox",
           "count": 9
         },
         {
-          "key": "reports/core-thesis",
-          "count": 4
+          "key": "test",
+          "count": 8
         },
         {
           "key": "build/lake-actions",
@@ -3784,10 +3776,6 @@
         },
         {
           "key": "docs/methods",
-          "count": 2
-        },
-        {
-          "key": "docs/milestones",
           "count": 2
         },
         {
@@ -3804,10 +3792,6 @@
         },
         {
           "key": "build/human-permission-gate-audit.json",
-          "count": 1
-        },
-        {
-          "key": "data/research",
           "count": 1
         },
         {
@@ -5013,276 +4997,6 @@
       "head_sha": "5cf0697fe7ac83f217fa01e5418fe806aeb51089"
     },
     {
-      "path": ".github/workflows/k0-role-neutral-wave-08.yml",
-      "status": "added",
-      "blob_sha": "2714d9123f0fbcce1a3e17216c6dd961238c70c5",
-      "previous_path": null,
-      "additions": 75,
-      "deletions": 0,
-      "changes": 75,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 405,
-      "pr_title": "Execute K0 role-neutral denominator Wave 08",
-      "head_ref": "agent/k0-role-neutral-wave-08",
-      "head_sha": "573ea8a763a3bf334f3a04d851480deb49980bac"
-    },
-    {
-      "path": ".github/workflows/project-stable-ground-sg04.yml",
-      "status": "added",
-      "blob_sha": "32618051193d1034762aca1521daa91b0ce13db9",
-      "previous_path": null,
-      "additions": 87,
-      "deletions": 0,
-      "changes": 87,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 405,
-      "pr_title": "Execute K0 role-neutral denominator Wave 08",
-      "head_ref": "agent/k0-role-neutral-wave-08",
-      "head_sha": "573ea8a763a3bf334f3a04d851480deb49980bac"
-    },
-    {
-      "path": "data/project/k0-role-neutral-wave-08-release-manifest.json",
-      "status": "added",
-      "blob_sha": "ac2f745690effa3b8a7f127242c44a4b93c9523b",
-      "previous_path": null,
-      "additions": 53,
-      "deletions": 0,
-      "changes": 53,
-      "evidence_like": true,
-      "branch_only_path": true,
-      "pr_number": 405,
-      "pr_title": "Execute K0 role-neutral denominator Wave 08",
-      "head_ref": "agent/k0-role-neutral-wave-08",
-      "head_sha": "573ea8a763a3bf334f3a04d851480deb49980bac"
-    },
-    {
-      "path": "data/project/project-stable-ground-sg04-release-manifest.json",
-      "status": "added",
-      "blob_sha": "5b8083583127139f71bad9a5dd8555ff93eb02f4",
-      "previous_path": null,
-      "additions": 149,
-      "deletions": 0,
-      "changes": 149,
-      "evidence_like": true,
-      "branch_only_path": true,
-      "pr_number": 405,
-      "pr_title": "Execute K0 role-neutral denominator Wave 08",
-      "head_ref": "agent/k0-role-neutral-wave-08",
-      "head_sha": "573ea8a763a3bf334f3a04d851480deb49980bac"
-    },
-    {
-      "path": "data/project/project-stable-ground-sg04.json",
-      "status": "added",
-      "blob_sha": "dcf2a404e9734803384363c088038c5b238dff06",
-      "previous_path": null,
-      "additions": 399,
-      "deletions": 0,
-      "changes": 399,
-      "evidence_like": true,
-      "branch_only_path": true,
-      "pr_number": 405,
-      "pr_title": "Execute K0 role-neutral denominator Wave 08",
-      "head_ref": "agent/k0-role-neutral-wave-08",
-      "head_sha": "573ea8a763a3bf334f3a04d851480deb49980bac"
-    },
-    {
-      "path": "data/research/k0-role-neutral-wave-08.json",
-      "status": "added",
-      "blob_sha": "4496a404e52d77feadb00c580481f30c28b99338",
-      "previous_path": null,
-      "additions": 592,
-      "deletions": 0,
-      "changes": 592,
-      "evidence_like": true,
-      "branch_only_path": true,
-      "pr_number": 405,
-      "pr_title": "Execute K0 role-neutral denominator Wave 08",
-      "head_ref": "agent/k0-role-neutral-wave-08",
-      "head_sha": "573ea8a763a3bf334f3a04d851480deb49980bac"
-    },
-    {
-      "path": "docs/milestones/m05-k0-role-neutral-wave-08.md",
-      "status": "added",
-      "blob_sha": "4b54469fed0379921d2dc945df3ad8c80a2892e1",
-      "previous_path": null,
-      "additions": 37,
-      "deletions": 0,
-      "changes": 37,
-      "evidence_like": true,
-      "branch_only_path": true,
-      "pr_number": 405,
-      "pr_title": "Execute K0 role-neutral denominator Wave 08",
-      "head_ref": "agent/k0-role-neutral-wave-08",
-      "head_sha": "573ea8a763a3bf334f3a04d851480deb49980bac"
-    },
-    {
-      "path": "docs/milestones/project-stable-ground-sg04.md",
-      "status": "added",
-      "blob_sha": "a0314277cc82a35458c3015f362100e2311f4aa8",
-      "previous_path": null,
-      "additions": 73,
-      "deletions": 0,
-      "changes": 73,
-      "evidence_like": true,
-      "branch_only_path": true,
-      "pr_number": 405,
-      "pr_title": "Execute K0 role-neutral denominator Wave 08",
-      "head_ref": "agent/k0-role-neutral-wave-08",
-      "head_sha": "573ea8a763a3bf334f3a04d851480deb49980bac"
-    },
-    {
-      "path": "reports/core-thesis/answerable-power/k0-role-neutral-wave-08.html",
-      "status": "added",
-      "blob_sha": "8b7eaf8181cba89b5459a254bdb266e990490656",
-      "previous_path": null,
-      "additions": 32,
-      "deletions": 0,
-      "changes": 32,
-      "evidence_like": true,
-      "branch_only_path": true,
-      "pr_number": 405,
-      "pr_title": "Execute K0 role-neutral denominator Wave 08",
-      "head_ref": "agent/k0-role-neutral-wave-08",
-      "head_sha": "573ea8a763a3bf334f3a04d851480deb49980bac"
-    },
-    {
-      "path": "reports/core-thesis/answerable-power/k0-role-neutral-wave-08.json",
-      "status": "added",
-      "blob_sha": "d6f290713d6de226ef9f01afe0745cdd8c9efcb8",
-      "previous_path": null,
-      "additions": 600,
-      "deletions": 0,
-      "changes": 600,
-      "evidence_like": true,
-      "branch_only_path": true,
-      "pr_number": 405,
-      "pr_title": "Execute K0 role-neutral denominator Wave 08",
-      "head_ref": "agent/k0-role-neutral-wave-08",
-      "head_sha": "573ea8a763a3bf334f3a04d851480deb49980bac"
-    },
-    {
-      "path": "reports/core-thesis/stable-ground/sg04/checkpoint.json",
-      "status": "added",
-      "blob_sha": "8ff9a0b7e5a195fd1c2715f985230b83598cfc8e",
-      "previous_path": null,
-      "additions": 437,
-      "deletions": 0,
-      "changes": 437,
-      "evidence_like": true,
-      "branch_only_path": true,
-      "pr_number": 405,
-      "pr_title": "Execute K0 role-neutral denominator Wave 08",
-      "head_ref": "agent/k0-role-neutral-wave-08",
-      "head_sha": "573ea8a763a3bf334f3a04d851480deb49980bac"
-    },
-    {
-      "path": "reports/core-thesis/stable-ground/sg04/index.html",
-      "status": "added",
-      "blob_sha": "a4f4714e95f6ea14265ed2aad44466fd1bb5ac09",
-      "previous_path": null,
-      "additions": 201,
-      "deletions": 0,
-      "changes": 201,
-      "evidence_like": true,
-      "branch_only_path": true,
-      "pr_number": 405,
-      "pr_title": "Execute K0 role-neutral denominator Wave 08",
-      "head_ref": "agent/k0-role-neutral-wave-08",
-      "head_sha": "573ea8a763a3bf334f3a04d851480deb49980bac"
-    },
-    {
-      "path": "test/k0-role-neutral-wave-08.test.js",
-      "status": "added",
-      "blob_sha": "84bf875c41184c7a7e62e51cf72b0caa0f640ee1",
-      "previous_path": null,
-      "additions": 10,
-      "deletions": 0,
-      "changes": 10,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 405,
-      "pr_title": "Execute K0 role-neutral denominator Wave 08",
-      "head_ref": "agent/k0-role-neutral-wave-08",
-      "head_sha": "573ea8a763a3bf334f3a04d851480deb49980bac"
-    },
-    {
-      "path": "test/project-stable-ground-sg04.test.js",
-      "status": "added",
-      "blob_sha": "ee95b38f48cf5ef5b17b9a813214a32141e23d14",
-      "previous_path": null,
-      "additions": 54,
-      "deletions": 0,
-      "changes": 54,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 405,
-      "pr_title": "Execute K0 role-neutral denominator Wave 08",
-      "head_ref": "agent/k0-role-neutral-wave-08",
-      "head_sha": "573ea8a763a3bf334f3a04d851480deb49980bac"
-    },
-    {
-      "path": "tools/build-k0-role-neutral-wave-08.mjs",
-      "status": "added",
-      "blob_sha": "fd22c5671c9db07eab4c9c8869162b26b8e3e425",
-      "previous_path": null,
-      "additions": 101,
-      "deletions": 0,
-      "changes": 101,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 405,
-      "pr_title": "Execute K0 role-neutral denominator Wave 08",
-      "head_ref": "agent/k0-role-neutral-wave-08",
-      "head_sha": "573ea8a763a3bf334f3a04d851480deb49980bac"
-    },
-    {
-      "path": "tools/build-project-stable-ground-sg04.mjs",
-      "status": "added",
-      "blob_sha": "db754a25368e8f080f34fd697e09bcdf6293cee0",
-      "previous_path": null,
-      "additions": 224,
-      "deletions": 0,
-      "changes": 224,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 405,
-      "pr_title": "Execute K0 role-neutral denominator Wave 08",
-      "head_ref": "agent/k0-role-neutral-wave-08",
-      "head_sha": "573ea8a763a3bf334f3a04d851480deb49980bac"
-    },
-    {
-      "path": "tools/validate-k0-role-neutral-wave-08.mjs",
-      "status": "added",
-      "blob_sha": "b7c302b6cdbf428f701e4f7e9ef00462306d2914",
-      "previous_path": null,
-      "additions": 33,
-      "deletions": 0,
-      "changes": 33,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 405,
-      "pr_title": "Execute K0 role-neutral denominator Wave 08",
-      "head_ref": "agent/k0-role-neutral-wave-08",
-      "head_sha": "573ea8a763a3bf334f3a04d851480deb49980bac"
-    },
-    {
-      "path": "tools/validate-project-stable-ground-sg04.mjs",
-      "status": "added",
-      "blob_sha": "70e925c7dcfae4ee4aee094ce660a39ee46cb9dc",
-      "previous_path": null,
-      "additions": 428,
-      "deletions": 0,
-      "changes": 428,
-      "evidence_like": false,
-      "branch_only_path": true,
-      "pr_number": 405,
-      "pr_title": "Execute K0 role-neutral denominator Wave 08",
-      "head_ref": "agent/k0-role-neutral-wave-08",
-      "head_sha": "573ea8a763a3bf334f3a04d851480deb49980bac"
-    },
-    {
       "path": ".github/scripts/materialize-publication-allowlist.py",
       "status": "added",
       "blob_sha": "1599619f385bcb2ba5718dbdf2978415ea825bc7",
@@ -5295,7 +5009,7 @@
       "pr_number": 450,
       "pr_title": "Enforce status-aware publication allowlist and admit POOF as staged",
       "head_ref": "agent/publication-allowlist-poof-admission-v2",
-      "head_sha": "0b55e448214700777c17f08cb1ec443a411010b5"
+      "head_sha": "da592520b3aac48cae5092093b40ad7ac302fc45"
     },
     {
       "path": ".github/scripts/retire-public-graph-bridge.py",
@@ -5310,7 +5024,7 @@
       "pr_number": 450,
       "pr_title": "Enforce status-aware publication allowlist and admit POOF as staged",
       "head_ref": "agent/publication-allowlist-poof-admission-v2",
-      "head_sha": "0b55e448214700777c17f08cb1ec443a411010b5"
+      "head_sha": "da592520b3aac48cae5092093b40ad7ac302fc45"
     },
     {
       "path": ".github/scripts/tighten-publication-test-predicates.py",
@@ -5325,7 +5039,7 @@
       "pr_number": 450,
       "pr_title": "Enforce status-aware publication allowlist and admit POOF as staged",
       "head_ref": "agent/publication-allowlist-poof-admission-v2",
-      "head_sha": "0b55e448214700777c17f08cb1ec443a411010b5"
+      "head_sha": "da592520b3aac48cae5092093b40ad7ac302fc45"
     },
     {
       "path": ".github/workflows/materialize-publication-allowlist-once.yml",
@@ -5340,7 +5054,7 @@
       "pr_number": 450,
       "pr_title": "Enforce status-aware publication allowlist and admit POOF as staged",
       "head_ref": "agent/publication-allowlist-poof-admission-v2",
-      "head_sha": "0b55e448214700777c17f08cb1ec443a411010b5"
+      "head_sha": "da592520b3aac48cae5092093b40ad7ac302fc45"
     },
     {
       "path": ".github/workflows/publication-integrity.yml",
@@ -5355,7 +5069,22 @@
       "pr_number": 450,
       "pr_title": "Enforce status-aware publication allowlist and admit POOF as staged",
       "head_ref": "agent/publication-allowlist-poof-admission-v2",
-      "head_sha": "0b55e448214700777c17f08cb1ec443a411010b5"
+      "head_sha": "da592520b3aac48cae5092093b40ad7ac302fc45"
+    },
+    {
+      "path": ".github/workflows/temporary-publication450-export.yml",
+      "status": "added",
+      "blob_sha": "f9aca660cc2e1da0046564779374a64f5c3db45f",
+      "previous_path": null,
+      "additions": 41,
+      "deletions": 0,
+      "changes": 41,
+      "evidence_like": false,
+      "branch_only_path": true,
+      "pr_number": 450,
+      "pr_title": "Enforce status-aware publication allowlist and admit POOF as staged",
+      "head_ref": "agent/publication-allowlist-poof-admission-v2",
+      "head_sha": "da592520b3aac48cae5092093b40ad7ac302fc45"
     },
     {
       "path": ".publication-allowlist-materialize",
@@ -5370,7 +5099,7 @@
       "pr_number": 450,
       "pr_title": "Enforce status-aware publication allowlist and admit POOF as staged",
       "head_ref": "agent/publication-allowlist-poof-admission-v2",
-      "head_sha": "0b55e448214700777c17f08cb1ec443a411010b5"
+      "head_sha": "da592520b3aac48cae5092093b40ad7ac302fc45"
     },
     {
       "path": "data/project/publication-plan.json",
@@ -5385,7 +5114,7 @@
       "pr_number": 450,
       "pr_title": "Enforce status-aware publication allowlist and admit POOF as staged",
       "head_ref": "agent/publication-allowlist-poof-admission-v2",
-      "head_sha": "0b55e448214700777c17f08cb1ec443a411010b5"
+      "head_sha": "da592520b3aac48cae5092093b40ad7ac302fc45"
     },
     {
       "path": "docs/methods/status-aware-publication-allowlist.md",
@@ -5400,7 +5129,7 @@
       "pr_number": 450,
       "pr_title": "Enforce status-aware publication allowlist and admit POOF as staged",
       "head_ref": "agent/publication-allowlist-poof-admission-v2",
-      "head_sha": "0b55e448214700777c17f08cb1ec443a411010b5"
+      "head_sha": "da592520b3aac48cae5092093b40ad7ac302fc45"
     },
     {
       "path": "reports/audits/adversarial-release-integrity-failed-custody.md",
@@ -5415,7 +5144,7 @@
       "pr_number": 450,
       "pr_title": "Enforce status-aware publication allowlist and admit POOF as staged",
       "head_ref": "agent/publication-allowlist-poof-admission-v2",
-      "head_sha": "0b55e448214700777c17f08cb1ec443a411010b5"
+      "head_sha": "da592520b3aac48cae5092093b40ad7ac302fc45"
     },
     {
       "path": "test/publication-manifest.test.js",
@@ -5430,7 +5159,7 @@
       "pr_number": 450,
       "pr_title": "Enforce status-aware publication allowlist and admit POOF as staged",
       "head_ref": "agent/publication-allowlist-poof-admission-v2",
-      "head_sha": "0b55e448214700777c17f08cb1ec443a411010b5"
+      "head_sha": "da592520b3aac48cae5092093b40ad7ac302fc45"
     },
     {
       "path": "test/publication-pages-browser.test.js",
@@ -5445,7 +5174,7 @@
       "pr_number": 450,
       "pr_title": "Enforce status-aware publication allowlist and admit POOF as staged",
       "head_ref": "agent/publication-allowlist-poof-admission-v2",
-      "head_sha": "0b55e448214700777c17f08cb1ec443a411010b5"
+      "head_sha": "da592520b3aac48cae5092093b40ad7ac302fc45"
     },
     {
       "path": "tools/lib/publication-manifest.mjs",
@@ -5460,7 +5189,7 @@
       "pr_number": 450,
       "pr_title": "Enforce status-aware publication allowlist and admit POOF as staged",
       "head_ref": "agent/publication-allowlist-poof-admission-v2",
-      "head_sha": "0b55e448214700777c17f08cb1ec443a411010b5"
+      "head_sha": "da592520b3aac48cae5092093b40ad7ac302fc45"
     },
     {
       "path": "tools/validate-publication-plan.mjs",
@@ -5475,12 +5204,12 @@
       "pr_number": 450,
       "pr_title": "Enforce status-aware publication allowlist and admit POOF as staged",
       "head_ref": "agent/publication-allowlist-poof-admission-v2",
-      "head_sha": "0b55e448214700777c17f08cb1ec443a411010b5"
+      "head_sha": "da592520b3aac48cae5092093b40ad7ac302fc45"
     },
     {
       "path": ".github/tmp/lake-residual-frontier-wave-17-trigger.json",
       "status": "added",
-      "blob_sha": "4a6218e2ea2d6dea1f5717af1cbdb2ce22a942f6",
+      "blob_sha": "3bdd5463a8c6837e24d70f109bfdc12a942d4f5c",
       "previous_path": null,
       "additions": 7,
       "deletions": 0,
@@ -5490,7 +5219,7 @@
       "pr_number": 458,
       "pr_title": "Adjudicate the residual evidence-lake frontier",
       "head_ref": "agent/lake-residual-frontier-wave-17",
-      "head_sha": "f35132b5d5e075c67297ceb679ca27c2ce22dc96"
+      "head_sha": "ce6f5a5877b9f0d99e894ecfd8ea18e792cb8a51"
     }
   ],
   "boundaries": {
