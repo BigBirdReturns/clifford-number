@@ -1,0 +1,43 @@
+name: Temporary AAH exact-input export
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-aah-exact-input-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Export canonical and stacked inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin \
+            main \
+            agent/poof-clifford-ecology \
+            agent/k0-role-neutral-wave-08
+          mkdir -p /tmp/aah-inputs
+          git archive --format=tar.gz --output=/tmp/aah-inputs/main.tar.gz origin/main
+          git archive --format=tar.gz --output=/tmp/aah-inputs/poof.tar.gz origin/agent/poof-clifford-ecology
+          git archive --format=tar.gz --output=/tmp/aah-inputs/k0-wave08.tar.gz origin/agent/k0-role-neutral-wave-08
+          {
+            echo "main=$(git rev-parse origin/main)"
+            echo "poof=$(git rev-parse origin/agent/poof-clifford-ecology)"
+            echo "k0_wave08=$(git rev-parse origin/agent/k0-role-neutral-wave-08)"
+            sha256sum /tmp/aah-inputs/*.tar.gz
+          } | tee /tmp/aah-inputs/receipt.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aah-exact-inputs
+          path: /tmp/aah-inputs/
+          if-no-files-found: error
+          retention-days: 3
