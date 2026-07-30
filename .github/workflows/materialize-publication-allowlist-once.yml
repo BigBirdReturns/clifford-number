@@ -7,6 +7,7 @@ on:
       - '.publication-allowlist-materialize'
       - '.github/scripts/materialize-publication-allowlist.py'
       - '.github/scripts/retire-public-graph-bridge.py'
+      - '.github/scripts/tighten-publication-test-predicates.py'
       - '.github/workflows/materialize-publication-allowlist-once.yml'
 
 permissions:
@@ -34,19 +35,21 @@ jobs:
           replacements = {
             '"    networkMode: \'research\', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null\\n"': '"  networkMode: \'research\', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null\\n"',
             '"    networkMode: \'hops\', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null\\n"': '"  networkMode: \'hops\', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null\\n"',
+            'assert "graph.json" not in read_text("app.js")': 'assert "loadJson(\'graph.json\')" not in read_text("app.js")',
           }
           for old, new in replacements.items():
               if text.count(old) != 1:
-                  raise SystemExit(f'materializer anchor count for {old[:50]!r}: {text.count(old)}')
+                  raise SystemExit(f'materializer anchor count for {old[:70]!r}: {text.count(old)}')
               text = text.replace(old, new, 1)
           old_assertion = 'if any(marker in read_text("app.js") for marker in ["graph.json", "researchNetworkModel", "legacyGraph"]):\n    raise RuntimeError("app.js still contains retired generic-graph runtime")\n'
-          new_assertion = 'exec(compile(read_text(".github/scripts/retire-public-graph-bridge.py"), ".github/scripts/retire-public-graph-bridge.py", "exec"))\nif any(marker in read_text("app.js") for marker in ["graph.json", "researchNetworkModel", "legacyGraph"]):\n    raise RuntimeError("app.js still contains retired generic-graph runtime")\n'
+          new_assertion = 'exec(compile(read_text(".github/scripts/retire-public-graph-bridge.py"), ".github/scripts/retire-public-graph-bridge.py", "exec"))\nif any(marker in read_text("app.js") for marker in ["loadJson(\'graph.json\')", "researchNetworkModel", "legacyGraph", "legacyNodes"]):\n    raise RuntimeError("app.js still contains retired generic-graph runtime")\n'
           if text.count(old_assertion) != 1:
               raise SystemExit(f'retirement assertion anchor count: {text.count(old_assertion)}')
           target.write_text(text.replace(old_assertion, new_assertion, 1))
           PY
-          python3 -m py_compile .github/scripts/materialize-publication-allowlist.py .github/scripts/retire-public-graph-bridge.py
+          python3 -m py_compile .github/scripts/materialize-publication-allowlist.py .github/scripts/retire-public-graph-bridge.py .github/scripts/tighten-publication-test-predicates.py
           python3 .github/scripts/materialize-publication-allowlist.py
+          python3 .github/scripts/tighten-publication-test-predicates.py
       - name: Prove focused constitutional and publication gates
         run: |
           node tools/validate-poof-constitutional-change.mjs origin/main
@@ -66,6 +69,7 @@ jobs:
           rm -f .publication-allowlist-materialize
           rm -f .github/scripts/materialize-publication-allowlist.py
           rm -f .github/scripts/retire-public-graph-bridge.py
+          rm -f .github/scripts/tighten-publication-test-predicates.py
       - name: Commit permanent publication surface
         run: |
           git config user.name 'github-actions[bot]'
