@@ -24,6 +24,15 @@ const objects = readJsonl('build/lake-index/objects.jsonl');
 const participation = readJsonl('data/ledger/participation.jsonl');
 const activeIdentity = readJson('build/axm-identity.json');
 const hopGraph = readJson('build/hop-graph.json');
+const triggerPath = '.github/tmp/lake-identifier-topology-wave-18-trigger.json';
+const authorizedMaterializationContext = process.env.GITHUB_ACTIONS === 'true'
+  && process.env.GITHUB_WORKFLOW === 'Evidence lake identifier topology Wave 18'
+  && process.env.GITHUB_EVENT_NAME === 'push';
+const preliminaryReceipt = receipt.post_execution_reconciliation_complete !== true;
+const preliminaryReceiptAuthorized = preliminaryReceipt
+  && authorizedMaterializationContext
+  && fs.existsSync(triggerPath)
+  && receipt.after_counts === null;
 
 for (const [artifact, schema] of [
   [policy, 'lake-identifier-topology-wave-18-policy@1'],
@@ -33,16 +42,48 @@ for (const [artifact, schema] of [
   [reconciliation, 'lake-identifier-topology-wave-18-reconciliation@1']
 ]) if (artifact.schema_version !== schema) fail(`schema drift: ${schema}`);
 
-if (!receipt.post_execution_reconciliation_complete) fail('receipt is not complete');
 if (registry.records.length !== registry.counts.records) fail('registry record denominator drift');
 if (registry.records.length !== projection.topology_decisions.length) fail('projection record denominator drift');
-if (registry.records.length !== receipt.counts.frozen_topology_rows_source_projected_indexed) fail('receipt observation denominator drift');
+if (!preliminaryReceipt && registry.records.length !== receipt.counts.frozen_topology_rows_source_projected_indexed) fail('receipt observation denominator drift');
 if (new Set(registry.records.map(row => `${row.id_key}:${row.id_value}`)).size !== registry.records.length) fail('duplicate topology target');
 if (new Set(registry.records.map(row => row.topology_decision_id)).size !== registry.records.length) fail('duplicate topology decision ID');
 if (registry.records.some(row => row.source_only?.final_classification === 'source_only_family_adjudication_required')) fail('generic source-only adjudication remains');
 if (registry.records.some(row => row.review_required_to_decide)) fail('human-permission dependency introduced');
 if (registry.records.some(row => row.cross_key_join_authorized)) fail('cross-key join authorized');
 if (registry.records.some(row => row.graph_effect !== 'none')) fail('graph effect introduced');
+
+const graphDigests = {
+  participation_sha256: digest(participation),
+  active_claims_sha256: digest(activeIdentity.claims),
+  hop_edges_sha256: digest(hopGraph.edges),
+  rejected_hop_surfaces_sha256: digest(hopGraph.rejected_hop_surfaces),
+  rejected_hop_pairs_sha256: digest(hopGraph.rejected_hop_pairs)
+};
+if (JSON.stringify(graphDigests) !== JSON.stringify(receipt.graph_digests)) fail('graph or participation payload changed');
+
+if (!fs.readFileSync('BUILD-INSTRUCTIONS.md', 'utf8').includes('3.18 **Identifier topology')) fail('build instruction contract missing');
+if (!fs.readFileSync('README.md', 'utf8').includes('## Identifier topology')) fail('README contract missing');
+if (fs.existsSync(triggerPath) && !authorizedMaterializationContext) fail('temporary Wave 18 trigger remains outside the authorized materializer');
+if (receipt.boundaries.identifier_indexing_proves_identity !== false) fail('identity boundary drift');
+if (receipt.boundaries.source_projection_proves_truth !== false) fail('truth boundary drift');
+if (receipt.boundaries.cross_key_join_authorized !== false) fail('cross-key boundary drift');
+if (receipt.boundaries.graph_effect !== 'none') fail('graph boundary drift');
+
+if (preliminaryReceiptAuthorized) {
+  if (receipt.counts.records !== registry.records.length) fail('preliminary receipt registry count drift');
+  if (receipt.counts.unclassified_source_only_rows !== 0) fail('preliminary source-only adjudication incomplete');
+  if (receipt.counts.unadjudicated_divergence_rows !== 0) fail('preliminary divergence adjudication incomplete');
+  if (failures) {
+    console.error(`validate-lake-identifier-topology-wave-18: ${failures} failure(s)`);
+    process.exit(1);
+  }
+  console.log(`validate-lake-identifier-topology-wave-18: OK (${registry.records.length} topology rows, preliminary receipt authorized only inside the push materializer, graph effect none)`);
+  process.exit(0);
+}
+
+if (preliminaryReceipt) fail('receipt is not complete');
+if (!reconciliation.completion?.all_frozen_topology_rows_source_projected_and_indexed) fail('reconciliation target observation incomplete');
+if (!reconciliation.completion?.all_topology_decision_ids_source_projected_and_indexed) fail('reconciliation decision observation incomplete');
 
 const current = {
   unindexed: summary.counts.unindexed_machine_ids,
@@ -63,15 +104,6 @@ if (current.topology_records !== registry.records.length) fail('summary topology
 if (receipt.counts.after.unindexed_machine_ids !== 0) fail('receipt unindexed count drift');
 if (receipt.counts.after.source_ids_without_projection_unadjudicated !== 0) fail('receipt source-only adjudication drift');
 if (receipt.counts.after.divergent_identifier_projections_unadjudicated !== 0) fail('receipt divergence adjudication drift');
-
-const graphDigests = {
-  participation_sha256: digest(participation),
-  active_claims_sha256: digest(activeIdentity.claims),
-  hop_edges_sha256: digest(hopGraph.edges),
-  rejected_hop_surfaces_sha256: digest(hopGraph.rejected_hop_surfaces),
-  rejected_hop_pairs_sha256: digest(hopGraph.rejected_hop_pairs)
-};
-if (JSON.stringify(graphDigests) !== JSON.stringify(receipt.graph_digests)) fail('graph or participation payload changed');
 
 const fileByPath = new Map(files.map(row => [row.path, row]));
 for (const relative of [
@@ -105,18 +137,6 @@ for (const record of registry.records) {
   if (!decision) { fail(`${record.topology_decision_id}: decision object missing`); continue; }
   if (!decision.indexed || !decision.source_occurrence || !decision.projection_occurrence) fail(`${record.topology_decision_id}: decision custody incomplete`);
 }
-
-if (!fs.readFileSync('BUILD-INSTRUCTIONS.md', 'utf8').includes('3.18 **Identifier topology')) fail('build instruction contract missing');
-if (!fs.readFileSync('README.md', 'utf8').includes('## Identifier topology')) fail('README contract missing');
-const triggerPath = '.github/tmp/lake-identifier-topology-wave-18-trigger.json';
-const authorizedMaterializationContext = process.env.GITHUB_ACTIONS === 'true'
-  && process.env.GITHUB_WORKFLOW === 'Evidence lake identifier topology Wave 18'
-  && process.env.GITHUB_EVENT_NAME === 'push';
-if (fs.existsSync(triggerPath) && !authorizedMaterializationContext) fail('temporary Wave 18 trigger remains outside the authorized materializer');
-if (receipt.boundaries.identifier_indexing_proves_identity !== false) fail('identity boundary drift');
-if (receipt.boundaries.source_projection_proves_truth !== false) fail('truth boundary drift');
-if (receipt.boundaries.cross_key_join_authorized !== false) fail('cross-key boundary drift');
-if (receipt.boundaries.graph_effect !== 'none') fail('graph boundary drift');
 
 if (failures) {
   console.error(`validate-lake-identifier-topology-wave-18: ${failures} failure(s)`);
