@@ -1,0 +1,257 @@
+name: Materialize evidence lake exact canonical subject Wave 14 from PR
+
+on:
+  pull_request:
+    types: [reopened, synchronize]
+    branches:
+      - agent/lake-canonical-subject-projection-wave-13
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: lake-exact-canonical-subject-wave-14-pr-materialize-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/lake-exact-canonical-subject-wave-14'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Determine whether materialization is required
+        id: mode
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "original_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if test -f data/project/lake-exact-canonical-subject-wave-14.json \
+             && ! test -f .github/tmp/lake-exact-canonical-subject-wave-14-trigger.json; then
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+            echo 'Wave 14 is already materialized; this run is clean-head validation only.'
+          else
+            test -f .github/tmp/lake-exact-canonical-subject-wave-14-trigger.json
+            test -f .github/tmp/apply-lake-exact-canonical-subject-wave-14.mjs
+            echo 'materialize=true' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Restore committed bytes
+        run: |
+          git restore --staged --worktree .
+          git clean -fd
+      - name: Validate an already materialized head
+        if: steps.mode.outputs.materialize != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run release:check
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-exact-canonical-subject-wave-14.mjs
+          node test/lake-exact-canonical-subject-wave-14.test.js
+          git reset --hard HEAD
+          git clean -fd
+          test -z "$(git status --porcelain)"
+      - name: Run the complete repository release gate
+        if: steps.mode.outputs.materialize == 'true'
+        run: npm run release:check
+      - name: Prove the pinned Wave 14 denominator
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-lake-exact-canonical-subject-wave-14.mjs
+          node tools/finalize-lake-exact-canonical-subject-wave-14.mjs
+          sha256sum \
+            build/exact-canonical-subject-projection-wave-14.json \
+            build/lake-actions/exact-canonical-subject-wave-14.json \
+            data/project/lake-exact-canonical-subject-wave-14.json \
+            data/project/lake-unresolved-subject-registry-wave-14.jsonl \
+            reports/lake-exact-canonical-subject-wave-14.md > /tmp/lake-exact-subject-wave-14-first.sha256
+          node tools/build-lake-exact-canonical-subject-wave-14.mjs
+          node tools/finalize-lake-exact-canonical-subject-wave-14.mjs
+          sha256sum --check --strict /tmp/lake-exact-subject-wave-14-first.sha256
+          node test/lake-exact-canonical-subject-wave-14.test.js
+          git diff --check
+          git add -A
+      - name: Apply Wave 14 source controls and documentation
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node .github/tmp/apply-lake-exact-canonical-subject-wave-14.mjs
+          cp .github/tmp/lake-exact-canonical-subject-wave-14-source-paths.json /tmp/lake-exact-canonical-subject-wave-14-source-paths.json
+          git add -A
+          git diff --check
+          npm run release:check
+      - name: Stabilize the exact staged tree
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -A
+          rm -f \
+            .github/tmp/lake-exact-canonical-subject-wave-14-trigger.json \
+            .github/tmp/apply-lake-exact-canonical-subject-wave-14.mjs \
+            .github/tmp/lake-exact-canonical-subject-wave-14-source-paths.json
+          git add -A
+          git restore --worktree .
+          git clean -fd
+      - name: Observe current open-PR shadow
+        if: steps.mode.outputs.materialize == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/build-lake-open-pr-shadow.mjs
+      - name: Build and reconcile the exact-subject lake
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/reconcile-lake-exact-canonical-subject-wave-14.mjs
+          git add -A
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/validate-lake-exact-canonical-subject-wave-14.mjs
+          node test/lake-index.test.js
+          node test/lake-exact-canonical-subject-wave-14.test.js
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node test/lake-basin-index.test.js
+      - name: Prove deterministic post-reconciliation products
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          find build/lake-index -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/lake-exact-subject-wave-14-post.sha256
+          sha256sum \
+            data/project/lake-exact-canonical-subject-wave-14-policy.json \
+            data/project/lake-unresolved-subject-registry-wave-14.jsonl \
+            data/project/lake-exact-canonical-subject-wave-14.json \
+            build/exact-canonical-subject-projection-wave-14.json \
+            build/lake-actions/exact-canonical-subject-wave-14.json \
+            build/lake-actions/exact-canonical-subject-wave-14-reconciliation.json \
+            reports/lake-exact-canonical-subject-wave-14.md \
+            reports/lake-exact-canonical-subject-wave-14-reconciliation.md >> /tmp/lake-exact-subject-wave-14-post.sha256
+          node tools/build-lake-exact-canonical-subject-wave-14.mjs
+          node tools/finalize-lake-exact-canonical-subject-wave-14.mjs
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/reconcile-lake-exact-canonical-subject-wave-14.mjs
+          git add -A
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/validate-lake-exact-canonical-subject-wave-14.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          sha256sum --check --strict /tmp/lake-exact-subject-wave-14-post.sha256
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node test/lake-exact-canonical-subject-wave-14.test.js
+          git diff --check
+      - name: Enforce Wave 14 source and output boundaries
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import re
+          import subprocess
+
+          migration = json.load(open('/tmp/lake-exact-canonical-subject-wave-14-source-paths.json'))
+          required = set(migration['changed_paths']) | {
+              '.github/tmp/lake-exact-canonical-subject-wave-14-trigger.json',
+              '.github/tmp/apply-lake-exact-canonical-subject-wave-14.mjs',
+              '.github/tmp/lake-exact-canonical-subject-wave-14-source-paths.json',
+              'data/project/lake-unresolved-subject-registry-wave-14.jsonl',
+              'data/project/lake-exact-canonical-subject-wave-14.json',
+              'build/exact-canonical-subject-projection-wave-14.json',
+              'build/lake-actions/exact-canonical-subject-wave-14.json',
+              'build/lake-actions/exact-canonical-subject-wave-14-reconciliation.json',
+              'reports/lake-exact-canonical-subject-wave-14.md',
+              'reports/lake-exact-canonical-subject-wave-14-reconciliation.md',
+          }
+          exact_allowed_sources = required | {'data/project/lake-open-pr-shadow.json'}
+          generated_prefixes = ('build/', 'reports/', 'briefs/', 'estates/', 'gametrails/')
+          generated_root = re.compile(r'^(?:Clifford-.*\.html|[^/]+-standalone\.html)$')
+          raw = subprocess.check_output(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'])
+          entries = [entry for entry in raw.decode().split('\0') if entry]
+          actual = set()
+          for entry in entries:
+              status = entry[:2]
+              assert 'R' not in status and 'C' not in status, entry
+              actual.add(entry[3:])
+          unexpected = sorted(path for path in actual
+              if path not in exact_allowed_sources
+              and not path.startswith(generated_prefixes)
+              and not generated_root.match(path))
+          assert required <= actual, {
+              'missing_required_exact_subject_or_reconciliation_changes': sorted(required - actual),
+          }
+          assert not unexpected, {'undeclared_source_changes': unexpected}
+          print(json.dumps({
+              'required_changes': len(required),
+              'actual_changes': len(actual),
+              'generated_changes': len(actual - exact_allowed_sources),
+          }, indent=2))
+          PY
+      - name: Commit and push the executed Wave 14 checkpoint
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Execute exact canonical subject projection Wave 14'
+          git fetch origin agent/lake-exact-canonical-subject-wave-14
+          test "$(git rev-parse origin/agent/lake-exact-canonical-subject-wave-14)" = "${{ steps.mode.outputs.original_sha }}"
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-exact-canonical-subject-wave-14.mjs
+          git push origin HEAD:agent/lake-exact-canonical-subject-wave-14
