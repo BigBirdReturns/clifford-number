@@ -54,13 +54,12 @@ jobs:
           node tools/build-poof-clifford-ecology.mjs
           npm run ci:poof-ecology
           git diff --check
-      - name: Remove bootstrap transport and publish branch commit
+      - name: Publish non-workflow materialization
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           rm -rf .bootstrap/poof-clifford-ecology
-          rm -f .github/workflows/poof-ecology-bootstrap-export.yml
-          rm -f .github/workflows/poof-ecology-materialize.yml
+          rm -f .github/workflows/poof-clifford-ecology.yml
           git add -A
           git config user.name 'OpenAI Agent'
           git config user.email 'agent@openai.invalid'
