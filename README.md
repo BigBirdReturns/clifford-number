@@ -193,3 +193,15 @@ wait-for-review state.
 The adjudication is additive metadata. Source claims and canonical registries are not
 mutated in this wave, and no decision creates a relationship, participation row,
 graph edge, hop, or automatic cross-case join.
+
+## Integrated subject layer
+
+Wave 16 makes the completed Wave 15 decisions usable in generated cases and the public
+catalog. Seventeen identity decisions travel through the existing graph-inert local
+resolution lane; forty nonidentity decisions travel through a separate typed
+subject-object lane. The result distinguishes unresolved identity from a resolved
+contract, program, record, place, infrastructure item, product, site, role, or
+analytic construct.
+
+This projection preserves source claim bytes and creates no relationship,
+participation, graph edge, hop, or automatic cross-case join.

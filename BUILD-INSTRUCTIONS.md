@@ -364,3 +364,16 @@ programs, records, places, infrastructure, products, sites, roles, and analytic
 constructs remain typed nonidentity objects. No adjudication creates a relationship,
 participation row, graph edge, hop, cross-case bridge, truth determination, or
 publication clearance.
+
+3.16 **Integrated subject layer — Wave 16.**
+Accepted Wave 15 identity decisions enter the live generated case layer only through
+case-scoped local-to-canonical resolutions. Accepted nonidentity decisions enter a
+parallel typed subject-object registry. One case-local subject cannot simultaneously
+be a canonical identity and a nonidentity object.
+
+Canonical identity and subject-object metadata are additive projections. Original
+subject IDs and claim text remain unchanged. Contracts, records, programs, places,
+infrastructure, products, sites, roles, and analytic constructs are not forced into
+actor or organization joins. Integration creates no relationship, participation row,
+graph edge, hop, cross-case bridge, truth determination, or publication clearance.
+Sealed Wave 14 and Wave 15 products remain historical and are not regenerated.

@@ -1,23 +1,23 @@
 # Canonical subject projection Wave 13
 
-Source fingerprint: `87191fb7ef0271fdfe2b0544080079dbed225977517f26f60e3b180283c3e1e6`
+Source fingerprint: `da3ca9d315d4a71425c1f3ac3c850e3b6c70ad6fe9d473c2b3c8bdcfee12c0fc`
 
 ## Projection census
 
 ```text
-current resolution rows:                 12
+current resolution rows:                 29
 compiled cases:                          4
 case claim subject references:           336
-resolved case subject references:        243
-unresolved case subject references:      93
-case resolution occurrences:             31
-public catalog subjects:                 228
-catalog resolution occurrences:          31
-searchable resolution rows:              12
-local-subject search aliases:             9
+resolved case subject references:        272
+unresolved case subject references:      64
+case resolution occurrences:             60
+public catalog subjects:                 227
+catalog resolution occurrences:          60
+searchable resolution rows:              29
+local-subject search aliases:             24
 ambiguous search keys held:               0
 reporter briefings:                       2
-briefing resolved subject references:     25
+briefing resolved subject references:     39
 source subject-ID changes:                0
 source claim-text changes:                0
 relationship / participation / hop delta: 0 / 0 / 0

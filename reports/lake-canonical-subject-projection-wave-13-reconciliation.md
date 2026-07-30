@@ -1,18 +1,18 @@
 # Canonical subject projection Wave 13 reconciliation
 
-Source fingerprint: `2ab987c9a179e08b3c7a3894456920809965989655c8680c7d1ede9a7b8af8e5`
+Source fingerprint: `b2203c3ce007bad84aca8705a1d6a001acfe7c83eb6b1e847dfd133e1153ae8c`
 
 ## Result
 
 ```text
-resolution IDs source observed:         12/12
-resolution IDs in compiled cases:       12/12
-resolution IDs in public catalog:       12/12
-resolution IDs in search projection:    12/12
-resolution IDs in briefing manifests:   6/12
-resolution IDs in Wave 13 projection:   12/12
-resolved case subject references:       31
-unresolved case subject references:     305
+resolution IDs source observed:         29/29
+resolution IDs in compiled cases:       29/29
+resolution IDs in public catalog:       29/29
+resolution IDs in search projection:    29/29
+resolution IDs in briefing manifests:   12/29
+resolution IDs in Wave 13 projection:   29/29
+resolved case subject references:       272
+unresolved case subject references:     64
 source subject-ID changes:              0
 source claim-text changes:              0
 participation / active-claim / hop delta:0 / 0 / 0
