@@ -28,7 +28,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Verify event identity and capture the exact K0 patch
+      - name: Verify event identity and exact source denominator
         env:
           EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
@@ -37,7 +37,7 @@ jobs:
           test "$old_head" = "$EXPECTED_HEAD"
           printf '%s\n' "$old_head" > /tmp/old-head
           git fetch origin main
-          merge_base="$(git merge-base HEAD origin/main)"
+          merge_base="$(git merge-base "$old_head" origin/main)"
           cat > /tmp/expected-paths <<'EOF'
           .github/workflows/k0-role-neutral-wave-08.yml
           data/project/k0-epistemic-admissibility-methodology.json
@@ -60,15 +60,18 @@ jobs:
           tools/validate-k0-role-neutral-wave-08.mjs
           EOF
           sort -o /tmp/expected-paths /tmp/expected-paths
-          git diff --name-only "$merge_base"..HEAD -- $(cat /tmp/expected-paths) | sort > /tmp/observed-paths
-          diff -u /tmp/expected-paths /tmp/observed-paths
-          git diff --binary "$merge_base"..HEAD -- $(cat /tmp/expected-paths) > /tmp/k0-wave-08.patch
-          test -s /tmp/k0-wave-08.patch
-      - name: Replay over canonical main and run focused gates
+          git diff --name-only "$merge_base".."$old_head" -- $(cat /tmp/expected-paths) | sort > /tmp/observed-k0-paths
+          diff -u /tmp/expected-paths /tmp/observed-k0-paths
+          git diff --name-only "$merge_base".."$old_head" \
+            | grep -vE '^(\.github/tmp/k0-wave08-transport-trigger\.txt|\.github/workflows/temporary-replay-k0-wave-08\.yml)$' \
+            | sort > /tmp/observed-nontransport-paths
+          diff -u /tmp/expected-paths /tmp/observed-nontransport-paths
+      - name: Transplant exact K0 files onto canonical main
         run: |
           set -euo pipefail
+          old_head="$(cat /tmp/old-head)"
           git reset --hard origin/main
-          git apply --3way --index /tmp/k0-wave-08.patch
+          git checkout "$old_head" -- $(cat /tmp/expected-paths)
           git diff --cached --check
           node tools/build-k0-role-neutral-wave-08.mjs
           node tools/validate-k0-role-neutral-wave-08.mjs
@@ -78,6 +81,9 @@ jobs:
           node test/k0-epistemic-admissibility.test.js
           git add -A
           git diff --cached --check
+          git diff --cached --name-only | sort > /tmp/replayed-paths
+          diff -u /tmp/expected-paths /tmp/replayed-paths
+          test -z "$(git diff --name-only)"
       - name: Publish the rebased transition
         run: |
           set -euo pipefail
