@@ -28,7 +28,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Verify exact transition and SG-04 source package
+      - name: Verify exact transition and expand SG-04 source carrier
         env:
           EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
@@ -37,6 +37,42 @@ jobs:
           test "$old_head" = "$EXPECTED_HEAD"
           printf '%s\n' "$old_head" > /tmp/old-head
           git merge-base --is-ancestor e9b85b31281db02ce3f9a9a84dd7aea34b714849 HEAD
+
+          carrier='.github/tmp/sg04-source.tar.gz.b64'
+          test -f "$carrier"
+          printf '%s  %s\n' '116d7d7aebc8452a8b08b0a3b1244bb274ab4efffc2e795ab475049502a7f58f' "$carrier" | sha256sum --check --strict
+          base64 --decode "$carrier" > /tmp/sg04-source.tar.gz
+          printf '%s  %s\n' 'db3b6d4cd41163fb889d7ceb91033f345d9f97dc4029d0c92095665ce48afd34' /tmp/sg04-source.tar.gz | sha256sum --check --strict
+          python3 - <<'PY'
+          import tarfile
+          from pathlib import PurePosixPath
+
+          expected = {
+              '.github/workflows/project-stable-ground-sg03.yml',
+              '.github/workflows/project-stable-ground-sg04.yml',
+              'data/project/project-stable-ground-current.json',
+              'data/project/project-stable-ground-sg04.json',
+              'docs/milestones/project-stable-ground-sg04.md',
+              'test/project-stable-ground-sg03.test.js',
+              'test/project-stable-ground-sg04.test.js',
+              'tools/build-project-stable-ground-sg04.mjs',
+              'tools/validate-project-stable-ground-sg03.mjs',
+              'tools/validate-project-stable-ground-sg04.mjs',
+          }
+          with tarfile.open('/tmp/sg04-source.tar.gz', 'r:gz') as archive:
+              files = []
+              for member in archive.getmembers():
+                  pure = PurePosixPath(member.name)
+                  if pure.is_absolute() or '..' in pure.parts:
+                      raise RuntimeError(f'unsafe carrier path: {member.name}')
+                  if member.isfile():
+                      files.append(member.name.removeprefix('./'))
+              if set(files) != expected:
+                  raise RuntimeError({'missing': sorted(expected - set(files)), 'unexpected': sorted(set(files) - expected)})
+          PY
+          tar -xzf /tmp/sg04-source.tar.gz
+          rm -f "$carrier"
+
           test -f data/project/project-stable-ground-sg04.json
           test -f tools/build-project-stable-ground-sg04.mjs
           test -f tools/validate-project-stable-ground-sg04.mjs
@@ -126,6 +162,7 @@ jobs:
           import { releaseScope as sg04Scope } from './tools/build-project-stable-ground-sg04.mjs';
           import { execFileSync } from 'node:child_process';
           const explicit = [
+            '.github/tmp/sg04-source.tar.gz.b64',
             'package.json',
             'data/project/project-stable-ground-sg04-release-manifest.json',
             'reports/core-thesis/stable-ground/sg04/checkpoint.json',
@@ -165,11 +202,14 @@ jobs:
           git diff --exit-code
           git diff --cached --binary > /tmp/sg04-rebuilt.patch
           cmp /tmp/sg04.patch /tmp/sg04-rebuilt.patch
-      - name: Publish the permanent atomic K0 and SG-04 tree
+      - name: Publish one permanent atomic K0 and SG-04 commit
         run: |
           set -euo pipefail
           old_head="$(cat /tmp/old-head)"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git reset --soft e9b85b31281db02ce3f9a9a84dd7aea34b714849
+          git diff --cached --check
+          test ! -e .github/tmp/sg04-source.tar.gz.b64
           git commit -m "Complete K0 query battery and append SG-04"
           git push --force-with-lease=refs/heads/agent/k0-role-neutral-wave-08:"$old_head" origin HEAD:agent/k0-role-neutral-wave-08
