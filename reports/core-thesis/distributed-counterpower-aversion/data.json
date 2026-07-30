@@ -60,67 +60,323 @@
     }
   ],
   "crosswalk": [
-    {"order": 0, "layer_id": "SG", "name": "stable-ground authority discriminator", "canonical_source": "data/project/project-stable-ground-alignment.json", "input": "merged project state and authority tiers", "output": "branch/hypothesis/effect separation", "boundary": "canonical state is not empirical truth", "status": "canonical"},
-    {"order": 1, "layer_id": "K0", "name": "epistemic admissibility", "canonical_source": "data/project/k0-epistemic-admissibility-methodology.json", "input": "qualified contradiction and gate action", "output": "bounded ceiling-conversion candidate or control", "boundary": "same mechanism creates no graph edge", "status": "canonical_8_of_9_query_templates"},
-    {"order": 2, "layer_id": "C1", "name": "problem definition", "canonical_source": "data/project/core-thesis.json", "input": "admitted knowers and claims", "output": "bounded governing problem", "boundary": "problem framing requires source custody", "status": "canonical_method"},
-    {"order": 3, "layer_id": "C2", "name": "eligible option set", "canonical_source": "data/project/core-thesis.json", "input": "problem frame and admissibility rules", "output": "included, excluded, and missing alternatives", "boundary": "absence is not proof of ineligibility", "status": "canonical_method"},
-    {"order": 4, "layer_id": "C3-C4", "name": "institutional conversion", "canonical_source": "data/project/core-thesis.json", "input": "selected option", "output": "policy, workflow, appointment, procurement, publication, force, ontology, or control", "boundary": "conversion receipt does not prove motive", "status": "canonical_method"},
-    {"order": 5, "layer_id": "C5-C6", "name": "dependency and residual authority/value", "canonical_source": "data/project/core-thesis.json", "input": "operated conversion", "output": "infrastructure, dependency, ownership, custody, and residual benefit", "boundary": "formal ownership and practical control remain distinct", "status": "canonical_method"},
-    {"order": 6, "layer_id": "C7", "name": "correction topology", "canonical_source": "data/project/m05-answerable-power-methodology.json", "input": "material consequence and challenge", "output": "inspection, pause, reversal, substitution, governance, exit, or value recovery", "boundary": "criticism or appeal without binding authority is insufficient", "status": "canonical_method"},
-    {"order": 7, "layer_id": "POOF", "name": "functional integration projection", "canonical_source": "PR #410 pending mainline reconciliation", "input": "bounded Clifford objects", "output": "compatible organs, interfaces, routing roles, and publication projections", "boundary": "POOF never writes facts backward into Clifford evidence", "status": "branch_projection_not_main"},
-    {"order": 8, "layer_id": "R0-R7", "name": "Answerable Power ladder", "canonical_source": "data/project/m05-answerable-power-methodology.json", "input": "correction topology", "output": "representation through value recovery", "boundary": "formal safeguard does not prove observed power", "status": "canonical_constitutional_method"},
-    {"order": 9, "layer_id": "APC-01", "name": "anti-counterfeit adoption constitution", "canonical_source": "data/project/m05-answerable-power-sprint-08-plan.json", "input": "reference, reproduction, adjudication, support lifecycle", "output": "bounded adoption status", "boundary": "internal validation cannot self-award external adoption", "status": "canonical_A0_reference"},
-    {"order": 10, "layer_id": "F0-F7", "name": "Question 4 field campaign", "canonical_source": "data/project/m05-answerable-power-sprint-09-field-gate.json", "input": "counterpower architecture and lawful partner topology", "output": "external receipts, binding correction, failure, or non-transfer evidence", "boundary": "meeting, demonstration, or simulation is not field adoption", "status": "canonical_no_external_effect"},
-    {"order": 11, "layer_id": "DCA-H01", "name": "distributed counterpower aversion field hypothesis", "canonical_source": "data/project/dca-h01-field-hypothesis.json", "input": "bounded recurrences and controls across the stack", "output": "supported, limited, bounded non-link, falsified, or unresolved field disposition", "boundary": "no actor edge, motive, coordination, common purpose, or prevalence without separate evidence", "status": "canonical_AT2_hypothesis"}
+    {
+      "order": 0,
+      "layer_id": "SG",
+      "name": "stable-ground authority discriminator",
+      "canonical_source": "data/project/project-stable-ground-alignment.json",
+      "input": "merged project state and authority tiers",
+      "output": "branch/hypothesis/effect separation",
+      "boundary": "canonical state is not empirical truth",
+      "status": "canonical"
+    },
+    {
+      "order": 1,
+      "layer_id": "K0",
+      "name": "epistemic admissibility",
+      "canonical_source": "data/project/k0-epistemic-admissibility-methodology.json",
+      "input": "qualified contradiction and gate action",
+      "output": "bounded ceiling-conversion candidate or control",
+      "boundary": "same mechanism creates no graph edge",
+      "status": "canonical_8_of_9_query_templates"
+    },
+    {
+      "order": 2,
+      "layer_id": "C1",
+      "name": "problem definition",
+      "canonical_source": "data/project/core-thesis.json",
+      "input": "admitted knowers and claims",
+      "output": "bounded governing problem",
+      "boundary": "problem framing requires source custody",
+      "status": "canonical_method"
+    },
+    {
+      "order": 3,
+      "layer_id": "C2",
+      "name": "eligible option set",
+      "canonical_source": "data/project/core-thesis.json",
+      "input": "problem frame and admissibility rules",
+      "output": "included, excluded, and missing alternatives",
+      "boundary": "absence is not proof of ineligibility",
+      "status": "canonical_method"
+    },
+    {
+      "order": 4,
+      "layer_id": "C3-C4",
+      "name": "institutional conversion",
+      "canonical_source": "data/project/core-thesis.json",
+      "input": "selected option",
+      "output": "policy, workflow, appointment, procurement, publication, force, ontology, or control",
+      "boundary": "conversion receipt does not prove motive",
+      "status": "canonical_method"
+    },
+    {
+      "order": 5,
+      "layer_id": "C5-C6",
+      "name": "dependency and residual authority/value",
+      "canonical_source": "data/project/core-thesis.json",
+      "input": "operated conversion",
+      "output": "infrastructure, dependency, ownership, custody, and residual benefit",
+      "boundary": "formal ownership and practical control remain distinct",
+      "status": "canonical_method"
+    },
+    {
+      "order": 6,
+      "layer_id": "C7",
+      "name": "correction topology",
+      "canonical_source": "data/project/m05-answerable-power-methodology.json",
+      "input": "material consequence and challenge",
+      "output": "inspection, pause, reversal, substitution, governance, exit, or value recovery",
+      "boundary": "criticism or appeal without binding authority is insufficient",
+      "status": "canonical_method"
+    },
+    {
+      "order": 7,
+      "layer_id": "POOF",
+      "name": "functional integration projection",
+      "canonical_source": "PR #410 pending mainline reconciliation",
+      "input": "bounded Clifford objects",
+      "output": "compatible organs, interfaces, routing roles, and publication projections",
+      "boundary": "POOF never writes facts backward into Clifford evidence",
+      "status": "branch_projection_not_main"
+    },
+    {
+      "order": 8,
+      "layer_id": "R0-R7",
+      "name": "Answerable Power ladder",
+      "canonical_source": "data/project/m05-answerable-power-methodology.json",
+      "input": "correction topology",
+      "output": "representation through value recovery",
+      "boundary": "formal safeguard does not prove observed power",
+      "status": "canonical_constitutional_method"
+    },
+    {
+      "order": 9,
+      "layer_id": "APC-01",
+      "name": "anti-counterfeit adoption constitution",
+      "canonical_source": "data/project/m05-answerable-power-sprint-08-plan.json",
+      "input": "reference, reproduction, adjudication, support lifecycle",
+      "output": "bounded adoption status",
+      "boundary": "internal validation cannot self-award external adoption",
+      "status": "canonical_A0_reference"
+    },
+    {
+      "order": 10,
+      "layer_id": "F0-F7",
+      "name": "Question 4 field campaign",
+      "canonical_source": "data/project/m05-answerable-power-sprint-09-field-gate.json",
+      "input": "counterpower architecture and lawful partner topology",
+      "output": "external receipts, binding correction, failure, or non-transfer evidence",
+      "boundary": "meeting, demonstration, or simulation is not field adoption",
+      "status": "canonical_no_external_effect"
+    },
+    {
+      "order": 11,
+      "layer_id": "DCA-H01",
+      "name": "distributed counterpower aversion field hypothesis",
+      "canonical_source": "data/project/dca-h01-field-hypothesis.json",
+      "input": "bounded recurrences and controls across the stack",
+      "output": "supported, limited, bounded non-link, falsified, or unresolved field disposition",
+      "boundary": "no actor edge, motive, coordination, common purpose, or prevalence without separate evidence",
+      "status": "canonical_AT2_hypothesis"
+    }
   ],
   "denominator": {
     "status": "protocol_frozen_execution_not_started",
     "selection_unit": "one bounded, source-addressable recurrence or control spanning a protected center, contradiction or excluded alternative, gate or option-set effect, conversion instrument, and correction topology",
     "selection_universe": "all recoverable public-source episodes returned by mechanism- and gate-neutral search, including ordinary disagreements, lawful discipline, failed searches, inaccessible sources, successful updates, stays, substitutions, co-governance, value recovery, and negative results",
     "strata": [
-      {"stratum_id": "DCA-G01", "name": "founder_controlled_company_governance"},
-      {"stratum_id": "DCA-G02", "name": "employment_and_professional_standing"},
-      {"stratum_id": "DCA-G03", "name": "ai_research_and_publication"},
-      {"stratum_id": "DCA-G04", "name": "media_ownership_and_editorial_authority"},
-      {"stratum_id": "DCA-G05", "name": "public_health_and_regulatory_authority"},
-      {"stratum_id": "DCA-G06", "name": "academic_governance_accreditation_and_tenure"},
-      {"stratum_id": "DCA-G07", "name": "military_command_and_national_security"},
-      {"stratum_id": "DCA-G08", "name": "executive_appointment_and_public_authority"},
-      {"stratum_id": "DCA-G09", "name": "funding_procurement_and_public_private_conversion"},
-      {"stratum_id": "DCA-G10", "name": "data_platform_and_system_access"},
-      {"stratum_id": "DCA-G11", "name": "law_adjudication_and_public_information"},
-      {"stratum_id": "DCA-G12", "name": "public_capacity_exit_cogovernance_and_value_recovery"}
+      {
+        "stratum_id": "DCA-G01",
+        "name": "founder_controlled_company_governance"
+      },
+      {
+        "stratum_id": "DCA-G02",
+        "name": "employment_and_professional_standing"
+      },
+      {
+        "stratum_id": "DCA-G03",
+        "name": "ai_research_and_publication"
+      },
+      {
+        "stratum_id": "DCA-G04",
+        "name": "media_ownership_and_editorial_authority"
+      },
+      {
+        "stratum_id": "DCA-G05",
+        "name": "public_health_and_regulatory_authority"
+      },
+      {
+        "stratum_id": "DCA-G06",
+        "name": "academic_governance_accreditation_and_tenure"
+      },
+      {
+        "stratum_id": "DCA-G07",
+        "name": "military_command_and_national_security"
+      },
+      {
+        "stratum_id": "DCA-G08",
+        "name": "executive_appointment_and_public_authority"
+      },
+      {
+        "stratum_id": "DCA-G09",
+        "name": "funding_procurement_and_public_private_conversion"
+      },
+      {
+        "stratum_id": "DCA-G10",
+        "name": "data_platform_and_system_access"
+      },
+      {
+        "stratum_id": "DCA-G11",
+        "name": "law_adjudication_and_public_information"
+      },
+      {
+        "stratum_id": "DCA-G12",
+        "name": "public_capacity_exit_cogovernance_and_value_recovery"
+      }
     ],
-    "query_axes": ["bounded_gate", "documented_contradiction", "reclassification", "option_set_effect", "conversion_instrument", "correction_topology"],
+    "query_axes": [
+      "bounded_gate",
+      "documented_contradiction",
+      "reclassification",
+      "option_set_effect",
+      "conversion_instrument",
+      "correction_topology"
+    ],
     "frozen_query_templates": [
-      {"query_id": "DCA-Q01", "purpose": "contradiction_to_gate", "template": "qualified contrary finding AND reclassified standing AND bounded gate action"},
-      {"query_id": "DCA-Q02", "purpose": "option_set_foreclosure", "template": "eligible alternative excluded before decision AND later no credible alternative claim"},
-      {"query_id": "DCA-Q03", "purpose": "status_output_mismatch", "template": "low-status or outsider source AND later validated output AND gate consequence"},
-      {"query_id": "DCA-Q04", "purpose": "status_signal_selection", "template": "public credential funding appointment or endorsement AND selection consequence"},
-      {"query_id": "DCA-Q05", "purpose": "personnel_routing", "template": "named role movement between institutions AND carried authority standard or workflow"},
-      {"query_id": "DCA-Q06", "purpose": "interface_complementarity", "template": "separate organizations AND named interoperable interface AND operating responsibility"},
-      {"query_id": "DCA-Q07", "purpose": "selection_effect", "template": "complete candidate or option denominator AND exclusion rule AND survivor consensus"},
-      {"query_id": "DCA-Q08", "purpose": "counterfactual_foreclosure", "template": "failed bidder public capacity dissenting expert or alternative architecture AND blocked comparison route"},
-      {"query_id": "DCA-Q09", "purpose": "binding_update_control", "template": "external contradiction retained standing AND pre-action pause burden shift or correction"},
-      {"query_id": "DCA-Q10", "purpose": "substitution_control", "template": "vendor or system replaced AND continuity evidence custody accountability and performance preserved"},
-      {"query_id": "DCA-Q11", "purpose": "inspection_without_remedy_control", "template": "independent inspection disclosed error AND no effective pre-action or remedial authority"},
-      {"query_id": "DCA-Q12", "purpose": "durability_control", "template": "correction or governance change survived leadership vendor contract or successor system change"}
+      {
+        "query_id": "DCA-Q01",
+        "purpose": "contradiction_to_gate",
+        "template": "qualified contrary finding AND reclassified standing AND bounded gate action"
+      },
+      {
+        "query_id": "DCA-Q02",
+        "purpose": "option_set_foreclosure",
+        "template": "eligible alternative excluded before decision AND later no credible alternative claim"
+      },
+      {
+        "query_id": "DCA-Q03",
+        "purpose": "status_output_mismatch",
+        "template": "low-status or outsider source AND later validated output AND gate consequence"
+      },
+      {
+        "query_id": "DCA-Q04",
+        "purpose": "status_signal_selection",
+        "template": "public credential funding appointment or endorsement AND selection consequence"
+      },
+      {
+        "query_id": "DCA-Q05",
+        "purpose": "personnel_routing",
+        "template": "named role movement between institutions AND carried authority standard or workflow"
+      },
+      {
+        "query_id": "DCA-Q06",
+        "purpose": "interface_complementarity",
+        "template": "separate organizations AND named interoperable interface AND operating responsibility"
+      },
+      {
+        "query_id": "DCA-Q07",
+        "purpose": "selection_effect",
+        "template": "complete candidate or option denominator AND exclusion rule AND survivor consensus"
+      },
+      {
+        "query_id": "DCA-Q08",
+        "purpose": "counterfactual_foreclosure",
+        "template": "failed bidder public capacity dissenting expert or alternative architecture AND blocked comparison route"
+      },
+      {
+        "query_id": "DCA-Q09",
+        "purpose": "binding_update_control",
+        "template": "external contradiction retained standing AND pre-action pause burden shift or correction"
+      },
+      {
+        "query_id": "DCA-Q10",
+        "purpose": "substitution_control",
+        "template": "vendor or system replaced AND continuity evidence custody accountability and performance preserved"
+      },
+      {
+        "query_id": "DCA-Q11",
+        "purpose": "inspection_without_remedy_control",
+        "template": "independent inspection disclosed error AND no effective pre-action or remedial authority"
+      },
+      {
+        "query_id": "DCA-Q12",
+        "purpose": "durability_control",
+        "template": "correction or governance change survived leadership vendor contract or successor system change"
+      }
     ],
-    "execution": {"started": false, "query_templates_total": 12, "query_templates_executed": 0, "records_retained": 0, "positive_controls": 0, "negative_controls": 0, "field_mechanism_findings": 0, "graph_effect": "none"}
+    "execution": {
+      "started": false,
+      "query_templates_total": 12,
+      "query_templates_executed": 0,
+      "records_retained": 0,
+      "positive_controls": 0,
+      "negative_controls": 0,
+      "field_mechanism_findings": 0,
+      "graph_effect": "none"
+    }
   },
   "controls": [
-    {"control_id": "DCA-C01", "name": "ordinary_disagreement_without_reclassification", "expected": "bounded_non_link"},
-    {"control_id": "DCA-C02", "name": "legitimate_discipline_with_independent_record", "expected": "bounded_non_link"},
-    {"control_id": "DCA-C03", "name": "strategic_bypass_not_comprehension_failure", "expected": "separate_failure_species"},
-    {"control_id": "DCA-C04", "name": "gateholder_updates_correctly", "expected": "counterevidence"},
-    {"control_id": "DCA-C05", "name": "unsanctioned_knower_retains_standing", "expected": "counterevidence"},
-    {"control_id": "DCA-C06", "name": "independent_pre_action_stay_and_reversal", "expected": "answer_story_control"},
-    {"control_id": "DCA-C07", "name": "successful_public_or_civic_substitute", "expected": "answer_story_control"},
-    {"control_id": "DCA-C08", "name": "affected_party_body_with_binding_authority", "expected": "answer_story_control"},
-    {"control_id": "DCA-C09", "name": "failed_attempt_to_remove_feedback_source", "expected": "counterevidence"},
-    {"control_id": "DCA-C10", "name": "strong_inspection_weak_remedy", "expected": "partial_counterpower"},
-    {"control_id": "DCA-C11", "name": "remedy_without_pre_action_timing", "expected": "partial_counterpower"},
-    {"control_id": "DCA-C12", "name": "alternatives_preserved_and_failed_paths_published", "expected": "counterevidence"}
+    {
+      "control_id": "DCA-C01",
+      "name": "ordinary_disagreement_without_reclassification",
+      "expected": "bounded_non_link"
+    },
+    {
+      "control_id": "DCA-C02",
+      "name": "legitimate_discipline_with_independent_record",
+      "expected": "bounded_non_link"
+    },
+    {
+      "control_id": "DCA-C03",
+      "name": "strategic_bypass_not_comprehension_failure",
+      "expected": "separate_failure_species"
+    },
+    {
+      "control_id": "DCA-C04",
+      "name": "gateholder_updates_correctly",
+      "expected": "counterevidence"
+    },
+    {
+      "control_id": "DCA-C05",
+      "name": "unsanctioned_knower_retains_standing",
+      "expected": "counterevidence"
+    },
+    {
+      "control_id": "DCA-C06",
+      "name": "independent_pre_action_stay_and_reversal",
+      "expected": "answer_story_control"
+    },
+    {
+      "control_id": "DCA-C07",
+      "name": "successful_public_or_civic_substitute",
+      "expected": "answer_story_control"
+    },
+    {
+      "control_id": "DCA-C08",
+      "name": "affected_party_body_with_binding_authority",
+      "expected": "answer_story_control"
+    },
+    {
+      "control_id": "DCA-C09",
+      "name": "failed_attempt_to_remove_feedback_source",
+      "expected": "counterevidence"
+    },
+    {
+      "control_id": "DCA-C10",
+      "name": "strong_inspection_weak_remedy",
+      "expected": "partial_counterpower"
+    },
+    {
+      "control_id": "DCA-C11",
+      "name": "remedy_without_pre_action_timing",
+      "expected": "partial_counterpower"
+    },
+    {
+      "control_id": "DCA-C12",
+      "name": "alternatives_preserved_and_failed_paths_published",
+      "expected": "counterevidence"
+    }
   ],
   "alternative_explanations": [
     "ordinary institutional complexity",
@@ -150,7 +406,13 @@
     "silence_proves_motive": false,
     "audience_concentration_proves_monitoring": false,
     "one_reaction_proves_ecosystem_response": false,
-    "required_receipts": ["exact_audience", "communication_or_observation", "decision_or_block", "citation_invitation_or_nonresponse", "bounded_institutional_consequence"]
+    "required_receipts": [
+      "exact_audience",
+      "communication_or_observation",
+      "decision_or_block",
+      "citation_invitation_or_nonresponse",
+      "bounded_institutional_consequence"
+    ]
   },
   "current_state": {
     "hypothesis_named": true,
