@@ -1,0 +1,74 @@
+licationPlan.generated_outputs.length, 4, 'live publication generated-output count');
++  equal(publicationPlan.held_surfaces.length, 11, 'live publication held-surface count');
++  equal(publicationManifest.combined_sha256, publication.manifest_sha256, 'live publication manifest digest');
++  equal(publicationManifest.counts.files, publication.manifest_files, 'live publication file count');
++  equal(publicationManifest.counts.source_files, publication.source_files, 'live publication source-file count');
++  equal(publicationManifest.counts.normalized_source_files, publication.normalized_source_files, 'live normalized projection count');
++  equal(publicationManifest.counts.held_surfaces, publication.held_surfaces, 'live held-surface count');
++  equal(publication.recursive_repository_copy, false, 'frozen recursive copy boundary');
++  equal(publication.unclassified_dependency_allowed, false, 'frozen unclassified dependency boundary');
++  equal(publication.generic_graph_public_route, false, 'frozen graph route boundary');
++  equal(publication.legacy_public_route, false, 'frozen legacy route boundary');
++  equal(publication.poof_github_pages_deployed, false, 'frozen POOF Pages deployment');
++  equal(publication.ssc_publication_status, 'blocked', 'frozen SSC publication state');
++  equal(publication.graph_effect, 'none', 'frozen publication graph effect');
++
++  equal(poofLog.changes.length, 6, 'live POOF receipt count');
++  equal(poofLog.changes.at(-1)?.change_id, 'POOF-CONST-2026-07-29-006', 'live POOF last receipt');
++  equal(poofContract.publication_state.current_state, 'staged_nonpublic_generated_aperture', 'live POOF publication status');
++  equal(poofAperture.publication.deployed, false, 'live POOF deployment');
++  equal(poofAperture.publication.indexable, false, 'live POOF indexability');
++  equal(poofRelease.combined_sha256, snapshot.poof.release_sha256, 'live POOF release digest');
++  equal(status.current_state.query_or_field_execution_started, false, 'live SSC execution state');
++  equal(status.current_state.observations_retained, 0, 'live SSC retained count');
++  equal(k0.execution.query_templates_executed, 9, 'live K0 execution');
++  equal(k0.execution.returned_records, 65, 'live K0 retained count');
++  equal(k0.execution.included_events, 0, 'live K0 event count');
++  equal(denominator.execution.query_templates_executed, 0, 'live DCA execution');
++  equal(denominator.execution.records_retained, 0, 'live DCA record count');
++  equal(sprint09.current_result.maximum_verified_adoption_level, 'A0', 'live adoption');
++  equal(sprint09.current_result.real_person_pilot_authorized, false, 'live pilot state');
++
++  equal(checkpoint.fanout_state.owner_lanes.length, 7, 'SG-06 owner-lane count');
++  equal(checkpoint.fanout_state.owner_lanes.find((row) => row.lane_id === 'FAN-04')?.state, 'complete_canonical_default_exclude', 'FAN-04 state');
++  equal(checkpoint.fanout_state.owner_lanes.find((row) => row.lane_id === 'FAN-04')?.receipt, checkpoint.trigger.transition_commit, 'FAN-04 receipt');
++  equal(checkpoint.build_order.find((row) => row.order === 2)?.receipt, checkpoint.trigger.transition_commit, 'SG-06 build-order receipt');
++
++  for (const [key, value] of Object.entries(checkpoint.boundaries)) {
++    if (key === 'graph_effect') equal(value, 'none', `SG-06 boundary ${key}`);
++    else if (typeof value === 'boolean') equal(value, false, `SG-06 boundary ${key}`);
++  }
++
++  for (const error of transitionVerifier(checkpoint)) errors.push(error);
++  const historyRow = pointer.history.find((row) => row.checkpoint_id === 'SG-2026-07-30-05');
++  for (const error of historicalVerifier(historyRow)) errors.push(error);
++
++  equal(manifest.schema_version, 'project-stable-ground-sg06-release-manifest@1', 'SG-06 manifest schema');
++  equal(manifest.checkpoint_id, checkpoint.checkpoint_id, 'SG-06 manifest identity');
++  equal(JSON.stringify(manifest), JSON.stringify(computeSg06Manifest()), 'current SG-06 exact-byte manifest');
++  equal(report.schema_version, 'project-stable-ground-sg06-report@1', 'SG-06 report schema');
++  equal(report.checkpoint_id, checkpoint.checkpoint_id, 'SG-06 report identity');
++  equal(report.canonical_main.commit, checkpoint.trigger.transition_commit, 'SG-06 report transition');
++  equal(report.counts.checkpoints_preserved, 6, 'SG-06 report history count');
++  equal(report.counts.publication_entries, 100, 'SG-06 report publication entry count');
++  equal(report.counts.publication_files, 118, 'SG-06 report publication file count');
++  equal(report.counts.held_surfaces, 11, 'SG-06 report held count');
++  equal(report.publication_manifest.combined_sha256, publication.manifest_sha256, 'SG-06 report publication digest');
++  equal(report.poof_release.combined_sha256, poofRelease.combined_sha256, 'SG-06 report POOF digest');
++  equal(report.release_manifest.combined_sha256, manifest.combined_sha256, 'SG-06 report release digest');
++  check(hex64.test(manifest.combined_sha256), 'SG-06 release digest format');
++  return errors;
++}
++
++function main() {
++  const errors = validateSg06();
++  if (errors.length) {
++    console.error(`validate-project-stable-ground-sg06: ${errors.length} error(s)`);
++    for (const error of errors) console.error(`- ${error}`);
++    process.exit(1);
++  }
++  console.log('validate-project-stable-ground-sg06: PASS');
++}
++
++const invoked = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
++if (invoked) main();
