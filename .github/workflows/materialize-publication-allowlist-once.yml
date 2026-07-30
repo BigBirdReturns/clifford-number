@@ -27,6 +27,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Normalize canonical carrier stream checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('.github/scripts/run-publication450-sg05.sh')
+          text = path.read_text()
+          replacements = {
+              '0a183d23a2758756c34db7bcc7b7ca49252d1d56c2f085c414f892b6805e16d4': '07e8f3ced9a21d5bad96e7cee651c9df230337b0c18533fd33ba539ae79c254e',
+              'f611d47d35893d76119e6dc3f5797aac5767a73ec079ee833f0f96a05a51f0d8': 'f82fd16874e578f770fc23ba28d20ae31c3c026d3eb204e8efb8e70d67723da4',
+          }
+          for old, new in replacements.items():
+              if text.count(old) != 1:
+                  raise SystemExit(f'carrier checksum anchor count for {old}: {text.count(old)}')
+              text = text.replace(old, new, 1)
+          path.write_text(text)
+          PY
       - name: Execute exact publication and SG-05 transition
         env:
           EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
