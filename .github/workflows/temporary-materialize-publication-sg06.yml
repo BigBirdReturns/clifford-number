@@ -1,0 +1,70 @@
+name: Temporary materialize publication safety and SG-06
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - '.github/tmp/publication-sg06-bundle-part-*.b64'
+      - '.github/workflows/temporary-materialize-publication-sg06.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publication-sg06-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: >-
+      github.head_ref == 'agent/publication-safety-sg06-final' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/publication-safety-sg06-final
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify and extract exact transition bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s  %s\n' 'f18fb8fcf414b7c5521c0b85b6ab0f07fc65628086ea0468193c97e3f6c2a141' .github/tmp/publication-sg06-bundle-part-00.b64 | sha256sum --check --strict
+          printf '%s  %s\n' '85d353b82d98ae03d1dcd1d7657590fab213e6547ef2deebe7f77592a345f972' .github/tmp/publication-sg06-bundle-part-01.b64 | sha256sum --check --strict
+          printf '%s  %s\n' '1080ff70a0a7ddcc813105d784d17df08968cfe60d0dd1e757463367ff800a70' .github/tmp/publication-sg06-bundle-part-02.b64 | sha256sum --check --strict
+          printf '%s  %s\n' '523d5917d9d5a4e59bdbbafc2ed5e0116b901c01f065a87a6c90421f35a82e2b' .github/tmp/publication-sg06-bundle-part-03.b64 | sha256sum --check --strict
+          cat .github/tmp/publication-sg06-bundle-part-*.b64 | tr -d '\n\r\t ' > /tmp/publication-sg06-bundle.tar.xz.b64
+          printf '%s  %s\n' 'aacb42c926d4fb66bcb56a98239c076cfaf4387917853038f12a02596f27c66b' /tmp/publication-sg06-bundle.tar.xz.b64 | sha256sum --check --strict
+          base64 --decode /tmp/publication-sg06-bundle.tar.xz.b64 > /tmp/publication-sg06-bundle.tar.xz
+          printf '%s  %s\n' 'dac9be953b1fcf17b66a6c5d8b8dfdc3833ae01320d45fc079d6438ceccf1bc9' /tmp/publication-sg06-bundle.tar.xz | sha256sum --check --strict
+          xz --decompress --stdout /tmp/publication-sg06-bundle.tar.xz > /tmp/publication-sg06-bundle.tar
+          printf '%s  %s\n' '97f9b922b775f6011454dfa473e1a698294100de91ae7ce734161fb50cf41756' /tmp/publication-sg06-bundle.tar | sha256sum --check --strict
+          printf '%s\n' materialize.sh publication.patch.xz.b64 sg06.patch.xz.b64 | sort > /tmp/expected-members
+          tar -tf /tmp/publication-sg06-bundle.tar | sort > /tmp/observed-members
+          diff -u /tmp/expected-members /tmp/observed-members
+          mkdir -p /tmp/publication-sg06-bundle
+          tar -xf /tmp/publication-sg06-bundle.tar -C /tmp/publication-sg06-bundle
+          printf '%s  %s\n' 'ba44480d3bada74cd0ec419a540b5d674ee79410205440c15b858a64b1684190' /tmp/publication-sg06-bundle/materialize.sh | sha256sum --check --strict
+          printf '%s  %s\n' '67f9fd7d6da4315a1b44d7d6dba651650390d466f640cd5a02109618c1ee580b' /tmp/publication-sg06-bundle/publication.patch.xz.b64 | sha256sum --check --strict
+          printf '%s  %s\n' '7e5626fbabbd9a02e1ab9eff356e1dc24e692beb52c6e756ea9361c4240f5680' /tmp/publication-sg06-bundle/sg06.patch.xz.b64 | sha256sum --check --strict
+      - name: Execute transport-free publication and SG-06 transition
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          CARRIER_ROOT: /tmp/publication-sg06-bundle
+        run: bash /tmp/publication-sg06-bundle/materialize.sh
+      - name: Preserve bounded QA receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: publication-sg06-qa-${{ github.run_id }}
+          path: |
+            /tmp/publication-browser-qa-*.json
+            /tmp/publication-sg06-*-head
+          if-no-files-found: ignore
+          retention-days: 14
