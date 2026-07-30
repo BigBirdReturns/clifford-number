@@ -82,7 +82,11 @@ for (const record of projectionRegistry.records) {
 
 if (!fs.readFileSync('BUILD-INSTRUCTIONS.md', 'utf8').includes('3.17 **Residual lake frontier')) fail('build instruction contract missing');
 if (!fs.readFileSync('README.md', 'utf8').includes('## Residual lake frontier')) fail('README contract missing');
-if (fs.existsSync('.github/tmp/lake-residual-frontier-wave-17-trigger.json')) fail('temporary Wave 17 trigger remains');
+const triggerPath = '.github/tmp/lake-residual-frontier-wave-17-trigger.json';
+const authorizedMaterializationContext = process.env.GITHUB_ACTIONS === 'true'
+  && process.env.GITHUB_WORKFLOW === 'Evidence lake residual frontier Wave 17'
+  && process.env.GITHUB_EVENT_NAME === 'push';
+if (fs.existsSync(triggerPath) && !authorizedMaterializationContext) fail('temporary Wave 17 trigger remains outside the authorized materializer');
 if (receipt.boundaries.source_truth_determined !== false) fail('source truth boundary drift');
 if (receipt.boundaries.publication_cleared !== false) fail('publication boundary drift');
 if (receipt.boundaries.graph_effect !== 'none') fail('graph boundary drift');
