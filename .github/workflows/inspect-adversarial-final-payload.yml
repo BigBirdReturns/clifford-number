@@ -1,6 +1,11 @@
 name: Inspect adversarial final payload
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/tmp/inspect-final-payload.trigger'
+      - '.github/workflows/inspect-adversarial-final-payload.yml'
   push:
     branches:
       - agent/adversarial-release-integrity
@@ -17,7 +22,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent/adversarial-release-integrity
           fetch-depth: 0
       - name: Decode and identify retained payloads
         shell: bash
@@ -42,13 +46,13 @@ jobs:
           if tar -tf /tmp/final-source.payload >/tmp/source-list.txt 2>/dev/null; then
             echo SOURCE_IS_TAR
             wc -l /tmp/source-list.txt
-            sed -n '1,120p' /tmp/source-list.txt
+            sed -n '1,160p' /tmp/source-list.txt
           fi
           if tar -tf /tmp/final-delta.payload >/tmp/delta-list.txt 2>/dev/null; then
             echo DELTA_IS_TAR
             wc -l /tmp/delta-list.txt
-            sed -n '1,120p' /tmp/delta-list.txt
+            sed -n '1,160p' /tmp/delta-list.txt
           fi
           echo '--- textual prefixes when applicable ---'
-          strings -n 8 /tmp/final-source.payload | sed -n '1,80p'
-          strings -n 8 /tmp/final-delta.payload | sed -n '1,120p'
+          strings -n 8 /tmp/final-source.payload | sed -n '1,120p'
+          strings -n 8 /tmp/final-delta.payload | sed -n '1,160p'
