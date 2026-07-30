@@ -351,3 +351,16 @@ unchanged. Every nonexact remainder is retained in a typed unresolved-subject
 registry with a named next action and append-preserving correction route. Exact
 projection and unresolved routing create no relationship, participation, graph edge,
 hop, automatic cross-case join, truth determination, or publication clearance.
+
+3.15 **Unresolved subject adjudication — Wave 15.**
+Every subject left by the exact-ID lane must receive exactly one evidence-grounded
+adjudication: an existing provenance-backed identity, a named controlled identity,
+a source-custodied canonical-creation plan, or a typed nonidentity object. Missing a
+reviewer is not a decision blocker.
+
+Wave 15 does not mutate canonical records or case claims. Identity decisions remain
+integration-ready and graph-inert; planned records remain unapplied; contracts,
+programs, records, places, infrastructure, products, sites, roles, and analytic
+constructs remain typed nonidentity objects. No adjudication creates a relationship,
+participation row, graph edge, hop, cross-case bridge, truth determination, or
+publication clearance.

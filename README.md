@@ -182,3 +182,14 @@ case/analytic, named-object, or still-unclassified work.
 This is generated identity metadata only. Source claim IDs and text are unchanged,
 and the projection creates no relationship, participation, graph edge, hop, or
 automatic cross-case join.
+
+## Unresolved subject adjudication
+
+Wave 15 converts the complete Wave 14 unresolved denominator into bounded decisions:
+provenance-backed identities, named controlled mappings, three canonical-creation
+plans, and typed nonidentity subject objects. Nothing remains in a generic
+wait-for-review state.
+
+The adjudication is additive metadata. Source claims and canonical registries are not
+mutated in this wave, and no decision creates a relationship, participation row,
+graph edge, hop, or automatic cross-case join.

@@ -1,26 +1,26 @@
 # Lake index census
 
-Source fingerprint: `e6e99fa72c56389b7d72a5d648f05ee445895e15dad4288cdd003f6e6812c528`
+Source fingerprint: `2e902a5d96b84f86b86b6d353966bdad8e721ceabfd93ffeb8cffb8592ae279c`
 
 ## The six waterlines
 
 | Waterline | Count | Share of evidence files |
 |---|---:|---:|
-| Tracked evidence-bearing files physically present | 1346 | 100.0% |
-| Reachable from declared authoritative roots | 1192 | 88.6% |
-| Reachable from any detected index or manifest | 1200 | 89.2% |
-| Reachable from current public entry roots | 242 | 18.0% |
-| Exact orphan evidence files with no inbound repository reference | 106 | 7.9% |
-| Evidence files with no detected program owner | 587 | 43.6% |
+| Tracked evidence-bearing files physically present | 1352 | 100.0% |
+| Reachable from declared authoritative roots | 1198 | 88.6% |
+| Reachable from any detected index or manifest | 1206 | 89.2% |
+| Reachable from current public entry roots | 242 | 17.9% |
+| Exact orphan evidence files with no inbound repository reference | 106 | 7.8% |
+| Evidence files with no detected program owner | 593 | 43.9% |
 
 ## Object and receipt census
 
 ```text
-distinct machine-addressable IDs:       15111
+distinct machine-addressable IDs:       15222
 local-only identifier values observed:   1152
 local-only identifier occurrences:       8072
-unindexed machine-addressable IDs:      8199
-divergent identifier projections:       2879
+unindexed machine-addressable IDs:      8198
+divergent identifier projections:       2977
 source IDs without a projection:         5612
 projection IDs without a source object:  1967
 receipt IDs:                             350
@@ -39,8 +39,8 @@ report IDs:                              5
 
 ```text
 open pull requests observed:              33
-changed paths across open pull requests:  525
-branch-only paths observed:               182
+changed paths across open pull requests:  539
+branch-only paths observed:               183
 ```
 
 Open-PR paths are a shadow inventory only. They are not merged corpus, evidence truth, or publication state.
