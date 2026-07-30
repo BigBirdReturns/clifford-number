@@ -1,9 +1,9 @@
 name: Temporary export publication SG-06 repair bytes
 
 on:
-  push:
-    branches:
-      - agent/publication-safety-sg06-final
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - '.github/workflows/temporary-export-publication-sg06-repairs.yml'
   workflow_dispatch:
@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   export:
+    if: github.head_ref == 'agent/publication-safety-sg06-final'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +24,6 @@ jobs:
           set -euo pipefail
           sha256sum .github/tmp/publication-sg06-repair-*.b64 > .github/tmp/publication-sg06-repairs.sha256
           wc -c .github/tmp/publication-sg06-repair-*.b64 > .github/tmp/publication-sg06-repairs.bytes
-          printf 'export-trigger=2\n' >> .github/tmp/publication-sg06-repairs.bytes
       - uses: actions/upload-artifact@v4
         with:
           name: publication-sg06-repairs-${{ github.run_id }}
