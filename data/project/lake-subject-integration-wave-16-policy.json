@@ -2,7 +2,7 @@
   "schema_version": "lake-subject-integration-wave-16-policy@1",
   "program_key": "CN-LAKE-SUBJECT-INTEGRATION-W16",
   "as_of": "2026-07-29",
-  "purpose": "Integrate the completed Wave 15 adjudications into the live generated subject layer. Fourteen existing canonical identities and three newly materialized canonical organizations become graph-inert case-scoped resolutions. Forty bounded nonidentity decisions become typed subject objects in generated cases and the public catalog. Sealed Wave 14 and Wave 15 receipts remain historical and are not regenerated.",
+  "purpose": "Integrate the completed Wave 15 adjudications into the live generated subject layer. Fifteen decisions resolve to existing canonical identities, including an append-preserving supersession of the Frontier AI Taskforce new-record plan because that name is already an explicit alias of AISI. Two source-custodied organizations are newly materialized. Forty bounded nonidentity decisions become typed subject objects. Sealed Wave 14 and Wave 15 receipts remain historical and are not regenerated.",
   "baseline": {
     "wave_15_receipt_path": "data/project/lake-unresolved-subject-adjudication-wave-15.json",
     "wave_15_registry_path": "data/project/lake-unresolved-subject-adjudication-registry-wave-15.jsonl",
@@ -46,11 +46,26 @@
     "tools/lib/local-canonical-resolution.mjs",
     "tools/lib/axm-id.mjs"
   ],
+  "identity_integration_overrides": [
+    {
+      "source_decision_id": "SUBJDEC-a0f11ad0030aa2a6f5aa7a1c",
+      "source_case_id": "uk-ai-policy",
+      "local_subject_id": "frontier-ai-taskforce",
+      "supersedes_wave_15_disposition": "identity_new_canonical_plan",
+      "canonical_id": "aisi",
+      "canonical_kind": "organization",
+      "same_entity_basis": "The canonical alias registry already assigns Frontier AI Taskforce to AISI; materializing a second entity would split one institutional lineage and collide in the AXM identity namespace.",
+      "required_receipt_ids": [
+        "guardian-clifford-stepdown"
+      ],
+      "correction_mode": "append_preserving_supersession"
+    }
+  ],
   "expected": {
     "wave_15_decisions": 57,
     "identity_decisions": 17,
-    "existing_identity_resolutions": 14,
-    "new_canonical_records": 3,
+    "existing_identity_resolutions": 15,
+    "new_canonical_records": 2,
     "nonidentity_object_decisions": 40,
     "identity_claim_references_integrated": 29,
     "subject_object_claim_references_integrated": 64,
@@ -58,14 +73,14 @@
     "local_resolution_rows_after": 29,
     "local_resolution_registry_files_after": 2,
     "canonical_actor_rows_after": 161,
-    "canonical_organization_rows_after": 66,
+    "canonical_organization_rows_after": 65,
     "canonical_alias_rows_after": 30,
-    "active_axm_entities_after": 241,
+    "active_axm_entities_after": 240,
     "active_axm_claims_after": 164,
     "resolved_identity_references_after": 272,
     "unresolved_identity_references_after": 64,
     "subject_object_rows": 40,
-    "identity_extension_rows": 3,
+    "identity_extension_rows": 2,
     "resolution_ids_source_projection_and_index_observed": 17,
     "subject_object_ids_source_projection_and_index_observed": 40,
     "source_subject_id_changes": 0,
@@ -80,7 +95,8 @@
     "review_required_to_integrate": false,
     "missing_reviewer_blocks_integration": false,
     "wave_15_adjudication_required": true,
-    "existing_identity_requires_accepted_wave_15_decision": true,
+    "later_identity_collision_or_existing_alias_may_supersede_a_new_record_plan": true,
+    "existing_identity_requires_accepted_wave_15_decision_or_named_append_preserving_supersession": true,
     "new_canonical_record_requires_wave_15_plan_and_receipt_custody": true,
     "nonidentity_object_requires_wave_15_subject_object_id_and_object_kind": true,
     "identity_and_subject_object_are_mutually_exclusive_for_one_case_local_subject": true,
