@@ -266,6 +266,184 @@ graph effect:                  none
 - multiple_pointer_templates_same_path: 3026
 - single_pointer_template_repeated_rows: 489
 
+## Single-template repeated-row groups
+
+- build/public-catalog.json :: subject_id :: /claims/*/subject_id: 60
+- estates :: object_id :: /custody_runs/*/object_id: 34
+- gametrails :: object_id :: /custody_runs/*/object_id: 34
+- build/estate-game-trails :: target_estate_id :: /directed_overlap_pairs/*/target_estate_id: 24
+- estates :: target_estate_id :: /overlap_matrix/directed_overlap_pairs/*/target_estate_id: 24
+- gametrails :: target_estate_id :: /overlap_matrix/directed_overlap_pairs/*/target_estate_id: 24
+- build/estate-game-trails :: origin_estate_id :: /rows/*/origin_estate_id: 22
+- build/core-thesis :: object_id :: /objects/*/object_id: 16
+- reports/core-thesis :: object_id :: /objects/*/object_id: 16
+- build/axm-identity.json :: obj_local_id :: /claims/*/obj_local_id: 14
+- build/briefings :: column_id :: /threads/*/cells/*/column_id: 10
+- build/surface-graph.json :: canonical_id :: /aliases/*/canonical_id: 8
+- estates :: canonical_family_id :: /source_route_runs/*/canonical_family_id: 8
+- estates :: from_estate_id :: /corridors/*/from_estate_id: 8
+- estates :: to_estate_id :: /corridors/*/to_estate_id: 8
+- gametrails :: canonical_family_id :: /source_route_runs/*/canonical_family_id: 8
+- build/axm-identity.json :: subj_local_id :: /claims/*/subj_local_id: 7
+- build/canonical-adjudication-index-wave-11.json :: typing_rule_id :: /decisions/*/typing_rule_id: 7
+- build/receipt-graph.json :: participant_id :: /participation_receipt_links/*/participant_id: 7
+- estates :: route_id :: /source_route_runs/*/route_id: 7
+- gametrails :: route_id :: /source_route_runs/*/route_id: 7
+- build/cases :: subject_id :: /claims/*/subject_id: 6
+- build/surface-graph.json :: actor_id :: /surfaces/*/participants/*/actor_id: 6
+- build/lake-actions :: source_case_id :: /subject_object_observations/*/source_case_id: 5
+- reports/core-thesis :: epistemic_standing_id :: /records/*/classification/epistemic_standing_id: 5
+- build/axm-canonical-identity-candidate-index-wave-09.json :: case_id :: /mentions/*/case_id: 4
+- build/canonical-adjudication-index-wave-11.json :: case_id :: /decisions/*/case_id: 4
+- build/core-thesis :: effective_power_id :: /records/*/classification/effective_power_id: 4
+- build/exact-canonical-subject-projection-wave-14.json :: source_case_id :: /unresolved_subjects/*/source_case_id: 4
+- build/lake-actions :: matched_rule_id :: /cases/*/matched_rule_id: 4
+- build/lake-actions :: source_case_id :: /unresolved_observations/*/source_case_id: 4
+- reports/core-thesis :: burden_position_id :: /records/*/classification/burden_position_id: 4
+- reports/core-thesis :: counterfactual_access_id :: /records/*/classification/counterfactual_access_id: 4
+- reports/core-thesis :: effective_power_id :: /records/*/classification/effective_power_id: 4
+- reports/core-thesis :: evidence_custody_id :: /records/*/classification/evidence_custody_id: 4
+- reports/core-thesis :: intervention_timing_id :: /records/*/classification/intervention_timing_id: 4
+- reports/core-thesis :: query_id :: /query_executions/*/query_id: 4
+- reports/core-thesis :: remedy_power_id :: /records/*/classification/remedy_power_id: 4
+- reports/core-thesis :: uncertainty_allocation_id :: /records/*/classification/uncertainty_allocation_id: 4
+- build/bounded-hold-resolution-index-wave-12.json :: source_case_id :: /local_resolutions/*/source_case_id: 3
+- build/canonical-subject-projection-wave-13.json :: source_case_id :: /resolutions/*/source_case_id: 3
+- build/hop-graph.json :: surface_id :: /edges/*/surfaces/*/surface_id: 3
+- build/lake-actions :: owner_program_id :: /cases/*/owner_program_id: 3
+- build/lake-actions :: owner_program_id :: /line-*/owner_program_id: 3
+- build/lake-actions :: source_case_id :: /observations/*/source_case_id: 3
+- reports/core-thesis :: source_route_id :: /evidence/*/source_route_id: 3
+- build/axm-production-cross-case-candidate-index-wave-08.json :: left_case_id :: /case_pairs/*/left_case_id: 2
+- build/axm-production-cross-case-candidate-index-wave-08.json :: right_case_id :: /case_pairs/*/right_case_id: 2
+- build/canonical-subject-projection-wave-13.json :: canonical_id :: /resolutions/*/canonical_id: 2
+- build/cases :: to_event_id :: /relations/*/to_event_id: 2
+- build/lake-actions :: canonical_id :: /observations/*/canonical_id: 2
+- build/lake-actions :: matched_rule_id :: /line-*/matched_rule_id: 2
+- build/surface-graph.json :: local_resolution_id :: /aliases/*/local_resolution_id: 2
+- build/axm-canonical-identity-candidate-index-wave-09.json :: canonical_id :: /mentions/*/canonical_candidates/*/canonical_id: 1
+- build/axm-cross-case-join-decision-index-wave-07.json :: left_axm_entity_id :: /decisions/*/left_axm_entity_id: 1
+- build/axm-cross-case-join-decision-index-wave-07.json :: left_case_id :: /decisions/*/left_case_id: 1
+- build/axm-cross-case-join-decision-index-wave-07.json :: right_case_id :: /decisions/*/right_case_id: 1
+- build/canonical-adjudication-index-wave-11.json :: proposed_canonical_id :: /decisions/*/proposed_canonical_id: 1
+- build/cases :: signature_id :: /trails/*/signature_id: 1
+- build/cases :: stage_id :: /trails/*/stage_id: 1
+- build/estates :: primary_estate_id :: /crosswalks/cases/*/primary_estate_id: 1
+- build/exact-canonical-subject-projection-wave-14.json :: case_id :: /explicit_exact_equality_references/*/case_id: 1
+- build/lake-actions :: canonical_id :: /resolution_observations/*/canonical_id: 1
+- build/scores.json :: surface_id :: /actors/*/shortest_path/hops/*/shared_surfaces/*/surface_id: 1
+- build/subject-integration-wave-16.json :: canonical_id :: /identity_resolutions/*/canonical_id: 1
+- build/subject-integration-wave-16.json :: source_case_id :: /subject_objects/*/source_case_id: 1
+- build/surface-graph.json :: legacy_local_id :: /aliases/*/legacy_local_id: 1
+- build/surface-graph.json :: organization_id :: /surfaces/*/participants/*/organization_id: 1
+- estates :: signature_id :: /legacy_runs/*/source_snapshot/signature_id: 1
+- estates :: stage_id :: /legacy_runs/*/source_snapshot/stage_id: 1
+- gametrails :: signature_id :: /legacy_runs/*/source_snapshot/signature_id: 1
+- gametrails :: stage_id :: /legacy_runs/*/source_snapshot/stage_id: 1
+- reports/core-thesis :: audit_record_id :: /seed_events/*/audit_record_id: 1
+- reports/core-thesis :: m05_lane_id :: /seed_events/*/m05_lane_id: 1
+- reports/core-thesis :: m05_story_id :: /seed_events/*/m05_story_id: 1
+- reports/core-thesis :: system_id :: /fanout/*/system_id: 1
+
+## Multi-template same-path groups
+
+- build/cases :: local_subject_id: 229
+- build/public-catalog.json :: local_subject_id: 229
+- build/cases :: canonical_subject_id: 187
+- build/public-catalog.json :: canonical_subject_id: 187
+- build/exact-canonical-subject-projection-wave-14.json :: canonical_subject_id: 160
+- estates :: route_id: 116
+- build/subject-ontology-routing-index-wave-10.json :: source_mention_id: 106
+- estates :: canonical_family_id: 104
+- estates :: trail_id: 101
+- gametrails :: trail_id: 101
+- build/estate-game-trails :: estate_id: 88
+- build/estate-closures :: route_id: 87
+- build/estate-closures :: canonical_family_id: 86
+- build/cases :: subject_id: 63
+- build/canonical-adjudication-index-wave-11.json :: source_routing_id: 51
+- gametrails :: canonical_family_id: 50
+- gametrails :: route_id: 50
+- build/cases :: source_decision_id: 40
+- build/cases :: source_unresolved_subject_id: 40
+- build/cases :: subject_object_id: 40
+- build/lake-actions :: adjudication_id: 40
+- build/public-catalog.json :: source_decision_id: 40
+- build/public-catalog.json :: source_unresolved_subject_id: 40
+- build/public-catalog.json :: subject_object_id: 40
+- estates :: estate_id: 38
+- build/estate-game-trails :: trail_id: 35
+- build/cases :: resolution_id: 29
+- build/public-catalog.json :: resolution_id: 29
+- reports/core-thesis :: source_id: 29
+- build/core-thesis :: source_id: 25
+- build/cases :: claim_id: 24
+- build/core-thesis :: estate_id: 24
+- build/estate-game-trails :: origin_estate_id: 24
+- estates :: origin_estate_id: 24
+- gametrails :: estate_id: 24
+- gametrails :: origin_estate_id: 24
+- reports/core-thesis :: estate_id: 24
+- build/surface-graph.json :: canonical_id: 23
+- build/subject-ontology-routing-index-wave-10.json :: typing_rule_id: 22
+- build/cases :: event_id: 20
+- build/core-thesis :: system_id: 15
+- reports/core-thesis :: leg_id: 15
+- reports/core-thesis :: system_id: 15
+- build/estate-closures :: estate_id: 14
+- build/receipt-graph.json :: surface_id: 14
+- build/surface-graph.json :: surface_id: 14
+- reports/core-thesis :: story_id: 14
+- reports/core-thesis :: event_id: 13
+- reports/core-thesis :: program_id: 13
+- build/bounded-hold-resolution-index-wave-12.json :: local_subject_id: 12
+- reports/core-thesis :: sprint_id: 12
+- build/bounded-hold-resolution-index-wave-12.json :: canonical_id: 11
+- build/cases :: regime_id: 11
+- build/estates :: track_id: 10
+- build/cases :: case_id: 8
+- reports/core-thesis :: test_id: 8
+- build/core-thesis :: orientation_id: 7
+- build/estates :: primary_estate_id: 7
+- reports/core-thesis :: orientation_id: 7
+- build/bounded-hold-resolution-index-wave-12.json :: source_local_subject_id: 6
+- build/core-thesis :: state_id: 6
+- build/surface-graph.json :: source_local_subject_id: 6
+- build/thesis :: chapter_id: 6
+- reports/core-thesis :: query_id: 6
+- reports/core-thesis :: state_id: 6
+- build/core-thesis :: awareness_id: 5
+- reports/core-thesis :: awareness_id: 5
+- reports/core-thesis :: wave_id: 5
+- build/briefings :: case_id: 4
+- build/canonical-adjudication-index-wave-11.json :: acquisition_id: 4
+- build/public-catalog.json :: case_id: 4
+- build/subject-ontology-routing-index-wave-10.json :: case_id: 4
+- build/surface-graph.json :: source_case_id: 4
+- build/unresolved-subject-adjudication-wave-15.json :: source_case_id: 4
+- build/canonical-adjudication-index-wave-11.json :: source_case_id: 3
+- build/lake-actions :: source_case_id: 3
+- build/public-catalog.json :: claim_id: 3
+- build/public-catalog.json :: subject_id: 3
+- build/subject-integration-wave-16.json :: source_case_id: 3
+- build/hop-graph.json :: surface_id: 2
+- build/scores.json :: actor_id: 2
+- build/scores.json :: organization_id: 2
+- build/subject-integration-wave-16.json :: source_decision_id: 2
+- reports/core-thesis :: candidate_id: 2
+- reports/core-thesis :: control_id: 2
+- build/canonical-adjudication-index-wave-11.json :: source_acquisition_id: 1
+- build/cases :: count_source_receipt_id: 1
+- build/core-thesis :: thesis_id: 1
+- build/report-frontier.json :: case_id: 1
+- build/scores.json :: surface_id: 1
+- build/surface-graph.json :: source_acquisition_id: 1
+- reports/core-thesis :: audit_id: 1
+- reports/core-thesis :: lane_id: 1
+- reports/core-thesis :: layer_id: 1
+- reports/core-thesis :: selection_lane_id: 1
+- reports/core-thesis :: thesis_id: 1
+
 ## Top exact projection paths
 
 - build/public-catalog.json: 635
@@ -371,4 +549,4 @@ graph effect:                  none
 
 ## Boundary
 
-The same identifier appearing in multiple object contexts inside one generated file is not automatically a conflicting definition. This diagnostic separates pointer-template repetition from actual identity or truth claims and preserves family-specific adjudication.
+The same identifier appearing in multiple object contexts inside one generated file is not automatically a conflicting definition. Single pointer-template repetition usually identifies repeated contextual rows; multi-template repetition usually identifies multiple typed views. Neither authorizes an identity or truth join without a declared contract.
