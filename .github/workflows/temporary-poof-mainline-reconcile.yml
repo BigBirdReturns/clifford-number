@@ -1,4 +1,4 @@
-name: Temporary POOF mainline reconciliation probe
+name: Temporary POOF mainline reconciliation materializer
 
 on:
   push:
@@ -12,59 +12,69 @@ permissions:
   contents: write
 
 jobs:
-  probe:
+  reconcile:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/poof-clifford-ecology
           fetch-depth: 0
-      - name: Capture exact inputs and conflict receipt
-        id: capture
-        shell: bash
-        run: |
-          set -u
-          git fetch origin main
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          head_before="$(git rev-parse HEAD)"
-          main_head="$(git rev-parse origin/main)"
-          mkdir -p /tmp/poof-mainline-reconcile-inputs build
-          git archive --format=tar.gz --output=/tmp/poof-mainline-reconcile-inputs/poof-head.tar.gz "${head_before}"
-          git archive --format=tar.gz --output=/tmp/poof-mainline-reconcile-inputs/main.tar.gz "${main_head}"
-          set +e
-          git merge --no-commit --no-ff origin/main
-          merge_status=$?
-          set -e
-          {
-            echo "schema_version: poof-mainline-reconcile-probe@1"
-            echo "run_id: ${GITHUB_RUN_ID}"
-            echo "poof_head: ${head_before}"
-            echo "main_head: ${main_head}"
-            echo "merge_status: ${merge_status}"
-            echo "unresolved_paths:"
-            git diff --name-only --diff-filter=U | sed 's/^/  - /' || true
-            echo "merge_state:"
-            git status --short | sed 's/^/  /'
-          } | tee /tmp/poof-mainline-reconcile-inputs/merge-probe.txt
-          if [ -f .git/MERGE_HEAD ]; then
-            git merge --abort
-          fi
-          cp /tmp/poof-mainline-reconcile-inputs/merge-probe.txt build/poof-mainline-reconcile-probe.txt
-      - name: Upload exact reconciliation inputs
-        uses: actions/upload-artifact@v4
+      - uses: actions/setup-node@v4
         with:
-          name: poof-mainline-reconcile-inputs
-          path: /tmp/poof-mainline-reconcile-inputs/
-          if-no-files-found: error
-          retention-days: 3
-      - name: Publish probe receipt
+          node-version: '24'
+      - name: Merge canonical Sprint 09 and stable ground
         shell: bash
         run: |
           set -euo pipefail
-          git add build/poof-mainline-reconcile-probe.txt
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git commit -m 'Record exact POOF mainline reconciliation conflicts'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git merge --no-edit origin/main
+          rm -f .github/workflows/temporary-poof-mainline-reconcile.yml
+          rm -f build/poof-mainline-reconcile-probe.txt
+      - name: Rebuild and validate the reconciled constitutional stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-m05-answerable-power-sprint-09.mjs
+          node tools/validate-m05-answerable-power-sprint-09.mjs
+          node test/m05-answerable-power-sprint-09.test.js
+          node tools/build-project-stable-ground-alignment.mjs
+          node tools/validate-project-stable-ground-alignment.mjs
+          node test/project-stable-ground-alignment.test.js
+          npm run ci:poof-ecology
+          npm run release:check
+          git diff --check
+      - name: Play-test the reconciled aperture
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+          node test/poof-clifford-ecology-browser.test.js
+      - name: Commit reconciled permanent surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -A
+          git commit -m 'Reconcile POOF ecology with Sprint 09 stable ground'
+      - name: Prove deterministic products from the committed tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-m05-answerable-power-sprint-09.mjs
+          node tools/validate-m05-answerable-power-sprint-09.mjs
+          node test/m05-answerable-power-sprint-09.test.js
+          node tools/build-project-stable-ground-alignment.mjs
+          node tools/validate-project-stable-ground-alignment.mjs
+          node test/project-stable-ground-alignment.test.js
+          npm run ci:poof-ecology
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+      - name: Push reconciled branch
+        shell: bash
+        run: |
+          set -euo pipefail
           git push origin HEAD:agent/poof-clifford-ecology
