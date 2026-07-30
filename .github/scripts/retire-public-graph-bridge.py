@@ -41,7 +41,7 @@ for marker in [
     'legacyNodes',
     'legacyShortestPath',
     'renderLegacyPath',
-    'graph.json',
+    "loadJson('graph.json')",
     'researchNetworkModel',
     'data-network-focus="dialog"',
     'data-network-focus="ai-opportunities-action-plan"',
