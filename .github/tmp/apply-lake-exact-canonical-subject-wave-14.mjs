@@ -90,7 +90,6 @@ and the projection creates no relationship, participation, graph edge, hop, or
 automatic cross-case join.`);
 
 const sourcePathFile = '.github/tmp/lake-exact-canonical-subject-wave-14-source-paths.json';
-changedPaths.add(sourcePathFile);
 fs.writeFileSync(sourcePathFile, `${JSON.stringify({
   schema_version: 'lake-exact-canonical-subject-wave-14-source-paths@1',
   changed_paths: [...changedPaths].sort()
