@@ -24,11 +24,10 @@ jobs:
           node-version: '24'
       - name: Retrieve exact production bundle from bounded Drive custody
         run: |
-          set -x
-          curl --fail --location --retry 2 \
-            --output /tmp/commitA.bundle.xz \
-            'https://drive.usercontent.google.com/download?id=1EVCn5Y5A3E-sUmEjXwE90ovdLrdLyXnw&export=download&confirm=t'
-          set +x
+          python3 -m pip install --disable-pip-version-check --quiet gdown
+          gdown --fuzzy \
+            'https://drive.google.com/file/d/1EVCn5Y5A3E-sUmEjXwE90ovdLrdLyXnw/view?usp=drivesdk' \
+            --output /tmp/commitA.bundle.xz
           file /tmp/commitA.bundle.xz
           stat -c 'bytes=%s' /tmp/commitA.bundle.xz
           sha256sum /tmp/commitA.bundle.xz
