@@ -1,0 +1,131 @@
+name: Enumerate original adversarial payload custody
+
+on:
+  push:
+    branches:
+      - agent/adversarial-release-integrity
+    paths:
+      - '.github/workflows/adversarial-original-payload-enumeration.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/adversarial-original-payload-enumeration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  enumerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/adversarial-release-integrity
+          fetch-depth: 0
+      - name: Enumerate every historical original-payload tree state
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --all --prune
+          python3 - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import lzma
+          import re
+          import subprocess
+          import tarfile
+          from io import BytesIO
+          from pathlib import Path
+
+          out = Path('/tmp/adversarial-original-payload-enumeration')
+          out.mkdir(parents=True, exist_ok=True)
+          manifest = json.loads(Path('.github/tmp/adversarial-release-manifest.json').read_text())
+          expected = {
+              'declared_chunk_count': int(manifest['chunk_count']),
+              'base64_bytes': int(manifest['base64_bytes']),
+              'base64_sha256': manifest['base64_sha256'],
+              'payload_bytes': int(manifest['payload_bytes']),
+              'payload_sha256': manifest['payload_sha256'],
+          }
+          part_re = re.compile(r'^\.github/tmp/adversarial-release-payload-[0-9]+\.b64$')
+          commits = subprocess.check_output(
+              ['git', 'rev-list', '--all', '--', '.github/tmp'], text=True
+          ).splitlines()
+          states = []
+          state_keys = set()
+          recovered = None
+
+          for commit in commits:
+              paths = sorted(
+                  path for path in subprocess.check_output(
+                      ['git', 'ls-tree', '-r', '--name-only', commit, '--', '.github/tmp'],
+                      text=True,
+                  ).splitlines()
+                  if part_re.match(path)
+              )
+              if not paths:
+                  continue
+              parts = [
+                  b''.join(subprocess.check_output(['git', 'show', f'{commit}:{path}']).split())
+                  for path in paths
+              ]
+              compact = b''.join(parts)
+              digest = hashlib.sha256(compact).hexdigest()
+              key = (tuple(paths), tuple(map(len, parts)), digest)
+              if key in state_keys:
+                  continue
+              state_keys.add(key)
+              row = {
+                  'commit': commit,
+                  'count': len(paths),
+                  'paths': paths,
+                  'part_lengths': [len(part) for part in parts],
+                  'base64_bytes': len(compact),
+                  'base64_sha256': digest,
+              }
+              states.append(row)
+              if len(compact) != expected['base64_bytes'] or digest != expected['base64_sha256']:
+                  continue
+              compressed = base64.b64decode(compact, validate=True)
+              payload = lzma.decompress(compressed)
+              payload_sha = hashlib.sha256(payload).hexdigest()
+              if len(payload) != expected['payload_bytes'] or payload_sha != expected['payload_sha256']:
+                  raise SystemExit('base64 custody matched but payload custody failed')
+              (out / 'adversarial-release-payload.recovered.b64').write_bytes(compact)
+              (out / 'adversarial-release-payload.recovered.tar').write_bytes(payload)
+              with tarfile.open(fileobj=BytesIO(payload), mode='r:*') as archive:
+                  names = archive.getnames()
+              (out / 'payload.tree.txt').write_text('\n'.join(names) + '\n')
+              recovered = {
+                  **row,
+                  'compressed_bytes': len(compressed),
+                  'compressed_sha256': hashlib.sha256(compressed).hexdigest(),
+                  'payload_bytes': len(payload),
+                  'payload_sha256': payload_sha,
+                  'tar_entries': len(names),
+              }
+              break
+
+          report = {
+              'schema_version': 'adversarial-original-payload-enumeration@1',
+              'expected': expected,
+              'unique_states': len(states),
+              'states': states,
+              'recovered': recovered,
+          }
+          (out / 'diagnostic.json').write_text(json.dumps(report, indent=2) + '\n')
+          print(json.dumps(report, indent=2))
+          if recovered is None:
+              raise SystemExit('no original-prefix tree state matched the exact manifest custody')
+          PY
+      - name: Upload enumeration custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adversarial-original-payload-enumeration-${{ github.run_id }}
+          path: /tmp/adversarial-original-payload-enumeration/
+          if-no-files-found: error
+          retention-days: 7
