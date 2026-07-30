@@ -1,0 +1,48 @@
+{
+  "schema_version": "lake-receipt-custody-wave-20-policy@1",
+  "program_id": "CN-LAKE-RECEIPT-CUSTODY-W20",
+  "as_of": "2026-07-30",
+  "purpose": "Adjudicate every raw unused receipt-definition gap by distinguishing compound reference encoding defects, hash-pinned custody, locator-only custody, coverage-source custody, explicit unavailability, and repository-only definitions. Preserve the raw denominator and source bytes while reducing the unadjudicated custody queue to zero.",
+  "baseline": {
+    "wave_19_head": "89d1c8038f8c855dba4aedda1ce59fc78891b68e",
+    "canonical_receipt_ids": 350,
+    "unused_receipt_definitions": 49,
+    "undefined_receipt_references": 0,
+    "source_locator_tokens": 11,
+    "content_hash_tokens": 30,
+    "inline_receipt_use_ids": 224
+  },
+  "paths": {
+    "registry": "data/project/lake-receipt-custody-registry-wave-20.jsonl",
+    "projection": "build/lake-actions/receipt-custody-wave-20.json",
+    "receipt": "data/project/lake-receipt-custody-wave-20.json",
+    "reconciliation": "build/lake-actions/receipt-custody-wave-20-reconciliation.json",
+    "report": "reports/lake-receipt-custody-wave-20.md"
+  },
+  "decision_law": {
+    "raw_unused_definition_count_must_remain_visible": true,
+    "compound_scalar_reference_is_not_one_receipt": true,
+    "compound_constituents_must_already_be_defined": true,
+    "locator_without_bytes_is_locator_only_custody": true,
+    "hash_without_a_consumer_is_not_evidentiary_use": true,
+    "explicit_unavailability_is_a_decision_not_a_permission_wait": true,
+    "unused_definition_may_be_retained_without_manufactured_consumption": true,
+    "source_claim_or_receipt_mutation_permitted": false,
+    "review_required_to_decide": false,
+    "correction_mode": "append_preserving_supersession"
+  },
+  "boundaries": {
+    "receipt_definition_proves_source_truth": false,
+    "receipt_locator_proves_byte_capture": false,
+    "content_hash_proves_claim_truth": false,
+    "unused_definition_is_false_evidence": false,
+    "adjudication_attaches_receipt_to_claim": false,
+    "compound_split_changes_claim_semantics": false,
+    "source_bytes_invented": false,
+    "publication_cleared": false,
+    "relationship_created": false,
+    "participation_created": false,
+    "active_claim_created": false,
+    "graph_effect": "none"
+  }
+}
