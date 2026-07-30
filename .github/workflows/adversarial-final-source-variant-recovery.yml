@@ -84,13 +84,12 @@ jobs:
                   })
 
           attempts = []
-          recovered = None
+          recovered = []
           seen_candidates = set()
           alphabet = (string.ascii_letters + string.digits + '+/').encode()
 
           def try_candidate(label, part2, part9, custody):
-              nonlocal recovered
-              if recovered is not None:
+              if recovered:
                   return
               parts = list(current)
               parts[2] = part2
@@ -130,7 +129,7 @@ jobs:
                   (out / 'final-source.recovered.xz').write_bytes(compressed)
                   (out / 'final-source.recovered.b64').write_bytes(compact)
                   (out / 'tree.txt').write_text('\n'.join(sorted(names)) + '\n')
-                  recovered = row
+                  recovered.append(row)
               except Exception as exc:
                   row['error'] = f'{type(exc).__name__}: {exc}'
               if len(attempts) < 5000:
@@ -166,6 +165,7 @@ jobs:
                       {'source': 'bounded_base64_boundary_repair', 'inserted': char.decode()}
                   )
 
+          recovered_row = recovered[0] if recovered else None
           report = {
               'schema_version': 'adversarial-final-source-variant-recovery@1',
               'current_part_lengths': [len(value) for value in current],
@@ -175,16 +175,16 @@ jobs:
               },
               'attempt_count': len(seen_candidates),
               'attempt_sample': attempts,
-              'recovered': recovered,
+              'recovered': recovered_row,
           }
           (out / 'diagnostic.json').write_text(json.dumps(report, indent=2) + '\n')
           print(json.dumps({
               'current_part_lengths': report['current_part_lengths'],
               'variant_counts': {key: len(value) for key, value in report['variant_inventory'].items()},
               'attempt_count': report['attempt_count'],
-              'recovered': recovered,
+              'recovered': recovered_row,
           }, indent=2))
-          if recovered is None:
+          if recovered_row is None:
               raise SystemExit('no preserved variant or bounded boundary repair produced a valid XZ tar')
           PY
       - name: Upload reconstructed source custody
