@@ -97,6 +97,8 @@ jobs:
           if test -f data/project/lake-identifier-topology-wave-18.json \
             && node -e "const x=require('./data/project/lake-identifier-topology-wave-18.json'); process.exit(x.post_execution_reconciliation_complete ? 0 : 1)"; then
             npm run release:check
+            git reset --hard HEAD
+            git clean -fd
             node tools/validate-lake-index-shards.mjs
             node tools/validate-lake-basin-index.mjs
             node tools/validate-lake-identifier-topology-wave-18.mjs
