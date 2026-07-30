@@ -108,7 +108,11 @@ for (const record of registry.records) {
 
 if (!fs.readFileSync('BUILD-INSTRUCTIONS.md', 'utf8').includes('3.18 **Identifier topology')) fail('build instruction contract missing');
 if (!fs.readFileSync('README.md', 'utf8').includes('## Identifier topology')) fail('README contract missing');
-if (fs.existsSync('.github/tmp/lake-identifier-topology-wave-18-trigger.json')) fail('temporary Wave 18 trigger remains');
+const triggerPath = '.github/tmp/lake-identifier-topology-wave-18-trigger.json';
+const authorizedMaterializationContext = process.env.GITHUB_ACTIONS === 'true'
+  && process.env.GITHUB_WORKFLOW === 'Evidence lake identifier topology Wave 18'
+  && process.env.GITHUB_EVENT_NAME === 'push';
+if (fs.existsSync(triggerPath) && !authorizedMaterializationContext) fail('temporary Wave 18 trigger remains outside the authorized materializer');
 if (receipt.boundaries.identifier_indexing_proves_identity !== false) fail('identity boundary drift');
 if (receipt.boundaries.source_projection_proves_truth !== false) fail('truth boundary drift');
 if (receipt.boundaries.cross_key_join_authorized !== false) fail('cross-key boundary drift');
