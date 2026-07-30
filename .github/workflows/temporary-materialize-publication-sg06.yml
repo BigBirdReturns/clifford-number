@@ -5,7 +5,7 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - '.github/tmp/publication-sg06-bundle-part-*.b64'
+      - '.github/tmp/publication-sg06-*.b64'
       - '.github/workflows/temporary-materialize-publication-sg06.yml'
 
 permissions:
@@ -54,27 +54,44 @@ jobs:
           from hashlib import sha256
           from pathlib import Path
 
+          def repair_bytes(name, expected_length, expected_sha):
+              encoded = Path(f'.github/tmp/{name}').read_text().strip()
+              decoded = b64decode(encoded)
+              assert len(decoded) == expected_length, (name, len(decoded))
+              assert sha256(decoded).hexdigest() == expected_sha, name
+              return decoded
+
           part020 = Path('.github/tmp/publication-sg06-bundle-part-020.b64')
           data020 = bytearray(part020.read_bytes())
           assert len(data020) == 4546, len(data020)
-          repair020 = b64decode('THJxU0gyS3JQNVRKVWFvbmNTWnlwMmZoUHljMWtqNXNtN2ZmbkYwUzZOaFJRT0lSeVYrVEJ0YjJOMnVXS0NqUHBwcXhCVlUvbGdBcWlwb3lFU2tHemxVYllnQVlPZkJiN21YUFZxeU0xNElkQTJCSWVXMkltNUdMTVFtemt5RFI4d0xjRnRRVDlYYyt6VWdhQ0xKZTlKVlZETHVFVlB6UXJSZjRxejZab1VpTlJ6ZTl2R3dtNk9XUklhR2ZId1Y0QU1zKzZBczc4dTB3aWhVSWhkVzNNeVVOTHlPeWZwME5nVVVXNjJSc0tHYVNYZ0dkRjZ1TVNkbkt2cjRrbFU1QXJiZXFPVUhscGx1dHRHTVRxeDcwZkxnUG9sWXcrK002NFBjTGtVVHpGa1FuOW02UUVWU1FqM1V6VTFKc2NCejlKQy9QaUdVcmQ0VjVka2JTWHpWQWtwRzJXTDdON3hOWndJZzVFQWtvVEE3UHRIdXNDeTVnS0RmdWd2aFJxS21meFJlTE8yK2xWMTgzM2JPM3pmUVBQeFVhVDQvcTZCcmtJaS9JWW1rSWxnZUlDd1FwZUx0dGlqd1Q0MjVYNlNlT1h6R0EwcDNoWnk4SWVoRnpCb2sxNEVJQ0ZLaHlOSmtwRGw5ckx5MUJSYWVBdHhQMEJXSXZWQzUvYUNHa1hXaGU=')
-          assert len(repair020) == 512
-          assert sha256(repair020).hexdigest() == '39f757417d53dd237f34fef243aca48d695c4c0eeb9a543cc4e24d22dba48226'
-          data020[2560:3072] = repair020
+          data020[2560:3072] = repair_bytes(
+              'publication-sg06-repair-020-05.b64',
+              512,
+              '39f757417d53dd237f34fef243aca48d695c4c0eeb9a543cc4e24d22dba48226',
+          )
           part020.write_bytes(data020)
 
           part023 = Path('.github/tmp/publication-sg06-bundle-part-023.b64')
           data023 = part023.read_bytes()
           assert len(data023) == 4548, len(data023)
           tail = b''.join([
-              b64decode('ZEYzSTgrUnZRczVCVXByRFpRRzV4OTRiSmZqRDVrMHFUd1J0UzlrVy9jNDA0amRoZThtV00za1h4Sy90OFUrSlRMS0ljSTJreFZKRzVYK1R2eVY1NW5LR3hNaU4xeE1WRHM0VktBRHlBWjB6a1J6b0pnL2hFZWVLYlh4MGJDN3JxRHFteW9EMDNsM0oxbytCT2NuaTgwUnRYVkh1U3cvWlY0R1JGdWJlL1ZyeHhGeExZb01lNnVKRDhheFVIZGdsbCsxTjZIenZ6eE52UTVGbHQzN2pIcGRCZ0c3c1Z2eUQrbi9RblY1ZnpsLzg3NlgxcVJPOFczRVRCWXAvb3hQYU5wUEdkK0ZiRVloWHRUa0xBYzVvVTFMbUt4eGhRSEsvM2JlNFlZelU5SDBZOFNBazZ6N3BKSXlETFl2dTdhUmNaYW1ucGtCQnkwY29PL1NFN3dnWFB6RVVIbURJdjFLUk1OaVl2TlZ0T3F2T3Q3R0xhckJDSU5kaytjUFlQcXdZL2FPM2tkQ08zVmZ5dkoyeFR0WjExaWE2eFJRYkEzbnJMMkY4TDRkSVdnREdHeUFtOWtkT3l5TzhXUURhNFVVU1dQdjVkZnBEUC90cnVTSUVtTE1PdDN5WTVWSWdHeHF5Q1BxRlBJd205d3hxcDZuZURlRmlTR3RjNHc4bHRqRGw='),
-              b64decode('MWhtZ0NYK3UrMmV1dzZSd2YrNUpxNDBFTGV0R1U3QjdSUUlEUjFJUTdqTGwzUDlRdnJ4WVFmNmZHYkJqcU5JUkErN29PK1pSVHgvOVNNTi9pNWdiczN2V2FxMHUwTVg1UllMekZsVjZrMXAyWEF5WTlyeGFNNlVkNWNzTUJjZUloVExVU3RIVnh6OWdTQmZlVXFXT3g1emUreTZyMTVoNzRTSmJZWnkzSEdSWmlaRU9UY3JRMkVYMkl6dzh3bm95ZXBrdG15NEVlUUdvcXQzeTBQKzhMYzYyS1RPVlpqMjZNeldIdVVFY0tQelJBeEFhU0IySEZZZy9VOEZQbEV0OGJiOURS29MeGwzc2V5STNOZXQvUGtuR2RJWVU3a3Y3eWp5K3BTRW9DQll5ZG96d1hGNG1hdC9KeE9mNmJENGFZRERIMnN2SGt3Ky9QUFpuWm9ZeWJCbHlaNlpzdCtWbjFKQy9WZklSYjhxcVVBQlRiMGtzWnpqQjN3cVp5akg1dllXV2ozeFloeDRLUHRFRzBzMEtBazFiSXJiRlVZQUtDMnBqYndDbzM0b055ejVQZCtjWk9hRjNpOWN3VXJncVd5MGlGdmgxRmNlNVhaQ1RScVJIVmg1OGloMmRIb0lnNHFzanFoWHJwaytWQTh3K2VyaU0xOWtwZXE5elh6a2U='),
-              b64decode('OUt6ZkxEamRjWGJYYlJLdVMyUnNpaUQvRzB2ZzhBSlRkNmlZUzRNSXI2Wmp3MThGOTNHMWpsMGs4QWpYQTFaamQwS0dBUDR6b2l2RmhxQWRtZkliY1hrQXFkako5bGxnQXh5ZlQ3Y29Ybk43QlBYcU11M01nYno2cUFXbG5ScXRzUWNReWZCRCtMcDJNU0YvUWwyclFadWxaN214SW50c2hrcjJISWRYSC9ZcXZOOVpob2dZSVdqVmV2a2NIYlZTeU1waDhLTG5kZkd1NHVNaWUrRXJjMlMyeEMwUXJId1V1WVRQMmlXVmNRNEhzVFk0MGkwdVk1Mm9TVm0yeDV2M25Za1cya2hhaVpsMmtQTmlVRlh0dE5EN29vcUtEbWxFRjZ6aUJyTTZmUEgvdzBCSGhzQ2p4NW96U2hyc3FPeU5iTVEzN2hOVVI0aW9temtZaXhrL0J1Z3pBUnZDQmNUWGlCUU4yMFpnVnZhaUI1dmVxZkFrMEJ2OS9yTGYvNFIxRzRNWXZvNUV0TExQenpvWmVXUVRSYjhLbHVTYzFyVjI3TVVTN1A4azJWeUowSGh3UEhBTC9zbDBRN0VTeG0xYzVu')
+              repair_bytes(
+                  'publication-sg06-repair-023-06.b64',
+                  512,
+                  '8fba9403054cf09970359005f57b2d546b3bc8eb677b23fa175ce4086f442f8a',
+              ),
+              repair_bytes(
+                  'publication-sg06-repair-023-07.b64',
+                  512,
+                  '800b8c84b646e638bf7bc2fe0a81badaaf0b91c51643ef93c725e9fbaabb59ab',
+              ),
+              repair_bytes(
+                  'publication-sg06-repair-023-08.b64',
+                  450,
+                  '7f6afa40638fa383ca9db4f45630eec935d513544f607610cf9cc9f9ad1217c8',
+              ),
           ])
           assert len(tail) == 1474
-          assert sha256(tail[:512]).hexdigest() == '8fba9403054cf09970359005f57b2d546b3bc8eb677b23fa175ce4086f442f8a'
-          assert sha256(tail[512:1024]).hexdigest() == '800b8c84b646e638bf7bc2fe0a81badaaf0b91c51643ef93c725e9fbaabb59ab'
-          assert sha256(tail[1024:]).hexdigest() == '7f6afa40638fa383ca9db4f45630eec935d513544f607610cf9cc9f9ad1217c8'
           part023.write_bytes(data023[:3072] + tail)
           PY
       - name: Verify and extract exact transition bundle
