@@ -16,6 +16,9 @@ export function loadStatusSovereigntyContext() {
     hypothesis: read('data/project/status-sovereignty-compact.json'),
     fanout: read('data/project/status-sovereignty-fanout.json'),
     sources: read('data/project/status-sovereignty-source-registry.json'),
+    wave: read('data/research/status-sovereignty-wave-01.json'),
+    waveSources: read('data/research/status-sovereignty-wave-01-source-receipts.json'),
+    waveRelease: read('data/project/status-sovereignty-wave-01-release-manifest.json'),
     schema: read('schemas/status-sovereignty-observation.schema.json'),
     manifest: read('data/project/status-sovereignty-release-manifest.json'),
     buildManifest: read('build/core-thesis/status-sovereignty/manifest.json'),
@@ -36,12 +39,12 @@ export function validateStatusSovereignty(context = loadStatusSovereigntyContext
     if (actual !== expected) errors.push(`${label}: expected ${JSON.stringify(expected)}, observed ${JSON.stringify(actual)}`);
   };
   const check = (condition, label) => { if (!condition) errors.push(label); };
-  const { hypothesis: h, fanout: f, sources: s, schema, manifest, buildManifest, buildReport, publicReport, html, core, dca, stories, m05Fanout, organism } = context;
+  const { hypothesis: h, fanout: f, sources: s, wave, waveSources, waveRelease, schema, manifest, buildManifest, buildReport, publicReport, html, core, dca, stories, m05Fanout, organism } = context;
 
   eq(h.schema_version, 'status-sovereignty-compact@1', 'SSC schema');
   eq(h.hypothesis_id, 'SSC-H01', 'SSC hypothesis identity');
   eq(h.program_id, 'M-05', 'SSC program');
-  eq(h.status, 'canonical_field_hypothesis_zero_execution_no_prevalence_finding', 'SSC status');
+  eq(h.status, 'canonical_field_hypothesis_wave_01_executed_unreviewed_no_prevalence_finding', 'SSC status');
   eq(h.authority_tier, 'AT-2', 'SSC authority tier');
   eq(h.coordinator_issue, 468, 'SSC coordinator issue');
   eq(h.parent_hypothesis?.hypothesis_id, 'DCA-H01', 'SSC parent hypothesis');
@@ -60,13 +63,26 @@ export function validateStatusSovereignty(context = loadStatusSovereigntyContext
   check(h.allowed_terminal_states?.includes('ordinary_patriotic_or_industrial_policy'), 'SSC ordinary-policy terminal state missing');
   check(h.allowed_terminal_states?.includes('racial_hierarchy_unsupported'), 'SSC racial-hierarchy negative terminal state missing');
 
-  eq(h.current_state?.query_or_field_execution_started, false, 'SSC execution state');
-  eq(h.current_state?.observations_retained, 0, 'SSC retained observation count');
+  eq(h.current_state?.query_or_field_execution_started, true, 'SSC execution state');
+  eq(h.current_state?.waves_executed, 1, 'SSC wave count');
+  eq(h.current_state?.executed_lanes, 8, 'SSC executed lane count');
+  eq(h.current_state?.observations_retained, 14, 'SSC retained observation count');
+  eq(h.current_state?.terminal_observations, 14, 'SSC terminal observation count');
+  eq(h.current_state?.maintainer_reviewed_observations, 0, 'SSC maintainer-reviewed count');
+  eq(h.current_state?.second_party_reviewed_observations, 0, 'SSC second-party-reviewed count');
+  eq(h.current_state?.adjudicated_observations, 0, 'SSC adjudicated count');
+  eq(h.current_state?.complete_compact_findings, 0, 'SSC complete compact finding count');
   for (const key of ['prevalence_finding_generated','racial_order_finding_generated','coordination_finding_generated','common_purpose_finding_generated','personal_hostility_finding_generated']) {
     eq(h.current_state?.[key], false, `SSC current ${key}`);
   }
-  eq(h.current_state?.publication_status, 'blocked_pending_source_acquisition_and_review', 'SSC publication status');
+  eq(h.current_state?.publication_status, 'blocked_pending_maintainer_and_second_party_review', 'SSC publication status');
   eq(h.current_state?.graph_effect, 'none', 'SSC current graph effect');
+  eq(h.field_waves?.length, 1, 'SSC field-wave count');
+  eq(h.field_waves?.[0]?.wave_id, 'SSC-W01', 'SSC field-wave identity');
+  eq(h.field_waves?.[0]?.observations, 14, 'SSC field-wave observation count');
+  eq(h.field_waves?.[0]?.complete_compact_findings, 0, 'SSC field-wave finding count');
+  eq(h.field_waves?.[0]?.review_state, 'unreviewed', 'SSC field-wave review state');
+  eq(h.field_waves?.[0]?.graph_effect, 'none', 'SSC field-wave graph effect');
 
   const falseBoundaries = [
     'source_synthesis_is_evidence','patriotism_is_white_power','multiracial_presence_proves_neutrality',
@@ -82,6 +98,7 @@ export function validateStatusSovereignty(context = loadStatusSovereigntyContext
   eq(f.schema_version, 'status-sovereignty-fanout@1', 'SSC fanout schema');
   eq(f.hypothesis_id, 'SSC-H01', 'SSC fanout hypothesis');
   eq(f.coordinator_issue, 468, 'SSC fanout coordinator');
+  eq(f.status, 'canonical_fanout_wave_01_execution_unreviewed', 'SSC fanout status');
   eq(f.issue_groups?.length, 8, 'SSC issue-group count');
   eq(f.lanes?.length, 16, 'SSC fanout lane count');
   check(unique(f.issue_groups.map((row) => row.group_id)), 'SSC issue-group uniqueness');
@@ -90,6 +107,7 @@ export function validateStatusSovereignty(context = loadStatusSovereigntyContext
   const issueIds = new Set(f.issue_groups.map((row) => row.issue_number));
   const groupIds = new Set(f.issue_groups.map((row) => row.group_id));
   const dimensionIds = new Set(h.dimensions.map((row) => row.dimension_id));
+  const expectedLaneCounts = { 'SSC-F05': 1, 'SSC-F06': 3, 'SSC-F07': 1, 'SSC-F09': 1, 'SSC-F10': 2, 'SSC-F11': 1, 'SSC-F14': 1, 'SSC-F16': 4 };
   for (const lane of f.lanes) {
     check(lane.issue_numbers?.length > 0 && lane.issue_numbers.every((id) => issueIds.has(id)), `${lane.lane_id}: issue denominator drift`);
     check(lane.issue_group_ids?.length > 0 && lane.issue_group_ids.every((id) => groupIds.has(id)), `${lane.lane_id}: issue-group drift`);
@@ -98,13 +116,22 @@ export function validateStatusSovereignty(context = loadStatusSovereigntyContext
     check(lane.matched_controls?.length >= 5, `${lane.lane_id}: matched controls missing`);
     check(lane.allowed_terminal_states?.includes('ordinary_patriotic_or_industrial_policy'), `${lane.lane_id}: ordinary-policy terminal missing`);
     check(lane.allowed_terminal_states?.includes('racial_hierarchy_unsupported'), `${lane.lane_id}: racial-hierarchy terminal missing`);
-    check(lane.execution?.started === false && lane.execution?.records_observed === 0 && lane.execution?.records_retained === 0 && lane.execution?.terminal_records === 0 && lane.graph_effect === 'none', 'SSC lane execution or graph drift');
+    const expected = expectedLaneCounts[lane.lane_id] ?? 0;
+    eq(lane.execution?.started, expected > 0, `${lane.lane_id}: execution state`);
+    eq(lane.execution?.records_observed, expected, `${lane.lane_id}: observed count`);
+    eq(lane.execution?.records_retained, expected, `${lane.lane_id}: retained count`);
+    eq(lane.execution?.terminal_records, expected, `${lane.lane_id}: terminal count`);
+    eq(lane.graph_effect, 'none', `${lane.lane_id}: graph effect`);
   }
   eq(f.counts?.lanes, 16, 'SSC fanout count lanes');
   eq(f.counts?.issue_groups, 8, 'SSC fanout count issues');
-  eq(f.counts?.query_or_field_execution_started, false, 'SSC fanout execution count state');
-  eq(f.counts?.records_observed, 0, 'SSC fanout observed count');
-  eq(f.counts?.records_retained, 0, 'SSC fanout retained count');
+  eq(f.counts?.query_or_field_execution_started, true, 'SSC fanout execution state');
+  eq(f.counts?.waves_executed, 1, 'SSC fanout wave count');
+  eq(f.counts?.executed_lanes, 8, 'SSC fanout executed count');
+  eq(f.counts?.records_observed, 14, 'SSC fanout observed count');
+  eq(f.counts?.records_retained, 14, 'SSC fanout retained count');
+  eq(f.counts?.terminal_records, 14, 'SSC fanout terminal count');
+  eq(f.waves?.length, 1, 'SSC fanout wave registry count');
   eq(f.boundaries?.issue_count_proves_coverage, false, 'SSC issue-count boundary');
   eq(f.boundaries?.controls_may_be_dropped, false, 'SSC control boundary');
   eq(f.boundaries?.graph_effect, 'none', 'SSC fanout graph effect');
@@ -113,16 +140,37 @@ export function validateStatusSovereignty(context = loadStatusSovereigntyContext
   eq(s.hypothesis_id, 'SSC-H01', 'SSC source-registry hypothesis');
   eq(s.source_document?.path, h.source_basis.path, 'SSC source-registry path');
   eq(s.source_document?.sha256, h.source_basis.sha256, 'SSC source-registry digest');
-  eq(s.source_document?.independent_verification_complete, false, 'SSC source-registry verification state');
+  eq(s.source_document?.independent_verification_complete, false, 'SSC source-registry synthesis verification state');
   eq(s.external_references?.length, 8, 'SSC external-reference count');
   eq(s.repository_sources?.length, 7, 'SSC repository-source count');
   check(unique(s.external_references.map((row) => row.source_id)), 'SSC external-reference uniqueness');
   check(unique(s.repository_sources.map((row) => row.source_id)), 'SSC repository-source uniqueness');
   check(s.external_references.every((row) => row.url?.startsWith('https://') && row.custody === 'source_provided_reference_not_retrieved_in_this_change'), 'SSC external-reference custody drift');
   check(s.repository_sources.every((row) => fs.existsSync(path.join(root, row.path))), 'SSC repository source missing');
-  eq(s.counts?.independently_retrieved_external_references, 0, 'SSC retrieval state');
+  eq(s.counts?.independently_retrieved_external_references, 0, 'SSC synthesis-reference retrieval state');
+  eq(s.field_source_receipts?.length, 1, 'SSC field-source receipt count');
+  eq(s.field_source_receipts?.[0]?.wave_id, 'SSC-W01', 'SSC field-source wave identity');
+  eq(s.counts?.field_source_records, 15, 'SSC field source count');
+  eq(s.counts?.independently_reviewed_field_sources, 15, 'SSC field source review count');
+  eq(s.counts?.field_source_bytes_preserved, 0, 'SSC field source byte count');
   eq(s.boundaries?.source_document_is_canonical_evidence, false, 'SSC source authority boundary');
+  eq(s.boundaries?.normalized_fact_records_equal_source_bytes, false, 'SSC normalized-fact authority boundary');
+  eq(s.boundaries?.field_source_review_is_maintainer_review, false, 'SSC field-review authority boundary');
   eq(s.boundaries?.graph_effect, 'none', 'SSC source graph effect');
+
+  eq(wave.wave_id, 'SSC-W01', 'SSC live wave identity');
+  eq(wave.counts?.source_records, 15, 'SSC live wave source count');
+  eq(wave.counts?.observations, 14, 'SSC live wave observation count');
+  eq(wave.counts?.executed_lanes, 8, 'SSC live wave executed count');
+  eq(wave.counts?.supported_bounded_compact, 0, 'SSC live wave complete compact count');
+  eq(wave.counts?.partial_functional_convergence, 6, 'SSC live wave partial count');
+  eq(wave.counts?.ordinary_patriotic_or_industrial_policy, 4, 'SSC live wave control count');
+  eq(wave.counts?.requires_additional_acquisition, 3, 'SSC live wave acquisition count');
+  eq(wave.counts?.capital_conversion_unsupported, 1, 'SSC live wave unsupported capital count');
+  eq(wave.current_result?.racial_order_finding_generated, false, 'SSC live wave racial-order state');
+  eq(wave.current_result?.graph_effect, 'none', 'SSC live wave graph effect');
+  eq(waveSources.records?.length, 15, 'SSC live field source denominator');
+  check(/^[0-9a-f]{64}$/.test(waveRelease.combined_sha256), 'SSC Wave 01 release digest format');
 
   eq(schema.additionalProperties, false, 'SSC observation schema additional-properties boundary');
   eq(schema.properties?.lane_id?.pattern, '^SSC-F(0[1-9]|1[0-6])$', 'SSC observation lane pattern');
@@ -152,14 +200,38 @@ export function validateStatusSovereignty(context = loadStatusSovereigntyContext
   eq(JSON.stringify(buildManifest), JSON.stringify(manifest), 'SSC build manifest drift');
   eq(JSON.stringify(buildReport), JSON.stringify(publicReport), 'SSC build/public report drift');
   eq(publicReport.release_manifest?.combined_sha256, manifest.combined_sha256, 'SSC report release digest');
+  eq(publicReport.wave_01?.release_manifest?.combined_sha256, waveRelease.combined_sha256, 'SSC report Wave 01 release digest');
   eq(publicReport.counts?.gates, 4, 'SSC report gate count');
   eq(publicReport.counts?.dimensions, 10, 'SSC report dimension count');
   eq(publicReport.counts?.fanout_lanes, 16, 'SSC report lane count');
   eq(publicReport.counts?.issue_groups, 8, 'SSC report issue count');
-  eq(publicReport.counts?.executed_lanes, 0, 'SSC report executed count');
-  eq(publicReport.counts?.retained_observations, 0, 'SSC report retained count');
-  check(html.includes('SSC-H01 · ZERO EXECUTION · NO RACIAL-ORDER FINDING · GRAPH EFFECT NONE · PUBLICATION BLOCKED'), 'SSC report boundary banner missing');
-  check(html.includes('Four-gate discriminator') && html.includes('Sixteen-lane fanout') && html.includes(manifest.combined_sha256), 'SSC report content drift');
+  eq(publicReport.counts?.field_source_records, 15, 'SSC report field source count');
+  eq(publicReport.counts?.waves_executed, 1, 'SSC report wave count');
+  eq(publicReport.counts?.executed_lanes, 8, 'SSC report executed count');
+  eq(publicReport.counts?.retained_observations, 14, 'SSC report retained count');
+  eq(publicReport.counts?.complete_compact_findings, 0, 'SSC report complete compact count');
+  check(html.includes('SSC-H01 · WAVE 01 EXECUTED · UNREVIEWED · COMPLETE-COMPACT FINDINGS 0 · NO RACIAL-ORDER FINDING · GRAPH EFFECT NONE · PUBLICATION BLOCKED'), 'SSC report boundary banner missing');
+  check(html.includes('Wave 01 independently reviewed records') && html.includes('Four-gate discriminator') && html.includes('Sixteen-lane fanout') && html.includes(manifest.combined_sha256), 'SSC report content drift');
+
+  for (const heldPath of [
+    'build/core-thesis/status-sovereignty',
+    'reports/core-thesis/status-sovereignty',
+    'data/project/status-sovereignty-compact.json',
+    'data/project/status-sovereignty-fanout.json',
+    'data/project/status-sovereignty-release-manifest.json',
+    'data/project/status-sovereignty-source-registry.json',
+    'data/project/status-sovereignty-wave-01-release-manifest.json',
+    'data/research/status-sovereignty-wave-01-source-receipts.json',
+    'data/research/status-sovereignty-wave-01.json',
+    'docs/methods/status-sovereignty-compact.md',
+    'docs/milestones/m05-status-sovereignty-fanout.md',
+    'docs/milestones/m05-status-sovereignty-wave-01.md'
+  ]) {
+    const builder = fs.readFileSync(path.join(root, 'tools/build-pages.mjs'), 'utf8');
+    const validator = fs.readFileSync(path.join(root, 'tools/validate-pages.mjs'), 'utf8');
+    check(builder.includes(heldPath.split('/').map((part) => `'${part}'`).join(', ')), `Pages builder does not hold ${heldPath}`);
+    check(validator.includes(`'${heldPath}'`), `Pages validator does not refuse ${heldPath}`);
+  }
 
   return errors;
 }
@@ -174,4 +246,5 @@ function main() {
   console.log('validate-status-sovereignty-compact: PASS');
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();
+const invoked = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (invoked) main();
