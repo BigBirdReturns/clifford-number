@@ -1,3 +1,4 @@
+// Wave 19 clean-head validation kick; removed in the next commit.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
