@@ -12,6 +12,7 @@ const steps = [
   ['build-canonical-subject-projection-wave-13', 'tools/build-lake-canonical-subject-projection-wave-13.mjs'],
   ['build-exact-canonical-subject-wave-14', 'tools/build-lake-exact-canonical-subject-wave-14.mjs'],
   ['finalize-exact-canonical-subject-wave-14', 'tools/finalize-lake-exact-canonical-subject-wave-14.mjs'],
+  ['build-unresolved-subject-adjudication-wave-15', 'tools/build-lake-unresolved-subject-adjudication-wave-15.mjs'],
   ['build-report-frontier', 'tools/build-report-frontier.mjs'],
   ['render-report-frontier', 'tools/render-report-frontier.mjs'],
   ['build-next-ten-estates', 'tools/build-next-ten-estates.mjs'],
