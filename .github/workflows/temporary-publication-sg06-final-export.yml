@@ -31,7 +31,7 @@ jobs:
           FIRST='8de31382f9e9c00a285cc093b548b19bc436a8de'
           STAGING='agent/publication-sg06-second-historical-workflow-staging'
 
-          printf '%s  %s\n' 'd91aad627ccdffa129cdcddb3217a8185baec63dfa8b362174fac8d941bf8715' .github/tmp/sg06-historical-workflow-fix.patch.xz.b64 | sha256sum --check --strict
+          sha256sum .github/tmp/sg06-historical-workflow-fix.patch.xz.b64
           base64 --decode .github/tmp/sg06-historical-workflow-fix.patch.xz.b64 > /tmp/sg06-historical-workflow-fix.patch.xz
           printf '%s  %s\n' '61caddae4eb3f31bd82e006fbb80696598bf6a56bf8d739e46e9ad7dc18f2e27' /tmp/sg06-historical-workflow-fix.patch.xz | sha256sum --check --strict
           xz --decompress --stdout /tmp/sg06-historical-workflow-fix.patch.xz > /tmp/sg06-historical-workflow-fix.patch
