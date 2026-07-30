@@ -27,6 +27,17 @@ jobs:
       - name: Decode and verify source patch
         run: |
           test "$(find .bootstrap/poof-clifford-ecology -maxdepth 1 -name 'part-*.b64' | wc -l)" -eq 7
+          for f in .bootstrap/poof-clifford-ecology/part-*.b64; do
+            printf '%s  ' "$f"
+            tr -d '\n\r' < "$f" | sha256sum | cut -d' ' -f1
+          done
+          test "$(tr -d '\n\r' < .bootstrap/poof-clifford-ecology/part-01.b64 | sha256sum | cut -d' ' -f1)" = '227cfcf10ffdce78dff76affc4ba6bbbdcc4cb310ad0b395b570672de32ea42b'
+          test "$(tr -d '\n\r' < .bootstrap/poof-clifford-ecology/part-02.b64 | sha256sum | cut -d' ' -f1)" = '706092cde4f35e1d49e0e68e3d96afd37bbe069831e0113411ae10f89a0a483a'
+          test "$(tr -d '\n\r' < .bootstrap/poof-clifford-ecology/part-03.b64 | sha256sum | cut -d' ' -f1)" = '176a8f9e1d6cead610243b2b5305d6929199205f55bb3701806eee048b69f373'
+          test "$(tr -d '\n\r' < .bootstrap/poof-clifford-ecology/part-04.b64 | sha256sum | cut -d' ' -f1)" = 'f0516e799839797a0ac76caa4792017c1fe7817fd651e907c94862d64fef5f96'
+          test "$(tr -d '\n\r' < .bootstrap/poof-clifford-ecology/part-05.b64 | sha256sum | cut -d' ' -f1)" = 'c154c44e6c2f7230ab144f1a67ad1e6ea7e726d8b61f40b1dc955ae26ade6363'
+          test "$(tr -d '\n\r' < .bootstrap/poof-clifford-ecology/part-06.b64 | sha256sum | cut -d' ' -f1)" = 'bb077d72738a87831977ad9fd89031ab7e9e3f7f6c9c11fe7004ed610fb5f44f'
+          test "$(tr -d '\n\r' < .bootstrap/poof-clifford-ecology/part-07.b64 | sha256sum | cut -d' ' -f1)" = '43fbbf514306866a44ed1af0237bbb78bcf30fc181debcb98bd972e297da50a6'
           cat .bootstrap/poof-clifford-ecology/part-*.b64 \
             | tr -d '\n\r' \
             | base64 --decode \
