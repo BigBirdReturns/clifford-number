@@ -207,7 +207,7 @@ export function validateK0({
   const lane = fanout.lanes.find(row => row.lane_id === 'A17');
   if (!story || story.mode !== 'constitutional_mechanism') fail('M05-S14 missing or wrong mode');
   if (!lane || lane.story_id !== 'M05-S14') fail('A17 missing or disconnected');
-  if (registry.stories.length !== 14 || fanout.lanes.length !== 17) fail('M05 integration counts drift');
+  if (registry.stories.length !== 15 || fanout.lanes.length !== 18) fail('M05 integration counts drift');
 
   const selectionLane = selection.lanes.find(row => row.lane_id === 'epistemic-admissibility-ceiling-events');
   const coverageRow = coverage.lanes.find(row => row.lane_id === 'epistemic-admissibility-ceiling-events');
