@@ -12,6 +12,7 @@ on:
     paths:
       - 'data/project/lake-residual-frontier-wave-17-policy.json'
       - 'tools/build-lake-residual-frontier-wave-17.mjs'
+      - 'tools/summarize-lake-residual-frontier-wave-17.mjs'
       - '.github/workflows/lake-residual-frontier-wave-17.yml'
   workflow_dispatch:
 
@@ -49,11 +50,16 @@ jobs:
         run: |
           set -euo pipefail
           node --check tools/build-lake-residual-frontier-wave-17.mjs
+          node --check tools/summarize-lake-residual-frontier-wave-17.mjs
           node tools/build-lake-residual-frontier-wave-17.mjs
+          node tools/summarize-lake-residual-frontier-wave-17.mjs
           sha256sum \
             build/lake-actions/residual-frontier-wave-17-preflight.json \
-            reports/lake-residual-frontier-wave-17-preflight.md > /tmp/wave17-preflight.sha256
+            build/lake-actions/residual-frontier-wave-17-diagnostics.json \
+            reports/lake-residual-frontier-wave-17-preflight.md \
+            reports/lake-residual-frontier-wave-17-diagnostics.md > /tmp/wave17-preflight.sha256
           node tools/build-lake-residual-frontier-wave-17.mjs
+          node tools/summarize-lake-residual-frontier-wave-17.mjs
           sha256sum --check --strict /tmp/wave17-preflight.sha256
           node - <<'NODE'
           const fs = require('fs');
@@ -87,7 +93,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
           git diff --check
-          git commit -m 'Census residual lake frontier Wave 17'
+          git commit -m 'Refine residual lake frontier Wave 17 census'
           git fetch origin agent/lake-residual-frontier-wave-17
           test "$(git rev-parse origin/agent/lake-residual-frontier-wave-17)" = "${{ steps.mode.outputs.original_sha }}"
           git push origin HEAD:agent/lake-residual-frontier-wave-17
