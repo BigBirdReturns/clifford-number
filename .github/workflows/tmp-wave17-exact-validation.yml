@@ -1,0 +1,40 @@
+name: Temporary exact Wave 17 clean-head validation
+
+on:
+  push:
+    branches:
+      - agent/tmp-wave17-exact-validation
+    paths:
+      - '.github/tmp/tmp-wave17-exact-validation-trigger.json'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ce5a3b6f4091f8832d927357a3e1d9d2e6739fb0
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prove the exact materialized Wave 17 commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 'ce5a3b6f4091f8832d927357a3e1d9d2e6739fb0'
+          npm run release:check
+          git reset --hard HEAD
+          git clean -fd
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-residual-frontier-wave-17.mjs
+          node test/lake-index.test.js
+          node test/lake-basin-index.test.js
+          node test/lake-residual-frontier-wave-17.test.js
+          git reset --hard HEAD
+          git clean -fd
+          test -z "$(git status --porcelain)"
