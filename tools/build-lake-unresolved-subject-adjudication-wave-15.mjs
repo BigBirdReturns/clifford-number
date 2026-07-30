@@ -80,10 +80,12 @@ assert.equal(unresolvedRows.length, policy.expected.subject_rows, 'Wave 15 unres
 assert.equal(unresolvedRows.reduce((total, row) => total + row.claim_count, 0), policy.expected.claim_references, 'Wave 15 claim-reference denominator drift');
 
 const claimsByCase = new Map();
+const claimRowsByCase = new Map();
 for (const relative of policy.input_paths.filter(item => /^cases\/[^/]+\/claims\.jsonl$/.test(item))) {
   const sourceCaseId = relative.split('/')[1];
   const rows = readJsonl(relative);
   claimsByCase.set(sourceCaseId, new Map(rows.map(row => [row.claim_id, row])));
+  claimRowsByCase.set(sourceCaseId, rows);
 }
 
 const canonicalByKey = new Map([
@@ -119,20 +121,28 @@ function claimsFor(row) {
   });
 }
 
+function supportingClaimsFor(row, attachedClaims) {
+  const allCaseClaims = claimRowsByCase.get(row.source_case_id) ?? [];
+  const related = allCaseClaims.filter(claim => claim.subject_id === row.local_subject_id || claim.object === row.local_subject_id);
+  const byId = new Map([...attachedClaims, ...related].map(claim => [claim.claim_id, claim]));
+  return [...byId.values()].sort((left, right) => left.claim_id.localeCompare(right.claim_id));
+}
+
 const decisions = [];
 for (const unresolved of unresolvedRows) {
   const disposition = dispositionByKey.get(dispositionKey(unresolved.source_case_id, unresolved.local_subject_id));
   assert.ok(disposition, `${unresolved.unresolved_subject_id}: disposition missing`);
   const claims = claimsFor(unresolved);
   assert.equal(claims.length, unresolved.claim_count, `${unresolved.unresolved_subject_id}: claim count drift`);
-  const receiptIds = uniqueSorted(claims.flatMap(claim => claim.receipt_ids ?? []));
+  const supportingClaims = supportingClaimsFor(unresolved, claims);
+  const receiptIds = uniqueSorted(supportingClaims.flatMap(claim => claim.receipt_ids ?? []));
   const predicates = uniqueSorted(claims.map(claim => claim.predicate));
-  const claimStates = uniqueSorted(claims.map(claim => claim.claim_status));
-  const evidenceStates = uniqueSorted(claims.map(claim => claim.evidence_state));
-  const evidenceClasses = uniqueSorted(claims.map(claim => claim.evidence_class));
+  const claimStates = uniqueSorted(supportingClaims.map(claim => claim.claim_status));
+  const evidenceStates = uniqueSorted(supportingClaims.map(claim => claim.evidence_state));
+  const evidenceClasses = uniqueSorted(supportingClaims.map(claim => claim.evidence_class));
   const requiredReceipts = uniqueSorted(disposition.required_receipt_ids ?? []);
   for (const receiptId of requiredReceipts) {
-    assert.ok(receiptIds.includes(receiptId), `${unresolved.unresolved_subject_id}: required receipt ${receiptId} absent from source claims`);
+    assert.ok(receiptIds.includes(receiptId), `${unresolved.unresolved_subject_id}: required receipt ${receiptId} absent from same-case subject/object custody`);
   }
 
   let canonicalRecord = null;
@@ -160,7 +170,7 @@ for (const unresolved of unresolvedRows) {
     evidenceBasis = [
       'the existing canonical record explicitly preserves the matching Wave 11 source-routing provenance',
       'the canonical record and unresolved row share the same source case',
-      'the underlying claim and receipt custody remains attached'
+      'the underlying same-case subject/object claim and receipt custody remains attached'
     ];
     counterevidence = ['the local subject ID did not exactly equal the canonical ID and therefore remained unresolved in Wave 14'];
     uncertainty = ['this decision resolves local identity only; it does not validate every attached claim'];
@@ -176,7 +186,7 @@ for (const unresolved of unresolvedRows) {
       source_routing_id: canonicalRecord.source_routing_id ?? null,
       receipt_ids: uniqueSorted(canonicalRecord.receipt_ids ?? [])
     };
-    evidenceBasis = [disposition.same_entity_basis, `required source receipts present: ${requiredReceipts.join(', ')}`];
+    evidenceBasis = [disposition.same_entity_basis, `required same-case subject/object receipts present: ${requiredReceipts.join(', ')}`];
     counterevidence = ['this is a named controlled mapping, not authorization for normalized-name or alias matching elsewhere'];
     uncertainty = ['the mapping establishes identity for this case-local subject only'];
     nextAction = 'integrate_named_graph_inert_local_to_canonical_resolution';
@@ -189,7 +199,7 @@ for (const unresolved of unresolvedRows) {
       planned_kind: disposition.planned_kind,
       required_receipt_ids: requiredReceipts
     };
-    evidenceBasis = [`source claims carry every required receipt: ${requiredReceipts.join(', ')}`, 'the subject is explicitly named in the source claim'];
+    evidenceBasis = [`same-case claims naming the subject as subject or object carry every required receipt: ${requiredReceipts.join(', ')}`, 'the local subject is explicitly named in the case claim estate'];
     counterevidence = ['no canonical record exists yet'];
     uncertainty = ['canonical mutation is deferred to the next integration wave'];
     nextAction = 'materialize_bounded_canonical_record_then_attach_graph_inert_case_resolution';
@@ -218,6 +228,7 @@ for (const unresolved of unresolvedRows) {
     case_title: unresolved.case_title,
     local_subject_id: unresolved.local_subject_id,
     source_claim_ids: uniqueSorted(unresolved.claim_ids),
+    supporting_claim_ids: uniqueSorted(supportingClaims.map(claim => claim.claim_id)),
     claim_count: unresolved.claim_count,
     predicates,
     receipt_ids: receiptIds,
@@ -348,7 +359,7 @@ const plan = {
   graph_effect: 'none'
 };
 
-const report = `# Unresolved subject adjudication — Wave 15\n\nSource fingerprint: \`${sourceFingerprint}\`\n\n## Result\n\n\`\`\`text\nsubject rows:                               ${counts.subject_rows}\nclaim references:                          ${counts.claim_references}\nexisting provenance identity decisions:    ${counts.existing_provenance_identity_decisions}\nexisting controlled identity decisions:    ${counts.existing_controlled_identity_decisions}\nplanned new canonical records:              ${counts.planned_new_canonical_records}\nidentity decisions:                         ${counts.identity_decisions}\nnonidentity object decisions:               ${counts.nonidentity_object_decisions}\ngeneric unadjudicated rows:                 ${counts.generic_unadjudicated_rows}\ncanonical mutations applied:                ${counts.canonical_mutations_applied}\ncase projection changes:                    ${counts.case_projection_changes}\nparticipation / active claim / graph delta:  0 / 0 / 0\naccepted cross-case identity bridges:       0\nhuman-permission dependencies:              0\ngraph effect:                               none\n\`\`\`\n\nEvery Wave 14 unresolved row now has one bounded disposition. Identity decisions remain integration-ready but graph-inert; planned records are not yet materialized; nonidentity rows are typed objects rather than failed actor or organization matches.\n`;
+const report = `# Unresolved subject adjudication — Wave 15\n\nSource fingerprint: \`${sourceFingerprint}\`\n\n## Result\n\n\`\`\`text\nsubject rows:                               ${counts.subject_rows}\nclaim references:                          ${counts.claim_references}\nexisting provenance identity decisions:    ${counts.existing_provenance_identity_decisions}\nexisting controlled identity decisions:    ${counts.existing_controlled_identity_decisions}\nplanned new canonical records:              ${counts.planned_new_canonical_records}\nidentity decisions:                         ${counts.identity_decisions}\nnonidentity object decisions:               ${counts.nonidentity_object_decisions}\ngeneric unadjudicated rows:                 ${counts.generic_unadjudicated_rows}\ncanonical mutations applied:                ${counts.canonical_mutations_applied}\ncase projection changes:                    ${counts.case_projection_changes}\nparticipation / active claim / graph delta:  0 / 0 / 0\naccepted cross-case identity bridges:       0\nhuman-permission dependencies:              0\ngraph effect:                               none\n\`\`\`\n\nEvery Wave 14 unresolved row now has one bounded disposition. Identity decisions remain integration-ready but graph-inert; planned records are not yet materialized; nonidentity rows are typed objects rather than failed actor or organization matches. Required custody may come from same-case claims that explicitly name the local subject on either side of the claim.\n`;
 
 writeJsonl(policy.registry_path, decisions);
 writeJson(policy.projection_path, projection);
