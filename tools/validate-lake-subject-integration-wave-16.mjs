@@ -114,6 +114,25 @@ if (new Set(resolutions.map(row => row.resolution_id)).size !== resolutions.leng
 if (new Set(subjectObjects.map(row => row.subject_object_id)).size !== subjectObjects.length) fail('duplicate Wave 16 subject-object ID');
 if (new Set(extensions.map(row => row.registry_key)).size !== extensions.length) fail('duplicate Wave 16 extension key');
 
+const overrideSpecs = policy.identity_integration_overrides ?? [];
+const overrideRows = resolutions.filter(row => row.integration_override_applied === true);
+if (overrideRows.length !== overrideSpecs.length) fail('Wave 16 identity override denominator drift');
+for (const spec of overrideSpecs) {
+  const row = resolutions.find(item => item.source_decision_id === spec.source_decision_id);
+  if (!row) { fail(`${spec.source_decision_id}: override resolution missing`); continue; }
+  if (row.source_case_id !== spec.source_case_id || row.local_subject_id !== spec.local_subject_id) fail(`${spec.source_decision_id}: override source scope drift`);
+  if (row.canonical_id !== spec.canonical_id || row.canonical_kind !== spec.canonical_kind) fail(`${spec.source_decision_id}: override canonical target drift`);
+  if (row.supersedes_wave_15_disposition !== spec.supersedes_wave_15_disposition) fail(`${spec.source_decision_id}: superseded disposition drift`);
+  if (row.supersedes_planned_canonical_id === null) fail(`${spec.source_decision_id}: superseded planned canonical ID missing`);
+  if (row.same_entity_basis !== spec.same_entity_basis) fail(`${spec.source_decision_id}: same-entity basis drift`);
+  if (row.reversibility?.mode !== 'append_preserving_supersession') fail(`${spec.source_decision_id}: append-preserving correction route missing`);
+  for (const receiptId of spec.required_receipt_ids ?? []) {
+    if (!(row.source_ids ?? []).includes(receiptId)) fail(`${spec.source_decision_id}: required receipt ${receiptId} missing from resolution custody`);
+  }
+  if (organizations.some(item => item.id === row.supersedes_planned_canonical_id)) fail(`${spec.source_decision_id}: superseded duplicate canonical organization was materialized`);
+  if (extensions.some(item => item.local_id === row.supersedes_planned_canonical_id)) fail(`${spec.source_decision_id}: superseded duplicate AXM extension was materialized`);
+}
+
 for (const [actual, expected, label] of [
   [actors.length, policy.expected.canonical_actor_rows_after, 'canonical actor'],
   [organizations.length, policy.expected.canonical_organization_rows_after, 'canonical organization'],

@@ -115,6 +115,20 @@ const detachment = claim('uk-ai-policy', 'clm-e-detachment-201-umbrella-u15-umbr
 assert.equal(detachment.subject_identity.canonical_subject_id, 'detachment-201');
 assert.ok(organizations.some(row => row.id === 'detachment-201' && row.kind === 'military_unit'));
 
+const frontier = claim('uk-ai-policy', 'clm-e-frontier-to-aisi');
+assert.equal(frontier.subject_id, 'frontier-ai-taskforce');
+assert.equal(frontier.subject_identity.canonical_subject_id, 'aisi');
+assert.equal(frontier.subject_identity.resolution_basis, 'explicit_case_scoped_resolution');
+const frontierResolution = localResolutions.find(row => row.source_decision_id === 'SUBJDEC-a0f11ad0030aa2a6f5aa7a1c');
+assert.ok(frontierResolution);
+assert.equal(frontierResolution.integration_override_applied, true);
+assert.equal(frontierResolution.supersedes_wave_15_disposition, 'identity_new_canonical_plan');
+assert.equal(frontierResolution.supersedes_planned_canonical_id, 'frontier-ai-taskforce');
+assert.equal(frontierResolution.canonical_id, 'aisi');
+assert.ok(!organizations.some(row => row.id === 'frontier-ai-taskforce'));
+assert.ok(!extensions.some(row => row.local_id === 'frontier-ai-taskforce'));
+assert.deepEqual(extensions.map(row => row.local_id).sort(), ['code-first-girls', 'detachment-201']);
+
 const contractOrder = claim('anduril-access-ownership', 'clm-cbp-order-362974500');
 assert.equal(contractOrder.subject_identity.resolution_status, 'local_only_unresolved');
 assert.equal(contractOrder.subject_object.object_kind, 'contract_order_identifier');

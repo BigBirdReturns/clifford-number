@@ -80,6 +80,48 @@ const publicCatalog = readJson('build/public-catalog.json');
 const localResolutionIndex = loadLocalCanonicalResolutionIndex({ refresh: true });
 const subjectObjectIndex = loadSubjectObjectResolutionIndex({ refresh: true });
 
+const overrideByDecisionId = new Map();
+for (const override of policy.identity_integration_overrides ?? []) {
+  assert.ok(!overrideByDecisionId.has(override.source_decision_id), `${override.source_decision_id}: duplicate Wave 16 identity override`);
+  const decision = decisionById.get(override.source_decision_id);
+  assert.ok(decision, `${override.source_decision_id}: override source decision missing`);
+  assert.equal(decision.disposition, override.supersedes_wave_15_disposition, `${override.source_decision_id}: superseded disposition drift`);
+  assert.equal(decision.source_case_id, override.source_case_id, `${override.source_decision_id}: override source case drift`);
+  assert.equal(decision.local_subject_id, override.local_subject_id, `${override.source_decision_id}: override local subject drift`);
+  assert.equal(override.correction_mode, 'append_preserving_supersession', `${override.source_decision_id}: correction mode drift`);
+  assert.ok(override.same_entity_basis, `${override.source_decision_id}: same-entity basis missing`);
+  for (const receiptId of override.required_receipt_ids ?? []) {
+    assert.ok((decision.receipt_ids ?? []).includes(receiptId), `${override.source_decision_id}: required receipt ${receiptId} absent from Wave 15 decision`);
+  }
+  const canonical = override.canonical_kind === 'actor'
+    ? actors.find(row => row.id === override.canonical_id)
+    : organizations.find(row => row.id === override.canonical_id);
+  assert.ok(canonical, `${override.source_decision_id}: override target ${override.canonical_id} missing`);
+  const plannedLabel = decision.canonical_target?.canonical_label;
+  assert.ok(aliases.some(alias => alias.alias === plannedLabel
+    && alias.canonical_id === override.canonical_id
+    && alias.kind === override.canonical_kind), `${override.source_decision_id}: explicit alias custody for ${JSON.stringify(plannedLabel)} missing`);
+  overrideByDecisionId.set(override.source_decision_id, override);
+}
+
+function effectiveTargetForDecision(decision) {
+  const override = overrideByDecisionId.get(decision.adjudication_id);
+  if (!override) return decision.canonical_target;
+  const canonical = override.canonical_kind === 'actor'
+    ? actors.find(row => row.id === override.canonical_id)
+    : organizations.find(row => row.id === override.canonical_id);
+  return {
+    canonical_id: override.canonical_id,
+    canonical_kind: override.canonical_kind,
+    canonical_label: canonical?.label ?? null
+  };
+}
+
+function materializesCanonicalRecord(decision) {
+  return decision.disposition === 'identity_new_canonical_plan'
+    && !overrideByDecisionId.has(decision.adjudication_id);
+}
+
 assert.equal(actors.length, policy.expected.canonical_actor_rows_after);
 assert.equal(organizations.length, policy.expected.canonical_organization_rows_after);
 assert.equal(aliases.length, policy.expected.canonical_alias_rows_after);
@@ -133,8 +175,10 @@ for (const entry of wave16ResolutionEntries) {
   assert.notEqual(decision.disposition, 'bounded_nonidentity_object', `${row.resolution_id}: nonidentity decision entered identity registry`);
   assert.equal(decision.source_case_id, row.source_case_id);
   assert.equal(decision.local_subject_id, row.local_subject_id);
-  assert.equal(decision.canonical_target.canonical_id, row.canonical_id);
-  assert.equal(decision.canonical_target.canonical_kind, row.canonical_kind);
+  const effectiveTarget = effectiveTargetForDecision(decision);
+  const integrationOverride = overrideByDecisionId.get(decision.adjudication_id) ?? null;
+  assert.equal(effectiveTarget.canonical_id, row.canonical_id);
+  assert.equal(effectiveTarget.canonical_kind, row.canonical_kind);
   const caseItem = caseById.get(row.source_case_id);
   assert.ok(caseItem, `${row.resolution_id}: compiled case missing`);
   const caseClaims = caseItem.claims.filter(claim => claim.subject_id === row.local_subject_id);
@@ -171,6 +215,11 @@ for (const entry of wave16ResolutionEntries) {
     local_subject_id: row.local_subject_id,
     canonical_id: row.canonical_id,
     canonical_kind: row.canonical_kind,
+    integration_override_applied: Boolean(integrationOverride),
+    supersedes_wave_15_disposition: integrationOverride?.supersedes_wave_15_disposition ?? null,
+    supersedes_planned_canonical_id: integrationOverride ? decision.canonical_target.canonical_id : null,
+    same_entity_basis: integrationOverride?.same_entity_basis ?? null,
+    new_canonical_record_materialized: materializesCanonicalRecord(decision),
     claim_ids: caseClaims.map(claim => claim.claim_id).sort(),
     public_catalog_claim_ids: catalogClaims.map(claim => claim.key).sort(),
     search_mode: directSearch ? 'canonical_id' : 'canonical_alias',
@@ -243,7 +292,7 @@ assert.equal(publicCatalog.counts.typed_subject_object_references, policy.expect
 assert.equal(publicCatalog.counts.distinct_subject_objects, policy.expected.subject_object_rows);
 assert.equal(publicCatalog.counts.generic_unresolved_subject_references, policy.expected.generic_unresolved_claim_references);
 
-const plannedDecisions = wave15Decisions.filter(row => row.disposition === 'identity_new_canonical_plan')
+const plannedDecisions = wave15Decisions.filter(row => materializesCanonicalRecord(row))
   .sort((left, right) => left.canonical_target.canonical_id.localeCompare(right.canonical_target.canonical_id));
 const entityByLocal = new Map(activeIdentity.entities.map(row => [row.local_id, row]));
 const resolutionByDecision = new Map(wave16ResolutionEntries.map(entry => [entry.row.source_decision_id, entry.row]));
@@ -318,7 +367,7 @@ const sourceFingerprint = fingerprint(manifest);
 const counts = {
   wave_15_decisions: wave15Decisions.length,
   identity_decisions: resolutionProjections.length,
-  existing_identity_resolutions: resolutionProjections.filter(row => decisionById.get(row.source_decision_id)?.disposition !== 'identity_new_canonical_plan').length,
+  existing_identity_resolutions: resolutionProjections.filter(row => !row.new_canonical_record_materialized).length,
   new_canonical_records: identityExtensionRows.length,
   nonidentity_object_decisions: subjectObjectProjections.length,
   identity_claim_references_integrated: identityClaimReferences,
