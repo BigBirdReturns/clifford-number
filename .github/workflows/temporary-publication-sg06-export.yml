@@ -1,0 +1,37 @@
+name: Temporary publication SG-06 export
+
+on:
+  push:
+    branches:
+      - agent/publication-sg06-export
+    paths:
+      - '.github/workflows/temporary-publication-sg06-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/publication-sg06-export
+          fetch-depth: 0
+      - name: Archive exact export branch and current main
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/publication-sg06-export
+          git fetch origin main
+          git archive --format=tar.gz --output=/tmp/publication-sg06-export/branch-head.tar.gz HEAD
+          git archive --format=tar.gz --output=/tmp/publication-sg06-export/main-head.tar.gz origin/main
+          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/publication-sg06-export/branch-head.txt
+          printf '%s\n' "$(git rev-parse origin/main)" > /tmp/publication-sg06-export/main-head.txt
+          sha256sum /tmp/publication-sg06-export/*.tar.gz > /tmp/publication-sg06-export/archives.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: publication-sg06-export-${{ github.run_id }}
+          path: /tmp/publication-sg06-export/
+          if-no-files-found: error
+          retention-days: 3
