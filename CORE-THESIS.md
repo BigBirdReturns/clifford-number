@@ -25,7 +25,7 @@ five overlapping historical phases
 × six actor-specific intentionality levels
 × ten recurring institutional archetypes
 × seven visualization contracts
-× seven report contracts
+× nine report contracts
 ```
 
 The bounded-surface kernel remains authoritative. The core thesis cannot create a hop, claim, graph edge, finding, conclusion, or publication approval.
