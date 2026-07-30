@@ -1,0 +1,44 @@
+name: Temporary DCA AAH convergence
+
+on:
+  push:
+    branches:
+      - agent/dca-aah-convergence-20260729
+    paths:
+      - '.github/scripts/materialize-dca-aah-phase01.py'
+      - '.github/scripts/run-dca-aah-convergence.sh'
+      - '.github/workflows/temporary-dca-aah-convergence.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dca-aah-convergence-20260729
+  cancel-in-progress: false
+
+jobs:
+  converge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/dca-aah-convergence-20260729
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install repository dependencies
+        run: npm ci
+      - name: Reconcile, execute, materialize, validate, and publish branch
+        run: bash .github/scripts/run-dca-aah-convergence.sh 2>&1 | tee /tmp/dca-aah-convergence.log
+      - name: Preserve convergence log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dca-aah-convergence-log-${{ github.run_id }}
+          path: /tmp/dca-aah-convergence.log
+          if-no-files-found: warn
+          retention-days: 14
