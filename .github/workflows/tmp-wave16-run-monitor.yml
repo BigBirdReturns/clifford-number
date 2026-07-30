@@ -1,0 +1,44 @@
+name: Temporary Wave 16 push-run monitor
+
+on:
+  push:
+    branches:
+      - agent/tmp-wave16-run-monitor
+    paths:
+      - '.github/tmp/tmp-wave16-run-monitor-trigger.json'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Query Wave 16 push runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/323409896/runs?branch=agent%2Flake-subject-integration-wave-16&event=push&per_page=20" \
+            --jq '{observed_at: now | todate, runs: [.workflow_runs[] | {id, run_number, status, conclusion, head_sha, event, created_at, updated_at, html_url}]}' \
+            > data/project/tmp-wave16-push-runs.json
+          rm -f \
+            .github/tmp/tmp-wave16-run-monitor-trigger.json \
+            .github/workflows/tmp-wave16-run-monitor.yml
+      - name: Commit observation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Refresh Wave 16 push-run observation'
+          git fetch origin agent/tmp-wave16-run-monitor
+          test "$(git rev-parse origin/agent/tmp-wave16-run-monitor)" = "${{ github.sha }}"
+          git push origin HEAD:agent/tmp-wave16-run-monitor
