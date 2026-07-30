@@ -16,6 +16,7 @@ on:
       - 'tools/build-lake-identifier-topology-wave-18.mjs'
       - 'tools/summarize-lake-identifier-topology-wave-18.mjs'
       - 'tools/materialize-lake-identifier-topology-wave-18.mjs'
+      - 'tools/expand-lake-identifier-topology-wave-18.mjs'
       - 'tools/reconcile-lake-identifier-topology-wave-18.mjs'
       - 'tools/validate-lake-identifier-topology-wave-18.mjs'
       - 'tools/stabilize-lake-index.mjs'
@@ -67,6 +68,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check tools/materialize-lake-identifier-topology-wave-18.mjs
+          node --check tools/expand-lake-identifier-topology-wave-18.mjs
           node --check tools/reconcile-lake-identifier-topology-wave-18.mjs
           node --check tools/validate-lake-identifier-topology-wave-18.mjs
           node --check tools/stabilize-lake-index.mjs
@@ -128,7 +130,7 @@ jobs:
         run: |
           set -euo pipefail
           for pass in 1 2 3; do
-            echo "Wave 18 lake pass ${pass}"
+            echo "Wave 18 expansion pass ${pass}"
             node tools/build-lake-index.mjs
             node tools/stabilize-lake-index.mjs
             node tools/reconcile-lake-receipt-semantics.mjs
@@ -136,6 +138,19 @@ jobs:
             node tools/validate-lake-index.mjs
             node tools/validate-lake-receipt-semantics.mjs
             node tools/validate-lake-gap-summary.mjs
+            node tools/expand-lake-identifier-topology-wave-18.mjs
+            git add -A
+          done
+          for pass in 1 2 3; do
+            echo "Wave 18 reconciliation pass ${pass}"
+            node tools/build-lake-index.mjs
+            node tools/stabilize-lake-index.mjs
+            node tools/reconcile-lake-receipt-semantics.mjs
+            node tools/build-lake-gap-summary.mjs
+            node tools/validate-lake-index.mjs
+            node tools/validate-lake-receipt-semantics.mjs
+            node tools/validate-lake-gap-summary.mjs
+            node tools/expand-lake-identifier-topology-wave-18.mjs
             node tools/reconcile-lake-identifier-topology-wave-18.mjs
             git add -A
           done
@@ -160,7 +175,7 @@ jobs:
             build/lake-actions/identifier-topology-wave-18.json \
             build/lake-actions/identifier-topology-wave-18-reconciliation.json \
             reports/lake-identifier-topology-wave-18.md >> /tmp/wave18-final.sha256
-          for pass in 1 2; do
+          for pass in 1 2 3; do
             node tools/build-lake-index.mjs
             node tools/stabilize-lake-index.mjs
             node tools/reconcile-lake-receipt-semantics.mjs
@@ -168,6 +183,7 @@ jobs:
             node tools/validate-lake-index.mjs
             node tools/validate-lake-receipt-semantics.mjs
             node tools/validate-lake-gap-summary.mjs
+            node tools/expand-lake-identifier-topology-wave-18.mjs
             node tools/reconcile-lake-identifier-topology-wave-18.mjs
             git add -A
           done
