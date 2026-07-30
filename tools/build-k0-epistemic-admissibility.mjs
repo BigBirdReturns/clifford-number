@@ -25,6 +25,7 @@ export const releaseScope = [
   '.github/workflows/k0-role-neutral-wave-05.yml',
   '.github/workflows/k0-role-neutral-wave-06.yml',
   '.github/workflows/k0-role-neutral-wave-07.yml',
+  '.github/workflows/k0-role-neutral-wave-08.yml',
   'data/intake/k0-epistemic-admissibility-source.txt',
   'data/intake/k0-ceiling-conversion-seed-events.json',
   'data/project/k0-epistemic-admissibility-methodology.json',
@@ -39,6 +40,7 @@ export const releaseScope = [
   'data/research/k0-role-neutral-wave-05.json',
   'data/research/k0-role-neutral-wave-06.json',
   'data/research/k0-role-neutral-wave-07.json',
+  'data/research/k0-role-neutral-wave-08.json',
   'schemas/k0-ceiling-conversion-event.schema.json',
   'docs/methods/k0-epistemic-admissibility.md',
   'docs/milestones/m05-k0-epistemic-admissibility.md',
@@ -50,6 +52,7 @@ export const releaseScope = [
   'docs/milestones/m05-k0-role-neutral-wave-05.md',
   'docs/milestones/m05-k0-role-neutral-wave-06.md',
   'docs/milestones/m05-k0-role-neutral-wave-07.md',
+  'docs/milestones/m05-k0-role-neutral-wave-08.md',
   'tools/build-k0-epistemic-admissibility.mjs',
   'tools/validate-k0-epistemic-admissibility.mjs',
   'tools/validate-k0-role-neutral-wave-01.mjs',
@@ -65,6 +68,8 @@ export const releaseScope = [
   'tools/validate-k0-role-neutral-wave-06.mjs',
   'tools/build-k0-role-neutral-wave-07.mjs',
   'tools/validate-k0-role-neutral-wave-07.mjs',
+  'tools/build-k0-role-neutral-wave-08.mjs',
+  'tools/validate-k0-role-neutral-wave-08.mjs',
   'test/k0-epistemic-admissibility.test.js',
   'test/k0-role-neutral-wave-01.test.js',
   'test/k0-role-neutral-wave-02.test.js',
@@ -72,7 +77,8 @@ export const releaseScope = [
   'test/k0-role-neutral-wave-04.test.js',
   'test/k0-role-neutral-wave-05.test.js',
   'test/k0-role-neutral-wave-06.test.js',
-  'test/k0-role-neutral-wave-07.test.js'
+  'test/k0-role-neutral-wave-07.test.js',
+  'test/k0-role-neutral-wave-08.test.js'
 ];
 
 export function computeK0ReleaseManifest() {
@@ -113,6 +119,7 @@ const neutralWave04 = read('data/research/k0-role-neutral-wave-04.json');
 const neutralWave05 = read('data/research/k0-role-neutral-wave-05.json');
 const neutralWave06 = read('data/research/k0-role-neutral-wave-06.json');
 const neutralWave07 = read('data/research/k0-role-neutral-wave-07.json');
+const neutralWave08 = read('data/research/k0-role-neutral-wave-08.json');
 const wave05Field = read('data/research/k0-wave05-field-adjudication.json');
 const wave06Field = read('data/research/k0-wave06-field-adjudication.json');
 const wave07Field = read('data/research/k0-wave07-field-adjudication.json');
@@ -189,6 +196,9 @@ const report = {
     role_neutral_wave_07_query_executions: neutralWave07.counts.query_executions,
     role_neutral_wave_07_retained_records: neutralWave07.counts.retained_records,
     role_neutral_wave_07_candidate_records: neutralWave07.counts.candidate_requires_field_audit,
+    role_neutral_wave_08_query_executions: neutralWave08.counts.query_executions,
+    role_neutral_wave_08_retained_records: neutralWave08.counts.retained_records,
+    role_neutral_wave_08_candidate_records: neutralWave08.counts.candidate_requires_field_audit,
     role_neutral_wave_05_field_records_reviewed: wave05Field.counts.retained_records_reviewed,
     role_neutral_wave_05_field_supported_for_human_review: wave05Field.counts.supported_for_human_review,
     role_neutral_wave_05_field_retained_candidate_only: wave05Field.counts.retained_candidate_only,
@@ -228,6 +238,7 @@ const report = {
   role_neutral_wave_05: neutralWave05,
   role_neutral_wave_06: neutralWave06,
   role_neutral_wave_07: neutralWave07,
+  role_neutral_wave_08: neutralWave08,
   role_neutral_wave_05_field_adjudication: wave05Field,
   role_neutral_wave_06_field_adjudication: wave06Field,
   role_neutral_wave_07_field_adjudication: wave07Field,
@@ -249,7 +260,9 @@ const report = {
     role_neutral_wave_06_field_adjudication_complete: true,
     role_neutral_wave_07_discovery_complete: true,
     role_neutral_wave_07_field_adjudication_complete: true,
-    role_neutral_universe_executed: false,
+    role_neutral_wave_08_discovery_complete: true,
+    role_neutral_wave_08_field_adjudication_complete: false,
+    role_neutral_universe_executed: true,
     independent_second_party_review_complete: false,
     evidence_truth_determined: false,
     publication_status: 'blocked',
