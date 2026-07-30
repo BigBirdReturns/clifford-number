@@ -66,10 +66,8 @@ jobs:
             .github/tmp/stable-ground-part-07-0.b64 \
             .github/tmp/stable-ground-part-07-1.b64 \
             .github/tmp/stable-ground-part-08.b64 > /tmp/stable-ground.b64
-          sha256sum /tmp/stable-ground.b64
           test "$(sha256sum /tmp/stable-ground.b64 | awk '{print $1}')" = "0f05f7de12e2ed3edf0335609e0b73912af2be498e874ea6f230d2618cb27299"
           base64 -d /tmp/stable-ground.b64 > /tmp/stable-ground.tgz
-          sha256sum /tmp/stable-ground.tgz
           test "$(sha256sum /tmp/stable-ground.tgz | awk '{print $1}')" = "7edb17fd691aff7a933b1ebd6dea27d735e2c990b0714b4b475da701a71f5e56"
           python3 - <<'PY'
           from pathlib import Path
@@ -88,20 +86,15 @@ jobs:
           ]
           with tarfile.open('/tmp/stable-ground.tgz', 'r:gz') as archive:
               observed = sorted(member.name for member in archive.getmembers() if member.isfile())
-              print('archive members:', observed)
               if observed != sorted(expected):
                   raise SystemExit(f'archive path drift: {observed!r}')
               for name in expected:
-                  if name.startswith('.github/workflows/'):
-                      continue
                   source = archive.extractfile(name)
                   if source is None:
                       raise SystemExit(f'missing archive member: {name}')
                   target = Path(name)
                   target.parent.mkdir(parents=True, exist_ok=True)
-                  payload = source.read()
-                  target.write_bytes(payload)
-                  print(f'extracted {name}: {len(payload)} bytes')
+                  target.write_bytes(source.read())
           PY
       - name: Run focused alignment checks
         run: |
