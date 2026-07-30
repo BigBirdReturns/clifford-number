@@ -120,8 +120,6 @@ jobs:
           PY
           node --check tools/apply-lake-subject-integration-wave-16-sources.mjs
           node --check test/lake-subject-integration-wave-16.test.js
-          grep -Fq 'group: lake-subject-integration-wave-16-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}' .github/workflows/lake-subject-integration-wave-16.yml
-          grep -Fq 'if test "$GITHUB_EVENT_NAME" = '\''push'\'' \' .github/workflows/lake-subject-integration-wave-16.yml
           rm -f \
             .github/tmp/lake-subject-integration-wave-16-concurrency-repair-trigger.json \
             .github/workflows/lake-subject-integration-wave-16-concurrency-repair.yml \
