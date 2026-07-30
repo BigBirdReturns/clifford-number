@@ -32,7 +32,7 @@ jobs:
           expected_archive='f02775d52ac6340482097bd4c6faa23207d3e14a812b72c5d3094ea947f8bb08'
 
           mapfile -t chunks < <(find .github/tmp/ssc-wave01 -maxdepth 1 -type f -name 'part-*.b64' | sort)
-          test "${#chunks[@]}" -eq 2
+          test "${#chunks[@]}" -eq 12
           cat "${chunks[@]}" | tr -d '\n' | base64 --decode > /tmp/ssc-wave01-carrier.tar.xz
           printf '%s  %s\n' "$expected_archive" /tmp/ssc-wave01-carrier.tar.xz | sha256sum -c -
 
