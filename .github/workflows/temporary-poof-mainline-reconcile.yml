@@ -19,7 +19,8 @@ jobs:
         with:
           ref: agent/poof-clifford-ecology
           fetch-depth: 0
-      - name: Probe and publish exact conflict receipt
+      - name: Capture exact inputs and conflict receipt
+        id: capture
         shell: bash
         run: |
           set -u
@@ -28,13 +29,16 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           head_before="$(git rev-parse HEAD)"
           main_head="$(git rev-parse origin/main)"
+          mkdir -p /tmp/poof-mainline-reconcile-inputs build
+          git archive --format=tar.gz --output=/tmp/poof-mainline-reconcile-inputs/poof-head.tar.gz "${head_before}"
+          git archive --format=tar.gz --output=/tmp/poof-mainline-reconcile-inputs/main.tar.gz "${main_head}"
           set +e
           git merge --no-commit --no-ff origin/main
           merge_status=$?
           set -e
-          mkdir -p /tmp/poof-reconcile build
           {
             echo "schema_version: poof-mainline-reconcile-probe@1"
+            echo "run_id: ${GITHUB_RUN_ID}"
             echo "poof_head: ${head_before}"
             echo "main_head: ${main_head}"
             echo "merge_status: ${merge_status}"
@@ -42,12 +46,25 @@ jobs:
             git diff --name-only --diff-filter=U | sed 's/^/  - /' || true
             echo "merge_state:"
             git status --short | sed 's/^/  /'
-          } > /tmp/poof-reconcile/probe.txt
-          cat /tmp/poof-reconcile/probe.txt
+          } | tee /tmp/poof-mainline-reconcile-inputs/merge-probe.txt
           if [ -f .git/MERGE_HEAD ]; then
             git merge --abort
           fi
-          cp /tmp/poof-reconcile/probe.txt build/poof-mainline-reconcile-probe.txt
+          cp /tmp/poof-mainline-reconcile-inputs/merge-probe.txt build/poof-mainline-reconcile-probe.txt
+      - name: Upload exact reconciliation inputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: poof-mainline-reconcile-inputs
+          path: /tmp/poof-mainline-reconcile-inputs/
+          if-no-files-found: error
+          retention-days: 3
+      - name: Publish probe receipt
+        shell: bash
+        run: |
+          set -euo pipefail
           git add build/poof-mainline-reconcile-probe.txt
+          if git diff --cached --quiet; then
+            exit 0
+          fi
           git commit -m 'Record exact POOF mainline reconciliation conflicts'
           git push origin HEAD:agent/poof-clifford-ecology
