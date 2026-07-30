@@ -1,0 +1,34 @@
+name: Temporary publication SG-07 main export
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-publication-sg07-main-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/publication-sg07-main-export
+          fetch-depth: 0
+      - name: Archive exact current main tree
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/publication-sg07-main-export
+          git archive --format=tar.gz --output=/tmp/publication-sg07-main-export/main-head.tar.gz HEAD
+          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/publication-sg07-main-export/main-head.txt
+          sha256sum /tmp/publication-sg07-main-export/main-head.tar.gz > /tmp/publication-sg07-main-export/archive.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: publication-sg07-main-export-${{ github.run_id }}
+          path: /tmp/publication-sg07-main-export/
+          if-no-files-found: error
+          retention-days: 2
