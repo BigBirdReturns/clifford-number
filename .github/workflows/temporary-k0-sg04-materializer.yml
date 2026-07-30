@@ -1,0 +1,175 @@
+name: Temporary materialize K0 Wave 08 and SG-04
+
+on:
+  pull_request_target:
+    types: [synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: k0-sg04-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.number == 405 &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/k0-role-neutral-wave-08'
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: BigBirdReturns/clifford-number
+          ref: agent/k0-role-neutral-wave-08
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify exact transition and SG-04 source package
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          old_head="$(git rev-parse HEAD)"
+          test "$old_head" = "$EXPECTED_HEAD"
+          printf '%s\n' "$old_head" > /tmp/old-head
+          git merge-base --is-ancestor e9b85b31281db02ce3f9a9a84dd7aea34b714849 HEAD
+          test -f data/project/project-stable-ground-sg04.json
+          test -f tools/build-project-stable-ground-sg04.mjs
+          test -f tools/validate-project-stable-ground-sg04.mjs
+          test -f test/project-stable-ground-sg04.test.js
+          test -f .github/workflows/project-stable-ground-sg04.yml
+          node - <<'NODE'
+          import fs from 'node:fs';
+          const checkpoint = JSON.parse(fs.readFileSync('data/project/project-stable-ground-sg04.json', 'utf8'));
+          if (checkpoint.checkpoint_id !== 'SG-2026-07-29-04') throw new Error('wrong SG-04 checkpoint');
+          if (checkpoint.trigger?.transition_commit !== 'e9b85b31281db02ce3f9a9a84dd7aea34b714849') throw new Error('wrong K0 transition commit');
+          if (checkpoint.trigger?.pull_request !== 405 || checkpoint.trigger?.issue !== 446) throw new Error('wrong SG-04 trigger custody');
+          NODE
+      - name: Install permanent release integration and repair Wave 08 label
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          package_path = Path('package.json')
+          package = json.loads(package_path.read_text())
+          scripts = package['scripts']
+          scripts['build:stable-ground'] = 'node tools/build-project-stable-ground-sg04.mjs'
+          scripts['validate:stable-ground'] = (
+              'node tools/validate-project-stable-ground-alignment.mjs && '
+              'node test/project-stable-ground-alignment.test.js && '
+              'node tools/validate-project-stable-ground-sg02.mjs && '
+              'node test/project-stable-ground-sg02.test.js && '
+              'node tools/validate-project-stable-ground-sg03.mjs && '
+              'node test/project-stable-ground-sg03.test.js && '
+              'node tools/validate-project-stable-ground-sg04.mjs && '
+              'node test/project-stable-ground-sg04.test.js'
+          )
+          scripts['ci:stable-ground'] = 'npm run build:stable-ground && npm run validate:stable-ground'
+          package_path.write_text(json.dumps(package, indent=2) + '\n')
+
+          builder_path = Path('tools/build-k0-role-neutral-wave-08.mjs')
+          builder = builder_path.read_text()
+          old_title = '<title>K0 Wave 08 · authorship transfer</title>'
+          old_label = 'CLIFFORD NUMBER · M-05 · K0 · WAVE 07'
+          if builder.count(old_title) != 1 or builder.count(old_label) != 1:
+              raise RuntimeError('Wave 08 label repair anchors drifted')
+          builder = builder.replace(old_title, '<title>K0 Wave 08 · contrary advice and gate action</title>', 1)
+          builder = builder.replace(old_label, 'CLIFFORD NUMBER · M-05 · K0 · WAVE 08', 1)
+          builder_path.write_text(builder)
+
+          test_path = Path('test/k0-role-neutral-wave-08.test.js')
+          test = test_path.read_text()
+          anchor = "console.log('k0-role-neutral-wave-08.test: OK');"
+          if test.count(anchor) != 1:
+              raise RuntimeError('Wave 08 browser-label test anchor drifted')
+          replacement = (
+              "const html=fs.readFileSync(path.join(root,'reports/core-thesis/answerable-power/k0-role-neutral-wave-08.html'),'utf8');"
+              "assert.match(html,/WAVE 08/);assert.doesNotMatch(html,/WAVE 07/);"
+              + anchor
+          )
+          test_path.write_text(test.replace(anchor, replacement, 1))
+          PY
+      - name: Build K0, POOF, and SG-04 in dependency order
+        run: |
+          set -euo pipefail
+          node tools/build-k0-role-neutral-wave-08.mjs
+          node tools/validate-k0-role-neutral-wave-08.mjs
+          node test/k0-role-neutral-wave-08.test.js
+          node tools/build-k0-epistemic-admissibility.mjs
+          node tools/validate-k0-epistemic-admissibility.mjs
+          node test/k0-epistemic-admissibility.test.js
+          node tools/build-poof-clifford-ecology.mjs
+          node tools/validate-poof-constitutional-change.mjs
+          node test/poof-constitutional-change.test.js
+          node tools/validate-poof-clifford-ecology.mjs
+          node test/poof-clifford-ecology.test.js
+          node tools/build-project-stable-ground-sg04.mjs
+          npm run validate:stable-ground
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Freeze and constrain the permanent patch
+        run: |
+          set -euo pipefail
+          git add -A
+          git diff --cached --check
+          node - <<'NODE'
+          import fs from 'node:fs';
+          import { releaseScope as waveScope } from './tools/build-k0-role-neutral-wave-08.mjs';
+          import { releaseScope as k0Scope } from './tools/build-k0-epistemic-admissibility.mjs';
+          import { releaseScope as poofScope } from './tools/build-poof-clifford-ecology.mjs';
+          import { releaseScope as sg04Scope } from './tools/build-project-stable-ground-sg04.mjs';
+          import { execFileSync } from 'node:child_process';
+          const explicit = [
+            'package.json',
+            'data/project/project-stable-ground-sg04-release-manifest.json',
+            'reports/core-thesis/stable-ground/sg04/checkpoint.json',
+            'reports/core-thesis/stable-ground/sg04/index.html',
+            'reports/core-thesis/poof-clifford-ecology/release-manifest.json',
+            'reports/core-thesis/answerable-power/k0-role-neutral-wave-08.json',
+            'reports/core-thesis/answerable-power/k0-role-neutral-wave-08.html',
+            'reports/core-thesis/answerable-power/k0.json',
+            'reports/core-thesis/answerable-power/k0.html'
+          ];
+          const allowed = new Set([...waveScope, ...k0Scope, ...poofScope, ...sg04Scope, ...explicit]);
+          const changed = execFileSync('git', ['diff', '--cached', '--name-only'], { encoding: 'utf8' }).trim().split('\n').filter(Boolean);
+          const unexpected = changed.filter((path) => !allowed.has(path));
+          if (unexpected.length) throw new Error(`unexpected materializer paths: ${unexpected.join(', ')}`);
+          fs.writeFileSync('/tmp/sg04-changed-paths.txt', changed.join('\n') + '\n');
+          NODE
+          git diff --cached --binary > /tmp/sg04.patch
+          test -s /tmp/sg04.patch
+      - name: Reconstruct the exact permanent tree
+        run: |
+          set -euo pipefail
+          old_head="$(cat /tmp/old-head)"
+          git reset --hard "$old_head"
+          git clean -fd
+          git apply --index /tmp/sg04.patch
+          node tools/build-k0-role-neutral-wave-08.mjs
+          node tools/build-k0-epistemic-admissibility.mjs
+          node tools/build-poof-clifford-ecology.mjs
+          node tools/build-project-stable-ground-sg04.mjs
+          npm run validate:stable-ground
+          node tools/validate-k0-role-neutral-wave-08.mjs
+          node test/k0-role-neutral-wave-08.test.js
+          node tools/validate-k0-epistemic-admissibility.mjs
+          node test/k0-epistemic-admissibility.test.js
+          node tools/validate-poof-clifford-ecology.mjs
+          node test/poof-clifford-ecology.test.js
+          git diff --exit-code
+          git diff --cached --binary > /tmp/sg04-rebuilt.patch
+          cmp /tmp/sg04.patch /tmp/sg04-rebuilt.patch
+      - name: Publish the permanent atomic K0 and SG-04 tree
+        run: |
+          set -euo pipefail
+          old_head="$(cat /tmp/old-head)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Complete K0 query battery and append SG-04"
+          git push --force-with-lease=refs/heads/agent/k0-role-neutral-wave-08:"$old_head" origin HEAD:agent/k0-role-neutral-wave-08
