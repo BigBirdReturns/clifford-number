@@ -1,0 +1,95 @@
+name: Recover current adversarial final source
+
+on:
+  push:
+    branches:
+      - agent/adversarial-release-integrity
+    paths:
+      - '.github/workflows/adversarial-current-final-source-recovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/adversarial-release-integrity
+          fetch-depth: 0
+      - name: Decode, decompress, and inspect the current final-source carrier
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import lzma
+          import os
+          import tarfile
+          from io import BytesIO
+          from pathlib import Path, PurePosixPath
+
+          out = Path('/tmp/adversarial-current-final-source')
+          out.mkdir(parents=True, exist_ok=True)
+          manifest = json.loads(Path('.github/tmp/adversarial-release-manifest.json').read_text())
+          paths = sorted(Path('.github/tmp').glob('final-source-part-*.b64'))
+          if not paths:
+              raise SystemExit('no current final-source parts')
+          parts = [b''.join(path.read_bytes().split()) for path in paths]
+          compact = b''.join(parts)
+          compressed = base64.b64decode(compact, validate=True)
+          payload = lzma.decompress(compressed)
+          with tarfile.open(fileobj=BytesIO(payload), mode='r:*') as archive:
+              members = archive.getmembers()
+              names = [member.name for member in members]
+              for member in members:
+                  pure = PurePosixPath(member.name)
+                  if pure.is_absolute() or '..' in pure.parts or not member.isfile():
+                      raise SystemExit(f'unsafe archive member: {member.name}')
+              archive.extractall(out / 'tree', filter='data')
+          declared = sorted(manifest['payload_paths'])
+          observed = sorted(names)
+          missing = sorted(set(declared) - set(observed))
+          extra = sorted(set(observed) - set(declared))
+          report = {
+              'schema_version': 'adversarial-current-final-source-recovery@1',
+              'authority': 'reference_carrier_not_original_manifest_payload',
+              'part_paths': [str(path) for path in paths],
+              'part_count': len(paths),
+              'part_lengths': [len(part) for part in parts],
+              'base64_bytes': len(compact),
+              'base64_sha256': hashlib.sha256(compact).hexdigest(),
+              'compressed_bytes': len(compressed),
+              'compressed_sha256': hashlib.sha256(compressed).hexdigest(),
+              'payload_bytes': len(payload),
+              'payload_sha256': hashlib.sha256(payload).hexdigest(),
+              'tar_entries': len(names),
+              'declared_payload_paths': len(declared),
+              'missing_declared_paths': missing,
+              'extra_paths': extra,
+              'exact_declared_path_set': not missing and not extra,
+              'original_manifest_payload_recovered': (
+                  len(payload) == int(manifest['payload_bytes'])
+                  and hashlib.sha256(payload).hexdigest() == manifest['payload_sha256']
+              ),
+          }
+          (out / 'diagnostic.json').write_text(json.dumps(report, indent=2) + '\n')
+          (out / 'tree.txt').write_text('\n'.join(observed) + '\n')
+          (out / 'final-source.tar').write_bytes(payload)
+          print(json.dumps(report, indent=2))
+          if missing:
+              raise SystemExit(f'current final-source carrier omits declared repair paths: {missing}')
+          PY
+      - name: Upload recovered reference source
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adversarial-current-final-source-${{ github.run_id }}
+          path: /tmp/adversarial-current-final-source/
+          if-no-files-found: error
+          retention-days: 7
