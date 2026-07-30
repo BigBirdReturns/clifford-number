@@ -45,7 +45,18 @@ jobs:
           new_assertion = 'exec(compile(read_text(".github/scripts/retire-public-graph-bridge.py"), ".github/scripts/retire-public-graph-bridge.py", "exec"))\nif any(marker in read_text("app.js") for marker in ["loadJson(\'graph.json\')", "researchNetworkModel", "legacyGraph", "legacyNodes"]):\n    raise RuntimeError("app.js still contains retired generic-graph runtime")\n'
           if text.count(old_assertion) != 1:
               raise SystemExit(f'retirement assertion anchor count: {text.count(old_assertion)}')
-          target.write_text(text.replace(old_assertion, new_assertion, 1))
+          text = text.replace(old_assertion, new_assertion, 1)
+          old_editorial_loop = '}.items():\n    replace_once("index.html", old, new)\n'
+          new_editorial_loop = '''}.items():
+    index_source = read_text("index.html")
+    occurrence_count = index_source.count(old)
+    if occurrence_count < 1:
+        raise RuntimeError(f"index.html: missing editorial anchor: {old[:180]!r}")
+    write_text("index.html", index_source.replace(old, new))
+'''
+          if text.count(old_editorial_loop) != 1:
+              raise SystemExit(f'editorial loop anchor count: {text.count(old_editorial_loop)}')
+          target.write_text(text.replace(old_editorial_loop, new_editorial_loop, 1))
           PY
           python3 -m py_compile .github/scripts/materialize-publication-allowlist.py .github/scripts/retire-public-graph-bridge.py .github/scripts/tighten-publication-test-predicates.py
           python3 .github/scripts/materialize-publication-allowlist.py
