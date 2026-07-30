@@ -1,4 +1,4 @@
-name: Project stable-ground supersession 04
+name: Project stable-ground supersession 04 · historical
 
 on:
   pull_request:
@@ -46,9 +46,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Build and validate current SG-04
+      - name: Validate preserved SG-04 history
         run: |
-          node tools/build-project-stable-ground-sg04.mjs
           node tools/validate-project-stable-ground-sg04.mjs
           node test/project-stable-ground-sg04.test.js
       - name: Validate preserved SG-01 through SG-03 history
@@ -75,13 +74,18 @@ jobs:
           node test/dca-h01.test.js
       - name: Run complete repository release gate
         run: npm run release:check
-      - name: Prove deterministic SG-04 products
+      - name: Prove historical SG-04 bytes remain untouched
         run: |
           git restore --staged --worktree .
-          node tools/build-k0-role-neutral-wave-08.mjs
-          node tools/build-k0-epistemic-admissibility.mjs
-          node tools/build-poof-clifford-ecology.mjs
-          node tools/build-project-stable-ground-sg04.mjs
-          npm run validate:stable-ground
+          node tools/validate-project-stable-ground-alignment.mjs
+          node test/project-stable-ground-alignment.test.js
+          node tools/validate-project-stable-ground-sg02.mjs
+          node test/project-stable-ground-sg02.test.js
+          node tools/validate-project-stable-ground-sg03.mjs
+          node test/project-stable-ground-sg03.test.js
+          node tools/validate-project-stable-ground-sg04.mjs
+          node test/project-stable-ground-sg04.test.js
+          node tools/validate-project-stable-ground-sg05.mjs
+          node test/project-stable-ground-sg05.test.js
           git diff --exit-code
           test -z "$(git status --porcelain)"
