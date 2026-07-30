@@ -25,3 +25,11 @@ The right-of-reply record preserves notice, response state, attributed claims, d
 ## Publication boundary
 
 The generated aperture is reviewable but nonpublic. Public release requires a publication allowlist, a real deployment origin, external audit of that origin, and a release-specific decision that the selected projections are publication-ready. The existence of an HTML route, MCP card, OpenAPI document, or sitemap does not satisfy those requirements.
+
+## Non-graph effects
+
+Graph-inert referrals may open a bounded review queue and may require a separate publication decision. Those powers are declared in the transaction's operational-effect contract. Visibility and ranking effects remain prohibited.
+
+## Compression custody
+
+A projection manifest must disclose its candidate universe, selection and exclusion rules, ordering, truncation, missingness, counterevidence, null-result policy, and overrides. Included-source lineage alone is not a complete account of publication authority.

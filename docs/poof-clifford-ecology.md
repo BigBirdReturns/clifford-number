@@ -90,3 +90,7 @@ REAL STEEL fixture ≠ neutral denominator
 Steel Mirror differential ≠ bad faith
 MCP narration ≠ evidence
 ```
+
+## Operational-effect and amendment hardening
+
+The ecology now treats `graph_effect: none` as only one dimension of authority. Every cross-system transaction carries a seven-dimension operational-effect contract, and every projection declares how it compressed its candidate universe. Constitutional changes are themselves receipted repository transactions. R8 separates documented acts, supported inferences, and interpretive models; R9 permits asymmetric, null, and noncomparable outcomes.

@@ -6,6 +6,15 @@ import { buildPoofCliffordEcology, computeReleaseManifest, manifestPath, outputR
 
 const moduleRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const readJson = (root, relative) => JSON.parse(fs.readFileSync(path.join(root, relative), 'utf8'));
+const effectDimensions = ['evidence','graph','review_queue','publication','visibility','ranking','custody'];
+function effectFailures(value, expected, location) {
+  const failures = [];
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return [`${location}: missing effect contract`];
+  const keys = Object.keys(value).sort();
+  if (JSON.stringify(keys) !== JSON.stringify([...effectDimensions].sort())) failures.push(`${location}: undeclared or missing effect dimension`);
+  for (const key of effectDimensions) if (value[key] !== expected[key]) failures.push(`${location}.${key}: expected ${expected[key]}, saw ${value[key]}`);
+  return failures;
+}
 
 function matchesType(value, type) {
   if (type === 'null') return value === null;
@@ -71,6 +80,7 @@ export function validatePoofCliffordEcology({ root = moduleRoot, overrides = {} 
   const integration = source('integration', 'data/project/poof-clifford-integration-map.json');
   const objects = source('objects', 'data/project/poof-clifford-object-registry.json');
   const aperture = source('aperture', 'data/project/poof-clifford-aperture.json');
+  const changeLog = source('changeLog', 'data/project/poof-clifford-constitutional-change-log.json');
   const core = source('core', 'data/project/core-thesis.json');
   const registry = source('registry', 'data/project/m05-answerable-power-story-registry.json');
   const fanout = source('fanout', 'data/project/m05-answerable-power-fanout.json');
@@ -85,6 +95,13 @@ export function validatePoofCliffordEcology({ root = moduleRoot, overrides = {} 
   if (contract.jurisdictions.length !== 4 || new Set(contract.jurisdictions.map((row) => row.jurisdiction_id)).size !== 4) fail('four-jurisdiction contract drift');
   if (contract.authority_stack.length !== 5) fail('authority stack drift');
   if (contract.transaction_objects.length !== 5) fail('transaction object count drift');
+  if (contract.operational_effect_law.undeclared_effects_forbidden !== true || JSON.stringify(contract.operational_effect_law.dimensions) !== JSON.stringify(effectDimensions)) fail('operational effect law drift');
+  if (contract.constitutional_amendment_law.change_log_path !== 'data/project/poof-clifford-constitutional-change-log.json' || contract.constitutional_amendment_law.prior_release_interpretation_preserved !== true) fail('constitutional amendment law drift');
+  if (changeLog.schema_version !== 'poof-clifford-constitutional-change-log@1' || changeLog.changes.length < 1) fail('constitutional change log missing');
+  for (const change of changeLog.changes) {
+    for (const key of contract.constitutional_amendment_law.required_fields) if (!(key in change)) fail(`${change.change_id || 'constitutional change'}: missing ${key}`);
+    if (change.emergency_override !== false || change.graph_effect !== 'none') fail(`${change.change_id}: unconstitutional override or graph effect`);
+  }
   if (contract.publication_state.current_state !== 'staged_nonpublic_generated_aperture' || contract.publication_state.may_be_represented_as_deployed !== false) fail('deployment laundering');
   for (const [key, value] of Object.entries(contract.boundaries)) {
     if (key === 'graph_effect') { if (value !== 'none') fail('contract graph boundary drift'); }
@@ -97,6 +114,10 @@ export function validatePoofCliffordEcology({ root = moduleRoot, overrides = {} 
   if (bindings.source_of_report_contract_truth !== 'data/project/core-thesis.json') fail('projection contract truth duplicated');
   if (JSON.stringify([...bindings.report_type_ids].sort()) !== JSON.stringify(['R8-epistemic-admissibility-ceiling-conversion','R9-two-tier-constitution-safeguard-allocation'].sort())) fail('R8/R9 binding drift');
   for (const row of bindings.bindings) if (row.graph_effect !== 'none') fail(`${row.report_type_id}: graph leak`);
+  const r8Firewall = bindings.inference_firewalls?.['R8-epistemic-admissibility-ceiling-conversion'];
+  const r9Firewall = bindings.inference_firewalls?.['R9-two-tier-constitution-safeguard-allocation'];
+  if (JSON.stringify(r8Firewall?.claim_classes?.map((row) => row.class_id)) !== JSON.stringify(['documented_act','supported_inference','interpretive_model']) || r8Firewall?.strongest_alternative_required !== true || r8Firewall?.disconfirmation_evidence_required !== true || r8Firewall?.model_may_not_be_presented_as_observed_internal_state !== true) fail('R8 inference firewall drift');
+  if (JSON.stringify(r9Firewall?.permitted_outcomes) !== JSON.stringify(['materially_comparable_and_similarly_safeguarded','materially_comparable_but_asymmetrically_safeguarded','partially_comparable','not_materially_comparable','insufficient_evidence_to_compare']) || r9Firewall?.forced_symmetry_forbidden !== true || r9Firewall?.formal_and_practical_remedy_must_be_separate !== true) fail('R9 comparison firewall drift');
 
   if (!registry.stories.some((row) => row.story_id === 'M05-S15' && row.maximum_ceiling === 'context_bounded_safeguard_differential')) fail('M05-S15 missing or over ceiling');
   if (!fanout.lanes.some((row) => row.lane_id === 'A18' && row.story_id === 'M05-S15')) fail('A18 missing or disconnected');
@@ -110,7 +131,12 @@ export function validatePoofCliffordEcology({ root = moduleRoot, overrides = {} 
   if (integration.boundaries.graph_effect !== 'none' || integration.boundaries.private_source_text_republished !== false) fail('integration boundary drift');
 
   if (objects.objects.length !== 5 || new Set(objects.objects.map((row) => row.object_id)).size !== 5) fail('object registry drift');
-  for (const row of objects.objects) if (row.canonical_write !== false || row.graph_effect !== 'none') fail(`${row.object_id}: object authority leak`);
+  for (const row of objects.objects) {
+    if (row.canonical_write !== false || row.graph_effect !== 'none') fail(`${row.object_id}: object authority leak`);
+    for (const error of effectFailures(row.effect_contract, row.effect_contract, row.object_id)) fail(error);
+    if (row.effect_contract.evidence !== 'none' || row.effect_contract.graph !== 'none' || row.effect_contract.visibility !== 'none' || row.effect_contract.ranking !== 'none') fail(`${row.object_id}: forbidden operational effect`);
+  }
+  if (JSON.stringify(objects.effect_dimensions) !== JSON.stringify(effectDimensions)) fail('object effect dimensions drift');
   if (aperture.routes.length !== 9 || aperture.publication.deployed !== false || aperture.publication.indexable !== false) fail('aperture publication drift');
 
   const schemaFixturePairs = [
@@ -125,6 +151,9 @@ export function validatePoofCliffordEcology({ root = moduleRoot, overrides = {} 
     const fixture = overrides.fixtures?.[fixturePath] ?? readJson(root, fixturePath);
     for (const error of validateObjectAgainstSchema(fixture, schema)) fail(`${fixturePath}: ${error}`);
     if (fixture.graph_effect !== 'none') fail(`${fixturePath}: graph leak`);
+    const registryObject = objects.objects.find((row) => row.schema_version === fixture.schema_version);
+    if (!registryObject) fail(`${fixturePath}: schema absent from object registry`);
+    else for (const error of effectFailures(fixture.effect_contract, registryObject.effect_contract, fixturePath)) fail(error);
   }
 
   const packageJson = readJson(root, 'package.json');
@@ -150,9 +179,14 @@ export function validatePoofCliffordEcology({ root = moduleRoot, overrides = {} 
   const projectionSchema = readJson(root, 'schemas/poof-projection-manifest.schema.json');
   for (const error of validateObjectAgainstSchema(projection, projectionSchema)) fail(`projection-manifest: ${error}`);
   if (projection.source_commit !== contract.source_repository.base_commit || projection.review_state !== 'review_required') fail('projection custody drift');
+  const projectionObject = objects.objects.find((row) => row.object_id === 'POOF-O1');
+  for (const error of effectFailures(projection.effect_contract, projectionObject.effect_contract, 'projection-manifest')) fail(error);
+  if (!projection.selection_contract || projection.selection_contract.candidate_set_hash_mode !== 'sha256_stable_source_object_ids' || projection.selection_contract.candidate_count < projection.selection_contract.included_count || !projection.selection_contract.compression_disclosure) fail('projection selection or compression contract drift');
 
   const mcp = overrides.mcp ?? readJson(root, `${outputRoot}/mcp-server-card.json`);
   if (mcp.implementation_status !== 'contract_only_not_deployed' || mcp.endpoint !== null || mcp.canonical_write !== false || mcp.graph_effect !== 'none') fail('MCP deployment or authority laundering');
+  const noEffect = Object.fromEntries(effectDimensions.map((key) => [key, 'none']));
+  for (const error of effectFailures(mcp.effect_contract, noEffect, 'MCP effect contract')) fail(error);
   const openapi = readJson(root, `${outputRoot}/openapi.json`);
   if (openapi['x-implementation-status'] !== 'contract_only_not_deployed' || openapi['x-canonical-write'] !== false) fail('OpenAPI deployment or authority laundering');
   if (fs.readFileSync(path.join(root, outputRoot, 'robots.txt'), 'utf8') !== 'User-agent: *\nDisallow: /\n') fail('robots publication boundary drift');

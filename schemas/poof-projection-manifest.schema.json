@@ -11,10 +11,12 @@
     "source_release",
     "source_commit",
     "source_objects",
+    "selection_contract",
     "qualification_state",
     "review_state",
     "generated_artifact",
     "interpretation_contract",
+    "effect_contract",
     "graph_effect"
   ],
   "properties": {
@@ -130,6 +132,128 @@
     },
     "graph_effect": {
       "const": "none"
+    },
+    "effect_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence",
+        "graph",
+        "review_queue",
+        "publication",
+        "visibility",
+        "ranking",
+        "custody"
+      ],
+      "properties": {
+        "evidence": {
+          "const": "none"
+        },
+        "graph": {
+          "const": "none"
+        },
+        "review_queue": {
+          "const": "none"
+        },
+        "publication": {
+          "const": "binds_projection_custody"
+        },
+        "visibility": {
+          "const": "none"
+        },
+        "ranking": {
+          "const": "none"
+        },
+        "custody": {
+          "const": "release_attached"
+        }
+      }
+    },
+    "selection_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bounded_universe_ref",
+        "candidate_set_hash",
+        "candidate_set_hash_mode",
+        "candidate_count",
+        "included_count",
+        "inclusion_rule",
+        "exclusion_rule",
+        "ordering_rule",
+        "truncation_rule",
+        "missingness_statement",
+        "counterevidence_ids",
+        "null_result_policy",
+        "override_receipt_ids",
+        "compression_disclosure"
+      ],
+      "properties": {
+        "bounded_universe_ref": {
+          "type": "string",
+          "minLength": 3
+        },
+        "candidate_set_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_set_hash_mode": {
+          "const": "sha256_stable_source_object_ids"
+        },
+        "candidate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "included_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "inclusion_rule": {
+          "type": "string",
+          "minLength": 10
+        },
+        "exclusion_rule": {
+          "type": "string",
+          "minLength": 10
+        },
+        "ordering_rule": {
+          "type": "string",
+          "minLength": 10
+        },
+        "truncation_rule": {
+          "type": "string",
+          "minLength": 10
+        },
+        "missingness_statement": {
+          "type": "string",
+          "minLength": 10
+        },
+        "counterevidence_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "null_result_policy": {
+          "enum": [
+            "publish_explicit_null",
+            "withhold_and_explain",
+            "fixture_only"
+          ]
+        },
+        "override_receipt_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "compression_disclosure": {
+          "type": "string",
+          "minLength": 15
+        }
+      }
     }
   }
 }

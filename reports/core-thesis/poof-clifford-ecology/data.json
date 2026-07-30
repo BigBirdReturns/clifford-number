@@ -229,7 +229,62 @@
       "projection_counts_as_independent_review": false,
       "mcp_contract_counts_as_deployed_service": false,
       "publication_aperture_counts_as_approved_publication": false,
-      "project_complete": false
+      "project_complete": false,
+      "undeclared_operational_effect_allowed": false,
+      "publication_selection_may_be_opaque": false,
+      "constitutional_change_without_receipt": false,
+      "interpretive_model_is_observed_mental_state": false,
+      "steel_mirror_requires_symmetric_result": false
+    },
+    "operational_effect_law": {
+      "statement": "Graph-inert is not power-inert. Every transaction must declare each operational effect it may exercise.",
+      "dimensions": [
+        "evidence",
+        "graph",
+        "review_queue",
+        "publication",
+        "visibility",
+        "ranking",
+        "custody"
+      ],
+      "undeclared_effects_forbidden": true,
+      "default_effect": "none",
+      "effect_contract_required_on_transaction_objects": true,
+      "publication_or_queue_effect_requires_separate_decision": true
+    },
+    "constitutional_amendment_law": {
+      "statement": "A constitutional rule may change only through a receipted, migration-aware repository transaction whose consequences remain inspectable.",
+      "change_log_path": "data/project/poof-clifford-constitutional-change-log.json",
+      "protected_paths": [
+        "data/project/poof-clifford-ecology-contract.json",
+        "data/project/poof-clifford-object-registry.json",
+        "data/project/poof-clifford-projection-contracts.json",
+        "schemas/poof-projection-manifest.schema.json",
+        "schemas/poof-referral-packet.schema.json",
+        "schemas/poof-comprehension-receipt.schema.json",
+        "schemas/poof-publication-audit-receipt.schema.json",
+        "schemas/poof-right-of-reply.schema.json",
+        "tools/validate-poof-clifford-ecology.mjs"
+      ],
+      "required_fields": [
+        "affected_invariants",
+        "reason",
+        "previous_behavior",
+        "proposed_behavior",
+        "migration",
+        "backward_compatibility",
+        "adversarial_fixtures_added",
+        "emergency_override"
+      ],
+      "prior_release_interpretation_preserved": true,
+      "validator_and_fixture_change_same_commit_requires_explicit_receipt": true,
+      "emergency_override_rule": {
+        "permitted": true,
+        "must_be_explicit": true,
+        "must_expire": true,
+        "cannot_create_evidence_or_graph_authority": true,
+        "post_hoc_ratification_forbidden": true
+      }
     }
   },
   "projectionBindings": {
@@ -256,7 +311,8 @@
         "required_transaction": "POOF-O1",
         "selection_requirement": "role-neutral K0 denominator or clearly marked fixture/boundary status",
         "approval_requirement": "ordinary claim, event, receipt, temporal, selection, privacy, and independent-review gates",
-        "graph_effect": "none"
+        "graph_effect": "none",
+        "inference_firewall_ref": "inference_firewalls.R8-epistemic-admissibility-ceiling-conversion"
       },
       {
         "report_type_id": "R9-two-tier-constitution-safeguard-allocation",
@@ -276,7 +332,8 @@
         "required_transaction": "POOF-O1",
         "selection_requirement": "same or materially comparable hazard, independently sourced self-regime and other-regime, and practical-remedy evidence",
         "approval_requirement": "context, scale, legal duty, fiduciary role, security, technical feasibility, and counterevidence review",
-        "graph_effect": "none"
+        "graph_effect": "none",
+        "comparison_firewall_ref": "inference_firewalls.R9-two-tier-constitution-safeguard-allocation"
       }
     ],
     "boundaries": {
@@ -284,7 +341,54 @@
       "adds_conversion_stage": false,
       "creates_graph_effect": false,
       "projection_is_finding": false,
-      "publication_approved": false
+      "publication_approved": false,
+      "interpretive_model_is_observed_internal_state": false,
+      "comparison_forces_equivalence": false
+    },
+    "inference_firewalls": {
+      "R8-epistemic-admissibility-ceiling-conversion": {
+        "claim_classes": [
+          {
+            "class_id": "documented_act",
+            "definition": "An act, statement, decision, gate, consequence, or changed explanation directly supported by a canonical object or receipt."
+          },
+          {
+            "class_id": "supported_inference",
+            "definition": "A bounded inference from documented acts whose alternatives, confidence, and disconfirming evidence are stated."
+          },
+          {
+            "class_id": "interpretive_model",
+            "definition": "A causal model used to organize evidence that is not represented as an observed internal state or diagnosis."
+          }
+        ],
+        "strongest_alternative_required": true,
+        "disconfirmation_evidence_required": true,
+        "motive_requires_independent_support": true,
+        "psychological_or_clinical_diagnosis_forbidden": true,
+        "model_may_not_be_presented_as_observed_internal_state": true
+      },
+      "R9-two-tier-constitution-safeguard-allocation": {
+        "permitted_outcomes": [
+          "materially_comparable_and_similarly_safeguarded",
+          "materially_comparable_but_asymmetrically_safeguarded",
+          "partially_comparable",
+          "not_materially_comparable",
+          "insufficient_evidence_to_compare"
+        ],
+        "forced_symmetry_forbidden": true,
+        "formal_and_practical_remedy_must_be_separate": true,
+        "context_dimensions": [
+          "scale",
+          "coerciveness",
+          "affected_population",
+          "law",
+          "security",
+          "technical_feasibility",
+          "reversibility",
+          "counterpower"
+        ],
+        "missing_regime_evidence_result": "insufficient_evidence_to_compare"
+      }
     }
   },
   "integration": {
@@ -530,7 +634,16 @@
         "path": "schemas/poof-projection-manifest.schema.json",
         "authority": "links a publication projection to exact source release, objects, qualifications, review state, and artifact hash",
         "canonical_write": false,
-        "graph_effect": "none"
+        "graph_effect": "none",
+        "effect_contract": {
+          "evidence": "none",
+          "graph": "none",
+          "review_queue": "none",
+          "publication": "binds_projection_custody",
+          "visibility": "none",
+          "ranking": "none",
+          "custody": "release_attached"
+        }
       },
       {
         "object_id": "POOF-O2",
@@ -539,7 +652,16 @@
         "authority": "opens a bounded research or correction question under ordinary intake review",
         "canonical_write": false,
         "promotes_to": "candidate_only",
-        "graph_effect": "none"
+        "graph_effect": "none",
+        "effect_contract": {
+          "evidence": "none",
+          "graph": "none",
+          "review_queue": "opens_intake_review",
+          "publication": "separate_decision_required",
+          "visibility": "none",
+          "ranking": "none",
+          "custody": "intake_append_only"
+        }
       },
       {
         "object_id": "POOF-O3",
@@ -548,7 +670,16 @@
         "authority": "records evidence operations demonstrated on a changed case",
         "canonical_write": false,
         "case_truth_effect": false,
-        "graph_effect": "none"
+        "graph_effect": "none",
+        "effect_contract": {
+          "evidence": "none",
+          "graph": "none",
+          "review_queue": "advisory_candidate",
+          "publication": "advisory_only",
+          "visibility": "none",
+          "ranking": "none",
+          "custody": "reader_local_or_voluntary_export"
+        }
       },
       {
         "object_id": "POOF-O4",
@@ -557,7 +688,16 @@
         "authority": "records observed release quality and machine or human interface defects",
         "canonical_write": false,
         "substantive_evidence_effect": false,
-        "graph_effect": "none"
+        "graph_effect": "none",
+        "effect_contract": {
+          "evidence": "none",
+          "graph": "none",
+          "review_queue": "opens_publication_repair_review",
+          "publication": "separate_decision_required",
+          "visibility": "none",
+          "ranking": "none",
+          "custody": "audit_append_only"
+        }
       },
       {
         "object_id": "POOF-O5",
@@ -565,7 +705,16 @@
         "path": "schemas/poof-right-of-reply.schema.json",
         "authority": "preserves notice, response, dispute, correction, and unresolved objection without flattening legal or evidentiary status",
         "canonical_write": false,
-        "graph_effect": "none"
+        "graph_effect": "none",
+        "effect_contract": {
+          "evidence": "none",
+          "graph": "none",
+          "review_queue": "opens_correction_review",
+          "publication": "separate_decision_required",
+          "visibility": "none",
+          "ranking": "none",
+          "custody": "versioned_append_only"
+        }
       }
     ],
     "lifecycle": [
@@ -579,8 +728,19 @@
     "boundaries": {
       "synthetic_fixture_is_real_transaction": false,
       "object_count_proves_coverage": false,
-      "graph_effect": "none"
-    }
+      "graph_effect": "none",
+      "undeclared_effect_is_permitted": false,
+      "graph_inert_means_power_inert": false
+    },
+    "effect_dimensions": [
+      "evidence",
+      "graph",
+      "review_queue",
+      "publication",
+      "visibility",
+      "ranking",
+      "custody"
+    ]
   },
   "aperture": {
     "schema_version": "poof-clifford-aperture@1",
@@ -675,6 +835,64 @@
     "boundaries": {
       "route_presence_proves_deployment": false,
       "machine_contract_proves_server": false,
+      "graph_effect": "none"
+    }
+  },
+  "constitutionalChanges": {
+    "schema_version": "poof-clifford-constitutional-change-log@1",
+    "ecology_id": "poof-clifford-constitutional-publication-ecology",
+    "as_of": "2026-07-29",
+    "protected_paths": [
+      "data/project/poof-clifford-ecology-contract.json",
+      "data/project/poof-clifford-object-registry.json",
+      "data/project/poof-clifford-projection-contracts.json",
+      "schemas/poof-projection-manifest.schema.json",
+      "schemas/poof-referral-packet.schema.json",
+      "schemas/poof-comprehension-receipt.schema.json",
+      "schemas/poof-publication-audit-receipt.schema.json",
+      "schemas/poof-right-of-reply.schema.json",
+      "tools/validate-poof-clifford-ecology.mjs"
+    ],
+    "changes": [
+      {
+        "change_id": "POOF-CONST-2026-07-29-001",
+        "effective_at": "2026-07-29T18:30:00-07:00",
+        "affected_invariants": [
+          "graph-inert objects may still exercise operational power",
+          "publication compression must be disclosed",
+          "constitutional rules require a durable amendment receipt",
+          "R8 separates observation from inference and model",
+          "R9 permits asymmetric, null, and noncomparable outcomes"
+        ],
+        "reason": "Adversarial review identified non-graph power, opaque selection, amendment, inference, and forced-symmetry bypasses.",
+        "previous_behavior": [
+          "transaction objects declared graph and canonical effects but not all operational effects",
+          "projection manifests identified included sources without binding the compression procedure",
+          "constitutional files could change without a dedicated amendment receipt"
+        ],
+        "proposed_behavior": [
+          "all transaction schemas carry exact seven-dimension effect contracts",
+          "projection manifests bind candidate universe, selection, ordering, truncation, missingness, counterevidence, null-result, and override rules",
+          "protected constitutional changes carry a durable change record and adversarial fixtures"
+        ],
+        "migration": "Existing staged fixtures and the generated aperture are regenerated under additive version-one fields before any deployment.",
+        "backward_compatibility": "No canonical evidence object, graph edge, claim, receipt, identity, event, or prior release is rewritten; old releases retain their original interpretation contracts.",
+        "adversarial_fixtures_added": [
+          "undeclared operational effect mutation",
+          "missing projection selection contract mutation",
+          "unreceipted constitutional change mutation",
+          "R8 inference-firewall mutation",
+          "R9 forced-symmetry mutation"
+        ],
+        "emergency_override": false,
+        "expires_at": null,
+        "authority": "repository_change_receipt_below_canonical_evidence",
+        "graph_effect": "none"
+      }
+    ],
+    "boundaries": {
+      "change_log_is_canonical_evidence": false,
+      "emergency_override_active": false,
       "graph_effect": "none"
     }
   },
@@ -839,7 +1057,16 @@
       },
       "x-implementation-status": "contract_only_not_deployed",
       "x-canonical-write": false,
-      "x-graph-effect": "none"
+      "x-graph-effect": "none",
+      "x-effect-contract": {
+        "evidence": "none",
+        "graph": "none",
+        "review_queue": "none",
+        "publication": "none",
+        "visibility": "none",
+        "ranking": "none",
+        "custody": "none"
+      }
     },
     "mcp": {
       "schema_version": "mcp-server-card@1",
@@ -883,6 +1110,15 @@
       ],
       "canonical_write": false,
       "graph_effect": "none",
+      "effect_contract": {
+        "evidence": "none",
+        "graph": "none",
+        "review_queue": "none",
+        "publication": "none",
+        "visibility": "none",
+        "ranking": "none",
+        "custody": "none"
+      },
       "interpretation_contract": "Tool output may summarize only from source-addressed projections and must retain qualification, review state, and release custody."
     },
     "skills": {
@@ -916,7 +1152,16 @@
           "output": "poof-referral-packet@1"
         }
       ],
-      "writes_to_canonical": false
+      "writes_to_canonical": false,
+      "effect_contract": {
+        "evidence": "none",
+        "graph": "none",
+        "review_queue": "none",
+        "publication": "none",
+        "visibility": "none",
+        "ranking": "none",
+        "custody": "none"
+      }
     }
   },
   "counts": {
@@ -940,6 +1185,11 @@
     "projection_counts_as_independent_review": false,
     "mcp_contract_counts_as_deployed_service": false,
     "publication_aperture_counts_as_approved_publication": false,
-    "project_complete": false
+    "project_complete": false,
+    "undeclared_operational_effect_allowed": false,
+    "publication_selection_may_be_opaque": false,
+    "constitutional_change_without_receipt": false,
+    "interpretive_model_is_observed_mental_state": false,
+    "steel_mirror_requires_symmetric_result": false
   }
 }

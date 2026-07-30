@@ -78,6 +78,39 @@ result = validatePoofCliffordEcology({ root, overrides: { fixtures: { [fixturePa
 assert.equal(result.ok, false);
 assert.ok(result.failures.some((row) => row.includes(fixturePath)));
 
+const objects = read('data/project/poof-clifford-object-registry.json');
+mutation = structuredClone(objects);
+mutation.objects.find((row) => row.object_id === 'POOF-O2').effect_contract.ranking = 'priority_boost';
+result = validatePoofCliffordEcology({ root, overrides: { objects: mutation } });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some((row) => row.includes('POOF-O2')));
+
+const projection = read('reports/core-thesis/poof-clifford-ecology/projection-manifest.json');
+mutation = structuredClone(projection);
+delete mutation.selection_contract;
+result = validatePoofCliffordEcology({ root, overrides: { projection: mutation } });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some((row) => row.includes('selection')));
+
+const changeLog = read('data/project/poof-clifford-constitutional-change-log.json');
+mutation = structuredClone(changeLog);
+mutation.changes[0].emergency_override = true;
+result = validatePoofCliffordEcology({ root, overrides: { changeLog: mutation } });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some((row) => row.includes('override')));
+
+const bindings = read('data/project/poof-clifford-projection-contracts.json');
+mutation = structuredClone(bindings);
+mutation.inference_firewalls['R8-epistemic-admissibility-ceiling-conversion'].claim_classes.pop();
+result = validatePoofCliffordEcology({ root, overrides: { bindings: mutation } });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some((row) => row.includes('R8 inference')));
+mutation = structuredClone(bindings);
+mutation.inference_firewalls['R9-two-tier-constitution-safeguard-allocation'].forced_symmetry_forbidden = false;
+result = validatePoofCliffordEcology({ root, overrides: { bindings: mutation } });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some((row) => row.includes('R9 comparison')));
+
 for (const route of ['index.html','report/index.html','reader-file/index.html','examination/index.html','estate/index.html','newsroom/index.html','methods/index.html','machine/index.html','audit/index.html']) {
   assert.ok(fs.existsSync(path.join(root, 'reports/core-thesis/poof-clifford-ecology', route)), route);
 }

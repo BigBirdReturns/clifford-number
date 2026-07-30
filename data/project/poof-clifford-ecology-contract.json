@@ -227,6 +227,61 @@
     "projection_counts_as_independent_review": false,
     "mcp_contract_counts_as_deployed_service": false,
     "publication_aperture_counts_as_approved_publication": false,
-    "project_complete": false
+    "project_complete": false,
+    "undeclared_operational_effect_allowed": false,
+    "publication_selection_may_be_opaque": false,
+    "constitutional_change_without_receipt": false,
+    "interpretive_model_is_observed_mental_state": false,
+    "steel_mirror_requires_symmetric_result": false
+  },
+  "operational_effect_law": {
+    "statement": "Graph-inert is not power-inert. Every transaction must declare each operational effect it may exercise.",
+    "dimensions": [
+      "evidence",
+      "graph",
+      "review_queue",
+      "publication",
+      "visibility",
+      "ranking",
+      "custody"
+    ],
+    "undeclared_effects_forbidden": true,
+    "default_effect": "none",
+    "effect_contract_required_on_transaction_objects": true,
+    "publication_or_queue_effect_requires_separate_decision": true
+  },
+  "constitutional_amendment_law": {
+    "statement": "A constitutional rule may change only through a receipted, migration-aware repository transaction whose consequences remain inspectable.",
+    "change_log_path": "data/project/poof-clifford-constitutional-change-log.json",
+    "protected_paths": [
+      "data/project/poof-clifford-ecology-contract.json",
+      "data/project/poof-clifford-object-registry.json",
+      "data/project/poof-clifford-projection-contracts.json",
+      "schemas/poof-projection-manifest.schema.json",
+      "schemas/poof-referral-packet.schema.json",
+      "schemas/poof-comprehension-receipt.schema.json",
+      "schemas/poof-publication-audit-receipt.schema.json",
+      "schemas/poof-right-of-reply.schema.json",
+      "tools/validate-poof-clifford-ecology.mjs"
+    ],
+    "required_fields": [
+      "affected_invariants",
+      "reason",
+      "previous_behavior",
+      "proposed_behavior",
+      "migration",
+      "backward_compatibility",
+      "adversarial_fixtures_added",
+      "emergency_override"
+    ],
+    "prior_release_interpretation_preserved": true,
+    "validator_and_fixture_change_same_commit_requires_explicit_receipt": true,
+    "emergency_override_rule": {
+      "permitted": true,
+      "must_be_explicit": true,
+      "must_expire": true,
+      "cannot_create_evidence_or_graph_authority": true,
+      "post_hoc_ratification_forbidden": true
+    }
   }
 }

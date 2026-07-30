@@ -17,6 +17,7 @@
     "privacy_boundary",
     "status",
     "promotes_to",
+    "effect_contract",
     "graph_effect"
   ],
   "properties": {
@@ -81,6 +82,42 @@
     },
     "graph_effect": {
       "const": "none"
+    },
+    "effect_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence",
+        "graph",
+        "review_queue",
+        "publication",
+        "visibility",
+        "ranking",
+        "custody"
+      ],
+      "properties": {
+        "evidence": {
+          "const": "none"
+        },
+        "graph": {
+          "const": "none"
+        },
+        "review_queue": {
+          "const": "opens_intake_review"
+        },
+        "publication": {
+          "const": "separate_decision_required"
+        },
+        "visibility": {
+          "const": "none"
+        },
+        "ranking": {
+          "const": "none"
+        },
+        "custody": {
+          "const": "intake_append_only"
+        }
+      }
     }
   }
 }

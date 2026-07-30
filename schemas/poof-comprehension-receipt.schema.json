@@ -14,6 +14,7 @@
     "result",
     "interpretation_contract",
     "canonical_write",
+    "effect_contract",
     "graph_effect"
   ],
   "properties": {
@@ -91,6 +92,42 @@
     },
     "graph_effect": {
       "const": "none"
+    },
+    "effect_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence",
+        "graph",
+        "review_queue",
+        "publication",
+        "visibility",
+        "ranking",
+        "custody"
+      ],
+      "properties": {
+        "evidence": {
+          "const": "none"
+        },
+        "graph": {
+          "const": "none"
+        },
+        "review_queue": {
+          "const": "advisory_candidate"
+        },
+        "publication": {
+          "const": "advisory_only"
+        },
+        "visibility": {
+          "const": "none"
+        },
+        "ranking": {
+          "const": "none"
+        },
+        "custody": {
+          "const": "reader_local_or_voluntary_export"
+        }
+      }
     }
   }
 }
