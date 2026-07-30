@@ -67,6 +67,7 @@ const caseIndex = readJson('build/cases/index.json');
 const cases = new Map(caseIndex.cases.map(entry => [entry.case_id, readJson(entry.href)]));
 const catalog = readJson('build/public-catalog.json');
 const organizations = readJson('data/canonical/organizations.json').organizations;
+const crossCorpusMap = readJson('data/research/clifford-cross-corpus-public-interest-map.json');
 const activeIdentity = readJson('build/axm-identity.json');
 const hopGraphText = fs.readFileSync('build/hop-graph.json', 'utf8');
 
@@ -86,6 +87,8 @@ assert.equal(caseIndex.subject_object_projection.counts.generic_unresolved_refer
 assert.equal(catalog.counts.typed_subject_object_references, policy.expected.subject_object_claim_references_integrated);
 assert.equal(catalog.counts.distinct_subject_objects, policy.expected.subject_object_rows);
 assert.equal(catalog.counts.generic_unresolved_subject_references, 0);
+assert.equal(crossCorpusMap.inventory.canonical.organizations, policy.expected.canonical_organization_rows_after);
+assert.equal(crossCorpusMap.generated_at, policy.as_of);
 
 function claim(caseId, claimId) {
   const row = cases.get(caseId)?.claims.find(item => item.claim_id === claimId);

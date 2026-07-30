@@ -127,6 +127,19 @@ assert.equal(canonicalAdditions.length, policy.expected.new_canonical_records);
 assert.equal(organizationsDoc.organizations.length, policy.expected.canonical_organization_rows_after);
 writeJson('data/canonical/organizations.json', organizationsDoc);
 
+const crossCorpusMapPath = 'data/research/clifford-cross-corpus-public-interest-map.json';
+const crossCorpusMap = readJson(crossCorpusMapPath);
+assert.equal(crossCorpusMap.schema_version, 'clifford-cross-corpus-public-interest-map@1');
+assert.equal(crossCorpusMap.inventory?.canonical?.actors, actorsDoc.actors.length, 'cross-corpus actor inventory drift');
+assert.ok(
+  [policy.baseline.canonical_organization_rows, policy.expected.canonical_organization_rows_after]
+    .includes(crossCorpusMap.inventory?.canonical?.organizations),
+  'cross-corpus organization inventory outside the bounded Wave 16 transition'
+);
+crossCorpusMap.generated_at = policy.as_of;
+crossCorpusMap.inventory.canonical.organizations = organizationsDoc.organizations.length;
+writeJson(crossCorpusMapPath, crossCorpusMap);
+
 function effectiveTarget(decision) {
   const override = overrideByDecisionId.get(decision.adjudication_id);
   if (!override) return {
