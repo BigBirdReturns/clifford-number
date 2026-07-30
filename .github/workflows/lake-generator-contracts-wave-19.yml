@@ -62,8 +62,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          rm -f .github/tmp/lake-generator-contracts-wave-19-trigger.json
+          git add -A .github/tmp/lake-generator-contracts-wave-19-trigger.json
           npm run release:check
-          git reset --hard HEAD
+          git restore --worktree .
           git clean -fd
       - name: Build or validate deterministic Wave 19 source controls
         if: steps.mode.outputs.materialize == 'true'
