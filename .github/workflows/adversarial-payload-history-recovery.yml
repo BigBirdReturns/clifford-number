@@ -37,7 +37,6 @@ jobs:
           import base64
           import hashlib
           import json
-          import lzma
           import re
           import subprocess
           import tarfile
@@ -54,13 +53,41 @@ jobs:
               'payload_bytes': int(manifest['payload_bytes']),
               'payload_sha256': manifest['payload_sha256'],
           }
+          prefixes = {
+              'original': re.compile(r'^\.github/tmp/adversarial-release-payload-([0-9]+)\.b64$'),
+              'final_source': re.compile(r'^\.github/tmp/final-source-part-([0-9]+)\.b64$'),
+          }
           commits = subprocess.check_output(
               ['git', 'rev-list', '--all', '--', '.github/tmp'], text=True
           ).splitlines()
           seen = set()
           candidates = []
           recovered = None
-          part_re = re.compile(r'^\.github/tmp/adversarial-release-payload-[0-9]+\.b64$')
+
+          def compact_blob(commit, path):
+              raw = subprocess.check_output(['git', 'show', f'{commit}:{path}'])
+              return b''.join(raw.split())
+
+          def decode_modes(parts):
+              modes = {}
+              compact = b''.join(parts)
+              try:
+                  modes['concatenated_text'] = base64.b64decode(compact, validate=True)
+              except Exception as exc:
+                  modes['concatenated_text_error'] = f'{type(exc).__name__}: {exc}'
+              try:
+                  modes['individually_decoded_parts'] = b''.join(
+                      base64.b64decode(part, validate=True) for part in parts
+                  )
+              except Exception as exc:
+                  modes['individually_decoded_parts_error'] = f'{type(exc).__name__}: {exc}'
+              try:
+                  unpadded = b''.join(part.rstrip(b'=') for part in parts)
+                  unpadded += b'=' * ((4 - len(unpadded) % 4) % 4)
+                  modes['rejoined_unpadded_text'] = base64.b64decode(unpadded, validate=True)
+              except Exception as exc:
+                  modes['rejoined_unpadded_text_error'] = f'{type(exc).__name__}: {exc}'
+              return modes
 
           for commit in commits:
               if commit in seen:
@@ -70,85 +97,87 @@ jobs:
                   ['git', 'ls-tree', '-r', '--name-only', commit, '--', '.github/tmp'],
                   text=True,
               ).splitlines()
-              paths = sorted(path for path in listing if part_re.match(path))
-              if len(paths) != expected['chunk_count']:
-                  continue
-              compact_parts = []
-              for path in paths:
-                  raw = subprocess.check_output(['git', 'show', f'{commit}:{path}'])
-                  compact_parts.append(b''.join(raw.split()))
-              compact = b''.join(compact_parts)
-              digest = hashlib.sha256(compact).hexdigest()
-              candidate = {
-                  'commit': commit,
-                  'paths': paths,
-                  'part_lengths': [len(part) for part in compact_parts],
-                  'base64_bytes': len(compact),
-                  'base64_sha256': digest,
-              }
-              if len(candidates) < 100:
-                  candidates.append(candidate)
-              if len(compact) != expected['base64_bytes'] or digest != expected['base64_sha256']:
-                  continue
-              compressed = base64.b64decode(compact, validate=True)
-              payload = lzma.decompress(compressed)
-              payload_digest = hashlib.sha256(payload).hexdigest()
-              if len(payload) != expected['payload_bytes']:
-                  raise SystemExit(f'payload byte mismatch at {commit}: {len(payload)}')
-              if payload_digest != expected['payload_sha256']:
-                  raise SystemExit(f'payload digest mismatch at {commit}: {payload_digest}')
-              (out / 'final-source.recovered.b64').write_bytes(compact)
-              (out / 'final-source.recovered.tar').write_bytes(payload)
-              with tarfile.open(fileobj=BytesIO(payload), mode='r:*') as archive:
-                  names = archive.getnames()
-              (out / 'final-source.tree.txt').write_text('\n'.join(names) + '\n')
-              recovered = {
-                  **candidate,
-                  'compressed_bytes': len(compressed),
-                  'compressed_sha256': hashlib.sha256(compressed).hexdigest(),
-                  'payload_bytes': len(payload),
-                  'payload_sha256': payload_digest,
-                  'tar_entries': len(names),
-              }
-              break
-
-          delta = {'present': False, 'valid': False}
-          delta_paths = sorted(Path('.github/tmp').glob('final-delta-part-*.b64'))
-          if delta_paths:
-              delta['present'] = True
-              compact = b''.join(b''.join(path.read_bytes().split()) for path in delta_paths)
-              delta.update({
-                  'paths': [str(path) for path in delta_paths],
-                  'part_lengths': [len(b''.join(path.read_bytes().split())) for path in delta_paths],
-                  'base64_bytes': len(compact),
-                  'base64_sha256': hashlib.sha256(compact).hexdigest(),
-              })
-              try:
-                  compressed = base64.b64decode(compact, validate=True)
-                  payload = lzma.decompress(compressed)
-                  (out / 'final-delta.recovered.payload').write_bytes(payload)
-                  delta.update({
-                      'valid': True,
-                      'compressed_bytes': len(compressed),
-                      'compressed_sha256': hashlib.sha256(compressed).hexdigest(),
-                      'payload_bytes': len(payload),
-                      'payload_sha256': hashlib.sha256(payload).hexdigest(),
-                  })
-              except Exception as exc:
-                  delta['error'] = f'{type(exc).__name__}: {exc}'
+              for family, pattern in prefixes.items():
+                  indexed = []
+                  for path in listing:
+                      match = pattern.match(path)
+                      if match:
+                          indexed.append((int(match.group(1)), path))
+                  if not indexed:
+                      continue
+                  indexed.sort()
+                  paths = [path for _, path in indexed]
+                  parts = [compact_blob(commit, path) for path in paths]
+                  compact = b''.join(parts)
+                  candidate = {
+                      'commit': commit,
+                      'family': family,
+                      'paths': paths,
+                      'part_count': len(parts),
+                      'part_lengths': [len(part) for part in parts],
+                      'base64_bytes': len(compact),
+                      'base64_sha256': hashlib.sha256(compact).hexdigest(),
+                      'modes': {},
+                  }
+                  modes = decode_modes(parts)
+                  for mode, value in modes.items():
+                      if mode.endswith('_error'):
+                          candidate['modes'][mode] = value
+                          continue
+                      payload = value
+                      payload_sha = hashlib.sha256(payload).hexdigest()
+                      mode_record = {
+                          'payload_bytes': len(payload),
+                          'payload_sha256': payload_sha,
+                          'gzip_tar': False,
+                      }
+                      try:
+                          with tarfile.open(fileobj=BytesIO(payload), mode='r:gz') as archive:
+                              names = archive.getnames()
+                          mode_record['gzip_tar'] = True
+                          mode_record['tar_entries'] = len(names)
+                      except Exception as exc:
+                          mode_record['tar_error'] = f'{type(exc).__name__}: {exc}'
+                      candidate['modes'][mode] = mode_record
+                      if len(payload) == expected['payload_bytes'] and payload_sha == expected['payload_sha256']:
+                          with tarfile.open(fileobj=BytesIO(payload), mode='r:gz') as archive:
+                              names = archive.getnames()
+                          (out / 'final-source.recovered.tar.gz').write_bytes(payload)
+                          (out / 'final-source.tree.txt').write_text('\n'.join(names) + '\n')
+                          (out / 'final-source.recovered.b64').write_bytes(compact)
+                          recovered = {
+                              'commit': commit,
+                              'family': family,
+                              'mode': mode,
+                              'paths': paths,
+                              'part_count': len(parts),
+                              'part_lengths': [len(part) for part in parts],
+                              'base64_bytes': len(compact),
+                              'base64_sha256': hashlib.sha256(compact).hexdigest(),
+                              'payload_bytes': len(payload),
+                              'payload_sha256': payload_sha,
+                              'tar_entries': len(names),
+                          }
+                          break
+                  if len(candidates) < 150:
+                      candidates.append(candidate)
+                  if recovered is not None:
+                      break
+              if recovered is not None:
+                  break
 
           diagnostic = {
-              'schema_version': 'adversarial-payload-history-recovery@1',
+              'schema_version': 'adversarial-payload-history-recovery@2',
+              'encoding_law': 'base64 transport decodes directly to the checksum-bound gzip tar payload',
               'expected': expected,
               'commits_scanned': len(seen),
-              'matching_chunk_count_candidates_sample': candidates,
+              'candidate_sample': candidates,
               'recovered': recovered,
-              'delta': delta,
           }
           (out / 'diagnostic.json').write_text(json.dumps(diagnostic, indent=2) + '\n')
           print(json.dumps(diagnostic, indent=2))
           if recovered is None:
-              raise SystemExit('no historical tree state matched the checksum-bound source payload')
+              raise SystemExit('no historical transport mode reproduced the checksum-bound gzip tar payload')
           PY
       - name: Upload recovery custody
         if: always()
@@ -160,4 +189,4 @@ jobs:
           retention-days: 7
 
 # Recovery replay requested after the POOF ecology merge.
-# Historical selector intentionally matches the materializer's original chunk prefix.
+# The final payload hash is authoritative; transport spelling is not.
