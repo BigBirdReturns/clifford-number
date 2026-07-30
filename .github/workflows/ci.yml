@@ -5,10 +5,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   release-check:
+    if: github.head_ref != 'agent/status-sovereignty-wave01-loader'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,3 +36,67 @@ jobs:
           PY
           fi
           exit "$status"
+
+  materialize-ssc-wave01:
+    if: github.event_name == 'pull_request' && github.head_ref == 'agent/status-sovereignty-wave01-loader'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/status-sovereignty-wave01-loader
+          fetch-depth: 0
+      - name: Verify carrier and publish non-workflow transition
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='0d701692fa83a405bd0ba86e7b45c525022589f7'
+          target='agent/status-sovereignty-wave-01'
+          expected_archive='f02775d52ac6340482097bd4c6faa23207d3e14a812b72c5d3094ea947f8bb08'
+
+          mapfile -t chunks < <(find .github/tmp/ssc-wave01 -maxdepth 1 -type f -name 'part-*.b64' | sort)
+          test "${#chunks[@]}" -eq 12
+          cat "${chunks[@]}" | tr -d '\n' | base64 --decode > /tmp/ssc-wave01-carrier.tar.xz
+          printf '%s  %s\n' "$expected_archive" /tmp/ssc-wave01-carrier.tar.xz | sha256sum -c -
+
+          rm -rf /tmp/ssc-wave01-payload /tmp/ssc-wave01-work
+          mkdir -p /tmp/ssc-wave01-payload
+          tar -xJf /tmp/ssc-wave01-carrier.tar.xz -C /tmp/ssc-wave01-payload
+          test "$(cat /tmp/ssc-wave01-payload/BASE.txt)" = "$base"
+          test "$(cat /tmp/ssc-wave01-payload/TRANSITION.txt)" = '3cfbb67e21458ffff34a0e18dd30545c7ec69d81'
+          test "$(cat /tmp/ssc-wave01-payload/FINAL.txt)" = '907c8b88618ca8a389d76e6848a40c18fd6b3ef2'
+          test "$(wc -l < /tmp/ssc-wave01-payload/TRANSITION_PATHS.txt)" -eq 43
+          test "$(wc -l < /tmp/ssc-wave01-payload/BINDING_PATHS.txt)" -eq 5
+
+          git fetch origin main "$target"
+          test "$(git rev-parse origin/main)" = "$base"
+          old_head="$(git rev-parse "origin/$target")"
+          test "$old_head" = "$base"
+          git worktree add --detach /tmp/ssc-wave01-work "$base"
+          cd /tmp/ssc-wave01-work
+
+          while IFS= read -r rel; do
+            case "$rel" in
+              .github/workflows/project-stable-ground-sg05.yml|\
+              .github/workflows/project-stable-ground-sg06.yml|\
+              .github/workflows/status-sovereignty-compact.yml|\
+              .github/workflows/status-sovereignty-wave-01.yml)
+                continue
+                ;;
+            esac
+            mkdir -p "$(dirname "$rel")"
+            cp "/tmp/ssc-wave01-payload/transition/$rel" "$rel"
+          done < /tmp/ssc-wave01-payload/TRANSITION_PATHS.txt
+
+          grep -vE '^\.github/workflows/(project-stable-ground-sg05|project-stable-ground-sg06|status-sovereignty-compact|status-sovereignty-wave-01)\.yml$' \
+            /tmp/ssc-wave01-payload/TRANSITION_PATHS.txt | sort > /tmp/expected-paths
+          git diff --name-only | sort > /tmp/observed-paths
+          diff -u /tmp/expected-paths /tmp/observed-paths
+          test "$(wc -l < /tmp/observed-paths)" -eq 39
+          git diff --check
+
+          git add -A
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Seed SSC-H01 Wave 01 non-workflow transition'
+          git push --force-with-lease="refs/heads/$target:$old_head" origin "HEAD:refs/heads/$target"
