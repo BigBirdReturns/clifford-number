@@ -8,16 +8,24 @@ on:
       - '.github/tmp/tmp-wave16-run-monitor-request.json'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out monitor branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          path: monitor
+      - name: Check out exact Wave 16 materialized head
+        uses: actions/checkout@v4
         with:
           ref: 1d7e2ca218db1a9db4be5450e39fba8c494a7e0a
           fetch-depth: 0
+          path: target
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -25,6 +33,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          cd target
           test "$(git rev-parse HEAD)" = '1d7e2ca218db1a9db4be5450e39fba8c494a7e0a'
           test ! -e .github/tmp/lake-subject-integration-wave-16-trigger.json
           npm run release:check
@@ -39,3 +48,31 @@ jobs:
           git reset --hard HEAD
           git clean -fd
           test -z "$(git status --porcelain)"
+      - name: Publish clean-head validation receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd monitor
+          mkdir -p data/project
+          cat > data/project/tmp-wave16-clean-head-validation-result.json <<JSON
+          {
+            "schema_version": "tmp-wave16-clean-head-validation-result@1",
+            "target_commit": "1d7e2ca218db1a9db4be5450e39fba8c494a7e0a",
+            "workflow_run_id": "${GITHUB_RUN_ID}",
+            "workflow_run_number": "${GITHUB_RUN_NUMBER}",
+            "release_gate_passed": true,
+            "lake_shards_validated": true,
+            "lake_basins_validated": true,
+            "wave_13_validated": true,
+            "wave_16_validated": true,
+            "dedicated_regressions_passed": true,
+            "clean_worktree_restored": true
+          }
+          JSON
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/project/tmp-wave16-clean-head-validation-result.json
+          git commit -m 'Record Wave 16 clean-head validation'
+          git fetch origin agent/tmp-wave16-run-monitor
+          test "$(git rev-parse origin/agent/tmp-wave16-run-monitor)" = "${GITHUB_SHA}"
+          git push origin HEAD:agent/tmp-wave16-run-monitor
