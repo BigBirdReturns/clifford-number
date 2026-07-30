@@ -60,7 +60,7 @@ jobs:
           seen = set()
           candidates = []
           recovered = None
-          part_re = re.compile(r'^\.github/tmp/final-source-part-[0-9]+\.b64$')
+          part_re = re.compile(r'^\.github/tmp/adversarial-release-payload-[0-9]+\.b64$')
 
           for commit in commits:
               if commit in seen:
@@ -160,3 +160,4 @@ jobs:
           retention-days: 7
 
 # Recovery replay requested after the POOF ecology merge.
+# Historical selector intentionally matches the materializer's original chunk prefix.
