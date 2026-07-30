@@ -23,20 +23,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Extract and apply the reviewed hardening payload
-        shell: bash
+      - name: Apply the compile-checked constitutional hardening codemod
         run: |
-          awk '/cat > \/tmp\/poof-hardening.b64/{capture=1; next} capture && /^[[:space:]]*PAYLOAD[[:space:]]*$/{exit} capture {print}' .github/workflows/poof-constitutional-hardening-once.yml \
-            | sed 's/^          //' > /tmp/poof-hardening.b64
-          test -s /tmp/poof-hardening.b64
-          set +e
-          base64 -d /tmp/poof-hardening.b64 | gzip -dc > /tmp/poof-hardening.py
-          gzip_status=${PIPESTATUS[1]}
-          set -e
-          echo "gzip_status=${gzip_status} decompressed_bytes=$(wc -c < /tmp/poof-hardening.py)"
-          test -s /tmp/poof-hardening.py
-          python3 -m py_compile /tmp/poof-hardening.py
-          python3 /tmp/poof-hardening.py
+          python3 -m py_compile .github/scripts/apply-poof-constitutional-hardening.py
+          python3 .github/scripts/apply-poof-constitutional-hardening.py
       - name: Build and validate hardened ecology
         run: |
           npm run ci:poof-ecology
@@ -47,6 +37,7 @@ jobs:
           rm -f .poof-constitutional-hardening-launch
           rm -f .github/workflows/poof-constitutional-hardening-once.yml
           rm -f .github/workflows/poof-constitutional-hardening-launch.yml
+          rm -f .github/scripts/apply-poof-constitutional-hardening.py
           cat > docs/poof-clifford-hardening-finalize.md <<'EOF'
           # POOF constitutional hardening finalization marker
 
