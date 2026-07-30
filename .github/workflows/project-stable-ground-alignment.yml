@@ -1,0 +1,61 @@
+name: Project stable-ground alignment
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/project-stable-ground-alignment*.json'
+      - 'docs/milestones/project-stable-ground-alignment.md'
+      - 'tools/build-project-stable-ground-alignment.mjs'
+      - 'tools/validate-project-stable-ground-alignment.mjs'
+      - 'test/project-stable-ground-alignment.test.js'
+      - 'reports/core-thesis/stable-ground/**'
+      - 'data/research/k0-role-neutral-denominator.json'
+      - 'data/project/m05-answerable-power-story-registry.json'
+      - 'data/project/m05-answerable-power-sprint-08-plan.json'
+      - 'data/project/m05-answerable-power-sprint-09-plan.json'
+      - 'data/project/m05-answerable-power-sprint-09-field-gate.json'
+      - '.github/workflows/project-stable-ground-alignment.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/project-stable-ground-alignment*.json'
+      - 'docs/milestones/project-stable-ground-alignment.md'
+      - 'tools/build-project-stable-ground-alignment.mjs'
+      - 'tools/validate-project-stable-ground-alignment.mjs'
+      - 'test/project-stable-ground-alignment.test.js'
+      - 'reports/core-thesis/stable-ground/**'
+      - 'data/research/k0-role-neutral-denominator.json'
+      - 'data/project/m05-answerable-power-story-registry.json'
+      - 'data/project/m05-answerable-power-sprint-08-plan.json'
+      - 'data/project/m05-answerable-power-sprint-09-plan.json'
+      - 'data/project/m05-answerable-power-sprint-09-field-gate.json'
+      - '.github/workflows/project-stable-ground-alignment.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build, validate, and test stable-ground checkpoint
+        run: |
+          node tools/build-project-stable-ground-alignment.mjs
+          node tools/validate-project-stable-ground-alignment.mjs
+          node test/project-stable-ground-alignment.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic stable-ground products
+        run: |
+          git restore --staged --worktree .
+          node tools/build-project-stable-ground-alignment.mjs
+          node tools/validate-project-stable-ground-alignment.mjs
+          node test/project-stable-ground-alignment.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
