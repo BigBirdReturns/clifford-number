@@ -170,3 +170,15 @@ record; public company and CDAO sources replace private-only identity custody.
 These are identity-resolution decisions only. They do not merge source records,
 validate every case claim, establish program performance, create participation or
 relationships, or enter the hop graph.
+
+## Exact canonical subject projection
+
+Wave 14 recognizes case claim subjects that already use an exact canonical actor or
+organization ID, while preserving explicit case-scoped resolutions as the higher
+precedence decision. The remaining subjects are not guessed: they are retained in a
+typed routing registry for identity, place/infrastructure, program/contract,
+case/analytic, named-object, or still-unclassified work.
+
+This is generated identity metadata only. Source claim IDs and text are unchanged,
+and the projection creates no relationship, participation, graph edge, hop, or
+automatic cross-case join.

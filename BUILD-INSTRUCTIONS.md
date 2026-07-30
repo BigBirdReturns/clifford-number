@@ -338,3 +338,16 @@ relationship, a graph edge, a hop, or a cross-case identity bridge. Selection or
 invitation to a program does not prove performance, acceptance, deployment, or a
 particular award. New identities and aliases travel in a separate append-preserving
 AXM extension registry.
+
+3.14 **Exact canonical subject projection — Wave 14.**
+An accepted case-scoped resolution has first priority. Without one, a claim subject
+may receive generated canonical identity metadata only when its source subject_id is
+byte-for-byte equal to an existing canonical actor or organization ID. Normalized
+names, aliases, fuzzy similarity, object identity, and context are not substitute
+identity evidence.
+
+The source subject_id, claim text, receipts, status, and causal qualification remain
+unchanged. Every nonexact remainder is retained in a typed unresolved-subject
+registry with a named next action and append-preserving correction route. Exact
+projection and unresolved routing create no relationship, participation, graph edge,
+hop, automatic cross-case join, truth determination, or publication clearance.
