@@ -51,6 +51,12 @@ jobs:
           else
             echo 'materialize=false' >> "$GITHUB_OUTPUT"
           fi
+          if test -f data/project/lake-generator-contracts-wave-19.json \
+            && node -e "const x=require('./data/project/lake-generator-contracts-wave-19.json'); process.exit(x.post_execution_reconciliation_complete ? 0 : 1)"; then
+            echo 'sealed=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'sealed=false' >> "$GITHUB_OUTPUT"
+          fi
       - name: Validate current branch baseline
         if: steps.mode.outputs.materialize == 'true'
         shell: bash
@@ -59,7 +65,7 @@ jobs:
           npm run release:check
           git reset --hard HEAD
           git clean -fd
-      - name: Build deterministic Wave 19 source controls
+      - name: Build or validate deterministic Wave 19 source controls
         if: steps.mode.outputs.materialize == 'true'
         shell: bash
         run: |
@@ -68,23 +74,28 @@ jobs:
           node --check tools/stabilize-lake-generator-contracts-wave-19.mjs
           node --check tools/reconcile-lake-generator-contracts-wave-19.mjs
           node --check tools/validate-lake-generator-contracts-wave-19.mjs
-          node tools/materialize-lake-generator-contracts-wave-19.mjs
-          sha256sum \
-            data/project/lake-generator-contract-registry-wave-19.json \
-            data/project/lake-generator-contracts-wave-19.json \
-            build/lake-actions/generator-contracts-wave-19.json \
-            data/project/lake-index-policy.json \
-            BUILD-INSTRUCTIONS.md \
-            README.md > /tmp/wave19-source-first.sha256
-          node tools/materialize-lake-generator-contracts-wave-19.mjs
-          sha256sum --check --strict /tmp/wave19-source-first.sha256
-          git add \
-            data/project/lake-generator-contract-registry-wave-19.json \
-            data/project/lake-generator-contracts-wave-19.json \
-            build/lake-actions/generator-contracts-wave-19.json \
-            data/project/lake-index-policy.json \
-            BUILD-INSTRUCTIONS.md \
-            README.md
+          if test "${{ steps.mode.outputs.sealed }}" = 'true'; then
+            node tools/validate-lake-generator-contracts-wave-19.mjs
+            node test/lake-generator-contracts-wave-19.test.js
+          else
+            node tools/materialize-lake-generator-contracts-wave-19.mjs
+            sha256sum \
+              data/project/lake-generator-contract-registry-wave-19.json \
+              data/project/lake-generator-contracts-wave-19.json \
+              build/lake-actions/generator-contracts-wave-19.json \
+              data/project/lake-index-policy.json \
+              BUILD-INSTRUCTIONS.md \
+              README.md > /tmp/wave19-source-first.sha256
+            node tools/materialize-lake-generator-contracts-wave-19.mjs
+            sha256sum --check --strict /tmp/wave19-source-first.sha256
+            git add \
+              data/project/lake-generator-contract-registry-wave-19.json \
+              data/project/lake-generator-contracts-wave-19.json \
+              build/lake-actions/generator-contracts-wave-19.json \
+              data/project/lake-index-policy.json \
+              BUILD-INSTRUCTIONS.md \
+              README.md
+          fi
           git diff --check
       - name: Run canonical repository gate with Wave 19 sources active
         if: steps.mode.outputs.materialize == 'true'
@@ -220,15 +231,15 @@ jobs:
 
           required_changes = {
               '.github/tmp/lake-generator-contracts-wave-19-trigger.json',
-              'BUILD-INSTRUCTIONS.md',
-              'README.md',
-              'data/project/lake-index-policy.json',
-              'data/project/lake-generator-contract-registry-wave-19.json',
-              'data/project/lake-generator-contracts-wave-19.json',
           }
           required_present = {
               '.github/workflows/lake-generator-contracts-wave-19.yml',
+              'BUILD-INSTRUCTIONS.md',
+              'README.md',
+              'data/project/lake-index-policy.json',
               'data/project/lake-generator-contracts-wave-19-policy.json',
+              'data/project/lake-generator-contract-registry-wave-19.json',
+              'data/project/lake-generator-contracts-wave-19.json',
               'tools/materialize-lake-generator-contracts-wave-19.mjs',
               'tools/stabilize-lake-generator-contracts-wave-19.mjs',
               'tools/reconcile-lake-generator-contracts-wave-19.mjs',
