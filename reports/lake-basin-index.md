@@ -47,8 +47,8 @@ gap rows:                           59
 | legacy-history | historical_legacy | 3 | 3 | 3 | 0 | 3 | yes |
 | gametrail-public-products | public_projection | 2 | 2 | 2 | 0 | 2 | yes |
 | contribution-pipeline | contribution_source_or_template | 1 | 1 | 1 | 0 | 1 | yes |
-| toolchain | tooling | 336 | 0 | 249 | 21 | 336 | yes |
-| regressions | test_fixture | 165 | 0 | 123 | 6 | 165 | yes |
+| toolchain | tooling | 336 | 0 | 250 | 21 | 336 | yes |
+| regressions | test_fixture | 165 | 0 | 124 | 6 | 165 | yes |
 | automation | automation | 75 | 0 | 31 | 41 | 75 | yes |
 | public-runtime | public_runtime | 52 | 0 | 41 | 10 | 52 | yes |
 | temporary-transport | temporary_transport | 17 | 0 | 1 | 16 | 17 | yes |

@@ -1,6 +1,6 @@
 # Lake index gap summary
 
-Source fingerprint: `678a9fe9552e21b480ed32e5501d3621a6ef6ecd7c5f87939685f9a1738de1d8`
+Source fingerprint: `b4d2921c3849789977b08c6d452d95b3d0ab6586401533ca96f06e7256d0f2fc`
 
 ## Finding
 
@@ -81,8 +81,8 @@ case IDs absent from public catalog: 26
 | #403 Measure the production cross-case identity denominator | 16 |
 | #404 Recover exact source-bound cross-case mention recurrence | 11 |
 | #362 Stage biological Omega control-surface research program | 9 |
+| #467 Encode the status-for-sovereignty compact and fan out its evidence program | 9 |
 | #50 Stage synthetic-population research program | 8 |
-| #467 Encode the status-for-sovereignty compact and fan out its evidence program | 7 |
 | #380 Build root Evidence Desk publication estate from WebsiteIQ audit | 6 |
 | #378 Run WebsiteIQ baseline audit before website remediation | 4 |
 | #211 Map every case and report membership across the estates | 2 |
