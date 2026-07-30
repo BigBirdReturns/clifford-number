@@ -46,6 +46,7 @@ jobs:
         run: npm run release:check
       - name: Refuse historical-check mutation
         run: |
+          git restore --staged --worktree .
           node tools/validate-project-stable-ground-alignment.mjs
           node test/project-stable-ground-alignment.test.js
           git diff --exit-code
