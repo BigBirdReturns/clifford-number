@@ -1,0 +1,54 @@
+name: Inspect adversarial final payload
+
+on:
+  push:
+    branches:
+      - agent/adversarial-release-integrity
+    paths:
+      - '.github/tmp/inspect-final-payload.trigger'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/adversarial-release-integrity
+          fetch-depth: 0
+      - name: Decode and identify retained payloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/tmp/final-source-part-*.b64 | base64 --decode > /tmp/final-source.xz
+          cat .github/tmp/final-delta-part-*.b64 | base64 --decode > /tmp/final-delta.xz
+          sha256sum /tmp/final-source.xz /tmp/final-delta.xz
+          xz --test /tmp/final-source.xz
+          xz --test /tmp/final-delta.xz
+          xz --decompress --stdout /tmp/final-source.xz > /tmp/final-source.payload
+          xz --decompress --stdout /tmp/final-delta.xz > /tmp/final-delta.payload
+          echo '--- file types ---'
+          file /tmp/final-source.payload /tmp/final-delta.payload
+          echo '--- byte counts ---'
+          wc -c /tmp/final-source.xz /tmp/final-source.payload /tmp/final-delta.xz /tmp/final-delta.payload
+          echo '--- source prefix ---'
+          od -An -tx1 -N64 /tmp/final-source.payload
+          echo '--- delta prefix ---'
+          od -An -tx1 -N64 /tmp/final-delta.payload
+          echo '--- tar listings when applicable ---'
+          if tar -tf /tmp/final-source.payload >/tmp/source-list.txt 2>/dev/null; then
+            echo SOURCE_IS_TAR
+            wc -l /tmp/source-list.txt
+            sed -n '1,120p' /tmp/source-list.txt
+          fi
+          if tar -tf /tmp/final-delta.payload >/tmp/delta-list.txt 2>/dev/null; then
+            echo DELTA_IS_TAR
+            wc -l /tmp/delta-list.txt
+            sed -n '1,120p' /tmp/delta-list.txt
+          fi
+          echo '--- textual prefixes when applicable ---'
+          strings -n 8 /tmp/final-source.payload | sed -n '1,80p'
+          strings -n 8 /tmp/final-delta.payload | sed -n '1,120p'
