@@ -1,0 +1,52 @@
+name: Patch Wave 18 clean-head shard validation
+
+on:
+  push:
+    branches:
+      - agent/lake-identifier-topology-wave-18
+    paths:
+      - '.github/tmp/patch-wave18-clean-head-reset-trigger.json'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Reset transient release outputs before committed shard validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          original_sha=$(git rev-parse HEAD)
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/lake-identifier-topology-wave-18.yml')
+          text = path.read_text()
+          old = """            npm run release:check
+            node tools/validate-lake-index-shards.mjs
+"""
+          new = """            npm run release:check
+            git reset --hard HEAD
+            git clean -fd
+            node tools/validate-lake-index-shards.mjs
+"""
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one clean-head validation insertion point, found {text.count(old)}')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          rm -f .github/tmp/patch-wave18-clean-head-reset-trigger.json
+          rm -f .github/workflows/patch-wave18-clean-head-reset.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --check
+          git commit -m 'Reset transient outputs before Wave 18 shard validation'
+          git fetch origin agent/lake-identifier-topology-wave-18
+          test "$(git rev-parse origin/agent/lake-identifier-topology-wave-18)" = "${original_sha}"
+          git push origin HEAD:agent/lake-identifier-topology-wave-18
