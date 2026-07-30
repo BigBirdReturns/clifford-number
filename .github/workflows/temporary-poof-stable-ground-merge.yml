@@ -1,0 +1,33 @@
+name: Temporary POOF stable-ground merge
+
+on:
+  push:
+    branches:
+      - agent/poof-sprint09-stable-ground-reconciliation
+    paths:
+      - '.github/workflows/temporary-poof-stable-ground-merge.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/poof-sprint09-stable-ground-reconciliation
+          fetch-depth: 0
+      - name: Merge latest POOF branch and canonical main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin agent/poof-clifford-ecology main
+          git merge --no-edit origin/agent/poof-clifford-ecology
+          git merge --no-edit origin/main
+          git rm .github/workflows/temporary-poof-stable-ground-merge.yml
+          git commit -m 'Remove POOF stable-ground merge transport'
+          git push origin HEAD:agent/poof-sprint09-stable-ground-reconciliation
