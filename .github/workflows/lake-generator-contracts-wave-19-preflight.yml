@@ -12,6 +12,7 @@ on:
     paths:
       - 'data/project/lake-generator-contracts-wave-19-policy.json'
       - 'tools/build-lake-generator-contracts-wave-19.mjs'
+      - 'tools/run-lake-generator-contracts-wave-19-preflight.mjs'
       - '.github/workflows/lake-generator-contracts-wave-19-preflight.yml'
   workflow_dispatch:
 
@@ -49,13 +50,16 @@ jobs:
         run: |
           set -euo pipefail
           node --check tools/build-lake-generator-contracts-wave-19.mjs
-          node tools/build-lake-generator-contracts-wave-19.mjs
+          node --check tools/run-lake-generator-contracts-wave-19-preflight.mjs
+          node tools/run-lake-generator-contracts-wave-19-preflight.mjs
+          test ! -e build/lake-object-index.json
           sha256sum \
             build/lake-actions/generator-contracts-wave-19-preflight.json \
             build/lake-actions/generator-contracts-wave-19-diagnostics.json \
             reports/lake-generator-contracts-wave-19-preflight.md \
             reports/lake-generator-contracts-wave-19-diagnostics.md > /tmp/wave19-preflight.sha256
-          node tools/build-lake-generator-contracts-wave-19.mjs
+          node tools/run-lake-generator-contracts-wave-19-preflight.mjs
+          test ! -e build/lake-object-index.json
           sha256sum --check --strict /tmp/wave19-preflight.sha256
           node - <<'NODE'
           const fs = require('fs');
