@@ -1,4 +1,4 @@
-name: Temporary publication SG-06 final export
+name: Temporary SG-06 shallow-history repair staging
 
 on:
   pull_request:
@@ -6,29 +6,107 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - '.github/workflows/temporary-publication-sg06-final-export.yml'
+      - '.github/tmp/sg06-shallow-ancestry-repair.patch.xz.b64'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  export:
+  repair:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/publication-sg06-final-export
           fetch-depth: 0
-      - name: Archive exact final branch
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build validated workflow-neutral replacement SG-06 successor
         run: |
           set -euo pipefail
-          mkdir -p /tmp/publication-sg06-final-export
-          git archive --format=tar.gz --output=/tmp/publication-sg06-final-export/branch-head.tar.gz HEAD
-          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/publication-sg06-final-export/branch-head.txt
-          sha256sum /tmp/publication-sg06-final-export/branch-head.tar.gz > /tmp/publication-sg06-final-export/archive.sha256
-      - uses: actions/upload-artifact@v4
-        with:
-          name: publication-sg06-final-export-${{ github.run_id }}
-          path: /tmp/publication-sg06-final-export/
-          if-no-files-found: error
-          retention-days: 2
+          FINAL='6edb036aab84da65032c7638dedbf819d8cbeeca'
+          FIRST='8de31382f9e9c00a285cc093b548b19bc436a8de'
+          STAGING='agent/publication-sg06-second-repair-staging'
+
+          printf '%s  %s\n' 'b05465ef318c3e298d8336596fd0f93593469aaab05ba876bbd8c2b8f1f4792e' .github/tmp/sg06-shallow-ancestry-repair.patch.xz.b64 | sha256sum --check --strict
+          base64 --decode .github/tmp/sg06-shallow-ancestry-repair.patch.xz.b64 > /tmp/sg06-shallow-repair.patch.xz
+          printf '%s  %s\n' '111aca18f62a9e73d3d40e41fdef2b6696527864833252f5cee500c9db6dea1e' /tmp/sg06-shallow-repair.patch.xz | sha256sum --check --strict
+          xz --decompress --stdout /tmp/sg06-shallow-repair.patch.xz > /tmp/sg06-shallow-repair.patch
+          printf '%s  %s\n' '074b8cbca92b5e8dc5599191f9ab8f8c77a9c36c72fb0ac6146d6800c8348c60' /tmp/sg06-shallow-repair.patch | sha256sum --check --strict
+
+          git cat-file -e "${FINAL}^{commit}"
+          git cat-file -e "${FIRST}^{commit}"
+          git checkout --detach "$FINAL"
+          git apply --check /tmp/sg06-shallow-repair.patch
+          git apply /tmp/sg06-shallow-repair.patch
+
+          node tools/build-pages.mjs
+          node tools/build-standalone.mjs
+          node tools/build-project-stable-ground-sg06.mjs
+          node tools/validate-project-stable-ground-sg06.mjs
+          node test/project-stable-ground-sg06.test.js
+          npm run release:check
+
+          python3 - <<'PY'
+          import subprocess
+          volatile = [
+              'build/axm-identity.json','build/build-hop-report.json','build/hop-graph.json',
+              'build/migration-review.md','build/migration-summary.json','build/receipt-graph.json',
+              'build/scores.json','build/scout-report.json','build/scout-report.md','build/surface-graph.json',
+          ]
+          for path in volatile:
+              diff = subprocess.run(['git','diff','--unified=0','--',path], check=True, text=True, capture_output=True).stdout
+              if not diff:
+                  continue
+              lines = [line[1:].strip() for line in diff.splitlines() if line.startswith(('+','-')) and not line.startswith(('+++','---'))]
+              if len(lines) != 2 or not all(line.startswith('"generated": "') or line.startswith('Generated: ') for line in lines):
+                  raise RuntimeError(f'unexpected volatile mutation in {path}: {lines}')
+          PY
+          git restore --source="$FINAL" -- \
+            build/axm-identity.json build/build-hop-report.json build/hop-graph.json \
+            build/migration-review.md build/migration-summary.json build/receipt-graph.json \
+            build/scores.json build/scout-report.json build/scout-report.md build/surface-graph.json
+
+          cat > /tmp/expected-repair <<'PATHS'
+          data/project/project-stable-ground-sg06-release-manifest.json
+          reports/core-thesis/stable-ground/sg06/checkpoint.json
+          reports/core-thesis/stable-ground/sg06/index.html
+          tools/validate-project-stable-ground-sg06.mjs
+          PATHS
+          sort -o /tmp/expected-repair /tmp/expected-repair
+          git diff --name-only | sort > /tmp/observed-repair
+          diff -u /tmp/expected-repair /tmp/observed-repair
+          git diff --check
+
+          git rm .github/workflows/project-stable-ground-sg06.yml
+          git add -A
+          git reset --soft "$FIRST"
+
+          cat > /tmp/expected-second <<'PATHS'
+          data/project/project-stable-ground-current.json
+          data/project/project-stable-ground-governor.json
+          data/project/project-stable-ground-sg06-release-manifest.json
+          data/project/project-stable-ground-sg06.json
+          docs/milestones/project-stable-ground-sg06.md
+          reports/core-thesis/stable-ground/sg06/checkpoint.json
+          reports/core-thesis/stable-ground/sg06/index.html
+          test/project-stable-ground-sg05.test.js
+          test/project-stable-ground-sg06.test.js
+          tools/build-project-stable-ground-sg06.mjs
+          tools/validate-project-stable-ground-sg04.mjs
+          tools/validate-project-stable-ground-sg05.mjs
+          tools/validate-project-stable-ground-sg06.mjs
+          PATHS
+          sort -o /tmp/expected-second /tmp/expected-second
+          git diff --cached --name-only "$FIRST" | sort > /tmp/observed-second
+          diff -u /tmp/expected-second /tmp/observed-second
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Append stable-ground supersession SG-06'
+          replacement="$(git rev-parse HEAD)"
+          git push --force-with-lease=refs/heads/${STAGING}:"$FIRST" origin HEAD:"$STAGING"
+          printf 'workflow_neutral_replacement=%s\n' "$replacement"
