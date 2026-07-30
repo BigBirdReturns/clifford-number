@@ -1,4 +1,4 @@
-name: Project stable-ground supersession 05
+name: Project stable-ground supersession 05 · historical
 
 on:
   pull_request:
@@ -7,18 +7,11 @@ on:
       - 'data/project/project-stable-ground-governor.json'
       - 'data/project/project-stable-ground-current.json'
       - 'data/project/project-stable-ground-sg05*.json'
+      - 'data/project/project-stable-ground-sg06*.json'
       - 'docs/milestones/project-stable-ground-sg05.md'
       - 'reports/core-thesis/stable-ground/sg05/**'
-      - 'tools/build-project-stable-ground-sg05.mjs'
       - 'tools/validate-project-stable-ground-sg05.mjs'
       - 'test/project-stable-ground-sg05.test.js'
-      - 'data/intake/status-sovereignty-*'
-      - 'data/project/status-sovereignty-*'
-      - 'data/project/core-thesis.json'
-      - 'data/project/dca-h01-field-hypothesis.json'
-      - 'data/project/m05-answerable-power-*.json'
-      - 'data/project/security-state-organism-program.json'
-      - 'package.json'
       - '.github/workflows/project-stable-ground-sg05.yml'
   push:
     branches: [main]
@@ -26,18 +19,11 @@ on:
       - 'data/project/project-stable-ground-governor.json'
       - 'data/project/project-stable-ground-current.json'
       - 'data/project/project-stable-ground-sg05*.json'
+      - 'data/project/project-stable-ground-sg06*.json'
       - 'docs/milestones/project-stable-ground-sg05.md'
       - 'reports/core-thesis/stable-ground/sg05/**'
-      - 'tools/build-project-stable-ground-sg05.mjs'
       - 'tools/validate-project-stable-ground-sg05.mjs'
       - 'test/project-stable-ground-sg05.test.js'
-      - 'data/intake/status-sovereignty-*'
-      - 'data/project/status-sovereignty-*'
-      - 'data/project/core-thesis.json'
-      - 'data/project/dca-h01-field-hypothesis.json'
-      - 'data/project/m05-answerable-power-*.json'
-      - 'data/project/security-state-organism-program.json'
-      - 'package.json'
       - '.github/workflows/project-stable-ground-sg05.yml'
   workflow_dispatch:
 
@@ -47,7 +33,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,12 +41,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Build and validate SSC-H01 and current SG-05
+      - name: Validate preserved SG-05 history
         run: |
-          node tools/build-status-sovereignty-compact.mjs
-          node tools/validate-status-sovereignty-compact.mjs
-          node test/status-sovereignty-compact.test.js
-          node tools/build-project-stable-ground-sg05.mjs
           node tools/validate-project-stable-ground-sg05.mjs
           node test/project-stable-ground-sg05.test.js
       - name: Validate preserved SG-01 through SG-04 history
@@ -73,44 +55,26 @@ jobs:
           node test/project-stable-ground-sg03.test.js
           node tools/validate-project-stable-ground-sg04.mjs
           node test/project-stable-ground-sg04.test.js
+      - name: Revalidate SSC-H01 and Wave 01 boundaries
+        run: |
+          node tools/validate-status-sovereignty-wave-01.mjs
+          node test/status-sovereignty-wave-01.test.js
+          node tools/validate-status-sovereignty-compact.mjs
+          node test/status-sovereignty-compact.test.js
       - name: Run complete repository release gate
         run: npm run release:check
-      - name: Prove deterministic current products and clean history
+      - name: Prove historical SG-05 bytes remain untouched
         run: |
           git restore --staged --worktree .
-          node tools/build-status-sovereignty-compact.mjs
-          node tools/build-core-thesis.mjs
-          node tools/build-dca-h01.mjs
-          node tools/build-m05-answerable-power.mjs
-          node tools/build-security-state-organism.mjs
-          node tools/build-k0-epistemic-admissibility.mjs
-          node tools/build-poof-clifford-ecology.mjs
-          node tools/build-project-stable-ground-sg05.mjs
-          npm run validate:stable-ground
-          git diff --exit-code -- \
-            data/project/status-sovereignty-release-manifest.json \
-            build/core-thesis/status-sovereignty/manifest.json \
-            build/core-thesis/status-sovereignty/data.json \
-            reports/core-thesis/status-sovereignty/data.json \
-            reports/core-thesis/status-sovereignty/index.html \
-            build/core-thesis/manifest.json \
-            build/core-thesis/data.json \
-            reports/core-thesis/data.json \
-            reports/core-thesis/index.html \
-            data/project/dca-h01-release-manifest.json \
-            reports/core-thesis/distributed-counterpower-aversion/data.json \
-            reports/core-thesis/distributed-counterpower-aversion/index.html \
-            reports/core-thesis/answerable-power/data.json \
-            build/core-thesis/security-state-organism/manifest.json \
-            build/core-thesis/security-state-organism/fanout.json \
-            build/core-thesis/security-state-organism/issue-plan.json \
-            reports/core-thesis/security-state-organism/data.json \
-            reports/core-thesis/security-state-organism/index.html \
-            data/project/k0-epistemic-admissibility-release-manifest.json \
-            reports/core-thesis/answerable-power/k0.json \
-            reports/core-thesis/answerable-power/k0.html \
-            data/project/poof-clifford-ecology-release-manifest.json \
-            reports/core-thesis/poof-clifford-ecology/release-manifest.json \
-            data/project/project-stable-ground-sg05-release-manifest.json \
-            reports/core-thesis/stable-ground/sg05/checkpoint.json \
-            reports/core-thesis/stable-ground/sg05/index.html
+          node tools/validate-project-stable-ground-alignment.mjs
+          node test/project-stable-ground-alignment.test.js
+          node tools/validate-project-stable-ground-sg02.mjs
+          node test/project-stable-ground-sg02.test.js
+          node tools/validate-project-stable-ground-sg03.mjs
+          node test/project-stable-ground-sg03.test.js
+          node tools/validate-project-stable-ground-sg04.mjs
+          node test/project-stable-ground-sg04.test.js
+          node tools/validate-project-stable-ground-sg05.mjs
+          node test/project-stable-ground-sg05.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"

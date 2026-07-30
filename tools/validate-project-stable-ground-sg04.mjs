@@ -132,10 +132,11 @@ export function validateSg04(context = loadSg04Context()) {
     else if (typeof value === 'boolean') equal(value, false, `SG-04 boundary ${key}`);
   }
 
-  check(pointer.current_checkpoint_id !== checkpoint.checkpoint_id, 'SG-04 remains current after SG-05 succession');
-  equal(pointer.current_checkpoint_id, 'SG-2026-07-30-05', 'current checkpoint after SG-04');
+  check(pointer.current_checkpoint_id !== checkpoint.checkpoint_id, 'SG-04 remains current after successor checkpoint');
   const historyIds = pointer.history?.map((row) => row.checkpoint_id) ?? [];
-  equal(JSON.stringify(historyIds), JSON.stringify(['SG-2026-07-29-01','SG-2026-07-29-02','SG-2026-07-29-03','SG-2026-07-29-04','SG-2026-07-30-05']), 'pointer history order');
+  const expectedPrefix = ['SG-2026-07-29-01','SG-2026-07-29-02','SG-2026-07-29-03','SG-2026-07-29-04'];
+  equal(JSON.stringify(historyIds.slice(0, expectedPrefix.length)), JSON.stringify(expectedPrefix), 'pointer history order');
+  check(historyIds.length > expectedPrefix.length, 'current checkpoint after SG-04');
   const historyRow = pointer.history?.find((row) => row.checkpoint_id === checkpoint.checkpoint_id);
   check(Boolean(historyRow), 'historical pointer row missing for SG-04');
   equal(historyRow?.path, 'data/project/project-stable-ground-sg04.json', 'historical SG-04 pointer path');

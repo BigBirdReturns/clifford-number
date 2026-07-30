@@ -182,13 +182,12 @@ export function validateSg05(context = loadSg05Context()) {
   equal(governor.history_law.historical_release_manifests_recomputed, false, 'governor no-recompute law');
   check(governor.trigger_classes.some((row) => row.includes('status-for-sovereignty')), 'governor missing SSC trigger class');
 
-  const expectedHistory = ['SG-2026-07-29-01','SG-2026-07-29-02','SG-2026-07-29-03','SG-2026-07-29-04','SG-2026-07-30-05'];
+  const expectedHistoryPrefix = ['SG-2026-07-29-01','SG-2026-07-29-02','SG-2026-07-29-03','SG-2026-07-29-04','SG-2026-07-30-05'];
   equal(pointer.schema_version, 'project-stable-ground-current@1', 'pointer schema');
-  equal(JSON.stringify(pointer.history.map((row) => row.checkpoint_id)), JSON.stringify(expectedHistory), 'pointer history order');
+  equal(JSON.stringify(pointer.history.slice(0, expectedHistoryPrefix.length).map((row) => row.checkpoint_id)), JSON.stringify(expectedHistoryPrefix), 'pointer history order');
   equal(new Set(pointer.history.map((row) => row.checkpoint_id)).size, pointer.history.length, 'pointer checkpoint uniqueness');
   equal(pointer.history.filter((row) => row.status === 'current').length, 1, 'pointer current-state denominator');
-  equal(pointer.current_checkpoint_path, 'data/project/project-stable-ground-sg05.json', 'pointer current path');
-  equal(pointer.current_canonical_main_commit, checkpoint.trigger.transition_commit, 'pointer current commit');
+  if (pointer.current_checkpoint_id === checkpoint.checkpoint_id) errors.push('current checkpoint after SG-05');
 
   equal(snapshot.status_sovereignty.hypothesis_id, 'SSC-H01', 'frozen SSC identity');
   equal(snapshot.status_sovereignty.authority_tier, 'AT-2', 'frozen SSC authority tier');

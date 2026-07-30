@@ -1,75 +1,47 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
+import { loadStatusSovereigntyContext, validateStatusSovereignty } from '../tools/validate-status-sovereignty-compact.mjs';
 
-const read = (rel) => JSON.parse(fs.readFileSync(rel, 'utf8'));
-const original = read('data/project/status-sovereignty-compact.json');
-const originalFanout = read('data/project/status-sovereignty-fanout.json');
-const originalSources = read('data/project/status-sovereignty-source-registry.json');
-const pagesBuilder = fs.readFileSync('tools/build-pages.mjs', 'utf8');
-const pagesValidator = fs.readFileSync('tools/validate-pages.mjs', 'utf8');
+const clean = loadStatusSovereigntyContext();
+assert.deepEqual(validateStatusSovereignty(clean), [], 'clean SSC-H01 Wave 01 state must validate');
+const clone = () => Object.fromEntries(Object.entries(clean).map(([key, value]) => [key, typeof value === 'string' ? value : structuredClone(value)]));
 
-function errors(h, f, s) {
-  const out = [];
-  if (h.hypothesis_id !== 'SSC-H01') out.push('hypothesis_id');
-  if (h.four_gate_discriminator.length !== 4) out.push('gate_count');
-  if (h.dimensions.length !== 10) out.push('dimension_count');
-  if (h.boundaries.patriotism_is_white_power !== false) out.push('patriotism_boundary');
-  if (h.boundaries.multiracial_presence_proves_neutrality !== false) out.push('neutrality_boundary');
-  if (h.boundaries.multiracial_presence_proves_tokenism !== false) out.push('tokenism_boundary');
-  if (h.boundaries.racial_disparity_proves_intent !== false) out.push('intent_boundary');
-  if (h.boundaries.functional_convergence_proves_common_purpose !== false) out.push('common_purpose_boundary');
-  if (h.boundaries.public_industrial_policy_proves_capture !== false) out.push('industrial_policy_boundary');
-  if (h.boundaries.field_hypothesis_creates_actor_edge !== false || h.boundaries.graph_effect !== 'none') out.push('graph_boundary');
-  if (h.boundaries.field_hypothesis_authorizes_publication !== false) out.push('publication_boundary');
-  if (h.current_state.query_or_field_execution_started !== false || h.current_state.observations_retained !== 0) out.push('execution_state');
-  if (h.current_state.prevalence_finding_generated !== false || h.current_state.racial_order_finding_generated !== false || h.current_state.common_purpose_finding_generated !== false) out.push('finding_state');
-  if (f.lanes.length !== 16 || f.issue_groups.length !== 8) out.push('fanout_denominator');
-  if (f.lanes.some((row) => row.execution.started || row.execution.records_observed || row.execution.records_retained)) out.push('lane_execution');
-  if (f.boundaries.issue_count_proves_coverage !== false) out.push('issue_coverage_boundary');
-  if (f.boundaries.controls_may_be_dropped !== false) out.push('control_boundary');
-  if (s.boundaries.source_document_is_canonical_evidence !== false) out.push('source_authority');
-  if (s.counts.independently_retrieved_external_references !== 0) out.push('source_retrieval_state');
-  return out;
-}
-
-assert.deepEqual(errors(original, originalFanout, originalSources), []);
-for (const heldPath of [
-  'build/core-thesis/status-sovereignty',
-  'reports/core-thesis/status-sovereignty',
-  'data/project/status-sovereignty-compact.json',
-  'data/project/status-sovereignty-fanout.json',
-  'data/project/status-sovereignty-release-manifest.json',
-  'data/project/status-sovereignty-source-registry.json',
-  'docs/methods/status-sovereignty-compact.md',
-  'docs/milestones/m05-status-sovereignty-fanout.md'
-]) {
-  assert(pagesBuilder.includes(heldPath.split('/').map((part) => `'${part}'`).join(', ')), `Pages builder does not hold ${heldPath}`);
-  assert(pagesValidator.includes(`'${heldPath}'`), `Pages validator does not refuse ${heldPath}`);
-}
-const cases = [
-  ['patriotism self-promoted', (h) => { h.boundaries.patriotism_is_white_power = true; }, 'patriotism_boundary'],
-  ['minority presence neutralizes hierarchy', (h) => { h.boundaries.multiracial_presence_proves_neutrality = true; }, 'neutrality_boundary'],
-  ['minority presence forced into tokenism', (h) => { h.boundaries.multiracial_presence_proves_tokenism = true; }, 'tokenism_boundary'],
-  ['disparity self-awards intent', (h) => { h.boundaries.racial_disparity_proves_intent = true; }, 'intent_boundary'],
-  ['functional convergence self-awards common purpose', (h) => { h.boundaries.functional_convergence_proves_common_purpose = true; }, 'common_purpose_boundary'],
-  ['industrial policy self-awards capture', (h) => { h.boundaries.public_industrial_policy_proves_capture = true; }, 'industrial_policy_boundary'],
-  ['graph edge created', (h) => { h.boundaries.field_hypothesis_creates_actor_edge = true; }, 'graph_boundary'],
-  ['publication self-awarded', (h) => { h.boundaries.field_hypothesis_authorizes_publication = true; }, 'publication_boundary'],
-  ['racial order finding self-awarded', (h) => { h.current_state.racial_order_finding_generated = true; }, 'finding_state'],
-  ['execution self-awarded', (h) => { h.current_state.query_or_field_execution_started = true; h.current_state.observations_retained = 16; }, 'execution_state'],
-  ['fanout lane deleted', (_h, f) => { f.lanes.pop(); }, 'fanout_denominator'],
-  ['lane execution invented', (_h, f) => { f.lanes[0].execution.started = true; f.lanes[0].execution.records_observed = 1; }, 'lane_execution'],
-  ['issue count laundered into coverage', (_h, f) => { f.boundaries.issue_count_proves_coverage = true; }, 'issue_coverage_boundary'],
-  ['controls made optional', (_h, f) => { f.boundaries.controls_may_be_dropped = true; }, 'control_boundary'],
-  ['source synthesis promoted as evidence', (_h, _f, s) => { s.boundaries.source_document_is_canonical_evidence = true; }, 'source_authority'],
-  ['external retrieval invented', (_h, _f, s) => { s.counts.independently_retrieved_external_references = 8; }, 'source_retrieval_state']
+const mutations = [
+  ['patriotism self-promoted', (c) => { c.hypothesis.boundaries.patriotism_is_white_power = true; }, 'SSC boundary patriotism_is_white_power'],
+  ['minority presence neutralizes hierarchy', (c) => { c.hypothesis.boundaries.multiracial_presence_proves_neutrality = true; }, 'SSC boundary multiracial_presence_proves_neutrality'],
+  ['minority presence forced into tokenism', (c) => { c.hypothesis.boundaries.multiracial_presence_proves_tokenism = true; }, 'SSC boundary multiracial_presence_proves_tokenism'],
+  ['disparity self-awards intent', (c) => { c.hypothesis.boundaries.racial_disparity_proves_intent = true; }, 'SSC boundary racial_disparity_proves_intent'],
+  ['functional convergence self-awards common purpose', (c) => { c.hypothesis.boundaries.functional_convergence_proves_common_purpose = true; }, 'SSC boundary functional_convergence_proves_common_purpose'],
+  ['industrial policy self-awards capture', (c) => { c.hypothesis.boundaries.public_industrial_policy_proves_capture = true; }, 'SSC boundary public_industrial_policy_proves_capture'],
+  ['graph edge created', (c) => { c.hypothesis.boundaries.field_hypothesis_creates_actor_edge = true; }, 'SSC boundary field_hypothesis_creates_actor_edge'],
+  ['publication self-awarded', (c) => { c.hypothesis.boundaries.field_hypothesis_authorizes_publication = true; }, 'SSC boundary field_hypothesis_authorizes_publication'],
+  ['execution erased', (c) => { c.hypothesis.current_state.query_or_field_execution_started = false; }, 'SSC execution state'],
+  ['wave count inflated', (c) => { c.hypothesis.current_state.waves_executed = 2; }, 'SSC wave count'],
+  ['observation count inflated', (c) => { c.hypothesis.current_state.observations_retained = 15; }, 'SSC retained observation count'],
+  ['complete compact self-awarded', (c) => { c.hypothesis.current_state.complete_compact_findings = 1; }, 'SSC complete compact finding count'],
+  ['maintainer review self-awarded', (c) => { c.hypothesis.current_state.maintainer_reviewed_observations = 14; }, 'SSC maintainer-reviewed count'],
+  ['racial-order finding self-awarded', (c) => { c.hypothesis.current_state.racial_order_finding_generated = true; }, 'SSC current racial_order_finding_generated'],
+  ['common-purpose finding self-awarded', (c) => { c.hypothesis.current_state.common_purpose_finding_generated = true; }, 'SSC current common_purpose_finding_generated'],
+  ['fanout lane deleted', (c) => { c.fanout.lanes.pop(); }, 'SSC fanout lane count'],
+  ['executed lane erased', (c) => { c.fanout.lanes.find((row) => row.lane_id === 'SSC-F05').execution.started = false; }, 'SSC-F05: execution state'],
+  ['unexecuted lane invented', (c) => { const row = c.fanout.lanes.find((lane) => lane.lane_id === 'SSC-F01'); row.execution.started = true; }, 'SSC-F01: execution state'],
+  ['fanout graph effect invented', (c) => { c.fanout.lanes[0].graph_effect = 'edge'; }, 'SSC-F01: graph effect'],
+  ['source synthesis promoted as evidence', (c) => { c.sources.boundaries.source_document_is_canonical_evidence = true; }, 'SSC source authority boundary'],
+  ['synthesis references laundered as retrieved', (c) => { c.sources.counts.independently_retrieved_external_references = 8; }, 'SSC synthesis-reference retrieval state'],
+  ['field source count inflated', (c) => { c.sources.counts.field_source_records = 16; }, 'SSC field source count'],
+  ['normalized facts laundered as bytes', (c) => { c.sources.boundaries.normalized_fact_records_equal_source_bytes = true; }, 'SSC normalized-fact authority boundary'],
+  ['field source review laundered as maintainer review', (c) => { c.sources.boundaries.field_source_review_is_maintainer_review = true; }, 'SSC field-review authority boundary'],
+  ['wave complete compact invented', (c) => { c.wave.counts.supported_bounded_compact = 1; }, 'SSC live wave complete compact count'],
+  ['wave racial-order finding invented', (c) => { c.wave.current_result.racial_order_finding_generated = true; }, 'SSC live wave racial-order state'],
+  ['core bridge dropped', (c) => { c.core.field_hypothesis_bridges.pop(); }, 'SSC core field-hypothesis bridge count'],
+  ['release manifest drift', (c) => { c.manifest.combined_sha256 = 'f'.repeat(64); }, 'SSC exact-byte release manifest'],
+  ['public report drift', (c) => { c.publicReport.counts.retained_observations = 999; }, 'SSC build/public report drift']
 ];
-for (const [name, mutate, expected] of cases) {
-  const h = structuredClone(original);
-  const f = structuredClone(originalFanout);
-  const s = structuredClone(originalSources);
-  mutate(h, f, s);
-  assert(errors(h, f, s).includes(expected), `${name} did not fail closed`);
+
+for (const [name, mutate, expected] of mutations) {
+  const context = clone();
+  mutate(context);
+  const errors = validateStatusSovereignty(context);
+  assert(errors.some((error) => error.includes(expected)), `${name} did not fail closed: ${JSON.stringify(errors)}`);
 }
-console.log(`status-sovereignty-compact.test: ${cases.length} adversarial mutations PASS`);
+console.log(`status-sovereignty-compact.test: ${mutations.length} adversarial mutations PASS`);
