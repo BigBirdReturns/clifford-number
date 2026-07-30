@@ -56,6 +56,12 @@ jobs:
 
           def repair_bytes(name, expected_length, expected_sha):
               encoded = Path(f'.github/tmp/{name}').read_text().strip()
+              if name == 'publication-sg06-repair-023-07.b64':
+                  assert len(encoded) == 683, len(encoded)
+                  assert sha256(encoded.encode()).hexdigest() == '71de96f8282a52d587dc99c0942fa8a0aa58fb58ee20ffb863dfaa3dad0627cb'
+                  assert encoded[338:355] == 'V0OGJiOURS29MeGwz'
+                  encoded = encoded[:346] + 'ND' + encoded[347:]
+                  assert encoded[338:356] == 'V0OGJiONDS29MeGwz'
               encoded += '=' * (-len(encoded) % 4)
               decoded = b64decode(encoded)
               assert len(decoded) == expected_length, (name, len(decoded))
