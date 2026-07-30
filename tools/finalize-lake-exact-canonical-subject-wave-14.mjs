@@ -138,10 +138,25 @@ const preliminaryReceipt = {
   boundaries: policy.boundaries
 };
 
+let preserveCompletedReceipt = false;
+if (fs.existsSync(full(policy.receipt_path)) && fs.existsSync(full(policy.reconciliation_path))) {
+  const existingReceipt = readJson(policy.receipt_path);
+  const existingReconciliation = readJson(policy.reconciliation_path);
+  preserveCompletedReceipt = existingReceipt.schema_version === 'lake-exact-canonical-subject-wave-14@1'
+    && existingReceipt.program_key === policy.program_key
+    && existingReceipt.counts?.exact_claim_references_observed === policy.expected.exact_canonical_references
+    && existingReceipt.counts?.unresolved_ids_source_projection_and_index_observed === policy.expected.unresolved_distinct_subjects
+    && existingReconciliation.schema_version === 'lake-exact-canonical-subject-wave-14-reconciliation@1'
+    && existingReconciliation.program_key === policy.program_key
+    && existingReconciliation.completion?.post_execution_reconciliation_complete === true;
+}
+
 writeJson(policy.projection_path, projection);
 writeJson(policy.plan_path, plan);
-writeJson(policy.receipt_path, preliminaryReceipt);
+if (!preserveCompletedReceipt) writeJson(policy.receipt_path, preliminaryReceipt);
 console.log('exact canonical subject Wave 14 finalized');
 console.log(`  exact observation IDs / unresolved IDs projected: ${exactSubjectObservations.length} / ${unresolvedRows.length}`);
-console.log('  preliminary receipt written; post-execution reconciliation complete: false');
+console.log(preserveCompletedReceipt
+  ? '  completed post-execution receipt preserved'
+  : '  preliminary receipt written; post-execution reconciliation complete: false');
 console.log('  source mutation, relationship, participation, graph, and hop effects: 0');
