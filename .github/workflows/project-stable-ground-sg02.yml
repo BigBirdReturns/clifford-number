@@ -1,4 +1,4 @@
-name: Project stable-ground supersession 02
+name: Project stable-ground supersession 02 · historical
 
 on:
   pull_request:
@@ -6,9 +6,7 @@ on:
     paths:
       - 'data/project/project-stable-ground-sg02*.json'
       - 'data/project/project-stable-ground-current.json'
-      - 'docs/milestones/project-stable-ground-sg02.md'
-      - 'reports/core-thesis/stable-ground/sg02/**'
-      - 'tools/build-project-stable-ground-sg02.mjs'
+      - 'data/project/project-stable-ground-governor.json'
       - 'tools/validate-project-stable-ground-sg02.mjs'
       - 'test/project-stable-ground-sg02.test.js'
       - '.github/workflows/project-stable-ground-sg02.yml'
@@ -17,9 +15,7 @@ on:
     paths:
       - 'data/project/project-stable-ground-sg02*.json'
       - 'data/project/project-stable-ground-current.json'
-      - 'docs/milestones/project-stable-ground-sg02.md'
-      - 'reports/core-thesis/stable-ground/sg02/**'
-      - 'tools/build-project-stable-ground-sg02.mjs'
+      - 'data/project/project-stable-ground-governor.json'
       - 'tools/validate-project-stable-ground-sg02.mjs'
       - 'test/project-stable-ground-sg02.test.js'
       - '.github/workflows/project-stable-ground-sg02.yml'
@@ -36,17 +32,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Build, validate, and attack SG-02
+      - name: Validate immutable SG-02 record and supersession custody
         run: |
-          node tools/build-project-stable-ground-sg02.mjs
           node tools/validate-project-stable-ground-sg02.mjs
           node test/project-stable-ground-sg02.test.js
       - name: Run complete repository release gate
         run: npm run release:check
-      - name: Prove deterministic SG-02 products
+      - name: Refuse historical-check mutation
         run: |
           git restore --staged --worktree .
-          node tools/build-project-stable-ground-sg02.mjs
           node tools/validate-project-stable-ground-sg02.mjs
           node test/project-stable-ground-sg02.test.js
           git diff --exit-code
