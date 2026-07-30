@@ -119,6 +119,7 @@ for (const action of registry.action_closures) {
 }
 
 for (const contract of registry.contracts) {
+  const objectHashEnforced = contract.serialization_contract.object_hash_enforced === true;
   const currentCounts = new Map();
   for (const compound of contract.action_compounds) {
     const object = objectByCompound.get(compound);
@@ -130,15 +131,22 @@ for (const contract of registry.contracts) {
     );
     if (!scoped.length) fail(`${contract.generator_contract_key}: ${compound}: scoped occurrence missing`);
     for (const occurrence of scoped) {
-      const serialized = [compound, occurrence.path, pointerTemplate(occurrence.pointer), occurrence.object_hash].join('\0');
+      const template = pointerTemplate(occurrence.pointer);
+      const serialized = objectHashEnforced
+        ? [compound, occurrence.path, template, occurrence.object_hash].join('\0')
+        : [compound, occurrence.path, template].join('\0');
       currentCounts.set(serialized, (currentCounts.get(serialized) ?? 0) + 1);
     }
   }
   const registeredCounts = new Map(contract.variants.map(variant => [
-    [`${variant.id_key}:${variant.id_value}`, variant.projection_path, variant.pointer_template, variant.object_hash].join('\0'),
+    objectHashEnforced
+      ? [`${variant.id_key}:${variant.id_value}`, variant.projection_path, variant.pointer_template, variant.object_hash].join('\0')
+      : [`${variant.id_key}:${variant.id_value}`, variant.projection_path, variant.pointer_template].join('\0'),
     variant.occurrence_count
   ]));
   if (JSON.stringify([...currentCounts.entries()].sort()) !== JSON.stringify([...registeredCounts.entries()].sort())) fail(`${contract.generator_contract_key}: registered variant drift`);
+  if (contract.variants.some(variant => variant.object_hash_enforced !== objectHashEnforced)) fail(`${contract.generator_contract_key}: variant hash-enforcement mode drift`);
+  if (!objectHashEnforced && contract.variants.some(variant => Object.hasOwn(variant, 'object_hash'))) fail(`${contract.generator_contract_key}: family contract retained payload hash enforcement`);
   if (contract.serialization_contract.cross_family_hash_equality_required !== false) fail(`${contract.generator_contract_key}: cross-family equality boundary drift`);
   if (contract.serialization_contract.identity_or_truth_inference_authorized !== false) fail(`${contract.generator_contract_key}: identity/truth inference boundary drift`);
 }

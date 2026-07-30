@@ -85,6 +85,7 @@ const variantClassCounts = new Map();
 let totalVariants = 0;
 
 const contracts = preflight.contracts.map(contract => {
+  const objectHashEnforced = contract.scope_type === 'exact_projection_path';
   const variantCounts = new Map();
   const actionCompounds = contractActionMap.get(contract.generator_contract_id) ?? new Set();
   for (const compound of actionCompounds) {
@@ -98,24 +99,29 @@ const contracts = preflight.contracts.map(contract => {
     assert.ok(projections.length > 0, `${compound}: ${contract.scope_value}: no matching projection occurrence`);
     for (const occurrence of projections) {
       const template = pointerTemplate(occurrence.pointer);
-      const serialized = [compound, occurrence.path, template, occurrence.object_hash].join('\0');
+      const serialized = objectHashEnforced
+        ? [compound, occurrence.path, template, occurrence.object_hash].join('\0')
+        : [compound, occurrence.path, template].join('\0');
       variantCounts.set(serialized, (variantCounts.get(serialized) ?? 0) + 1);
     }
   }
 
   const variants = [...variantCounts.entries()].map(([serialized, occurrenceCount]) => {
-    const [compound, projectionPath, template, objectHash] = serialized.split('\0');
+    const [compound, projectionPath, template, objectHash = null] = serialized.split('\0');
     const separator = compound.indexOf(':');
     const idKey = compound.slice(0, separator);
     const idValue = compound.slice(separator + 1);
     return {
-      variant_key: stableKey('LAKEW19VAR', [contract.generator_contract_id, compound, projectionPath, template, objectHash]),
+      variant_key: stableKey('LAKEW19VAR', objectHashEnforced
+        ? [contract.generator_contract_id, compound, projectionPath, template, objectHash]
+        : [contract.generator_contract_id, compound, projectionPath, template, 'STRUCTURAL_FAMILY_VARIANT']),
       id_key: idKey,
       id_value: idValue,
       projection_path: projectionPath,
       projection_family: pathFamily(projectionPath),
       pointer_template: template,
-      object_hash: objectHash,
+      ...(objectHashEnforced ? { object_hash: objectHash } : {}),
+      object_hash_enforced: objectHashEnforced,
       occurrence_count: occurrenceCount
     };
   }).sort((a, b) => a.variant_key.localeCompare(b.variant_key));
@@ -136,8 +142,12 @@ const contracts = preflight.contracts.map(contract => {
     projection_paths: uniqueSorted(contract.projection_paths),
     pointer_templates: uniqueSorted(contract.pointer_templates),
     serialization_contract: {
-      variant_selector: 'id_key + id_value + projection_path + pointer_template + object_hash',
+      variant_selector: objectHashEnforced
+        ? 'id_key + id_value + projection_path + pointer_template + object_hash'
+        : 'id_key + id_value + projection_path + pointer_template',
       variant_namespace: `${contract.scope_type}:${contract.scope_value}`,
+      object_hash_enforced: objectHashEnforced,
+      payload_hash_policy: objectHashEnforced ? 'exact_hash_registered' : 'family_structural_boundary',
       current_variants_registered: true,
       new_variant_policy: 'append_a_superseding_contract_variant_before_release',
       removal_policy: 'preserve_the_retired_variant_in_history_and_record_the_superseding_contract_version',
@@ -271,9 +281,10 @@ writeJson(lakePolicyPath, lakePolicy);
 
 appendSection('BUILD-INSTRUCTIONS.md', '3.19 **Generator contracts', `3.19 **Generator contracts — Wave 19.**
 Every open Wave 18 generator-contract action is assigned to a named exact-path or
-projection-family sidecar contract. Each contract registers the current projection
-path, pointer-template, and object-hash variants. A new variant must be added through
-an append-preserving superseding contract before release.
+projection-family sidecar contract. Exact-path contracts bind projection path, pointer
+template, and object hash. Projection-family contracts bind structural path and pointer
+variants; a payload-hash change inside the declared family boundary is not itself drift.
+A new exact-path hash or family structural variant requires append-preserving supersession.
 
 Cross-family typed views remain distinct and are never forced into byte equality.
 A generator contract governs serialization custody; it does not prove identity,
@@ -283,8 +294,9 @@ appendSection('README.md', '## Generator contracts', `## Generator contracts
 
 Wave 19 converts the residual generator-action queue into named, enforceable sidecar
 contracts. Exact generated paths receive uniqueness or version contracts; projection
-families receive explicit schema or version boundaries. The registry closes the
-bounded action queue while retaining raw typed divergence where it is legitimate.
+families receive structural schema or version boundaries that do not freeze every
+payload byte. The registry closes the bounded action queue while retaining raw typed
+divergence where it is legitimate.
 No contract authorizes a cross-key join or creates a relationship, participation row,
 graph edge, truth determination, or publication clearance.`);
 

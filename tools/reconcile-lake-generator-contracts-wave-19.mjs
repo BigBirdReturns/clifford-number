@@ -95,6 +95,7 @@ assert.equal(closedActionsObserved, registry.action_closures.length);
 let variantsObserved = 0;
 const contractObservations = [];
 for (const contract of registry.contracts) {
+  const objectHashEnforced = contract.serialization_contract.object_hash_enforced === true;
   const currentCounts = new Map();
   for (const compound of contract.action_compounds) {
     const object = objectByCompound.get(compound);
@@ -106,14 +107,21 @@ for (const contract of registry.contracts) {
     );
     assert.ok(projections.length > 0, `${contract.generator_contract_key}: ${compound}: scoped projection missing`);
     for (const occurrence of projections) {
-      const serialized = [compound, occurrence.path, pointerTemplate(occurrence.pointer), occurrence.object_hash].join('\0');
+      const template = pointerTemplate(occurrence.pointer);
+      const serialized = objectHashEnforced
+        ? [compound, occurrence.path, template, occurrence.object_hash].join('\0')
+        : [compound, occurrence.path, template].join('\0');
       currentCounts.set(serialized, (currentCounts.get(serialized) ?? 0) + 1);
     }
   }
   const registeredCounts = new Map(contract.variants.map(variant => [
-    [`${variant.id_key}:${variant.id_value}`, variant.projection_path, variant.pointer_template, variant.object_hash].join('\0'),
+    objectHashEnforced
+      ? [`${variant.id_key}:${variant.id_value}`, variant.projection_path, variant.pointer_template, variant.object_hash].join('\0')
+      : [`${variant.id_key}:${variant.id_value}`, variant.projection_path, variant.pointer_template].join('\0'),
     variant.occurrence_count
   ]));
+  assert.equal(contract.serialization_contract.object_hash_enforced, objectHashEnforced, `${contract.generator_contract_key}: hash-enforcement mode drift`);
+  assert.ok(contract.variants.every(variant => variant.object_hash_enforced === objectHashEnforced), `${contract.generator_contract_key}: variant hash-enforcement drift`);
   assert.deepEqual([...currentCounts.entries()].sort(), [...registeredCounts.entries()].sort(), `${contract.generator_contract_key}: registered variants drift`);
   variantsObserved += contract.variants.length;
   contractObservations.push({
@@ -123,6 +131,7 @@ for (const contract of registry.contracts) {
     action_row_count: contract.action_row_count,
     variant_count: contract.variant_count,
     current_variant_match: true,
+    object_hash_enforced: objectHashEnforced,
     graph_effect: 'none'
   });
 }
@@ -199,7 +208,7 @@ const reconciliation = {
 writeJson(policy.paths.receipt, receipt);
 writeJson(policy.paths.reconciliation, reconciliation);
 
-const report = `# Generator contracts — Wave 19\n\n\`\`\`text\nWave 18 open generator actions:       ${policy.baseline.generator_contract_actions} -> ${afterCounts.open_generator_actions}\nactive generator contracts:          ${afterCounts.generator_contracts}\naction-to-contract links:            ${afterCounts.action_to_contract_links}\nregistered current variants:         ${afterCounts.registered_variants}\ncontracts observed:                   ${contractObservations.length}/${registry.contracts.length}\naction closures observed:             ${closedActionsObserved}/${registry.action_closures.length}\nregistered variants observed:         ${variantsObserved}/${registry.counts.registered_variants}\nhuman-permission dependencies:        0\nrelationship / participation / graph: 0 / 0 / 0\n\`\`\`\n\nThe 411 frozen generator actions are closed by 18 named sidecar contracts. Raw projection divergence remains visible where typed views or declared versions differ. Each current variant is registered by exact path, pointer template, and object hash. A new variant requires append-preserving supersession before release. No contract establishes identity, evidence truth, publication clearance, a cross-key join, or graph semantics.\n`;
+const report = `# Generator contracts — Wave 19\n\n\`\`\`text\nWave 18 open generator actions:       ${policy.baseline.generator_contract_actions} -> ${afterCounts.open_generator_actions}\nactive generator contracts:          ${afterCounts.generator_contracts}\naction-to-contract links:            ${afterCounts.action_to_contract_links}\nregistered current variants:         ${afterCounts.registered_variants}\ncontracts observed:                   ${contractObservations.length}/${registry.contracts.length}\naction closures observed:             ${closedActionsObserved}/${registry.action_closures.length}\nregistered variants observed:         ${variantsObserved}/${registry.counts.registered_variants}\nhuman-permission dependencies:        0\nrelationship / participation / graph: 0 / 0 / 0\n\`\`\`\n\nThe 411 frozen generator actions are closed by 18 named sidecar contracts. Raw projection divergence remains visible where typed views or declared versions differ. Exact-path variants are registered by path, pointer template, and object hash. Projection-family variants are registered structurally by path and pointer template, so payload-hash changes inside a declared family boundary do not create a recursive self-hash. New exact-path hashes or family structural variants require append-preserving supersession before release. No contract establishes identity, evidence truth, publication clearance, a cross-key join, or graph semantics.\n`;
 fs.mkdirSync(path.dirname(full(policy.paths.report)), { recursive: true });
 fs.writeFileSync(full(policy.paths.report), report);
 
