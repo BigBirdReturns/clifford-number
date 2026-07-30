@@ -24,7 +24,15 @@ jobs:
           node-version: '24'
       - name: Verify exact Commit A carrier
         run: |
+          for file in .github/tmp/commit-a-binary/part-*.bin; do
+            printf '%s bytes=%s sha256=%s head=' "$file" "$(stat -c%s "$file")" "$(sha256sum "$file" | cut -d' ' -f1)"
+            head -c 8 "$file" | base64 -w0
+            printf ' tail='
+            tail -c 8 "$file" | base64 -w0
+            printf '\n'
+          done
           cat .github/tmp/commit-a-binary/part-*.bin > /tmp/commitA.bundle.xz
+          echo "carrier_bytes=$(stat -c%s /tmp/commitA.bundle.xz)"
           echo "carrier_sha256=$(sha256sum /tmp/commitA.bundle.xz | cut -d' ' -f1)"
           xz --test /tmp/commitA.bundle.xz
           xz --decompress --stdout /tmp/commitA.bundle.xz > /tmp/commitA.bundle
