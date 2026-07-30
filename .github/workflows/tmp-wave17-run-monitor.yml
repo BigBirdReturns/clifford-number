@@ -19,14 +19,16 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
-      - name: Query Wave 17 branch push runs
+      - name: Query requested Wave 17 branch push runs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs?branch=agent%2Flake-residual-frontier-wave-17&event=push&per_page=30" \
-            --jq '{observed_at: now | todate, runs: [.workflow_runs[] | {id, name, workflow_id, run_number, status, conclusion, head_sha, event, created_at, updated_at, html_url}]}' \
+          branch=$(node -p "require('./.github/tmp/tmp-wave17-run-monitor-request.json').branch")
+          encoded=$(node -p "encodeURIComponent(process.argv[1])" "$branch")
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs?branch=${encoded}&event=push&per_page=30" \
+            --jq --arg branch "$branch" '{observed_at: now | todate, branch: $branch, runs: [.workflow_runs[] | {id, name, workflow_id, run_number, status, conclusion, head_sha, event, created_at, updated_at, html_url}]}' \
             > data/project/tmp-wave17-push-runs.json
       - name: Commit observation
         shell: bash
