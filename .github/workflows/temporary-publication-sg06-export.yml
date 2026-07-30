@@ -6,6 +6,10 @@ on:
       - agent/publication-sg06-export
     paths:
       - '.github/workflows/temporary-publication-sg06-export.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-publication-sg06-export.yml'
   workflow_dispatch:
 
 permissions:
