@@ -7,7 +7,7 @@ Convert the distributed-counterpower-aversion synthesis from issue prose into a 
 ## Permanent surface
 
 - `data/project/dca-h01-field-hypothesis.json` — hypothesis, mechanisms, controls, alternatives, falsifiers, and authority ceiling;
-- `data/project/dca-h01-crosswalk.json` — K0, Clifford C1–C7, POOF, Answerable Power, APC-01, Question 4, and stable-ground joins;
+- `data/project/dca-h01-crosswalk.json` — K0, Clifford, POOF, Answerable Power, APC-01, Question 4, and stable-ground joins;
 - `data/project/dca-h01-role-neutral-denominator.json` — twelve strata, twelve frozen query templates, selection law, and empty execution ledger;
 - `schemas/dca-field-record.schema.json` — future bounded recurrence records;
 - deterministic builder, validator, tests, report, exact-byte manifest, and CI.
