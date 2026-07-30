@@ -1,0 +1,34 @@
+name: Temporary export publication SG-06 repair bytes
+
+on:
+  push:
+    branches:
+      - agent/publication-safety-sg06-final
+    paths:
+      - '.github/workflows/temporary-export-publication-sg06-repairs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/publication-safety-sg06-final
+      - name: Record exact repair-file hashes
+        run: |
+          set -euo pipefail
+          sha256sum .github/tmp/publication-sg06-repair-*.b64 > .github/tmp/publication-sg06-repairs.sha256
+          wc -c .github/tmp/publication-sg06-repair-*.b64 > .github/tmp/publication-sg06-repairs.bytes
+      - uses: actions/upload-artifact@v4
+        with:
+          name: publication-sg06-repairs-${{ github.run_id }}
+          path: |
+            .github/tmp/publication-sg06-repair-*.b64
+            .github/tmp/publication-sg06-repairs.sha256
+            .github/tmp/publication-sg06-repairs.bytes
+          if-no-files-found: error
+          retention-days: 3
