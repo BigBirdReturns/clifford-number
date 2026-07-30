@@ -1,0 +1,168 @@
+name: Patch Wave 19 sealed preflight lifecycle
+
+on:
+  push:
+    branches:
+      - agent/lake-generator-contracts-wave-19
+    paths:
+      - '.github/tmp/patch-wave19-sealed-preflight-trigger.json'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  patch-and-reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Patch sealed preflight lifecycle and remove transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          original_sha=$(git rev-parse HEAD)
+          echo "original_sha=${original_sha}" >> "$GITHUB_ENV"
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/lake-generator-contracts-wave-19-preflight.yml')
+          text = path.read_text()
+          old = """          set -euo pipefail
+          node --check tools/build-lake-generator-contracts-wave-19.mjs
+"""
+          new = """          set -euo pipefail
+          if test -f data/project/lake-generator-contracts-wave-19.json \\
+            && node -e \"const x=require('./data/project/lake-generator-contracts-wave-19.json'); process.exit(x.post_execution_reconciliation_complete ? 0 : 1)\"; then
+            node tools/validate-lake-generator-contracts-wave-19.mjs
+            node test/lake-generator-contracts-wave-19.test.js
+            echo 'Wave 19 is sealed; validated committed contracts instead of recomputing the frozen preflight.'
+            exit 0
+          fi
+          node --check tools/build-lake-generator-contracts-wave-19.mjs
+"""
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one Wave 19 preflight insertion point, found {text.count(old)}')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          rm -f .github/tmp/patch-wave19-sealed-preflight-trigger.json
+          rm -f .github/workflows/patch-wave19-sealed-preflight.yml
+          git add -A
+          git diff --check
+      - name: Run canonical release reconstruction
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run release:check
+          git diff --check
+      - name: Refresh open-PR shadow
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/build-lake-open-pr-shadow.mjs
+      - name: Rebuild and reconcile the lake fixed point
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pass in 1 2 3; do
+            echo "post-seal reconciliation pass ${pass}"
+            node tools/build-lake-index.mjs
+            node tools/stabilize-lake-index.mjs
+            node tools/stabilize-lake-generator-contracts-wave-19.mjs
+            node tools/reconcile-lake-receipt-semantics.mjs
+            node tools/build-lake-gap-summary.mjs
+            node tools/validate-lake-index.mjs
+            node tools/validate-lake-receipt-semantics.mjs
+            node tools/validate-lake-gap-summary.mjs
+            node tools/reconcile-lake-identifier-topology-wave-18.mjs
+            node tools/reconcile-lake-generator-contracts-wave-19.mjs
+            git add -A
+          done
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-identifier-topology-wave-18.mjs
+          node tools/validate-lake-generator-contracts-wave-19.mjs
+          node test/lake-index.test.js
+          node test/lake-basin-index.test.js
+          node test/lake-identifier-topology-wave-18.test.js
+          node test/lake-generator-contracts-wave-19.test.js
+          git add -A
+      - name: Prove deterministic lake reconstruction
+        shell: bash
+        run: |
+          set -euo pipefail
+          find build/lake-index -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/wave19-sealed-final.sha256
+          sha256sum \
+            data/project/lake-identifier-topology-wave-18.json \
+            build/lake-actions/identifier-topology-wave-18-reconciliation.json \
+            data/project/lake-generator-contracts-wave-19.json \
+            build/lake-actions/generator-contracts-wave-19-reconciliation.json \
+            reports/lake-generator-contracts-wave-19.md >> /tmp/wave19-sealed-final.sha256
+          for pass in 1 2; do
+            node tools/build-lake-index.mjs
+            node tools/stabilize-lake-index.mjs
+            node tools/stabilize-lake-generator-contracts-wave-19.mjs
+            node tools/reconcile-lake-receipt-semantics.mjs
+            node tools/build-lake-gap-summary.mjs
+            node tools/validate-lake-index.mjs
+            node tools/validate-lake-receipt-semantics.mjs
+            node tools/validate-lake-gap-summary.mjs
+            node tools/reconcile-lake-identifier-topology-wave-18.mjs
+            node tools/reconcile-lake-generator-contracts-wave-19.mjs
+            git add -A
+          done
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          sha256sum --check --strict /tmp/wave19-sealed-final.sha256
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-generator-contracts-wave-19.mjs
+          node test/lake-generator-contracts-wave-19.test.js
+          git diff --check
+      - name: Enforce bounded source changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import re
+          import subprocess
+
+          allowed_sources = {
+              '.github/workflows/lake-generator-contracts-wave-19-preflight.yml',
+              'data/project/lake-open-pr-shadow.json',
+              'data/project/lake-identifier-topology-wave-18.json',
+              'data/project/lake-generator-contracts-wave-19.json',
+          }
+          generated_prefixes = ('build/', 'reports/', 'briefs/', 'estates/', 'gametrails/')
+          generated_root = re.compile(r'^(?:Clifford-.*\.html|[^/]+-standalone\.html)$')
+          raw = subprocess.check_output(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'])
+          entries = [entry for entry in raw.decode().split('\0') if entry]
+          actual = {entry[3:] for entry in entries}
+          unexpected = sorted(path for path in actual
+              if path not in allowed_sources
+              and not path.startswith(generated_prefixes)
+              and not generated_root.match(path))
+          assert '.github/workflows/lake-generator-contracts-wave-19-preflight.yml' in actual
+          assert not unexpected, {'undeclared_source_changes': unexpected}
+          print({'actual_changes': len(actual), 'generated_or_authorized': len(actual)})
+          PY
+      - name: Commit and push post-seal correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Make Wave 19 preflight post-seal aware'
+          git fetch origin agent/lake-generator-contracts-wave-19
+          test "$(git rev-parse origin/agent/lake-generator-contracts-wave-19)" = "$original_sha"
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-generator-contracts-wave-19.mjs
+          git push origin HEAD:agent/lake-generator-contracts-wave-19
