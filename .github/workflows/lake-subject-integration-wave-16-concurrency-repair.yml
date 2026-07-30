@@ -1,0 +1,48 @@
+name: Repair Wave 16 event concurrency
+
+on:
+  push:
+    branches:
+      - agent/lake-subject-integration-wave-16
+    paths:
+      - '.github/tmp/lake-subject-integration-wave-16-concurrency-repair-trigger.json'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Separate push and pull-request concurrency groups
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/lake-subject-integration-wave-16.yml')
+          text = path.read_text()
+          old = '  group: lake-subject-integration-wave-16-${{ github.head_ref || github.ref_name }}'
+          new = '  group: lake-subject-integration-wave-16-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}'
+          assert text.count(old) == 1, {'expected_occurrences': 1, 'actual': text.count(old)}
+          path.write_text(text.replace(old, new))
+          PY
+          rm -f \
+            .github/tmp/lake-subject-integration-wave-16-concurrency-repair-trigger.json \
+            .github/workflows/lake-subject-integration-wave-16-concurrency-repair.yml
+          git diff --check
+      - name: Commit and publish the concurrency repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Separate Wave 16 push and PR concurrency'
+          git fetch origin agent/lake-subject-integration-wave-16
+          test "$(git rev-parse origin/agent/lake-subject-integration-wave-16)" = "${{ github.sha }}"
+          git push origin HEAD:agent/lake-subject-integration-wave-16
