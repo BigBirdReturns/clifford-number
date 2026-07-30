@@ -1,0 +1,308 @@
+name: Evidence lake receipt custody Wave 20
+
+on:
+  push:
+    branches:
+      - agent/lake-receipt-custody-wave-20
+    paths:
+      - '.github/tmp/lake-receipt-custody-wave-20-trigger.json'
+  pull_request:
+    branches:
+      - agent/lake-generator-contracts-wave-19
+    paths:
+      - 'data/project/lake-receipt-custody-wave-20-policy.json'
+      - 'data/project/lake-receipt-custody-registry-wave-20.jsonl'
+      - 'data/project/lake-receipt-custody-wave-20.json'
+      - 'tools/build-lake-receipt-custody-wave-20.mjs'
+      - 'tools/stabilize-lake-receipt-custody-wave-20.mjs'
+      - 'tools/reconcile-lake-receipt-custody-wave-20.mjs'
+      - 'tools/validate-lake-receipt-custody-wave-20.mjs'
+      - 'test/lake-receipt-custody-wave-20.test.js'
+      - '.github/workflows/lake-receipt-custody-wave-20.yml'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: lake-receipt-custody-wave-20-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Determine execution mode
+        id: mode
+        shell: bash
+        run: |
+          echo "original_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if test "$GITHUB_EVENT_NAME" = 'push' \
+            && test -f .github/tmp/lake-receipt-custody-wave-20-trigger.json; then
+            echo 'materialize=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+          fi
+          if test -f data/project/lake-receipt-custody-wave-20.json \
+            && node -e "const x=require('./data/project/lake-receipt-custody-wave-20.json'); process.exit(x.post_execution_reconciliation_complete ? 0 : 1)"; then
+            echo 'sealed=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'sealed=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate trigger-free baseline
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f \
+            .github/tmp/lake-receipt-custody-wave-20-trigger.json \
+            .github/tmp/lake-generator-contracts-wave-19-trigger.json
+          git add -A \
+            .github/tmp/lake-receipt-custody-wave-20-trigger.json \
+            .github/tmp/lake-generator-contracts-wave-19-trigger.json
+          npm run release:check
+          git restore --worktree .
+          git clean -fd
+
+      - name: Build deterministic Wave 20 source controls
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/build-lake-receipt-custody-wave-20.mjs
+          node --check tools/stabilize-lake-receipt-custody-wave-20.mjs
+          node --check tools/reconcile-lake-receipt-custody-wave-20.mjs
+          node --check tools/validate-lake-receipt-custody-wave-20.mjs
+
+          node tools/build-lake-receipt-custody-wave-20.mjs
+          sha256sum \
+            data/project/lake-receipt-custody-registry-wave-20.jsonl \
+            data/project/lake-receipt-custody-wave-20.json \
+            build/lake-actions/receipt-custody-wave-20.json \
+            data/project/lake-index-policy.json \
+            BUILD-INSTRUCTIONS.md \
+            README.md \
+            package.json > /tmp/wave20-source-first.sha256
+
+          node tools/build-lake-receipt-custody-wave-20.mjs
+          sha256sum --check --strict /tmp/wave20-source-first.sha256
+          git add -A
+          git diff --check
+
+      - name: Observe current open-PR shadow
+        if: steps.mode.outputs.materialize == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/build-lake-open-pr-shadow.mjs
+
+      - name: Build and reconcile the Wave 20 lake fixed point
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pass in 1 2 3; do
+            echo "Wave 20 reconciliation pass ${pass}"
+            node tools/build-lake-index.mjs
+            node tools/stabilize-lake-index.mjs
+            node tools/stabilize-lake-generator-contracts-wave-19.mjs
+            node tools/stabilize-lake-receipt-custody-wave-20.mjs
+            node tools/reconcile-lake-receipt-semantics.mjs
+            node tools/build-lake-gap-summary.mjs
+            node tools/validate-lake-index.mjs
+            node tools/validate-lake-receipt-semantics.mjs
+            node tools/validate-lake-gap-summary.mjs
+            node tools/reconcile-lake-identifier-topology-wave-18.mjs
+            node tools/reconcile-lake-generator-contracts-wave-19.mjs
+            node tools/reconcile-lake-receipt-custody-wave-20.mjs
+            git add -A
+          done
+
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-identifier-topology-wave-18.mjs
+          node tools/validate-lake-generator-contracts-wave-19.mjs
+          node tools/validate-lake-receipt-custody-wave-20.mjs
+          node test/lake-index.test.js
+          node test/lake-basin-index.test.js
+          node test/lake-identifier-topology-wave-18.test.js
+          node test/lake-generator-contracts-wave-19.test.js
+          node test/lake-receipt-custody-wave-20.test.js
+          git add -A
+
+      - name: Prove deterministic final reconstruction
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          find build/lake-index -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/wave20-final.sha256
+          sha256sum \
+            data/project/lake-receipt-custody-registry-wave-20.jsonl \
+            data/project/lake-receipt-custody-wave-20.json \
+            build/lake-actions/receipt-custody-wave-20.json \
+            build/lake-actions/receipt-custody-wave-20-reconciliation.json \
+            reports/lake-receipt-custody-wave-20.md \
+            package.json >> /tmp/wave20-final.sha256
+
+          for pass in 1 2; do
+            node tools/build-lake-index.mjs
+            node tools/stabilize-lake-index.mjs
+            node tools/stabilize-lake-generator-contracts-wave-19.mjs
+            node tools/stabilize-lake-receipt-custody-wave-20.mjs
+            node tools/reconcile-lake-receipt-semantics.mjs
+            node tools/build-lake-gap-summary.mjs
+            node tools/validate-lake-index.mjs
+            node tools/validate-lake-receipt-semantics.mjs
+            node tools/validate-lake-gap-summary.mjs
+            node tools/reconcile-lake-identifier-topology-wave-18.mjs
+            node tools/reconcile-lake-generator-contracts-wave-19.mjs
+            node tools/reconcile-lake-receipt-custody-wave-20.mjs
+            git add -A
+          done
+
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          sha256sum --check --strict /tmp/wave20-final.sha256
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-receipt-custody-wave-20.mjs
+          node test/lake-receipt-custody-wave-20.test.js
+          git diff --check
+
+      - name: Run canonical repository gate with Wave 20 active
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run release:check
+          git restore --worktree .
+          git clean -fd
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-residual-frontier-wave-17.mjs
+          node tools/validate-lake-identifier-topology-wave-18.mjs
+          node tools/validate-lake-generator-contracts-wave-19.mjs
+          node tools/validate-lake-receipt-custody-wave-20.mjs
+          node test/lake-receipt-custody-wave-20.test.js
+          git diff --check
+
+      - name: Enforce Wave 20 source and generated-output boundaries
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          import re
+          import subprocess
+
+          required_changes = {
+              '.github/tmp/lake-receipt-custody-wave-20-trigger.json',
+              'BUILD-INSTRUCTIONS.md',
+              'README.md',
+              'package.json',
+              'data/project/lake-index-policy.json',
+              'data/project/lake-receipt-custody-registry-wave-20.jsonl',
+              'data/project/lake-receipt-custody-wave-20.json',
+          }
+          required_present = {
+              '.github/workflows/lake-receipt-custody-wave-20.yml',
+              'data/project/lake-receipt-custody-wave-20-policy.json',
+              'tools/build-lake-receipt-custody-wave-20.mjs',
+              'tools/stabilize-lake-receipt-custody-wave-20.mjs',
+              'tools/reconcile-lake-receipt-custody-wave-20.mjs',
+              'tools/validate-lake-receipt-custody-wave-20.mjs',
+              'test/lake-receipt-custody-wave-20.test.js',
+          }
+          allowed_sources = required_changes | required_present | {
+              'data/project/lake-open-pr-shadow.json',
+              'data/project/lake-identifier-topology-registry-wave-18.json',
+              'data/project/lake-identifier-topology-wave-18.json',
+              'data/project/lake-generator-contracts-wave-19.json',
+          }
+          generated_prefixes = ('build/', 'reports/', 'briefs/', 'estates/', 'gametrails/')
+          generated_root = re.compile(r'^(?:Clifford-.*\.html|[^/]+-standalone\.html)$')
+          raw = subprocess.check_output(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'])
+          entries = [entry for entry in raw.decode().split('\0') if entry]
+          actual = set()
+          for entry in entries:
+              status = entry[:2]
+              assert 'R' not in status and 'C' not in status, entry
+              actual.add(entry[3:])
+          unexpected = sorted(path for path in actual
+              if path not in allowed_sources
+              and not path.startswith(generated_prefixes)
+              and not generated_root.match(path))
+          assert required_changes <= actual, {'missing_required_wave_20_changes': sorted(required_changes - actual)}
+          for required_path in sorted(required_present):
+              assert os.path.exists(required_path), {'missing_required_wave_20_source': required_path}
+              subprocess.check_call(['git', 'ls-files', '--error-unmatch', required_path], stdout=subprocess.DEVNULL)
+          assert not unexpected, {'undeclared_source_changes': unexpected}
+          assert not os.path.exists('.github/tmp/lake-generator-contracts-wave-19-trigger.json')
+          assert not os.path.exists('.github/tmp/lake-receipt-custody-wave-20-trigger.json')
+          print({
+              'required_changes': len(required_changes),
+              'required_present': len(required_present),
+              'actual_changes': len(actual),
+              'generated_changes': len(actual - allowed_sources)
+          })
+          PY
+
+      - name: Commit and push Wave 20 checkpoint
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Execute receipt and source custody Wave 20'
+          git fetch origin agent/lake-receipt-custody-wave-20
+          test "$(git rev-parse origin/agent/lake-receipt-custody-wave-20)" = "${{ steps.mode.outputs.original_sha }}"
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-receipt-custody-wave-20.mjs
+          git push origin HEAD:agent/lake-receipt-custody-wave-20
+
+      - name: Validate nonmaterializing or completed head
+        if: steps.mode.outputs.materialize != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/build-lake-receipt-custody-wave-20.mjs
+          node --check tools/stabilize-lake-receipt-custody-wave-20.mjs
+          node --check tools/reconcile-lake-receipt-custody-wave-20.mjs
+          node --check tools/validate-lake-receipt-custody-wave-20.mjs
+
+          if test "${{ steps.mode.outputs.sealed }}" = 'true'; then
+            npm run release:check
+            git reset --hard HEAD
+            git clean -fd
+            node tools/validate-lake-index-shards.mjs
+            node tools/validate-lake-basin-index.mjs
+            node tools/validate-lake-receipt-custody-wave-20.mjs
+            node test/lake-receipt-custody-wave-20.test.js
+          else
+            node tools/build-lake-receipt-custody-wave-20.mjs
+            node -e "const x=require('./data/project/lake-receipt-custody-wave-20.json'); if (x.counts.raw_unused_receipt_definitions !== 49 || x.post_execution_reconciliation_complete !== false) process.exit(1)"
+            git reset --hard HEAD
+            git clean -fd
+            npm run release:check
+          fi
+
+          git reset --hard HEAD
+          git clean -fd
+          test -z "$(git status --porcelain)"
