@@ -18,6 +18,12 @@ const paths = readJson(policy.paths.path_registry);
 const projections = readJson(policy.paths.projection_registry);
 const receipt = readJson(policy.paths.receipt);
 const pathByPath = new Map(paths.decisions.map(row => [row.path, row]));
+const triggerPath = '.github/tmp/lake-residual-frontier-wave-17-trigger.json';
+const authorizedPreReconciliationReceipt = process.env.GITHUB_ACTIONS === 'true'
+  && process.env.GITHUB_WORKFLOW === 'Evidence lake residual frontier Wave 17'
+  && process.env.GITHUB_EVENT_NAME === 'push'
+  && process.env.WAVE17_ALLOW_PRELIMINARY_RECEIPT === 'true'
+  && fs.existsSync(triggerPath);
 
 assert.equal(pathByPath.get('data/crawl/candidates.jsonl').owner_program, 'official-crawl-program');
 assert.equal(pathByPath.get('data/crawl/README.md').semantic_role, 'official_source_crawl_state');
@@ -46,11 +52,20 @@ const estate = projections.records.find(row => row.id_key === 'target_estate_id'
 assert.ok(estate);
 assert.equal(estate.classification, 'cross_key_estate_projection');
 
-assert.equal(receipt.counts.after.evidence_paths_without_program_owner, 0);
-assert.equal(receipt.counts.after.exact_orphan_evidence_files, 0);
-assert.equal(receipt.counts.after.evidence_paths_not_index_reachable, 0);
-assert.equal(receipt.counts.after.projection_ids_without_source, 0);
-assert.equal(receipt.counts.decisions_requiring_human_permission, 0);
+if (authorizedPreReconciliationReceipt) {
+  assert.equal(receipt.post_execution_reconciliation_complete, false);
+  assert.equal(receipt.after_counts, null);
+  assert.equal(receipt.counts.residual_path_decisions, 601);
+  assert.equal(receipt.counts.projection_lineage_records, 2000);
+  assert.equal(receipt.counts.residual_path_typed_refusals, 0);
+} else {
+  assert.equal(receipt.post_execution_reconciliation_complete, true);
+  assert.equal(receipt.counts.after.evidence_paths_without_program_owner, 0);
+  assert.equal(receipt.counts.after.exact_orphan_evidence_files, 0);
+  assert.equal(receipt.counts.after.evidence_paths_not_index_reachable, 0);
+  assert.equal(receipt.counts.after.projection_ids_without_source, 0);
+  assert.equal(receipt.counts.decisions_requiring_human_permission, 0);
+}
 assert.equal(receipt.boundaries.graph_effect, 'none');
 
-console.log('lake-residual-frontier-wave-17.test: OK (601 path decisions, 2000 lineage records, all four frozen residual counts zero, graph effect none)');
+console.log(`lake-residual-frontier-wave-17.test: OK (601 path decisions, 2000 lineage records, ${authorizedPreReconciliationReceipt ? 'preliminary receipt authorized' : 'all four frozen residual counts zero'}, graph effect none)`);
