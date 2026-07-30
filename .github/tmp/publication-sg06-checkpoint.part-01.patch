@@ -1,0 +1,304 @@
+bece25cdb5d115ff9622037ff20398f4c31bd2e638c126518664a335a606",
++      "bytes": 6256
++    },
++    {
++      "path": "tools/lib/publication-manifest.mjs",
++      "sha256": "032bd37f3c7e6ed55b2f2e4f41479fc882283d0edc25b94f52b9a6a11049dd2d",
++      "bytes": 20812
++    },
++    {
++      "path": "tools/validate-pages.mjs",
++      "sha256": "16d18bdeb78d10328653f12816f6c3cfc8bbabda16e4f8a5a3af164aefb79e10",
++      "bytes": 20965
++    },
++    {
++      "path": "tools/validate-publication-plan.mjs",
++      "sha256": "39f6ea6268ff95da8c141a8340b5e0ec87c1c535821a79dd9ac3a12fb22c7ade",
++      "bytes": 653
++    },
++    {
++      "path": "tools/build-project-stable-ground-sg06.mjs",
++      "sha256": "8dbfd58b9f24d1de62e4b778911884d5c43d1003fc1b0bf6a64625b008a5f95e",
++      "bytes": 11507
++    },
++    {
++      "path": "tools/validate-project-stable-ground-sg06.mjs",
++      "sha256": "678a6b91509811d24c534e1c2c2a85326f25e245c76c9713773252417ac5c5be",
++      "bytes": 16680
++    },
++    {
++      "path": "test/publication-manifest.test.js",
++      "sha256": "f7ff99792de00a8175eb9e995e6b4c6a45c3be78d8c5923b78a3c89fdcf13086",
++      "bytes": 5448
++    },
++    {
++      "path": "test/publication-pages-browser.test.js",
++      "sha256": "04be9400c49310854d208cbf498197ac20afd554cf840942be1a796c55845d97",
++      "bytes": 4137
++    },
++    {
++      "path": "test/status-sovereignty-compact.test.js",
++      "sha256": "4dfeb7fb5f9efc96886b8ee143fd61e75e8b57fd79ecddcae20c93096b9ff8ad",
++      "bytes": 6087
++    },
++    {
++      "path": "test/ui-contract.test.js",
++      "sha256": "8cd2190e603149348efb788cf5747c5750d9a98cdad6bc14effb749b4f6fa70a",
++      "bytes": 15403
++    },
++    {
++      "path": "test/project-stable-ground-sg06.test.js",
++      "sha256": "26fea77cbe830cf14c53c5767d658cad50e8523ef520c37fe2e697991ff1c71f",
++      "bytes": 3789
++    },
++    {
++      "path": "test/project-stable-ground-sg05.test.js",
++      "sha256": "275b2453c6126d9390a697de16fc907b583471d7c85090eb76e6c859a97e787f",
++      "bytes": 4384
++    }
++  ],
++  "combined_sha256": "733c991e34fb76c4c6928469333858759237f9c9ae65917dda6da246817b00ae",
++  "boundaries": {
++    "exact_bytes_prove_source_truth": false,
++    "manifest_proves_publication_correctness": false,
++    "manifest_proves_poof_deployment": false,
++    "manifest_proves_coordination": false,
++    "manifest_advances_dca": false,
++    "manifest_advances_adoption": false,
++    "graph_effect": "none"
++  }
++}
+diff --git a/data/project/project-stable-ground-sg06.json b/data/project/project-stable-ground-sg06.json
+new file mode 100644
+index 0000000..a4b3b0e
+--- /dev/null
++++ b/data/project/project-stable-ground-sg06.json
+@@ -0,0 +1,577 @@
++{
++  "schema_version": "project-stable-ground-supersession@1",
++  "project_id": "clifford-number",
++  "program_id": "M-05",
++  "checkpoint_id": "SG-2026-07-30-06",
++  "as_of": "2026-07-30",
++  "governor": "data/project/project-stable-ground-governor.json",
++  "supersedes": {
++    "checkpoint_id": "SG-2026-07-30-05",
++    "source_path": "data/project/project-stable-ground-sg05.json",
++    "merge_commit": "cada5ce40087305196a53a9ecc32a707cff28e52",
++    "preserved_unchanged": true
++  },
++  "preserved_history": [
++    {
++      "checkpoint_id": "SG-2026-07-29-01",
++      "source_path": "data/project/project-stable-ground-alignment.json",
++      "merge_commit": "c810cc741b23062b7eb3d026a46404e138e93eda",
++      "status": "superseded_preserved"
++    },
++    {
++      "checkpoint_id": "SG-2026-07-29-02",
++      "source_path": "data/project/project-stable-ground-sg02.json",
++      "merge_commit": "6b54d531885b5de72be547933ad4f7828a34d529",
++      "status": "superseded_preserved"
++    },
++    {
++      "checkpoint_id": "SG-2026-07-29-03",
++      "source_path": "data/project/project-stable-ground-sg03.json",
++      "merge_commit": "b305eb935864b8adef320e8db5ff471d2a778403",
++      "status": "superseded_preserved"
++    },
++    {
++      "checkpoint_id": "SG-2026-07-29-04",
++      "source_path": "data/project/project-stable-ground-sg04.json",
++      "merge_commit": "8c5e592034effe30d644319e085f97e045060269",
++      "status": "superseded_preserved"
++    },
++    {
++      "checkpoint_id": "SG-2026-07-30-05",
++      "source_path": "data/project/project-stable-ground-sg05.json",
++      "merge_commit": "cada5ce40087305196a53a9ecc32a707cff28e52",
++      "status": "superseded_preserved"
++    }
++  ],
++  "trigger": {
++    "type": "canonical_status_aware_publication_safety",
++    "issue": 463,
++    "pull_request": 478,
++    "transition_commit": "1991d4528cca0836be84469fb2115b3308b4dfa1",
++    "transition_base": "0d701692fa83a405bd0ba86e7b45c525022589f7",
++    "transition_paths": [
++      ".github/workflows/publication-integrity.yml",
++      "app.js",
++      "data/project/poof-clifford-constitutional-change-log.json",
++      "data/project/poof-clifford-ecology-contract.json",
++      "data/project/poof-clifford-ecology-release-manifest.json",
++      "data/project/publication-plan.json",
++      "docs/methods/status-aware-publication-allowlist.md",
++      "index.html",
++      "package.json",
++      "reports/audits/adversarial-release-integrity-failed-custody.md",
++      "reports/core-thesis/poof-clifford-ecology/data.json",
++      "reports/core-thesis/poof-clifford-ecology/methods/index.html",
++      "reports/core-thesis/poof-clifford-ecology/release-manifest.json",
++      "test/publication-manifest.test.js",
++      "test/publication-pages-browser.test.js",
++      "test/status-sovereignty-compact.test.js",
++      "test/ui-contract.test.js",
++      "tools/build-pages.mjs",
++      "tools/build-standalone.mjs",
++      "tools/lib/publication-manifest.mjs",
++      "tools/validate-pages.mjs",
++      "tools/validate-publication-plan.mjs"
++    ],
++    "transition_paths_sha256": "6c6efeac292640acedaf0fa2b6ab1dd1e27d1a318cec2061a44e5b0be94b58c3",
++    "publication_plan_path": "data/project/publication-plan.json",
++    "publication_manifest_sha256": "9dafbcfc55e3b4aa6fb33acb0186f2105092c1e0b4baae27c0203295073fd5f2",
++    "poof_release_sha256": "3f8d1e3e7eef699609779a846f992e06ff61e67ab6ffca2f5b9e9c700429702a",
++    "reason": "The stable-ground governor requires a successor because publication authority changed from broad recursive copying with negative deletions to a positive default-exclude constitution, while POOF was admitted to custody but remained staged and nonpublic."
++  },
++  "canonical_main": {
++    "repository": "BigBirdReturns/clifford-number",
++    "branch": "main",
++    "commit": "1991d4528cca0836be84469fb2115b3308b4dfa1",
++    "commit_title": "Enforce status-aware publication allowlist and stage POOF",
++    "meaning": "Canonical status-aware publication constitution and staged POOF custody; not source truth, coordination, deployment, field effect, adoption, or authority to conduct a real-person pilot."
++  },
++  "preserved_stable_propositions": [
++    "SG-P01",
++    "SG-P02",
++    "SG-P03",
++    "SG-P04",
++    "SG-P05",
++    "SG-P06",
++    "SG-P07",
++    "SG-P08",
++    "SG-P09"
++  ],
++  "authority_change": {
++    "changed_layer": "L9-STATUS-AWARE-PUBLICATION-SAFETY",
++    "prior_authority": "broad recursive Pages copying with known-path deletions and a generic graph route",
++    "current_authority": "canonical positive default-exclude publication constitution with classified dependencies, exact manifest custody, and held surfaces",
++    "canonical_contract": "data/project/publication-plan.json",
++    "publication_manifest_sha256": "9dafbcfc55e3b4aa6fb33acb0186f2105092c1e0b4baae27c0203295073fd5f2",
++    "canonical_effect": "publication surface narrowed to explicit entries and classified dependencies; generic graph and legacy routes retired; POOF and SSC remain held",
++    "graph_effect": "none",
++    "publication_effect": "status_aware_default_exclude_publication_constitution_installed",
++    "field_effect": "none",
++    "adoption_effect": "none"
++  },
++  "canonical_snapshot": {
++    "status_sovereignty": {
++      "hypothesis_id": "SSC-H01",
++      "authority_tier": "AT-2",
++      "status": "canonical_field_hypothesis_zero_execution_no_prevalence_finding",
++      "gates": 4,
++      "dimensions": 10,
++      "causal_stages": 12,
++      "fanout_lanes": 16,
++      "issue_groups": 8,
++      "external_references": 8,
++      "repository_sources": 7,
++      "source_sha256": "6cddd17c6526afc8f9407beb7b7888b5c8d0c05ecb14c8b4bc8dd4ae8d4a9011",
++      "release_sha256": "69a8671d6db9d9e3db48b043e8a1d54210b914f2ecee6219bde5d47b81085bfa",
++      "query_or_field_execution_started": false,
++      "records_observed": 0,
++      "records_retained": 0,
++      "prevalence_finding_generated": false,
++      "racial_order_finding_generated": false,
++      "coordination_finding_generated": false,
++      "common_purpose_finding_generated": false,
++      "personal_hostility_finding_generated": false,
++      "publication_status": "blocked_pending_source_acquisition_and_review",
++      "graph_effect": "none"
++    },
++    "core_thesis": {
++      "report_contracts": 9,
++      "field_hypothesis_bridges": 2,
++      "graph_effect": "none"
++    },
++    "m05_story_ecology": {
++      "stories": 15,
++      "standalone_actor": 3,
++      "exact_overlap": 3,
++      "constitutional_mechanism": 5,
++      "answer_story": 3,
++      "non_link": 1,
++      "last_canonical_story_id": "M05-S15",
++      "research_lanes": 18,
++      "last_canonical_lane_id": "A18"
++    },
++    "k0": {
++      "status": "execution_started_wave_08_discovery_complete_field_adjudication_pending",
++      "query_templates_total": 9,
++      "query_templates_executed": 9,
++      "searches_executed": 52,
++      "raw_results_observed": 302,
++      "returned_records": 65,
++      "candidate_records": 28,
++      "positive_controls": 14,
++      "negative_controls": 12,
++      "coverage_controls": 8,
++      "non_events": 34,
++      "open_additional_acquisition": 1,
++      "included_events": 0,
++      "independent_second_party_review_complete": false,
++      "graph_effect": "none"
++    },
++    "wave_08": {
++      "wave_id": "K0-W08",
++      "query_id": "K0-Q02",
++      "query_executions": 8,
++      "raw_results_observed": 96,
++      "retained_records": 8,
++      "candidate_records": 4,
++      "positive_controls": 1,
++      "negative_controls": 2,
++      "coverage_controls": 1,
++      "counterpower_controls": 1,
++      "included_events": 0,
++      "assigned_ccd_values": 0,
++      "field_adjudication_complete": false,
++      "publication_status": "blocked",
++      "graph_effect": "none"
++    },
++    "poof": {
++      "ecology_id": "poof-clifford-constitutional-publication-ecology",
++      "jurisdictions": 4,
++      "typed_transaction_objects": 5,
++      "routes": 9,
++      "constitutional_change_receipts": 6,
++      "staged": true,
++      "deployed": false,
++      "indexable": false,
++      "release_sha256": "3f8d1e3e7eef699609779a846f992e06ff61e67ab6ffca2f5b9e9c700429702a",
++      "graph_effect": "none"
++    },
++    "dca": {
++      "hypothesis_id": "DCA-H01",
++      "authority_tier": "AT-2",
++      "query_templates_executed": 0,
++      "field_records": 0,
++      "prevalence_finding_generated": false,
++      "coordination_finding_generated": false,
++      "common_purpose_finding_generated": false,
++      "graph_effect": "none"
++    },
++    "sprint_09": {
++      "external_reproduction_receipts": 0,
++      "A1_registry_entries": 0,
++      "A3_no_adverse_shadow_uses": 0,
++      "A4_prospective_parallel_operations": 0,
++      "A5_rights_bearing_uses": 0,
++      "maximum_verified_adoption_level": "A0",
++      "real_person_pilot_authorized": false
++    },
++    "publication_safety": {
++      "publication_id": "clifford-number-github-pages-public-waterline",
++      "status": "active_status_aware_positive_allowlist",
++      "default_decision": "exclude",
++      "public_entries": 100,
++      "allowed_dependency_prefixes": 20,
++      "generated_outputs": 4,
++      "normalization_rules": 1,
++      "held_surfaces": 11,
++      "manifest_files": 118,
++      "source_files"
