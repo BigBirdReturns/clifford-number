@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import { validateConstitutionalChangePlan, canonicalChangeLogPath, remoteBranchForCandidate, resolveComparisonBase } from '../tools/validate-poof-constitutional-change.mjs';
+import { validateConstitutionalChangePlan, canonicalChangeLogPath, remoteBranchForCandidate, resolveComparisonBase, resolveCommittedPathDiff } from '../tools/validate-poof-constitutional-change.mjs';
 
 const requiredFields = ['protected_paths_touched','affected_invariants','reason','previous_behavior','proposed_behavior','migration','backward_compatibility','adversarial_fixtures_added','emergency_override'];
 const contract = {
@@ -62,5 +62,19 @@ const resolvedBase = resolveComparisonBase({
 });
 assert.equal(resolvedBase, 'origin/main');
 assert.deepEqual(fetchedBranches, ['main']);
+
+const comparisonAttempts = [];
+const shallowComparison = resolveCommittedPathDiff({
+  mergeBaseDiff: () => { comparisonAttempts.push('merge_base'); return null; },
+  treeDiff: () => { comparisonAttempts.push('tree_delta'); return 'validator.mjs\n'; }
+});
+assert.deepEqual(shallowComparison, { mode: 'tree_delta', output: 'validator.mjs\n' });
+assert.deepEqual(comparisonAttempts, ['merge_base', 'tree_delta']);
+
+const fullComparison = resolveCommittedPathDiff({
+  mergeBaseDiff: () => 'constitution.json\n',
+  treeDiff: () => { throw new Error('tree fallback must not run'); }
+});
+assert.deepEqual(fullComparison, { mode: 'merge_base', output: 'constitution.json\n' });
 
 console.log('poof-constitutional-change.test: OK');

@@ -997,6 +997,40 @@
         "expires_at": null,
         "authority": "repository_change_receipt_below_canonical_evidence",
         "graph_effect": "none"
+      },
+      {
+        "change_id": "POOF-CONST-2026-07-29-004",
+        "effective_at": "2026-07-29T19:45:00-07:00",
+        "protected_paths_touched": [
+          "tools/validate-poof-constitutional-change.mjs",
+          "test/poof-constitutional-change.test.js"
+        ],
+        "affected_invariants": [
+          "a shallow merge checkout cannot suppress protected-path comparison by lacking a traversable merge base",
+          "the fallback compares complete base and current trees rather than inferring an empty change set",
+          "merge-base comparison remains preferred whenever repository history supports it"
+        ],
+        "reason": "The real depth-one pull-request merge checkout fetched origin/main successfully but Git treated the merge commit as a shallow root, so triple-dot diff had no merge base.",
+        "previous_behavior": [
+          "base acquisition succeeded but committed-path enumeration terminated on a missing merge base",
+          "the generic release gate could not reach constitutional receipt validation in a depth-one PR merge checkout"
+        ],
+        "proposed_behavior": [
+          "attempt the ordinary merge-base diff first",
+          "fall back only on failure to a direct base-tree versus current-tree diff",
+          "fail closed if neither comparison can be produced and expose the comparison mode in the validation receipt"
+        ],
+        "migration": "Add an injected committed-path comparison helper, mutation coverage for preferred and fallback modes, and regenerate every release-bound product.",
+        "backward_compatibility": "Full-history clones retain merge-base behavior; shallow PR merge clones receive a conservative net-tree comparison that cannot omit a final protected-file difference.",
+        "adversarial_fixtures_added": [
+          "missing merge-base tree-delta fallback",
+          "merge-base preference without fallback execution",
+          "comparison-mode receipt"
+        ],
+        "emergency_override": false,
+        "expires_at": null,
+        "authority": "repository_change_receipt_below_canonical_evidence",
+        "graph_effect": "none"
       }
     ],
     "boundaries": {

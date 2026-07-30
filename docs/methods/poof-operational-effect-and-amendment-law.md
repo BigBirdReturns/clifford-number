@@ -27,3 +27,7 @@ The repository compares every pull request with its merge base. Prior constituti
 ## Shallow-checkout base bootstrap
 
 The constitutional guard first uses a comparison ref already present in the clone. When a standard shallow pull-request checkout lacks its base ref, the guard may fetch only the validated remote base branch required for the comparison. Malformed ref candidates are rejected, broad history is not required, and failure to acquire a lawful base remains fatal.
+
+## Shallow merge-tree comparison
+
+A depth-one pull-request merge checkout may contain the base tree while still marking the merge commit as a shallow root, making an ordinary merge-base diff unavailable. The guard first attempts the merge-base comparison. Only when that fails does it compare the complete selected base tree directly with the current tree. This fallback is conservative: any final protected-file difference remains visible. If neither comparison can be produced, validation fails closed.

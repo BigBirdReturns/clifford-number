@@ -28,6 +28,14 @@ export function resolveComparisonBase({ candidates, verify, fetchRemoteBranch })
   return null;
 }
 
+export function resolveCommittedPathDiff({ mergeBaseDiff, treeDiff }) {
+  const mergeBaseOutput = mergeBaseDiff();
+  if (mergeBaseOutput !== null) return { mode: 'merge_base', output: mergeBaseOutput };
+  const treeOutput = treeDiff();
+  if (treeOutput !== null) return { mode: 'tree_delta', output: treeOutput };
+  throw new Error('Unable to compare constitutional paths with the selected base');
+}
+
 export function validateConstitutionalChangePlan({ baseContract, currentContract, baseLog, currentLog, changedPaths }) {
   const failures = [];
   const fail = (message) => failures.push(message);
@@ -100,12 +108,16 @@ export function validateRepositoryConstitutionalChange({ root = moduleRoot, base
   const currentLog = JSON.parse(fs.readFileSync(path.join(root, canonicalChangeLogPath), 'utf8'));
   const baseContract = jsonAt(resolvedBase, 'data/project/poof-clifford-ecology-contract.json');
   const baseLog = jsonAt(resolvedBase, canonicalChangeLogPath);
-  const committed = git(['diff', '--name-only', `${resolvedBase}...HEAD`]).split('\n').filter(Boolean);
+  const committedComparison = resolveCommittedPathDiff({
+    mergeBaseDiff: () => git(['diff', '--name-only', `${resolvedBase}...HEAD`], { allowFailure: true }),
+    treeDiff: () => git(['diff', '--name-only', resolvedBase, 'HEAD'], { allowFailure: true })
+  });
+  const committed = committedComparison.output.split('\n').filter(Boolean);
   const working = git(['diff', '--name-only']).split('\n').filter(Boolean);
   const staged = git(['diff', '--cached', '--name-only']).split('\n').filter(Boolean);
   const untracked = git(['ls-files', '--others', '--exclude-standard']).split('\n').filter(Boolean);
   const changedPaths = sortedUnique([...committed, ...working, ...staged, ...untracked]);
-  return { baseRef: resolvedBase, ...validateConstitutionalChangePlan({ baseContract, currentContract, baseLog, currentLog, changedPaths }) };
+  return { baseRef: resolvedBase, comparisonMode: committedComparison.mode, ...validateConstitutionalChangePlan({ baseContract, currentContract, baseLog, currentLog, changedPaths }) };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
@@ -114,5 +126,5 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.error(`POOF constitutional change validation failed against ${result.baseRef}:\n${result.failures.map((row) => `- ${row}`).join('\n')}`);
     process.exit(1);
   }
-  console.log(`validate-poof-constitutional-change: OK (${result.appended.length} appended receipt(s), ${result.touched.length} protected path(s))`);
+  console.log(`validate-poof-constitutional-change: OK (${result.appended.length} appended receipt(s), ${result.touched.length} protected path(s), ${result.comparisonMode})`);
 }
