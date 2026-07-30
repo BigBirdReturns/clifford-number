@@ -26,6 +26,16 @@ jobs:
         run: |
           python3 -m py_compile .github/scripts/apply-poof-constitutional-guard.py
           python3 .github/scripts/apply-poof-constitutional-guard.py
+          python3 - <<'PY'
+          from pathlib import Path
+          target = Path('tools/validate-poof-clifford-ecology.mjs')
+          text = target.read_text()
+          old = "  if (projection.selection_contract.candidate_count === projection.selection_contract.included_count && projection.selection_contract.candidate_set_hash !== includedHash) fail('projection candidate set hash drift');\n"
+          new = "  if (projection.selection_contract && projection.selection_contract.candidate_count === projection.selection_contract.included_count && projection.selection_contract.candidate_set_hash !== includedHash) fail('projection candidate set hash drift');\n"
+          if text.count(old) != 1:
+              raise SystemExit(f'candidate hash guard anchor count: {text.count(old)}')
+          target.write_text(text.replace(old, new, 1))
+          PY
       - name: Prove constitutional custody and focused ecology
         run: |
           node tools/validate-poof-constitutional-change.mjs origin/main
