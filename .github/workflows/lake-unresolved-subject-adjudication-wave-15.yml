@@ -46,7 +46,8 @@ jobs:
         shell: bash
         run: |
           echo "original_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          if test "$GITHUB_EVENT_NAME" = 'push' && test -f .github/tmp/lake-unresolved-subject-adjudication-wave-15-trigger.json; then
+          if test -f .github/tmp/lake-unresolved-subject-adjudication-wave-15-trigger.json \
+            && { test "$GITHUB_EVENT_NAME" = 'push' || test "$GITHUB_EVENT_NAME" = 'pull_request'; }; then
             echo 'materialize=true' >> "$GITHUB_OUTPUT"
           else
             echo 'materialize=false' >> "$GITHUB_OUTPUT"
