@@ -85,7 +85,7 @@ jobs:
           git diff --check
 
           git restore --source="$FIRST" -- .github/workflows/project-stable-ground-sg05.yml
-          git rm .github/workflows/project-stable-ground-sg06.yml
+          git rm -f .github/workflows/project-stable-ground-sg06.yml
           git add -A
           git reset --soft "$FIRST"
 
