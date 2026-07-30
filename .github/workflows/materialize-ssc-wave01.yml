@@ -29,16 +29,16 @@ jobs:
           set -euo pipefail
           base='0d701692fa83a405bd0ba86e7b45c525022589f7'
           target='agent/status-sovereignty-wave-01'
-          expected_archive='db2aefe157bcdc8af8cd89c107deb521a985e437833c8bf1ab67181aecc902bc'
+          expected_archive='b21c83371c5438d2a0011ba085b01a64c17124a91a85c10c79d4ebe125c108da'
 
           mapfile -t chunks < <(find .github/tmp/ssc-wave01 -maxdepth 1 -type f -name 'part-*.b64' | sort)
-          test "${#chunks[@]}" -eq 4
-          cat "${chunks[@]}" | base64 --decode > /tmp/ssc-wave01-transition.tar.gz
-          printf '%s  %s\n' "$expected_archive" /tmp/ssc-wave01-transition.tar.gz | sha256sum -c -
+          test "${#chunks[@]}" -eq 5
+          cat "${chunks[@]}" | base64 --decode > /tmp/ssc-wave01-transition.tar.xz
+          printf '%s  %s\n' "$expected_archive" /tmp/ssc-wave01-transition.tar.xz | sha256sum -c -
 
           rm -rf /tmp/ssc-wave01-payload /tmp/ssc-wave01-work
           mkdir -p /tmp/ssc-wave01-payload
-          tar -xzf /tmp/ssc-wave01-transition.tar.gz -C /tmp/ssc-wave01-payload
+          tar -xJf /tmp/ssc-wave01-transition.tar.xz -C /tmp/ssc-wave01-payload
           test "$(cat /tmp/ssc-wave01-payload/TRANSITION_BASE.txt)" = "$base"
           test "$(wc -l < /tmp/ssc-wave01-payload/TRANSITION_PATHS.txt)" -eq 42
 
