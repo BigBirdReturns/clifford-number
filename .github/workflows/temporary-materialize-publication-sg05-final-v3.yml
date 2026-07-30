@@ -1,0 +1,66 @@
+name: Temporary materialize publication safety and SG-05 final v3
+
+on:
+  push:
+    branches:
+      - agent/publication-safety-sg05-final-v3
+    paths:
+      - '.github/workflows/temporary-materialize-publication-sg05-final-v3.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publication-sg05-final-v3
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/publication-safety-sg05-final-v3
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reassemble and verify exact carrier
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/tmp/publication-sg05-final-v3-part-*.b64 \
+            | tr -d '\n\r\t ' \
+            | base64 --decode \
+            > /tmp/publication-sg05-final-v3-carrier.tar.gz
+          printf '%s  %s\n' \
+            '18eafe73534bc9c8188a41f159019360b265ae7ae0cbf329f569184f0572611a' \
+            /tmp/publication-sg05-final-v3-carrier.tar.gz \
+            | sha256sum --check --strict
+          mkdir -p /tmp/publication-sg05-final-v3
+          tar -xzf /tmp/publication-sg05-final-v3-carrier.tar.gz \
+            -C /tmp/publication-sg05-final-v3
+      - name: Execute exact publication and SG-05 transition
+        env:
+          EXPECTED_BASE_COMMIT: c8415a769d03add67a92a3019794268bf5d1cb84
+          BRANCH: agent/publication-safety-sg05-final-v3
+          RUN_BROWSER: '1'
+          PUSH: '1'
+          TRANSPORT_HEAD: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -o pipefail
+          bash /tmp/publication-sg05-final-v3/materialize-publication-sg05.sh \
+            2>&1 | tee /tmp/publication-sg05-final-v3.log
+      - name: Preserve materialization receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: publication-sg05-final-v3-${{ github.run_id }}
+          path: |
+            /tmp/publication-sg05-final-v3.log
+            /tmp/publication-sg05-materialization-receipt.json
+            /tmp/publication-browser-qa.json
+          if-no-files-found: warn
+          retention-days: 14
