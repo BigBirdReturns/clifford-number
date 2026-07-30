@@ -1,6 +1,6 @@
 # Lake index gap summary
 
-Source fingerprint: `b4d2921c3849789977b08c6d452d95b3d0ab6586401533ca96f06e7256d0f2fc`
+Source fingerprint: `3c6276afabcaaa8d01fc1a271766954104d77a8790457cb3b2e3bda1c9257da8`
 
 ## Finding
 
@@ -79,15 +79,17 @@ case IDs absent from public catalog: 26
 |---|---:|
 | #386 Make evidence-grounded judgments without a human-permission gate | 18 |
 | #403 Measure the production cross-case identity denominator | 16 |
+| #478 Enforce status-aware publication safety and append SG-05 | 14 |
 | #404 Recover exact source-bound cross-case mention recurrence | 11 |
 | #362 Stage biological Omega control-surface research program | 9 |
-| #467 Encode the status-for-sovereignty compact and fan out its evidence program | 9 |
 | #50 Stage synthetic-population research program | 8 |
 | #380 Build root Evidence Desk publication estate from WebsiteIQ audit | 6 |
 | #378 Run WebsiteIQ baseline audit before website remediation | 4 |
 | #211 Map every case and report membership across the estates | 2 |
 | #379 Run corrected WebsiteIQ landing-path audit | 2 |
 | #477 Adjudicate identifier topology after the residual lake repair | 1 |
+| #480 Execute SSC-H01 Wave 01 across grievance, allocator, and public-capital lanes | 1 |
+| #481 Export exact current main for the publication SG-06 rebuild | 1 |
 
 ### P5 — history and semantics
 
