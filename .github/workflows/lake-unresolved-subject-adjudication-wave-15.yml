@@ -1,0 +1,240 @@
+name: Evidence lake unresolved subject adjudication Wave 15
+
+on:
+  push:
+    branches:
+      - agent/lake-unresolved-subject-adjudication-wave-15
+    paths:
+      - '.github/tmp/lake-unresolved-subject-adjudication-wave-15-trigger.json'
+  pull_request:
+    branches:
+      - agent/lake-exact-canonical-subject-wave-14
+    paths:
+      - 'data/project/lake-unresolved-subject-adjudication-wave-15-policy.json'
+      - 'data/project/lake-unresolved-subject-adjudication-registry-wave-15.jsonl'
+      - 'data/project/lake-unresolved-subject-adjudication-wave-15.json'
+      - 'tools/build-lake-unresolved-subject-adjudication-wave-15.mjs'
+      - 'tools/apply-lake-unresolved-subject-adjudication-wave-15.mjs'
+      - 'tools/reconcile-lake-unresolved-subject-adjudication-wave-15.mjs'
+      - 'tools/validate-lake-unresolved-subject-adjudication-wave-15.mjs'
+      - 'test/lake-unresolved-subject-adjudication-wave-15.test.js'
+      - 'tools/compile.mjs'
+      - '.github/workflows/lake-unresolved-subject-adjudication-wave-15.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: lake-unresolved-subject-adjudication-wave-15-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Determine execution mode
+        id: mode
+        shell: bash
+        run: |
+          echo "original_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if test "$GITHUB_EVENT_NAME" = 'push' && test -f .github/tmp/lake-unresolved-subject-adjudication-wave-15-trigger.json; then
+            echo 'materialize=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Restore committed bytes
+        run: |
+          git restore --staged --worktree .
+          git clean -fd
+      - name: Run the complete repository release gate
+        run: npm run release:check
+      - name: Prove the Wave 15 denominator deterministically
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-lake-unresolved-subject-adjudication-wave-15.mjs
+          sha256sum \
+            data/project/lake-unresolved-subject-adjudication-registry-wave-15.jsonl \
+            build/unresolved-subject-adjudication-wave-15.json \
+            build/lake-actions/unresolved-subject-adjudication-wave-15.json \
+            reports/lake-unresolved-subject-adjudication-wave-15.md > /tmp/lake-unresolved-subject-wave-15-first.sha256
+          node tools/build-lake-unresolved-subject-adjudication-wave-15.mjs
+          sha256sum --check --strict /tmp/lake-unresolved-subject-wave-15-first.sha256
+          node test/lake-unresolved-subject-adjudication-wave-15.test.js
+          git diff --check
+      - name: Validate an already materialized head
+        if: steps.mode.outputs.materialize != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git reset --hard HEAD
+          git clean -fd
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-unresolved-subject-adjudication-wave-15.mjs
+          node test/lake-unresolved-subject-adjudication-wave-15.test.js
+          git reset --hard HEAD
+          git clean -fd
+          test -z "$(git status --porcelain)"
+      - name: Apply Wave 15 source controls and documentation
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/apply-lake-unresolved-subject-adjudication-wave-15.mjs
+          git add -A
+          git diff --check
+      - name: Re-run the complete release gate with Wave 15 authority active
+        if: steps.mode.outputs.materialize == 'true'
+        run: npm run release:check
+      - name: Stabilize the exact staged tree
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -A
+          rm -f .github/tmp/lake-unresolved-subject-adjudication-wave-15-trigger.json
+          git add -A
+          git restore --worktree .
+          git clean -fd
+      - name: Observe current open-PR shadow
+        if: steps.mode.outputs.materialize == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/build-lake-open-pr-shadow.mjs
+      - name: Build and reconcile the Wave 15 lake
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/reconcile-lake-unresolved-subject-adjudication-wave-15.mjs
+          git add -A
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/validate-lake-unresolved-subject-adjudication-wave-15.mjs
+          node test/lake-index.test.js
+          node test/lake-unresolved-subject-adjudication-wave-15.test.js
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node test/lake-basin-index.test.js
+      - name: Prove deterministic post-reconciliation products
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          find build/lake-index -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/lake-unresolved-subject-wave-15-post.sha256
+          sha256sum \
+            data/project/lake-unresolved-subject-adjudication-wave-15-policy.json \
+            data/project/lake-unresolved-subject-adjudication-registry-wave-15.jsonl \
+            data/project/lake-unresolved-subject-adjudication-wave-15.json \
+            build/unresolved-subject-adjudication-wave-15.json \
+            build/lake-actions/unresolved-subject-adjudication-wave-15.json \
+            build/lake-actions/unresolved-subject-adjudication-wave-15-reconciliation.json \
+            reports/lake-unresolved-subject-adjudication-wave-15.md \
+            reports/lake-unresolved-subject-adjudication-wave-15-reconciliation.md >> /tmp/lake-unresolved-subject-wave-15-post.sha256
+          node tools/build-lake-unresolved-subject-adjudication-wave-15.mjs
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/reconcile-lake-unresolved-subject-adjudication-wave-15.mjs
+          git add -A
+          node tools/build-lake-index.mjs
+          node tools/stabilize-lake-index.mjs
+          node tools/reconcile-lake-receipt-semantics.mjs
+          node tools/build-lake-gap-summary.mjs
+          node tools/validate-lake-index.mjs
+          node tools/validate-lake-receipt-semantics.mjs
+          node tools/validate-lake-gap-summary.mjs
+          node tools/validate-lake-unresolved-subject-adjudication-wave-15.mjs
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          sha256sum --check --strict /tmp/lake-unresolved-subject-wave-15-post.sha256
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node test/lake-unresolved-subject-adjudication-wave-15.test.js
+          git diff --check
+      - name: Enforce Wave 15 source and output boundaries
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import re
+          import subprocess
+
+          required = {
+              '.github/tmp/lake-unresolved-subject-adjudication-wave-15-trigger.json',
+              'BUILD-INSTRUCTIONS.md',
+              'README.md',
+              'data/project/lake-index-policy.json',
+              'data/project/lake-unresolved-subject-adjudication-registry-wave-15.jsonl',
+              'data/project/lake-unresolved-subject-adjudication-wave-15.json',
+              'build/unresolved-subject-adjudication-wave-15.json',
+              'build/lake-actions/unresolved-subject-adjudication-wave-15.json',
+              'build/lake-actions/unresolved-subject-adjudication-wave-15-reconciliation.json',
+              'reports/lake-unresolved-subject-adjudication-wave-15.md',
+              'reports/lake-unresolved-subject-adjudication-wave-15-reconciliation.md',
+          }
+          allowed_sources = required | {'data/project/lake-open-pr-shadow.json'}
+          generated_prefixes = ('build/', 'reports/', 'briefs/', 'estates/', 'gametrails/')
+          generated_root = re.compile(r'^(?:Clifford-.*\.html|[^/]+-standalone\.html)$')
+          raw = subprocess.check_output(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'])
+          entries = [entry for entry in raw.decode().split('\0') if entry]
+          actual = set()
+          for entry in entries:
+              status = entry[:2]
+              assert 'R' not in status and 'C' not in status, entry
+              actual.add(entry[3:])
+          unexpected = sorted(path for path in actual
+              if path not in allowed_sources
+              and not path.startswith(generated_prefixes)
+              and not generated_root.match(path))
+          assert required <= actual, {'missing_required_wave_15_changes': sorted(required - actual)}
+          assert not unexpected, {'undeclared_source_changes': unexpected}
+          print({'required_changes': len(required), 'actual_changes': len(actual), 'generated_changes': len(actual - allowed_sources)})
+          PY
+      - name: Commit and push the executed Wave 15 checkpoint
+        if: steps.mode.outputs.materialize == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Execute unresolved subject adjudication Wave 15'
+          git fetch origin agent/lake-unresolved-subject-adjudication-wave-15
+          test "$(git rev-parse origin/agent/lake-unresolved-subject-adjudication-wave-15)" = "${{ steps.mode.outputs.original_sha }}"
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          git push origin HEAD:agent/lake-unresolved-subject-adjudication-wave-15
