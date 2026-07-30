@@ -11,6 +11,7 @@ on:
       - agent/lake-unresolved-subject-adjudication-wave-15
     paths:
       - 'data/project/lake-subject-integration-wave-16-policy.json'
+      - 'data/research/clifford-cross-corpus-public-interest-map.json'
       - 'data/project/lake-local-canonical-resolution-registry-wave-16.jsonl'
       - 'data/project/lake-subject-object-registry-wave-16.jsonl'
       - 'data/project/lake-canonical-identity-extension-registry-wave-16.jsonl'
@@ -34,7 +35,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: lake-subject-integration-wave-16-${{ github.head_ref || github.ref_name }}
+  group: lake-subject-integration-wave-16-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -53,8 +54,8 @@ jobs:
         shell: bash
         run: |
           echo "original_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          if test -f .github/tmp/lake-subject-integration-wave-16-trigger.json \
-            && { test "$GITHUB_EVENT_NAME" = 'push' || test "$GITHUB_EVENT_NAME" = 'pull_request'; }; then
+          if test "$GITHUB_EVENT_NAME" = 'push' \
+            && test -f .github/tmp/lake-subject-integration-wave-16-trigger.json; then
             echo 'materialize=true' >> "$GITHUB_OUTPUT"
           else
             echo 'materialize=false' >> "$GITHUB_OUTPUT"
@@ -90,6 +91,7 @@ jobs:
           node tools/apply-lake-subject-integration-wave-16-sources.mjs
           sha256sum \
             data/canonical/organizations.json \
+            data/research/clifford-cross-corpus-public-interest-map.json \
             data/project/lake-canonical-subject-projection-wave-13-policy.json \
             data/project/lake-local-canonical-resolution-registry-wave-16.jsonl \
             data/project/lake-subject-object-registry-wave-16.jsonl \
@@ -248,6 +250,7 @@ jobs:
               'BUILD-INSTRUCTIONS.md',
               'README.md',
               'data/canonical/organizations.json',
+              'data/research/clifford-cross-corpus-public-interest-map.json',
               'data/project/lake-canonical-subject-projection-wave-13-policy.json',
               'data/project/lake-index-policy.json',
               'data/project/lake-local-canonical-resolution-registry-wave-16.jsonl',
