@@ -115,7 +115,7 @@ const surfaceGraphText = JSON.stringify(surfaceGraph);
 
 let resolutionIdsObserved = 0;
 const resolutionObservations = [];
-const wave16ResolutionEntries = localResolutionIndex.current_entries.filter(entry => entry.source_path === policy.paths.local_resolution_registry);
+const wave16ResolutionEntries = [...localResolutionIndex.current_by_case_and_local.values()].filter(entry => entry.source_path === policy.paths.local_resolution_registry);
 for (const entry of wave16ResolutionEntries) {
   const row = entry.row;
   const object = objectByKey.get(`resolution_id:${row.resolution_id}`);
