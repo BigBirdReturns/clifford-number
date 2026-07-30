@@ -33,7 +33,6 @@ for (const file of [
 }
 lakePolicy.authoritative_roots.sort((left, right) => left.localeCompare(right));
 for (const file of [
-  policy.plan_path,
   policy.reconciliation_path,
   policy.report_path,
   policy.reconciliation_report_path,
