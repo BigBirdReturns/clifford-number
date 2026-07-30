@@ -37,6 +37,16 @@ jobs:
           set -euo pipefail
           python3 .github/scripts/apply-pr410-review-fixes.py --self-test
           python3 .github/scripts/apply-pr410-review-fixes.py "$PWD"
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('test/poof-clifford-ecology-browser.test.js')
+          text = path.read_text()
+          old = "page.waitForURL(`http://127.0.0.1:${port}/newsroom/`)"
+          new = "page.waitForURL(`http://127.0.0.1:${port}/newsroom/index.html`)"
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one directory-form newsroom assertion, observed {text.count(old)}')
+          path.write_text(text.replace(old, new, 1))
+          PY
       - name: Build and validate the fixed ecology
         run: |
           set -euo pipefail
