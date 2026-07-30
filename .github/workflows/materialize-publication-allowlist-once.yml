@@ -1,0 +1,55 @@
+name: Materialize publication allowlist once
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.publication-allowlist-materialize'
+      - '.github/scripts/materialize-publication-allowlist.py'
+      - '.github/workflows/materialize-publication-allowlist-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.head_ref == 'agent/publication-allowlist-poof-admission-v2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/publication-allowlist-poof-admission-v2
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Apply publication reconciliation
+        run: |
+          python3 -m py_compile .github/scripts/materialize-publication-allowlist.py
+          python3 .github/scripts/materialize-publication-allowlist.py
+      - name: Prove focused constitutional and publication gates
+        run: |
+          node tools/validate-poof-constitutional-change.mjs origin/main
+          node test/poof-constitutional-change.test.js
+          node test/publication-manifest.test.js
+          npm run ci:poof-ecology
+          npm run release:check
+          git diff --check
+      - name: Install browser harness
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Prove browser publication boundary
+        run: node test/publication-pages-browser.test.js
+      - name: Remove transient source machinery
+        run: |
+          rm -f .publication-allowlist-materialize
+          rm -f .github/scripts/materialize-publication-allowlist.py
+      - name: Commit permanent publication surface
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Enforce status-aware publication allowlist'
+          git push origin HEAD:agent/publication-allowlist-poof-admission-v2
