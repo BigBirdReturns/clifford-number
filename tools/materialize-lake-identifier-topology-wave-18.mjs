@@ -7,12 +7,17 @@ import path from 'node:path';
 const root = process.cwd();
 const full = relative => path.join(root, relative);
 const policyPath = 'data/project/lake-identifier-topology-wave-18-policy.json';
+const lakePolicyPath = 'data/project/lake-index-policy.json';
 
 function readJson(relative) { return JSON.parse(fs.readFileSync(full(relative), 'utf8')); }
 function readJsonl(relative) { return fs.readFileSync(full(relative), 'utf8').split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line)); }
 function writeJson(relative, value) {
   fs.mkdirSync(path.dirname(full(relative)), { recursive: true });
   fs.writeFileSync(full(relative), `${JSON.stringify(value, null, 2)}\n`);
+}
+function writeCompactJson(relative, value) {
+  fs.mkdirSync(path.dirname(full(relative)), { recursive: true });
+  fs.writeFileSync(full(relative), `${JSON.stringify(value)}\n`);
 }
 function stable(value) {
   if (Array.isArray(value)) return value.map(stable);
@@ -37,23 +42,6 @@ function pointerTemplate(pointer) {
     .replace(/\/line-\d+(?=\/|$)/g, '/line-*')
     .replace(/\/\d+(?=\/|$)/g, '/*');
 }
-function pathFamily(file) {
-  const parts = String(file).split('/');
-  if (file.startsWith('build/lake-index/')) return 'build/lake-index';
-  if (file.startsWith('build/lake-actions/')) return 'build/lake-actions';
-  if (file.startsWith('build/cases/')) return 'build/cases';
-  if (file.startsWith('build/briefings/')) return 'build/briefings';
-  if (file.startsWith('build/core-thesis/')) return 'build/core-thesis';
-  if (file.startsWith('build/estate-game-trails/')) return 'build/estate-game-trails';
-  if (file.startsWith('build/estate-frontier/')) return 'build/estate-frontier';
-  if (file.startsWith('build/estate-closures/')) return 'build/estate-closures';
-  if (file.startsWith('build/')) return `build/${parts[1] ?? 'root'}`;
-  if (file.startsWith('reports/')) return `reports/${parts[1] ?? 'root'}`;
-  if (file.startsWith('estates/')) return 'estates';
-  if (file.startsWith('gametrails/')) return 'gametrails';
-  if (file.startsWith('briefs/')) return 'briefs';
-  return parts[0] || 'root';
-}
 
 const externalDomainKeys = new Set([
   'award_id', 'canonical_actor_id', 'committee_id', 'company_id', 'contract_id',
@@ -70,120 +58,70 @@ const analyticalControlKeys = new Set([
 ]);
 const contextualPointerPattern = /\/(?:aliases|case_pairs|cases|claims|classification|corridors|crosswalks|custody_runs|decisions|directed_overlap_pairs|edges|evidence|explicit_exact_equality_references|fanout|hops|identity_resolutions|legacy_runs|mentions|objects|observations|participation_receipt_links|query_executions|records|relations|resolution_observations|resolutions|rows|seed_events|shared_surfaces|source_route_runs|source_snapshot|subject_object_observations|subject_objects|surfaces|threads|trails|unresolved_observations|unresolved_subjects)\//;
 
+function sourceDecision(finalClassification, finalDisposition) {
+  return { final_classification: finalClassification, final_disposition: finalDisposition };
+}
+
 function finalizeSourceOnly(row) {
   const prior = row.source_only;
   if (!prior) return null;
-  if (prior.classification === 'intentional_source_only_control_identifier') return {
-    ...prior,
-    final_classification: 'intentional_source_only_control_identifier',
-    final_disposition: 'retain_source_only_as_control_identifier',
-    projection_required_now: false,
-    named_consumer_required_for_projection: true
-  };
-  if (prior.classification === 'governance_or_fixture_identifier_source_only') return {
-    ...prior,
-    final_classification: 'governance_or_fixture_identifier_source_only',
-    final_disposition: 'retain_source_only_in_control_plane',
-    projection_required_now: false,
-    named_consumer_required_for_projection: true
-  };
-  if (prior.classification === 'intake_source_identifier_not_yet_promoted') return {
-    ...prior,
-    final_classification: 'intake_source_identifier_not_yet_promoted',
-    final_disposition: 'retain_intake_only_until_an_explicit_promotion_or_nonpromotion_decision',
-    projection_required_now: false,
-    named_consumer_required_for_projection: true
-  };
-  if (prior.classification === 'case_local_source_identifier_without_global_projection') return {
-    ...prior,
-    final_classification: 'case_local_source_identifier_without_global_projection',
-    final_disposition: 'retain_case_scoped_without_cross_case_projection',
-    projection_required_now: false,
-    named_consumer_required_for_projection: true
-  };
-  if (prior.classification === 'estate_identifier_projection_candidate') return {
-    ...prior,
-    final_classification: 'estate_identifier_projection_candidate',
-    final_disposition: 'retain_source_only_and_open_a_typed_estate_consumer_contract_action',
-    projection_required_now: false,
-    named_consumer_required_for_projection: true
-  };
-  if (prior.classification === 'domain_identifier_projection_candidate') return {
-    ...prior,
-    final_classification: 'domain_identifier_projection_candidate',
-    final_disposition: 'retain_source_only_and_open_a_named_domain_consumer_contract_action',
-    projection_required_now: false,
-    named_consumer_required_for_projection: true
-  };
+  if (prior.classification === 'intentional_source_only_control_identifier') {
+    return sourceDecision('intentional_source_only_control_identifier', 'retain_source_only_as_control_identifier');
+  }
+  if (prior.classification === 'governance_or_fixture_identifier_source_only') {
+    return sourceDecision('governance_or_fixture_identifier_source_only', 'retain_source_only_in_control_plane');
+  }
+  if (prior.classification === 'intake_source_identifier_not_yet_promoted') {
+    return sourceDecision('intake_source_identifier_not_yet_promoted', 'retain_intake_only_until_explicit_promotion_or_nonpromotion');
+  }
+  if (prior.classification === 'case_local_source_identifier_without_global_projection') {
+    return sourceDecision('case_local_source_identifier_without_global_projection', 'retain_case_scoped_without_cross_case_projection');
+  }
+  if (prior.classification === 'estate_identifier_projection_candidate') {
+    return sourceDecision('estate_identifier_projection_candidate', 'retain_source_only_and_open_typed_estate_consumer_contract_action');
+  }
+  if (prior.classification === 'domain_identifier_projection_candidate') {
+    return sourceDecision('domain_identifier_projection_candidate', 'retain_source_only_and_open_named_domain_consumer_contract_action');
+  }
   assert.equal(prior.classification, 'source_only_family_adjudication_required');
-  if (externalDomainKeys.has(row.id_key)) return {
-    ...prior,
-    final_classification: 'external_or_domain_identifier_source_only',
-    final_disposition: 'retain_source_only_until_a_named_domain_consumer_requires_projection',
-    projection_required_now: false,
-    named_consumer_required_for_projection: true,
-    confidence: 'high'
-  };
-  if (lineageOrVocabularyKeys.has(row.id_key)) return {
-    ...prior,
-    final_classification: 'lineage_record_or_vocabulary_identifier_source_only',
-    final_disposition: 'retain_source_only_as_lineage_or_schema_vocabulary',
-    projection_required_now: false,
-    named_consumer_required_for_projection: true,
-    confidence: 'high'
-  };
-  if (legacyGraphKeys.has(row.id_key)) return {
-    ...prior,
-    final_classification: 'legacy_or_analytic_graph_node_identifier_source_only',
-    final_disposition: 'retain_source_only_and_forbid_automatic_graph_promotion',
-    projection_required_now: false,
-    named_consumer_required_for_projection: true,
-    confidence: 'high'
-  };
-  if (analyticalControlKeys.has(row.id_key) || row.source_roles.includes('test')) return {
-    ...prior,
-    final_classification: row.source_roles.includes('test')
-      ? 'fixture_identifier_source_only'
-      : 'research_analysis_or_control_identifier_source_only',
-    final_disposition: 'retain_source_only_as_a_research_or_fixture_control',
-    projection_required_now: false,
-    named_consumer_required_for_projection: true,
-    confidence: 'high'
-  };
+  if (externalDomainKeys.has(row.id_key)) {
+    return sourceDecision('external_or_domain_identifier_source_only', 'retain_source_only_until_named_domain_consumer_requires_projection');
+  }
+  if (lineageOrVocabularyKeys.has(row.id_key)) {
+    return sourceDecision('lineage_record_or_vocabulary_identifier_source_only', 'retain_source_only_as_lineage_or_schema_vocabulary');
+  }
+  if (legacyGraphKeys.has(row.id_key)) {
+    return sourceDecision('legacy_or_analytic_graph_node_identifier_source_only', 'retain_source_only_and_forbid_automatic_graph_promotion');
+  }
+  if (analyticalControlKeys.has(row.id_key) || row.source_roles.includes('test')) {
+    return sourceDecision(
+      row.source_roles.includes('test') ? 'fixture_identifier_source_only' : 'research_analysis_or_control_identifier_source_only',
+      'retain_source_only_as_research_or_fixture_control'
+    );
+  }
+  return sourceDecision('bounded_source_only_identifier_without_named_consumer', 'retain_source_only_until_explicit_consumer_contract');
+}
+
+function divergenceDecision(finalClassification, finalDisposition, generatorContractActionOpen = false) {
   return {
-    ...prior,
-    final_classification: 'bounded_source_only_identifier_without_named_consumer',
-    final_disposition: 'retain_source_only_and_require_an_explicit_consumer_contract_before_projection',
-    projection_required_now: false,
-    named_consumer_required_for_projection: true,
-    confidence: 'moderate'
+    final_classification: finalClassification,
+    final_disposition: finalDisposition,
+    generator_contract_action_open: generatorContractActionOpen
   };
 }
 
 function finalizeDivergence(row, object) {
   const prior = row.divergence;
   if (!prior) return null;
-  if (prior.classification === 'cross_family_projection_views') return {
-    ...prior,
-    final_classification: 'typed_cross_family_projection_views',
-    final_disposition: 'retain_typed_views_and_forbid_hash_equality_as_a_join_requirement',
-    definition_collision_observed: false,
-    generator_contract_action_open: false
-  };
-  if (prior.classification === 'single_family_projection_variants') return {
-    ...prior,
-    final_classification: 'single_family_schema_or_version_variants',
-    final_disposition: 'retain_versions_separately_and_require_the_generator_to_declare_schema_or_version_boundaries',
-    definition_collision_observed: false,
-    generator_contract_action_open: true
-  };
-  if (prior.classification === 'mixed_cross_family_and_intra_family_variants') return {
-    ...prior,
-    final_classification: 'mixed_typed_views_and_intra_family_variants',
-    final_disposition: 'retain_cross_family_views_and_open_generator_contract_actions_for_intra_family_variants',
-    definition_collision_observed: false,
-    generator_contract_action_open: true
-  };
+  if (prior.classification === 'cross_family_projection_views') {
+    return divergenceDecision('typed_cross_family_projection_views', 'retain_typed_views_without_hash_equality_join');
+  }
+  if (prior.classification === 'single_family_projection_variants') {
+    return divergenceDecision('single_family_schema_or_version_variants', 'retain_versions_and_require_declared_generator_schema_boundary', true);
+  }
+  if (prior.classification === 'mixed_cross_family_and_intra_family_variants') {
+    return divergenceDecision('mixed_typed_views_and_intra_family_variants', 'retain_typed_views_and_open_intra_family_generator_contract_action', true);
+  }
   assert.equal(prior.classification, 'same_path_projection_variants');
   const projections = object.occurrences.filter(projectionOccurrence);
   const byPath = new Map();
@@ -192,40 +130,20 @@ function finalizeDivergence(row, object) {
     list.push(occurrence);
     byPath.set(occurrence.path, list);
   }
-  const pathAssessments = [];
   let generatorContractActionOpen = false;
-  for (const [file, occurrences] of [...byPath.entries()].sort(([a], [b]) => a.localeCompare(b))) {
-    const hashes = unique(occurrences.map(item => item.object_hash));
-    if (hashes.length <= 1) continue;
+  for (const occurrences of byPath.values()) {
+    if (new Set(occurrences.map(item => item.object_hash)).size <= 1) continue;
     const templates = unique(occurrences.map(item => pointerTemplate(item.pointer)));
     const contextual = templates.length > 1 || templates.every(template => contextualPointerPattern.test(template));
     if (!contextual) generatorContractActionOpen = true;
-    pathAssessments.push({
-      path: file,
-      family: pathFamily(file),
-      occurrence_count: occurrences.length,
-      hash_count: hashes.length,
-      pointer_templates: templates,
-      assessment: contextual
-        ? 'contextual_repetition_or_multiple_typed_views'
-        : 'generator_contract_required_for_repeated_same_template'
-    });
   }
-  return {
-    ...prior,
-    final_classification: generatorContractActionOpen
-      ? 'same_path_generator_contract_candidates'
-      : 'same_path_contextual_projection_repetition',
-    final_disposition: generatorContractActionOpen
-      ? 'retain_without_join_and_open_a_generator_specific_uniqueness_or_version_contract_action'
-      : 'retain_contextual_repetitions_without_treating_object_hash_difference_as_a_definition_conflict',
-    path_assessments: pathAssessments,
-    definition_collision_observed: false,
-    generator_contract_action_open: generatorContractActionOpen
-  };
+  return generatorContractActionOpen
+    ? divergenceDecision('same_path_generator_contract_candidates', 'retain_without_join_and_open_generator_uniqueness_or_version_action', true)
+    : divergenceDecision('same_path_contextual_projection_repetition', 'retain_contextual_repetitions_without_definition_conflict');
 }
 
 const policy = readJson(policyPath);
+const lakePolicyBefore = readJson(lakePolicyPath);
 assert.equal(policy.schema_version, 'lake-identifier-topology-wave-18-policy@1');
 const preflight = readJson(policy.paths.preflight);
 const objects = readJsonl('build/lake-index/objects.jsonl');
@@ -254,21 +172,14 @@ const records = preflight.topology_rows.map(row => {
     id_value: row.id_value,
     topology_source_object: { [row.id_key]: row.id_value },
     baseline_states: row.states,
-    baseline_occurrence_count: row.occurrence_count,
-    baseline_source_paths: row.source_paths,
-    baseline_projection_paths: row.projection_paths,
     indexing: {
       baseline_indexed: row.indexed,
-      final_disposition: row.indexing_disposition,
-      index_via_this_registry: !row.indexed
+      final_disposition: row.indexing_disposition
     },
-    source_only: sourceOnly,
-    divergence,
+    ...(sourceOnly ? { source_only: sourceOnly } : {}),
+    ...(divergence ? { divergence } : {}),
     review_required_to_decide: false,
-    correction_mode: policy.decision_law.correction_mode,
     cross_key_join_authorized: false,
-    relationship_created: false,
-    participation_created: false,
     graph_effect: 'none'
   };
 }).sort((a, b) => `${a.id_key}:${a.id_value}`.localeCompare(`${b.id_key}:${b.id_value}`));
@@ -308,7 +219,7 @@ const registry = {
   records,
   boundaries: policy.boundaries
 };
-writeJson(policy.paths.registry, registry);
+writeCompactJson(policy.paths.registry, registry);
 
 const projection = {
   schema_version: 'lake-identifier-topology-wave-18@1',
@@ -321,15 +232,10 @@ const projection = {
     topology_decision_id: row.topology_decision_id,
     id_key: row.id_key,
     id_value: row.id_value,
-    baseline_states: row.baseline_states,
-    indexing_disposition: row.indexing.final_disposition,
-    source_only_classification: row.source_only?.final_classification ?? null,
-    source_only_disposition: row.source_only?.final_disposition ?? null,
-    divergence_classification: row.divergence?.final_classification ?? null,
-    divergence_disposition: row.divergence?.final_disposition ?? null,
+    index_disposition: row.indexing.final_disposition,
+    source_only_disposition: row.source_only?.final_classification ?? null,
+    divergence_disposition: row.divergence?.final_classification ?? null,
     generator_contract_action_open: row.divergence?.generator_contract_action_open ?? false,
-    review_required_to_decide: false,
-    cross_key_join_authorized: false,
     graph_effect: 'none'
   })),
   completion: {
@@ -341,15 +247,24 @@ const projection = {
   },
   boundaries: policy.boundaries
 };
-writeJson(policy.paths.projection, projection);
+writeCompactJson(policy.paths.projection, projection);
 writeJson(policy.paths.receipt, {
-  ...projection,
   schema_version: 'lake-identifier-topology-wave-18-receipt@1',
+  program_id: policy.program_id,
+  registry_sha256: projection.registry_sha256,
+  graph_digests: graphDigests,
+  counts: registry.counts,
   post_execution_reconciliation_complete: false,
-  after_counts: null
+  after_counts: null,
+  boundaries: policy.boundaries
 });
 
-const lakePolicyPath = 'data/project/lake-index-policy.json';
+const parserCeiling = Number(lakePolicyBefore.max_text_bytes ?? 8_000_000);
+const registryBytes = fs.statSync(full(policy.paths.registry)).size;
+const projectionBytes = fs.statSync(full(policy.paths.projection)).size;
+assert.ok(registryBytes <= parserCeiling, `Wave 18 registry exceeds parser ceiling: ${registryBytes} > ${parserCeiling}`);
+assert.ok(projectionBytes <= parserCeiling, `Wave 18 projection exceeds parser ceiling: ${projectionBytes} > ${parserCeiling}`);
+
 const lakePolicy = readJson(lakePolicyPath);
 for (const relative of [
   policyPath,
@@ -406,5 +321,6 @@ or automatic cross-key join.`);
 
 console.log('identifier topology Wave 18 source controls materialized');
 console.log(`  records / source-only / divergent: ${records.length} / ${policy.baseline.source_ids_without_projection} / ${policy.baseline.divergent_identifier_projections}`);
+console.log(`  registry/projection bytes: ${registryBytes}/${projectionBytes} (ceiling ${parserCeiling})`);
 console.log(`  generator actions / contextual same-path: ${generatorContractActions} / ${samePathContextual}`);
 console.log('  review dependencies / graph effects: 0 / 0');
