@@ -14,6 +14,7 @@ function run(file) {
 
 run('tools/validate-lake-identifier-topology-wave-18.mjs');
 const policy = readJson('data/project/lake-identifier-topology-wave-18-policy.json');
+const preflight = readJson(policy.paths.preflight);
 const registry = readJson(policy.paths.registry);
 const receipt = readJson(policy.paths.receipt);
 const byKey = new Map();
@@ -23,7 +24,12 @@ for (const row of registry.records) {
   byKey.set(row.id_key, list);
 }
 
-assert.equal(registry.records.length, 10371);
+const frozenRows = preflight.counts.frozen_union;
+const postFreezeRows = registry.counts.post_freeze_records ?? 0;
+assert.equal(frozenRows, 10371);
+assert.ok(registry.records.length >= frozenRows);
+assert.equal(registry.records.length - frozenRows, postFreezeRows);
+assert.equal(registry.counts.records, registry.records.length);
 assert.equal(registry.counts.baseline_unindexed, 6661);
 assert.equal(registry.counts.baseline_source_without_projection, 5612);
 assert.equal(registry.counts.baseline_divergent_projections, 3129);
@@ -48,4 +54,4 @@ assert.equal(receipt.counts.after.projection_ids_without_source, 0);
 assert.equal(receipt.counts.decisions_requiring_human_permission, 0);
 assert.equal(receipt.boundaries.graph_effect, 'none');
 
-console.log('lake-identifier-topology-wave-18.test: OK (10371 topology decisions, unindexed 0, source-only/divergence unadjudicated 0/0, graph effect none)');
+console.log(`lake-identifier-topology-wave-18.test: OK (${frozenRows} frozen + ${postFreezeRows} post-freeze topology decisions, unindexed 0, source-only/divergence unadjudicated 0/0, graph effect none)`);
