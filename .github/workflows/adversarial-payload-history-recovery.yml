@@ -1,0 +1,156 @@
+name: Recover adversarial payload from Git history
+
+on:
+  push:
+    branches:
+      - agent/adversarial-release-integrity
+    paths:
+      - '.github/workflows/adversarial-payload-history-recovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: adversarial-payload-history-recovery
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/adversarial-release-integrity
+          fetch-depth: 0
+      - name: Recover checksum-bound payload from historical tree states
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --all --prune
+          python3 - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import lzma
+          import re
+          import subprocess
+          import tarfile
+          from io import BytesIO
+          from pathlib import Path
+
+          out = Path('/tmp/adversarial-payload-history-recovery')
+          out.mkdir(parents=True, exist_ok=True)
+          manifest = json.loads(Path('.github/tmp/adversarial-release-manifest.json').read_text())
+          expected = {
+              'chunk_count': int(manifest['chunk_count']),
+              'base64_bytes': int(manifest['base64_bytes']),
+              'base64_sha256': manifest['base64_sha256'],
+              'payload_bytes': int(manifest['payload_bytes']),
+              'payload_sha256': manifest['payload_sha256'],
+          }
+          commits = subprocess.check_output(
+              ['git', 'rev-list', '--all', '--', '.github/tmp'], text=True
+          ).splitlines()
+          seen = set()
+          candidates = []
+          recovered = None
+          part_re = re.compile(r'^\.github/tmp/final-source-part-[0-9]+\.b64$')
+
+          for commit in commits:
+              if commit in seen:
+                  continue
+              seen.add(commit)
+              listing = subprocess.check_output(
+                  ['git', 'ls-tree', '-r', '--name-only', commit, '--', '.github/tmp'],
+                  text=True,
+              ).splitlines()
+              paths = sorted(path for path in listing if part_re.match(path))
+              if len(paths) != expected['chunk_count']:
+                  continue
+              compact_parts = []
+              for path in paths:
+                  raw = subprocess.check_output(['git', 'show', f'{commit}:{path}'])
+                  compact_parts.append(b''.join(raw.split()))
+              compact = b''.join(compact_parts)
+              digest = hashlib.sha256(compact).hexdigest()
+              candidate = {
+                  'commit': commit,
+                  'paths': paths,
+                  'part_lengths': [len(part) for part in compact_parts],
+                  'base64_bytes': len(compact),
+                  'base64_sha256': digest,
+              }
+              if len(candidates) < 100:
+                  candidates.append(candidate)
+              if len(compact) != expected['base64_bytes'] or digest != expected['base64_sha256']:
+                  continue
+              compressed = base64.b64decode(compact, validate=True)
+              payload = lzma.decompress(compressed)
+              payload_digest = hashlib.sha256(payload).hexdigest()
+              if len(payload) != expected['payload_bytes']:
+                  raise SystemExit(f'payload byte mismatch at {commit}: {len(payload)}')
+              if payload_digest != expected['payload_sha256']:
+                  raise SystemExit(f'payload digest mismatch at {commit}: {payload_digest}')
+              (out / 'final-source.recovered.b64').write_bytes(compact)
+              (out / 'final-source.recovered.tar').write_bytes(payload)
+              with tarfile.open(fileobj=BytesIO(payload), mode='r:*') as archive:
+                  names = archive.getnames()
+              (out / 'final-source.tree.txt').write_text('\n'.join(names) + '\n')
+              recovered = {
+                  **candidate,
+                  'compressed_bytes': len(compressed),
+                  'compressed_sha256': hashlib.sha256(compressed).hexdigest(),
+                  'payload_bytes': len(payload),
+                  'payload_sha256': payload_digest,
+                  'tar_entries': len(names),
+              }
+              break
+
+          delta = {'present': False, 'valid': False}
+          delta_paths = sorted(Path('.github/tmp').glob('final-delta-part-*.b64'))
+          if delta_paths:
+              delta['present'] = True
+              compact = b''.join(b''.join(path.read_bytes().split()) for path in delta_paths)
+              delta.update({
+                  'paths': [str(path) for path in delta_paths],
+                  'part_lengths': [len(b''.join(path.read_bytes().split())) for path in delta_paths],
+                  'base64_bytes': len(compact),
+                  'base64_sha256': hashlib.sha256(compact).hexdigest(),
+              })
+              try:
+                  compressed = base64.b64decode(compact, validate=True)
+                  payload = lzma.decompress(compressed)
+                  (out / 'final-delta.recovered.payload').write_bytes(payload)
+                  delta.update({
+                      'valid': True,
+                      'compressed_bytes': len(compressed),
+                      'compressed_sha256': hashlib.sha256(compressed).hexdigest(),
+                      'payload_bytes': len(payload),
+                      'payload_sha256': hashlib.sha256(payload).hexdigest(),
+                  })
+              except Exception as exc:
+                  delta['error'] = f'{type(exc).__name__}: {exc}'
+
+          diagnostic = {
+              'schema_version': 'adversarial-payload-history-recovery@1',
+              'expected': expected,
+              'commits_scanned': len(seen),
+              'matching_chunk_count_candidates_sample': candidates,
+              'recovered': recovered,
+              'delta': delta,
+          }
+          (out / 'diagnostic.json').write_text(json.dumps(diagnostic, indent=2) + '\n')
+          print(json.dumps(diagnostic, indent=2))
+          if recovered is None:
+              raise SystemExit('no historical tree state matched the checksum-bound source payload')
+          PY
+      - name: Upload recovery custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adversarial-payload-history-recovery-${{ github.run_id }}
+          path: /tmp/adversarial-payload-history-recovery/
+          if-no-files-found: error
+          retention-days: 7
