@@ -1,0 +1,33 @@
+name: Temporary PR 483 bundle export
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-pr483-bundle-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/publication-sg06-pr483-export
+          fetch-depth: 0
+      - name: Archive exact branch
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pr483-export
+          git archive --format=tar.gz --output=/tmp/pr483-export/branch-head.tar.gz HEAD
+          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/pr483-export/branch-head.txt
+          sha256sum /tmp/pr483-export/branch-head.tar.gz > /tmp/pr483-export/archive.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pr483-bundle-export-${{ github.run_id }}
+          path: /tmp/pr483-export/
+          if-no-files-found: error
+          retention-days: 2
