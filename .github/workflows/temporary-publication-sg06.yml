@@ -1,0 +1,36 @@
+name: Temporary materialize publication safety and SG-06
+
+on:
+  pull_request:
+    branches: [main]
+    types: [reopened, synchronize, ready_for_review]
+    paths:
+      - '.github/workflows/temporary-publication-sg06.yml'
+      - '.github/tmp/publication-sg06-*'
+      - '.github/scripts/run-publication-sg06.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publication-sg06-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.head_ref == 'agent/publication-allowlist-poof-admission-v2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/publication-allowlist-poof-admission-v2
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Execute exact publication and SG-06 transition
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: bash .github/scripts/run-publication-sg06.sh
