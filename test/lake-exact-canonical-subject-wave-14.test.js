@@ -27,11 +27,19 @@ function buildWave14() {
 }
 
 const policy = readJson('data/project/lake-exact-canonical-subject-wave-14-policy.json');
+const completedReconciliationPresent = fs.existsSync(policy.reconciliation_path)
+  && fs.existsSync(policy.receipt_path)
+  && readJson(policy.reconciliation_path).completion?.post_execution_reconciliation_complete === true;
+const completedReceiptHash = completedReconciliationPresent ? sha256(policy.receipt_path) : null;
 buildWave14();
 const deterministicPaths = [policy.projection_path, policy.plan_path, policy.report_path, policy.unresolved_registry_path];
+if (!completedReconciliationPresent) deterministicPaths.push(policy.receipt_path);
 const firstHashes = Object.fromEntries(deterministicPaths.map(file => [file, sha256(file)]));
 buildWave14();
 for (const file of deterministicPaths) assert.equal(sha256(file), firstHashes[file], `${file}: Wave 14 build is not deterministic`);
+if (completedReceiptHash) {
+  assert.equal(sha256(policy.receipt_path), completedReceiptHash, 'completed Wave 14 receipt was overwritten by deterministic replay');
+}
 
 const projection = readJson(policy.projection_path);
 const plan = readJson(policy.plan_path);
