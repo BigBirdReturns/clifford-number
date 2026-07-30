@@ -1,0 +1,98 @@
+name: Temporary materialize stable-ground SG-03
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/scripts/materialize-sg03.py'
+      - '.github/workflows/temporary-materialize-sg03.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: materialize-stable-ground-sg03
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/project-stable-ground-sg03
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Integrate SG-03 into the global release gate
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/materialize-sg03.py
+      - name: Build and validate SG-03 and preserved history
+        run: |
+          set -euo pipefail
+          node tools/build-project-stable-ground-sg03.mjs
+          node tools/validate-project-stable-ground-sg03.mjs
+          node test/project-stable-ground-sg03.test.js
+          node tools/validate-project-stable-ground-alignment.mjs
+          node test/project-stable-ground-alignment.test.js
+          node tools/validate-project-stable-ground-sg02.mjs
+          node test/project-stable-ground-sg02.test.js
+          node tools/validate-poof-constitutional-change.mjs
+          node test/poof-constitutional-change.test.js
+          node tools/validate-poof-clifford-ecology.mjs
+          node test/poof-clifford-ecology.test.js
+      - name: Freeze the exact permanent patch
+        run: |
+          set -euo pipefail
+          git add \
+            package.json \
+            tools/build-project-stable-ground-sg03.mjs \
+            data/project/project-stable-ground-governor.json \
+            data/project/project-stable-ground-current.json \
+            data/project/project-stable-ground-sg03.json \
+            data/project/project-stable-ground-sg03-release-manifest.json \
+            docs/milestones/project-stable-ground-sg03.md \
+            tools/validate-project-stable-ground-sg03.mjs \
+            tools/validate-project-stable-ground-sg02.mjs \
+            test/project-stable-ground-sg03.test.js \
+            test/project-stable-ground-sg02.test.js \
+            .github/workflows/project-stable-ground-sg03.yml \
+            .github/workflows/project-stable-ground-sg02.yml \
+            reports/core-thesis/stable-ground/sg03/checkpoint.json \
+            reports/core-thesis/stable-ground/sg03/index.html
+          git diff --cached --check
+          git diff --cached --binary > /tmp/sg03.patch
+          test -s /tmp/sg03.patch
+      - name: Run the complete repository release gate
+        run: npm run release:check
+      - name: Reconstruct the exact permanent SG-03 tree
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          git clean -fd
+          git apply --index /tmp/sg03.patch
+          node tools/build-project-stable-ground-sg03.mjs
+          node tools/validate-project-stable-ground-sg03.mjs
+          node test/project-stable-ground-sg03.test.js
+          node tools/validate-project-stable-ground-alignment.mjs
+          node test/project-stable-ground-alignment.test.js
+          node tools/validate-project-stable-ground-sg02.mjs
+          node test/project-stable-ground-sg02.test.js
+          git diff --exit-code
+          git diff --cached --binary > /tmp/sg03-rebuilt.patch
+          cmp /tmp/sg03.patch /tmp/sg03-rebuilt.patch
+      - name: Commit permanent SG-03 and remove materializer
+        run: |
+          set -euo pipefail
+          git rm .github/scripts/materialize-sg03.py
+          git rm .github/workflows/temporary-materialize-sg03.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Append stable-ground supersession SG-03"
+          git push origin HEAD:agent/project-stable-ground-sg03
