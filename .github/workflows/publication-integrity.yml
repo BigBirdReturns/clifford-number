@@ -1,0 +1,73 @@
+name: Publication integrity
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/publication-plan.json'
+      - 'data/project/poof-clifford-ecology-contract.json'
+      - 'data/project/poof-clifford-constitutional-change-log.json'
+      - 'tools/lib/publication-manifest.mjs'
+      - 'tools/build-pages.mjs'
+      - 'tools/build-standalone.mjs'
+      - 'tools/validate-pages.mjs'
+      - 'tools/validate-publication-plan.mjs'
+      - 'test/publication-*'
+      - 'app.js'
+      - 'index.html'
+      - 'package.json'
+      - '.github/workflows/publication-integrity.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/publication-plan.json'
+      - 'data/project/poof-clifford-ecology-contract.json'
+      - 'data/project/poof-clifford-constitutional-change-log.json'
+      - 'tools/lib/publication-manifest.mjs'
+      - 'tools/build-pages.mjs'
+      - 'tools/build-standalone.mjs'
+      - 'tools/validate-pages.mjs'
+      - 'tools/validate-publication-plan.mjs'
+      - 'test/publication-*'
+      - 'app.js'
+      - 'index.html'
+      - 'package.json'
+      - '.github/workflows/publication-integrity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Install browser harness
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Prove public routes and held surfaces
+        run: node test/publication-pages-browser.test.js
+      - name: Prove deterministic publication products
+        run: |
+          git restore --staged --worktree .
+          npm run release:check
+          git diff --check
+          git diff --exit-code
+      - name: Upload exact publication review artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: publication-integrity
+          path: |
+            dist/
+            build/publication/browser-qa.json
+          retention-days: 14
