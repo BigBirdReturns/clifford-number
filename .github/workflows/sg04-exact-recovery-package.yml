@@ -8,7 +8,7 @@ on:
       - '.github/workflows/sg04-exact-recovery-package.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   package:
@@ -40,3 +40,16 @@ jobs:
             /tmp/status.txt
           if-no-files-found: error
           retention-days: 2
+      - name: Publish artifact custody pointer
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin agent/sg04-exact-recovery
+          git checkout -B agent/sg04-exact-recovery origin/agent/sg04-exact-recovery
+          mkdir -p .github/tmp
+          printf 'run_id: %s\nsource_head: %s\nartifact: sg04-carrier-head-%s\n' '${{ github.run_id }}' 'cb39a6f960e7596611209a4fb836c8fffb6b7f72' '${{ github.run_id }}' > .github/tmp/sg04-exact-recovery-run.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/tmp/sg04-exact-recovery-run.txt
+          git commit -m 'Record exact SG-04 recovery artifact custody'
+          git push origin HEAD:agent/sg04-exact-recovery
