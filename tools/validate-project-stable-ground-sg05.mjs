@@ -32,7 +32,19 @@ function defaultTransitionVerifier(checkpoint) {
   if (errors.length) return errors;
 
   const ancestry = spawnSync('git', ['merge-base', '--is-ancestor', base, transition], { cwd: root, encoding: 'utf8' });
-  if (ancestry.status !== 0) errors.push('SG-05 transition commit is not descended from its declared base');
+  if (ancestry.status !== 0) {
+  // Shallow transports can hide reachability even though the immutable
+  // transition object names the declared base as its direct parent.
+  const rawCommit = spawnSync('git', ['cat-file', '-p', transition], {
+    cwd: root,
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024
+  });
+  const parents = rawCommit.status === 0
+    ? rawCommit.stdout.split('\n').filter((line) => line.startsWith('parent ')).map((line) => line.slice(7).trim())
+    : [];
+  if (!parents.includes(base)) errors.push('SG-05 transition commit is not descended from its declared base');
+}
 
   const changed = spawnSync('git', ['diff', '--name-only', base, transition], { cwd: root, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
   if (changed.status !== 0) {
