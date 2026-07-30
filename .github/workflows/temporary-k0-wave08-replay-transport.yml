@@ -1,0 +1,88 @@
+name: Temporary K0 Wave 08 replay transport
+
+on:
+  pull_request_target:
+    types: [synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: k0-wave08-replay-transport
+  cancel-in-progress: false
+
+jobs:
+  replay:
+    if: >-
+      github.event.pull_request.number == 405 &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/k0-role-neutral-wave-08'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: BigBirdReturns/clifford-number
+          ref: agent/k0-role-neutral-wave-08
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify event identity and capture the exact K0 patch
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          old_head="$(git rev-parse HEAD)"
+          test "$old_head" = "$EXPECTED_HEAD"
+          printf '%s\n' "$old_head" > /tmp/old-head
+          git fetch origin main
+          merge_base="$(git merge-base HEAD origin/main)"
+          cat > /tmp/expected-paths <<'EOF'
+          .github/workflows/k0-role-neutral-wave-08.yml
+          data/project/k0-epistemic-admissibility-methodology.json
+          data/project/k0-epistemic-admissibility-release-manifest.json
+          data/project/k0-role-neutral-wave-08-release-manifest.json
+          data/research/corpus-coverage.json
+          data/research/k0-role-neutral-denominator.json
+          data/research/k0-role-neutral-wave-08.json
+          data/research/selection-adversarial-reviews.json
+          docs/milestones/m05-k0-role-neutral-wave-08.md
+          reports/core-thesis/answerable-power/k0-role-neutral-wave-08.html
+          reports/core-thesis/answerable-power/k0-role-neutral-wave-08.json
+          reports/core-thesis/answerable-power/k0.html
+          reports/core-thesis/answerable-power/k0.json
+          test/k0-epistemic-admissibility.test.js
+          test/k0-role-neutral-wave-08.test.js
+          tools/build-k0-epistemic-admissibility.mjs
+          tools/build-k0-role-neutral-wave-08.mjs
+          tools/validate-k0-epistemic-admissibility.mjs
+          tools/validate-k0-role-neutral-wave-08.mjs
+          EOF
+          sort -o /tmp/expected-paths /tmp/expected-paths
+          git diff --name-only "$merge_base"..HEAD -- $(cat /tmp/expected-paths) | sort > /tmp/observed-paths
+          diff -u /tmp/expected-paths /tmp/observed-paths
+          git diff --binary "$merge_base"..HEAD -- $(cat /tmp/expected-paths) > /tmp/k0-wave-08.patch
+          test -s /tmp/k0-wave-08.patch
+      - name: Replay over canonical main and run focused gates
+        run: |
+          set -euo pipefail
+          git reset --hard origin/main
+          git apply --3way --index /tmp/k0-wave-08.patch
+          git diff --cached --check
+          node tools/build-k0-role-neutral-wave-08.mjs
+          node tools/validate-k0-role-neutral-wave-08.mjs
+          node test/k0-role-neutral-wave-08.test.js
+          node tools/build-k0-epistemic-admissibility.mjs
+          node tools/validate-k0-epistemic-admissibility.mjs
+          node test/k0-epistemic-admissibility.test.js
+          git add -A
+          git diff --cached --check
+      - name: Publish the rebased transition
+        run: |
+          set -euo pipefail
+          old_head="$(cat /tmp/old-head)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Replay K0 Wave 08 over SG-03 main"
+          git push --force-with-lease=refs/heads/agent/k0-role-neutral-wave-08:"$old_head" origin HEAD:agent/k0-role-neutral-wave-08
