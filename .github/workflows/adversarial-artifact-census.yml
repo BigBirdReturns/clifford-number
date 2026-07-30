@@ -1,0 +1,138 @@
+name: Census adversarial workflow artifacts
+
+on:
+  push:
+    branches:
+      - agent/adversarial-release-integrity
+    paths:
+      - '.github/workflows/adversarial-artifact-census.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/adversarial-artifact-census.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/adversarial-release-integrity
+          fetch-depth: 0
+      - name: Enumerate branch workflow runs and artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.parse
+          import urllib.request
+          from pathlib import Path
+
+          out = Path('/tmp/adversarial-artifact-census')
+          out.mkdir(parents=True, exist_ok=True)
+          repo = os.environ['REPOSITORY']
+          token = os.environ['GH_TOKEN']
+          headers = {
+              'Authorization': f'Bearer {token}',
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+              'User-Agent': 'clifford-adversarial-artifact-census',
+          }
+
+          def get_json(url):
+              request = urllib.request.Request(url, headers=headers)
+              with urllib.request.urlopen(request, timeout=60) as response:
+                  return json.load(response)
+
+          branch = 'agent/adversarial-release-integrity'
+          runs = []
+          for page in range(1, 11):
+              query = urllib.parse.urlencode({
+                  'branch': branch,
+                  'per_page': 100,
+                  'page': page,
+              })
+              payload = get_json(f'https://api.github.com/repos/{repo}/actions/runs?{query}')
+              batch = payload.get('workflow_runs', [])
+              runs.extend(batch)
+              if len(batch) < 100:
+                  break
+
+          rows = []
+          all_artifacts = []
+          for run in runs:
+              artifact_payload = get_json(
+                  f"https://api.github.com/repos/{repo}/actions/runs/{run['id']}/artifacts?per_page=100"
+              )
+              artifacts = artifact_payload.get('artifacts', [])
+              artifact_rows = []
+              for artifact in artifacts:
+                  row = {
+                      'id': artifact['id'],
+                      'name': artifact['name'],
+                      'size_in_bytes': artifact['size_in_bytes'],
+                      'expired': artifact['expired'],
+                      'created_at': artifact['created_at'],
+                      'expires_at': artifact['expires_at'],
+                      'digest': artifact.get('digest'),
+                  }
+                  artifact_rows.append(row)
+                  all_artifacts.append({**row, 'run_id': run['id'], 'run_name': run['name']})
+              rows.append({
+                  'id': run['id'],
+                  'name': run['name'],
+                  'path': run.get('path'),
+                  'event': run['event'],
+                  'status': run['status'],
+                  'conclusion': run['conclusion'],
+                  'run_number': run['run_number'],
+                  'head_sha': run['head_sha'],
+                  'created_at': run['created_at'],
+                  'updated_at': run['updated_at'],
+                  'html_url': run['html_url'],
+                  'artifacts': artifact_rows,
+              })
+
+          relevant = [
+              row for row in all_artifacts
+              if any(term in row['name'].lower() for term in (
+                  'adversarial', 'bootstrap', 'checkout', 'repair', 'release', 'source', 'payload'
+              ))
+          ]
+          report = {
+              'schema_version': 'adversarial-artifact-census@1',
+              'repository': repo,
+              'branch': branch,
+              'runs_scanned': len(rows),
+              'artifacts_found': len(all_artifacts),
+              'nonexpired_artifacts': sum(not row['expired'] for row in all_artifacts),
+              'relevant_artifacts': relevant,
+              'runs': rows,
+          }
+          (out / 'census.json').write_text(json.dumps(report, indent=2) + '\n')
+          print(json.dumps({
+              'runs_scanned': report['runs_scanned'],
+              'artifacts_found': report['artifacts_found'],
+              'nonexpired_artifacts': report['nonexpired_artifacts'],
+              'relevant_artifacts': relevant,
+          }, indent=2))
+          PY
+      - name: Upload artifact census
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adversarial-artifact-census-${{ github.run_id }}
+          path: /tmp/adversarial-artifact-census/
+          if-no-files-found: error
+          retention-days: 7
