@@ -1,6 +1,11 @@
-name: Temporary SGR-01 stable-ground reconciliation materializer
+name: Temporary SGR-01 non-workflow materializer
 
 on:
+  pull_request:
+    branches:
+      - agent/poof-clifford-ecology
+    paths:
+      - '.github/workflows/temporary-sgr01-materialize.yml'
   push:
     branches:
       - agent/poof-sprint09-stable-ground-reconciliation
@@ -24,15 +29,13 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Merge latest POOF ecology and canonical mainline
+      - name: Prove dependency heads are already carried by connector-owned merges
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git fetch origin agent/poof-clifford-ecology main
-          git merge --no-edit origin/agent/poof-clifford-ecology
-          git merge --no-edit origin/main
+          git merge-base --is-ancestor origin/agent/poof-clifford-ecology HEAD
+          git merge-base --is-ancestor origin/main HEAD
 
       - name: Verify and extract exact SGR-01 payload
         shell: bash
@@ -50,7 +53,7 @@ jobs:
           test "$(sha256sum /tmp/sgr01.tar.gz | awk '{print $1}')" = "5532c9d69e4d6b13e136f781cb3164a7f493ff23b27121165363973ba812d0a0"
           tar -xzf /tmp/sgr01.tar.gz -C .
 
-      - name: Rebuild and validate Sprint 09, stable ground, and POOF ecology
+      - name: Rebuild and validate Sprint 09, stable ground, POOF, and canonical release
         shell: bash
         run: |
           set -euo pipefail
@@ -81,10 +84,12 @@ jobs:
             build/scout-report.md \
             build/surface-graph.json
 
-      - name: Remove transport and commit exact permanent surface
+      - name: Remove non-workflow transport and commit exact permanent surface
         shell: bash
         run: |
           set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git rm \
             .github/tmp/sgr01-part-00.b64 \
             .github/tmp/sgr01-part-01.b64 \
@@ -92,8 +97,7 @@ jobs:
             .github/tmp/sgr01-part-03a.b64 \
             .github/tmp/sgr01-part-03b.b64 \
             .github/tmp/sgr01-part-04.b64 \
-            .github/tmp/sgr01-part-05.b64 \
-            .github/workflows/temporary-sgr01-materialize.yml
+            .github/tmp/sgr01-part-05.b64
           git add \
             data/project/project-stable-ground-alignment-release-manifest.json \
             data/project/project-stable-ground-alignment.json \
@@ -123,19 +127,18 @@ jobs:
             '.github/tmp/sgr01-part-03b.b64',
             '.github/tmp/sgr01-part-04.b64',
             '.github/tmp/sgr01-part-05.b64',
-            '.github/workflows/temporary-sgr01-materialize.yml',
           }
           actual = set(subprocess.check_output(['git','diff','--cached','--name-only'], text=True).splitlines())
           expected = permanent | transport
           assert actual == expected, f'path mismatch\nmissing={sorted(expected-actual)}\nextra={sorted(actual-expected)}'
           unstaged = set(subprocess.check_output(['git','diff','--name-only'], text=True).splitlines())
           assert not unstaged, f'unstaged tracked changes: {sorted(unstaged)}'
-          print(f'exact staged denominator: {len(permanent)} permanent paths + {len(transport)} transport deletions')
+          print(f'exact staged denominator: {len(permanent)} permanent paths + {len(transport)} carrier deletions')
           PY
           git diff --cached --check
           git commit -m 'Reconcile POOF ecology with Sprint 09 stable ground'
 
-      - name: Prove committed deterministic tree and push
+      - name: Prove committed deterministic tree and push non-workflow bytes
         shell: bash
         run: |
           set -euo pipefail
