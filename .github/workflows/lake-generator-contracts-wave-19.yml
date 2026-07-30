@@ -1,0 +1,277 @@
+name: Evidence lake generator contracts Wave 19
+
+on:
+  push:
+    branches:
+      - agent/lake-generator-contracts-wave-19
+    paths:
+      - '.github/tmp/lake-generator-contracts-wave-19-trigger.json'
+  pull_request:
+    branches:
+      - agent/lake-identifier-topology-wave-18
+    paths:
+      - 'data/project/lake-generator-contracts-wave-19-policy.json'
+      - 'data/project/lake-generator-contract-registry-wave-19.json'
+      - 'data/project/lake-generator-contracts-wave-19.json'
+      - 'tools/materialize-lake-generator-contracts-wave-19.mjs'
+      - 'tools/stabilize-lake-generator-contracts-wave-19.mjs'
+      - 'tools/reconcile-lake-generator-contracts-wave-19.mjs'
+      - 'tools/validate-lake-generator-contracts-wave-19.mjs'
+      - 'test/lake-generator-contracts-wave-19.test.js'
+      - '.github/workflows/lake-generator-contracts-wave-19.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: lake-generator-contracts-wave-19-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Determine execution mode
+        id: mode
+        shell: bash
+        run: |
+          echo "original_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if test -f .github/tmp/lake-generator-contracts-wave-19-trigger.json \
+            && { test "$GITHUB_EVENT_NAME" = 'push' || test "$GITHUB_EVENT_NAME" = 'pull_request'; }; then
+            echo 'materialize=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'materialize=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Validate current branch baseline
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run release:check
+          git reset --hard HEAD
+          git clean -fd
+      - name: Build deterministic Wave 19 source controls
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/materialize-lake-generator-contracts-wave-19.mjs
+          node --check tools/stabilize-lake-generator-contracts-wave-19.mjs
+          node --check tools/reconcile-lake-generator-contracts-wave-19.mjs
+          node --check tools/validate-lake-generator-contracts-wave-19.mjs
+          node tools/materialize-lake-generator-contracts-wave-19.mjs
+          sha256sum \
+            data/project/lake-generator-contract-registry-wave-19.json \
+            data/project/lake-generator-contracts-wave-19.json \
+            build/lake-actions/generator-contracts-wave-19.json \
+            data/project/lake-index-policy.json \
+            BUILD-INSTRUCTIONS.md \
+            README.md > /tmp/wave19-source-first.sha256
+          node tools/materialize-lake-generator-contracts-wave-19.mjs
+          sha256sum --check --strict /tmp/wave19-source-first.sha256
+          git add \
+            data/project/lake-generator-contract-registry-wave-19.json \
+            data/project/lake-generator-contracts-wave-19.json \
+            build/lake-actions/generator-contracts-wave-19.json \
+            data/project/lake-index-policy.json \
+            BUILD-INSTRUCTIONS.md \
+            README.md
+          git diff --check
+      - name: Run canonical repository gate with Wave 19 sources active
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run release:check
+          git diff --check
+      - name: Validate an already materialized committed head
+        if: steps.mode.outputs.materialize != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -f data/project/lake-generator-contracts-wave-19.json \
+            && node -e "const x=require('./data/project/lake-generator-contracts-wave-19.json'); process.exit(x.post_execution_reconciliation_complete ? 0 : 1)"; then
+            npm run release:check
+            git reset --hard HEAD
+            git clean -fd
+            node tools/validate-lake-index-shards.mjs
+            node tools/validate-lake-basin-index.mjs
+            node tools/validate-lake-generator-contracts-wave-19.mjs
+            node test/lake-generator-contracts-wave-19.test.js
+          else
+            node tools/run-lake-generator-contracts-wave-19-preflight.mjs
+            npm run release:check
+          fi
+          git reset --hard HEAD
+          git clean -fd
+          test -z "$(git status --porcelain)"
+      - name: Stabilize exact staged source tree
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/tmp/lake-generator-contracts-wave-19-trigger.json
+          git add -A .github/tmp/lake-generator-contracts-wave-19-trigger.json
+          git restore --worktree .
+          git clean -fd
+      - name: Observe current open-PR shadow
+        if: steps.mode.outputs.materialize == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/build-lake-open-pr-shadow.mjs
+      - name: Absorb Wave 19 source identifiers into the Wave 18 topology
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pass in 1 2 3; do
+            echo "Wave 18 compatibility pass ${pass}"
+            node tools/build-lake-index.mjs
+            node tools/stabilize-lake-index.mjs
+            node tools/reconcile-lake-receipt-semantics.mjs
+            node tools/build-lake-gap-summary.mjs
+            node tools/validate-lake-index.mjs
+            node tools/validate-lake-receipt-semantics.mjs
+            node tools/validate-lake-gap-summary.mjs
+            node tools/expand-lake-identifier-topology-wave-18.mjs
+            git add -A
+          done
+      - name: Build and reconcile the final lake fixed point
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pass in 1 2 3; do
+            echo "Wave 19 reconciliation pass ${pass}"
+            node tools/build-lake-index.mjs
+            node tools/stabilize-lake-index.mjs
+            node tools/stabilize-lake-generator-contracts-wave-19.mjs
+            node tools/reconcile-lake-receipt-semantics.mjs
+            node tools/build-lake-gap-summary.mjs
+            node tools/validate-lake-index.mjs
+            node tools/validate-lake-receipt-semantics.mjs
+            node tools/validate-lake-gap-summary.mjs
+            node tools/reconcile-lake-identifier-topology-wave-18.mjs
+            node tools/reconcile-lake-generator-contracts-wave-19.mjs
+            git add -A
+          done
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-identifier-topology-wave-18.mjs
+          node tools/validate-lake-generator-contracts-wave-19.mjs
+          node test/lake-index.test.js
+          node test/lake-basin-index.test.js
+          node test/lake-identifier-topology-wave-18.test.js
+          node test/lake-generator-contracts-wave-19.test.js
+          git add -A
+      - name: Prove deterministic final reconstruction
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          find build/lake-index -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/wave19-final.sha256
+          sha256sum \
+            data/project/lake-generator-contract-registry-wave-19.json \
+            data/project/lake-generator-contracts-wave-19.json \
+            build/lake-actions/generator-contracts-wave-19.json \
+            build/lake-actions/generator-contracts-wave-19-reconciliation.json \
+            reports/lake-generator-contracts-wave-19.md >> /tmp/wave19-final.sha256
+          for pass in 1 2; do
+            node tools/build-lake-index.mjs
+            node tools/stabilize-lake-index.mjs
+            node tools/stabilize-lake-generator-contracts-wave-19.mjs
+            node tools/reconcile-lake-receipt-semantics.mjs
+            node tools/build-lake-gap-summary.mjs
+            node tools/validate-lake-index.mjs
+            node tools/validate-lake-receipt-semantics.mjs
+            node tools/validate-lake-gap-summary.mjs
+            node tools/reconcile-lake-identifier-topology-wave-18.mjs
+            node tools/reconcile-lake-generator-contracts-wave-19.mjs
+            git add -A
+          done
+          node tools/shard-lake-index.mjs
+          node tools/build-lake-basin-index.mjs
+          sha256sum --check --strict /tmp/wave19-final.sha256
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-generator-contracts-wave-19.mjs
+          node test/lake-generator-contracts-wave-19.test.js
+          git diff --check
+      - name: Enforce Wave 19 source and generated-output boundaries
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          import re
+          import subprocess
+
+          required_changes = {
+              '.github/tmp/lake-generator-contracts-wave-19-trigger.json',
+              'BUILD-INSTRUCTIONS.md',
+              'README.md',
+              'data/project/lake-index-policy.json',
+              'data/project/lake-generator-contract-registry-wave-19.json',
+              'data/project/lake-generator-contracts-wave-19.json',
+          }
+          required_present = {
+              '.github/workflows/lake-generator-contracts-wave-19.yml',
+              'data/project/lake-generator-contracts-wave-19-policy.json',
+              'tools/materialize-lake-generator-contracts-wave-19.mjs',
+              'tools/stabilize-lake-generator-contracts-wave-19.mjs',
+              'tools/reconcile-lake-generator-contracts-wave-19.mjs',
+              'tools/validate-lake-generator-contracts-wave-19.mjs',
+              'test/lake-generator-contracts-wave-19.test.js',
+          }
+          allowed_sources = required_changes | required_present | {
+              'data/project/lake-open-pr-shadow.json',
+              'data/project/lake-identifier-topology-registry-wave-18.json',
+              'data/project/lake-identifier-topology-wave-18.json',
+          }
+          generated_prefixes = ('build/', 'reports/', 'briefs/', 'estates/', 'gametrails/')
+          generated_root = re.compile(r'^(?:Clifford-.*\.html|[^/]+-standalone\.html)$')
+          raw = subprocess.check_output(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'])
+          entries = [entry for entry in raw.decode().split('\0') if entry]
+          actual = set()
+          for entry in entries:
+              status = entry[:2]
+              assert 'R' not in status and 'C' not in status, entry
+              actual.add(entry[3:])
+          unexpected = sorted(path for path in actual
+              if path not in allowed_sources
+              and not path.startswith(generated_prefixes)
+              and not generated_root.match(path))
+          assert required_changes <= actual, {'missing_required_wave_19_changes': sorted(required_changes - actual)}
+          for required_path in sorted(required_present):
+              assert os.path.exists(required_path), {'missing_required_wave_19_source': required_path}
+              subprocess.check_call(['git', 'ls-files', '--error-unmatch', required_path], stdout=subprocess.DEVNULL)
+          assert not unexpected, {'undeclared_source_changes': unexpected}
+          print({'required_changes': len(required_changes), 'required_present': len(required_present), 'actual_changes': len(actual), 'generated_changes': len(actual - allowed_sources)})
+          PY
+      - name: Commit and push Wave 19 checkpoint
+        if: steps.mode.outputs.materialize == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Execute generator contracts Wave 19'
+          git fetch origin agent/lake-generator-contracts-wave-19
+          test "$(git rev-parse origin/agent/lake-generator-contracts-wave-19)" = "${{ steps.mode.outputs.original_sha }}"
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-generator-contracts-wave-19.mjs
+          git push origin HEAD:agent/lake-generator-contracts-wave-19
