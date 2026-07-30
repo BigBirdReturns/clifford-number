@@ -201,16 +201,19 @@ jobs:
           import re
           import subprocess
 
-          required = {
+          must_change = {
               '.github/tmp/lake-residual-frontier-wave-17-trigger.json',
+          }
+          declared_sources = {
               'BUILD-INSTRUCTIONS.md',
               'README.md',
               'data/project/lake-index-policy.json',
               'data/project/lake-residual-path-registry-wave-17.json',
               'data/project/lake-projection-lineage-registry-wave-17.json',
               'data/project/lake-residual-frontier-wave-17.json',
+              'data/project/lake-open-pr-shadow.json',
           }
-          allowed_sources = required | {'data/project/lake-open-pr-shadow.json'}
+          allowed_sources = must_change | declared_sources
           generated_prefixes = ('build/', 'reports/', 'briefs/', 'estates/', 'gametrails/')
           generated_root = re.compile(r'^(?:Clifford-.*\.html|[^/]+-standalone\.html)$')
           raw = subprocess.check_output(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'])
@@ -224,9 +227,15 @@ jobs:
               if path not in allowed_sources
               and not path.startswith(generated_prefixes)
               and not generated_root.match(path))
-          assert required <= actual, {'missing_required_wave_17_changes': sorted(required - actual)}
+          assert must_change <= actual, {'missing_mandatory_wave_17_changes': sorted(must_change - actual)}
           assert not unexpected, {'undeclared_source_changes': unexpected}
-          print({'required_changes': len(required), 'actual_changes': len(actual), 'generated_changes': len(actual - allowed_sources)})
+          changed_declared_sources = sorted(actual & declared_sources)
+          print({
+              'mandatory_changes': len(must_change),
+              'declared_source_changes': changed_declared_sources,
+              'actual_changes': len(actual),
+              'generated_changes': len(actual - allowed_sources),
+          })
           PY
       - name: Commit and push Wave 17 checkpoint
         if: steps.mode.outputs.materialize == 'true'
