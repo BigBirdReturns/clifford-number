@@ -22,59 +22,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Verify exact Commit A carrier
+      - name: Retrieve exact production bundle from bounded Drive custody
         run: |
-          for file in .github/tmp/commit-a-binary/part-*.bin; do
-            printf '%s bytes=%s sha256=%s head=' "$file" "$(stat -c%s "$file")" "$(sha256sum "$file" | cut -d' ' -f1)"
-            head -c 8 "$file" | base64 -w0
-            printf ' tail='
-            tail -c 8 "$file" | base64 -w0
-            printf '\n'
-          done
-          cat .github/tmp/commit-a-binary/part-*.bin > /tmp/commitA.bundle.xz
-          echo "carrier_bytes=$(stat -c%s /tmp/commitA.bundle.xz)"
-          echo "carrier_sha256=$(sha256sum /tmp/commitA.bundle.xz | cut -d' ' -f1)"
+          set -x
+          curl --fail --location --retry 2 \
+            --output /tmp/commitA.bundle.xz \
+            'https://drive.usercontent.google.com/download?id=1EVCn5Y5A3E-sUmEjXwE90ovdLrdLyXnw&export=download&confirm=t'
+          set +x
+          file /tmp/commitA.bundle.xz
+          stat -c 'bytes=%s' /tmp/commitA.bundle.xz
+          sha256sum /tmp/commitA.bundle.xz
+          echo '6a2131f43e82817f943a777519a5f825fb45afba26686be4e438b5797a54f2f5  /tmp/commitA.bundle.xz' | sha256sum --check
           xz --test /tmp/commitA.bundle.xz
-          xz --decompress --stdout /tmp/commitA.bundle.xz > /tmp/commitA.bundle
-          echo "bundle_sha256=$(sha256sum /tmp/commitA.bundle | cut -d' ' -f1)"
-          git bundle verify /tmp/commitA.bundle
-          git fetch /tmp/commitA.bundle HEAD:refs/remotes/commit-a/exact
-          test "$(git rev-parse refs/remotes/commit-a/exact)" = '98b4004af3ab85954ef28aa4e6b9f82ed71a1d24'
-          test "$(git rev-parse refs/remotes/commit-a/exact^)" = '8d7499ca31c5ab371929cabfe84f29388cace698'
-          test "$(git rev-parse refs/remotes/commit-a/exact^{tree})" = '22e692dc242d7f737c3ef4239216e14aed14ce9d'
-          git diff --exit-code refs/remotes/commit-a/exact -- \
-            .github/workflows/publication-integrity.yml \
-            .github/workflows/pre-assemblage-origin-custody.yml
-      - name: Materialize exact non-workflow production tree
-        run: |
-          git diff --name-only -z \
-            8d7499ca31c5ab371929cabfe84f29388cace698 \
-            refs/remotes/commit-a/exact -- \
-            . ':(exclude).github/workflows/**' > /tmp/production-paths.z
-          while IFS= read -r -d '' path; do
-            git checkout refs/remotes/commit-a/exact -- "$path"
-          done < /tmp/production-paths.z
-          xargs -0 git add -A -- < /tmp/production-paths.z
-          git diff --cached --check
-          git diff --cached --exit-code refs/remotes/commit-a/exact -- \
-            . ':(exclude).github/workflows/**' ':(exclude).github/tmp/commit-a-binary/**'
-      - name: Run focused production gates
-        run: |
-          node tools/validate-governing-document.mjs
-          node test/governing-document-integrity.test.js
-          node tools/validate-pre-assemblage-origins.mjs
-          node test/pre-assemblage-origins.test.js
-          node tools/validate-publication-plan.mjs
-          node test/publication-manifest.test.js
-          npm run build:pages
-          npm run validate:pages
-          npm test
-      - name: Publish production tree and remove binary carrier
-        run: |
-          git config user.name 'OpenAI Agent'
-          git config user.email 'agent@openai.invalid'
-          git commit -m 'Enforce production publication and preserve pre-assemblage origins'
-          rm -rf .github/tmp/commit-a-binary
-          git add -A .github/tmp/commit-a-binary
-          git commit -m 'Remove exact production bundle carrier'
-          git push origin HEAD:agent/production-convergence-origin-custody
