@@ -40,7 +40,7 @@ const mutations = [
   {
     name: 'drift POOF release digest',
     mutate(context) { context.poofRelease.combined_sha256 = '0'.repeat(64); },
-    expected: 'POOF exact release digest'
+    expected: 'SG-03 report POOF digest'
   },
   {
     name: 'promote POOF deployment',

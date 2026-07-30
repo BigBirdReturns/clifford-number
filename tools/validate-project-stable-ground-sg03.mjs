@@ -218,6 +218,9 @@ export function validateSg03(context = loadSg03Context()) {
   equal(snapshot.poof.routes, 9, 'frozen POOF route count');
   equal(snapshot.poof.operational_effect_dimensions, 7, 'frozen POOF effect count');
   equal(snapshot.poof.constitutional_change_receipts, 5, 'frozen POOF change-receipt count');
+  equal(snapshot.poof.trigger_release_sha256, '26ebcd554cdc4a0c7a9b21946decf098aba8e2720c0a11121459f9fddb126248', 'frozen trigger POOF release digest');
+  equal(snapshot.poof.current_release_manifest, 'data/project/poof-clifford-ecology-release-manifest.json', 'current POOF release-manifest path');
+  equal(snapshot.poof.current_release_digest_bound_in_report, true, 'current POOF report-binding law');
   equal(snapshot.poof.staged, true, 'frozen POOF staged state');
   equal(snapshot.poof.deployed, false, 'frozen POOF deployment state');
   equal(snapshot.poof.indexable, false, 'frozen POOF indexability state');
@@ -284,7 +287,7 @@ export function validateSg03(context = loadSg03Context()) {
   }
 
   equal(poofRelease.schema_version, 'poof-clifford-ecology-release-manifest@1', 'POOF release schema');
-  equal(poofRelease.combined_sha256, checkpoint.trigger.release_sha256, 'POOF exact release digest');
+  check(/^[0-9a-f]{64}$/.test(poofRelease.combined_sha256), 'current POOF release digest format');
   equal(manifest.schema_version, 'project-stable-ground-sg03-release-manifest@1', 'SG-03 release schema');
   equal(manifest.checkpoint_id, checkpoint.checkpoint_id, 'SG-03 release identity');
   equal(report.schema_version, 'project-stable-ground-sg03-report@1', 'SG-03 report schema');

@@ -14,17 +14,22 @@ const write = (rel, value) => {
 };
 
 export const releaseScope = [
+  'package.json',
   '.github/workflows/project-stable-ground-sg03.yml',
   '.github/workflows/project-stable-ground-sg02.yml',
+  '.github/workflows/project-stable-ground-alignment.yml',
   'data/project/project-stable-ground-governor.json',
   'data/project/project-stable-ground-sg03.json',
   'data/project/project-stable-ground-current.json',
+  'data/project/poof-clifford-ecology-release-manifest.json',
   'docs/milestones/project-stable-ground-sg03.md',
   'tools/build-project-stable-ground-sg03.mjs',
   'tools/validate-project-stable-ground-sg03.mjs',
   'tools/validate-project-stable-ground-sg02.mjs',
+  'tools/validate-project-stable-ground-alignment.mjs',
   'test/project-stable-ground-sg03.test.js',
-  'test/project-stable-ground-sg02.test.js'
+  'test/project-stable-ground-sg02.test.js',
+  'test/project-stable-ground-alignment.test.js'
 ];
 
 export function computeReleaseManifest() {
