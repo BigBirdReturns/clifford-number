@@ -46,10 +46,35 @@ try {
     await page.locator('#reader-objective').fill('Test one bounded claim.');
     await page.locator('#reader-save').click();
     await assert.doesNotReject(async () => assert.match(await page.locator('#reader-result').textContent(), /Saved locally/));
-    await page.goto(`http://127.0.0.1:${port}/newsroom/`);
+    await page.goto(`http://127.0.0.1:${port}/`);
+    await page.locator('#site-search').fill('poof-o2');
+    assert.equal(await page.locator('.object:visible').count(), 1);
+    await page.locator('#site-search').fill('definitely-not-present');
+    assert.equal(await page.locator('[data-filter-item]:visible').count(), 0);
+    await page.locator('#site-search').fill('');
+    await Promise.all([
+      page.waitForURL(`http://127.0.0.1:${port}/newsroom/index.html`),
+      page.getByRole('link', { name: 'Use the newsroom desk' }).click()
+    ]);
     for (const [name, value] of [['claim','bounded'],['receipt','limited'],['counterweight','preserve'],['candidate','candidate']]) await page.locator(`input[name="${name}"][value="${value}"]`).check();
     await page.locator('#prove').click();
     assert.match(await page.locator('#proof-result').textContent(), /transfer verified/i);
+    await page.goto(`http://127.0.0.1:${port}/examination/`);
+    await page.locator('#referral-export').click();
+    assert.match(await page.locator('#referral-result').textContent(), /not exported/i);
+    const validReferral = {
+      '#ref-proposition': 'A bounded proposition requiring another record.',
+      '#ref-ceiling': 'Candidate only.',
+      '#ref-record': 'Acquire the exact decision record.',
+      '#ref-route': 'Public-record request and lawful review.',
+      '#ref-custodian': 'Evidence desk',
+      '#ref-consequence': 'The proposition remains unresolved.',
+      '#ref-privacy': 'Exclude personal data not required by the claim.'
+    };
+    for (const [selector, value] of Object.entries(validReferral)) await page.locator(selector).fill(value);
+    const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#referral-export').click()]);
+    assert.equal(download.suggestedFilename(), 'poof-referral-packet.json');
+    assert.match(await page.locator('#referral-result').textContent(), /validated graph-inert referral/i);
     await context.close();
   }
   const qa = { schema_version:'poof-ecology-browser-qa@1', tested_routes:routes, viewport_runs:2, route_checks:results.length, console_errors:0, page_errors:0, max_overflow_px:Math.max(...results.map((row)=>row.overflow)), reader_file_interaction:true, proving_ground_transfer:true };

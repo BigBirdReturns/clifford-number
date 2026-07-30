@@ -183,6 +183,48 @@
       "expires_at": null,
       "authority": "repository_change_receipt_below_canonical_evidence",
       "graph_effect": "none"
+    },
+    {
+      "change_id": "POOF-CONST-2026-07-29-005",
+      "effective_at": "2026-07-29T19:55:00-07:00",
+      "protected_paths_touched": [
+        "tools/build-poof-clifford-ecology.mjs",
+        "tools/validate-poof-clifford-ecology.mjs",
+        "test/poof-clifford-ecology.test.js"
+      ],
+      "affected_invariants": [
+        "a typed referral exporter cannot emit an object rejected by its own schema",
+        "the advertised jurisdiction-and-object filter covers both classes of card",
+        "JSON Schema date-time fields are validated as RFC 3339 rather than host-parser dates",
+        "primary entry actions route to their named jurisdictions"
+      ],
+      "reason": "Repository review found an incorrect positional newsroom route, a filter omission, a schema-invalid empty-form export path, and permissive Date.parse validation.",
+      "previous_behavior": [
+        "the newsroom action could route to Examination because action targets were positional",
+        "object cards remained visible under every filter query",
+        "blank and undersized referral fields could be exported as poof-referral-packet@1",
+        "date-only values could pass a schema field declared format date-time"
+      ],
+      "proposed_behavior": [
+        "entry actions resolve through explicit label-to-route bindings and fail closed when unmapped",
+        "jurisdiction and object cards share the same data-filter-item contract",
+        "the browser enforces the referral schema minimum lengths before local export",
+        "the validator enforces RFC 3339 syntax and calendar ranges",
+        "the browser harness proves newsroom routing, filtering, invalid refusal, and valid referral export"
+      ],
+      "migration": "Regenerate the staged aperture and release manifest; no stored referral, evidence object, graph edge, or prior release is rewritten.",
+      "backward_compatibility": "The changes are predeployment and additive at the interface boundary. Existing valid typed fixtures remain valid; previously emitted invalid local packets receive no authority and are not migrated as evidence.",
+      "adversarial_fixtures_added": [
+        "date-only value in a date-time field",
+        "empty referral export refusal",
+        "minimum-length-valid referral export",
+        "object-only search filter",
+        "named newsroom entry-route navigation"
+      ],
+      "emergency_override": false,
+      "expires_at": null,
+      "authority": "repository_change_receipt_below_canonical_evidence",
+      "graph_effect": "none"
     }
   ],
   "boundaries": {

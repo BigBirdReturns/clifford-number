@@ -24,6 +24,26 @@ function effectFailures(value, expected, location) {
   return failures;
 }
 
+const rfc3339DateTime = /^(\d{4})-(\d{2})-(\d{2})[Tt](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(?:[Zz]|([+-])(\d{2}):(\d{2}))$/;
+function isRfc3339DateTime(value) {
+  if (typeof value !== 'string') return false;
+  const match = rfc3339DateTime.exec(value);
+  if (!match) return false;
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText, , , offsetHourText, offsetMinuteText] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+  if (month < 1 || month > 12 || hour > 23 || minute > 59 || second > 60) return false;
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (day < 1 || day > days[month - 1]) return false;
+  if (offsetHourText !== undefined && (Number(offsetHourText) > 23 || Number(offsetMinuteText) > 59)) return false;
+  return true;
+}
+
 function matchesType(value, type) {
   if (type === 'null') return value === null;
   if (type === 'array') return Array.isArray(value);
@@ -47,7 +67,7 @@ export function validateObjectAgainstSchema(value, schema, location = '$') {
   if (typeof value === 'string') {
     if (schema.minLength && value.length < schema.minLength) fail(`shorter than ${schema.minLength}`);
     if (schema.pattern && !(new RegExp(schema.pattern).test(value))) fail(`does not match ${schema.pattern}`);
-    if (schema.format === 'date-time' && Number.isNaN(Date.parse(value))) fail('invalid date-time');
+    if (schema.format === 'date-time' && !isRfc3339DateTime(value)) fail('invalid RFC 3339 date-time');
   }
   if (Array.isArray(value)) {
     if (schema.minItems && value.length < schema.minItems) fail(`fewer than ${schema.minItems} items`);
@@ -112,7 +132,7 @@ export function validatePoofCliffordEcology({ root = moduleRoot, overrides = {} 
     if (change.graph_effect !== 'none') fail(`${change.change_id}: unconstitutional graph effect`);
     if (new Set(change.protected_paths_touched || []).size !== (change.protected_paths_touched || []).length) fail(`${change.change_id}: duplicate protected path coverage`);
     for (const touched of change.protected_paths_touched || []) if (!contract.constitutional_amendment_law.protected_paths.includes(touched)) fail(`${change.change_id}: path outside constitutional registry`);
-    if (change.emergency_override === true && (!change.expires_at || Number.isNaN(Date.parse(change.expires_at)) || Date.parse(change.expires_at) <= Date.parse(change.effective_at))) fail(`${change.change_id}: unconstitutional emergency override expiry`);
+    if (change.emergency_override === true && (!isRfc3339DateTime(change.expires_at) || !isRfc3339DateTime(change.effective_at) || Date.parse(change.expires_at) <= Date.parse(change.effective_at))) fail(`${change.change_id}: unconstitutional emergency override expiry`);
   }
   if (contract.publication_state.current_state !== 'staged_nonpublic_generated_aperture' || contract.publication_state.may_be_represented_as_deployed !== false) fail('deployment laundering');
   for (const [key, value] of Object.entries(contract.boundaries)) {

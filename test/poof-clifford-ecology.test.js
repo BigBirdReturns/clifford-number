@@ -78,6 +78,15 @@ result = validatePoofCliffordEcology({ root, overrides: { fixtures: { [fixturePa
 assert.equal(result.ok, false);
 assert.ok(result.failures.some((row) => row.includes(fixturePath)));
 
+
+const comprehensionFixturePath = 'test/fixtures/poof-comprehension-receipt.fixture.json';
+const comprehensionFixture = read(comprehensionFixturePath);
+mutation = structuredClone(comprehensionFixture);
+mutation.issued_at = '2026-07-29';
+result = validatePoofCliffordEcology({ root, overrides: { fixtures: { [comprehensionFixturePath]: mutation } } });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some((row) => row.includes('invalid RFC 3339 date-time')));
+
 const objects = read('data/project/poof-clifford-object-registry.json');
 mutation = structuredClone(objects);
 mutation.objects.find((row) => row.object_id === 'POOF-O2').effect_contract.ranking = 'priority_boost';
