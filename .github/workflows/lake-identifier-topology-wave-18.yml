@@ -12,6 +12,7 @@ on:
     paths:
       - 'data/project/lake-identifier-topology-wave-18-policy.json'
       - 'tools/build-lake-identifier-topology-wave-18.mjs'
+      - 'tools/summarize-lake-identifier-topology-wave-18.mjs'
       - '.github/workflows/lake-identifier-topology-wave-18.yml'
   workflow_dispatch:
 
@@ -49,18 +50,24 @@ jobs:
         run: |
           set -euo pipefail
           node --check tools/build-lake-identifier-topology-wave-18.mjs
+          node --check tools/summarize-lake-identifier-topology-wave-18.mjs
           node tools/build-lake-identifier-topology-wave-18.mjs
+          node tools/summarize-lake-identifier-topology-wave-18.mjs
           sha256sum \
             build/lake-actions/identifier-topology-wave-18-preflight.json \
             build/lake-actions/identifier-topology-wave-18-diagnostics.json \
+            build/lake-actions/identifier-topology-wave-18-family-diagnostics.json \
             reports/lake-identifier-topology-wave-18-preflight.md \
-            reports/lake-identifier-topology-wave-18-diagnostics.md > /tmp/wave18-preflight.sha256
+            reports/lake-identifier-topology-wave-18-diagnostics.md \
+            reports/lake-identifier-topology-wave-18-family-diagnostics.md > /tmp/wave18-preflight.sha256
           node tools/build-lake-identifier-topology-wave-18.mjs
+          node tools/summarize-lake-identifier-topology-wave-18.mjs
           sha256sum --check --strict /tmp/wave18-preflight.sha256
           node - <<'NODE'
           const fs = require('fs');
           const policy = JSON.parse(fs.readFileSync('data/project/lake-identifier-topology-wave-18-policy.json'));
           const preflight = JSON.parse(fs.readFileSync(policy.paths.preflight));
+          const family = JSON.parse(fs.readFileSync('build/lake-actions/identifier-topology-wave-18-family-diagnostics.json'));
           const baseline = policy.baseline;
           const counts = preflight.counts;
           if (counts.distinct_machine_ids !== baseline.distinct_machine_ids) throw new Error('machine-ID denominator drift');
@@ -69,6 +76,8 @@ jobs:
           if (counts.divergent_identifier_projections !== baseline.divergent_identifier_projections) throw new Error('divergence denominator drift');
           if (counts.projection_ids_without_source !== baseline.projection_ids_without_source) throw new Error('projection-without-source denominator drift');
           if (!preflight.completion.every_frozen_identifier_classified) throw new Error('unclassified frozen identifier');
+          if (family.counts.source_only_family_adjudication_required !== preflight.completion.unclassified_source_only_rows) throw new Error('source-only family diagnostics drift');
+          if (family.counts.same_path_projection_variants !== preflight.completion.same_path_projection_variant_rows) throw new Error('same-path family diagnostics drift');
           if (preflight.completion.review_required_to_decide !== false) throw new Error('human-permission dependency introduced');
           if (preflight.completion.graph_effect !== 'none') throw new Error('graph effect introduced');
           console.log({
@@ -77,7 +86,8 @@ jobs:
             source_only_classes: counts.source_only_classification_counts,
             divergence_classes: counts.divergence_classification_counts,
             unclassified_source_only_rows: preflight.completion.unclassified_source_only_rows,
-            same_path_projection_variant_rows: preflight.completion.same_path_projection_variant_rows
+            same_path_projection_variant_rows: preflight.completion.same_path_projection_variant_rows,
+            same_path_shapes: Object.fromEntries(family.counts.same_path_shape_counts.map(row => [row.key, row.count]))
           });
           NODE
           git diff --check
