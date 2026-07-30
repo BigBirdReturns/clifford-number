@@ -1,0 +1,132 @@
+name: Recover final adversarial source with exact checksum
+
+on:
+  push:
+    branches:
+      - agent/adversarial-release-integrity
+    paths:
+      - '.github/workflows/adversarial-final-source-offbyone-recovery.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/adversarial-final-source-offbyone-recovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/adversarial-release-integrity
+          fetch-depth: 0
+      - name: Test eleven and twelve part historical carriers
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --all --prune
+          python3 - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import lzma
+          import re
+          import subprocess
+          import tarfile
+          from io import BytesIO
+          from pathlib import Path
+
+          out = Path('/tmp/adversarial-final-source-recovery')
+          out.mkdir(parents=True, exist_ok=True)
+          manifest = json.loads(Path('.github/tmp/adversarial-release-manifest.json').read_text())
+          expected_b64_bytes = int(manifest['base64_bytes'])
+          expected_b64_sha = manifest['base64_sha256']
+          expected_payload_bytes = int(manifest['payload_bytes'])
+          expected_payload_sha = manifest['payload_sha256']
+          declared_count = int(manifest['chunk_count'])
+          allowed_counts = {declared_count, declared_count + 1}
+          part_re = re.compile(r'^\.github/tmp/final-source-part-[0-9]+\.b64$')
+          commits = subprocess.check_output(
+              ['git', 'rev-list', '--all', '--', '.github/tmp'], text=True
+          ).splitlines()
+          candidates = []
+          recovered = None
+
+          for commit in commits:
+              paths = sorted(
+                  path for path in subprocess.check_output(
+                      ['git', 'ls-tree', '-r', '--name-only', commit, '--', '.github/tmp'],
+                      text=True,
+                  ).splitlines()
+                  if part_re.match(path)
+              )
+              if len(paths) not in allowed_counts:
+                  continue
+              parts = [
+                  b''.join(subprocess.check_output(['git', 'show', f'{commit}:{path}']).split())
+                  for path in paths
+              ]
+              compact = b''.join(parts)
+              row = {
+                  'commit': commit,
+                  'count': len(paths),
+                  'paths': paths,
+                  'part_lengths': [len(part) for part in parts],
+                  'base64_bytes': len(compact),
+                  'base64_sha256': hashlib.sha256(compact).hexdigest(),
+              }
+              if len(candidates) < 200:
+                  candidates.append(row)
+              if row['base64_bytes'] != expected_b64_bytes or row['base64_sha256'] != expected_b64_sha:
+                  continue
+              compressed = base64.b64decode(compact, validate=True)
+              payload = lzma.decompress(compressed)
+              payload_sha = hashlib.sha256(payload).hexdigest()
+              if len(payload) != expected_payload_bytes or payload_sha != expected_payload_sha:
+                  raise SystemExit('base64 matched but payload custody did not')
+              (out / 'final-source.recovered.b64').write_bytes(compact)
+              (out / 'final-source.recovered.tar').write_bytes(payload)
+              with tarfile.open(fileobj=BytesIO(payload), mode='r:*') as archive:
+                  names = archive.getnames()
+              (out / 'final-source.tree.txt').write_text('\n'.join(names) + '\n')
+              recovered = {
+                  **row,
+                  'payload_bytes': len(payload),
+                  'payload_sha256': payload_sha,
+                  'compressed_bytes': len(compressed),
+                  'compressed_sha256': hashlib.sha256(compressed).hexdigest(),
+                  'tar_entries': len(names),
+                  'manifest_count_interpretation': (
+                      'count' if len(paths) == declared_count else 'last_index_or_off_by_one'
+                  ),
+              }
+              break
+
+          report = {
+              'schema_version': 'adversarial-final-source-recovery@1',
+              'declared_chunk_count': declared_count,
+              'allowed_counts': sorted(allowed_counts),
+              'expected_base64_bytes': expected_b64_bytes,
+              'expected_base64_sha256': expected_b64_sha,
+              'expected_payload_bytes': expected_payload_bytes,
+              'expected_payload_sha256': expected_payload_sha,
+              'candidates': candidates,
+              'recovered': recovered,
+          }
+          (out / 'diagnostic.json').write_text(json.dumps(report, indent=2) + '\n')
+          print(json.dumps(report, indent=2))
+          if recovered is None:
+              raise SystemExit('no exact eleven- or twelve-part final-source carrier found')
+          PY
+      - name: Upload exact recovery custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adversarial-final-source-recovery-${{ github.run_id }}
+          path: /tmp/adversarial-final-source-recovery/
+          if-no-files-found: error
+          retention-days: 7
