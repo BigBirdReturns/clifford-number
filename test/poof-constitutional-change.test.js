@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import { validateConstitutionalChangePlan, canonicalChangeLogPath } from '../tools/validate-poof-constitutional-change.mjs';
+import { validateConstitutionalChangePlan, canonicalChangeLogPath, remoteBranchForCandidate, resolveComparisonBase } from '../tools/validate-poof-constitutional-change.mjs';
 
 const requiredFields = ['protected_paths_touched','affected_invariants','reason','previous_behavior','proposed_behavior','migration','backward_compatibility','adversarial_fixtures_added','emergency_override'];
 const contract = {
@@ -44,5 +44,23 @@ mutation.changes[1].expires_at = null;
 result = validateConstitutionalChangePlan({ baseContract: contract, currentContract: contract, baseLog, currentLog: mutation, changedPaths: ['validator.mjs', canonicalChangeLogPath] });
 assert.equal(result.ok, false);
 assert.ok(result.failures.some((row) => row.includes('expiry')));
+
+assert.equal(remoteBranchForCandidate('origin/main'), 'main');
+assert.equal(remoteBranchForCandidate('origin/feature/constitutional-guard'), 'feature/constitutional-guard');
+assert.equal(remoteBranchForCandidate('HEAD^'), null);
+assert.equal(remoteBranchForCandidate('origin/../escape'), null);
+
+const availableRefs = new Set();
+const fetchedBranches = [];
+const resolvedBase = resolveComparisonBase({
+  candidates: ['origin/main', 'HEAD^'],
+  verify: (candidate) => availableRefs.has(candidate),
+  fetchRemoteBranch: (branch) => {
+    fetchedBranches.push(branch);
+    if (branch === 'main') availableRefs.add('origin/main');
+  }
+});
+assert.equal(resolvedBase, 'origin/main');
+assert.deepEqual(fetchedBranches, ['main']);
 
 console.log('poof-constitutional-change.test: OK');

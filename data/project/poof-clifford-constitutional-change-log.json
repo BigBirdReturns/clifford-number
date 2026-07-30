@@ -115,6 +115,40 @@
       "expires_at": null,
       "authority": "repository_change_receipt_below_canonical_evidence",
       "graph_effect": "none"
+    },
+    {
+      "change_id": "POOF-CONST-2026-07-29-003",
+      "effective_at": "2026-07-29T19:30:00-07:00",
+      "protected_paths_touched": [
+        "tools/validate-poof-constitutional-change.mjs",
+        "test/poof-constitutional-change.test.js"
+      ],
+      "affected_invariants": [
+        "constitutional custody is enforceable from standard shallow pull-request checkouts",
+        "missing comparison refs may be acquired only through a validated remote-branch candidate",
+        "checkout depth cannot silently disable or crash the constitutional release gate"
+      ],
+      "reason": "The generic Release Checks workflow exposed that a depth-one pull-request merge checkout lacked origin/main and HEAD^, causing the guard to fail before it could evaluate the receipt sequence.",
+      "previous_behavior": [
+        "the guard required a comparison ref to be present in the local clone",
+        "the dedicated ecology workflow passed because it fetched full history while the generic release workflow failed at depth one"
+      ],
+      "proposed_behavior": [
+        "use an already available comparison ref when present",
+        "otherwise fetch only the validated shallow base branch required for comparison",
+        "reject malformed remote-ref candidates and fail closed when no lawful base can be acquired"
+      ],
+      "migration": "Add a deterministic base-resolution helper, a validated one-branch shallow fetch fallback, and mutation coverage for valid and invalid candidates.",
+      "backward_compatibility": "Full-history local and CI checkouts keep their existing behavior; only missing comparison refs invoke the bounded fetch fallback.",
+      "adversarial_fixtures_added": [
+        "shallow remote-base bootstrap",
+        "invalid remote-ref rejection",
+        "available-ref preference before network acquisition"
+      ],
+      "emergency_override": false,
+      "expires_at": null,
+      "authority": "repository_change_receipt_below_canonical_evidence",
+      "graph_effect": "none"
     }
   ],
   "boundaries": {

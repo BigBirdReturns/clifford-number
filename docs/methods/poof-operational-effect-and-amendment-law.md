@@ -23,3 +23,7 @@ R9 permits comparable-and-similar, comparable-but-asymmetric, partial, noncompar
 ## Append-only merge-base guard
 
 The repository compares every pull request with its merge base. Prior constitutional receipts must remain an exact prefix. Any protected contract, schema, generator, validator, workflow, or adversarial test that changes must be covered exactly by one or more newly appended receipts. Reusing an old receipt, narrowing the protected-path registry, rewriting receipt history, or omitting a changed protected path fails the gate.
+
+## Shallow-checkout base bootstrap
+
+The constitutional guard first uses a comparison ref already present in the clone. When a standard shallow pull-request checkout lacks its base ref, the guard may fetch only the validated remote base branch required for the comparison. Malformed ref candidates are rejected, broad history is not required, and failure to acquire a lawful base remains fatal.

@@ -9,6 +9,25 @@ export const canonicalChangeLogPath = 'data/project/poof-clifford-constitutional
 const stable = (value) => JSON.stringify(value);
 const sortedUnique = (values) => [...new Set(values || [])].sort();
 
+export function remoteBranchForCandidate(candidate) {
+  if (!candidate?.startsWith('origin/')) return null;
+  const branch = candidate.slice('origin/'.length);
+  if (!branch || branch.startsWith('/') || branch.endsWith('/') || branch.includes('..') || branch.includes('@{') || !/^[A-Za-z0-9._/-]+$/.test(branch)) return null;
+  return branch;
+}
+
+export function resolveComparisonBase({ candidates, verify, fetchRemoteBranch }) {
+  const uniqueCandidates = [...new Set((candidates || []).filter(Boolean))];
+  for (const candidate of uniqueCandidates) if (verify(candidate)) return candidate;
+  for (const candidate of uniqueCandidates) {
+    const branch = remoteBranchForCandidate(candidate);
+    if (!branch) continue;
+    fetchRemoteBranch(branch);
+    if (verify(candidate)) return candidate;
+  }
+  return null;
+}
+
 export function validateConstitutionalChangePlan({ baseContract, currentContract, baseLog, currentLog, changedPaths }) {
   const failures = [];
   const fail = (message) => failures.push(message);
@@ -66,7 +85,12 @@ function jsonAt(ref, relative) {
 
 function resolveBase(explicit) {
   const candidates = [explicit, process.env.GITHUB_BASE_REF ? `origin/${process.env.GITHUB_BASE_REF}` : null, 'origin/main', 'HEAD^'].filter(Boolean);
-  for (const candidate of candidates) if (git(['rev-parse', '--verify', candidate], { allowFailure: true })) return candidate;
+  const verify = (candidate) => Boolean(git(['rev-parse', '--verify', candidate], { allowFailure: true }));
+  const fetchRemoteBranch = (branch) => {
+    git(['fetch', '--no-tags', '--depth=1', 'origin', `+refs/heads/${branch}:refs/remotes/origin/${branch}`], { allowFailure: true });
+  };
+  const resolved = resolveComparisonBase({ candidates, verify, fetchRemoteBranch });
+  if (resolved) return resolved;
   throw new Error('Unable to resolve a constitutional comparison base');
 }
 
