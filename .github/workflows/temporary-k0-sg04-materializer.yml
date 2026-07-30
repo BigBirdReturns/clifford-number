@@ -85,7 +85,7 @@ jobs:
           if (checkpoint.trigger?.transition_commit !== 'e9b85b31281db02ce3f9a9a84dd7aea34b714849') throw new Error('wrong K0 transition commit');
           if (checkpoint.trigger?.pull_request !== 405 || checkpoint.trigger?.issue !== 446) throw new Error('wrong SG-04 trigger custody');
           NODE
-      - name: Install permanent release integration and repair Wave 08 label
+      - name: Install permanent release integration and repair stale K0 seams
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -130,6 +130,14 @@ jobs:
               + anchor
           )
           test_path.write_text(test.replace(anchor, replacement, 1))
+
+          validator_path = Path('tools/validate-k0-epistemic-admissibility.mjs')
+          validator = validator_path.read_text()
+          old_counts = "  if (registry.stories.length !== 14 || fanout.lanes.length !== 17) fail('M05 integration counts drift');"
+          new_counts = "  if (registry.stories.length !== 15 || fanout.lanes.length !== 18) fail('M05 integration counts drift');"
+          if validator.count(old_counts) != 1:
+              raise RuntimeError(f'stale M05 integration anchor count: {validator.count(old_counts)}')
+          validator_path.write_text(validator.replace(old_counts, new_counts, 1))
           PY
       - name: Build K0, POOF, and SG-04 in dependency order
         run: |
@@ -149,6 +157,67 @@ jobs:
           npm run validate:stable-ground
       - name: Run complete repository release gate
         run: npm run release:check
+      - name: Restore unrelated timestamp-only compiler products
+        run: |
+          set -euo pipefail
+          old_head="$(cat /tmp/old-head)"
+          python3 - <<'PY'
+          import subprocess
+
+          volatile = [
+              'build/axm-identity.json',
+              'build/build-hop-report.json',
+              'build/hop-graph.json',
+              'build/migration-review.md',
+              'build/migration-summary.json',
+              'build/receipt-graph.json',
+              'build/scores.json',
+              'build/scout-report.json',
+              'build/scout-report.md',
+              'build/surface-graph.json',
+          ]
+          for path in volatile:
+              diff = subprocess.run(
+                  ['git', 'diff', '--unified=0', '--', path],
+                  check=True,
+                  text=True,
+                  capture_output=True,
+              ).stdout
+              if not diff:
+                  continue
+              changed = [
+                  line[1:].strip()
+                  for line in diff.splitlines()
+                  if line.startswith(('+', '-')) and not line.startswith(('+++', '---'))
+              ]
+              if len(changed) != 2 or not all(
+                  line.startswith('"generated": "') or line.startswith('Generated: ')
+                  for line in changed
+              ):
+                  raise RuntimeError(f'unexpected volatile compiler diff in {path}: {changed}')
+          PY
+          git restore --source="$old_head" --worktree -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json
+          git diff --quiet -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json
       - name: Freeze and constrain the permanent patch
         run: |
           set -euo pipefail
