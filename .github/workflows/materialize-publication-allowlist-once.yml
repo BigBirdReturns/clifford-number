@@ -26,6 +26,18 @@ jobs:
           node-version: '24'
       - name: Apply publication reconciliation
         run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          target = Path('.github/scripts/materialize-publication-allowlist.py')
+          text = target.read_text()
+          old = '"    networkMode: \'research\', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null\\n"'
+          new = '"  networkMode: \'research\', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null\\n"'
+          old_replacement = '"    networkMode: \'hops\', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null\\n"'
+          new_replacement = '"  networkMode: \'hops\', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null\\n"'
+          if text.count(old) != 1 or text.count(old_replacement) != 1:
+              raise SystemExit(f'network-mode materializer anchors: source={text.count(old)} replacement={text.count(old_replacement)}')
+          target.write_text(text.replace(old, new, 1).replace(old_replacement, new_replacement, 1))
+          PY
           python3 -m py_compile .github/scripts/materialize-publication-allowlist.py
           python3 .github/scripts/materialize-publication-allowlist.py
       - name: Prove focused constitutional and publication gates
