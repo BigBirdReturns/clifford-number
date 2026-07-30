@@ -19,3 +19,7 @@ R8 distinguishes documented acts, supported inferences, and interpretive models.
 ## Steel Mirror comparison firewall
 
 R9 permits comparable-and-similar, comparable-but-asymmetric, partial, noncomparable, and insufficient-evidence outcomes. Formal remedies are kept distinct from remedies demonstrated in practice. Comparison never forces equivalence.
+
+## Append-only merge-base guard
+
+The repository compares every pull request with its merge base. Prior constitutional receipts must remain an exact prefix. Any protected contract, schema, generator, validator, workflow, or adversarial test that changes must be covered exactly by one or more newly appended receipts. Reusing an old receipt, narrowing the protected-path registry, rewriting receipt history, or omitting a changed protected path fails the gate.

@@ -254,6 +254,7 @@
     "statement": "A constitutional rule may change only through a receipted, migration-aware repository transaction whose consequences remain inspectable.",
     "change_log_path": "data/project/poof-clifford-constitutional-change-log.json",
     "protected_paths": [
+      ".github/workflows/poof-clifford-ecology.yml",
       "data/project/poof-clifford-ecology-contract.json",
       "data/project/poof-clifford-object-registry.json",
       "data/project/poof-clifford-projection-contracts.json",
@@ -262,9 +263,14 @@
       "schemas/poof-comprehension-receipt.schema.json",
       "schemas/poof-publication-audit-receipt.schema.json",
       "schemas/poof-right-of-reply.schema.json",
-      "tools/validate-poof-clifford-ecology.mjs"
+      "tools/build-poof-clifford-ecology.mjs",
+      "tools/validate-poof-clifford-ecology.mjs",
+      "tools/validate-poof-constitutional-change.mjs",
+      "test/poof-clifford-ecology.test.js",
+      "test/poof-constitutional-change.test.js"
     ],
     "required_fields": [
+      "protected_paths_touched",
       "affected_invariants",
       "reason",
       "previous_behavior",
@@ -282,6 +288,8 @@
       "must_expire": true,
       "cannot_create_evidence_or_graph_authority": true,
       "post_hoc_ratification_forbidden": true
-    }
+    },
+    "append_only_base_comparison_required": true,
+    "protected_path_coverage_required": true
   }
 }

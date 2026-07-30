@@ -84,6 +84,11 @@ mutation.objects.find((row) => row.object_id === 'POOF-O2').effect_contract.rank
 result = validatePoofCliffordEcology({ root, overrides: { objects: mutation } });
 assert.equal(result.ok, false);
 assert.ok(result.failures.some((row) => row.includes('POOF-O2')));
+mutation = structuredClone(objects);
+mutation.objects.find((row) => row.object_id === 'POOF-O2').effect_contract.publication = 'automatic_publication_hold';
+result = validatePoofCliffordEcology({ root, overrides: { objects: mutation } });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some((row) => row.includes('POOF-O2.publication')));
 
 const projection = read('reports/core-thesis/poof-clifford-ecology/projection-manifest.json');
 mutation = structuredClone(projection);
@@ -91,6 +96,18 @@ delete mutation.selection_contract;
 result = validatePoofCliffordEcology({ root, overrides: { projection: mutation } });
 assert.equal(result.ok, false);
 assert.ok(result.failures.some((row) => row.includes('selection')));
+mutation = structuredClone(projection);
+mutation.selection_contract.candidate_set_hash = '0'.repeat(64);
+result = validatePoofCliffordEcology({ root, overrides: { projection: mutation } });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some((row) => row.includes('candidate set hash')));
+
+const openapi = read('reports/core-thesis/poof-clifford-ecology/openapi.json');
+mutation = structuredClone(openapi);
+mutation['x-effect-contract'].ranking = 'machine_priority';
+result = validatePoofCliffordEcology({ root, overrides: { openapi: mutation } });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some((row) => row.includes('OpenAPI effect contract')));
 
 const changeLog = read('data/project/poof-clifford-constitutional-change-log.json');
 mutation = structuredClone(changeLog);
@@ -98,6 +115,11 @@ mutation.changes[0].emergency_override = true;
 result = validatePoofCliffordEcology({ root, overrides: { changeLog: mutation } });
 assert.equal(result.ok, false);
 assert.ok(result.failures.some((row) => row.includes('override')));
+mutation = structuredClone(changeLog);
+mutation.protected_paths.pop();
+result = validatePoofCliffordEcology({ root, overrides: { changeLog: mutation } });
+assert.equal(result.ok, false);
+assert.ok(result.failures.some((row) => row.includes('protected path registry')));
 
 const bindings = read('data/project/poof-clifford-projection-contracts.json');
 mutation = structuredClone(bindings);

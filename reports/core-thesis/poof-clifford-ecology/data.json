@@ -256,6 +256,7 @@
       "statement": "A constitutional rule may change only through a receipted, migration-aware repository transaction whose consequences remain inspectable.",
       "change_log_path": "data/project/poof-clifford-constitutional-change-log.json",
       "protected_paths": [
+        ".github/workflows/poof-clifford-ecology.yml",
         "data/project/poof-clifford-ecology-contract.json",
         "data/project/poof-clifford-object-registry.json",
         "data/project/poof-clifford-projection-contracts.json",
@@ -264,9 +265,14 @@
         "schemas/poof-comprehension-receipt.schema.json",
         "schemas/poof-publication-audit-receipt.schema.json",
         "schemas/poof-right-of-reply.schema.json",
-        "tools/validate-poof-clifford-ecology.mjs"
+        "tools/build-poof-clifford-ecology.mjs",
+        "tools/validate-poof-clifford-ecology.mjs",
+        "tools/validate-poof-constitutional-change.mjs",
+        "test/poof-clifford-ecology.test.js",
+        "test/poof-constitutional-change.test.js"
       ],
       "required_fields": [
+        "protected_paths_touched",
         "affected_invariants",
         "reason",
         "previous_behavior",
@@ -284,7 +290,9 @@
         "must_expire": true,
         "cannot_create_evidence_or_graph_authority": true,
         "post_hoc_ratification_forbidden": true
-      }
+      },
+      "append_only_base_comparison_required": true,
+      "protected_path_coverage_required": true
     }
   },
   "projectionBindings": {
@@ -843,6 +851,7 @@
     "ecology_id": "poof-clifford-constitutional-publication-ecology",
     "as_of": "2026-07-29",
     "protected_paths": [
+      ".github/workflows/poof-clifford-ecology.yml",
       "data/project/poof-clifford-ecology-contract.json",
       "data/project/poof-clifford-object-registry.json",
       "data/project/poof-clifford-projection-contracts.json",
@@ -851,7 +860,11 @@
       "schemas/poof-comprehension-receipt.schema.json",
       "schemas/poof-publication-audit-receipt.schema.json",
       "schemas/poof-right-of-reply.schema.json",
-      "tools/validate-poof-clifford-ecology.mjs"
+      "tools/build-poof-clifford-ecology.mjs",
+      "tools/validate-poof-clifford-ecology.mjs",
+      "tools/validate-poof-constitutional-change.mjs",
+      "test/poof-clifford-ecology.test.js",
+      "test/poof-constitutional-change.test.js"
     ],
     "changes": [
       {
@@ -883,6 +896,68 @@
           "unreceipted constitutional change mutation",
           "R8 inference-firewall mutation",
           "R9 forced-symmetry mutation"
+        ],
+        "emergency_override": false,
+        "expires_at": null,
+        "authority": "repository_change_receipt_below_canonical_evidence",
+        "graph_effect": "none",
+        "protected_paths_touched": [
+          "data/project/poof-clifford-ecology-contract.json",
+          "data/project/poof-clifford-object-registry.json",
+          "data/project/poof-clifford-projection-contracts.json",
+          "schemas/poof-projection-manifest.schema.json",
+          "schemas/poof-referral-packet.schema.json",
+          "schemas/poof-comprehension-receipt.schema.json",
+          "schemas/poof-publication-audit-receipt.schema.json",
+          "schemas/poof-right-of-reply.schema.json",
+          "tools/validate-poof-clifford-ecology.mjs"
+        ]
+      },
+      {
+        "change_id": "POOF-CONST-2026-07-29-002",
+        "effective_at": "2026-07-29T19:15:00-07:00",
+        "protected_paths_touched": [
+          ".github/workflows/poof-clifford-ecology.yml",
+          "data/project/poof-clifford-ecology-contract.json",
+          "data/project/poof-clifford-object-registry.json",
+          "data/project/poof-clifford-projection-contracts.json",
+          "schemas/poof-projection-manifest.schema.json",
+          "schemas/poof-referral-packet.schema.json",
+          "schemas/poof-comprehension-receipt.schema.json",
+          "schemas/poof-publication-audit-receipt.schema.json",
+          "schemas/poof-right-of-reply.schema.json",
+          "tools/build-poof-clifford-ecology.mjs",
+          "tools/validate-poof-clifford-ecology.mjs",
+          "tools/validate-poof-constitutional-change.mjs",
+          "test/poof-clifford-ecology.test.js",
+          "test/poof-constitutional-change.test.js"
+        ],
+        "affected_invariants": [
+          "a prior constitutional receipt cannot be reused for a later protected-path change",
+          "previous constitutional receipts are append-only across the merge base",
+          "object-specific operational effects remain exact rather than merely dimension-complete",
+          "generated machine contracts and selection hashes are validated as authority surfaces"
+        ],
+        "reason": "The first hardening pass recorded constitutional change but did not mechanically bind each future protected-path diff to a newly appended receipt.",
+        "previous_behavior": [
+          "validation required at least one constitutional receipt but did not compare it with the merge-base receipt sequence",
+          "the object registry was dimension-checked while some object-specific review, publication, and custody values were not hard-coded in the validator",
+          "MCP effects were checked while parallel OpenAPI and agent-skill effects were not independently revalidated"
+        ],
+        "proposed_behavior": [
+          "a base-aware guard requires the prior receipt sequence to remain an exact prefix",
+          "the union of newly appended receipt path coverage must equal the protected paths changed in the pull request",
+          "object, projection, MCP, OpenAPI, and agent-skill effects fail closed against exact expected contracts"
+        ],
+        "migration": "Add a permanent git-aware constitutional guard, a pure mutation-test surface, complete protected-path coverage, and regenerate the staged release.",
+        "backward_compatibility": "The change is additive and predeployment; canonical evidence and previous release interpretation remain unchanged.",
+        "adversarial_fixtures_added": [
+          "reused old receipt with protected change",
+          "rewritten prior receipt",
+          "incomplete protected-path coverage",
+          "object-specific publication-effect mutation",
+          "machine-interface operational-effect mutation",
+          "projection candidate-set hash mutation"
         ],
         "emergency_override": false,
         "expires_at": null,
