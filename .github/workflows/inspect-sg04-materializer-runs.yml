@@ -10,13 +10,17 @@ on:
 
 permissions:
   actions: read
-  contents: read
+  contents: write
 
 jobs:
   inspect:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/sg04-exact-recovery
+          fetch-depth: 0
       - name: Query production materializer runs
         env:
           GH_TOKEN: ${{ github.token }}
@@ -41,3 +45,14 @@ jobs:
           path: /tmp/sg04-materializer-runs/
           if-no-files-found: error
           retention-days: 2
+      - name: Publish inspection pointer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .github/tmp
+          printf 'run_id: %s\nartifact: sg04-materializer-runs-%s\n' '${{ github.run_id }}' '${{ github.run_id }}' > .github/tmp/sg04-materializer-runs-pointer.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/tmp/sg04-materializer-runs-pointer.txt
+          git commit -m 'Record SG-04 materializer run inspection custody'
+          git push origin HEAD:agent/sg04-exact-recovery
