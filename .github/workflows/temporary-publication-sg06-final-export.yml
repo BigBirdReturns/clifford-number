@@ -34,11 +34,11 @@ jobs:
           CARRIER='.github/tmp/sg06-historical-workflow-fix.patch.xz.b64'
           ROOT='/tmp/sg06-historical-workflows'
 
-          printf '%s  %s\n' '92791c956681878ae53dc7d15fc0c63ba8f0aaec89850eb1705cc52854262874' "$CARRIER" | sha256sum --check --strict
+          printf '%s  %s\n' '697aa4d687df0a8089874cc2968187d436bbb8bbcae5941d1623d33612595a16' "$CARRIER" | sha256sum --check --strict
           base64 --decode "$CARRIER" > /tmp/sg06-historical-workflows.tar.xz
-          printf '%s  %s\n' '14a35a13a6b32f54224c2ace2143ac7d5b835bb88894e8c9f96fe26a66aded42' /tmp/sg06-historical-workflows.tar.xz | sha256sum --check --strict
+          printf '%s  %s\n' '661c93e2222b7f4e73d861de019c3445f6b707419cee6b72a7e80aad893a6d74' /tmp/sg06-historical-workflows.tar.xz | sha256sum --check --strict
           xz --decompress --stdout /tmp/sg06-historical-workflows.tar.xz > /tmp/sg06-historical-workflows.tar
-          printf '%s  %s\n' 'b70c9f15bc46ddb3ccdb412b840091fe6849e0423a8bec6108841f353037a67e' /tmp/sg06-historical-workflows.tar | sha256sum --check --strict
+          printf '%s  %s\n' 'c03db0a53d2992e32b25bbaa4c1df2379d583f7423f91f464271a1e4236110aa' /tmp/sg06-historical-workflows.tar | sha256sum --check --strict
 
           printf '%s\n' project-stable-ground-sg05.yml project-stable-ground-sg06.yml repair.sh | sort > /tmp/expected-members
           tar -tf /tmp/sg06-historical-workflows.tar | sort > /tmp/observed-members
@@ -49,6 +49,6 @@ jobs:
 
           printf '%s  %s\n' '3c366df8c94caded415fed603a396432ca2fc7b0a1199237c582ff28dd3abd45' "$ROOT/project-stable-ground-sg05.yml" | sha256sum --check --strict
           printf '%s  %s\n' 'e1e2f58f53cdd59d0edb22a8c99e72252f2c5268f27864b300ccc2c2ab2d65b8' "$ROOT/project-stable-ground-sg06.yml" | sha256sum --check --strict
-          printf '%s  %s\n' '309b02a021a07534f7af3b1edcf5d5802c37e44490676824c72d0d672d2e6258' "$ROOT/repair.sh" | sha256sum --check --strict
+          printf '%s  %s\n' '6d1f9c4b535f3bc2fbcccc54d5894e3f0570a6c89bd4b2055b4da92c9d46b84d' "$ROOT/repair.sh" | sha256sum --check --strict
           chmod +x "$ROOT/repair.sh"
           CARRIER_ROOT="$ROOT" "$ROOT/repair.sh"
