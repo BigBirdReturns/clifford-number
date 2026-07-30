@@ -29,18 +29,20 @@ jobs:
           set -euo pipefail
           base='0d701692fa83a405bd0ba86e7b45c525022589f7'
           target='agent/status-sovereignty-wave-01'
-          expected_archive='b21c83371c5438d2a0011ba085b01a64c17124a91a85c10c79d4ebe125c108da'
+          expected_archive='ec4c2ff2ab28a697c7dcc61ea433cbafa2405c6419e3a1efc0e1cac661eb2b20'
+          expected_paths='23092863b9157b93169733cce341684f90b215360f24d8fe9cc5b3971e05231c'
 
           mapfile -t chunks < <(find .github/tmp/ssc-wave01 -maxdepth 1 -type f -name 'part-*.b64' | sort)
           test "${#chunks[@]}" -eq 5
-          cat "${chunks[@]}" | base64 --decode > /tmp/ssc-wave01-transition.tar.xz
+          tr -d '\n' < <(cat "${chunks[@]}") | base64 --decode > /tmp/ssc-wave01-transition.tar.xz
           printf '%s  %s\n' "$expected_archive" /tmp/ssc-wave01-transition.tar.xz | sha256sum -c -
 
           rm -rf /tmp/ssc-wave01-payload /tmp/ssc-wave01-work
           mkdir -p /tmp/ssc-wave01-payload
           tar -xJf /tmp/ssc-wave01-transition.tar.xz -C /tmp/ssc-wave01-payload
           test "$(cat /tmp/ssc-wave01-payload/TRANSITION_BASE.txt)" = "$base"
-          test "$(wc -l < /tmp/ssc-wave01-payload/TRANSITION_PATHS.txt)" -eq 42
+          test "$(wc -l < /tmp/ssc-wave01-payload/TRANSITION_PATHS.txt)" -eq 48
+          test "$(sha256sum /tmp/ssc-wave01-payload/TRANSITION_PATHS.txt | cut -d' ' -f1)" = "$expected_paths"
 
           git fetch origin main "$target"
           test "$(git rev-parse origin/main)" = "$base"
@@ -66,7 +68,7 @@ jobs:
             /tmp/ssc-wave01-payload/TRANSITION_PATHS.txt | sort > /tmp/expected-nonworkflow-paths
           git diff --name-only | sort > /tmp/observed-nonworkflow-paths
           diff -u /tmp/expected-nonworkflow-paths /tmp/observed-nonworkflow-paths
-          test "$(wc -l < /tmp/observed-nonworkflow-paths)" -eq 38
+          test "$(wc -l < /tmp/observed-nonworkflow-paths)" -eq 44
           git diff --check
 
           git add -A
@@ -74,7 +76,7 @@ jobs:
           diff -u /tmp/expected-nonworkflow-paths /tmp/staged-nonworkflow-paths
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'Execute SSC-H01 Wave 01 and append SG-06'
+          git commit -m 'Execute SSC-H01 Wave 01 non-workflow transition'
           transition_head="$(git rev-parse HEAD)"
           test "$(git rev-parse HEAD^)" = "$base"
           git push --force-with-lease="refs/heads/$target:$old_head" origin "HEAD:refs/heads/$target"
@@ -85,8 +87,9 @@ jobs:
           Path('/tmp/ssc-wave01-materialization.json').write_text(json.dumps({
               'base': '0d701692fa83a405bd0ba86e7b45c525022589f7',
               'transition_head': os.popen('git rev-parse HEAD').read().strip(),
-              'published_paths': 38,
+              'published_paths': 44,
               'remaining_workflow_paths': 4,
+              'path_denominator_sha256': '23092863b9157b93169733cce341684f90b215360f24d8fe9cc5b3971e05231c',
           }, indent=2) + '\n')
           PY
       - uses: actions/upload-artifact@v4
