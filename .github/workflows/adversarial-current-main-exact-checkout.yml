@@ -1,0 +1,45 @@
+name: Materialize exact current main for release-integrity reconstruction
+
+on:
+  push:
+    branches:
+      - agent/adversarial-release-integrity
+    paths:
+      - '.github/workflows/adversarial-current-main-exact-checkout.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/adversarial-current-main-exact-checkout.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-current-main:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Package exact current main with Git metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain)"
+          git rev-parse HEAD > /tmp/main-head.txt
+          git status --porcelain=v1 > /tmp/main-status.txt
+          tar -czf /tmp/clifford-number-current-main.tgz .
+          sha256sum /tmp/clifford-number-current-main.tgz > /tmp/clifford-number-current-main.tgz.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clifford-number-current-main-exact-checkout-${{ github.run_id }}
+          path: |
+            /tmp/clifford-number-current-main.tgz
+            /tmp/clifford-number-current-main.tgz.sha256
+            /tmp/main-head.txt
+            /tmp/main-status.txt
+          if-no-files-found: error
+          retention-days: 2
