@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#faf6ec">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="The Clifford Number">
-  <meta property="og:title" content="The Clifford Number — map the machine, open every receipt">
+  <meta property="og:title" content="The Clifford Number — map documented routes, open every receipt">
   <meta property="og:description" content="A public research instrument for following documented decisions, claims, connections, and source receipts.">
   <meta property="og:url" content="https://bigbirdreturns.github.io/clifford-number/">
   <meta property="og:image" content="https://bigbirdreturns.github.io/clifford-number/assets/social-card.png">
@@ -18,7 +18,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="canonical" href="https://bigbirdreturns.github.io/clifford-number/">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <title>The Clifford Number — map the machine, open every receipt</title>
+  <title>The Clifford Number — map documented routes, open every receipt</title>
   <script>
     (() => {
       try {
@@ -104,8 +104,8 @@
     <div class="hero hero--civic shell-wide">
       <div class="hero-copy">
         <p class="eyebrow"><span id="hero-node-count">Public research network</span><span class="eyebrow-rule" aria-hidden="true"></span><span id="hero-edge-count">Sourced topology</span></p>
-        <h1>The machine is already in the records.<br><em>Zoom out.</em></h1>
-        <p class="hero-dek">See the policy spine, the Dialog directory, capital, government, defence, and technology clusters at once. Then touch any edge and read the exact claim and receipts underneath it.</p>
+        <h1>The documented routes are already in the records.<br><em>Open every receipt.</em></h1>
+        <p class="hero-dek">See only the actor-to-actor routes admitted by bounded surfaces and compatible dates. Touch any hop to inspect the shared surface, roles, overlap window, and receipts underneath it.</p>
 
         <section class="search-card search-card--hero civic-search" aria-labelledby="search-label">
           <div class="search-label-row">
@@ -122,7 +122,7 @@
         </section>
 
         <div class="hero-actions">
-          <a class="primary-action" href="#network-atlas">Open the whole network <span aria-hidden="true">→</span></a>
+          <a class="primary-action" href="#network-atlas">Open the verified hop map <span aria-hidden="true">→</span></a>
           <button class="text-action" id="hero-check" type="button"><span data-i18n="checkConnection">Check a connection</span> <span aria-hidden="true">→</span></button>
           <a class="text-action" href="estates/">Open Estate Aperture <span aria-hidden="true">→</span></a>
           <a class="text-action" href="gametrails/">Open Game-Trail Aperture <span aria-hidden="true">→</span></a>
@@ -131,12 +131,12 @@
       </div>
 
       <aside class="hero-hotspots" aria-labelledby="hotspots-title">
-        <p class="section-kicker">Highest-density public clusters</p>
-        <h2 id="hotspots-title">Start where the record burns hottest.</h2>
-        <button class="hotspot-jump hotspot-jump--dialog" type="button" data-network-focus="dialog"><strong>Dialog</strong><span id="hotspot-dialog-count">Highest-density public cluster</span></button>
-        <button class="hotspot-jump" type="button" data-network-focus="ai-opportunities-action-plan"><strong>AI Opportunities Action Plan</strong><span id="hotspot-action-plan-count">Public policy surface</span></button>
-        <button class="hotspot-jump" type="button" data-network-focus="palantir"><strong>Palantir</strong><span id="hotspot-palantir-count">Public organization cluster</span></button>
-        <p class="hotspot-boundary"><strong>Edge ≠ allegation.</strong> Color shows evidence class. The claim and receipt stay attached all the way down.</p>
+        <p class="section-kicker">Verified routes worth opening</p>
+        <h2 id="hotspots-title">Start with an admitted actor route.</h2>
+        <button class="hotspot-jump" type="button" data-network-focus="ben-warner"><strong>Ben Warner</strong><span id="hotspot-ben-warner-count">Verified surface hops</span></button>
+        <button class="hotspot-jump" type="button" data-network-focus="fiona-hill"><strong>Fiona Hill</strong><span id="hotspot-fiona-hill-count">Verified surface hops</span></button>
+        <button class="hotspot-jump" type="button" data-network-focus="keir-starmer"><strong>Keir Starmer</strong><span id="hotspot-keir-starmer-count">Verified surface hops</span></button>
+        <p class="hotspot-boundary"><strong>Hop ≠ allegation.</strong> Every visible line is actor → bounded surface → actor. Shared context that fails the compiler remains off this map.</p>
         <div class="release-strip" id="release-strip">Loading the current public release…</div>
       </aside>
     </div>
@@ -146,13 +146,12 @@
     <section class="network-atlas" id="network-atlas" aria-labelledby="network-title">
       <div class="atlas-heading">
         <div>
-          <p class="section-kicker">The public topology</p>
-          <h2 id="network-title">One machine. Two honest views.</h2>
-          <p>Research network shows every published sourced edge. Verified surface hops shows only actor-to-actor routes admitted by the bounded-surface compiler.</p>
+          <p class="section-kicker">The admitted topology</p>
+          <h2 id="network-title">One bounded view. Every step receipted.</h2>
+          <p>The map shows only actor-to-actor routes admitted by the bounded-surface compiler. Wider contextual edges remain available to research tooling but are not published as interpersonal routes.</p>
         </div>
-        <div class="atlas-mode" role="group" aria-label="Choose network view">
-          <button type="button" class="atlas-mode-button is-active" data-network-mode="research" aria-pressed="true">Research network</button>
-          <button type="button" class="atlas-mode-button" data-network-mode="hops" aria-pressed="false">Verified surface hops</button>
+        <div class="atlas-mode" role="group" aria-label="Network view">
+          <button type="button" class="atlas-mode-button is-active" data-network-mode="hops" aria-pressed="true">Verified surface hops</button>
         </div>
       </div>
       <div class="atlas-stats" id="atlas-stats" aria-live="polite"></div>
@@ -164,8 +163,8 @@
             <button type="button" data-network-zoom="reset">Whole map</button>
           </div>
           <svg id="network-svg" class="network-svg" viewBox="0 0 1400 900" role="img" aria-labelledby="network-svg-title network-svg-desc">
-            <title id="network-svg-title">Interactive Clifford research network</title>
-            <desc id="network-svg-desc">A zoomable map of documented public nodes and sourced edges. Larger glowing nodes are high-degree public clusters.</desc>
+            <title id="network-svg-title">Interactive Clifford surface-hop network</title>
+            <desc id="network-svg-desc">A zoomable map of admitted actors and verified surface hops. Every visible edge terminates in one or more bounded surfaces.</desc>
             <g id="network-layer"></g>
           </svg>
           <div class="atlas-legend" aria-label="Evidence legend">

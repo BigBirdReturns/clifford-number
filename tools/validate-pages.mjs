@@ -5,7 +5,7 @@ import { root } from './lib/ledger.mjs';
 
 const destination = path.join(root, 'dist');
 const required = [
-  'index.html', 'Clifford-Number-standalone.html', 'Clifford-Estate-Aperture-standalone.html', 'Clifford-Game-Trail-Aperture-standalone.html', 'app.js', 'styles.css', '.nojekyll',
+  'index.html', 'Clifford-Number-standalone.html', 'Clifford-Estate-Aperture-standalone.html', 'Clifford-Game-Trail-Aperture-standalone.html', 'app.js', 'styles.css', '.nojekyll', 'publication-manifest.json',
   'build/surface-graph.json', 'build/hop-graph.json', 'build/receipt-graph.json',
   'build/public-catalog.json', 'build/cases/index.json', 'build/cases/field-autopsy-03.json',
   'build/cases/uk-ai-policy.json',
@@ -41,7 +41,6 @@ const required = [
   'data/research/theses/synthetic-population-infrastructure.json',
   'data/research/thesis-evidence/synthetic-population-infrastructure.json',
   'data/research/thesis-reviews/synthetic-population-infrastructure.json',
-  'legacy/graph.edge-model.json', 'legacy/uk-ai-policy.edge-model.json',
   'src/ui-utils.js', 'src/i18n.js', 'src/aperture-bootstrap.js', 'src/visual-aperture-core.mjs',
   'src/visual-aperture-state.mjs', 'src/visual-aperture-workspace.mjs',
   'src/visual-aperture-export.mjs',
@@ -61,28 +60,15 @@ if (missing.length) {
   console.error(`validate-pages failed: missing ${missing.join(', ')}`);
   process.exit(1);
 }
-for (const forbidden of [
-  'data/crawl',
-  'data/intake',
-  'data/local',
-  'receipts/crawl',
-  'build/core-thesis/status-sovereignty',
-  'reports/core-thesis/status-sovereignty',
-  'data/project/status-sovereignty-compact.json',
-  'data/project/status-sovereignty-fanout.json',
-  'data/project/status-sovereignty-release-manifest.json',
-  'data/project/status-sovereignty-source-registry.json',
-  'docs/methods/status-sovereignty-compact.md',
-  'docs/milestones/m05-status-sovereignty-fanout.md',
-]) {
+for (const forbidden of ['data/crawl', 'data/intake', 'data/local', 'receipts/crawl', 'legacy', 'reports/core-thesis/poof-clifford-ecology']) {
   if (fs.existsSync(path.join(destination, forbidden))) {
     console.error(`validate-pages failed: intake path ${forbidden} must not be published`);
     process.exit(1);
   }
 }
 // SSC-H01 is canonical repository research but remains publication-blocked.
-// The broad Pages builder must prove that none of its source, contracts,
-// reports, or exact-byte custody products escaped into the public artifact.
+// The positive publication compiler must prove that none of its source,
+// reports, contracts, or exact-byte custody products escaped into Pages.
 for (const held of [
   'build/core-thesis/status-sovereignty',
   'reports/core-thesis/status-sovereignty',
@@ -131,11 +117,7 @@ const ukAiCase = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'cas
 const andurilCase = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'cases', 'anduril-access-ownership.json'), 'utf8'));
 const andurilBrief = fs.readFileSync(path.join(destination, 'briefs', 'anduril-access-ownership.html'), 'utf8');
 const hopGraph = JSON.parse(fs.readFileSync(path.join(destination, 'build', 'hop-graph.json'), 'utf8'));
-const legacyGraph = JSON.parse(fs.readFileSync(path.join(destination, 'graph.json'), 'utf8'));
-const legacyEdgeModels = [
-  JSON.parse(fs.readFileSync(path.join(destination, 'legacy', 'graph.edge-model.json'), 'utf8')),
-  JSON.parse(fs.readFileSync(path.join(destination, 'legacy', 'uk-ai-policy.edge-model.json'), 'utf8')),
-];
+const publicationManifest = JSON.parse(fs.readFileSync(path.join(destination, 'publication-manifest.json'), 'utf8'));
 
 if (gameTrailData.schema_version !== 'estate-game-trail-public-data@2'
   || gameTrailData.manifest?.counts?.estates !== 24
@@ -305,10 +287,31 @@ if (ukAiCase.subtitle !== 'Seven degrees of UK AI policy topology, with receipts
   console.error('validate-pages failed: UK AI case framing exceeds the published evidence model');
   process.exit(1);
 }
-if (legacyGraph.subtitle !== 'Seven degrees of UK AI policy topology, with receipts.'
-  || legacyEdgeModels.some(item => item.subtitle !== 'Seven degrees of UK AI policy topology, with receipts.')
+const publicJavascript = [];
+const visitPublicJavascript = (directory) => {
+  if (!fs.existsSync(directory)) return;
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const target = path.join(directory, entry.name);
+    if (entry.isDirectory()) visitPublicJavascript(target);
+    else if (entry.isFile() && /\.(?:js|mjs)$/.test(entry.name)) publicJavascript.push(fs.readFileSync(target, 'utf8'));
+  }
+};
+visitPublicJavascript(destination);
+const retiredGraphRequest = publicJavascript.some(source => /(?:fetch|loadJson|readData)\(\s*['"](?:\.\/)?graph\.json['"]/.test(source));
+if (fs.existsSync(path.join(destination, 'graph.json'))
+  || fs.existsSync(path.join(destination, 'legacy'))
+  || retiredGraphRequest
+  || app.includes('researchNetworkModel')
+  || html.includes('data-network-mode="research"')
   || standalone.includes('Seven degrees of UK AI state capture, with receipts.')) {
-  console.error('validate-pages failed: stale state-capture framing remains in the public payload');
+  console.error('validate-pages failed: retired generic-edge publication or stale state-capture framing remains in the public payload');
+  process.exit(1);
+}
+if (publicationManifest.schema_version !== 'clifford-publication-manifest@1'
+  || publicationManifest.boundaries?.recursive_repository_copy_allowed !== false
+  || publicationManifest.boundaries?.generic_edge_graph_is_public_route_product !== false
+  || publicationManifest.held_surfaces?.some(item => item.path === 'reports/core-thesis/poof-clifford-ecology/' && item.status === 'staged_nonpublic') !== true) {
+  console.error('validate-pages failed: status-aware positive publication manifest is absent or distorted');
   process.exit(1);
 }
 const refusal = (hopGraph.rejected_hop_pairs ?? []).find(item => item.actor_a === 'dan-rosenfield' && item.actor_b === 'dominic-cummings');

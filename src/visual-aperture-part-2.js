@@ -73,10 +73,9 @@ function initializeIndexes() {
   state.actors = new Map((state.data.surfaceGraph.actors ?? []).map(actor => [actor.id, actor]));
   state.surfaces = new Map((state.data.surfaceGraph.surfaces ?? []).map(surface => [surface.surface_id, surface]));
   state.receipts = new Map((state.data.receiptGraph.receipts ?? []).map(receipt => [receipt.receipt_id, receipt]));
-  state.legacyNodes = new Map((state.data.legacyGraph.nodes ?? []).map(node => [node.id, node]));
-  for (const [id, node] of state.legacyNodes) {
-    if (!state.actors.has(id) && node.type === 'person') state.actors.set(id, { id, label: node.label, description: node.description });
-  }
+  // The public aperture is derived only from the bounded surface and admitted-hop
+  // products. The internal generic edge graph is deliberately not loaded.
+  state.legacyNodes = new Map();
 }
 
 function largestSurface(surfaces = []) {

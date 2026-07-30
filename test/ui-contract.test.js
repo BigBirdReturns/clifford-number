@@ -49,12 +49,12 @@ assert.match(html, /id="preferences-menu"/);
 for (const id of ['theme-select', 'language-select', 'reading-select', 'density-select', 'contrast-toggle', 'preferences-reset']) {
   assert.match(html, new RegExp(`id="${id}"`), `${id} must ship in the display menu`);
 }
-assert.match(html, /The machine is already in the records/);
+assert.match(html, /The documented routes are already in the records/);
 assert.match(html, /id="network-atlas"/);
 assert.match(html, /id="network-svg"/);
-assert.match(html, /data-network-mode="research"/);
+assert.doesNotMatch(html, /data-network-mode="research"/);
 assert.match(html, /data-network-mode="hops"/);
-assert.match(html, /data-network-focus="dialog"/);
+assert.match(html, /data-network-focus="ben-warner"/);
 assert.match(html, /id="purpose-title"/);
 for (const key of ['purposeSurfaceTitle', 'purposeFlowTitle', 'purposeOutcomeTitle']) assert.match(html, new RegExp(`data-i18n="${key}"`));
 assert.match(html, /id="browse-all"/);
@@ -89,7 +89,7 @@ assert.match(css, /\[data-contrast="high"\]/);
 assert.match(app, /function renderReceiptGrid/);
 assert.match(app, /function renderTopologyMap/);
 assert.match(app, /function renderCase/);
-assert.match(app, /function researchNetworkModel/);
+assert.doesNotMatch(app, /function researchNetworkModel|loadJson\('graph\.json'\)|legacyGraph|legacyNodes/);
 assert.match(app, /function hopNetworkModel/);
 assert.match(app, /function initNetworkAtlas/);
 assert.match(app, /function focusNetworkNode/);
@@ -234,10 +234,16 @@ assert.match(socialCard, /width="1200" height="630"/);
 assert.match(socialCard, /EVERY HOP IS A SHARED BOUNDED SURFACE/);
 assert.ok(statSync('assets/social-card.png').size > 10_000, 'raster social card must be present and non-empty');
 
-// Every runtime dependency and local receipt link must ship in the Pages artifact.
-for (const directory of ['assets', 'docs', 'data', 'build', 'src', 'receipts']) {
-  assert.match(pagesBuilder, new RegExp(`['"]${directory}['"]`), `Pages artifact must include ${directory}/`);
-}
+// Every public byte is selected through the positive publication manifest.
+assert.match(pagesBuilder, /buildPublicationArtifact/);
+assert.doesNotMatch(pagesBuilder, /cpSync|copyTree|const dirs =/);
+const publicationPlan = readFileSync('data/project/publication-plan.json', 'utf8');
+const publicationModule = readFileSync('tools/lib/publication-manifest.mjs', 'utf8');
+assert.match(publicationPlan, /"default_decision": "exclude"/);
+assert.match(publicationPlan, /reports\/core-thesis\/poof-clifford-ecology\//);
+assert.match(publicationPlan, /"status": "staged_nonpublic"/);
+assert.match(publicationModule, /unclassified files/);
+assert.match(publicationModule, /generic edge graph is public/);
 assert.match(deployWorkflow, /npm run release:check/);
 assert.match(ciWorkflow, /pull_request:/);
 assert.match(ciWorkflow, /npm run release:check/);

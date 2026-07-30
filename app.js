@@ -6,7 +6,7 @@ const state = {
   searchResults: [], searchActiveIndex: -1, locale: 'en', preferences: {}, citation: null,
   tracks: new Map(), trackHarnesses: new Map(), cases: new Map(), caseIndex: new Map(),
   claims: new Map(), caseReceipts: new Map(), claimCatalog: new Map(), receiptCatalog: new Map(), claimKeyById: new Map(), catalogCounts: {},
-  networkMode: 'research', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null
+  networkMode: 'hops', networkView: { x: 0, y: 0, width: 1400, height: 900 }, networkModel: null
 };
 const $ = sel => document.querySelector(sel);
 
@@ -399,16 +399,15 @@ function labelOrg(id) { return state.orgs.get(id)?.label || id; }
 function surface(id) { return state.surfaces.get(id); }
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function shortLabel(s, max = 26) { const value = String(s ?? ''); return value.length > max ? `${value.slice(0, max - 1)}…` : value; }
-function setDocumentTitle(label) { document.title = label ? `${label} — The Clifford Number` : 'The Clifford Number — map the machine, open every receipt'; }
+function setDocumentTitle(label) { document.title = label ? `${label} — The Clifford Number` : 'The Clifford Number — map documented routes, open every receipt'; }
 function announce(message) { const status = $('#view-status'); if (status) status.textContent = message; }
 
 async function init() {
   initPreferences();
-  const [surfaceGraph, hopGraph, scores, legacyGraph, scout, receiptGraph, publicCatalog] = await Promise.all([
+  const [surfaceGraph, hopGraph, scores, scout, receiptGraph, publicCatalog] = await Promise.all([
     loadJson('build/surface-graph.json'),
     loadJson('build/hop-graph.json'),
     loadJson('build/scores.json'),
-    loadJson('graph.json'),
     loadJson('build/scout-report.json').catch(() => ({ findings: [] })),
     loadJson('build/receipt-graph.json').catch(() => ({ receipts: [] })),
     loadJson('build/public-catalog.json').catch(() => ({ counts: {}, tracks: [], cases: [], claims: [], receipts: [] }))
@@ -416,7 +415,6 @@ async function init() {
   state.surfaceGraph = surfaceGraph;
   state.hopGraph = hopGraph;
   state.scores = scores;
-  state.legacyGraph = legacyGraph;
   state.scout = scout;
   state.receipts = new Map((receiptGraph.receipts ?? []).map(r => [r.receipt_id, r]));
   state.actors = new Map(surfaceGraph.actors.map(a => [a.id, a]));
@@ -431,7 +429,6 @@ async function init() {
   }
   state.actorScores = new Map(scores.actors.map(a => [a.actor_id, a]));
   state.orgScores = new Map(scores.organizations.map(o => [o.organization_id, o]));
-  state.legacyNodes = new Map((legacyGraph.nodes ?? []).map(n => [n.id, n]));
   state.chains = new Map((scores.chains ?? []).map(c => [c.chain_id, c]));
   state.catalogCounts = publicCatalog.counts ?? {};
   state.caseIndex = new Map((publicCatalog.cases ?? []).map(item => [item.case_id, item]));
@@ -446,7 +443,7 @@ async function init() {
   }
   const flagshipCase = [...state.caseIndex.values()].sort((a, b) => (b.featured_priority ?? 0) - (a.featured_priority ?? 0))[0];
   $('#try-examples').innerHTML = `
-    <button data-network-focus="dialog">Dialog · 124 edges</button>
+    <button data-network-focus="ben-warner">Ben Warner · verified hop route</button>
     ${flagshipCase ? `<button data-kind="case" data-id="${esc(flagshipCase.case_id)}">Clifford → Starmer · official</button>` : ''}
     ${state.actors.has('ben-warner') ? '<button data-kind="actor" data-id="ben-warner">Ben Warner → Clifford · hops</button>' : ''}`;
   for (const btn of $('#try-examples').querySelectorAll('[data-kind]')) btn.addEventListener('click', () => go(btn.dataset.kind, btn.dataset.id));
@@ -727,71 +724,6 @@ function evidenceBand(value) {
   return 'derived';
 }
 
-function clusterForNode(node) {
-  const text = norm([node.id, node.type, ...(node.tags ?? [])].join(' '));
-  if (text.includes('dialog') || text.includes('private-forum')) return 'dialog';
-  if (text.includes('government') || text.includes('policy') || text.includes('uk-ai') || text.includes('public-sector')) return 'policy';
-  if (text.includes('defen') || text.includes('military') || text.includes('army') || text.includes('palantir')) return 'defense';
-  if (text.includes('capital') || text.includes('fund') || text.includes('venture') || text.includes('invest')) return 'capital';
-  if (text.includes('company') || text.includes('technology') || text.includes('frontier-ai') || text.includes('data')) return 'technology';
-  return 'other';
-}
-
-function researchNetworkModel() {
-  const graph = state.legacyGraph;
-  const degree = new Map((graph.nodes ?? []).map(node => [node.id, 0]));
-  const adjacency = new Map((graph.nodes ?? []).map(node => [node.id, []]));
-  for (const edge of graph.edges ?? []) {
-    degree.set(edge.from, (degree.get(edge.from) ?? 0) + 1);
-    degree.set(edge.to, (degree.get(edge.to) ?? 0) + 1);
-    adjacency.get(edge.from)?.push(edge.to);
-    adjacency.get(edge.to)?.push(edge.from);
-  }
-  const fixed = new Map(Object.entries({
-    dialog: [300, 440],
-    'matt-clifford': [690, 415],
-    'clifford-policy-machine': [835, 415],
-    'ai-opportunities-action-plan': [790, 235],
-    palantir: [1080, 570],
-    'entrepreneur-first': [700, 700],
-    'detachment-201': [1130, 285]
-  }));
-  const centers = {
-    dialog: [300, 440], policy: [805, 365], defense: [1110, 520],
-    capital: [700, 690], technology: [1080, 190], other: [505, 745]
-  };
-  const raw = (graph.nodes ?? []).map(node => {
-    let cluster = clusterForNode(node);
-    if ((adjacency.get(node.id) ?? []).includes('dialog') && !fixed.has(node.id)) cluster = 'dialog';
-    return { ...node, degree: degree.get(node.id) ?? 0, cluster };
-  });
-  const groups = new Map();
-  for (const node of raw.filter(node => !fixed.has(node.id))) {
-    if (!groups.has(node.cluster)) groups.set(node.cluster, []);
-    groups.get(node.cluster).push(node);
-  }
-  const positions = new Map();
-  for (const [id, point] of fixed) positions.set(id, { x: point[0], y: point[1] });
-  for (const [cluster, nodes] of groups) {
-    const [cx, cy] = centers[cluster] ?? centers.other;
-    nodes.sort((a, b) => b.degree - a.degree || a.label.localeCompare(b.label));
-    nodes.forEach((node, index) => {
-      const angle = index * 2.3999632297;
-      const spread = cluster === 'dialog' ? 27 : 34;
-      const radius = 62 + Math.sqrt(index + 1) * spread;
-      positions.set(node.id, {
-        x: Math.max(28, Math.min(1372, cx + Math.cos(angle) * radius)),
-        y: Math.max(28, Math.min(872, cy + Math.sin(angle) * radius))
-      });
-    });
-  }
-  const nodes = raw.map(node => ({ ...node, ...(positions.get(node.id) ?? { x: 700, y: 450 }) }));
-  return {
-    mode: 'research', nodes, edges: graph.edges ?? [], nodeById: new Map(nodes.map(node => [node.id, node])),
-    defaultNode: 'dialog', fullView: { ...NETWORK_FULL_VIEW }
-  };
-}
-
 function hopNetworkModel() {
   const actorIds = new Set();
   const degree = new Map();
@@ -867,41 +799,32 @@ function networkNodeRadius(node) {
   return Math.max(5, Math.min(31, 4 + Math.sqrt(node.degree || 1) * 2.35));
 }
 
-function renderNetworkAtlas(mode = state.networkMode, selectedId = null) {
+function renderNetworkAtlas(selectedId = null) {
   const layer = $('#network-layer');
   if (!layer) return;
-  state.networkMode = mode;
-  state.networkModel = mode === 'hops' ? hopNetworkModel() : researchNetworkModel();
+  state.networkMode = 'hops';
+  state.networkModel = hopNetworkModel();
   const model = state.networkModel;
   const edgeMarkup = model.edges.map(edge => {
     const from = model.nodeById.get(edge.from);
     const to = model.nodeById.get(edge.to);
     if (!from || !to) return '';
     const band = evidenceBand(edge.evidence_class);
-    const topology = model.mode === 'research' && legacyIsTopology(edge) ? ' network-edge--topology' : '';
-    return `<line class="network-edge network-edge--${band}${topology}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"/><line class="network-edge-hit" data-network-edge="${esc(edge.id)}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"/>`;
+    return `<line class="network-edge network-edge--${band}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"/><line class="network-edge-hit" data-network-edge="${esc(edge.id)}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"/>`;
   }).join('');
   const nodeMarkup = model.nodes.map(node => {
     const radius = networkNodeRadius(node);
     const hot = node.degree >= 5 || node.id === model.defaultNode;
-    const showLabel = hot || model.mode === 'hops';
-    return `<g class="atlas-node atlas-node--${esc(node.cluster)}${hot ? ' atlas-node--hot' : ''}" data-network-node="${esc(node.id)}" transform="translate(${node.x} ${node.y})" tabindex="0" role="button" aria-label="${esc(`${node.label}, ${node.degree} documented edges`)}">
+    return `<g class="atlas-node atlas-node--${esc(node.cluster)}${hot ? ' atlas-node--hot' : ''}" data-network-node="${esc(node.id)}" transform="translate(${node.x} ${node.y})" tabindex="0" role="button" aria-label="${esc(`${node.label}, ${node.degree} verified hops`)}">
       ${hot ? `<circle class="atlas-node-halo" r="${radius + 12}"/>` : ''}
       <circle class="atlas-node-core" r="${radius}"/>
-      ${showLabel ? `<text class="atlas-node-label" y="${-(radius + 10)}" text-anchor="middle">${esc(shortLabel(node.label, 28))}</text><text class="atlas-node-degree" y="4" text-anchor="middle">${node.degree}</text>` : ''}
-      <title>${esc(node.label)} · ${node.degree} documented edge${node.degree === 1 ? '' : 's'}</title>
+      <text class="atlas-node-label" y="${-(radius + 10)}" text-anchor="middle">${esc(shortLabel(node.label, 28))}</text><text class="atlas-node-degree" y="4" text-anchor="middle">${node.degree}</text>
+      <title>${esc(node.label)} · ${node.degree} verified hop${node.degree === 1 ? '' : 's'}</title>
     </g>`;
   }).join('');
   layer.innerHTML = `<g class="network-edges">${edgeMarkup}</g><g class="network-nodes">${nodeMarkup}</g>`;
   const uniqueSurfaces = new Set((state.hopGraph.edges ?? []).flatMap(edge => (edge.surfaces ?? []).map(surfaceItem => surfaceItem.surface_id)));
-  $('#atlas-stats').innerHTML = model.mode === 'research'
-    ? `<strong>${model.nodes.length}</strong> public nodes <span>·</span> <strong>${model.edges.length}</strong> sourced edges <span>·</span> <strong>${model.nodeById.get('dialog')?.degree ?? 0}</strong> edges at Dialog`
-    : `<strong>${model.nodes.length}</strong> admitted actors <span>·</span> <strong>${model.edges.length}</strong> valid hops <span>·</span> <strong>${uniqueSurfaces.size}</strong> bounded surfaces`;
-  for (const button of document.querySelectorAll('[data-network-mode]')) {
-    const active = button.dataset.networkMode === mode;
-    button.classList.toggle('is-active', active);
-    button.setAttribute('aria-pressed', String(active));
-  }
+  $('#atlas-stats').innerHTML = `<strong>${model.nodes.length}</strong> admitted actors <span>·</span> <strong>${model.edges.length}</strong> valid hops <span>·</span> <strong>${uniqueSurfaces.size}</strong> bounded surfaces`;
   for (const nodeEl of layer.querySelectorAll('[data-network-node]')) {
     const select = () => selectNetworkNode(nodeEl.dataset.networkNode);
     nodeEl.addEventListener('click', select);
@@ -910,9 +833,7 @@ function renderNetworkAtlas(mode = state.networkMode, selectedId = null) {
       event.preventDefault(); select();
     });
   }
-  for (const edgeEl of layer.querySelectorAll('[data-network-edge]')) {
-    edgeEl.addEventListener('click', () => openNetworkEdge(edgeEl.dataset.networkEdge));
-  }
+  for (const edgeEl of layer.querySelectorAll('[data-network-edge]')) edgeEl.addEventListener('click', () => openNetworkEdge(edgeEl.dataset.networkEdge));
   resetNetworkView();
   selectNetworkNode(selectedId && model.nodeById.has(selectedId) ? selectedId : model.defaultNode);
 }
@@ -929,30 +850,21 @@ function selectNetworkNode(id) {
   const cards = related.map(edge => {
     const otherId = edge.from === id ? edge.to : edge.from;
     const other = model.nodeById.get(otherId);
-    if (model.mode === 'hops') {
-      const surfaces = edge.surfaces ?? [];
-      return `<article class="network-edge-card"><div><span class="badge">${esc(humanLabel(edge.evidence_class))}</span><strong>${esc(other?.label ?? otherId)}</strong></div>${surfaces.map(surfaceItem => `<p><b>${esc(surfaceItem.surface_label)}</b><br><span>${esc(surfaceItem.actor_a_role || '')} ↔ ${esc(surfaceItem.actor_b_role || '')}</span></p><div class="network-receipt-buttons">${(surfaceItem.receipt_ids ?? []).slice(0, 3).map(receiptId => `<button type="button" data-open-receipt="${esc(receiptId)}">Receipt · ${esc(shortLabel(receiptId, 28))}</button>`).join('')}</div>`).join('')}</article>`;
-    }
-    const claimKey = state.claimKeyById.get(`clm-${edge.id}`);
-    return `<article class="network-edge-card"><div><span class="badge">${esc(humanLabel(edge.evidence_class || 'context'))}</span><strong>${esc(other?.label ?? otherId)}</strong></div><p>${esc(edge.claim || humanLabel(edge.type))}</p>${claimKey ? `<button type="button" class="edge-evidence-button" data-open-claim="${esc(claimKey)}">Open claim + ${(edge.source_ids ?? []).length} receipt${(edge.source_ids ?? []).length === 1 ? '' : 's'} →</button>` : ''}</article>`;
+    const surfaces = edge.surfaces ?? [];
+    return `<article class="network-edge-card"><div><span class="badge">${esc(humanLabel(edge.evidence_class))}</span><strong>${esc(other?.label ?? otherId)}</strong></div>${surfaces.map(surfaceItem => `<p><b>${esc(surfaceItem.surface_label)}</b><br><span>${esc(surfaceItem.actor_a_role || '')} ↔ ${esc(surfaceItem.actor_b_role || '')}</span></p><div class="network-receipt-buttons">${(surfaceItem.receipt_ids ?? []).slice(0, 3).map(receiptId => `<button type="button" data-open-receipt="${esc(receiptId)}">Receipt · ${esc(shortLabel(receiptId, 28))}</button>`).join('')}</div>`).join('')}</article>`;
   }).join('');
-  inspector.innerHTML = `<p class="section-kicker">${esc(model.mode === 'hops' ? 'Verified surface-hop node' : humanLabel(node.cluster) + ' cluster')}</p><h3>${esc(node.label)}</h3><div class="network-node-metric"><strong>${node.degree}</strong><span>documented edge${node.degree === 1 ? '' : 's'}</span></div>${node.description ? `<p>${esc(node.description)}</p>` : ''}<button class="result network-profile-link" data-kind="actor" data-id="${esc(node.id)}"><span class="kind-glyph">A</span><span class="result-label">Open the full record<small>routes, roles, windows, and receipts</small></span></button><h4>Strongest visible edges</h4><div class="network-edge-list">${cards || '<p>No edge is visible in this view.</p>'}</div>`;
+  inspector.innerHTML = `<p class="section-kicker">Verified surface-hop node</p><h3>${esc(node.label)}</h3><div class="network-node-metric"><strong>${node.degree}</strong><span>verified hop${node.degree === 1 ? '' : 's'}</span></div><button class="result network-profile-link" data-kind="actor" data-id="${esc(node.id)}"><span class="kind-glyph">A</span><span class="result-label">Open the full record<small>routes, roles, windows, and receipts</small></span></button><h4>Admitted adjacent actors</h4><div class="network-edge-list">${cards || '<p>No admitted hop is visible in this view.</p>'}</div>`;
   bindEvidenceActions(inspector);
   for (const button of inspector.querySelectorAll('.result')) button.addEventListener('click', () => activateResult(button.dataset.kind, button.dataset.id));
 }
 
 function openNetworkEdge(id) {
-  if (state.networkMode === 'research') {
-    const claimKey = state.claimKeyById.get(`clm-${id}`);
-    if (claimKey) openClaimDialog(claimKey);
-    return;
-  }
   const edge = state.networkModel?.edges.find(item => item.id === id);
   if (edge) selectNetworkNode(edge.from);
 }
 
 function focusNetworkNode(id) {
-  if (state.networkMode !== 'research' || !state.networkModel?.nodeById.has(id)) renderNetworkAtlas('research', id);
+  if (!state.networkModel?.nodeById.has(id)) renderNetworkAtlas(id);
   else selectNetworkNode(id);
   const node = state.networkModel?.nodeById.get(id);
   if (node) {
@@ -981,21 +893,20 @@ function renderHopSpine() {
 }
 
 function initNetworkAtlas() {
-  renderNetworkAtlas('research');
+  renderNetworkAtlas();
   renderHopSpine();
   const model = state.networkModel;
   if (model) {
     const degree = id => model.nodeById.get(id)?.degree || 0;
     const setText = (selector, value) => { const node = $(selector); if (node) node.textContent = value; };
-    setText('#hero-node-count', `${model.nodes.length} public nodes`);
-    setText('#hero-edge-count', `${model.edges.length} sourced edges`);
-    setText('#hotspot-dialog-count', `${degree('dialog')} public graph edges`);
-    setText('#hotspot-action-plan-count', `${degree('ai-opportunities-action-plan')} public graph edges`);
-    setText('#hotspot-palantir-count', `${degree('palantir')} public graph edges`);
-    const dialogExample = document.querySelector('#try-examples [data-network-focus="dialog"]');
-    if (dialogExample) dialogExample.textContent = `Dialog · ${degree('dialog')} edges`;
+    setText('#hero-node-count', `${model.nodes.length} admitted actors`);
+    setText('#hero-edge-count', `${model.edges.length} valid hops`);
+    setText('#hotspot-ben-warner-count', `${degree('ben-warner')} verified hops`);
+    setText('#hotspot-fiona-hill-count', `${degree('fiona-hill')} verified hops`);
+    setText('#hotspot-keir-starmer-count', `${degree('keir-starmer')} verified hops`);
+    const example = document.querySelector('#try-examples [data-network-focus="ben-warner"]');
+    if (example) example.textContent = `Ben Warner · ${degree('ben-warner')} verified hops`;
   }
-  for (const button of document.querySelectorAll('[data-network-mode]')) button.addEventListener('click', () => renderNetworkAtlas(button.dataset.networkMode));
   for (const button of document.querySelectorAll('[data-network-focus]')) button.addEventListener('click', () => focusNetworkNode(button.dataset.networkFocus));
   for (const button of document.querySelectorAll('[data-network-zoom]')) button.addEventListener('click', () => {
     if (button.dataset.networkZoom === 'reset') resetNetworkView();
@@ -1161,7 +1072,7 @@ function renderMethod(section = 'overview') {
   $('#summary').innerHTML = [
     metricPanel('Admitted hops', state.hopGraph.edges.length),
     metricPanel('Bounded surfaces', state.surfaceGraph.surfaces.length),
-    metricPanel('Public graph edges', state.legacyGraph.edges.length),
+    metricPanel('Compiler refusals', state.hopGraph.rejected_hop_pairs?.length ?? 0),
     metricPanel('Unique receipts', publicReceiptCount())
   ].join('');
   const methodNav = `<nav class="method-nav" aria-label="Method sections">${tabs.map(([id, label]) => `<a class="${section === id ? 'is-active' : ''}" href="#method/${id}">${esc(label)}</a>`).join('')}</nav>`;
@@ -1288,7 +1199,7 @@ async function renderCase(id) {
   const relationFlow = item.relations.map(relation => `<article class="relation-row"><div><span class="meta">${esc(eventById.get(relation.from_event_id)?.occurred_at || '')}</span><strong>${esc(eventById.get(relation.from_event_id)?.label || relation.from_event_id)}</strong></div><span class="relation-arrow" aria-hidden="true">→</span><div><span class="meta">${esc(eventById.get(relation.to_event_id)?.occurred_at || '')}</span><strong>${esc(eventById.get(relation.to_event_id)?.label || relation.to_event_id)}</strong></div><aside><span class="badge">${esc(humanLabel(relation.relation_type))}</span><span class="causal-status">Causality: ${esc(humanLabel(relation.causal_status))}</span></aside></article>`).join('');
   const beacon = item.beacons[0];
   const dimensions = (beacon?.dimensions ?? []).map(dimension => `<li><strong>${esc(humanLabel(dimension.id))}</strong><span>${esc(dimension.formula)}</span></li>`).join('');
-  const graphBridge = item.presentation === 'research_graph_projection' ? `<section class="panel case-network-bridge"><span class="panel-label">The graph this case was hiding</span><h3>${item.source_counts?.nodes ?? state.legacyGraph.nodes.length} nodes · ${item.source_counts?.edges ?? state.legacyGraph.edges.length} sourced edges</h3><p>The case ladder is the ledger view. The network atlas is the whole-machine view. Dialog is the largest public cluster; the Action Plan is the policy spine; each edge opens the exact claim and receipts.</p><div class="case-policy-spine" aria-label="Official policy spine"><span>Matt Clifford</span><b>commissioned to lead</b><span>AI Opportunities Action Plan</span><b>adopted by</b><span>Starmer government</span></div><div class="case-network-actions"><button type="button" data-network-focus="dialog">Open the Dialog spine · ${state.networkModel?.nodeById.get('dialog')?.degree ?? 124} edges</button><button type="button" data-network-focus="ai-opportunities-action-plan">Open the policy spine · ${state.networkModel?.nodeById.get('ai-opportunities-action-plan')?.degree ?? 16} edges</button><button type="button" data-network-focus="palantir">Open the Palantir cluster · ${state.networkModel?.nodeById.get('palantir')?.degree ?? 10} edges</button></div></section>` : '';
+  const graphBridge = item.presentation === 'research_graph_projection' ? `<section class="panel case-network-bridge"><span class="panel-label">The bounded routes this case can expose</span><h3>${state.hopGraph.edges.length} valid hops · ${new Set((state.hopGraph.edges ?? []).flatMap(edge => (edge.surfaces ?? []).map(surface => surface.surface_id))).size} bounded surfaces</h3><p>The case ladder is the decision record. The hop atlas remains bounded: every visible line is actor → shared named surface → actor, and broader context does not become an interpersonal route.</p><div class="case-network-actions"><button type="button" data-network-focus="ben-warner">Open Ben Warner’s admitted route</button><button type="button" data-network-focus="fiona-hill">Open Fiona Hill’s admitted route</button><button type="button" data-network-focus="keir-starmer">Open Keir Starmer’s admitted route</button></div></section>` : '';
   $('#detail').innerHTML = `
     <div class="panel case-hero">${entityHeading(item.title, [])}<div class="case-print-row"><p class="case-subtitle">${esc(item.subtitle)} · ${esc(item.tracking_id)} · as known ${esc(item.as_of)}</p>${briefingAction}<button class="copy-link print-dossier" type="button" onclick="window.print()">Print dossier</button></div><p>${esc(item.scope)}</p><div class="evidence-note"><strong>Publication boundary.</strong> ${esc(item.boundary)}</div><p class="meta">${esc(item.disclaimer)}</p></div>
     ${graphBridge}
@@ -1325,78 +1236,14 @@ function renderTopologyMap(path) {
   return `<div class="route-map" role="img" aria-label="${esc(aria)}"><svg viewBox="0 0 ${width} 260" aria-hidden="true" preserveAspectRatio="xMidYMid meet" style="min-width:${width}px">${lines}${nodes}</svg></div>`;
 }
 
-function legacyIsTopology(edge) {
-  return edge?.topology === true
-    || edge?.topology_only === true
-    || edge?.type === 'topology'
-    || edge?.type === 'umbrella-membership'
-    || edge?.status === 'topology'
-    || edge?.status === 'topology-membership';
-}
 
-function legacyShortestPath(startId, targetId = state.legacyGraph?.target_node_id) {
-  if (!startId || !targetId || startId === targetId) return null;
-  const nodes = state.legacyNodes;
-  if (!nodes?.has(startId) || !nodes.has(targetId)) return null;
-  const adjacency = new Map();
-  for (const edge of state.legacyGraph.edges ?? []) {
-    if (legacyIsTopology(edge)) continue;
-    if (!adjacency.has(edge.from)) adjacency.set(edge.from, []);
-    if (!adjacency.has(edge.to)) adjacency.set(edge.to, []);
-    adjacency.get(edge.from).push({ from: edge.from, to: edge.to, edge, reversed: false });
-    adjacency.get(edge.to).push({ from: edge.to, to: edge.from, edge, reversed: true });
-  }
-  const queue = [{ id: startId, hops: [] }];
-  const seen = new Set([startId]);
-  while (queue.length) {
-    const current = queue.shift();
-    if (current.hops.length >= 12) continue;
-    for (const hop of adjacency.get(current.id) ?? []) {
-      if (seen.has(hop.to)) continue;
-      const hops = [...current.hops, hop];
-      if (hop.to === targetId) return { number: hops.length, hops, node_ids: [startId, ...hops.map(h => h.to)] };
-      seen.add(hop.to);
-      queue.push({ id: hop.to, hops });
-    }
-  }
-  return null;
-}
-
-function renderLegacyPath(path) {
-  if (!path) return '<p class="why-no-hop"><strong>Legacy edge graph: no path found.</strong></p>';
-  const steps = [`<div class="path-step"><span class="path-node">${esc(state.legacyNodes.get(path.node_ids[0])?.label ?? path.node_ids[0])}</span></div>`];
-  for (const h of path.hops) {
-    steps.push(`<div class="path-step path-connector"><span class="path-surface">${esc(h.edge.type || 'edge')} · ${esc(h.edge.evidence_class || 'unknown')}</span></div>`);
-    steps.push(`<div class="path-step"><span class="path-node">${esc(state.legacyNodes.get(h.to)?.label ?? h.to)}</span></div>`);
-  }
-  return `<div class="path-timeline">${steps.join('')}</div>`
-    + path.hops.map(h => `<div class="receipts">${esc(state.legacyNodes.get(h.from)?.label ?? h.from)} ↔ ${esc(state.legacyNodes.get(h.to)?.label ?? h.to)}: ${esc(h.edge.type || 'edge')} · ${esc(h.edge.evidence_class || 'unknown')}</div>`).join('');
-}
 
 function renderActor(id) {
   const actor = state.actors.get(id);
   const score = state.actorScores.get(id);
   const path = state.hopGraph.shortest_paths[id];
-  const legacyNode = state.legacyNodes.get(id);
-  const legacyPath = !score && legacyNode ? legacyShortestPath(id) : null;
-  if (!actor && !legacyNode) return renderNotFound('actor', id);
-  setDocumentTitle(actor?.label ?? legacyNode.label);
-  if (!score && legacyNode) {
-    const related = (state.legacyGraph.edges ?? []).filter(edge => edge.from === id || edge.to === id).slice(0, 10);
-    $('#summary').innerHTML = [
-      metricPanel('Legacy Edge Number', legacyPath?.number ?? 'N/A'),
-      metricPanel('Surface-Hop Number', 'N/A'),
-      metricPanelRatio('Structural context index', 0, 1),
-      metricPanel('Source', 'legacy graph'),
-    ].join('');
-    $('#detail').innerHTML = `
-      <div class="panel">${entityHeading(actor?.label ?? legacyNode.label, actor ? entityReceiptIds('actor', id) : [])}<p>${esc(legacyNode.description || 'Legacy graph node imported for search continuity.')}</p><div class="badge-row">${(legacyNode.tags ?? []).map(t => `<span class="badge">${esc(t)}</span>`).join('')}</div></div>
-      <div class="panel why-no-hop"><h3>Surface-hop status</h3><p>This actor is search-visible through the legacy edge graph bridge, but has not yet been promoted into bounded surface-hop ledgers. The path below is legacy edge-graph context, not a newly manufactured surface hop.</p></div>
-      <div class="panel"><h3>Legacy edge-graph path</h3>${renderLegacyPath(legacyPath)}</div>
-      <div class="panel"><h3>Legacy public edges</h3>${related.length ? related.map(edge => `<div class="receipts">${esc(state.legacyNodes.get(edge.from)?.label ?? edge.from)} → ${esc(state.legacyNodes.get(edge.to)?.label ?? edge.to)}: ${esc(edge.claim || edge.type || edge.id)}</div>`).join('') : '<p>None.</p>'}</div>
-    `;
-    return;
-  }
+  if (!actor) return renderNotFound('actor', id);
+  setDocumentTitle(actor.label);
   $('#summary').innerHTML = [
     metricPanel('Clifford Number', score?.clifford_number ?? 'N/A'),
     metricPanel('Documented Surfaces', score?.surfaces?.length ?? 0),

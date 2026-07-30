@@ -7,6 +7,7 @@ const original = read('data/project/status-sovereignty-compact.json');
 const originalFanout = read('data/project/status-sovereignty-fanout.json');
 const originalSources = read('data/project/status-sovereignty-source-registry.json');
 const pagesBuilder = fs.readFileSync('tools/build-pages.mjs', 'utf8');
+const publicationPlan = read('data/project/publication-plan.json');
 const pagesValidator = fs.readFileSync('tools/validate-pages.mjs', 'utf8');
 
 function errors(h, f, s) {
@@ -34,6 +35,9 @@ function errors(h, f, s) {
 }
 
 assert.deepEqual(errors(original, originalFanout, originalSources), []);
+assert.match(pagesBuilder, /buildPublicationArtifact/);
+assert.equal(publicationPlan.default_decision, 'exclude');
+const publicationHeld = new Set((publicationPlan.held_surfaces ?? []).map((item) => item.path.replace(/\/$/, '')));
 for (const heldPath of [
   'build/core-thesis/status-sovereignty',
   'reports/core-thesis/status-sovereignty',
@@ -44,7 +48,7 @@ for (const heldPath of [
   'docs/methods/status-sovereignty-compact.md',
   'docs/milestones/m05-status-sovereignty-fanout.md'
 ]) {
-  assert(pagesBuilder.includes(heldPath.split('/').map((part) => `'${part}'`).join(', ')), `Pages builder does not hold ${heldPath}`);
+  assert(publicationHeld.has(heldPath), `Publication plan does not hold ${heldPath}`);
   assert(pagesValidator.includes(`'${heldPath}'`), `Pages validator does not refuse ${heldPath}`);
 }
 const cases = [

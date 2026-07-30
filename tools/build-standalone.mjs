@@ -2,9 +2,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { root } from './lib/ledger.mjs';
+import { refreshPublicationManifest } from './lib/publication-manifest.mjs';
 
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const readJson = file => JSON.parse(read(file));
+const readPublishedJson = file => JSON.parse(fs.readFileSync(path.join(root, 'dist', file), 'utf8'));
 const escapeScript = value => value.replace(/<\/script/gi, '<\\/script');
 const faviconData = Buffer.from(read('assets/favicon.svg')).toString('base64');
 
@@ -13,14 +15,13 @@ const dataPaths = [
   'build/surface-graph.json',
   'build/hop-graph.json',
   'build/scores.json',
-  'graph.json',
   'build/scout-report.json',
   'build/receipt-graph.json',
   'build/public-catalog.json',
   ...(catalog.cases ?? []).map(item => item.href),
   ...(catalog.tracks ?? []).map(item => item.href)
 ];
-const embedded = Object.fromEntries([...new Set(dataPaths)].map(file => [file, readJson(file)]));
+const embedded = Object.fromEntries([...new Set(dataPaths)].map(file => [file, readPublishedJson(file)]));
 
 const helpers = [read('src/ui-utils.js'), read('src/i18n.js')]
   .join('\n\n')
@@ -106,4 +107,5 @@ if (!fs.existsSync(estateApertureSource)) throw new Error('Estate Aperture must 
 if (!fs.existsSync(gameTrailSource)) throw new Error('Game-Trail Aperture must be rendered before standalone packaging');
 fs.copyFileSync(estateApertureSource, estateApertureOutput);
 fs.copyFileSync(gameTrailSource, gameTrailOutput);
-console.log(`build-standalone: ${path.relative(root, output)} (${fs.statSync(output).size} bytes, ${dataPaths.length} embedded records, ${inlineScripts.length} parsed scripts); ${path.relative(root, estateApertureOutput)} (${fs.statSync(estateApertureOutput).size} bytes); ${path.relative(root, gameTrailOutput)} (${fs.statSync(gameTrailOutput).size} bytes)`);
+const publicationManifest = refreshPublicationManifest({ root, destination: path.join(root, 'dist') });
+console.log(`build-standalone: ${path.relative(root, output)} (${fs.statSync(output).size} bytes, ${dataPaths.length} embedded records, ${inlineScripts.length} parsed scripts); ${path.relative(root, estateApertureOutput)} (${fs.statSync(estateApertureOutput).size} bytes); ${path.relative(root, gameTrailOutput)} (${fs.statSync(gameTrailOutput).size} bytes); publication ${publicationManifest.combined_sha256}`);
