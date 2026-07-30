@@ -1,0 +1,34 @@
+name: Temporary SG-06 historical repair carrier export
+
+on:
+  push:
+    branches:
+      - agent/sg06-historical-carrier-export
+    paths:
+      - '.github/workflows/temporary-sg06-historical-carrier-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/sg06-historical-carrier-export
+          fetch-depth: 0
+      - name: Archive exact branch
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/sg06-historical-carrier-export
+          git archive --format=tar.gz --output=/tmp/sg06-historical-carrier-export/branch-head.tar.gz HEAD
+          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/sg06-historical-carrier-export/branch-head.txt
+          sha256sum /tmp/sg06-historical-carrier-export/branch-head.tar.gz > /tmp/sg06-historical-carrier-export/archive.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sg06-historical-carrier-export-${{ github.run_id }}
+          path: /tmp/sg06-historical-carrier-export/
+          if-no-files-found: error
+          retention-days: 2
