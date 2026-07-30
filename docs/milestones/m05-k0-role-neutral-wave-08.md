@@ -9,9 +9,9 @@ Execute the final frozen `K0-Q02` contrary-advice query against appointment, rem
 ```text
 query executions:                    8
 raw results observed:               96
-retained records:                    9
+retained records:                    8
 candidate records:                   4
-positive counterpower controls:      2
+positive counterpower controls:      1
 negative merits controls:            2
 coverage controls:                   1
 included events:                     0
@@ -20,7 +20,7 @@ publication clearances:              0
 graph effects:                       0
 ```
 
-This wave closes the nine-template discovery battery. It retains four candidate matters while preserving investigated removal, lawful command relief, statutory notice, independent stay, and no-removal continuity controls.
+This wave closes the nine-template discovery battery. It retains four candidate matters while preserving investigated removal, lawful command relief, statutory notice, and no-removal continuity controls. The OSC/VA stay remains in the search denominator but is not retained again because it is already custodied as K0-W01-R001 and K0-W06-R007.
 
 ## Boundaries
 

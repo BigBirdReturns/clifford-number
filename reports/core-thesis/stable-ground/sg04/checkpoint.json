@@ -59,8 +59,8 @@
     "transition_commit": "e9b85b31281db02ce3f9a9a84dd7aea34b714849",
     "wave_id": "K0-W08",
     "query_id": "K0-Q02",
-    "source_wave_release_sha256": "05ed2e35fcee292b9710d32a0656cd9ad70c917f1b56119d15f48bf52846b7ff",
-    "source_aggregate_release_sha256": "a5d2c4c75c85780069dea51aa05c7e99db2d3b051e8fd0d5e02ba96008ab90c1",
+    "source_wave_release_sha256": "2b26149de23b27bc51431307afa4efaedf72d055d304a00bd97508175543259c",
+    "source_aggregate_release_sha256": "373955b42246fe20abc51d7ede50c18c3af39430ac523d8dc9206316f530bf16",
     "reason": "The stable-ground governor requires an atomic successor when canonical K0 moves from eight of nine to nine of nine frozen query templates."
   },
   "authority_change": {
@@ -87,9 +87,9 @@
     "k0_total": 9,
     "k0_searches": 52,
     "k0_raw_results": 302,
-    "k0_retained_records": 66,
+    "k0_retained_records": 65,
     "k0_candidate_records": 28,
-    "wave_08_retained_records": 9,
+    "wave_08_retained_records": 8,
     "wave_08_candidate_records": 4,
     "included_k0_events": 0,
     "dca_executed": 0,
@@ -107,12 +107,12 @@
       "query_templates_executed": 9,
       "searches_executed": 52,
       "raw_results_observed": 302,
-      "returned_records": 66,
+      "returned_records": 65,
       "candidate_records": 28,
-      "positive_controls": 15,
+      "positive_controls": 14,
       "negative_controls": 12,
       "coverage_controls": 8,
-      "non_events": 35,
+      "non_events": 34,
       "open_additional_acquisition": 1,
       "included_events": 0,
       "independent_second_party_review_complete": false,
@@ -123,12 +123,12 @@
       "query_id": "K0-Q02",
       "query_executions": 8,
       "raw_results_observed": 96,
-      "retained_records": 9,
+      "retained_records": 8,
       "candidate_records": 4,
-      "positive_controls": 2,
+      "positive_controls": 1,
       "negative_controls": 2,
       "coverage_controls": 1,
-      "counterpower_controls": 2,
+      "counterpower_controls": 1,
       "included_events": 0,
       "assigned_ccd_values": 0,
       "field_adjudication_complete": false,
@@ -239,10 +239,10 @@
       },
       {
         "lane_id": "FAN-04",
-        "surface": "PR #382",
+        "surface": "PR #450",
         "purpose": "publication safety before lake landing and public aperture admission",
-        "state": "open_transport_bound_dependency",
-        "dependency": "replay participant-specific hop evidence, status-aware allowlist, and retired generic-edge removal over current main"
+        "state": "open_current_publication_allowlist_dependency",
+        "dependency": "materialize the status-aware allowlist and staged POOF admission over the canonical SG-04 line"
       },
       {
         "lane_id": "FAN-05",
@@ -352,8 +352,8 @@
     },
     {
       "order": 5,
-      "action": "Materialize publication safety over current main before public POOF admission or lake landing.",
-      "state": "open_PR_382"
+      "action": "Materialize publication safety through PR #450 before public POOF deployment or lake landing.",
+      "state": "open_PR_450"
     },
     {
       "order": 6,
@@ -380,7 +380,7 @@
     {
       "drift_id": "SG04-DRIFT-02",
       "prior_state": "K0-Q02 was the only unexecuted frozen role-neutral query template.",
-      "current_resolution": "Wave 08 executes K0-Q02 through eight name-blind source-plane searches and retains nine bounded rows with zero event promotion."
+      "current_resolution": "Wave 08 executes K0-Q02 through eight name-blind source-plane searches and retains eight bounded rows with zero event promotion; the OSC/VA stay remains excluded as a prior-wave duplicate."
     },
     {
       "drift_id": "SG04-DRIFT-03",
@@ -391,13 +391,18 @@
       "drift_id": "SG04-DRIFT-04",
       "prior_state": "SG-03 still contained current-state comparisons that would fail after a lawful successor.",
       "current_resolution": "SG-03 now validates only its frozen object, original release digest, reports, history row, and merge receipt."
+    },
+    {
+      "drift_id": "SG04-DRIFT-05",
+      "prior_state": "The first Wave 08 materialization counted an OSC/VA stay already retained in Waves 01 and 06.",
+      "current_resolution": "Review correction K0-W08-CORR-01 removes the duplicate record, preserves the query result and prior record IDs, and changes no candidate, event, publication, graph, DCA, or adoption state."
     }
   ],
   "change_control": {
     "next_checkpoint_triggers": [
       "Wave 08 field adjudication changes the candidate or terminal disposition set",
       "any DCA query wave produces retained records or terminal zero results",
-      "publication-safety PR #382 changes state",
+      "publication-safety PR #450 changes state",
       "POOF publication state changes from staged and undeployed",
       "lake branch shadow lands on main",
       "external adoption ceiling changes from A0",
@@ -420,18 +425,18 @@
   },
   "k0_release": {
     "path": "data/project/k0-epistemic-admissibility-release-manifest.json",
-    "combined_sha256": "8971989469775a1009e4242a043c8a9d9d2c212aa0dea26af87e892092f7919d"
+    "combined_sha256": "373955b42246fe20abc51d7ede50c18c3af39430ac523d8dc9206316f530bf16"
   },
   "wave_08_release": {
     "path": "data/project/k0-role-neutral-wave-08-release-manifest.json",
-    "combined_sha256": "cf7a135966f4d8dc7487fc8e93edee7c0f1982c2e8abb4f5e19c6dbf6e257c60"
+    "combined_sha256": "2b26149de23b27bc51431307afa4efaedf72d055d304a00bd97508175543259c"
   },
   "poof_release": {
     "path": "data/project/poof-clifford-ecology-release-manifest.json",
-    "combined_sha256": "7fad6dde6c32252d188d8e160ebf21d68c7ae426f354d3f072ac9780cf566697"
+    "combined_sha256": "81d0ea9f894cde1d673580c18adaebc5284a381cc0ce67a9e8be3dbcde1d0df5"
   },
   "release_manifest": {
     "path": "data/project/project-stable-ground-sg04-release-manifest.json",
-    "combined_sha256": "6892c889d02d6a36a51afc9b6fc8edc13ef0c0e826956c91947c1d1feb0f69eb"
+    "combined_sha256": "7b2c6aa2cebd82ad027c81fd3a82bc07162f1b49f44a8c34981ed2f5af7805a1"
   }
 }

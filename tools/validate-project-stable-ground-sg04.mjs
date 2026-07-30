@@ -196,8 +196,8 @@ export function validateSg04(context = loadSg04Context()) {
   equal(checkpoint.trigger.transition_commit, transitionCommit, 'SG-04 K0 transition receipt');
   equal(checkpoint.trigger.wave_id, 'K0-W08', 'SG-04 wave identity');
   equal(checkpoint.trigger.query_id, 'K0-Q02', 'SG-04 query identity');
-  equal(checkpoint.trigger.source_wave_release_sha256, '05ed2e35fcee292b9710d32a0656cd9ad70c917f1b56119d15f48bf52846b7ff', 'source Wave 08 digest');
-  equal(checkpoint.trigger.source_aggregate_release_sha256, 'a5d2c4c75c85780069dea51aa05c7e99db2d3b051e8fd0d5e02ba96008ab90c1', 'source aggregate K0 digest');
+  equal(checkpoint.trigger.source_wave_release_sha256, '2b26149de23b27bc51431307afa4efaedf72d055d304a00bd97508175543259c', 'source Wave 08 digest');
+  equal(checkpoint.trigger.source_aggregate_release_sha256, '373955b42246fe20abc51d7ede50c18c3af39430ac523d8dc9206316f530bf16', 'source aggregate K0 digest');
   equal(checkpoint.canonical_main.commit, transitionCommit, 'SG-04 canonical transition');
   equal(checkpoint.canonical_main.repository, 'BigBirdReturns/clifford-number', 'SG-04 repository');
   equal(checkpoint.canonical_main.branch, 'main', 'SG-04 branch');
@@ -250,12 +250,12 @@ export function validateSg04(context = loadSg04Context()) {
     query_templates_executed: 9,
     searches_executed: 52,
     raw_results_observed: 302,
-    returned_records: 66,
+    returned_records: 65,
     candidate_records: 28,
-    positive_controls: 15,
+    positive_controls: 14,
     negative_controls: 12,
     coverage_controls: 8,
-    non_events: 35,
+    non_events: 34,
     open_additional_acquisition: 1,
     included_events: 0,
     independent_second_party_review_complete: false,
@@ -268,12 +268,12 @@ export function validateSg04(context = loadSg04Context()) {
     query_id: 'K0-Q02',
     query_executions: 8,
     raw_results_observed: 96,
-    retained_records: 9,
+    retained_records: 8,
     candidate_records: 4,
-    positive_controls: 2,
+    positive_controls: 1,
     negative_controls: 2,
     coverage_controls: 1,
-    counterpower_controls: 2,
+    counterpower_controls: 1,
     included_events: 0,
     assigned_ccd_values: 0,
     field_adjudication_complete: false,

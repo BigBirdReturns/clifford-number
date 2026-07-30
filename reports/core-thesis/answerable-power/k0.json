@@ -42,9 +42,9 @@
     "role_changes": 1,
     "role_neutral_query_executions": 52,
     "role_neutral_raw_results_observed": 302,
-    "role_neutral_retained_records": 66,
+    "role_neutral_retained_records": 65,
     "role_neutral_candidate_records": 28,
-    "role_neutral_positive_controls": 15,
+    "role_neutral_positive_controls": 14,
     "role_neutral_negative_controls": 12,
     "role_neutral_coverage_controls": 8,
     "role_neutral_requires_additional_acquisition": 1,
@@ -70,7 +70,7 @@
     "role_neutral_wave_07_retained_records": 9,
     "role_neutral_wave_07_candidate_records": 3,
     "role_neutral_wave_08_query_executions": 8,
-    "role_neutral_wave_08_retained_records": 9,
+    "role_neutral_wave_08_retained_records": 8,
     "role_neutral_wave_08_candidate_records": 4,
     "role_neutral_wave_05_field_records_reviewed": 8,
     "role_neutral_wave_05_field_supported_for_human_review": 1,
@@ -1540,16 +1540,16 @@
       "searches_executed": 52,
       "query_templates_executed": 9,
       "raw_results_observed": 302,
-      "returned_records": 66,
+      "returned_records": 65,
       "candidate_records": 28,
-      "positive_controls": 15,
+      "positive_controls": 14,
       "negative_controls": 12,
       "coverage_controls": 8,
       "requires_additional_acquisition": 3,
       "resolved_additional_acquisition": 2,
       "open_additional_acquisition": 1,
       "included_events": 0,
-      "non_events": 35,
+      "non_events": 34,
       "source_failures": 0,
       "executed_wave_ids": [
         "K0-W01",
@@ -5459,7 +5459,12 @@
         "selection_by_person_name": false,
         "selection_by_institution_name": false,
         "raw_results_observed": 12,
-        "retained_unique_records": 1
+        "retained_unique_records": 0,
+        "disposition": "excluded_prior_wave_duplicate",
+        "prior_wave_record_ids": [
+          "K0-W01-R001",
+          "K0-W06-R007"
+        ]
       },
       {
         "execution_id": "K0-W08-Q02-NAVY-RELIEF",
@@ -5497,12 +5502,12 @@
     "counts": {
       "query_executions": 8,
       "raw_results_observed": 96,
-      "retained_records": 9,
+      "retained_records": 8,
       "candidate_requires_field_audit": 4,
-      "positive_controls": 2,
+      "positive_controls": 1,
       "negative_controls": 2,
       "coverage_controls": 1,
-      "counterpower_controls": 2,
+      "counterpower_controls": 1,
       "requires_additional_acquisition": 0,
       "included_events": 0,
       "assigned_ccd_values": 0,
@@ -5735,41 +5740,6 @@
         "control_kind": "investigation_grounded_command_relief_control"
       },
       {
-        "record_id": "K0-W08-R007",
-        "matter": "Independent stay halting removal while whistleblower retaliation merits proceed",
-        "institution": "U.S. Office of Special Counsel / Merit Systems Protection Board / Department of Veterans Affairs",
-        "gate_stratum_ids": [
-          "K0-G01",
-          "K0-G07",
-          "K0-G09"
-        ],
-        "selection_outcome": "positive_counterpower_control",
-        "qualification_basis_status": "Independent statutory whistleblower investigator and merit-system adjudicator",
-        "source_packets": [
-          {
-            "url": "https://www.osc.gov/news/2025-01-29/osc-obtains-stay-files-complaint-on-behalf-of-va-employee-removed-in-retaliation-for-protected-whistleblowing/",
-            "source_class": "official_special_counsel_stay_and_complaint_summary",
-            "issued_at": "2025-01-29",
-            "supports": "OSC reports an indefinite MSPB stay halting removal after OSC found strong evidence of retaliation and sought corrective action."
-          }
-        ],
-        "source_supports": "An authority outside the employing agency can preserve standing and suspend the removal gate while the merits and remedy remain adjudicable.",
-        "source_does_not_establish": [
-          "a final merits finding",
-          "complete reinstatement or compensation",
-          "universal availability of timely stays",
-          "a K0 event"
-        ],
-        "field_audit_status": "pending",
-        "ccd_chain_depth": null,
-        "included_event": false,
-        "evidence_truth_determined": false,
-        "independent_review_complete": false,
-        "publication_status": "blocked",
-        "graph_effect": "none",
-        "control_kind": "independent_pre_action_stay_control"
-      },
-      {
         "record_id": "K0-W08-R008",
         "matter": "Inspector General removal law requiring advance rationale and continuity reporting",
         "institution": "Federal Inspector General system",
@@ -5909,14 +5879,18 @@
       {
         "execution_id": "K0-W08-Q02-OSC-STAY",
         "raw_results_observed": 12,
-        "retained_unique_records": 1,
-        "excluded_after_deduplication": 11,
+        "retained_unique_records": 0,
+        "excluded_after_deduplication": 12,
         "primary_reasons": [
+          "prior_wave_duplicate",
           "duplicate_or_cross_query_repeat",
           "no_bounded_qualified_contradiction",
           "ordinary_turnover_or_investigation_grounded_action",
-          "no_traceable_appointment_removal_or_board_gate",
-          "prior_wave_overlap_or_control_only"
+          "no_traceable_appointment_removal_or_board_gate"
+        ],
+        "prior_wave_record_ids": [
+          "K0-W01-R001",
+          "K0-W06-R007"
         ]
       },
       {
@@ -5959,7 +5933,21 @@
       "same_institutional_shape_proves_coordination": false,
       "maintainer_retention_proves_independent_review": false,
       "graph_effect": "none"
-    }
+    },
+    "review_corrections": [
+      {
+        "correction_id": "K0-W08-CORR-01",
+        "reason": "The OSC/VA stay was already retained as K0-W01-R001 and K0-W06-R007; Wave 08 preserves the query result as a prior-wave duplicate rather than counting a third record.",
+        "removed_record_id": "K0-W08-R007",
+        "prior_wave_record_ids": [
+          "K0-W01-R001",
+          "K0-W06-R007"
+        ],
+        "candidate_count_changed": false,
+        "included_event_count_changed": false,
+        "graph_effect": "none"
+      }
+    ]
   },
   "role_neutral_wave_05_field_adjudication": {
     "schema_version": "k0-wave05-field-adjudication@1",
@@ -8132,7 +8120,7 @@
           "metric_id": "retained_official_records",
           "unit": "records",
           "expected": null,
-          "observed": 66,
+          "observed": 65,
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
@@ -8152,7 +8140,7 @@
           "metric_id": "role_neutral_positive_controls",
           "unit": "controls",
           "expected": null,
-          "observed": 15,
+          "observed": 14,
           "denominator_kind": "open",
           "publicly_reproducible": true,
           "counts_toward_public_progress": false,
@@ -8286,7 +8274,7 @@
           "gap_id": "k0-wave08-field-adjudication-open",
           "description": "Four Wave 08 contrary-advice appointment/removal records require stage-by-stage field adjudication before any K0 disposition.",
           "status": "blocking",
-          "next_action": "Review all nine retained records, preserve investigated-removal and counterpower controls, assign only contiguous provisional CCD, and keep included_event false absent independent adjudication."
+          "next_action": "Review the eight retained records, preserve investigated-removal and statutory counterpower controls, assign only contiguous provisional CCD, and keep included_event false absent independent adjudication."
         }
       ]
     },
@@ -8487,8 +8475,8 @@
         ],
         "query_executions": 52,
         "raw_results_observed": 302,
-        "retained_records": 66,
-        "controls_preserved": 35,
+        "retained_records": 65,
+        "controls_preserved": 34,
         "included_events": 0,
         "independence_effect": "does_not_satisfy_second_party_clearance"
       }
@@ -10203,7 +10191,7 @@
   },
   "release_manifest": {
     "path": "data/project/k0-epistemic-admissibility-release-manifest.json",
-    "combined_sha256": "8971989469775a1009e4242a043c8a9d9d2c212aa0dea26af87e892092f7919d"
+    "combined_sha256": "373955b42246fe20abc51d7ede50c18c3af39430ac523d8dc9206316f530bf16"
   },
   "boundaries": {
     "promotes_to": "candidate_only",
