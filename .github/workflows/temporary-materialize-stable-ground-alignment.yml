@@ -34,10 +34,10 @@ jobs:
       - name: Expand exact stable-ground package
         run: |
           set -euo pipefail
-          test "$(sha256sum .github/tmp/stable-ground-package.b64 | awk '{print $1}')" = "0f05f7de12e2ed3edf0335609e0b73912af2be498e874ea6f230d2618cb27299"
           base64 -d .github/tmp/stable-ground-package.b64 > /tmp/stable-ground.tgz
-          test "$(sha256sum /tmp/stable-ground.tgz | awk '{print $1}')" = "7edb17fd691aff7a933b1ebd6dea27d735e2c990b0714b4b475da701a71f5e56"
-          tar -tzf /tmp/stable-ground.tgz | sort > /tmp/archive-paths.txt
+          actual_archive_sha="$(sha256sum /tmp/stable-ground.tgz | awk '{print $1}')"
+          echo "decoded archive SHA-256: ${actual_archive_sha}"
+          test "${actual_archive_sha}" = "7edb17fd691aff7a933b1ebd6dea27d735e2c990b0714b4b475da701a71f5e56"
           cat > /tmp/expected-paths.txt <<'EOF'
           .github/workflows/project-stable-ground-alignment.yml
           data/project/project-stable-ground-alignment-release-manifest.json
@@ -49,9 +49,11 @@ jobs:
           tools/build-project-stable-ground-alignment.mjs
           tools/validate-project-stable-ground-alignment.mjs
           EOF
+          tar -tzf /tmp/stable-ground.tgz | sort > /tmp/archive-paths.txt
           sort -o /tmp/expected-paths.txt /tmp/expected-paths.txt
           diff -u /tmp/expected-paths.txt /tmp/archive-paths.txt
           while IFS= read -r path; do
+            echo "extracting ${path}"
             mkdir -p "$(dirname "$path")"
             tar -xOf /tmp/stable-ground.tgz "$path" > "$path"
           done < /tmp/expected-paths.txt
