@@ -136,7 +136,7 @@ assert.deepEqual(localResolutionIndex.registry_paths, [
 ]);
 assert.deepEqual(subjectObjectIndex.registry_paths, [policy.paths.subject_object_registry]);
 
-const wave16ResolutionEntries = localResolutionIndex.current_entries
+const wave16ResolutionEntries = [...localResolutionIndex.current_by_case_and_local.values()]
   .filter(entry => entry.source_path === policy.paths.local_resolution_registry)
   .sort((left, right) => left.row.resolution_id.localeCompare(right.row.resolution_id));
 assert.equal(wave16ResolutionEntries.length, policy.expected.identity_decisions);
