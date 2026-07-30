@@ -33,4 +33,12 @@ jobs:
       - name: Execute exact publication and SG-06 transition
         env:
           EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
-        run: bash .github/scripts/run-publication-sg06.sh
+        run: |
+          set -euo pipefail
+          printf '%s  %s\n' '15456b213de7523c4cd6c6ab5e2fba14775f2b6e791078aecd084ef9c7541733' .github/tmp/publication-sg06-v2-runner.sh.xz.b64 | sha256sum --check --strict
+          base64 --decode .github/tmp/publication-sg06-v2-runner.sh.xz.b64 > /tmp/run-publication-sg06-v2.sh.xz
+          printf '%s  %s\n' '220e174e1695fa02b8f7a84ab2a9a9bd3ca2af309f7b4680f18599a08f281c88' /tmp/run-publication-sg06-v2.sh.xz | sha256sum --check --strict
+          xz --decompress --stdout /tmp/run-publication-sg06-v2.sh.xz > /tmp/run-publication-sg06-v2.sh
+          printf '%s  %s\n' '638564f6a6f0dc15fd18cdc54d2e3482ccd7551f5038a5d1550c090a3254b388' /tmp/run-publication-sg06-v2.sh | sha256sum --check --strict
+          chmod +x /tmp/run-publication-sg06-v2.sh
+          /tmp/run-publication-sg06-v2.sh
