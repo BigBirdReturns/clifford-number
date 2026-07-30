@@ -1,0 +1,43 @@
+name: Pre-assemblage origin custody
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'origins/pre-assemblage/**'
+      - 'data/project/pre-assemblage-origin-estate.json'
+      - 'docs/methods/pre-assemblage-origin-custody.md'
+      - 'tools/validate-pre-assemblage-origins.mjs'
+      - 'test/pre-assemblage-origins.test.js'
+      - 'data/project/publication-plan.json'
+      - 'tools/lib/publication-manifest.mjs'
+      - 'package.json'
+  push:
+    branches: [main]
+    paths:
+      - 'origins/pre-assemblage/**'
+      - 'data/project/pre-assemblage-origin-estate.json'
+      - 'tools/validate-pre-assemblage-origins.mjs'
+      - 'test/pre-assemblage-origins.test.js'
+      - 'data/project/publication-plan.json'
+      - 'tools/lib/publication-manifest.mjs'
+      - 'package.json'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node tools/validate-pre-assemblage-origins.mjs
+      - run: node test/pre-assemblage-origins.test.js
+      - run: npm run build:pages && npm run validate:pages
+      - run: git diff --exit-code
