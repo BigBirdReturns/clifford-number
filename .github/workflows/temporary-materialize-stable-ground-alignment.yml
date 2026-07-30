@@ -34,7 +34,17 @@ jobs:
       - name: Reconstruct and expand exact stable-ground package
         run: |
           set -euo pipefail
-          sha256sum .github/tmp/stable-ground-part-*.b64
+          sha256sum \
+            .github/tmp/stable-ground-part-00.b64 \
+            .github/tmp/stable-ground-part-01.b64 \
+            .github/tmp/stable-ground-part-02.b64 \
+            .github/tmp/stable-ground-part-03.b64 \
+            .github/tmp/stable-ground-part-04.b64 \
+            .github/tmp/stable-ground-part-05.b64 \
+            .github/tmp/stable-ground-part-06.b64 \
+            .github/tmp/stable-ground-part-07-0.b64 \
+            .github/tmp/stable-ground-part-07-1.b64 \
+            .github/tmp/stable-ground-part-08.b64
           test "$(sha256sum .github/tmp/stable-ground-part-00.b64 | awk '{print $1}')" = "bf0c67f76b4de9c000d66b984ab947709c31614f9f802cadaf7619f39110814e"
           test "$(sha256sum .github/tmp/stable-ground-part-01.b64 | awk '{print $1}')" = "ea73582763a6e06cffb76e9e8a34771c51f32f35edcde26109ffd039a4df6f8c"
           test "$(sha256sum .github/tmp/stable-ground-part-02.b64 | awk '{print $1}')" = "2da16cb95d19a9d8063e72c96d71d0106c5140b47529f837f7876c44f37524c6"
@@ -42,9 +52,20 @@ jobs:
           test "$(sha256sum .github/tmp/stable-ground-part-04.b64 | awk '{print $1}')" = "9faa0fad8e6160e4a0b46b528be4cb81891240083bcd543cda85ac5ff4256e85"
           test "$(sha256sum .github/tmp/stable-ground-part-05.b64 | awk '{print $1}')" = "34f1a0e3bf22dd46cc8c327ca90d536537b4584139457e36b3bed49c3d429b12"
           test "$(sha256sum .github/tmp/stable-ground-part-06.b64 | awk '{print $1}')" = "b018059a09feec5a8656f977a682cb1e3941a9458d412717b69e3f7fa74bc8e1"
-          test "$(sha256sum .github/tmp/stable-ground-part-07.b64 | awk '{print $1}')" = "a47663aa3b1595e7f08ac09445860145adf3f9b3cb2881973b0eea86f1428119"
+          test "$(sha256sum .github/tmp/stable-ground-part-07-0.b64 | awk '{print $1}')" = "ca25e26616bee1b24c7440edd31e9d0d270e7ace666f188ed4bfd11cf1eedb66"
+          test "$(sha256sum .github/tmp/stable-ground-part-07-1.b64 | awk '{print $1}')" = "b3de577f6d234874145c85ef1a8dd171b2b3a669b2f21a45495fee4f2b6c3817"
           test "$(sha256sum .github/tmp/stable-ground-part-08.b64 | awk '{print $1}')" = "eb42df779aaf35fff5c41b18308b39f8961517b992c023e96b7ee05da50d7f55"
-          cat .github/tmp/stable-ground-part-*.b64 > /tmp/stable-ground.b64
+          cat \
+            .github/tmp/stable-ground-part-00.b64 \
+            .github/tmp/stable-ground-part-01.b64 \
+            .github/tmp/stable-ground-part-02.b64 \
+            .github/tmp/stable-ground-part-03.b64 \
+            .github/tmp/stable-ground-part-04.b64 \
+            .github/tmp/stable-ground-part-05.b64 \
+            .github/tmp/stable-ground-part-06.b64 \
+            .github/tmp/stable-ground-part-07-0.b64 \
+            .github/tmp/stable-ground-part-07-1.b64 \
+            .github/tmp/stable-ground-part-08.b64 > /tmp/stable-ground.b64
           sha256sum /tmp/stable-ground.b64
           test "$(sha256sum /tmp/stable-ground.b64 | awk '{print $1}')" = "0f05f7de12e2ed3edf0335609e0b73912af2be498e874ea6f230d2618cb27299"
           base64 -d /tmp/stable-ground.b64 > /tmp/stable-ground.tgz
