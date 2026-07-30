@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   probe:
@@ -19,38 +19,35 @@ jobs:
         with:
           ref: agent/poof-clifford-ecology
           fetch-depth: 0
-      - name: Capture exact branch and mainline inputs
+      - name: Probe and publish exact conflict receipt
         shell: bash
         run: |
-          set -euo pipefail
+          set -u
           git fetch origin main
-          mkdir -p /tmp/poof-reconcile-inputs
-          git archive --format=tar.gz --output=/tmp/poof-reconcile-inputs/poof-head.tar.gz HEAD
-          git archive --format=tar.gz --output=/tmp/poof-reconcile-inputs/main.tar.gz origin/main
-          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/poof-reconcile-inputs/poof-head.sha
-          printf '%s\n' "$(git rev-parse origin/main)" > /tmp/poof-reconcile-inputs/main.sha
-      - name: Probe merge against canonical main
-        id: merge_probe
-        shell: bash
-        run: |
-          set -uo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          head_before="$(git rev-parse HEAD)"
+          main_head="$(git rev-parse origin/main)"
+          set +e
           git merge --no-commit --no-ff origin/main
           merge_status=$?
+          set -e
+          mkdir -p /tmp/poof-reconcile build
           {
-            echo "merge_status=${merge_status}"
-            echo '--- unresolved paths ---'
-            git diff --name-status --diff-filter=U || true
-            echo '--- all merge-state paths ---'
-            git status --short
-          } | tee /tmp/poof-reconcile-inputs/merge-probe.txt
-          exit "$merge_status"
-      - name: Upload exact reconciliation inputs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: poof-mainline-reconcile-inputs
-          path: /tmp/poof-reconcile-inputs/
-          if-no-files-found: error
-          retention-days: 3
+            echo "schema_version: poof-mainline-reconcile-probe@1"
+            echo "poof_head: ${head_before}"
+            echo "main_head: ${main_head}"
+            echo "merge_status: ${merge_status}"
+            echo "unresolved_paths:"
+            git diff --name-only --diff-filter=U | sed 's/^/  - /' || true
+            echo "merge_state:"
+            git status --short | sed 's/^/  /'
+          } > /tmp/poof-reconcile/probe.txt
+          cat /tmp/poof-reconcile/probe.txt
+          if [ -f .git/MERGE_HEAD ]; then
+            git merge --abort
+          fi
+          cp /tmp/poof-reconcile/probe.txt build/poof-mainline-reconcile-probe.txt
+          git add build/poof-mainline-reconcile-probe.txt
+          git commit -m 'Record exact POOF mainline reconciliation conflicts'
+          git push origin HEAD:agent/poof-clifford-ecology
