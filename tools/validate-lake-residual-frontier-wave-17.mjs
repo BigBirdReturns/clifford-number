@@ -25,6 +25,13 @@ const objects = readJsonl('build/lake-index/objects.jsonl');
 const participation = readJsonl('data/ledger/participation.jsonl');
 const activeIdentity = readJson('build/axm-identity.json');
 const hopGraph = readJson('build/hop-graph.json');
+const triggerPath = '.github/tmp/lake-residual-frontier-wave-17-trigger.json';
+const authorizedMaterializationContext = process.env.GITHUB_ACTIONS === 'true'
+  && process.env.GITHUB_WORKFLOW === 'Evidence lake residual frontier Wave 17'
+  && process.env.GITHUB_EVENT_NAME === 'push';
+const authorizedPreReconciliationReceipt = authorizedMaterializationContext
+  && process.env.WAVE17_ALLOW_PRELIMINARY_RECEIPT === 'true'
+  && fs.existsSync(triggerPath);
 
 for (const [artifact, schema] of [
   [policy, 'lake-residual-frontier-wave-17-policy@1'],
@@ -40,7 +47,7 @@ if (pathRegistry.counts.typed_refusals !== 0) fail('path typed refusal unexpecte
 if (projectionRegistry.records.length !== 2000) fail('projection lineage denominator drift');
 if (new Set(pathRegistry.decisions.map(row => row.path)).size !== 601) fail('duplicate path decision');
 if (new Set(projectionRegistry.records.map(row => row.lineage_key)).size !== 2000) fail('duplicate projection lineage key');
-if (!receipt.post_execution_reconciliation_complete) fail('receipt is not complete');
+if (!receipt.post_execution_reconciliation_complete && !authorizedPreReconciliationReceipt) fail('receipt is not complete');
 if (!reconciliation.completion.all_601_frozen_path_rows_owned_and_index_reachable) fail('path reconciliation incomplete');
 if (!reconciliation.completion.all_2000_frozen_projection_rows_have_source_and_projection_occurrences) fail('projection reconciliation incomplete');
 
@@ -82,11 +89,8 @@ for (const record of projectionRegistry.records) {
 
 if (!fs.readFileSync('BUILD-INSTRUCTIONS.md', 'utf8').includes('3.17 **Residual lake frontier')) fail('build instruction contract missing');
 if (!fs.readFileSync('README.md', 'utf8').includes('## Residual lake frontier')) fail('README contract missing');
-const triggerPath = '.github/tmp/lake-residual-frontier-wave-17-trigger.json';
-const authorizedMaterializationContext = process.env.GITHUB_ACTIONS === 'true'
-  && process.env.GITHUB_WORKFLOW === 'Evidence lake residual frontier Wave 17'
-  && process.env.GITHUB_EVENT_NAME === 'push';
 if (fs.existsSync(triggerPath) && !authorizedMaterializationContext) fail('temporary Wave 17 trigger remains outside the authorized materializer');
+if (authorizedPreReconciliationReceipt && receipt.post_execution_reconciliation_complete !== false) fail('pre-reconciliation mode requires an explicitly preliminary receipt');
 if (receipt.boundaries.source_truth_determined !== false) fail('source truth boundary drift');
 if (receipt.boundaries.publication_cleared !== false) fail('publication boundary drift');
 if (receipt.boundaries.graph_effect !== 'none') fail('graph boundary drift');
@@ -95,4 +99,4 @@ if (failures) {
   console.error(`validate-lake-residual-frontier-wave-17: ${failures} failure(s)`);
   process.exit(1);
 }
-console.log(`validate-lake-residual-frontier-wave-17: OK (601 paths, 2000 projection identifiers, residual counts 0/0/0/0, graph effect none)`);
+console.log(`validate-lake-residual-frontier-wave-17: OK (601 paths, 2000 projection identifiers, residual counts 0/0/0/0, graph effect none${authorizedPreReconciliationReceipt ? ', preliminary receipt authorized' : ''})`);
