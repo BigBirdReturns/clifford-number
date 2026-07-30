@@ -1,0 +1,73 @@
+name: Patch Wave 19 lifecycle validation
+
+on:
+  push:
+    branches:
+      - agent/lake-generator-contracts-wave-19
+    paths:
+      - '.github/tmp/patch-wave19-lifecycle-trigger.json'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Patch lifecycle controls and self-delete
+        shell: bash
+        run: |
+          set -euo pipefail
+          original_sha=$(git rev-parse HEAD)
+          python - <<'PY'
+          from pathlib import Path
+
+          materializer = Path('.github/workflows/lake-generator-contracts-wave-19.yml')
+          text = materializer.read_text()
+          old = """          if test -f .github/tmp/lake-generator-contracts-wave-19-trigger.json \\
+            && { test \"$GITHUB_EVENT_NAME\" = 'push' || test \"$GITHUB_EVENT_NAME\" = 'pull_request'; }; then
+"""
+          new = """          if test \"$GITHUB_EVENT_NAME\" = 'push' \\
+            && test -f .github/tmp/lake-generator-contracts-wave-19-trigger.json; then
+"""
+          if old not in text:
+              raise SystemExit('Wave 19 materializer mode block not found')
+          materializer.write_text(text.replace(old, new, 1))
+
+          preflight = Path('.github/workflows/lake-generator-contracts-wave-19-preflight.yml')
+          text = preflight.read_text()
+          anchor = """          set -euo pipefail
+          node --check tools/build-lake-generator-contracts-wave-19.mjs
+"""
+          replacement = """          set -euo pipefail
+          if test -f data/project/lake-generator-contracts-wave-19.json \\
+            && node -e \"const x=require('./data/project/lake-generator-contracts-wave-19.json'); process.exit(x.post_execution_reconciliation_complete ? 0 : 1)\"; then
+            npm run release:check
+            git reset --hard HEAD
+            git clean -fd
+            node tools/validate-lake-index-shards.mjs
+            node tools/validate-lake-basin-index.mjs
+            node tools/validate-lake-generator-contracts-wave-19.mjs
+            node test/lake-generator-contracts-wave-19.test.js
+            exit 0
+          fi
+          node --check tools/build-lake-generator-contracts-wave-19.mjs
+"""
+          if anchor not in text:
+              raise SystemExit('Wave 19 preflight build block not found')
+          preflight.write_text(text.replace(anchor, replacement, 1))
+          PY
+          rm -f .github/tmp/patch-wave19-lifecycle-trigger.json
+          rm -f .github/workflows/patch-wave19-lifecycle.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --check
+          git commit -m 'Harden Wave 19 lifecycle validation'
+          git fetch origin agent/lake-generator-contracts-wave-19
+          test "$(git rev-parse origin/agent/lake-generator-contracts-wave-19)" = "$original_sha"
+          git push origin HEAD:agent/lake-generator-contracts-wave-19
