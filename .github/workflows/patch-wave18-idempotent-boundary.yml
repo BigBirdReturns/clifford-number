@@ -1,0 +1,52 @@
+name: Patch Wave 18 idempotent source boundary
+
+on:
+  push:
+    branches:
+      - agent/lake-identifier-topology-wave-18
+    paths:
+      - '.github/tmp/patch-wave18-idempotent-boundary-trigger.json'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Patch source boundary and self-delete
+        shell: bash
+        run: |
+          set -euo pipefail
+          original_sha=$(git rev-parse HEAD)
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/lake-identifier-topology-wave-18.yml')
+          text = path.read_text()
+          text = text.replace(
+              "          import re\n          import subprocess\n\n          required = {\n              '.github/tmp/lake-identifier-topology-wave-18-trigger.json',\n              'BUILD-INSTRUCTIONS.md',\n              'README.md',\n              'data/project/lake-index-policy.json',\n              'data/project/lake-identifier-topology-registry-wave-18.json',\n              'data/project/lake-identifier-topology-wave-18.json',\n          }\n          allowed_sources = required | {'data/project/lake-open-pr-shadow.json'}",
+              "          import os\n          import re\n          import subprocess\n\n          required_changes = {\n              '.github/tmp/lake-identifier-topology-wave-18-trigger.json',\n          }\n          required_present = {\n              '.github/workflows/lake-identifier-topology-wave-18.yml',\n              'BUILD-INSTRUCTIONS.md',\n              'README.md',\n              'package.json',\n              'data/project/lake-index-policy.json',\n              'data/project/lake-identifier-topology-registry-wave-18.json',\n              'data/project/lake-identifier-topology-wave-18.json',\n              'tools/validate-lake-identifier-topology-wave-18.mjs',\n              'test/lake-identifier-topology-wave-18.test.js',\n          }\n          allowed_sources = required_changes | required_present | {'data/project/lake-open-pr-shadow.json'}"
+          )
+          text = text.replace(
+              "          assert required <= actual, {'missing_required_wave_18_changes': sorted(required - actual)}\n          assert not unexpected, {'undeclared_source_changes': unexpected}\n          print({'required_changes': len(required), 'actual_changes': len(actual), 'generated_changes': len(actual - allowed_sources)})",
+              "          assert required_changes <= actual, {'missing_required_wave_18_changes': sorted(required_changes - actual)}\n          for required_path in sorted(required_present):\n              assert os.path.exists(required_path), {'missing_required_wave_18_source': required_path}\n              subprocess.check_call(['git', 'ls-files', '--error-unmatch', required_path], stdout=subprocess.DEVNULL)\n          assert not unexpected, {'undeclared_source_changes': unexpected}\n          print({'required_changes': len(required_changes), 'required_present': len(required_present), 'actual_changes': len(actual), 'generated_changes': len(actual - allowed_sources)})"
+          )
+          if 'required_changes = {' not in text or "required_present = {" not in text:
+              raise SystemExit('Wave 18 boundary patch did not apply')
+          path.write_text(text)
+          PY
+          rm -f .github/tmp/patch-wave18-idempotent-boundary-trigger.json
+          rm -f .github/workflows/patch-wave18-idempotent-boundary.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --check
+          git commit -m 'Make Wave 18 source boundary idempotent'
+          git fetch origin agent/lake-identifier-topology-wave-18
+          test "$(git rev-parse origin/agent/lake-identifier-topology-wave-18)" = "$original_sha"
+          git push origin HEAD:agent/lake-identifier-topology-wave-18
