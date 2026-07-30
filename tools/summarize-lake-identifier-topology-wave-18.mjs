@@ -75,6 +75,8 @@ const samePathByFamily = new Map();
 const samePathByPath = new Map();
 const samePathByPathKey = new Map();
 const samePathShapeCounts = new Map();
+const singleTemplateByFamilyKeyTemplate = new Map();
+const multiTemplateByFamilyKey = new Map();
 const samePathDetails = [];
 for (const row of samePath) {
   const object = objectByCompound.get(`${row.id_key}:${row.id_value}`);
@@ -90,6 +92,7 @@ for (const row of samePath) {
   const pathDetails = conflictingPaths.map(([file, occurrences]) => {
     const templates = unique(occurrences.map(item => pointerTemplate(item.pointer)));
     const hashes = unique(occurrences.map(item => item.object_hash));
+    const family = pathFamily(file);
     const shape = templates.length > 1
       ? 'multiple_pointer_templates_same_path'
       : occurrences.length > 1
@@ -97,11 +100,16 @@ for (const row of samePath) {
         : 'single_occurrence_hash_anomaly';
     increment(samePathShapeCounts, shape);
     increment(samePathByPath, file);
-    increment(samePathByFamily, pathFamily(file));
+    increment(samePathByFamily, family);
     increment(samePathByPathKey, `${file} :: ${row.id_key}`);
+    if (shape === 'single_pointer_template_repeated_rows') {
+      increment(singleTemplateByFamilyKeyTemplate, `${family} :: ${row.id_key} :: ${templates[0]}`);
+    } else if (shape === 'multiple_pointer_templates_same_path') {
+      increment(multiTemplateByFamilyKey, `${family} :: ${row.id_key}`);
+    }
     return {
       path: file,
-      family: pathFamily(file),
+      family,
       occurrence_count: occurrences.length,
       hash_count: hashes.length,
       pointer_templates: templates,
@@ -113,7 +121,7 @@ for (const row of samePath) {
 }
 
 const summary = {
-  schema_version: 'lake-identifier-topology-wave-18-family-diagnostics@1',
+  schema_version: 'lake-identifier-topology-wave-18-family-diagnostics@2',
   program_id: policy.program_id,
   counts: {
     source_only_family_adjudication_required: undecided.length,
@@ -127,16 +135,18 @@ const summary = {
     same_path_by_family: sortedCounts(samePathByFamily),
     same_path_by_path: sortedCounts(samePathByPath),
     same_path_by_path_and_key: sortedCounts(samePathByPathKey),
-    same_path_shape_counts: sortedCounts(samePathShapeCounts)
+    same_path_shape_counts: sortedCounts(samePathShapeCounts),
+    single_template_repetitions_by_family_key_template: sortedCounts(singleTemplateByFamilyKeyTemplate),
+    multi_template_repetitions_by_family_and_key: sortedCounts(multiTemplateByFamilyKey)
   },
-  source_only_samples: undecided.slice(0, 160).map(row => ({
+  source_only_samples: undecided.slice(0, 200).map(row => ({
     id_key: row.id_key,
     id_value: row.id_value,
     source_families: row.source_families,
     source_roles: row.source_roles,
     source_paths: row.source_paths
   })),
-  same_path_samples: samePathDetails.slice(0, 240),
+  same_path_samples: samePathDetails.slice(0, 320),
   boundaries: policy.boundaries
 };
 
@@ -164,9 +174,13 @@ lines.push('', '## Same-path variants by projection family', '');
 for (const row of summary.counts.same_path_by_family.slice(0, 80)) lines.push(`- ${row.key}: ${row.count}`);
 lines.push('', '## Same-path variant pointer shapes', '');
 for (const row of summary.counts.same_path_shape_counts) lines.push(`- ${row.key}: ${row.count}`);
+lines.push('', '## Single-template repeated-row groups', '');
+for (const row of summary.counts.single_template_repetitions_by_family_key_template.slice(0, 180)) lines.push(`- ${row.key}: ${row.count}`);
+lines.push('', '## Multi-template same-path groups', '');
+for (const row of summary.counts.multi_template_repetitions_by_family_and_key.slice(0, 120)) lines.push(`- ${row.key}: ${row.count}`);
 lines.push('', '## Top exact projection paths', '');
 for (const row of summary.counts.same_path_by_path.slice(0, 100)) lines.push(`- ${row.key}: ${row.count}`);
-lines.push('', '## Boundary', '', 'The same identifier appearing in multiple object contexts inside one generated file is not automatically a conflicting definition. This diagnostic separates pointer-template repetition from actual identity or truth claims and preserves family-specific adjudication.');
+lines.push('', '## Boundary', '', 'The same identifier appearing in multiple object contexts inside one generated file is not automatically a conflicting definition. Single pointer-template repetition usually identifies repeated contextual rows; multi-template repetition usually identifies multiple typed views. Neither authorizes an identity or truth join without a declared contract.');
 fs.writeFileSync(full(reportPath), `${lines.join('\n')}\n`);
 
 console.log('identifier topology Wave 18 family diagnostics built');
