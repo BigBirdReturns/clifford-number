@@ -30,6 +30,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Diagnose transmitted subsegments
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from hashlib import sha256
+          from pathlib import Path
+          for suffix in ('020', '021', '022', '023'):
+              path = Path(f'.github/tmp/publication-sg06-bundle-part-{suffix}.b64')
+              data = path.read_bytes()
+              print(f'{suffix} length={len(data)} sha256={sha256(data).hexdigest()}')
+              for index, start in enumerate(range(0, len(data), 512)):
+                  block = data[start:start + 512]
+                  print(f'{suffix}:{index:02d} offset={start} length={len(block)} sha256={sha256(block).hexdigest()}')
+          PY
       - name: Verify and extract exact transition bundle
         shell: bash
         run: |
