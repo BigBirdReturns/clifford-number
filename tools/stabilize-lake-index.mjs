@@ -91,7 +91,7 @@ for (const object of globalObjects) {
 }
 objects.objects = globalObjects.sort((a, b) => `${a.id_key}:${a.id_value}`.localeCompare(`${b.id_key}:${b.id_value}`));
 objects.identifier_semantics = {
-  schema_version: 'lake-identifier-semantics@2',
+  schema_version: 'lake-identifier-semantics@1',
   global_identifier_keys_require_explicit_namespace: true,
   local_identifier_keys: [...localIdentifierKeys].sort(),
   local_identifier_values_excluded_from_global_join: localObjects.length,
