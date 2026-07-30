@@ -31,11 +31,11 @@ jobs:
           FIRST='8de31382f9e9c00a285cc093b548b19bc436a8de'
           STAGING='agent/publication-sg06-second-historical-workflow-staging'
 
-          sha256sum .github/tmp/sg06-historical-workflow-fix.patch.xz.b64
+          printf '%s  %s\n' '3e584258f3662ba60734bd3a861bb2755d1daef91a37efb587f34d0d04e9f66d' .github/tmp/sg06-historical-workflow-fix.patch.xz.b64 | sha256sum --check --strict
           base64 --decode .github/tmp/sg06-historical-workflow-fix.patch.xz.b64 > /tmp/sg06-historical-workflow-fix.patch.xz
-          printf '%s  %s\n' '61caddae4eb3f31bd82e006fbb80696598bf6a56bf8d739e46e9ad7dc18f2e27' /tmp/sg06-historical-workflow-fix.patch.xz | sha256sum --check --strict
+          printf '%s  %s\n' '5b93cd4981dc7a3277cb259567ec0ad55ec0a41464ae9ee22a011dfc0f47436e' /tmp/sg06-historical-workflow-fix.patch.xz | sha256sum --check --strict
           xz --decompress --stdout /tmp/sg06-historical-workflow-fix.patch.xz > /tmp/sg06-historical-workflow-fix.patch
-          printf '%s  %s\n' '4216fae3705ca97c96831a596bb6387de4520657a5a954da5ce5d7322fe828bd' /tmp/sg06-historical-workflow-fix.patch | sha256sum --check --strict
+          printf '%s  %s\n' '268730a791c97519e68f2894d8d83986aa3ff94b643e174315f39825c0d71f90' /tmp/sg06-historical-workflow-fix.patch | sha256sum --check --strict
 
           git cat-file -e "${FINAL}^{commit}"
           git cat-file -e "${FIRST}^{commit}"
