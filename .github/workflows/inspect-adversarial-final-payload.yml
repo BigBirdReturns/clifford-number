@@ -13,63 +13,84 @@ permissions:
 jobs:
   inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Decode and identify retained payloads
+      - name: Verify and recover retained source payload
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import base64
           import hashlib
+          import itertools
           import lzma
-          import re
+          import tarfile
+          from io import BytesIO
           from pathlib import Path
 
-          def decode(parts, label):
-              paths = sorted(Path('.github/tmp').glob(parts))
-              assert paths, (label, 'no chunks')
-              raw = b''.join(path.read_bytes() for path in paths)
-              compact = b''.join(raw.split())
-              invalid = sorted(set(re.sub(rb'[A-Za-z0-9+/=]', b'', compact)))
-              print(f'{label}: chunks={len(paths)} raw_bytes={len(raw)} compact_bytes={len(compact)} mod4={len(compact)%4} invalid={invalid!r}')
-              for path in paths:
-                  body = b''.join(path.read_bytes().split())
-                  bad = sorted(set(re.sub(rb'[A-Za-z0-9+/=]', b'', body)))
-                  print(f'  {path.name}: bytes={len(body)} mod4={len(body)%4} invalid={bad!r} prefix={body[:16]!r} suffix={body[-16:]!r}')
-              assert not invalid, (label, invalid)
-              compressed = base64.b64decode(compact, validate=True)
-              Path(f'/tmp/{label}.xz').write_bytes(compressed)
-              print(f'{label}: compressed_sha256={hashlib.sha256(compressed).hexdigest()} compressed_bytes={len(compressed)}')
-              try:
-                  payload = lzma.decompress(compressed)
-              except Exception as exc:
-                  print(f'{label}: DECOMPRESS_FAILED {type(exc).__name__}: {exc}')
-                  return False
-              Path(f'/tmp/{label}.payload').write_bytes(payload)
-              print(f'{label}: payload_sha256={hashlib.sha256(payload).hexdigest()} payload_bytes={len(payload)}')
-              return True
+          paths = sorted(Path('.github/tmp').glob('final-source-part-*.b64'))
+          parts = [b''.join(path.read_bytes().split()) for path in paths]
+          print('chunk_lengths', [len(part) for part in parts])
+          alphabet = b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 
-          source_ok = decode('final-source-part-*.b64', 'final-source')
-          delta_ok = decode('final-delta-part-*.b64', 'final-delta')
-          Path('/tmp/payload-status').write_text(f'source_ok={int(source_ok)}\ndelta_ok={int(delta_ok)}\n')
+          def test(candidate, label):
+              try:
+                  compressed = base64.b64decode(candidate, validate=True)
+                  payload = lzma.decompress(compressed)
+              except Exception:
+                  return None
+              print('RECOVERED', label)
+              print('base64_sha256', hashlib.sha256(candidate).hexdigest(), 'base64_bytes', len(candidate))
+              print('compressed_sha256', hashlib.sha256(compressed).hexdigest(), 'compressed_bytes', len(compressed))
+              print('payload_sha256', hashlib.sha256(payload).hexdigest(), 'payload_bytes', len(payload))
+              Path('/tmp/final-source.recovered.tar').write_bytes(payload)
+              try:
+                  with tarfile.open(fileobj=BytesIO(payload), mode='r:*') as archive:
+                      names = archive.getnames()
+                  print('tar_entries', len(names))
+                  for name in names[:300]: print(name)
+              except Exception as exc:
+                  print('payload_not_tar', type(exc).__name__, str(exc))
+              return payload
+
+          original = b''.join(parts)
+          if test(original, 'unmodified') is not None:
+              raise SystemExit(0)
+
+          # The retained transport has one 14,999-byte part and one 15,001-byte part.
+          # Test only boundary-local repairs: insert one base64 symbol at a boundary
+          # adjacent to the short part and remove one symbol at a boundary adjacent
+          # to the long part. XZ integrity is the acceptance oracle.
+          short_index = next(i for i, part in enumerate(parts) if len(part) == 14999)
+          long_index = next(i for i, part in enumerate(parts) if len(part) == 15001)
+          insert_boundaries = sorted(set([
+              sum(map(len, parts[:short_index])),
+              sum(map(len, parts[:short_index + 1])),
+          ]))
+          long_start = sum(map(len, parts[:long_index]))
+          long_end = long_start + len(parts[long_index])
+          remove_positions = sorted(set([
+              long_start,
+              long_start + 1,
+              long_end - 2,
+              long_end - 1,
+          ]))
+          print('short_index', short_index, 'long_index', long_index)
+          print('insert_boundaries', insert_boundaries, 'remove_positions', remove_positions)
+
+          attempts = 0
+          for insert_at, remove_at, symbol in itertools.product(insert_boundaries, remove_positions, alphabet):
+              reduced = original[:remove_at] + original[remove_at + 1:]
+              adjusted_insert = insert_at - (1 if remove_at < insert_at else 0)
+              candidate = reduced[:adjusted_insert] + bytes([symbol]) + reduced[adjusted_insert:]
+              attempts += 1
+              payload = test(candidate, f'insert={insert_at}:{chr(symbol)} remove={remove_at}:{chr(original[remove_at])}')
+              if payload is not None:
+                  print('attempts', attempts)
+                  raise SystemExit(0)
+          print('NO_BOUNDARY_RECOVERY', attempts)
+          raise SystemExit(2)
           PY
-          cat /tmp/payload-status
-          for label in final-source final-delta; do
-            test -f "/tmp/${label}.payload" || continue
-            echo "--- ${label} file type ---"
-            file "/tmp/${label}.payload"
-            echo "--- ${label} prefix ---"
-            od -An -tx1 -N64 "/tmp/${label}.payload"
-            if tar -tf "/tmp/${label}.payload" >"/tmp/${label}-list.txt" 2>/dev/null; then
-              echo "${label^^}_IS_TAR"
-              wc -l "/tmp/${label}-list.txt"
-              sed -n '1,240p' "/tmp/${label}-list.txt"
-            else
-              echo "--- ${label} textual prefix ---"
-              strings -n 8 "/tmp/${label}.payload" | sed -n '1,300p'
-            fi
-          done
