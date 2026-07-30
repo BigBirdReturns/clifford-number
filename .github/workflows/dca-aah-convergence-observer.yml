@@ -1,0 +1,123 @@
+name: DCA AAH convergence observer
+
+on:
+  push:
+    branches:
+      - agent/dca-aah-convergence-20260729
+    paths:
+      - '.github/workflows/dca-aah-convergence-observer.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: dca-aah-convergence-observer-20260729
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BRANCH: agent/dca-aah-convergence-20260729
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/dca-aah-convergence-20260729
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Wait for the convergence materializer
+        id: wait
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_id=''
+          for attempt in $(seq 1 120); do
+            run_id="$(gh run list --workflow 'Temporary DCA AAH convergence' --branch "$BRANCH" --limit 1 --json databaseId --jq '.[0].databaseId // empty' || true)"
+            if [[ -n "$run_id" ]]; then
+              status="$(gh run view "$run_id" --json status --jq '.status')"
+              conclusion="$(gh run view "$run_id" --json conclusion --jq '.conclusion // empty')"
+              printf 'attempt=%s run=%s status=%s conclusion=%s\n' "$attempt" "$run_id" "$status" "$conclusion"
+              if [[ "$status" == completed ]]; then
+                url="$(gh run view "$run_id" --json url --jq '.url')"
+                echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+                echo "run_url=$url" >> "$GITHUB_OUTPUT"
+                echo "conclusion=$conclusion" >> "$GITHUB_OUTPUT"
+                if [[ "$conclusion" != success ]]; then
+                  pr="$(gh pr list --head "$BRANCH" --base main --state open --json number --jq '.[0].number // empty')"
+                  body="Convergence stopped before publication. Workflow conclusion: **${conclusion}**. Run: ${url}. The branch remains draft and no DCA/AAH phase-one success is claimed."
+                  [[ -z "$pr" ]] || gh pr comment "$pr" --body "$body"
+                  gh issue comment 418 --body "$body"
+                  exit 1
+                fi
+                exit 0
+              fi
+            fi
+            sleep 30
+          done
+          echo 'convergence workflow did not complete inside observer timeout' >&2
+          exit 1
+      - name: Fetch the published branch head
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "+refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}"
+          git reset --hard "origin/${BRANCH}"
+          test ! -e .github/workflows/temporary-dca-aah-convergence.yml
+          test ! -e .github/scripts/materialize-dca-aah-phase01.py
+          test ! -e .github/scripts/run-dca-aah-convergence.sh
+          test -f data/project/dca-aah-convergence-receipt.json
+          test -f data/project/dca-aah-program-release-manifest.json
+      - name: Remove the observer from the permanent product
+        run: |
+          set -euo pipefail
+          git config user.name 'clifford-number convergence observer'
+          git config user.email 'actions@users.noreply.github.com'
+          git rm .github/workflows/dca-aah-convergence-observer.yml
+          git commit -m 'Remove DCA AAH convergence observer'
+          git push origin "HEAD:${BRANCH}"
+      - name: Independently validate the final head
+        run: |
+          set -euo pipefail
+          npm ci
+          node tools/build-dca-aah-program.mjs
+          node tools/validate-dca-aah-program.mjs
+          node test/dca-aah-program.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+      - name: Publish typed completion receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          head="$(git rev-parse HEAD)"
+          poof_stage="$(node -p "require('./data/project/dca-aah-convergence-receipt.json').validated_stage_heads.poof_sprint09_stable_ground")"
+          k0_stage="$(node -p "require('./data/project/dca-aah-convergence-receipt.json').validated_stage_heads.k0_q02_ninth_template")"
+          digest="$(node -p "require('./data/project/dca-aah-program-release-manifest.json').combined_sha256")"
+          candidates="$(node -p "require('./data/project/aah-hunt-registry.json').denominator.current")"
+          target="$(node -p "require('./data/project/aah-hunt-registry.json').denominator.target")"
+          pr="$(gh pr list --head "$BRANCH" --base main --state open --json number --jq '.[0].number // empty')"
+          body=$(cat <<EOF
+Convergence materialized and independently revalidated.
+
+- final head: \`${head}\`
+- POOF/Sprint 09/stable-ground stage: \`${poof_stage}\`
+- K0-Q02 ninth-template stage: \`${k0_stage}\`
+- DCA/AAH exact-byte release digest: \`${digest}\`
+- AAH candidate denominator: **${candidates}/${target}**; empty slots were not counted as evidence
+- temporary workflows and source carriers: removed
+- graph effect: **none**
+- publication effect: **none**
+- adoption effect: **none**
+
+Convergence workflow: ${{ steps.wait.outputs.run_url }}
+EOF
+          )
+          [[ -z "$pr" ]] || gh pr comment "$pr" --body "$body"
+          gh issue comment 418 --body "$body"
