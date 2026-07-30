@@ -1,0 +1,42 @@
+name: Package exact SG-04 carrier head
+
+on:
+  push:
+    branches:
+      - agent/sg04-exact-recovery
+    paths:
+      - '.github/workflows/sg04-exact-recovery-package.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cb39a6f960e7596611209a4fb836c8fffb6b7f72
+          fetch-depth: 0
+      - name: Verify and package exact carrier tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 'cb39a6f960e7596611209a4fb836c8fffb6b7f72'
+          test -f .github/tmp/sg04-source.tar.gz.b64
+          printf '%s  %s\n' '116d7d7aebc8452a8b08b0a3b1244bb274ab4efffc2e795ab475049502a7f58f' .github/tmp/sg04-source.tar.gz.b64 | sha256sum --check --strict
+          tar --exclude='.git' -czf /tmp/sg04-carrier-head.tgz .
+          sha256sum /tmp/sg04-carrier-head.tgz > /tmp/sg04-carrier-head.tgz.sha256
+          git rev-parse HEAD > /tmp/head.txt
+          git status --porcelain=v1 > /tmp/status.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sg04-carrier-head-${{ github.run_id }}
+          path: |
+            /tmp/sg04-carrier-head.tgz
+            /tmp/sg04-carrier-head.tgz.sha256
+            /tmp/head.txt
+            /tmp/status.txt
+          if-no-files-found: error
+          retention-days: 2
