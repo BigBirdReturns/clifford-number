@@ -1,6 +1,11 @@
 name: Temporary materialize stable-ground alignment
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/tmp/stable-ground-package.b64'
+      - '.github/workflows/temporary-materialize-stable-ground-alignment.yml'
   push:
     branches: [agent/project-stable-ground-alignment]
     paths:
