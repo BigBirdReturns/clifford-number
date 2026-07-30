@@ -97,6 +97,7 @@ jobs:
         run: |
           set -euo pipefail
           rm -f build/poof-clifford-ecology/browser-qa.json
+          rm -rf node_modules
           git rm .github/scripts/apply-pr410-review-fixes.py
           git rm .github/workflows/temporary-apply-pr410-review-fixes.yml
           git config user.name "github-actions[bot]"
