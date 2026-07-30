@@ -132,11 +132,22 @@ export function validateSg04(context = loadSg04Context()) {
     else if (typeof value === 'boolean') equal(value, false, `SG-04 boundary ${key}`);
   }
 
-  check(pointer.current_checkpoint_id !== checkpoint.checkpoint_id, 'SG-04 remains current after SG-05 succession');
-  equal(pointer.current_checkpoint_id, 'SG-2026-07-30-05', 'current checkpoint after SG-04');
-  const historyIds = pointer.history?.map((row) => row.checkpoint_id) ?? [];
-  equal(JSON.stringify(historyIds), JSON.stringify(['SG-2026-07-29-01','SG-2026-07-29-02','SG-2026-07-29-03','SG-2026-07-29-04','SG-2026-07-30-05']), 'pointer history order');
-  const historyRow = pointer.history?.find((row) => row.checkpoint_id === checkpoint.checkpoint_id);
+  const requiredHistoryPrefix = ['SG-2026-07-29-01','SG-2026-07-29-02','SG-2026-07-29-03','SG-2026-07-29-04','SG-2026-07-30-05'];
+  const history = pointer.history ?? [];
+  const historyIds = history.map((row) => row.checkpoint_id);
+  equal(pointer.schema_version, 'project-stable-ground-current@1', 'pointer schema');
+  check(historyIds.length >= requiredHistoryPrefix.length, 'pointer history does not extend through SG-05');
+  equal(JSON.stringify(historyIds.slice(0, requiredHistoryPrefix.length)), JSON.stringify(requiredHistoryPrefix), 'pointer history prefix');
+  equal(new Set(historyIds).size, historyIds.length, 'pointer checkpoint uniqueness');
+  equal(history.filter((row) => row.status === 'current').length, 1, 'pointer current-state denominator');
+  const currentRow = history.at(-1);
+  equal(currentRow?.checkpoint_id, pointer.current_checkpoint_id, 'pointer current checkpoint row');
+  equal(currentRow?.status, 'current', 'pointer current row status');
+  equal(currentRow?.path, pointer.current_checkpoint_path, 'pointer current path');
+  equal(currentRow?.trigger_commit, pointer.current_canonical_main_commit, 'pointer current commit');
+  check(pointer.current_checkpoint_id !== checkpoint.checkpoint_id, 'SG-04 remains current after succession');
+  check(historyIds.indexOf(checkpoint.checkpoint_id) >= 0 && historyIds.indexOf(checkpoint.checkpoint_id) < historyIds.length - 1, 'SG-04 has no append-only successor');
+  const historyRow = history.find((row) => row.checkpoint_id === checkpoint.checkpoint_id);
   check(Boolean(historyRow), 'historical pointer row missing for SG-04');
   equal(historyRow?.path, 'data/project/project-stable-ground-sg04.json', 'historical SG-04 pointer path');
   equal(historyRow?.status, 'superseded_preserved', 'historical SG-04 pointer status');
