@@ -1,4 +1,4 @@
-name: Persistent temporary Wave 16 push-run monitor
+name: Persistent temporary Wave 16 clean-head validator
 
 on:
   push:
@@ -8,34 +8,34 @@ on:
       - '.github/tmp/tmp-wave16-run-monitor-request.json'
 
 permissions:
-  actions: read
-  contents: write
+  contents: read
 
 jobs:
-  observe:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: 1d7e2ca218db1a9db4be5450e39fba8c494a7e0a
           fetch-depth: 0
-      - name: Query all Wave 16 branch push runs
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prove the exact materialized Wave 16 head
         shell: bash
         run: |
           set -euo pipefail
-          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs?branch=agent%2Flake-subject-integration-wave-16&event=push&per_page=50" \
-            --jq '{observed_at: now | todate, runs: [.workflow_runs[] | {id, name, workflow_id, run_number, status, conclusion, head_sha, event, created_at, updated_at, html_url}]}' \
-            > data/project/tmp-wave16-push-runs.json
-      - name: Commit observation
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/project/tmp-wave16-push-runs.json
-          git commit -m 'Refresh Wave 16 push-run observation'
-          git fetch origin agent/tmp-wave16-run-monitor
-          test "$(git rev-parse origin/agent/tmp-wave16-run-monitor)" = "${{ github.sha }}"
-          git push origin HEAD:agent/tmp-wave16-run-monitor
+          test "$(git rev-parse HEAD)" = '1d7e2ca218db1a9db4be5450e39fba8c494a7e0a'
+          test ! -e .github/tmp/lake-subject-integration-wave-16-trigger.json
+          npm run release:check
+          git reset --hard HEAD
+          git clean -fd
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-canonical-subject-projection-wave-13.mjs
+          node tools/validate-lake-subject-integration-wave-16.mjs
+          node test/lake-canonical-subject-projection-wave-13.test.js
+          node test/lake-subject-integration-wave-16.test.js
+          git reset --hard HEAD
+          git clean -fd
+          test -z "$(git status --porcelain)"
