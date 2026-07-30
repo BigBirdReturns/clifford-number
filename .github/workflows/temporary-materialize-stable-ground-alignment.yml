@@ -64,7 +64,7 @@ jobs:
           grep -v '^\.github/workflows/' /tmp/archive-expected-paths.txt > /tmp/materialize-paths.txt
           while IFS= read -r path; do
             mkdir -p "$(dirname "$path")"
-            tar -xOf /tmp/stable-ground.tgz "$path" > "$path"
+            tar -xzOf /tmp/stable-ground.tgz "$path" > "$path"
           done < /tmp/materialize-paths.txt
       - name: Run focused alignment checks
         run: |
