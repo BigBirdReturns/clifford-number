@@ -27,7 +27,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Normalize canonical carrier stream checksums
+      - name: Normalize materializer against the current canonical tree
         shell: bash
         run: |
           set -euo pipefail
@@ -38,11 +38,116 @@ jobs:
           replacements = {
               '0a183d23a2758756c34db7bcc7b7ca49252d1d56c2f085c414f892b6805e16d4': '07e8f3ced9a21d5bad96e7cee651c9df230337b0c18533fd33ba539ae79c254e',
               'f611d47d35893d76119e6dc3f5797aac5767a73ec079ee833f0f96a05a51f0d8': 'f82fd16874e578f770fc23ba28d20ae31c3c026d3eb204e8efb8e70d67723da4',
+              'npm ci\n': '',
           }
           for old, new in replacements.items():
               if text.count(old) != 1:
-                  raise SystemExit(f'carrier checksum anchor count for {old}: {text.count(old)}')
+                  raise SystemExit(f'materializer anchor count for {old[:80]!r}: {text.count(old)}')
               text = text.replace(old, new, 1)
+
+          old_publication = """cat > /tmp/publication-paths <<'PATHS'
+          .github/workflows/publication-integrity.yml
+          app.js
+          data/project/poof-clifford-constitutional-change-log.json
+          data/project/poof-clifford-ecology-contract.json
+          data/project/poof-clifford-ecology-release-manifest.json
+          data/project/publication-plan.json
+          docs/methods/status-aware-publication-allowlist.md
+          index.html
+          package.json
+          reports/audits/adversarial-release-integrity-failed-custody.md
+          reports/core-thesis/poof-clifford-ecology/data.json
+          reports/core-thesis/poof-clifford-ecology/methods/index.html
+          reports/core-thesis/poof-clifford-ecology/release-manifest.json
+          test/publication-manifest.test.js
+          test/publication-pages-browser.test.js
+          test/ui-contract.test.js
+          tools/build-pages.mjs
+          tools/build-standalone.mjs
+          tools/lib/publication-manifest.mjs
+          tools/validate-pages.mjs
+          tools/validate-publication-plan.mjs
+          PATHS"""
+          new_publication = """cat > /tmp/publication-paths <<'PATHS'
+          app.js
+          data/project/poof-clifford-constitutional-change-log.json
+          data/project/poof-clifford-ecology-contract.json
+          data/project/poof-clifford-ecology-release-manifest.json
+          index.html
+          package.json
+          reports/core-thesis/poof-clifford-ecology/data.json
+          reports/core-thesis/poof-clifford-ecology/methods/index.html
+          reports/core-thesis/poof-clifford-ecology/release-manifest.json
+          test/ui-contract.test.js
+          tools/build-pages.mjs
+          tools/build-standalone.mjs
+          tools/validate-pages.mjs
+          PATHS"""
+          if text.count(old_publication) != 1:
+              raise SystemExit(f'publication denominator anchor count: {text.count(old_publication)}')
+          text = text.replace(old_publication, new_publication, 1)
+
+          old_final = """cat > /tmp/final-paths <<'PATHS'
+          .github/workflows/project-stable-ground-sg05.yml
+          .github/workflows/publication-integrity.yml
+          app.js
+          data/project/poof-clifford-constitutional-change-log.json
+          data/project/poof-clifford-ecology-contract.json
+          data/project/poof-clifford-ecology-release-manifest.json
+          data/project/project-stable-ground-current.json
+          data/project/project-stable-ground-sg05-release-manifest.json
+          data/project/project-stable-ground-sg05.json
+          data/project/publication-plan.json
+          docs/methods/status-aware-publication-allowlist.md
+          docs/milestones/project-stable-ground-sg05.md
+          index.html
+          package.json
+          reports/audits/adversarial-release-integrity-failed-custody.md
+          reports/core-thesis/poof-clifford-ecology/data.json
+          reports/core-thesis/poof-clifford-ecology/methods/index.html
+          reports/core-thesis/poof-clifford-ecology/release-manifest.json
+          reports/core-thesis/stable-ground/sg05/checkpoint.json
+          reports/core-thesis/stable-ground/sg05/index.html
+          test/project-stable-ground-sg05.test.js
+          test/publication-manifest.test.js
+          test/publication-pages-browser.test.js
+          test/ui-contract.test.js
+          tools/build-pages.mjs
+          tools/build-project-stable-ground-sg05.mjs
+          tools/build-standalone.mjs
+          tools/lib/publication-manifest.mjs
+          tools/validate-pages.mjs
+          tools/validate-project-stable-ground-sg05.mjs
+          tools/validate-publication-plan.mjs
+          PATHS"""
+          new_final = """cat > /tmp/final-paths <<'PATHS'
+          .github/workflows/project-stable-ground-sg05.yml
+          app.js
+          data/project/poof-clifford-constitutional-change-log.json
+          data/project/poof-clifford-ecology-contract.json
+          data/project/poof-clifford-ecology-release-manifest.json
+          data/project/project-stable-ground-current.json
+          data/project/project-stable-ground-sg05-release-manifest.json
+          data/project/project-stable-ground-sg05.json
+          docs/milestones/project-stable-ground-sg05.md
+          index.html
+          package.json
+          reports/core-thesis/poof-clifford-ecology/data.json
+          reports/core-thesis/poof-clifford-ecology/methods/index.html
+          reports/core-thesis/poof-clifford-ecology/release-manifest.json
+          reports/core-thesis/stable-ground/sg05/checkpoint.json
+          reports/core-thesis/stable-ground/sg05/index.html
+          test/project-stable-ground-sg05.test.js
+          test/ui-contract.test.js
+          tools/build-pages.mjs
+          tools/build-project-stable-ground-sg05.mjs
+          tools/build-standalone.mjs
+          tools/validate-pages.mjs
+          tools/validate-project-stable-ground-sg05.mjs
+          PATHS"""
+          if text.count(old_final) != 1:
+              raise SystemExit(f'final denominator anchor count: {text.count(old_final)}')
+          text = text.replace(old_final, new_final, 1)
           path.write_text(text)
           PY
       - name: Execute exact publication and SG-05 transition
