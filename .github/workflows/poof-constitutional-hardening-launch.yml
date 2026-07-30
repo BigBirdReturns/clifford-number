@@ -29,7 +29,12 @@ jobs:
           awk '/cat > \/tmp\/poof-hardening.b64/{capture=1; next} capture && /^[[:space:]]*PAYLOAD[[:space:]]*$/{exit} capture {print}' .github/workflows/poof-constitutional-hardening-once.yml \
             | sed 's/^          //' > /tmp/poof-hardening.b64
           test -s /tmp/poof-hardening.b64
-          base64 -d /tmp/poof-hardening.b64 | gzip -d > /tmp/poof-hardening.py
+          set +e
+          base64 -d /tmp/poof-hardening.b64 | gzip -dc > /tmp/poof-hardening.py
+          gzip_status=${PIPESTATUS[1]}
+          set -e
+          echo "gzip_status=${gzip_status} decompressed_bytes=$(wc -c < /tmp/poof-hardening.py)"
+          test -s /tmp/poof-hardening.py
           python3 -m py_compile /tmp/poof-hardening.py
           python3 /tmp/poof-hardening.py
       - name: Build and validate hardened ecology
