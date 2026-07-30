@@ -1,0 +1,53 @@
+name: Project stable-ground supersession 02
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/project-stable-ground-sg02*.json'
+      - 'data/project/project-stable-ground-current.json'
+      - 'docs/milestones/project-stable-ground-sg02.md'
+      - 'reports/core-thesis/stable-ground/sg02/**'
+      - 'tools/build-project-stable-ground-sg02.mjs'
+      - 'tools/validate-project-stable-ground-sg02.mjs'
+      - 'test/project-stable-ground-sg02.test.js'
+      - '.github/workflows/project-stable-ground-sg02.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/project-stable-ground-sg02*.json'
+      - 'data/project/project-stable-ground-current.json'
+      - 'docs/milestones/project-stable-ground-sg02.md'
+      - 'reports/core-thesis/stable-ground/sg02/**'
+      - 'tools/build-project-stable-ground-sg02.mjs'
+      - 'tools/validate-project-stable-ground-sg02.mjs'
+      - 'test/project-stable-ground-sg02.test.js'
+      - '.github/workflows/project-stable-ground-sg02.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build, validate, and attack SG-02
+        run: |
+          node tools/build-project-stable-ground-sg02.mjs
+          node tools/validate-project-stable-ground-sg02.mjs
+          node test/project-stable-ground-sg02.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic SG-02 products
+        run: |
+          git restore --staged --worktree .
+          node tools/build-project-stable-ground-sg02.mjs
+          node tools/validate-project-stable-ground-sg02.mjs
+          node test/project-stable-ground-sg02.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
