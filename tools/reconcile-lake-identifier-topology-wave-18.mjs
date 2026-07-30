@@ -21,18 +21,21 @@ function asObject(map) { return Object.fromEntries([...map.entries()].sort(([a],
 const policy = readJson('data/project/lake-identifier-topology-wave-18-policy.json');
 const registry = readJson(policy.paths.registry);
 const projection = readJson(policy.paths.projection);
-const summary = readJson('build/lake-index/summary.json');
-const files = readJsonl('build/lake-index/files.jsonl');
-const objects = readJsonl('build/lake-index/objects.jsonl');
+const liveIndex = readJson('build/lake-index.json');
+const liveObjectIndex = readJson('build/lake-object-index.json');
+const summary = liveIndex.summary;
+const files = liveIndex.files ?? [];
+const objects = liveObjectIndex.objects ?? [];
 const participation = readJsonl('data/ledger/participation.jsonl');
 const activeIdentity = readJson('build/axm-identity.json');
 const hopGraph = readJson('build/hop-graph.json');
 
 assert.equal(registry.schema_version, 'lake-identifier-topology-registry-wave-18@1');
 assert.equal(projection.schema_version, 'lake-identifier-topology-wave-18@1');
+assert.equal(liveIndex.schema_version, 'lake-index@1');
+assert.equal(liveObjectIndex.schema_version, 'lake-object-index@1');
 assert.equal(registry.records.length, registry.counts.records);
 assert.equal(registry.records.length, projection.topology_decisions.length);
-assert.equal(registry.records.length, projection.counts.records);
 assert.equal(registry.records.length, projection.counts.records);
 
 const currentGraphDigests = {
