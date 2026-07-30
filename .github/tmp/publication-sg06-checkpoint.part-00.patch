@@ -1,0 +1,296 @@
+diff --git a/.github/workflows/project-stable-ground-sg06.yml b/.github/workflows/project-stable-ground-sg06.yml
+new file mode 100644
+index 0000000..f9f11f2
+--- /dev/null
++++ b/.github/workflows/project-stable-ground-sg06.yml
+@@ -0,0 +1,113 @@
++name: Project stable-ground supersession 06
++
++on:
++  pull_request:
++    branches: [main]
++    paths:
++      - 'data/project/project-stable-ground-governor.json'
++      - 'data/project/project-stable-ground-current.json'
++      - 'data/project/project-stable-ground-sg06*.json'
++      - 'data/project/publication-plan.json'
++      - 'docs/methods/status-aware-publication-allowlist.md'
++      - 'docs/milestones/project-stable-ground-sg06.md'
++      - 'reports/core-thesis/stable-ground/sg06/**'
++      - 'tools/lib/publication-manifest.mjs'
++      - 'tools/build-pages.mjs'
++      - 'tools/build-standalone.mjs'
++      - 'tools/validate-pages.mjs'
++      - 'tools/validate-publication-plan.mjs'
++      - 'tools/build-project-stable-ground-sg06.mjs'
++      - 'tools/validate-project-stable-ground-sg06.mjs'
++      - 'test/publication-*.test.js'
++      - 'test/project-stable-ground-sg06.test.js'
++      - 'test/status-sovereignty-compact.test.js'
++      - 'app.js'
++      - 'index.html'
++      - 'package.json'
++      - '.github/workflows/publication-integrity.yml'
++      - '.github/workflows/project-stable-ground-sg06.yml'
++  push:
++    branches: [main]
++    paths:
++      - 'data/project/project-stable-ground-governor.json'
++      - 'data/project/project-stable-ground-current.json'
++      - 'data/project/project-stable-ground-sg06*.json'
++      - 'data/project/publication-plan.json'
++      - 'docs/methods/status-aware-publication-allowlist.md'
++      - 'docs/milestones/project-stable-ground-sg06.md'
++      - 'reports/core-thesis/stable-ground/sg06/**'
++      - 'tools/lib/publication-manifest.mjs'
++      - 'tools/build-pages.mjs'
++      - 'tools/build-standalone.mjs'
++      - 'tools/validate-pages.mjs'
++      - 'tools/validate-publication-plan.mjs'
++      - 'tools/build-project-stable-ground-sg06.mjs'
++      - 'tools/validate-project-stable-ground-sg06.mjs'
++      - 'test/publication-*.test.js'
++      - 'test/project-stable-ground-sg06.test.js'
++      - 'test/status-sovereignty-compact.test.js'
++      - 'app.js'
++      - 'index.html'
++      - 'package.json'
++      - '.github/workflows/publication-integrity.yml'
++      - '.github/workflows/project-stable-ground-sg06.yml'
++  workflow_dispatch:
++
++permissions:
++  contents: read
++
++jobs:
++  validate:
++    runs-on: ubuntu-latest
++    timeout-minutes: 90
++    steps:
++      - uses: actions/checkout@v4
++        with:
++          fetch-depth: 0
++      - uses: actions/setup-node@v4
++        with:
++          node-version: '24'
++      - name: Build and validate publication safety and current SG-06
++        run: |
++          node test/publication-manifest.test.js
++          npm run build:pages
++          npm run build:standalone
++          npm run validate:publication
++          npm run validate:pages
++          node tools/build-project-stable-ground-sg06.mjs
++          node tools/validate-project-stable-ground-sg06.mjs
++          node test/project-stable-ground-sg06.test.js
++      - name: Validate preserved SG-01 through SG-05 history
++        run: |
++          node tools/validate-project-stable-ground-alignment.mjs
++          node test/project-stable-ground-alignment.test.js
++          node tools/validate-project-stable-ground-sg02.mjs
++          node test/project-stable-ground-sg02.test.js
++          node tools/validate-project-stable-ground-sg03.mjs
++          node test/project-stable-ground-sg03.test.js
++          node tools/validate-project-stable-ground-sg04.mjs
++          node test/project-stable-ground-sg04.test.js
++          node tools/validate-project-stable-ground-sg05.mjs
++          node test/project-stable-ground-sg05.test.js
++      - name: Run complete repository release gate
++        run: npm run release:check
++      - name: Prove desktop and mobile publication boundary
++        run: |
++          npm install --no-save --no-package-lock playwright@1.55.0
++          npx playwright install --with-deps chromium
++          node test/publication-pages-browser.test.js
++      - name: Prove deterministic exact products
++        run: |
++          git restore --staged --worktree .
++          npm run build:pages
++          npm run build:standalone
++          node tools/build-poof-clifford-ecology.mjs
++          node tools/build-project-stable-ground-sg06.mjs
++          npm run validate:stable-ground
++          npm run validate:publication
++          git diff --exit-code -- \
++            data/project/poof-clifford-ecology-release-manifest.json \
++            reports/core-thesis/poof-clifford-ecology/release-manifest.json \
++            data/project/project-stable-ground-sg06-release-manifest.json \
++            reports/core-thesis/stable-ground/sg06/checkpoint.json \
++            reports/core-thesis/stable-ground/sg06/index.html
+diff --git a/data/project/project-stable-ground-current.json b/data/project/project-stable-ground-current.json
+index dea7ccc..d080206 100644
+--- a/data/project/project-stable-ground-current.json
++++ b/data/project/project-stable-ground-current.json
+@@ -2,9 +2,9 @@
+   "schema_version": "project-stable-ground-current@1",
+   "project_id": "clifford-number",
+   "governor_path": "data/project/project-stable-ground-governor.json",
+-  "current_checkpoint_id": "SG-2026-07-30-05",
+-  "current_checkpoint_path": "data/project/project-stable-ground-sg05.json",
+-  "current_canonical_main_commit": "8ccbff46d2ee83a3d0f1d39b91b38765f7a3f3c1",
++  "current_checkpoint_id": "SG-2026-07-30-06",
++  "current_checkpoint_path": "data/project/project-stable-ground-sg06.json",
++  "current_canonical_main_commit": "1991d4528cca0836be84469fb2115b3308b4dfa1",
+   "history": [
+     {
+       "checkpoint_id": "SG-2026-07-29-01",
+@@ -37,6 +37,13 @@
+       "checkpoint_id": "SG-2026-07-30-05",
+       "path": "data/project/project-stable-ground-sg05.json",
+       "trigger_commit": "8ccbff46d2ee83a3d0f1d39b91b38765f7a3f3c1",
++      "status": "superseded_preserved",
++      "merge_commit": "cada5ce40087305196a53a9ecc32a707cff28e52"
++    },
++    {
++      "checkpoint_id": "SG-2026-07-30-06",
++      "path": "data/project/project-stable-ground-sg06.json",
++      "trigger_commit": "1991d4528cca0836be84469fb2115b3308b4dfa1",
+       "status": "current"
+     }
+   ],
+diff --git a/data/project/project-stable-ground-governor.json b/data/project/project-stable-ground-governor.json
+index 1700045..9ccf1bf 100644
+--- a/data/project/project-stable-ground-governor.json
++++ b/data/project/project-stable-ground-governor.json
+@@ -82,7 +82,8 @@
+     "evidence-lake shadow lands on main",
+     "external adoption ceiling changes",
+     "works-standard predicate changes",
+-    "status-for-sovereignty hypothesis, source-review, or field-execution state changes"
++    "status-for-sovereignty hypothesis, source-review, or field-execution state changes",
++    "status-aware publication plan, manifest, held-surface, or public-route state changes"
+   ],
+   "boundaries": {
+     "governor_proves_source_truth": false,
+diff --git a/data/project/project-stable-ground-sg06-release-manifest.json b/data/project/project-stable-ground-sg06-release-manifest.json
+new file mode 100644
+index 0000000..13a47b0
+--- /dev/null
++++ b/data/project/project-stable-ground-sg06-release-manifest.json
+@@ -0,0 +1,195 @@
++{
++  "schema_version": "project-stable-ground-sg06-release-manifest@1",
++  "checkpoint_id": "SG-2026-07-30-06",
++  "as_of": "2026-07-30",
++  "hash_mode": "sha256_exact_bytes",
++  "scope_ordered": true,
++  "self_included": false,
++  "entries": [
++    {
++      "path": "package.json",
++      "sha256": "d75d6903049037fb173eb8f9e46962c43fd648333d68e0b16e60c40a8bef81fb",
++      "bytes": 15633
++    },
++    {
++      "path": ".github/workflows/project-stable-ground-sg06.yml",
++      "sha256": "9140095e74fcc873798458a9cb5b78336bebe630079fb79d7ecbec32a282f6a0",
++      "bytes": 4630
++    },
++    {
++      "path": ".github/workflows/project-stable-ground-sg05.yml",
++      "sha256": "3a501ed0a7a2c850191590ea691acad8ae5a376bf46b85d266a8cf5c4a9b157a",
++      "bytes": 5397
++    },
++    {
++      "path": ".github/workflows/publication-integrity.yml",
++      "sha256": "f839028680badfcba16160da333a517c3ef7fb242f27b44162acd4e43f1dca27",
++      "bytes": 3665
++    },
++    {
++      "path": "app.js",
++      "sha256": "5a5783ff6484c145ec8ffd582c225f1b1218c77b697e0f0e64d87f903830110d",
++      "bytes": 116768
++    },
++    {
++      "path": "index.html",
++      "sha256": "48100e8d3cc72c37fa5aefda52554654cd36a8712e7bee32cecb885443fa1da8",
++      "bytes": 20948
++    },
++    {
++      "path": "data/project/project-stable-ground-governor.json",
++      "sha256": "b553e5b3b6c8b7cdd3a1f76fd4b57982f44bef4846ad31a4d69853adc466f86c",
++      "bytes": 3487
++    },
++    {
++      "path": "data/project/project-stable-ground-current.json",
++      "sha256": "fc716fe864946385b34a64ece1196b55e9ba85be205107610349c408b9ddfb77",
++      "bytes": 2209
++    },
++    {
++      "path": "data/project/project-stable-ground-sg06.json",
++      "sha256": "46d4218be329afb667f51146c3dacd573c836369641aa19a9266721889d307d7",
++      "bytes": 20765
++    },
++    {
++      "path": "data/project/project-stable-ground-sg05.json",
++      "sha256": "5c94b9a96c410bb08b9e50bc2cdbce2649bb87031f68d40aa064b3df1fc707ba",
++      "bytes": 22099
++    },
++    {
++      "path": "data/project/publication-plan.json",
++      "sha256": "82b9e7bc70c890378ee0c73dcb8f40bcab90c06b68dbdf2d91f87ca1e1f6193e",
++      "bytes": 23854
++    },
++    {
++      "path": "data/project/poof-clifford-constitutional-change-log.json",
++      "sha256": "913a73bfc1326318a3b2a3bb9fa8c9e3cda5f43d11dc46f1779646c0b8dcdb57",
++      "bytes": 16083
++    },
++    {
++      "path": "data/project/poof-clifford-ecology-contract.json",
++      "sha256": "849cb51c8c2e5210bd1445eb5d89fa1056f4edb125ebc6797c135c463a6aa3ff",
++      "bytes": 12846
++    },
++    {
++      "path": "data/project/poof-clifford-ecology-release-manifest.json",
++      "sha256": "56bbf5aabe5a18c1e3960dabeb96309746269e4b599076b496f6212f30df6891",
++      "bytes": 12997
++    },
++    {
++      "path": "data/project/status-sovereignty-release-manifest.json",
++      "sha256": "827963e7d95021d3b08f841ed1e096d576ffb0c329b5883514240947badf7707",
++      "bytes": 4423
++    },
++    {
++      "path": "data/project/k0-epistemic-admissibility-release-manifest.json",
++      "sha256": "6d2b95c9305b2a31b87558cf0ac76be167681a9507f8cd7d52bd134adbd544d3",
++      "bytes": 11820
++    },
++    {
++      "path": "data/research/k0-role-neutral-denominator.json",
++      "sha256": "f85612c0befff2b5f86659749e942390b8052817bd083ed5d1bc36dfc78cf050",
++      "bytes": 11004
++    },
++    {
++      "path": "docs/methods/status-aware-publication-allowlist.md",
++      "sha256": "9c41cca44f4a1d334a8912267cc84eb910355525ad2279e05f7de228dc7db995",
++      "bytes": 2280
++    },
++    {
++      "path": "docs/milestones/project-stable-ground-sg06.md",
++      "sha256": "be1212126f7acad0c48383662d5181d969dca540298e054cd256bbb3de4ac429",
++      "bytes": 1149
++    },
++    {
++      "path": "reports/audits/adversarial-release-integrity-failed-custody.md",
++      "sha256": "5beb43228c199838c32a7c194bcc09fb665f9bd28d86fa43e472cb8fa080a26a",
++      "bytes": 1154
++    },
++    {
++      "path": "reports/core-thesis/poof-clifford-ecology/data.json",
++      "sha256": "64db60a9174b56b947c23c9db62f136750ca8f345c56318cce34ed061116321c",
++      "bytes": 61307
++    },
++    {
++      "path": "reports/core-thesis/poof-clifford-ecology/release-manifest.json",
++      "sha256": "56bbf5aabe5a18c1e3960dabeb96309746269e4b599076b496f6212f30df6891",
++      "bytes": 12997
++    },
++    {
++      "path": "tools/build-pages.mjs",
++      "sha256": "f53d48d139d1aca3686a7846d79779ae92eac3bfd1f23f82acedf0f23beb7ed1",
++      "bytes": 534
++    },
++    {
++      "path": "tools/build-standalone.mjs",
++      "sha256": "f723
