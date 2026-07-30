@@ -389,3 +389,15 @@ repository key; it does not authorize unrestricted cross-key joins. A determinis
 projection recipe is source custody for the generated identifier, not external evidence.
 Typed refusals remain valid executable outcomes, and missing a reviewer is never a
 standalone blocker for reversible indexing or custody work.
+
+3.18 **Identifier topology — Wave 18.**
+Every identifier in the frozen unindexed, source-only, or divergent topology union receives
+an append-preserving decision. Indexing creates addressability, not identity, truth,
+publication status, or graph semantics. Source-only identifiers remain source-only unless a
+named consumer contract justifies a typed projection. Cross-family projection views may be
+valid; same-family variants retain explicit generator-contract actions rather than being
+forced into byte equality.
+
+The topology registry is an index and custody surface. It does not authorize automatic
+cross-key joins, create relationships or participation, or establish semantic completeness.
+Missing a reviewer never blocks reversible classification, indexing, or projection refusal.

@@ -1,8 +1,8 @@
 {
   "schema_version": "lake-open-pr-shadow@1",
-  "observed_at": "2026-07-30T06:31:24.095Z",
+  "observed_at": "2026-07-30T07:41:40.836Z",
   "repository": "BigBirdReturns/clifford-number",
-  "exact_checkout_head": "ce6f5a5877b9f0d99e894ecfd8ea18e792cb8a51",
+  "exact_checkout_head": "e74563712b3470372c20acbc7353889e4b70e774",
   "status": "complete",
   "pull_requests": [
     {
@@ -10179,207 +10179,17 @@
       ]
     },
     {
-      "number": 450,
-      "title": "Enforce status-aware publication allowlist and admit POOF as staged",
-      "draft": true,
-      "state": "open",
-      "created_at": "2026-07-30T04:08:15Z",
-      "updated_at": "2026-07-30T06:30:44Z",
-      "base_ref": "main",
-      "base_sha": "c8415a769d03add67a92a3019794268bf5d1cb84",
-      "head_ref": "agent/publication-allowlist-poof-admission-v2",
-      "head_sha": "da592520b3aac48cae5092093b40ad7ac302fc45",
-      "files": [
-        {
-          "path": ".github/scripts/materialize-publication-allowlist.py",
-          "status": "added",
-          "blob_sha": "1599619f385bcb2ba5718dbdf2978415ea825bc7",
-          "previous_path": null,
-          "additions": 423,
-          "deletions": 0,
-          "changes": 423,
-          "evidence_like": false,
-          "branch_only_path": true
-        },
-        {
-          "path": ".github/scripts/retire-public-graph-bridge.py",
-          "status": "added",
-          "blob_sha": "39706c0d63fc125a0d01099d939831073eba8e0e",
-          "previous_path": null,
-          "additions": 54,
-          "deletions": 0,
-          "changes": 54,
-          "evidence_like": false,
-          "branch_only_path": true
-        },
-        {
-          "path": ".github/scripts/tighten-publication-test-predicates.py",
-          "status": "added",
-          "blob_sha": "d64c527455687f95608e754db5c598b9289078b0",
-          "previous_path": null,
-          "additions": 11,
-          "deletions": 0,
-          "changes": 11,
-          "evidence_like": false,
-          "branch_only_path": true
-        },
-        {
-          "path": ".github/workflows/materialize-publication-allowlist-once.yml",
-          "status": "added",
-          "blob_sha": "f619d9abc19e83d55b1eee30e43b9099202ad6b6",
-          "previous_path": null,
-          "additions": 84,
-          "deletions": 0,
-          "changes": 84,
-          "evidence_like": false,
-          "branch_only_path": true
-        },
-        {
-          "path": ".github/workflows/publication-integrity.yml",
-          "status": "added",
-          "blob_sha": "d6a9076b33d64189c95c2fafe0002622fef65328",
-          "previous_path": null,
-          "additions": 73,
-          "deletions": 0,
-          "changes": 73,
-          "evidence_like": false,
-          "branch_only_path": true
-        },
-        {
-          "path": ".github/workflows/temporary-publication450-export.yml",
-          "status": "added",
-          "blob_sha": "f9aca660cc2e1da0046564779374a64f5c3db45f",
-          "previous_path": null,
-          "additions": 41,
-          "deletions": 0,
-          "changes": 41,
-          "evidence_like": false,
-          "branch_only_path": true
-        },
-        {
-          "path": ".publication-allowlist-materialize",
-          "status": "added",
-          "blob_sha": "920314c9b668da66e48e3d19dd197af0a959192f",
-          "previous_path": null,
-          "additions": 2,
-          "deletions": 0,
-          "changes": 2,
-          "evidence_like": false,
-          "branch_only_path": true
-        },
-        {
-          "path": "data/project/publication-plan.json",
-          "status": "added",
-          "blob_sha": "2d6794721a45e7e5c9f1aef43463c2427c0bd506",
-          "previous_path": null,
-          "additions": 208,
-          "deletions": 0,
-          "changes": 208,
-          "evidence_like": true,
-          "branch_only_path": true
-        },
-        {
-          "path": "docs/methods/status-aware-publication-allowlist.md",
-          "status": "added",
-          "blob_sha": "a63cf9ac72d762ea264fcfec027f463195bb33c2",
-          "previous_path": null,
-          "additions": 39,
-          "deletions": 0,
-          "changes": 39,
-          "evidence_like": true,
-          "branch_only_path": true
-        },
-        {
-          "path": "reports/audits/adversarial-release-integrity-failed-custody.md",
-          "status": "added",
-          "blob_sha": "f3ead703acfa7c9494dcc52c4527243bd5283fdc",
-          "previous_path": null,
-          "additions": 26,
-          "deletions": 0,
-          "changes": 26,
-          "evidence_like": true,
-          "branch_only_path": true
-        },
-        {
-          "path": "test/publication-manifest.test.js",
-          "status": "added",
-          "blob_sha": "d37337bb734b2c47765bf65cf2860747418a56c9",
-          "previous_path": null,
-          "additions": 93,
-          "deletions": 0,
-          "changes": 93,
-          "evidence_like": false,
-          "branch_only_path": true
-        },
-        {
-          "path": "test/publication-pages-browser.test.js",
-          "status": "added",
-          "blob_sha": "fb2c59f9c4c2a264293c2626a824bc1f66b90b5d",
-          "previous_path": null,
-          "additions": 80,
-          "deletions": 0,
-          "changes": 80,
-          "evidence_like": false,
-          "branch_only_path": true
-        },
-        {
-          "path": "tools/build-pages.mjs",
-          "status": "modified",
-          "blob_sha": "28c96256e9c60a24cc84c5fa93d4704dd67835d2",
-          "previous_path": null,
-          "additions": 5,
-          "deletions": 18,
-          "changes": 23,
-          "evidence_like": false,
-          "branch_only_path": false
-        },
-        {
-          "path": "tools/lib/publication-manifest.mjs",
-          "status": "added",
-          "blob_sha": "3a484515694683cb961557b2be11f98532f4e8eb",
-          "previous_path": null,
-          "additions": 360,
-          "deletions": 0,
-          "changes": 360,
-          "evidence_like": false,
-          "branch_only_path": true
-        },
-        {
-          "path": "tools/validate-publication-plan.mjs",
-          "status": "added",
-          "blob_sha": "57bf37e46bfab0a5399e8773cc2cf9a5c372304b",
-          "previous_path": null,
-          "additions": 12,
-          "deletions": 0,
-          "changes": 12,
-          "evidence_like": false,
-          "branch_only_path": true
-        }
-      ]
-    },
-    {
       "number": 458,
       "title": "Adjudicate the residual evidence-lake frontier",
       "draft": true,
       "state": "open",
       "created_at": "2026-07-30T05:28:36Z",
-      "updated_at": "2026-07-30T06:30:33Z",
+      "updated_at": "2026-07-30T06:37:02Z",
       "base_ref": "agent/lake-subject-integration-wave-16",
       "base_sha": "d5f74134d4b8abc071f06e5b8797988e70525b61",
       "head_ref": "agent/lake-residual-frontier-wave-17",
-      "head_sha": "ce6f5a5877b9f0d99e894ecfd8ea18e792cb8a51",
+      "head_sha": "ee5d35a8f779d4b47d9f6a0c235a0f4d875221a8",
       "files": [
-        {
-          "path": ".github/tmp/lake-residual-frontier-wave-17-trigger.json",
-          "status": "added",
-          "blob_sha": "3bdd5463a8c6837e24d70f109bfdc12a942d4f5c",
-          "previous_path": null,
-          "additions": 7,
-          "deletions": 0,
-          "changes": 7,
-          "evidence_like": false,
-          "branch_only_path": true
-        },
         {
           "path": ".github/workflows/lake-residual-frontier-wave-17.yml",
           "status": "added",
@@ -10416,7 +10226,7 @@
         {
           "path": "build/axm-identity.json",
           "status": "modified",
-          "blob_sha": "de5cccfc7f273fa2139fc96fb03178e5c61a28b0",
+          "blob_sha": "fbed2fc27c481b388b35faa947c26d6a30979477",
           "previous_path": null,
           "additions": 1,
           "deletions": 1,
@@ -10427,7 +10237,7 @@
         {
           "path": "build/build-hop-report.json",
           "status": "modified",
-          "blob_sha": "cb77002c842ce0ecc0e2b3f2b1e9487265d5dffe",
+          "blob_sha": "1564742f46bf414c884af595af579e59a71f642b",
           "previous_path": null,
           "additions": 1,
           "deletions": 1,
@@ -10438,7 +10248,7 @@
         {
           "path": "build/canonical-subject-projection-wave-13.json",
           "status": "modified",
-          "blob_sha": "c64721fda5eea67f8c37500d321ee037c8537648",
+          "blob_sha": "5b4786e5f02d2d4fa85a48b4b94e58e9c5ea615d",
           "previous_path": null,
           "additions": 5,
           "deletions": 5,
@@ -10449,7 +10259,7 @@
         {
           "path": "build/hop-graph.json",
           "status": "modified",
-          "blob_sha": "c896341255dbb6d7e8d0ccd86206a4fe6403f2ae",
+          "blob_sha": "d915980b40a1321efad7cbd010847758ae39ceb9",
           "previous_path": null,
           "additions": 1,
           "deletions": 1,
@@ -10460,7 +10270,7 @@
         {
           "path": "build/lake-actions/canonical-subject-projection-wave-13.json",
           "status": "modified",
-          "blob_sha": "52ba41a9e6b1d0fb1f4ae0542ff03e548896a5f1",
+          "blob_sha": "65328bc45d3e2524f850e70aa9a055b63c966604",
           "previous_path": null,
           "additions": 5,
           "deletions": 5,
@@ -10493,7 +10303,7 @@
         {
           "path": "build/lake-actions/residual-frontier-wave-17-reconciliation.json",
           "status": "added",
-          "blob_sha": "5f97752073d4007d6dc0af8e92eb574ad1750b30",
+          "blob_sha": "54cecc1971d6d17aa38081491f874c9aca491d5c",
           "previous_path": null,
           "additions": 2826,
           "deletions": 0,
@@ -10504,7 +10314,7 @@
         {
           "path": "build/lake-actions/residual-frontier-wave-17.json",
           "status": "added",
-          "blob_sha": "c25dc7a619d39090df58b5bbdfd8e0f9bdc59ce0",
+          "blob_sha": "a590755eb658ede4f46ee981fbb6c31825fb9684",
           "previous_path": null,
           "additions": 47,
           "deletions": 0,
@@ -10515,7 +10325,7 @@
         {
           "path": "build/lake-actions/subject-integration-wave-16.json",
           "status": "modified",
-          "blob_sha": "13cf3cf64b880231f142156b100d301938cb82be",
+          "blob_sha": "5b23ec21386aedf3dbe957dded45cffe497e89e7",
           "previous_path": null,
           "additions": 6,
           "deletions": 6,
@@ -10537,7 +10347,7 @@
         {
           "path": "build/lake-index/basin-manifest.json",
           "status": "modified",
-          "blob_sha": "9188f0104b54200a888cb124adf2d4737d8365a7",
+          "blob_sha": "66a81fc3bdf56e8ca71986c14cf71ebdd8f95297",
           "previous_path": null,
           "additions": 10,
           "deletions": 10,
@@ -10548,18 +10358,18 @@
         {
           "path": "build/lake-index/basin-membership.jsonl",
           "status": "modified",
-          "blob_sha": "876a643e2e0945195fbe2fc718d27db390cfa3f9",
+          "blob_sha": "48fe771c31d948c785e3892862dc25fe9ad3257e",
           "previous_path": null,
-          "additions": 186,
-          "deletions": 171,
-          "changes": 357,
+          "additions": 187,
+          "deletions": 172,
+          "changes": 359,
           "evidence_like": true,
           "branch_only_path": false
         },
         {
           "path": "build/lake-index/basins.json",
           "status": "modified",
-          "blob_sha": "2c21fc1177efeb1908a7db5edb1fc1dffe6e00eb",
+          "blob_sha": "130dbb9d96cd08c06973e17655c9df925ec2524c",
           "previous_path": null,
           "additions": 121,
           "deletions": 122,
@@ -10570,40 +10380,40 @@
         {
           "path": "build/lake-index/branch-shadow.jsonl",
           "status": "modified",
-          "blob_sha": "03a3df233de9f2a5a16c690cb26cf7e103269c1b",
+          "blob_sha": "adc2026061b00690eab1c26b0cbe3f67239a4f99",
           "previous_path": null,
-          "additions": 139,
-          "deletions": 192,
-          "changes": 331,
+          "additions": 148,
+          "deletions": 207,
+          "changes": 355,
           "evidence_like": true,
           "branch_only_path": false
         },
         {
           "path": "build/lake-index/files.jsonl",
           "status": "modified",
-          "blob_sha": "5fdc959c8a63f3093ee3579ac17a7dcfeb2dcf6f",
+          "blob_sha": "f844d683713bba4a17523c552f7c3101c309b7d6",
           "previous_path": null,
-          "additions": 940,
-          "deletions": 925,
-          "changes": 1865,
+          "additions": 941,
+          "deletions": 926,
+          "changes": 1867,
           "evidence_like": true,
           "branch_only_path": false
         },
         {
           "path": "build/lake-index/gap-summary.json",
           "status": "modified",
-          "blob_sha": "181e001e63dd17dbfc88fe5031190b82699f31ad",
+          "blob_sha": "2343ec166763d39ffff2bee092fc365653ac0a20",
           "previous_path": null,
-          "additions": 1214,
-          "deletions": 4154,
-          "changes": 5368,
+          "additions": 1061,
+          "deletions": 4272,
+          "changes": 5333,
           "evidence_like": true,
           "branch_only_path": false
         },
         {
           "path": "build/lake-index/id-gaps.jsonl",
           "status": "modified",
-          "blob_sha": "d37ae3e815ab8b2b8e8a9b8104efde961c85e0a8",
+          "blob_sha": "f0ba5a2cc131b2d7aaf67ce6e522e889c7afa2d8",
           "previous_path": null,
           "additions": 603,
           "deletions": 4158,
@@ -10614,7 +10424,7 @@
         {
           "path": "build/lake-index/manifest.json",
           "status": "modified",
-          "blob_sha": "f0556e87cff86ea0112cd0f4a1db3572dff549c7",
+          "blob_sha": "0760584897c1566da8fc4364ed5d2f65a6705608",
           "previous_path": null,
           "additions": 26,
           "deletions": 26,
@@ -10636,7 +10446,7 @@
         {
           "path": "build/lake-index/objects.jsonl",
           "status": "modified",
-          "blob_sha": "f3bd43994e11a49267682384435430c785c95689",
+          "blob_sha": "16e9acfad1d247324490568b02b50e1b3c17e0eb",
           "previous_path": null,
           "additions": 2002,
           "deletions": 2001,
@@ -10680,7 +10490,7 @@
         {
           "path": "build/lake-index/summary.json",
           "status": "modified",
-          "blob_sha": "2612ee6f1080b79409a8b67cb6e906ac008a6af2",
+          "blob_sha": "c4e01a9850094d96025dae5de5a68e691ae93cb9",
           "previous_path": null,
           "additions": 40,
           "deletions": 19,
@@ -10691,7 +10501,7 @@
         {
           "path": "build/migration-review.md",
           "status": "modified",
-          "blob_sha": "c83648bfc06bb488900f155ca80e43caab1b1cbc",
+          "blob_sha": "5f75f829b5060725725add4b5ef86353ea31efcc",
           "previous_path": null,
           "additions": 1,
           "deletions": 1,
@@ -10702,7 +10512,7 @@
         {
           "path": "build/migration-summary.json",
           "status": "modified",
-          "blob_sha": "0aa3903c697f34981bf44249a77e228801e40e0d",
+          "blob_sha": "2d4c91801f04a804590f03ebaeb9689e6148e80c",
           "previous_path": null,
           "additions": 1,
           "deletions": 1,
@@ -10713,7 +10523,7 @@
         {
           "path": "build/receipt-graph.json",
           "status": "modified",
-          "blob_sha": "064c0e812ebfd42825d4af6a58c99169bf8cec8e",
+          "blob_sha": "537408dce0e607f35bb319101f75c5afcb716757",
           "previous_path": null,
           "additions": 1,
           "deletions": 1,
@@ -10724,7 +10534,7 @@
         {
           "path": "build/scores.json",
           "status": "modified",
-          "blob_sha": "7e314a534b2b081e262d3808219f875bdf18da32",
+          "blob_sha": "85c298864672573e020ef56e01d6286cbf4d0a39",
           "previous_path": null,
           "additions": 1,
           "deletions": 1,
@@ -10735,7 +10545,7 @@
         {
           "path": "build/scout-report.json",
           "status": "modified",
-          "blob_sha": "022dd4e616a9bdd7e4b83d92685e07452962669f",
+          "blob_sha": "d4b7109a10f3fa1e243ce0826045213bdda7eac7",
           "previous_path": null,
           "additions": 1,
           "deletions": 1,
@@ -10746,7 +10556,7 @@
         {
           "path": "build/scout-report.md",
           "status": "modified",
-          "blob_sha": "a792a25cbe178c54dfea6000315e1825d5542947",
+          "blob_sha": "c7e7c0aaa2efeb216682db611150cd6b5a889a22",
           "previous_path": null,
           "additions": 1,
           "deletions": 1,
@@ -10757,7 +10567,7 @@
         {
           "path": "build/subject-integration-wave-16.json",
           "status": "modified",
-          "blob_sha": "0c1443c077ea46e17720be1ff353160374f82aab",
+          "blob_sha": "e851056aa97f09bb90afb6b76cbae367efe36a11",
           "previous_path": null,
           "additions": 6,
           "deletions": 6,
@@ -10768,7 +10578,7 @@
         {
           "path": "build/surface-graph.json",
           "status": "modified",
-          "blob_sha": "d614112d143d4e91b012aaa03c3e9f9446f16446",
+          "blob_sha": "ac6291cea49e64d2b30b4b2a9d3c0c8e4d94cadd",
           "previous_path": null,
           "additions": 1,
           "deletions": 1,
@@ -10790,22 +10600,22 @@
         {
           "path": "data/project/lake-open-pr-shadow.json",
           "status": "modified",
-          "blob_sha": "a7b5dd1874aa1a6ca2950fde6b70b15218e92012",
+          "blob_sha": "6754e2a222949b74575c86db9f437354cc2ffc22",
           "previous_path": null,
-          "additions": 1715,
-          "deletions": 2334,
-          "changes": 4049,
+          "additions": 4451,
+          "deletions": 5139,
+          "changes": 9590,
           "evidence_like": true,
           "branch_only_path": false
         },
         {
           "path": "data/project/lake-projection-lineage-registry-wave-17.json",
           "status": "added",
-          "blob_sha": "520ac7fb798c8f639bb3317e90deb2aac1691a23",
+          "blob_sha": "19ba79c1f600943f82530c4592737c03ea48de9f",
           "previous_path": null,
-          "additions": 92891,
+          "additions": 113792,
           "deletions": 0,
-          "changes": 92891,
+          "changes": 113792,
           "evidence_like": true,
           "branch_only_path": false
         },
@@ -10867,7 +10677,7 @@
         {
           "path": "reports/lake-canonical-subject-projection-wave-13.md",
           "status": "modified",
-          "blob_sha": "ddb3489d5725fc87e508190b7d784318a324b47a",
+          "blob_sha": "dd2dc891cec4edb38b52e98b143d9bc83e8c2d77",
           "previous_path": null,
           "additions": 1,
           "deletions": 1,
@@ -10878,7 +10688,7 @@
         {
           "path": "reports/lake-index-census.md",
           "status": "modified",
-          "blob_sha": "63eebbe292c9077d4037c195012313cbff8b8887",
+          "blob_sha": "7478c4e05344d17b6ed4ed4a91d23d44fa580bfb",
           "previous_path": null,
           "additions": 15,
           "deletions": 15,
@@ -10889,11 +10699,11 @@
         {
           "path": "reports/lake-index-gap-summary.md",
           "status": "modified",
-          "blob_sha": "8e391b175264619cc71f0f0d7351f6d116422a72",
+          "blob_sha": "b6a6efbfbe0f83c222d15f8c9ecdeafb4cc1920e",
           "previous_path": null,
           "additions": 37,
-          "deletions": 59,
-          "changes": 96,
+          "deletions": 60,
+          "changes": 97,
           "evidence_like": true,
           "branch_only_path": false
         },
@@ -10933,7 +10743,7 @@
         {
           "path": "reports/lake-subject-integration-wave-16.md",
           "status": "modified",
-          "blob_sha": "812f529bcda2a2c9bc66157932b837c79494eada",
+          "blob_sha": "972132bbf907bab2e6ba7b3f133c1cc5dace0f83",
           "previous_path": null,
           "additions": 1,
           "deletions": 1,
@@ -11019,14 +10829,306 @@
           "branch_only_path": false
         }
       ]
+    },
+    {
+      "number": 467,
+      "title": "Encode the status-for-sovereignty compact and fan out its evidence program",
+      "draft": true,
+      "state": "open",
+      "created_at": "2026-07-30T06:41:39Z",
+      "updated_at": "2026-07-30T07:37:39Z",
+      "base_ref": "main",
+      "base_sha": "c8415a769d03add67a92a3019794268bf5d1cb84",
+      "head_ref": "agent/status-sovereignty-compact",
+      "head_sha": "ece9b0da4a495776208337b36cc74944a484ffd4",
+      "files": [
+        {
+          "path": ".github/tmp/status-sovereignty/part-00.b64",
+          "status": "added",
+          "blob_sha": "0c3c2a9958f727f13b6255d2fc025e09987a66f6",
+          "previous_path": null,
+          "additions": 1,
+          "deletions": 0,
+          "changes": 1,
+          "evidence_like": false,
+          "branch_only_path": true
+        },
+        {
+          "path": ".github/tmp/status-sovereignty/part-01.b64",
+          "status": "added",
+          "blob_sha": "18e0665c306a79857bd9ce4ce3e67a309a568248",
+          "previous_path": null,
+          "additions": 1,
+          "deletions": 0,
+          "changes": 1,
+          "evidence_like": false,
+          "branch_only_path": true
+        },
+        {
+          "path": ".github/tmp/status-sovereignty/part-02.b64",
+          "status": "added",
+          "blob_sha": "94edc72af4e13d74da59874221ca8a8906593607",
+          "previous_path": null,
+          "additions": 1,
+          "deletions": 0,
+          "changes": 1,
+          "evidence_like": false,
+          "branch_only_path": true
+        },
+        {
+          "path": ".github/tmp/status-sovereignty/part-03.b64",
+          "status": "added",
+          "blob_sha": "2638bc2c78c481a29527066948a3165ecd676e37",
+          "previous_path": null,
+          "additions": 1,
+          "deletions": 0,
+          "changes": 1,
+          "evidence_like": false,
+          "branch_only_path": true
+        },
+        {
+          "path": ".github/tmp/status-sovereignty/part-04.b64",
+          "status": "added",
+          "blob_sha": "cc08d0ea37d86820b89e22e1fde5b8e2af0fcee3",
+          "previous_path": null,
+          "additions": 1,
+          "deletions": 0,
+          "changes": 1,
+          "evidence_like": false,
+          "branch_only_path": true
+        },
+        {
+          "path": ".github/tmp/status-sovereignty/part-05.b64",
+          "status": "added",
+          "blob_sha": "36599c66b8fb52c0bcb995c01cf848f9b7138380",
+          "previous_path": null,
+          "additions": 1,
+          "deletions": 0,
+          "changes": 1,
+          "evidence_like": false,
+          "branch_only_path": true
+        },
+        {
+          "path": ".github/workflows/package-status-sovereignty-source.yml",
+          "status": "added",
+          "blob_sha": "f8cc0551f70842d91fd5b4ebc745beeb940b44a9",
+          "previous_path": null,
+          "additions": 140,
+          "deletions": 0,
+          "changes": 140,
+          "evidence_like": false,
+          "branch_only_path": true
+        }
+      ]
+    },
+    {
+      "number": 477,
+      "title": "Adjudicate identifier topology after the residual lake repair",
+      "draft": true,
+      "state": "open",
+      "created_at": "2026-07-30T06:51:37Z",
+      "updated_at": "2026-07-30T07:40:44Z",
+      "base_ref": "agent/lake-residual-frontier-wave-17",
+      "base_sha": "ee5d35a8f779d4b47d9f6a0c235a0f4d875221a8",
+      "head_ref": "agent/lake-identifier-topology-wave-18",
+      "head_sha": "e74563712b3470372c20acbc7353889e4b70e774",
+      "files": [
+        {
+          "path": ".github/tmp/lake-identifier-topology-wave-18-trigger.json",
+          "status": "added",
+          "blob_sha": "eae12a3545b909fc1d35bd0895b50b86d9ef8a09",
+          "previous_path": null,
+          "additions": 6,
+          "deletions": 0,
+          "changes": 6,
+          "evidence_like": false,
+          "branch_only_path": true
+        },
+        {
+          "path": ".github/workflows/lake-identifier-topology-wave-18.yml",
+          "status": "added",
+          "blob_sha": "4d35137d4df830f8638c7c4f1fd37ad7bdbb3587",
+          "previous_path": null,
+          "additions": 263,
+          "deletions": 0,
+          "changes": 263,
+          "evidence_like": false,
+          "branch_only_path": false
+        },
+        {
+          "path": "build/lake-actions/identifier-topology-wave-18-diagnostics.json",
+          "status": "added",
+          "blob_sha": "82849ea4b8ffa0ba3dbe528a67ee6c08e6a6fa63",
+          "previous_path": null,
+          "additions": 2799,
+          "deletions": 0,
+          "changes": 2799,
+          "evidence_like": true,
+          "branch_only_path": false
+        },
+        {
+          "path": "build/lake-actions/identifier-topology-wave-18-family-diagnostics.json",
+          "status": "added",
+          "blob_sha": "8022575bdc5d39f507abc49d9755c289f8411425",
+          "previous_path": null,
+          "additions": 17702,
+          "deletions": 0,
+          "changes": 17702,
+          "evidence_like": true,
+          "branch_only_path": false
+        },
+        {
+          "path": "build/lake-actions/identifier-topology-wave-18-preflight.json",
+          "status": "added",
+          "blob_sha": "fe7e3860f24fbcbbec74e57b04f1478249ae02bb",
+          "previous_path": null,
+          "additions": 552754,
+          "deletions": 0,
+          "changes": 552754,
+          "evidence_like": true,
+          "branch_only_path": false
+        },
+        {
+          "path": "data/project/lake-identifier-topology-wave-18-policy.json",
+          "status": "added",
+          "blob_sha": "d05ad7f073bb828bd49b84e301152e1bbc98e17d",
+          "previous_path": null,
+          "additions": 49,
+          "deletions": 0,
+          "changes": 49,
+          "evidence_like": true,
+          "branch_only_path": false
+        },
+        {
+          "path": "reports/lake-identifier-topology-wave-18-diagnostics.md",
+          "status": "added",
+          "blob_sha": "7bae2940efc99b21f3ac196d01e1afd1b8996aba",
+          "previous_path": null,
+          "additions": 166,
+          "deletions": 0,
+          "changes": 166,
+          "evidence_like": true,
+          "branch_only_path": false
+        },
+        {
+          "path": "reports/lake-identifier-topology-wave-18-family-diagnostics.md",
+          "status": "added",
+          "blob_sha": "e52333d7431d3ef0bcc4a290c7248a740ee76eb4",
+          "previous_path": null,
+          "additions": 552,
+          "deletions": 0,
+          "changes": 552,
+          "evidence_like": true,
+          "branch_only_path": false
+        },
+        {
+          "path": "reports/lake-identifier-topology-wave-18-preflight.md",
+          "status": "added",
+          "blob_sha": "5309761e5fa5d58678bdb66b430e47cab04af486",
+          "previous_path": null,
+          "additions": 86,
+          "deletions": 0,
+          "changes": 86,
+          "evidence_like": true,
+          "branch_only_path": false
+        },
+        {
+          "path": "test/lake-identifier-topology-wave-18.test.js",
+          "status": "added",
+          "blob_sha": "1da1ce273ea8e00145176d9e7b3d67f60d5dd711",
+          "previous_path": null,
+          "additions": 57,
+          "deletions": 0,
+          "changes": 57,
+          "evidence_like": false,
+          "branch_only_path": false
+        },
+        {
+          "path": "tools/build-lake-identifier-topology-wave-18.mjs",
+          "status": "added",
+          "blob_sha": "1e732a7778b832ed987ab8592cfe0a9b2f4e4e4b",
+          "previous_path": null,
+          "additions": 342,
+          "deletions": 0,
+          "changes": 342,
+          "evidence_like": false,
+          "branch_only_path": false
+        },
+        {
+          "path": "tools/expand-lake-identifier-topology-wave-18.mjs",
+          "status": "added",
+          "blob_sha": "f0e01dd4b71e9475274e3e8af5e48086244ce53e",
+          "previous_path": null,
+          "additions": 282,
+          "deletions": 0,
+          "changes": 282,
+          "evidence_like": false,
+          "branch_only_path": false
+        },
+        {
+          "path": "tools/materialize-lake-identifier-topology-wave-18.mjs",
+          "status": "added",
+          "blob_sha": "ad7e1b3f47d31c3a400b317ffc3faf11b799e204",
+          "previous_path": null,
+          "additions": 326,
+          "deletions": 0,
+          "changes": 326,
+          "evidence_like": false,
+          "branch_only_path": false
+        },
+        {
+          "path": "tools/reconcile-lake-identifier-topology-wave-18.mjs",
+          "status": "added",
+          "blob_sha": "be769194514c744497c69f75a9733b7d5188a4f9",
+          "previous_path": null,
+          "additions": 201,
+          "deletions": 0,
+          "changes": 201,
+          "evidence_like": false,
+          "branch_only_path": false
+        },
+        {
+          "path": "tools/stabilize-lake-index.mjs",
+          "status": "modified",
+          "blob_sha": "2a6d833a28fd21ee9d1b412ff1704e6498b04521",
+          "previous_path": null,
+          "additions": 56,
+          "deletions": 11,
+          "changes": 67,
+          "evidence_like": false,
+          "branch_only_path": false
+        },
+        {
+          "path": "tools/summarize-lake-identifier-topology-wave-18.mjs",
+          "status": "added",
+          "blob_sha": "21e1fa8386b87630900197863e80d481be66aabe",
+          "previous_path": null,
+          "additions": 188,
+          "deletions": 0,
+          "changes": 188,
+          "evidence_like": false,
+          "branch_only_path": false
+        },
+        {
+          "path": "tools/validate-lake-identifier-topology-wave-18.mjs",
+          "status": "added",
+          "blob_sha": "8eeccc30893c98153d71226ec331644a4e2bda86",
+          "previous_path": null,
+          "additions": 121,
+          "deletions": 0,
+          "changes": 121,
+          "evidence_like": false,
+          "branch_only_path": false
+        }
+      ]
     }
   ],
   "counts": {
-    "open_pull_requests": 27,
-    "changed_paths": 445,
-    "evidence_like_changed_paths": 256,
-    "branch_only_paths": 91,
-    "branch_only_evidence_paths": 37
+    "open_pull_requests": 28,
+    "changed_paths": 452,
+    "evidence_like_changed_paths": 260,
+    "branch_only_paths": 84,
+    "branch_only_evidence_paths": 34
   },
   "boundaries": {
     "open_pr_path_proves_merged_corpus": false,

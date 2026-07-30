@@ -214,3 +214,13 @@ custody, creates explicit index routes, and records how generated identifiers ar
 These repairs improve addressability; they do not establish evidence truth, historical
 completeness, remote source-byte custody, publication clearance, or a common-purpose
 conclusion.
+
+## Identifier topology
+
+Wave 18 makes the residual machine-identifier topology addressable without collapsing
+indexing, projection, identity, truth, or publication. Every frozen identifier receives a
+bounded index, source-only, and divergence disposition. Source-only controls, intake IDs,
+case-local IDs, and domain IDs do not acquire a public projection merely to lower a count.
+Typed cross-family views remain distinct, and same-family variants carry generator-contract
+repair actions. No topology decision creates a relationship, participation row, graph edge,
+or automatic cross-key join.

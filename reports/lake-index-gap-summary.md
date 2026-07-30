@@ -1,21 +1,21 @@
 # Lake index gap summary
 
-Source fingerprint: `8abacfca8edb31a588de86b5b54870813991b068a3370309dbfb554778263c0e`
+Source fingerprint: `678a9fe9552e21b480ed32e5501d3621a6ef6ecd7c5f87939685f9a1738de1d8`
 
 ## Finding
 
-The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1367 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
+The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1373 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
 
 ## By evidence role
 
 | Role | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
-| generated_artifact | 581 | 581 | 0 | 0 |
-| project_governance | 160 | 160 | 0 | 0 |
+| generated_artifact | 583 | 583 | 0 | 0 |
+| project_governance | 163 | 163 | 0 | 0 |
 | intake | 141 | 141 | 0 | 0 |
 | documentation | 123 | 123 | 0 | 0 |
 | repository_root | 109 | 109 | 0 | 0 |
-| report_product | 101 | 101 | 0 | 0 |
+| report_product | 102 | 102 | 0 | 0 |
 | research_record | 48 | 48 | 0 | 0 |
 | case_source | 43 | 43 | 0 | 0 |
 | receipt_artifact | 32 | 32 | 0 | 0 |
@@ -29,7 +29,7 @@ The current Git tree is physically censused, but the evidence lake is not semant
 |---|---:|---:|---:|---:|
 | build/estate-game-trails | 313 | 313 | 0 | 0 |
 | build/core-thesis | 184 | 184 | 0 | 0 |
-| data/project | 160 | 160 | 0 | 0 |
+| data/project | 163 | 163 | 0 | 0 |
 | data/intake | 141 | 141 | 0 | 0 |
 | reports/core-thesis | 96 | 96 | 0 | 0 |
 | docs/milestones | 65 | 65 | 0 | 0 |
@@ -38,8 +38,8 @@ The current Git tree is physically censused, but the evidence lake is not semant
 | data/estates | 43 | 43 | 0 | 0 |
 | cases/arcadia-field-autopsy | 21 | 21 | 0 | 0 |
 | receipts/crawl | 19 | 19 | 0 | 0 |
+| build/lake-actions | 17 | 17 | 0 | 0 |
 | build/estate-closures | 15 | 15 | 0 | 0 |
-| build/lake-actions | 15 | 15 | 0 | 0 |
 | data/canonical | 12 | 12 | 0 | 0 |
 | build/estate-frontier | 11 | 11 | 0 | 0 |
 
@@ -51,7 +51,7 @@ The current Git tree is physically censused, but the evidence lake is not semant
 parse errors:                   0
 undefined receipt references:   0
 projection IDs without source:  0
-missing repository path tokens: 169
+missing repository path tokens: 175
 ```
 
 ### P1 — exact orphan evidence
@@ -69,7 +69,7 @@ missing repository path tokens: 169
 ```text
 not reachable from any detected index: 0
 not reachable from authoritative roots: 0
-not reachable from public roots: 1123
+not reachable from public roots: 1129
 case IDs absent from public catalog: 26
 ```
 
@@ -79,15 +79,15 @@ case IDs absent from public catalog: 26
 |---|---:|
 | #386 Make evidence-grounded judgments without a human-permission gate | 18 |
 | #403 Measure the production cross-case identity denominator | 16 |
-| #450 Enforce status-aware publication allowlist and admit POOF as staged | 14 |
 | #404 Recover exact source-bound cross-case mention recurrence | 11 |
 | #362 Stage biological Omega control-surface research program | 9 |
 | #50 Stage synthetic-population research program | 8 |
+| #467 Encode the status-for-sovereignty compact and fan out its evidence program | 7 |
 | #380 Build root Evidence Desk publication estate from WebsiteIQ audit | 6 |
 | #378 Run WebsiteIQ baseline audit before website remediation | 4 |
 | #211 Map every case and report membership across the estates | 2 |
 | #379 Run corrected WebsiteIQ landing-path audit | 2 |
-| #458 Adjudicate the residual evidence-lake frontier | 1 |
+| #477 Adjudicate identifier topology after the residual lake repair | 1 |
 
 ### P5 — history and semantics
 
