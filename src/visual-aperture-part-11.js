@@ -1,14 +1,3 @@
-function clusterForLegacyNode(node) {
-  const text = [node?.id, node?.type, node?.description, ...(node?.tags ?? [])].join(' ').toLowerCase();
-  if (/dialog|forum|directory|roster|cohort/.test(text)) return 'forums';
-  if (/defen|military|army|palantir|security|procure/.test(text)) return 'defense';
-  if (/capital|fund|venture|invest|finance/.test(text)) return 'capital';
-  if (/government|policy|cabinet|minister|public-sector|uk-ai/.test(text)) return 'policy';
-  if (/campaign|election/.test(text)) return 'campaigns';
-  if (/company|technology|frontier-ai|data/.test(text)) return 'enterprise';
-  return 'other';
-}
-
 function findSurfaceForFocus(focusId) {
   const normalized = String(focusId || '').toLowerCase();
   const surfaces = [...state.surfaces.values()];
@@ -211,10 +200,6 @@ function focusExternal(id) {
         selectMapSurface(containing.surface_id);
         selectActor(id, 'map');
       }
-    } else {
-      const legacy = state.legacyNodes.get(id);
-      const clusterId = clusterForLegacyNode(legacy);
-      if (summarizeClusters(state.data.surfaceGraph).some(cluster => cluster.id === clusterId)) selectCluster(clusterId);
     }
   } finally {
     state.address.applying = false;
@@ -266,14 +251,13 @@ function bindEvents() {
 async function mount() {
   const root = document.getElementById(ROOT_ID);
   if (!root || root.dataset.apertureMounted === 'true') return;
-  const [_, surfaceGraph, hopGraph, receiptGraph, legacyGraph] = await Promise.all([
+  const [_, surfaceGraph, hopGraph, receiptGraph] = await Promise.all([
     waitForPublicApp(),
     readData('build/surface-graph.json'),
     readData('build/hop-graph.json'),
-    readData('build/receipt-graph.json').catch(() => ({ receipts: [] })),
-    readData('graph.json').catch(() => ({ nodes: [], edges: [] }))
+    readData('build/receipt-graph.json').catch(() => ({ receipts: [] }))
   ]);
-  state.data = { surfaceGraph, hopGraph, receiptGraph, legacyGraph };
+  state.data = { surfaceGraph, hopGraph, receiptGraph };
   state.root = root;
   initializeIndexes();
   initializeSelections();
