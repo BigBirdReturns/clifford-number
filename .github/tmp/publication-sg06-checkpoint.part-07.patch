@@ -1,0 +1,169 @@
+eld_surfaces} held surfaces, POOF staged, adoption ${snapshot.sprint_09.maximum_verified_adoption_level}`);
++  return { checkpoint, pointer, manifest, report, publication };
++}
++
++const invoked = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
++if (invoked) buildStableGroundSG06();
+diff --git a/tools/validate-project-stable-ground-sg06.mjs b/tools/validate-project-stable-ground-sg06.mjs
+new file mode 100755
+index 0000000..5a0ba7f
+--- /dev/null
++++ b/tools/validate-project-stable-ground-sg06.mjs
+@@ -0,0 +1,230 @@
++#!/usr/bin/env node
++import crypto from 'node:crypto';
++import fs from 'node:fs';
++import path from 'node:path';
++import { spawnSync } from 'node:child_process';
++import { fileURLToPath } from 'node:url';
++import { validatePublicationPlan } from './lib/publication-manifest.mjs';
++import { computeSg06Manifest } from './build-project-stable-ground-sg06.mjs';
++
++const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
++const read = (rel) => JSON.parse(fs.readFileSync(path.join(root, rel), 'utf8'));
++const readBytes = (rel) => fs.readFileSync(path.join(root, rel));
++const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
++const hex40 = /^[0-9a-f]{40}$/;
++const hex64 = /^[0-9a-f]{64}$/;
++const zero40 = '0'.repeat(40);
++
++function ensureCommit(sha, label) {
++  if (!hex40.test(sha || '') || sha === zero40) return [`${label} is not a materialized full commit SHA`];
++  const present = spawnSync('git', ['cat-file', '-e', `${sha}^{commit}`], { cwd: root, encoding: 'utf8' });
++  if (present.status === 0) return [];
++  const fetched = spawnSync('git', ['fetch', '--no-tags', '--depth=1', 'origin', sha], { cwd: root, encoding: 'utf8' });
++  if (fetched.status !== 0) return [`${label} cannot be acquired: ${fetched.stderr || fetched.stdout}`];
++  const retry = spawnSync('git', ['cat-file', '-e', `${sha}^{commit}`], { cwd: root, encoding: 'utf8' });
++  return retry.status === 0 ? [] : [`${label} is unavailable after bounded acquisition`];
++}
++
++function defaultTransitionVerifier(checkpoint) {
++  const errors = [];
++  const { transition_commit: transition, transition_base: base, transition_paths: declared } = checkpoint.trigger;
++  errors.push(...ensureCommit(base, 'SG-06 transition base'));
++  errors.push(...ensureCommit(transition, 'SG-06 transition commit'));
++  if (errors.length) return errors;
++  const ancestry = spawnSync('git', ['merge-base', '--is-ancestor', base, transition], { cwd: root, encoding: 'utf8' });
++  if (ancestry.status !== 0) errors.push('SG-06 transition commit is not descended from its declared base');
++  const changed = spawnSync('git', ['diff', '--name-only', base, transition], { cwd: root, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
++  if (changed.status !== 0) errors.push('SG-06 transition path denominator cannot be recovered');
++  else {
++    const observed = changed.stdout.trim().split('\n').filter(Boolean).sort();
++    const expected = [...declared].sort();
++    if (JSON.stringify(observed) !== JSON.stringify(expected)) errors.push(`SG-06 transition path denominator drift: ${JSON.stringify(observed)}`);
++    if (sha256(`${declared.join('\n')}\n`) !== checkpoint.trigger.transition_paths_sha256) errors.push('SG-06 transition path digest drift');
++  }
++  const show = (rel) => spawnSync('git', ['show', `${transition}:${rel}`], { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
++  const planResult = show('data/project/publication-plan.json');
++  if (planResult.status !== 0) errors.push('SG-06 transition cannot recover publication plan');
++  else {
++    try {
++      const plan = JSON.parse(planResult.stdout);
++      if (plan.default_decision !== 'exclude' || plan.status !== 'active_status_aware_positive_allowlist' || plan.boundaries?.graph_effect !== 'none') errors.push('SG-06 transition publication plan drift');
++      const held = new Set((plan.held_surfaces || []).map((row) => row.path.replace(/\/$/, '')));
++      for (const required of ['graph.json','legacy','reports/core-thesis/poof-clifford-ecology','build/core-thesis/status-sovereignty','reports/core-thesis/status-sovereignty']) {
++        if (!held.has(required)) errors.push(`SG-06 transition missing held surface ${required}`);
++      }
++    } catch { errors.push('SG-06 transition publication plan is not valid JSON'); }
++  }
++  const appResult = show('app.js');
++  if (appResult.status !== 0) errors.push('SG-06 transition cannot recover public app');
++  else if (appResult.stdout.includes("loadJson('graph.json')") || appResult.stdout.includes('researchNetworkModel')) errors.push('SG-06 transition retains generic graph runtime');
++  return errors;
++}
++
++function defaultHistoricalVerifier(row) {
++  const errors = [];
++  if (!hex40.test(row?.merge_commit || '')) return ['historical SG-05 merge receipt is not a full commit SHA'];
++  errors.push(...ensureCommit(row.merge_commit, 'historical SG-05 merge receipt'));
++  if (errors.length) return errors;
++  for (const rel of [
++    'data/project/project-stable-ground-sg05.json',
++    'data/project/project-stable-ground-sg05-release-manifest.json',
++    'reports/core-thesis/stable-ground/sg05/checkpoint.json',
++    'reports/core-thesis/stable-ground/sg05/index.html'
++  ]) {
++    const committed = spawnSync('git', ['show', `${row.merge_commit}:${rel}`], { cwd: root, encoding: null, maxBuffer: 32 * 1024 * 1024 });
++    if (committed.status !== 0) errors.push(`historical SG-05 merge receipt cannot recover ${rel}`);
++    else if (!committed.stdout.equals(readBytes(rel))) errors.push(`historical SG-05 bytes drifted from merge receipt: ${rel}`);
++  }
++  return errors;
++}
++
++function currentPublicationManifest() {
++  return read('dist/publication-manifest.json');
++}
++
++export function loadSg06Context({ transitionVerifier = defaultTransitionVerifier, historicalVerifier = defaultHistoricalVerifier } = {}) {
++  return {
++    checkpoint: read('data/project/project-stable-ground-sg06.json'),
++    pointer: read('data/project/project-stable-ground-current.json'),
++    governor: read('data/project/project-stable-ground-governor.json'),
++    sg05: read('data/project/project-stable-ground-sg05.json'),
++    publicationPlan: read('data/project/publication-plan.json'),
++    publicationManifest: currentPublicationManifest(),
++    poofLog: read('data/project/poof-clifford-constitutional-change-log.json'),
++    poofAperture: read('data/project/poof-clifford-aperture.json'),
++    poofContract: read('data/project/poof-clifford-ecology-contract.json'),
++    poofRelease: read('data/project/poof-clifford-ecology-release-manifest.json'),
++    status: read('data/project/status-sovereignty-compact.json'),
++    k0: read('data/research/k0-role-neutral-denominator.json'),
++    denominator: read('data/project/dca-h01-role-neutral-denominator.json'),
++    sprint09: read('data/project/m05-answerable-power-sprint-09-plan.json'),
++    manifest: read('data/project/project-stable-ground-sg06-release-manifest.json'),
++    report: read('reports/core-thesis/stable-ground/sg06/checkpoint.json'),
++    transitionVerifier,
++    historicalVerifier
++  };
++}
++
++export function validateSg06(context = loadSg06Context()) {
++  const errors = [];
++  const equal = (actual, expected, message) => { if (actual !== expected) errors.push(`${message}: expected ${JSON.stringify(expected)}, observed ${JSON.stringify(actual)}`); };
++  const check = (condition, message) => { if (!condition) errors.push(message); };
++  const { checkpoint, pointer, governor, sg05, publicationPlan, publicationManifest, poofLog, poofAperture, poofContract, poofRelease, status, k0, denominator, sprint09, manifest, report, transitionVerifier, historicalVerifier } = context;
++  const snapshot = checkpoint.canonical_snapshot;
++  const publication = snapshot.publication_safety;
++  const expectedHistory = ['SG-2026-07-29-01','SG-2026-07-29-02','SG-2026-07-29-03','SG-2026-07-29-04','SG-2026-07-30-05','SG-2026-07-30-06'];
++
++  equal(checkpoint.schema_version, 'project-stable-ground-supersession@1', 'SG-06 schema');
++  equal(checkpoint.checkpoint_id, 'SG-2026-07-30-06', 'SG-06 checkpoint identity');
++  equal(checkpoint.governor, 'data/project/project-stable-ground-governor.json', 'SG-06 governor');
++  equal(checkpoint.supersedes.checkpoint_id, 'SG-2026-07-30-05', 'SG-06 predecessor');
++  equal(checkpoint.supersedes.source_path, 'data/project/project-stable-ground-sg05.json', 'SG-06 predecessor path');
++  equal(checkpoint.supersedes.merge_commit, 'cada5ce40087305196a53a9ecc32a707cff28e52', 'SG-05 final custody receipt');
++  equal(checkpoint.supersedes.preserved_unchanged, true, 'SG-05 preservation');
++  equal(sg05.checkpoint_id, checkpoint.supersedes.checkpoint_id, 'SG-05 source identity');
++  equal(checkpoint.preserved_history.length, 5, 'SG-06 preserved-history count');
++  equal(JSON.stringify(checkpoint.preserved_history.map((row) => row.checkpoint_id)), JSON.stringify(expectedHistory.slice(0,5)), 'SG-06 preserved-history order');
++  check(checkpoint.preserved_history.every((row) => row.status === 'superseded_preserved'), 'SG-06 predecessor status drift');
++
++  equal(checkpoint.trigger.type, 'canonical_status_aware_publication_safety', 'SG-06 trigger type');
++  equal(checkpoint.trigger.issue, 463, 'SG-06 trigger issue');
++  equal(checkpoint.trigger.pull_request, 478, 'SG-06 trigger PR');
++  check(hex40.test(checkpoint.trigger.transition_base), 'SG-06 transition base format');
++  check(hex40.test(checkpoint.trigger.transition_commit), 'SG-06 transition commit format');
++  check(checkpoint.trigger.transition_paths.length === 22, 'SG-06 transition path denominator missing');
++  equal(sha256(`${checkpoint.trigger.transition_paths.join('\n')}\n`), checkpoint.trigger.transition_paths_sha256, 'SG-06 transition path digest');
++  equal(checkpoint.canonical_main.commit, checkpoint.trigger.transition_commit, 'SG-06 canonical main receipt');
++  equal(checkpoint.authority_change.publication_manifest_sha256, checkpoint.trigger.publication_manifest_sha256, 'SG-06 authority publication digest');
++
++  equal(governor.history_law.append_only, true, 'governor append-only law');
++  equal(governor.history_law.historical_data_and_reports_rewritten, false, 'governor historical rewrite law');
++  check(governor.trigger_classes.some((row) => row.includes('status-aware publication')), 'governor missing publication trigger class');
++  equal(pointer.schema_version, 'project-stable-ground-current@1', 'pointer schema');
++  equal(JSON.stringify(pointer.history.map((row) => row.checkpoint_id)), JSON.stringify(expectedHistory), 'pointer history order');
++  equal(new Set(pointer.history.map((row) => row.checkpoint_id)).size, pointer.history.length, 'pointer checkpoint uniqueness');
++  equal(pointer.history.filter((row) => row.status === 'current').length, 1, 'pointer current-state denominator');
++  equal(pointer.current_checkpoint_id, checkpoint.checkpoint_id, 'pointer current checkpoint');
++  equal(pointer.current_checkpoint_path, 'data/project/project-stable-ground-sg06.json', 'pointer current path');
++  equal(pointer.current_canonical_main_commit, checkpoint.trigger.transition_commit, 'pointer current commit');
++  equal(pointer.history.find((row) => row.checkpoint_id === 'SG-2026-07-30-05')?.status, 'superseded_preserved', 'historical SG-05 pointer status');
++  equal(pointer.history.find((row) => row.checkpoint_id === 'SG-2026-07-30-05')?.merge_commit, checkpoint.supersedes.merge_commit, 'historical SG-05 pointer receipt');
++
++  const planValidation = validatePublicationPlan(publicationPlan, { root });
++  check(planValidation.ok, `live publication plan invalid: ${planValidation.failures.join('; ')}`);
++  equal(publicationPlan.default_decision, 'exclude', 'live publication default decision');
++  equal(publicationPlan.entries.length, 100, 'live publication entry count');
++  equal(publicationPlan.allowed_dependency_prefixes.length, 20, 'live publication dependency count');
++  equal(pub
