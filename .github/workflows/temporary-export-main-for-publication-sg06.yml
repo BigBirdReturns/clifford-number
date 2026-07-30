@@ -1,0 +1,35 @@
+name: Temporary export current main for publication SG-06
+
+on:
+  push:
+    branches:
+      - agent/publication-safety-sg06-exact-export
+    paths:
+      - '.github/workflows/temporary-export-main-for-publication-sg06.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Archive exact canonical main
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          mkdir -p /tmp/publication-sg06-input
+          main_sha="$(git rev-parse origin/main)"
+          git archive --format=tar.gz --output=/tmp/publication-sg06-input/main.tar.gz "$main_sha"
+          printf '%s\n' "$main_sha" > /tmp/publication-sg06-input/main.txt
+          sha256sum /tmp/publication-sg06-input/main.tar.gz > /tmp/publication-sg06-input/main.tar.gz.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: publication-sg06-main-${{ github.run_id }}
+          path: /tmp/publication-sg06-input/
+          if-no-files-found: error
+          retention-days: 3
