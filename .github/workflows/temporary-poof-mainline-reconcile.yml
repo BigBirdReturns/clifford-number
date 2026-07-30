@@ -19,23 +19,38 @@ jobs:
         with:
           ref: agent/poof-clifford-ecology
           fetch-depth: 0
-      - name: Probe merge against canonical main
+      - name: Capture exact branch and mainline inputs
         shell: bash
         run: |
           set -euo pipefail
           git fetch origin main
+          mkdir -p /tmp/poof-reconcile-inputs
+          git archive --format=tar.gz --output=/tmp/poof-reconcile-inputs/poof-head.tar.gz HEAD
+          git archive --format=tar.gz --output=/tmp/poof-reconcile-inputs/main.tar.gz origin/main
+          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/poof-reconcile-inputs/poof-head.sha
+          printf '%s\n' "$(git rev-parse origin/main)" > /tmp/poof-reconcile-inputs/main.sha
+      - name: Probe merge against canonical main
+        id: merge_probe
+        shell: bash
+        run: |
+          set -uo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          set +e
           git merge --no-commit --no-ff origin/main
           merge_status=$?
-          set -e
-          echo "merge_status=${merge_status}"
-          echo '--- unresolved paths ---'
-          git diff --name-status --diff-filter=U || true
-          echo '--- all merge-state paths ---'
-          git status --short
-          if [ "$merge_status" -ne 0 ]; then
-            exit "$merge_status"
-          fi
-          git merge --abort
+          {
+            echo "merge_status=${merge_status}"
+            echo '--- unresolved paths ---'
+            git diff --name-status --diff-filter=U || true
+            echo '--- all merge-state paths ---'
+            git status --short
+          } | tee /tmp/poof-reconcile-inputs/merge-probe.txt
+          exit "$merge_status"
+      - name: Upload exact reconciliation inputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: poof-mainline-reconcile-inputs
+          path: /tmp/poof-reconcile-inputs/
+          if-no-files-found: error
+          retention-days: 3
