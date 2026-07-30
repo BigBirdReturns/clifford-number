@@ -4,12 +4,12 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - '.github/tmp/stable-ground-package.b64'
+      - '.github/tmp/stable-ground-part-*.b64'
       - '.github/workflows/temporary-materialize-stable-ground-alignment.yml'
   push:
     branches: [agent/project-stable-ground-alignment]
     paths:
-      - '.github/tmp/stable-ground-package.b64'
+      - '.github/tmp/stable-ground-part-*.b64'
       - '.github/workflows/temporary-materialize-stable-ground-alignment.yml'
   workflow_dispatch:
 
@@ -31,13 +31,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Expand exact stable-ground package
+      - name: Reconstruct and expand exact stable-ground package
         run: |
           set -euo pipefail
-          base64 -d .github/tmp/stable-ground-package.b64 > /tmp/stable-ground.tgz
-          actual_archive_sha="$(sha256sum /tmp/stable-ground.tgz | awk '{print $1}')"
-          echo "decoded archive SHA-256: ${actual_archive_sha}"
-          test "${actual_archive_sha}" = "7edb17fd691aff7a933b1ebd6dea27d735e2c990b0714b4b475da701a71f5e56"
+          test "$(sha256sum .github/tmp/stable-ground-part-00.b64 | awk '{print $1}')" = "bf0c67f76b4de9c000d66b984ab947709c31614f9f802cadaf7619f39110814e"
+          test "$(sha256sum .github/tmp/stable-ground-part-01.b64 | awk '{print $1}')" = "ea73582763a6e06cffb76e9e8a34771c51f32f35edcde26109ffd039a4df6f8c"
+          test "$(sha256sum .github/tmp/stable-ground-part-02.b64 | awk '{print $1}')" = "2da16cb95d19a9d8063e72c96d71d0106c5140b47529f837f7876c44f37524c6"
+          test "$(sha256sum .github/tmp/stable-ground-part-03.b64 | awk '{print $1}')" = "a2f2d9cc5180e2edcab3d3d500724531f25df1cd6e6f45c91cec7331fafa45bf"
+          test "$(sha256sum .github/tmp/stable-ground-part-04.b64 | awk '{print $1}')" = "9faa0fad8e6160e4a0b46b528be4cb81891240083bcd543cda85ac5ff4256e85"
+          test "$(sha256sum .github/tmp/stable-ground-part-05.b64 | awk '{print $1}')" = "34f1a0e3bf22dd46cc8c327ca90d536537b4584139457e36b3bed49c3d429b12"
+          test "$(sha256sum .github/tmp/stable-ground-part-06.b64 | awk '{print $1}')" = "b018059a09feec5a8656f977a682cb1e3941a9458d412717b69e3f7fa74bc8e1"
+          test "$(sha256sum .github/tmp/stable-ground-part-07.b64 | awk '{print $1}')" = "a47663aa3b1595e7f08ac09445860145adf3f9b3cb2881973b0eea86f1428119"
+          test "$(sha256sum .github/tmp/stable-ground-part-08.b64 | awk '{print $1}')" = "eb42df779aaf35fff5c41b18308b39f8961517b992c023e96b7ee05da50d7f55"
+          cat .github/tmp/stable-ground-part-*.b64 > /tmp/stable-ground.b64
+          test "$(sha256sum /tmp/stable-ground.b64 | awk '{print $1}')" = "0f05f7de12e2ed3edf0335609e0b73912af2be498e874ea6f230d2618cb27299"
+          base64 -d /tmp/stable-ground.b64 > /tmp/stable-ground.tgz
+          test "$(sha256sum /tmp/stable-ground.tgz | awk '{print $1}')" = "7edb17fd691aff7a933b1ebd6dea27d735e2c990b0714b4b475da701a71f5e56"
           cat > /tmp/expected-paths.txt <<'EOF'
           .github/workflows/project-stable-ground-alignment.yml
           data/project/project-stable-ground-alignment-release-manifest.json
@@ -53,7 +62,6 @@ jobs:
           sort -o /tmp/expected-paths.txt /tmp/expected-paths.txt
           diff -u /tmp/expected-paths.txt /tmp/archive-paths.txt
           while IFS= read -r path; do
-            echo "extracting ${path}"
             mkdir -p "$(dirname "$path")"
             tar -xOf /tmp/stable-ground.tgz "$path" > "$path"
           done < /tmp/expected-paths.txt
