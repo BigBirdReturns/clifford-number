@@ -1,0 +1,47 @@
+{
+  "schema_version": "lake-residual-frontier-wave-17-policy@1",
+  "program_id": "CN-LAKE-RESIDUAL-FRONTIER-W17",
+  "as_of": "2026-07-29",
+  "purpose": "Freeze and adjudicate the current residual evidence-lake frontier without collapsing ownership, reachability, orphan status, and projection lineage into one completeness score. Every row receives an evidence-grounded bounded owner, a typed custody-only disposition, or a typed refusal with a named correction route. Missing a reviewer is not a blocker.",
+  "baseline": {
+    "wave_16_clean_head": "d5f74134d4b8abc071f06e5b8797988e70525b61",
+    "lake_source_fingerprint_sha256": "2acd11b4019aab774b7b9b302421ce383f6c0911253129b8f482c849559b7c12",
+    "tracked_files_indexed": 2047,
+    "evidence_bearing_files": 1360,
+    "exact_orphan_evidence_files": 106,
+    "evidence_paths_without_program_owner": 601,
+    "evidence_paths_not_index_reachable": 146,
+    "projection_ids_without_source": 2000
+  },
+  "paths": {
+    "preflight": "build/lake-actions/residual-frontier-wave-17-preflight.json",
+    "preflight_report": "reports/lake-residual-frontier-wave-17-preflight.md",
+    "path_registry": "data/project/lake-residual-path-registry-wave-17.jsonl",
+    "projection_registry": "data/project/lake-projection-lineage-registry-wave-17.jsonl",
+    "projection": "build/lake-actions/residual-frontier-wave-17.json",
+    "receipt": "data/project/lake-residual-frontier-wave-17.json",
+    "reconciliation": "build/lake-actions/residual-frontier-wave-17-reconciliation.json",
+    "report": "reports/lake-residual-frontier-wave-17.md"
+  },
+  "decision_law": {
+    "review_required_to_decide": false,
+    "missing_reviewer_blocks_reversible_execution": false,
+    "ownership_must_be_bounded_to_repository_custody_or_semantic_program": true,
+    "index_reachability_must_not_be_described_as_evidence_truth": true,
+    "projection_lineage_registry_is_repository_provenance_not_external_source_evidence": true,
+    "source_bytes_must_not_be_invented": true,
+    "typed_refusal_is_allowed_when_no_semantic_owner_or derivation_can_be justified": true,
+    "correction_mode": "append_preserving_supersession"
+  },
+  "boundaries": {
+    "current_tree_semantically_complete": false,
+    "historical_git_complete": false,
+    "remote_source_bytes_complete": false,
+    "source_truth_determined": false,
+    "publication_cleared": false,
+    "common_purpose_conclusion_generated": false,
+    "relationship_created": false,
+    "participation_created": false,
+    "graph_effect": "none"
+  }
+}
