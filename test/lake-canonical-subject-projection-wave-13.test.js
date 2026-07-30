@@ -33,12 +33,14 @@ const catalog = readJson('build/public-catalog.json');
 const surfaceGraph = readJson('build/surface-graph.json');
 const briefingIndex = readJson('build/briefings/index.json');
 const hopGraphText = fs.readFileSync('build/hop-graph.json', 'utf8');
+const wave16Active = fs.existsSync('data/project/lake-local-canonical-resolution-registry-wave-16.jsonl');
 
 assert.equal(projection.schema_version, 'canonical-subject-projection-wave-13@1');
 assert.equal(plan.schema_version, 'canonical-subject-projection-wave-13-plan@1');
-assert.equal(projection.counts.resolution_rows, 12);
-assert.equal(projection.resolutions.length, 12);
-assert.equal(projection.counts.searchable_resolution_rows, 12);
+assert.equal(projection.counts.resolution_rows, policy.expected.current_resolution_rows);
+assert.equal(projection.resolutions.length, policy.expected.current_resolution_rows);
+assert.equal(projection.counts.resolution_registry_files, policy.expected.current_resolution_registry_files);
+assert.equal(projection.counts.searchable_resolution_rows, policy.expected.current_resolution_rows);
 assert.equal(projection.counts.source_subject_id_changes, 0);
 assert.equal(projection.counts.source_claim_text_changes, 0);
 assert.equal(projection.completion.every_current_resolution_projected_into_compiled_cases, true);
@@ -78,6 +80,17 @@ assertResolved('arcadia-field-autopsy', 'clm-monrovia', 'org-tcr', 'trammell-cro
 assertResolved('uk-ai-policy', 'clm-e-adl-umbrella-u13-umbrella-membership', 'adl', 'anti-defamation-league', 'organization');
 assertResolved('uk-ai-policy', 'clm-e-safegraph-hoffman', 'safegraph', 'safegraph', 'organization');
 assertResolved('field-autopsy-03', 'clm-fit-data-blanket', 'org-data-blanket', 'data-blanket', 'organization');
+
+if (wave16Active) {
+  assertResolved('anduril-access-ownership', 'clm-axis-working-proposition', 'anduril-industries', 'anduril', 'organization');
+  assertResolved('arcadia-field-autopsy', 'clm-anita-inheritance', 'p-anita-baldwin', 'anita-baldwin', 'actor');
+  assertResolved('uk-ai-policy', 'clm-e-no10-starmer-layer', 'no10', 'no-10', 'organization');
+  assertResolved('uk-ai-policy', 'clm-e-code-first-mc', 'code-first-girls', 'code-first-girls', 'organization');
+  assert.equal(projection.counts.resolution_rows, 29);
+  assert.equal(projection.counts.resolution_registry_files, 2);
+  assert.equal(projection.counts.resolved_case_claim_subject_references, 272);
+  assert.equal(projection.counts.unresolved_case_claim_subject_references, 64);
+}
 
 const unresolved = claim('field-autopsy-03', 'clm-submissions-133');
 assert.equal(unresolved.subject_identity.resolution_status, 'local_only_unresolved');
@@ -124,4 +137,4 @@ for (const row of projection.resolutions) {
   assert.equal(row.graph_effect, 'none');
 }
 
-console.log(`lake-canonical-subject-projection-wave-13.test: OK (${projection.counts.resolution_rows} resolutions; ${projection.counts.resolved_case_claim_subject_references} resolved and ${projection.counts.unresolved_case_claim_subject_references} unresolved subject references; graph effect none)`);
+console.log(`lake-canonical-subject-projection-wave-13.test: OK (${projection.counts.resolution_rows} resolutions; ${projection.counts.resolved_case_claim_subject_references} resolved and ${projection.counts.unresolved_case_claim_subject_references} unresolved identity references; graph effect none)`);
