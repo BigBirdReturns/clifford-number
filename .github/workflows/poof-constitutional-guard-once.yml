@@ -1,0 +1,46 @@
+name: Apply POOF constitutional diff guard once
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.poof-constitutional-guard-launch'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'agent/poof-clifford-ecology'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/poof-clifford-ecology
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Apply constitutional diff guard
+        run: |
+          python3 -m py_compile .github/scripts/apply-poof-constitutional-guard.py
+          python3 .github/scripts/apply-poof-constitutional-guard.py
+      - name: Prove constitutional custody and focused ecology
+        run: |
+          node tools/validate-poof-constitutional-change.mjs origin/main
+          node test/poof-constitutional-change.test.js
+          npm run ci:poof-ecology
+          git diff --check
+      - name: Remove one-shot machinery
+        run: |
+          rm -f .poof-constitutional-guard-launch
+          rm -f .github/scripts/apply-poof-constitutional-guard.py
+          rm -f .github/workflows/poof-constitutional-guard-once.yml
+      - name: Commit guarded constitution and regenerated release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Enforce append-only POOF constitutional change custody"
+          git push origin HEAD:agent/poof-clifford-ecology
