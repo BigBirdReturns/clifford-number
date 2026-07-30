@@ -12,6 +12,7 @@ const readBytes = (rel) => fs.readFileSync(path.join(root, rel));
 const hex40 = /^[0-9a-f]{40}$/;
 const hex64 = /^[0-9a-f]{64}$/;
 const zero40 = '0'.repeat(40);
+const sg05MergeCommit = 'cada5ce40087305196a53a9ecc32a707cff28e52';
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 
 function ensureCommit(sha, label) {
@@ -102,7 +103,7 @@ function defaultHistoricalVerifier(row) {
   return errors;
 }
 
-export function loadSg05Context({ transitionVerifier = defaultTransitionVerifier, historicalVerifier = defaultHistoricalVerifier } = {}) {
+export function loadSg05Context({ transitionVerifier = defaultTransitionVerifier, historicalVerifier = defaultHistoricalVerifier, manifestComputer = computeSg05Manifest } = {}) {
   return {
     checkpoint: read('data/project/project-stable-ground-sg05.json'),
     pointer: read('data/project/project-stable-ground-current.json'),
@@ -125,7 +126,8 @@ export function loadSg05Context({ transitionVerifier = defaultTransitionVerifier
     manifest: read('data/project/project-stable-ground-sg05-release-manifest.json'),
     report: read('reports/core-thesis/stable-ground/sg05/checkpoint.json'),
     transitionVerifier,
-    historicalVerifier
+    historicalVerifier,
+    manifestComputer
   };
 }
 
@@ -136,7 +138,7 @@ export function validateSg05(context = loadSg05Context()) {
   const {
     checkpoint, pointer, governor, sg04, status, fanout, sources, statusRelease, core, k0,
     denominator, dca, stories, m05Fanout, organism, poofAperture, poofRelease, sprint09,
-    manifest, report, transitionVerifier, historicalVerifier
+    manifest, report, transitionVerifier, historicalVerifier, manifestComputer
   } = context;
   const snapshot = checkpoint.canonical_snapshot;
 
@@ -182,13 +184,22 @@ export function validateSg05(context = loadSg05Context()) {
   equal(governor.history_law.historical_release_manifests_recomputed, false, 'governor no-recompute law');
   check(governor.trigger_classes.some((row) => row.includes('status-for-sovereignty')), 'governor missing SSC trigger class');
 
-  const expectedHistory = ['SG-2026-07-29-01','SG-2026-07-29-02','SG-2026-07-29-03','SG-2026-07-29-04','SG-2026-07-30-05'];
+  const expectedHistoryPrefix = ['SG-2026-07-29-01','SG-2026-07-29-02','SG-2026-07-29-03','SG-2026-07-29-04','SG-2026-07-30-05'];
+  const history = pointer.history ?? [];
+  const historyIds = history.map((row) => row.checkpoint_id);
   equal(pointer.schema_version, 'project-stable-ground-current@1', 'pointer schema');
-  equal(JSON.stringify(pointer.history.map((row) => row.checkpoint_id)), JSON.stringify(expectedHistory), 'pointer history order');
-  equal(new Set(pointer.history.map((row) => row.checkpoint_id)).size, pointer.history.length, 'pointer checkpoint uniqueness');
-  equal(pointer.history.filter((row) => row.status === 'current').length, 1, 'pointer current-state denominator');
-  equal(pointer.current_checkpoint_path, 'data/project/project-stable-ground-sg05.json', 'pointer current path');
-  equal(pointer.current_canonical_main_commit, checkpoint.trigger.transition_commit, 'pointer current commit');
+  check(historyIds.length >= expectedHistoryPrefix.length, 'pointer history does not extend through SG-05');
+  equal(JSON.stringify(historyIds.slice(0, expectedHistoryPrefix.length)), JSON.stringify(expectedHistoryPrefix), 'pointer history prefix');
+  equal(new Set(historyIds).size, historyIds.length, 'pointer checkpoint uniqueness');
+  equal(history.filter((row) => row.status === 'current').length, 1, 'pointer current-state denominator');
+  const currentRow = history.at(-1);
+  equal(currentRow?.checkpoint_id, pointer.current_checkpoint_id, 'pointer current checkpoint row');
+  equal(currentRow?.status, 'current', 'pointer current row status');
+  equal(currentRow?.path, pointer.current_checkpoint_path, 'pointer current path');
+  equal(currentRow?.trigger_commit, pointer.current_canonical_main_commit, 'pointer current commit');
+  const historyRow = history.find((row) => row.checkpoint_id === checkpoint.checkpoint_id);
+  check(Boolean(historyRow), 'historical pointer row missing for SG-05');
+  equal(historyRow?.path, 'data/project/project-stable-ground-sg05.json', 'SG-05 pointer path');
 
   equal(snapshot.status_sovereignty.hypothesis_id, 'SSC-H01', 'frozen SSC identity');
   equal(snapshot.status_sovereignty.authority_tier, 'AT-2', 'frozen SSC authority tier');
@@ -239,6 +250,10 @@ export function validateSg05(context = loadSg05Context()) {
 
   const isCurrent = pointer.current_checkpoint_id === checkpoint.checkpoint_id;
   if (isCurrent) {
+    equal(historyIds.length, expectedHistoryPrefix.length, 'current SG-05 history length');
+    equal(historyRow?.status, 'current', 'current SG-05 pointer status');
+    equal(pointer.current_checkpoint_path, 'data/project/project-stable-ground-sg05.json', 'current SG-05 pointer path');
+    equal(pointer.current_canonical_main_commit, checkpoint.trigger.transition_commit, 'current SG-05 pointer commit');
     for (const error of transitionVerifier(checkpoint)) errors.push(error);
     equal(status.hypothesis_id, 'SSC-H01', 'live SSC identity');
     equal(status.status, snapshot.status_sovereignty.status, 'live SSC status');
@@ -273,7 +288,7 @@ export function validateSg05(context = loadSg05Context()) {
 
     equal(manifest.schema_version, 'project-stable-ground-sg05-release-manifest@1', 'SG-05 manifest schema');
     equal(manifest.checkpoint_id, checkpoint.checkpoint_id, 'SG-05 manifest identity');
-    equal(JSON.stringify(manifest), JSON.stringify(computeSg05Manifest()), 'current SG-05 exact-byte manifest');
+    equal(JSON.stringify(manifest), JSON.stringify(manifestComputer()), 'current SG-05 exact-byte manifest');
     equal(report.schema_version, 'project-stable-ground-sg05-report@1', 'SG-05 report schema');
     equal(report.checkpoint_id, checkpoint.checkpoint_id, 'SG-05 report identity');
     equal(report.canonical_main.commit, checkpoint.trigger.transition_commit, 'SG-05 report transition');
@@ -287,11 +302,10 @@ export function validateSg05(context = loadSg05Context()) {
     equal(report.poof_release.combined_sha256, poofRelease.combined_sha256, 'SG-05 report POOF digest');
     equal(report.release_manifest.combined_sha256, manifest.combined_sha256, 'SG-05 report release digest');
   } else {
-    const row = pointer.history.find((item) => item.checkpoint_id === checkpoint.checkpoint_id);
-    check(Boolean(row), 'historical pointer row missing for SG-05');
-    equal(row?.path, 'data/project/project-stable-ground-sg05.json', 'historical SG-05 pointer path');
-    equal(row?.status, 'superseded_preserved', 'historical SG-05 pointer status');
-    if (row) for (const error of historicalVerifier(row)) errors.push(error);
+    check(historyIds.indexOf(checkpoint.checkpoint_id) >= 0 && historyIds.indexOf(checkpoint.checkpoint_id) < historyIds.length - 1, 'SG-05 has no append-only successor');
+    equal(historyRow?.status, 'superseded_preserved', 'historical SG-05 pointer status');
+    equal(historyRow?.merge_commit, sg05MergeCommit, 'historical SG-05 merge receipt');
+    if (historyRow) for (const error of historicalVerifier(historyRow)) errors.push(error);
   }
   return errors;
 }

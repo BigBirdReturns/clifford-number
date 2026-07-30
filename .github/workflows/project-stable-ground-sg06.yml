@@ -1,0 +1,123 @@
+name: Project stable-ground supersession 06
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/project-stable-ground-governor.json'
+      - 'data/project/project-stable-ground-current.json'
+      - 'data/project/project-stable-ground-sg06*.json'
+      - 'data/project/publication-plan.json'
+      - 'docs/methods/status-aware-publication-allowlist.md'
+      - 'docs/milestones/project-stable-ground-sg06.md'
+      - 'reports/core-thesis/stable-ground/sg06/**'
+      - 'tools/lib/publication-manifest.mjs'
+      - 'tools/build-pages.mjs'
+      - 'tools/build-standalone.mjs'
+      - 'tools/validate-pages.mjs'
+      - 'tools/validate-publication-plan.mjs'
+      - 'tools/build-project-stable-ground-sg06.mjs'
+      - 'tools/validate-project-stable-ground-sg04.mjs'
+      - 'tools/validate-project-stable-ground-sg05.mjs'
+      - 'tools/validate-project-stable-ground-sg06.mjs'
+      - 'test/project-stable-ground-sg05.test.js'
+      - 'test/publication-*.test.js'
+      - 'test/project-stable-ground-sg06.test.js'
+      - 'test/status-sovereignty-compact.test.js'
+      - 'app.js'
+      - 'src/visual-aperture-part-2.js'
+      - 'src/visual-aperture-part-11.js'
+      - 'index.html'
+      - 'package.json'
+      - '.github/workflows/publication-integrity.yml'
+      - '.github/workflows/project-stable-ground-sg06.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/project-stable-ground-governor.json'
+      - 'data/project/project-stable-ground-current.json'
+      - 'data/project/project-stable-ground-sg06*.json'
+      - 'data/project/publication-plan.json'
+      - 'docs/methods/status-aware-publication-allowlist.md'
+      - 'docs/milestones/project-stable-ground-sg06.md'
+      - 'reports/core-thesis/stable-ground/sg06/**'
+      - 'tools/lib/publication-manifest.mjs'
+      - 'tools/build-pages.mjs'
+      - 'tools/build-standalone.mjs'
+      - 'tools/validate-pages.mjs'
+      - 'tools/validate-publication-plan.mjs'
+      - 'tools/build-project-stable-ground-sg06.mjs'
+      - 'tools/validate-project-stable-ground-sg04.mjs'
+      - 'tools/validate-project-stable-ground-sg05.mjs'
+      - 'tools/validate-project-stable-ground-sg06.mjs'
+      - 'test/project-stable-ground-sg05.test.js'
+      - 'test/publication-*.test.js'
+      - 'test/project-stable-ground-sg06.test.js'
+      - 'test/status-sovereignty-compact.test.js'
+      - 'app.js'
+      - 'src/visual-aperture-part-2.js'
+      - 'src/visual-aperture-part-11.js'
+      - 'index.html'
+      - 'package.json'
+      - '.github/workflows/publication-integrity.yml'
+      - '.github/workflows/project-stable-ground-sg06.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build and validate publication safety and current SG-06
+        run: |
+          node test/publication-manifest.test.js
+          npm run build:pages
+          npm run build:standalone
+          npm run validate:publication
+          npm run validate:pages
+          node tools/build-project-stable-ground-sg06.mjs
+          node tools/validate-project-stable-ground-sg06.mjs
+          node test/project-stable-ground-sg06.test.js
+      - name: Validate preserved SG-01 through SG-05 history
+        run: |
+          node tools/validate-project-stable-ground-alignment.mjs
+          node test/project-stable-ground-alignment.test.js
+          node tools/validate-project-stable-ground-sg02.mjs
+          node test/project-stable-ground-sg02.test.js
+          node tools/validate-project-stable-ground-sg03.mjs
+          node test/project-stable-ground-sg03.test.js
+          node tools/validate-project-stable-ground-sg04.mjs
+          node test/project-stable-ground-sg04.test.js
+          node tools/validate-project-stable-ground-sg05.mjs
+          node test/project-stable-ground-sg05.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove desktop and mobile publication boundary
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+          node test/publication-pages-browser.test.js
+      - name: Prove deterministic exact products
+        run: |
+          git restore --staged --worktree .
+          npm run build:pages
+          npm run build:standalone
+          node tools/build-poof-clifford-ecology.mjs
+          node tools/build-project-stable-ground-sg06.mjs
+          npm run validate:stable-ground
+          npm run validate:publication
+          git diff --exit-code -- \
+            data/project/poof-clifford-ecology-release-manifest.json \
+            reports/core-thesis/poof-clifford-ecology/release-manifest.json \
+            data/project/project-stable-ground-sg06-release-manifest.json \
+            reports/core-thesis/stable-ground/sg06/checkpoint.json \
+            reports/core-thesis/stable-ground/sg06/index.html
