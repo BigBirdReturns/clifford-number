@@ -1,0 +1,34 @@
+name: Temporary production origin checkout export
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-production-origin-export.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/production-convergence-origin-custody
+          fetch-depth: 0
+      - name: Record exact checkout
+        run: |
+          git rev-parse HEAD > CURRENT_HEAD.txt
+          git status --short > WORKTREE_STATUS.txt
+          git bundle create repository-history.bundle --all
+      - name: Upload exact repository checkout and history bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-origin-checkout
+          path: |
+            .
+            !.git/**
+          include-hidden-files: true
+          retention-days: 2
