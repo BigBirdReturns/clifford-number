@@ -1,4 +1,4 @@
-name: Temporary SG-06 shallow-history repair staging
+name: Temporary SG-05 historical-workflow repair staging
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - '.github/workflows/temporary-publication-sg06-final-export.yml'
-      - '.github/tmp/sg06-shallow-ancestry-repair.patch.xz.b64'
+      - '.github/tmp/sg06-historical-workflow-fix.patch.xz.b64'
   workflow_dispatch:
 
 permissions:
@@ -27,25 +27,27 @@ jobs:
       - name: Build validated workflow-neutral replacement SG-06 successor
         run: |
           set -euo pipefail
-          FINAL='6edb036aab84da65032c7638dedbf819d8cbeeca'
+          FINAL='076c7c2d43250d226f4b9de311427307e4cb3d98'
           FIRST='8de31382f9e9c00a285cc093b548b19bc436a8de'
-          STAGING='agent/publication-sg06-second-repair-staging'
+          STAGING='agent/publication-sg06-second-historical-workflow-staging'
 
-          printf '%s  %s\n' 'b05465ef318c3e298d8336596fd0f93593469aaab05ba876bbd8c2b8f1f4792e' .github/tmp/sg06-shallow-ancestry-repair.patch.xz.b64 | sha256sum --check --strict
-          base64 --decode .github/tmp/sg06-shallow-ancestry-repair.patch.xz.b64 > /tmp/sg06-shallow-repair.patch.xz
-          printf '%s  %s\n' '111aca18f62a9e73d3d40e41fdef2b6696527864833252f5cee500c9db6dea1e' /tmp/sg06-shallow-repair.patch.xz | sha256sum --check --strict
-          xz --decompress --stdout /tmp/sg06-shallow-repair.patch.xz > /tmp/sg06-shallow-repair.patch
-          printf '%s  %s\n' '074b8cbca92b5e8dc5599191f9ab8f8c77a9c36c72fb0ac6146d6800c8348c60' /tmp/sg06-shallow-repair.patch | sha256sum --check --strict
+          printf '%s  %s\n' 'd91aad627ccdffa129cdcddb3217a8185baec63dfa8b362174fac8d941bf8715' .github/tmp/sg06-historical-workflow-fix.patch.xz.b64 | sha256sum --check --strict
+          base64 --decode .github/tmp/sg06-historical-workflow-fix.patch.xz.b64 > /tmp/sg06-historical-workflow-fix.patch.xz
+          printf '%s  %s\n' '61caddae4eb3f31bd82e006fbb80696598bf6a56bf8d739e46e9ad7dc18f2e27' /tmp/sg06-historical-workflow-fix.patch.xz | sha256sum --check --strict
+          xz --decompress --stdout /tmp/sg06-historical-workflow-fix.patch.xz > /tmp/sg06-historical-workflow-fix.patch
+          printf '%s  %s\n' '4216fae3705ca97c96831a596bb6387de4520657a5a954da5ce5d7322fe828bd' /tmp/sg06-historical-workflow-fix.patch | sha256sum --check --strict
 
           git cat-file -e "${FINAL}^{commit}"
           git cat-file -e "${FIRST}^{commit}"
           git checkout --detach "$FINAL"
-          git apply --check /tmp/sg06-shallow-repair.patch
-          git apply /tmp/sg06-shallow-repair.patch
+          git apply --check /tmp/sg06-historical-workflow-fix.patch
+          git apply /tmp/sg06-historical-workflow-fix.patch
 
           node tools/build-pages.mjs
           node tools/build-standalone.mjs
           node tools/build-project-stable-ground-sg06.mjs
+          node tools/validate-project-stable-ground-sg05.mjs
+          node test/project-stable-ground-sg05.test.js
           node tools/validate-project-stable-ground-sg06.mjs
           node test/project-stable-ground-sg06.test.js
           npm run release:check
@@ -71,16 +73,18 @@ jobs:
             build/scores.json build/scout-report.json build/scout-report.md build/surface-graph.json
 
           cat > /tmp/expected-repair <<'PATHS'
+          .github/workflows/project-stable-ground-sg05.yml
+          .github/workflows/project-stable-ground-sg06.yml
           data/project/project-stable-ground-sg06-release-manifest.json
           reports/core-thesis/stable-ground/sg06/checkpoint.json
           reports/core-thesis/stable-ground/sg06/index.html
-          tools/validate-project-stable-ground-sg06.mjs
           PATHS
           sort -o /tmp/expected-repair /tmp/expected-repair
           git diff --name-only | sort > /tmp/observed-repair
           diff -u /tmp/expected-repair /tmp/observed-repair
           git diff --check
 
+          git restore --source="$FIRST" -- .github/workflows/project-stable-ground-sg05.yml
           git rm .github/workflows/project-stable-ground-sg06.yml
           git add -A
           git reset --soft "$FIRST"
