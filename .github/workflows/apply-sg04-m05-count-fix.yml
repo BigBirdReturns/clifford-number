@@ -1,0 +1,50 @@
+name: Apply proven SG-04 M05 count repair
+
+on:
+  push:
+    branches:
+      - agent/sg04-exact-recovery
+    paths:
+      - '.github/workflows/apply-sg04-m05-count-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: BigBirdReturns/clifford-number
+          ref: agent/k0-role-neutral-wave-08
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Repair the stale M-05 integration count and prove K0
+        shell: bash
+        run: |
+          set -euo pipefail
+          old_head="$(git rev-parse HEAD)"
+          test "$old_head" = 'cb39a6f960e7596611209a4fb836c8fffb6b7f72'
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('tools/validate-k0-epistemic-admissibility.mjs')
+          text = path.read_text()
+          old = "  if (registry.stories.length !== 14 || fanout.lanes.length !== 17) fail('M05 integration counts drift');"
+          new = "  if (registry.stories.length !== 15 || fanout.lanes.length !== 18) fail('M05 integration counts drift');"
+          if text.count(old) != 1:
+              raise SystemExit(f'stale M05 anchor count: {text.count(old)}')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          node tools/build-k0-epistemic-admissibility.mjs
+          node tools/validate-k0-epistemic-admissibility.mjs
+          node test/k0-epistemic-admissibility.test.js
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tools/validate-k0-epistemic-admissibility.mjs data/project/k0-epistemic-admissibility-release-manifest.json reports/core-thesis/answerable-power/k0.json reports/core-thesis/answerable-power/k0.html
+          git commit -m 'Repair K0 M05 ecology count seam'
+          git push --force-with-lease=refs/heads/agent/k0-role-neutral-wave-08:"$old_head" origin HEAD:agent/k0-role-neutral-wave-08
