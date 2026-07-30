@@ -26,9 +26,9 @@ jobs:
         run: |
           set -euo pipefail
           original_sha=$(git rev-parse HEAD)
-          git worktree add --detach /tmp/wave17-exact 0c895db97b5ab7b02f933e93fd781c84c853ee5c
+          git worktree add --detach /tmp/wave17-exact ee5d35a8f779d4b47d9f6a0c235a0f4d875221a8
           cd /tmp/wave17-exact
-          test "$(git rev-parse HEAD)" = '0c895db97b5ab7b02f933e93fd781c84c853ee5c'
+          test "$(git rev-parse HEAD)" = 'ee5d35a8f779d4b47d9f6a0c235a0f4d875221a8'
           npm run release:check
           git reset --hard HEAD
           git clean -fd
@@ -46,7 +46,7 @@ jobs:
           cat > data/project/tmp-wave17-exact-validation-result.json <<JSON
           {
             "schema_version": "tmp-wave17-exact-validation-result@1",
-            "target_commit": "0c895db97b5ab7b02f933e93fd781c84c853ee5c",
+            "target_commit": "ee5d35a8f779d4b47d9f6a0c235a0f4d875221a8",
             "workflow_run_id": "${GITHUB_RUN_ID}",
             "workflow_run_attempt": "${GITHUB_RUN_ATTEMPT}",
             "canonical_release_gate_includes_wave_17": true,
