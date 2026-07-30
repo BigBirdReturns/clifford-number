@@ -1,0 +1,197 @@
+name: Recover adversarial final source from part variants
+
+on:
+  push:
+    branches:
+      - agent/adversarial-release-integrity
+    paths:
+      - '.github/workflows/adversarial-final-source-variant-recovery.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/adversarial-final-source-variant-recovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/adversarial-release-integrity
+          fetch-depth: 0
+      - name: Reconstruct the XZ carrier from preserved part variants
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --all --prune
+          python3 - <<'PY'
+          import base64
+          import hashlib
+          import itertools
+          import json
+          import lzma
+          import string
+          import subprocess
+          import tarfile
+          from io import BytesIO
+          from pathlib import Path, PurePosixPath
+
+          out = Path('/tmp/adversarial-final-source-variant-recovery')
+          out.mkdir(parents=True, exist_ok=True)
+          manifest = json.loads(Path('.github/tmp/adversarial-release-manifest.json').read_text())
+          current_paths = sorted(Path('.github/tmp').glob('final-source-part-*.b64'))
+          current = [b''.join(path.read_bytes().split()) for path in current_paths]
+          if len(current) != 15:
+              raise SystemExit(f'expected 15 current parts, saw {len(current)}')
+
+          def historical_variants(index):
+              relative = f'.github/tmp/final-source-part-{index:02d}.b64'
+              commits = subprocess.check_output(
+                  ['git', 'log', '--all', '--format=%H', '--', relative], text=True
+              ).splitlines()
+              values = []
+              seen = set()
+              for commit in commits:
+                  try:
+                      raw = subprocess.check_output(['git', 'show', f'{commit}:{relative}'])
+                  except subprocess.CalledProcessError:
+                      continue
+                  value = b''.join(raw.split())
+                  digest = hashlib.sha256(value).hexdigest()
+                  if digest in seen:
+                      continue
+                  seen.add(digest)
+                  values.append({
+                      'commit': commit,
+                      'value': value,
+                      'bytes': len(value),
+                      'sha256': digest,
+                  })
+              return values
+
+          variants = {2: historical_variants(2), 9: historical_variants(9)}
+          for index in (2, 9):
+              digest = hashlib.sha256(current[index]).hexdigest()
+              if not any(row['sha256'] == digest for row in variants[index]):
+                  variants[index].insert(0, {
+                      'commit': 'current', 'value': current[index],
+                      'bytes': len(current[index]), 'sha256': digest,
+                  })
+
+          attempts = []
+          recovered = None
+          seen_candidates = set()
+          alphabet = (string.ascii_letters + string.digits + '+/').encode()
+
+          def try_candidate(label, part2, part9, custody):
+              nonlocal recovered
+              if recovered is not None:
+                  return
+              parts = list(current)
+              parts[2] = part2
+              parts[9] = part9
+              compact = b''.join(parts)
+              digest = hashlib.sha256(compact).hexdigest()
+              if digest in seen_candidates:
+                  return
+              seen_candidates.add(digest)
+              row = {
+                  'label': label,
+                  'custody': custody,
+                  'part_02_bytes': len(part2),
+                  'part_09_bytes': len(part9),
+                  'base64_bytes': len(compact),
+                  'base64_sha256': digest,
+              }
+              try:
+                  compressed = base64.b64decode(compact, validate=True)
+                  row['compressed_bytes'] = len(compressed)
+                  row['compressed_sha256'] = hashlib.sha256(compressed).hexdigest()
+                  row['magic_hex'] = compressed[:8].hex()
+                  payload = lzma.decompress(compressed)
+                  row['payload_bytes'] = len(payload)
+                  row['payload_sha256'] = hashlib.sha256(payload).hexdigest()
+                  with tarfile.open(fileobj=BytesIO(payload), mode='r:*') as archive:
+                      members = archive.getmembers()
+                      names = [member.name for member in members]
+                      for member in members:
+                          pure = PurePosixPath(member.name)
+                          if pure.is_absolute() or '..' in pure.parts or not member.isfile():
+                              raise ValueError(f'unsafe member {member.name}')
+                  row['tar_entries'] = len(names)
+                  row['missing_declared_paths'] = sorted(set(manifest['payload_paths']) - set(names))
+                  row['extra_paths'] = sorted(set(names) - set(manifest['payload_paths']))
+                  (out / 'final-source.recovered.tar').write_bytes(payload)
+                  (out / 'final-source.recovered.xz').write_bytes(compressed)
+                  (out / 'final-source.recovered.b64').write_bytes(compact)
+                  (out / 'tree.txt').write_text('\n'.join(sorted(names)) + '\n')
+                  recovered = row
+              except Exception as exc:
+                  row['error'] = f'{type(exc).__name__}: {exc}'
+              if len(attempts) < 5000:
+                  attempts.append(row)
+
+          for left, right in itertools.product(variants[2], variants[9]):
+              try_candidate(
+                  'historical_variant_pair', left['value'], right['value'],
+                  {'part_02': {k:v for k,v in left.items() if k != 'value'},
+                   'part_09': {k:v for k,v in right.items() if k != 'value'}}
+              )
+
+          p2 = current[2]
+          p9 = current[9]
+          boundary_moves = [
+              ('p9_first_to_p2_end', p2 + p9[:1], p9[1:]),
+              ('p9_last_to_p2_end', p2 + p9[-1:], p9[:-1]),
+              ('p9_first_to_p2_start', p9[:1] + p2, p9[1:]),
+              ('p9_last_to_p2_start', p9[-1:] + p2, p9[:-1]),
+          ]
+          for label, left, right in boundary_moves:
+              try_candidate(label, left, right, {'source': 'current_boundary_move'})
+
+          for remove_label, right in [('drop_p9_first', p9[1:]), ('drop_p9_last', p9[:-1])]:
+              for byte in alphabet:
+                  char = bytes([byte])
+                  try_candidate(
+                      f'{remove_label}_insert_p2_end', p2 + char, right,
+                      {'source': 'bounded_base64_boundary_repair', 'inserted': char.decode()}
+                  )
+                  try_candidate(
+                      f'{remove_label}_insert_p2_start', char + p2, right,
+                      {'source': 'bounded_base64_boundary_repair', 'inserted': char.decode()}
+                  )
+
+          report = {
+              'schema_version': 'adversarial-final-source-variant-recovery@1',
+              'current_part_lengths': [len(value) for value in current],
+              'variant_inventory': {
+                  str(index): [{k:v for k,v in row.items() if k != 'value'} for row in rows]
+                  for index, rows in variants.items()
+              },
+              'attempt_count': len(seen_candidates),
+              'attempt_sample': attempts,
+              'recovered': recovered,
+          }
+          (out / 'diagnostic.json').write_text(json.dumps(report, indent=2) + '\n')
+          print(json.dumps({
+              'current_part_lengths': report['current_part_lengths'],
+              'variant_counts': {key: len(value) for key, value in report['variant_inventory'].items()},
+              'attempt_count': report['attempt_count'],
+              'recovered': recovered,
+          }, indent=2))
+          if recovered is None:
+              raise SystemExit('no preserved variant or bounded boundary repair produced a valid XZ tar')
+          PY
+      - name: Upload reconstructed source custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adversarial-final-source-variant-recovery-${{ github.run_id }}
+          path: /tmp/adversarial-final-source-variant-recovery/
+          if-no-files-found: error
+          retention-days: 7
