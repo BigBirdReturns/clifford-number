@@ -1,9 +1,9 @@
 name: Temporary materialize publication safety and SG-05 final v3
 
 on:
-  push:
-    branches:
-      - agent/publication-safety-sg05-final-v3
+  pull_request:
+    branches: [main]
+    types: [synchronize, reopened, ready_for_review]
     paths:
       - '.github/workflows/temporary-materialize-publication-sg05-final-v3.yml'
 
@@ -12,10 +12,11 @@ permissions:
 
 concurrency:
   group: publication-sg05-final-v3
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   materialize:
+    if: github.head_ref == 'agent/publication-safety-sg05-final-v3'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -47,7 +48,7 @@ jobs:
           BRANCH: agent/publication-safety-sg05-final-v3
           RUN_BROWSER: '1'
           PUSH: '1'
-          TRANSPORT_HEAD: ${{ github.sha }}
+          TRANSPORT_HEAD: ${{ github.event.pull_request.head.sha }}
         shell: bash
         run: |
           set -o pipefail
