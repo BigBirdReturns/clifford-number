@@ -61,11 +61,15 @@ jobs:
         run: node tools/validate-counter-selector.mjs
       - name: Run adversarial mutations
         run: node test/counter-selector.test.js
+      - name: Require exact committed Counter-Selector products
+        run: |
+          git diff --exit-code -- \
+            data/project/counter-selector-release-manifest.json \
+            reports/core-thesis/counter-selector/data.json \
+            reports/core-thesis/counter-selector/index.html
       - name: Run complete repository release gate
         run: npm run release:check
-      - name: Require exact committed products
-        run: git diff --exit-code
-      - name: Reconstruct deterministically
+      - name: Reconstruct Counter-Selector deterministically
         run: |
           git restore --staged --worktree .
           node tools/build-counter-selector.mjs
