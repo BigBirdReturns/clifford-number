@@ -53,8 +53,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-          cache: npm
-      - run: npm ci
       - name: Build Counter-Selector products
         run: node tools/build-counter-selector.mjs
       - name: Validate Counter-Selector contract
