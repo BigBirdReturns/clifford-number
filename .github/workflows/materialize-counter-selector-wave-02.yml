@@ -1,7 +1,11 @@
 name: Materialize Counter-Selector Wave 02
 
-# Activation pass after the workflow exists on the branch.
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-02.yml'
+      - '.github/materializers/counter-selector-wave-02/**'
   push:
     branches:
       - 'agent/counter-selector-wave-02-artifact-readiness'
