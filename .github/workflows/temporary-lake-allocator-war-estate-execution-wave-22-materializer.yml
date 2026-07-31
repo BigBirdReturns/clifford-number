@@ -1,0 +1,157 @@
+name: Temporary allocator-war estate execution Wave 22 materializer
+
+on:
+  push:
+    branches:
+      - agent/allocator-war-estate-acquisition-wave-22
+    paths:
+      - '.github/tmp/lake-allocator-war-estate-execution-wave-22-trigger.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: temporary-lake-allocator-war-estate-execution-wave-22-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Require exact Wave 22 source line
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .github/tmp/lake-allocator-war-estate-execution-wave-22-trigger.json
+          test -f tools/materialize-lake-allocator-war-estate-execution-wave-22.mjs
+          git merge-base --is-ancestor ec730441e4779b24226f12f556707f4a89b7fe3f HEAD
+          echo "original_sha=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Validate sealed Wave 21 baseline
+        run: npm run release:check
+
+      - name: Materialize Wave 22 source and products
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/materialize-lake-allocator-war-estate-execution-wave-22.mjs
+          node tools/materialize-lake-allocator-war-estate-execution-wave-22.mjs
+          rm -f tools/materialize-lake-allocator-war-estate-execution-wave-22.mjs
+          rm -f .github/tmp/lake-allocator-war-estate-execution-wave-22-trigger.json
+          rm -f .github/workflows/temporary-lake-allocator-war-estate-execution-wave-22-materializer.yml
+          node --check tools/build-lake-allocator-war-estate-execution-wave-22.mjs
+          node --check tools/validate-lake-allocator-war-estate-execution-wave-22.mjs
+          node --check test/lake-allocator-war-estate-execution-wave-22.test.js
+          node tools/install-lake-allocator-war-wave-21.mjs
+          node tools/build-lake-allocator-war-wave-21.mjs
+          node tools/build-lake-allocator-war-wave-21.mjs
+          node tools/build-lake-allocator-war-estate-execution-wave-22.mjs
+          first_projection="$(sha256sum build/lake-actions/allocator-war-estate-execution-wave-22.json | cut -d' ' -f1)"
+          first_report="$(sha256sum reports/lake-allocator-war-estate-execution-wave-22.md | cut -d' ' -f1)"
+          node tools/build-lake-allocator-war-estate-execution-wave-22.mjs
+          test "$first_projection" = "$(sha256sum build/lake-actions/allocator-war-estate-execution-wave-22.json | cut -d' ' -f1)"
+          test "$first_report" = "$(sha256sum reports/lake-allocator-war-estate-execution-wave-22.md | cut -d' ' -f1)"
+          git add -A
+          git diff --check
+
+      - name: Observe current pull-request shadow
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/build-lake-open-pr-shadow.mjs
+
+      - name: Reconcile three-pass lake fixed point
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pass in 1 2 3; do
+            echo "allocator-war estate execution Wave 22 fixed-point pass $pass"
+            node tools/build-lake-index.mjs
+            node tools/stabilize-lake-index.mjs
+            node tools/stabilize-lake-generator-contracts-wave-19.mjs
+            node tools/reconcile-lake-receipt-semantics.mjs
+            node tools/stabilize-lake-receipt-custody-wave-20.mjs
+            node tools/stabilize-lake-allocator-war-wave-21.mjs
+            node tools/build-lake-gap-summary.mjs
+            node tools/validate-lake-index.mjs
+            node tools/validate-lake-receipt-semantics.mjs
+            node tools/validate-lake-gap-summary.mjs
+            node tools/reconcile-lake-identifier-topology-wave-18.mjs
+            node tools/reconcile-lake-generator-contracts-wave-19.mjs
+            node tools/reconcile-lake-receipt-custody-wave-20.mjs
+            node tools/reconcile-lake-allocator-war-wave-21.mjs
+            LAW22_SKIP_SHARDS=1 node tools/validate-lake-allocator-war-estate-execution-wave-22.mjs
+            git add -A
+          done
+
+      - name: Shard and validate the committed lake epoch
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/shard-lake-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-residual-frontier-wave-17.mjs
+          node test/lake-residual-frontier-wave-17.test.js
+          node tools/validate-lake-identifier-topology-wave-18.mjs
+          node test/lake-identifier-topology-wave-18.test.js
+          node tools/validate-lake-generator-contracts-wave-19.mjs
+          node test/lake-generator-contracts-wave-19.test.js
+          node tools/validate-lake-receipt-custody-wave-20.mjs
+          node test/lake-receipt-custody-wave-20.test.js
+          node tools/validate-lake-allocator-war-wave-21.mjs
+          node test/lake-allocator-war-wave-21.test.js
+          node tools/validate-lake-allocator-war-estate-execution-wave-22.mjs
+          node test/lake-allocator-war-estate-execution-wave-22.test.js
+          git add -A
+          git diff --check
+
+      - name: Run complete repository gate
+        run: npm run release:check
+
+      - name: Restore and revalidate the staged lake epoch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore --worktree .
+          git clean -fd
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-residual-frontier-wave-17.mjs
+          node tools/validate-lake-identifier-topology-wave-18.mjs
+          node tools/validate-lake-generator-contracts-wave-19.mjs
+          node tools/validate-lake-receipt-custody-wave-20.mjs
+          node tools/validate-lake-allocator-war-wave-21.mjs
+          node test/lake-allocator-war-wave-21.test.js
+          node tools/validate-lake-allocator-war-estate-execution-wave-22.mjs
+          node test/lake-allocator-war-estate-execution-wave-22.test.js
+          git diff --check
+          test -z "$(git status --porcelain)"
+
+      - name: Commit and push transport-free Wave 22 checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e .github/tmp/lake-allocator-war-estate-execution-wave-22-trigger.json
+          test ! -e .github/workflows/temporary-lake-allocator-war-estate-execution-wave-22-materializer.yml
+          test ! -e tools/materialize-lake-allocator-war-estate-execution-wave-22.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Materialize allocator-war estate execution Wave 22"
+          git fetch origin agent/allocator-war-estate-acquisition-wave-22
+          test "$(git rev-parse origin/agent/allocator-war-estate-acquisition-wave-22)" = "$original_sha"
+          git push origin HEAD:agent/allocator-war-estate-acquisition-wave-22
