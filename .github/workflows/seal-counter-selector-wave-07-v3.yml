@@ -1,0 +1,86 @@
+name: Seal Counter-Selector Wave 07 canonical state v3
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/seal-counter-selector-wave-07-v3.yml'
+  push:
+    branches:
+      - 'agent/counter-selector-wave-07-seal-v3'
+    paths:
+      - '.github/workflows/seal-counter-selector-wave-07-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  statuses: write
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  REPO: BigBirdReturns/clifford-number
+  TAG: counter-selector-wave-07-b02-canonical
+
+jobs:
+  validate-tag-retire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Rebuild transport-free canonical Wave 07
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f tools/build-counter-selector-wave-07.mjs
+          test -f tools/validate-counter-selector-wave-07.mjs
+          test -f test/counter-selector-wave-07.test.js
+          test -f data/project/counter-selector-wave-07-release-manifest.json
+          test ! -e .github/workflows/materialize-counter-selector-wave-07.yml
+          test ! -d .github/materializers/counter-selector-wave-07
+          node tools/build-counter-selector-wave-07.mjs
+          node tools/validate-counter-selector-wave-07.mjs
+          node test/counter-selector-wave-07.test.js
+          npm run release:check
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+
+      - name: Publish canonical tag and validation context
+        shell: bash
+        run: |
+          set -euo pipefail
+          main_sha="$(git rev-parse HEAD)"
+          digest="$(node -e "console.log(require('./data/project/counter-selector-wave-07-release-manifest.json').combined_sha256)")"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -f -a "$TAG" -m "Counter-Selector Wave 07 canonical at $main_sha; release $digest"
+          git push --force origin "refs/tags/$TAG"
+          gh api --method POST "repos/$REPO/statuses/$main_sha" -f state=success -f context='Counter-Selector Wave 07 canonical seal' -f description='Canonical main rebuilt; exact tag published' -f target_url="https://github.com/$REPO/actions/runs/${{ github.run_id }}" >/dev/null
+
+      - name: Delete obsolete working refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          for ref in \
+            'heads/agent/counter-selector-wave-07-b02-acquisition-v2' \
+            'heads/agent/counter-selector-wave-07-b02-acquisition-v3' \
+            'heads/agent/counter-selector-wave-07-finalize' \
+            'heads/agent/counter-selector-wave-07-canonical-semaphore' \
+            'heads/agent/counter-selector-wave-07-retire-source' \
+            'heads/agent/counter-selector-wave-07-seal-v2'; do
+            gh api --method DELETE "repos/$REPO/git/refs/$ref" >/dev/null 2>&1 || true
+          done
+
+      - name: Retire this seal branch last
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --method DELETE "repos/$REPO/git/refs/heads/agent/counter-selector-wave-07-seal-v3" >/dev/null 2>&1 || true
