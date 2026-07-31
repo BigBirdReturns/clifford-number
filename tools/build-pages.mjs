@@ -29,11 +29,14 @@ for (const heldPath of [
   ['data', 'project', 'status-sovereignty-release-manifest.json'],
   ['data', 'project', 'status-sovereignty-source-registry.json'],
   ['data', 'project', 'status-sovereignty-wave-01-release-manifest.json'],
+  ['data', 'project', 'status-sovereignty-wave-01-maintainer-review-release-manifest.json'],
   ['data', 'research', 'status-sovereignty-wave-01-source-receipts.json'],
   ['data', 'research', 'status-sovereignty-wave-01.json'],
+  ['data', 'research', 'status-sovereignty-wave-01-maintainer-review.json'],
   ['docs', 'methods', 'status-sovereignty-compact.md'],
   ['docs', 'milestones', 'm05-status-sovereignty-fanout.md'],
   ['docs', 'milestones', 'm05-status-sovereignty-wave-01.md'],
+  ['docs', 'milestones', 'm05-status-sovereignty-wave-01-review.md'],
 ]) fs.rmSync(path.join(destination, ...heldPath), { recursive: true, force: true });
 fs.writeFileSync(path.join(destination, '.nojekyll'), '');
 console.log(`build-pages: ${files.length} files and ${directories.length} directories copied`);

@@ -21,20 +21,27 @@ const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
 export const releaseScope = [
   '.github/workflows/status-sovereignty-compact.yml',
   '.github/workflows/status-sovereignty-wave-01.yml',
+  '.github/workflows/status-sovereignty-wave-01-review.yml',
   'data/intake/status-sovereignty-compact-source.md',
   'data/project/status-sovereignty-compact.json',
   'data/project/status-sovereignty-fanout.json',
   'data/project/status-sovereignty-source-registry.json',
   'data/project/status-sovereignty-wave-01-release-manifest.json',
+  'data/project/status-sovereignty-wave-01-maintainer-review-release-manifest.json',
   'data/research/status-sovereignty-wave-01-source-receipts.json',
   'data/research/status-sovereignty-wave-01.json',
+  'data/research/status-sovereignty-wave-01-maintainer-review.json',
   'schemas/status-sovereignty-observation.schema.json',
   'docs/methods/status-sovereignty-compact.md',
   'docs/milestones/m05-status-sovereignty-fanout.md',
   'docs/milestones/m05-status-sovereignty-wave-01.md',
+  'docs/milestones/m05-status-sovereignty-wave-01-review.md',
   'tools/build-status-sovereignty-wave-01.mjs',
   'tools/validate-status-sovereignty-wave-01.mjs',
   'test/status-sovereignty-wave-01.test.js',
+  'tools/build-status-sovereignty-wave-01-review.mjs',
+  'tools/validate-status-sovereignty-wave-01-review.mjs',
+  'test/status-sovereignty-wave-01-review.test.js',
   'tools/build-status-sovereignty-compact.mjs',
   'tools/validate-status-sovereignty-compact.mjs',
   'test/status-sovereignty-compact.test.js',
@@ -84,6 +91,8 @@ export function buildStatusSovereignty() {
   const wave = read('data/research/status-sovereignty-wave-01.json');
   const waveSources = read('data/research/status-sovereignty-wave-01-source-receipts.json');
   const waveRelease = read('data/project/status-sovereignty-wave-01-release-manifest.json');
+  const review = read('data/research/status-sovereignty-wave-01-maintainer-review.json');
+  const reviewRelease = read('data/project/status-sovereignty-wave-01-maintainer-review-release-manifest.json');
   const manifest = computeReleaseManifest();
   write('data/project/status-sovereignty-release-manifest.json', stable(manifest));
 
@@ -139,6 +148,14 @@ export function buildStatusSovereignty() {
         combined_sha256: waveRelease.combined_sha256
       }
     },
+    maintainer_review: {
+      path: 'data/research/status-sovereignty-wave-01-maintainer-review.json',
+      review_id: review.review_id,
+      status: review.status,
+      counts: review.counts,
+      current_result: review.current_result,
+      release_manifest: { path: 'data/project/status-sovereignty-wave-01-maintainer-review-release-manifest.json', combined_sha256: reviewRelease.combined_sha256 }
+    },
     source_registry: {
       source_document: sources.source_document,
       external_references: sources.external_references,
@@ -171,7 +188,7 @@ export function buildStatusSovereignty() {
   const html = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>SSC-H01 · Clifford Number</title>
 <style>:root{color-scheme:light;background:#eeeae0;color:#181714;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{max-width:1500px;margin:0 auto;padding:40px 24px 72px;line-height:1.55}h1{font-size:clamp(2.2rem,5vw,4.8rem);line-height:.98;letter-spacing:-.045em;max-width:1120px}h2{margin-top:2.6rem}code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}pre{white-space:pre-wrap;background:#1c1b18;color:#f6f1e6;padding:18px;border-radius:12px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.card,table{background:#fffdf7;border:1px solid #c9c1b2;border-radius:12px}.card{padding:16px}.card b{display:block;font-size:2rem;line-height:1.1}table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}th,td{padding:10px;border-bottom:1px solid #ddd5c7;text-align:left;vertical-align:top}tr:last-child td{border-bottom:0}.state{font-weight:800;color:#8c300d}.boundary{border-left:6px solid #7c2920}.small{font-size:.9rem;color:#625d54}a{color:#6b2b16}</style></head><body>
-<p><strong>CLIFFORD NUMBER · M-05 · AT-2 FIELD HYPOTHESIS</strong></p><h1>Status-for-sovereignty compact</h1><p class="state">SSC-H01 · WAVE 01 EXECUTED · UNREVIEWED · COMPLETE-COMPACT FINDINGS 0 · NO RACIAL-ORDER FINDING · GRAPH EFFECT NONE · PUBLICATION BLOCKED</p>
+<p><strong>CLIFFORD NUMBER · M-05 · AT-2 FIELD HYPOTHESIS</strong></p><h1>Status-for-sovereignty compact</h1><p class="state">SSC-H01 · WAVE 01 MAINTAINER REVIEWED 14/14 · SECOND-PARTY 0 · COMPLETE-COMPACT FINDINGS 0 · NO RACIAL-ORDER FINDING · GRAPH EFFECT NONE · PUBLICATION BLOCKED</p>
 <p>${esc(hypothesis.working_proposition)}</p><h2>Negative constitution under test</h2><pre>${esc(hypothesis.negative_constitution)}</pre>
 <div class="grid"><div class="card"><b>${report.counts.gates}</b>gates</div><div class="card"><b>${report.counts.dimensions}</b>dimensions</div><div class="card"><b>${report.counts.fanout_lanes}</b>fanout lanes</div><div class="card"><b>${report.counts.issue_groups}</b>issue groups</div><div class="card"><b>${report.counts.field_source_records}</b>field sources</div><div class="card"><b>${report.counts.executed_lanes}/16</b>executed lanes</div><div class="card"><b>${report.counts.retained_observations}</b>unreviewed observations</div><div class="card"><b>${report.counts.complete_compact_findings}</b>complete compact</div></div>
 <h2>Wave 01 result</h2><p><a href="./wave-01/index.html">Open the Wave 01 review surface</a></p><table><thead><tr><th>Observation</th><th>Disposition</th><th>Interpretation ceiling</th><th>Review</th></tr></thead><tbody>${waveRows}</tbody></table>
@@ -181,7 +198,7 @@ export function buildStatusSovereignty() {
 <h2>Ten dimensions</h2><table><thead><tr><th>ID</th><th>Dimension</th><th>Question</th><th>Required observation</th></tr></thead><tbody>${dimensionRows}</tbody></table>
 <h2>Sixteen-lane fanout</h2><table><thead><tr><th>Lane</th><th>Title</th><th>Question</th><th>Selection unit</th><th>Execution</th></tr></thead><tbody>${laneRows}</tbody></table>
 <h2>Source-provided external references</h2><p class="small">These references are preserved from the supplied synthesis and remain unretrieved by the canonical source registry.</p><table><thead><tr><th>ID</th><th>Source</th><th>Class</th><th>Custody</th></tr></thead><tbody>${sourceRows}</tbody></table>
-<h2>Wave 01 independently reviewed records</h2><p class="small">Normalized fact records were reviewed against these official or first-party pages. Exact source bytes were not preserved, and field-source review is not maintainer or second-party adjudication.</p><table><thead><tr><th>ID</th><th>Source</th><th>Class</th><th>Custody</th></tr></thead><tbody>${fieldSourceRows}</tbody></table>
+<h2>Wave 01 maintainer-reviewed observation packets</h2><p class="small">Normalized fact records were reviewed against these official or first-party pages. Exact source bytes were not preserved, and field-source review is not maintainer or second-party adjudication.</p><table><thead><tr><th>ID</th><th>Source</th><th>Class</th><th>Custody</th></tr></thead><tbody>${fieldSourceRows}</tbody></table>
 <h2>Current state</h2><pre>${esc(JSON.stringify(hypothesis.current_state, null, 2))}</pre><h2>Boundary</h2><pre class="boundary">${esc(JSON.stringify(hypothesis.boundaries, null, 2))}</pre><p class="small"><code>Wave 01 release SHA-256: ${waveRelease.combined_sha256}</code></p><p class="small"><code>SSC release SHA-256: ${manifest.combined_sha256}</code></p></body></html>`;
   write('reports/core-thesis/status-sovereignty/index.html', `${html}\n`);
   console.log(`build-status-sovereignty-compact: ${report.counts.gates} gates, ${report.counts.dimensions} dimensions, ${report.counts.executed_lanes}/16 lanes, ${report.counts.retained_observations} observations, ${report.counts.complete_compact_findings} complete compact`);

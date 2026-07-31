@@ -20,16 +20,22 @@ const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
 
 export const releaseScope = [
   '.github/workflows/status-sovereignty-wave-01.yml',
+  '.github/workflows/status-sovereignty-wave-01-review.yml',
   'data/research/status-sovereignty-wave-01-source-receipts.json',
   'data/research/status-sovereignty-wave-01.json',
+  'data/research/status-sovereignty-wave-01-maintainer-review.json',
   'data/project/status-sovereignty-compact.json',
   'data/project/status-sovereignty-fanout.json',
   'data/project/status-sovereignty-source-registry.json',
   'schemas/status-sovereignty-observation.schema.json',
   'docs/milestones/m05-status-sovereignty-wave-01.md',
+  'docs/milestones/m05-status-sovereignty-wave-01-review.md',
   'tools/build-status-sovereignty-wave-01.mjs',
   'tools/validate-status-sovereignty-wave-01.mjs',
-  'test/status-sovereignty-wave-01.test.js'
+  'test/status-sovereignty-wave-01.test.js',
+  'tools/build-status-sovereignty-wave-01-review.mjs',
+  'tools/validate-status-sovereignty-wave-01-review.mjs',
+  'test/status-sovereignty-wave-01-review.test.js'
 ];
 
 export function computeWave01Manifest() {
@@ -66,6 +72,7 @@ export function buildWave01() {
   const sources = read('data/research/status-sovereignty-wave-01-source-receipts.json');
   const hypothesis = read('data/project/status-sovereignty-compact.json');
   const fanout = read('data/project/status-sovereignty-fanout.json');
+  const review = read('data/research/status-sovereignty-wave-01-maintainer-review.json');
   const manifest = computeWave01Manifest();
   write('data/project/status-sovereignty-wave-01-release-manifest.json', stable(manifest));
 
@@ -123,6 +130,13 @@ export function buildWave01() {
         records_retained: row.execution.records_retained
       }))
     },
+    maintainer_review: {
+      path: 'data/research/status-sovereignty-wave-01-maintainer-review.json',
+      review_id: review.review_id,
+      status: review.status,
+      counts: review.counts,
+      current_result: review.current_result
+    },
     current_result: wave.current_result,
     boundaries: wave.boundaries,
     release_manifest: {
@@ -135,7 +149,7 @@ export function buildWave01() {
   write('build/core-thesis/status-sovereignty/wave-01/data.json', stable(report));
   write('reports/core-thesis/status-sovereignty/wave-01/data.json', stable(report));
 
-  const observationRows = report.observations.map((row) => `<tr><td><code>${esc(row.observation_id)}</code><br><code>${esc(row.lane_id)}</code></td><td>${esc(row.disposition)}</td><td>${esc(row.observed_facts.join(' '))}</td><td>${esc(row.working_interpretation)}</td><td>${row.sources.map((source) => `<a href="${esc(source.url)}">${esc(source.source_id)}</a>`).join('<br>')}</td></tr>`).join('');
+  const observationRows = report.observations.map((row) => `<tr><td><code>${esc(row.observation_id)}</code><br><code>${esc(row.lane_id)}</code></td><td>${esc(row.disposition)}<br><code>${esc(row.review_state)}</code></td><td>${esc(row.observed_facts.join(' '))}</td><td>${esc(row.working_interpretation)}</td><td>${row.sources.map((source) => `<a href="${esc(source.url)}">${esc(source.source_id)}</a>`).join('<br>')}</td></tr>`).join('');
   const laneRows = Object.entries(report.lane_counts).map(([lane, count]) => `<tr><td><code>${esc(lane)}</code></td><td>${count}</td></tr>`).join('');
   const dispositionRows = Object.entries(report.disposition_counts).map(([state, count]) => `<tr><td><code>${esc(state)}</code></td><td>${count}</td></tr>`).join('');
   const sourceRows = sources.records.map((row) => `<tr><td><code>${esc(row.source_id)}</code></td><td><a href="${esc(row.url)}">${esc(row.title)}</a><br>${esc(row.publisher)}</td><td>${esc(row.source_class)}</td><td>${esc(row.retrieval.status)}</td><td>${esc(row.limitations.join(' '))}</td></tr>`).join('');
@@ -143,8 +157,8 @@ export function buildWave01() {
   const html = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>SSC-H01 Wave 01 · Clifford Number</title>
 <style>:root{color-scheme:light;background:#eeeae0;color:#181714;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{max-width:1560px;margin:0 auto;padding:40px 24px 72px;line-height:1.55}h1{font-size:clamp(2rem,5vw,4.8rem);line-height:.98;letter-spacing:-.045em;max-width:1180px}h2{margin-top:2.6rem}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.card,table{background:#fffdf7;border:1px solid #c9c1b2;border-radius:12px}.card{padding:16px}.card b{display:block;font-size:2rem;line-height:1.1}table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}th,td{padding:10px;border-bottom:1px solid #ddd5c7;text-align:left;vertical-align:top}tr:last-child td{border-bottom:0}code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}pre{white-space:pre-wrap;background:#1c1b18;color:#f6f1e6;padding:18px;border-radius:12px}.state{font-weight:800;color:#8c300d}.boundary{border-left:6px solid #7c2920}.small{font-size:.9rem;color:#625d54}a{color:#6b2b16}</style></head><body>
-<p><strong>CLIFFORD NUMBER · SSC-H01 · FIELD WAVE</strong></p><h1>Wave 01: allocator, selector, capital, and counterpower</h1><p class="state">EXECUTED · UNREVIEWED · COMPLETE-COMPACT FINDINGS 0 · RACIAL-ORDER FINDING FALSE · GRAPH EFFECT NONE · PUBLICATION BLOCKED</p>
-<p>${esc(wave.selection_contract.selection_universe)}</p><div class="grid"><div class="card"><b>${wave.counts.source_records}</b>source records</div><div class="card"><b>${wave.counts.observations}</b>observations</div><div class="card"><b>${wave.counts.executed_lanes}/16</b>executed lanes</div><div class="card"><b>${wave.counts.partial_functional_convergence}</b>partial convergence</div><div class="card"><b>${wave.counts.ordinary_patriotic_or_industrial_policy}</b>controls</div><div class="card"><b>${wave.counts.requires_additional_acquisition}</b>open acquisition</div><div class="card"><b>${wave.counts.capital_conversion_unsupported}</b>unsupported capital claim</div><div class="card"><b>${wave.counts.supported_bounded_compact}</b>complete compact</div></div>
+<p><strong>CLIFFORD NUMBER · SSC-H01 · FIELD WAVE</strong></p><h1>Wave 01: allocator, selector, capital, and counterpower</h1><p class="state">EXECUTED · MAINTAINER REVIEWED 14/14 · SECOND-PARTY REVIEW 0 · COMPLETE-COMPACT FINDINGS 0 · RACIAL-ORDER FINDING FALSE · GRAPH EFFECT NONE · PUBLICATION BLOCKED</p>
+<p>${esc(wave.selection_contract.selection_universe)}</p><div class="grid"><div class="card"><b>${wave.counts.source_records}</b>source records</div><div class="card"><b>${wave.counts.maintainer_reviewed}</b>maintainer reviewed</div><div class="card"><b>${wave.counts.observations}</b>observations</div><div class="card"><b>${wave.counts.executed_lanes}/16</b>executed lanes</div><div class="card"><b>${wave.counts.partial_functional_convergence}</b>partial convergence</div><div class="card"><b>${wave.counts.ordinary_patriotic_or_industrial_policy}</b>controls</div><div class="card"><b>${wave.counts.requires_additional_acquisition}</b>open acquisition</div><div class="card"><b>${wave.counts.capital_conversion_unsupported}</b>unsupported capital claim</div><div class="card"><b>${wave.counts.supported_bounded_compact}</b>complete compact</div></div>
 <h2>Disposition denominator</h2><table><thead><tr><th>Disposition</th><th>Count</th></tr></thead><tbody>${dispositionRows}</tbody></table>
 <h2>Lane denominator</h2><table><thead><tr><th>Lane</th><th>Retained observations</th></tr></thead><tbody>${laneRows}</tbody></table>
 <h2>Observation packets</h2><table><thead><tr><th>Observation</th><th>Disposition</th><th>Observed facts</th><th>Interpretation ceiling</th><th>Sources</th></tr></thead><tbody>${observationRows}</tbody></table>

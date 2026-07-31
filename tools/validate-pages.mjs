@@ -73,11 +73,14 @@ for (const forbidden of [
   'data/project/status-sovereignty-release-manifest.json',
   'data/project/status-sovereignty-source-registry.json',
   'data/project/status-sovereignty-wave-01-release-manifest.json',
+  'data/project/status-sovereignty-wave-01-maintainer-review-release-manifest.json',
   'data/research/status-sovereignty-wave-01-source-receipts.json',
   'data/research/status-sovereignty-wave-01.json',
+  'data/research/status-sovereignty-wave-01-maintainer-review.json',
   'docs/methods/status-sovereignty-compact.md',
   'docs/milestones/m05-status-sovereignty-fanout.md',
   'docs/milestones/m05-status-sovereignty-wave-01.md',
+  'docs/milestones/m05-status-sovereignty-wave-01-review.md',
 ]) {
   if (fs.existsSync(path.join(destination, forbidden))) {
     console.error(`validate-pages failed: intake path ${forbidden} must not be published`);
@@ -95,11 +98,14 @@ for (const held of [
   'data/project/status-sovereignty-release-manifest.json',
   'data/project/status-sovereignty-source-registry.json',
   'data/project/status-sovereignty-wave-01-release-manifest.json',
+  'data/project/status-sovereignty-wave-01-maintainer-review-release-manifest.json',
   'data/research/status-sovereignty-wave-01-source-receipts.json',
   'data/research/status-sovereignty-wave-01.json',
+  'data/research/status-sovereignty-wave-01-maintainer-review.json',
   'docs/methods/status-sovereignty-compact.md',
   'docs/milestones/m05-status-sovereignty-fanout.md',
   'docs/milestones/m05-status-sovereignty-wave-01.md',
+  'docs/milestones/m05-status-sovereignty-wave-01-review.md',
 ]) {
   if (fs.existsSync(path.join(destination, held))) {
     console.error(`validate-pages failed: publication-blocked SSC path ${held} must not be published`);

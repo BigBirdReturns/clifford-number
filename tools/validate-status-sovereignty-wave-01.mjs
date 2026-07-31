@@ -16,6 +16,7 @@ export function loadWave01Context() {
   return {
     wave: read('data/research/status-sovereignty-wave-01.json'),
     sources: read('data/research/status-sovereignty-wave-01-source-receipts.json'),
+    review: read('data/research/status-sovereignty-wave-01-maintainer-review.json'),
     hypothesis: read('data/project/status-sovereignty-compact.json'),
     fanout: read('data/project/status-sovereignty-fanout.json'),
     sourceRegistry: read('data/project/status-sovereignty-source-registry.json'),
@@ -34,12 +35,12 @@ export function validateWave01(context = loadWave01Context()) {
     if (actual !== expected) errors.push(`${label}: expected ${JSON.stringify(expected)}, observed ${JSON.stringify(actual)}`);
   };
   const check = (condition, label) => { if (!condition) errors.push(label); };
-  const { wave, sources, hypothesis, fanout, sourceRegistry, schema, manifest, buildManifest, buildReport, publicReport, html } = context;
+  const { wave, sources, review, hypothesis, fanout, sourceRegistry, schema, manifest, buildManifest, buildReport, publicReport, html } = context;
 
   eq(wave.schema_version, 'status-sovereignty-wave@1', 'Wave 01 schema');
   eq(wave.hypothesis_id, 'SSC-H01', 'Wave 01 hypothesis');
   eq(wave.wave_id, 'SSC-W01', 'Wave 01 identity');
-  eq(wave.status, 'executed_unreviewed_zero_complete_compact', 'Wave 01 status');
+  eq(wave.status, 'executed_maintainer_reviewed_zero_complete_compact', 'Wave 01 status');
   eq(wave.selection_contract?.target_first_selection, false, 'Wave 01 target-first selection boundary');
   eq(wave.selection_contract?.supportive_contradictory_ordinary_and_null_results_retained, true, 'Wave 01 result-retention law');
   eq(wave.source_receipts_path, 'data/research/status-sovereignty-wave-01-source-receipts.json', 'Wave 01 source receipt path');
@@ -61,7 +62,7 @@ export function validateWave01(context = loadWave01Context()) {
     observations: 14,
     executed_lanes: 8,
     terminal_records: 14,
-    maintainer_reviewed: 0,
+    maintainer_reviewed: 14,
     second_party_reviewed: 0,
     adjudicated: 0,
     supported_bounded_compact: 0,
@@ -88,11 +89,14 @@ export function validateWave01(context = loadWave01Context()) {
   eq(wave.current_result?.execution_started, true, 'Wave 01 execution state');
   eq(wave.current_result?.observations_retained, 14, 'Wave 01 retained count');
   eq(wave.current_result?.complete_compact_findings, 0, 'Wave 01 complete compact count');
-  eq(wave.current_result?.review_complete, false, 'Wave 01 review state');
+  eq(wave.current_result?.maintainer_review_complete, true, 'Wave 01 maintainer review state');
+  eq(wave.current_result?.second_party_review_complete, false, 'Wave 01 second-party review state');
+  eq(wave.current_result?.adjudication_complete, false, 'Wave 01 adjudication state');
+  eq(wave.current_result?.review_complete, false, 'Wave 01 complete review state');
   for (const key of ['prevalence_finding_generated','racial_order_finding_generated','coordination_finding_generated','common_purpose_finding_generated','personal_hostility_finding_generated']) {
     eq(wave.current_result?.[key], false, `Wave 01 ${key}`);
   }
-  eq(wave.current_result?.publication_status, 'blocked_pending_maintainer_and_second_party_review', 'Wave 01 publication status');
+  eq(wave.current_result?.publication_status, 'blocked_pending_second_party_review_and_open_acquisitions', 'Wave 01 publication status');
   eq(wave.current_result?.graph_effect, 'none', 'Wave 01 graph effect');
   for (const [key, value] of Object.entries(wave.boundaries ?? {})) {
     if (key === 'graph_effect') eq(value, 'none', `Wave 01 boundary ${key}`);
@@ -156,7 +160,7 @@ export function validateWave01(context = loadWave01Context()) {
     check(Array.isArray(observation.counterevidence) && observation.counterevidence.length >= 1, `${observation.observation_id}: counterevidence missing`);
     check(Array.isArray(observation.source_ids) && observation.source_ids.length >= 1, `${observation.observation_id}: source IDs missing`);
     check(allowedDispositions.has(observation.disposition), `${observation.observation_id}: disposition invalid`);
-    eq(observation.review_state, 'unreviewed', `${observation.observation_id}: review state`);
+    eq(observation.review_state, 'maintainer_reviewed', `${observation.observation_id}: review state`);
     eq(observation.graph_effect, 'none', `${observation.observation_id}: graph effect`);
     check(observation.disposition !== 'supported_bounded_compact', `${observation.observation_id}: complete compact self-awarded`);
     for (const sourceId of observation.source_ids) {
@@ -174,25 +178,25 @@ export function validateWave01(context = loadWave01Context()) {
     eq(JSON.stringify(observedUsage), JSON.stringify(expectedUsage), `${source.source_id}: observation usage drift`);
   }
 
-  eq(hypothesis.status, 'canonical_field_hypothesis_wave_01_executed_unreviewed_no_prevalence_finding', 'Wave 01 parent hypothesis status');
+  eq(hypothesis.status, 'canonical_field_hypothesis_wave_01_maintainer_reviewed_no_prevalence_finding', 'Wave 01 parent hypothesis status');
   eq(hypothesis.current_state?.query_or_field_execution_started, true, 'Wave 01 parent execution state');
   eq(hypothesis.current_state?.waves_executed, 1, 'Wave 01 parent wave count');
   eq(hypothesis.current_state?.executed_lanes, 8, 'Wave 01 parent executed-lane count');
   eq(hypothesis.current_state?.observations_retained, 14, 'Wave 01 parent retained count');
   eq(hypothesis.current_state?.terminal_observations, 14, 'Wave 01 parent terminal count');
   eq(hypothesis.current_state?.complete_compact_findings, 0, 'Wave 01 parent complete compact count');
-  eq(hypothesis.current_state?.maintainer_reviewed_observations, 0, 'Wave 01 parent maintainer review count');
+  eq(hypothesis.current_state?.maintainer_reviewed_observations, 14, 'Wave 01 parent maintainer review count');
   eq(hypothesis.current_state?.second_party_reviewed_observations, 0, 'Wave 01 parent second-party review count');
   eq(hypothesis.current_state?.adjudicated_observations, 0, 'Wave 01 parent adjudication count');
   for (const key of ['prevalence_finding_generated','racial_order_finding_generated','coordination_finding_generated','common_purpose_finding_generated','personal_hostility_finding_generated']) {
     eq(hypothesis.current_state?.[key], false, `Wave 01 parent ${key}`);
   }
-  eq(hypothesis.current_state?.publication_status, 'blocked_pending_maintainer_and_second_party_review', 'Wave 01 parent publication state');
+  eq(hypothesis.current_state?.publication_status, 'blocked_pending_second_party_review_and_open_acquisitions', 'Wave 01 parent publication state');
   eq(hypothesis.current_state?.graph_effect, 'none', 'Wave 01 parent graph effect');
   eq(hypothesis.field_waves?.length, 1, 'Wave 01 parent wave registry count');
   eq(hypothesis.field_waves?.[0]?.wave_id, 'SSC-W01', 'Wave 01 parent wave registry identity');
 
-  eq(fanout.status, 'canonical_fanout_wave_01_execution_unreviewed', 'Wave 01 fanout status');
+  eq(fanout.status, 'canonical_fanout_wave_01_maintainer_reviewed', 'Wave 01 fanout status');
   eq(fanout.counts?.query_or_field_execution_started, true, 'Wave 01 fanout execution state');
   eq(fanout.counts?.waves_executed, 1, 'Wave 01 fanout wave count');
   eq(fanout.counts?.executed_lanes, 8, 'Wave 01 fanout executed count');
@@ -217,6 +221,17 @@ export function validateWave01(context = loadWave01Context()) {
   eq(sourceRegistry.boundaries?.normalized_fact_records_equal_source_bytes, false, 'Wave 01 normalized-fact boundary');
   eq(sourceRegistry.boundaries?.field_source_review_is_maintainer_review, false, 'Wave 01 review-authority boundary');
 
+  eq(review.review_id, 'SSC-W01-MR01', 'Wave 01 maintainer review identity');
+  eq(review.counts?.maintainer_reviewed, 14, 'Wave 01 maintainer review denominator');
+  eq(review.counts?.second_party_reviewed, 0, 'Wave 01 second-party review denominator');
+  eq(review.counts?.adjudicated, 0, 'Wave 01 adjudication denominator');
+  eq(review.counts?.supported_bounded_compact, 0, 'Wave 01 reviewed complete compact denominator');
+  eq(review.current_result?.publication_status, 'blocked_pending_second_party_review_and_open_acquisitions', 'Wave 01 reviewed publication state');
+  eq(review.current_result?.graph_effect, 'none', 'Wave 01 reviewed graph effect');
+  eq(review.reviewed_observations?.length, 14, 'Wave 01 review row count');
+  eq(JSON.stringify(review.reviewed_observations?.map((row) => row.observation_id)), JSON.stringify(observationIds), 'Wave 01 review row identity order');
+  check(review.reviewed_observations?.every((row, index) => row.review_state === 'maintainer_reviewed' && row.disposition_changed === false && row.reviewed_disposition === wave.observations[index]?.disposition && row.graph_effect === 'none'), 'Wave 01 review row authority drift');
+
   const recomputed = computeWave01Manifest();
   eq(JSON.stringify(manifest), JSON.stringify(recomputed), 'Wave 01 exact-byte manifest');
   eq(JSON.stringify(buildManifest), JSON.stringify(manifest), 'Wave 01 build manifest drift');
@@ -226,7 +241,7 @@ export function validateWave01(context = loadWave01Context()) {
   eq(publicReport.counts?.observations, 14, 'Wave 01 report observation count');
   eq(publicReport.counts?.executed_lanes, 8, 'Wave 01 report lane count');
   eq(publicReport.counts?.supported_bounded_compact, 0, 'Wave 01 report complete compact count');
-  check(html.includes('EXECUTED · UNREVIEWED · COMPLETE-COMPACT FINDINGS 0 · RACIAL-ORDER FINDING FALSE · GRAPH EFFECT NONE · PUBLICATION BLOCKED'), 'Wave 01 report boundary banner missing');
+  check(html.includes('EXECUTED · MAINTAINER REVIEWED 14/14 · SECOND-PARTY REVIEW 0 · COMPLETE-COMPACT FINDINGS 0 · RACIAL-ORDER FINDING FALSE · GRAPH EFFECT NONE · PUBLICATION BLOCKED'), 'Wave 01 report boundary banner missing');
   check(html.includes(manifest.combined_sha256) && html.includes('Declared source universe') && html.includes('Observation packets'), 'Wave 01 report content drift');
   return errors;
 }
