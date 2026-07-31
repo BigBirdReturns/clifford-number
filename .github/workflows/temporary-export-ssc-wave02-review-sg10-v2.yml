@@ -1,0 +1,34 @@
+name: Temporary export SSC Wave 02 review SG-10 v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-export-ssc-wave02-review-sg10-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: github.head_ref == 'agent/ssc-wave02-maintainer-review-sg10-v2' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-maintainer-review-sg10-v2
+          fetch-depth: 0
+      - name: Package exact branch tree
+        run: |
+          set -Eeuo pipefail
+          git archive --format=zip --output=/tmp/ssc-wave02-review-sg10-v2-base.zip HEAD
+          sha256sum /tmp/ssc-wave02-review-sg10-v2-base.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-review-sg10-v2-base
+          path: /tmp/ssc-wave02-review-sg10-v2-base.zip
+          if-no-files-found: error
+          retention-days: 1
