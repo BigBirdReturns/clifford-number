@@ -423,3 +423,9 @@ explicitly unavailable, and repository-only custody remain distinct.
 The raw unused-definition denominator remains visible. Adjudication does not attach a
 receipt to a claim, invent source bytes, prove evidence truth, clear publication, create
 a relationship or participation row, or alter the active graph.
+
+
+3.21 **Allocator-war lake integration — Wave 21.**
+Reviewed Wave 01 allocator-war packets and unreviewed Wave 02 intake packets enter separate source registries. Exact commit-and-path custody preserves their authority difference. Reviewed packets may feed bounded findings and controls; unreviewed packets may feed acquisition only.
+
+Estate and program routing is one-way. It does not create a finding, identity, relationship, participation, graph edge, prevalence estimate, racial-order conclusion, coordination conclusion, common purpose, publication clearance, or adoption effect.

@@ -36,6 +36,8 @@ Wave 02 intake is not a reviewed finding
 estate routing is not an estate conclusion
 program routing is not recurrence or prevalence
 basin membership is not common purpose
+repeated gate_id is a reusable assessment dimension, not an identical assessment
+repeated owner_program_id is an accountable reference, not a graph edge or common purpose
 graph effect: none
 publication: blocked
 ```

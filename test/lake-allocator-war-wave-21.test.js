@@ -47,7 +47,12 @@ const mutations = [
   ['mutate source authority', state => { state.receipt.source_mutations = 1; }],
   ['drift observation projection', state => { state.projection.observations[0].working_interpretation = 'mutated'; }],
   ['drift estate projection', state => { state.projection.estate_acquisition_routes.pop(); }],
-  ['drift program projection', state => { state.projection.program_feeds[0].authority_transferred = true; }]
+  ['drift program projection', state => { state.projection.program_feeds[0].authority_transferred = true; }],
+  ['drift row program identity', state => { state.observations[0].program_id = 'CN-LAKE-OTHER'; }],
+  ['remove projection basin view', state => { state.projection.basins.pop(); }],
+  ['drop gate identifier contract', state => { state.policy.projection_contract.target_identifier_keys = state.policy.projection_contract.target_identifier_keys.filter(key => key !== 'gate_id'); }],
+  ['drop owner identifier contract', state => { state.policy.projection_contract.target_identifier_keys = state.policy.projection_contract.target_identifier_keys.filter(key => key !== 'owner_program_id'); }],
+  ['broaden source basin contract', state => { state.policy.basin_contract.find(row => row.basin_id === 'allocator-war-source').path_prefixes[0] = 'data/project/lake-allocator-war-'; }]
 ];
 
 for (const [label, mutate] of mutations) expectFailure(label, mutate);

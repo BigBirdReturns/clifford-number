@@ -211,14 +211,27 @@
       "basin_id": "allocator-war-source",
       "label": "Allocator-war source registries",
       "path_prefixes": [
-        "data/project/lake-allocator-war-"
+        "data/project/lake-allocator-war-estate-acquisition-registry-wave-21.jsonl",
+        "data/project/lake-allocator-war-observation-registry-wave-21.jsonl",
+        "data/project/lake-allocator-war-program-feed-registry-wave-21.jsonl",
+        "data/project/lake-allocator-war-waterline-registry-wave-21.jsonl",
+        "data/project/lake-allocator-war-wave-21-policy.json",
+        "data/project/lake-allocator-war-wave-21.json",
+        "docs/methods/lake-allocator-war-wave-21.md",
+        "docs/milestones/lake-allocator-war-wave-21.md"
       ],
       "semantic_role": "research_routing_source",
       "owner_program_id": "CN-LAKE-ALLOCATOR-WAR-W21",
       "ownership_status": "declared_by_wave_21",
       "authoritative_entrypoints": [
+        "data/project/lake-allocator-war-estate-acquisition-registry-wave-21.jsonl",
+        "data/project/lake-allocator-war-observation-registry-wave-21.jsonl",
+        "data/project/lake-allocator-war-program-feed-registry-wave-21.jsonl",
+        "data/project/lake-allocator-war-waterline-registry-wave-21.jsonl",
         "data/project/lake-allocator-war-wave-21-policy.json",
-        "data/project/lake-allocator-war-wave-21.json"
+        "data/project/lake-allocator-war-wave-21.json",
+        "docs/methods/lake-allocator-war-wave-21.md",
+        "docs/milestones/lake-allocator-war-wave-21.md"
       ],
       "source_basin_ids": [
         "project-governance",
@@ -231,12 +244,14 @@
       "basin_id": "allocator-war-lake-actions",
       "label": "Allocator-war lake projections",
       "path_prefixes": [
-        "build/lake-actions/allocator-war-wave-21"
+        "build/lake-actions/allocator-war-wave-21-reconciliation.json",
+        "build/lake-actions/allocator-war-wave-21.json"
       ],
       "semantic_role": "operational_decision_projection",
       "owner_program_id": "CN-LAKE-ALLOCATOR-WAR-W21",
       "ownership_status": "declared_by_builder",
       "authoritative_entrypoints": [
+        "build/lake-actions/allocator-war-wave-21-reconciliation.json",
         "build/lake-actions/allocator-war-wave-21.json"
       ],
       "source_basin_ids": [
@@ -249,7 +264,7 @@
       "basin_id": "allocator-war-reports",
       "label": "Allocator-war lake reports",
       "path_prefixes": [
-        "reports/lake-allocator-war-wave-21"
+        "reports/lake-allocator-war-wave-21.md"
       ],
       "semantic_role": "report_projection",
       "owner_program_id": "CN-LAKE-ALLOCATOR-WAR-W21",
@@ -273,7 +288,8 @@
     "estate_route_transfers_authority": false,
     "program_route_transfers_authority": false,
     "missing_external_review_blocks_internal_routing": false,
-    "correction_mode": "append_preserving_supersession"
+    "correction_mode": "append_preserving_supersession",
+    "typed_projection_views_may_differ_by_role": true
   },
   "boundaries": {
     "imported_commit_proves_source_truth": false,
@@ -294,6 +310,37 @@
     "active_claim_created": false,
     "hop_created": false,
     "publication_cleared": false,
+    "graph_effect": "none",
+    "typed_projection_view_proves_identity_or_truth": false,
+    "typed_projection_view_authorizes_cross_key_join": false,
+    "repeated_gate_id_is_identical_assessment": false,
+    "repeated_owner_program_id_is_graph_or_common_purpose": false,
+    "wave_21_method_and_milestone_are_source_owned": true,
+    "wave_21_basin_paths_are_exact": true
+  },
+  "projection_contract": {
+    "contract_name": "wave21_source_registry_and_aggregate_projection_views",
+    "target_identifier_keys": [
+      "allocator_class_id",
+      "allocator_estate_feed_id",
+      "allocator_program_feed_id",
+      "allocator_record_id",
+      "basin_id",
+      "gate_id",
+      "owner_program_id",
+      "program_id",
+      "wave_id"
+    ],
+    "allowed_generated_paths": [
+      "build/lake-actions/allocator-war-wave-21.json",
+      "build/lake-actions/allocator-war-wave-21-reconciliation.json"
+    ],
+    "divergence_classification": "typed_wave21_identifier_reuse_across_source_records_and_projection_views",
+    "divergence_disposition": "retain_declared_typed_reference_views",
+    "source_only_classification": "declared_wave21_semantic_or_routing_identifier",
+    "source_only_disposition": "retain_declared_source_identifier",
+    "projection_hash_equality_required": false,
+    "cross_key_join_authorized": false,
     "graph_effect": "none"
   }
 }

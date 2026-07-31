@@ -179,6 +179,8 @@ for (const [index, observation] of wave1.observations.entries()) {
   assert(review?.review_state === 'maintainer_reviewed', `${observation.observation_id}: maintainer review missing`);
   observationRows.push({
     schema_version: 'lake-allocator-war-observation-wave-21@1',
+    program_id: policy.program_id,
+    wave_id: policy.wave_id,
     allocator_record_id: `LAW21-OBS-${String(index + 1).padStart(3, '0')}`,
     source_observation_ref: observation.observation_id,
     source_wave_key: 'SSC-W01',
@@ -217,6 +219,8 @@ for (const [index, observation] of wave2.observations.entries()) {
   assert(route, `${observation.observation_id}: Wave 02 lane route missing`);
   observationRows.push({
     schema_version: 'lake-allocator-war-observation-wave-21@1',
+    program_id: policy.program_id,
+    wave_id: policy.wave_id,
     allocator_record_id: `LAW21-OBS-${String(expected.wave_01_reviewed_observations + index + 1).padStart(3, '0')}`,
     source_observation_ref: observation.observation_id,
     source_wave_key: 'SSC-W02',
@@ -254,6 +258,8 @@ const waterlineRows = [];
 for (const [index, findingClass] of awWaterline.finding_classes.entries()) {
   waterlineRows.push({
     schema_version: 'lake-allocator-war-waterline-class-wave-21@1',
+    program_id: policy.program_id,
+    wave_id: policy.wave_id,
     allocator_class_id: `LAW21-CLASS-W1-${String(index + 1).padStart(2, '0')}`,
     source_wave_key: 'SSC-W01',
     source_class_ref: findingClass.finding_id,
@@ -272,6 +278,8 @@ for (const [index, findingClass] of awWaterline.finding_classes.entries()) {
 for (const [index, observation] of wave2.observations.entries()) {
   waterlineRows.push({
     schema_version: 'lake-allocator-war-waterline-class-wave-21@1',
+    program_id: policy.program_id,
+    wave_id: policy.wave_id,
     allocator_class_id: `LAW21-FRONTIER-W2-${String(index + 1).padStart(2, '0')}`,
     source_wave_key: 'SSC-W02',
     source_class_ref: null,
@@ -332,6 +340,8 @@ const estateRows = [...estateMap.values()]
   .sort((a, b) => a.consumer_key.localeCompare(b.consumer_key))
   .map((row, index) => ({
     schema_version: 'lake-allocator-war-estate-acquisition-wave-21@1',
+    program_id: policy.program_id,
+    wave_id: policy.wave_id,
     allocator_estate_feed_id: routeRecordId('LAW21-EST', index),
     consumer_type: 'estate',
     consumer_key: row.consumer_key,
@@ -377,6 +387,8 @@ const programRows = [...programMap.values()]
   .sort((a, b) => a.consumer_key.localeCompare(b.consumer_key))
   .map((row, index) => ({
     schema_version: 'lake-allocator-war-program-feed-wave-21@1',
+    program_id: policy.program_id,
+    wave_id: policy.wave_id,
     allocator_program_feed_id: routeRecordId('LAW21-PROG', index),
     consumer_type: 'program',
     consumer_key: row.consumer_key,
@@ -404,11 +416,13 @@ const beforeGraphDigests = graphDigests();
 
 const receipt = {
   schema_version: 'lake-allocator-war-wave-21-receipt@1',
-  receipt_key: 'LAW-W21-RECEIPT',
+  program_id: policy.program_id,
+  wave_id: policy.wave_id,
   as_of: policy.as_of,
   status: 'source_materialized_pending_lake_reconciliation',
   base_checkpoint: policy.base_checkpoint,
   import_digests: importDigests,
+  projection_contract: policy.projection_contract,
   source_registry_digests: sourceRegistryDigests,
   counts: {
     wave_01_reviewed_observations: expected.wave_01_reviewed_observations,
@@ -440,7 +454,8 @@ const receipt = {
 
 const projection = {
   schema_version: 'lake-allocator-war-wave-21@1',
-  projection_key: 'LAW-W21-PROJECTION',
+  program_id: policy.program_id,
+  wave_id: policy.wave_id,
   generated_from: {
     policy_path: 'data/project/lake-allocator-war-wave-21-policy.json',
     observation_registry_path: policy.paths.observation_registry,
@@ -452,6 +467,14 @@ const projection = {
     wave_01: 'maintainer_reviewed_below_second_party_review',
     wave_02: 'unreviewed_intake_only'
   },
+  projection_contract: policy.projection_contract,
+  basins: policy.basin_contract.map(row => ({
+    basin_id: row.basin_id,
+    label: row.label,
+    semantic_role: row.semantic_role,
+    owner_program_id: row.owner_program_id,
+    graph_effect: 'none'
+  })),
   observations: observationRows,
   waterline_classes: waterlineRows,
   estate_acquisition_routes: estateRows,

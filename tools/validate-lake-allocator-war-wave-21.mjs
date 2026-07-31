@@ -53,6 +53,35 @@ export function validateArtifacts(state) {
 
   if (policy.schema_version !== 'lake-allocator-war-wave-21-policy@1') fail(errors, 'policy schema drift');
   if (policy.boundaries.graph_effect !== 'none') fail(errors, 'policy graph effect drift');
+  if (policy.projection_contract.graph_effect !== 'none') fail(errors, 'projection contract graph effect drift');
+  if (policy.projection_contract.cross_key_join_authorized !== false) fail(errors, 'projection contract cross-key join drift');
+  if (policy.projection_contract.projection_hash_equality_required !== false) fail(errors, 'projection contract hash-equality drift');
+  for (const key of ['gate_id', 'owner_program_id']) {
+    if (!policy.projection_contract.target_identifier_keys.includes(key)) fail(errors, `${key}: projection contract target missing`);
+  }
+  if (policy.boundaries.repeated_gate_id_is_identical_assessment !== false) fail(errors, 'gate reference boundary drift');
+  if (policy.boundaries.repeated_owner_program_id_is_graph_or_common_purpose !== false) fail(errors, 'owner reference boundary drift');
+  if (policy.boundaries.wave_21_basin_paths_are_exact !== true) fail(errors, 'exact basin path boundary drift');
+  const exactBasinPaths = new Map([
+    ['allocator-war-source', [
+      'data/project/lake-allocator-war-wave-21-policy.json',
+      policy.paths.observation_registry,
+      policy.paths.waterline_registry,
+      policy.paths.estate_registry,
+      policy.paths.program_registry,
+      policy.paths.receipt,
+      'docs/methods/lake-allocator-war-wave-21.md',
+      'docs/milestones/lake-allocator-war-wave-21.md'
+    ]],
+    ['allocator-war-lake-actions', [policy.paths.projection, policy.paths.reconciliation]],
+    ['allocator-war-reports', [policy.paths.report]]
+  ]);
+  for (const [basinId, expectedPaths] of exactBasinPaths) {
+    const basin = policy.basin_contract.find(row => row.basin_id === basinId);
+    const actual = [...(basin?.path_prefixes ?? [])].sort();
+    const expected = [...expectedPaths].sort();
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) fail(errors, `${basinId}: exact basin path contract drift`);
+  }
   if (observations.length !== expected.total_observations) fail(errors, `observation count ${observations.length}`);
   if (waterline.length !== expected.wave_01_finding_classes + expected.wave_02_unreviewed_observations) fail(errors, `waterline count ${waterline.length}`);
   if (estates.length !== expected.estate_consumers_after) fail(errors, `estate count ${estates.length}`);
@@ -63,6 +92,18 @@ export function validateArtifacts(state) {
   const estateIds = estates.map(row => row.allocator_estate_feed_id);
   const programIds = programs.map(row => row.allocator_program_feed_id);
   if (![recordIds, classIds, estateIds, programIds].every(unique)) fail(errors, 'duplicate Wave 21 identifier');
+  const gateIds = [...new Set(observations.flatMap(row =>
+    (row.four_gate_assessment ?? []).map(gate => gate.gate_id)
+  ))].sort();
+  if (gateIds.length !== 4) fail(errors, `four-gate identifier count ${gateIds.length}`);
+  for (const row of [...observations, ...waterline, ...estates, ...programs]) {
+    if (row.program_id !== policy.program_id) fail(errors, 'row program identity drift');
+    if (row.wave_id !== policy.wave_id) fail(errors, 'row wave identity drift');
+  }
+  if (receipt.program_id !== policy.program_id || receipt.wave_id !== policy.wave_id) fail(errors, 'receipt program or wave identity drift');
+  if (projection.program_id !== policy.program_id || projection.wave_id !== policy.wave_id) fail(errors, 'projection program or wave identity drift');
+  const basinIds = new Set((projection.basins ?? []).map(row => row.basin_id));
+  for (const basin of policy.basin_contract) if (!basinIds.has(basin.basin_id)) fail(errors, `${basin.basin_id}: projection basin view missing`);
 
   const reviewed = observations.filter(row => row.source_wave_key === 'SSC-W01');
   const intake = observations.filter(row => row.source_wave_key === 'SSC-W02');
@@ -104,6 +145,7 @@ export function validateArtifacts(state) {
   if (JSON.stringify(projection.program_feeds) !== JSON.stringify(programs)) fail(errors, 'program projection drift');
 
   if (reconciliation) {
+    if (reconciliation.program_id !== policy.program_id || reconciliation.wave_id !== policy.wave_id) fail(errors, 'reconciliation program or wave identity drift');
     if (!reconciliation.current_state?.source_projection_index_complete) fail(errors, 'reconciliation not source/projection/index complete');
     if (reconciliation.current_state?.graph_effect !== 'none') fail(errors, 'reconciliation graph effect');
     if (reconciliation.counts?.source_ids_source_observed !== recordIds.length + classIds.length + estateIds.length + programIds.length) fail(errors, 'reconciliation source count drift');
@@ -152,7 +194,9 @@ export function validateRepository(root = defaultRoot) {
     policy.paths.receipt,
     policy.paths.projection,
     policy.paths.reconciliation,
-    policy.paths.report
+    policy.paths.report,
+    'docs/methods/lake-allocator-war-wave-21.md',
+    'docs/milestones/lake-allocator-war-wave-21.md'
   ]) if (!lakePolicy.authoritative_roots.includes(relative)) fail(errors, `${relative}: missing authoritative root`);
 
   const pkg = readJson(root, 'package.json');
@@ -166,12 +210,27 @@ export function validateRepository(root = defaultRoot) {
     const basinMembershipPath = 'build/lake-index/basin-membership.jsonl';
     if (fs.existsSync(full(root, summaryPath))) {
       const summary = readJson(root, summaryPath);
-      if (summary.counts?.allocator_war_wave_21_source_rows !== 53) fail(errors, 'sharded summary Wave 21 source count drift');
+      const expectedSourceRows = observations.length + waterline.length + estates.length + programs.length;
+      const expectedGateIds = new Set(observations.flatMap(row =>
+        (row.four_gate_assessment ?? []).map(gate => gate.gate_id)
+      )).size;
+      const expectedContractObjects = expectedSourceRows + policy.basin_contract.length + expectedGateIds + 3;
+      if (summary.counts?.allocator_war_wave_21_source_rows !== expectedSourceRows) fail(errors, 'sharded summary Wave 21 source count drift');
+      if (summary.counts?.allocator_war_wave_21_contract_objects !== expectedContractObjects) fail(errors, 'sharded summary Wave 21 contract-object count drift');
       if (summary.counts?.allocator_war_wave_21_complete_findings !== 0) fail(errors, 'sharded summary finding inflation');
+      for (const [key, label] of [
+        ['divergent_identifier_projections_unadjudicated', 'divergence'],
+        ['source_ids_without_projection_unadjudicated', 'source-only'],
+        ['unindexed_machine_ids_unadjudicated', 'unindexed']
+      ]) if (summary.counts?.[key] !== 0) fail(errors, `Wave 21 sharded summary unresolved identifier ${label}`);
     }
     if (fs.existsSync(full(root, gapsPath))) {
       const gaps = readJson(root, gapsPath);
-      if (gaps.allocator_war_wave_21?.unresolved_identifier_divergence !== 0) fail(errors, 'Wave 21 unresolved identifier divergence');
+      for (const [key, label] of [
+        ['divergent_identifier_projections_unadjudicated', 'divergence'],
+        ['source_ids_without_projection_unadjudicated', 'source-only'],
+        ['unindexed_machine_ids_unadjudicated', 'unindexed']
+      ]) if (gaps.counts?.[key] !== 0) fail(errors, `Wave 21 sharded gap summary unresolved identifier ${label}`);
     }
     if (fs.existsSync(full(root, basinMembershipPath))) {
       const membership = readJsonl(root, basinMembershipPath);
@@ -182,7 +241,9 @@ export function validateRepository(root = defaultRoot) {
         policy.paths.waterline_registry,
         policy.paths.estate_registry,
         policy.paths.program_registry,
-        policy.paths.receipt
+        policy.paths.receipt,
+        'docs/methods/lake-allocator-war-wave-21.md',
+        'docs/milestones/lake-allocator-war-wave-21.md'
       ]) if (byPath.get(relative)?.basin_id !== 'allocator-war-source') fail(errors, `${relative}: wrong source basin`);
       if (byPath.get(policy.paths.projection)?.basin_id !== 'allocator-war-lake-actions') fail(errors, 'projection wrong basin');
       if (byPath.get(policy.paths.reconciliation)?.basin_id !== 'allocator-war-lake-actions') fail(errors, 'reconciliation wrong basin');

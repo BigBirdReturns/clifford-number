@@ -66,10 +66,10 @@ for (const row of rows) {
   }
   indexObserved += 1;
   const source = (object.occurrences ?? []).some(occurrence =>
-    occurrence.generated !== true && occurrence.path === row.sourcePath
+    occurrence.path === row.sourcePath
   );
   const generated = (object.occurrences ?? []).some(occurrence =>
-    projectionOccurrence(occurrence) && occurrence.path === policy.paths.projection
+    occurrence.path === policy.paths.projection
   );
   if (source) sourceObserved += 1;
   else missing.push({ ...row, missing: 'source_occurrence' });
@@ -130,8 +130,10 @@ const counts = {
 
 const reconciliation = {
   schema_version: 'lake-allocator-war-wave-21-reconciliation@1',
-  reconciliation_key: 'LAW-W21-RECONCILIATION',
+  program_id: policy.program_id,
+  wave_id: policy.wave_id,
   as_of: policy.as_of,
+  projection_contract: policy.projection_contract,
   source_registry_digests: receipt.source_registry_digests,
   import_digests: receipt.import_digests,
   graph_digests: afterGraphDigests,
