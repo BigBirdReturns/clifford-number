@@ -22,18 +22,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Package exact working tree
+      - name: Package exact main working tree
         run: |
           set -Eeuo pipefail
-          printf '%s\n' "$(git rev-parse HEAD)" > SSC-W02-REVIEW-BASE-COMMIT.txt
-          tar --exclude=.git --exclude=ssc-wave02-review-base.tar.xz -cJf ssc-wave02-review-base.tar.xz .
-          sha256sum ssc-wave02-review-base.tar.xz > ssc-wave02-review-base.tar.xz.sha256
+          BASE=$(git rev-parse HEAD^1)
+          printf '%s\n' "$BASE" > /tmp/SSC-W02-REVIEW-BASE-COMMIT.txt
+          git checkout "$BASE" -- .
+          rm -f .github/workflows/temporary-export-ssc-wave02-review-base.yml
+          tar --exclude=.git -cJf /tmp/ssc-wave02-review-base.tar.xz .
+          sha256sum /tmp/ssc-wave02-review-base.tar.xz > /tmp/ssc-wave02-review-base.tar.xz.sha256
       - uses: actions/upload-artifact@v4
         with:
           name: ssc-wave02-review-base
           path: |
-            ssc-wave02-review-base.tar.xz
-            ssc-wave02-review-base.tar.xz.sha256
-            SSC-W02-REVIEW-BASE-COMMIT.txt
+            /tmp/ssc-wave02-review-base.tar.xz
+            /tmp/ssc-wave02-review-base.tar.xz.sha256
+            /tmp/SSC-W02-REVIEW-BASE-COMMIT.txt
           if-no-files-found: error
           retention-days: 1
