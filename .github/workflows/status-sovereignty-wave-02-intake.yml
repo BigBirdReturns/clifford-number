@@ -67,7 +67,7 @@ jobs:
           test ! -e dist/reports/core-thesis/status-sovereignty/wave-02-intake
       - name: Run complete repository release gate
         run: npm run release:check
-      - name: Prove deterministic intake products without promoting them
+      - name: Prove deterministic committed intake products
         run: |
           set -Eeuo pipefail
           products=(
@@ -78,15 +78,19 @@ jobs:
             reports/core-thesis/status-sovereignty/wave-02-intake/index.html
           )
           sha256sum "${products[@]}" > /tmp/ssc-wave02-intake-products.sha256
-          rm -rf \
-            data/project/status-sovereignty-wave-02-intake-release-manifest.json \
-            build/core-thesis/status-sovereignty/wave-02-intake \
-            reports/core-thesis/status-sovereignty/wave-02-intake
           node tools/build-status-sovereignty-wave-02-intake.mjs
           sha256sum --check --strict /tmp/ssc-wave02-intake-products.sha256
           node tools/validate-status-sovereignty-wave-02-intake.mjs
-          rm -rf \
-            data/project/status-sovereignty-wave-02-intake-release-manifest.json \
-            build/core-thesis/status-sovereignty/wave-02-intake \
-            reports/core-thesis/status-sovereignty/wave-02-intake
+          git diff --exit-code -- "${products[@]}"
+          git restore -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json
           test -z "$(git status --porcelain)"
