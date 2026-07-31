@@ -47,6 +47,10 @@ for (const [artifact, schema] of [
 }
 
 if (decisions.length !== policy.baseline.unused_receipt_definitions) fail(`decision denominator is ${decisions.length}`);
+if (decisions.some(row => row.program_id !== policy.program_id)) fail('decision program identity drift');
+if (projection.program_id !== policy.program_id) fail('projection program identity drift');
+if (receipt.program_id !== policy.program_id) fail('receipt program identity drift');
+if (reconciliation.program_id !== policy.program_id) fail('reconciliation program identity drift');
 if (unusedGaps.length !== policy.baseline.unused_receipt_definitions) fail(`raw unused denominator is ${unusedGaps.length}`);
 if (rawReceiptRows.filter(row => row.defined && !row.used).length !== policy.baseline.unused_receipt_definitions) fail('unused receipt index denominator drift');
 if (receiptSemantics.canonical_receipt_ids !== policy.baseline.canonical_receipt_ids) fail('canonical receipt denominator drift');

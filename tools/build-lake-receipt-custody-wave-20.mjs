@@ -255,6 +255,7 @@ const decisions = unusedGaps.map(gap => {
 
   return {
     schema_version: 'lake-receipt-custody-decision-wave-20@1',
+    program_id: policy.program_id,
     receipt_custody_decision_id: stableId('LAKEW20RECEIPT', [
       policy.program_id,
       gap.receipt_id,
@@ -333,7 +334,7 @@ const counts = {
 writeJsonl(policy.paths.registry, decisions);
 writeCompactJson(policy.paths.projection, {
   schema_version: 'lake-receipt-custody-wave-20@1',
-  program_key: policy.program_id,
+  program_id: policy.program_id,
   registry_sha256: registrySha256,
   counts,
   decisions: decisions.map(row => ({
@@ -356,7 +357,7 @@ writeCompactJson(policy.paths.projection, {
 });
 writeJson(policy.paths.receipt, {
   schema_version: 'lake-receipt-custody-wave-20-receipt@1',
-  program_key: policy.program_id,
+  program_id: policy.program_id,
   registry_sha256: registrySha256,
   receipt_gap_sha256: digest(unusedGaps),
   receipt_index_sha256: digest(rawReceiptRows),

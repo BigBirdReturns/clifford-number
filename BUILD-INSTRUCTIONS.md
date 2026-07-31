@@ -413,3 +413,13 @@ Cross-family typed views remain distinct and are never forced into byte equality
 A generator contract governs serialization custody; it does not prove identity,
 evidence truth, publication status, a relationship, participation, or graph semantics.
 Missing a reviewer is not a standalone blocker for bounded contract execution.
+
+3.20 **Receipt and source custody — Wave 20.**
+Every raw unused receipt-definition row receives a source-preserving custody decision.
+Compound scalar receipt tokens are classified as encoding defects only after every
+constituent receipt is independently defined. Hash-pinned, locator-only, coverage,
+explicitly unavailable, and repository-only custody remain distinct.
+
+The raw unused-definition denominator remains visible. Adjudication does not attach a
+receipt to a claim, invent source bytes, prove evidence truth, clear publication, create
+a relationship or participation row, or alter the active graph.

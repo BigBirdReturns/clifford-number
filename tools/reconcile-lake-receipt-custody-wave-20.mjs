@@ -132,7 +132,7 @@ const receipt = {
 };
 const reconciliation = {
   schema_version: 'lake-receipt-custody-wave-20-reconciliation@1',
-  program_key: policy.program_id,
+  program_id: policy.program_id,
   registry_sha256: digest(decisions),
   receipt_gap_sha256: digest(unusedGaps),
   graph_digests: graphDigests,

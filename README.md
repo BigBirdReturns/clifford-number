@@ -234,3 +234,11 @@ payload byte. The registry closes the bounded action queue while retaining raw t
 divergence where it is legitimate.
 No contract authorizes a cross-key join or creates a relationship, participation row,
 graph edge, truth determination, or publication clearance.
+
+## Receipt and source custody
+
+Wave 20 adjudicates the residual unused-receipt denominator without manufacturing
+consumption. It separates compound reference-encoding defects from hash-pinned,
+locator-only, coverage-source, explicitly unresolved, and repository-only custody.
+Every decision is reversible and graph-inert; source claims and receipt definitions
+remain byte-stable.
