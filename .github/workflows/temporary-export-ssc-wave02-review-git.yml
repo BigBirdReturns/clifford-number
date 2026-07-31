@@ -1,0 +1,41 @@
+name: Temporary export SSC Wave 02 review Git history
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-export-ssc-wave02-review-git.yml'
+  push:
+    branches: [agent/ssc-wave02-review-git-export]
+    paths:
+      - '.github/workflows/temporary-export-ssc-wave02-review-git.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Package exact Git history
+        run: |
+          set -Eeuo pipefail
+          git bundle create /tmp/ssc-wave02-review-base.bundle --all
+          git bundle verify /tmp/ssc-wave02-review-base.bundle
+          sha256sum /tmp/ssc-wave02-review-base.bundle > /tmp/ssc-wave02-review-base.bundle.sha256
+          printf '%s\n' "$(git rev-parse HEAD^1)" > /tmp/SSC-W02-REVIEW-BASE-COMMIT.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-review-git-base
+          path: |
+            /tmp/ssc-wave02-review-base.bundle
+            /tmp/ssc-wave02-review-base.bundle.sha256
+            /tmp/SSC-W02-REVIEW-BASE-COMMIT.txt
+          if-no-files-found: error
+          retention-days: 1
