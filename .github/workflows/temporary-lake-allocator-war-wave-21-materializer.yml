@@ -8,6 +8,7 @@ on:
       - '.github/tmp/lake-allocator-war-wave-21-trigger.json'
       - '.github/workflows/temporary-lake-allocator-war-wave-21-materializer.yml'
       - 'data/project/lake-allocator-war-wave-21-policy.json'
+      - 'tools/repair-lake-allocator-war-wave-21-final.mjs'
   workflow_dispatch:
 
 permissions:
@@ -52,7 +53,10 @@ jobs:
           set -euo pipefail
           node --check tools/repair-lake-allocator-war-wave-21.mjs
           node tools/repair-lake-allocator-war-wave-21.mjs
+          node --check tools/repair-lake-allocator-war-wave-21-final.mjs
+          node tools/repair-lake-allocator-war-wave-21-final.mjs
           rm -f tools/repair-lake-allocator-war-wave-21.mjs
+          rm -f tools/repair-lake-allocator-war-wave-21-final.mjs
           node --check tools/install-lake-allocator-war-wave-21.mjs
           node --check tools/build-lake-allocator-war-wave-21.mjs
           node --check tools/reconcile-lake-allocator-war-wave-21.mjs
@@ -146,6 +150,7 @@ jobs:
           test ! -e .github/tmp/lake-allocator-war-wave-21-trigger.json
           test ! -e .github/workflows/temporary-lake-allocator-war-wave-21-materializer.yml
           test ! -e tools/repair-lake-allocator-war-wave-21.mjs
+          test ! -e tools/repair-lake-allocator-war-wave-21-final.mjs
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
