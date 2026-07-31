@@ -1,0 +1,55 @@
+name: Retire Counter-Selector Wave 07 source branches
+
+on:
+  push:
+    branches:
+      - 'agent/counter-selector-wave-07-retire-source'
+    paths:
+      - '.github/workflows/retire-counter-selector-wave-07-source.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  SOURCE_BRANCH: agent/counter-selector-wave-07-b02-acquisition-v3
+
+jobs:
+  verify-canonical-and-retire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify transport-free canonical Wave 07
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f tools/build-counter-selector-wave-07.mjs
+          test -f tools/validate-counter-selector-wave-07.mjs
+          test -f test/counter-selector-wave-07.test.js
+          test -f data/project/counter-selector-wave-07-release-manifest.json
+          test ! -e .github/workflows/materialize-counter-selector-wave-07.yml
+          test ! -d .github/materializers/counter-selector-wave-07
+          node tools/build-counter-selector-wave-07.mjs
+          node tools/validate-counter-selector-wave-07.mjs
+          node test/counter-selector-wave-07.test.js
+          npm run release:check
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+
+      - name: Retire obsolete working branches
+        shell: bash
+        run: |
+          set -euo pipefail
+          git push origin --delete "$SOURCE_BRANCH" || true
+          git push origin --delete agent/counter-selector-wave-07-finalize || true
+          git push origin --delete agent/counter-selector-wave-07-canonical-semaphore || true
+          git push origin --delete agent/counter-selector-wave-07-retire-source || true
