@@ -5,7 +5,7 @@
   "campaign_id": "SSC-W01-SPR01",
   "as_of": "2026-07-31",
   "issue": 507,
-  "status": "campaign_infrastructure_zero_external_receipts",
+  "status": "campaign_infrastructure_complete_zero_external_receipts",
   "authority_tier": "AT-2",
   "title": "SSC-H01 Wave 01 separated second-party review campaign",
   "parent_checkpoint": {
@@ -15,11 +15,17 @@
   },
   "source_paths": {
     "maintainer_review": "data/research/status-sovereignty-wave-01-maintainer-review.json",
+    "maintainer_review_source_receipts": "data/research/status-sovereignty-wave-01-source-receipts.json",
     "maintainer_review_release_manifest": "data/project/status-sovereignty-wave-01-maintainer-review-release-manifest.json",
     "targeted_acquisition": "data/research/status-sovereignty-wave-01-targeted-acquisition.json",
+    "targeted_acquisition_source_receipts": "data/research/status-sovereignty-wave-01-targeted-acquisition-source-receipts.json",
     "targeted_acquisition_release_manifest": "data/project/status-sovereignty-wave-01-targeted-acquisition-release-manifest.json",
     "candidate_registry": "data/research/status-sovereignty-wave-01-second-party-review-candidates.json",
-    "response_registry": "data/research/status-sovereignty-wave-01-second-party-review-responses.json"
+    "response_registry": "data/research/status-sovereignty-wave-01-second-party-review-responses.json",
+    "packet_registry": "data/project/status-sovereignty-wave-01-second-party-review-packet-registry.json",
+    "candidate_schema": "schemas/status-sovereignty-second-party-review-candidate.schema.json",
+    "review_receipt_schema": "schemas/status-sovereignty-second-party-review-receipt.schema.json",
+    "public_intake": "docs/ssc-wave-01-second-party-review-intake.md"
   },
   "packet_ids": [
     "SSC-OBS-0001",
@@ -96,7 +102,11 @@
     "maintainer_review_relation",
     "confidence",
     "scope_limits",
-    "authenticity_receipt"
+    "authenticity_receipt",
+    "review_effect",
+    "publication_effect",
+    "graph_effect",
+    "adoption_effect"
   ],
   "allowed_review_effects": [
     "affirm_maintainer_ceiling",
@@ -123,6 +133,8 @@
   },
   "counts": {
     "wave_packets": 14,
+    "packet_registry_rows": 14,
+    "unassigned_packets": 14,
     "maintainer_reviewed_packets": 14,
     "second_party_reviewed_packets": 0,
     "adjudicated_packets": 0,
@@ -142,7 +154,8 @@
     "graph_effects": 0
   },
   "current_result": {
-    "campaign_infrastructure_complete": false,
+    "campaign_infrastructure_complete": true,
+    "packet_registry_complete": true,
     "candidate_registry_open": true,
     "second_party_review_complete": false,
     "adjudication_complete": false,
