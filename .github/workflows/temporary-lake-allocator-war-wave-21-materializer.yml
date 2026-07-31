@@ -86,21 +86,7 @@ jobs:
             node tools/validate-lake-receipt-semantics.mjs
             node tools/validate-lake-gap-summary.mjs
             if [ "$pass" = "1" ]; then
-              node --input-type=module <<'NODE'
-              import fs from 'node:fs';
-              const gaps = JSON.parse(fs.readFileSync('build/lake-index-gaps.json', 'utf8'));
-              const summary = JSON.parse(fs.readFileSync('build/lake-gap-summary.json', 'utf8'));
-              console.log('WAVE21_DIAGNOSTIC_UNINDEXED');
-              console.log(JSON.stringify(gaps.unindexed_machine_ids_unadjudicated, null, 2));
-              console.log('WAVE21_DIAGNOSTIC_SOURCE_ONLY');
-              console.log(JSON.stringify(gaps.source_ids_without_projection_unadjudicated, null, 2));
-              console.log('WAVE21_DIAGNOSTIC_DIVERGENCE');
-              console.log(JSON.stringify(gaps.divergent_identifier_projections_unadjudicated, null, 2));
-              console.log('WAVE21_DIAGNOSTIC_UNOWNED');
-              console.log(JSON.stringify(summary.unowned_evidence_paths ?? summary.paths_without_program_owner ?? [], null, 2));
-              console.log('WAVE21_DIAGNOSTIC_UNREACHABLE');
-              console.log(JSON.stringify(summary.not_index_reachable_paths ?? summary.evidence_not_index_reachable ?? [], null, 2));
-              NODE
+              node -e 'const fs=require("fs");const gaps=JSON.parse(fs.readFileSync("build/lake-index-gaps.json","utf8"));const summary=JSON.parse(fs.readFileSync("build/lake-gap-summary.json","utf8"));const rows={WAVE21_DIAGNOSTIC_UNINDEXED:gaps.unindexed_machine_ids_unadjudicated,WAVE21_DIAGNOSTIC_SOURCE_ONLY:gaps.source_ids_without_projection_unadjudicated,WAVE21_DIAGNOSTIC_DIVERGENCE:gaps.divergent_identifier_projections_unadjudicated,WAVE21_DIAGNOSTIC_UNOWNED:summary.unowned_evidence_paths??summary.paths_without_program_owner??[],WAVE21_DIAGNOSTIC_UNREACHABLE:summary.not_index_reachable_paths??summary.evidence_not_index_reachable??[]};for(const [label,value] of Object.entries(rows)){console.log(label);console.log(JSON.stringify(value,null,2));}'
             fi
             node tools/reconcile-lake-identifier-topology-wave-18.mjs
             node tools/reconcile-lake-generator-contracts-wave-19.mjs
