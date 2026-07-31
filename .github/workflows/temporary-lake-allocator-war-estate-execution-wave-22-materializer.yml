@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: agent/allocator-war-estate-acquisition-wave-22
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -54,6 +54,16 @@ jobs:
           set -euo pipefail
           node --check tools/materialize-lake-allocator-war-estate-execution-wave-22.mjs
           node tools/materialize-lake-allocator-war-estate-execution-wave-22.mjs
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const testPath = 'test/lake-allocator-war-estate-execution-wave-22.test.js';
+          let source = fs.readFileSync(testPath, 'utf8');
+          const before = "  ['change priority', state => { state.projection.queues[0].tasks[0].priority_tier = 'P2'; }],";
+          const after = "  ['change priority', state => { const task = state.projection.queues[0].tasks[0]; task.priority_tier = task.priority_tier === 'P0' ? 'P1' : 'P0'; }],";
+          if (!source.includes(before)) throw new Error('Wave 22 priority mutation marker missing');
+          source = source.replace(before, after);
+          fs.writeFileSync(testPath, source);
+          NODE
           rm -f tools/materialize-lake-allocator-war-estate-execution-wave-22.mjs
           rm -f .github/tmp/lake-allocator-war-estate-execution-wave-22-trigger.json
           rm -f .github/workflows/temporary-lake-allocator-war-estate-execution-wave-22-materializer.yml
