@@ -1,0 +1,57 @@
+name: Temporary export SSC SG-07 comment carrier
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize, reopened, ready_for_review]
+    paths:
+      - '.github/workflows/temporary-export-ssc-sg07-comment-carrier.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  export:
+    if: github.head_ref == 'agent/status-sovereignty-wave01-review-loader'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/status-sovereignty-wave01-review-loader
+          fetch-depth: 0
+      - name: Recover carrier from PR 497 comments
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ssc-sg07-comment-carrier
+          gh api --paginate "repos/${REPOSITORY}/issues/497/comments?per_page=100" > /tmp/comments.json
+          python3 - <<'PY'
+          import base64, json
+          rows=json.load(open('/tmp/comments.json'))
+          parts=[]
+          for row in rows:
+              lines=(row.get('body') or '').splitlines()
+              if lines and lines[0].startswith('SSC-SG07-CARRIER-PART-'):
+                  parts.append((lines[0], ''.join(lines[1:]).strip()))
+          parts.sort()
+          if len(parts) != 16:
+              raise RuntimeError(f'expected 16 carrier comments, observed {len(parts)}')
+          encoded=''.join(value for _, value in parts)
+          raw=base64.b64decode(encoded, validate=True)
+          open('/tmp/ssc-sg07-comment-carrier/carrier.b64','w').write(encoded)
+          open('/tmp/ssc-sg07-comment-carrier/carrier.tar.xz','wb').write(raw)
+          open('/tmp/ssc-sg07-comment-carrier/parts.txt','w').write('\n'.join(name for name,_ in parts)+'\n')
+          PY
+          sha256sum /tmp/ssc-sg07-comment-carrier/* > /tmp/ssc-sg07-comment-carrier/checksums.sha256
+          xz --test /tmp/ssc-sg07-comment-carrier/carrier.tar.xz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-sg07-comment-carrier-${{ github.run_id }}
+          path: /tmp/ssc-sg07-comment-carrier/
+          if-no-files-found: error
+          retention-days: 2
