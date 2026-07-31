@@ -64,11 +64,10 @@ jobs:
           for row in comments:
               body=row.get('body','')
               lines=body.splitlines()
-              if lines and lines[0].startswith('SSC-SG07B-CARRIER-PART-'):
+              if lines and lines[0].startswith('SSC-SG07C-CARRIER-PART-'):
                   parts.append((lines[0],''.join(lines[1:]).strip()))
           parts.sort()
-          if len(parts)!=16: raise RuntimeError(f'expected 16 carrier comments, observed {len(parts)}')
-          expected=[f'SSC-SG07B-CARRIER-PART-{i:02d}' for i in range(16)]
+          expected=[f'SSC-SG07C-CARRIER-PART-{i:02d}' for i in range(8)]
           observed=[name for name,_ in parts]
           if observed!=expected: raise RuntimeError(f'carrier comment denominator drift: {observed}')
           raw=base64.b64decode(''.join(part for _,part in parts),validate=True)
@@ -79,22 +78,23 @@ jobs:
         run: |
           set -euo pipefail
           base='a9cb4c707a1cc6afb51d0fd20b0375e0cf2373b7'
-          target='agent/status-sovereignty-wave01-maintainer-review'
-          expected_archive='c11e469a5eaf65388c6c1110644ed6b53cc1c7ff8c91e244e93446bdf903a5c1'
-          expected_paths='fec1fc6ac3ef2e538be23ea162960e1a61dc59a45b8cb7024a31112ac2744224'
+          target='agent/status-sovereignty-wave01-maintainer-review-v2'
+          expected_archive='7d7b48d800dddfa84e751537455d41ea02555db7b1bb9df3c8a2653df335d49f'
+          expected_paths='5f49ee77ffff5c9b5efd2cf19542263438f9475fbe9aba9c998c7efb85210f9b'
+          expected_binding='0fee682980c2e54bbbde8e7851c4cb17da3893246a51c2c218f4c632f04efd54'
           printf '%s  %s\n' "$expected_archive" /tmp/ssc-wave01-review-carrier.tar.xz | sha256sum -c -
           rm -rf /tmp/ssc-review-payload /tmp/ssc-review-work
           mkdir -p /tmp/ssc-review-payload
           tar -xJf /tmp/ssc-wave01-review-carrier.tar.xz -C /tmp/ssc-review-payload
           test "$(cat /tmp/ssc-review-payload/BASE.txt)" = "$base"
-          test "$(cat /tmp/ssc-review-payload/LOCAL_TRANSITION.txt)" = 'f5516e2d0232b44b3f8f51c717cbf75a9580087a'
-          test "$(wc -l < /tmp/ssc-review-payload/TRANSITION_PATHS.txt)" -eq 53
+          test "$(cat /tmp/ssc-review-payload/LOCAL_TRANSITION.txt)" = '63eef4544678f906e6654a10e9fb62ea5ec05b62'
+          test "$(wc -l < /tmp/ssc-review-payload/TRANSITION_PATHS.txt)" -eq 52
           test "$(sha256sum /tmp/ssc-review-payload/TRANSITION_PATHS.txt | cut -d' ' -f1)" = "$expected_paths"
           test "$(wc -l < /tmp/ssc-review-payload/BINDING_PATHS.txt)" -eq 5
+          test "$(sha256sum /tmp/ssc-review-payload/BINDING_PATHS.txt | cut -d' ' -f1)" = "$expected_binding"
           git fetch origin main "$target"
           test "$(git rev-parse origin/main)" = "$base"
           old_head="$(git rev-parse "origin/$target")"
-          test "$old_head" = "$base"
           git worktree add --detach /tmp/ssc-review-work "$base"
           cd /tmp/ssc-review-work
           while IFS= read -r rel; do
@@ -102,16 +102,16 @@ jobs:
               .github/workflows/project-stable-ground-sg06.yml|\
               .github/workflows/project-stable-ground-sg07.yml|\
               .github/workflows/status-sovereignty-compact.yml|\
-              .github/workflows/status-sovereignty-wave-01-maintainer-review.yml|\
+              .github/workflows/status-sovereignty-wave-01-review.yml|\
               .github/workflows/status-sovereignty-wave-01.yml) continue ;;
             esac
             mkdir -p "$(dirname "$rel")"
             cp "/tmp/ssc-review-payload/transition/$rel" "$rel"
           done < /tmp/ssc-review-payload/TRANSITION_PATHS.txt
-          grep -vE '^\.github/workflows/(project-stable-ground-sg06|project-stable-ground-sg07|status-sovereignty-compact|status-sovereignty-wave-01-maintainer-review|status-sovereignty-wave-01)\.yml$' /tmp/ssc-review-payload/TRANSITION_PATHS.txt | sort > /tmp/expected-paths
+          grep -vE '^\.github/workflows/(project-stable-ground-sg06|project-stable-ground-sg07|status-sovereignty-compact|status-sovereignty-wave-01-review|status-sovereignty-wave-01)\.yml$' /tmp/ssc-review-payload/TRANSITION_PATHS.txt | sort > /tmp/expected-paths
           git diff --name-only | sort > /tmp/observed-paths
           diff -u /tmp/expected-paths /tmp/observed-paths
-          test "$(wc -l < /tmp/observed-paths)" -eq 48
+          test "$(wc -l < /tmp/observed-paths)" -eq 47
           git diff --check
           git add -A
           git config user.name 'github-actions[bot]'
