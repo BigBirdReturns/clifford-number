@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { collectStructuralErrors } from '../tools/validate-counter-selector.mjs';
+import { collectStructuralErrors, hydrateRegistry } from '../tools/validate-counter-selector.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => JSON.parse(fs.readFileSync(path.join(root, rel), 'utf8'));
 const clone = (value) => structuredClone(value);
 const program0 = read('data/project/counter-selector-program.json');
-const registry0 = read('data/project/counter-selector-candidate-registry.json');
+const registry0 = hydrateRegistry(read('data/project/counter-selector-candidate-registry.json'));
 const supersession0 = read('data/project/counter-selector-wave-00-supersession.json');
 const wave0 = read('data/project/counter-selector-wave-01.json');
 const schema0 = read('schemas/counter-selector-candidate.schema.json');
