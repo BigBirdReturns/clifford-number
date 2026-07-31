@@ -1,0 +1,94 @@
+name: Materialize Counter-Selector Wave 03 Batch 01
+
+on:
+  push:
+    branches:
+      - 'agent/counter-selector-wave-03-b01-acquisition'
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-03.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/counter-selector-wave-03-b01-acquisition
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Unpack exact Wave 03 source estate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/materializers/counter-selector-wave-03/payload-* \
+            | base64 --decode \
+            > /tmp/counter-selector-wave-03.tar.gz
+          echo 'f8af200f5473ef7f2a6e11c50a401a9c4ec856a250434fdbba767af379c10278  /tmp/counter-selector-wave-03.tar.gz' \
+            | sha256sum --check --strict
+          tar -xzf /tmp/counter-selector-wave-03.tar.gz -C .
+          rm -rf .github/materializers/counter-selector-wave-03
+
+      - name: Build, validate, and attack Batch 01 acquisition
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-counter-selector-wave-03.mjs
+          node tools/validate-counter-selector-wave-03.mjs
+          node test/counter-selector-wave-03.test.js
+
+      - name: Commit exact non-workflow Wave 03 estate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          actual="$(git diff --cached --name-only | sort)"
+          expected="$(printf '%s\n' \
+            .github/materializers/counter-selector-wave-03/payload-00 \
+            .github/materializers/counter-selector-wave-03/payload-01 \
+            .github/materializers/counter-selector-wave-03/payload-02 \
+            .github/materializers/counter-selector-wave-03/payload-03 \
+            .github/materializers/counter-selector-wave-03/payload-04 \
+            data/project/counter-selector-wave-03-batch-01.json \
+            data/project/counter-selector-artifact-acquisition-b01-registry.json \
+            data/project/counter-selector-blind-packet-registry.json \
+            data/project/counter-selector-wave-03-release-manifest.json \
+            schemas/counter-selector-artifact-acquisition.schema.json \
+            docs/methods/counter-selector-artifact-acquisition.md \
+            docs/milestones/counter-selector-wave-03-batch-01.md \
+            tools/build-counter-selector-wave-03.mjs \
+            tools/validate-counter-selector-wave-03.mjs \
+            test/counter-selector-wave-03.test.js \
+            reports/core-thesis/counter-selector-wave-03/data.json \
+            reports/core-thesis/counter-selector-wave-03/index.html | sort)"
+          test "$actual" = "$expected"
+          git diff --cached --check
+          git commit -m 'Acquire Counter-Selector Wave 03 Batch 01 artifacts'
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Prove deterministic Wave 03 reconstruction
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          node tools/build-counter-selector-wave-03.mjs
+          node tools/validate-counter-selector-wave-03.mjs
+          node test/counter-selector-wave-03.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+
+      - name: Publish non-workflow Wave 03 head
+        run: git push origin HEAD:agent/counter-selector-wave-03-b01-acquisition
