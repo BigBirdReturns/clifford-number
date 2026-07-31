@@ -178,7 +178,7 @@ export function validateWave01(context = loadWave01Context()) {
     eq(JSON.stringify(observedUsage), JSON.stringify(expectedUsage), `${source.source_id}: observation usage drift`);
   }
 
-  eq(hypothesis.status, 'canonical_field_hypothesis_wave_01_maintainer_reviewed_no_prevalence_finding', 'Wave 01 parent hypothesis status');
+  eq(hypothesis.status, 'canonical_field_hypothesis_wave_01_maintainer_reviewed_targeted_acquisition_open_no_prevalence_finding', 'Wave 01 parent hypothesis status');
   eq(hypothesis.current_state?.query_or_field_execution_started, true, 'Wave 01 parent execution state');
   eq(hypothesis.current_state?.waves_executed, 1, 'Wave 01 parent wave count');
   eq(hypothesis.current_state?.executed_lanes, 8, 'Wave 01 parent executed-lane count');
@@ -191,7 +191,7 @@ export function validateWave01(context = loadWave01Context()) {
   for (const key of ['prevalence_finding_generated','racial_order_finding_generated','coordination_finding_generated','common_purpose_finding_generated','personal_hostility_finding_generated']) {
     eq(hypothesis.current_state?.[key], false, `Wave 01 parent ${key}`);
   }
-  eq(hypothesis.current_state?.publication_status, 'blocked_pending_second_party_review_and_open_acquisitions', 'Wave 01 parent publication state');
+  eq(hypothesis.current_state?.publication_status, 'blocked_pending_second_party_review_and_still_open_denominators', 'Wave 01 parent publication state');
   eq(hypothesis.current_state?.graph_effect, 'none', 'Wave 01 parent graph effect');
   eq(hypothesis.field_waves?.length, 1, 'Wave 01 parent wave registry count');
   eq(hypothesis.field_waves?.[0]?.wave_id, 'SSC-W01', 'Wave 01 parent wave registry identity');

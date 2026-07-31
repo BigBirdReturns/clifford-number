@@ -14,36 +14,17 @@ on:
       - 'test/status-sovereignty-*'
       - 'reports/core-thesis/status-sovereignty/**'
       - 'build/core-thesis/status-sovereignty/**'
-      - 'data/project/core-thesis.json'
-      - 'tools/build-core-thesis.mjs'
-      - 'tools/validate-core-thesis.mjs'
-      - 'test/core-thesis.test.js'
-      - 'data/project/dca-h01-field-hypothesis.json'
-      - 'data/project/m05-answerable-power-story-registry.json'
-      - 'data/project/m05-answerable-power-fanout.json'
-      - 'data/project/security-state-organism-program.json'
-      - 'tools/build-pages.mjs'
-      - 'tools/validate-pages.mjs'
-      - 'package.json'
-      - 'data/project/project-stable-ground-governor.json'
-      - 'data/project/project-stable-ground-current.json'
-      - 'data/project/project-stable-ground-sg05*.json'
-      - 'data/project/project-stable-ground-sg06*.json'
       - 'data/project/project-stable-ground-sg07*.json'
-      - 'docs/milestones/project-stable-ground-sg06.md'
-      - 'docs/milestones/project-stable-ground-sg07.md'
-      - 'tools/build-project-stable-ground-sg06.mjs'
-      - 'tools/build-project-stable-ground-sg07.mjs'
-      - 'tools/validate-project-stable-ground-sg06.mjs'
-      - 'tools/validate-project-stable-ground-sg07.mjs'
-      - 'test/project-stable-ground-sg06.test.js'
-      - 'test/project-stable-ground-sg07.test.js'
-      - '.github/workflows/project-stable-ground-sg05.yml'
-      - '.github/workflows/project-stable-ground-sg06.yml'
+      - 'data/project/project-stable-ground-sg08*.json'
+      - 'tools/*project-stable-ground-sg08*'
+      - 'test/project-stable-ground-sg08.test.js'
       - '.github/workflows/project-stable-ground-sg07.yml'
+      - '.github/workflows/project-stable-ground-sg08.yml'
       - '.github/workflows/status-sovereignty-compact.yml'
       - '.github/workflows/status-sovereignty-wave-01.yml'
       - '.github/workflows/status-sovereignty-wave-01-review.yml'
+      - '.github/workflows/status-sovereignty-wave-01-targeted-acquisition.yml'
+      - 'package.json'
   push:
     branches: [main]
     paths:
@@ -57,36 +38,17 @@ on:
       - 'test/status-sovereignty-*'
       - 'reports/core-thesis/status-sovereignty/**'
       - 'build/core-thesis/status-sovereignty/**'
-      - 'data/project/core-thesis.json'
-      - 'tools/build-core-thesis.mjs'
-      - 'tools/validate-core-thesis.mjs'
-      - 'test/core-thesis.test.js'
-      - 'data/project/dca-h01-field-hypothesis.json'
-      - 'data/project/m05-answerable-power-story-registry.json'
-      - 'data/project/m05-answerable-power-fanout.json'
-      - 'data/project/security-state-organism-program.json'
-      - 'tools/build-pages.mjs'
-      - 'tools/validate-pages.mjs'
-      - 'package.json'
-      - 'data/project/project-stable-ground-governor.json'
-      - 'data/project/project-stable-ground-current.json'
-      - 'data/project/project-stable-ground-sg05*.json'
-      - 'data/project/project-stable-ground-sg06*.json'
       - 'data/project/project-stable-ground-sg07*.json'
-      - 'docs/milestones/project-stable-ground-sg06.md'
-      - 'docs/milestones/project-stable-ground-sg07.md'
-      - 'tools/build-project-stable-ground-sg06.mjs'
-      - 'tools/build-project-stable-ground-sg07.mjs'
-      - 'tools/validate-project-stable-ground-sg06.mjs'
-      - 'tools/validate-project-stable-ground-sg07.mjs'
-      - 'test/project-stable-ground-sg06.test.js'
-      - 'test/project-stable-ground-sg07.test.js'
-      - '.github/workflows/project-stable-ground-sg05.yml'
-      - '.github/workflows/project-stable-ground-sg06.yml'
+      - 'data/project/project-stable-ground-sg08*.json'
+      - 'tools/*project-stable-ground-sg08*'
+      - 'test/project-stable-ground-sg08.test.js'
       - '.github/workflows/project-stable-ground-sg07.yml'
+      - '.github/workflows/project-stable-ground-sg08.yml'
       - '.github/workflows/status-sovereignty-compact.yml'
       - '.github/workflows/status-sovereignty-wave-01.yml'
       - '.github/workflows/status-sovereignty-wave-01-review.yml'
+      - '.github/workflows/status-sovereignty-wave-01-targeted-acquisition.yml'
+      - 'package.json'
   workflow_dispatch:
 
 permissions:
@@ -95,7 +57,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
@@ -103,60 +65,36 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Build and validate SSC-H01 Wave 01
+      - name: Build, validate, and attack SSC-H01
         run: |
           npm run build:status-sovereignty
           npm run validate:status-sovereignty
           node test/status-sovereignty-wave-01.test.js
+          node test/status-sovereignty-wave-01-review.test.js
+          node test/status-sovereignty-wave-01-targeted-acquisition.test.js
           node test/status-sovereignty-compact.test.js
-      - name: Revalidate joined constitutional surfaces
+      - name: Revalidate current stable ground
         run: |
-          node tools/build-core-thesis.mjs
-          node tools/validate-core-thesis.mjs
-          node test/core-thesis.test.js
-          node tools/build-dca-h01.mjs
-          node tools/validate-dca-h01.mjs
-          node test/dca-h01.test.js
-          node tools/build-m05-answerable-power.mjs
-          node tools/validate-m05-answerable-power.mjs
-          node test/m05-answerable-power.test.js
-          node tools/build-security-state-organism.mjs
-          node tools/validate-security-state-organism.mjs
-          node test/security-state-organism.test.js
-          node tools/validate-project-stable-ground-sg06.mjs
-          node test/project-stable-ground-sg06.test.js
-          node tools/build-project-stable-ground-sg07.mjs
           node tools/validate-project-stable-ground-sg07.mjs
           node test/project-stable-ground-sg07.test.js
+          node tools/build-project-stable-ground-sg08.mjs
+          node tools/validate-project-stable-ground-sg08.mjs
+          node test/project-stable-ground-sg08.test.js
       - name: Run complete repository release gate
         run: npm run release:check
-      - name: Prove deterministic SSC-H01 and SG-07 products
+      - name: Prove deterministic SSC and SG-08 products
         run: |
           git restore --staged --worktree .
           npm run build:status-sovereignty
-          node tools/build-core-thesis.mjs
-          node tools/build-dca-h01.mjs
-          node tools/build-m05-answerable-power.mjs
-          node tools/build-security-state-organism.mjs
-          node tools/build-project-stable-ground-sg07.mjs
-          node tools/build-k0-epistemic-admissibility.mjs
           node tools/build-poof-clifford-ecology.mjs
+          node tools/build-project-stable-ground-sg08.mjs
+          npm run validate:stable-ground
           git diff --exit-code -- \
             data/project/status-sovereignty-wave-01-release-manifest.json \
-            build/core-thesis/status-sovereignty/wave-01/manifest.json \
-            build/core-thesis/status-sovereignty/wave-01/data.json \
-            reports/core-thesis/status-sovereignty/wave-01/data.json \
-            reports/core-thesis/status-sovereignty/wave-01/index.html \
+            data/project/status-sovereignty-wave-01-maintainer-review-release-manifest.json \
+            data/project/status-sovereignty-wave-01-targeted-acquisition-release-manifest.json \
             data/project/status-sovereignty-release-manifest.json \
-            build/core-thesis/status-sovereignty/manifest.json \
-            build/core-thesis/status-sovereignty/data.json \
-            reports/core-thesis/status-sovereignty/data.json \
-            reports/core-thesis/status-sovereignty/index.html \
-            data/project/project-stable-ground-sg06-release-manifest.json \
-            reports/core-thesis/stable-ground/sg06/checkpoint.json \
-            reports/core-thesis/stable-ground/sg06/index.html \
-            data/project/project-stable-ground-sg07-release-manifest.json \
-            reports/core-thesis/stable-ground/sg07/checkpoint.json \
-            reports/core-thesis/stable-ground/sg07/index.html \
             data/project/poof-clifford-ecology-release-manifest.json \
-            reports/core-thesis/poof-clifford-ecology/release-manifest.json
+            data/project/project-stable-ground-sg08-release-manifest.json \
+            reports/core-thesis/stable-ground/sg08/checkpoint.json \
+            reports/core-thesis/stable-ground/sg08/index.html

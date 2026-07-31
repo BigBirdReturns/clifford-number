@@ -22,26 +22,35 @@ export const releaseScope = [
   '.github/workflows/status-sovereignty-compact.yml',
   '.github/workflows/status-sovereignty-wave-01.yml',
   '.github/workflows/status-sovereignty-wave-01-review.yml',
+  '.github/workflows/status-sovereignty-wave-01-targeted-acquisition.yml',
   'data/intake/status-sovereignty-compact-source.md',
   'data/project/status-sovereignty-compact.json',
   'data/project/status-sovereignty-fanout.json',
   'data/project/status-sovereignty-source-registry.json',
   'data/project/status-sovereignty-wave-01-release-manifest.json',
   'data/project/status-sovereignty-wave-01-maintainer-review-release-manifest.json',
+  'data/project/status-sovereignty-wave-01-targeted-acquisition-release-manifest.json',
   'data/research/status-sovereignty-wave-01-source-receipts.json',
   'data/research/status-sovereignty-wave-01.json',
   'data/research/status-sovereignty-wave-01-maintainer-review.json',
+  'data/research/status-sovereignty-wave-01-targeted-acquisition-source-receipts.json',
+  'data/research/status-sovereignty-wave-01-targeted-acquisition.json',
   'schemas/status-sovereignty-observation.schema.json',
+  'schemas/status-sovereignty-targeted-acquisition.schema.json',
   'docs/methods/status-sovereignty-compact.md',
   'docs/milestones/m05-status-sovereignty-fanout.md',
   'docs/milestones/m05-status-sovereignty-wave-01.md',
   'docs/milestones/m05-status-sovereignty-wave-01-review.md',
+  'docs/milestones/m05-status-sovereignty-wave-01-targeted-acquisition.md',
   'tools/build-status-sovereignty-wave-01.mjs',
   'tools/validate-status-sovereignty-wave-01.mjs',
   'test/status-sovereignty-wave-01.test.js',
   'tools/build-status-sovereignty-wave-01-review.mjs',
   'tools/validate-status-sovereignty-wave-01-review.mjs',
   'test/status-sovereignty-wave-01-review.test.js',
+  'tools/build-status-sovereignty-wave-01-targeted-acquisition.mjs',
+  'tools/validate-status-sovereignty-wave-01-targeted-acquisition.mjs',
+  'test/status-sovereignty-wave-01-targeted-acquisition.test.js',
   'tools/build-status-sovereignty-compact.mjs',
   'tools/validate-status-sovereignty-compact.mjs',
   'test/status-sovereignty-compact.test.js',
@@ -93,6 +102,9 @@ export function buildStatusSovereignty() {
   const waveRelease = read('data/project/status-sovereignty-wave-01-release-manifest.json');
   const review = read('data/research/status-sovereignty-wave-01-maintainer-review.json');
   const reviewRelease = read('data/project/status-sovereignty-wave-01-maintainer-review-release-manifest.json');
+  const acquisition = read('data/research/status-sovereignty-wave-01-targeted-acquisition.json');
+  const acquisitionSources = read('data/research/status-sovereignty-wave-01-targeted-acquisition-source-receipts.json');
+  const acquisitionRelease = read('data/project/status-sovereignty-wave-01-targeted-acquisition-release-manifest.json');
   const manifest = computeReleaseManifest();
   write('data/project/status-sovereignty-release-manifest.json', stable(manifest));
 
@@ -124,6 +136,11 @@ export function buildStatusSovereignty() {
       maintainer_reviewed_observations: hypothesis.current_state.maintainer_reviewed_observations,
       second_party_reviewed_observations: hypothesis.current_state.second_party_reviewed_observations,
       adjudicated_observations: hypothesis.current_state.adjudicated_observations,
+      targeted_acquisition_supplements: hypothesis.current_state.targeted_acquisition_supplements,
+      targeted_acquisition_source_records: hypothesis.current_state.targeted_acquisition_source_records,
+      open_acquisition_obligations: hypothesis.current_state.open_acquisition_obligations,
+      partially_repaired_acquisition_obligations: hypothesis.current_state.partially_repaired_acquisition_obligations,
+      closed_acquisition_obligations: hypothesis.current_state.closed_acquisition_obligations,
       alternatives: hypothesis.alternative_explanations.length,
       falsifiers: hypothesis.falsifiers.length,
       forbidden_inferences: hypothesis.forbidden_inferences.length
@@ -156,12 +173,23 @@ export function buildStatusSovereignty() {
       current_result: review.current_result,
       release_manifest: { path: 'data/project/status-sovereignty-wave-01-maintainer-review-release-manifest.json', combined_sha256: reviewRelease.combined_sha256 }
     },
+    targeted_acquisition: {
+      path: 'data/research/status-sovereignty-wave-01-targeted-acquisition.json',
+      source_receipts_path: 'data/research/status-sovereignty-wave-01-targeted-acquisition-source-receipts.json',
+      acquisition_id: acquisition.acquisition_id,
+      status: acquisition.status,
+      counts: acquisition.counts,
+      obligations: acquisition.obligations,
+      current_result: acquisition.current_result,
+      release_manifest: { path: 'data/project/status-sovereignty-wave-01-targeted-acquisition-release-manifest.json', combined_sha256: acquisitionRelease.combined_sha256 }
+    },
     source_registry: {
       source_document: sources.source_document,
       external_references: sources.external_references,
       repository_sources: sources.repository_sources,
       field_source_receipts: sources.field_source_receipts,
       field_sources: waveSources.records,
+      targeted_acquisition_sources: acquisitionSources.records,
       counts: sources.counts
     },
     alternative_explanations: hypothesis.alternative_explanations,
@@ -190,9 +218,9 @@ export function buildStatusSovereignty() {
 <style>:root{color-scheme:light;background:#eeeae0;color:#181714;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{max-width:1500px;margin:0 auto;padding:40px 24px 72px;line-height:1.55}h1{font-size:clamp(2.2rem,5vw,4.8rem);line-height:.98;letter-spacing:-.045em;max-width:1120px}h2{margin-top:2.6rem}code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}pre{white-space:pre-wrap;background:#1c1b18;color:#f6f1e6;padding:18px;border-radius:12px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.card,table{background:#fffdf7;border:1px solid #c9c1b2;border-radius:12px}.card{padding:16px}.card b{display:block;font-size:2rem;line-height:1.1}table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden}th,td{padding:10px;border-bottom:1px solid #ddd5c7;text-align:left;vertical-align:top}tr:last-child td{border-bottom:0}.state{font-weight:800;color:#8c300d}.boundary{border-left:6px solid #7c2920}.small{font-size:.9rem;color:#625d54}a{color:#6b2b16}</style></head><body>
 <p><strong>CLIFFORD NUMBER · M-05 · AT-2 FIELD HYPOTHESIS</strong></p><h1>Status-for-sovereignty compact</h1><p class="state">SSC-H01 · WAVE 01 MAINTAINER REVIEWED 14/14 · SECOND-PARTY 0 · COMPLETE-COMPACT FINDINGS 0 · NO RACIAL-ORDER FINDING · GRAPH EFFECT NONE · PUBLICATION BLOCKED</p>
 <p>${esc(hypothesis.working_proposition)}</p><h2>Negative constitution under test</h2><pre>${esc(hypothesis.negative_constitution)}</pre>
-<div class="grid"><div class="card"><b>${report.counts.gates}</b>gates</div><div class="card"><b>${report.counts.dimensions}</b>dimensions</div><div class="card"><b>${report.counts.fanout_lanes}</b>fanout lanes</div><div class="card"><b>${report.counts.issue_groups}</b>issue groups</div><div class="card"><b>${report.counts.field_source_records}</b>field sources</div><div class="card"><b>${report.counts.executed_lanes}/16</b>executed lanes</div><div class="card"><b>${report.counts.retained_observations}</b>unreviewed observations</div><div class="card"><b>${report.counts.complete_compact_findings}</b>complete compact</div></div>
+<div class="grid"><div class="card"><b>${report.counts.gates}</b>gates</div><div class="card"><b>${report.counts.dimensions}</b>dimensions</div><div class="card"><b>${report.counts.fanout_lanes}</b>fanout lanes</div><div class="card"><b>${report.counts.issue_groups}</b>issue groups</div><div class="card"><b>${report.counts.field_source_records}</b>field sources</div><div class="card"><b>${report.counts.executed_lanes}/16</b>executed lanes</div><div class="card"><b>${report.counts.retained_observations}</b>unreviewed observations</div><div class="card"><b>${report.counts.complete_compact_findings}</b>complete compact</div><div class="card"><b>${report.counts.partially_repaired_acquisition_obligations}/${report.counts.open_acquisition_obligations}</b>denominators partially repaired</div></div>
 <h2>Wave 01 result</h2><p><a href="./wave-01/index.html">Open the Wave 01 review surface</a></p><table><thead><tr><th>Observation</th><th>Disposition</th><th>Interpretation ceiling</th><th>Review</th></tr></thead><tbody>${waveRows}</tbody></table>
-<h2>Patriotism discriminator</h2><pre>${esc(JSON.stringify(hypothesis.patriotism_discriminator, null, 2))}</pre>
+<h2>Targeted acquisition</h2><p><a href="./wave-01-targeted-acquisition/index.html">Open the NatSec100, SBICCT, and OSC denominator repair</a></p><pre>${esc(JSON.stringify(acquisition.current_result,null,2))}</pre><h2>Patriotism discriminator</h2><pre>${esc(JSON.stringify(hypothesis.patriotism_discriminator, null, 2))}</pre>
 <h2>Four-gate discriminator</h2><table><thead><tr><th>Gate</th><th>Question</th><th>Required record</th><th>Forbidden inference</th></tr></thead><tbody>${gateRows}</tbody></table>
 <h2>Causal sequence</h2><pre>${esc(hypothesis.causal_sequence.join('\n→ '))}</pre>
 <h2>Ten dimensions</h2><table><thead><tr><th>ID</th><th>Dimension</th><th>Question</th><th>Required observation</th></tr></thead><tbody>${dimensionRows}</tbody></table>
