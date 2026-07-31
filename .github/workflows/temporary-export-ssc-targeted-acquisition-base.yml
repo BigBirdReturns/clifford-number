@@ -1,0 +1,36 @@
+name: Temporary exact SSC targeted-acquisition base export
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - '.github/workflows/temporary-export-ssc-targeted-acquisition-base.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: github.head_ref == 'agent/ssc-wave01-targeted-acquisition-export'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: f3fb90778ce12e262cd24824c385594d7c7daec2
+          fetch-depth: 0
+      - name: Archive exact canonical SG-07 main
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ssc-targeted-acquisition-base
+          git archive --format=tar.gz --output=/tmp/ssc-targeted-acquisition-base/main.tar.gz HEAD
+          git bundle create /tmp/ssc-targeted-acquisition-base/main.bundle HEAD
+          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/ssc-targeted-acquisition-base/main-head.txt
+          sha256sum /tmp/ssc-targeted-acquisition-base/main.tar.gz /tmp/ssc-targeted-acquisition-base/main.bundle > /tmp/ssc-targeted-acquisition-base/artifacts.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-targeted-acquisition-base-${{ github.run_id }}
+          path: /tmp/ssc-targeted-acquisition-base/
+          if-no-files-found: error
+          retention-days: 2
