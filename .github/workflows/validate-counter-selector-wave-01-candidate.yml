@@ -22,13 +22,16 @@ jobs:
           fetch-depth: 0
           ref: agent/counter-selector-wave-01
 
-      - uses: actions/setup-node@v4
+      - id: node
+        name: Install Node 24
+        uses: actions/setup-node@v4
+        continue-on-error: true
         with:
           node-version: '24'
-          cache: npm
 
       - id: deps
         name: Install exact dependencies
+        if: steps.node.outcome == 'success'
         continue-on-error: true
         run: npm ci
 
@@ -75,6 +78,7 @@ jobs:
         name: Write validation receipt
         if: always()
         env:
+          NODE_OUTCOME: ${{ steps.node.outcome }}
           DEPS_OUTCOME: ${{ steps.deps.outcome }}
           FOCUSED_OUTCOME: ${{ steps.focused.outcome }}
           RELEASE_OUTCOME: ${{ steps.release.outcome }}
@@ -86,6 +90,7 @@ jobs:
           import fs from 'node:fs';
           import { execFileSync } from 'node:child_process';
           const outcomes = {
+            node_24: process.env.NODE_OUTCOME,
             npm_ci: process.env.DEPS_OUTCOME,
             focused_counter_selector: process.env.FOCUSED_OUTCOME,
             repository_release_check: process.env.RELEASE_OUTCOME,
@@ -104,6 +109,7 @@ jobs:
             node_version: process.version,
             step_outcomes: outcomes,
             commands: [
+              'actions/setup-node@v4 node 24',
               'npm ci',
               'node tools/build-counter-selector.mjs',
               'node tools/validate-counter-selector.mjs',
@@ -135,12 +141,14 @@ jobs:
       - name: Return validation outcome
         if: always()
         env:
+          NODE_OUTCOME: ${{ steps.node.outcome }}
           DEPS_OUTCOME: ${{ steps.deps.outcome }}
           FOCUSED_OUTCOME: ${{ steps.focused.outcome }}
           RELEASE_OUTCOME: ${{ steps.release.outcome }}
           EXACT_OUTCOME: ${{ steps.exact.outcome }}
           RECONSTRUCT_OUTCOME: ${{ steps.reconstruct.outcome }}
         run: |
+          test "$NODE_OUTCOME" = success
           test "$DEPS_OUTCOME" = success
           test "$FOCUSED_OUTCOME" = success
           test "$RELEASE_OUTCOME" = success
