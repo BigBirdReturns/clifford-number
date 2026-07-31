@@ -15,10 +15,15 @@ on:
       - 'test/status-sovereignty-wave-01.test.js'
       - '.github/workflows/status-sovereignty-wave-01.yml'
       - 'data/project/project-stable-ground-sg06*.json'
-      - 'tools/build-project-stable-ground-sg06.mjs'
+      - 'data/project/project-stable-ground-sg07*.json'
+      - 'tools/build-project-stable-ground-sg07.mjs'
       - 'tools/validate-project-stable-ground-sg06.mjs'
+      - 'tools/validate-project-stable-ground-sg07.mjs'
       - 'test/project-stable-ground-sg06.test.js'
+      - 'test/project-stable-ground-sg07.test.js'
       - '.github/workflows/project-stable-ground-sg06.yml'
+      - '.github/workflows/project-stable-ground-sg07.yml'
+      - '.github/workflows/status-sovereignty-wave-01-review.yml'
       - 'package.json'
   push:
     branches: [main]
@@ -34,10 +39,15 @@ on:
       - 'test/status-sovereignty-wave-01.test.js'
       - '.github/workflows/status-sovereignty-wave-01.yml'
       - 'data/project/project-stable-ground-sg06*.json'
-      - 'tools/build-project-stable-ground-sg06.mjs'
+      - 'data/project/project-stable-ground-sg07*.json'
+      - 'tools/build-project-stable-ground-sg07.mjs'
       - 'tools/validate-project-stable-ground-sg06.mjs'
+      - 'tools/validate-project-stable-ground-sg07.mjs'
       - 'test/project-stable-ground-sg06.test.js'
+      - 'test/project-stable-ground-sg07.test.js'
       - '.github/workflows/project-stable-ground-sg06.yml'
+      - '.github/workflows/project-stable-ground-sg07.yml'
+      - '.github/workflows/status-sovereignty-wave-01-review.yml'
       - 'package.json'
   workflow_dispatch:
 
@@ -57,9 +67,10 @@ jobs:
           node-version: '24'
       - name: Build, validate, and attack Wave 01
         run: |
-          node tools/build-status-sovereignty-wave-01.mjs
-          node tools/validate-status-sovereignty-wave-01.mjs
+          npm run build:status-sovereignty
+          npm run validate:status-sovereignty
           node test/status-sovereignty-wave-01.test.js
+          node test/status-sovereignty-wave-01-review.test.js
       - name: Revalidate parent SSC-H01
         run: |
           node tools/build-status-sovereignty-compact.mjs
@@ -67,28 +78,34 @@ jobs:
           node test/status-sovereignty-compact.test.js
       - name: Validate current stable-ground custody
         run: |
-          node tools/build-project-stable-ground-sg06.mjs
           node tools/validate-project-stable-ground-sg06.mjs
           node test/project-stable-ground-sg06.test.js
+          node tools/build-project-stable-ground-sg07.mjs
+          node tools/validate-project-stable-ground-sg07.mjs
+          node test/project-stable-ground-sg07.test.js
       - name: Run complete repository release gate
         run: npm run release:check
       - name: Prove deterministic Wave 01 products
         run: |
           git restore --staged --worktree .
-          node tools/build-status-sovereignty-wave-01.mjs
-          node tools/build-status-sovereignty-compact.mjs
-          node tools/build-project-stable-ground-sg06.mjs
+          npm run build:status-sovereignty
+          node tools/build-project-stable-ground-sg07.mjs
           git diff --exit-code -- \
             data/project/status-sovereignty-wave-01-release-manifest.json \
             build/core-thesis/status-sovereignty/wave-01/manifest.json \
             build/core-thesis/status-sovereignty/wave-01/data.json \
             reports/core-thesis/status-sovereignty/wave-01/data.json \
             reports/core-thesis/status-sovereignty/wave-01/index.html \
+            data/project/status-sovereignty-wave-01-maintainer-review-release-manifest.json \
+            build/core-thesis/status-sovereignty/wave-01-review/manifest.json \
+            build/core-thesis/status-sovereignty/wave-01-review/data.json \
+            reports/core-thesis/status-sovereignty/wave-01-review/data.json \
+            reports/core-thesis/status-sovereignty/wave-01-review/index.html \
             data/project/status-sovereignty-release-manifest.json \
             build/core-thesis/status-sovereignty/manifest.json \
             build/core-thesis/status-sovereignty/data.json \
             reports/core-thesis/status-sovereignty/data.json \
             reports/core-thesis/status-sovereignty/index.html \
-            data/project/project-stable-ground-sg06-release-manifest.json \
-            reports/core-thesis/stable-ground/sg06/checkpoint.json \
-            reports/core-thesis/stable-ground/sg06/index.html
+            data/project/project-stable-ground-sg07-release-manifest.json \
+            reports/core-thesis/stable-ground/sg07/checkpoint.json \
+            reports/core-thesis/stable-ground/sg07/index.html
