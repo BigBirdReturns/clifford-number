@@ -96,6 +96,16 @@ jobs:
             node tools/validate-lake-index.mjs
             node tools/validate-lake-receipt-semantics.mjs
             node tools/validate-lake-gap-summary.mjs
+            if [ "$pass" = "1" ]; then
+              node --input-type=module <<'NODE'
+              import fs from 'node:fs';
+              const gaps = JSON.parse(fs.readFileSync('build/lake-index-gaps.json', 'utf8'));
+              console.log('WAVE20_IDENTIFIER_DIAGNOSTIC_UNINDEXED');
+              console.log(JSON.stringify(gaps.unindexed_machine_ids_unadjudicated, null, 2));
+              console.log('WAVE20_IDENTIFIER_DIAGNOSTIC_SOURCE_ONLY');
+              console.log(JSON.stringify(gaps.source_ids_without_projection_unadjudicated, null, 2));
+              NODE
+            fi
             node tools/reconcile-lake-identifier-topology-wave-18.mjs
             node tools/reconcile-lake-generator-contracts-wave-19.mjs
             node tools/reconcile-lake-receipt-custody-wave-20.mjs
