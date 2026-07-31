@@ -1,0 +1,60 @@
+name: Materialize Counter-Selector Wave 01
+
+on:
+  push:
+    branches:
+      - 'agent/counter-selector-wave-00-v2'
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-01.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/counter-selector-wave-00-v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Unpack exact Counter-Selector payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/materializers/counter-selector-wave-01/payload-* \
+            | base64 --decode \
+            > /tmp/counter-selector-wave-01.tar.gz
+          echo '8ca54fc1d68c3c1d7c3d35a31f21cd9090c69843aa009f18b716507ef1435e3b  /tmp/counter-selector-wave-01.tar.gz' \
+            | sha256sum --check --strict
+          tar -xzf /tmp/counter-selector-wave-01.tar.gz -C .
+          rm -rf .github/materializers/counter-selector-wave-01
+          rm -f .github/workflows/materialize-counter-selector-wave-01.yml
+
+      - name: Validate focused estate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-counter-selector.mjs
+          node tools/validate-counter-selector.mjs
+          node test/counter-selector.test.js
+          test ! -e .github/workflows/materialize-counter-selector-wave-01.yml
+          test ! -e .github/materializers/counter-selector-wave-01
+
+      - name: Commit materialized estate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'Seed Counter-Selector denominator and close Wave 00'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
