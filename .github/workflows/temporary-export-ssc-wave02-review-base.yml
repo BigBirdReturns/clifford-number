@@ -1,0 +1,35 @@
+name: Temporary export SSC Wave 02 review base
+
+on:
+  push:
+    branches: [agent/ssc-wave02-review-export]
+    paths:
+      - '.github/workflows/temporary-export-ssc-wave02-review-base.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Package exact working tree
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' "$(git rev-parse HEAD)" > SSC-W02-REVIEW-BASE-COMMIT.txt
+          tar --exclude=.git --exclude=ssc-wave02-review-base.tar.xz -cJf ssc-wave02-review-base.tar.xz .
+          sha256sum ssc-wave02-review-base.tar.xz > ssc-wave02-review-base.tar.xz.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-review-base
+          path: |
+            ssc-wave02-review-base.tar.xz
+            ssc-wave02-review-base.tar.xz.sha256
+            SSC-W02-REVIEW-BASE-COMMIT.txt
+          if-no-files-found: error
+          retention-days: 1
