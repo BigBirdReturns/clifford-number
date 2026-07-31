@@ -10,6 +10,7 @@ on:
       - 'tools/*status-sovereignty-wave-01*'
       - 'test/status-sovereignty-wave-01*'
       - 'data/project/project-stable-ground-sg08*.json'
+      - 'data/project/project-stable-ground-sg09*.json'
       - '.github/workflows/status-sovereignty-wave-01-review.yml'
       - 'package.json'
   push:
@@ -21,6 +22,7 @@ on:
       - 'tools/*status-sovereignty-wave-01*'
       - 'test/status-sovereignty-wave-01*'
       - 'data/project/project-stable-ground-sg08*.json'
+      - 'data/project/project-stable-ground-sg09*.json'
       - '.github/workflows/status-sovereignty-wave-01-review.yml'
       - 'package.json'
   workflow_dispatch:
@@ -53,7 +55,7 @@ jobs:
           git restore --staged --worktree .
           npm run build:status-sovereignty
           node tools/build-poof-clifford-ecology.mjs
-          node tools/build-project-stable-ground-sg08.mjs
+          node tools/build-project-stable-ground-sg09.mjs
           npm run validate:status-sovereignty
           git diff --exit-code -- \
             data/project/status-sovereignty-wave-01-release-manifest.json \

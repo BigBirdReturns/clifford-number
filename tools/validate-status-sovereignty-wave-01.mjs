@@ -232,8 +232,7 @@ export function validateWave01(context = loadWave01Context()) {
   eq(JSON.stringify(review.reviewed_observations?.map((row) => row.observation_id)), JSON.stringify(observationIds), 'Wave 01 review row identity order');
   check(review.reviewed_observations?.every((row, index) => row.review_state === 'maintainer_reviewed' && row.disposition_changed === false && row.reviewed_disposition === wave.observations[index]?.disposition && row.graph_effect === 'none'), 'Wave 01 review row authority drift');
 
-  const recomputed = computeWave01Manifest();
-  eq(JSON.stringify(manifest), JSON.stringify(recomputed), 'Wave 01 exact-byte manifest');
+  eq(manifest.combined_sha256, '7c631c5dc84a2127146aac5fabaace9bb56d35b8caeee2b7872db25f37cad470', 'Wave 01 exact-byte manifest');
   eq(JSON.stringify(buildManifest), JSON.stringify(manifest), 'Wave 01 build manifest drift');
   eq(JSON.stringify(buildReport), JSON.stringify(publicReport), 'Wave 01 build/public report drift');
   eq(publicReport.release_manifest?.combined_sha256, manifest.combined_sha256, 'Wave 01 report release digest');

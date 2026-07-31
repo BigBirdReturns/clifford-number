@@ -54,6 +54,7 @@ const required = [
   'assets/social-card.png', 'docs/methodology.md', 'docs/thesis-assembly.md',
   'docs/synthetic-population-vendor-denominator.md', 'docs/thesis-case-packets.md',
   'docs/thesis-state-market-receipt-custody.md',
+  'docs/ssc-wave-01-second-party-review-intake.md',
   'cases/field-autopsy-03/case.json'
 ];
 const missing = required.filter(file => !fs.existsSync(path.join(destination, file)));
@@ -80,11 +81,17 @@ for (const forbidden of [
   'data/research/status-sovereignty-wave-01-maintainer-review.json',
   'data/research/status-sovereignty-wave-01-targeted-acquisition-source-receipts.json',
   'data/research/status-sovereignty-wave-01-targeted-acquisition.json',
+  'data/project/status-sovereignty-wave-01-second-party-review-campaign.json',
+  'data/project/status-sovereignty-wave-01-second-party-review-packet-registry.json',
+  'data/project/status-sovereignty-wave-01-second-party-review-release-manifest.json',
+  'data/research/status-sovereignty-wave-01-second-party-review-candidates.json',
+  'data/research/status-sovereignty-wave-01-second-party-review-responses.json',
   'docs/methods/status-sovereignty-compact.md',
   'docs/milestones/m05-status-sovereignty-fanout.md',
   'docs/milestones/m05-status-sovereignty-wave-01.md',
   'docs/milestones/m05-status-sovereignty-wave-01-review.md',
   'docs/milestones/m05-status-sovereignty-wave-01-targeted-acquisition.md',
+  'docs/milestones/m05-status-sovereignty-wave-01-second-party-review.md',
 ]) {
   if (fs.existsSync(path.join(destination, forbidden))) {
     console.error(`validate-pages failed: intake path ${forbidden} must not be published`);
@@ -109,11 +116,17 @@ for (const held of [
   'data/research/status-sovereignty-wave-01-maintainer-review.json',
   'data/research/status-sovereignty-wave-01-targeted-acquisition-source-receipts.json',
   'data/research/status-sovereignty-wave-01-targeted-acquisition.json',
+  'data/project/status-sovereignty-wave-01-second-party-review-campaign.json',
+  'data/project/status-sovereignty-wave-01-second-party-review-packet-registry.json',
+  'data/project/status-sovereignty-wave-01-second-party-review-release-manifest.json',
+  'data/research/status-sovereignty-wave-01-second-party-review-candidates.json',
+  'data/research/status-sovereignty-wave-01-second-party-review-responses.json',
   'docs/methods/status-sovereignty-compact.md',
   'docs/milestones/m05-status-sovereignty-fanout.md',
   'docs/milestones/m05-status-sovereignty-wave-01.md',
   'docs/milestones/m05-status-sovereignty-wave-01-review.md',
   'docs/milestones/m05-status-sovereignty-wave-01-targeted-acquisition.md',
+  'docs/milestones/m05-status-sovereignty-wave-01-second-party-review.md',
 ]) {
   if (fs.existsSync(path.join(destination, held))) {
     console.error(`validate-pages failed: publication-blocked SSC path ${held} must not be published`);
