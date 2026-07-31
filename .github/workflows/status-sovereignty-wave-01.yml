@@ -12,6 +12,7 @@ on:
       - 'test/status-sovereignty-wave-01*'
       - 'data/project/project-stable-ground-sg07*.json'
       - 'data/project/project-stable-ground-sg08*.json'
+      - 'data/project/project-stable-ground-sg09*.json'
       - '.github/workflows/status-sovereignty-wave-01.yml'
       - '.github/workflows/status-sovereignty-wave-01-review.yml'
       - '.github/workflows/status-sovereignty-wave-01-targeted-acquisition.yml'
@@ -27,6 +28,7 @@ on:
       - 'test/status-sovereignty-wave-01*'
       - 'data/project/project-stable-ground-sg07*.json'
       - 'data/project/project-stable-ground-sg08*.json'
+      - 'data/project/project-stable-ground-sg09*.json'
       - '.github/workflows/status-sovereignty-wave-01.yml'
       - '.github/workflows/status-sovereignty-wave-01-review.yml'
       - '.github/workflows/status-sovereignty-wave-01-targeted-acquisition.yml'
@@ -59,9 +61,11 @@ jobs:
         run: |
           node tools/validate-project-stable-ground-sg07.mjs
           node test/project-stable-ground-sg07.test.js
-          node tools/build-project-stable-ground-sg08.mjs
+          node tools/build-project-stable-ground-sg09.mjs
           node tools/validate-project-stable-ground-sg08.mjs
           node test/project-stable-ground-sg08.test.js
+          node tools/validate-project-stable-ground-sg09.mjs
+          node test/project-stable-ground-sg09.test.js
       - name: Run complete repository release gate
         run: npm run release:check
       - name: Prove deterministic Wave 01 products
@@ -69,7 +73,7 @@ jobs:
           git restore --staged --worktree .
           npm run build:status-sovereignty
           node tools/build-poof-clifford-ecology.mjs
-          node tools/build-project-stable-ground-sg08.mjs
+          node tools/build-project-stable-ground-sg09.mjs
           git diff --exit-code -- \
             data/project/status-sovereignty-wave-01-release-manifest.json \
             data/project/status-sovereignty-wave-01-maintainer-review-release-manifest.json \
