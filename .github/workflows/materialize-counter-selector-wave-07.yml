@@ -65,26 +65,26 @@ jobs:
           git add -A
           actual="$(git diff --cached --name-only | sort)"
           expected="$(printf '%s\n' \
-            .github/materializers/counter-selector-wave-07/payload-00 \\
-            .github/materializers/counter-selector-wave-07/payload-01 \\
-            .github/materializers/counter-selector-wave-07/payload-02 \\
-            .github/materializers/counter-selector-wave-07/payload-03 \\
-            .github/materializers/counter-selector-wave-07/payload-04 \\
-            .github/materializers/counter-selector-wave-07/payload-05 \\
-            .github/materializers/counter-selector-wave-07/payload-06 \\
-            .github/materializers/counter-selector-wave-07/payload-07 \\
-            data/project/counter-selector-artifact-acquisition-b02-registry.json \\
-            data/project/counter-selector-blind-packet-registry-b02.json \\
-            data/project/counter-selector-wave-07-batch-02.json \\
-            data/project/counter-selector-wave-07-release-manifest.json \\
-            data/project/counter-selector-wave-07-source-registry.json \\
-            docs/methods/counter-selector-batch02-acquisition.md \\
-            docs/milestones/counter-selector-wave-07.md \\
-            reports/core-thesis/counter-selector-wave-07/data.json \\
-            reports/core-thesis/counter-selector-wave-07/index.html \\
-            schemas/counter-selector-batch02-acquisition.schema.json \\
-            test/counter-selector-wave-07.test.js \\
-            tools/build-counter-selector-wave-07.mjs \\
+            .github/materializers/counter-selector-wave-07/payload-00 \
+            .github/materializers/counter-selector-wave-07/payload-01 \
+            .github/materializers/counter-selector-wave-07/payload-02 \
+            .github/materializers/counter-selector-wave-07/payload-03 \
+            .github/materializers/counter-selector-wave-07/payload-04 \
+            .github/materializers/counter-selector-wave-07/payload-05 \
+            .github/materializers/counter-selector-wave-07/payload-06 \
+            .github/materializers/counter-selector-wave-07/payload-07 \
+            data/project/counter-selector-artifact-acquisition-b02-registry.json \
+            data/project/counter-selector-blind-packet-registry-b02.json \
+            data/project/counter-selector-wave-07-batch-02.json \
+            data/project/counter-selector-wave-07-release-manifest.json \
+            data/project/counter-selector-wave-07-source-registry.json \
+            docs/methods/counter-selector-batch02-acquisition.md \
+            docs/milestones/counter-selector-wave-07.md \
+            reports/core-thesis/counter-selector-wave-07/data.json \
+            reports/core-thesis/counter-selector-wave-07/index.html \
+            schemas/counter-selector-batch02-acquisition.schema.json \
+            test/counter-selector-wave-07.test.js \
+            tools/build-counter-selector-wave-07.mjs \
             tools/validate-counter-selector-wave-07.mjs | sort)"
           test "$actual" = "$expected"
           git diff --cached --check
