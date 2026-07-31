@@ -1,4 +1,4 @@
-name: Temporary materialize SSC SG-09
+name: Temporary export SSC SG-09 workflow bytes
 
 on:
   pull_request:
@@ -7,27 +7,20 @@ on:
     paths:
       - '.github/tmp/materialize-ssc-sg09.mjs'
       - '.github/workflows/temporary-materialize-ssc-sg09.yml'
-      - '.github/workflows/project-stable-ground-sg08.yml'
-      - '.github/workflows/project-stable-ground-sg09.yml'
-      - 'tools/validate-project-stable-ground-sg08.mjs'
-      - 'test/project-stable-ground-sg08.test.js'
-      - 'tools/build-project-stable-ground-sg09.mjs'
-      - 'tools/validate-project-stable-ground-sg09.mjs'
-      - 'test/project-stable-ground-sg09.test.js'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: materialize-ssc-sg09
+  group: export-ssc-sg09-workflows
   cancel-in-progress: false
 
 jobs:
-  materialize:
+  export:
     if: github.head_ref == 'agent/ssc-wave01-second-party-review-campaign' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,44 +29,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Append SG-09 and validate the complete repository
+      - name: Generate and export exact workflow bytes
         run: |
           set -Eeuo pipefail
           node .github/tmp/materialize-ssc-sg09.mjs
-          node tools/build-status-sovereignty-wave-01-second-party-review.mjs
-          node .github/tmp/materialize-ssc-sg09.mjs --checkpoint
-          npm run build:poof-ecology
-          node tools/build-project-stable-ground-sg09.mjs
-
-          npm run validate:status-sovereignty
-          node test/status-sovereignty-wave-01.test.js
-          node test/status-sovereignty-wave-01-review.test.js
-          node test/status-sovereignty-wave-01-targeted-acquisition.test.js
-          node test/status-sovereignty-compact.test.js
-          node test/status-sovereignty-wave-01-second-party-review.test.js
-          node tools/validate-project-stable-ground-sg08.mjs
-          node test/project-stable-ground-sg08.test.js
-          node tools/validate-project-stable-ground-sg09.mjs
-          node test/project-stable-ground-sg09.test.js
-
-          npm run build:pages
-          npm run build:standalone
-          npm run validate:pages
-          npm run release:check
-
-          git config user.name 'OpenAI'
-          git config user.email 'noreply@openai.com'
-          git add -u
-          git add \
-            data/project/project-stable-ground-sg09.json \
-            data/project/project-stable-ground-sg09-release-manifest.json \
-            reports/core-thesis/stable-ground/sg09/checkpoint.json \
-            reports/core-thesis/stable-ground/sg09/index.html
-          git clean -fdx
-          git status --short
-          if git diff --cached --quiet; then
-            echo 'SG-09 materialization already deterministic'
-            exit 0
-          fi
-          git commit -m 'Append stable-ground supersession SG-09'
-          git push origin HEAD:agent/ssc-wave01-second-party-review-campaign
+          for file in \
+            .github/workflows/project-stable-ground-sg07.yml \
+            .github/workflows/status-sovereignty-compact.yml \
+            .github/workflows/status-sovereignty-wave-01.yml \
+            .github/workflows/status-sovereignty-wave-01-review.yml \
+            .github/workflows/status-sovereignty-wave-01-targeted-acquisition.yml \
+            .github/workflows/status-sovereignty-wave-01-second-party-review.yml
+          do
+            printf 'BEGIN_FILE_B64 %s\n' "$file"
+            base64 -w0 "$file"
+            printf '\nEND_FILE_B64 %s\n' "$file"
+          done
