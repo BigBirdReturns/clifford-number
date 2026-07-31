@@ -1,0 +1,73 @@
+name: Temporary refresh SSC Wave 02 committed products
+
+on:
+  push:
+    branches: [agent/ssc-wave02-intake]
+    paths:
+      - '.github/workflows/temporary-refresh-ssc-wave02-products.yml'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-refresh-ssc-wave02-products.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-refresh-ssc-wave02-products
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    if: github.event_name == 'push' || github.head_ref == 'agent/ssc-wave02-intake'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-intake
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Rebuild, validate, and publish the five committed products
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git config user.name 'OpenAI'
+          git config user.email 'noreply@openai.com'
+          node tools/build-status-sovereignty-wave-02-intake.mjs
+          node tools/validate-status-sovereignty-wave-02-intake.mjs
+          node test/status-sovereignty-wave-02-intake.test.js
+          npm run release:check
+          git restore -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json
+          products=(
+            data/project/status-sovereignty-wave-02-intake-release-manifest.json
+            build/core-thesis/status-sovereignty/wave-02-intake/manifest.json
+            build/core-thesis/status-sovereignty/wave-02-intake/data.json
+            reports/core-thesis/status-sovereignty/wave-02-intake/data.json
+            reports/core-thesis/status-sovereignty/wave-02-intake/index.html
+          )
+          git add "${products[@]}"
+          test "$(git diff --cached --name-only | wc -l)" -eq 5
+          git commit -m 'Refresh SSC Wave 02 intake custody'
+          git reset --hard HEAD
+          git clean -fdx
+          test -z "$(git status --porcelain)"
+          git fetch origin agent/ssc-wave02-intake
+          test "$(git rev-parse refs/remotes/origin/agent/ssc-wave02-intake)" = "$EXPECTED_HEAD"
+          git push origin HEAD:refs/heads/agent/ssc-wave02-intake
