@@ -1,0 +1,158 @@
+name: Temporary materialize SSC Wave 02 review only v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-materialize-ssc-wave02-review-only-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: materialize-ssc-wave02-review-only-v2
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.number == 524 &&
+       github.head_ref == 'agent/ssc-wave02-maintainer-review-sg10-v2' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-maintainer-review-sg10-v2
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Materialize and publish workflow-neutral review commit
+        env:
+          EXPECTED_EVENT_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -Eeuo pipefail
+          BASE='52a363704857a2da5035c24898f9dfdc38b56754'
+          STAGING='agent/ssc-wave02-review-sg10-v2-staging'
+          PR_BRANCH='agent/ssc-wave02-maintainer-review-sg10-v2'
+
+          if [ "${GITHUB_EVENT_NAME}" = 'pull_request' ]; then
+            test "$(git rev-parse HEAD)" = "${EXPECTED_EVENT_HEAD}"
+          fi
+          test "$(git branch --show-current)" = "${PR_BRANCH}"
+          git fetch --no-tags origin main "${STAGING}"
+          test "$(git rev-parse origin/main)" = "${BASE}"
+          lease="$(git ls-remote origin "refs/heads/${STAGING}" | awk '{print $1}')"
+          test "${lease}" = "${BASE}"
+
+          cat .github/tmp/ssc-w02-review-first.part-{00..10}.b64 > /tmp/first.patch.xz.b64
+          printf '%s  %s\n' '8b094621dc4fcd2328d292b91ca670142caa919f91e6813599cb5bd333c9ee4f' /tmp/first.patch.xz.b64 | sha256sum -c -
+          base64 -d /tmp/first.patch.xz.b64 > /tmp/first.patch.xz
+          printf '%s  %s\n' '0cf28c0175a9c34c00687928bf1b427420ba0ec5077426bb65f62c2eed6dbaf1' /tmp/first.patch.xz | sha256sum -c -
+          xz -dc /tmp/first.patch.xz > /tmp/first.patch
+          printf '%s  %s\n' 'f2c0bf6656ea8a93e3af821717f33cf988d5ea94a4e3b268257ff0642c097c57' /tmp/first.patch | sha256sum -c -
+
+          cat .github/tmp/ssc-w02-review-new.part-{00..06}.b64 > /tmp/new.patch.xz.b64
+          printf '%s  %s\n' '8128d22909fa036fa1e8730e2a181b792a184e7b79657c2647e14338e0d85898' /tmp/new.patch.xz.b64 | sha256sum -c -
+          base64 -d /tmp/new.patch.xz.b64 > /tmp/new.patch.xz
+          printf '%s  %s\n' '735afc5afa0417a8755b79c61485e57fc93bc82053a8ae43dfa987e499b268a4' /tmp/new.patch.xz | sha256sum -c -
+          xz -dc /tmp/new.patch.xz > /tmp/new.patch
+          printf '%s  %s\n' '070420339b01f86b2330817f02c28f25dd368ab69df17865688c6d7db5c9c6ee' /tmp/new.patch | sha256sum -c -
+
+          base64 -d .github/tmp/ssc-w02-review-permanent-workflow.b64 > /tmp/review.yml
+          printf '%s  %s\n' 'bde28ac00a998d4d81aa93c081cc87f89b17c7c583ac4877972c5bd082d7f34e' /tmp/review.yml | sha256sum -c -
+
+          git reset --hard "${BASE}"
+          git clean -fdx
+          git apply --index /tmp/first.patch
+          git apply --index /tmp/new.patch
+          mkdir -p .github/workflows
+          cp /tmp/review.yml .github/workflows/status-sovereignty-wave-02-review.yml
+
+          cat > /tmp/nonworkflow-paths <<'EOF'
+          build/core-thesis/status-sovereignty/data.json
+          build/core-thesis/status-sovereignty/manifest.json
+          build/core-thesis/status-sovereignty/wave-02-review/data.json
+          build/core-thesis/status-sovereignty/wave-02-review/manifest.json
+          data/project/poof-clifford-ecology-release-manifest.json
+          data/project/status-sovereignty-compact.json
+          data/project/status-sovereignty-fanout.json
+          data/project/status-sovereignty-release-manifest.json
+          data/project/status-sovereignty-source-registry.json
+          data/project/status-sovereignty-wave-02-maintainer-review-release-manifest.json
+          data/research/status-sovereignty-wave-02-maintainer-review.json
+          data/research/status-sovereignty-wave-02.json
+          docs/milestones/m05-status-sovereignty-wave-02-review.md
+          package.json
+          reports/core-thesis/poof-clifford-ecology/release-manifest.json
+          reports/core-thesis/status-sovereignty/data.json
+          reports/core-thesis/status-sovereignty/index.html
+          reports/core-thesis/status-sovereignty/wave-02-review/data.json
+          reports/core-thesis/status-sovereignty/wave-02-review/index.html
+          test/status-sovereignty-compact.test.js
+          test/status-sovereignty-wave-01-review.test.js
+          test/status-sovereignty-wave-01.test.js
+          test/status-sovereignty-wave-02-intake.test.js
+          test/status-sovereignty-wave-02-review.test.js
+          tools/build-pages.mjs
+          tools/build-status-sovereignty-compact.mjs
+          tools/build-status-sovereignty-wave-02-review.mjs
+          tools/validate-pages.mjs
+          tools/validate-status-sovereignty-compact.mjs
+          tools/validate-status-sovereignty-wave-01-review.mjs
+          tools/validate-status-sovereignty-wave-01-second-party-review.mjs
+          tools/validate-status-sovereignty-wave-01.mjs
+          tools/validate-status-sovereignty-wave-02-intake.mjs
+          tools/validate-status-sovereignty-wave-02-review.mjs
+          EOF
+          sed -i 's/^          //' /tmp/nonworkflow-paths
+          sort -o /tmp/nonworkflow-paths /tmp/nonworkflow-paths
+
+          git diff --cached --name-only "${BASE}" | sort > /tmp/observed
+          { cat /tmp/nonworkflow-paths; echo '.github/workflows/status-sovereignty-wave-02-review.yml'; } | sort > /tmp/full-paths
+          diff -u /tmp/full-paths /tmp/observed
+          test "$(wc -l < /tmp/observed)" -eq 35
+
+          node tools/build-status-sovereignty-wave-02-review.mjs
+          node tools/validate-status-sovereignty-wave-02-review.mjs
+          node test/status-sovereignty-wave-02-review.test.js
+          node tools/validate-status-sovereignty-wave-02-intake.mjs
+          node test/status-sovereignty-wave-02-intake.test.js
+          npm run validate:status-sovereignty
+          npm run build:poof-ecology
+          npm run validate:poof-ecology
+          npm run build:pages
+          npm run build:standalone
+          npm run validate:pages
+          test ! -e dist/build/core-thesis/status-sovereignty/wave-02-review
+          test ! -e dist/reports/core-thesis/status-sovereignty/wave-02-review
+          test ! -e dist/data/research/status-sovereignty-wave-02.json
+          test ! -e dist/data/research/status-sovereignty-wave-02-maintainer-review.json
+
+          git restore --source="${BASE}" --staged --worktree -- \
+            build/axm-identity.json build/build-hop-report.json build/hop-graph.json \
+            build/migration-review.md build/migration-summary.json build/receipt-graph.json \
+            build/scores.json build/scout-report.json build/scout-report.md build/surface-graph.json
+
+          rm -f .github/workflows/status-sovereignty-wave-02-review.yml
+          git reset
+          git add --pathspec-from-file=/tmp/nonworkflow-paths
+          git diff --check --cached
+          git diff --exit-code
+          git diff --cached --name-only "${BASE}" | sort > /tmp/final-paths
+          diff -u /tmp/nonworkflow-paths /tmp/final-paths
+          test -z "$(git ls-files --others --exclude-standard)"
+
+          git config user.name OpenAI
+          git config user.email noreply@openai.com
+          git commit -m 'Review SSC-H01 Wave 02 observation packets'
+          test "$(git rev-parse HEAD^)" = "${BASE}"
+          git diff --name-only "${BASE}" HEAD | sort > /tmp/commit-paths
+          diff -u /tmp/nonworkflow-paths /tmp/commit-paths
+          git push --force-with-lease="refs/heads/${STAGING}:${BASE}" origin "HEAD:refs/heads/${STAGING}"
+          echo "Staging commit: $(git rev-parse HEAD)"
