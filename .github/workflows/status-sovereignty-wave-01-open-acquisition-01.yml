@@ -1,0 +1,55 @@
+name: Status-for-sovereignty Wave 01 open acquisition 01
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/status-sovereignty-wave-01-open-acquisition-01.yml'
+      - 'data/research/status-sovereignty-wave-01-open-acquisition-01.json'
+      - 'data/project/status-sovereignty-wave-01-open-acquisition-01-release-manifest.json'
+      - 'docs/milestones/m05-status-sovereignty-wave-01-open-acquisition-01.md'
+      - 'reports/core-thesis/status-sovereignty/wave-01-open-acquisition-01/**'
+      - 'tools/build-status-sovereignty-wave-01-open-acquisition-01.mjs'
+      - 'tools/validate-status-sovereignty-wave-01-open-acquisition-01.mjs'
+      - 'test/status-sovereignty-wave-01-open-acquisition-01.test.js'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-wave-01-open-acquisition-01.yml'
+      - 'data/research/status-sovereignty-wave-01-open-acquisition-01.json'
+      - 'data/project/status-sovereignty-wave-01-open-acquisition-01-release-manifest.json'
+      - 'docs/milestones/m05-status-sovereignty-wave-01-open-acquisition-01.md'
+      - 'reports/core-thesis/status-sovereignty/wave-01-open-acquisition-01/**'
+      - 'tools/build-status-sovereignty-wave-01-open-acquisition-01.mjs'
+      - 'tools/validate-status-sovereignty-wave-01-open-acquisition-01.mjs'
+      - 'test/status-sovereignty-wave-01-open-acquisition-01.test.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build and validate bounded acquisition
+        run: |
+          set -euo pipefail
+          node tools/build-status-sovereignty-wave-01-open-acquisition-01.mjs
+          node tools/validate-status-sovereignty-wave-01-open-acquisition-01.mjs
+          node test/status-sovereignty-wave-01-open-acquisition-01.test.js
+          git diff --exit-code --             data/project/status-sovereignty-wave-01-open-acquisition-01-release-manifest.json             reports/core-thesis/status-sovereignty/wave-01-open-acquisition-01/data.json             reports/core-thesis/status-sovereignty/wave-01-open-acquisition-01/index.html
+      - name: Complete repository release gate
+        run: npm run release:check
+      - name: Deterministic reconstruction
+        run: |
+          set -euo pipefail
+          node tools/build-status-sovereignty-wave-01-open-acquisition-01.mjs
+          node tools/validate-status-sovereignty-wave-01-open-acquisition-01.mjs
+          git diff --exit-code --             data/project/status-sovereignty-wave-01-open-acquisition-01-release-manifest.json             reports/core-thesis/status-sovereignty/wave-01-open-acquisition-01/data.json             reports/core-thesis/status-sovereignty/wave-01-open-acquisition-01/index.html
