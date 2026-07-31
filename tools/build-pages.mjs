@@ -36,11 +36,17 @@ for (const heldPath of [
   ['data', 'research', 'status-sovereignty-wave-01-maintainer-review.json'],
   ['data', 'research', 'status-sovereignty-wave-01-targeted-acquisition-source-receipts.json'],
   ['data', 'research', 'status-sovereignty-wave-01-targeted-acquisition.json'],
+  ['data', 'project', 'status-sovereignty-wave-01-second-party-review-campaign.json'],
+  ['data', 'project', 'status-sovereignty-wave-01-second-party-review-packet-registry.json'],
+  ['data', 'project', 'status-sovereignty-wave-01-second-party-review-release-manifest.json'],
+  ['data', 'research', 'status-sovereignty-wave-01-second-party-review-candidates.json'],
+  ['data', 'research', 'status-sovereignty-wave-01-second-party-review-responses.json'],
   ['docs', 'methods', 'status-sovereignty-compact.md'],
   ['docs', 'milestones', 'm05-status-sovereignty-fanout.md'],
   ['docs', 'milestones', 'm05-status-sovereignty-wave-01.md'],
   ['docs', 'milestones', 'm05-status-sovereignty-wave-01-review.md'],
   ['docs', 'milestones', 'm05-status-sovereignty-wave-01-targeted-acquisition.md'],
+  ['docs', 'milestones', 'm05-status-sovereignty-wave-01-second-party-review.md'],
 ]) fs.rmSync(path.join(destination, ...heldPath), { recursive: true, force: true });
 fs.writeFileSync(path.join(destination, '.nojekyll'), '');
 console.log(`build-pages: ${files.length} files and ${directories.length} directories copied`);
