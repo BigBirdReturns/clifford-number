@@ -19,6 +19,23 @@
     "reconciliation": "build/lake-actions/receipt-custody-wave-20-reconciliation.json",
     "report": "reports/lake-receipt-custody-wave-20.md"
   },
+  "projection_contract": {
+    "contract_name": "wave20_receipt_custody_typed_projection_and_reconciliation_views",
+    "target_identifier_keys": [
+      "program_id",
+      "receipt_custody_decision_id"
+    ],
+    "allowed_generated_paths": [
+      "build/lake-actions/receipt-custody-wave-20.json",
+      "build/lake-actions/receipt-custody-wave-20-reconciliation.json"
+    ],
+    "divergence_classification": "typed_wave20_projection_and_reconciliation_views",
+    "final_disposition": "retain_declared_typed_views",
+    "projection_hash_equality_required": false,
+    "cross_key_join_authorized": false,
+    "review_required_to_decide": false,
+    "graph_effect": "none"
+  },
   "decision_law": {
     "raw_unused_definition_count_must_remain_visible": true,
     "compound_scalar_reference_is_not_one_receipt": true,
@@ -38,6 +55,8 @@
     "unused_definition_is_false_evidence": false,
     "adjudication_attaches_receipt_to_claim": false,
     "compound_split_changes_claim_semantics": false,
+    "typed_projection_views_prove_identity_or_truth": false,
+    "typed_projection_views_authorize_cross_key_join": false,
     "source_bytes_invented": false,
     "publication_cleared": false,
     "relationship_created": false,
