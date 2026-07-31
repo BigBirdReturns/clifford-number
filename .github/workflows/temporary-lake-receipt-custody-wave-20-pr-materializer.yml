@@ -64,6 +64,16 @@ jobs:
           node --check tools/validate-lake-receipt-custody-wave-20.mjs
           node tools/build-lake-receipt-custody-wave-20.mjs
           node tools/build-lake-receipt-custody-wave-20.mjs
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const path = 'data/project/lake-index-policy.json';
+          const policy = JSON.parse(fs.readFileSync(path, 'utf8'));
+          const transport = '.github/workflows/temporary-lake-receipt-custody-wave-20-pr-materializer.yml';
+          if (!policy.excluded_paths.includes(transport)) policy.excluded_paths.push(transport);
+          policy.excluded_paths.sort((a, b) => a.localeCompare(b));
+          policy.boundaries.wave_20_temporary_transport_is_evidence = false;
+          fs.writeFileSync(path, `${JSON.stringify(policy, null, 2)}\n`);
+          NODE
           git add -A
           git diff --check
 
