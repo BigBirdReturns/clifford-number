@@ -1,0 +1,193 @@
+name: Temporary materialize SSC Wave 02 review SG-10 v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-materialize-ssc-wave02-review-sg10-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: materialize-ssc-wave02-review-sg10-v2
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.number == 524 &&
+       github.head_ref == 'agent/ssc-wave02-maintainer-review-sg10-v2' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-maintainer-review-sg10-v2
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify carriers, materialize permanent review, and publish staging commit
+        env:
+          EXPECTED_EVENT_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -Eeuo pipefail
+
+          BASE='52a363704857a2da5035c24898f9dfdc38b56754'
+          STAGING='agent/ssc-wave02-review-sg10-v2-staging'
+          PR_BRANCH='agent/ssc-wave02-maintainer-review-sg10-v2'
+
+          if [ "${GITHUB_EVENT_NAME}" = 'pull_request' ]; then
+            test "$(git rev-parse HEAD)" = "${EXPECTED_EVENT_HEAD}"
+          fi
+          test "$(git branch --show-current)" = "${PR_BRANCH}"
+
+          git fetch --no-tags origin main "${STAGING}"
+          test "$(git rev-parse origin/main)" = "${BASE}"
+          lease="$(git ls-remote origin "refs/heads/${STAGING}" | awk '{print $1}')"
+          test "${lease}" = "${BASE}"
+
+          sha256sum -c <<'EOF'
+          de840a3f212340b30f845dc722de8951ccbcdd75ec13f01b8be0a0a34bf59a8f  .github/tmp/ssc-w02-review-first.part-00.b64
+          7fd638874b776c91a05ad2479e99d9940b1839030fefbe1d1e0d637917ccc9d5  .github/tmp/ssc-w02-review-first.part-01.b64
+          9346ba8f8295c5842d9c152060a17933a667d187ab650e4f771eed18119ed0e1  .github/tmp/ssc-w02-review-first.part-02.b64
+          48092d27c2f5b88805590cfb0fe5a7462492507adb4a383796a1319e495a9084  .github/tmp/ssc-w02-review-first.part-03.b64
+          5ba972c677a49ae50c122868dc494858b92e4a889fad228365438933d782169f  .github/tmp/ssc-w02-review-first.part-04.b64
+          2b24f9dc1d2017a0bc0f938e2446587f9a4a5834c2bc6b4bdc211c11a30ea95d  .github/tmp/ssc-w02-review-first.part-05.b64
+          a98ff6c1b21d50bcc8cdfacbd259523ce1c0e911a6fe473cf02285550001f628  .github/tmp/ssc-w02-review-first.part-06.b64
+          7ffe3ea36c32fd2a633beb21747172c90f5b47e913e7fc643268b85817aaccbf  .github/tmp/ssc-w02-review-first.part-07.b64
+          64637563d9bd02f484a23072143fc1ef93dfe6bcf14e1c1cbc9ab906c86221f0  .github/tmp/ssc-w02-review-first.part-08.b64
+          a91d4278f214331cb02b0b3612d0221aa315edcd2d937d2a2ad3eb52f8e5baf6  .github/tmp/ssc-w02-review-first.part-09.b64
+          6bcb02067711f3426df7798d085f79b8d6fa73ce00008e7203604948cf3a1465  .github/tmp/ssc-w02-review-first.part-10.b64
+          EOF
+
+          sha256sum -c <<'EOF'
+          526ca96346f4915a197cb55c1143de7ff2d8ac9809def904aa263fd22754612d  .github/tmp/ssc-w02-review-new.part-00.b64
+          b5de78db5f80ba92f2709f556d665df9f5760cd5a627651458ced390d0e6e0f2  .github/tmp/ssc-w02-review-new.part-01.b64
+          008750a0f917d29036856f94068b822f0978636349dddfff220a779b08c0bb7c  .github/tmp/ssc-w02-review-new.part-02.b64
+          c93c871b3816aa4f7af329e73604d292261a335cb6c7c65763dba2b0a22eff79  .github/tmp/ssc-w02-review-new.part-03.b64
+          1c85367a8e62c6e7009e65d49b12be7edb5989ca97da741a329e2fce8298be3b  .github/tmp/ssc-w02-review-new.part-04.b64
+          5ad58406a4e47cd3f38d51a50983b5026e11f3e919caec1da0e3a4c1d27b5426  .github/tmp/ssc-w02-review-new.part-05.b64
+          1b9502c20062c7d0e0ff6eb7df87905b068ca6fc4f90c7439790014314f756d3  .github/tmp/ssc-w02-review-new.part-06.b64
+          e72772301a0782ddcb07bb28be5202c7477c78ee77d43d2caa164f839f980b81  .github/tmp/ssc-w02-review-permanent-workflow.b64
+          EOF
+
+          cat .github/tmp/ssc-w02-review-first.part-{00..10}.b64 > /tmp/ssc-w02-first.patch.xz.b64
+          printf '%s  %s\n' '8b094621dc4fcd2328d292b91ca670142caa919f91e6813599cb5bd333c9ee4f' '/tmp/ssc-w02-first.patch.xz.b64' | sha256sum -c -
+          base64 -d /tmp/ssc-w02-first.patch.xz.b64 > /tmp/ssc-w02-first.patch.xz
+          printf '%s  %s\n' '0cf28c0175a9c34c00687928bf1b427420ba0ec5077426bb65f62c2eed6dbaf1' '/tmp/ssc-w02-first.patch.xz' | sha256sum -c -
+          xz -dc /tmp/ssc-w02-first.patch.xz > /tmp/ssc-w02-first.patch
+          printf '%s  %s\n' 'f2c0bf6656ea8a93e3af821717f33cf988d5ea94a4e3b268257ff0642c097c57' '/tmp/ssc-w02-first.patch' | sha256sum -c -
+
+          cat .github/tmp/ssc-w02-review-new.part-{00..06}.b64 > /tmp/ssc-w02-newfiles.patch.xz.b64
+          printf '%s  %s\n' '8128d22909fa036fa1e8730e2a181b792a184e7b79657c2647e14338e0d85898' '/tmp/ssc-w02-newfiles.patch.xz.b64' | sha256sum -c -
+          base64 -d /tmp/ssc-w02-newfiles.patch.xz.b64 > /tmp/ssc-w02-newfiles.patch.xz
+          printf '%s  %s\n' '735afc5afa0417a8755b79c61485e57fc93bc82053a8ae43dfa987e499b268a4' '/tmp/ssc-w02-newfiles.patch.xz' | sha256sum -c -
+          xz -dc /tmp/ssc-w02-newfiles.patch.xz > /tmp/ssc-w02-newfiles.patch
+          printf '%s  %s\n' '070420339b01f86b2330817f02c28f25dd368ab69df17865688c6d7db5c9c6ee' '/tmp/ssc-w02-newfiles.patch' | sha256sum -c -
+
+          base64 -d .github/tmp/ssc-w02-review-permanent-workflow.b64 > /tmp/status-sovereignty-wave-02-review.yml
+          printf '%s  %s\n' 'bde28ac00a998d4d81aa93c081cc87f89b17c7c583ac4877972c5bd082d7f34e' '/tmp/status-sovereignty-wave-02-review.yml' | sha256sum -c -
+
+          git reset --hard "${BASE}"
+          git clean -fdx
+          git apply --index /tmp/ssc-w02-first.patch
+          git apply --index /tmp/ssc-w02-newfiles.patch
+          mkdir -p .github/workflows
+          cp /tmp/status-sovereignty-wave-02-review.yml .github/workflows/status-sovereignty-wave-02-review.yml
+
+          cat > /tmp/expected-paths <<'EOF'
+          build/core-thesis/status-sovereignty/data.json
+          build/core-thesis/status-sovereignty/manifest.json
+          build/core-thesis/status-sovereignty/wave-02-review/data.json
+          build/core-thesis/status-sovereignty/wave-02-review/manifest.json
+          data/project/poof-clifford-ecology-release-manifest.json
+          data/project/status-sovereignty-compact.json
+          data/project/status-sovereignty-fanout.json
+          data/project/status-sovereignty-release-manifest.json
+          data/project/status-sovereignty-source-registry.json
+          data/project/status-sovereignty-wave-02-maintainer-review-release-manifest.json
+          data/research/status-sovereignty-wave-02-maintainer-review.json
+          data/research/status-sovereignty-wave-02.json
+          docs/milestones/m05-status-sovereignty-wave-02-review.md
+          package.json
+          reports/core-thesis/poof-clifford-ecology/release-manifest.json
+          reports/core-thesis/status-sovereignty/data.json
+          reports/core-thesis/status-sovereignty/index.html
+          reports/core-thesis/status-sovereignty/wave-02-review/data.json
+          reports/core-thesis/status-sovereignty/wave-02-review/index.html
+          test/status-sovereignty-compact.test.js
+          test/status-sovereignty-wave-01-review.test.js
+          test/status-sovereignty-wave-01.test.js
+          test/status-sovereignty-wave-02-intake.test.js
+          test/status-sovereignty-wave-02-review.test.js
+          tools/build-pages.mjs
+          tools/build-status-sovereignty-compact.mjs
+          tools/build-status-sovereignty-wave-02-review.mjs
+          tools/validate-pages.mjs
+          tools/validate-status-sovereignty-compact.mjs
+          tools/validate-status-sovereignty-wave-01-review.mjs
+          tools/validate-status-sovereignty-wave-01-second-party-review.mjs
+          tools/validate-status-sovereignty-wave-01.mjs
+          tools/validate-status-sovereignty-wave-02-intake.mjs
+          tools/validate-status-sovereignty-wave-02-review.mjs
+          EOF
+          sort -o /tmp/expected-paths /tmp/expected-paths
+          git diff --cached --name-only "${BASE}" | sort > /tmp/observed-paths
+          diff -u /tmp/expected-paths /tmp/observed-paths
+          test "$(wc -l < /tmp/observed-paths)" -eq 34
+
+          node tools/build-status-sovereignty-wave-02-review.mjs
+          node tools/validate-status-sovereignty-wave-02-review.mjs
+          node test/status-sovereignty-wave-02-review.test.js
+          node tools/validate-status-sovereignty-wave-02-intake.mjs
+          node test/status-sovereignty-wave-02-intake.test.js
+          npm run validate:status-sovereignty
+          npm run build:poof-ecology
+          npm run validate:poof-ecology
+          npm run build:pages
+          npm run build:standalone
+          npm run validate:pages
+          test ! -e dist/build/core-thesis/status-sovereignty/wave-02-review
+          test ! -e dist/reports/core-thesis/status-sovereignty/wave-02-review
+          test ! -e dist/data/research/status-sovereignty-wave-02.json
+          test ! -e dist/data/research/status-sovereignty-wave-02-maintainer-review.json
+          npm run release:check
+
+          git restore --source="${BASE}" --staged --worktree -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json
+
+          rm -f .github/workflows/status-sovereignty-wave-02-review.yml
+          git add --pathspec-from-file=/tmp/expected-paths
+          git diff --check --cached
+          git diff --exit-code
+          git diff --cached --name-only "${BASE}" | sort > /tmp/final-paths
+          diff -u /tmp/expected-paths /tmp/final-paths
+          test -z "$(git ls-files --others --exclude-standard)"
+
+          git config user.name 'OpenAI'
+          git config user.email 'noreply@openai.com'
+          git commit -m 'Review SSC-H01 Wave 02 observation packets'
+          test "$(git rev-parse HEAD^)" = "${BASE}"
+          git diff --name-only "${BASE}" HEAD | sort > /tmp/commit-paths
+          diff -u /tmp/expected-paths /tmp/commit-paths
+
+          git push \
+            --force-with-lease="refs/heads/${STAGING}:${BASE}" \
+            origin "HEAD:refs/heads/${STAGING}"
+
+          echo "Staging commit: $(git rev-parse HEAD)"
