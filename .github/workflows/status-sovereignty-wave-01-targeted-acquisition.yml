@@ -10,6 +10,9 @@ on:
       - 'docs/milestones/m05-status-sovereignty-wave-01-targeted-acquisition.md'
       - 'tools/*status-sovereignty-wave-01-targeted-acquisition*'
       - 'test/status-sovereignty-wave-01-targeted-acquisition.test.js'
+      - 'data/project/project-stable-ground-sg08*.json'
+      - 'tools/*project-stable-ground-sg08*'
+      - 'test/project-stable-ground-sg08.test.js'
       - 'tools/build-pages.mjs'
       - 'tools/validate-pages.mjs'
       - 'package.json'
@@ -23,6 +26,9 @@ on:
       - 'docs/milestones/m05-status-sovereignty-wave-01-targeted-acquisition.md'
       - 'tools/*status-sovereignty-wave-01-targeted-acquisition*'
       - 'test/status-sovereignty-wave-01-targeted-acquisition.test.js'
+      - 'data/project/project-stable-ground-sg08*.json'
+      - 'tools/*project-stable-ground-sg08*'
+      - 'test/project-stable-ground-sg08.test.js'
       - 'tools/build-pages.mjs'
       - 'tools/validate-pages.mjs'
       - 'package.json'
@@ -35,7 +41,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 95
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,15 +51,19 @@ jobs:
           node-version: '24'
       - name: Build and validate targeted acquisition
         run: |
-          npm run build:status-sovereignty-wave-01-targeted-acquisition
-          npm run validate:status-sovereignty-wave-01-targeted-acquisition
-          node test/status-sovereignty-wave-01-targeted-acquisition.test.js
-      - name: Revalidate frozen Wave 01 review
-        run: |
-          npm run validate:status-sovereignty-wave-01
-          npm run validate:status-sovereignty-wave-01-review
+          npm run build:status-sovereignty
+          npm run validate:status-sovereignty
           node test/status-sovereignty-wave-01.test.js
           node test/status-sovereignty-wave-01-review.test.js
+          node test/status-sovereignty-wave-01-targeted-acquisition.test.js
+          node test/status-sovereignty-compact.test.js
+      - name: Validate historical SG-07 and current SG-08
+        run: |
+          node tools/validate-project-stable-ground-sg07.mjs
+          node test/project-stable-ground-sg07.test.js
+          node tools/build-project-stable-ground-sg08.mjs
+          node tools/validate-project-stable-ground-sg08.mjs
+          node test/project-stable-ground-sg08.test.js
       - name: Prove publication hold
         run: |
           npm run build:pages
@@ -64,11 +74,17 @@ jobs:
       - name: Prove deterministic acquisition products
         run: |
           git restore --staged --worktree .
-          npm run build:status-sovereignty-wave-01-targeted-acquisition
-          npm run validate:status-sovereignty-wave-01-targeted-acquisition
+          npm run build:status-sovereignty
+          node tools/build-poof-clifford-ecology.mjs
+          node tools/build-project-stable-ground-sg08.mjs
+          npm run validate:status-sovereignty
           git diff --exit-code -- \
             data/project/status-sovereignty-wave-01-targeted-acquisition-release-manifest.json \
             build/core-thesis/status-sovereignty/wave-01-targeted-acquisition/manifest.json \
             build/core-thesis/status-sovereignty/wave-01-targeted-acquisition/data.json \
             reports/core-thesis/status-sovereignty/wave-01-targeted-acquisition/data.json \
-            reports/core-thesis/status-sovereignty/wave-01-targeted-acquisition/index.html
+            reports/core-thesis/status-sovereignty/wave-01-targeted-acquisition/index.html \
+            data/project/status-sovereignty-release-manifest.json \
+            data/project/project-stable-ground-sg08-release-manifest.json \
+            reports/core-thesis/stable-ground/sg08/checkpoint.json \
+            reports/core-thesis/stable-ground/sg08/index.html
