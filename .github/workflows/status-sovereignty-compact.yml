@@ -16,10 +16,14 @@ on:
       - 'build/core-thesis/status-sovereignty/**'
       - 'data/project/project-stable-ground-sg07*.json'
       - 'data/project/project-stable-ground-sg08*.json'
+      - 'data/project/project-stable-ground-sg09*.json'
       - 'tools/*project-stable-ground-sg08*'
+      - 'tools/*project-stable-ground-sg09*'
       - 'test/project-stable-ground-sg08.test.js'
+      - 'test/project-stable-ground-sg09.test.js'
       - '.github/workflows/project-stable-ground-sg07.yml'
       - '.github/workflows/project-stable-ground-sg08.yml'
+      - '.github/workflows/project-stable-ground-sg09.yml'
       - '.github/workflows/status-sovereignty-compact.yml'
       - '.github/workflows/status-sovereignty-wave-01.yml'
       - '.github/workflows/status-sovereignty-wave-01-review.yml'
@@ -40,10 +44,14 @@ on:
       - 'build/core-thesis/status-sovereignty/**'
       - 'data/project/project-stable-ground-sg07*.json'
       - 'data/project/project-stable-ground-sg08*.json'
+      - 'data/project/project-stable-ground-sg09*.json'
       - 'tools/*project-stable-ground-sg08*'
+      - 'tools/*project-stable-ground-sg09*'
       - 'test/project-stable-ground-sg08.test.js'
+      - 'test/project-stable-ground-sg09.test.js'
       - '.github/workflows/project-stable-ground-sg07.yml'
       - '.github/workflows/project-stable-ground-sg08.yml'
+      - '.github/workflows/project-stable-ground-sg09.yml'
       - '.github/workflows/status-sovereignty-compact.yml'
       - '.github/workflows/status-sovereignty-wave-01.yml'
       - '.github/workflows/status-sovereignty-wave-01-review.yml'
@@ -77,9 +85,11 @@ jobs:
         run: |
           node tools/validate-project-stable-ground-sg07.mjs
           node test/project-stable-ground-sg07.test.js
-          node tools/build-project-stable-ground-sg08.mjs
+          node tools/build-project-stable-ground-sg09.mjs
           node tools/validate-project-stable-ground-sg08.mjs
           node test/project-stable-ground-sg08.test.js
+          node tools/validate-project-stable-ground-sg09.mjs
+          node test/project-stable-ground-sg09.test.js
       - name: Run complete repository release gate
         run: npm run release:check
       - name: Prove deterministic SSC and SG-08 products
@@ -87,7 +97,7 @@ jobs:
           git restore --staged --worktree .
           npm run build:status-sovereignty
           node tools/build-poof-clifford-ecology.mjs
-          node tools/build-project-stable-ground-sg08.mjs
+          node tools/build-project-stable-ground-sg09.mjs
           npm run validate:stable-ground
           git diff --exit-code -- \
             data/project/status-sovereignty-wave-01-release-manifest.json \
