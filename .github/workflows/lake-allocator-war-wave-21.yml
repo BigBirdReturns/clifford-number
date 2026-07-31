@@ -1,0 +1,92 @@
+name: Evidence lake allocator-war Wave 21
+
+on:
+  pull_request:
+    branches:
+      - agent/lake-receipt-custody-wave-20
+    paths:
+      - '.github/workflows/lake-allocator-war-wave-21.yml'
+      - 'data/project/lake-allocator-war-**'
+      - 'tools/*lake-allocator-war-wave-21.mjs'
+      - 'test/lake-allocator-war-wave-21.test.js'
+      - 'docs/methods/lake-allocator-war-wave-21.md'
+      - 'docs/milestones/lake-allocator-war-wave-21.md'
+      - 'build/lake-actions/allocator-war-wave-21**'
+      - 'reports/lake-allocator-war-wave-21.md'
+  push:
+    branches:
+      - agent/lake-allocator-war-wave-21
+    paths:
+      - '.github/workflows/lake-allocator-war-wave-21.yml'
+      - 'data/project/lake-allocator-war-**'
+      - 'tools/*lake-allocator-war-wave-21.mjs'
+      - 'test/lake-allocator-war-wave-21.test.js'
+      - 'docs/methods/lake-allocator-war-wave-21.md'
+      - 'docs/milestones/lake-allocator-war-wave-21.md'
+      - 'build/lake-actions/allocator-war-wave-21**'
+      - 'reports/lake-allocator-war-wave-21.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lake-allocator-war-wave-21-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Await sealed materialization when source-only
+        id: state
+        shell: bash
+        run: |
+          if test -f data/project/lake-allocator-war-wave-21.json; then
+            echo 'materialized=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'materialized=false' >> "$GITHUB_OUTPUT"
+            node --check tools/build-lake-allocator-war-wave-21.mjs
+            node --check tools/install-lake-allocator-war-wave-21.mjs
+            node --check tools/reconcile-lake-allocator-war-wave-21.mjs
+            node --check tools/stabilize-lake-allocator-war-wave-21.mjs
+            node --check tools/validate-lake-allocator-war-wave-21.mjs
+          fi
+
+      - name: Validate allocator-war custody and authority
+        if: steps.state.outputs.materialized == 'true'
+        run: node tools/validate-lake-allocator-war-wave-21.mjs
+
+      - name: Run adversarial mutations
+        if: steps.state.outputs.materialized == 'true'
+        run: node test/lake-allocator-war-wave-21.test.js
+
+      - name: Run complete repository release gate
+        if: steps.state.outputs.materialized == 'true'
+        run: npm run release:check
+
+      - name: Restore and validate committed lake epoch
+        if: steps.state.outputs.materialized == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore --worktree .
+          git clean -fd
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-identifier-topology-wave-18.mjs
+          node tools/validate-lake-generator-contracts-wave-19.mjs
+          node tools/validate-lake-receipt-custody-wave-20.mjs
+          node tools/validate-lake-allocator-war-wave-21.mjs
+          node test/lake-allocator-war-wave-21.test.js
+          git diff --check
+          test -z "$(git status --porcelain)"

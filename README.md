@@ -242,3 +242,8 @@ consumption. It separates compound reference-encoding defects from hash-pinned,
 locator-only, coverage-source, explicitly unresolved, and repository-only custody.
 Every decision is reversible and graph-inert; source claims and receipt definitions
 remain byte-stable.
+
+
+## Allocator-war lake waterline
+
+Wave 21 imports the reviewed allocator-war Wave 01 waterline and the unreviewed SSC Wave 02 frontier through exact commit-and-path custody. It exposes separate observation, findings-waterline, estate-acquisition, and program-feed registries while retaining zero graph and publication effect. See `reports/lake-allocator-war-wave-21.md`.
