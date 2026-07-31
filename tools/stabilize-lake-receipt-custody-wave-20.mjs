@@ -145,7 +145,7 @@ gaps.receipt_custody = {
   graph_effect: 'none'
 };
 
-receiptSemantics.custody_adjudication = {
+const custodyAdjudication = {
   schema_version: 'lake-receipt-custody-semantics-wave-20@1',
   raw_unused_definitions: receipt.counts.raw_unused_receipt_definitions,
   adjudicated_decisions: decisions.length,
@@ -157,6 +157,9 @@ receiptSemantics.custody_adjudication = {
   raw_count_forced_to_zero: false,
   graph_effect: 'none'
 };
+receiptSemantics.custody_adjudication = custodyAdjudication;
+gaps.receipt_semantics ??= {};
+gaps.receipt_semantics.custody_adjudication = custodyAdjudication;
 
 writeJson('build/lake-index.json', index);
 writeJson('build/lake-object-index.json', objects);
