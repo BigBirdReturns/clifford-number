@@ -1,36 +1,26 @@
 name: Materialize Counter-Selector Wave 01 reports
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches:
+      - 'agent/counter-selector-wave-01'
     paths:
       - '.github/workflows/materialize-counter-selector-wave-01-reports.yml'
-      - '.github/workflows/counter-selector-wave-00.yml'
-      - 'data/project/counter-selector-program.json'
-      - 'data/project/counter-selector-wave-00-supersession.json'
-      - 'data/project/counter-selector-candidate-registry.json'
-      - 'data/project/counter-selector-candidates/**'
-      - 'data/project/counter-selector-wave-01.json'
-      - 'schemas/counter-selector-candidate.schema.json'
-      - 'docs/methods/counter-selector.md'
-      - 'docs/milestones/counter-selector-wave-01.md'
-      - 'tools/build-counter-selector.mjs'
-      - 'tools/validate-counter-selector.mjs'
-      - 'test/counter-selector.test.js'
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   materialize:
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'github-actions[bot]'
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: agent/counter-selector-wave-01
 
       - uses: actions/setup-node@v4
         with:
@@ -55,4 +45,4 @@ jobs:
             exit 0
           fi
           git commit -m 'Materialize Counter-Selector Wave 01 reports'
-          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+          git push origin HEAD:agent/counter-selector-wave-01
