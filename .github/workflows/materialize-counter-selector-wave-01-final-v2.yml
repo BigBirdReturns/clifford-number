@@ -1,0 +1,54 @@
+name: Materialize Counter-Selector Wave 01 final products v2
+
+on:
+  push:
+    branches:
+      - 'agent/counter-selector-wave-01'
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-01-final-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/counter-selector-wave-01
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Build and validate final Counter-Selector products
+        run: |
+          set -euo pipefail
+          node tools/build-counter-selector.mjs
+          node tools/validate-counter-selector.mjs
+          node test/counter-selector.test.js
+
+      - name: Commit only permanent generated products
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/project/counter-selector-release-manifest.json
+          git add reports/core-thesis/counter-selector/data.json
+          git add reports/core-thesis/counter-selector/index.html
+          git rm .github/workflows/materialize-counter-selector-wave-01-final-v2.yml
+          actual="$(git diff --cached --name-only | sort)"
+          expected="$(printf '%s\n' \
+            .github/workflows/materialize-counter-selector-wave-01-final-v2.yml \
+            data/project/counter-selector-release-manifest.json \
+            reports/core-thesis/counter-selector/data.json \
+            reports/core-thesis/counter-selector/index.html | sort)"
+          test "$actual" = "$expected"
+          git diff --cached --check
+          git commit -m 'Materialize Counter-Selector Wave 01 exact products'
+          git push origin HEAD:agent/counter-selector-wave-01
