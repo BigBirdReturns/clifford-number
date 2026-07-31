@@ -13,11 +13,21 @@ const write = (rel, value) => {
   fs.writeFileSync(target, value);
 };
 
+export const candidateShardPaths = [
+  'data/project/counter-selector-candidates/positive_candidate_operators.json',
+  'data/project/counter-selector-candidates/false_positive_outsider_genius_candidates.json',
+  'data/project/counter-selector-candidates/ordinary_specialists.json',
+  'data/project/counter-selector-candidates/high_status_selected_operators.json',
+  'data/project/counter-selector-candidates/repair_capable_partnerships.json',
+  'data/project/counter-selector-candidates/brittle_or_failed_partnerships.json'
+];
+
 export const releaseScope = [
   '.github/workflows/counter-selector-wave-00.yml',
   'data/project/counter-selector-program.json',
   'data/project/counter-selector-wave-00-supersession.json',
   'data/project/counter-selector-candidate-registry.json',
+  ...candidateShardPaths,
   'data/project/counter-selector-wave-01.json',
   'schemas/counter-selector-candidate.schema.json',
   'docs/methods/counter-selector.md',
@@ -74,9 +84,19 @@ function countBy(items, key) {
   }, {});
 }
 
+export function loadCandidateRegistry() {
+  const index = read('data/project/counter-selector-candidate-registry.json');
+  const shards = index.candidate_files.map((rel) => ({ path: rel, ...read(rel) }));
+  return {
+    ...index,
+    candidate_shards: shards,
+    candidates: shards.flatMap((shard) => shard.candidates)
+  };
+}
+
 export function buildCounterSelector() {
   const program = read('data/project/counter-selector-program.json');
-  const registry = read('data/project/counter-selector-candidate-registry.json');
+  const registry = loadCandidateRegistry();
   const supersession = read('data/project/counter-selector-wave-00-supersession.json');
   const wave = read('data/project/counter-selector-wave-01.json');
   const schema = read('schemas/counter-selector-candidate.schema.json');
