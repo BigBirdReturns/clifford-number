@@ -1,4 +1,4 @@
-name: Temporary package SSC SG-09 workflow bytes
+name: Temporary materialize workflow-neutral SSC SG-09
 
 on:
   pull_request:
@@ -7,20 +7,26 @@ on:
     paths:
       - '.github/tmp/materialize-ssc-sg09.mjs'
       - '.github/workflows/temporary-materialize-ssc-sg09.yml'
+      - '.github/workflows/project-stable-ground-sg07.yml'
+      - '.github/workflows/status-sovereignty-compact.yml'
+      - '.github/workflows/status-sovereignty-wave-01.yml'
+      - '.github/workflows/status-sovereignty-wave-01-review.yml'
+      - '.github/workflows/status-sovereignty-wave-01-targeted-acquisition.yml'
+      - '.github/workflows/status-sovereignty-wave-01-second-party-review.yml'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: package-ssc-sg09-workflows
+  group: materialize-workflow-neutral-ssc-sg09
   cancel-in-progress: false
 
 jobs:
-  package:
+  materialize:
     if: github.head_ref == 'agent/ssc-wave01-second-party-review-campaign' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,24 +35,78 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Generate exact workflow bytes
+      - name: Append SG-09 without writing workflows
         run: |
           set -Eeuo pipefail
+
           node .github/tmp/materialize-ssc-sg09.mjs
-          mkdir -p /tmp/ssc-sg09-workflows/.github/workflows
-          cp \
+          sha256sum -c <<'SUMS'
+          05512e161df04b367817a545a8d752b0ea3f46c585a92b1c4efb0fc14711956d  .github/workflows/project-stable-ground-sg07.yml
+          cb046f42072951414e0dea5f17fdead9722ef3a2c0d029e2e8dcb64f4c1943ce  .github/workflows/status-sovereignty-compact.yml
+          1f4d277c73424027fb590aa02e32c4ab073531ae8bac7e3276211f48c1236d78  .github/workflows/status-sovereignty-wave-01.yml
+          2757f2809bb79f5293bf7236802c1e90b05317ddc5478c75d9e6caa93db6bc4e  .github/workflows/status-sovereignty-wave-01-review.yml
+          520d758a826c4dc10e2a6413c55f8f2ba78926d963ffa547e843c7ca29185640  .github/workflows/status-sovereignty-wave-01-targeted-acquisition.yml
+          17429014bc831c094aa24ce2279573eb917416782951b9e402eb2619d9dc1365  .github/workflows/status-sovereignty-wave-01-second-party-review.yml
+          SUMS
+
+          node tools/build-status-sovereignty-wave-01-second-party-review.mjs
+          node .github/tmp/materialize-ssc-sg09.mjs --checkpoint
+          npm run build:poof-ecology
+          node tools/build-project-stable-ground-sg09.mjs
+
+          npm run validate:status-sovereignty
+          node test/status-sovereignty-wave-01.test.js
+          node test/status-sovereignty-wave-01-review.test.js
+          node test/status-sovereignty-wave-01-targeted-acquisition.test.js
+          node test/status-sovereignty-compact.test.js
+          node test/status-sovereignty-wave-01-second-party-review.test.js
+          node tools/validate-project-stable-ground-sg08.mjs
+          node test/project-stable-ground-sg08.test.js
+          node tools/validate-project-stable-ground-sg09.mjs
+          node test/project-stable-ground-sg09.test.js
+
+          npm run build:pages
+          npm run build:standalone
+          npm run validate:pages
+          npm run release:check
+
+          git diff --exit-code -- \
             .github/workflows/project-stable-ground-sg07.yml \
             .github/workflows/status-sovereignty-compact.yml \
             .github/workflows/status-sovereignty-wave-01.yml \
             .github/workflows/status-sovereignty-wave-01-review.yml \
             .github/workflows/status-sovereignty-wave-01-targeted-acquisition.yml \
-            .github/workflows/status-sovereignty-wave-01-second-party-review.yml \
-            /tmp/ssc-sg09-workflows/.github/workflows/
-          sha256sum /tmp/ssc-sg09-workflows/.github/workflows/*
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ssc-sg09-exact-workflows
-          path: /tmp/ssc-sg09-workflows
-          if-no-files-found: error
-          include-hidden-files: true
-          retention-days: 1
+            .github/workflows/status-sovereignty-wave-01-second-party-review.yml
+
+          git config user.name 'OpenAI'
+          git config user.email 'noreply@openai.com'
+          git add \
+            package.json \
+            tools/validate-status-sovereignty-compact.mjs \
+            tools/validate-status-sovereignty-wave-01-review.mjs \
+            tools/validate-status-sovereignty-wave-01-targeted-acquisition.mjs \
+            tools/validate-status-sovereignty-wave-01.mjs \
+            data/project/project-stable-ground-current.json \
+            data/project/project-stable-ground-sg09.json \
+            data/project/project-stable-ground-sg09-release-manifest.json \
+            reports/core-thesis/stable-ground/sg09/checkpoint.json \
+            reports/core-thesis/stable-ground/sg09/index.html \
+            data/project/status-sovereignty-wave-01-second-party-review-release-manifest.json \
+            build/core-thesis/status-sovereignty/wave-01-second-party-review/data.json \
+            build/core-thesis/status-sovereignty/wave-01-second-party-review/manifest.json \
+            reports/core-thesis/status-sovereignty/wave-01-second-party-review/data.json \
+            reports/core-thesis/status-sovereignty/wave-01-second-party-review/index.html \
+            reports/core-thesis/status-sovereignty/wave-01-second-party-review/intake.html \
+            data/project/poof-clifford-ecology-release-manifest.json \
+            reports/core-thesis/poof-clifford-ecology/release-manifest.json
+
+          if git diff --cached --name-only | grep -E '(^|/)(temporary-|materialize-ssc-sg09|\.github/tmp/)'; then
+            echo 'temporary transport entered permanent staging' >&2
+            exit 1
+          fi
+          if git diff --cached --quiet; then
+            echo 'workflow-neutral SG-09 materialization already deterministic'
+            exit 0
+          fi
+          git commit -m 'Append stable-ground supersession SG-09'
+          git push origin HEAD:agent/ssc-wave01-second-party-review-campaign
