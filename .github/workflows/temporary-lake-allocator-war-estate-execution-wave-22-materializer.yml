@@ -1,6 +1,12 @@
 name: Temporary allocator-war estate execution Wave 22 materializer
 
 on:
+  pull_request:
+    branches:
+      - agent/lake-allocator-war-wave-21
+    paths:
+      - '.github/tmp/lake-allocator-war-estate-execution-wave-22-trigger.json'
+      - '.github/workflows/temporary-lake-allocator-war-estate-execution-wave-22-materializer.yml'
   push:
     branches:
       - agent/allocator-war-estate-acquisition-wave-22
