@@ -1,0 +1,103 @@
+name: Temporary materialize SSC-W01 open acquisition 01 v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize, reopened, ready_for_review]
+    paths:
+      - '.github/tmp/ssc-w01-oa01.part-*'
+      - '.github/workflows/temporary-materialize-ssc-w01-oa01-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-w01-oa01-materializer-v2
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.head_ref == 'agent/status-sovereignty-wave01-open-acquisition-01' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/status-sovereignty-wave01-open-acquisition-01
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate and publish workflow-neutral acquisition commit
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -Eeuo pipefail
+          BASE='e59664b02ac695378cab6ef2186a560be6ff8a32'
+          CANONICAL_MAIN='d1021f56565a1aa667f456ad35852de3a8724e30'
+          STAGING='agent/status-sovereignty-wave01-open-acquisition-01-staging'
+          actual_head="$(git rev-parse HEAD)"
+          test "$actual_head" = "$EXPECTED_HEAD"
+          git fetch origin main "$STAGING"
+          actual_main="$(git rev-parse refs/remotes/origin/main)"
+          actual_staging="$(git rev-parse refs/remotes/origin/$STAGING)"
+          printf 'head=%s\nmain=%s\nstaging=%s\n' "$actual_head" "$actual_main" "$actual_staging"
+          git merge-base --is-ancestor "$CANONICAL_MAIN" "$actual_main"
+
+          mapfile -t parts < <(find .github/tmp -maxdepth 1 -type f -name 'ssc-w01-oa01.part-*' -printf '%f\n' | sort)
+          test "${#parts[@]}" -eq 5
+          for i in $(seq -w 0 4); do test "${parts[10#$i]}" = "ssc-w01-oa01.part-$i"; done
+          printf '%s  %s\n' 'bdc276cd916dea5c00018e4f0e9efadc97bdf245295b230aa193a6527e36d440' .github/tmp/ssc-w01-oa01.part-00 | sha256sum --check --strict
+          printf '%s  %s\n' '024f68ca06ade3ae1b344354c6646587569793d2699e9660398e8bc7ffbe14fe' .github/tmp/ssc-w01-oa01.part-01 | sha256sum --check --strict
+          printf '%s  %s\n' 'f1d5e307ee39725f0e2336bf2392e701a480e41f599c75f45c1bea371d353452' .github/tmp/ssc-w01-oa01.part-02 | sha256sum --check --strict
+          printf '%s  %s\n' '70446166fa374e5798c7815cd09ef125b4e176268282fe4ad053164e469956bd' .github/tmp/ssc-w01-oa01.part-03 | sha256sum --check --strict
+          printf '%s  %s\n' 'cc63354f9368d2d9d915ddb4c4d1e8ac9ef0406f44cd60de67a0e711a6abf771' .github/tmp/ssc-w01-oa01.part-04 | sha256sum --check --strict
+          cat .github/tmp/ssc-w01-oa01.part-* > /tmp/ssc-w01-oa01.b64
+          printf '%s  %s\n' '3556b98fabd2df7bc039190a6987257a2484dfafeaeff9b9125d5deb6a262155' /tmp/ssc-w01-oa01.b64 | sha256sum --check --strict
+          base64 --decode /tmp/ssc-w01-oa01.b64 > /tmp/ssc-w01-oa01.tar.xz
+          printf '%s  %s\n' '37d7edd8f3cd08317dbbfb9502c383f2c7fc28739e5b34dc6d22991fa6ff5768' /tmp/ssc-w01-oa01.tar.xz | sha256sum --check --strict
+          xz --decompress --stdout /tmp/ssc-w01-oa01.tar.xz > /tmp/ssc-w01-oa01.tar
+          printf '%s  %s\n' '065f46d7963117ad22facc8f05aa6101b0573cf90a298a170313380153369f64' /tmp/ssc-w01-oa01.tar | sha256sum --check --strict
+
+          rm -rf /tmp/ssc-w01-oa01
+          mkdir -p /tmp/ssc-w01-oa01
+          tar -xf /tmp/ssc-w01-oa01.tar -C /tmp/ssc-w01-oa01
+          test "$(wc -l < /tmp/ssc-w01-oa01/PATHS.txt)" -eq 8
+          printf '%s  %s\n' '6ab954310c51d079162942de2ce807626bdbf4636a01062679b3cbf39d4f520b' /tmp/ssc-w01-oa01/PATHS.txt | sha256sum --check --strict
+          (cd /tmp/ssc-w01-oa01/root && find . -type f -printf '%P\n' | sort) > /tmp/archive-paths
+          diff -u /tmp/ssc-w01-oa01/PATHS.txt /tmp/archive-paths
+
+          git checkout --detach "$BASE"
+          while IFS= read -r rel; do
+            mkdir -p "$(dirname "$rel")"
+            cp "/tmp/ssc-w01-oa01/root/$rel" "$rel"
+          done < /tmp/ssc-w01-oa01/PATHS.txt
+          { git diff --name-only "$BASE"; git ls-files --others --exclude-standard; } | sort -u > /tmp/observed
+          diff -u /tmp/ssc-w01-oa01/PATHS.txt /tmp/observed
+          git diff --check
+          node tools/build-status-sovereignty-wave-01-open-acquisition-01.mjs
+          node tools/validate-status-sovereignty-wave-01-open-acquisition-01.mjs
+          node test/status-sovereignty-wave-01-open-acquisition-01.test.js
+          git diff --exit-code -- \
+            data/project/status-sovereignty-wave-01-open-acquisition-01-release-manifest.json \
+            reports/core-thesis/status-sovereignty/wave-01-open-acquisition-01/data.json \
+            reports/core-thesis/status-sovereignty/wave-01-open-acquisition-01/index.html
+          npm run release:check
+
+          git reset --hard "$BASE"
+          git clean -fdx
+          while IFS= read -r rel; do
+            mkdir -p "$(dirname "$rel")"
+            cp "/tmp/ssc-w01-oa01/root/$rel" "$rel"
+          done < /tmp/ssc-w01-oa01/PATHS.txt
+          { git diff --name-only "$BASE"; git ls-files --others --exclude-standard; } | sort -u > /tmp/final-observed
+          diff -u /tmp/ssc-w01-oa01/PATHS.txt /tmp/final-observed
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Record SSC-W01 open-acquisition resolution 01'
+          successor="$(git rev-parse HEAD)"
+          git push --force-with-lease=refs/heads/${STAGING}:"$actual_staging" origin HEAD:"$STAGING"
+          printf 'successor_commit=%s\n' "$successor"
