@@ -50,7 +50,15 @@ function defaultTransitionVerifier(checkpoint) {
   errors.push(...ensureCommit(transition, 'SG-09 transition commit', 6));
   if (errors.length) return errors;
   const ancestry = spawnSync('git', ['merge-base', '--is-ancestor', base, transition], { cwd: root, encoding: 'utf8' });
-  if (ancestry.status !== 0) errors.push('SG-09 transition commit is not descended from its declared base');
+  if (ancestry.status !== 0) {
+  spawnSync('git', ['fetch', '--no-tags', '--depth=64', 'origin', transition], { cwd: root, encoding: 'utf8' });
+  const retried = spawnSync('git', ['merge-base', '--is-ancestor', base, transition], { cwd: root, encoding: 'utf8' });
+  if (retried.status !== 0) {
+    const raw = spawnSync('git', ['cat-file', '-p', transition], { cwd: root, encoding: 'utf8' });
+    const parents = raw.status === 0 ? raw.stdout.split('\n').filter((line) => line.startsWith('parent ')).map((line) => line.slice(7).trim()) : [];
+    if (!parents.includes(base)) errors.push('SG-09 transition commit is not descended from its declared base');
+  }
+}
   const changed = spawnSync('git', ['diff', '--name-only', base, transition], { cwd: root, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
   if (changed.status !== 0) errors.push('SG-09 transition path denominator cannot be recovered');
   else {
