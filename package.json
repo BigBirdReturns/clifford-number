@@ -107,9 +107,9 @@
     "build:security-state-organism": "node tools/build-security-state-organism.mjs",
     "validate:security-state-organism": "node tools/validate-security-state-organism.mjs",
     "ci:security-state-organism": "npm run build:security-state-organism && npm run validate:security-state-organism && node test/security-state-organism.test.js",
-    "build:status-sovereignty": "node tools/build-status-sovereignty-wave-01.mjs && node tools/build-status-sovereignty-wave-01-review.mjs && node tools/build-status-sovereignty-compact.mjs",
-    "validate:status-sovereignty": "node tools/validate-status-sovereignty-wave-01.mjs && node tools/validate-status-sovereignty-wave-01-review.mjs && node tools/validate-status-sovereignty-compact.mjs",
-    "ci:status-sovereignty": "npm run build:status-sovereignty && npm run validate:status-sovereignty && node test/status-sovereignty-wave-01.test.js && node test/status-sovereignty-wave-01-review.test.js && node test/status-sovereignty-compact.test.js",
+    "build:status-sovereignty": "node tools/build-status-sovereignty-wave-01.mjs && node tools/build-status-sovereignty-wave-01-review.mjs && node tools/build-status-sovereignty-wave-01-targeted-acquisition.mjs && node tools/build-status-sovereignty-compact.mjs",
+    "validate:status-sovereignty": "node tools/validate-status-sovereignty-wave-01.mjs && node tools/validate-status-sovereignty-wave-01-review.mjs && node tools/validate-status-sovereignty-wave-01-targeted-acquisition.mjs && node tools/validate-status-sovereignty-compact.mjs",
+    "ci:status-sovereignty": "npm run build:status-sovereignty && npm run validate:status-sovereignty && node test/status-sovereignty-wave-01.test.js && node test/status-sovereignty-wave-01-review.test.js && node test/status-sovereignty-wave-01-targeted-acquisition.test.js && node test/status-sovereignty-compact.test.js",
     "build:k0": "node tools/build-k0-epistemic-admissibility.mjs",
     "validate:k0": "node tools/validate-k0-epistemic-admissibility.mjs",
     "build:poof-ecology": "node tools/build-poof-clifford-ecology.mjs",
@@ -125,7 +125,10 @@
     "ci:status-sovereignty-wave-01": "npm run build:status-sovereignty-wave-01 && npm run validate:status-sovereignty-wave-01 && node test/status-sovereignty-wave-01.test.js",
     "build:status-sovereignty-wave-01-review": "node tools/build-status-sovereignty-wave-01-review.mjs",
     "validate:status-sovereignty-wave-01-review": "node tools/validate-status-sovereignty-wave-01-review.mjs",
-    "ci:status-sovereignty-wave-01-review": "npm run build:status-sovereignty-wave-01 && npm run build:status-sovereignty-wave-01-review && npm run validate:status-sovereignty-wave-01 && npm run validate:status-sovereignty-wave-01-review && node test/status-sovereignty-wave-01.test.js && node test/status-sovereignty-wave-01-review.test.js"
+    "ci:status-sovereignty-wave-01-review": "npm run build:status-sovereignty-wave-01 && npm run build:status-sovereignty-wave-01-review && npm run validate:status-sovereignty-wave-01 && npm run validate:status-sovereignty-wave-01-review && node test/status-sovereignty-wave-01.test.js && node test/status-sovereignty-wave-01-review.test.js",
+    "build:status-sovereignty-wave-01-targeted-acquisition": "node tools/build-status-sovereignty-wave-01-targeted-acquisition.mjs",
+    "validate:status-sovereignty-wave-01-targeted-acquisition": "node tools/validate-status-sovereignty-wave-01-targeted-acquisition.mjs",
+    "ci:status-sovereignty-wave-01-targeted-acquisition": "npm run build:status-sovereignty-wave-01-targeted-acquisition && npm run validate:status-sovereignty-wave-01-targeted-acquisition && node test/status-sovereignty-wave-01-targeted-acquisition.test.js"
   },
   "keywords": [
     "surface-hop",
