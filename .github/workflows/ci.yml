@@ -67,7 +67,7 @@ jobs:
               if lines and lines[0].startswith('SSC-SG07-CARRIER-PART-'):
                   parts.append((lines[0],''.join(lines[1:]).strip()))
           parts.sort()
-          if len(parts)!=4: raise RuntimeError(f'expected 4 carrier comments, observed {len(parts)}')
+          if len(parts)!=16: raise RuntimeError(f'expected 16 carrier comments, observed {len(parts)}')
           raw=base64.b64decode(''.join(part for _,part in parts),validate=True)
           open('/tmp/ssc-wave01-review-carrier.tar.xz','wb').write(raw)
           PY
