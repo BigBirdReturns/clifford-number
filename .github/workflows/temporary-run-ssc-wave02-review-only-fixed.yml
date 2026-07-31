@@ -1,0 +1,56 @@
+name: Temporary run corrected SSC Wave 02 review staging
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-run-ssc-wave02-review-only-fixed.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: materialize-ssc-wave02-review-only-v2
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.number == 524 &&
+       github.head_ref == 'agent/ssc-wave02-maintainer-review-sg10-v2' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-maintainer-review-sg10-v2
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Extract, repair, and execute the reviewed materializer
+        env:
+          EXPECTED_EVENT_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          source = Path('.github/workflows/temporary-materialize-ssc-wave02-review-only-v2.yml').read_text().splitlines()
+          start = next(i for i, line in enumerate(source) if line == '        run: |') + 1
+          script = []
+          for line in source[start:]:
+              if line and not line.startswith('          '):
+                  break
+              script.append(line[10:] if line.startswith('          ') else '')
+          text = '\n'.join(script) + '\n'
+          anchor = "cp /tmp/review.yml .github/workflows/status-sovereignty-wave-02-review.yml\n\ncat > /tmp/nonworkflow-paths"
+          replacement = "cp /tmp/review.yml .github/workflows/status-sovereignty-wave-02-review.yml\ngit add .github/workflows/status-sovereignty-wave-02-review.yml\n\ncat > /tmp/nonworkflow-paths"
+          if anchor not in text:
+              raise SystemExit('review workflow staging anchor missing')
+          Path('/tmp/materialize-review.sh').write_text(text.replace(anchor, replacement))
+          PY
+          bash /tmp/materialize-review.sh
