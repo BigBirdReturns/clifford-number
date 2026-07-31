@@ -1,0 +1,93 @@
+name: Validate Counter-Selector Wave 01 candidate
+
+on:
+  push:
+    branches:
+      - 'agent/counter-selector-wave-01'
+    paths:
+      - '.github/workflows/validate-counter-selector-wave-01-candidate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-receipt:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/counter-selector-wave-01
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install exact dependencies
+        run: npm ci
+
+      - name: Run focused Counter-Selector gates
+        run: |
+          set -euo pipefail
+          node tools/build-counter-selector.mjs
+          node tools/validate-counter-selector.mjs
+          node test/counter-selector.test.js
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Require exact committed products
+        run: git diff --exit-code
+
+      - name: Reconstruct deterministically
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          node tools/build-counter-selector.mjs
+          node tools/validate-counter-selector.mjs
+          node test/counter-selector.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+
+      - name: Write validation receipt
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const manifest = JSON.parse(fs.readFileSync('data/project/counter-selector-release-manifest.json', 'utf8'));
+          const receipt = {
+            schema_version: 'counter-selector-ci-receipt@1',
+            program_id: 'counter-selector-v1',
+            wave_id: 'CS-W02-W01',
+            result: 'pass',
+            validated_commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+            release_manifest_combined_sha256: manifest.combined_sha256,
+            node_version: process.version,
+            commands: [
+              'npm ci',
+              'node tools/build-counter-selector.mjs',
+              'node tools/validate-counter-selector.mjs',
+              'node test/counter-selector.test.js',
+              'npm run release:check',
+              'git diff --exit-code',
+              'deterministic reconstruction and clean worktree check'
+            ],
+            graph_effect: 'none'
+          };
+          fs.writeFileSync('data/project/counter-selector-wave-01-ci-receipt.json', `${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+
+      - name: Commit validation receipt
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/project/counter-selector-wave-01-ci-receipt.json
+          git diff --cached --check
+          git commit -m 'Record Counter-Selector Wave 01 release gate'
+          git push origin HEAD:agent/counter-selector-wave-01
