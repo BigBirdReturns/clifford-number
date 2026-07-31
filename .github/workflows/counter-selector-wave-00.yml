@@ -1,0 +1,52 @@
+name: Counter-Selector Wave 00
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/counter-selector-wave-00-*.json'
+      - 'schemas/counter-selector-candidate.schema.json'
+      - 'docs/methods/counter-selector-wave-00.md'
+      - 'docs/milestones/counter-selector-wave-00.md'
+      - 'tools/build-counter-selector-wave-00.mjs'
+      - 'tools/validate-counter-selector-wave-00.mjs'
+      - 'test/counter-selector-wave-00.test.js'
+      - 'reports/core-thesis/counter-selector-wave-00/**'
+      - '.github/workflows/counter-selector-wave-00.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/counter-selector-wave-00-*.json'
+      - 'schemas/counter-selector-candidate.schema.json'
+      - 'docs/methods/counter-selector-wave-00.md'
+      - 'docs/milestones/counter-selector-wave-00.md'
+      - 'tools/build-counter-selector-wave-00.mjs'
+      - 'tools/validate-counter-selector-wave-00.mjs'
+      - 'test/counter-selector-wave-00.test.js'
+      - 'reports/core-thesis/counter-selector-wave-00/**'
+      - '.github/workflows/counter-selector-wave-00.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build, validate, and attack Wave 00
+        run: |
+          node tools/build-counter-selector-wave-00.mjs
+          node tools/validate-counter-selector-wave-00.mjs
+          node test/counter-selector-wave-00.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic Wave 00 products
+        run: |
+          git restore --staged --worktree .
+          node tools/build-counter-selector-wave-00.mjs
+          node tools/validate-counter-selector-wave-00.mjs
+          node test/counter-selector-wave-00.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
