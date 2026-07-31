@@ -49,7 +49,7 @@ jobs:
         run: |
           set -euo pipefail
           rm -f .github/tmp/lake-receipt-custody-wave-20-trigger.json .github/tmp/lake-generator-contracts-wave-19-trigger.json
-          git add -A .github/tmp/lake-receipt-custody-wave-20-trigger.json .github/tmp/lake-generator-contracts-wave-19-trigger.json
+          git add -A .github/tmp
           npm run release:check
           git restore --worktree .
           git clean -fd
