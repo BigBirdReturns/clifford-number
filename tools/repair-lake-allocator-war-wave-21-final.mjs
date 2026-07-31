@@ -85,6 +85,12 @@ stabilizer = replaceRequired(
   "const gateIds = unique(observations.flatMap(row =>\n  (row.four_gate_assessment ?? []).map(gate => gate.gate_id)\n));\nassert(gateIds.length === 4, `allocator-war Wave 21 gate identifiers ${gateIds.length}/4`);\nconst projectionTargets = new Map([\n  [`program_id:${policy.program_id}`, { object_type: 'program_identity' }],\n  [`owner_program_id:${policy.program_id}`, { object_type: 'program_owner_reference' }],\n  [`wave_id:${policy.wave_id}`, { object_type: 'wave_identity' }],\n  ...gateIds.map(gateId => [`gate_id:${gateId}`, { object_type: 'four_gate_dimension_reference', consumer_key: gateId }]),",
   'metadata projection targets'
 );
+stabilizer = replaceRequired(
+  stabilizer,
+  "const remainingUnindexed = (objects.objects ?? []).filter(object => object.unindexed_identifier && !object.topology_unindexed_disposition);\n\nindex.summary.counts.allocator_war_wave_21_source_rows = authorityByCompound.size;",
+  "const remainingUnindexed = (objects.objects ?? []).filter(object => object.unindexed_identifier && !object.topology_unindexed_disposition);\n\nconst residualViews = [\n  ['unindexed', remainingUnindexed, 'unindexed_machine_ids_unadjudicated'],\n  ['source-only', remainingSourceOnly, 'source_ids_without_projection_unadjudicated'],\n  ['divergence', remainingDivergence, 'divergent_identifier_projections_unadjudicated']\n];\nfor (const [label, rows, summaryKey] of residualViews) {\n  index.summary.counts[summaryKey] = rows.length;\n  gaps[summaryKey] = rows;\n  assert(index.summary.counts[summaryKey] === gaps[summaryKey].length, label + ' residual summary drift');\n}\nif (gaps.identifier_topology) {\n  gaps.identifier_topology.unindexed_unadjudicated = remainingUnindexed.length;\n  gaps.identifier_topology.source_only_unadjudicated = remainingSourceOnly.length;\n  gaps.identifier_topology.divergence_unadjudicated = remainingDivergence.length;\n}\n\nindex.summary.counts.allocator_war_wave_21_source_rows = authorityByCompound.size;",
+  'canonical residual view synchronization'
+);
 write(stabilizerPath, stabilizer);
 
 const validatorPath = 'tools/validate-lake-allocator-war-wave-21.mjs';
@@ -141,3 +147,4 @@ console.log('allocator-war Wave 21 final reconciliation seams repaired');
 console.log('  exact declared source/projection path observation: enabled');
 console.log('  method and milestone ownership/reachability: declared');
 console.log('  gate and owner metadata references: typed and topology-adjudicated');
+console.log('  residual summary, gap arrays, and topology counters: synchronized');
