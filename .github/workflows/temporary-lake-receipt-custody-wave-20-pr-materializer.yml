@@ -54,26 +54,29 @@ jobs:
           git restore --worktree .
           git clean -fd
 
+      - name: Repair program identity contract and remove transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e "const fs=require('fs');const f='tools/build-lake-receipt-custody-wave-20.mjs';let s=fs.readFileSync(f,'utf8');const a=\"schema_version: 'lake-receipt-custody-decision-wave-20@1',\\n    receipt_custody_decision_id:\";const b=\"schema_version: 'lake-receipt-custody-decision-wave-20@1',\\n    program_id: policy.program_id,\\n    receipt_custody_decision_id:\";if(!s.includes('program_id: policy.program_id')){if(!s.includes(a))throw new Error('decision marker drift');s=s.replace(a,b);}s=s.replaceAll('program_key: policy.program_id,','program_id: policy.program_id,');fs.writeFileSync(f,s);"
+          node -e "const fs=require('fs');const f='tools/reconcile-lake-receipt-custody-wave-20.mjs';let s=fs.readFileSync(f,'utf8');s=s.replaceAll('program_key: policy.program_id,','program_id: policy.program_id,');fs.writeFileSync(f,s);"
+          node -e "const fs=require('fs');const f='tools/validate-lake-receipt-custody-wave-20.mjs';let s=fs.readFileSync(f,'utf8');const marker=\"if (decisions.length !== policy.baseline.unused_receipt_definitions) fail(\`decision denominator is \${decisions.length}\`);\";const insertion=marker+\"\\nif (decisions.some(row => row.program_id !== policy.program_id)) fail('decision program identity drift');\\nif (projection.program_id !== policy.program_id) fail('projection program identity drift');\\nif (receipt.program_id !== policy.program_id) fail('receipt program identity drift');\\nif (reconciliation.program_id !== policy.program_id) fail('reconciliation program identity drift');\";if(!s.includes('decision program identity drift')){if(!s.includes(marker))throw new Error('validator marker drift');s=s.replace(marker,insertion);}fs.writeFileSync(f,s);"
+          rm -f .github/tmp/lake-receipt-custody-wave-20-trigger.json
+          rm -f .github/tmp/lake-generator-contracts-wave-19-trigger.json
+          rm -f .github/workflows/temporary-lake-receipt-custody-wave-20-pr-materializer.yml
+          node --check tools/build-lake-receipt-custody-wave-20.mjs
+          node --check tools/reconcile-lake-receipt-custody-wave-20.mjs
+          node --check tools/validate-lake-receipt-custody-wave-20.mjs
+          git add -A
+          git diff --check
+
       - name: Build Wave 20 source controls
         shell: bash
         run: |
           set -euo pipefail
-          node --check tools/build-lake-receipt-custody-wave-20.mjs
           node --check tools/stabilize-lake-receipt-custody-wave-20.mjs
-          node --check tools/reconcile-lake-receipt-custody-wave-20.mjs
-          node --check tools/validate-lake-receipt-custody-wave-20.mjs
           node tools/build-lake-receipt-custody-wave-20.mjs
           node tools/build-lake-receipt-custody-wave-20.mjs
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs';
-          const path = 'data/project/lake-index-policy.json';
-          const policy = JSON.parse(fs.readFileSync(path, 'utf8'));
-          const transport = '.github/workflows/temporary-lake-receipt-custody-wave-20-pr-materializer.yml';
-          if (!policy.excluded_paths.includes(transport)) policy.excluded_paths.push(transport);
-          policy.excluded_paths.sort((a, b) => a.localeCompare(b));
-          policy.boundaries.wave_20_temporary_transport_is_evidence = false;
-          fs.writeFileSync(path, `${JSON.stringify(policy, null, 2)}\n`);
-          NODE
           git add -A
           git diff --check
 
@@ -96,16 +99,6 @@ jobs:
             node tools/validate-lake-index.mjs
             node tools/validate-lake-receipt-semantics.mjs
             node tools/validate-lake-gap-summary.mjs
-            if [ "$pass" = "1" ]; then
-              node --input-type=module <<'NODE'
-              import fs from 'node:fs';
-              const gaps = JSON.parse(fs.readFileSync('build/lake-index-gaps.json', 'utf8'));
-              console.log('WAVE20_IDENTIFIER_DIAGNOSTIC_UNINDEXED');
-              console.log(JSON.stringify(gaps.unindexed_machine_ids_unadjudicated, null, 2));
-              console.log('WAVE20_IDENTIFIER_DIAGNOSTIC_SOURCE_ONLY');
-              console.log(JSON.stringify(gaps.source_ids_without_projection_unadjudicated, null, 2));
-              NODE
-            fi
             node tools/reconcile-lake-identifier-topology-wave-18.mjs
             node tools/reconcile-lake-generator-contracts-wave-19.mjs
             node tools/reconcile-lake-receipt-custody-wave-20.mjs
@@ -148,6 +141,8 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
+          test ! -e .github/tmp/lake-receipt-custody-wave-20-trigger.json
+          test ! -e .github/workflows/temporary-lake-receipt-custody-wave-20-pr-materializer.yml
           git commit -m 'Execute receipt and source custody Wave 20'
           git fetch origin agent/lake-receipt-custody-wave-20
           test "$(git rev-parse origin/agent/lake-receipt-custody-wave-20)" = "$original_sha"
