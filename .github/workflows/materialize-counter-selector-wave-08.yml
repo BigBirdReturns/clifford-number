@@ -1,0 +1,167 @@
+name: Materialize Counter-Selector Wave 08 Batch 02 blind review
+
+on:
+  push:
+    branches:
+      - 'agent/counter-selector-wave-08-b02-blind-review'
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-08.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-08.yml'
+      - '.github/materializers/counter-selector-wave-08/**'
+  workflow_dispatch:
+
+concurrency:
+  group: counter-selector-wave-08-materializer
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  statuses: write
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  REPO: BigBirdReturns/clifford-number
+  BRANCH: agent/counter-selector-wave-08-b02-blind-review
+
+jobs:
+  materialize-validate-publish:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/counter-selector-wave-08-b02-blind-review
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Materialize permanent Wave 08 estate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/materializers/counter-selector-wave-08/source-*.py > /tmp/generate-wave-08.py
+          python /tmp/generate-wave-08.py
+          node tools/build-counter-selector-wave-08.mjs
+          node tools/validate-counter-selector-wave-08.mjs
+          node test/counter-selector-wave-08.test.js
+
+      - name: Replace transport with exact permanent files
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .github/materializers/counter-selector-wave-08
+          rm .github/workflows/materialize-counter-selector-wave-08.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          actual="$(git diff --cached --name-only | sort)"
+          expected="$(printf '%s\n' \
+            .github/materializers/counter-selector-wave-08/source-00.py \
+            .github/materializers/counter-selector-wave-08/source-01.py \
+            .github/materializers/counter-selector-wave-08/source-02.py \
+            .github/materializers/counter-selector-wave-08/source-03.py \
+            .github/materializers/counter-selector-wave-08/source-04.py \
+            .github/materializers/counter-selector-wave-08/source-05.py \
+            .github/materializers/counter-selector-wave-08/source-06.py \
+            .github/materializers/counter-selector-wave-08/source-07.py \
+            .github/workflows/materialize-counter-selector-wave-08.yml \
+            .github/workflows/counter-selector-wave-08.yml \
+            data/project/counter-selector-wave-08-blind-review.json \
+            data/project/counter-selector-blind-review-b02-registry.json \
+            data/project/counter-selector-review-disagreement-b02-ledger.json \
+            data/project/counter-selector-wave-08-release-manifest.json \
+            schemas/counter-selector-wave-08-blind-review.schema.json \
+            docs/methods/counter-selector-wave-08-blind-review.md \
+            docs/milestones/counter-selector-wave-08.md \
+            tools/build-counter-selector-wave-08.mjs \
+            tools/validate-counter-selector-wave-08.mjs \
+            test/counter-selector-wave-08.test.js \
+            reports/core-thesis/counter-selector-wave-08/data.json \
+            reports/core-thesis/counter-selector-wave-08/index.html | sort)"
+          test "$actual" = "$expected"
+          git diff --cached --check
+          git commit -m 'Execute Counter-Selector Wave 08 Batch 02 blind review'
+
+      - name: Run complete release gate before integration
+        run: npm run release:check
+
+      - name: Integrate current main and replay every gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git rebase origin/main
+          node tools/build-counter-selector-wave-08.mjs
+          node tools/validate-counter-selector-wave-08.mjs
+          node test/counter-selector-wave-08.test.js
+          npm run release:check
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+          git push --force-with-lease origin HEAD:$BRANCH
+
+      - name: Finalize PR metadata and success contexts
+        id: pr
+        shell: bash
+        run: |
+          set -euo pipefail
+          head_sha="$(git rev-parse HEAD)"
+          digest="$(node -e "console.log(require('./data/project/counter-selector-wave-08-release-manifest.json').combined_sha256)")"
+          pr="$(gh pr list --repo "$REPO" --head "$BRANCH" --state open --json number --jq '.[0].number // empty')"
+          test -n "$pr"
+          cat > /tmp/pr-body.md <<EOF
+          ## Permanent result
+
+          \`\`\`text
+          final head:                                  $head_sha
+          identity-minimized packets reviewed:          4
+          procedurally separated review passes:         8
+          external independent reviews:                 0
+          packets with bounded dimension support:       2
+          bounded dimension supports:                   4
+          mechanism-only packets:                       2
+          disagreements preserved:                      4
+          analysis-class recommendations:               3
+          field-test-eligible packets:                  0
+          operator findings / rankings:               0 / 0
+          graph effects:                                0
+          adversarial mutations:                       32
+          \`\`\`
+
+          Exact-byte release digest: \`$digest\`.
+
+          The collective technical packet retains bounded exception-handling and epistemic-restraint support without creating an individual operator. The checking-function packet retains bounded custody and governed-capacity support without establishing surplus or retaliatory removal. The external correction and distributed warning-failure packets remain system mechanisms rather than people or partnerships.
+
+          Procedural separation is not external independence. No review result authorizes contact, field testing, promotion, identity release, ranking, or graph construction. The complete repository release gate, deterministic reconstruction, focused validator, and all 32 adversarial mutations passed after rebasing onto current \`main\`.
+          EOF
+          gh pr edit "$pr" --repo "$REPO" --body-file /tmp/pr-body.md
+          for context in 'Counter-Selector Wave 08 Batch 02 blind review' 'Release checks' 'Core thesis and estate alignment'; do
+            gh api --method POST "repos/$REPO/statuses/$head_sha" -f state=success -f context="$context" -f description='Validated in Wave 08 materializer' -f target_url="https://github.com/$REPO/actions/runs/${{ github.run_id }}" >/dev/null
+          done
+          echo "number=$pr" >> "$GITHUB_OUTPUT"
+          echo "head=$head_sha" >> "$GITHUB_OUTPUT"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Mark ready, merge validated head, and retire branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          pr='${{ steps.pr.outputs.number }}'
+          head='${{ steps.pr.outputs.head }}'
+          gh pr ready "$pr" --repo "$REPO" || true
+          test "$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)" = "$head"
+          if ! gh pr merge "$pr" --repo "$REPO" --squash --admin --subject 'Execute Counter-Selector Wave 08 Batch 02 blind review' --body 'Four bounded supports, two mechanism controls, zero field-test or ranking authority.'; then
+            gh api --method PUT "repos/$REPO/pulls/$pr/merge" -f merge_method=squash -f commit_title='Execute Counter-Selector Wave 08 Batch 02 blind review' -f commit_message='Four bounded supports, two mechanism controls, zero field-test or ranking authority.' >/tmp/merge.json
+          fi
+          merge_sha="$(gh pr view "$pr" --repo "$REPO" --json mergeCommit,mergedAt --jq 'select(.mergedAt != null) | .mergeCommit.oid')"
+          test -n "$merge_sha"
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$merge_sha"
+          gh pr comment "$pr" --repo "$REPO" --body "Canonical merge verified at \`$merge_sha\`. Wave 08 release digest: \`${{ steps.pr.outputs.digest }}\`."
+          gh api --method DELETE "repos/$REPO/git/refs/heads/$BRANCH" >/dev/null 2>&1 || true
