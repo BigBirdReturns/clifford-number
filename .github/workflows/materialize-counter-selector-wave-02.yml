@@ -1,5 +1,6 @@
 name: Materialize Counter-Selector Wave 02
 
+# Connector-owned workflow custody; Actions publishes non-workflow estate bytes only.
 on:
   pull_request:
     branches: [main]
@@ -41,8 +42,8 @@ jobs:
           echo '3ece02fc78ecf252876f975e8ddb80ff9854799219e9bfa8c3b40c54d624864c  /tmp/counter-selector-wave-02.tar.gz' \
             | sha256sum --check --strict
           tar -xzf /tmp/counter-selector-wave-02.tar.gz -C .
+          git restore --source=HEAD --worktree -- .github/workflows/counter-selector-wave-02.yml
           rm -rf .github/materializers/counter-selector-wave-02
-          rm -f .github/workflows/materialize-counter-selector-wave-02.yml
 
       - name: Build, validate, and attack artifact readiness
         shell: bash
@@ -52,7 +53,7 @@ jobs:
           node tools/validate-counter-selector-wave-02.mjs
           node test/counter-selector-wave-02.test.js
 
-      - name: Commit exact permanent Wave 02 estate
+      - name: Commit exact non-workflow Wave 02 estate
         shell: bash
         run: |
           set -euo pipefail
@@ -63,8 +64,6 @@ jobs:
           expected="$(printf '%s\n' \
             .github/materializers/counter-selector-wave-02/payload-00 \
             .github/materializers/counter-selector-wave-02/payload-01 \
-            .github/workflows/materialize-counter-selector-wave-02.yml \
-            .github/workflows/counter-selector-wave-02.yml \
             data/project/counter-selector-wave-02-artifact-readiness.json \
             data/project/counter-selector-artifact-readiness-registry.json \
             data/project/counter-selector-artifact-acquisition-queue.json \
@@ -95,5 +94,5 @@ jobs:
           git diff --exit-code
           test -z "$(git status --porcelain)"
 
-      - name: Publish transport-free Wave 02 head
+      - name: Publish non-workflow Wave 02 head
         run: git push origin HEAD:agent/counter-selector-wave-02-artifact-readiness
