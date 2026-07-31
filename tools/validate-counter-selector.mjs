@@ -26,6 +26,16 @@ const dimensionNames = [
   'non_zero_sum_orientation',
   'epistemic_restraint'
 ];
+
+export function hydrateRegistry(index) {
+  const shards = (index.candidate_files || []).map((rel) => ({ path: rel, ...read(rel) }));
+  return {
+    ...index,
+    candidate_shards: shards,
+    candidates: shards.flatMap((shard) => shard.candidates || [])
+  };
+}
+
 const expectedProgramBoundaries = [
   'status_output_mismatch_proves_capability',
   'rejection_proves_value',
@@ -72,6 +82,12 @@ export function collectStructuralErrors(program, registry, wave, schema, superse
 
   if (registry.registry_id !== 'counter-selector-candidates-v1' || registry.program_id !== program.program_id) push(errors, 'REGISTRY_ID', registry.registry_id);
   if (registry.graph_effect !== 'none') push(errors, 'GRAPH_EFFECT', 'registry');
+  if (!Array.isArray(registry.candidate_files) || registry.candidate_files.length !== 6 || new Set(registry.candidate_files).size !== 6) push(errors, 'REGISTRY_SHARDS', 'expected six unique class files');
+  if (!Array.isArray(registry.candidate_shards) || registry.candidate_shards.length !== 6) push(errors, 'REGISTRY_SHARDS', 'candidate files did not hydrate');
+  for (const shard of registry.candidate_shards || []) {
+    if (shard.schema_version !== 'counter-selector-candidate-class@1' || shard.program_id !== program.program_id || shard.wave_id !== 'CS-W02-W01' || shard.graph_effect !== 'none') push(errors, 'REGISTRY_SHARD', shard.path || 'unknown');
+    if (!classIds.includes(shard.denominator_class) || shard.candidate_count !== 5 || shard.candidates?.length !== 5 || shard.candidates?.some((candidate) => candidate.denominator_class !== shard.denominator_class)) push(errors, 'REGISTRY_SHARD', `${shard.path || 'unknown'}:class or count`);
+  }
   if (!registry.denominator.complete || registry.denominator.target !== 30 || registry.denominator.current !== 30 || registry.denominator.independently_reviewed !== false) push(errors, 'DENOMINATOR', 'registry denominator state');
   if (registry.candidates.length !== 30) push(errors, 'DENOMINATOR', `candidate length ${registry.candidates.length}`);
   if (registry.selection_boundary.aggregate_rank_generated !== false || registry.selection_boundary.public_person_ranking_authorized !== false) push(errors, 'PROGRAM_RANK_BOUNDARY', 'registry rank boundary');
@@ -120,6 +136,8 @@ export function collectStructuralErrors(program, registry, wave, schema, superse
   }
 
   if (ids.size !== 30 || sourceIds.size !== 30) push(errors, 'DENOMINATOR', `unique ids ${ids.size}, sources ${sourceIds.size}`);
+  const indexedIds = new Set(registry.candidate_ids || []);
+  if (indexedIds.size !== 30 || [...ids].some((id) => !indexedIds.has(id))) push(errors, 'REGISTRY_INDEX', 'candidate file index and hydrated candidates differ');
   for (const classId of classIds) {
     if (counts[classId] !== 5) push(errors, 'CLASS_COUNT', `${classId}:${counts[classId]}`);
     if (registry.candidate_counts[classId] !== counts[classId]) push(errors, 'CLASS_COUNT', `registry:${classId}:${registry.candidate_counts[classId]}`);
@@ -137,7 +155,7 @@ export function collectStructuralErrors(program, registry, wave, schema, superse
 
 export function validateCounterSelector() {
   const program = read('data/project/counter-selector-program.json');
-  const registry = read('data/project/counter-selector-candidate-registry.json');
+  const registry = hydrateRegistry(read('data/project/counter-selector-candidate-registry.json'));
   const supersession = read('data/project/counter-selector-wave-00-supersession.json');
   const wave = read('data/project/counter-selector-wave-01.json');
   const schema = read('schemas/counter-selector-candidate.schema.json');
