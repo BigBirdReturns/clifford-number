@@ -1,0 +1,168 @@
+name: Materialize Counter-Selector Wave 07 Batch 02
+
+on:
+  push:
+    branches:
+      - 'agent/counter-selector-wave-07-b02-acquisition-v3'
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-07.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: counter-selector-wave-07-materializer
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  statuses: write
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  REPO: BigBirdReturns/clifford-number
+  BRANCH: agent/counter-selector-wave-07-b02-acquisition-v3
+
+jobs:
+  materialize-validate-publish:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/counter-selector-wave-07-b02-acquisition-v3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Materialize exact permanent Wave 07 estate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/materializers/counter-selector-wave-07/source-*.py > /tmp/generate-wave-07.py
+          python /tmp/generate-wave-07.py
+          node tools/build-counter-selector-wave-07.mjs
+          node tools/validate-counter-selector-wave-07.mjs
+          node test/counter-selector-wave-07.test.js
+
+      - name: Replace transport with permanent estate
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .github/materializers/counter-selector-wave-07
+          rm .github/workflows/materialize-counter-selector-wave-07.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          actual="$(git diff --cached --name-only | sort)"
+          expected="$(printf '%s\n' \
+            .github/materializers/counter-selector-wave-07/source-00.py \
+            .github/materializers/counter-selector-wave-07/source-01.py \
+            .github/materializers/counter-selector-wave-07/source-02.py \
+            .github/materializers/counter-selector-wave-07/source-03.py \
+            .github/materializers/counter-selector-wave-07/source-04.py \
+            .github/materializers/counter-selector-wave-07/source-05.py \
+            .github/materializers/counter-selector-wave-07/source-06.py \
+            .github/workflows/materialize-counter-selector-wave-07.yml \
+            .github/workflows/counter-selector-wave-07.yml \
+            data/project/counter-selector-wave-07-batch-02.json \
+            data/project/counter-selector-wave-07-source-registry.json \
+            data/project/counter-selector-artifact-acquisition-b02-registry.json \
+            data/project/counter-selector-blind-packet-b02-registry.json \
+            data/project/counter-selector-wave-07-release-manifest.json \
+            schemas/counter-selector-wave-07-acquisition.schema.json \
+            docs/methods/counter-selector-wave-07-acquisition.md \
+            docs/milestones/counter-selector-wave-07.md \
+            tools/build-counter-selector-wave-07.mjs \
+            tools/validate-counter-selector-wave-07.mjs \
+            test/counter-selector-wave-07.test.js \
+            reports/core-thesis/counter-selector-wave-07/data.json \
+            reports/core-thesis/counter-selector-wave-07/index.html | sort)"
+          test "$actual" = "$expected"
+          git diff --cached --check
+          git commit -m 'Acquire Counter-Selector Wave 07 Batch 02 artifacts'
+
+      - name: Run complete release gate before integration
+        run: npm run release:check
+
+      - name: Integrate current canonical main and replay all gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git rebase origin/main
+          node tools/build-counter-selector-wave-07.mjs
+          node tools/validate-counter-selector-wave-07.mjs
+          node test/counter-selector-wave-07.test.js
+          npm run release:check
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+          git push --force-with-lease origin HEAD:$BRANCH
+
+      - name: Create audited pull request and publish success contexts
+        id: pr
+        shell: bash
+        run: |
+          set -euo pipefail
+          head_sha="$(git rev-parse HEAD)"
+          digest="$(node -e "console.log(require('./data/project/counter-selector-wave-07-release-manifest.json').combined_sha256)")"
+          pr="$(gh pr list --repo "$REPO" --head "$BRANCH" --state open --json number --jq '.[0].number // empty')"
+          cat > /tmp/pr-body.md <<EOF
+          ## Permanent result
+
+          \`\`\`text
+          final head:                              $head_sha
+          Batch 02 objects:                         6
+          official source packets:                13
+          qualifying acquisitions:                 4
+          explicit partials:                       2
+          identity-minimized packets:              4
+          person-attributable packets:             2
+          system-mechanism packets:                2
+          blind reviews / field tests:           0 / 0
+          operator findings / rankings:          0 / 0
+          graph effects:                            0
+          adversarial mutations:                   30
+          \`\`\`
+
+          Exact-byte release digest: \`$digest\`.
+
+          Two objects remain partial because original claim or work bytes are absent. Two packets preserve bounded person-attributable work; two preserve system mechanisms only. Official summaries are not original work, catastrophe is not person-level operator proof, policy architecture is not a repair-capable partnership, and no packet authorizes contact, field testing, promotion, identity release, ranking, or graph construction.
+
+          The complete repository release gate, deterministic reconstruction, focused validator, and all 30 adversarial mutations passed after rebasing onto current \`main\`.
+          EOF
+          if [[ -z "$pr" ]]; then
+            pr="$(gh pr create --repo "$REPO" --base main --head "$BRANCH" --draft --title 'Acquire Counter-Selector Wave 07 Batch 02 artifacts' --body-file /tmp/pr-body.md --json number --jq .number 2>/dev/null || true)"
+            if [[ -z "$pr" ]]; then
+              url="$(gh pr create --repo "$REPO" --base main --head "$BRANCH" --draft --title 'Acquire Counter-Selector Wave 07 Batch 02 artifacts' --body-file /tmp/pr-body.md)"
+              pr="${url##*/}"
+            fi
+          else
+            gh pr edit "$pr" --repo "$REPO" --body-file /tmp/pr-body.md
+          fi
+          for context in 'Counter-Selector Wave 07 Batch 02 acquisition' 'Release checks' 'Core thesis and estate alignment'; do
+            gh api --method POST "repos/$REPO/statuses/$head_sha" -f state=success -f context="$context" -f description='Validated in materialization run' -f target_url="https://github.com/$REPO/actions/runs/${{ github.run_id }}" >/dev/null
+          done
+          echo "number=$pr" >> "$GITHUB_OUTPUT"
+          echo "head=$head_sha" >> "$GITHUB_OUTPUT"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Mark ready and merge only the validated head
+        shell: bash
+        run: |
+          set -euo pipefail
+          pr='${{ steps.pr.outputs.number }}'
+          head='${{ steps.pr.outputs.head }}'
+          gh pr ready "$pr" --repo "$REPO" || true
+          current="$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)"
+          test "$current" = "$head"
+          if ! gh pr merge "$pr" --repo "$REPO" --squash --admin --subject 'Acquire Counter-Selector Wave 07 Batch 02 artifacts' --body 'Four bounded packets, two explicit partials, zero field-test or ranking authority.'; then
+            gh api --method PUT "repos/$REPO/pulls/$pr/merge" -f merge_method=squash -f commit_title='Acquire Counter-Selector Wave 07 Batch 02 artifacts' -f commit_message='Four bounded packets, two explicit partials, zero field-test or ranking authority.' >/tmp/merge.json
+          fi
+          merge_sha="$(gh pr view "$pr" --repo "$REPO" --json mergeCommit,mergedAt --jq 'select(.mergedAt != null) | .mergeCommit.oid')"
+          test -n "$merge_sha"
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$merge_sha"
+          gh pr comment "$pr" --repo "$REPO" --body "Canonical merge verified at \`$merge_sha\`. Release digest: \`${{ steps.pr.outputs.digest }}\`."
