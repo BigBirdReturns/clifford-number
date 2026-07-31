@@ -1,6 +1,5 @@
 name: Validate Counter-Selector Wave 01 candidate
 
-# Activation pass after the workflow exists on the branch.
 on:
   push:
     branches:
@@ -28,23 +27,37 @@ jobs:
           node-version: '24'
           cache: npm
 
-      - name: Install exact dependencies
+      - id: deps
+        name: Install exact dependencies
+        continue-on-error: true
         run: npm ci
 
-      - name: Run focused Counter-Selector gates
+      - id: focused
+        name: Run focused Counter-Selector gates
+        if: steps.deps.outcome == 'success'
+        continue-on-error: true
         run: |
           set -euo pipefail
           node tools/build-counter-selector.mjs
           node tools/validate-counter-selector.mjs
           node test/counter-selector.test.js
 
-      - name: Run complete repository release gate
+      - id: release
+        name: Run complete repository release gate
+        if: steps.deps.outcome == 'success'
+        continue-on-error: true
         run: npm run release:check
 
-      - name: Require exact committed products
+      - id: exact
+        name: Require exact committed products
+        if: steps.focused.outcome == 'success'
+        continue-on-error: true
         run: git diff --exit-code
 
-      - name: Reconstruct deterministically
+      - id: reconstruct
+        name: Reconstruct deterministically
+        if: steps.deps.outcome == 'success'
+        continue-on-error: true
         run: |
           set -euo pipefail
           git restore --staged --worktree .
@@ -54,21 +67,42 @@ jobs:
           git diff --exit-code
           test -z "$(git status --porcelain)"
 
-      - name: Write validation receipt
+      - name: Restore validated tree before receipt
+        if: always()
+        run: git restore --staged --worktree .
+
+      - id: receipt
+        name: Write validation receipt
+        if: always()
+        env:
+          DEPS_OUTCOME: ${{ steps.deps.outcome }}
+          FOCUSED_OUTCOME: ${{ steps.focused.outcome }}
+          RELEASE_OUTCOME: ${{ steps.release.outcome }}
+          EXACT_OUTCOME: ${{ steps.exact.outcome }}
+          RECONSTRUCT_OUTCOME: ${{ steps.reconstruct.outcome }}
         run: |
           set -euo pipefail
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           import { execFileSync } from 'node:child_process';
+          const outcomes = {
+            npm_ci: process.env.DEPS_OUTCOME,
+            focused_counter_selector: process.env.FOCUSED_OUTCOME,
+            repository_release_check: process.env.RELEASE_OUTCOME,
+            exact_products: process.env.EXACT_OUTCOME,
+            deterministic_reconstruction: process.env.RECONSTRUCT_OUTCOME
+          };
           const manifest = JSON.parse(fs.readFileSync('data/project/counter-selector-release-manifest.json', 'utf8'));
+          const pass = Object.values(outcomes).every((value) => value === 'success');
           const receipt = {
             schema_version: 'counter-selector-ci-receipt@1',
             program_id: 'counter-selector-v1',
             wave_id: 'CS-W02-W01',
-            result: 'pass',
+            result: pass ? 'pass' : 'fail',
             validated_commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
             release_manifest_combined_sha256: manifest.combined_sha256,
             node_version: process.version,
+            step_outcomes: outcomes,
             commands: [
               'npm ci',
               'node tools/build-counter-selector.mjs',
@@ -84,11 +118,31 @@ jobs:
           NODE
 
       - name: Commit validation receipt
+        if: always() && steps.receipt.outcome == 'success'
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add data/project/counter-selector-wave-01-ci-receipt.json
           git diff --cached --check
-          git commit -m 'Record Counter-Selector Wave 01 release gate'
-          git push origin HEAD:agent/counter-selector-wave-01
+          if git diff --cached --quiet; then
+            echo 'Validation receipt is already exact.'
+          else
+            git commit -m 'Record Counter-Selector Wave 01 release gate'
+            git push origin HEAD:agent/counter-selector-wave-01
+          fi
+
+      - name: Return validation outcome
+        if: always()
+        env:
+          DEPS_OUTCOME: ${{ steps.deps.outcome }}
+          FOCUSED_OUTCOME: ${{ steps.focused.outcome }}
+          RELEASE_OUTCOME: ${{ steps.release.outcome }}
+          EXACT_OUTCOME: ${{ steps.exact.outcome }}
+          RECONSTRUCT_OUTCOME: ${{ steps.reconstruct.outcome }}
+        run: |
+          test "$DEPS_OUTCOME" = success
+          test "$FOCUSED_OUTCOME" = success
+          test "$RELEASE_OUTCOME" = success
+          test "$EXACT_OUTCOME" = success
+          test "$RECONSTRUCT_OUTCOME" = success
