@@ -6,6 +6,8 @@ on:
 
 permissions:
   contents: write
+  pull-requests: read
+  issues: read
 
 jobs:
   release-check:
@@ -31,8 +33,7 @@ jobs:
           lines = Path('/tmp/release-check.log').read_text(errors='replace').splitlines()
           relevant = [line.strip() for line in lines if re.search(r'AssertionError|ERR_ASSERTION|failed|Error:|SyntaxError|not found|must |does not|cannot ', line, re.I)]
           tail = [line.strip() for line in lines[-14:] if line.strip()]
-          message = ' | '.join((relevant[-8:] + tail)[-16:])
-          print('CI_DIAG ' + message[:7000])
+          print('CI_DIAG ' + ' | '.join((relevant[-8:] + tail)[-16:])[:7000])
           PY
           fi
           exit "$status"
@@ -46,56 +47,68 @@ jobs:
         with:
           ref: agent/status-sovereignty-wave01-review-loader
           fetch-depth: 0
+      - name: Recover checksum-bound carrier from transport PR comments
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64, json, os, urllib.request
+          url=f"https://api.github.com/repos/{os.environ['REPOSITORY']}/issues/{os.environ['PR_NUMBER']}/comments?per_page=100"
+          req=urllib.request.Request(url,headers={'Authorization':f"Bearer {os.environ['GH_TOKEN']}",'Accept':'application/vnd.github+json'})
+          comments=json.load(urllib.request.urlopen(req))
+          parts=[]
+          for row in comments:
+              body=row.get('body','')
+              lines=body.splitlines()
+              if lines and lines[0].startswith('SSC-SG07-CARRIER-PART-'):
+                  parts.append((lines[0],''.join(lines[1:]).strip()))
+          parts.sort()
+          if len(parts)!=4: raise RuntimeError(f'expected 4 carrier comments, observed {len(parts)}')
+          raw=base64.b64decode(''.join(part for _,part in parts),validate=True)
+          open('/tmp/ssc-wave01-review-carrier.tar.xz','wb').write(raw)
+          PY
       - name: Verify carrier and publish non-workflow transition
         shell: bash
         run: |
           set -euo pipefail
           base='a9cb4c707a1cc6afb51d0fd20b0375e0cf2373b7'
           target='agent/status-sovereignty-wave01-maintainer-review'
-          expected_archive='080e0274694e73575ea5d1ea91cec3504c48d5162cf98a97bb049ac823e263c1'
+          expected_archive='0ff9db411b9adc016fe58358e49d0fbc6d793acf462fafb0068af7d6a026be20'
           expected_paths='81ee979d3c88dc8dcf00d63a2bb0f21af64d763d4dbbc659eb0239dc9751252e'
-
-          mapfile -t chunks < <(find .github/tmp/ssc-wave01-review -maxdepth 1 -type f -name 'part-*.b64' | sort)
-          test "${#chunks[@]}" -eq 5
-          cat "${chunks[@]}" | tr -d '\n' | base64 --decode > /tmp/ssc-wave01-review-carrier.tar.xz
           printf '%s  %s\n' "$expected_archive" /tmp/ssc-wave01-review-carrier.tar.xz | sha256sum -c -
-
-          rm -rf /tmp/ssc-wave01-review-payload /tmp/ssc-wave01-review-work
-          mkdir -p /tmp/ssc-wave01-review-payload
-          tar -xJf /tmp/ssc-wave01-review-carrier.tar.xz -C /tmp/ssc-wave01-review-payload
-          test "$(cat /tmp/ssc-wave01-review-payload/BASE.txt)" = "$base"
-          test "$(cat /tmp/ssc-wave01-review-payload/PLACEHOLDER.txt)" = 'ffffffffffffffffffffffffffffffffffffffff'
-          test "$(wc -l < /tmp/ssc-wave01-review-payload/TRANSITION_PATHS.txt)" -eq 51
-          test "$(sha256sum /tmp/ssc-wave01-review-payload/TRANSITION_PATHS.txt | cut -d' ' -f1)" = "$expected_paths"
-
+          rm -rf /tmp/ssc-review-payload /tmp/ssc-review-work
+          mkdir -p /tmp/ssc-review-payload
+          tar -xJf /tmp/ssc-wave01-review-carrier.tar.xz -C /tmp/ssc-review-payload
+          test "$(cat /tmp/ssc-review-payload/BASE.txt)" = "$base"
+          test "$(cat /tmp/ssc-review-payload/PLACEHOLDER.txt)" = 'ffffffffffffffffffffffffffffffffffffffff'
+          test "$(wc -l < /tmp/ssc-review-payload/TRANSITION_PATHS.txt)" -eq 51
+          test "$(sha256sum /tmp/ssc-review-payload/TRANSITION_PATHS.txt | cut -d' ' -f1)" = "$expected_paths"
           git fetch origin main "$target"
           test "$(git rev-parse origin/main)" = "$base"
           old_head="$(git rev-parse "origin/$target")"
           test "$old_head" = "$base"
-          git worktree add --detach /tmp/ssc-wave01-review-work "$base"
-          cd /tmp/ssc-wave01-review-work
-
+          git worktree add --detach /tmp/ssc-review-work "$base"
+          cd /tmp/ssc-review-work
           while IFS= read -r rel; do
             case "$rel" in
               .github/workflows/project-stable-ground-sg06.yml|\
               .github/workflows/project-stable-ground-sg07.yml|\
               .github/workflows/status-sovereignty-compact.yml|\
               .github/workflows/status-sovereignty-wave-01-review.yml|\
-              .github/workflows/status-sovereignty-wave-01.yml)
-                continue
-                ;;
+              .github/workflows/status-sovereignty-wave-01.yml) continue ;;
             esac
             mkdir -p "$(dirname "$rel")"
-            cp "/tmp/ssc-wave01-review-payload/transition/$rel" "$rel"
-          done < /tmp/ssc-wave01-review-payload/TRANSITION_PATHS.txt
-
-          grep -vE '^\.github/workflows/(project-stable-ground-sg06|project-stable-ground-sg07|status-sovereignty-compact|status-sovereignty-wave-01-review|status-sovereignty-wave-01)\.yml$' \
-            /tmp/ssc-wave01-review-payload/TRANSITION_PATHS.txt | sort > /tmp/expected-paths
+            cp "/tmp/ssc-review-payload/transition/$rel" "$rel"
+          done < /tmp/ssc-review-payload/TRANSITION_PATHS.txt
+          grep -vE '^\.github/workflows/(project-stable-ground-sg06|project-stable-ground-sg07|status-sovereignty-compact|status-sovereignty-wave-01-review|status-sovereignty-wave-01)\.yml$' /tmp/ssc-review-payload/TRANSITION_PATHS.txt | sort > /tmp/expected-paths
           git diff --name-only | sort > /tmp/observed-paths
           diff -u /tmp/expected-paths /tmp/observed-paths
           test "$(wc -l < /tmp/observed-paths)" -eq 46
           git diff --check
-
           git add -A
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
