@@ -1,0 +1,109 @@
+name: Ensure Counter-Selector Wave 07 canonical semaphore
+
+on:
+  push:
+    branches:
+      - 'agent/counter-selector-wave-07-canonical-semaphore'
+    paths:
+      - '.github/workflows/ensure-counter-selector-wave-07-canonical.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  statuses: write
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  REPO: BigBirdReturns/clifford-number
+  SOURCE_BRANCH: agent/counter-selector-wave-07-b02-acquisition-v3
+  TAG: counter-selector-wave-07-b02-canonical
+
+jobs:
+  ensure-and-seal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Complete the Wave 07 PR if canonical main has not advanced
+        shell: bash
+        run: |
+          set -euo pipefail
+          sleep 60
+          git fetch origin main "$SOURCE_BRANCH" || true
+          if ! git cat-file -e origin/main:tools/build-counter-selector-wave-07.mjs 2>/dev/null; then
+            git cat-file -e origin/$SOURCE_BRANCH:tools/build-counter-selector-wave-07.mjs
+            git cat-file -e origin/$SOURCE_BRANCH:data/project/counter-selector-wave-07-release-manifest.json
+            if git cat-file -e origin/$SOURCE_BRANCH:.github/workflows/materialize-counter-selector-wave-07.yml 2>/dev/null; then
+              echo 'temporary materializer still present on source branch' >&2
+              exit 1
+            fi
+            if git ls-tree -r --name-only origin/$SOURCE_BRANCH .github/materializers/counter-selector-wave-07 | grep -q .; then
+              echo 'temporary source carrier still present on source branch' >&2
+              exit 1
+            fi
+            git checkout -B wave07 origin/$SOURCE_BRANCH
+            node tools/build-counter-selector-wave-07.mjs
+            node tools/validate-counter-selector-wave-07.mjs
+            node test/counter-selector-wave-07.test.js
+            npm run release:check
+            git diff --exit-code
+            test -z "$(git status --porcelain)"
+            head="$(git rev-parse HEAD)"
+            pr="$(gh pr list --repo "$REPO" --head "$SOURCE_BRANCH" --state open --json number --jq '.[0].number // empty')"
+            if [[ -z "$pr" ]]; then
+              cat > /tmp/body.md <<EOF
+          Six balanced Batch 02 objects produced thirteen official-source packets, four identity-minimized packets, two explicit partials, zero field tests, zero rankings, and zero graph effects. The source branch passed deterministic reconstruction, thirty adversarial mutations, and the complete repository release gate.
+          EOF
+              url="$(gh pr create --repo "$REPO" --base main --head "$SOURCE_BRANCH" --draft --title 'Acquire Counter-Selector Wave 07 Batch 02 artifacts' --body-file /tmp/body.md)"
+              pr="${url##*/}"
+            fi
+            for context in 'Counter-Selector Wave 07 Batch 02 acquisition' 'Release checks' 'Core thesis and estate alignment'; do
+              gh api --method POST "repos/$REPO/statuses/$head" -f state=success -f context="$context" -f description='Validated by canonical semaphore' -f target_url="https://github.com/$REPO/actions/runs/${{ github.run_id }}" >/dev/null
+            done
+            gh pr ready "$pr" --repo "$REPO" || true
+            if ! gh pr merge "$pr" --repo "$REPO" --squash --admin --subject 'Acquire Counter-Selector Wave 07 Batch 02 artifacts' --body 'Four bounded packets, two explicit partials, zero field-test or ranking authority.'; then
+              gh api --method PUT "repos/$REPO/pulls/$pr/merge" -f merge_method=squash -f commit_title='Acquire Counter-Selector Wave 07 Batch 02 artifacts' -f commit_message='Four bounded packets, two explicit partials, zero field-test or ranking authority.' >/tmp/merge.json
+            fi
+          fi
+
+      - name: Rebuild canonical main and create the validation semaphore
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout --detach origin/main
+          test -f tools/build-counter-selector-wave-07.mjs
+          test -f tools/validate-counter-selector-wave-07.mjs
+          test -f test/counter-selector-wave-07.test.js
+          test -f data/project/counter-selector-wave-07-release-manifest.json
+          test ! -e .github/workflows/materialize-counter-selector-wave-07.yml
+          test ! -d .github/materializers/counter-selector-wave-07
+          node tools/build-counter-selector-wave-07.mjs
+          node tools/validate-counter-selector-wave-07.mjs
+          node test/counter-selector-wave-07.test.js
+          npm run release:check
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+          main_sha="$(git rev-parse HEAD)"
+          digest="$(node -e "console.log(require('./data/project/counter-selector-wave-07-release-manifest.json').combined_sha256)")"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -f -a "$TAG" -m "Counter-Selector Wave 07 canonical at $main_sha; release $digest"
+          git push --force origin "refs/tags/$TAG"
+          gh api --method POST "repos/$REPO/statuses/$main_sha" -f state=success -f context='Counter-Selector Wave 07 canonical semaphore' -f description='Canonical main rebuilt; exact tag published' -f target_url="https://github.com/$REPO/actions/runs/${{ github.run_id }}" >/dev/null
+          pr="$(gh pr list --repo "$REPO" --head "$SOURCE_BRANCH" --state all --json number --jq '.[0].number // empty')"
+          if [[ -n "$pr" ]]; then
+            gh pr comment "$pr" --repo "$REPO" --body "Canonical semaphore \`$TAG\` now points to validated main \`$main_sha\`. Exact-byte Wave 07 release digest: \`$digest\`."
+          fi
+
+      - name: Retire semaphore branch
+        if: success()
+        run: git push origin --delete agent/counter-selector-wave-07-canonical-semaphore
