@@ -21,6 +21,9 @@ export function loadStatusSovereigntyContext() {
     waveRelease: read('data/project/status-sovereignty-wave-01-release-manifest.json'),
     review: read('data/research/status-sovereignty-wave-01-maintainer-review.json'),
     reviewRelease: read('data/project/status-sovereignty-wave-01-maintainer-review-release-manifest.json'),
+    acquisition: read('data/research/status-sovereignty-wave-01-targeted-acquisition.json'),
+    acquisitionSources: read('data/research/status-sovereignty-wave-01-targeted-acquisition-source-receipts.json'),
+    acquisitionRelease: read('data/project/status-sovereignty-wave-01-targeted-acquisition-release-manifest.json'),
     schema: read('schemas/status-sovereignty-observation.schema.json'),
     manifest: read('data/project/status-sovereignty-release-manifest.json'),
     buildManifest: read('build/core-thesis/status-sovereignty/manifest.json'),
@@ -41,12 +44,12 @@ export function validateStatusSovereignty(context = loadStatusSovereigntyContext
     if (actual !== expected) errors.push(`${label}: expected ${JSON.stringify(expected)}, observed ${JSON.stringify(actual)}`);
   };
   const check = (condition, label) => { if (!condition) errors.push(label); };
-  const { hypothesis: h, fanout: f, sources: s, wave, waveSources, waveRelease, review, reviewRelease, schema, manifest, buildManifest, buildReport, publicReport, html, core, dca, stories, m05Fanout, organism } = context;
+  const { hypothesis: h, fanout: f, sources: s, wave, waveSources, waveRelease, review, reviewRelease, acquisition, acquisitionSources, acquisitionRelease, schema, manifest, buildManifest, buildReport, publicReport, html, core, dca, stories, m05Fanout, organism } = context;
 
   eq(h.schema_version, 'status-sovereignty-compact@1', 'SSC schema');
   eq(h.hypothesis_id, 'SSC-H01', 'SSC hypothesis identity');
   eq(h.program_id, 'M-05', 'SSC program');
-  eq(h.status, 'canonical_field_hypothesis_wave_01_maintainer_reviewed_no_prevalence_finding', 'SSC status');
+  eq(h.status, 'canonical_field_hypothesis_wave_01_maintainer_reviewed_targeted_acquisition_open_no_prevalence_finding', 'SSC status');
   eq(h.authority_tier, 'AT-2', 'SSC authority tier');
   eq(h.coordinator_issue, 468, 'SSC coordinator issue');
   eq(h.parent_hypothesis?.hypothesis_id, 'DCA-H01', 'SSC parent hypothesis');
@@ -77,7 +80,17 @@ export function validateStatusSovereignty(context = loadStatusSovereigntyContext
   for (const key of ['prevalence_finding_generated','racial_order_finding_generated','coordination_finding_generated','common_purpose_finding_generated','personal_hostility_finding_generated']) {
     eq(h.current_state?.[key], false, `SSC current ${key}`);
   }
-  eq(h.current_state?.publication_status, 'blocked_pending_second_party_review_and_open_acquisitions', 'SSC publication status');
+  eq(h.current_state?.publication_status, 'blocked_pending_second_party_review_and_still_open_denominators', 'SSC publication status');
+  eq(h.current_state?.targeted_acquisition_supplements, 1, 'SSC targeted-acquisition supplement count');
+  eq(h.current_state?.targeted_acquisition_source_records, 12, 'SSC targeted-acquisition source count');
+  eq(h.current_state?.open_acquisition_obligations, 3, 'SSC open-acquisition obligation count');
+  eq(h.current_state?.partially_repaired_acquisition_obligations, 3, 'SSC partially repaired obligation count');
+  eq(h.current_state?.closed_acquisition_obligations, 0, 'SSC closed acquisition obligation count');
+  eq(h.targeted_acquisitions?.length, 1, 'SSC targeted-acquisition registry count');
+  eq(h.targeted_acquisitions?.[0]?.acquisition_id, 'SSC-W01-TA01', 'SSC targeted-acquisition identity');
+  eq(h.targeted_acquisitions?.[0]?.partially_repaired_open, 3, 'SSC targeted-acquisition partially repaired count');
+  eq(h.targeted_acquisitions?.[0]?.closed, 0, 'SSC targeted-acquisition closed count');
+  eq(h.targeted_acquisitions?.[0]?.graph_effect, 'none', 'SSC targeted-acquisition graph effect');
   eq(h.current_state?.graph_effect, 'none', 'SSC current graph effect');
   eq(h.field_waves?.length, 1, 'SSC field-wave count');
   eq(h.field_waves?.[0]?.wave_id, 'SSC-W01', 'SSC field-wave identity');
@@ -188,6 +201,17 @@ export function validateStatusSovereignty(context = loadStatusSovereigntyContext
   eq(review.counts?.supported_bounded_compact, 0, 'SSC review complete compact denominator');
   eq(review.current_result?.publication_status, 'blocked_pending_second_party_review_and_open_acquisitions', 'SSC review publication state');
   check(/^[0-9a-f]{64}$/.test(reviewRelease.combined_sha256), 'SSC review release digest format');
+  eq(acquisition.acquisition_id, 'SSC-W01-TA01', 'SSC acquisition identity');
+  eq(acquisition.counts?.source_records, 12, 'SSC acquisition source denominator');
+  eq(acquisition.counts?.obligations, 3, 'SSC acquisition obligation denominator');
+  eq(acquisition.counts?.partially_repaired_open, 3, 'SSC acquisition partially repaired denominator');
+  eq(acquisition.counts?.closed, 0, 'SSC acquisition closed denominator');
+  eq(acquisition.counts?.reviewed_disposition_changes, 0, 'SSC acquisition disposition-change count');
+  eq(acquisition.counts?.complete_compact_findings, 0, 'SSC acquisition complete compact count');
+  eq(acquisition.current_result?.publication_status, 'blocked_pending_second_party_review_and_still_open_denominators', 'SSC acquisition publication state');
+  eq(acquisition.current_result?.graph_effect, 'none', 'SSC acquisition graph effect');
+  eq(acquisitionSources.records?.length, 12, 'SSC acquisition source rows');
+  check(/^[0-9a-f]{64}$/.test(acquisitionRelease.combined_sha256), 'SSC acquisition release digest format');
   eq(wave.current_result?.racial_order_finding_generated, false, 'SSC live wave racial-order state');
   eq(wave.current_result?.graph_effect, 'none', 'SSC live wave graph effect');
   eq(waveSources.records?.length, 15, 'SSC live field source denominator');
@@ -223,6 +247,7 @@ export function validateStatusSovereignty(context = loadStatusSovereigntyContext
   eq(publicReport.release_manifest?.combined_sha256, manifest.combined_sha256, 'SSC report release digest');
   eq(publicReport.wave_01?.release_manifest?.combined_sha256, waveRelease.combined_sha256, 'SSC report Wave 01 release digest');
   eq(publicReport.maintainer_review?.release_manifest?.combined_sha256, reviewRelease.combined_sha256, 'SSC report review release digest');
+  eq(publicReport.targeted_acquisition?.release_manifest?.combined_sha256, acquisitionRelease.combined_sha256, 'SSC report acquisition release digest');
   eq(publicReport.counts?.gates, 4, 'SSC report gate count');
   eq(publicReport.counts?.dimensions, 10, 'SSC report dimension count');
   eq(publicReport.counts?.fanout_lanes, 16, 'SSC report lane count');
@@ -232,8 +257,13 @@ export function validateStatusSovereignty(context = loadStatusSovereigntyContext
   eq(publicReport.counts?.executed_lanes, 8, 'SSC report executed count');
   eq(publicReport.counts?.retained_observations, 14, 'SSC report retained count');
   eq(publicReport.counts?.complete_compact_findings, 0, 'SSC report complete compact count');
+  eq(publicReport.counts?.targeted_acquisition_supplements, 1, 'SSC report acquisition supplement count');
+  eq(publicReport.counts?.targeted_acquisition_source_records, 12, 'SSC report acquisition source count');
+  eq(publicReport.counts?.open_acquisition_obligations, 3, 'SSC report open obligation count');
+  eq(publicReport.counts?.partially_repaired_acquisition_obligations, 3, 'SSC report partially repaired count');
+  eq(publicReport.counts?.closed_acquisition_obligations, 0, 'SSC report closed obligation count');
   check(html.includes('SSC-H01 · WAVE 01 MAINTAINER REVIEWED 14/14 · SECOND-PARTY 0 · COMPLETE-COMPACT FINDINGS 0 · NO RACIAL-ORDER FINDING · GRAPH EFFECT NONE · PUBLICATION BLOCKED'), 'SSC report boundary banner missing');
-  check(html.includes('Wave 01 maintainer-reviewed observation packets') && html.includes('Four-gate discriminator') && html.includes('Sixteen-lane fanout') && html.includes(manifest.combined_sha256), 'SSC report content drift');
+  check(html.includes('Wave 01 maintainer-reviewed observation packets') && html.includes('Targeted acquisition') && html.includes('Four-gate discriminator') && html.includes('Sixteen-lane fanout') && html.includes(manifest.combined_sha256), 'SSC report content drift');
 
   for (const heldPath of [
     'build/core-thesis/status-sovereignty',
@@ -249,8 +279,12 @@ export function validateStatusSovereignty(context = loadStatusSovereigntyContext
     'docs/milestones/m05-status-sovereignty-fanout.md',
     'docs/milestones/m05-status-sovereignty-wave-01.md',
     'data/project/status-sovereignty-wave-01-maintainer-review-release-manifest.json',
+    'data/project/status-sovereignty-wave-01-targeted-acquisition-release-manifest.json',
     'data/research/status-sovereignty-wave-01-maintainer-review.json',
-    'docs/milestones/m05-status-sovereignty-wave-01-review.md'
+    'data/research/status-sovereignty-wave-01-targeted-acquisition-source-receipts.json',
+    'data/research/status-sovereignty-wave-01-targeted-acquisition.json',
+    'docs/milestones/m05-status-sovereignty-wave-01-review.md',
+    'docs/milestones/m05-status-sovereignty-wave-01-targeted-acquisition.md'
   ]) {
     const builder = fs.readFileSync(path.join(root, 'tools/build-pages.mjs'), 'utf8');
     const validator = fs.readFileSync(path.join(root, 'tools/validate-pages.mjs'), 'utf8');
