@@ -3,17 +3,19 @@
   "program_id": "counter-selector-v1",
   "wave_id": "CS-W02-W01",
   "result": "fail",
-  "validated_commit": "73223ba10792c4c5a670616fafd8e078bfae06ae",
+  "validated_commit": "f38d8384ee75784b924f5a9528ae3fe9fdedc6e5",
   "release_manifest_combined_sha256": "020601b1aa70c49ccc4c4a5fb6ca4a00044eaab4941a27e42b84ca73eb79b060",
   "node_version": "v24.18.0",
   "step_outcomes": {
-    "npm_ci": "skipped",
+    "node_24": "success",
+    "npm_ci": "failure",
     "focused_counter_selector": "skipped",
     "repository_release_check": "skipped",
     "exact_products": "skipped",
     "deterministic_reconstruction": "skipped"
   },
   "commands": [
+    "actions/setup-node@v4 node 24",
     "npm ci",
     "node tools/build-counter-selector.mjs",
     "node tools/validate-counter-selector.mjs",
