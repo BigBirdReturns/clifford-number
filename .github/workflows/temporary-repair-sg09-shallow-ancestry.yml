@@ -1,0 +1,72 @@
+name: Temporary repair SG-09 shallow ancestry
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-repair-sg09-shallow-ancestry.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repair-sg09-shallow-ancestry
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.head_ref == 'agent/ssc-wave01-second-party-review-campaign' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave01-second-party-review-campaign
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install bounded shallow-history fallback and validate
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tools/validate-project-stable-ground-sg09.mjs')
+          text = path.read_text()
+          old = """  const ancestry = spawnSync('git', ['merge-base', '--is-ancestor', base, transition], { cwd: root, encoding: 'utf8' });
+          if (ancestry.status !== 0) errors.push('SG-09 transition commit is not descended from its declared base');
+          """
+          new = """  const ancestry = spawnSync('git', ['merge-base', '--is-ancestor', base, transition], { cwd: root, encoding: 'utf8' });
+          if (ancestry.status !== 0) {
+            const raw = spawnSync('git', ['cat-file', '-p', transition], { cwd: root, encoding: 'utf8' });
+            const parents = raw.status === 0 ? raw.stdout.split('\\n').filter((line) => line.startsWith('parent ')).map((line) => line.slice(7).trim()) : [];
+            if (!parents.includes(base)) errors.push('SG-09 transition commit is not descended from its declared base');
+          }
+          """
+          if old not in text:
+              if "['cat-file', '-p', transition]" not in text:
+                  raise SystemExit('SG-09 ancestry anchor missing')
+          else:
+              path.write_text(text.replace(old, new))
+          PY
+
+          node tools/build-project-stable-ground-sg09.mjs
+          node tools/validate-project-stable-ground-sg09.mjs
+          node test/project-stable-ground-sg09.test.js
+          npm run release:check
+
+          git config user.name 'OpenAI'
+          git config user.email 'noreply@openai.com'
+          git add \
+            tools/validate-project-stable-ground-sg09.mjs \
+            data/project/project-stable-ground-sg09-release-manifest.json \
+            reports/core-thesis/stable-ground/sg09/checkpoint.json \
+            reports/core-thesis/stable-ground/sg09/index.html
+          if git diff --cached --quiet; then
+            echo 'SG-09 shallow ancestry repair already deterministic'
+            exit 0
+          fi
+          git commit -m 'Support shallow SG-09 ancestry verification'
+          git push origin HEAD:agent/ssc-wave01-second-party-review-campaign
