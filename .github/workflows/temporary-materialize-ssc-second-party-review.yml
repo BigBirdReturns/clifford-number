@@ -1,0 +1,135 @@
+name: Temporary materialize SSC second-party review campaign
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-materialize-ssc-second-party-review.yml'
+      - '.github/workflows/status-sovereignty-wave-01-second-party-review.yml'
+      - 'data/project/status-sovereignty-wave-01-second-party-review*'
+      - 'data/research/status-sovereignty-wave-01-second-party-review*'
+      - 'schemas/status-sovereignty-second-party-review*'
+      - 'docs/ssc-wave-01-second-party-review-intake.md'
+      - 'docs/milestones/m05-status-sovereignty-wave-01-second-party-review.md'
+      - 'tools/*status-sovereignty-wave-01-second-party-review*'
+      - 'test/status-sovereignty-wave-01-second-party-review.test.js'
+      - 'package.json'
+      - 'tools/build-pages.mjs'
+      - 'tools/validate-pages.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: materialize-ssc-second-party-review
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.head_ref == 'agent/ssc-wave01-second-party-review-campaign' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave01-second-party-review-campaign
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Wire campaign and materialize deterministic products
+        run: |
+          set -Eeuo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          const packagePath = 'package.json';
+          const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+          const scripts = pkg.scripts;
+          scripts['build:status-sovereignty-second-party-review'] = 'node tools/build-status-sovereignty-wave-01-second-party-review.mjs';
+          scripts['validate:status-sovereignty-second-party-review'] = 'node tools/validate-status-sovereignty-wave-01-second-party-review.mjs';
+
+          const buildCommand = 'node tools/build-status-sovereignty-wave-01-second-party-review.mjs';
+          if (!scripts['build:status-sovereignty'].includes(buildCommand)) {
+            scripts['build:status-sovereignty'] = scripts['build:status-sovereignty'].replace(
+              'node tools/build-status-sovereignty-compact.mjs',
+              `${buildCommand} && node tools/build-status-sovereignty-compact.mjs`
+            );
+          }
+          const validateCommand = 'node tools/validate-status-sovereignty-wave-01-second-party-review.mjs';
+          if (!scripts['validate:status-sovereignty'].includes(validateCommand)) {
+            scripts['validate:status-sovereignty'] = scripts['validate:status-sovereignty'].replace(
+              'node tools/validate-status-sovereignty-compact.mjs',
+              `${validateCommand} && node tools/validate-status-sovereignty-compact.mjs`
+            );
+          }
+          const testCommand = 'node test/status-sovereignty-wave-01-second-party-review.test.js';
+          if (!scripts.test.includes(testCommand)) scripts.test = `${scripts.test} && ${testCommand}`;
+          if (!scripts['ci:status-sovereignty'].includes(testCommand)) {
+            scripts['ci:status-sovereignty'] = `${scripts['ci:status-sovereignty']} && ${testCommand}`;
+          }
+          fs.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
+
+          const buildPagesPath = 'tools/build-pages.mjs';
+          let buildPages = fs.readFileSync(buildPagesPath, 'utf8');
+          const buildAnchor = "  ['data', 'research', 'status-sovereignty-wave-01-targeted-acquisition.json'],\n  ['docs', 'methods', 'status-sovereignty-compact.md'],";
+          const buildInsert = "  ['data', 'research', 'status-sovereignty-wave-01-targeted-acquisition.json'],\n  ['data', 'project', 'status-sovereignty-wave-01-second-party-review-campaign.json'],\n  ['data', 'project', 'status-sovereignty-wave-01-second-party-review-packet-registry.json'],\n  ['data', 'project', 'status-sovereignty-wave-01-second-party-review-release-manifest.json'],\n  ['data', 'research', 'status-sovereignty-wave-01-second-party-review-candidates.json'],\n  ['data', 'research', 'status-sovereignty-wave-01-second-party-review-responses.json'],\n  ['docs', 'methods', 'status-sovereignty-compact.md'],";
+          if (!buildPages.includes('status-sovereignty-wave-01-second-party-review-campaign.json')) {
+            if (!buildPages.includes(buildAnchor)) throw new Error('build-pages SSC hold anchor missing');
+            buildPages = buildPages.replace(buildAnchor, buildInsert);
+            const milestoneAnchor = "  ['docs', 'milestones', 'm05-status-sovereignty-wave-01-targeted-acquisition.md'],\n])";
+            const milestoneInsert = "  ['docs', 'milestones', 'm05-status-sovereignty-wave-01-targeted-acquisition.md'],\n  ['docs', 'milestones', 'm05-status-sovereignty-wave-01-second-party-review.md'],\n])";
+            if (!buildPages.includes(milestoneAnchor)) throw new Error('build-pages milestone hold anchor missing');
+            buildPages = buildPages.replace(milestoneAnchor, milestoneInsert);
+            fs.writeFileSync(buildPagesPath, buildPages);
+          }
+
+          const validatePagesPath = 'tools/validate-pages.mjs';
+          let validatePages = fs.readFileSync(validatePagesPath, 'utf8');
+          if (!validatePages.includes("'docs/ssc-wave-01-second-party-review-intake.md'")) {
+            const requiredAnchor = "  'docs/thesis-state-market-receipt-custody.md',\n  'cases/field-autopsy-03/case.json'";
+            const requiredInsert = "  'docs/thesis-state-market-receipt-custody.md',\n  'docs/ssc-wave-01-second-party-review-intake.md',\n  'cases/field-autopsy-03/case.json'";
+            if (!validatePages.includes(requiredAnchor)) throw new Error('validate-pages required-doc anchor missing');
+            validatePages = validatePages.replace(requiredAnchor, requiredInsert);
+          }
+          if (!validatePages.includes("'data/project/status-sovereignty-wave-01-second-party-review-campaign.json'")) {
+            const holdAnchor = "  'data/research/status-sovereignty-wave-01-targeted-acquisition.json',\n  'docs/methods/status-sovereignty-compact.md',";
+            const holdInsert = "  'data/research/status-sovereignty-wave-01-targeted-acquisition.json',\n  'data/project/status-sovereignty-wave-01-second-party-review-campaign.json',\n  'data/project/status-sovereignty-wave-01-second-party-review-packet-registry.json',\n  'data/project/status-sovereignty-wave-01-second-party-review-release-manifest.json',\n  'data/research/status-sovereignty-wave-01-second-party-review-candidates.json',\n  'data/research/status-sovereignty-wave-01-second-party-review-responses.json',\n  'docs/methods/status-sovereignty-compact.md',";
+            if (!validatePages.includes(holdAnchor)) throw new Error('validate-pages SSC hold anchor missing');
+            validatePages = validatePages.replaceAll(holdAnchor, holdInsert);
+            const milestoneHoldAnchor = "  'docs/milestones/m05-status-sovereignty-wave-01-targeted-acquisition.md',\n])";
+            const milestoneHoldInsert = "  'docs/milestones/m05-status-sovereignty-wave-01-targeted-acquisition.md',\n  'docs/milestones/m05-status-sovereignty-wave-01-second-party-review.md',\n])";
+            if (!validatePages.includes(milestoneHoldAnchor)) throw new Error('validate-pages milestone hold anchor missing');
+            validatePages = validatePages.replaceAll(milestoneHoldAnchor, milestoneHoldInsert);
+          }
+          fs.writeFileSync(validatePagesPath, validatePages);
+          NODE
+
+          node tools/build-status-sovereignty-wave-01-second-party-review.mjs
+          node tools/validate-status-sovereignty-wave-01-second-party-review.mjs
+          node test/status-sovereignty-wave-01-second-party-review.test.js
+          npm run build:pages
+          npm run build:standalone
+          npm run validate:pages
+
+          git config user.name 'OpenAI'
+          git config user.email 'noreply@openai.com'
+          git add \
+            package.json \
+            tools/build-pages.mjs \
+            tools/validate-pages.mjs \
+            data/project/status-sovereignty-wave-01-second-party-review-packet-registry.json \
+            data/project/status-sovereignty-wave-01-second-party-review-release-manifest.json \
+            build/core-thesis/status-sovereignty/wave-01-second-party-review/manifest.json \
+            build/core-thesis/status-sovereignty/wave-01-second-party-review/data.json \
+            reports/core-thesis/status-sovereignty/wave-01-second-party-review/data.json \
+            reports/core-thesis/status-sovereignty/wave-01-second-party-review/index.html \
+            reports/core-thesis/status-sovereignty/wave-01-second-party-review/intake.html
+          if git diff --cached --quiet; then
+            echo 'materialization already deterministic'
+            exit 0
+          fi
+          git commit -m 'Materialize SSC second-party review campaign'
+          git push origin HEAD:agent/ssc-wave01-second-party-review-campaign
