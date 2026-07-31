@@ -1,0 +1,49 @@
+name: Temporary export SSC Wave 02 current main
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-export-ssc-wave02-current-main.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Package exact current main tree and history
+        run: |
+          set -Eeuo pipefail
+          repo="$GITHUB_WORKSPACE"
+          parent="$(dirname "$repo")"
+          base="$(basename "$repo")"
+          commit="$(git -C "$repo" rev-parse HEAD)"
+          printf '%s\n' "$commit" > /tmp/SSC-W02-CURRENT-MAIN-COMMIT.txt
+          git -C "$repo" show -s --format=fuller "$commit" > /tmp/SSC-W02-CURRENT-MAIN-METADATA.txt
+          tar -C "$parent" --exclude="$base/.git" -cJf /tmp/ssc-wave02-current-main-tree.tar.xz "$base"
+          git -C "$repo" update-ref refs/heads/ssc-wave02-current-main-export "$commit"
+          git -C "$repo" bundle create /tmp/ssc-wave02-current-main.bundle refs/heads/ssc-wave02-current-main-export
+          git -C "$repo" update-ref -d refs/heads/ssc-wave02-current-main-export
+          sha256sum /tmp/ssc-wave02-current-main-tree.tar.xz > /tmp/ssc-wave02-current-main-tree.tar.xz.sha256
+          sha256sum /tmp/ssc-wave02-current-main.bundle > /tmp/ssc-wave02-current-main.bundle.sha256
+          git -C "$repo" status --short
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-current-main
+          path: |
+            /tmp/ssc-wave02-current-main-tree.tar.xz
+            /tmp/ssc-wave02-current-main-tree.tar.xz.sha256
+            /tmp/ssc-wave02-current-main.bundle
+            /tmp/ssc-wave02-current-main.bundle.sha256
+            /tmp/SSC-W02-CURRENT-MAIN-COMMIT.txt
+            /tmp/SSC-W02-CURRENT-MAIN-METADATA.txt
+          if-no-files-found: error
+          retention-days: 1
