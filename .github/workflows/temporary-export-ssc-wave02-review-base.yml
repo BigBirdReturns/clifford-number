@@ -1,6 +1,10 @@
 name: Temporary export SSC Wave 02 review base
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-export-ssc-wave02-review-base.yml'
   push:
     branches: [agent/ssc-wave02-review-export]
     paths:
