@@ -28,7 +28,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Install bounded shallow-history fallback and validate
+      - name: Install bounded shallow-history recovery and validate
         run: |
           set -Eeuo pipefail
           python - <<'PY'
@@ -38,14 +38,18 @@ jobs:
           text = path.read_text()
           needle = "  if (ancestry.status !== 0) errors.push('SG-09 transition commit is not descended from its declared base');"
           replacement = """  if (ancestry.status !== 0) {
-            const raw = spawnSync('git', ['cat-file', '-p', transition], { cwd: root, encoding: 'utf8' });
-            const parents = raw.status === 0 ? raw.stdout.split('\\n').filter((line) => line.startsWith('parent ')).map((line) => line.slice(7).trim()) : [];
-            if (!parents.includes(base)) errors.push('SG-09 transition commit is not descended from its declared base');
+            spawnSync('git', ['fetch', '--no-tags', '--depth=64', 'origin', transition], { cwd: root, encoding: 'utf8' });
+            const retried = spawnSync('git', ['merge-base', '--is-ancestor', base, transition], { cwd: root, encoding: 'utf8' });
+            if (retried.status !== 0) {
+              const raw = spawnSync('git', ['cat-file', '-p', transition], { cwd: root, encoding: 'utf8' });
+              const parents = raw.status === 0 ? raw.stdout.split('\\n').filter((line) => line.startsWith('parent ')).map((line) => line.slice(7).trim()) : [];
+              if (!parents.includes(base)) errors.push('SG-09 transition commit is not descended from its declared base');
+            }
           }"""
 
           if needle in text:
               path.write_text(text.replace(needle, replacement))
-          elif "['cat-file', '-p', transition]" not in text:
+          elif "'--depth=64', 'origin', transition" not in text:
               raise SystemExit('SG-09 ancestry anchor missing')
           PY
 
