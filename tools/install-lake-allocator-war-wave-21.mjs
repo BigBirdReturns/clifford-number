@@ -141,7 +141,21 @@ for (const relative of [
   'data/acquisition/lake-allocator-war-wave-31/public-award-and-contract-denominators.jsonl',
   'data/acquisition/lake-allocator-war-wave-31/published-enforcement-and-action-registers.jsonl',
   'build/lake-actions/allocator-war-public-route-execution-wave-31.json',
-  'reports/lake-allocator-war-public-route-execution-wave-31.md'
+  'reports/lake-allocator-war-public-route-execution-wave-31.md',
+  'data/project/lake-allocator-war-bounded-source-snapshots-wave-32-policy.json',
+  'data/project/lake-allocator-war-bounded-source-snapshots-wave-32-plan.json',
+  'data/acquisition/lake-allocator-war-wave-32/snapshot-ledger.jsonl',
+  'docs/methods/lake-allocator-war-bounded-source-snapshots-wave-32.md',
+  'docs/milestones/lake-allocator-war-bounded-source-snapshots-wave-32.md',
+  'data/acquisition/lake-allocator-war-wave-32/routes/affected-comparator-and-distributional-joins.jsonl',
+  'data/acquisition/lake-allocator-war-wave-32/routes/correction-dockets-and-outcomes.jsonl',
+  'data/acquisition/lake-allocator-war-wave-32/routes/financial-recovery-and-continuity.jsonl',
+  'data/acquisition/lake-allocator-war-wave-32/routes/internal-authority-and-inventory.jsonl',
+  'data/acquisition/lake-allocator-war-wave-32/routes/protected-personnel-records.jsonl',
+  'data/acquisition/lake-allocator-war-wave-32/routes/public-award-and-contract-denominators.jsonl',
+  'data/acquisition/lake-allocator-war-wave-32/routes/published-enforcement-and-action-registers.jsonl',
+  'build/lake-actions/allocator-war-bounded-source-snapshots-wave-32.json',
+  'reports/lake-allocator-war-bounded-source-snapshots-wave-32.md'
 ]) roots.add(relative);
 lakePolicy.authoritative_roots = [...roots].sort();
 lakePolicy.boundaries.allocator_war_routing_proves_finding = false;
@@ -150,13 +164,20 @@ writeJson(lakePolicyPath, lakePolicy);
 
 const basinPath = 'data/project/lake-basin-registry.json';
 const basinRegistry = readJson(basinPath);
-const existing = new Map(basinRegistry.basins.map(row => [row.basin_id, row]));
+const existing = new Map(basinRegistry.basins.map((row, index) => [row.basin_id, { row, index }]));
 for (const basin of policy.basin_contract) {
   const prior = existing.get(basin.basin_id);
-  if (prior && JSON.stringify(prior) !== JSON.stringify(basin)) {
-    throw new Error(`${basin.basin_id}: existing basin contract differs`);
+  if (!prior) {
+    basinRegistry.basins.push(basin);
+    continue;
   }
-  if (!prior) basinRegistry.basins.push(basin);
+  if (JSON.stringify(prior.row) === JSON.stringify(basin)) continue;
+  const stableFields = value => Object.fromEntries(Object.entries(value).filter(([key]) =>
+    !['path_prefixes', 'authoritative_entrypoints'].includes(key)));
+  if (JSON.stringify(stableFields(prior.row)) !== JSON.stringify(stableFields(basin))) {
+    throw new Error(`${basin.basin_id}: non-path basin contract differs`);
+  }
+  basinRegistry.basins[prior.index] = basin;
 }
 basinRegistry.basins.sort((a, b) => a.basin_id.localeCompare(b.basin_id));
 basinRegistry.boundaries.allocator_war_basin_membership_proves_common_purpose = false;
@@ -180,6 +201,15 @@ if (!pkg.scripts.check.includes('npm run validate:lake-allocator-war-public-rout
   if (!pkg.scripts.check.includes(marker)) throw new Error('Wave 30 release-gate marker missing');
   pkg.scripts.check = pkg.scripts.check.replace(marker, `${marker} && npm run validate:lake-allocator-war-public-route-execution-wave-31`);
 }
+pkg.scripts['acquire:lake-allocator-war-bounded-source-snapshots-wave-32'] = 'node tools/acquire-lake-allocator-war-bounded-source-snapshots-wave-32.mjs';
+pkg.scripts['build:lake-allocator-war-bounded-source-snapshots-wave-32'] = 'node tools/build-lake-allocator-war-bounded-source-snapshots-wave-32.mjs';
+pkg.scripts['validate:lake-allocator-war-bounded-source-snapshots-wave-32'] = 'node tools/validate-lake-allocator-war-bounded-source-snapshots-wave-32.mjs && node test/lake-allocator-war-bounded-source-snapshots-wave-32.test.js';
+pkg.scripts['ci:lake-allocator-war-bounded-source-snapshots-wave-32'] = 'npm run build:lake-allocator-war-bounded-source-snapshots-wave-32 && npm run validate:lake-allocator-war-bounded-source-snapshots-wave-32';
+if (!pkg.scripts.check.includes('npm run validate:lake-allocator-war-bounded-source-snapshots-wave-32')) {
+  const marker = 'npm run validate:lake-allocator-war-public-route-execution-wave-31';
+  if (!pkg.scripts.check.includes(marker)) throw new Error('Wave 31 release-gate marker missing');
+  pkg.scripts.check = pkg.scripts.check.replace(marker, `${marker} && npm run validate:lake-allocator-war-bounded-source-snapshots-wave-32`);
+}
 writeJson(packagePath, pkg);
 
 const buildInstructionsPath = 'BUILD-INSTRUCTIONS.md';
@@ -188,6 +218,16 @@ const buildMarker = '3.21 **Allocator-war lake integration — Wave 21.**';
 if (!buildInstructions.includes(buildMarker)) {
   buildInstructions += `\n\n${buildMarker}\nReviewed Wave 01 allocator-war packets and unreviewed Wave 02 intake packets enter separate source registries. Exact commit-and-path custody preserves their authority difference. Reviewed packets may feed bounded findings and controls; unreviewed packets may feed acquisition only.\n\nEstate and program routing is one-way. It does not create a finding, identity, relationship, participation, graph edge, prevalence estimate, racial-order conclusion, coordination conclusion, common purpose, publication clearance, or adoption effect.\n`;
 }
+const wave32BuildMarker = '3.32 **Allocator-war bounded source snapshots — Wave 32.**';
+if (!buildInstructions.includes(wave32BuildMarker)) {
+  buildInstructions += `
+
+${wave32BuildMarker}
+Run \`node tools/acquire-lake-allocator-war-bounded-source-snapshots-wave-32.mjs\` only in the bounded acquisition lane. The acquisition must emit nineteen exact source objects: fifteen public HTTP requests and four credential boundaries. The seven required JSON controls must parse successfully. Release validation reads the frozen bytes and must never refetch the network.
+
+Run \`node tools/build-lake-allocator-war-bounded-source-snapshots-wave-32.mjs\` after the snapshot ledger is complete. The builder preserves the exact thirty-eight-task Wave 31 denominator and creates no complete denominator, evidence adjudication, estate adoption, finding, graph effect, or publication clearance.
+`;
+}
 fs.writeFileSync(full(buildInstructionsPath), buildInstructions);
 
 const readmePath = 'README.md';
@@ -195,6 +235,15 @@ let readme = fs.readFileSync(full(readmePath), 'utf8');
 const readmeMarker = '## Allocator-war lake waterline';
 if (!readme.includes(readmeMarker)) {
   readme += `\n\n${readmeMarker}\n\nWave 21 imports the reviewed allocator-war Wave 01 waterline and the unreviewed SSC Wave 02 frontier through exact commit-and-path custody. It exposes separate observation, findings-waterline, estate-acquisition, and program-feed registries while retaining zero graph and publication effect. See \`reports/lake-allocator-war-wave-21.md\`.\n`;
+}
+const wave32ReadmeMarker = '## Allocator-war bounded source snapshots Wave 32';
+if (!readme.includes(wave32ReadmeMarker)) {
+  readme += `
+
+${wave32ReadmeMarker}
+
+Wave 32 freezes each of the nineteen Wave 31 official locators as one exact public request-response object or one explicit credential boundary. Fifteen bounded requests and four access boundaries are reused across the unchanged thirty-eight-task route denominator. Frozen source responses remain acquisition-only and create no evidence, finding, graph, or publication effect. See \`reports/lake-allocator-war-bounded-source-snapshots-wave-32.md\`.
+`;
 }
 fs.writeFileSync(full(readmePath), readme);
 
