@@ -483,3 +483,9 @@ Queue admission is acquisition routing only. It does not close a source partial,
 All twelve Wave 28 implementation obligations are executed against thirty-four exact official source receipts. Eleven results remain partial and one person-level personnel-decision ledger remains unavailable after bounded search. Missing rows, failed searches, no-action states, comparators, controls, refusals, and correction routes remain explicit.
 
 Execution is acquisition only. It does not adjudicate evidence, close a denominator, establish estate adoption, create a finding, modify the graph, treat unavailability as null, or clear publication.
+
+
+3.30 **Allocator-war missing-row observability and closure fan-out — Wave 30.**
+Every explicit unavailable row retained by Wave 29 becomes one route-owned closure task. The thirty-eight-task frontier is emitted in one deterministic build across seven reusable acquisition lanes. Four personnel tasks retain a lawful-access boundary; thirty-four tasks are publicly executable through agency records, public systems, action registers, dockets, comparator joins, or recovery records.
+
+Route assignment is acquisition routing only. It does not close a source gap, adjudicate evidence, establish estate adoption, promote a finding, modify the graph, or clear publication.

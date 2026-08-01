@@ -1,21 +1,21 @@
 # Lake index gap summary
 
-Source fingerprint: `56b6d0cff165484231b38dbfb06874bc3da1ece4fb7c7d3a26f2decb0fbede60`
+Source fingerprint: `074aa2c8d6d425015e944d9102a0b863fdae829cec9048b32b66ea6f510ef81f`
 
 ## Finding
 
-The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1490 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
+The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1502 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
 
 ## By evidence role
 
 | Role | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
-| generated_artifact | 599 | 599 | 0 | 0 |
-| project_governance | 187 | 187 | 0 | 0 |
-| repository_root | 154 | 154 | 0 | 0 |
-| documentation | 143 | 143 | 0 | 0 |
+| generated_artifact | 600 | 600 | 0 | 0 |
+| project_governance | 188 | 188 | 0 | 0 |
+| repository_root | 161 | 161 | 0 | 0 |
+| documentation | 145 | 145 | 0 | 0 |
 | intake | 141 | 141 | 0 | 0 |
-| report_product | 114 | 114 | 0 | 0 |
+| report_product | 115 | 115 | 0 | 0 |
 | research_record | 48 | 48 | 0 | 0 |
 | case_source | 43 | 43 | 0 | 0 |
 | receipt_artifact | 32 | 32 | 0 | 0 |
@@ -28,18 +28,18 @@ The current Git tree is physically censused, but the evidence lake is not semant
 | Cluster | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
 | build/estate-game-trails | 313 | 313 | 0 | 0 |
-| data/project | 187 | 187 | 0 | 0 |
+| data/project | 188 | 188 | 0 | 0 |
 | build/core-thesis | 184 | 184 | 0 | 0 |
 | data/intake | 141 | 141 | 0 | 0 |
 | reports/core-thesis | 96 | 96 | 0 | 0 |
-| docs/milestones | 75 | 75 | 0 | 0 |
+| docs/milestones | 76 | 76 | 0 | 0 |
+| data/acquisition | 52 | 52 | 0 | 0 |
 | data/research-tracks | 52 | 52 | 0 | 0 |
 | data/research | 48 | 48 | 0 | 0 |
-| data/acquisition | 45 | 45 | 0 | 0 |
 | data/estates | 43 | 43 | 0 | 0 |
-| build/lake-actions | 33 | 33 | 0 | 0 |
+| build/lake-actions | 34 | 34 | 0 | 0 |
 | cases/arcadia-field-autopsy | 21 | 21 | 0 | 0 |
-| docs/methods | 19 | 19 | 0 | 0 |
+| docs/methods | 20 | 20 | 0 | 0 |
 | receipts/crawl | 19 | 19 | 0 | 0 |
 | build/estate-closures | 15 | 15 | 0 | 0 |
 
@@ -69,7 +69,7 @@ missing repository path tokens: 200
 ```text
 not reachable from any detected index: 0
 not reachable from authoritative roots: 0
-not reachable from public roots: 1246
+not reachable from public roots: 1258
 case IDs absent from public catalog: 26
 ```
 
@@ -86,17 +86,17 @@ case IDs absent from public catalog: 26
 | #579 Temporary export exact SG-11 integration receipt | 20 |
 | #592 Temporary export exact SG-11 integration 4a0cf | 20 |
 | #598 Temporary export exact SG-11 integration cbfee | 20 |
+| #605 Temporary export exact SG-11 integration 946d | 20 |
 | #576 Install SSC-W02 separated review campaign and append SG-11 | 19 |
 | #386 Make evidence-grounded judgments without a human-permission gate | 18 |
 | #494 Temporary PR 484 exact-head export | 18 |
 | #490 Temporary current SG-06 transport export | 17 |
+| #606 Exhaust Counter-Selector Wave 21 remaining gates | 17 |
 | #403 Measure the production cross-case identity denominator | 16 |
 | #487 Temporary PR 483 bundle export | 14 |
 | #404 Recover exact source-bound cross-case mention recurrence | 11 |
 | #362 Stage biological Omega control-surface research program | 9 |
 | #527 Execute Counter-Selector Wave 08 Batch 02 blind review | 9 |
-| #50 Stage synthetic-population research program | 8 |
-| #380 Build root Evidence Desk publication estate from WebsiteIQ audit | 6 |
 
 ### P5 — history and semantics
 

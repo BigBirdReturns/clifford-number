@@ -116,7 +116,19 @@ for (const relative of [
   'data/acquisition/lake-allocator-war-wave-29/law28-est-07.jsonl',
   'data/acquisition/lake-allocator-war-wave-29/law28-est-10.jsonl',
   'build/lake-actions/allocator-war-public-interest-execution-wave-29.json',
-  'reports/lake-allocator-war-public-interest-execution-wave-29.md'
+  'reports/lake-allocator-war-public-interest-execution-wave-29.md',
+  'data/project/lake-allocator-war-gap-fanout-wave-30-policy.json',
+  'docs/methods/lake-allocator-war-gap-fanout-wave-30.md',
+  'docs/milestones/lake-allocator-war-gap-fanout-wave-30.md',
+  'data/acquisition/lake-allocator-war-wave-30/protected-personnel-records.jsonl',
+  'data/acquisition/lake-allocator-war-wave-30/internal-authority-and-inventory.jsonl',
+  'data/acquisition/lake-allocator-war-wave-30/public-award-and-contract-denominators.jsonl',
+  'data/acquisition/lake-allocator-war-wave-30/published-enforcement-and-action-registers.jsonl',
+  'data/acquisition/lake-allocator-war-wave-30/correction-dockets-and-outcomes.jsonl',
+  'data/acquisition/lake-allocator-war-wave-30/affected-comparator-and-distributional-joins.jsonl',
+  'data/acquisition/lake-allocator-war-wave-30/financial-recovery-and-continuity.jsonl',
+  'build/lake-actions/allocator-war-gap-fanout-wave-30.json',
+  'reports/lake-allocator-war-gap-fanout-wave-30.md'
 ]) roots.add(relative);
 lakePolicy.authoritative_roots = [...roots].sort();
 lakePolicy.boundaries.allocator_war_routing_proves_finding = false;

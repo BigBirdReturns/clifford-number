@@ -292,3 +292,8 @@ Wave 28 converts the two partial public-interest results into twelve exact imple
 ## Allocator-war public-interest execution Wave 29
 
 Wave 29 executes all twelve public-interest implementation obligations against thirty-four exact official source receipts. Eleven results remain partial and one terminates as unavailable after bounded search. The wave preserves zero complete denominators, evidence rows, estate adoptions, findings, graph effects, and publication clearances. See `reports/lake-allocator-war-public-interest-execution-wave-29.md`.
+
+
+## Allocator-war gap fan-out Wave 30
+
+Wave 30 converts all thirty-eight explicit missing rows retained by Wave 29 into seven reusable route ledgers. The projection preserves zero complete denominators, evidence rows, estate adoptions, findings, graph effects, and publication clearances. See `reports/lake-allocator-war-gap-fanout-wave-30.md`.
