@@ -1,0 +1,143 @@
+{
+  "schema_version": "lake-allocator-war-lead-execution-wave-24-policy@1",
+  "program_ref": "CN-LAKE-ALLOCATOR-WAR-W24",
+  "wave_ref": "LAW-W24",
+  "as_of": "2026-07-31",
+  "title": "Allocator-war lead acquisition execution Wave 24",
+  "purpose": "Execute the eleven Wave 23 lead packets into packet-specific acquisition ledgers using the bounded source plan while preserving source authority, negative search, unavailable and refused rows, gate-unspecified states, zero evidentiary adjudication, zero finding promotion, zero graph effect, and blocked publication.",
+  "base_checkpoint": {
+    "branch": "agent/lake-allocator-war-wave-21",
+    "commit": "748dfe258cd39195375135d748e6af3e7f11a242",
+    "required_ancestry": true
+  },
+  "paths": {
+    "source_plan": "data/project/lake-allocator-war-lead-execution-wave-24-source-plan.json",
+    "source_projection": "build/lake-actions/allocator-war-lead-acquisition-wave-23.json",
+    "projection": "build/lake-actions/allocator-war-lead-execution-wave-24.json",
+    "report": "reports/lake-allocator-war-lead-execution-wave-24.md",
+    "method": "docs/methods/lake-allocator-war-lead-execution-wave-24.md",
+    "milestone": "docs/milestones/lake-allocator-war-lead-execution-wave-24.md",
+    "ledger_root": "data/acquisition/lake-allocator-war-wave-24"
+  },
+  "expected_counts": {
+    "source_packets": 11,
+    "acquisition_ledgers": 11,
+    "unique_source_receipts": 28,
+    "source_receipt_uses": 51,
+    "packet_summary_rows": 11,
+    "source_receipt_rows": 51,
+    "acquisition_rows": 62,
+    "partial_source_recovery": 9,
+    "bounded_public_record_recovered_gate_unspecified": 2,
+    "verified": 21,
+    "verified_redirected": 4,
+    "blocked_403_reused_reviewed_locator": 1,
+    "fetch_error_reused_reviewed_locator": 2,
+    "complete_denominators": 0,
+    "evidence_rows": 0,
+    "finding_promotions": 0,
+    "graph_effects": 0,
+    "publication_clearances": 0
+  },
+  "execution_contract": {
+    "execution_state": "acquisition_recorded_evidence_unadjudicated",
+    "packet_summary_schema": "lake-allocator-war-wave-24-packet-execution@1",
+    "source_receipt_schema": "lake-allocator-war-wave-24-source-receipt@1",
+    "allowed_acquisition_dispositions": [
+      "partial_source_recovery",
+      "bounded_public_record_recovered_gate_unspecified"
+    ],
+    "source_bytes_required_for_acquisition_record": false,
+    "stable_official_identifier_may_satisfy_locator_custody": true,
+    "complete_denominator_required_for_evidence_review": true,
+    "evidence_adjudication_performed": false,
+    "negative_search_required": true,
+    "controls_nulls_refusals_and_failed_paths_required": true,
+    "cross_estate_join_authorized": false,
+    "required_packet_fields": [
+      "packet_ref",
+      "source_queue_ref",
+      "source_task_ref",
+      "consumer_key",
+      "queue_class",
+      "source_route_authority",
+      "task_authority",
+      "acquisition_target",
+      "bounded_window",
+      "acquisition_disposition",
+      "institutional_gate_state",
+      "coverage_statement",
+      "included_rows",
+      "excluded_rows",
+      "null_rows",
+      "unavailable_rows",
+      "refused_rows",
+      "negative_search_statement",
+      "correction_route",
+      "correction_outcome"
+    ],
+    "required_source_fields": [
+      "source_ref",
+      "source_locator",
+      "resolved_locator",
+      "stable_identifier",
+      "issuing_body",
+      "source_type",
+      "jurisdiction",
+      "issued_at",
+      "retrieved_at",
+      "retrieval_status",
+      "custody_refs"
+    ]
+  },
+  "disposition_law": {
+    "partial_source_recovery": {
+      "named_institutional_gate_required": true,
+      "complete_denominator": false,
+      "evidence_result": false
+    },
+    "bounded_public_record_recovered_gate_unspecified": {
+      "named_institutional_gate_required": false,
+      "required_gate_state": "no_bounded_institutional_gate_identified",
+      "complete_denominator": false,
+      "evidence_result": false
+    }
+  },
+  "blocked_promotions": [
+    "estate_finding",
+    "complete_compact_finding",
+    "racial_order_finding",
+    "prevalence_finding",
+    "coordination_finding",
+    "common_purpose_finding",
+    "identity_edge",
+    "relationship_edge",
+    "participation_row",
+    "active_claim",
+    "hop_edge",
+    "publication_clearance"
+  ],
+  "boundaries": {
+    "source_plan_is_evidence_review": false,
+    "acquisition_row_is_evidence_row": false,
+    "acquisition_disposition_is_evidence_result": false,
+    "partial_source_recovery_is_complete_denominator": false,
+    "gate_unspecified_record_is_institutional_gate": false,
+    "stable_identifier_is_source_bytes": false,
+    "verified_page_is_complete_instrument": false,
+    "blocked_or_failed_retrieval_is_null": false,
+    "shared_source_is_relationship": false,
+    "source_recurrence_is_prevalence": false,
+    "reviewed_route_is_second_party_review": false,
+    "split_route_launders_unreviewed_intake": false,
+    "unreviewed_route_may_promote_finding": false,
+    "identity_created": false,
+    "relationship_created": false,
+    "participation_created": false,
+    "active_claim_created": false,
+    "hop_created": false,
+    "finding_promoted": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}
