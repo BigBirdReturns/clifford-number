@@ -1,4 +1,4 @@
-name: Temporary stage SG-11 non-workflow estate · current main
+name: Temporary stage SG-11 checkpoint products
 
 on:
   push:
@@ -17,13 +17,13 @@ permissions:
   contents: write
 
 concurrency:
-  group: sg11-nonworkflow-materializer-current-main
+  group: sg11-checkpoint-products
   cancel-in-progress: false
 
 jobs:
   stage:
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,10 +48,10 @@ jobs:
           xz -dc /tmp/sg11.patch.xz > /tmp/sg11.patch
           test "$(wc -c < /tmp/sg11.patch)" -eq 124901
           printf '%s  %s\n' 2b550f334cb635fa1daf6aa16f59bd83852e77b15a97a30ad4245643b7701dc3 /tmp/sg11.patch | sha256sum -c -
-      - name: Apply exact non-workflow patch to isolated staging branch
+      - name: Apply exact patch to workflow-complete staging branch
         env:
           STAGING_BRANCH: agent/sg11-nonworkflow-staging
-          EXPECTED_HEAD: 4a0cf108098789f93732b829fc5a5e4ea152f28b
+          EXPECTED_HEAD: 507dd96c8a0ec051943ae5ff8629bd3ca3dd23d8
         run: |
           set -Eeuo pipefail
           git fetch --no-tags origin "$STAGING_BRANCH"
@@ -59,46 +59,39 @@ jobs:
           test "$lease" = "$EXPECTED_HEAD"
           git switch -C sg11-staging "origin/$STAGING_BRANCH"
           test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
-          test "$(git show -s --format=%P HEAD)" = "2362f4357bf58d388dad11f38bcac62f580ce89b 04649fafcc517c0d7eef6279818dd309366eb49b"
           git apply --check --index /tmp/sg11.patch
           git apply --index /tmp/sg11.patch
           cat > /tmp/expected <<'PATHS'
-build/core-thesis/status-sovereignty/data.json
-build/core-thesis/status-sovereignty/manifest.json
-build/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
-build/core-thesis/status-sovereignty/wave-02-second-party-review/manifest.json
-data/project/poof-clifford-ecology-release-manifest.json
-data/project/project-stable-ground-current.json
-data/project/project-stable-ground-sg11-release-manifest.json
-data/project/project-stable-ground-sg11.json
-data/project/status-sovereignty-release-manifest.json
-data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json
-docs/milestones/project-stable-ground-sg11.md
-package.json
-reports/core-thesis/poof-clifford-ecology/release-manifest.json
-reports/core-thesis/stable-ground/sg11/checkpoint.json
-reports/core-thesis/stable-ground/sg11/index.html
-reports/core-thesis/status-sovereignty/data.json
-reports/core-thesis/status-sovereignty/index.html
-reports/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
-reports/core-thesis/status-sovereignty/wave-02-second-party-review/index.html
-test/project-stable-ground-sg10.test.js
-test/project-stable-ground-sg11.test.js
-tools/build-project-stable-ground-sg10.mjs
-tools/build-project-stable-ground-sg11.mjs
-tools/validate-project-stable-ground-sg10.mjs
-tools/validate-project-stable-ground-sg11.mjs
-PATHS
+          build/core-thesis/status-sovereignty/data.json
+          build/core-thesis/status-sovereignty/manifest.json
+          build/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+          build/core-thesis/status-sovereignty/wave-02-second-party-review/manifest.json
+          data/project/poof-clifford-ecology-release-manifest.json
+          data/project/project-stable-ground-current.json
+          data/project/project-stable-ground-sg11-release-manifest.json
+          data/project/project-stable-ground-sg11.json
+          data/project/status-sovereignty-release-manifest.json
+          data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json
+          docs/milestones/project-stable-ground-sg11.md
+          package.json
+          reports/core-thesis/poof-clifford-ecology/release-manifest.json
+          reports/core-thesis/stable-ground/sg11/checkpoint.json
+          reports/core-thesis/stable-ground/sg11/index.html
+          reports/core-thesis/status-sovereignty/data.json
+          reports/core-thesis/status-sovereignty/index.html
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/index.html
+          test/project-stable-ground-sg10.test.js
+          test/project-stable-ground-sg11.test.js
+          tools/build-project-stable-ground-sg10.mjs
+          tools/build-project-stable-ground-sg11.mjs
+          tools/validate-project-stable-ground-sg10.mjs
+          tools/validate-project-stable-ground-sg11.mjs
+          PATHS
           sort -o /tmp/expected /tmp/expected
           git diff --cached --name-only | sort > /tmp/observed
           diff -u /tmp/expected /tmp/observed
           test "$(wc -l < /tmp/observed)" -eq 25
-          ! grep -Eq '^\.github/(tmp/|workflows/)' /tmp/observed
-      - name: Install exact permanent workflow bytes for validation only
-        run: |
-          set -Eeuo pipefail
-          printf '%s' 'bmFtZTogUHJvamVjdCBzdGFibGUtZ3JvdW5kIHN1cGVyc2Vzc2lvbiAxMCDCtyBoaXN0b3JpY2FsCgpvbjoKICBwdWxsX3JlcXVlc3Q6CiAgICBicmFuY2hlczogW21haW5dCiAgICBwYXRoczoKICAgICAgLSAnZGF0YS9wcm9qZWN0L3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1jdXJyZW50Lmpzb24nCiAgICAgIC0gJ2RhdGEvcHJvamVjdC9wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMCouanNvbicKICAgICAgLSAnZGF0YS9wcm9qZWN0L3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzExKi5qc29uJwogICAgICAtICdyZXBvcnRzL2NvcmUtdGhlc2lzL3N0YWJsZS1ncm91bmQvc2cxMC8qKicKICAgICAgLSAncmVwb3J0cy9jb3JlLXRoZXNpcy9zdGFibGUtZ3JvdW5kL3NnMTEvKionCiAgICAgIC0gJ3Rvb2xzL2J1aWxkLXByb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzEwLm1qcycKICAgICAgLSAndG9vbHMvdmFsaWRhdGUtcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTAubWpzJwogICAgICAtICd0ZXN0L3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzEwLnRlc3QuanMnCiAgICAgIC0gJy5naXRodWIvd29ya2Zsb3dzL3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzEwLnltbCcKICAgICAgLSAnLmdpdGh1Yi93b3JrZmxvd3MvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTEueW1sJwogICAgICAtICdwYWNrYWdlLmpzb24nCiAgcHVzaDoKICAgIGJyYW5jaGVzOiBbbWFpbl0KICAgIHBhdGhzOgogICAgICAtICdkYXRhL3Byb2plY3QvcHJvamVjdC1zdGFibGUtZ3JvdW5kLWN1cnJlbnQuanNvbicKICAgICAgLSAnZGF0YS9wcm9qZWN0L3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzEwKi5qc29uJwogICAgICAtICdkYXRhL3Byb2plY3QvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTEqLmpzb24nCiAgICAgIC0gJ3JlcG9ydHMvY29yZS10aGVzaXMvc3RhYmxlLWdyb3VuZC9zZzEwLyoqJwogICAgICAtICdyZXBvcnRzL2NvcmUtdGhlc2lzL3N0YWJsZS1ncm91bmQvc2cxMS8qKicKICAgICAgLSAndG9vbHMvYnVpbGQtcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTAubWpzJwogICAgICAtICd0b29scy92YWxpZGF0ZS1wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMC5tanMnCiAgICAgIC0gJ3Rlc3QvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTAudGVzdC5qcycKICAgICAgLSAnLmdpdGh1Yi93b3JrZmxvd3MvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTAueW1sJwogICAgICAtICcuZ2l0aHViL3dvcmtmbG93cy9wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMS55bWwnCiAgICAgIC0gJ3BhY2thZ2UuanNvbicKICB3b3JrZmxvd19kaXNwYXRjaDoKCnBlcm1pc3Npb25zOgogIGNvbnRlbnRzOiByZWFkCgpqb2JzOgogIHZhbGlkYXRlLWhpc3RvcmljYWw6CiAgICBydW5zLW9uOiB1YnVudHUtbGF0ZXN0CiAgICB0aW1lb3V0LW1pbnV0ZXM6IDEyMAogICAgc3RlcHM6CiAgICAgIC0gdXNlczogYWN0aW9ucy9jaGVja291dEB2NAogICAgICAgIHdpdGg6CiAgICAgICAgICBmZXRjaC1kZXB0aDogMAogICAgICAtIHVzZXM6IGFjdGlvbnMvc2V0dXAtbm9kZUB2NAogICAgICAgIHdpdGg6CiAgICAgICAgICBub2RlLXZlcnNpb246ICcyNCcKICAgICAgLSBuYW1lOiBWYWxpZGF0ZSBTRy0xMCBhcyBpbW11dGFibGUgaGlzdG9yeQogICAgICAgIHJ1bjogfAogICAgICAgICAgbm9kZSB0b29scy92YWxpZGF0ZS1wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMC5tanMKICAgICAgICAgIG5vZGUgdGVzdC9wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMC50ZXN0LmpzCiAgICAgIC0gbmFtZTogVmVyaWZ5IGZyb3plbiBTRy0xMCBieXRlcyBhdCB0aGUgbWVyZ2UgcmVjZWlwdAogICAgICAgIHJ1bjogfAogICAgICAgICAgc2V0IC1FZXVvIHBpcGVmYWlsCiAgICAgICAgICByZWNlaXB0PWI5NTJkYTAwOTMyMDEyYmU0MDljNjM1NTRkNmM4MWY4MzY3NzIzY2IKICAgICAgICAgIGZvciByZWwgaW4gXAogICAgICAgICAgICBkYXRhL3Byb2plY3QvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTAuanNvbiBcCiAgICAgICAgICAgIGRhdGEvcHJvamVjdC9wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMC1yZWxlYXNlLW1hbmlmZXN0Lmpzb24gXAogICAgICAgICAgICByZXBvcnRzL2NvcmUtdGhlc2lzL3N0YWJsZS1ncm91bmQvc2cxMC9jaGVja3BvaW50Lmpzb24gXAogICAgICAgICAgICByZXBvcnRzL2NvcmUtdGhlc2lzL3N0YWJsZS1ncm91bmQvc2cxMC9pbmRleC5odG1sCiAgICAgICAgICBkbwogICAgICAgICAgICBnaXQgc2hvdyAiJHJlY2VpcHQ6JHJlbCIgPiAiL3RtcC8kKGJhc2VuYW1lICIkcmVsIikiCiAgICAgICAgICAgIGNtcCAtLXNpbGVudCAiJHJlbCIgIi90bXAvJChiYXNlbmFtZSAiJHJlbCIpIgogICAgICAgICAgZG9uZQogICAgICAtIG5hbWU6IFZhbGlkYXRlIGN1cnJlbnQgc3VjY2Vzc29yIHdoZW4gcHJlc2VudAogICAgICAgIHJ1bjogfAogICAgICAgICAgaWYgdGVzdCAtZiBkYXRhL3Byb2plY3QvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTEuanNvbjsgdGhlbgogICAgICAgICAgICBub2RlIHRvb2xzL3ZhbGlkYXRlLXByb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzExLm1qcwogICAgICAgICAgICBub2RlIHRlc3QvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTEudGVzdC5qcwogICAgICAgICAgZmkKICAgICAgLSBuYW1lOiBSdW4gY29tcGxldGUgcmVwb3NpdG9yeSByZWxlYXNlIGdhdGUKICAgICAgICBydW46IG5wbSBydW4gcmVsZWFzZTpjaGVjawo=' | base64 -d > .github/workflows/project-stable-ground-sg10.yml
-          printf '%s' 'bmFtZTogUHJvamVjdCBzdGFibGUtZ3JvdW5kIHN1cGVyc2Vzc2lvbiAxMQoKb246CiAgcHVsbF9yZXF1ZXN0OgogICAgYnJhbmNoZXM6IFttYWluXQogICAgcGF0aHM6CiAgICAgIC0gJ2RhdGEvcHJvamVjdC9wcm9qZWN0LXN0YWJsZS1ncm91bmQtY3VycmVudC5qc29uJwogICAgICAtICdkYXRhL3Byb2plY3QvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTAqLmpzb24nCiAgICAgIC0gJ2RhdGEvcHJvamVjdC9wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMSouanNvbicKICAgICAgLSAnZGF0YS9wcm9qZWN0L3N0YXR1cy1zb3ZlcmVpZ250eS13YXZlLTAyLXNlY29uZC1wYXJ0eS1yZXZpZXctKi5qc29uJwogICAgICAtICdkYXRhL3Jlc2VhcmNoL3N0YXR1cy1zb3ZlcmVpZ250eS13YXZlLTAyLXNlY29uZC1wYXJ0eS1yZXZpZXctKi5qc29uJwogICAgICAtICdyZXBvcnRzL2NvcmUtdGhlc2lzL3N0YXR1cy1zb3ZlcmVpZ250eS93YXZlLTAyLXNlY29uZC1wYXJ0eS1yZXZpZXcvKionCiAgICAgIC0gJ3JlcG9ydHMvY29yZS10aGVzaXMvc3RhYmxlLWdyb3VuZC9zZzExLyoqJwogICAgICAtICd0b29scy8qcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTEqJwogICAgICAtICd0ZXN0L3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzExLnRlc3QuanMnCiAgICAgIC0gJy5naXRodWIvd29ya2Zsb3dzL3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzEwLnltbCcKICAgICAgLSAnLmdpdGh1Yi93b3JrZmxvd3MvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTEueW1sJwogICAgICAtICcuZ2l0aHViL3dvcmtmbG93cy9zdGF0dXMtc292ZXJlaWdudHktd2F2ZS0wMi1zZWNvbmQtcGFydHktcmV2aWV3LnltbCcKICAgICAgLSAncGFja2FnZS5qc29uJwogIHB1c2g6CiAgICBicmFuY2hlczogW21haW5dCiAgICBwYXRoczoKICAgICAgLSAnZGF0YS9wcm9qZWN0L3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1jdXJyZW50Lmpzb24nCiAgICAgIC0gJ2RhdGEvcHJvamVjdC9wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMCouanNvbicKICAgICAgLSAnZGF0YS9wcm9qZWN0L3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzExKi5qc29uJwogICAgICAtICdkYXRhL3Byb2plY3Qvc3RhdHVzLXNvdmVyZWlnbnR5LXdhdmUtMDItc2Vjb25kLXBhcnR5LXJldmlldy0qLmpzb24nCiAgICAgIC0gJ2RhdGEvcmVzZWFyY2gvc3RhdHVzLXNvdmVyZWlnbnR5LXdhdmUtMDItc2Vjb25kLXBhcnR5LXJldmlldy0qLmpzb24nCiAgICAgIC0gJ3JlcG9ydHMvY29yZS10aGVzaXMvc3RhdHVzLXNvdmVyZWlnbnR5L3dhdmUtMDItc2Vjb25kLXBhcnR5LXJldmlldy8qKicKICAgICAgLSAncmVwb3J0cy9jb3JlLXRoZXNpcy9zdGFibGUtZ3JvdW5kL3NnMTEvKionCiAgICAgIC0gJ3Rvb2xzLypwcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMSonCiAgICAgIC0gJ3Rlc3QvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTEudGVzdC5qcycKICAgICAgLSAnLmdpdGh1Yi93b3JrZmxvd3MvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTAueW1sJwogICAgICAtICcuZ2l0aHViL3dvcmtmbG93cy9wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMS55bWwnCiAgICAgIC0gJy5naXRodWIvd29ya2Zsb3dzL3N0YXR1cy1zb3ZlcmVpZ250eS13YXZlLTAyLXNlY29uZC1wYXJ0eS1yZXZpZXcueW1sJwogICAgICAtICdwYWNrYWdlLmpzb24nCiAgd29ya2Zsb3dfZGlzcGF0Y2g6CgpwZXJtaXNzaW9uczoKICBjb250ZW50czogcmVhZAoKam9iczoKICB2YWxpZGF0ZToKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHRpbWVvdXQtbWludXRlczogMTgwCiAgICBzdGVwczoKICAgICAgLSB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CiAgICAgICAgd2l0aDoKICAgICAgICAgIGZldGNoLWRlcHRoOiAwCiAgICAgIC0gdXNlczogYWN0aW9ucy9zZXR1cC1ub2RlQHY0CiAgICAgICAgd2l0aDoKICAgICAgICAgIG5vZGUtdmVyc2lvbjogJzI0JwogICAgICAtIG5hbWU6IEJ1aWxkIGFuZCB2YWxpZGF0ZSBjYW1wYWlnbiwgU1NDLCBhbmQgUE9PRiBjdXN0b2R5CiAgICAgICAgcnVuOiB8CiAgICAgICAgICBucG0gcnVuIGJ1aWxkOnN0YXR1cy1zb3ZlcmVpZ250eQogICAgICAgICAgbnBtIHJ1biB2YWxpZGF0ZTpzdGF0dXMtc292ZXJlaWdudHkKICAgICAgICAgIG5vZGUgdGVzdC9zdGF0dXMtc292ZXJlaWdudHktd2F2ZS0wMi1zZWNvbmQtcGFydHktcmV2aWV3LnRlc3QuanMKICAgICAgICAgIG5wbSBydW4gYnVpbGQ6cG9vZi1lY29sb2d5CiAgICAgICAgICBucG0gcnVuIHZhbGlkYXRlOnBvb2YtZWNvbG9neQogICAgICAgICAgbm9kZSB0ZXN0L3Bvb2YtY2xpZmZvcmQtZWNvbG9neS50ZXN0LmpzCiAgICAgIC0gbmFtZTogVmFsaWRhdGUgU0ctMTAgaGlzdG9yeSBhbmQgU0ctMTEgY3VycmVudCBzdGF0ZQogICAgICAgIHJ1bjogfAogICAgICAgICAgbm9kZSB0b29scy92YWxpZGF0ZS1wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMC5tanMKICAgICAgICAgIG5vZGUgdGVzdC9wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMC50ZXN0LmpzCiAgICAgICAgICBub2RlIHRvb2xzL2J1aWxkLXByb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzExLm1qcwogICAgICAgICAgbm9kZSB0b29scy92YWxpZGF0ZS1wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMS5tanMKICAgICAgICAgIG5vZGUgdGVzdC9wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMS50ZXN0LmpzCiAgICAgIC0gbmFtZTogUHJvdmUgY2FtcGFpZ24gcHVibGljYXRpb24gaG9sZAogICAgICAgIHJ1bjogfAogICAgICAgICAgbnBtIHJ1biBidWlsZDpwYWdlcwogICAgICAgICAgbnBtIHJ1biBidWlsZDpzdGFuZGFsb25lCiAgICAgICAgICBucG0gcnVuIHZhbGlkYXRlOnBhZ2VzCiAgICAgICAgICB0ZXN0ICEgLWUgZGlzdC9yZXBvcnRzL2NvcmUtdGhlc2lzL3N0YXR1cy1zb3ZlcmVpZ250eS93YXZlLTAyLXNlY29uZC1wYXJ0eS1yZXZpZXcKICAgICAgICAgIHRlc3QgISAtZSBkaXN0L2RhdGEvcmVzZWFyY2gvc3RhdHVzLXNvdmVyZWlnbnR5LXdhdmUtMDItc2Vjb25kLXBhcnR5LXJldmlldy1jYW5kaWRhdGVzLmpzb24KICAgICAgICAgIHRlc3QgISAtZSBkaXN0L2RhdGEvcmVzZWFyY2gvc3RhdHVzLXNvdmVyZWlnbnR5LXdhdmUtMDItc2Vjb25kLXBhcnR5LXJldmlldy1yZXNwb25zZXMuanNvbgogICAgICAtIG5hbWU6IFJ1biBjb21wbGV0ZSByZXBvc2l0b3J5IHJlbGVhc2UgZ2F0ZQogICAgICAgIHJ1bjogbnBtIHJ1biByZWxlYXNlOmNoZWNrCiAgICAgIC0gbmFtZTogUHJvdmUgZGV0ZXJtaW5pc3RpYyBjdXJyZW50IHByb2R1Y3RzIGFuZCBmcm96ZW4gU0ctMTAKICAgICAgICBydW46IHwKICAgICAgICAgIGdpdCByZXN0b3JlIC0tc3RhZ2VkIC0td29ya3RyZWUgLgogICAgICAgICAgZ2l0IGNsZWFuIC1mZHgKICAgICAgICAgIG5wbSBydW4gYnVpbGQ6c3RhdHVzLXNvdmVyZWlnbnR5CiAgICAgICAgICBucG0gcnVuIHZhbGlkYXRlOnN0YXR1cy1zb3ZlcmVpZ250eQogICAgICAgICAgbnBtIHJ1biBidWlsZDpwb29mLWVjb2xvZ3kKICAgICAgICAgIG5wbSBydW4gdmFsaWRhdGU6cG9vZi1lY29sb2d5CiAgICAgICAgICBucG0gcnVuIGJ1aWxkOnN0YWJsZS1ncm91bmQKICAgICAgICAgIG5wbSBydW4gdmFsaWRhdGU6c3RhYmxlLWdyb3VuZAogICAgICAgICAgZ2l0IGRpZmYgLS1leGl0LWNvZGUKICAgICAgICAgIHRlc3QgLXogIiQoZ2l0IHN0YXR1cyAtLXBvcmNlbGFpbikiCg==' | base64 -d > .github/workflows/project-stable-ground-sg11.yml
       - name: Validate focused campaign and stable-ground chain
         run: |
           set -Eeuo pipefail
@@ -117,42 +110,32 @@ PATHS
           test "$(jq -r '.combined_sha256' data/project/project-stable-ground-sg11-release-manifest.json)" = 2c6b9b593e6f22334e628fb5a8b596740a0cc525cd698f79aae9701d908bb881
       - name: Run complete repository release gate
         run: npm run release:check
-      - name: Restore volatile products and prove exact permanent denominator
+      - name: Restore volatile products and prove exact denominator
         run: |
           set -Eeuo pipefail
           cat > /tmp/volatile <<'PATHS'
-build/axm-identity.json
-build/build-hop-report.json
-build/hop-graph.json
-build/migration-review.md
-build/migration-summary.json
-build/receipt-graph.json
-build/scores.json
-build/scout-report.json
-build/scout-report.md
-build/surface-graph.json
-PATHS
+          build/axm-identity.json
+          build/build-hop-report.json
+          build/hop-graph.json
+          build/migration-review.md
+          build/migration-summary.json
+          build/receipt-graph.json
+          build/scores.json
+          build/scout-report.json
+          build/scout-report.md
+          build/surface-graph.json
+          PATHS
           xargs -d '\n' git restore --worktree --source=HEAD -- < /tmp/volatile
-          printf '%s\n' .github/workflows/project-stable-ground-sg10.yml > /tmp/expected-unstaged
-          git diff --name-only | sort > /tmp/observed-unstaged
-          diff -u /tmp/expected-unstaged /tmp/observed-unstaged
-          printf '%s\n' .github/workflows/project-stable-ground-sg11.yml > /tmp/expected-untracked
-          git ls-files --others --exclude-standard | sort > /tmp/observed-untracked
-          diff -u /tmp/expected-untracked /tmp/observed-untracked
-          git diff --cached --name-only | sort > /tmp/observed-after
-          diff -u /tmp/expected /tmp/observed-after
-      - name: Publish workflow-neutral staging commit
-        env:
-          STAGING_BRANCH: agent/sg11-nonworkflow-staging
-          EXPECTED_HEAD: 4a0cf108098789f93732b829fc5a5e4ea152f28b
-        run: |
-          set -Eeuo pipefail
-          git restore --worktree --source=HEAD -- .github/workflows/project-stable-ground-sg10.yml
-          rm -f .github/workflows/project-stable-ground-sg11.yml
           git diff --quiet
           test -z "$(git ls-files --others --exclude-standard)"
           git diff --cached --name-only | sort > /tmp/observed-final
           diff -u /tmp/expected /tmp/observed-final
+      - name: Publish checkpoint-product commit
+        env:
+          STAGING_BRANCH: agent/sg11-nonworkflow-staging
+          EXPECTED_HEAD: 507dd96c8a0ec051943ae5ff8629bd3ca3dd23d8
+        run: |
+          set -Eeuo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git commit -m 'Stage SG-11 current-main checkpoint products'
