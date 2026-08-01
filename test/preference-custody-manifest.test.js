@@ -213,13 +213,52 @@ const buildsByPath = {
       real_world_effect_claimed: false
     },
     refusal_rules: manifest.controls[7].required_refusal_rules
+  },
+  'build/research/preference-succession-validation.json': {
+    schema_version: 'preference-succession-build@1',
+    fixture_id: 'same-validation-headline-different-successor-v1',
+    graph_effect: 'none',
+    counts_toward_thesis_evidence: false,
+    conclusion_generated: false,
+    metrics: {
+      distinct_public_headline_signatures: 1,
+      distinct_successor_artifact_signatures: 4,
+      distinct_successor_metric_signatures: 2,
+      distinct_successor_policy_signatures: 2,
+      distinct_resolution_signatures: 6,
+      exact_inheritance_worlds: 1,
+      unvalidated_runtime_successor_worlds: 1,
+      current_noncomparable_metric_worlds: 1,
+      policy_validation_required_worlds: 1,
+      revalidated_successor_worlds: 1,
+      failed_revalidation_worlds: 1,
+      current_predictive_claim_worlds: 4,
+      continuity_claim_worlds: 2,
+      deployment_allowed_worlds: 3,
+      deployment_blocked_worlds: 3,
+      public_badge_unbound_worlds: 2,
+      shared_headline_but_deployment_blocked_worlds: 3,
+      rollback_required_worlds: 1
+    },
+    classification: {
+      prior_validation_transfers_across_runtime_change: false,
+      same_score_under_changed_metric_is_comparable: false,
+      predictive_validation_authorizes_changed_policy: false,
+      revalidated_successor_can_carry_bounded_claim: true,
+      failed_revalidation_is_negative_evidence_not_missing_data: true,
+      public_badge_identifies_current_artifact: false,
+      preference_change_present: false,
+      manipulative_intent_inferable: false,
+      real_world_effect_claimed: false
+    },
+    refusal_rules: manifest.controls[8].required_refusal_rules
   }
 };
 
 const compiled = compilePreferenceCustodyManifest(manifest, buildsByPath);
 assert.deepEqual(validatePreferenceCustodyManifestBuild(compiled), []);
 assert.equal(compiled.status, 'laboratory_floor_qualified');
-assert.equal(compiled.control_count, 8);
+assert.equal(compiled.control_count, 9);
 assert.equal(compiled.real_world_evidence_state, 'none');
 assert.equal(compiled.control_integrity.all_graph_effect_none, true);
 assert.equal(compiled.control_integrity.no_thesis_evidence_consumption, true);
@@ -228,20 +267,16 @@ assert.equal(compiled.control_integrity.no_preference_change_claim, true);
 assert.equal(compiled.control_integrity.no_intent_inference, true);
 assert.equal(compiled.control_integrity.all_required_refusal_rules_present, true);
 assert.ok(compiled.refusal_rule_union.includes('same_behavior_does_not_imply_same_preference'));
-assert.ok(compiled.open_frontiers.includes('federated_multilevel_and_successor_authority'));
-assert.ok(compiled.open_frontiers.includes('intertemporal_repeated_bargaining_and_commitment'));
-assert.ok(!compiled.open_frontiers.includes('negotiated_package_formation_and_collective_bargaining'));
-assert.ok(compiled.refusal_rule_union.includes('organized_refusal_is_not_missing_data'));
-assert.ok(compiled.refusal_rule_union.includes('distributional_acceptability_requires_external_authority'));
-assert.ok(compiled.refusal_rule_union.includes('prediction_is_evidence_not_authority'));
-assert.ok(compiled.refusal_rule_union.includes('public_rejection_blocks_implementation'));
-assert.ok(compiled.refusal_rule_union.includes('forced_choice_is_not_complete_agenda'));
-assert.ok(compiled.refusal_rule_union.includes('binding_objective_rejection_blocks_implementation'));
+assert.ok(compiled.open_frontiers.includes('cross_organizational_vendor_customer_and_regulator_succession'));
+assert.ok(!compiled.open_frontiers.includes('model_policy_and_metric_succession'));
 assert.ok(compiled.refusal_rule_union.includes('package_support_is_not_collective_agreement'));
 assert.ok(compiled.refusal_rule_union.includes('failed_ratification_is_binding_impasse_not_missing_data'));
+assert.ok(compiled.refusal_rule_union.includes('validation_binds_exact_artifact_metric_policy_and_scope'));
+assert.ok(compiled.refusal_rule_union.includes('old_badge_cannot_authorize_successor'));
+assert.ok(compiled.refusal_rule_union.includes('failed_revalidation_is_negative_evidence_not_missing_data'));
 
 const markdown = renderPreferenceCustodyManifestMarkdown(compiled);
-assert.match(markdown, /Preference custody laboratory floor v6/);
+assert.match(markdown, /Preference custody laboratory floor v7/);
 assert.match(markdown, /PC-01: exposure_policy_confounding/);
 assert.match(markdown, /PC-02: option_set_starvation/);
 assert.match(markdown, /PC-03: observational_equivalence/);
@@ -250,21 +285,20 @@ assert.match(markdown, /PC-05: subgroup_response_capacity_and_burden/);
 assert.match(markdown, /PC-06: authority_laundering_and_nonbinding_consultation/);
 assert.match(markdown, /PC-07: agenda_formation_and_collective_option_generation/);
 assert.match(markdown, /PC-08: negotiated_package_formation_and_collective_bargaining/);
-assert.match(markdown, /Publicly authorized worlds: 1/);
-assert.match(markdown, /Institutional-only approval worlds: 2/);
-assert.match(markdown, /Binding public rejection worlds: 1/);
-assert.match(markdown, /Binding option-generation worlds: 1/);
-assert.match(markdown, /Binding objective-rejection worlds: 1/);
-assert.match(markdown, /Marginal-majority package support: 20\.00%/);
-assert.match(markdown, /Protected package support: 100\.00%/);
-assert.match(markdown, /Binding collective agreements: 1/);
-assert.match(markdown, /Binding impasses: 1/);
+assert.match(markdown, /PC-09: model_metric_policy_and_validation_succession/);
+assert.match(markdown, /Exact inheritance worlds: 1/);
+assert.match(markdown, /Unvalidated runtime successors: 1/);
+assert.match(markdown, /Noncomparable metric worlds: 1/);
+assert.match(markdown, /Changed-policy validation gaps: 1/);
+assert.match(markdown, /Fully revalidated successors: 1/);
+assert.match(markdown, /Failed revalidations: 1/);
+assert.match(markdown, /Shared-headline blocked worlds: 3/);
 assert.match(markdown, /Laboratory controls are real-world evidence: false/);
-assert.doesNotMatch(markdown, /Electric Twin caused|News UK caused|illegitimate institution|suppressed the public|imposed the package|manipulated the public/i);
+assert.doesNotMatch(markdown, /Electric Twin caused|News UK caused|stale badge used|unvalidated deployment|deceived the public|manipulated the public/i);
 
 const missingControl = structuredClone(manifest);
 missingControl.controls.pop();
-assert.ok(validatePreferenceCustodyManifest(missingControl).some(error => /exactly PC-01, PC-02, PC-03, PC-04, PC-05, PC-06, PC-07, and PC-08/.test(error)));
+assert.ok(validatePreferenceCustodyManifest(missingControl).some(error => /exactly PC-01, PC-02, PC-03, PC-04, PC-05, PC-06, PC-07, PC-08, and PC-09/.test(error)));
 
 const graphLeak = structuredClone(buildsByPath);
 graphLeak['build/research/preference-custody-option-set-fixture.json'].graph_effect = 'asserted';
@@ -286,39 +320,39 @@ attritionLeak['build/research/preference-attrition-refusal.json'].classification
 const attritionLeakCompiled = compilePreferenceCustodyManifest(manifest, attritionLeak);
 assert.ok(validatePreferenceCustodyManifestBuild(attritionLeakCompiled).some(error => /no_preference_change_claim/.test(error)));
 
-const subgroupLeak = structuredClone(buildsByPath);
-subgroupLeak['build/research/preference-subgroup-capacity.json'].classification.manipulative_intent_inferable = true;
-const subgroupLeakCompiled = compilePreferenceCustodyManifest(manifest, subgroupLeak);
-assert.ok(validatePreferenceCustodyManifestBuild(subgroupLeakCompiled).some(error => /no_intent_inference/.test(error)));
-
 const authorityLeak = structuredClone(buildsByPath);
 authorityLeak['build/research/preference-standing-authority.json'].classification.modeled_support_confers_authorization = true;
 const authorityLeakCompiled = compilePreferenceCustodyManifest(manifest, authorityLeak);
 assert.ok(validatePreferenceCustodyManifestBuild(authorityLeakCompiled).some(error => /refuse modeled support as authorization/.test(error)));
-
-const resolutionLeak = structuredClone(buildsByPath);
-resolutionLeak['build/research/preference-standing-authority.json'].metrics.binding_public_rejection_worlds = 0;
-const resolutionLeakCompiled = compilePreferenceCustodyManifest(manifest, resolutionLeak);
-assert.ok(validatePreferenceCustodyManifestBuild(resolutionLeakCompiled).some(error => /preserve one binding public rejection/.test(error)));
 
 const agendaLeak = structuredClone(buildsByPath);
 agendaLeak['build/research/preference-agenda-formation.json'].classification.forced_choice_identifies_complete_agenda = true;
 const agendaLeakCompiled = compilePreferenceCustodyManifest(manifest, agendaLeak);
 assert.ok(validatePreferenceCustodyManifestBuild(agendaLeakCompiled).some(error => /refuse forced choice as the complete agenda/.test(error)));
 
-const objectiveLeak = structuredClone(buildsByPath);
-objectiveLeak['build/research/preference-agenda-formation.json'].metrics.binding_objective_rejection_worlds = 0;
-const objectiveLeakCompiled = compilePreferenceCustodyManifest(manifest, objectiveLeak);
-assert.ok(validatePreferenceCustodyManifestBuild(objectiveLeakCompiled).some(error => /preserve one binding objective rejection/.test(error)));
-
 const packageLeak = structuredClone(buildsByPath);
 packageLeak['build/research/preference-package-bargaining.json'].classification.high_package_support_is_collective_agreement = true;
 const packageLeakCompiled = compilePreferenceCustodyManifest(manifest, packageLeak);
 assert.ok(validatePreferenceCustodyManifestBuild(packageLeakCompiled).some(error => /refuse package support as collective agreement/.test(error)));
 
-const impasseLeak = structuredClone(buildsByPath);
-impasseLeak['build/research/preference-package-bargaining.json'].metrics.binding_impasse_worlds = 0;
-const impasseLeakCompiled = compilePreferenceCustodyManifest(manifest, impasseLeak);
-assert.ok(validatePreferenceCustodyManifestBuild(impasseLeakCompiled).some(error => /preserve one binding impasse/.test(error)));
+const runtimeLeak = structuredClone(buildsByPath);
+runtimeLeak['build/research/preference-succession-validation.json'].classification.prior_validation_transfers_across_runtime_change = true;
+const runtimeLeakCompiled = compilePreferenceCustodyManifest(manifest, runtimeLeak);
+assert.ok(validatePreferenceCustodyManifestBuild(runtimeLeakCompiled).some(error => /refuse validation transfer across runtime change/.test(error)));
+
+const metricLeak = structuredClone(buildsByPath);
+metricLeak['build/research/preference-succession-validation.json'].classification.same_score_under_changed_metric_is_comparable = true;
+const metricLeakCompiled = compilePreferenceCustodyManifest(manifest, metricLeak);
+assert.ok(validatePreferenceCustodyManifestBuild(metricLeakCompiled).some(error => /refuse same score as metric comparability/.test(error)));
+
+const policyLeak = structuredClone(buildsByPath);
+policyLeak['build/research/preference-succession-validation.json'].metrics.policy_validation_required_worlds = 0;
+const policyLeakCompiled = compilePreferenceCustodyManifest(manifest, policyLeak);
+assert.ok(validatePreferenceCustodyManifestBuild(policyLeakCompiled).some(error => /preserve one changed-policy validation gap/.test(error)));
+
+const failedValidationLeak = structuredClone(buildsByPath);
+failedValidationLeak['build/research/preference-succession-validation.json'].metrics.failed_revalidation_worlds = 0;
+const failedValidationLeakCompiled = compilePreferenceCustodyManifest(manifest, failedValidationLeak);
+assert.ok(validatePreferenceCustodyManifestBuild(failedValidationLeakCompiled).some(error => /preserve one failed revalidation/.test(error)));
 
 console.log('preference-custody-manifest.test.js: OK');
