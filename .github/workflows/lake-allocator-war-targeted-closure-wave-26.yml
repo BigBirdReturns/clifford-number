@@ -1,0 +1,114 @@
+name: Allocator-war targeted closure Wave 26
+
+on:
+  pull_request:
+    branches:
+      - agent/lake-allocator-war-wave-21
+    paths:
+      - '.github/workflows/lake-allocator-war-targeted-closure-wave-26.yml'
+      - 'data/project/lake-allocator-war-targeted-closure-wave-26-policy.json'
+      - 'data/project/lake-allocator-war-targeted-closure-wave-26-source-plan.json'
+      - 'data/project/lake-allocator-war-wave-21-policy.json'
+      - 'data/project/lake-basin-registry.json'
+      - 'data/project/lake-index-policy.json'
+      - 'tools/*lake-allocator-war*wave-2*.mjs'
+      - 'test/lake-allocator-war-targeted-closure-wave-26.test.js'
+      - 'docs/methods/lake-allocator-war-targeted-closure-wave-26.md'
+      - 'docs/milestones/lake-allocator-war-targeted-closure-wave-26.md'
+      - 'data/acquisition/lake-allocator-war-wave-26/**'
+      - 'build/lake-actions/allocator-war-targeted-closure-wave-26.json'
+      - 'reports/lake-allocator-war-targeted-closure-wave-26.md'
+      - 'package.json'
+  push:
+    branches:
+      - agent/lake-allocator-war-closure-execution-wave-26
+    paths:
+      - '.github/workflows/lake-allocator-war-targeted-closure-wave-26.yml'
+      - 'data/project/lake-allocator-war-targeted-closure-wave-26-policy.json'
+      - 'data/project/lake-allocator-war-targeted-closure-wave-26-source-plan.json'
+      - 'data/project/lake-allocator-war-wave-21-policy.json'
+      - 'data/project/lake-basin-registry.json'
+      - 'data/project/lake-index-policy.json'
+      - 'tools/*lake-allocator-war*wave-2*.mjs'
+      - 'test/lake-allocator-war-targeted-closure-wave-26.test.js'
+      - 'docs/methods/lake-allocator-war-targeted-closure-wave-26.md'
+      - 'docs/milestones/lake-allocator-war-targeted-closure-wave-26.md'
+      - 'data/acquisition/lake-allocator-war-wave-26/**'
+      - 'build/lake-actions/allocator-war-targeted-closure-wave-26.json'
+      - 'reports/lake-allocator-war-targeted-closure-wave-26.md'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lake-allocator-war-targeted-closure-wave-26-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Await sealed materialization when source-only
+        id: state
+        shell: bash
+        run: |
+          if test -f build/lake-actions/allocator-war-targeted-closure-wave-26.json; then
+            echo 'materialized=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'materialized=false' >> "$GITHUB_OUTPUT"
+            node --check tools/build-lake-allocator-war-targeted-closure-wave-26.mjs
+            node --check tools/validate-lake-allocator-war-targeted-closure-wave-26.mjs
+            node --check test/lake-allocator-war-targeted-closure-wave-26.test.js
+            node -e "JSON.parse(require('fs').readFileSync('data/project/lake-allocator-war-targeted-closure-wave-26-policy.json','utf8'))"
+          fi
+
+      - name: Validate targeted closure execution
+        if: steps.state.outputs.materialized == 'true'
+        run: node tools/validate-lake-allocator-war-targeted-closure-wave-26.mjs
+
+      - name: Run adversarial mutations
+        if: steps.state.outputs.materialized == 'true'
+        run: node test/lake-allocator-war-targeted-closure-wave-26.test.js
+
+      - name: Run complete repository release gate
+        if: steps.state.outputs.materialized == 'true'
+        run: npm run release:check
+
+      - name: Restore and validate committed lake epoch
+        if: steps.state.outputs.materialized == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore --worktree .
+          git clean -fd
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-residual-frontier-wave-17.mjs
+          node tools/validate-lake-identifier-topology-wave-18.mjs
+          node tools/validate-lake-generator-contracts-wave-19.mjs
+          node tools/validate-lake-receipt-custody-wave-20.mjs
+          node tools/validate-lake-allocator-war-wave-21.mjs
+          node test/lake-allocator-war-wave-21.test.js
+          node tools/validate-lake-allocator-war-estate-execution-wave-22.mjs
+          node test/lake-allocator-war-estate-execution-wave-22.test.js
+          node tools/validate-lake-allocator-war-lead-acquisition-wave-23.mjs
+          node test/lake-allocator-war-lead-acquisition-wave-23.test.js
+          node tools/validate-lake-allocator-war-lead-execution-wave-24.mjs
+          node test/lake-allocator-war-lead-execution-wave-24.test.js
+          node tools/validate-lake-allocator-war-denominator-closure-wave-25.mjs
+          node test/lake-allocator-war-denominator-closure-wave-25.test.js
+          node tools/validate-lake-allocator-war-targeted-closure-wave-26.mjs
+          node test/lake-allocator-war-targeted-closure-wave-26.test.js
+          git diff --check
+          test -z "$(git status --porcelain)"
