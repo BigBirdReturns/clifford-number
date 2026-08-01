@@ -1,12 +1,13 @@
 export const PREFERENCE_CUSTODY_MANIFEST_SCHEMA_VERSION = 'preference-custody-control-manifest@1';
 export const PREFERENCE_CUSTODY_MANIFEST_BUILD_SCHEMA_VERSION = 'preference-custody-control-manifest-build@1';
 
-const REQUIRED_CONTROL_IDS = ['PC-01', 'PC-02', 'PC-03', 'PC-04', 'PC-05', 'PC-06', 'PC-07'];
+const REQUIRED_CONTROL_IDS = ['PC-01', 'PC-02', 'PC-03', 'PC-04', 'PC-05', 'PC-06', 'PC-07', 'PC-08'];
 const REQUIRED_FAILURE_CLASSES = [
   'agenda_formation_and_collective_option_generation',
   'attrition_and_refusal_censoring',
   'authority_laundering_and_nonbinding_consultation',
   'exposure_policy_confounding',
+  'negotiated_package_formation_and_collective_bargaining',
   'observational_equivalence',
   'option_set_starvation',
   'subgroup_response_capacity_and_burden'
@@ -16,6 +17,7 @@ const REQUIRED_IDENTIFICATION_STAGES = [
   'attrition_and_refusal',
   'exposure_policy',
   'option_set',
+  'package_formation_and_bargaining',
   'public_authorization',
   'response_mechanism',
   'subgroup_distribution'
@@ -150,7 +152,7 @@ function summarizeControl(control, build) {
           aggregate_support_identifies_authorization: build.classification?.aggregate_support_identifies_authorization
         }
       };
-    default:
+    case 'PC-07':
       return {
         ...common,
         proof_summary: {
@@ -170,6 +172,29 @@ function summarizeControl(control, build) {
           forced_choice_support_identifies_objective_acceptance: build.classification?.forced_choice_support_identifies_objective_acceptance
         }
       };
+    default:
+      return {
+        ...common,
+        proof_summary: {
+          distinct_component_poll_signatures: build.metrics?.distinct_component_poll_signatures,
+          distinct_package_signatures: build.metrics?.distinct_package_signatures,
+          distinct_package_support_signatures: build.metrics?.distinct_package_support_signatures,
+          marginal_majority_package_support_share: build.metrics?.marginal_majority_package_support_share,
+          protected_package_support_share: build.metrics?.protected_package_support_share,
+          package_support_gap: build.metrics?.package_support_gap,
+          high_support_nonagreement_worlds: build.metrics?.high_support_nonagreement_worlds,
+          binding_collective_agreement_worlds: build.metrics?.binding_collective_agreement_worlds,
+          binding_impasse_worlds: build.metrics?.binding_impasse_worlds,
+          institutionally_approved_without_collective_agreement_worlds: build.metrics?.institutionally_approved_without_collective_agreement_worlds,
+          synthetic_candidate_worlds: build.metrics?.synthetic_candidate_worlds,
+          maximum_one_sided_group_ratification_gap: build.metrics?.maximum_one_sided_group_ratification_gap,
+          component_marginals_identify_package_acceptance: build.classification?.component_marginals_identify_package_acceptance,
+          high_package_support_is_collective_agreement: build.classification?.high_package_support_is_collective_agreement,
+          synthetic_candidate_can_bind_representatives: build.classification?.synthetic_candidate_can_bind_representatives,
+          advisory_co_design_is_collective_agreement: build.classification?.advisory_co_design_is_collective_agreement,
+          bargaining_impasse_is_missing_preference_data: build.classification?.bargaining_impasse_is_missing_preference_data
+        }
+      };
   }
 }
 
@@ -184,7 +209,7 @@ export function validatePreferenceCustodyManifest(manifest) {
   if (manifest?.graph_effect !== 'none') errors.push('manifest graph_effect must remain none');
   requireFalse(manifest?.counts_toward_thesis_evidence, 'manifest counts_toward_thesis_evidence', errors);
   if (!sameMembers(controls.map(control => control.control_id), REQUIRED_CONTROL_IDS)) {
-    errors.push('manifest must contain exactly PC-01, PC-02, PC-03, PC-04, PC-05, PC-06, and PC-07');
+    errors.push('manifest must contain exactly PC-01, PC-02, PC-03, PC-04, PC-05, PC-06, PC-07, and PC-08');
   }
   if (!sameMembers(controls.map(control => control.failure_class), REQUIRED_FAILURE_CLASSES)) errors.push('manifest failure-class coverage is incomplete');
 
@@ -204,7 +229,7 @@ export function validatePreferenceCustodyManifest(manifest) {
   }
   if (unique(manifest?.open_frontiers).length < 5) errors.push('manifest must preserve at least five open frontiers');
   requireFalse(manifest?.promotion_boundary?.laboratory_controls_are_real_world_evidence, 'laboratory_controls_are_real_world_evidence', errors);
-  if (unique(manifest?.promotion_boundary?.real_case_requires).length < 14) errors.push('real-case promotion requirements are incomplete');
+  if (unique(manifest?.promotion_boundary?.real_case_requires).length < 20) errors.push('real-case promotion requirements are incomplete');
   if (!text(manifest?.promotion_boundary?.promotion_authority)) errors.push('promotion authority is required');
   if (!array(manifest?.prohibited_inferences).length) errors.push('prohibited inferences are required');
   if (!text(manifest?.interpretation_contract?.contract_id)) errors.push('interpretation contract ID is required');
@@ -267,7 +292,7 @@ export function validatePreferenceCustodyManifestBuild(compiled) {
   requireFalse(compiled?.counts_toward_thesis_evidence, 'compiled counts_toward_thesis_evidence', errors);
   requireFalse(compiled?.conclusion_generated, 'compiled conclusion_generated', errors);
   if (compiled?.real_world_evidence_state !== 'none') errors.push('compiled manifest must preserve real_world_evidence_state none');
-  if (compiled?.control_count !== 7) errors.push('compiled manifest must contain seven controls');
+  if (compiled?.control_count !== 8) errors.push('compiled manifest must contain eight controls');
   if (!sameMembers(compiled?.failure_classes, REQUIRED_FAILURE_CLASSES)) errors.push('compiled failure-class coverage is incomplete');
   if (!sameMembers(array(compiled?.controls).map(control => control.control_id), REQUIRED_CONTROL_IDS)) errors.push('compiled control IDs are incomplete');
 
@@ -283,13 +308,15 @@ export function validatePreferenceCustodyManifestBuild(compiled) {
     if (integrity[key] !== true) errors.push(`control_integrity.${key} must be true`);
   }
 
-  const pc1 = array(compiled?.controls).find(control => control.control_id === 'PC-01');
-  const pc2 = array(compiled?.controls).find(control => control.control_id === 'PC-02');
-  const pc3 = array(compiled?.controls).find(control => control.control_id === 'PC-03');
-  const pc4 = array(compiled?.controls).find(control => control.control_id === 'PC-04');
-  const pc5 = array(compiled?.controls).find(control => control.control_id === 'PC-05');
-  const pc6 = array(compiled?.controls).find(control => control.control_id === 'PC-06');
-  const pc7 = array(compiled?.controls).find(control => control.control_id === 'PC-07');
+  const controls = Object.fromEntries(array(compiled?.controls).map(control => [control.control_id, control]));
+  const pc1 = controls['PC-01'];
+  const pc2 = controls['PC-02'];
+  const pc3 = controls['PC-03'];
+  const pc4 = controls['PC-04'];
+  const pc5 = controls['PC-05'];
+  const pc6 = controls['PC-06'];
+  const pc7 = controls['PC-07'];
+  const pc8 = controls['PC-08'];
 
   if (!(pc1?.proof_summary?.maximum_naive_drift > 0.3)) errors.push('PC-01 must demonstrate material exposure drift');
   if (!(pc1?.proof_summary?.maximum_corrected_drift <= 1e-12)) errors.push('PC-01 corrected drift must recover the frozen distribution');
@@ -336,6 +363,23 @@ export function validatePreferenceCustodyManifestBuild(compiled) {
   if (pc7?.proof_summary?.forced_choice_identifies_complete_agenda !== false) errors.push('PC-07 must refuse forced choice as the complete agenda');
   if (pc7?.proof_summary?.advisory_proposal_confers_agenda_authority !== false) errors.push('PC-07 must refuse advisory proposal as agenda authority');
   if (pc7?.proof_summary?.forced_choice_support_identifies_objective_acceptance !== false) errors.push('PC-07 must separate option preference from objective acceptance');
+  if (pc8?.proof_summary?.distinct_component_poll_signatures !== 1) errors.push('PC-08 must preserve one component poll');
+  if (pc8?.proof_summary?.distinct_package_signatures !== 3) errors.push('PC-08 must preserve three package versions');
+  if (pc8?.proof_summary?.distinct_package_support_signatures !== 3) errors.push('PC-08 must preserve three package-support states');
+  if (pc8?.proof_summary?.marginal_majority_package_support_share !== 0.2) errors.push('PC-08 must preserve 20 percent support for the marginal-majority package');
+  if (pc8?.proof_summary?.protected_package_support_share !== 1) errors.push('PC-08 must preserve complete support for the protected package');
+  if (pc8?.proof_summary?.package_support_gap !== 0.8) errors.push('PC-08 must preserve the 80-point package support gap');
+  if (pc8?.proof_summary?.high_support_nonagreement_worlds !== 2) errors.push('PC-08 must preserve two high-support nonagreement worlds');
+  if (pc8?.proof_summary?.binding_collective_agreement_worlds !== 1) errors.push('PC-08 must preserve one binding collective agreement');
+  if (pc8?.proof_summary?.binding_impasse_worlds !== 1) errors.push('PC-08 must preserve one binding impasse');
+  if (pc8?.proof_summary?.institutionally_approved_without_collective_agreement_worlds !== 2) errors.push('PC-08 must preserve two institutional approvals without collective agreement');
+  if (pc8?.proof_summary?.synthetic_candidate_worlds !== 1) errors.push('PC-08 must preserve one synthetic package candidate');
+  if (pc8?.proof_summary?.maximum_one_sided_group_ratification_gap !== 0.8) errors.push('PC-08 must preserve the 80-point one-sided ratification gap');
+  if (pc8?.proof_summary?.component_marginals_identify_package_acceptance !== false) errors.push('PC-08 must refuse component marginals as package acceptance');
+  if (pc8?.proof_summary?.high_package_support_is_collective_agreement !== false) errors.push('PC-08 must refuse package support as collective agreement');
+  if (pc8?.proof_summary?.synthetic_candidate_can_bind_representatives !== false) errors.push('PC-08 must refuse synthetic candidate authority over representatives');
+  if (pc8?.proof_summary?.advisory_co_design_is_collective_agreement !== false) errors.push('PC-08 must refuse advisory co-design as collective agreement');
+  if (pc8?.proof_summary?.bargaining_impasse_is_missing_preference_data !== false) errors.push('PC-08 must preserve bargaining impasse as a disposition');
 
   if (!sameMembers(array(compiled?.identification_requirements).map(item => item.stage), REQUIRED_IDENTIFICATION_STAGES)) errors.push('compiled identification stages are incomplete');
   if (unique(compiled?.open_frontiers).length < 5) errors.push('compiled manifest must preserve open frontiers');
@@ -350,7 +394,7 @@ function percentage(value) {
 
 export function renderPreferenceCustodyManifestMarkdown(compiled) {
   const lines = [
-    '# Preference custody laboratory floor v5',
+    '# Preference custody laboratory floor v6',
     '',
     `**Status:** ${compiled.status}`,
     '',
@@ -403,13 +447,22 @@ export function renderPreferenceCustodyManifestMarkdown(compiled) {
         lines.push(`- Institutional-only approval worlds: ${control.proof_summary.institutionally_approved_without_public_authorization_worlds}`);
         lines.push(`- Binding public rejection worlds: ${control.proof_summary.binding_public_rejection_worlds}`);
         break;
-      default:
+      case 'PC-07':
         lines.push(`- Distinct preliminary headline signatures: ${control.proof_summary.distinct_preliminary_headline_signatures}`);
         lines.push(`- Distinct final option sets: ${control.proof_summary.distinct_final_option_set_signatures}`);
         lines.push(`- Distinct agenda consequences: ${control.proof_summary.distinct_agenda_resolution_signatures}`);
         lines.push(`- Public agenda-authority worlds: ${control.proof_summary.public_agenda_authority_worlds}`);
         lines.push(`- Binding option-generation worlds: ${control.proof_summary.binding_collective_option_generation_worlds}`);
         lines.push(`- Binding objective-rejection worlds: ${control.proof_summary.binding_objective_rejection_worlds}`);
+        break;
+      default:
+        lines.push(`- Distinct package versions: ${control.proof_summary.distinct_package_signatures}`);
+        lines.push(`- Distinct package-support states: ${control.proof_summary.distinct_package_support_signatures}`);
+        lines.push(`- Marginal-majority package support: ${percentage(control.proof_summary.marginal_majority_package_support_share)}`);
+        lines.push(`- Protected package support: ${percentage(control.proof_summary.protected_package_support_share)}`);
+        lines.push(`- High-support nonagreement worlds: ${control.proof_summary.high_support_nonagreement_worlds}`);
+        lines.push(`- Binding collective agreements: ${control.proof_summary.binding_collective_agreement_worlds}`);
+        lines.push(`- Binding impasses: ${control.proof_summary.binding_impasse_worlds}`);
         break;
     }
     lines.push('');
