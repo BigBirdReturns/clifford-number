@@ -88,7 +88,9 @@ export function validateStatusSovereignty(context = loadStatusSovereigntyContext
   eq(h.current_state?.publication_status, 'blocked_pending_second_party_review_and_still_open_denominators', 'SSC publication status');
   eq(h.current_state?.targeted_acquisition_supplements, 1, 'SSC targeted-acquisition supplement count');
   eq(h.current_state?.targeted_acquisition_source_records, 12, 'SSC targeted-acquisition source count');
-  eq(h.current_state?.open_acquisition_obligations, 3, 'SSC open-acquisition obligation count');
+  eq(h.current_state?.open_acquisition_obligations, 6, 'SSC open-acquisition obligation count');
+  eq(h.current_state?.wave_01_open_acquisition_obligations, 3, 'SSC Wave 01 open-acquisition count');
+  eq(h.current_state?.wave_02_open_acquisition_obligations, 3, 'SSC Wave 02 open-acquisition count');
   eq(h.current_state?.partially_repaired_acquisition_obligations, 3, 'SSC partially repaired obligation count');
   eq(h.current_state?.closed_acquisition_obligations, 0, 'SSC closed acquisition obligation count');
   eq(h.targeted_acquisitions?.length, 1, 'SSC targeted-acquisition registry count');
@@ -108,6 +110,9 @@ export function validateStatusSovereignty(context = loadStatusSovereigntyContext
   eq(h.field_waves?.[1]?.complete_compact_findings, 0, 'SSC Wave 02 finding count');
   eq(h.field_waves?.[1]?.review_state, 'maintainer_reviewed', 'SSC Wave 02 review state');
   eq(h.field_waves?.[1]?.graph_effect, 'none', 'SSC Wave 02 graph effect');
+  eq(h.maintainer_reviews?.length, 2, 'SSC maintainer-review registry count');
+  eq(h.maintainer_reviews?.[1]?.review_id, 'SSC-W02-MR01', 'SSC Wave 02 maintainer-review registry identity');
+  eq(h.maintainer_reviews?.[1]?.reviewed_observations, 8, 'SSC Wave 02 maintainer-review registry denominator');
 
   const falseBoundaries = [
     'source_synthesis_is_evidence','patriotism_is_white_power','multiracial_presence_proves_neutrality',
@@ -289,7 +294,7 @@ export function validateStatusSovereignty(context = loadStatusSovereigntyContext
   eq(publicReport.counts?.complete_compact_findings, 0, 'SSC report complete compact count');
   eq(publicReport.counts?.targeted_acquisition_supplements, 1, 'SSC report acquisition supplement count');
   eq(publicReport.counts?.targeted_acquisition_source_records, 12, 'SSC report acquisition source count');
-  eq(publicReport.counts?.open_acquisition_obligations, 3, 'SSC report open obligation count');
+  eq(publicReport.counts?.open_acquisition_obligations, 6, 'SSC report open obligation count');
   eq(publicReport.counts?.partially_repaired_acquisition_obligations, 3, 'SSC report partially repaired count');
   eq(publicReport.counts?.closed_acquisition_obligations, 0, 'SSC report closed obligation count');
   check(html.includes('SSC-H01 · TWO WAVES MAINTAINER REVIEWED 22/22 · SECOND-PARTY 0 · COMPLETE-COMPACT FINDINGS 0 · NO RACIAL-ORDER FINDING · GRAPH EFFECT NONE · PUBLICATION BLOCKED'), 'SSC report boundary banner missing');
