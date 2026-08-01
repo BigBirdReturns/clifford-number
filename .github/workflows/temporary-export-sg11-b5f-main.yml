@@ -1,0 +1,52 @@
+name: Temporary export SG-11 exact b5f main
+
+on:
+  push:
+    branches: [agent/sg11-b5f-main-export]
+    paths:
+      - '.github/workflows/temporary-export-sg11-b5f-main.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-export-sg11-b5f-main.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: b5f93086de47486081269b34cf2eec9a1d887675
+          fetch-depth: 0
+      - name: Package exact current-main tree and history
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = b5f93086de47486081269b34cf2eec9a1d887675
+          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/MAIN-HEAD.txt
+          printf '%s\n' "$(git show -s --format=%T HEAD)" > /tmp/MAIN-TREE.txt
+          repo="$GITHUB_WORKSPACE"
+          parent="$(dirname "$repo")"
+          base="$(basename "$repo")"
+          tar -C "$parent" --exclude="$base/.git" -cJf /tmp/sg11-b5f-main-tree.tar.xz "$base"
+          git update-ref refs/heads/sg11-b5f-main-export HEAD
+          git bundle create /tmp/sg11-b5f-main.bundle refs/heads/sg11-b5f-main-export
+          git update-ref -d refs/heads/sg11-b5f-main-export
+          sha256sum /tmp/sg11-b5f-main-tree.tar.xz > /tmp/sg11-b5f-main-tree.tar.xz.sha256
+          sha256sum /tmp/sg11-b5f-main.bundle > /tmp/sg11-b5f-main.bundle.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sg11-b5f-main
+          path: |
+            /tmp/sg11-b5f-main-tree.tar.xz
+            /tmp/sg11-b5f-main-tree.tar.xz.sha256
+            /tmp/sg11-b5f-main.bundle
+            /tmp/sg11-b5f-main.bundle.sha256
+            /tmp/MAIN-HEAD.txt
+            /tmp/MAIN-TREE.txt
+          if-no-files-found: error
+          retention-days: 1
