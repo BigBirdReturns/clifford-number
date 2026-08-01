@@ -1,21 +1,21 @@
 # Lake index gap summary
 
-Source fingerprint: `074aa2c8d6d425015e944d9102a0b863fdae829cec9048b32b66ea6f510ef81f`
+Source fingerprint: `a605db0fbcded44838d9d1aecbcb6b9305e2ce291bf16e7400112ddda665656d`
 
 ## Finding
 
-The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1502 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
+The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1515 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
 
 ## By evidence role
 
 | Role | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
-| generated_artifact | 600 | 600 | 0 | 0 |
-| project_governance | 188 | 188 | 0 | 0 |
-| repository_root | 161 | 161 | 0 | 0 |
-| documentation | 145 | 145 | 0 | 0 |
+| generated_artifact | 601 | 601 | 0 | 0 |
+| project_governance | 190 | 190 | 0 | 0 |
+| repository_root | 168 | 168 | 0 | 0 |
+| documentation | 147 | 147 | 0 | 0 |
 | intake | 141 | 141 | 0 | 0 |
-| report_product | 115 | 115 | 0 | 0 |
+| report_product | 116 | 116 | 0 | 0 |
 | research_record | 48 | 48 | 0 | 0 |
 | case_source | 43 | 43 | 0 | 0 |
 | receipt_artifact | 32 | 32 | 0 | 0 |
@@ -28,18 +28,18 @@ The current Git tree is physically censused, but the evidence lake is not semant
 | Cluster | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
 | build/estate-game-trails | 313 | 313 | 0 | 0 |
-| data/project | 188 | 188 | 0 | 0 |
+| data/project | 190 | 190 | 0 | 0 |
 | build/core-thesis | 184 | 184 | 0 | 0 |
 | data/intake | 141 | 141 | 0 | 0 |
 | reports/core-thesis | 96 | 96 | 0 | 0 |
-| docs/milestones | 76 | 76 | 0 | 0 |
-| data/acquisition | 52 | 52 | 0 | 0 |
+| docs/milestones | 77 | 77 | 0 | 0 |
+| data/acquisition | 59 | 59 | 0 | 0 |
 | data/research-tracks | 52 | 52 | 0 | 0 |
 | data/research | 48 | 48 | 0 | 0 |
 | data/estates | 43 | 43 | 0 | 0 |
-| build/lake-actions | 34 | 34 | 0 | 0 |
+| build/lake-actions | 35 | 35 | 0 | 0 |
 | cases/arcadia-field-autopsy | 21 | 21 | 0 | 0 |
-| docs/methods | 20 | 20 | 0 | 0 |
+| docs/methods | 21 | 21 | 0 | 0 |
 | receipts/crawl | 19 | 19 | 0 | 0 |
 | build/estate-closures | 15 | 15 | 0 | 0 |
 
@@ -69,7 +69,7 @@ missing repository path tokens: 200
 ```text
 not reachable from any detected index: 0
 not reachable from authoritative roots: 0
-not reachable from public roots: 1258
+not reachable from public roots: 1151
 case IDs absent from public catalog: 26
 ```
 
@@ -78,6 +78,7 @@ case IDs absent from public catalog: 26
 | Open PR | Branch-only paths |
 |---|---:|
 | #601 Temporary export exact SG-11 product commit dfb7 | 29 |
+| #576 Install SSC-W02 separated review campaign and establish SG-11 | 28 |
 | #488 Converge production publication and preserve pre-assemblage origins | 25 |
 | #585 Temporary stage SG-11 non-workflow estate | 25 |
 | #493 Temporary SG-06 historical carrier export | 21 |
@@ -87,13 +88,12 @@ case IDs absent from public catalog: 26
 | #592 Temporary export exact SG-11 integration 4a0cf | 20 |
 | #598 Temporary export exact SG-11 integration cbfee | 20 |
 | #605 Temporary export exact SG-11 integration 946d | 20 |
-| #576 Install SSC-W02 separated review campaign and append SG-11 | 19 |
 | #386 Make evidence-grounded judgments without a human-permission gate | 18 |
 | #494 Temporary PR 484 exact-head export | 18 |
 | #490 Temporary current SG-06 transport export | 17 |
-| #606 Exhaust Counter-Selector Wave 21 remaining gates | 17 |
 | #403 Measure the production cross-case identity denominator | 16 |
 | #487 Temporary PR 483 bundle export | 14 |
+| #616 Temporary materialize SG-11 final non-workflow estate | 13 |
 | #404 Recover exact source-bound cross-case mention recurrence | 11 |
 | #362 Stage biological Omega control-surface research program | 9 |
 | #527 Execute Counter-Selector Wave 08 Batch 02 blind review | 9 |

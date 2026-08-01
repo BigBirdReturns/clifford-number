@@ -297,3 +297,8 @@ Wave 29 executes all twelve public-interest implementation obligations against t
 ## Allocator-war gap fan-out Wave 30
 
 Wave 30 converts all thirty-eight explicit missing rows retained by Wave 29 into seven reusable route ledgers. The projection preserves zero complete denominators, evidence rows, estate adoptions, findings, graph effects, and publication clearances. See `reports/lake-allocator-war-gap-fanout-wave-30.md`.
+
+
+## Allocator-war public-route execution Wave 31
+
+Wave 31 executes the thirty-four publicly addressable Wave 30 obligations through six reusable official-source lanes while retaining four protected-personnel obligations under privacy-safe or otherwise lawful access. Public base universes, action announcements, dockets, and audit records remain bounded acquisition surfaces rather than complete denominators or findings. See `reports/lake-allocator-war-public-route-execution-wave-31.md`.

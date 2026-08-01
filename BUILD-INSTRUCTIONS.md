@@ -489,3 +489,7 @@ Execution is acquisition only. It does not adjudicate evidence, close a denomina
 Every explicit unavailable row retained by Wave 29 becomes one route-owned closure task. The thirty-eight-task frontier is emitted in one deterministic build across seven reusable acquisition lanes. Four personnel tasks retain a lawful-access boundary; thirty-four tasks are publicly executable through agency records, public systems, action registers, dockets, comparator joins, or recovery records.
 
 Route assignment is acquisition routing only. It does not close a source gap, adjudicate evidence, establish estate adoption, promote a finding, modify the graph, or clear publication.
+
+
+3.31 **Allocator-war public-route execution — Wave 31.**
+Run `node tools/build-lake-allocator-war-public-route-execution-wave-31.mjs` only after the Wave 30 route ledgers and the Wave 31 source plan are present. The builder must preserve the exact thirty-eight-task denominator, execute only the thirty-four public tasks, retain the four protected tasks as access-bounded, and create no evidence, estate adoption, finding, graph, or publication effect.

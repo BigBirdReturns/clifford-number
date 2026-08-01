@@ -128,7 +128,20 @@ for (const relative of [
   'data/acquisition/lake-allocator-war-wave-30/affected-comparator-and-distributional-joins.jsonl',
   'data/acquisition/lake-allocator-war-wave-30/financial-recovery-and-continuity.jsonl',
   'build/lake-actions/allocator-war-gap-fanout-wave-30.json',
-  'reports/lake-allocator-war-gap-fanout-wave-30.md'
+  'reports/lake-allocator-war-gap-fanout-wave-30.md',
+  'data/project/lake-allocator-war-public-route-execution-wave-31-policy.json',
+  'data/project/lake-allocator-war-public-route-execution-wave-31-source-plan.json',
+  'docs/methods/lake-allocator-war-public-route-execution-wave-31.md',
+  'docs/milestones/lake-allocator-war-public-route-execution-wave-31.md',
+  'data/acquisition/lake-allocator-war-wave-31/affected-comparator-and-distributional-joins.jsonl',
+  'data/acquisition/lake-allocator-war-wave-31/correction-dockets-and-outcomes.jsonl',
+  'data/acquisition/lake-allocator-war-wave-31/financial-recovery-and-continuity.jsonl',
+  'data/acquisition/lake-allocator-war-wave-31/internal-authority-and-inventory.jsonl',
+  'data/acquisition/lake-allocator-war-wave-31/protected-personnel-records.jsonl',
+  'data/acquisition/lake-allocator-war-wave-31/public-award-and-contract-denominators.jsonl',
+  'data/acquisition/lake-allocator-war-wave-31/published-enforcement-and-action-registers.jsonl',
+  'build/lake-actions/allocator-war-public-route-execution-wave-31.json',
+  'reports/lake-allocator-war-public-route-execution-wave-31.md'
 ]) roots.add(relative);
 lakePolicy.authoritative_roots = [...roots].sort();
 lakePolicy.boundaries.allocator_war_routing_proves_finding = false;
@@ -158,6 +171,14 @@ if (!pkg.scripts.check.includes('validate:lake-allocator-war-wave-21')) {
   const marker = 'npm run validate:lake-receipt-custody-wave-20';
   if (!pkg.scripts.check.includes(marker)) throw new Error('Wave 20 release-gate marker missing');
   pkg.scripts.check = pkg.scripts.check.replace(marker, `${marker} && npm run validate:lake-allocator-war-wave-21`);
+}
+pkg.scripts['build:lake-allocator-war-public-route-execution-wave-31'] = 'node tools/build-lake-allocator-war-public-route-execution-wave-31.mjs';
+pkg.scripts['validate:lake-allocator-war-public-route-execution-wave-31'] = 'node tools/validate-lake-allocator-war-public-route-execution-wave-31.mjs && node test/lake-allocator-war-public-route-execution-wave-31.test.js';
+pkg.scripts['ci:lake-allocator-war-public-route-execution-wave-31'] = 'npm run build:lake-allocator-war-public-route-execution-wave-31 && npm run validate:lake-allocator-war-public-route-execution-wave-31';
+if (!pkg.scripts.check.includes('npm run validate:lake-allocator-war-public-route-execution-wave-31')) {
+  const marker = 'npm run validate:lake-allocator-war-gap-fanout-wave-30';
+  if (!pkg.scripts.check.includes(marker)) throw new Error('Wave 30 release-gate marker missing');
+  pkg.scripts.check = pkg.scripts.check.replace(marker, `${marker} && npm run validate:lake-allocator-war-public-route-execution-wave-31`);
 }
 writeJson(packagePath, pkg);
 
