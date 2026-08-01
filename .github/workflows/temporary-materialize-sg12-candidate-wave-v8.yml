@@ -1,0 +1,77 @@
+name: TEMP materialize SSC-W02 candidate wave and SG-12 v8
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/sg12-candidate-materializer-base-ffd71b
+    paths:
+      - '.github/tmp/sg12-candidate-materializer-trigger-v8.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sg12-candidate-materializer-v8
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Extract and prove six canonical carrier chunks, reconstruct, and establish SG-12
+        env:
+          MINIMUM_MAIN: 7bac82d1da6a604b205c6ad0e73cba6a3b7b29f5
+          FINAL_PR_NUMBER: '655'
+        run: |
+          set -Eeuo pipefail
+          files=(
+            .github/tmp/sg12-candidate-materializer-v6.carrier.00
+            .github/tmp/sg12-candidate-materializer-v6.carrier.01
+            .github/tmp/sg12-candidate-materializer-v6.carrier.02
+            .github/tmp/sg12-candidate-materializer-v6.carrier.03
+            .github/tmp/sg12-candidate-materializer-v6.carrier.04
+            .github/tmp/sg12-candidate-materializer-v6.carrier.05
+          )
+          blobs=(
+            e46cc5df9f7355beebb250bdd74ad2206a3bd620
+            4ef09b0c00cba688447fc40a662fff76f1302ae7
+            d668ef648aeda353eea407a083b3b59072670d56
+            9a4de0951330856ea7271b5258818a142006776f
+            60cd3bd78e756d387e3e97956d6ebfe4d2bbac96
+            8343963195369c6b184494d5915e9a9686d8a0c5
+          )
+          for index in 0 1 2 3 4; do
+            test -f "${files[$index]}"
+            head -c 6000 "${files[$index]}" > "/tmp/sg12-carrier-$index"
+            source_blob="$(git hash-object "${files[$index]}")"
+            extracted_blob="$(git hash-object "/tmp/sg12-carrier-$index")"
+            printf 'carrier[%s] source=%s source_bytes=%s source_blob=%s extracted_bytes=%s extracted_blob=%s\n' \
+              "$index" "${files[$index]}" "$(wc -c < "${files[$index]}")" "$source_blob" \
+              "$(wc -c < "/tmp/sg12-carrier-$index")" "$extracted_blob"
+            test "$extracted_blob" = "${blobs[$index]}"
+          done
+          test -f "${files[5]}"
+          cp "${files[5]}" /tmp/sg12-carrier-5
+          printf 'carrier[5] source=%s source_bytes=%s source_blob=%s\n' \
+            "${files[5]}" "$(wc -c < "${files[5]}")" "$(git hash-object "${files[5]}")"
+          test "$(git hash-object /tmp/sg12-carrier-5)" = "${blobs[5]}"
+          cat /tmp/sg12-carrier-0 /tmp/sg12-carrier-1 /tmp/sg12-carrier-2 /tmp/sg12-carrier-3 /tmp/sg12-carrier-4 /tmp/sg12-carrier-5 > /tmp/sg12-candidate-materializer-v8.b64
+          echo 'f3c12bc7fbafa6e3a24294767f028bd367fedaa82491859cb015e0a9bcb99cda  /tmp/sg12-candidate-materializer-v8.b64' | sha256sum --check --strict
+          base64 --decode /tmp/sg12-candidate-materializer-v8.b64 | gzip --decompress > /tmp/materialize-sg12-candidate-wave-v8.mjs
+          echo '2d4b280afa7e06e1a5d377a8f00b0357e645d92da5d7e4d6cf6161e5958b0cff  /tmp/materialize-sg12-candidate-wave-v8.mjs' | sha256sum --check --strict
+          node --check /tmp/materialize-sg12-candidate-wave-v8.mjs
+          node /tmp/materialize-sg12-candidate-wave-v8.mjs
+      - name: Upload exact materializer receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: sg12-candidate-materializer-receipt-v8
+          path: sg12-candidate-materializer-summary.txt
+          if-no-files-found: error
