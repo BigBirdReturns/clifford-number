@@ -105,7 +105,18 @@ for (const relative of [
   'data/acquisition/lake-allocator-war-wave-28/law28-est-07.jsonl',
   'data/acquisition/lake-allocator-war-wave-28/law28-est-10.jsonl',
   'build/lake-actions/allocator-war-public-interest-implementation-wave-28.json',
-  'reports/lake-allocator-war-public-interest-implementation-wave-28.md'
+  'reports/lake-allocator-war-public-interest-implementation-wave-28.md',
+  'data/project/lake-allocator-war-public-interest-execution-wave-29-policy.json',
+  'data/project/lake-allocator-war-public-interest-execution-wave-29-source-plan.json',
+  'docs/methods/lake-allocator-war-public-interest-execution-wave-29.md',
+  'docs/milestones/lake-allocator-war-public-interest-execution-wave-29.md',
+  'data/acquisition/lake-allocator-war-wave-29/law28-est-04.jsonl',
+  'data/acquisition/lake-allocator-war-wave-29/law28-est-05.jsonl',
+  'data/acquisition/lake-allocator-war-wave-29/law28-est-06.jsonl',
+  'data/acquisition/lake-allocator-war-wave-29/law28-est-07.jsonl',
+  'data/acquisition/lake-allocator-war-wave-29/law28-est-10.jsonl',
+  'build/lake-actions/allocator-war-public-interest-execution-wave-29.json',
+  'reports/lake-allocator-war-public-interest-execution-wave-29.md'
 ]) roots.add(relative);
 lakePolicy.authoritative_roots = [...roots].sort();
 lakePolicy.boundaries.allocator_war_routing_proves_finding = false;
