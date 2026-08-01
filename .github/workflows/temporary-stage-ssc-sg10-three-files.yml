@@ -1,0 +1,67 @@
+name: Temporary stage SSC SG-10 three-file custody repair
+
+on:
+  push:
+    branches: [agent/ssc-sg10-five-file-materializer]
+    paths:
+      - '.github/workflows/temporary-stage-ssc-sg10-three-files.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-stage-ssc-sg10-three-files
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify carrier and publish workflow-neutral staging commit
+        env:
+          STAGING_BRANCH: agent/ssc-sg10-five-file-staging
+          EXPECTED_HEAD: a0429f0f0055d2d2de9ea6c15c4358aff278476a
+        run: |
+          set -Eeuo pipefail
+          carrier=.github/tmp/ssc-sg10-three-nonworkflow.patch.xz.b64
+          test "$(wc -c < "$carrier")" -eq 1384
+          printf '%s  %s\n' 5e42fd3a9173934ba718e6295d0b7d25827a6e8614d533db2450960a40d21da0 "$carrier" | sha256sum -c -
+          base64 -d "$carrier" > /tmp/sg10.patch.xz
+          test "$(wc -c < /tmp/sg10.patch.xz)" -eq 1036
+          printf '%s  %s\n' d308b4890d7eedb0be30bb46b3ccfec93f7cdfb9ac8935dbcaa8a3f28bc645d1 /tmp/sg10.patch.xz | sha256sum -c -
+          xz -dc /tmp/sg10.patch.xz > /tmp/sg10.patch
+          test "$(wc -c < /tmp/sg10.patch)" -eq 2894
+          printf '%s  %s\n' 734b90ad55f285152dee1c497672255ab44898521aa3e41416f69bbdcb78dd1e /tmp/sg10.patch | sha256sum -c -
+
+          git fetch --no-tags origin "$STAGING_BRANCH"
+          lease="$(git ls-remote origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')"
+          test "$lease" = "$EXPECTED_HEAD"
+          git switch -C sg10-staging "origin/$STAGING_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git apply --check --index /tmp/sg10.patch
+          git apply --index /tmp/sg10.patch
+
+          cat > /tmp/expected <<'PATHS'
+          data/project/project-stable-ground-sg10-release-manifest.json
+          reports/core-thesis/stable-ground/sg10/checkpoint.json
+          reports/core-thesis/stable-ground/sg10/index.html
+          PATHS
+          sort -o /tmp/expected /tmp/expected
+          git diff --cached --name-only | sort > /tmp/observed
+          diff -u /tmp/expected /tmp/observed
+          test "$(wc -l < /tmp/observed)" -eq 3
+          printf '%s  %s\n' d9ecbd8e903e70b72bcc3bb1e6df0c4a295ce25bb6c6b9a7008ac14e67ad377b data/project/project-stable-ground-sg10-release-manifest.json | sha256sum -c -
+          printf '%s  %s\n' 8a627dc0e270cc6ca713e6160cef2f1814507fbe34c509120e613d12cb1d1481 reports/core-thesis/stable-ground/sg10/checkpoint.json | sha256sum -c -
+          printf '%s  %s\n' 43583eea15dfc0880e2caa804ef4282162c895c0a293853f610bd4e91ac47199 reports/core-thesis/stable-ground/sg10/index.html | sha256sum -c -
+          test "$(jq -r '.combined_sha256' data/project/project-stable-ground-sg10-release-manifest.json)" = df181c262a151e158bcdca1a62ef4e9c980e7e210dd347a288e57f4a2f8c750c
+
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m 'Stage SG-10 workflow-bound custody products'
+          git push --force-with-lease="refs/heads/$STAGING_BRANCH:$EXPECTED_HEAD" origin "HEAD:refs/heads/$STAGING_BRANCH"
+          echo "staging_sha=$(git rev-parse HEAD)"
