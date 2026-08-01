@@ -1,10 +1,10 @@
-# Preference custody laboratory floor v2
+# Preference custody laboratory floor v3
 
-The preference-custody laboratory joins four deterministic controls into one minimum identification floor for issue [#594](https://github.com/BigBirdReturns/clifford-number/issues/594).
+The preference-custody laboratory joins five deterministic controls into one minimum identification floor for issue [#594](https://github.com/BigBirdReturns/clifford-number/issues/594).
 
-The controls remain synthetic. They create no graph effect, thesis evidence, real-world causal conclusion, preference-change finding, manipulation claim, or inference of intent. Their purpose is to establish what a real deployment must preserve before observed behavior can be narrated as population preference, population support, or public authorization.
+The controls remain synthetic. They create no graph effect, thesis evidence, real-world causal conclusion, preference-change finding, discrimination finding, manipulation claim, or inference of intent. Their purpose is to establish what a real deployment must preserve before observed behavior can be narrated as population preference, population support, distributional acceptability, or public authorization.
 
-## The four-control floor
+## The five-control floor
 
 ### PC-01: exposure-policy confounding
 
@@ -50,23 +50,37 @@ organized refusal ≠ missing data
 normalized active share ≠ population support
 ```
 
+### PC-05: subgroup response capacity and burden
+
+Three materially different subgroup worlds produce the same aggregate 80 percent success rate. The balanced world has equal 80 percent group success and equal burden. The two asymmetric worlds place complete low-cost success in one group while the other group receives 60 percent success, a 40-point outcome gap, and fifteen times the adaptation cost per successful response.
+
+```text
+aggregate success ≠ subgroup parity
+adaptation ≠ preference
+compliance ≠ low burden
+average gain ≠ cancellation of concentrated harm
+missing group slice ≠ no disparity
+distributional acceptability requires external authority
+```
+
 ## The identification ladder
 
-A conforming real-world case must preserve five distinct stages.
+A conforming real-world case must preserve six distinct stages.
 
 1. **Exposure policy.** Who was eligible, what each person could encounter, and whether assignment was logged or randomized.
 2. **Option set.** Every offered, excluded, rejected, unavailable, and never-generated alternative.
 3. **Response mechanism.** Direct first choice, fallback, adaptation, compliance, or competing candidate explanations.
 4. **Attrition and refusal.** Complete disposition, denominator history, exit, churn, nonresponse, organized refusal, and the reasons those states were assigned.
-5. **Public authorization.** An external procedure through which affected people can bind the objective, threshold, suspension, redesign, or retirement decision.
+5. **Subgroup distribution.** Group denominators, assignment, outcomes, adaptation cost, burden, counterfactuals, and affected-group contestation.
+6. **Public authorization.** An external procedure through which affected people can bind the objective, threshold, acceptable burden, suspension, redesign, or retirement decision.
 
-Passing a predictive benchmark answers fit under the tested instrument. It does not establish exogeneity of later behavior, completeness of the option set, identification of the response mechanism, absence of dissent, population support, or authorization of the intervention.
+Passing a predictive benchmark answers fit under the tested instrument. It does not establish exogeneity of later behavior, completeness of the option set, identification of the response mechanism, absence of dissent, population support, subgroup parity, acceptable burden, or authorization of the intervention.
 
 ## Open frontiers
 
-The laboratory floor remains deliberately incomplete. It does not yet qualify dynamic preference change in an open environment, coordinated refusal and collective bargaining, unequal subgroup capacity to respond, model and policy succession, binding public standing over the objective, or a real deployment chain from synthetic output through intervention and feedback reuse.
+The laboratory floor remains deliberately incomplete. It does not yet qualify dynamic preference change in an open environment, coordinated refusal and collective bargaining, intersectional and unobserved group custody, model and policy succession, binding public standing over the objective, or a real deployment chain from synthetic output through intervention and feedback reuse.
 
-Those remain open frontiers rather than being inferred from the four controls.
+Those remain open frontiers rather than being inferred from the five controls.
 
 ## Run
 
@@ -75,18 +89,21 @@ node tools/compile-performative-synthetic-constituency.mjs
 node tools/compile-preference-custody.mjs
 node tools/compile-preference-equifinality.mjs
 node tools/compile-preference-attrition.mjs
+node tools/compile-preference-subgroup.mjs
 node tools/compile-preference-custody-manifest.mjs
 
 node tools/validate-performative-synthetic-constituency.mjs
 node tools/validate-preference-custody.mjs
 node tools/validate-preference-equifinality.mjs
 node tools/validate-preference-attrition.mjs
+node tools/validate-preference-subgroup.mjs
 node tools/validate-preference-custody-manifest.mjs
 
 node test/performative-synthetic-constituency.test.js
 node test/preference-custody.test.js
 node test/preference-equifinality.test.js
 node test/preference-attrition.test.js
+node test/preference-subgroup.test.js
 node test/preference-custody-manifest.test.js
 ```
 
@@ -99,6 +116,6 @@ build/research/preference-custody-laboratory-floor.md
 
 ## Promotion boundary
 
-A real case requires the model and version, source population and data window, complete question and option set, attributed institutional disposition, exposure and eligibility, complete disposition and denominator history, counterfactual design, post-intervention outcomes, feedback reuse, and affected-public standing and remedy.
+A real case requires the model and version, source population and data window, complete question and option set, attributed institutional disposition, exposure and eligibility, complete disposition and denominator history, group denominators and burden distribution, counterfactual design, post-intervention outcomes, feedback reuse, and affected-public standing and remedy.
 
 The laboratory can refuse unsupported interpretation. It cannot grant publication authority to a real-world claim.
