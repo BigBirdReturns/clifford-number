@@ -180,13 +180,46 @@ const buildsByPath = {
       real_world_effect_claimed: false
     },
     refusal_rules: manifest.controls[6].required_refusal_rules
+  },
+  'build/research/preference-package-bargaining.json': {
+    schema_version: 'preference-package-build@1',
+    fixture_id: 'same-marginals-different-package-agreement-v1',
+    graph_effect: 'none',
+    counts_toward_thesis_evidence: false,
+    conclusion_generated: false,
+    metrics: {
+      distinct_component_poll_signatures: 1,
+      distinct_package_signatures: 3,
+      distinct_package_support_signatures: 3,
+      marginal_majority_package_support_share: 0.2,
+      protected_package_support_share: 1,
+      package_support_gap: 0.8,
+      high_support_nonagreement_worlds: 2,
+      binding_collective_agreement_worlds: 1,
+      binding_impasse_worlds: 1,
+      institutionally_approved_without_collective_agreement_worlds: 2,
+      synthetic_candidate_worlds: 1,
+      maximum_one_sided_group_ratification_gap: 0.8
+    },
+    classification: {
+      component_marginals_identify_package_acceptance: false,
+      high_package_support_is_collective_agreement: false,
+      synthetic_candidate_can_bind_representatives: false,
+      advisory_co_design_is_collective_agreement: false,
+      binding_ratification_creates_collective_agreement: true,
+      bargaining_impasse_is_missing_preference_data: false,
+      preference_change_present: false,
+      manipulative_intent_inferable: false,
+      real_world_effect_claimed: false
+    },
+    refusal_rules: manifest.controls[7].required_refusal_rules
   }
 };
 
 const compiled = compilePreferenceCustodyManifest(manifest, buildsByPath);
 assert.deepEqual(validatePreferenceCustodyManifestBuild(compiled), []);
 assert.equal(compiled.status, 'laboratory_floor_qualified');
-assert.equal(compiled.control_count, 7);
+assert.equal(compiled.control_count, 8);
 assert.equal(compiled.real_world_evidence_state, 'none');
 assert.equal(compiled.control_integrity.all_graph_effect_none, true);
 assert.equal(compiled.control_integrity.no_thesis_evidence_consumption, true);
@@ -196,17 +229,19 @@ assert.equal(compiled.control_integrity.no_intent_inference, true);
 assert.equal(compiled.control_integrity.all_required_refusal_rules_present, true);
 assert.ok(compiled.refusal_rule_union.includes('same_behavior_does_not_imply_same_preference'));
 assert.ok(compiled.open_frontiers.includes('federated_multilevel_and_successor_authority'));
-assert.ok(compiled.open_frontiers.includes('negotiated_package_formation_and_collective_bargaining'));
-assert.ok(!compiled.open_frontiers.includes('coordinated_refusal_and_collective_bargaining'));
+assert.ok(compiled.open_frontiers.includes('intertemporal_repeated_bargaining_and_commitment'));
+assert.ok(!compiled.open_frontiers.includes('negotiated_package_formation_and_collective_bargaining'));
 assert.ok(compiled.refusal_rule_union.includes('organized_refusal_is_not_missing_data'));
 assert.ok(compiled.refusal_rule_union.includes('distributional_acceptability_requires_external_authority'));
 assert.ok(compiled.refusal_rule_union.includes('prediction_is_evidence_not_authority'));
 assert.ok(compiled.refusal_rule_union.includes('public_rejection_blocks_implementation'));
 assert.ok(compiled.refusal_rule_union.includes('forced_choice_is_not_complete_agenda'));
 assert.ok(compiled.refusal_rule_union.includes('binding_objective_rejection_blocks_implementation'));
+assert.ok(compiled.refusal_rule_union.includes('package_support_is_not_collective_agreement'));
+assert.ok(compiled.refusal_rule_union.includes('failed_ratification_is_binding_impasse_not_missing_data'));
 
 const markdown = renderPreferenceCustodyManifestMarkdown(compiled);
-assert.match(markdown, /Preference custody laboratory floor v5/);
+assert.match(markdown, /Preference custody laboratory floor v6/);
 assert.match(markdown, /PC-01: exposure_policy_confounding/);
 assert.match(markdown, /PC-02: option_set_starvation/);
 assert.match(markdown, /PC-03: observational_equivalence/);
@@ -214,17 +249,22 @@ assert.match(markdown, /PC-04: attrition_and_refusal_censoring/);
 assert.match(markdown, /PC-05: subgroup_response_capacity_and_burden/);
 assert.match(markdown, /PC-06: authority_laundering_and_nonbinding_consultation/);
 assert.match(markdown, /PC-07: agenda_formation_and_collective_option_generation/);
+assert.match(markdown, /PC-08: negotiated_package_formation_and_collective_bargaining/);
 assert.match(markdown, /Publicly authorized worlds: 1/);
 assert.match(markdown, /Institutional-only approval worlds: 2/);
 assert.match(markdown, /Binding public rejection worlds: 1/);
 assert.match(markdown, /Binding option-generation worlds: 1/);
 assert.match(markdown, /Binding objective-rejection worlds: 1/);
+assert.match(markdown, /Marginal-majority package support: 20\.00%/);
+assert.match(markdown, /Protected package support: 100\.00%/);
+assert.match(markdown, /Binding collective agreements: 1/);
+assert.match(markdown, /Binding impasses: 1/);
 assert.match(markdown, /Laboratory controls are real-world evidence: false/);
-assert.doesNotMatch(markdown, /Electric Twin caused|News UK caused|illegitimate institution|suppressed the public|manipulated the public/i);
+assert.doesNotMatch(markdown, /Electric Twin caused|News UK caused|illegitimate institution|suppressed the public|imposed the package|manipulated the public/i);
 
 const missingControl = structuredClone(manifest);
 missingControl.controls.pop();
-assert.ok(validatePreferenceCustodyManifest(missingControl).some(error => /exactly PC-01, PC-02, PC-03, PC-04, PC-05, PC-06, and PC-07/.test(error)));
+assert.ok(validatePreferenceCustodyManifest(missingControl).some(error => /exactly PC-01, PC-02, PC-03, PC-04, PC-05, PC-06, PC-07, and PC-08/.test(error)));
 
 const graphLeak = structuredClone(buildsByPath);
 graphLeak['build/research/preference-custody-option-set-fixture.json'].graph_effect = 'asserted';
@@ -270,5 +310,15 @@ const objectiveLeak = structuredClone(buildsByPath);
 objectiveLeak['build/research/preference-agenda-formation.json'].metrics.binding_objective_rejection_worlds = 0;
 const objectiveLeakCompiled = compilePreferenceCustodyManifest(manifest, objectiveLeak);
 assert.ok(validatePreferenceCustodyManifestBuild(objectiveLeakCompiled).some(error => /preserve one binding objective rejection/.test(error)));
+
+const packageLeak = structuredClone(buildsByPath);
+packageLeak['build/research/preference-package-bargaining.json'].classification.high_package_support_is_collective_agreement = true;
+const packageLeakCompiled = compilePreferenceCustodyManifest(manifest, packageLeak);
+assert.ok(validatePreferenceCustodyManifestBuild(packageLeakCompiled).some(error => /refuse package support as collective agreement/.test(error)));
+
+const impasseLeak = structuredClone(buildsByPath);
+impasseLeak['build/research/preference-package-bargaining.json'].metrics.binding_impasse_worlds = 0;
+const impasseLeakCompiled = compilePreferenceCustodyManifest(manifest, impasseLeak);
+assert.ok(validatePreferenceCustodyManifestBuild(impasseLeakCompiled).some(error => /preserve one binding impasse/.test(error)));
 
 console.log('preference-custody-manifest.test.js: OK');
