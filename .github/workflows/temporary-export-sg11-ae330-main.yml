@@ -1,0 +1,52 @@
+name: Temporary export SG-11 ae330 main
+
+on:
+  push:
+    branches: [agent/sg11-ae330-main-export]
+    paths:
+      - '.github/workflows/temporary-export-sg11-ae330-main.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-export-sg11-ae330-main.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ae330857de6ab9871969bc3daa97a9294f70057c
+          fetch-depth: 0
+      - name: Package exact current-main tree and history
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = ae330857de6ab9871969bc3daa97a9294f70057c
+          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/MAIN-HEAD.txt
+          printf '%s\n' "$(git show -s --format=%T HEAD)" > /tmp/MAIN-TREE.txt
+          repo="$GITHUB_WORKSPACE"
+          parent="$(dirname "$repo")"
+          base="$(basename "$repo")"
+          tar -C "$parent" --exclude="$base/.git" -cJf /tmp/sg11-ae330-main-tree.tar.xz "$base"
+          git update-ref refs/heads/sg11-ae330-main-export HEAD
+          git bundle create /tmp/sg11-ae330-main.bundle refs/heads/sg11-ae330-main-export
+          git update-ref -d refs/heads/sg11-ae330-main-export
+          sha256sum /tmp/sg11-ae330-main-tree.tar.xz > /tmp/sg11-ae330-main-tree.tar.xz.sha256
+          sha256sum /tmp/sg11-ae330-main.bundle > /tmp/sg11-ae330-main.bundle.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sg11-ae330-main
+          path: |
+            /tmp/sg11-ae330-main-tree.tar.xz
+            /tmp/sg11-ae330-main-tree.tar.xz.sha256
+            /tmp/sg11-ae330-main.bundle
+            /tmp/sg11-ae330-main.bundle.sha256
+            /tmp/MAIN-HEAD.txt
+            /tmp/MAIN-TREE.txt
+          if-no-files-found: error
+          retention-days: 1
