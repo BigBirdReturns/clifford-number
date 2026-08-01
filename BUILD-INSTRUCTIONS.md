@@ -471,3 +471,9 @@ The repair changes source custody and generated hashes only. It does not change 
 Execute only the two public-interest rows marked `unblocked_for_next_wave` by the repaired Wave 26 gate. The deservingness-category row may recover formal programme, employment, contractor, grant, funding-recipient, and enforcement scope without treating that scope as a complete affected roster. The consequence row may recover formal authority and bounded correction controls without treating them as observed use or system-wide remedy adequacy.
 
 The two legislative and political-finance rows marked `blocked_no_qualifying_gate` receive no plan, source references, or synthetic result. Wave 27 creates no evidence row, finding, graph effect, or publication clearance.
+
+
+3.28 **Allocator-war public-interest implementation denominator — Wave 28.**
+The two partial Wave 27 public-interest results are decomposed into twelve exact acquisition obligations owned by five estates. Each obligation preserves the repaired nine-source institutional custody, defines a receipt-complete closure target, and requires controls, nulls, refusals, failed paths, no-action rows, comparators, and no-observed-effect rows where applicable.
+
+Queue admission is acquisition routing only. It does not close a source partial, establish estate adoption, adjudicate evidence, create a complete denominator or finding, modify the graph, or clear publication.

@@ -1,0 +1,102 @@
+name: Allocator-war public-interest implementation Wave 28
+
+on:
+  pull_request:
+    branches:
+      - agent/lake-allocator-war-wave-21
+    paths:
+      - 'data/project/lake-allocator-war-public-interest-implementation-wave-28-policy.json'
+      - 'tools/build-lake-allocator-war-public-interest-implementation-wave-28.mjs'
+      - 'tools/validate-lake-allocator-war-public-interest-implementation-wave-28.mjs'
+      - 'test/lake-allocator-war-public-interest-implementation-wave-28.test.js'
+      - 'docs/methods/lake-allocator-war-public-interest-implementation-wave-28.md'
+      - 'docs/milestones/lake-allocator-war-public-interest-implementation-wave-28.md'
+      - 'build/lake-actions/allocator-war-public-interest-implementation-wave-28.json'
+      - 'reports/lake-allocator-war-public-interest-implementation-wave-28.md'
+      - 'data/acquisition/lake-allocator-war-wave-28/**'
+      - 'data/project/lake-allocator-war-wave-21-policy.json'
+      - 'data/project/lake-index-policy.json'
+      - 'data/project/lake-basin-registry.json'
+      - 'package.json'
+      - 'build/lake-index/**'
+      - 'reports/lake-basin-index.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lake-allocator-war-public-interest-wave-28-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate source-only Wave 28 surface
+        if: ${{ hashFiles('build/lake-actions/allocator-war-public-interest-implementation-wave-28.json') == '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/build-lake-allocator-war-public-interest-implementation-wave-28.mjs
+          node --check tools/validate-lake-allocator-war-public-interest-implementation-wave-28.mjs
+          node --check test/lake-allocator-war-public-interest-implementation-wave-28.test.js
+          node -e "JSON.parse(require('fs').readFileSync('data/project/lake-allocator-war-public-interest-implementation-wave-28-policy.json','utf8'))"
+
+      - name: Validate sealed Wave 28 queues
+        if: ${{ hashFiles('build/lake-actions/allocator-war-public-interest-implementation-wave-28.json') != '' }}
+        run: node tools/validate-lake-allocator-war-public-interest-implementation-wave-28.mjs
+
+      - name: Run Wave 28 adversarial mutations
+        if: ${{ hashFiles('build/lake-actions/allocator-war-public-interest-implementation-wave-28.json') != '' }}
+        run: node test/lake-allocator-war-public-interest-implementation-wave-28.test.js
+
+      - name: Run complete repository release gate
+        if: ${{ hashFiles('build/lake-actions/allocator-war-public-interest-implementation-wave-28.json') != '' }}
+        run: npm run release:check
+
+      - name: Restore and validate committed lake epoch
+        if: ${{ hashFiles('build/lake-actions/allocator-war-public-interest-implementation-wave-28.json') != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore --worktree .
+          git clean -fd
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-residual-frontier-wave-17.mjs
+          node test/lake-residual-frontier-wave-17.test.js
+          node tools/validate-lake-identifier-topology-wave-18.mjs
+          node test/lake-identifier-topology-wave-18.test.js
+          node tools/validate-lake-generator-contracts-wave-19.mjs
+          node test/lake-generator-contracts-wave-19.test.js
+          node tools/validate-lake-receipt-custody-wave-20.mjs
+          node test/lake-receipt-custody-wave-20.test.js
+          node tools/validate-lake-allocator-war-wave-21.mjs
+          node test/lake-allocator-war-wave-21.test.js
+          node tools/validate-lake-allocator-war-estate-execution-wave-22.mjs
+          node test/lake-allocator-war-estate-execution-wave-22.test.js
+          node tools/validate-lake-allocator-war-lead-acquisition-wave-23.mjs
+          node test/lake-allocator-war-lead-acquisition-wave-23.test.js
+          node tools/validate-lake-allocator-war-lead-execution-wave-24.mjs
+          node test/lake-allocator-war-lead-execution-wave-24.test.js
+          node tools/validate-lake-allocator-war-denominator-closure-wave-25.mjs
+          node test/lake-allocator-war-denominator-closure-wave-25.test.js
+          node tools/validate-lake-allocator-war-targeted-closure-wave-26.mjs
+          node test/lake-allocator-war-targeted-closure-wave-26.test.js
+          node tools/validate-lake-allocator-war-wave26-source-custody-repair.mjs
+          node test/lake-allocator-war-wave26-source-custody-repair.test.js
+          node tools/validate-lake-allocator-war-public-interest-downstream-wave-27.mjs
+          node test/lake-allocator-war-public-interest-downstream-wave-27.test.js
+          node tools/validate-lake-allocator-war-public-interest-implementation-wave-28.mjs
+          node test/lake-allocator-war-public-interest-implementation-wave-28.test.js
+          git diff --check
+          test -z "$(git status --porcelain)"

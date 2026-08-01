@@ -1,21 +1,21 @@
 # Lake index gap summary
 
-Source fingerprint: `b09af76bbb8873651cba0f66d1046c019c814c60f16e6f6d83689973725e5cd2`
+Source fingerprint: `876c23e5424cc5c1d8b81106f3bd9abde8fc6fc57d6ae90deb86875b7b417a6e`
 
 ## Finding
 
-The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1469 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
+The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1479 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
 
 ## By evidence role
 
 | Role | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
-| generated_artifact | 597 | 597 | 0 | 0 |
-| project_governance | 184 | 184 | 0 | 0 |
-| repository_root | 144 | 144 | 0 | 0 |
+| generated_artifact | 598 | 598 | 0 | 0 |
+| project_governance | 185 | 185 | 0 | 0 |
+| repository_root | 149 | 149 | 0 | 0 |
+| documentation | 141 | 141 | 0 | 0 |
 | intake | 141 | 141 | 0 | 0 |
-| documentation | 139 | 139 | 0 | 0 |
-| report_product | 112 | 112 | 0 | 0 |
+| report_product | 113 | 113 | 0 | 0 |
 | research_record | 48 | 48 | 0 | 0 |
 | case_source | 43 | 43 | 0 | 0 |
 | receipt_artifact | 32 | 32 | 0 | 0 |
@@ -28,19 +28,19 @@ The current Git tree is physically censused, but the evidence lake is not semant
 | Cluster | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
 | build/estate-game-trails | 313 | 313 | 0 | 0 |
+| data/project | 185 | 185 | 0 | 0 |
 | build/core-thesis | 184 | 184 | 0 | 0 |
-| data/project | 184 | 184 | 0 | 0 |
 | data/intake | 141 | 141 | 0 | 0 |
 | reports/core-thesis | 96 | 96 | 0 | 0 |
-| docs/milestones | 73 | 73 | 0 | 0 |
+| docs/milestones | 74 | 74 | 0 | 0 |
 | data/research-tracks | 52 | 52 | 0 | 0 |
 | data/research | 48 | 48 | 0 | 0 |
 | data/estates | 43 | 43 | 0 | 0 |
-| data/acquisition | 35 | 35 | 0 | 0 |
-| build/lake-actions | 31 | 31 | 0 | 0 |
+| data/acquisition | 40 | 40 | 0 | 0 |
+| build/lake-actions | 32 | 32 | 0 | 0 |
 | cases/arcadia-field-autopsy | 21 | 21 | 0 | 0 |
 | receipts/crawl | 19 | 19 | 0 | 0 |
-| docs/methods | 17 | 17 | 0 | 0 |
+| docs/methods | 18 | 18 | 0 | 0 |
 | build/estate-closures | 15 | 15 | 0 | 0 |
 
 ## First repair queues
@@ -69,7 +69,7 @@ missing repository path tokens: 200
 ```text
 not reachable from any detected index: 0
 not reachable from authoritative roots: 0
-not reachable from public roots: 1225
+not reachable from public roots: 1235
 case IDs absent from public catalog: 26
 ```
 
@@ -88,15 +88,15 @@ case IDs absent from public catalog: 26
 | #490 Temporary current SG-06 transport export | 17 |
 | #403 Measure the production cross-case identity denominator | 16 |
 | #487 Temporary PR 483 bundle export | 14 |
-| #558 Test SSC-F04 against the ACES governance denominator | 13 |
+| #559 Acquire the DCGS-A counterfactual-foreclosure denominator | 12 |
 | #404 Recover exact source-bound cross-case mention recurrence | 11 |
 | #362 Stage biological Omega control-surface research program | 9 |
 | #527 Execute Counter-Selector Wave 08 Batch 02 blind review | 9 |
 | #50 Stage synthetic-population research program | 8 |
 | #380 Build root Evidence Desk publication estate from WebsiteIQ audit | 6 |
-| #573 Execute allocator-war public-interest downstream Wave 27 | 5 |
 | #378 Run WebsiteIQ baseline audit before website remediation | 4 |
 | #211 Map every case and report membership across the estates | 2 |
+| #379 Run corrected WebsiteIQ landing-path audit | 2 |
 
 ### P5 — history and semantics
 

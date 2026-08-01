@@ -282,3 +282,8 @@ The Wave 26 public-interest gate is bound to nine exact executive, Foreign Servi
 ## Allocator-war public-interest downstream Wave 27
 
 Wave 27 executes the two public-interest tasks unlocked by the repaired federal institutional gate. It records partial formal-category and consequence-and-correction recoveries, preserves the legislative and political-finance no-gate blocks, and retains zero complete denominators, evidence rows, findings, graph effects, or publication clearances. See `reports/lake-allocator-war-public-interest-downstream-wave-27.md`.
+
+
+## Allocator-war public-interest implementation Wave 28
+
+Wave 28 converts the two partial public-interest results into twelve exact implementation acquisition tasks across five estate owners. The queues preserve zero evidence, estate adoption, findings, graph effects, and publication authority. See `reports/lake-allocator-war-public-interest-implementation-wave-28.md`.
