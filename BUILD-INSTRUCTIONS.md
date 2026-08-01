@@ -493,3 +493,8 @@ Route assignment is acquisition routing only. It does not close a source gap, ad
 
 3.31 **Allocator-war public-route execution — Wave 31.**
 Run `node tools/build-lake-allocator-war-public-route-execution-wave-31.mjs` only after the Wave 30 route ledgers and the Wave 31 source plan are present. The builder must preserve the exact thirty-eight-task denominator, execute only the thirty-four public tasks, retain the four protected tasks as access-bounded, and create no evidence, estate adoption, finding, graph, or publication effect.
+
+3.32 **Allocator-war bounded source snapshots — Wave 32.**
+Run `node tools/acquire-lake-allocator-war-bounded-source-snapshots-wave-32.mjs` only in the bounded acquisition lane. The acquisition must emit nineteen exact source objects: fifteen public HTTP requests and four credential boundaries. The seven required JSON controls must parse successfully. Release validation reads the frozen bytes and must never refetch the network.
+
+Run `node tools/build-lake-allocator-war-bounded-source-snapshots-wave-32.mjs` after the snapshot ledger is complete. The builder preserves the exact thirty-eight-task Wave 31 denominator and creates no complete denominator, evidence adjudication, estate adoption, finding, graph effect, or publication clearance.
