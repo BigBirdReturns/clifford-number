@@ -44,7 +44,7 @@ jobs:
           reports/core-thesis/status-sovereignty/f04-aces/data.json
           reports/core-thesis/status-sovereignty/f04-aces/index.html
           PATHS
-          git diff --name-only | sort > /tmp/observed-paths
+          git status --porcelain=v1 --untracked-files=all | cut -c4- | sort > /tmp/observed-paths
           sort -o /tmp/expected-paths /tmp/expected-paths
           diff -u /tmp/expected-paths /tmp/observed-paths
           test "$(wc -l < /tmp/observed-paths)" -eq 5
@@ -69,7 +69,7 @@ jobs:
             build/scout-report.json \
             build/scout-report.md \
             build/surface-graph.json
-          git diff --name-only | sort > /tmp/observed-after-release
+          git status --porcelain=v1 --untracked-files=all | cut -c4- | sort > /tmp/observed-after-release
           diff -u /tmp/expected-paths /tmp/observed-after-release
       - name: Publish only the five deterministic products
         env:
