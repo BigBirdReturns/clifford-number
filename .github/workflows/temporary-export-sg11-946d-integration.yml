@@ -1,0 +1,52 @@
+name: Temporary export SG-11 946d integration
+
+on:
+  push:
+    branches: [agent/sg11-946d-integration-export]
+    paths:
+      - '.github/workflows/temporary-export-sg11-946d-integration.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-export-sg11-946d-integration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 946d011b3ef365193170dfe824a69cf2ce8adfca
+          fetch-depth: 0
+      - name: Package exact integration tree and history
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = 946d011b3ef365193170dfe824a69cf2ce8adfca
+          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/INTEGRATION-HEAD.txt
+          printf '%s\n' "$(git show -s --format=%T HEAD)" > /tmp/INTEGRATION-TREE.txt
+          repo="$GITHUB_WORKSPACE"
+          parent="$(dirname "$repo")"
+          base="$(basename "$repo")"
+          tar -C "$parent" --exclude="$base/.git" -cJf /tmp/sg11-946d-integration-tree.tar.xz "$base"
+          git update-ref refs/heads/sg11-946d-integration-export HEAD
+          git bundle create /tmp/sg11-946d-integration.bundle refs/heads/sg11-946d-integration-export
+          git update-ref -d refs/heads/sg11-946d-integration-export
+          sha256sum /tmp/sg11-946d-integration-tree.tar.xz > /tmp/sg11-946d-integration-tree.tar.xz.sha256
+          sha256sum /tmp/sg11-946d-integration.bundle > /tmp/sg11-946d-integration.bundle.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sg11-946d-integration
+          path: |
+            /tmp/sg11-946d-integration-tree.tar.xz
+            /tmp/sg11-946d-integration-tree.tar.xz.sha256
+            /tmp/sg11-946d-integration.bundle
+            /tmp/sg11-946d-integration.bundle.sha256
+            /tmp/INTEGRATION-HEAD.txt
+            /tmp/INTEGRATION-TREE.txt
+          if-no-files-found: error
+          retention-days: 1
