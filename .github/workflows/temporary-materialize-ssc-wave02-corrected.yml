@@ -4,12 +4,12 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - '.github/tmp/ssc-wave02-review-correction.b64'
+      - '.github/tmp/ssc-wave02-review-correction.part-*.b64'
       - '.github/workflows/temporary-materialize-ssc-wave02-corrected.yml'
   push:
     branches: [agent/ssc-wave02-review-corrected-transport]
     paths:
-      - '.github/tmp/ssc-wave02-review-correction.b64'
+      - '.github/tmp/ssc-wave02-review-correction.part-*.b64'
       - '.github/workflows/temporary-materialize-ssc-wave02-corrected.yml'
   workflow_dispatch:
 
@@ -24,7 +24,7 @@ jobs:
       BASE: 52a363704857a2da5035c24898f9dfdc38b56754
       SOURCE: 4c8ec34686d7005b06a94dc75bb8828610be60a1
       TARGET: agent/ssc-wave02-maintainer-review-sg10
-      B64_SHA: d0c6567afbd5a91dbea50cdf1af0cb3367020240aa853badeb7525d06d039a71
+      COMBINED_B64_SHA: d0c6567afbd5a91dbea50cdf1af0cb3367020240aa853badeb7525d06d039a71
       XZ_SHA: a3cbc1e554b922114ce5e786dcc634b278480cea1fbfbe691006e358dacbb8d4
       EXPECTED_TREE: 1ac7c1754aaf3c57347e176ffd0dccbd1a7b57ba
     steps:
@@ -42,16 +42,47 @@ jobs:
           git config user.name 'OpenAI'
           git config user.email 'noreply@openai.com'
 
-          cat > /tmp/expected-transport.txt <<'EOF'
-          .github/tmp/ssc-wave02-review-correction.b64
-          .github/workflows/temporary-materialize-ssc-wave02-corrected.yml
-          EOF
+          chunks=(
+            .github/tmp/ssc-wave02-review-correction.part-00.b64
+            .github/tmp/ssc-wave02-review-correction.part-01.b64
+            .github/tmp/ssc-wave02-review-correction.part-02.b64
+            .github/tmp/ssc-wave02-review-correction.part-03.b64
+            .github/tmp/ssc-wave02-review-correction.part-04.b64
+            .github/tmp/ssc-wave02-review-correction.part-05.b64
+            .github/tmp/ssc-wave02-review-correction.part-06.b64
+            .github/tmp/ssc-wave02-review-correction.part-07.b64
+            .github/tmp/ssc-wave02-review-correction.part-08.b64
+            .github/tmp/ssc-wave02-review-correction.part-09.b64
+            .github/tmp/ssc-wave02-review-correction.part-10.b64
+            .github/tmp/ssc-wave02-review-correction.part-11.b64
+          )
+          chunk_shas=(
+            62a55ee5cb9998b12942f6300fa2f342550283410763fa4be4c29a3f625c8715
+            97ac03476abde5165b1ab13caff731c6216fffd1f0919a332ab48eb4a55913b6
+            01e44ac091fac32de5c99ae63832fd607c065e8f6c1ffecfb3b38e6715efef98
+            ac5344eca962d607f04bad336b668fe8548d1be28a6dcf6535ddd237193d2ff2
+            c592e022de3e40c4a06096be26db3894384e6593a9b9362bfb935996cf4a30a8
+            e84f1e6b658a6a1ea227a034184081855048a2eec5dc5713c1e9d01517d6545b
+            83d063334842463bb94356b4761ed16e0d7e23f659a01d9514040ec98df61478
+            57745c40c78bf03cab2927292eee1b0e51d2c610256b6b3fc25a7c4c9e8e6a07
+            eaea22a87f8042e5083e5511305e832e9e0e6316cce267419a8a8b5d5200db85
+            733b27d235fca367d530148ae43f1291a37f2e357c7ff3550187770d1c3825fd
+            c055ba86d939340977b2cb37a578296cab59f045328f16b9d90383a60c487326
+            e326acf2d383f102622e50908937a9bc9ec19c2ce7f86b3a47f2e5a1832568e4
+          )
+
+          printf '%s\n' "${chunks[@]}" .github/workflows/temporary-materialize-ssc-wave02-corrected.yml | sort > /tmp/expected-transport.txt
           git diff --name-only "$BASE" HEAD | sort > /tmp/observed-transport.txt
-          sort /tmp/expected-transport.txt -o /tmp/expected-transport.txt
           diff -u /tmp/expected-transport.txt /tmp/observed-transport.txt
 
-          tr -d '\r\n' < .github/tmp/ssc-wave02-review-correction.b64 > /tmp/correction.patch.xz.b64
-          echo "$B64_SHA  /tmp/correction.patch.xz.b64" | sha256sum -c -
+          : > /tmp/correction.patch.xz.b64
+          for i in "${!chunks[@]}"; do
+            normalized="/tmp/correction.chunk-${i}.b64"
+            tr -d '\r\n\t ' < "${chunks[$i]}" > "$normalized"
+            echo "${chunk_shas[$i]}  $normalized" | sha256sum -c -
+            cat "$normalized" >> /tmp/correction.patch.xz.b64
+          done
+          echo "$COMBINED_B64_SHA  /tmp/correction.patch.xz.b64" | sha256sum -c -
           base64 --decode /tmp/correction.patch.xz.b64 > /tmp/correction.patch.xz
           echo "$XZ_SHA  /tmp/correction.patch.xz" | sha256sum -c -
           xz -dc /tmp/correction.patch.xz > /tmp/correction.patch
