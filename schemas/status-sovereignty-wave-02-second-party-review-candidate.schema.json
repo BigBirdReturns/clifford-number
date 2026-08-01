@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-wave-02-second-party-review-candidate.schema.json",
+  "title": "SSC-W02 reviewer candidate registry",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "campaign_id",
+    "records",
+    "counts",
+    "failure_denominator",
+    "boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "status-sovereignty-wave-02-second-party-review-candidates@1"
+    },
+    "campaign_id": {
+      "const": "SSC-W02-SPR01"
+    },
+    "records": {
+      "type": "array"
+    },
+    "counts": {
+      "type": "object"
+    },
+    "failure_denominator": {
+      "type": "array"
+    },
+    "boundaries": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}
