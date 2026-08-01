@@ -1,6 +1,6 @@
 # Lake index gap summary
 
-Source fingerprint: `13d6dc0bb7c7ae8fdb894207bd2af9b1ec95d0983769cb35630da70152ade066`
+Source fingerprint: `f929141a09d2b8b6cebaea44e7a98c38dc25402bb0588bb9fd06137abdad60cf`
 
 ## Finding
 
@@ -80,9 +80,9 @@ case IDs absent from public catalog: 26
 | #529 Temporary recover SG-10 payload bytes | 27 |
 | #488 Converge production publication and preserve pre-assemblage origins | 25 |
 | #493 Temporary SG-06 historical carrier export | 21 |
+| #524 Review SSC-H01 Wave 02 and append stable-ground SG-10 | 21 |
 | #564 Temporary export exact SSC SG-10 a042 tree | 21 |
 | #491 Temporary final SG-06 export | 20 |
-| #524 Review SSC-H01 Wave 02 observation packets | 20 |
 | #386 Make evidence-grounded judgments without a human-permission gate | 18 |
 | #494 Temporary PR 484 exact-head export | 18 |
 | #490 Temporary current SG-06 transport export | 17 |

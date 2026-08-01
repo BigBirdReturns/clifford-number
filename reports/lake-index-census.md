@@ -1,6 +1,6 @@
 # Lake index census
 
-Source fingerprint: `13d6dc0bb7c7ae8fdb894207bd2af9b1ec95d0983769cb35630da70152ade066`
+Source fingerprint: `f929141a09d2b8b6cebaea44e7a98c38dc25402bb0588bb9fd06137abdad60cf`
 
 ## The six waterlines
 
@@ -44,7 +44,7 @@ report IDs:                              5
 
 ```text
 open pull requests observed:              58
-changed paths across open pull requests:  728
+changed paths across open pull requests:  743
 branch-only paths observed:               260
 ```
 
