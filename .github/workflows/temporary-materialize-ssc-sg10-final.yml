@@ -4,12 +4,10 @@ on:
   push:
     branches: [agent/ssc-sg10-final-materializer]
     paths:
-      - '.github/tmp/ssc-sg10-nonworkflow.part-*.b64'
       - '.github/workflows/temporary-materialize-ssc-sg10-final.yml'
   pull_request:
     branches: [main]
     paths:
-      - '.github/tmp/ssc-sg10-nonworkflow.part-*.b64'
       - '.github/workflows/temporary-materialize-ssc-sg10-final.yml'
   workflow_dispatch:
 
@@ -27,25 +25,64 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Verify and reconstruct bounded patch
+      - name: Verify and reconstruct bounded patch from immutable blobs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -Eeuo pipefail
-          declare -A expected=(
-            [00]=1a39065bb99bf519f5f1883717f972c2a67396c514bc9f2ca2077372bd5f8e13
-            [01]=a642283727b86ee451c6baf516bd0c1a5043245595c02f741a390a7d72b499ce
-            [02]=54d5470a7b4eca93c43afa37af18c3433e531d8b628089fd083c3558a9299204
-            [03]=5f2f24aab030a2f68933c199ce92d9cc809ee46cbd8f6eacd7d70af6e8cc8ab2
+          blob_shas=(
+            41a560043a259585e9ff7d775c84c15ebf140ee7
+            d170d23b687d50873834ac646f1119b49f42b1b4
+            76cef6d2c4b52d31a3aaf1c926e13bb6015925bc
+            a6cb8b31f2628ff142c1257651329f8e52eceeb5
+            37587f68b0c66b4c6145ec46221325571138a866
+            a3cfe4fe01060477a760330fc5da42a6634e627d
+            bc63ff85d0b0e8e4ff093dbff94021d61f6b6ce2
+            bea779237814fb4bd61ccb82499fb31d1a446ae6
+            0e7d05de720f12bf5ffce4f15efe4ca8678a76c4
+            5008bf44dc201f462f042cc007c90101f82ccb57
+            8aaef468c6efde4e729e7e4c0ec785bef7070f19
+            15cb3c360a8aee23973ba5484b412a3f95d6393e
+            1f5b7ab50b73e305ee2473771a24b73b51346022
+            6da378be745646a0f73c90649757b5f0eac0ffa0
+            3402ebcfdc3ff7492968a23c2eb5c18758cc0f46
+            4778933637a661dc2644b1aff4eec00d24d0004d
           )
-          : > /tmp/sg10.patch.xz.b64
-          for part in 00 01 02 03; do
-            file=".github/tmp/ssc-sg10-nonworkflow.part-${part}.b64"
-            test -f "$file"
-            test "$(sha256sum "$file" | cut -d' ' -f1)" = "${expected[$part]}"
-            cat "$file" >> /tmp/sg10.patch.xz.b64
+          chunk_sha256=(
+            89d052511dbcb12cb6d6492d8c191bf24ee3c066d1af39e8d98a74777a567ed3
+            edf34a40bd1986a7646770eef0d6dbaa560c33ec888373758b96f7bbb7915ab0
+            04f72a635bb5e43aba46f1f2ab37919453845cd995e7f7803522308b5bc89641
+            490b16c37b74f8a01dd39c7ba7f8caf2f18be1e0454199e958e37d76bfeb6c51
+            9602400fb29b19676663e01dd81fda6ad9a51ad7323a275319a1c5a914b1d532
+            1b5ada6c61aefe36c4e9f9ae96081fa3e5697ff302c515d4d853985c1a329c31
+            1a41e8f78a365d59774d560ae7538227a69025dec89afef23d0fb7befac99ee2
+            a4f28613af6c6767058bc6ba4ce7bc90167411e3f93a3ea35803aea24ce1fe23
+            8411093a4183263cf6879a41d489b441cf83ea7858dfaa0080d3935bd68053ad
+            0fa7c27836216691085b6b2c6fa77399c806c8c8cf48f7440f40cebf2a87cc6a
+            8219c144601cbafe8e748e2fc5c47c0973e22f7c081cc74d64587dc2b523832c
+            21bb1b1a431eea1e851a3a629561afe7658dabab5965692f9be2c7e5d13cce1a
+            e434cff759bc8acf5c9751e842366862ad6becc7b8ebabc54dc6dd6871b4f2c9
+            b844a7a60d088a316dd30b0568960527ea7cc36e4202ceaae6341cbbea4ff048
+            e168b0687c7f4b4a465816b6fe0f8aca7302d1c5aa83045a20e683b791a273d1
+            5a6d97dab0d24beee0841b0c18282d286fb5d485caa1509c7030c12ada6f0fff
+          )
+          : > /tmp/sg10.patch.xz
+          for idx in "${!blob_shas[@]}"; do
+            sha="${blob_shas[$idx]}"
+            json="/tmp/blob-${idx}.json"
+            bin="/tmp/blob-${idx}.bin"
+            curl -fsSL \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/${sha}" > "$json"
+            test "$(jq -r '.sha' "$json")" = "$sha"
+            jq -r '.content' "$json" | tr -d '\n' | base64 -d > "$bin"
+            test "$(sha256sum "$bin" | cut -d' ' -f1)" = "${chunk_sha256[$idx]}"
+            if test "$idx" -lt 15; then test "$(wc -c < "$bin")" -eq 1500; else test "$(wc -c < "$bin")" -eq 1148; fi
+            cat "$bin" >> /tmp/sg10.patch.xz
           done
-          test "$(wc -c < /tmp/sg10.patch.xz.b64)" -eq 31532
-          test "$(sha256sum /tmp/sg10.patch.xz.b64 | cut -d' ' -f1)" = fc0dfdb948c43c48622ef49b420f3f2eb710f0e694215d457efe561f9e637689
-          base64 -d /tmp/sg10.patch.xz.b64 > /tmp/sg10.patch.xz
+          test "$(wc -c < /tmp/sg10.patch.xz)" -eq 23648
           test "$(sha256sum /tmp/sg10.patch.xz | cut -d' ' -f1)" = 6aae4a724f09adf2589e110238788f11873fe7bff657bbc20002f9a48e91dcba
           xz -dc /tmp/sg10.patch.xz > /tmp/sg10.patch
           test "$(sha256sum /tmp/sg10.patch | cut -d' ' -f1)" = 848432dad675a535dce8058ba2b56716903f656918edc6b7da942321ae60c3b6
