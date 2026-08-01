@@ -272,3 +272,8 @@ Wave 25 converts forty explicit missing-record obligations into eleven estate-ow
 ## Allocator-war targeted closure execution
 
 Wave 26 executes thirty-six ready closure tasks, preserves four blocked tasks, identifies one bounded public-interest institutional gate, and records one no-qualifying-gate result for the legislative-political-finance lane. Two downstream tasks become eligible only for a later wave. Complete denominators, evidence rows, findings, graph effects, and publication clearances remain zero. See `reports/lake-allocator-war-targeted-closure-wave-26.md`.
+
+
+## Wave 26 public-interest gate source custody
+
+The Wave 26 public-interest gate is bound to nine exact executive, Foreign Service, judicial, and procurement-control sources. Research sources remain confined to the separate legislative no-gate search. The source-custody repair preserves both result states, two downstream public-interest tasks, two blocked legislative-finance tasks, and zero evidence, finding, graph, or publication effect. See `reports/lake-allocator-war-wave26-source-custody-repair.md`.

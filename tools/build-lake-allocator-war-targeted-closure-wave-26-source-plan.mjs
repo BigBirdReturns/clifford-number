@@ -19,6 +19,7 @@ const countBy = (rows, key) => Object.fromEntries(
     .sort()
     .map(value => [value, rows.filter(row => row[key] === value).length])
 );
+const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
 
 const unavailableRefs = new Set([
   'LAW25-LAW21-EST-01/C02',
@@ -32,6 +33,23 @@ const unavailableRefs = new Set([
 ]);
 const completeGateRef = 'LAW25-LAW21-EST-05/C02';
 const noGateRef = 'LAW25-LAW21-EST-11/C02';
+const publicInterestGateSourceRefs = [
+  'LAW24-S012',
+  'LAW24-S013',
+  'LAW24-S014',
+  'LAW24-S015',
+  'LAW24-S019',
+  'LAW24-S020',
+  'LAW24-S021',
+  'LAW24-S022',
+  'LAW24-S023'
+];
+const legislativeNoGateSourceRefs = [
+  'LAW24-S016',
+  'LAW24-S017',
+  'LAW24-S018',
+  'LAW24-S028'
+];
 
 function resultStateFor(task) {
   if (task.closure_ref === completeGateRef) return 'complete';
@@ -80,23 +98,27 @@ function planFor(task) {
     return {
       closure_ref: task.closure_ref,
       result_state: resultState,
-      source_refs: task.source_refs,
-      coverage_statement: 'The inherited federal executive and implementing records identify a bounded selector spanning federal employment, programme administration, contracting, grants, funding recipients, and civil-rights enforcement. This completes only institutional-gate identification; the affected-row and consequence denominators remain open.',
+      source_refs: publicInterestGateSourceRefs,
+      coverage_statement: 'The exact executive, Foreign Service, judicial, and procurement-control records identify a bounded selector spanning federal employment, programme administration, contracting, grants, funding recipients, civil-rights enforcement, and formal correction routes. This completes only institutional-gate identification; the affected-row and consequence denominators remain open.',
       included_rows: [
-        'named federal employment and personnel criteria',
-        'named federal contracting, grant, and funding-recipient conditions',
-        'named civil-rights enforcement and compliance instruments',
-        'formal administrative and judicial correction routes'
+        'EO 14151 programme termination and inventory surface',
+        'EO 14173 federal employment, contracting, grant, and funding-recipient conditions',
+        'EO 14281 disparate-impact enforcement reclassification',
+        'EO 14398 contractor compliance, records, suspension, debarment, and litigation surface',
+        'Foreign Service promotion and tenure criteria and operative personnel manual',
+        'Ames judicial correction control and docket',
+        'VMD procurement correction control'
       ],
       unavailable_rows: [
         'complete programme, office, contractor, grantee, employee, beneficiary, enforcement, and remedy rosters',
         'complete observed consequence and correction denominator'
       ],
       refused_rows: [
+        'status, hierarchy, demographic, and electorate research is not used to establish this institutional gate',
         'gate identification is not treated as a complete deservingness denominator',
         'formal authority is not treated as proof of use, motive, prevalence, racial order, coordination, or remedy adequacy'
       ],
-      negative_search_statement: 'The inherited records identify the bounded federal gate, but do not expose the complete affected-row, burden, consequence, appeal, and remedy denominator.',
+      negative_search_statement: 'The exact institutional records identify the bounded federal gate, but do not expose the complete affected-row, burden, consequence, appeal, and remedy denominator.',
       correction_route: correctionRoute(task),
       correction_outcome: 'bounded_institutional_gate_identified_downstream_denominators_open'
     };
@@ -105,7 +127,7 @@ function planFor(task) {
     return {
       closure_ref: task.closure_ref,
       result_state: resultState,
-      source_refs: task.source_refs,
+      source_refs: legislativeNoGateSourceRefs,
       coverage_statement: 'The bounded status, hierarchy, demographic, representation, and public-record source set did not identify a source-complete legislative or political-finance selector with an executed decision instrument, affected rows, material consequence, and correction chain.',
       included_rows: [
         'bounded status and hierarchy research',
@@ -192,6 +214,15 @@ export function buildSourcePlan() {
   }
 
   const taskPlans = ready.map(planFor);
+  const publicInterestGate = taskPlans.find(row => row.closure_ref === completeGateRef);
+  const legislativeNoGate = taskPlans.find(row => row.closure_ref === noGateRef);
+  if (!publicInterestGate || !same(publicInterestGate.source_refs, publicInterestGateSourceRefs)) {
+    throw new Error('Wave 26 public-interest gate source custody drift');
+  }
+  if (!legislativeNoGate || !same(legislativeNoGate.source_refs, legislativeNoGateSourceRefs)) {
+    throw new Error('Wave 26 legislative no-gate source custody drift');
+  }
+
   const usedSourceRefs = [...new Set(taskPlans.flatMap(row => row.source_refs))].sort();
   const sourceRegistry = usedSourceRefs.map(sourceRef => {
     const prior = sourceByRef.get(sourceRef);
@@ -221,7 +252,7 @@ export function buildSourcePlan() {
     partial: 26,
     unavailable_after_search: 8
   };
-  if (JSON.stringify(resultStates) !== JSON.stringify(expectedStates)) {
+  if (!same(resultStates, expectedStates)) {
     throw new Error('Wave 26 result-state denominator drift: ' + JSON.stringify(resultStates));
   }
 
@@ -230,7 +261,7 @@ export function buildSourcePlan() {
     program_ref: wave26Policy.program_ref,
     wave_ref: wave26Policy.wave_ref,
     as_of: wave26Policy.as_of,
-    purpose: 'Bind every Wave 25 ready closure task to inherited source-addressed receipts and a bounded acquisition outcome while preserving all four blocked tasks outside the execution plan.',
+    purpose: 'Bind every Wave 25 ready closure task to exact inherited source-addressed receipts and a bounded acquisition outcome while preserving all four blocked tasks outside the execution plan. The public-interest institutional gate uses only the executive, Foreign Service, judicial, and procurement-control records that establish that gate; research sources remain confined to the separate legislative no-gate search.',
     source_registry: sourceRegistry,
     task_plans: taskPlans,
     counts: {
@@ -244,6 +275,13 @@ export function buildSourcePlan() {
       finding_promotions: 0,
       graph_effects: 0,
       publication_clearances: 0
+    },
+    custody_contract: {
+      public_interest_gate_ref: completeGateRef,
+      public_interest_gate_source_refs: publicInterestGateSourceRefs,
+      legislative_no_gate_ref: noGateRef,
+      legislative_no_gate_source_refs: legislativeNoGateSourceRefs,
+      research_sources_establish_public_interest_gate: false
     },
     boundaries: wave26Policy.boundaries
   };

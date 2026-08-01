@@ -10,7 +10,7 @@ execution rows:                      51
 result complete / partial:           1 / 26
 unavailable / no qualifying gate:    8 / 1
 unblocked next wave / blocked no gate: 2 / 2
-source receipts / uses:              28 / 179
+source receipts / uses:              28 / 185
 complete denominators:               0
 evidence rows:                       0
 finding promotions:                  0
