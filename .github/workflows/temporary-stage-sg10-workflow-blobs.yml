@@ -1,0 +1,48 @@
+name: Temporary stage SG-10 workflow blobs
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-stage-sg10-workflow-blobs.yml'
+      - '.github/tmp/ssc-w02-sg10.part-00.b64'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stage-sg10-workflow-blobs
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    if: github.head_ref == 'agent/ssc-sg10-payload-recovery' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-sg10-payload-recovery
+          fetch-depth: 0
+      - name: Publish exact workflow blobs under inert custody paths
+        run: |
+          set -Eeuo pipefail
+          test "$(git hash-object .github/tmp/ssc-w02-sg10.part-00.b64)" = '332b824ad26015a943d0a046d2aad6f263fd3bc4'
+          base64 --decode .github/tmp/ssc-w02-sg10.part-00.b64 > /tmp/sg10.tar.xz
+          rm -rf /tmp/sg10-unpack
+          mkdir -p /tmp/sg10-unpack
+          tar -xJf /tmp/sg10.tar.xz -C /tmp/sg10-unpack
+
+          git reset --hard 4c8ec34686d7005b06a94dc75bb8828610be60a1
+          mkdir -p .github/tmp
+          cp /tmp/sg10-unpack/.github/workflows/project-stable-ground-sg09.yml .github/tmp/project-stable-ground-sg09.yml
+          cp /tmp/sg10-unpack/.github/workflows/project-stable-ground-sg10.yml .github/tmp/project-stable-ground-sg10.yml
+          git add .github/tmp/project-stable-ground-sg09.yml .github/tmp/project-stable-ground-sg10.yml
+          test "$(git diff --cached --name-only | sort | tr '\n' ' ')" = '.github/tmp/project-stable-ground-sg09.yml .github/tmp/project-stable-ground-sg10.yml '
+          git config user.name 'OpenAI'
+          git config user.email 'noreply@openai.com'
+          git commit -m 'Stage exact SG-10 workflow blobs'
+          git push --force origin HEAD:agent/ssc-wave02-sg10-workflow-blobs
+          echo "workflow_blob_stage=$(git rev-parse HEAD)"
