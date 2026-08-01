@@ -1,4 +1,4 @@
-name: Temporary export SSC Wave 02 review SG-10 v2
+name: Temporary export recovered SG-10 payload
 
 on:
   pull_request:
@@ -6,6 +6,7 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - '.github/workflows/temporary-export-ssc-wave02-review-sg10-v2.yml'
+      - '.github/tmp/ssc-w02-sg10.part-00.b64'
   workflow_dispatch:
 
 permissions:
@@ -13,22 +14,26 @@ permissions:
 
 jobs:
   export:
-    if: github.head_ref == 'agent/ssc-wave02-maintainer-review-sg10-v2' && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.head_ref == 'agent/ssc-sg10-payload-recovery' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent/ssc-wave02-maintainer-review-sg10-v2
-          fetch-depth: 0
-      - name: Package exact branch tree
+          ref: agent/ssc-sg10-payload-recovery
+          fetch-depth: 1
+      - name: Decode exact SG-10 payload
         run: |
           set -Eeuo pipefail
-          git archive --format=zip --output=/tmp/ssc-wave02-review-sg10-v2-base.zip HEAD
-          sha256sum /tmp/ssc-wave02-review-sg10-v2-base.zip
+          git hash-object .github/tmp/ssc-w02-sg10.part-00.b64
+          base64 --decode .github/tmp/ssc-w02-sg10.part-00.b64 > /tmp/sg10-payload.tar.xz
+          sha256sum .github/tmp/ssc-w02-sg10.part-00.b64 /tmp/sg10-payload.tar.xz
+          tar -tJf /tmp/sg10-payload.tar.xz > /tmp/sg10-payload-paths.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: ssc-wave02-review-sg10-v2-base
-          path: /tmp/ssc-wave02-review-sg10-v2-base.zip
+          name: recovered-sg10-payload
+          path: |
+            /tmp/sg10-payload.tar.xz
+            /tmp/sg10-payload-paths.txt
           if-no-files-found: error
           retention-days: 1
