@@ -122,13 +122,40 @@ const buildsByPath = {
       real_world_effect_claimed: false
     },
     refusal_rules: manifest.controls[4].required_refusal_rules
+  },
+  'build/research/preference-standing-authority.json': {
+    schema_version: 'preference-standing-build@1',
+    fixture_id: 'same-support-different-standing-v1',
+    graph_effect: 'none',
+    counts_toward_thesis_evidence: false,
+    conclusion_generated: false,
+    metrics: {
+      distinct_aggregate_headline_signatures: 1,
+      distinct_support_evidence_classes: 3,
+      distinct_authority_classes: 3,
+      distinct_authority_resolution_signatures: 3,
+      public_authorized_worlds: 1,
+      institutionally_approved_without_public_authorization_worlds: 2,
+      binding_public_rejection_worlds: 1,
+      aggregate_support_rate: 0.8
+    },
+    classification: {
+      modeled_support_confers_authorization: false,
+      advisory_feedback_confers_authorization: false,
+      institutional_approval_is_public_authorization: false,
+      aggregate_support_identifies_authorization: false,
+      preference_change_present: false,
+      manipulative_intent_inferable: false,
+      real_world_effect_claimed: false
+    },
+    refusal_rules: manifest.controls[5].required_refusal_rules
   }
 };
 
 const compiled = compilePreferenceCustodyManifest(manifest, buildsByPath);
 assert.deepEqual(validatePreferenceCustodyManifestBuild(compiled), []);
 assert.equal(compiled.status, 'laboratory_floor_qualified');
-assert.equal(compiled.control_count, 5);
+assert.equal(compiled.control_count, 6);
 assert.equal(compiled.real_world_evidence_state, 'none');
 assert.equal(compiled.control_integrity.all_graph_effect_none, true);
 assert.equal(compiled.control_integrity.no_thesis_evidence_consumption, true);
@@ -137,26 +164,30 @@ assert.equal(compiled.control_integrity.no_preference_change_claim, true);
 assert.equal(compiled.control_integrity.no_intent_inference, true);
 assert.equal(compiled.control_integrity.all_required_refusal_rules_present, true);
 assert.ok(compiled.refusal_rule_union.includes('same_behavior_does_not_imply_same_preference'));
-assert.ok(compiled.open_frontiers.includes('binding_public_standing_and_objective_control'));
-assert.ok(compiled.open_frontiers.includes('intersectional_and_unobserved_group_custody'));
+assert.ok(compiled.open_frontiers.includes('federated_multilevel_and_successor_authority'));
+assert.ok(!compiled.open_frontiers.includes('binding_public_standing_and_objective_control'));
 assert.ok(compiled.refusal_rule_union.includes('organized_refusal_is_not_missing_data'));
 assert.ok(compiled.refusal_rule_union.includes('distributional_acceptability_requires_external_authority'));
+assert.ok(compiled.refusal_rule_union.includes('prediction_is_evidence_not_authority'));
+assert.ok(compiled.refusal_rule_union.includes('public_rejection_blocks_implementation'));
 
 const markdown = renderPreferenceCustodyManifestMarkdown(compiled);
-assert.match(markdown, /Preference custody laboratory floor v3/);
+assert.match(markdown, /Preference custody laboratory floor v4/);
 assert.match(markdown, /PC-01: exposure_policy_confounding/);
 assert.match(markdown, /PC-02: option_set_starvation/);
 assert.match(markdown, /PC-03: observational_equivalence/);
 assert.match(markdown, /PC-04: attrition_and_refusal_censoring/);
 assert.match(markdown, /PC-05: subgroup_response_capacity_and_burden/);
-assert.match(markdown, /Maximum subgroup success-rate gap: 40.00%/);
-assert.match(markdown, /Maximum adaptation-cost ratio: 15.00×/);
+assert.match(markdown, /PC-06: authority_laundering_and_nonbinding_consultation/);
+assert.match(markdown, /Publicly authorized worlds: 1/);
+assert.match(markdown, /Institutional-only approval worlds: 2/);
+assert.match(markdown, /Binding public rejection worlds: 1/);
 assert.match(markdown, /Laboratory controls are real-world evidence: false/);
-assert.doesNotMatch(markdown, /Electric Twin caused|News UK caused|discriminated against the public/i);
+assert.doesNotMatch(markdown, /Electric Twin caused|News UK caused|illegitimate institution|manipulated the public/i);
 
 const missingControl = structuredClone(manifest);
 missingControl.controls.pop();
-assert.ok(validatePreferenceCustodyManifest(missingControl).some(error => /exactly PC-01, PC-02, PC-03, PC-04, and PC-05/.test(error)));
+assert.ok(validatePreferenceCustodyManifest(missingControl).some(error => /exactly PC-01, PC-02, PC-03, PC-04, PC-05, and PC-06/.test(error)));
 
 const graphLeak = structuredClone(buildsByPath);
 graphLeak['build/research/preference-custody-option-set-fixture.json'].graph_effect = 'asserted';
@@ -182,5 +213,15 @@ const subgroupLeak = structuredClone(buildsByPath);
 subgroupLeak['build/research/preference-subgroup-capacity.json'].classification.manipulative_intent_inferable = true;
 const subgroupLeakCompiled = compilePreferenceCustodyManifest(manifest, subgroupLeak);
 assert.ok(validatePreferenceCustodyManifestBuild(subgroupLeakCompiled).some(error => /no_intent_inference/.test(error)));
+
+const authorityLeak = structuredClone(buildsByPath);
+authorityLeak['build/research/preference-standing-authority.json'].classification.modeled_support_confers_authorization = true;
+const authorityLeakCompiled = compilePreferenceCustodyManifest(manifest, authorityLeak);
+assert.ok(validatePreferenceCustodyManifestBuild(authorityLeakCompiled).some(error => /refuse modeled support as authorization/.test(error)));
+
+const resolutionLeak = structuredClone(buildsByPath);
+resolutionLeak['build/research/preference-standing-authority.json'].metrics.binding_public_rejection_worlds = 0;
+const resolutionLeakCompiled = compilePreferenceCustodyManifest(manifest, resolutionLeak);
+assert.ok(validatePreferenceCustodyManifestBuild(resolutionLeakCompiled).some(error => /preserve one binding public rejection/.test(error)));
 
 console.log('preference-custody-manifest.test.js: OK');

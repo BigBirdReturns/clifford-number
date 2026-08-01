@@ -1,10 +1,10 @@
-# Preference custody laboratory floor v3
+# Preference custody laboratory floor v4
 
-The preference-custody laboratory joins five deterministic controls into one minimum identification floor for issue [#594](https://github.com/BigBirdReturns/clifford-number/issues/594).
+The preference-custody laboratory joins six deterministic controls into one minimum identification and authority floor for issue [#594](https://github.com/BigBirdReturns/clifford-number/issues/594).
 
-The controls remain synthetic. They create no graph effect, thesis evidence, real-world causal conclusion, preference-change finding, discrimination finding, manipulation claim, or inference of intent. Their purpose is to establish what a real deployment must preserve before observed behavior can be narrated as population preference, population support, distributional acceptability, or public authorization.
+The controls remain synthetic. They create no graph effect, thesis evidence, real-world causal conclusion, preference-change finding, discrimination finding, legitimacy verdict, manipulation claim, or inference of intent. Their purpose is to establish what a real deployment must preserve before observed behavior can be narrated as population preference, population support, distributional acceptability, or public authorization.
 
-## The five-control floor
+## The six-control floor
 
 ### PC-01: exposure-policy confounding
 
@@ -63,7 +63,22 @@ missing group slice ≠ no disparity
 distributional acceptability requires external authority
 ```
 
-## The identification ladder
+### PC-06: standing and objective-control authority
+
+Four authority worlds preserve the same aggregate 80 percent support headline. Synthetic prediction and direct advisory feedback can support commissioner approval while remaining nonbinding. A binding affected-public instrument can authorize implementation when its overall and group thresholds pass. The same aggregate support is rejected when a protected group threshold fails.
+
+```text
+prediction = evidence, not authority
+advisory feedback ≠ binding participation
+institutional approval ≠ public authorization
+aggregate support does not override a distributional rule
+binding public rejection blocks implementation
+model accuracy does not confer jurisdiction
+```
+
+The binding instrument seals the eligible constituency, quorum, overall threshold, group threshold, challenge window, and rights to amend the objective, suspend implementation, veto the proposal, appeal, and obtain remedy. The authority resolution records institutional approval, public authorization, binding rejection, and implementation state as separate objects.
+
+## The identification and authority ladder
 
 A conforming real-world case must preserve six distinct stages.
 
@@ -72,15 +87,15 @@ A conforming real-world case must preserve six distinct stages.
 3. **Response mechanism.** Direct first choice, fallback, adaptation, compliance, or competing candidate explanations.
 4. **Attrition and refusal.** Complete disposition, denominator history, exit, churn, nonresponse, organized refusal, and the reasons those states were assigned.
 5. **Subgroup distribution.** Group denominators, assignment, outcomes, adaptation cost, burden, counterfactuals, and affected-group contestation.
-6. **Public authorization.** An external procedure through which affected people can bind the objective, threshold, acceptable burden, suspension, redesign, or retirement decision.
+6. **Public authorization.** A binding affected-public instrument that defines the constituency and decision rule, preserves objective amendment, suspension, veto, challenge, appeal, and remedy, and changes the implementation state when the public approves or rejects.
 
-Passing a predictive benchmark answers fit under the tested instrument. It does not establish exogeneity of later behavior, completeness of the option set, identification of the response mechanism, absence of dissent, population support, subgroup parity, acceptable burden, or authorization of the intervention.
+Passing a predictive benchmark answers fit under the tested instrument. It does not establish exogeneity of later behavior, completeness of the option set, identification of the response mechanism, absence of dissent, population support, subgroup parity, acceptable burden, or authorization of the intervention. Human feedback also remains advisory unless the governing instrument permits that feedback to bind.
 
 ## Open frontiers
 
-The laboratory floor remains deliberately incomplete. It does not yet qualify dynamic preference change in an open environment, coordinated refusal and collective bargaining, intersectional and unobserved group custody, model and policy succession, binding public standing over the objective, or a real deployment chain from synthetic output through intervention and feedback reuse.
+The laboratory floor remains deliberately incomplete. It does not yet qualify dynamic preference change in an open environment, coordinated refusal and collective bargaining, intersectional and unobserved group custody, model and policy succession, federated or multilevel authority, successor legitimacy, or a real deployment chain from synthetic output through intervention and feedback reuse.
 
-Those remain open frontiers rather than being inferred from the five controls.
+Those remain open frontiers rather than being inferred from the six controls.
 
 ## Run
 
@@ -90,6 +105,7 @@ node tools/compile-preference-custody.mjs
 node tools/compile-preference-equifinality.mjs
 node tools/compile-preference-attrition.mjs
 node tools/compile-preference-subgroup.mjs
+node tools/compile-preference-standing.mjs
 node tools/compile-preference-custody-manifest.mjs
 
 node tools/validate-performative-synthetic-constituency.mjs
@@ -97,6 +113,7 @@ node tools/validate-preference-custody.mjs
 node tools/validate-preference-equifinality.mjs
 node tools/validate-preference-attrition.mjs
 node tools/validate-preference-subgroup.mjs
+node tools/validate-preference-standing.mjs
 node tools/validate-preference-custody-manifest.mjs
 
 node test/performative-synthetic-constituency.test.js
@@ -104,6 +121,7 @@ node test/preference-custody.test.js
 node test/preference-equifinality.test.js
 node test/preference-attrition.test.js
 node test/preference-subgroup.test.js
+node test/preference-standing.test.js
 node test/preference-custody-manifest.test.js
 ```
 
@@ -116,6 +134,6 @@ build/research/preference-custody-laboratory-floor.md
 
 ## Promotion boundary
 
-A real case requires the model and version, source population and data window, complete question and option set, attributed institutional disposition, exposure and eligibility, complete disposition and denominator history, group denominators and burden distribution, counterfactual design, post-intervention outcomes, feedback reuse, and affected-public standing and remedy.
+A real case requires the model and version, source population and data window, complete question and option set, attributed institutional disposition, exposure and eligibility, complete disposition and denominator history, group denominators and burden distribution, counterfactual design, post-intervention outcomes, feedback reuse, a defined affected constituency, a binding decision rule with quorum and thresholds, enforceable objective-control and remedy rights, and an implementation receipt showing that approval or rejection carried consequence.
 
-The laboratory can refuse unsupported interpretation. It cannot grant publication authority to a real-world claim.
+The laboratory can refuse unsupported interpretation. It cannot grant publication authority to a real-world causal or legitimacy claim.
