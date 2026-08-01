@@ -1,0 +1,39 @@
+name: Preference custody option-set fixture
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/**'
+      - 'tools/lib/preference-custody.mjs'
+      - 'tools/compile-preference-custody.mjs'
+      - 'tools/validate-preference-custody.mjs'
+      - 'test/preference-custody.test.js'
+      - 'docs/preference-custody-option-set.md'
+      - '.github/workflows/preference-custody.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fixture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Compile deterministic option-set custody projection
+        run: node tools/compile-preference-custody.mjs
+      - name: Validate custody, interpretation, and authority boundaries
+        run: node tools/validate-preference-custody.mjs
+      - name: Exercise positive, tamper, and laundering fixtures
+        run: node test/preference-custody.test.js
+      - name: Preserve deterministic preference-custody projection
+        uses: actions/upload-artifact@v4
+        with:
+          name: preference-custody-option-set-fixture
+          path: |
+            build/research/preference-custody-option-set-fixture.json
+            build/research/preference-custody-option-set-fixture.md
+          if-no-files-found: error
