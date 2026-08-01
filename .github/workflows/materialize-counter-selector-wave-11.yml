@@ -1,0 +1,103 @@
+name: Materialize Counter-Selector Wave 11 Batch 04 acquisition
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-11.yml'
+      - '.github/materializers/counter-selector-wave-11/**'
+  workflow_dispatch:
+
+concurrency:
+  group: counter-selector-wave-11-materializer
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/counter-selector-wave-11-b04-acquisition
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Unpack exact Wave 11 source estate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/materializers/counter-selector-wave-11/payload-* \
+            | base64 --decode \
+            > /tmp/counter-selector-wave-11.tar.gz
+          echo '30934ba24fd676085163db6a1edd78883d86513f5a5a2a776a75bb13d994275b  /tmp/counter-selector-wave-11.tar.gz' \
+            | sha256sum --check --strict
+          tar -xzf /tmp/counter-selector-wave-11.tar.gz -C .
+          rm -rf .github/materializers/counter-selector-wave-11
+
+      - name: Build, validate, and attack Batch 04 acquisition
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-counter-selector-wave-11.mjs
+          node tools/validate-counter-selector-wave-11.mjs
+          node test/counter-selector-wave-11.test.js
+
+      - name: Commit exact permanent Wave 11 estate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          actual="$(git diff --cached --name-only | sort)"
+          expected="$(printf '%s\n' \
+            .github/materializers/counter-selector-wave-11/payload-000 \
+            .github/materializers/counter-selector-wave-11/payload-001 \
+            .github/materializers/counter-selector-wave-11/payload-002 \
+            .github/materializers/counter-selector-wave-11/payload-003 \
+            .github/materializers/counter-selector-wave-11/payload-004 \
+            .github/materializers/counter-selector-wave-11/payload-005 \
+            .github/materializers/counter-selector-wave-11/payload-006 \
+            .github/materializers/counter-selector-wave-11/payload-007 \
+            .github/materializers/counter-selector-wave-11/payload-008 \
+            data/project/counter-selector-artifact-acquisition-b04-registry.json \
+            data/project/counter-selector-blind-packet-registry-b04.json \
+            data/project/counter-selector-wave-11-batch-04.json \
+            data/project/counter-selector-wave-11-release-manifest.json \
+            data/project/counter-selector-wave-11-source-registry.json \
+            docs/methods/counter-selector-artifact-acquisition-b04.md \
+            docs/milestones/counter-selector-wave-11.md \
+            reports/core-thesis/counter-selector-wave-11/data.json \
+            reports/core-thesis/counter-selector-wave-11/index.html \
+            schemas/counter-selector-artifact-acquisition-b04.schema.json \
+            test/counter-selector-wave-11.test.js \
+            tools/build-counter-selector-wave-11.mjs \
+            tools/validate-counter-selector-wave-11.mjs | sort)"
+          test "$actual" = "$expected"
+          git diff --cached --check
+          git commit -m 'Acquire Counter-Selector Wave 11 Batch 04 artifacts'
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Prove deterministic Wave 11 reconstruction
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          node tools/build-counter-selector-wave-11.mjs
+          node tools/validate-counter-selector-wave-11.mjs
+          node test/counter-selector-wave-11.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+
+      - name: Publish permanent Wave 11 head
+        run: git push origin HEAD:agent/counter-selector-wave-11-b04-acquisition
