@@ -1,0 +1,412 @@
+{
+  "schema_version": "lake-allocator-war-gap-fanout-wave-30-policy@1",
+  "program_ref": "CN-LAKE-ALLOCATOR-WAR-W30",
+  "wave_ref": "LAW-W30",
+  "as_of": "2026-08-01",
+  "title": "Allocator-war missing-row observability and closure fan-out Wave 30",
+  "purpose": "Transform every explicit unavailable row retained by Wave 29 into one exact route-owned closure obligation, separate public execution from lawful-access boundaries, and amortize future acquisition across seven reusable source-system lanes without promoting evidence or findings.",
+  "base_checkpoint": {
+    "branch": "agent/lake-allocator-war-wave-21",
+    "commit": "91ed857db69d8e095138688634e05859484d42ba",
+    "required_ancestry": true
+  },
+  "paths": {
+    "source_projection": "build/lake-actions/allocator-war-public-interest-execution-wave-29.json",
+    "source_result_root": "data/acquisition/lake-allocator-war-wave-29",
+    "projection": "build/lake-actions/allocator-war-gap-fanout-wave-30.json",
+    "report": "reports/lake-allocator-war-gap-fanout-wave-30.md",
+    "method": "docs/methods/lake-allocator-war-gap-fanout-wave-30.md",
+    "milestone": "docs/milestones/lake-allocator-war-gap-fanout-wave-30.md",
+    "result_root": "data/acquisition/lake-allocator-war-wave-30"
+  },
+  "source_contract": {
+    "required_source_schema": "lake-allocator-war-public-interest-execution-wave-29@1",
+    "required_source_result_schema": "lake-allocator-war-public-interest-execution-result-wave-29@1",
+    "required_result_states": [
+      "partial",
+      "unavailable_after_search"
+    ],
+    "required_complete_denominator": false,
+    "required_evidence_rows": 0,
+    "required_finding_promotions": 0,
+    "required_graph_effects": 0,
+    "required_publication_clearances": 0
+  },
+  "route_classes": [
+    {
+      "route_class": "protected-personnel-records",
+      "route_sequence": 1,
+      "owner": "labor-immigration-workforce-mobility-estate",
+      "execution_state": "requires_privacy_safe_aggregate_or_lawful_record_access",
+      "public_execution": false,
+      "objective": "Acquire lawful aggregate or person-level personnel records without converting protected-record absence into a substantive inference.",
+      "required_receipts": [
+        "lawful aggregate personnel tables",
+        "privacy-safe decision extracts",
+        "criteria and decision-custody records",
+        "comparator and no-action rows where legally available"
+      ],
+      "stop_rule": "Terminate as access-bounded when lawful public or authorized access cannot expose the declared row set; preserve the missing denominator without imputing secrecy, motive, or uniformity."
+    },
+    {
+      "route_class": "internal-authority-and-inventory",
+      "route_sequence": 2,
+      "owner": "us-executive-appointments-ethics-estate",
+      "execution_state": "ready_for_agency_record_acquisition",
+      "public_execution": true,
+      "objective": "Recover agency inventory submissions, implementation histories, delegations, exceptions, overrides, and decision custody.",
+      "required_receipts": [
+        "agency inventories and disposition files",
+        "delegation and authority instruments",
+        "version histories, exceptions, waivers, and overrides",
+        "decision logs, dissent, recusal, and no-action rows"
+      ],
+      "stop_rule": "Do not substitute executive-wide instructions or named examples for complete agency submissions and decision files."
+    },
+    {
+      "route_class": "public-award-and-contract-denominators",
+      "route_sequence": 3,
+      "owner": "public-money-industrial-policy-estate",
+      "execution_state": "ready_for_public_system_denominator_acquisition",
+      "public_execution": true,
+      "objective": "Construct complete base universes for awards, recipients, contracts, contractors, agencies, amounts, and timing before joining action records.",
+      "required_receipts": [
+        "machine-addressable award and contract universes",
+        "recipient and contractor identifiers",
+        "agency, amount, programme, and timing fields",
+        "negative, inactive, and no-action rows"
+      ],
+      "stop_rule": "A broad award or contract universe is a base denominator only; it does not identify which rows were subject to the disputed condition or action."
+    },
+    {
+      "route_class": "published-enforcement-and-action-registers",
+      "route_sequence": 4,
+      "owner": "regulatory-markets-estate",
+      "execution_state": "ready_for_published_action_register_acquisition",
+      "public_execution": true,
+      "objective": "Recover published certifications, reviews, investigations, referrals, sanctions, settlements, declinations, withdrawals, replacement rules, and no-action records where enumerated.",
+      "required_receipts": [
+        "published action and enforcement registers",
+        "certification and records-request rows",
+        "investigation, sanction, settlement, appeal, and declination rows",
+        "rule, guidance, withdrawal, replacement, and no-action rows"
+      ],
+      "stop_rule": "Published announcements are not a complete enforcement denominator unless the issuing system declares complete coverage and preserves declinations and no-action rows."
+    },
+    {
+      "route_class": "correction-dockets-and-outcomes",
+      "route_sequence": 5,
+      "owner": "public-interest-crossing-estate",
+      "execution_state": "ready_for_docket_and_outcome_acquisition",
+      "public_execution": true,
+      "objective": "Recover complete dockets, administrative files, settlements, compliance records, unsuccessful paths, and practical correction outcomes.",
+      "required_receipts": [
+        "complete administrative and judicial dockets",
+        "appeal, protest, grievance, and settlement instruments",
+        "remedy, timing, access, cost, compliance, and durability rows",
+        "denied, abandoned, unresolved, and no-remedy rows"
+      ],
+      "stop_rule": "Formal review, remand, dismissal, or settlement is not effective correction without final outcome, implementation, access, cost, and durability evidence."
+    },
+    {
+      "route_class": "affected-comparator-and-distributional-joins",
+      "route_sequence": 6,
+      "owner": "public-interest-crossing-estate",
+      "execution_state": "ready_for_comparator_join_design",
+      "public_execution": true,
+      "objective": "Join affected, unaffected, comparator, burden, no-effect, recurrence, substitution, and distributional consequence rows without category-to-person substitution.",
+      "required_receipts": [
+        "affected and unaffected population tables",
+        "eligibility, exclusion, burden, and no-effect rows",
+        "comparator design and entity-resolution rules",
+        "recurrence, substitution, reversal, durability, and public-value consequences"
+      ],
+      "stop_rule": "Formal coverage categories, named litigants, and represented classes cannot stand in for the complete affected and comparator denominator."
+    },
+    {
+      "route_class": "financial-recovery-and-continuity",
+      "route_sequence": 7,
+      "owner": "public-money-industrial-policy-estate",
+      "execution_state": "ready_for_financial_recovery_acquisition",
+      "public_execution": true,
+      "objective": "Recover programme continuity, substitution, exit, clawback, repayment, recovery, loss, performance, and public-private value allocation.",
+      "required_receipts": [
+        "programme replacement and continuity records",
+        "recipient exit and substitution rows",
+        "clawback, repayment, recovery, loss, and no-recovery records",
+        "performance and public-private value allocation"
+      ],
+      "stop_rule": "Announced payments, settlements, replacement programmes, or terminations are not realized public recovery or continuity without execution and performance records."
+    }
+  ],
+  "assignments": [
+    {
+      "source_task_ref": "LAW28-EST-04/T01",
+      "unavailable_row_index": 0,
+      "route_class": "protected-personnel-records"
+    },
+    {
+      "source_task_ref": "LAW28-EST-04/T01",
+      "unavailable_row_index": 1,
+      "route_class": "internal-authority-and-inventory"
+    },
+    {
+      "source_task_ref": "LAW28-EST-04/T01",
+      "unavailable_row_index": 2,
+      "route_class": "protected-personnel-records"
+    },
+    {
+      "source_task_ref": "LAW28-EST-04/T02",
+      "unavailable_row_index": 0,
+      "route_class": "correction-dockets-and-outcomes"
+    },
+    {
+      "source_task_ref": "LAW28-EST-04/T02",
+      "unavailable_row_index": 1,
+      "route_class": "correction-dockets-and-outcomes"
+    },
+    {
+      "source_task_ref": "LAW28-EST-04/T02",
+      "unavailable_row_index": 2,
+      "route_class": "correction-dockets-and-outcomes"
+    },
+    {
+      "source_task_ref": "LAW28-EST-05/T01",
+      "unavailable_row_index": 0,
+      "route_class": "internal-authority-and-inventory"
+    },
+    {
+      "source_task_ref": "LAW28-EST-05/T01",
+      "unavailable_row_index": 1,
+      "route_class": "internal-authority-and-inventory"
+    },
+    {
+      "source_task_ref": "LAW28-EST-05/T01",
+      "unavailable_row_index": 2,
+      "route_class": "internal-authority-and-inventory"
+    },
+    {
+      "source_task_ref": "LAW28-EST-05/T02",
+      "unavailable_row_index": 0,
+      "route_class": "protected-personnel-records"
+    },
+    {
+      "source_task_ref": "LAW28-EST-05/T02",
+      "unavailable_row_index": 1,
+      "route_class": "protected-personnel-records"
+    },
+    {
+      "source_task_ref": "LAW28-EST-05/T02",
+      "unavailable_row_index": 2,
+      "route_class": "affected-comparator-and-distributional-joins"
+    },
+    {
+      "source_task_ref": "LAW28-EST-05/T03",
+      "unavailable_row_index": 0,
+      "route_class": "affected-comparator-and-distributional-joins"
+    },
+    {
+      "source_task_ref": "LAW28-EST-05/T03",
+      "unavailable_row_index": 1,
+      "route_class": "affected-comparator-and-distributional-joins"
+    },
+    {
+      "source_task_ref": "LAW28-EST-05/T03",
+      "unavailable_row_index": 2,
+      "route_class": "affected-comparator-and-distributional-joins"
+    },
+    {
+      "source_task_ref": "LAW28-EST-05/T03",
+      "unavailable_row_index": 3,
+      "route_class": "correction-dockets-and-outcomes"
+    },
+    {
+      "source_task_ref": "LAW28-EST-06/T01",
+      "unavailable_row_index": 0,
+      "route_class": "public-award-and-contract-denominators"
+    },
+    {
+      "source_task_ref": "LAW28-EST-06/T01",
+      "unavailable_row_index": 1,
+      "route_class": "published-enforcement-and-action-registers"
+    },
+    {
+      "source_task_ref": "LAW28-EST-06/T01",
+      "unavailable_row_index": 2,
+      "route_class": "public-award-and-contract-denominators"
+    },
+    {
+      "source_task_ref": "LAW28-EST-06/T02",
+      "unavailable_row_index": 0,
+      "route_class": "financial-recovery-and-continuity"
+    },
+    {
+      "source_task_ref": "LAW28-EST-06/T02",
+      "unavailable_row_index": 1,
+      "route_class": "financial-recovery-and-continuity"
+    },
+    {
+      "source_task_ref": "LAW28-EST-06/T02",
+      "unavailable_row_index": 2,
+      "route_class": "financial-recovery-and-continuity"
+    },
+    {
+      "source_task_ref": "LAW28-EST-07/T01",
+      "unavailable_row_index": 0,
+      "route_class": "public-award-and-contract-denominators"
+    },
+    {
+      "source_task_ref": "LAW28-EST-07/T01",
+      "unavailable_row_index": 1,
+      "route_class": "published-enforcement-and-action-registers"
+    },
+    {
+      "source_task_ref": "LAW28-EST-07/T01",
+      "unavailable_row_index": 2,
+      "route_class": "public-award-and-contract-denominators"
+    },
+    {
+      "source_task_ref": "LAW28-EST-07/T02",
+      "unavailable_row_index": 0,
+      "route_class": "published-enforcement-and-action-registers"
+    },
+    {
+      "source_task_ref": "LAW28-EST-07/T02",
+      "unavailable_row_index": 1,
+      "route_class": "published-enforcement-and-action-registers"
+    },
+    {
+      "source_task_ref": "LAW28-EST-07/T02",
+      "unavailable_row_index": 2,
+      "route_class": "affected-comparator-and-distributional-joins"
+    },
+    {
+      "source_task_ref": "LAW28-EST-07/T02",
+      "unavailable_row_index": 3,
+      "route_class": "internal-authority-and-inventory"
+    },
+    {
+      "source_task_ref": "LAW28-EST-07/T03",
+      "unavailable_row_index": 0,
+      "route_class": "correction-dockets-and-outcomes"
+    },
+    {
+      "source_task_ref": "LAW28-EST-07/T03",
+      "unavailable_row_index": 1,
+      "route_class": "correction-dockets-and-outcomes"
+    },
+    {
+      "source_task_ref": "LAW28-EST-07/T03",
+      "unavailable_row_index": 2,
+      "route_class": "correction-dockets-and-outcomes"
+    },
+    {
+      "source_task_ref": "LAW28-EST-10/T01",
+      "unavailable_row_index": 0,
+      "route_class": "internal-authority-and-inventory"
+    },
+    {
+      "source_task_ref": "LAW28-EST-10/T01",
+      "unavailable_row_index": 1,
+      "route_class": "internal-authority-and-inventory"
+    },
+    {
+      "source_task_ref": "LAW28-EST-10/T01",
+      "unavailable_row_index": 2,
+      "route_class": "internal-authority-and-inventory"
+    },
+    {
+      "source_task_ref": "LAW28-EST-10/T02",
+      "unavailable_row_index": 0,
+      "route_class": "correction-dockets-and-outcomes"
+    },
+    {
+      "source_task_ref": "LAW28-EST-10/T02",
+      "unavailable_row_index": 1,
+      "route_class": "correction-dockets-and-outcomes"
+    },
+    {
+      "source_task_ref": "LAW28-EST-10/T02",
+      "unavailable_row_index": 2,
+      "route_class": "affected-comparator-and-distributional-joins"
+    }
+  ],
+  "expected_counts": {
+    "source_queues": 5,
+    "source_tasks": 12,
+    "source_missing_rows": 38,
+    "route_classes": 7,
+    "route_ledgers": 7,
+    "route_summary_rows": 7,
+    "closure_task_rows": 38,
+    "execution_rows": 45,
+    "publicly_executable_tasks": 34,
+    "access_bounded_tasks": 4,
+    "route_task_counts": {
+      "affected-comparator-and-distributional-joins": 6,
+      "correction-dockets-and-outcomes": 9,
+      "financial-recovery-and-continuity": 3,
+      "internal-authority-and-inventory": 8,
+      "protected-personnel-records": 4,
+      "public-award-and-contract-denominators": 4,
+      "published-enforcement-and-action-registers": 4
+    },
+    "complete_denominators": 0,
+    "evidence_rows": 0,
+    "estate_adoptions": 0,
+    "finding_promotions": 0,
+    "graph_effects": 0,
+    "publication_clearances": 0
+  },
+  "execution_law": {
+    "one_obligation_per_missing_row": true,
+    "one_route_class_per_obligation": true,
+    "all_missing_rows_assigned": true,
+    "same_wave_source_acquisition": false,
+    "same_wave_completion": false,
+    "same_wave_evidence_adjudication": false,
+    "route_class_replay_is_amortized": true,
+    "manual_per_task_dispatch_required": false,
+    "protected_access_is_not_public_absence": true,
+    "no_action_row_required_for_complete_action_denominator": true,
+    "negative_search_is_not_null": true,
+    "source_change_replays_only_affected_route": true
+  },
+  "blocked_promotions": [
+    "evidence_row",
+    "estate_adoption",
+    "estate_finding",
+    "complete_compact_finding",
+    "racial_order_finding",
+    "prevalence_finding",
+    "coordination_finding",
+    "common_purpose_finding",
+    "identity_edge",
+    "relationship_edge",
+    "participation_row",
+    "active_claim",
+    "hop_edge",
+    "publication_clearance"
+  ],
+  "boundaries": {
+    "gap_task_is_evidence_row": false,
+    "route_assignment_is_estate_adoption": false,
+    "route_assignment_closes_source_gap": false,
+    "protected_record_absence_is_substantive_inference": false,
+    "public_base_universe_is_action_denominator": false,
+    "published_action_is_complete_register": false,
+    "formal_correction_is_effective_correction": false,
+    "category_is_person_level_denominator": false,
+    "shared_route_is_relationship": false,
+    "route_recurrence_is_prevalence": false,
+    "identity_created": false,
+    "relationship_created": false,
+    "participation_created": false,
+    "active_claim_created": false,
+    "hop_created": false,
+    "evidence_adjudicated": false,
+    "finding_promoted": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}

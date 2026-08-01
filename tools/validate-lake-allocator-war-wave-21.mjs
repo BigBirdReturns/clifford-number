@@ -146,10 +146,20 @@ export function validateArtifacts(state) {
       'data/acquisition/lake-allocator-war-wave-29/law28-est-05.jsonl',
       'data/acquisition/lake-allocator-war-wave-29/law28-est-06.jsonl',
       'data/acquisition/lake-allocator-war-wave-29/law28-est-07.jsonl',
-      'data/acquisition/lake-allocator-war-wave-29/law28-est-10.jsonl'
+      'data/acquisition/lake-allocator-war-wave-29/law28-est-10.jsonl',
+      'data/project/lake-allocator-war-gap-fanout-wave-30-policy.json',
+      'docs/methods/lake-allocator-war-gap-fanout-wave-30.md',
+      'docs/milestones/lake-allocator-war-gap-fanout-wave-30.md',
+      'data/acquisition/lake-allocator-war-wave-30/protected-personnel-records.jsonl',
+      'data/acquisition/lake-allocator-war-wave-30/internal-authority-and-inventory.jsonl',
+      'data/acquisition/lake-allocator-war-wave-30/public-award-and-contract-denominators.jsonl',
+      'data/acquisition/lake-allocator-war-wave-30/published-enforcement-and-action-registers.jsonl',
+      'data/acquisition/lake-allocator-war-wave-30/correction-dockets-and-outcomes.jsonl',
+      'data/acquisition/lake-allocator-war-wave-30/affected-comparator-and-distributional-joins.jsonl',
+      'data/acquisition/lake-allocator-war-wave-30/financial-recovery-and-continuity.jsonl'
     ]],
-    ['allocator-war-lake-actions', [policy.paths.projection, policy.paths.reconciliation, 'build/lake-actions/allocator-war-estate-execution-wave-22.json', 'build/lake-actions/allocator-war-lead-acquisition-wave-23.json', 'build/lake-actions/allocator-war-lead-execution-wave-24.json', 'build/lake-actions/allocator-war-denominator-closure-wave-25.json', 'build/lake-actions/allocator-war-targeted-closure-wave-26.json', 'build/lake-actions/allocator-war-wave26-source-custody-repair.json', 'build/lake-actions/allocator-war-public-interest-downstream-wave-27-source-plan.json', 'build/lake-actions/allocator-war-public-interest-downstream-wave-27.json', 'build/lake-actions/allocator-war-public-interest-implementation-wave-28.json', 'build/lake-actions/allocator-war-public-interest-execution-wave-29.json']],
-    ['allocator-war-reports', [policy.paths.report, 'reports/lake-allocator-war-estate-execution-wave-22.md', 'reports/lake-allocator-war-lead-acquisition-wave-23.md', 'reports/lake-allocator-war-lead-execution-wave-24.md', 'reports/lake-allocator-war-denominator-closure-wave-25.md', 'reports/lake-allocator-war-targeted-closure-wave-26.md', 'reports/lake-allocator-war-wave26-source-custody-repair.md', 'reports/lake-allocator-war-public-interest-downstream-wave-27.md', 'reports/lake-allocator-war-public-interest-implementation-wave-28.md', 'reports/lake-allocator-war-public-interest-execution-wave-29.md']]
+    ['allocator-war-lake-actions', [policy.paths.projection, policy.paths.reconciliation, 'build/lake-actions/allocator-war-estate-execution-wave-22.json', 'build/lake-actions/allocator-war-lead-acquisition-wave-23.json', 'build/lake-actions/allocator-war-lead-execution-wave-24.json', 'build/lake-actions/allocator-war-denominator-closure-wave-25.json', 'build/lake-actions/allocator-war-targeted-closure-wave-26.json', 'build/lake-actions/allocator-war-wave26-source-custody-repair.json', 'build/lake-actions/allocator-war-public-interest-downstream-wave-27-source-plan.json', 'build/lake-actions/allocator-war-public-interest-downstream-wave-27.json', 'build/lake-actions/allocator-war-public-interest-implementation-wave-28.json', 'build/lake-actions/allocator-war-public-interest-execution-wave-29.json', 'build/lake-actions/allocator-war-gap-fanout-wave-30.json']],
+    ['allocator-war-reports', [policy.paths.report, 'reports/lake-allocator-war-estate-execution-wave-22.md', 'reports/lake-allocator-war-lead-acquisition-wave-23.md', 'reports/lake-allocator-war-lead-execution-wave-24.md', 'reports/lake-allocator-war-denominator-closure-wave-25.md', 'reports/lake-allocator-war-targeted-closure-wave-26.md', 'reports/lake-allocator-war-wave26-source-custody-repair.md', 'reports/lake-allocator-war-public-interest-downstream-wave-27.md', 'reports/lake-allocator-war-public-interest-implementation-wave-28.md', 'reports/lake-allocator-war-public-interest-execution-wave-29.md', 'reports/lake-allocator-war-gap-fanout-wave-30.md']]
   ]);
   for (const [basinId, expectedPaths] of exactBasinPaths) {
     const basin = policy.basin_contract.find(row => row.basin_id === basinId);
@@ -365,7 +375,19 @@ export function validateRepository(root = defaultRoot) {
     'data/acquisition/lake-allocator-war-wave-29/law28-est-07.jsonl',
     'data/acquisition/lake-allocator-war-wave-29/law28-est-10.jsonl',
     'build/lake-actions/allocator-war-public-interest-execution-wave-29.json',
-    'reports/lake-allocator-war-public-interest-execution-wave-29.md'
+    'reports/lake-allocator-war-public-interest-execution-wave-29.md',
+    'data/project/lake-allocator-war-gap-fanout-wave-30-policy.json',
+    'docs/methods/lake-allocator-war-gap-fanout-wave-30.md',
+    'docs/milestones/lake-allocator-war-gap-fanout-wave-30.md',
+    'data/acquisition/lake-allocator-war-wave-30/protected-personnel-records.jsonl',
+    'data/acquisition/lake-allocator-war-wave-30/internal-authority-and-inventory.jsonl',
+    'data/acquisition/lake-allocator-war-wave-30/public-award-and-contract-denominators.jsonl',
+    'data/acquisition/lake-allocator-war-wave-30/published-enforcement-and-action-registers.jsonl',
+    'data/acquisition/lake-allocator-war-wave-30/correction-dockets-and-outcomes.jsonl',
+    'data/acquisition/lake-allocator-war-wave-30/affected-comparator-and-distributional-joins.jsonl',
+    'data/acquisition/lake-allocator-war-wave-30/financial-recovery-and-continuity.jsonl',
+    'build/lake-actions/allocator-war-gap-fanout-wave-30.json',
+    'reports/lake-allocator-war-gap-fanout-wave-30.md'
   ]) if (!lakePolicy.authoritative_roots.includes(relative)) fail(errors, `${relative}: missing authoritative root`);
 
   const pkg = readJson(root, 'package.json');
