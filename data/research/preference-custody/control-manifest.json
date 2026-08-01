@@ -1,6 +1,6 @@
 {
   "schema_version": "preference-custody-control-manifest@1",
-  "manifest_id": "preference-custody-laboratory-floor-v3",
+  "manifest_id": "preference-custody-laboratory-floor-v4",
   "issue": 594,
   "captured_at": "2026-08-01",
   "status": "synthetic_control_floor",
@@ -76,6 +76,22 @@
         "average_outcome_does_not_cancel_group_harm",
         "distributional_acceptability_requires_external_authority"
       ]
+    },
+    {
+      "control_id": "PC-06",
+      "fixture_id": "same-support-different-standing-v1",
+      "failure_class": "authority_laundering_and_nonbinding_consultation",
+      "source_fixture_path": "data/research/preference-custody/standing-authority.fixture.json",
+      "build_artifact_path": "build/research/preference-standing-authority.json",
+      "expected_build_schema": "preference-standing-build@1",
+      "required_refusal_rules": [
+        "prediction_is_evidence_not_authority",
+        "advisory_feedback_is_not_binding_participation",
+        "institutional_approval_is_not_public_authorization",
+        "authorization_requires_binding_affected_public_standing",
+        "objective_control_requires_amend_suspend_veto_and_remedy",
+        "public_rejection_blocks_implementation"
+      ]
     }
   ],
   "identification_requirements": [
@@ -106,8 +122,8 @@
     },
     {
       "stage": "public_authorization",
-      "required_state": "external_binding_standing",
-      "refused_inference": "prediction_or_behavioral_agreement_does_not_confer_authorization"
+      "required_state": "binding_affected_public_authority_with_objective_control",
+      "refused_inference": "prediction_behavior_advice_or_commissioner_approval_does_not_confer_public_authorization"
     }
   ],
   "open_frontiers": [
@@ -115,7 +131,7 @@
     "coordinated_refusal_and_collective_bargaining",
     "intersectional_and_unobserved_group_custody",
     "model_policy_and_metric_succession",
-    "binding_public_standing_and_objective_control",
+    "federated_multilevel_and_successor_authority",
     "real_world_intervention_provenance"
   ],
   "promotion_boundary": {
@@ -131,20 +147,24 @@
       "counterfactual_design",
       "post_intervention_outcomes",
       "feedback_reuse",
-      "affected_public_standing_and_remedy"
+      "eligible_affected_constituency_definition",
+      "binding_decision_rule_quorum_and_thresholds",
+      "objective_amendment_suspension_veto_appeal_and_remedy_rights",
+      "attributed_constituency_disposition_and_implementation_enforcement_receipt"
     ],
     "promotion_authority": "human_review_plus_repository_gates"
   },
   "prohibited_inferences": [
     "Do not treat a laboratory control as evidence about a named deployment.",
-    "Do not infer preference change, suppression, discrimination, manipulation, or intent from identification failure alone.",
-    "Do not treat a passing predictive benchmark as a pass on exposure, option-set, mechanism, attrition, subgroup distribution, or authorization validity.",
-    "Do not treat the five controls as exhaustive of every performative or constitutional failure mode."
+    "Do not infer preference change, suppression, discrimination, manipulation, illegitimacy, or intent from identification or authority failure alone.",
+    "Do not treat a passing predictive benchmark as a pass on exposure, option-set, mechanism, attrition, subgroup distribution, or public-authorization validity.",
+    "Do not treat synthetic prediction, observed behavior, advisory consultation, or commissioner approval as binding affected-public authorization.",
+    "Do not treat the six controls as exhaustive of every performative or constitutional failure mode."
   ],
   "interpretation_contract": {
     "contract_id": "preference-custody-control-manifest@1",
-    "what_this_is": "A compiled laboratory floor joining five deterministic controls for exposure confounding, option-set starvation, observational equivalence, attrition or refusal censoring, and subgroup response capacity or burden.",
-    "what_this_is_not": "A real-world findings dossier, a market-wide claim, evidence against a named actor, or a complete theory of preference formation and public standing.",
-    "copy_ready_caveat": "The preference-custody floor proves five identification failures in synthetic controls. It requires real deployments to preserve exposure, option-set, mechanism, attrition, subgroup, counterfactual, and authority evidence, but it creates no real-world causal conclusion by itself."
+    "what_this_is": "A compiled laboratory floor joining six deterministic controls for exposure confounding, option-set starvation, observational equivalence, attrition or refusal censoring, subgroup response capacity or burden, and standing or objective-control authority.",
+    "what_this_is_not": "A real-world findings dossier, a market-wide claim, evidence against a named actor, a legitimacy verdict, or a complete universal constitution for preference formation and public standing.",
+    "copy_ready_caveat": "The preference-custody floor proves six identification and authority separations in synthetic controls. It requires real deployments to preserve exposure, option-set, mechanism, attrition, subgroup, counterfactual, and binding authority evidence, but it creates no real-world causal or legitimacy conclusion by itself."
   }
 }
