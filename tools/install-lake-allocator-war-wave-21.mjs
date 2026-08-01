@@ -49,7 +49,23 @@ for (const relative of [
   'data/acquisition/lake-allocator-war-wave-24/law21-est-08.jsonl',
   'data/acquisition/lake-allocator-war-wave-24/law21-est-09.jsonl',
   'data/acquisition/lake-allocator-war-wave-24/law21-est-10.jsonl',
-  'data/acquisition/lake-allocator-war-wave-24/law21-est-11.jsonl'
+  'data/acquisition/lake-allocator-war-wave-24/law21-est-11.jsonl',
+  'data/project/lake-allocator-war-denominator-closure-wave-25-policy.json',
+  'build/lake-actions/allocator-war-denominator-closure-wave-25.json',
+  'reports/lake-allocator-war-denominator-closure-wave-25.md',
+  'docs/methods/lake-allocator-war-denominator-closure-wave-25.md',
+  'docs/milestones/lake-allocator-war-denominator-closure-wave-25.md',
+  'data/acquisition/lake-allocator-war-wave-25/law21-est-01.jsonl',
+  'data/acquisition/lake-allocator-war-wave-25/law21-est-02.jsonl',
+  'data/acquisition/lake-allocator-war-wave-25/law21-est-03.jsonl',
+  'data/acquisition/lake-allocator-war-wave-25/law21-est-04.jsonl',
+  'data/acquisition/lake-allocator-war-wave-25/law21-est-05.jsonl',
+  'data/acquisition/lake-allocator-war-wave-25/law21-est-06.jsonl',
+  'data/acquisition/lake-allocator-war-wave-25/law21-est-07.jsonl',
+  'data/acquisition/lake-allocator-war-wave-25/law21-est-08.jsonl',
+  'data/acquisition/lake-allocator-war-wave-25/law21-est-09.jsonl',
+  'data/acquisition/lake-allocator-war-wave-25/law21-est-10.jsonl',
+  'data/acquisition/lake-allocator-war-wave-25/law21-est-11.jsonl'
 ]) roots.add(relative);
 lakePolicy.authoritative_roots = [...roots].sort();
 lakePolicy.boundaries.allocator_war_routing_proves_finding = false;

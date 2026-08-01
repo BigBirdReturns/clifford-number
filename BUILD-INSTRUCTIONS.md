@@ -447,3 +447,9 @@ Every packet retains authority state, controls, refusals, negative search, exact
 Wave 24 writes one packet-specific acquisition ledger for every Wave 23 lead packet. Each ledger preserves exact source custody, retrieval state, negative search, excluded and unavailable rows, refusals, correction routes, and gate-unspecified states.
 
 Acquisition rows remain below evidence review. Partial recovery is not a complete denominator, gate-unspecified public records are not institutional gates, shared sources create no relationship, and the wave creates no finding, graph effect, or publication authority.
+
+
+3.25 **Allocator-war denominator closure fan-out — Wave 25.**
+Wave 25 converts each explicit Wave 24 unavailable obligation into one deterministic estate-owned closure task. Gate-unspecified packets receive one G0 gate-identification task, and all downstream tasks remain blocked until that task terminates.
+
+Closure queues are work-ordering surfaces, not evidence. Priority is not truth or merit; unavailable rows are not nulls; repeated tasks do not establish prevalence or relationship; graph effect and publication authority remain zero.
