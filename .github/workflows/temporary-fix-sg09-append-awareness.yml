@@ -1,4 +1,4 @@
-name: Temporary preserve historical SSC builders
+name: Temporary rebind SG-10 custody after historical-builder repairs
 
 on:
   push:
@@ -11,9 +11,9 @@ permissions:
   contents: write
 
 jobs:
-  repair:
+  rebind:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
@@ -21,105 +21,76 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Patch the two superseded builders on the exact target head
+      - name: Recover and verify the immutable custody patch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PATCH_BLOB: bf958abb7931914d17234b240b7ccde043dc9a32
+        run: |
+          set -Eeuo pipefail
+          curl -fsSL \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/${PATCH_BLOB}" > /tmp/blob.json
+          test "$(jq -r '.sha' /tmp/blob.json)" = "$PATCH_BLOB"
+          jq -r '.content' /tmp/blob.json | tr -d '\n' | base64 -d > /tmp/sg10-custody.patch.xz
+          test "$(wc -c < /tmp/sg10-custody.patch.xz)" -eq 2424
+          test "$(sha256sum /tmp/sg10-custody.patch.xz | cut -d' ' -f1)" = cf40ef1a170cd06acdfbc7270fb609e6a904805338e485068f180d4f580df284
+          xz -dc /tmp/sg10-custody.patch.xz > /tmp/sg10-custody.patch
+          test "$(wc -c < /tmp/sg10-custody.patch)" -eq 11891
+          test "$(sha256sum /tmp/sg10-custody.patch | cut -d' ' -f1)" = 5766c1fb030f25236c6cd2eaa83e283be1f056217ae6218be67e2bd4d2afc2b8
+      - name: Apply exactly nine custody products to the authorized head
         env:
           TARGET_BRANCH: agent/ssc-wave02-maintainer-review-sg10-v2
-          EXPECTED_HEAD: 0c86412fd7f745194ab7ec5575f5d6846be844e5
+          EXPECTED_HEAD: 565e17a900ca9752515d64a2ea443705d0eb79c3
         run: |
           set -Eeuo pipefail
           git fetch --no-tags origin "$TARGET_BRANCH"
           git switch -C target "origin/$TARGET_BRANCH"
           test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path('tools/build-status-sovereignty-wave-01-second-party-review.mjs')
-          text = path.read_text()
-          old = """export function buildSecondPartyReviewCampaign() {
-            const context = loadSecondPartyReviewSources();
-            const { campaign, candidates, responses } = context;
-          """
-          new = """export function buildSecondPartyReviewCampaign() {
-            const context = loadSecondPartyReviewSources();
-            const { campaign, candidates, responses } = context;
-            const pointer = read('data/project/project-stable-ground-current.json');
-            if (
-              pointer.current_checkpoint_id !== 'SG-2026-07-31-09' &&
-              candidates.records.length === 0 &&
-              responses.records.length === 0
-            ) {
-              console.log(`build-status-sovereignty-wave-01-second-party-review: historical zero-state preserved; current checkpoint ${pointer.current_checkpoint_id}; no write`);
-              return { ...context, historical: true, pointer };
-            }
-          """
-          if text.count(old) != 1:
-              raise SystemExit(f'expected one separated-review anchor, found {text.count(old)}')
-          path.write_text(text.replace(old, new))
-
-          path = Path('tools/build-status-sovereignty-wave-02-intake.mjs')
-          text = path.read_text()
-          old = """export function buildWave02Intake(){
-           const intake=read('data/intake/status-sovereignty-wave-02-candidate-observations.json');
-          """
-          new = """export function buildWave02Intake(){
-           const reviewPath=path.join(root,'data/research/status-sovereignty-wave-02-maintainer-review.json');
-           if(fs.existsSync(reviewPath)){
-            console.log('build-status-sovereignty-wave-02-intake: historical intake preserved after maintainer review; no write');
-            return{historical:true};
-           }
-           const intake=read('data/intake/status-sovereignty-wave-02-candidate-observations.json');
-          """
-          if text.count(old) != 1:
-              raise SystemExit(f'expected one Wave 02 intake anchor, found {text.count(old)}')
-          path.write_text(text.replace(old, new))
-          PY
-          git diff --name-only | sort > /tmp/observed
-          printf '%s\n' \
-            tools/build-status-sovereignty-wave-01-second-party-review.mjs \
-            tools/build-status-sovereignty-wave-02-intake.mjs | sort > /tmp/expected
-          diff -u /tmp/expected /tmp/observed
-      - name: Prove both historical estates remain byte-identical
+          git apply --check --index /tmp/sg10-custody.patch
+          git apply --index /tmp/sg10-custody.patch
+          cat > /tmp/expected-paths <<'PATHS'
+          build/core-thesis/status-sovereignty/data.json
+          build/core-thesis/status-sovereignty/manifest.json
+          data/project/project-stable-ground-sg10-release-manifest.json
+          data/project/project-stable-ground-sg10.json
+          data/project/status-sovereignty-release-manifest.json
+          reports/core-thesis/stable-ground/sg10/checkpoint.json
+          reports/core-thesis/stable-ground/sg10/index.html
+          reports/core-thesis/status-sovereignty/data.json
+          reports/core-thesis/status-sovereignty/index.html
+          PATHS
+          git diff --cached --name-only | sort > /tmp/observed-paths
+          sort -o /tmp/expected-paths /tmp/expected-paths
+          diff -u /tmp/expected-paths /tmp/observed-paths
+          test "$(wc -l < /tmp/observed-paths)" -eq 9
+          ! grep -Eq '^\.github/' /tmp/observed-paths
+      - name: Validate rebound SSC and stable-ground custody
         run: |
           set -Eeuo pipefail
-          before=$(sha256sum \
-            data/project/status-sovereignty-wave-01-second-party-review-release-manifest.json \
-            data/project/status-sovereignty-wave-01-second-party-review-packet-registry.json \
-            reports/core-thesis/status-sovereignty/wave-01-second-party-review/data.json \
-            data/project/status-sovereignty-wave-02-intake-release-manifest.json \
-            build/core-thesis/status-sovereignty/wave-02-intake/data.json \
-            reports/core-thesis/status-sovereignty/wave-02-intake/data.json)
-          node tools/build-status-sovereignty-wave-01-second-party-review.mjs
           node tools/validate-status-sovereignty-wave-01-second-party-review.mjs
           node test/status-sovereignty-wave-01-second-party-review.test.js
-          node tools/build-status-sovereignty-wave-02-intake.mjs
           node tools/validate-status-sovereignty-wave-02-intake.mjs
           node test/status-sovereignty-wave-02-intake.test.js
-          after=$(sha256sum \
-            data/project/status-sovereignty-wave-01-second-party-review-release-manifest.json \
-            data/project/status-sovereignty-wave-01-second-party-review-packet-registry.json \
-            reports/core-thesis/status-sovereignty/wave-01-second-party-review/data.json \
-            data/project/status-sovereignty-wave-02-intake-release-manifest.json \
-            build/core-thesis/status-sovereignty/wave-02-intake/data.json \
-            reports/core-thesis/status-sovereignty/wave-02-intake/data.json)
-          test "$before" = "$after"
+          node tools/validate-status-sovereignty-compact.mjs
+          node test/status-sovereignty-compact.test.js
           node tools/validate-project-stable-ground-sg09.mjs
           node test/project-stable-ground-sg09.test.js
           node tools/validate-project-stable-ground-sg10.mjs
           node test/project-stable-ground-sg10.test.js
-      - name: Publish only the two builder repairs
+          test "$(jq -r '.combined_sha256' data/project/status-sovereignty-release-manifest.json)" = 4587ef3565285a41a433ee460d97172d826f5a3f73c05fd1f0e4d1ebb36abf95
+          test "$(jq -r '.combined_sha256' data/project/project-stable-ground-sg10-release-manifest.json)" = 33e94ab2d918a2338f61e3b921052aae133726a3d86c7cab81411f14b9ac6c53
+          npm run release:check
+          test -z "$(git diff --name-only)"
+          git diff --cached --name-only | sort > /tmp/observed-after-release
+          diff -u /tmp/expected-paths /tmp/observed-after-release
+      - name: Publish only the rebound custody products
         env:
           TARGET_BRANCH: agent/ssc-wave02-maintainer-review-sg10-v2
         run: |
           set -Eeuo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add \
-            tools/build-status-sovereignty-wave-01-second-party-review.mjs \
-            tools/build-status-sovereignty-wave-02-intake.mjs
-          git diff --cached --name-only | sort > /tmp/observed
-          printf '%s\n' \
-            tools/build-status-sovereignty-wave-01-second-party-review.mjs \
-            tools/build-status-sovereignty-wave-02-intake.mjs | sort > /tmp/expected
-          diff -u /tmp/expected /tmp/observed
-          git commit -m 'Preserve superseded SSC zero-state builders'
+          git commit -m 'Rebind SG-10 after historical-builder repairs'
           git push origin "HEAD:$TARGET_BRANCH"
