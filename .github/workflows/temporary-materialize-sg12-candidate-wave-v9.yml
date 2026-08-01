@@ -1,0 +1,78 @@
+name: TEMP materialize SSC-W02 candidate wave and SG-12 v9
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/sg12-candidate-materializer-base-ffd71b
+    paths:
+      - '.github/tmp/sg12-candidate-materializer-trigger-v9.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sg12-candidate-materializer-v9
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      PATCH_BLOB: 765fe2ea78d9e6bfd66edebee9372a6e2506fc57
+      MINIMUM_MAIN: 7bac82d1da6a604b205c6ad0e73cba6a3b7b29f5
+      FINAL_PR_NUMBER: '655'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct certified original, apply literal patch, and establish SG-12
+        run: |
+          set -Eeuo pipefail
+
+          cat .github/tmp/sg12-candidate-materializer.carrier.* > /tmp/sg12-original-materializer.b64
+          echo '4a3fb8777f9b3f0f881de29dc1d36165a06e9cd2c75ce7dbf9ff68ccb202a98d  /tmp/sg12-original-materializer.b64' | sha256sum --check --strict
+          base64 --decode /tmp/sg12-original-materializer.b64 | gzip --decompress > /tmp/sg12-original-materializer.mjs
+          echo 'f0b95e0ae9de7371cbc46c1f8b3909c9ba710d77e7f6fa416ee2924384473995  /tmp/sg12-original-materializer.mjs' | sha256sum --check --strict
+
+          curl --fail --silent --show-error --location \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/${PATCH_BLOB}" \
+            > /tmp/sg12-patch-blob.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const response = JSON.parse(fs.readFileSync('/tmp/sg12-patch-blob.json', 'utf8'));
+          if (response.sha !== process.env.PATCH_BLOB || response.encoding !== 'base64') {
+            throw new Error(`unexpected patch blob response: ${response.sha} ${response.encoding}`);
+          }
+          fs.writeFileSync('/tmp/sg12-original-to-final.patch.gz.b64', Buffer.from(response.content.replace(/\s/g, ''), 'base64'));
+          NODE
+          test "$(git hash-object /tmp/sg12-original-to-final.patch.gz.b64)" = "${PATCH_BLOB}"
+          echo '6d50b331265117010cc005f6bab28a6401390fdce271fcb19477b378f51e26d7  /tmp/sg12-original-to-final.patch.gz.b64' | sha256sum --check --strict
+          base64 --decode /tmp/sg12-original-to-final.patch.gz.b64 | gzip --decompress > /tmp/sg12-original-to-final.patch
+          echo '321f15cc36591e567c5944a97eaba1843b36a3fa0c1b29e0daa20867e791df7e  /tmp/sg12-original-to-final.patch' | sha256sum --check --strict
+
+          rm -rf /tmp/sg12-materializer-v9
+          mkdir /tmp/sg12-materializer-v9
+          cp /tmp/sg12-original-materializer.mjs /tmp/sg12-materializer-v9/materialize.mjs
+          (
+            cd /tmp/sg12-materializer-v9
+            patch --dry-run --batch --fuzz=0 -p1 < /tmp/sg12-original-to-final.patch
+            patch --batch --fuzz=0 -p1 < /tmp/sg12-original-to-final.patch
+          )
+          echo '2d4b280afa7e06e1a5d377a8f00b0357e645d92da5d7e4d6cf6161e5958b0cff  /tmp/sg12-materializer-v9/materialize.mjs' | sha256sum --check --strict
+          node --check /tmp/sg12-materializer-v9/materialize.mjs
+          node /tmp/sg12-materializer-v9/materialize.mjs
+      - name: Upload exact materializer receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: sg12-candidate-materializer-receipt-v9
+          path: sg12-candidate-materializer-summary.txt
+          if-no-files-found: error
