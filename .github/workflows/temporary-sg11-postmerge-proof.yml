@@ -1,0 +1,185 @@
+name: TEMP verify SG-11 on live main after merge
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/sg11-postmerge-proof-base-974b
+    paths:
+      - '.github/tmp/sg11-postmerge-proof-trigger.txt'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sg11-postmerge-proof-974b
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      EXPECTED_MAIN: bd26b82a83e86b94a020650a1fdb356fc7a58de5
+      PREMERGE_MAIN: 2a441e71921b81c997c350683f3c7f6c032ef0fd
+      CAMPAIGN: 04649fafcc517c0d7eef6279818dd309366eb49b
+      INTEGRATION: a228e24a6d45516cb507919e5b8999a62e4bc702
+      INTEGRATION_TREE: f167fbebec2d129fd9034eee177f984574094f07
+      PRODUCT: 45cf5c0937f6a9dd5b84abdb5bbd3a2025d0bb5b
+      SG11_MERGE: 974b7a70cdc46828805f38bb4abe46aacd94380c
+      EXPECTED_RELEASE: bd559144b5b12743312a2cc6fa233492542175b90be1a7f3e083e0156b4db9f2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify permanent lineage and post-merge disjointness
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          CURRENT_MAIN="$(git rev-parse origin/main)"
+          test "$CURRENT_MAIN" = "$EXPECTED_MAIN"
+          git merge-base --is-ancestor "$SG11_MERGE" "$CURRENT_MAIN"
+          test "$(git show -s --format=%P "$SG11_MERGE")" = "$PREMERGE_MAIN $PRODUCT"
+          test "$(git show -s --format=%P "$PRODUCT")" = "$INTEGRATION"
+          test "$(git show -s --format=%P "$INTEGRATION")" = "$PREMERGE_MAIN $CAMPAIGN"
+          test "$(git show -s --format=%T "$INTEGRATION")" = "$INTEGRATION_TREE"
+
+          cat > /tmp/sg11-product-paths.txt <<'EOF'
+          .github/workflows/project-stable-ground-sg10.yml
+          .github/workflows/project-stable-ground-sg11.yml
+          .github/workflows/status-sovereignty-wave-02-second-party-review.yml
+          build/core-thesis/status-sovereignty/data.json
+          build/core-thesis/status-sovereignty/manifest.json
+          build/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+          build/core-thesis/status-sovereignty/wave-02-second-party-review/manifest.json
+          data/project/poof-clifford-ecology-release-manifest.json
+          data/project/project-stable-ground-current.json
+          data/project/project-stable-ground-sg11-release-manifest.json
+          data/project/project-stable-ground-sg11.json
+          data/project/status-sovereignty-release-manifest.json
+          data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json
+          docs/milestones/project-stable-ground-sg11.md
+          package.json
+          reports/core-thesis/poof-clifford-ecology/release-manifest.json
+          reports/core-thesis/stable-ground/sg11/checkpoint.json
+          reports/core-thesis/stable-ground/sg11/index.html
+          reports/core-thesis/status-sovereignty/data.json
+          reports/core-thesis/status-sovereignty/index.html
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/index.html
+          test/project-stable-ground-sg10.test.js
+          test/project-stable-ground-sg11.test.js
+          tools/build-pages.mjs
+          tools/build-project-stable-ground-sg10.mjs
+          tools/build-project-stable-ground-sg11.mjs
+          tools/validate-project-stable-ground-sg10.mjs
+          tools/validate-project-stable-ground-sg11.mjs
+          EOF
+          sed -i 's/^          //' /tmp/sg11-product-paths.txt
+          sort -o /tmp/sg11-product-paths.txt /tmp/sg11-product-paths.txt
+          test "$(wc -l < /tmp/sg11-product-paths.txt)" -eq 29
+
+          git diff --name-only "$SG11_MERGE" "$CURRENT_MAIN" | sort > /tmp/postmerge-main-paths.txt
+          comm -12 /tmp/sg11-product-paths.txt /tmp/postmerge-main-paths.txt > /tmp/postmerge-overlap.txt
+          test ! -s /tmp/postmerge-overlap.txt
+
+      - name: Prove SG-11 on full-history live main
+        run: |
+          set -euo pipefail
+          git checkout --detach "$EXPECTED_MAIN"
+          node <<'NODE'
+          import fs from 'node:fs';
+          const pointer = JSON.parse(fs.readFileSync('data/project/project-stable-ground-current.json', 'utf8'));
+          const checkpoint = JSON.parse(fs.readFileSync('data/project/project-stable-ground-sg11.json', 'utf8'));
+          const release = JSON.parse(fs.readFileSync('data/project/project-stable-ground-sg11-release-manifest.json', 'utf8'));
+          if (pointer.current_checkpoint_id !== 'SG-2026-07-31-11') throw new Error('SG-11 is not current');
+          if (pointer.current_checkpoint_path !== 'data/project/project-stable-ground-sg11.json') throw new Error('SG-11 pointer path drifted');
+          if (pointer.current_canonical_main_commit !== process.env.INTEGRATION) throw new Error('canonical integration pointer drifted');
+          if (checkpoint.trigger.integration_base !== process.env.PREMERGE_MAIN) throw new Error('integration base drifted');
+          if (checkpoint.trigger.integration_commit !== process.env.INTEGRATION) throw new Error('integration commit drifted');
+          if (checkpoint.trigger.integration_tree !== process.env.INTEGRATION_TREE) throw new Error('integration tree drifted');
+          if (checkpoint.trigger.wave_packets !== 8 || checkpoint.trigger.unassigned_packets !== 8) throw new Error('packet denominator drifted');
+          if (checkpoint.trigger.valid_reviews !== 0 || checkpoint.trigger.adjudicated_packets !== 0) throw new Error('review authority self-awarded');
+          if (checkpoint.trigger.publication_clearances !== 0 || checkpoint.trigger.graph_effects !== 0) throw new Error('publication or graph authority self-awarded');
+          if (release.combined_sha256 !== process.env.EXPECTED_RELEASE) throw new Error('SG-11 release digest drifted');
+          NODE
+          node tools/validate-project-stable-ground-sg11.mjs
+          node test/project-stable-ground-sg11.test.js
+          npm run release:check
+
+          git reset --hard "$EXPECTED_MAIN"
+          git clean -fdx
+          npm run build:pages
+          npm run build:standalone
+          npm run validate:pages
+          for held in \
+            build/core-thesis/status-sovereignty/wave-02-second-party-review \
+            reports/core-thesis/status-sovereignty/wave-02-second-party-review \
+            data/project/status-sovereignty-wave-02-second-party-review-campaign.json \
+            data/project/status-sovereignty-wave-02-second-party-review-packet-registry.json \
+            data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json \
+            data/research/status-sovereignty-wave-02-second-party-review-candidates.json \
+            data/research/status-sovereignty-wave-02-second-party-review-responses.json \
+            docs/milestones/m05-status-sovereignty-wave-02-second-party-review.md \
+            docs/ssc-wave-02-second-party-review-intake.md
+          do
+            test ! -e "dist/$held"
+          done
+
+          git reset --hard "$EXPECTED_MAIN"
+          git clean -fdx
+          node tools/validate-project-stable-ground-sg11.mjs
+          node test/project-stable-ground-sg11.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+
+      - name: Prove SG-11 in a genuine depth-1 live-main clone
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/sg11-postmerge-depth1
+          git clone --no-tags --depth=1 --branch main \
+            "https://github.com/${GITHUB_REPOSITORY}.git" /tmp/sg11-postmerge-depth1
+          cd /tmp/sg11-postmerge-depth1
+          test "$(git rev-parse HEAD)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse --is-shallow-repository)" = true
+          node tools/validate-project-stable-ground-sg11.mjs
+          node test/project-stable-ground-sg11.test.js
+          npm run release:check
+          git reset --hard "$EXPECTED_MAIN"
+          git clean -fdx
+          node tools/validate-project-stable-ground-sg11.mjs
+          node test/project-stable-ground-sg11.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+
+      - name: Recheck live-main lease and emit receipt
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+          git fetch --no-tags origin main
+          CURRENT_MAIN="$(git rev-parse origin/main)"
+          test "$CURRENT_MAIN" = "$EXPECTED_MAIN"
+          {
+            echo "live_main=$EXPECTED_MAIN"
+            echo "sg11_merge=$SG11_MERGE"
+            echo "sg11_product=$PRODUCT"
+            echo "sg11_integration=$INTEGRATION"
+            echo "sg11_release_sha256=$EXPECTED_RELEASE"
+            echo "postmerge_changed_paths=$(wc -l < /tmp/postmerge-main-paths.txt)"
+            echo "postmerge_sg11_overlap_paths=0"
+            echo "full_history_release_check=pass"
+            echo "depth1_release_check=pass"
+            echo "publication_hold_paths=9"
+            echo "temporary_prs_open=0"
+            echo "issue_571_expected_open=true"
+          } | tee sg11-postmerge-proof-summary.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sg11-postmerge-proof-receipt
+          path: sg11-postmerge-proof-summary.txt
+          if-no-files-found: error
