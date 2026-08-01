@@ -267,3 +267,8 @@ Wave 24 converts the eleven lead packets into eleven packet-specific acquisition
 ## Allocator-war denominator closure fan-out
 
 Wave 25 converts forty explicit missing-record obligations into eleven estate-owned closure queues. Thirty-six tasks are ready for targeted acquisition, while four downstream tasks remain blocked behind two gate-identification tasks. Evidence rows, findings, graph effects, and publication clearances remain zero. See `reports/lake-allocator-war-denominator-closure-wave-25.md`.
+
+
+## Allocator-war targeted closure execution
+
+Wave 26 executes thirty-six ready closure tasks, preserves four blocked tasks, identifies one bounded public-interest institutional gate, and records one no-qualifying-gate result for the legislative-political-finance lane. Two downstream tasks become eligible only for a later wave. Complete denominators, evidence rows, findings, graph effects, and publication clearances remain zero. See `reports/lake-allocator-war-targeted-closure-wave-26.md`.

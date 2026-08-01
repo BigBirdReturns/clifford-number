@@ -65,7 +65,24 @@ for (const relative of [
   'data/acquisition/lake-allocator-war-wave-25/law21-est-08.jsonl',
   'data/acquisition/lake-allocator-war-wave-25/law21-est-09.jsonl',
   'data/acquisition/lake-allocator-war-wave-25/law21-est-10.jsonl',
-  'data/acquisition/lake-allocator-war-wave-25/law21-est-11.jsonl'
+  'data/acquisition/lake-allocator-war-wave-25/law21-est-11.jsonl',
+  'data/project/lake-allocator-war-targeted-closure-wave-26-policy.json',
+  'data/project/lake-allocator-war-targeted-closure-wave-26-source-plan.json',
+  'build/lake-actions/allocator-war-targeted-closure-wave-26.json',
+  'reports/lake-allocator-war-targeted-closure-wave-26.md',
+  'docs/methods/lake-allocator-war-targeted-closure-wave-26.md',
+  'docs/milestones/lake-allocator-war-targeted-closure-wave-26.md',
+  'data/acquisition/lake-allocator-war-wave-26/law21-est-01.jsonl',
+  'data/acquisition/lake-allocator-war-wave-26/law21-est-02.jsonl',
+  'data/acquisition/lake-allocator-war-wave-26/law21-est-03.jsonl',
+  'data/acquisition/lake-allocator-war-wave-26/law21-est-04.jsonl',
+  'data/acquisition/lake-allocator-war-wave-26/law21-est-05.jsonl',
+  'data/acquisition/lake-allocator-war-wave-26/law21-est-06.jsonl',
+  'data/acquisition/lake-allocator-war-wave-26/law21-est-07.jsonl',
+  'data/acquisition/lake-allocator-war-wave-26/law21-est-08.jsonl',
+  'data/acquisition/lake-allocator-war-wave-26/law21-est-09.jsonl',
+  'data/acquisition/lake-allocator-war-wave-26/law21-est-10.jsonl',
+  'data/acquisition/lake-allocator-war-wave-26/law21-est-11.jsonl'
 ]) roots.add(relative);
 lakePolicy.authoritative_roots = [...roots].sort();
 lakePolicy.boundaries.allocator_war_routing_proves_finding = false;

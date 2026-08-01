@@ -5,13 +5,13 @@ This report partitions the current tracked lake census into declared semantic ba
 ## Current assignment
 
 ```text
-source rows:                         2179
+source rows:                         2201
 semantic basins:                    40
-classified without default:         2179
+classified without default:         2201
 unclassified paths:                 0
-evidence-bearing files:             1439
-evidence files with registry owner: 1439
-evidence files previously unowned:  1439
+evidence-bearing files:             1456
+evidence files with registry owner: 1456
+evidence files previously unowned:  1456
 exact orphan evidence files:        0
 gap rows:                           59
 ```
@@ -26,10 +26,10 @@ gap rows:                           59
 | intake-custody | intake_only | 142 | 142 | 142 | 0 | 142 | yes |
 | core-thesis-report-products | report_projection | 96 | 96 | 96 | 0 | 96 | yes |
 | milestone-governance | governance_history | 65 | 65 | 65 | 0 | 65 | yes |
+| allocator-war-source | research_routing_source | 58 | 58 | 58 | 0 | 58 | yes |
 | documentation | documentation | 58 | 58 | 58 | 0 | 58 | yes |
 | research-tracks | research_program_source | 52 | 52 | 52 | 0 | 52 | yes |
 | research-records | research_source | 48 | 48 | 48 | 0 | 48 | yes |
-| allocator-war-source | research_routing_source | 43 | 43 | 43 | 0 | 43 | yes |
 | case-sources | case_source | 43 | 43 | 43 | 0 | 43 | yes |
 | estate-source-data | estate_source | 43 | 43 | 43 | 0 | 43 | yes |
 | general-build-products | generated_projection | 35 | 35 | 35 | 0 | 35 | yes |
@@ -39,10 +39,10 @@ gap rows:                           59
 | canonical-registries | canonical_registry | 12 | 12 | 12 | 0 | 12 | yes |
 | estate-frontier-products | generated_projection | 11 | 11 | 11 | 0 | 11 | yes |
 | residual-current-tree | residual_current_tree_path | 51 | 8 | 51 | 0 | 51 | yes |
+| allocator-war-lake-actions | operational_decision_projection | 7 | 7 | 7 | 0 | 7 | yes |
 | general-report-products | report_projection | 7 | 7 | 7 | 0 | 7 | yes |
-| allocator-war-lake-actions | operational_decision_projection | 6 | 6 | 6 | 0 | 6 | yes |
+| allocator-war-reports | report_projection | 6 | 6 | 6 | 0 | 6 | yes |
 | crawl-state | crawler_state | 6 | 6 | 6 | 0 | 6 | yes |
-| allocator-war-reports | report_projection | 5 | 5 | 5 | 0 | 5 | yes |
 | briefing-products | report_projection | 5 | 5 | 5 | 0 | 5 | yes |
 | canonical-ledgers | canonical_ledger | 5 | 5 | 5 | 0 | 5 | yes |
 | case-build-products | generated_projection | 5 | 5 | 5 | 0 | 5 | yes |
@@ -50,9 +50,9 @@ gap rows:                           59
 | legacy-history | historical_legacy | 3 | 3 | 3 | 0 | 3 | yes |
 | gametrail-public-products | public_projection | 2 | 2 | 2 | 0 | 2 | yes |
 | contribution-pipeline | contribution_source_or_template | 1 | 1 | 1 | 0 | 1 | yes |
-| toolchain | tooling | 359 | 0 | 263 | 21 | 359 | yes |
-| regressions | test_fixture | 172 | 0 | 131 | 6 | 172 | yes |
-| automation | automation | 82 | 0 | 31 | 48 | 82 | yes |
+| toolchain | tooling | 362 | 0 | 265 | 22 | 362 | yes |
+| regressions | test_fixture | 173 | 0 | 132 | 6 | 173 | yes |
+| automation | automation | 83 | 0 | 31 | 49 | 83 | yes |
 | public-runtime | public_runtime | 52 | 0 | 41 | 10 | 52 | yes |
 | temporary-transport | temporary_transport | 17 | 0 | 1 | 16 | 17 | yes |
 | comprehension-protocol | method_and_fixture | 8 | 0 | 8 | 0 | 8 | yes |
