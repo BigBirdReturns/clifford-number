@@ -25,10 +25,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Repair publication custody and build exact products
+      - name: Repair remaining source references and build exact products
         env:
           TARGET_BRANCH: agent/ssc-f04-governance-denominator
-          EXPECTED_HEAD: 2854dfb7328861c81c25fa7779d9b6de566b780d
+          EXPECTED_HEAD: f1baee1a26fdac30ff7c0cd3ddc7907b0aa931ba
         run: |
           set -Eeuo pipefail
           git fetch --no-tags origin "$TARGET_BRANCH"
@@ -42,7 +42,6 @@ jobs:
           paths = [
               Path('tools/build-status-sovereignty-f04-aces-governance.mjs'),
               Path('tools/validate-status-sovereignty-f04-aces-governance.mjs'),
-              Path('.github/workflows/status-sovereignty-f04-aces.yml'),
           ]
           for path in paths:
               text = path.read_text()
@@ -54,7 +53,6 @@ jobs:
           node tools/validate-status-sovereignty-f04-aces-governance.mjs
           node test/status-sovereignty-f04-aces-governance.test.js
           cat > /tmp/expected-paths <<'PATHS'
-          .github/workflows/status-sovereignty-f04-aces.yml
           build/core-thesis/status-sovereignty/f04-aces/data.json
           build/core-thesis/status-sovereignty/f04-aces/manifest.json
           data/project/status-sovereignty-f04-aces-governance-first-pass-release-manifest.json
@@ -66,7 +64,7 @@ jobs:
           git status --porcelain=v1 --untracked-files=all | cut -c4- | sort > /tmp/observed-paths
           sort -o /tmp/expected-paths /tmp/expected-paths
           diff -u /tmp/expected-paths /tmp/observed-paths
-          test "$(wc -l < /tmp/observed-paths)" -eq 8
+          test "$(wc -l < /tmp/observed-paths)" -eq 7
       - name: Prove publication exclusion and repository compatibility
         run: |
           set -Eeuo pipefail
@@ -90,7 +88,7 @@ jobs:
             build/surface-graph.json
           git status --porcelain=v1 --untracked-files=all | cut -c4- | sort > /tmp/observed-after-release
           diff -u /tmp/expected-paths /tmp/observed-after-release
-      - name: Publish only the eight authorized paths
+      - name: Publish only the seven authorized paths
         env:
           TARGET_BRANCH: agent/ssc-f04-governance-denominator
         run: |
@@ -98,7 +96,6 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add \
-            .github/workflows/status-sovereignty-f04-aces.yml \
             build/core-thesis/status-sovereignty/f04-aces/data.json \
             build/core-thesis/status-sovereignty/f04-aces/manifest.json \
             data/project/status-sovereignty-f04-aces-governance-first-pass-release-manifest.json \
