@@ -62,11 +62,10 @@ jobs:
           node tools/build-counter-selector-wave-26.mjs
           node tools/validate-counter-selector-wave-26.mjs
           node test/counter-selector-wave-26.test.js
-          git diff --exit-code -- \
-            data/project/counter-selector-wave-26-candidate-registry.json \
-            data/project/counter-selector-wave-26-release-manifest.json \
-            reports/core-thesis/counter-selector-wave-26/data.json \
-            reports/core-thesis/counter-selector-wave-26/index.html
+          test "$(git hash-object data/project/counter-selector-wave-26-candidate-registry.json)" = 'fc721bf1cf5bd79161d4084b73ad219d207a538d'
+          test "$(git hash-object data/project/counter-selector-wave-26-release-manifest.json)" = 'a8efa761a3e858990d9b2a1269e4c90b6348415d'
+          test "$(git hash-object reports/core-thesis/counter-selector-wave-26/data.json)" = '44b8f24995303888228ee5299a3ad2f2b22cbe83'
+          test "$(git hash-object reports/core-thesis/counter-selector-wave-26/index.html)" = '7c3594a33ded7f436be9ff1a60b3149b397592b6'
       - name: Commit corrected report and retire repair fragments
         run: |
           set -euo pipefail
