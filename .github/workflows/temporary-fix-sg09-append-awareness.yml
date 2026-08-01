@@ -1,4 +1,4 @@
-name: Temporary fix SG-09 append awareness
+name: Temporary preserve historical SSC builders
 
 on:
   push:
@@ -13,7 +13,7 @@ permissions:
 jobs:
   repair:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -21,10 +21,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Patch the historical builder on the exact target head
+      - name: Patch the two superseded builders on the exact target head
         env:
           TARGET_BRANCH: agent/ssc-wave02-maintainer-review-sg10-v2
-          EXPECTED_HEAD: e15425522f0a67857edd0ff5c6a661e10ba0c82a
+          EXPECTED_HEAD: 0c86412fd7f745194ab7ec5575f5d6846be844e5
         run: |
           set -Eeuo pipefail
           git fetch --no-tags origin "$TARGET_BRANCH"
@@ -33,51 +33,93 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          path = Path('tools/build-project-stable-ground-sg09.mjs')
+          path = Path('tools/build-status-sovereignty-wave-01-second-party-review.mjs')
           text = path.read_text()
-          old = """export function buildStableGroundSG09() {
-            const checkpoint = read('data/project/project-stable-ground-sg09.json');
-            const pointer = read('data/project/project-stable-ground-current.json');
+          old = """export function buildSecondPartyReviewCampaign() {
+            const context = loadSecondPartyReviewSources();
+            const { campaign, candidates, responses } = context;
           """
-          new = """export function buildStableGroundSG09() {
+          new = """export function buildSecondPartyReviewCampaign() {
+            const context = loadSecondPartyReviewSources();
+            const { campaign, candidates, responses } = context;
             const pointer = read('data/project/project-stable-ground-current.json');
-            if (pointer.current_checkpoint_id !== 'SG-2026-07-31-09') {
-              console.log(`build-project-stable-ground-sg09: historical checkpoint preserved; current checkpoint ${pointer.current_checkpoint_id}; no write`);
-              return { historical: true, pointer };
+            if (
+              pointer.current_checkpoint_id !== 'SG-2026-07-31-09' &&
+              candidates.records.length === 0 &&
+              responses.records.length === 0
+            ) {
+              console.log(`build-status-sovereignty-wave-01-second-party-review: historical zero-state preserved; current checkpoint ${pointer.current_checkpoint_id}; no write`);
+              return { ...context, historical: true, pointer };
             }
-            const checkpoint = read('data/project/project-stable-ground-sg09.json');
           """
           if text.count(old) != 1:
-              raise SystemExit(f'expected one SG-09 builder anchor, found {text.count(old)}')
+              raise SystemExit(f'expected one separated-review anchor, found {text.count(old)}')
+          path.write_text(text.replace(old, new))
+
+          path = Path('tools/build-status-sovereignty-wave-02-intake.mjs')
+          text = path.read_text()
+          old = """export function buildWave02Intake(){
+           const intake=read('data/intake/status-sovereignty-wave-02-candidate-observations.json');
+          """
+          new = """export function buildWave02Intake(){
+           const reviewPath=path.join(root,'data/research/status-sovereignty-wave-02-maintainer-review.json');
+           if(fs.existsSync(reviewPath)){
+            console.log('build-status-sovereignty-wave-02-intake: historical intake preserved after maintainer review; no write');
+            return{historical:true};
+           }
+           const intake=read('data/intake/status-sovereignty-wave-02-candidate-observations.json');
+          """
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one Wave 02 intake anchor, found {text.count(old)}')
           path.write_text(text.replace(old, new))
           PY
-          test "$(git diff --name-only | wc -l)" -eq 1
-          test "$(git diff --name-only)" = tools/build-project-stable-ground-sg09.mjs
-      - name: Prove successor execution cannot rewrite SG-09
+          git diff --name-only | sort > /tmp/observed
+          printf '%s\n' \
+            tools/build-status-sovereignty-wave-01-second-party-review.mjs \
+            tools/build-status-sovereignty-wave-02-intake.mjs | sort > /tmp/expected
+          diff -u /tmp/expected /tmp/observed
+      - name: Prove both historical estates remain byte-identical
         run: |
           set -Eeuo pipefail
           before=$(sha256sum \
-            data/project/project-stable-ground-sg09-release-manifest.json \
-            reports/core-thesis/stable-ground/sg09/checkpoint.json \
-            reports/core-thesis/stable-ground/sg09/index.html)
-          node tools/build-project-stable-ground-sg09.mjs
+            data/project/status-sovereignty-wave-01-second-party-review-release-manifest.json \
+            data/project/status-sovereignty-wave-01-second-party-review-packet-registry.json \
+            reports/core-thesis/status-sovereignty/wave-01-second-party-review/data.json \
+            data/project/status-sovereignty-wave-02-intake-release-manifest.json \
+            build/core-thesis/status-sovereignty/wave-02-intake/data.json \
+            reports/core-thesis/status-sovereignty/wave-02-intake/data.json)
+          node tools/build-status-sovereignty-wave-01-second-party-review.mjs
+          node tools/validate-status-sovereignty-wave-01-second-party-review.mjs
+          node test/status-sovereignty-wave-01-second-party-review.test.js
+          node tools/build-status-sovereignty-wave-02-intake.mjs
+          node tools/validate-status-sovereignty-wave-02-intake.mjs
+          node test/status-sovereignty-wave-02-intake.test.js
           after=$(sha256sum \
-            data/project/project-stable-ground-sg09-release-manifest.json \
-            reports/core-thesis/stable-ground/sg09/checkpoint.json \
-            reports/core-thesis/stable-ground/sg09/index.html)
+            data/project/status-sovereignty-wave-01-second-party-review-release-manifest.json \
+            data/project/status-sovereignty-wave-01-second-party-review-packet-registry.json \
+            reports/core-thesis/status-sovereignty/wave-01-second-party-review/data.json \
+            data/project/status-sovereignty-wave-02-intake-release-manifest.json \
+            build/core-thesis/status-sovereignty/wave-02-intake/data.json \
+            reports/core-thesis/status-sovereignty/wave-02-intake/data.json)
           test "$before" = "$after"
           node tools/validate-project-stable-ground-sg09.mjs
           node test/project-stable-ground-sg09.test.js
           node tools/validate-project-stable-ground-sg10.mjs
           node test/project-stable-ground-sg10.test.js
-      - name: Publish only the builder repair
+      - name: Publish only the two builder repairs
         env:
           TARGET_BRANCH: agent/ssc-wave02-maintainer-review-sg10-v2
         run: |
           set -Eeuo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add tools/build-project-stable-ground-sg09.mjs
-          git diff --cached --name-only | grep -qx tools/build-project-stable-ground-sg09.mjs
-          git commit -m 'Preserve historical SG-09 under successor checkpoints'
+          git add \
+            tools/build-status-sovereignty-wave-01-second-party-review.mjs \
+            tools/build-status-sovereignty-wave-02-intake.mjs
+          git diff --cached --name-only | sort > /tmp/observed
+          printf '%s\n' \
+            tools/build-status-sovereignty-wave-01-second-party-review.mjs \
+            tools/build-status-sovereignty-wave-02-intake.mjs | sort > /tmp/expected
+          diff -u /tmp/expected /tmp/observed
+          git commit -m 'Preserve superseded SSC zero-state builders'
           git push origin "HEAD:$TARGET_BRANCH"
