@@ -1,0 +1,134 @@
+name: Temporary stage SG-11 non-workflow estate
+
+on:
+  push:
+    branches: [agent/sg11-nonworkflow-materializer]
+    paths:
+      - '.github/tmp/sg11-nonworkflow-25.patch.xz.b64'
+      - '.github/workflows/temporary-stage-sg11-nonworkflow.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/tmp/sg11-nonworkflow-25.patch.xz.b64'
+      - '.github/workflows/temporary-stage-sg11-nonworkflow.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sg11-nonworkflow-materializer
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/sg11-nonworkflow-materializer
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify and reconstruct exact patch
+        run: |
+          set -Eeuo pipefail
+          carrier=.github/tmp/sg11-nonworkflow-25.patch.xz.b64
+          test "$(wc -c < "$carrier")" -eq 12936
+          printf '%s  %s\n' 83d7dcfbb25401fbedb743ce76bf67f339c4fcfa1fd87167923c1fc60bc62e8c "$carrier" | sha256sum -c -
+          base64 -d "$carrier" > /tmp/sg11.patch.xz
+          test "$(wc -c < /tmp/sg11.patch.xz)" -eq 9700
+          printf '%s  %s\n' 7ba2f4c7ee76a442eeffc616a42aa458c1545acceb62e41528474268801d9b5e /tmp/sg11.patch.xz | sha256sum -c -
+          xz -dc /tmp/sg11.patch.xz > /tmp/sg11.patch
+          test "$(wc -c < /tmp/sg11.patch)" -eq 59953
+          printf '%s  %s\n' 1df39c498fc33d049bbf246bbdfde845d44e56d262e293ee28ef5bc8490fecae /tmp/sg11.patch | sha256sum -c -
+      - name: Apply exact non-workflow patch to isolated staging branch
+        env:
+          STAGING_BRANCH: agent/sg11-nonworkflow-staging
+          EXPECTED_HEAD: 2467d3dbf647738391ece602da77dc93f05dc697
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin "$STAGING_BRANCH"
+          lease="$(git ls-remote origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')"
+          test "$lease" = "$EXPECTED_HEAD"
+          git switch -C sg11-staging "origin/$STAGING_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git apply --check --index /tmp/sg11.patch
+          git apply --index /tmp/sg11.patch
+          cat > /tmp/expected <<'PATHS'
+build/core-thesis/status-sovereignty/data.json
+build/core-thesis/status-sovereignty/manifest.json
+build/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+build/core-thesis/status-sovereignty/wave-02-second-party-review/manifest.json
+data/project/poof-clifford-ecology-release-manifest.json
+data/project/project-stable-ground-current.json
+data/project/project-stable-ground-sg11-release-manifest.json
+data/project/project-stable-ground-sg11.json
+data/project/status-sovereignty-release-manifest.json
+data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json
+docs/milestones/project-stable-ground-sg11.md
+package.json
+reports/core-thesis/poof-clifford-ecology/release-manifest.json
+reports/core-thesis/stable-ground/sg11/checkpoint.json
+reports/core-thesis/stable-ground/sg11/index.html
+reports/core-thesis/status-sovereignty/data.json
+reports/core-thesis/status-sovereignty/index.html
+reports/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+reports/core-thesis/status-sovereignty/wave-02-second-party-review/index.html
+test/project-stable-ground-sg10.test.js
+test/project-stable-ground-sg11.test.js
+tools/build-project-stable-ground-sg10.mjs
+tools/build-project-stable-ground-sg11.mjs
+tools/validate-project-stable-ground-sg10.mjs
+tools/validate-project-stable-ground-sg11.mjs
+PATHS
+          sort -o /tmp/expected /tmp/expected
+          git diff --cached --name-only | sort > /tmp/observed
+          diff -u /tmp/expected /tmp/observed
+          test "$(wc -l < /tmp/observed)" -eq 25
+          ! grep -Eq '^\.github/(tmp/|workflows/)' /tmp/observed
+      - name: Validate against exact permanent workflow bytes
+        run: |
+          set -Eeuo pipefail
+          printf '%s' 'bmFtZTogUHJvamVjdCBzdGFibGUtZ3JvdW5kIHN1cGVyc2Vzc2lvbiAxMCDCtyBoaXN0b3JpY2FsCgpvbjoKICBwdWxsX3JlcXVlc3Q6CiAgICBicmFuY2hlczogW21haW5dCiAgICBwYXRoczoKICAgICAgLSAnZGF0YS9wcm9qZWN0L3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1jdXJyZW50Lmpzb24nCiAgICAgIC0gJ2RhdGEvcHJvamVjdC9wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMCouanNvbicKICAgICAgLSAnZGF0YS9wcm9qZWN0L3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzExKi5qc29uJwogICAgICAtICdyZXBvcnRzL2NvcmUtdGhlc2lzL3N0YWJsZS1ncm91bmQvc2cxMC8qKicKICAgICAgLSAncmVwb3J0cy9jb3JlLXRoZXNpcy9zdGFibGUtZ3JvdW5kL3NnMTEvKionCiAgICAgIC0gJ3Rvb2xzL2J1aWxkLXByb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzEwLm1qcycKICAgICAgLSAndG9vbHMvdmFsaWRhdGUtcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTAubWpzJwogICAgICAtICd0ZXN0L3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzEwLnRlc3QuanMnCiAgICAgIC0gJy5naXRodWIvd29ya2Zsb3dzL3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzEwLnltbCcKICAgICAgLSAnLmdpdGh1Yi93b3JrZmxvd3MvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTEueW1sJwogICAgICAtICdwYWNrYWdlLmpzb24nCiAgcHVzaDoKICAgIGJyYW5jaGVzOiBbbWFpbl0KICAgIHBhdGhzOgogICAgICAtICdkYXRhL3Byb2plY3QvcHJvamVjdC1zdGFibGUtZ3JvdW5kLWN1cnJlbnQuanNvbicKICAgICAgLSAnZGF0YS9wcm9qZWN0L3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzEwKi5qc29uJwogICAgICAtICdkYXRhL3Byb2plY3QvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTEqLmpzb24nCiAgICAgIC0gJ3JlcG9ydHMvY29yZS10aGVzaXMvc3RhYmxlLWdyb3VuZC9zZzEwLyoqJwogICAgICAtICdyZXBvcnRzL2NvcmUtdGhlc2lzL3N0YWJsZS1ncm91bmQvc2cxMS8qKicKICAgICAgLSAndG9vbHMvYnVpbGQtcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTAubWpzJwogICAgICAtICd0b29scy92YWxpZGF0ZS1wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMC5tanMnCiAgICAgIC0gJ3Rlc3QvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTAudGVzdC5qcycKICAgICAgLSAnLmdpdGh1Yi93b3JrZmxvd3MvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTAueW1sJwogICAgICAtICcuZ2l0aHViL3dvcmtmbG93cy9wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMS55bWwnCiAgICAgIC0gJ3BhY2thZ2UuanNvbicKICB3b3JrZmxvd19kaXNwYXRjaDoKCnBlcm1pc3Npb25zOgogIGNvbnRlbnRzOiByZWFkCgpqb2JzOgogIHZhbGlkYXRlLWhpc3RvcmljYWw6CiAgICBydW5zLW9uOiB1YnVudHUtbGF0ZXN0CiAgICB0aW1lb3V0LW1pbnV0ZXM6IDEyMAogICAgc3RlcHM6CiAgICAgIC0gdXNlczogYWN0aW9ucy9jaGVja291dEB2NAogICAgICAgIHdpdGg6CiAgICAgICAgICBmZXRjaC1kZXB0aDogMAogICAgICAtIHVzZXM6IGFjdGlvbnMvc2V0dXAtbm9kZUB2NAogICAgICAgIHdpdGg6CiAgICAgICAgICBub2RlLXZlcnNpb246ICcyNCcKICAgICAgLSBuYW1lOiBWYWxpZGF0ZSBTRy0xMCBhcyBpbW11dGFibGUgaGlzdG9yeQogICAgICAgIHJ1bjogfAogICAgICAgICAgbm9kZSB0b29scy92YWxpZGF0ZS1wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMC5tanMKICAgICAgICAgIG5vZGUgdGVzdC9wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMC50ZXN0LmpzCiAgICAgIC0gbmFtZTogVmVyaWZ5IGZyb3plbiBTRy0xMCBieXRlcyBhdCB0aGUgbWVyZ2UgcmVjZWlwdAogICAgICAgIHJ1bjogfAogICAgICAgICAgc2V0IC1FZXVvIHBpcGVmYWlsCiAgICAgICAgICByZWNlaXB0PWI5NTJkYTAwOTMyMDEyYmU0MDljNjM1NTRkNmM4MWY4MzY3NzIzY2IKICAgICAgICAgIGZvciByZWwgaW4gXAogICAgICAgICAgICBkYXRhL3Byb2plY3QvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTAuanNvbiBcCiAgICAgICAgICAgIGRhdGEvcHJvamVjdC9wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMC1yZWxlYXNlLW1hbmlmZXN0Lmpzb24gXAogICAgICAgICAgICByZXBvcnRzL2NvcmUtdGhlc2lzL3N0YWJsZS1ncm91bmQvc2cxMC9jaGVja3BvaW50Lmpzb24gXAogICAgICAgICAgICByZXBvcnRzL2NvcmUtdGhlc2lzL3N0YWJsZS1ncm91bmQvc2cxMC9pbmRleC5odG1sCiAgICAgICAgICBkbwogICAgICAgICAgICBnaXQgc2hvdyAiJHJlY2VpcHQ6JHJlbCIgPiAiL3RtcC8kKGJhc2VuYW1lICIkcmVsIikiCiAgICAgICAgICAgIGNtcCAtLXNpbGVudCAiJHJlbCIgIi90bXAvJChiYXNlbmFtZSAiJHJlbCIpIgogICAgICAgICAgZG9uZQogICAgICAtIG5hbWU6IFZhbGlkYXRlIGN1cnJlbnQgc3VjY2Vzc29yIHdoZW4gcHJlc2VudAogICAgICAgIHJ1bjogfAogICAgICAgICAgaWYgdGVzdCAtZiBkYXRhL3Byb2plY3QvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTEuanNvbjsgdGhlbgogICAgICAgICAgICBub2RlIHRvb2xzL3ZhbGlkYXRlLXByb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzExLm1qcwogICAgICAgICAgICBub2RlIHRlc3QvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTEudGVzdC5qcwogICAgICAgICAgZmkKICAgICAgLSBuYW1lOiBSdW4gY29tcGxldGUgcmVwb3NpdG9yeSByZWxlYXNlIGdhdGUKICAgICAgICBydW46IG5wbSBydW4gcmVsZWFzZTpjaGVjawo=' | base64 -d > .github/workflows/project-stable-ground-sg10.yml
+          printf '%s' 'bmFtZTogUHJvamVjdCBzdGFibGUtZ3JvdW5kIHN1cGVyc2Vzc2lvbiAxMQoKb246CiAgcHVsbF9yZXF1ZXN0OgogICAgYnJhbmNoZXM6IFttYWluXQogICAgcGF0aHM6CiAgICAgIC0gJ2RhdGEvcHJvamVjdC9wcm9qZWN0LXN0YWJsZS1ncm91bmQtY3VycmVudC5qc29uJwogICAgICAtICdkYXRhL3Byb2plY3QvcHJvamVjdC9wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMCouanNvbicKICAgICAgLSAnZGF0YS9wcm9qZWN0L3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzExKi5qc29uJwogICAgICAtICdkYXRhL3Byb2plY3Qvc3RhdHVzLXNvdmVyZWlnbnR5LXdhdmUtMDItc2Vjb25kLXBhcnR5LXJldmlldy0qLmpzb24nCiAgICAgIC0gJ2RhdGEvcmVzZWFyY2gvc3RhdHVzLXNvdmVyZWlnbnR5LXdhdmUtMDItc2Vjb25kLXBhcnR5LXJldmlldy0qLmpzb24nCiAgICAgIC0gJ3JlcG9ydHMvY29yZS10aGVzaXMvc3RhdHVzLXNvdmVyZWlnbnR5L3dhdmUtMDItc2Vjb25kLXBhcnR5LXJldmlldy8qKicKICAgICAgLSAncmVwb3J0cy9jb3JlLXRoZXNpcy9zdGFibGUtZ3JvdW5kL3NnMTEvKionCiAgICAgIC0gJ3Rvb2xzLypwcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMSonCiAgICAgIC0gJ3Rlc3QvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTEudGVzdC5qcycKICAgICAgLSAnLmdpdGh1Yi93b3JrZmxvd3MvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTAueW1sJwogICAgICAtICcuZ2l0aHViL3dvcmtmbG93cy9wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMS55bWwnCiAgICAgIC0gJy5naXRodWIvd29ya2Zsb3dzL3N0YXR1cy1zb3ZlcmVpZ250eS13YXZlLTAyLXNlY29uZC1wYXJ0eS1yZXZpZXcueW1sJwogICAgICAtICdwYWNrYWdlLmpzb24nCiAgcHVzaDoKICAgIGJyYW5jaGVzOiBbbWFpbl0KICAgIHBhdGhzOgogICAgICAtICdkYXRhL3Byb2plY3QvcHJvamVjdC1zdGFibGUtZ3JvdW5kLWN1cnJlbnQuanNvbicKICAgICAgLSAnZGF0YS9wcm9qZWN0L3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzEwKi5qc29uJwogICAgICAtICdkYXRhL3Byb2plY3QvcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTEqLmpzb24nCiAgICAgIC0gJ2RhdGEvcHJvamVjdC9zdGF0dXMtc292ZXJlaWdudHktd2F2ZS0wMi1zZWNvbmQtcGFydHktcmV2aWV3LSouanNvbicKICAgICAgLSAnZGF0YS9yZXNlYXJjaC9zdGF0dXMtc292ZXJlaWdudHktd2F2ZS0wMi1zZWNvbmQtcGFydHktcmV2aWV3LSouanNvbicKICAgICAgLSAncmVwb3J0cy9jb3JlLXRoZXNpcy9zdGF0dXMtc292ZXJlaWdudHkvd2F2ZS0wMi1zZWNvbmQtcGFydHktcmV2aWV3LyoqJwogICAgICAtICdyZXBvcnRzL2NvcmUtdGhlc2lzL3N0YWJsZS1ncm91bmQvc2cxMS8qKicKICAgICAgLSAndG9vbHMvKnByb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzExKicKICAgICAgLSAndGVzdC9wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMS50ZXN0LmpzJwogICAgICAtICcuZ2l0aHViL3dvcmtmbG93cy9wcm9qZWN0LXN0YWJsZS1ncm91bmQtc2cxMC55bWwnCiAgICAgIC0gJy5naXRodWIvd29ya2Zsb3dzL3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzExLnltbCcKICAgICAgLSAnLmdpdGh1Yi93b3JrZmxvd3Mvc3RhdHVzLXNvdmVyZWlnbnR5LXdhdmUtMDItc2Vjb25kLXBhcnR5LXJldmlldy55bWwnCiAgICAgIC0gJ3BhY2thZ2UuanNvbicKICB3b3JrZmxvd19kaXNwYXRjaDoKCnBlcm1pc3Npb25zOgogIGNvbnRlbnRzOiByZWFkCgpqb2JzOgogIHZhbGlkYXRlOgogICAgcnVucy1vbjogdWJ1bnR1LWxhdGVzdAogICAgdGltZW91dC1taW51dGVzOiAxODAKICAgIHN0ZXBzOgogICAgICAtIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjQKICAgICAgICB3aXRoOgogICAgICAgICAgZmV0Y2gtZGVwdGg6IDAKICAgICAgLSB1c2VzOiBhY3Rpb25zL3NldHVwLW5vZGVAdjQKICAgICAgICB3aXRoOgogICAgICAgICAgbm9kZS12ZXJzaW9uOiAnMjQnCiAgICAgIC0gbmFtZTogQnVpbGQgYW5kIHZhbGlkYXRlIGNhbXBhaWduLCBTU0MsIGFuZCBQT09GIGN1c3RvZHkKICAgICAgICBydW46IHwKICAgICAgICAgIG5wbSBydW4gYnVpbGQ6c3RhdHVzLXNvdmVyZWlnbnR5CiAgICAgICAgICBucG0gcnVuIHZhbGlkYXRlOnN0YXR1cy1zb3ZlcmVpZ250eQogICAgICAgICAgbm9kZSB0ZXN0L3N0YXR1cy1zb3ZlcmVpZ250eS13YXZlLTAyLXNlY29uZC1wYXJ0eS1yZXZpZXcudGVzdC5qcwogICAgICAgICAgbnBtIHJ1biBidWlsZDpwb29mLWVjb2xvZ3kKICAgICAgICAgIG5wbSBydW4gdmFsaWRhdGU6cG9vZi1lY29sb2d5CiAgICAgICAgICBub2RlIHRlc3QvcG9vZi1jbGlmZm9yZC1lY29sb2d5LnRlc3QuanMKICAgICAgLSBuYW1lOiBWYWxpZGF0ZSBTRy0xMCBoaXN0b3J5IGFuZCBTRy0xMSBjdXJyZW50IHN0YXRlCiAgICAgICAgcnVuOiB8CiAgICAgICAgICBub2RlIHRvb2xzL3ZhbGlkYXRlLXByb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzEwLm1qcwogICAgICAgICAgbm9kZSB0ZXN0L3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzEwLnRlc3QuanMKICAgICAgICAgIG5vZGUgdG9vbHMvYnVpbGQtcHJvamVjdC1zdGFibGUtZ3JvdW5kLXNnMTEubWpzCiAgICAgICAgICBub2RlIHRvb2xzL3ZhbGlkYXRlLXByb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzExLm1qcwogICAgICAgICAgbm9kZSB0ZXN0L3Byb2plY3Qtc3RhYmxlLWdyb3VuZC1zZzExLnRlc3QuanMKICAgICAgLSBuYW1lOiBQcm92ZSBjYW1wYWlnbiBwdWJsaWNhdGlvbiBob2xkCiAgICAgICAgcnVuOiB8CiAgICAgICAgICBucG0gcnVuIGJ1aWxkOnBhZ2VzCiAgICAgICAgICBucG0gcnVuIGJ1aWxkOnN0YW5kYWxvbmUKICAgICAgICAgIG5wbSBydW4gdmFsaWRhdGU6cGFnZXMKICAgICAgICAgIHRlc3QgISAtZSBkaXN0L3JlcG9ydHMvY29yZS10aGVzaXMvc3RhdHVzLXNvdmVyZWlnbnR5L3dhdmUtMDItc2Vjb25kLXBhcnR5LXJldmlldwogICAgICAgICAgdGVzdCAhIC1lIGRpc3QvZGF0YS9yZXNlYXJjaC9zdGF0dXMtc292ZXJlaWdudHktd2F2ZS0wMi1zZWNvbmQtcGFydHktcmV2aWV3LWNhbmRpZGF0ZXMuanNvbgogICAgICAgICAgdGVzdCAhIC1lIGRpc3QvZGF0YS9yZXNlYXJjaC9zdGF0dXMtc292ZXJlaWdudHktd2F2ZS0wMi1zZWNvbmQtcGFydHktcmV2aWV3LXJlc3BvbnNlcy5qc29uCiAgICAgIC0gbmFtZTogUnVuIGNvbXBsZXRlIHJlcG9zaXRvcnkgcmVsZWFzZSBnYXRlCiAgICAgICAgcnVuOiBucG0gcnVuIHJlbGVhc2U6Y2hlY2sKICAgICAgLSBuYW1lOiBQcm92ZSBkZXRlcm1pbmlzdGljIGN1cnJlbnQgcHJvZHVjdHMgYW5kIGZyb3plbiBTRy0xMAogICAgICAgIHJ1bjogfAogICAgICAgICAgZ2l0IHJlc3RvcmUgLS1zdGFnZWQgLS13b3JrdHJlZSAuCiAgICAgICAgICBnaXQgY2xlYW4gLWZkeAogICAgICAgICAgbnBtIHJ1biBidWlsZDpzdGF0dXMtc292ZXJlaWdudHkKICAgICAgICAgIG5wbSBydW4gdmFsaWRhdGU6c3RhdHVzLXNvdmVyZWlnbnR5CiAgICAgICAgICBucG0gcnVuIGJ1aWxkOnBvb2YtZWNvbG9neQogICAgICAgICAgbnBtIHJ1biB2YWxpZGF0ZTpwb29mLWVjb2xvZ3kKICAgICAgICAgIG5wbSBydW4gYnVpbGQ6c3RhYmxlLWdyb3VuZAogICAgICAgICAgbnBtIHJ1biB2YWxpZGF0ZTpzdGFibGUtZ3JvdW5kCiAgICAgICAgICBnaXQgZGlmZiAtLWV4aXQtY29kZQogICAgICAgICAgdGVzdCAteiAiJChnaXQgc3RhdHVzIC0tcG9yY2VsYWluKSIK' | base64 -d > .github/workflows/project-stable-ground-sg11.yml
+          printf '%s  %s\n' 2ad6fb794029ea5c6dafe0116cbaf9de415c6cebeaa0e21c16d13bb6fafc9693 .github/workflows/project-stable-ground-sg10.yml | sha256sum -c -
+          printf '%s  %s\n' 7423b2166dd8055d7bb25b6f170c1fc6cd4f0d84f0c91fbc6f53070a5c7e5ac8 .github/workflows/project-stable-ground-sg11.yml | sha256sum -c -
+          npm run build:status-sovereignty
+          npm run validate:status-sovereignty
+          node test/status-sovereignty-wave-02-second-party-review.test.js
+          npm run build:poof-ecology
+          npm run validate:poof-ecology
+          node tools/validate-project-stable-ground-sg10.mjs
+          node test/project-stable-ground-sg10.test.js
+          node tools/build-project-stable-ground-sg11.mjs
+          node tools/validate-project-stable-ground-sg11.mjs
+          node test/project-stable-ground-sg11.test.js
+          test "$(jq -r '.combined_sha256' data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json)" = 5690fb91f6d686d0c5b080ab30621e277d0efbe5fbdf4e336e6ac7219d26e0c5
+          test "$(jq -r '.combined_sha256' data/project/status-sovereignty-release-manifest.json)" = f9362122c76960c23a4572514a7be3650c672d920a40fb1654dfefecb59103bb
+          test "$(jq -r '.combined_sha256' data/project/poof-clifford-ecology-release-manifest.json)" = 042f6bad908db435b9071f25be7c4072d4570da182c5132ff64ab501dc897d8a
+          test "$(jq -r '.combined_sha256' data/project/project-stable-ground-sg11-release-manifest.json)" = 2798c3015fe6f3790d022eea82075e31e02371b243db3eab991ed20372c9937f
+          git diff --cached --name-only | sort > /tmp/observed-after
+          diff -u /tmp/expected /tmp/observed-after
+          unstaged="$(git diff --name-only | sort)"
+          expected_unstaged=$(printf '%s\n' .github/workflows/project-stable-ground-sg10.yml .github/workflows/project-stable-ground-sg11.yml | sort)
+          test "$unstaged" = "$expected_unstaged"
+      - name: Remove validation-only workflow bytes and publish staging commit
+        env:
+          STAGING_BRANCH: agent/sg11-nonworkflow-staging
+          EXPECTED_HEAD: 2467d3dbf647738391ece602da77dc93f05dc697
+        run: |
+          set -Eeuo pipefail
+          git restore --worktree .github/workflows/project-stable-ground-sg10.yml
+          rm .github/workflows/project-stable-ground-sg11.yml
+          test -z "$(git diff --name-only)"
+          git diff --cached --name-only | sort > /tmp/observed-final
+          diff -u /tmp/expected /tmp/observed-final
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m 'Stage SG-11 non-workflow estate'
+          git push --force-with-lease="refs/heads/$STAGING_BRANCH:$EXPECTED_HEAD" origin "HEAD:refs/heads/$STAGING_BRANCH"
+          echo "staging_sha=$(git rev-parse HEAD)"
+          echo "staging_tree=$(git show -s --format=%T HEAD)"
