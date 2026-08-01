@@ -1,6 +1,11 @@
 name: Temporary materialize SSC Wave 02 review
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/tmp/ssc-wave02-review.part-*.b64'
+      - '.github/workflows/temporary-materialize-ssc-wave02-review.yml'
   push:
     branches: [agent/ssc-wave02-review-sg10-transport]
     paths:
