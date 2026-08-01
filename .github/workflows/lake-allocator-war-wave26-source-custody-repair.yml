@@ -1,0 +1,82 @@
+name: Allocator-war Wave 26 source-custody repair
+
+on:
+  pull_request:
+    branches:
+      - agent/lake-allocator-war-wave-21
+    paths:
+      - 'data/project/lake-allocator-war-wave26-source-custody-repair-policy.json'
+      - 'tools/build-lake-allocator-war-targeted-closure-wave-26-source-plan.mjs'
+      - 'tools/build-lake-allocator-war-wave26-source-custody-repair.mjs'
+      - 'tools/validate-lake-allocator-war-wave26-source-custody-repair.mjs'
+      - 'test/lake-allocator-war-wave26-source-custody-repair.test.js'
+      - 'docs/methods/lake-allocator-war-wave26-source-custody-repair.md'
+      - 'docs/milestones/lake-allocator-war-wave26-source-custody-repair.md'
+      - 'build/lake-actions/allocator-war-wave26-source-custody-repair.json'
+      - 'reports/lake-allocator-war-wave26-source-custody-repair.md'
+      - 'data/project/lake-allocator-war-targeted-closure-wave-26-source-plan.json'
+      - 'data/acquisition/lake-allocator-war-wave-26/**'
+      - 'data/project/lake-allocator-war-wave-21-policy.json'
+      - 'data/project/lake-index-policy.json'
+      - 'data/project/lake-basin-registry.json'
+      - 'package.json'
+      - 'build/lake-index/**'
+      - 'reports/lake-basin-index.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lake-allocator-war-wave26-source-custody-repair-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate source-only repair surface
+        if: ${{ hashFiles('build/lake-actions/allocator-war-wave26-source-custody-repair.json') == '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/build-lake-allocator-war-targeted-closure-wave-26-source-plan.mjs
+          node --check tools/build-lake-allocator-war-wave26-source-custody-repair.mjs
+          node --check tools/validate-lake-allocator-war-wave26-source-custody-repair.mjs
+          node --check test/lake-allocator-war-wave26-source-custody-repair.test.js
+
+      - name: Validate sealed repair receipt
+        if: ${{ hashFiles('build/lake-actions/allocator-war-wave26-source-custody-repair.json') != '' }}
+        run: node tools/validate-lake-allocator-war-wave26-source-custody-repair.mjs
+
+      - name: Run source-custody adversarial mutations
+        if: ${{ hashFiles('build/lake-actions/allocator-war-wave26-source-custody-repair.json') != '' }}
+        run: node test/lake-allocator-war-wave26-source-custody-repair.test.js
+
+      - name: Run complete repository release gate
+        if: ${{ hashFiles('build/lake-actions/allocator-war-wave26-source-custody-repair.json') != '' }}
+        run: npm run release:check
+
+      - name: Restore and validate committed lake epoch
+        if: ${{ hashFiles('build/lake-actions/allocator-war-wave26-source-custody-repair.json') != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore --worktree .
+          git clean -fd
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-allocator-war-targeted-closure-wave-26.mjs
+          node test/lake-allocator-war-targeted-closure-wave-26.test.js
+          node tools/validate-lake-allocator-war-wave26-source-custody-repair.mjs
+          node test/lake-allocator-war-wave26-source-custody-repair.test.js
+          git diff --check
+          test -z "$(git status --porcelain)"
