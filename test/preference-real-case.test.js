@@ -57,7 +57,20 @@ assert.match(markdown, /Bounded partial substitution vendor-claimed: true/);
 assert.match(markdown, /Full replacement demonstrated: false/);
 assert.match(markdown, /Performative effect supported: false/);
 assert.match(markdown, /Current validation continuity supported: false/);
-assert.doesNotMatch(markdown, /changed audience preferences|manipulated the audience|publicly authorized the deployment|independently reproduced 92 percent/i);
+
+// Forbidden propositions may appear only inside the explicit prohibited-inference ledger.
+// The publication surface before that heading must not assert them affirmatively.
+const prohibitedHeading = '## Prohibited inferences';
+const prohibitedIndex = markdown.indexOf(prohibitedHeading);
+assert.ok(prohibitedIndex >= 0, 'rendered admission must preserve the prohibited-inference ledger');
+const publicationSurface = markdown.slice(0, prohibitedIndex);
+const prohibitedSurface = markdown.slice(prohibitedIndex);
+assert.doesNotMatch(
+  publicationSurface,
+  /changed audience preferences|manipulated the audience|publicly authorized the deployment|independently reproduced 92 percent/i
+);
+assert.match(prohibitedSurface, /Do not infer that News UK or Electric Twin changed audience preferences/);
+assert.match(prohibitedSurface, /Do not treat the vendor-reported 92-percent holdout result as independently reproduced/);
 
 const graphLeak = structuredClone(packet);
 graphLeak.graph_effect = 'asserted';
