@@ -1,0 +1,262 @@
+name: TEMP materialize SG-11 against live main
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/sg11-live-runner-base
+    paths:
+      - '.github/tmp/sg11-live-trigger.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sg11-live-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Form exact live-main receipt, rebuild SG-11, and gate permanent bytes
+        env:
+          EXPECTED_CAMPAIGN: 04649fafcc517c0d7eef6279818dd309366eb49b
+          EXPECTED_OLD_PRODUCT: dfb7a1040f9c865d17e5bd711726d6bc085c6cd9
+          OLD_INTEGRATION_BASE: 2362f4357bf58d388dad11f38bcac62f580ce89b
+          OLD_INTEGRATION_COMMIT: 4a0cf108098789f93732b829fc5a5e4ea152f28b
+          OLD_INTEGRATION_TREE: e2c1964d853714a7ca34cde57272588e3e4b611e
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --no-tags origin \
+            main \
+            refs/heads/agent/sg11-campaign-source-04649:refs/remotes/origin/agent/sg11-campaign-source-04649 \
+            refs/heads/agent/tmp-sg11-old-product:refs/remotes/origin/agent/tmp-sg11-old-product
+
+          MAIN="$(git rev-parse origin/main)"
+          CAMPAIGN="$(git rev-parse origin/agent/sg11-campaign-source-04649)"
+          OLD_PRODUCT="$(git rev-parse origin/agent/tmp-sg11-old-product)"
+          test "$CAMPAIGN" = "$EXPECTED_CAMPAIGN"
+          test "$OLD_PRODUCT" = "$EXPECTED_OLD_PRODUCT"
+
+          cat > /tmp/expected-campaign-paths.txt <<'EOF'
+          .github/workflows/status-sovereignty-wave-02-second-party-review.yml
+          build/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+          build/core-thesis/status-sovereignty/wave-02-second-party-review/manifest.json
+          data/project/status-sovereignty-wave-02-second-party-review-campaign.json
+          data/project/status-sovereignty-wave-02-second-party-review-packet-registry.json
+          data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json
+          data/research/status-sovereignty-wave-02-second-party-review-candidates.json
+          data/research/status-sovereignty-wave-02-second-party-review-responses.json
+          docs/milestones/m05-status-sovereignty-wave-02-second-party-review.md
+          docs/ssc-wave-02-second-party-review-intake.md
+          package.json
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/index.html
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/intake.html
+          schemas/status-sovereignty-wave-02-second-party-review-campaign.schema.json
+          schemas/status-sovereignty-wave-02-second-party-review-candidate.schema.json
+          schemas/status-sovereignty-wave-02-second-party-review-receipt.schema.json
+          test/status-sovereignty-wave-02-second-party-review.test.js
+          tools/build-status-sovereignty-wave-02-second-party-review.mjs
+          tools/validate-status-sovereignty-wave-02-second-party-review.mjs
+          EOF
+          sed -i 's/^          //' /tmp/expected-campaign-paths.txt
+          sort -o /tmp/expected-campaign-paths.txt /tmp/expected-campaign-paths.txt
+
+          git checkout --detach "$MAIN"
+          git merge --no-ff "$CAMPAIGN" \
+            -m "Integrate SSC-W02 separated-review campaign over current main" \
+            -m "Preserve live main as first parent and the exact twenty-path campaign source as second parent. This receipt creates no reviewer, adjudication, publication, graph, field, or adoption authority."
+          INTEGRATION="$(git rev-parse HEAD)"
+          INTEGRATION_TREE="$(git show -s --format=%T HEAD)"
+          test "$(git show -s --format=%P HEAD)" = "$MAIN $CAMPAIGN"
+          git diff --name-only "$MAIN" "$INTEGRATION" | sort > /tmp/actual-campaign-paths.txt
+          diff -u /tmp/expected-campaign-paths.txt /tmp/actual-campaign-paths.txt
+
+          cat > /tmp/permanent-paths.txt <<'EOF'
+          .github/workflows/project-stable-ground-sg10.yml
+          .github/workflows/project-stable-ground-sg11.yml
+          build/core-thesis/status-sovereignty/data.json
+          build/core-thesis/status-sovereignty/manifest.json
+          build/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+          build/core-thesis/status-sovereignty/wave-02-second-party-review/manifest.json
+          data/project/poof-clifford-ecology-release-manifest.json
+          data/project/project-stable-ground-current.json
+          data/project/project-stable-ground-sg11-release-manifest.json
+          data/project/project-stable-ground-sg11.json
+          data/project/status-sovereignty-release-manifest.json
+          data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json
+          docs/milestones/project-stable-ground-sg11.md
+          package.json
+          reports/core-thesis/poof-clifford-ecology/release-manifest.json
+          reports/core-thesis/stable-ground/sg11/checkpoint.json
+          reports/core-thesis/stable-ground/sg11/index.html
+          reports/core-thesis/status-sovereignty/data.json
+          reports/core-thesis/status-sovereignty/index.html
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/index.html
+          test/project-stable-ground-sg10.test.js
+          test/project-stable-ground-sg11.test.js
+          tools/build-project-stable-ground-sg10.mjs
+          tools/build-project-stable-ground-sg11.mjs
+          tools/validate-project-stable-ground-sg10.mjs
+          tools/validate-project-stable-ground-sg11.mjs
+          EOF
+          sed -i 's/^          //' /tmp/permanent-paths.txt
+          sort -o /tmp/permanent-paths.txt /tmp/permanent-paths.txt
+          grep -v '^package.json$' /tmp/permanent-paths.txt > /tmp/overlay-paths.txt
+
+          git checkout -B agent/sg11-live-product "$INTEGRATION"
+          while IFS= read -r path; do
+            git checkout "$OLD_PRODUCT" -- "$path"
+          done < /tmp/overlay-paths.txt
+
+          MAIN="$MAIN" INTEGRATION="$INTEGRATION" INTEGRATION_TREE="$INTEGRATION_TREE" node <<'NODE'
+          import fs from 'node:fs';
+
+          const main = process.env.MAIN;
+          const integration = process.env.INTEGRATION;
+          const integrationTree = process.env.INTEGRATION_TREE;
+          const oldBase = process.env.OLD_INTEGRATION_BASE;
+          const oldCommit = process.env.OLD_INTEGRATION_COMMIT;
+          const oldTree = process.env.OLD_INTEGRATION_TREE;
+          const stable = (value) => `${JSON.stringify(value, null, 2)}\n`;
+          const read = (path) => JSON.parse(fs.readFileSync(path, 'utf8'));
+          const write = (path, value) => fs.writeFileSync(path, stable(value));
+
+          const packagePath = 'package.json';
+          const pkg = read(packagePath);
+          const scripts = pkg.scripts;
+          const append = (key, command) => {
+            const value = scripts[key];
+            if (typeof value !== 'string') throw new Error(`missing package script ${key}`);
+            const commands = value.split(' && ');
+            if (!commands.includes(command)) scripts[key] = `${value} && ${command}`;
+          };
+          append('test', 'node test/project-stable-ground-sg11.test.js');
+          scripts['build:stable-ground'] = 'node tools/build-project-stable-ground-sg11.mjs';
+          append('validate:stable-ground', 'node tools/validate-project-stable-ground-sg11.mjs');
+          append('validate:stable-ground', 'node test/project-stable-ground-sg11.test.js');
+          scripts['build:stable-ground-sg10'] = 'node tools/build-project-stable-ground-sg10.mjs';
+          scripts['validate:stable-ground-sg10'] = 'node tools/validate-project-stable-ground-sg10.mjs && node test/project-stable-ground-sg10.test.js';
+          scripts['ci:stable-ground-sg10'] = 'npm run validate:stable-ground-sg10';
+          scripts['build:stable-ground-sg11'] = 'node tools/build-project-stable-ground-sg11.mjs';
+          scripts['validate:stable-ground-sg11'] = 'node tools/validate-project-stable-ground-sg11.mjs && node test/project-stable-ground-sg11.test.js';
+          scripts['ci:stable-ground-sg11'] = 'npm run build:stable-ground-sg11 && npm run validate:stable-ground-sg11';
+          write(packagePath, pkg);
+
+          const reboundPaths = [
+            'data/project/project-stable-ground-current.json',
+            'data/project/project-stable-ground-sg11.json',
+            'tools/validate-project-stable-ground-sg11.mjs'
+          ];
+          for (const path of reboundPaths) {
+            let content = fs.readFileSync(path, 'utf8');
+            content = content.split(oldBase).join(main);
+            content = content.split(oldCommit).join(integration);
+            content = content.split(oldTree).join(integrationTree);
+            fs.writeFileSync(path, content);
+          }
+
+          const pointerPath = 'data/project/project-stable-ground-current.json';
+          const pointer = read(pointerPath);
+          pointer.current_canonical_main_commit = integration;
+          const historyRow = pointer.history.find((row) => row.checkpoint_id === 'SG-2026-07-31-11');
+          if (!historyRow) throw new Error('SG-11 pointer history row missing');
+          historyRow.integration_commit = integration;
+          write(pointerPath, pointer);
+
+          const checkpointPath = 'data/project/project-stable-ground-sg11.json';
+          const checkpoint = read(checkpointPath);
+          checkpoint.trigger.integration_base = main;
+          checkpoint.trigger.integration_commit = integration;
+          checkpoint.trigger.integration_tree = integrationTree;
+          checkpoint.canonical_main.commit = integration;
+          checkpoint.canonical_main.commit_title = 'Integrate SSC-W02 separated-review campaign over current main';
+          checkpoint.canonical_main.meaning = 'The exact twenty-path SSC-W02 campaign is integrated over the live, disjoint mainline without converting infrastructure into external review, adjudication, publication, graph, field, or adoption authority.';
+          write(checkpointPath, checkpoint);
+
+          for (const path of reboundPaths) {
+            const content = fs.readFileSync(path, 'utf8');
+            for (const stale of [oldBase, oldCommit, oldTree]) {
+              if (content.includes(stale)) throw new Error(`${path} retains stale integration object ${stale}`);
+            }
+          }
+          NODE
+
+          node tools/build-project-stable-ground-sg11.mjs
+          node tools/validate-status-sovereignty-wave-02-second-party-review.mjs
+          node test/status-sovereignty-wave-02-second-party-review.test.js
+          node tools/validate-project-stable-ground-sg10.mjs
+          node test/project-stable-ground-sg10.test.js
+          node tools/validate-project-stable-ground-sg11.mjs
+          node test/project-stable-ground-sg11.test.js
+
+          git diff --name-only "$INTEGRATION" | sort > /tmp/actual-permanent-paths.txt
+          diff -u /tmp/permanent-paths.txt /tmp/actual-permanent-paths.txt
+          if grep -q '^\.github/tmp/' /tmp/actual-permanent-paths.txt; then
+            echo 'transport path entered permanent denominator' >&2
+            exit 1
+          fi
+          while IFS= read -r path; do git add -- "$path"; done < /tmp/permanent-paths.txt
+          test -z "$(git diff --name-only | grep -v '^$' || true)"
+          git commit -m "Establish SG-11 external-review campaign stable ground" \
+            -m "Bind SG-11 to the exact live-main integration receipt, preserve frozen SG-10 and campaign/status/POOF custody, and retain eight unassigned packets, zero valid external reviews, zero adjudications, zero publication clearances, and graph effect none."
+          PRODUCT="$(git rev-parse HEAD)"
+          test "$(git rev-parse "${PRODUCT}^")" = "$INTEGRATION"
+
+          node tools/build-project-stable-ground-sg11.mjs
+          node tools/validate-status-sovereignty-wave-02-second-party-review.mjs
+          node test/status-sovereignty-wave-02-second-party-review.test.js
+          node tools/validate-project-stable-ground-sg10.mjs
+          node test/project-stable-ground-sg10.test.js
+          node tools/validate-project-stable-ground-sg11.mjs
+          node test/project-stable-ground-sg11.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+
+          npm run release:check
+          git reset --hard "$PRODUCT"
+          node tools/build-project-stable-ground-sg11.mjs
+          node tools/validate-project-stable-ground-sg11.mjs
+          node test/project-stable-ground-sg11.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+
+          git fetch --no-tags origin main
+          CURRENT_MAIN="$(git rev-parse origin/main)"
+          if [ "$CURRENT_MAIN" != "$MAIN" ]; then
+            echo "main advanced during exact-head validation: $MAIN -> $CURRENT_MAIN" >&2
+            exit 42
+          fi
+
+          RELEASE_SHA256="$(node -e "const x=require('./data/project/project-stable-ground-sg11-release-manifest.json'); console.log(x.combined_sha256)")"
+          {
+            echo "main=$MAIN"
+            echo "campaign=$CAMPAIGN"
+            echo "integration=$INTEGRATION"
+            echo "integration_tree=$INTEGRATION_TREE"
+            echo "product=$PRODUCT"
+            echo "sg11_release_sha256=$RELEASE_SHA256"
+            echo "permanent_paths=27"
+            echo "transport_paths=0"
+          } | tee .sg11-materialization-summary.txt
+
+          git push origin "$INTEGRATION:refs/heads/agent/sg11-live-integration" --force
+          git push origin "$PRODUCT:refs/heads/agent/sg11-live-product" --force
+      - name: Upload exact materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: sg11-live-materialization-receipt
+          path: .sg11-materialization-summary.txt
+          if-no-files-found: error
