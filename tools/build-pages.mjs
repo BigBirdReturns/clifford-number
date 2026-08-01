@@ -45,6 +45,11 @@ for (const heldPath of [
   ['data', 'project', 'status-sovereignty-wave-02-maintainer-review-release-manifest.json'],
   ['data', 'research', 'status-sovereignty-wave-02.json'],
   ['data', 'research', 'status-sovereignty-wave-02-maintainer-review.json'],
+  ['data', 'project', 'status-sovereignty-wave-02-second-party-review-campaign.json'],
+  ['data', 'project', 'status-sovereignty-wave-02-second-party-review-packet-registry.json'],
+  ['data', 'project', 'status-sovereignty-wave-02-second-party-review-release-manifest.json'],
+  ['data', 'research', 'status-sovereignty-wave-02-second-party-review-candidates.json'],
+  ['data', 'research', 'status-sovereignty-wave-02-second-party-review-responses.json'],
   ['docs', 'methods', 'status-sovereignty-compact.md'],
   ['docs', 'milestones', 'm05-status-sovereignty-fanout.md'],
   ['docs', 'milestones', 'm05-status-sovereignty-wave-01.md'],
@@ -53,6 +58,8 @@ for (const heldPath of [
   ['docs', 'milestones', 'm05-status-sovereignty-wave-01-second-party-review.md'],
   ['docs', 'milestones', 'm05-status-sovereignty-wave-02-intake.md'],
   ['docs', 'milestones', 'm05-status-sovereignty-wave-02-review.md'],
+  ['docs', 'milestones', 'm05-status-sovereignty-wave-02-second-party-review.md'],
+  ['docs', 'ssc-wave-02-second-party-review-intake.md'],
 ]) fs.rmSync(path.join(destination, ...heldPath), { recursive: true, force: true });
 fs.writeFileSync(path.join(destination, '.nojekyll'), '');
 console.log(`build-pages: ${files.length} files and ${directories.length} directories copied`);
