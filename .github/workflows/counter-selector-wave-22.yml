@@ -51,11 +51,7 @@ jobs:
         run: node test/counter-selector-wave-22.test.js
       - name: Require exact committed Wave 22 products
         run: |
-          git diff --exit-code -- \
-            data/project/counter-selector-wave-22-request-receipt-registry.json \
-            data/project/counter-selector-wave-22-release-manifest.json \
-            reports/core-thesis/counter-selector-wave-22/data.json \
-            reports/core-thesis/counter-selector-wave-22/index.html
+          git diff --exit-code --             data/project/counter-selector-wave-22-request-receipt-registry.json             data/project/counter-selector-wave-22-release-manifest.json             reports/core-thesis/counter-selector-wave-22/data.json             reports/core-thesis/counter-selector-wave-22/index.html
       - name: Run complete repository release gate
         run: npm run release:check
       - name: Reconstruct Wave 22 deterministically
