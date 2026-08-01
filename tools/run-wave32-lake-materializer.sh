@@ -89,6 +89,59 @@ validate_allocator_chain() {
   node test/lake-allocator-war-bounded-source-snapshots-wave-32.test.js
 }
 
+prove_restored_epoch() {
+  local sealed_tree="$1"
+  local previous=''
+  local current=''
+
+  git reset --hard HEAD
+  git clean -fd
+
+  # The monolithic lake products are deliberately not committed. Rebuild them
+  # from the committed source epoch before sharding and validating restoration.
+  for pass in 1 2 3; do
+    echo "Wave 32 restored-epoch reconstruction pass ${pass}"
+    fixed_point_pass
+    git add -A
+    current="$(git write-tree)"
+    if [[ "$pass" -ge 2 && "$current" == "$previous" ]]; then
+      echo "Wave 32 restored-epoch fixed point reached: ${current}"
+      break
+    fi
+    previous="$current"
+    if [[ "$pass" == 3 ]]; then
+      echo 'Wave 32 restored epoch did not reach a two-pass tree fixed point' >&2
+      return 1
+    fi
+  done
+
+  shard_and_validate
+  validate_allocator_chain
+  git diff --check
+  git diff --cached --check
+  git add -A
+  local restored_tree
+  restored_tree="$(git write-tree)"
+  [[ "$restored_tree" == "$sealed_tree" ]] || {
+    echo "Wave 32 restored tree mismatch: sealed=$sealed_tree restored=$restored_tree" >&2
+    git status --short >&2
+    return 1
+  }
+  [[ -z "$(git status --porcelain --untracked-files=no)" ]] || {
+    git status --short >&2
+    echo 'Wave 32 restored tracked epoch is dirty' >&2
+    return 1
+  }
+  [[ "$sealed_tree" == "$(git rev-parse HEAD^{tree})" ]] || {
+    echo 'Wave 32 committed tree changed during restored validation' >&2
+    return 1
+  }
+
+  # Remove reconstructed, noncommitted products without changing the commit.
+  git reset --hard HEAD
+  git clean -fd
+}
+
 observed_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
 export LAW32_OBSERVED_AT="$observed_at"
 echo "Wave 32 live acquisition observed_at=${LAW32_OBSERVED_AT}"
@@ -134,14 +187,7 @@ git add -A
 git commit -m 'Materialize allocator-war bounded source snapshots Wave 32'
 sealed_tree="$(git rev-parse HEAD^{tree})"
 
-# Restore from the committed epoch and prove that validation is read-only.
-git reset --hard HEAD
-git clean -fd
-shard_and_validate
-validate_allocator_chain
-git diff --check
-[[ -z "$(git status --porcelain)" ]] || { git status --short >&2; echo 'Wave 32 restored epoch is dirty' >&2; exit 1; }
-[[ "$sealed_tree" == "$(git rev-parse HEAD^{tree})" ]] || { echo 'Wave 32 committed tree changed during restored validation' >&2; exit 1; }
+prove_restored_epoch "$sealed_tree"
 
 # Refuse to publish over a descendant or sibling head.
 git fetch origin "$branch"
