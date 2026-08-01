@@ -1,6 +1,6 @@
 {
   "schema_version": "preference-custody-control-manifest@1",
-  "manifest_id": "preference-custody-laboratory-floor-v7",
+  "manifest_id": "preference-custody-laboratory-floor-v8",
   "issue": 594,
   "captured_at": "2026-08-01",
   "status": "synthetic_control_floor",
@@ -149,6 +149,25 @@
         "rollback_or_abstention_preserves_failed_result",
         "publication_claim_requires_current_receipt_and_version"
       ]
+    },
+    {
+      "control_id": "PC-10",
+      "fixture_id": "same-observed-shift-different-mechanisms-v1",
+      "failure_class": "dynamic_preference_change_and_measurement_equifinality",
+      "source_fixture_path": "data/research/preference-custody/dynamic-change.fixture.json",
+      "build_artifact_path": "build/research/preference-dynamic-change.json",
+      "expected_build_schema": "preference-dynamic-change-build@1",
+      "required_refusal_rules": [
+        "aggregate_shift_is_not_individual_preference_change",
+        "panel_continuity_is_not_instrument_invariance",
+        "reported_choice_is_not_latent_preference_under_strategic_incentive",
+        "entry_and_exit_are_not_conversion",
+        "imputation_is_not_observed_response",
+        "instrument_drift_is_not_population_learning",
+        "targeted_exposure_conversion_supports_performative_path_not_manipulation_or_intent",
+        "longitudinal_change_requires_identity_transition_instrument_exposure_and_attrition_custody",
+        "dynamic_preference_change_does_not_confer_public_authority"
+      ]
     }
   ],
   "identification_requirements": [
@@ -183,6 +202,11 @@
       "refused_inference": "retained_or_responding_share_does_not_identify_population_support_or_preference_change"
     },
     {
+      "stage": "dynamic_preference_change",
+      "required_state": "longitudinal_identity_transition_instrument_exposure_incentive_attrition_and_postprocessing_custody",
+      "refused_inference": "aggregate_before_and_after_share_does_not_identify_individual_conversion_or_performative_effect"
+    },
+    {
       "stage": "subgroup_distribution",
       "required_state": "group_outcomes_burden_and_counterfactuals",
       "refused_inference": "aggregate_success_does_not_identify_group_acceptability_or_burden"
@@ -199,11 +223,11 @@
     }
   ],
   "open_frontiers": [
-    "dynamic_preference_change",
     "intertemporal_repeated_bargaining_and_commitment",
     "intersectional_and_unobserved_group_custody",
     "cross_organizational_vendor_customer_and_regulator_succession",
     "federated_multilevel_and_successor_authority",
+    "endogenous_network_and_collective_preference_formation",
     "real_world_intervention_provenance"
   ],
   "promotion_boundary": {
@@ -230,6 +254,14 @@
       "institutional_disposition",
       "exposure_and_eligibility_state",
       "complete_disposition_and_denominator_history",
+      "longitudinal_identity_and_cohort_continuity",
+      "entrant_exit_nonresponse_and_recontact_history",
+      "latent_and_reported_transition_matrices",
+      "instrument_version_wording_hash_and_crosswalk",
+      "exposure_assignment_timing_dose_and_counterfactual",
+      "incentive_coercion_and_strategic_reporting_state",
+      "postprocessing_weighting_and_imputation_lineage",
+      "subgroup_longitudinal_transition_and_burden",
       "group_denominators_outcomes_and_burden_distribution",
       "counterfactual_design",
       "post_intervention_outcomes",
@@ -244,18 +276,19 @@
   },
   "prohibited_inferences": [
     "Do not treat a laboratory control as evidence about a named deployment.",
-    "Do not infer preference change, suppression, discrimination, bargaining denial, package imposition, stale-badge use, unvalidated succession, manipulation, illegitimacy, or intent from identification, package, agenda, authority, or version failure alone.",
-    "Do not treat a passing predictive benchmark as a pass on exposure, option-set, agenda-formation, package bargaining, mechanism, attrition, subgroup distribution, changed policy consequences, or public-authorization validity.",
-    "Do not treat synthetic prediction, observed behavior, advisory consultation, commissioner approval, a popular suggestion, high package support, or a prior validation badge as binding current authority.",
-    "Do not treat component support as package acceptance, package acceptance as collective agreement, failed ratification as missing data, or failed revalidation as an absent result.",
+    "Do not infer preference change, suppression, discrimination, bargaining denial, package imposition, stale-badge use, unvalidated succession, manipulation, illegitimacy, or intent from identification, package, agenda, authority, version, or longitudinal measurement failure alone.",
+    "Do not treat a passing predictive benchmark as a pass on exposure, option-set, agenda-formation, package bargaining, mechanism, attrition, dynamic change, subgroup distribution, changed policy consequences, or public-authorization validity.",
+    "Do not treat synthetic prediction, observed behavior, aggregate before-and-after movement, advisory consultation, commissioner approval, a popular suggestion, high package support, or a prior validation badge as binding current authority.",
+    "Do not treat component support as package acceptance, package acceptance as collective agreement, failed ratification as missing data, failed revalidation as an absent result, or entrants, exits, instrument drift, strategic compliance, and imputation as individual preference conversion.",
     "Do not treat the same score under a changed metric or benchmark as continuity without a crosswalk and bounded new receipt.",
     "Do not treat preference among institution-authored options as acceptance of the objective or proof that no better collective alternative or package exists.",
-    "Do not treat the nine controls as exhaustive of every performative or constitutional failure mode."
+    "Do not treat a targeted performative path as proof of manipulation, improper intent, causal effect size, or public injury without the required exposure and counterfactual evidence.",
+    "Do not treat the ten controls as exhaustive of every performative or constitutional failure mode."
   ],
   "interpretation_contract": {
     "contract_id": "preference-custody-control-manifest@1",
-    "what_this_is": "A compiled laboratory floor joining nine deterministic controls for exposure confounding, option-set starvation, agenda formation, negotiated package formation, model or policy succession, observational equivalence, attrition or refusal censoring, subgroup response capacity or burden, and standing or objective-control authority.",
-    "what_this_is_not": "A real-world findings dossier, a market-wide claim, evidence against a named actor, a bargaining, validation, safety, or legitimacy verdict, or a complete universal constitution for preference formation and public standing.",
-    "copy_ready_caveat": "The preference-custody floor proves nine identification, package, succession, agenda, and authority separations in synthetic controls. It requires real deployments to preserve artifact lineage, validation scope, exposure, option-set, agenda-formation, package-bargaining, mechanism, attrition, subgroup, counterfactual, and binding authority evidence, but it creates no real-world causal or legitimacy conclusion by itself."
+    "what_this_is": "A compiled laboratory floor joining ten deterministic controls for exposure confounding, option-set starvation, agenda formation, negotiated package formation, model or policy succession, dynamic preference change, observational equivalence, attrition or refusal censoring, subgroup response capacity or burden, and standing or objective-control authority.",
+    "what_this_is_not": "A real-world findings dossier, a market-wide claim, evidence against a named actor, a bargaining, validation, dynamic-change, safety, or legitimacy verdict, or a complete universal constitution for preference formation and public standing.",
+    "copy_ready_caveat": "The preference-custody floor proves ten identification, longitudinal, package, succession, agenda, and authority separations in synthetic controls. It requires real deployments to preserve artifact lineage, validation scope, exposure, option-set, agenda-formation, package-bargaining, mechanism, attrition, longitudinal identity and transition, instrument, incentive, postprocessing, subgroup, counterfactual, and binding authority evidence, but it creates no real-world causal or legitimacy conclusion by itself."
   }
 }
