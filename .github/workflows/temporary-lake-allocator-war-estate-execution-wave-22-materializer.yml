@@ -1,0 +1,39 @@
+name: Temporary allocator-war estate execution Wave 22 materializer
+
+on:
+  push:
+    branches:
+      - agent/allocator-war-estate-acquisition-wave-22
+    paths:
+      - '.github/tmp/lake-allocator-war-estate-execution-wave-22-trigger.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: temporary-lake-allocator-war-estate-execution-wave-22-materializer
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Hold for connector-side transport cleanup
+        run: sleep 45
+
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/allocator-war-estate-acquisition-wave-22
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Materialize, reseal, and publish Wave 22
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash tools/run-wave22-push-materializer.sh
