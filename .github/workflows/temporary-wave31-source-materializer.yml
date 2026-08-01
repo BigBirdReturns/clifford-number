@@ -1,0 +1,47 @@
+name: Temporary Wave 31 source materializer
+
+on:
+  push:
+    branches:
+      - agent/lake-allocator-war-public-routes-wave-31
+    paths:
+      - '.github/tmp/wave31-source-trigger.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-wave31-source-materializer
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Await transport-workflow deletion
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          path='.github/workflows/temporary-wave31-source-materializer.yml'
+          encoded_ref='agent%2Flake-allocator-war-public-routes-wave-31'
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/${path}?ref=${encoded_ref}"
+          for attempt in $(seq 1 180); do
+            status="$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer ${GITHUB_TOKEN}" -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' "$api")"
+            [[ "$status" == '404' ]] && exit 0
+            [[ "$status" == '200' ]] || { echo "unexpected GitHub contents status: $status" >&2; exit 1; }
+            sleep 2
+          done
+          echo 'temporary Wave 31 source workflow was not deleted before checkout' >&2
+          exit 1
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lake-allocator-war-public-routes-wave-31
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct and publish Wave 31 source surface
+        run: bash tools/run-wave31-source-materializer.sh
