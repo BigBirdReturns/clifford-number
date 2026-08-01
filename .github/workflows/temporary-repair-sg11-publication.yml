@@ -1,0 +1,245 @@
+name: TEMP repair SG-11 publication boundary
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/sg11-publication-repair-base
+    paths:
+      - '.github/tmp/sg11-publication-repair-trigger.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sg11-publication-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Rebuild exact product with a fail-closed publication boundary
+        env:
+          EXPECTED_MAIN: 2155844efb5867f60013711fe8647a6a7f938604
+          EXPECTED_INTEGRATION: c71d3bc6fce9e30626304f5fdf0ea5f4f6214d40
+          EXPECTED_OLD_PRODUCT: a0f472a21fee59146368eed368cc30df48bb5be5
+          REPAIR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --no-tags origin \
+            main \
+            refs/heads/agent/sg11-live-integration:refs/remotes/origin/agent/sg11-live-integration \
+            refs/heads/agent/sg11-live-product:refs/remotes/origin/agent/sg11-live-product
+
+          MAIN="$(git rev-parse origin/main)"
+          INTEGRATION="$(git rev-parse origin/agent/sg11-live-integration)"
+          OLD_PRODUCT="$(git rev-parse origin/agent/sg11-live-product)"
+          test "$MAIN" = "$EXPECTED_MAIN"
+          test "$INTEGRATION" = "$EXPECTED_INTEGRATION"
+          test "$OLD_PRODUCT" = "$EXPECTED_OLD_PRODUCT"
+          test "$(git rev-parse "${OLD_PRODUCT}^")" = "$INTEGRATION"
+
+          cat > /tmp/permanent-paths.txt <<'EOF'
+          .github/workflows/project-stable-ground-sg10.yml
+          .github/workflows/project-stable-ground-sg11.yml
+          .github/workflows/status-sovereignty-wave-02-second-party-review.yml
+          build/core-thesis/status-sovereignty/data.json
+          build/core-thesis/status-sovereignty/manifest.json
+          build/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+          build/core-thesis/status-sovereignty/wave-02-second-party-review/manifest.json
+          data/project/poof-clifford-ecology-release-manifest.json
+          data/project/project-stable-ground-current.json
+          data/project/project-stable-ground-sg11-release-manifest.json
+          data/project/project-stable-ground-sg11.json
+          data/project/status-sovereignty-release-manifest.json
+          data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json
+          docs/milestones/project-stable-ground-sg11.md
+          package.json
+          reports/core-thesis/poof-clifford-ecology/release-manifest.json
+          reports/core-thesis/stable-ground/sg11/checkpoint.json
+          reports/core-thesis/stable-ground/sg11/index.html
+          reports/core-thesis/status-sovereignty/data.json
+          reports/core-thesis/status-sovereignty/index.html
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/index.html
+          test/project-stable-ground-sg10.test.js
+          test/project-stable-ground-sg11.test.js
+          tools/build-pages.mjs
+          tools/build-project-stable-ground-sg10.mjs
+          tools/build-project-stable-ground-sg11.mjs
+          tools/validate-project-stable-ground-sg10.mjs
+          tools/validate-project-stable-ground-sg11.mjs
+          EOF
+          sed -i 's/^          //' /tmp/permanent-paths.txt
+          sort -o /tmp/permanent-paths.txt /tmp/permanent-paths.txt
+
+          cat > /tmp/old-product-paths.txt <<'EOF'
+          .github/workflows/project-stable-ground-sg10.yml
+          .github/workflows/project-stable-ground-sg11.yml
+          build/core-thesis/status-sovereignty/data.json
+          build/core-thesis/status-sovereignty/manifest.json
+          build/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+          build/core-thesis/status-sovereignty/wave-02-second-party-review/manifest.json
+          data/project/poof-clifford-ecology-release-manifest.json
+          data/project/project-stable-ground-current.json
+          data/project/project-stable-ground-sg11-release-manifest.json
+          data/project/project-stable-ground-sg11.json
+          data/project/status-sovereignty-release-manifest.json
+          data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json
+          docs/milestones/project-stable-ground-sg11.md
+          package.json
+          reports/core-thesis/poof-clifford-ecology/release-manifest.json
+          reports/core-thesis/stable-ground/sg11/checkpoint.json
+          reports/core-thesis/stable-ground/sg11/index.html
+          reports/core-thesis/status-sovereignty/data.json
+          reports/core-thesis/status-sovereignty/index.html
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/index.html
+          test/project-stable-ground-sg10.test.js
+          test/project-stable-ground-sg11.test.js
+          tools/build-project-stable-ground-sg10.mjs
+          tools/build-project-stable-ground-sg11.mjs
+          tools/validate-project-stable-ground-sg10.mjs
+          tools/validate-project-stable-ground-sg11.mjs
+          EOF
+          sed -i 's/^          //' /tmp/old-product-paths.txt
+
+          git checkout -B agent/sg11-live-product-repaired "$INTEGRATION"
+          while IFS= read -r path; do
+            git checkout "$OLD_PRODUCT" -- "$path"
+          done < /tmp/old-product-paths.txt
+          git checkout "$REPAIR_BASE" -- \
+            tools/build-pages.mjs \
+            .github/workflows/project-stable-ground-sg11.yml \
+            .github/workflows/status-sovereignty-wave-02-second-party-review.yml
+
+          node <<'NODE'
+          import fs from 'node:fs';
+          const path = 'tools/build-project-stable-ground-sg11.mjs';
+          let source = fs.readFileSync(path, 'utf8');
+          const marker = '  "docs/milestones/project-stable-ground-sg11.md",';
+          if (!source.includes(marker)) throw new Error('SG-11 release-scope marker missing');
+          if (source.includes('  "tools/build-pages.mjs",')) throw new Error('publication compiler already present before repair');
+          source = source.replace(marker, `  "tools/build-pages.mjs",\n${marker}`);
+          fs.writeFileSync(path, source);
+          NODE
+
+          npm run build:status-sovereignty
+          npm run validate:status-sovereignty
+          node test/status-sovereignty-wave-02-second-party-review.test.js
+          npm run build:poof-ecology
+          npm run validate:poof-ecology
+          node test/poof-clifford-ecology.test.js
+          node tools/build-project-stable-ground-sg11.mjs
+          node tools/validate-project-stable-ground-sg10.mjs
+          node test/project-stable-ground-sg10.test.js
+          node tools/validate-project-stable-ground-sg11.mjs
+          node test/project-stable-ground-sg11.test.js
+
+          npm run build:pages
+          npm run build:standalone
+          npm run validate:pages
+          for held in \
+            build/core-thesis/status-sovereignty/wave-02-second-party-review \
+            reports/core-thesis/status-sovereignty/wave-02-second-party-review \
+            data/project/status-sovereignty-wave-02-second-party-review-campaign.json \
+            data/project/status-sovereignty-wave-02-second-party-review-packet-registry.json \
+            data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json \
+            data/research/status-sovereignty-wave-02-second-party-review-candidates.json \
+            data/research/status-sovereignty-wave-02-second-party-review-responses.json \
+            docs/milestones/m05-status-sovereignty-wave-02-second-party-review.md \
+            docs/ssc-wave-02-second-party-review-intake.md
+          do
+            test ! -e "dist/$held"
+          done
+          rm -rf dist
+
+          git diff --name-only "$INTEGRATION" | sort > /tmp/actual-permanent-paths.txt
+          diff -u /tmp/permanent-paths.txt /tmp/actual-permanent-paths.txt
+          if grep -q '^\.github/tmp/' /tmp/actual-permanent-paths.txt; then
+            echo 'transport path entered permanent denominator' >&2
+            exit 1
+          fi
+          while IFS= read -r path; do git add -- "$path"; done < /tmp/permanent-paths.txt
+          test -z "$(git diff --name-only | grep -v '^$' || true)"
+          git commit -m "Establish SG-11 external-review campaign stable ground" \
+            -m "Bind SG-11 to the exact live-main integration receipt, preserve frozen SG-10 and campaign/status/POOF custody, enforce the positive publication hold, and retain eight unassigned packets, zero valid external reviews, zero adjudications, zero publication clearances, and graph effect none."
+          PRODUCT="$(git rev-parse HEAD)"
+          test "$(git rev-parse "${PRODUCT}^")" = "$INTEGRATION"
+
+          npm run build:status-sovereignty
+          npm run validate:status-sovereignty
+          node test/status-sovereignty-wave-02-second-party-review.test.js
+          npm run build:poof-ecology
+          npm run validate:poof-ecology
+          node test/poof-clifford-ecology.test.js
+          node tools/build-project-stable-ground-sg11.mjs
+          node tools/validate-project-stable-ground-sg10.mjs
+          node test/project-stable-ground-sg10.test.js
+          node tools/validate-project-stable-ground-sg11.mjs
+          node test/project-stable-ground-sg11.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+
+          npm run release:check
+          git reset --hard "$PRODUCT"
+          git clean -fdx
+          npm run build:status-sovereignty
+          npm run validate:status-sovereignty
+          npm run build:poof-ecology
+          npm run validate:poof-ecology
+          node tools/build-project-stable-ground-sg11.mjs
+          node tools/validate-project-stable-ground-sg11.mjs
+          node test/project-stable-ground-sg11.test.js
+          npm run build:pages
+          npm run build:standalone
+          npm run validate:pages
+          for held in \
+            build/core-thesis/status-sovereignty/wave-02-second-party-review \
+            reports/core-thesis/status-sovereignty/wave-02-second-party-review \
+            data/project/status-sovereignty-wave-02-second-party-review-campaign.json \
+            data/project/status-sovereignty-wave-02-second-party-review-packet-registry.json \
+            data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json \
+            data/research/status-sovereignty-wave-02-second-party-review-candidates.json \
+            data/research/status-sovereignty-wave-02-second-party-review-responses.json \
+            docs/milestones/m05-status-sovereignty-wave-02-second-party-review.md \
+            docs/ssc-wave-02-second-party-review-intake.md
+          do
+            test ! -e "dist/$held"
+          done
+          rm -rf dist
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+
+          git fetch --no-tags origin main
+          CURRENT_MAIN="$(git rev-parse origin/main)"
+          test "$CURRENT_MAIN" = "$MAIN"
+
+          RELEASE_SHA256="$(node -e "const x=require('./data/project/project-stable-ground-sg11-release-manifest.json'); console.log(x.combined_sha256)")"
+          {
+            echo "main=$MAIN"
+            echo "integration=$INTEGRATION"
+            echo "product=$PRODUCT"
+            echo "sg11_release_sha256=$RELEASE_SHA256"
+            echo "permanent_paths=29"
+            echo "transport_paths=0"
+            echo "publication_hold_paths=9"
+          } | tee sg11-publication-repair-summary.txt
+
+          git push origin "$PRODUCT:refs/heads/agent/sg11-live-product-repaired" --force
+      - name: Upload repair receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: sg11-publication-repair-receipt
+          path: sg11-publication-repair-summary.txt
+          if-no-files-found: error
