@@ -103,11 +103,17 @@ jobs:
           node tools/build-project-stable-ground-sg11.mjs
           node tools/validate-project-stable-ground-sg11.mjs
           node test/project-stable-ground-sg11.test.js
-          test "$(jq -r '.current_checkpoint_id' data/project/project-stable-ground-current.json)" = SG-2026-08-01-11
-          test "$(jq -r '.combined_sha256' data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json)" = 5690fb91f6d686d0c5b080ab30621e277d0efbe5fbdf4e336e6ac7219d26e0c5
-          test "$(jq -r '.combined_sha256' data/project/status-sovereignty-release-manifest.json)" = f9362122c76960c23a4572514a7be3650c672d920a40fb1654dfefecb59103bb
-          test "$(jq -r '.combined_sha256' data/project/poof-clifford-ecology-release-manifest.json)" = 042f6bad908db435b9071f25be7c4072d4570da182c5132ff64ab501dc897d8a
-          test "$(jq -r '.combined_sha256' data/project/project-stable-ground-sg11-release-manifest.json)" = 2c6b9b593e6f22334e628fb5a8b596740a0cc525cd698f79aae9701d908bb881
+          checkpoint="$(jq -r '.current_checkpoint_id' data/project/project-stable-ground-current.json)"
+          campaign_release="$(jq -r '.combined_sha256' data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json)"
+          status_release="$(jq -r '.combined_sha256' data/project/status-sovereignty-release-manifest.json)"
+          poof_release="$(jq -r '.combined_sha256' data/project/poof-clifford-ecology-release-manifest.json)"
+          sg11_release="$(jq -r '.combined_sha256' data/project/project-stable-ground-sg11-release-manifest.json)"
+          printf 'checkpoint=%s\ncampaign=%s\nstatus=%s\npoof=%s\nsg11=%s\n' "$checkpoint" "$campaign_release" "$status_release" "$poof_release" "$sg11_release"
+          test "$checkpoint" = SG-2026-08-01-11
+          test "$campaign_release" = 5690fb91f6d686d0c5b080ab30621e277d0efbe5fbdf4e336e6ac7219d26e0c5
+          test "$status_release" = f9362122c76960c23a4572514a7be3650c672d920a40fb1654dfefecb59103bb
+          test "$poof_release" = 042f6bad908db435b9071f25be7c4072d4570da182c5132ff64ab501dc897d8a
+          test "$sg11_release" = 2c6b9b593e6f22334e628fb5a8b596740a0cc525cd698f79aae9701d908bb881
       - name: Run complete repository release gate
         run: npm run release:check
       - name: Restore volatile products and prove exact denominator
