@@ -1,0 +1,108 @@
+{
+  "schema_version": "preference-custody-control-manifest@1",
+  "manifest_id": "preference-custody-laboratory-floor-v1",
+  "issue": 594,
+  "captured_at": "2026-08-01",
+  "status": "synthetic_control_floor",
+  "graph_effect": "none",
+  "counts_toward_thesis_evidence": false,
+  "controls": [
+    {
+      "control_id": "PC-01",
+      "fixture_id": "exposure-confounding-fixed-preference-v1",
+      "failure_class": "exposure_policy_confounding",
+      "source_fixture_path": "data/research/performative-synthetic-constituencies/exposure-confounding.fixture.json",
+      "build_artifact_path": "build/research/performative-synthetic-constituency-fixture.json",
+      "expected_build_schema": "performative-synthetic-constituency-build@1",
+      "required_refusal_rules": [
+        "not_exposed_is_not_rejected",
+        "no_click_is_not_negative_preference",
+        "raw_engagement_share_is_not_population_preference"
+      ]
+    },
+    {
+      "control_id": "PC-02",
+      "fixture_id": "option-set-starvation-fixed-preference-v1",
+      "failure_class": "option_set_starvation",
+      "source_fixture_path": "data/research/preference-custody/option-set-starvation.fixture.json",
+      "build_artifact_path": "build/research/preference-custody-option-set-fixture.json",
+      "expected_build_schema": "preference-custody-build@1",
+      "required_refusal_rules": [
+        "unoffered_option_is_not_rejected",
+        "choice_among_offered_options_is_not_latent_preference",
+        "fallback_selection_is_not_first_choice",
+        "nonresponse_is_not_negative_preference"
+      ]
+    },
+    {
+      "control_id": "PC-03",
+      "fixture_id": "observational-equivalence-three-worlds-v1",
+      "failure_class": "observational_equivalence",
+      "source_fixture_path": "data/research/preference-custody/observational-equivalence.fixture.json",
+      "build_artifact_path": "build/research/preference-observational-equivalence.json",
+      "expected_build_schema": "preference-equifinality-build@1",
+      "required_refusal_rules": [
+        "same_behavior_does_not_imply_same_preference",
+        "behavioral_fit_does_not_identify_mechanism",
+        "aggregate_choice_does_not_identify_unavailable_demand"
+      ]
+    }
+  ],
+  "identification_requirements": [
+    {
+      "stage": "exposure_policy",
+      "required_state": "logged_or_randomized",
+      "refused_inference": "behavior_observed_without_exposure_does_not_identify_population_preference"
+    },
+    {
+      "stage": "option_set",
+      "required_state": "complete_offered_excluded_and_rejected_alternatives",
+      "refused_inference": "unoffered_or_unavailable_does_not_mean_rejected"
+    },
+    {
+      "stage": "response_mechanism",
+      "required_state": "identified_or_held_as_competing_candidates",
+      "refused_inference": "behavioral_fit_does_not_identify_why_behavior_occurred"
+    },
+    {
+      "stage": "public_authorization",
+      "required_state": "external_binding_standing",
+      "refused_inference": "prediction_or_behavioral_agreement_does_not_confer_authorization"
+    }
+  ],
+  "open_frontiers": [
+    "dynamic_preference_change",
+    "strategic_refusal_and_exit",
+    "subgroup_adaptation_and_unequal_response_capacity",
+    "model_policy_and_metric_succession",
+    "collective_organization_and_public_standing",
+    "real_world_intervention_provenance"
+  ],
+  "promotion_boundary": {
+    "laboratory_controls_are_real_world_evidence": false,
+    "real_case_requires": [
+      "model_and_version",
+      "source_population_and_data_window",
+      "complete_question_and_option_set",
+      "institutional_disposition",
+      "exposure_and_eligibility_state",
+      "counterfactual_design",
+      "post_intervention_outcomes",
+      "feedback_reuse",
+      "affected_public_standing_and_remedy"
+    ],
+    "promotion_authority": "human_review_plus_repository_gates"
+  },
+  "prohibited_inferences": [
+    "Do not treat a laboratory control as evidence about a named deployment.",
+    "Do not infer preference change, suppression, manipulation, or intent from identification failure alone.",
+    "Do not treat a passing predictive benchmark as a pass on exposure, option-set, mechanism, or authorization validity.",
+    "Do not treat the three controls as exhaustive of every performative or constitutional failure mode."
+  ],
+  "interpretation_contract": {
+    "contract_id": "preference-custody-control-manifest@1",
+    "what_this_is": "A compiled laboratory floor joining three deterministic controls for exposure confounding, option-set starvation, and observational equivalence.",
+    "what_this_is_not": "A real-world findings dossier, a market-wide claim, evidence against a named actor, or a complete theory of preference formation and public standing.",
+    "copy_ready_caveat": "The preference-custody floor proves three identification failures in synthetic controls. It requires real deployments to preserve exposure, option-set, mechanism, counterfactual, and authority evidence, but it creates no real-world causal conclusion by itself."
+  }
+}
