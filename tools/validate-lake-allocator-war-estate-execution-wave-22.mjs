@@ -184,43 +184,40 @@ export function validateRepository(root = defaultRoot) {
   if (process.env.LAW22_SKIP_GIT !== '1') {
     const baseCommit = policy.base_checkpoint.commit;
     const quietGit = args => execFileSync('git', args, { cwd: root, stdio: 'ignore' });
-    const hasBaseCommit = () => {
+    const hasCommit = commitish => {
       try {
-        quietGit(['cat-file', '-e', baseCommit + '^{commit}']);
+        quietGit(['cat-file', '-e', commitish + '^{commit}']);
         return true;
       } catch {
         return false;
       }
     };
 
-    let baseAvailable = hasBaseCommit();
-    if (!baseAvailable) {
-      let shallow = false;
-      try {
-        shallow = execFileSync('git', ['rev-parse', '--is-shallow-repository'], {
-          cwd: root,
-          encoding: 'utf8',
-          stdio: ['ignore', 'pipe', 'ignore']
-        }).trim() === 'true';
-      } catch {
-        shallow = false;
-      }
+    const githubHeadRef = String(process.env.GITHUB_HEAD_REF ?? '').trim();
+    const remoteHeadRef = githubHeadRef ? 'refs/remotes/origin/' + githubHeadRef : null;
+    let ancestryTarget = 'HEAD';
+    let baseAvailable = hasCommit(baseCommit);
 
-      if (shallow && process.env.GITHUB_ACTIONS === 'true') {
-        try {
-          quietGit(['fetch', '--no-tags', '--unshallow', 'origin']);
-        } catch {
-          // The availability check below records a bounded recovery failure.
-        }
-        baseAvailable = hasBaseCommit();
+    if (!baseAvailable && process.env.GITHUB_ACTIONS === 'true' && remoteHeadRef) {
+      try {
+        quietGit([
+          'fetch',
+          '--no-tags',
+          'origin',
+          '+refs/heads/' + githubHeadRef + ':' + remoteHeadRef
+        ]);
+      } catch {
+        // The availability check below records a bounded targeted-recovery failure.
       }
+      if (hasCommit(remoteHeadRef)) ancestryTarget = remoteHeadRef;
+      baseAvailable = hasCommit(baseCommit);
     }
 
     if (!baseAvailable) {
-      fail(errors, 'Wave 22 base checkpoint unavailable after shallow-history recovery');
+      fail(errors, 'Wave 22 base checkpoint unavailable after explicit head-ref recovery');
     } else {
       try {
-        quietGit(['merge-base', '--is-ancestor', baseCommit, 'HEAD']);
+        quietGit(['merge-base', '--is-ancestor', baseCommit, ancestryTarget]);
       } catch {
         fail(errors, 'Wave 22 base checkpoint is not an ancestor');
       }
