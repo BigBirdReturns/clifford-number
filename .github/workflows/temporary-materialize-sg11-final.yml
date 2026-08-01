@@ -1,0 +1,168 @@
+name: Temporary materialize SG-11 final non-workflow estate
+
+on:
+  push:
+    branches: [agent/sg11-final-25-materializer]
+    paths:
+      - '.github/tmp/sg11-25.part-*.b64'
+      - '.github/tmp/sg10.yml.b64'
+      - '.github/tmp/sg11.yml.part-*.b64'
+      - '.github/workflows/temporary-materialize-sg11-final.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/tmp/sg11-25.part-*.b64'
+      - '.github/tmp/sg10.yml.b64'
+      - '.github/tmp/sg11.yml.part-*.b64'
+      - '.github/workflows/temporary-materialize-sg11-final.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sg11-final-nonworkflow-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/sg11-final-25-materializer
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify and reconstruct exact SG-11 payloads
+        run: |
+          set -Eeuo pipefail
+          printf '%s  %s\n' aa3898d78e41a3af40ffb5c703914cdaf32e5905094bbf5cf094d715a8684967 .github/tmp/sg11-25.part-00.b64 | sha256sum -c -
+          printf '%s  %s\n' c7b557289b421a7065eab64e2378196befa55fb09d74009c8ecb425bd9ade084 .github/tmp/sg11-25.part-01.b64 | sha256sum -c -
+          printf '%s  %s\n' 040da77ed6bc7c5fba62583874ed5d3a378664b88dcaba9d7a83f0677f9b7cc5 .github/tmp/sg11-25.part-02.b64 | sha256sum -c -
+          printf '%s  %s\n' 695591c28b38cab727d91213e99c0e2eff535040c5c1c839aad433f49e4c7733 .github/tmp/sg11-25.part-03.b64 | sha256sum -c -
+          printf '%s  %s\n' d9f18f9bd1e252ac741138fee2a7d9b609ba9ed7e9615b7764dff3f288f6f7c0 .github/tmp/sg11-25.part-04.b64 | sha256sum -c -
+          printf '%s  %s\n' d1cdbb0b650cac7d9bcc2c516e4e5ea718243e5eab5d36b6e7c8b6f6a457b86d .github/tmp/sg11-25.part-05.b64 | sha256sum -c -
+          printf '%s  %s\n' dc12f4510b242fc3f9a040c3eda76d6426ce0689476c3612689fbdaf47af86b0 .github/tmp/sg11-25.part-06.b64 | sha256sum -c -
+          cat .github/tmp/sg11-25.part-{00..06}.b64 > /tmp/sg11-25.patch.xz.b64
+          test "$(wc -c < /tmp/sg11-25.patch.xz.b64)" -eq 27496
+          printf '%s  %s\n' b5d6d6fa16ab1d5b18d28f2b651836dd9d93dd535242caf0370f362994cc6ef1 /tmp/sg11-25.patch.xz.b64 | sha256sum -c -
+          base64 -d /tmp/sg11-25.patch.xz.b64 > /tmp/sg11-25.patch.xz
+          test "$(wc -c < /tmp/sg11-25.patch.xz)" -eq 20620
+          printf '%s  %s\n' 4a6d75b8471f76e8a2fd51198a39d21f30fb4f76e4a8d502664178bdf33cb00b /tmp/sg11-25.patch.xz | sha256sum -c -
+          xz -dc /tmp/sg11-25.patch.xz > /tmp/sg11-25.patch
+          test "$(wc -c < /tmp/sg11-25.patch)" -eq 124949
+          printf '%s  %s\n' c958a916d96a2fc0c98e5d632e63172e5fddcf478a222278cf83689a0bda5456 /tmp/sg11-25.patch | sha256sum -c -
+
+          test "$(wc -c < .github/tmp/sg10.yml.b64)" -eq 3656
+          printf '%s  %s\n' e9e1d76ec041e24cb3b7dc52df022c836f91586df6e358773f7f8fda6e3cbf00 .github/tmp/sg10.yml.b64 | sha256sum -c -
+          base64 -d .github/tmp/sg10.yml.b64 > /tmp/project-stable-ground-sg10.yml
+          test "$(wc -c < /tmp/project-stable-ground-sg10.yml)" -eq 2741
+          printf '%s  %s\n' 2ad6fb794029ea5c6dafe0116cbaf9de415c6cebeaa0e21c16d13bb6fafc9693 /tmp/project-stable-ground-sg10.yml | sha256sum -c -
+
+          printf '%s  %s\n' dc1a312a51cfef264cd61afd403137b99bc3182a6640a9f6a28f8e2103070eb0 .github/tmp/sg11.yml.part-00.b64 | sha256sum -c -
+          printf '%s  %s\n' 04b866c8be3cdfcfc8a5376ad72516090527ed098e9b7d2575c68368795e93be .github/tmp/sg11.yml.part-01.b64 | sha256sum -c -
+          cat .github/tmp/sg11.yml.part-{00..01}.b64 > /tmp/project-stable-ground-sg11.yml.b64
+          test "$(wc -c < /tmp/project-stable-ground-sg11.yml.b64)" -eq 4960
+          printf '%s  %s\n' 1a3151e827ccfae5fdeca27127b249c8b46c5f260c416283415a2bb5b20d2c8c /tmp/project-stable-ground-sg11.yml.b64 | sha256sum -c -
+          base64 -d /tmp/project-stable-ground-sg11.yml.b64 > /tmp/project-stable-ground-sg11.yml
+          test "$(wc -c < /tmp/project-stable-ground-sg11.yml)" -eq 3718
+          printf '%s  %s\n' 7423b2166dd8055d7bb25b6f170c1fc6cd4f0d84f0c91fbc6f53070a5c7e5ac8 /tmp/project-stable-ground-sg11.yml | sha256sum -c -
+      - name: Apply exact patch to the frozen integration receipt
+        env:
+          TARGET_BRANCH: agent/sg11-final-25-staging
+          EXPECTED_HEAD: 946d011b3ef365193170dfe824a69cf2ce8adfca
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          lease="$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')"
+          test "$lease" = "$EXPECTED_HEAD"
+          git switch -C sg11-final-staging "origin/$TARGET_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git apply --check --index /tmp/sg11-25.patch
+          git apply --index /tmp/sg11-25.patch
+          cp /tmp/project-stable-ground-sg10.yml .github/workflows/project-stable-ground-sg10.yml
+          cp /tmp/project-stable-ground-sg11.yml .github/workflows/project-stable-ground-sg11.yml
+      - name: Smash every focused gate
+        run: |
+          set -Eeuo pipefail
+          node tools/build-status-sovereignty-wave-02-second-party-review.mjs
+          node tools/validate-status-sovereignty-wave-02-second-party-review.mjs
+          node test/status-sovereignty-wave-02-second-party-review.test.js
+          node tools/validate-project-stable-ground-sg10.mjs
+          node test/project-stable-ground-sg10.test.js
+          node tools/build-project-stable-ground-sg11.mjs
+          node tools/validate-project-stable-ground-sg11.mjs
+          node test/project-stable-ground-sg11.test.js
+          test "$(jq -r '.current_checkpoint_id' data/project/project-stable-ground-current.json)" = SG-2026-07-31-11
+          test "$(jq -r '.combined_sha256' data/project/project-stable-ground-sg11-release-manifest.json)" = 4332d90a57bfdc68e97bfd68fa6f28f99256962a22c2ff04e3ab4d1ce3232608
+          test "$(jq -r '.combined_sha256' data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json)" = 5690fb91f6d686d0c5b080ab30621e277d0efbe5fbdf4e336e6ac7219d26e0c5
+          test "$(jq -r '.combined_sha256' data/project/status-sovereignty-release-manifest.json)" = f9362122c76960c23a4572514a7be3650c672d920a40fb1654dfefecb59103bb
+          test "$(jq -r '.combined_sha256' data/project/poof-clifford-ecology-release-manifest.json)" = 042f6bad908db435b9071f25be7c4072d4570da182c5132ff64ab501dc897d8a
+      - name: Smash the complete repository release gate
+        run: npm run release:check
+      - name: Restore volatile products and prove exact denominator
+        run: |
+          set -Eeuo pipefail
+          git restore --worktree -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json
+          git restore --worktree -- .github/workflows/project-stable-ground-sg10.yml
+          rm -f .github/workflows/project-stable-ground-sg11.yml
+          test -z "$(git diff --name-only)"
+          cat > /tmp/expected <<'PATHS'
+build/core-thesis/status-sovereignty/data.json
+build/core-thesis/status-sovereignty/manifest.json
+build/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+build/core-thesis/status-sovereignty/wave-02-second-party-review/manifest.json
+data/project/poof-clifford-ecology-release-manifest.json
+data/project/project-stable-ground-current.json
+data/project/project-stable-ground-sg11-release-manifest.json
+data/project/project-stable-ground-sg11.json
+data/project/status-sovereignty-release-manifest.json
+data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json
+docs/milestones/project-stable-ground-sg11.md
+package.json
+reports/core-thesis/poof-clifford-ecology/release-manifest.json
+reports/core-thesis/stable-ground/sg11/checkpoint.json
+reports/core-thesis/stable-ground/sg11/index.html
+reports/core-thesis/status-sovereignty/data.json
+reports/core-thesis/status-sovereignty/index.html
+reports/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+reports/core-thesis/status-sovereignty/wave-02-second-party-review/index.html
+test/project-stable-ground-sg10.test.js
+test/project-stable-ground-sg11.test.js
+tools/build-project-stable-ground-sg10.mjs
+tools/build-project-stable-ground-sg11.mjs
+tools/validate-project-stable-ground-sg10.mjs
+tools/validate-project-stable-ground-sg11.mjs
+PATHS
+          sort -o /tmp/expected /tmp/expected
+          git diff --cached --name-only | sort > /tmp/observed
+          diff -u /tmp/expected /tmp/observed
+          test "$(wc -l < /tmp/observed)" -eq 25
+          ! grep -Eq '^\.github/(tmp/|workflows/)' /tmp/observed
+      - name: Publish transport-free non-workflow commit
+        env:
+          TARGET_BRANCH: agent/sg11-final-25-staging
+          EXPECTED_HEAD: 946d011b3ef365193170dfe824a69cf2ce8adfca
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'OpenAI'
+          git config user.email 'noreply@openai.com'
+          git commit -m 'Stage SG-11 final non-workflow checkpoint products'
+          final_sha="$(git rev-parse HEAD)"
+          final_tree="$(git show -s --format=%T HEAD)"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_HEAD" origin "HEAD:refs/heads/$TARGET_BRANCH"
+          echo "staging_sha=$final_sha"
+          echo "staging_tree=$final_tree"
