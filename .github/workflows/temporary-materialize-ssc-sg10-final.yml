@@ -1,4 +1,4 @@
-name: Temporary materialize SSC SG-10 final non-workflow estate
+name: Temporary rebind SG-10 custody after historical-builder repairs
 
 on:
   push:
@@ -15,9 +15,9 @@ permissions:
   contents: write
 
 jobs:
-  materialize:
+  rebind:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,129 +25,87 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Verify and reconstruct bounded patch from immutable blobs
+      - name: Recover and verify the immutable custody patch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PATCH_BLOB: bf958abb7931914d17234b240b7ccde043dc9a32
         run: |
           set -Eeuo pipefail
-          blob_shas=(
-            41a560043a259585e9ff7d775c84c15ebf140ee7
-            d170d23b687d50873834ac646f1119b49f42b1b4
-            76cef6d2c4b52d31a3aaf1c926e13bb6015925bc
-            a6cb8b31f2628ff142c1257651329f8e52eceeb5
-            37587f68b0c66b4c6145ec46221325571138a866
-            a3cfe4fe01060477a760330fc5da42a6634e627d
-            bc63ff85d0b0e8e4ff093dbff94021d61f6b6ce2
-            bea779237814fb4bd61ccb82499fb31d1a446ae6
-            0e7d05de720f12bf5ffce4f15efe4ca8678a76c4
-            5008bf44dc201f462f042cc007c90101f82ccb57
-            8aaef468c6efde4e729e7e4c0ec785bef7070f19
-            15cb3c360a8aee23973ba5484b412a3f95d6393e
-            1f5b7ab50b73e305ee2473771a24b73b51346022
-            6da378be745646a0f73c90649757b5f0eac0ffa0
-            3402ebcfdc3ff7492968a23c2eb5c18758cc0f46
-            4778933637a661dc2644b1aff4eec00d24d0004d
-          )
-          chunk_sha256=(
-            89d052511dbcb12cb6d6492d8c191bf24ee3c066d1af39e8d98a74777a567ed3
-            edf34a40bd1986a7646770eef0d6dbaa560c33ec888373758b96f7bbb7915ab0
-            04f72a635bb5e43aba46f1f2ab37919453845cd995e7f7803522308b5bc89641
-            490b16c37b74f8a01dd39c7ba7f8caf2f18be1e0454199e958e37d76bfeb6c51
-            9602400fb29b19676663e01dd81fda6ad9a51ad7323a275319a1c5a914b1d532
-            1b5ada6c61aefe36c4e9f9ae96081fa3e5697ff302c515d4d853985c1a329c31
-            1a41e8f78a365d59774d560ae7538227a69025dec89afef23d0fb7befac99ee2
-            a4f28613af6c6767058bc6ba4ce7bc90167411e3f93a3ea35803aea24ce1fe23
-            8411093a4183263cf6879a41d489b441cf83ea7858dfaa0080d3935bd68053ad
-            0fa7c27836216691085b6b2c6fa77399c806c8c8cf48f7440f40cebf2a87cc6a
-            8219c144601cbafe8e748e2fc5c47c0973e22f7c081cc74d64587dc2b523832c
-            21bb1b1a431eea1e851a3a629561afe7658dabab5965692f9be2c7e5d13cce1a
-            e434cff759bc8acf5c9751e842366862ad6becc7b8ebabc54dc6dd6871b4f2c9
-            b844a7a60d088a316dd30b0568960527ea7cc36e4202ceaae6341cbbea4ff048
-            e168b0687c7f4b4a465816b6fe0f8aca7302d1c5aa83045a20e683b791a273d1
-            5a6d97dab0d24beee0841b0c18282d286fb5d485caa1509c7030c12ada6f0fff
-          )
-          : > /tmp/sg10.patch.xz
-          for idx in "${!blob_shas[@]}"; do
-            sha="${blob_shas[$idx]}"
-            json="/tmp/blob-${idx}.json"
-            bin="/tmp/blob-${idx}.bin"
-            curl -fsSL \
-              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-              -H 'Accept: application/vnd.github+json' \
-              -H 'X-GitHub-Api-Version: 2022-11-28' \
-              "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/${sha}" > "$json"
-            test "$(jq -r '.sha' "$json")" = "$sha"
-            jq -r '.content' "$json" | tr -d '\n' | base64 -d > "$bin"
-            test "$(sha256sum "$bin" | cut -d' ' -f1)" = "${chunk_sha256[$idx]}"
-            if test "$idx" -lt 15; then test "$(wc -c < "$bin")" -eq 1500; else test "$(wc -c < "$bin")" -eq 1148; fi
-            cat "$bin" >> /tmp/sg10.patch.xz
-          done
-          test "$(wc -c < /tmp/sg10.patch.xz)" -eq 23648
-          test "$(sha256sum /tmp/sg10.patch.xz | cut -d' ' -f1)" = 6aae4a724f09adf2589e110238788f11873fe7bff657bbc20002f9a48e91dcba
-          xz -dc /tmp/sg10.patch.xz > /tmp/sg10.patch
-          test "$(sha256sum /tmp/sg10.patch | cut -d' ' -f1)" = 848432dad675a535dce8058ba2b56716903f656918edc6b7da942321ae60c3b6
-      - name: Apply exact patch to the clean review branch
+          curl -fsSL \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/${PATCH_BLOB}" > /tmp/blob.json
+          test "$(jq -r '.sha' /tmp/blob.json)" = "$PATCH_BLOB"
+          jq -r '.content' /tmp/blob.json | tr -d '\n' | base64 -d > /tmp/sg10-custody.patch.xz
+          test "$(wc -c < /tmp/sg10-custody.patch.xz)" -eq 2424
+          test "$(sha256sum /tmp/sg10-custody.patch.xz | cut -d' ' -f1)" = cf40ef1a170cd06acdfbc7270fb609e6a904805338e485068f180d4f580df284
+          xz -dc /tmp/sg10-custody.patch.xz > /tmp/sg10-custody.patch
+          test "$(wc -c < /tmp/sg10-custody.patch)" -eq 11891
+          test "$(sha256sum /tmp/sg10-custody.patch | cut -d' ' -f1)" = 5766c1fb030f25236c6cd2eaa83e283be1f056217ae6218be67e2bd4d2afc2b8
+      - name: Apply exactly nine custody products to the authorized head
         env:
           TARGET_BRANCH: agent/ssc-wave02-maintainer-review-sg10-v2
-          EXPECTED_HEAD: fe39ce09f71ab819fb2fc749f7e8120fc9f5bc89
+          EXPECTED_HEAD: 565e17a900ca9752515d64a2ea443705d0eb79c3
         run: |
           set -Eeuo pipefail
           git fetch --no-tags origin "$TARGET_BRANCH"
-          git switch -C sg10-target "origin/$TARGET_BRANCH"
+          git switch -C target "origin/$TARGET_BRANCH"
           test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
-          git apply --check --index /tmp/sg10.patch
-          git apply --index /tmp/sg10.patch
+          git apply --check --index /tmp/sg10-custody.patch
+          git apply --index /tmp/sg10-custody.patch
           cat > /tmp/expected-paths <<'PATHS'
           build/core-thesis/status-sovereignty/data.json
           build/core-thesis/status-sovereignty/manifest.json
-          build/core-thesis/status-sovereignty/wave-02-review/data.json
-          build/core-thesis/status-sovereignty/wave-02-review/manifest.json
-          data/project/poof-clifford-ecology-release-manifest.json
-          data/project/project-stable-ground-current.json
           data/project/project-stable-ground-sg10-release-manifest.json
           data/project/project-stable-ground-sg10.json
-          data/project/status-sovereignty-compact.json
           data/project/status-sovereignty-release-manifest.json
-          data/project/status-sovereignty-wave-02-maintainer-review-release-manifest.json
-          docs/milestones/project-stable-ground-sg10.md
-          package.json
-          reports/core-thesis/poof-clifford-ecology/release-manifest.json
           reports/core-thesis/stable-ground/sg10/checkpoint.json
           reports/core-thesis/stable-ground/sg10/index.html
           reports/core-thesis/status-sovereignty/data.json
           reports/core-thesis/status-sovereignty/index.html
-          reports/core-thesis/status-sovereignty/wave-02-review/data.json
-          reports/core-thesis/status-sovereignty/wave-02-review/index.html
-          test/project-stable-ground-sg09.test.js
-          test/project-stable-ground-sg10.test.js
-          tools/build-project-stable-ground-sg10.mjs
-          tools/validate-project-stable-ground-sg09.mjs
-          tools/validate-project-stable-ground-sg10.mjs
-          tools/validate-status-sovereignty-compact.mjs
           PATHS
           git diff --cached --name-only | sort > /tmp/observed-paths
           sort -o /tmp/expected-paths /tmp/expected-paths
           diff -u /tmp/expected-paths /tmp/observed-paths
-          test "$(wc -l < /tmp/observed-paths)" -eq 26
-          ! grep -Eq '^\.github/(tmp/|workflows/)' /tmp/observed-paths
-      - name: Validate the bounded non-workflow state
+          test "$(wc -l < /tmp/observed-paths)" -eq 9
+          ! grep -Eq '^\.github/' /tmp/observed-paths
+      - name: Validate rebound SSC and stable-ground custody
         run: |
           set -Eeuo pipefail
-          node tools/validate-status-sovereignty-wave-02-review.mjs
-          node test/status-sovereignty-wave-02-review.test.js
+          node tools/validate-status-sovereignty-wave-01-second-party-review.mjs
+          node test/status-sovereignty-wave-01-second-party-review.test.js
+          node tools/validate-status-sovereignty-wave-02-intake.mjs
+          node test/status-sovereignty-wave-02-intake.test.js
           node tools/validate-status-sovereignty-compact.mjs
           node test/status-sovereignty-compact.test.js
           node tools/validate-project-stable-ground-sg09.mjs
           node test/project-stable-ground-sg09.test.js
-          test "$(jq -r '.current_state.open_acquisition_obligations' data/project/status-sovereignty-compact.json)" = 6
-          test "$(jq -r '.current_checkpoint_id' data/project/project-stable-ground-current.json)" = SG-2026-07-31-10
-          test "$(jq -r '.boundaries.graph_effect' data/project/project-stable-ground-sg10.json)" = none
-      - name: Publish the bounded non-workflow commit
+          node tools/validate-project-stable-ground-sg10.mjs
+          node test/project-stable-ground-sg10.test.js
+          test "$(jq -r '.combined_sha256' data/project/status-sovereignty-release-manifest.json)" = 4587ef3565285a41a433ee460d97172d826f5a3f73c05fd1f0e4d1ebb36abf95
+          test "$(jq -r '.combined_sha256' data/project/project-stable-ground-sg10-release-manifest.json)" = 33e94ab2d918a2338f61e3b921052aae133726a3d86c7cab81411f14b9ac6c53
+          npm run release:check
+          git restore --worktree -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json
+          test -z "$(git diff --name-only)"
+          git diff --cached --name-only | sort > /tmp/observed-after-release
+          diff -u /tmp/expected-paths /tmp/observed-after-release
+      - name: Publish only the rebound custody products
         env:
           TARGET_BRANCH: agent/ssc-wave02-maintainer-review-sg10-v2
         run: |
           set -Eeuo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git commit -m 'Stage SG-10 non-workflow estate'
+          git commit -m 'Rebind SG-10 after historical-builder repairs'
           git push origin "HEAD:$TARGET_BRANCH"
