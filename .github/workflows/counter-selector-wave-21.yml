@@ -53,13 +53,7 @@ jobs:
         run: node test/counter-selector-wave-21.test.js
       - name: Require exact committed Wave 21 products
         run: |
-          git diff --exit-code -- \
-            data/project/counter-selector-wave-21-gate-registry.json \
-            data/project/counter-selector-wave-21-archive-request-registry.json \
-            data/project/counter-selector-wave-21-external-review-registry.json \
-            data/project/counter-selector-wave-21-release-manifest.json \
-            reports/core-thesis/counter-selector-wave-21/data.json \
-            reports/core-thesis/counter-selector-wave-21/index.html
+          git diff --exit-code --             data/project/counter-selector-wave-21-gate-registry.json             data/project/counter-selector-wave-21-archive-request-registry.json             data/project/counter-selector-wave-21-external-review-registry.json             data/project/counter-selector-wave-21-release-manifest.json             reports/core-thesis/counter-selector-wave-21/data.json             reports/core-thesis/counter-selector-wave-21/index.html
       - name: Run complete repository release gate
         run: npm run release:check
       - name: Reconstruct Wave 21 deterministically
