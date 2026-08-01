@@ -192,29 +192,36 @@ export function validateRepository(root = defaultRoot) {
         return false;
       }
     };
+    const isShallowRepository = () => {
+      try {
+        return execFileSync('git', ['rev-parse', '--is-shallow-repository'], {
+          cwd: root,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore']
+        }).trim() === 'true';
+      } catch {
+        return false;
+      }
+    };
 
     const githubHeadRef = String(process.env.GITHUB_HEAD_REF ?? '').trim();
     const remoteHeadRef = githubHeadRef ? 'refs/remotes/origin/' + githubHeadRef : null;
     let ancestryTarget = 'HEAD';
-    let baseAvailable = hasCommit(baseCommit);
 
-    if (!baseAvailable && process.env.GITHUB_ACTIONS === 'true' && remoteHeadRef) {
+    if (process.env.GITHUB_ACTIONS === 'true' && remoteHeadRef) {
       try {
-        quietGit([
-          'fetch',
-          '--no-tags',
-          'origin',
-          '+refs/heads/' + githubHeadRef + ':' + remoteHeadRef
-        ]);
+        const fetchArgs = ['fetch', '--no-tags'];
+        if (isShallowRepository()) fetchArgs.push('--unshallow');
+        fetchArgs.push('origin', '+refs/heads/' + githubHeadRef + ':' + remoteHeadRef);
+        quietGit(fetchArgs);
       } catch {
-        // The availability check below records a bounded targeted-recovery failure.
+        // The availability and ancestry checks below record bounded recovery failure.
       }
       if (hasCommit(remoteHeadRef)) ancestryTarget = remoteHeadRef;
-      baseAvailable = hasCommit(baseCommit);
     }
 
-    if (!baseAvailable) {
-      fail(errors, 'Wave 22 base checkpoint unavailable after explicit head-ref recovery');
+    if (!hasCommit(baseCommit)) {
+      fail(errors, 'Wave 22 base checkpoint unavailable after targeted full-history recovery');
     } else {
       try {
         quietGit(['merge-base', '--is-ancestor', baseCommit, ancestryTarget]);

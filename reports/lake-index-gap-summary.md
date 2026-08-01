@@ -1,6 +1,6 @@
 # Lake index gap summary
 
-Source fingerprint: `5031228ffd4975b3f00f0eef95b2d56c1b3babd5f4dc87c67a7b1155d7f1433a`
+Source fingerprint: `fd19f18213c625f0d0ba6a8144853b420ed7f1d4a79a380f5355bf7768e135ed`
 
 ## Finding
 
@@ -89,12 +89,12 @@ case IDs absent from public catalog: 26
 | #483 Enforce deterministic publication safety and append SG-06 | 13 |
 | #530 Temporary export exact Wave 02 review commit | 13 |
 | #531 Temporary export SSC Wave 02 reviewed transition | 13 |
+| #532 Temporary materialization of corrected SSC Wave 02 review | 13 |
 | #524 Review SSC-H01 Wave 02 and append SG-10 | 12 |
 | #404 Recover exact source-bound cross-case mention recurrence | 11 |
 | #362 Stage biological Omega control-surface research program | 9 |
 | #527 Execute Counter-Selector Wave 08 Batch 02 blind review | 9 |
 | #50 Stage synthetic-population research program | 8 |
-| #533 Execute Counter-Selector Wave 08 Batch 02 blind review | 8 |
 | #380 Build root Evidence Desk publication estate from WebsiteIQ audit | 6 |
 | #378 Run WebsiteIQ baseline audit before website remediation | 4 |
 
