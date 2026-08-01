@@ -208,6 +208,10 @@ export function validateArtifacts(state) {
     for (const [index, sourceRow] of sourceRows.entries()) {
       const sourceRef = plan.source_refs[index];
       const source = sourceByRef.get(sourceRef);
+      if (!source) {
+        fail(errors, packet.packet_ref + ': source plan reference absent during ledger validation: ' + sourceRef);
+        continue;
+      }
       if (sourceRow.schema_version !== policy.execution_contract.source_receipt_schema || sourceRow.row_type !== 'source_receipt') fail(errors, packet.packet_ref + ': source row schema drift');
       if (sourceRow.packet_ref !== packet.packet_ref || sourceRow.source_queue_ref !== packet.source_queue_ref || sourceRow.receipt_sequence !== index + 1) fail(errors, packet.packet_ref + ': source row ordering drift');
       if (sourceRow.source_ref !== sourceRef) fail(errors, packet.packet_ref + ': source reference order drift');

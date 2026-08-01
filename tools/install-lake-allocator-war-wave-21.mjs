@@ -32,7 +32,24 @@ for (const relative of [
   'build/lake-actions/allocator-war-lead-acquisition-wave-23.json',
   'reports/lake-allocator-war-lead-acquisition-wave-23.md',
   'docs/methods/lake-allocator-war-lead-acquisition-wave-23.md',
-  'docs/milestones/lake-allocator-war-lead-acquisition-wave-23.md'
+  'docs/milestones/lake-allocator-war-lead-acquisition-wave-23.md',
+  'data/project/lake-allocator-war-lead-execution-wave-24-policy.json',
+  'data/project/lake-allocator-war-lead-execution-wave-24-source-plan.json',
+  'build/lake-actions/allocator-war-lead-execution-wave-24.json',
+  'reports/lake-allocator-war-lead-execution-wave-24.md',
+  'docs/methods/lake-allocator-war-lead-execution-wave-24.md',
+  'docs/milestones/lake-allocator-war-lead-execution-wave-24.md',
+  'data/acquisition/lake-allocator-war-wave-24/law21-est-01.jsonl',
+  'data/acquisition/lake-allocator-war-wave-24/law21-est-02.jsonl',
+  'data/acquisition/lake-allocator-war-wave-24/law21-est-03.jsonl',
+  'data/acquisition/lake-allocator-war-wave-24/law21-est-04.jsonl',
+  'data/acquisition/lake-allocator-war-wave-24/law21-est-05.jsonl',
+  'data/acquisition/lake-allocator-war-wave-24/law21-est-06.jsonl',
+  'data/acquisition/lake-allocator-war-wave-24/law21-est-07.jsonl',
+  'data/acquisition/lake-allocator-war-wave-24/law21-est-08.jsonl',
+  'data/acquisition/lake-allocator-war-wave-24/law21-est-09.jsonl',
+  'data/acquisition/lake-allocator-war-wave-24/law21-est-10.jsonl',
+  'data/acquisition/lake-allocator-war-wave-24/law21-est-11.jsonl'
 ]) roots.add(relative);
 lakePolicy.authoritative_roots = [...roots].sort();
 lakePolicy.boundaries.allocator_war_routing_proves_finding = false;
