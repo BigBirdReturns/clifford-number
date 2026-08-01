@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/status-sovereignty-f04-aces.yml'
-      - 'data/research/status-sovereignty-f04-aces-governance-first-pass.json'
+      - 'data/intake/status-sovereignty-f04-aces-governance-first-pass.json'
       - 'data/project/status-sovereignty-f04-aces-governance-first-pass-release-manifest.json'
       - 'schemas/status-sovereignty-governance-denominator-first-pass.schema.json'
       - 'docs/milestones/ssc-f04-aces-governance-first-pass.md'
@@ -20,7 +20,7 @@ on:
       - 'agent/ssc-f04-governance-denominator'
     paths:
       - '.github/workflows/status-sovereignty-f04-aces.yml'
-      - 'data/research/status-sovereignty-f04-aces-governance-first-pass.json'
+      - 'data/intake/status-sovereignty-f04-aces-governance-first-pass.json'
       - 'data/project/status-sovereignty-f04-aces-governance-first-pass-release-manifest.json'
       - 'schemas/status-sovereignty-governance-denominator-first-pass.schema.json'
       - 'docs/milestones/ssc-f04-aces-governance-first-pass.md'
@@ -63,7 +63,7 @@ jobs:
           npm run build:pages
           npm run build:standalone
           npm run validate:pages
-          test ! -e dist/data/research/status-sovereignty-f04-aces-governance-first-pass.json
+          test ! -e dist/data/intake/status-sovereignty-f04-aces-governance-first-pass.json
           test ! -e dist/build/core-thesis/status-sovereignty/f04-aces
           test ! -e dist/reports/core-thesis/status-sovereignty/f04-aces
       - name: Run complete repository release gate
