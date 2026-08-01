@@ -144,7 +144,12 @@ jobs:
           git diff --check
 
       - name: Run complete repository gate
-        run: npm run release:check
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run release:check
+          git add -A
+          echo "staged_tree=$(git write-tree)" >> "$GITHUB_ENV"
 
       - name: Restore and revalidate the staged lake epoch
         shell: bash
@@ -162,8 +167,13 @@ jobs:
           node test/lake-allocator-war-wave-21.test.js
           node tools/validate-lake-allocator-war-estate-execution-wave-22.mjs
           node test/lake-allocator-war-estate-execution-wave-22.test.js
-          git diff --check
-          test -z "$(git status --porcelain)"
+          git add -A
+          git diff --cached --check
+          git diff --quiet
+          test "$(git write-tree)" = "$staged_tree"
+          test ! -e .github/tmp/lake-allocator-war-estate-execution-wave-22-trigger.json
+          test ! -e .github/workflows/temporary-lake-allocator-war-estate-execution-wave-22-materializer.yml
+          test ! -e tools/materialize-lake-allocator-war-estate-execution-wave-22.mjs
 
       - name: Commit and push transport-free Wave 22 checkpoint
         shell: bash
