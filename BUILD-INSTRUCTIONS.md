@@ -453,3 +453,9 @@ Acquisition rows remain below evidence review. Partial recovery is not a complet
 Wave 25 converts each explicit Wave 24 unavailable obligation into one deterministic estate-owned closure task. Gate-unspecified packets receive one G0 gate-identification task, and all downstream tasks remain blocked until that task terminates.
 
 Closure queues are work-ordering surfaces, not evidence. Priority is not truth or merit; unavailable rows are not nulls; repeated tasks do not establish prevalence or relationship; graph effect and publication authority remain zero.
+
+
+3.26 **Allocator-war targeted closure execution — Wave 26.**
+Wave 26 executes only Wave 25 tasks already marked ready, records bounded source outcomes, preserves all blocked tasks, and moves newly eligible downstream work into a later-wave state rather than executing it immediately.
+
+Execution results remain acquisition records. Partial does not mean complete; unavailable-after-search is not null; a completed gate-identification task does not close its downstream denominator; a no-gate result does not foreclose future source-addressed gates. Evidence, findings, graph effects, and publication authority remain zero.
