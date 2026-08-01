@@ -1,0 +1,52 @@
+name: TEMP materialize SSC-W02 candidate wave and SG-12 v6
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/sg12-candidate-materializer-base-ffd71b
+    paths:
+      - '.github/tmp/sg12-candidate-materializer-trigger-v6.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sg12-candidate-materializer-v6
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct exact repaired materializer and establish SG-12
+        env:
+          MINIMUM_MAIN: 7bac82d1da6a604b205c6ad0e73cba6a3b7b29f5
+          FINAL_PR_NUMBER: '655'
+        run: |
+          set -Eeuo pipefail
+          parts=(.github/tmp/sg12-candidate-materializer-v6.carrier.*)
+          test "${#parts[@]}" -eq 6
+          for index in 0 1 2 3 4; do
+            test "$(wc -c < "${parts[$index]}")" -eq 6000
+          done
+          test "$(wc -c < "${parts[5]}")" -eq 36
+          cat "${parts[@]}" > /tmp/sg12-candidate-materializer-v6.b64
+          echo 'f3c12bc7fbafa6e3a24294767f028bd367fedaa82491859cb015e0a9bcb99cda  /tmp/sg12-candidate-materializer-v6.b64' | sha256sum --check --strict
+          base64 --decode /tmp/sg12-candidate-materializer-v6.b64 | gzip --decompress > /tmp/materialize-sg12-candidate-wave-v6.mjs
+          echo '2d4b280afa7e06e1a5d377a8f00b0357e645d92da5d7e4d6cf6161e5958b0cff  /tmp/materialize-sg12-candidate-wave-v6.mjs' | sha256sum --check --strict
+          node --check /tmp/materialize-sg12-candidate-wave-v6.mjs
+          node /tmp/materialize-sg12-candidate-wave-v6.mjs
+      - name: Upload exact materializer receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: sg12-candidate-materializer-receipt-v6
+          path: sg12-candidate-materializer-summary.txt
+          if-no-files-found: error
