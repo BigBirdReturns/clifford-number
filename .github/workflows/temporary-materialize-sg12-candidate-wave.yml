@@ -1,0 +1,46 @@
+name: TEMP materialize SSC-W02 candidate wave and SG-12
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/sg12-candidate-materializer-base-ffd71b
+    paths:
+      - '.github/tmp/sg12-candidate-materializer-trigger.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sg12-candidate-materializer-ffd71b
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct and materialize candidate transition and SG-12
+        env:
+          EXPECTED_MAIN: ffd71b0fd3fd393e3ef97b00436a7c1d9fd830da
+          FINAL_PR_NUMBER: '655'
+        run: |
+          set -euo pipefail
+          cat .github/tmp/sg12-candidate-materializer.carrier.* > /tmp/sg12-materializer.b64
+          echo '4a3fb8777f9b3f0f881de29dc1d36165a06e9cd2c75ce7dbf9ff68ccb202a98d  /tmp/sg12-materializer.b64' | sha256sum --check --strict
+          base64 --decode /tmp/sg12-materializer.b64 | gzip --decompress > /tmp/materialize-sg12-candidate-wave.mjs
+          echo 'f0b95e0ae9de7371cbc46c1f8b3909c9ba710d77e7f6fa416ee2924384473995  /tmp/materialize-sg12-candidate-wave.mjs' | sha256sum --check --strict
+          node --check /tmp/materialize-sg12-candidate-wave.mjs
+          node /tmp/materialize-sg12-candidate-wave.mjs
+      - name: Upload exact materializer receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: sg12-candidate-materializer-receipt
+          path: sg12-candidate-materializer-summary.txt
+          if-no-files-found: error
