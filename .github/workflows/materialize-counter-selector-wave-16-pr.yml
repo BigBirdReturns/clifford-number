@@ -51,7 +51,16 @@ jobs:
           git add -A
           actual="$(git diff --cached --name-only | sort)"
           expected="$({
-            for i in $(seq -f '%03g' 0 22); do
+            for i in $(seq -f '%03g' 0 9); do
+              printf '%s\n' ".github/materializers/counter-selector-wave-16/hex-$i"
+            done
+            for suffix in a b c d; do
+              printf '%s\n' ".github/materializers/counter-selector-wave-16/hex-010$suffix"
+            done
+            for suffix in a b c d; do
+              printf '%s\n' ".github/materializers/counter-selector-wave-16/hex-011$suffix"
+            done
+            for i in $(seq -f '%03g' 12 22); do
               printf '%s\n' ".github/materializers/counter-selector-wave-16/hex-$i"
             done
             printf '%s\n' \
