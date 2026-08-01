@@ -1,21 +1,21 @@
 # Lake index gap summary
 
-Source fingerprint: `e8ca23eec88b8bed588b937dfa9d98e052bda4da456c0bf4003e124e812c6a2f`
+Source fingerprint: `b09af76bbb8873651cba0f66d1046c019c814c60f16e6f6d83689973725e5cd2`
 
 ## Finding
 
-The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1461 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
+The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1469 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
 
 ## By evidence role
 
 | Role | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
-| generated_artifact | 595 | 595 | 0 | 0 |
-| project_governance | 183 | 183 | 0 | 0 |
-| repository_root | 142 | 142 | 0 | 0 |
+| generated_artifact | 597 | 597 | 0 | 0 |
+| project_governance | 184 | 184 | 0 | 0 |
+| repository_root | 144 | 144 | 0 | 0 |
 | intake | 141 | 141 | 0 | 0 |
-| documentation | 137 | 137 | 0 | 0 |
-| report_product | 111 | 111 | 0 | 0 |
+| documentation | 139 | 139 | 0 | 0 |
+| report_product | 112 | 112 | 0 | 0 |
 | research_record | 48 | 48 | 0 | 0 |
 | case_source | 43 | 43 | 0 | 0 |
 | receipt_artifact | 32 | 32 | 0 | 0 |
@@ -29,18 +29,18 @@ The current Git tree is physically censused, but the evidence lake is not semant
 |---|---:|---:|---:|---:|
 | build/estate-game-trails | 313 | 313 | 0 | 0 |
 | build/core-thesis | 184 | 184 | 0 | 0 |
-| data/project | 183 | 183 | 0 | 0 |
+| data/project | 184 | 184 | 0 | 0 |
 | data/intake | 141 | 141 | 0 | 0 |
 | reports/core-thesis | 96 | 96 | 0 | 0 |
-| docs/milestones | 72 | 72 | 0 | 0 |
+| docs/milestones | 73 | 73 | 0 | 0 |
 | data/research-tracks | 52 | 52 | 0 | 0 |
 | data/research | 48 | 48 | 0 | 0 |
 | data/estates | 43 | 43 | 0 | 0 |
-| data/acquisition | 33 | 33 | 0 | 0 |
-| build/lake-actions | 29 | 29 | 0 | 0 |
+| data/acquisition | 35 | 35 | 0 | 0 |
+| build/lake-actions | 31 | 31 | 0 | 0 |
 | cases/arcadia-field-autopsy | 21 | 21 | 0 | 0 |
 | receipts/crawl | 19 | 19 | 0 | 0 |
-| docs/methods | 16 | 16 | 0 | 0 |
+| docs/methods | 17 | 17 | 0 | 0 |
 | build/estate-closures | 15 | 15 | 0 | 0 |
 
 ## First repair queues
@@ -69,7 +69,7 @@ missing repository path tokens: 200
 ```text
 not reachable from any detected index: 0
 not reachable from authoritative roots: 0
-not reachable from public roots: 1217
+not reachable from public roots: 1225
 case IDs absent from public catalog: 26
 ```
 
@@ -80,23 +80,23 @@ case IDs absent from public catalog: 26
 | #488 Converge production publication and preserve pre-assemblage origins | 25 |
 | #493 Temporary SG-06 historical carrier export | 21 |
 | #491 Temporary final SG-06 export | 20 |
+| #577 Temporary export exact SSC-W02 campaign head | 20 |
+| #579 Temporary export exact SG-11 integration receipt | 20 |
+| #576 Install SSC-W02 separated review campaign and append SG-11 | 19 |
 | #386 Make evidence-grounded judgments without a human-permission gate | 18 |
 | #494 Temporary PR 484 exact-head export | 18 |
 | #490 Temporary current SG-06 transport export | 17 |
 | #403 Measure the production cross-case identity denominator | 16 |
 | #487 Temporary PR 483 bundle export | 14 |
-| #532 Temporary materialization of corrected SSC Wave 02 review | 14 |
-| #483 Enforce deterministic publication safety and append SG-06 | 13 |
-| #530 Temporary export exact Wave 02 review commit | 13 |
-| #531 Temporary export SSC Wave 02 reviewed transition | 13 |
+| #558 Test SSC-F04 against the ACES governance denominator | 13 |
 | #404 Recover exact source-bound cross-case mention recurrence | 11 |
 | #362 Stage biological Omega control-surface research program | 9 |
 | #527 Execute Counter-Selector Wave 08 Batch 02 blind review | 9 |
 | #50 Stage synthetic-population research program | 8 |
 | #380 Build root Evidence Desk publication estate from WebsiteIQ audit | 6 |
+| #573 Execute allocator-war public-interest downstream Wave 27 | 5 |
 | #378 Run WebsiteIQ baseline audit before website remediation | 4 |
 | #211 Map every case and report membership across the estates | 2 |
-| #379 Run corrected WebsiteIQ landing-path audit | 2 |
 
 ### P5 — history and semantics
 
