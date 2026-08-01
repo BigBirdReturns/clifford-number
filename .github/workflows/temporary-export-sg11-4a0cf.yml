@@ -1,0 +1,52 @@
+name: Temporary export exact SG-11 integration
+
+on:
+  push:
+    branches: [agent/sg11-4a0cf-export]
+    paths:
+      - '.github/workflows/temporary-export-sg11-4a0cf.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-export-sg11-4a0cf.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 4a0cf108098789f93732b829fc5a5e4ea152f28b
+          fetch-depth: 0
+      - name: Package exact integration tree and history
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = 4a0cf108098789f93732b829fc5a5e4ea152f28b
+          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/INTEGRATION-HEAD.txt
+          printf '%s\n' "$(git show -s --format=%T HEAD)" > /tmp/INTEGRATION-TREE.txt
+          repo="$GITHUB_WORKSPACE"
+          parent="$(dirname "$repo")"
+          base="$(basename "$repo")"
+          tar -C "$parent" --exclude="$base/.git" -cJf /tmp/sg11-integration-tree.tar.xz "$base"
+          git update-ref refs/heads/sg11-integration-export HEAD
+          git bundle create /tmp/sg11-integration.bundle refs/heads/sg11-integration-export
+          git update-ref -d refs/heads/sg11-integration-export
+          sha256sum /tmp/sg11-integration-tree.tar.xz > /tmp/sg11-integration-tree.tar.xz.sha256
+          sha256sum /tmp/sg11-integration.bundle > /tmp/sg11-integration.bundle.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sg11-integration-4a0cf
+          path: |
+            /tmp/sg11-integration-tree.tar.xz
+            /tmp/sg11-integration-tree.tar.xz.sha256
+            /tmp/sg11-integration.bundle
+            /tmp/sg11-integration.bundle.sha256
+            /tmp/INTEGRATION-HEAD.txt
+            /tmp/INTEGRATION-TREE.txt
+          if-no-files-found: error
+          retention-days: 1
