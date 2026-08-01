@@ -1,0 +1,53 @@
+name: Temporary export SG-10 canonical main
+
+on:
+  push:
+    branches: [agent/sg10-canonical-main-export]
+    paths:
+      - '.github/workflows/temporary-export-sg10-canonical-main.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-export-sg10-canonical-main.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: b952da00932012be409c63554d6c81f8367723cb
+          fetch-depth: 0
+      - name: Package exact canonical tree and history
+        run: |
+          set -Eeuo pipefail
+          target="$(git rev-parse HEAD)"
+          test "$target" = b952da00932012be409c63554d6c81f8367723cb
+          printf '%s\n' "$target" > /tmp/SG10-CANONICAL-MAIN.txt
+          printf '%s\n' "$(git show -s --format=%T HEAD)" > /tmp/SG10-CANONICAL-TREE.txt
+          repo="$GITHUB_WORKSPACE"
+          parent="$(dirname "$repo")"
+          base="$(basename "$repo")"
+          tar -C "$parent" --exclude="$base/.git" -cJf /tmp/sg10-canonical-main-tree.tar.xz "$base"
+          git update-ref refs/heads/sg10-canonical-main-export HEAD
+          git bundle create /tmp/sg10-canonical-main.bundle refs/heads/sg10-canonical-main-export
+          git update-ref -d refs/heads/sg10-canonical-main-export
+          sha256sum /tmp/sg10-canonical-main-tree.tar.xz > /tmp/sg10-canonical-main-tree.tar.xz.sha256
+          sha256sum /tmp/sg10-canonical-main.bundle > /tmp/sg10-canonical-main.bundle.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sg10-canonical-main
+          path: |
+            /tmp/sg10-canonical-main-tree.tar.xz
+            /tmp/sg10-canonical-main-tree.tar.xz.sha256
+            /tmp/sg10-canonical-main.bundle
+            /tmp/sg10-canonical-main.bundle.sha256
+            /tmp/SG10-CANONICAL-MAIN.txt
+            /tmp/SG10-CANONICAL-TREE.txt
+          if-no-files-found: error
+          retention-days: 1
