@@ -1,6 +1,6 @@
 # Subject integration — Wave 16
 
-Source fingerprint: `7c9b57612fea4b65939ff127feac93646027efc8fa752aa395ee8d0b64d01c1d`
+Source fingerprint: `3e004aa6881edbce4287026528dbdaadb969b66aac7333ad97540fd5fe2fcfea`
 
 ## Result
 

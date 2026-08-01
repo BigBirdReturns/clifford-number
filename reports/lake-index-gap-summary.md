@@ -1,6 +1,6 @@
 # Lake index gap summary
 
-Source fingerprint: `7aab3d8bceedb1ec28a9e33455fb81f561a376c3d0b5658157f9ba4cfcb0ad6a`
+Source fingerprint: `7b5ad5c22b7ae74c81df58d4806a7b632ae1c0747a5003c4cbb2096525be472b`
 
 ## Finding
 
@@ -77,6 +77,7 @@ case IDs absent from public catalog: 26
 
 | Open PR | Branch-only paths |
 |---|---:|
+| #529 Temporary recover SG-10 payload bytes | 26 |
 | #488 Converge production publication and preserve pre-assemblage origins | 25 |
 | #493 Temporary SG-06 historical carrier export | 21 |
 | #491 Temporary final SG-06 export | 20 |
@@ -86,6 +87,8 @@ case IDs absent from public catalog: 26
 | #403 Measure the production cross-case identity denominator | 16 |
 | #487 Temporary PR 483 bundle export | 14 |
 | #483 Enforce deterministic publication safety and append SG-06 | 13 |
+| #530 Temporary export exact Wave 02 review commit | 13 |
+| #531 Temporary export SSC Wave 02 reviewed transition | 13 |
 | #524 Review SSC-H01 Wave 02 and append SG-10 | 12 |
 | #404 Recover exact source-bound cross-case mention recurrence | 11 |
 | #362 Stage biological Omega control-surface research program | 9 |
@@ -93,10 +96,7 @@ case IDs absent from public catalog: 26
 | #50 Stage synthetic-population research program | 8 |
 | #380 Build root Evidence Desk publication estate from WebsiteIQ audit | 6 |
 | #378 Run WebsiteIQ baseline audit before website remediation | 4 |
-| #528 Execute allocator-war estate acquisition queues | 3 |
 | #211 Map every case and report membership across the estates | 2 |
-| #379 Run corrected WebsiteIQ landing-path audit | 2 |
-| #481 Export exact current main for the publication SG-06 rebuild | 1 |
 
 ### P5 — history and semantics
 

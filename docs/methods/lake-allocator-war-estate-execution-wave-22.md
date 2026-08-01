@@ -28,3 +28,5 @@ publication: blocked
 ```
 
 Wave 22 uses the existing allocator-war source, lake-action, and report basins. Exact file paths are added to those basins. No new semantic basin, identity, relationship, participation, active claim, hop, finding, or publication authority is created.
+
+Ancestry validation distinguishes an unavailable commit object from failed ancestry. In a shallow GitHub Actions checkout, the validator recovers remote history and then reruns the same merge-base ancestry test. A non-shallow missing checkpoint, failed recovery, or a recovered non-ancestor remains blocking.

@@ -182,10 +182,48 @@ export function validateRepository(root = defaultRoot) {
   const errors = validateArtifacts({ policy, sourceRows, sourceRaw, projection, wave21Policy });
 
   if (process.env.LAW22_SKIP_GIT !== '1') {
-    try {
-      execFileSync('git', ['merge-base', '--is-ancestor', policy.base_checkpoint.commit, 'HEAD'], { cwd: root, stdio: 'ignore' });
-    } catch {
-      fail(errors, 'Wave 22 base checkpoint is not an ancestor');
+    const baseCommit = policy.base_checkpoint.commit;
+    const quietGit = args => execFileSync('git', args, { cwd: root, stdio: 'ignore' });
+    const hasBaseCommit = () => {
+      try {
+        quietGit(['cat-file', '-e', baseCommit + '^{commit}']);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    let baseAvailable = hasBaseCommit();
+    if (!baseAvailable) {
+      let shallow = false;
+      try {
+        shallow = execFileSync('git', ['rev-parse', '--is-shallow-repository'], {
+          cwd: root,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore']
+        }).trim() === 'true';
+      } catch {
+        shallow = false;
+      }
+
+      if (shallow && process.env.GITHUB_ACTIONS === 'true') {
+        try {
+          quietGit(['fetch', '--no-tags', '--unshallow', 'origin']);
+        } catch {
+          // The availability check below records a bounded recovery failure.
+        }
+        baseAvailable = hasBaseCommit();
+      }
+    }
+
+    if (!baseAvailable) {
+      fail(errors, 'Wave 22 base checkpoint unavailable after shallow-history recovery');
+    } else {
+      try {
+        quietGit(['merge-base', '--is-ancestor', baseCommit, 'HEAD']);
+      } catch {
+        fail(errors, 'Wave 22 base checkpoint is not an ancestor');
+      }
     }
   }
 
