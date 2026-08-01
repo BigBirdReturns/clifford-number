@@ -1,6 +1,6 @@
 {
   "schema_version": "preference-custody-control-manifest@1",
-  "manifest_id": "preference-custody-laboratory-floor-v4",
+  "manifest_id": "preference-custody-laboratory-floor-v5",
   "issue": 594,
   "captured_at": "2026-08-01",
   "status": "synthetic_control_floor",
@@ -92,6 +92,24 @@
         "objective_control_requires_amend_suspend_veto_and_remedy",
         "public_rejection_blocks_implementation"
       ]
+    },
+    {
+      "control_id": "PC-07",
+      "fixture_id": "same-forced-choice-different-agenda-v1",
+      "failure_class": "agenda_formation_and_collective_option_generation",
+      "source_fixture_path": "data/research/preference-custody/agenda-formation.fixture.json",
+      "build_artifact_path": "build/research/preference-agenda-formation.json",
+      "expected_build_schema": "preference-agenda-build@1",
+      "required_refusal_rules": [
+        "forced_choice_is_not_complete_agenda",
+        "unoffered_option_can_be_collectively_generated",
+        "proposal_without_binding_rule_is_not_agenda_authority",
+        "preference_over_options_is_not_acceptance_of_objective",
+        "preliminary_winner_is_not_final_public_disposition",
+        "collective_option_generation_requires_attributed_membership_and_rule",
+        "synthetic_prediction_cannot_exercise_amendment_rights",
+        "binding_objective_rejection_blocks_implementation"
+      ]
     }
   ],
   "identification_requirements": [
@@ -104,6 +122,11 @@
       "stage": "option_set",
       "required_state": "complete_offered_excluded_and_rejected_alternatives",
       "refused_inference": "unoffered_or_unavailable_does_not_mean_rejected"
+    },
+    {
+      "stage": "agenda_formation",
+      "required_state": "option_origin_proposal_coalition_amendment_and_objective_challenge_history",
+      "refused_inference": "preference_among_institution_authored_options_does_not_identify_the_public_agenda_or_objective_acceptance"
     },
     {
       "stage": "response_mechanism",
@@ -128,7 +151,7 @@
   ],
   "open_frontiers": [
     "dynamic_preference_change",
-    "coordinated_refusal_and_collective_bargaining",
+    "negotiated_package_formation_and_collective_bargaining",
     "intersectional_and_unobserved_group_custody",
     "model_policy_and_metric_succession",
     "federated_multilevel_and_successor_authority",
@@ -140,6 +163,7 @@
       "model_and_version",
       "source_population_and_data_window",
       "complete_question_and_option_set",
+      "option_origin_proposal_coalition_amendment_and_objective_challenge_history",
       "institutional_disposition",
       "exposure_and_eligibility_state",
       "complete_disposition_and_denominator_history",
@@ -150,21 +174,23 @@
       "eligible_affected_constituency_definition",
       "binding_decision_rule_quorum_and_thresholds",
       "objective_amendment_suspension_veto_appeal_and_remedy_rights",
-      "attributed_constituency_disposition_and_implementation_enforcement_receipt"
+      "attributed_agenda_and_constituency_dispositions",
+      "implementation_or_blocking_enforcement_receipt"
     ],
     "promotion_authority": "human_review_plus_repository_gates"
   },
   "prohibited_inferences": [
     "Do not treat a laboratory control as evidence about a named deployment.",
-    "Do not infer preference change, suppression, discrimination, manipulation, illegitimacy, or intent from identification or authority failure alone.",
-    "Do not treat a passing predictive benchmark as a pass on exposure, option-set, mechanism, attrition, subgroup distribution, or public-authorization validity.",
-    "Do not treat synthetic prediction, observed behavior, advisory consultation, or commissioner approval as binding affected-public authorization.",
-    "Do not treat the six controls as exhaustive of every performative or constitutional failure mode."
+    "Do not infer preference change, suppression, discrimination, manipulation, illegitimacy, or intent from identification, agenda, or authority failure alone.",
+    "Do not treat a passing predictive benchmark as a pass on exposure, option-set, agenda-formation, mechanism, attrition, subgroup distribution, or public-authorization validity.",
+    "Do not treat synthetic prediction, observed behavior, advisory consultation, commissioner approval, or popular suggestion as binding affected-public agenda authority.",
+    "Do not treat preference among institution-authored options as acceptance of the objective or proof that no better collective alternative exists.",
+    "Do not treat the seven controls as exhaustive of every performative or constitutional failure mode."
   ],
   "interpretation_contract": {
     "contract_id": "preference-custody-control-manifest@1",
-    "what_this_is": "A compiled laboratory floor joining six deterministic controls for exposure confounding, option-set starvation, observational equivalence, attrition or refusal censoring, subgroup response capacity or burden, and standing or objective-control authority.",
+    "what_this_is": "A compiled laboratory floor joining seven deterministic controls for exposure confounding, option-set starvation, agenda formation, observational equivalence, attrition or refusal censoring, subgroup response capacity or burden, and standing or objective-control authority.",
     "what_this_is_not": "A real-world findings dossier, a market-wide claim, evidence against a named actor, a legitimacy verdict, or a complete universal constitution for preference formation and public standing.",
-    "copy_ready_caveat": "The preference-custody floor proves six identification and authority separations in synthetic controls. It requires real deployments to preserve exposure, option-set, mechanism, attrition, subgroup, counterfactual, and binding authority evidence, but it creates no real-world causal or legitimacy conclusion by itself."
+    "copy_ready_caveat": "The preference-custody floor proves seven identification, agenda, and authority separations in synthetic controls. It requires real deployments to preserve exposure, option-set, agenda-formation, mechanism, attrition, subgroup, counterfactual, and binding authority evidence, but it creates no real-world causal or legitimacy conclusion by itself."
   }
 }
