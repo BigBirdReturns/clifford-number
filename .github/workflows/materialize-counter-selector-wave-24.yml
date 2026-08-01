@@ -1,0 +1,90 @@
+name: Materialize Counter-Selector Wave 24
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-24.yml'
+  push:
+    branches:
+      - 'agent/counter-selector-wave-24-model-update-handoff'
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-24.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/counter-selector-wave-24-model-update-handoff
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify exact payload and unpack Wave 24 estate
+        run: |
+          set -euo pipefail
+          payload=.github/materializers/counter-selector-wave-24/payload.tar.gz
+          actual="$(git hash-object "$payload")"
+          test "$actual" = "2fbb776a8e778408baa48058f51904279bfc4dc3" || {
+            echo "payload blob mismatch: expected=2fbb776a8e778408baa48058f51904279bfc4dc3 actual=$actual" >&2
+            exit 1
+          }
+          echo '3547910de5d1217ad0256c4b3107ac5ea54547e91a705afa0ec25593ab358f9b  .github/materializers/counter-selector-wave-24/payload.tar.gz' \
+            | sha256sum --check --strict
+          tar -xzf "$payload" -C .
+          rm -rf .github/materializers/counter-selector-wave-24
+          rm -f .github/workflows/materialize-counter-selector-wave-24.yml
+      - name: Build, validate, and attack Wave 24
+        run: |
+          set -euo pipefail
+          node tools/build-counter-selector-wave-24.mjs
+          node tools/validate-counter-selector-wave-24.mjs
+          node test/counter-selector-wave-24.test.js
+      - name: Commit exact permanent non-workflow Wave 24 estate
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          actual="$(git diff --cached --name-only | sort)"
+          expected="$(printf '%s\n' \
+            .github/materializers/counter-selector-wave-24/payload.tar.gz \
+            .github/workflows/materialize-counter-selector-wave-24.yml \
+            data/project/counter-selector-wave-24-evidence-registry.json \
+            data/project/counter-selector-wave-24-model-update-handoff.json \
+            data/project/counter-selector-wave-24-release-manifest.json \
+            docs/methods/counter-selector-model-update-handoff.md \
+            docs/milestones/counter-selector-wave-24.md \
+            reports/core-thesis/counter-selector-wave-24/data.json \
+            reports/core-thesis/counter-selector-wave-24/index.html \
+            schemas/counter-selector-model-update-handoff.schema.json \
+            test/counter-selector-wave-24.test.js \
+            tools/build-counter-selector-wave-24.mjs \
+            tools/validate-counter-selector-wave-24.mjs | sort)"
+          test "$actual" = "$expected" || {
+            echo 'unexpected staged paths' >&2
+            printf 'actual:\n%s\nexpected:\n%s\n' "$actual" "$expected" >&2
+            exit 1
+          }
+          git diff --cached --check
+          git commit -m 'Advance Counter-Selector Wave 24 model update and handoff'
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic Wave 24 reconstruction
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          node tools/build-counter-selector-wave-24.mjs
+          node tools/validate-counter-selector-wave-24.mjs
+          node test/counter-selector-wave-24.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+      - name: Publish permanent Wave 24 head
+        run: git push origin HEAD:agent/counter-selector-wave-24-model-update-handoff
