@@ -1,47 +1,27 @@
-name: Project stable-ground supersession 09
+name: Project stable-ground supersession 09 · historical
 
 on:
   pull_request:
     branches: [main]
     paths:
-      - 'data/project/project-stable-ground-current.json'
-      - 'data/project/project-stable-ground-sg08*.json'
       - 'data/project/project-stable-ground-sg09*.json'
-      - 'data/project/status-sovereignty-wave-01-second-party-review*'
-      - 'data/research/status-sovereignty-wave-01-second-party-review*'
-      - 'schemas/status-sovereignty-second-party-review*'
-      - 'docs/ssc-wave-01-second-party-review-intake.md'
-      - 'docs/milestones/m05-status-sovereignty-wave-01-second-party-review.md'
-      - 'docs/milestones/project-stable-ground-sg09.md'
-      - 'reports/core-thesis/stable-ground/sg09/**'
-      - 'tools/*project-stable-ground-sg09*'
+      - 'data/project/project-stable-ground-current.json'
+      - 'data/project/project-stable-ground-governor.json'
+      - 'tools/validate-project-stable-ground-sg09.mjs'
       - 'test/project-stable-ground-sg09.test.js'
-      - 'tools/*status-sovereignty-wave-01-second-party-review*'
-      - 'test/status-sovereignty-wave-01-second-party-review.test.js'
-      - '.github/workflows/project-stable-ground-sg08.yml'
       - '.github/workflows/project-stable-ground-sg09.yml'
-      - '.github/workflows/status-sovereignty-wave-01-second-party-review.yml'
+      - '.github/workflows/project-stable-ground-sg10.yml'
       - 'package.json'
   push:
     branches: [main]
     paths:
-      - 'data/project/project-stable-ground-current.json'
-      - 'data/project/project-stable-ground-sg08*.json'
       - 'data/project/project-stable-ground-sg09*.json'
-      - 'data/project/status-sovereignty-wave-01-second-party-review*'
-      - 'data/research/status-sovereignty-wave-01-second-party-review*'
-      - 'schemas/status-sovereignty-second-party-review*'
-      - 'docs/ssc-wave-01-second-party-review-intake.md'
-      - 'docs/milestones/m05-status-sovereignty-wave-01-second-party-review.md'
-      - 'docs/milestones/project-stable-ground-sg09.md'
-      - 'reports/core-thesis/stable-ground/sg09/**'
-      - 'tools/*project-stable-ground-sg09*'
+      - 'data/project/project-stable-ground-current.json'
+      - 'data/project/project-stable-ground-governor.json'
+      - 'tools/validate-project-stable-ground-sg09.mjs'
       - 'test/project-stable-ground-sg09.test.js'
-      - 'tools/*status-sovereignty-wave-01-second-party-review*'
-      - 'test/status-sovereignty-wave-01-second-party-review.test.js'
-      - '.github/workflows/project-stable-ground-sg08.yml'
       - '.github/workflows/project-stable-ground-sg09.yml'
-      - '.github/workflows/status-sovereignty-wave-01-second-party-review.yml'
+      - '.github/workflows/project-stable-ground-sg10.yml'
       - 'package.json'
   workflow_dispatch:
 
@@ -49,9 +29,9 @@ permissions:
   contents: read
 
 jobs:
-  validate:
+  validate-history:
     runs-on: ubuntu-latest
-    timeout-minutes: 110
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
         with:
@@ -59,74 +39,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Build and validate separated-review campaign
+      - name: Validate frozen SG-09 custody
         run: |
-          npm run build:status-sovereignty
-          npm run validate:status-sovereignty
-          node test/status-sovereignty-wave-01-second-party-review.test.js
-      - name: Validate frozen SG-08 and current SG-09
-        run: |
-          node tools/validate-project-stable-ground-sg08.mjs
-          node test/project-stable-ground-sg08.test.js
-          node tools/build-project-stable-ground-sg09.mjs
           node tools/validate-project-stable-ground-sg09.mjs
           node test/project-stable-ground-sg09.test.js
-      - name: Validate preserved SG-01 through SG-07 history
-        run: |
-          node tools/validate-project-stable-ground-alignment.mjs
-          node test/project-stable-ground-alignment.test.js
-          node tools/validate-project-stable-ground-sg02.mjs
-          node test/project-stable-ground-sg02.test.js
-          node tools/validate-project-stable-ground-sg03.mjs
-          node test/project-stable-ground-sg03.test.js
-          node tools/validate-project-stable-ground-sg04.mjs
-          node test/project-stable-ground-sg04.test.js
-          node tools/validate-project-stable-ground-sg05.mjs
-          node test/project-stable-ground-sg05.test.js
-          node tools/validate-project-stable-ground-sg06.mjs
-          node test/project-stable-ground-sg06.test.js
-          node tools/validate-project-stable-ground-sg07.mjs
-          node test/project-stable-ground-sg07.test.js
-      - name: Prove public intake and publication hold
-        run: |
-          npm run build:pages
-          npm run build:standalone
-          npm run validate:pages
-          test -f dist/docs/ssc-wave-01-second-party-review-intake.md
-          test ! -e dist/data/project/status-sovereignty-wave-01-second-party-review-campaign.json
-          test ! -e dist/data/project/status-sovereignty-wave-01-second-party-review-packet-registry.json
-          test ! -e dist/data/project/status-sovereignty-wave-01-second-party-review-release-manifest.json
-          test ! -e dist/data/research/status-sovereignty-wave-01-second-party-review-candidates.json
-          test ! -e dist/data/research/status-sovereignty-wave-01-second-party-review-responses.json
-          test ! -e dist/reports/core-thesis/status-sovereignty/wave-01-second-party-review
+      - name: Validate current stable-ground chain
+        run: npm run validate:stable-ground
       - name: Run complete repository release gate
         run: npm run release:check
-      - name: Prove deterministic SG-09 and frozen SG-08
+      - name: Preserve immutable SG-09 bytes
         run: |
           git restore --staged --worktree .
           git clean -fdx
-          npm run build:status-sovereignty
-          npm run validate:status-sovereignty
-          npm run build:poof-ecology
-          npm run validate:poof-ecology
-          npm run build:stable-ground
-          npm run validate:stable-ground
+          node tools/validate-project-stable-ground-sg09.mjs
+          node test/project-stable-ground-sg09.test.js
           git diff --exit-code -- \
-            data/project/status-sovereignty-wave-01-second-party-review-packet-registry.json \
-            data/project/status-sovereignty-wave-01-second-party-review-release-manifest.json \
-            build/core-thesis/status-sovereignty/wave-01-second-party-review/manifest.json \
-            build/core-thesis/status-sovereignty/wave-01-second-party-review/data.json \
-            reports/core-thesis/status-sovereignty/wave-01-second-party-review/data.json \
-            reports/core-thesis/status-sovereignty/wave-01-second-party-review/index.html \
-            reports/core-thesis/status-sovereignty/wave-01-second-party-review/intake.html \
-            data/project/poof-clifford-ecology-release-manifest.json \
-            reports/core-thesis/poof-clifford-ecology/release-manifest.json \
+            data/project/project-stable-ground-sg09.json \
             data/project/project-stable-ground-sg09-release-manifest.json \
             reports/core-thesis/stable-ground/sg09/checkpoint.json \
             reports/core-thesis/stable-ground/sg09/index.html
-          git diff --exit-code -- \
-            data/project/project-stable-ground-sg08.json \
-            data/project/project-stable-ground-sg08-release-manifest.json \
-            reports/core-thesis/stable-ground/sg08/checkpoint.json \
-            reports/core-thesis/stable-ground/sg08/index.html
           test -z "$(git status --porcelain)"
