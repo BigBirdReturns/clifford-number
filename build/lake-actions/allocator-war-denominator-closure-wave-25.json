@@ -1,0 +1,531 @@
+{
+  "schema_version": "lake-allocator-war-denominator-closure-wave-25@1",
+  "program_ref": "CN-LAKE-ALLOCATOR-WAR-W25",
+  "wave_ref": "LAW-W25",
+  "as_of": "2026-07-31",
+  "generated_from": {
+    "policy_path": "data/project/lake-allocator-war-denominator-closure-wave-25-policy.json",
+    "source_plan_path": "data/project/lake-allocator-war-lead-execution-wave-24-source-plan.json",
+    "source_plan_bytes": 48761,
+    "source_plan_sha256": "84949aa42b62d1084236cd422afc4d092c14f996cbe8202a6fbd6f445d7b73b2",
+    "source_projection_path": "build/lake-actions/allocator-war-lead-execution-wave-24.json",
+    "source_projection_bytes": 22623,
+    "source_projection_sha256": "43202d2e40f45ae211b9a315f6d6993e4413f23d647ba6d310b2c8ec0f49905a"
+  },
+  "counts": {
+    "source_packets": 11,
+    "closure_queues": 11,
+    "closure_tasks": 40,
+    "queue_summary_rows": 11,
+    "closure_task_rows": 40,
+    "closure_rows": 51,
+    "named_gate_queues": 9,
+    "gate_unspecified_queues": 2,
+    "ready_tasks": 36,
+    "blocked_tasks": 4,
+    "gate_identification_tasks": 2,
+    "task_classes": {
+      "denominator_closure": 17,
+      "entity_resolution": 1,
+      "gate_identification": 2,
+      "instrument_rights_recovery": 9,
+      "outcome_correction_recovery": 11
+    },
+    "priority_tiers": {
+      "G0": 2,
+      "P0": 17,
+      "P1": 10,
+      "P2": 11
+    },
+    "evidence_rows": 0,
+    "finding_promotions": 0,
+    "graph_effects": 0,
+    "publication_clearances": 0
+  },
+  "graph_digests": {
+    "participation_sha256": "4d3251dca3760bae9459cd46ac33455663ae7943680fb6184d6c517e026ad83a",
+    "active_claims_sha256": "3ccda11961cc6e1bec1b5675418004a8cb98d62a891f710599f81c36a8e0eaf7",
+    "hop_edges_sha256": "aa080592cb62dee1f7d39ed6d8a0d7c2d3f674c1bb2a0bacbc959c84f8a601cd",
+    "rejected_hop_surfaces_sha256": "82774168d65b67ba1b3c3071a67142bf454bab75b82fa21bbf193642bc05c7a5",
+    "rejected_hop_pairs_sha256": "e8511b978ddfaae049cd4673ef98946932fc354050d6b5259218794ad7bf38ab"
+  },
+  "queues": [
+    {
+      "queue_ref": "LAW25-LAW21-EST-01",
+      "queue_sequence": 1,
+      "packet_ref": "LAW23-LAW21-EST-01",
+      "source_queue_ref": "LAW21-EST-01",
+      "source_task_ref": "LAW21-EST-01/T02",
+      "consumer_key": "dialog-estate",
+      "queue_class": "split_authority_execution_queue",
+      "source_route_authority": "split_reviewed_wave_01_and_unreviewed_wave_02",
+      "task_authority": "split_reviewed_and_unreviewed_sources",
+      "source_acquisition_disposition": "partial_source_recovery",
+      "source_institutional_gate_state": "named_private_ranking_surface_partial_denominator",
+      "queue_state": "ready_for_targeted_acquisition",
+      "closure_task_count": 4,
+      "ready_task_count": 4,
+      "blocked_task_count": 0,
+      "gate_identification_task_count": 0,
+      "task_classes": {
+        "denominator_closure": 1,
+        "instrument_rights_recovery": 1,
+        "outcome_correction_recovery": 2
+      },
+      "priorities": {
+        "P0": 1,
+        "P1": 1,
+        "P2": 2
+      },
+      "source_refs": [
+        "LAW24-S001",
+        "LAW24-S002",
+        "LAW24-S003",
+        "LAW24-S004"
+      ],
+      "queue_path": "data/acquisition/lake-allocator-war-wave-25/law21-est-01.jsonl",
+      "queue_rows": 5,
+      "queue_sha256": "53d9e5325e73b3f67a3d965da34aad0bb942fa17231d39f5f88d3db1084f249d",
+      "evidence_adjudicated": false,
+      "evidence_rows": 0,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "queue_ref": "LAW25-LAW21-EST-02",
+      "queue_sequence": 2,
+      "packet_ref": "LAW23-LAW21-EST-02",
+      "source_queue_ref": "LAW21-EST-02",
+      "source_task_ref": "LAW21-EST-02/T01",
+      "consumer_key": "intellectual-property-standards-data-rights-estate",
+      "queue_class": "reviewed_execution_queue",
+      "source_route_authority": "reviewed_wave_01_routing",
+      "task_authority": "maintainer_reviewed_routing_below_second_party_review",
+      "source_acquisition_disposition": "partial_source_recovery",
+      "source_institutional_gate_state": "named_award_and_loan_surfaces_partial_instruments",
+      "queue_state": "ready_for_targeted_acquisition",
+      "closure_task_count": 3,
+      "ready_task_count": 3,
+      "blocked_task_count": 0,
+      "gate_identification_task_count": 0,
+      "task_classes": {
+        "instrument_rights_recovery": 3
+      },
+      "priorities": {
+        "P1": 3
+      },
+      "source_refs": [
+        "LAW24-S007",
+        "LAW24-S008",
+        "LAW24-S009"
+      ],
+      "queue_path": "data/acquisition/lake-allocator-war-wave-25/law21-est-02.jsonl",
+      "queue_rows": 4,
+      "queue_sha256": "76cc621da17fe8712923465888e1c3d929564e22ef0a5dee956194fdd8ef4940",
+      "evidence_adjudicated": false,
+      "evidence_rows": 0,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "queue_ref": "LAW25-LAW21-EST-03",
+      "queue_sequence": 3,
+      "packet_ref": "LAW23-LAW21-EST-03",
+      "source_queue_ref": "LAW21-EST-03",
+      "source_task_ref": "LAW21-EST-03/T01",
+      "consumer_key": "judicial-administrative-adjudication-estate",
+      "queue_class": "unreviewed_acquisition_queue",
+      "source_route_authority": "unreviewed_wave_02_acquisition_only",
+      "task_authority": "unreviewed_intake_acquisition_only",
+      "source_acquisition_disposition": "partial_source_recovery",
+      "source_institutional_gate_state": "named_army_procurement_surface_partial_denominator",
+      "queue_state": "ready_for_targeted_acquisition",
+      "closure_task_count": 4,
+      "ready_task_count": 4,
+      "blocked_task_count": 0,
+      "gate_identification_task_count": 0,
+      "task_classes": {
+        "denominator_closure": 2,
+        "instrument_rights_recovery": 1,
+        "outcome_correction_recovery": 1
+      },
+      "priorities": {
+        "P0": 2,
+        "P1": 1,
+        "P2": 1
+      },
+      "source_refs": [
+        "LAW24-S010",
+        "LAW24-S011"
+      ],
+      "queue_path": "data/acquisition/lake-allocator-war-wave-25/law21-est-03.jsonl",
+      "queue_rows": 5,
+      "queue_sha256": "f32ea4df3d511a9ebc8764c3ca7699ee039ea0bce487f793c9a6bd5f03a03732",
+      "evidence_adjudicated": false,
+      "evidence_rows": 0,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "queue_ref": "LAW25-LAW21-EST-04",
+      "queue_sequence": 4,
+      "packet_ref": "LAW23-LAW21-EST-04",
+      "source_queue_ref": "LAW21-EST-04",
+      "source_task_ref": "LAW21-EST-04/T01",
+      "consumer_key": "labor-immigration-workforce-mobility-estate",
+      "queue_class": "split_authority_execution_queue",
+      "source_route_authority": "split_reviewed_wave_01_and_unreviewed_wave_02",
+      "task_authority": "split_reviewed_and_unreviewed_sources",
+      "source_acquisition_disposition": "partial_source_recovery",
+      "source_institutional_gate_state": "named_foreign_service_and_title_vii_surfaces_partial_denominator",
+      "queue_state": "ready_for_targeted_acquisition",
+      "closure_task_count": 3,
+      "ready_task_count": 3,
+      "blocked_task_count": 0,
+      "gate_identification_task_count": 0,
+      "task_classes": {
+        "denominator_closure": 1,
+        "outcome_correction_recovery": 2
+      },
+      "priorities": {
+        "P0": 1,
+        "P2": 2
+      },
+      "source_refs": [
+        "LAW24-S012",
+        "LAW24-S013",
+        "LAW24-S014",
+        "LAW24-S015"
+      ],
+      "queue_path": "data/acquisition/lake-allocator-war-wave-25/law21-est-04.jsonl",
+      "queue_rows": 4,
+      "queue_sha256": "0c6ca53451258bf4bdf189fcfabca239a6e2b899d9d0d97bcf1a13d520cd3271",
+      "evidence_adjudicated": false,
+      "evidence_rows": 0,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "queue_ref": "LAW25-LAW21-EST-05",
+      "queue_sequence": 5,
+      "packet_ref": "LAW23-LAW21-EST-05",
+      "source_queue_ref": "LAW21-EST-05",
+      "source_task_ref": "LAW21-EST-05/T01",
+      "consumer_key": "public-interest-crossing-estate",
+      "queue_class": "unreviewed_acquisition_queue",
+      "source_route_authority": "unreviewed_wave_02_acquisition_only",
+      "task_authority": "unreviewed_intake_acquisition_only",
+      "source_acquisition_disposition": "bounded_public_record_recovered_gate_unspecified",
+      "source_institutional_gate_state": "no_bounded_institutional_gate_identified",
+      "queue_state": "gate_first_acquisition_required",
+      "closure_task_count": 3,
+      "ready_task_count": 1,
+      "blocked_task_count": 2,
+      "gate_identification_task_count": 1,
+      "task_classes": {
+        "denominator_closure": 1,
+        "gate_identification": 1,
+        "outcome_correction_recovery": 1
+      },
+      "priorities": {
+        "G0": 1,
+        "P0": 1,
+        "P2": 1
+      },
+      "source_refs": [
+        "LAW24-S016",
+        "LAW24-S017",
+        "LAW24-S018"
+      ],
+      "queue_path": "data/acquisition/lake-allocator-war-wave-25/law21-est-05.jsonl",
+      "queue_rows": 4,
+      "queue_sha256": "ba92599a33b3a82c40aba5068782fd7290276e5144c80ec3d61a2f194a789510",
+      "evidence_adjudicated": false,
+      "evidence_rows": 0,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "queue_ref": "LAW25-LAW21-EST-06",
+      "queue_sequence": 6,
+      "packet_ref": "LAW23-LAW21-EST-06",
+      "source_queue_ref": "LAW21-EST-06",
+      "source_task_ref": "LAW21-EST-06/T01",
+      "consumer_key": "public-money-industrial-policy-estate",
+      "queue_class": "reviewed_execution_queue",
+      "source_route_authority": "reviewed_wave_01_routing",
+      "task_authority": "maintainer_reviewed_routing_below_second_party_review",
+      "source_acquisition_disposition": "partial_source_recovery",
+      "source_institutional_gate_state": "named_public_finance_and_industrial_policy_surfaces_partial_denominator",
+      "queue_state": "ready_for_targeted_acquisition",
+      "closure_task_count": 4,
+      "ready_task_count": 4,
+      "blocked_task_count": 0,
+      "gate_identification_task_count": 0,
+      "task_classes": {
+        "denominator_closure": 2,
+        "instrument_rights_recovery": 1,
+        "outcome_correction_recovery": 1
+      },
+      "priorities": {
+        "P0": 2,
+        "P1": 1,
+        "P2": 1
+      },
+      "source_refs": [
+        "LAW24-S005",
+        "LAW24-S006",
+        "LAW24-S007",
+        "LAW24-S008",
+        "LAW24-S009"
+      ],
+      "queue_path": "data/acquisition/lake-allocator-war-wave-25/law21-est-06.jsonl",
+      "queue_rows": 5,
+      "queue_sha256": "ff2b553f8e7b4460b9d1c2e062f5363b93c7435b7b6edbc2e4f712ea708a3efc",
+      "evidence_adjudicated": false,
+      "evidence_rows": 0,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "queue_ref": "LAW25-LAW21-EST-07",
+      "queue_sequence": 7,
+      "packet_ref": "LAW23-LAW21-EST-07",
+      "source_queue_ref": "LAW21-EST-07",
+      "source_task_ref": "LAW21-EST-07/T02",
+      "consumer_key": "regulatory-markets-estate",
+      "queue_class": "split_authority_execution_queue",
+      "source_route_authority": "split_reviewed_wave_01_and_unreviewed_wave_02",
+      "task_authority": "split_reviewed_and_unreviewed_sources",
+      "source_acquisition_disposition": "partial_source_recovery",
+      "source_institutional_gate_state": "named_regulatory_and_enforcement_surfaces_partial_denominator",
+      "queue_state": "ready_for_targeted_acquisition",
+      "closure_task_count": 4,
+      "ready_task_count": 4,
+      "blocked_task_count": 0,
+      "gate_identification_task_count": 0,
+      "task_classes": {
+        "denominator_closure": 2,
+        "instrument_rights_recovery": 2
+      },
+      "priorities": {
+        "P0": 2,
+        "P1": 2
+      },
+      "source_refs": [
+        "LAW24-S019",
+        "LAW24-S020",
+        "LAW24-S021",
+        "LAW24-S022",
+        "LAW24-S023",
+        "LAW24-S014"
+      ],
+      "queue_path": "data/acquisition/lake-allocator-war-wave-25/law21-est-07.jsonl",
+      "queue_rows": 5,
+      "queue_sha256": "21eb9419461a0e797fbd028085ebc1eb79c99567a141946224f609734430a2c1",
+      "evidence_adjudicated": false,
+      "evidence_rows": 0,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "queue_ref": "LAW25-LAW21-EST-08",
+      "queue_sequence": 8,
+      "packet_ref": "LAW23-LAW21-EST-08",
+      "source_queue_ref": "LAW21-EST-08",
+      "source_task_ref": "LAW21-EST-08/T01",
+      "consumer_key": "transatlantic-defense-innovation-estate",
+      "queue_class": "reviewed_execution_queue",
+      "source_route_authority": "reviewed_wave_01_routing",
+      "task_authority": "maintainer_reviewed_routing_below_second_party_review",
+      "source_acquisition_disposition": "partial_source_recovery",
+      "source_institutional_gate_state": "named_cross_year_ranking_and_fund_surfaces_partial_denominator",
+      "queue_state": "ready_for_targeted_acquisition",
+      "closure_task_count": 4,
+      "ready_task_count": 4,
+      "blocked_task_count": 0,
+      "gate_identification_task_count": 0,
+      "task_classes": {
+        "denominator_closure": 2,
+        "entity_resolution": 1,
+        "outcome_correction_recovery": 1
+      },
+      "priorities": {
+        "P0": 2,
+        "P1": 1,
+        "P2": 1
+      },
+      "source_refs": [
+        "LAW24-S001",
+        "LAW24-S002",
+        "LAW24-S003",
+        "LAW24-S004",
+        "LAW24-S005"
+      ],
+      "queue_path": "data/acquisition/lake-allocator-war-wave-25/law21-est-08.jsonl",
+      "queue_rows": 5,
+      "queue_sha256": "eeb7e794c969338ebff0d6320d0ad203567ecfebec98de268eac2ec4917e1fc3",
+      "evidence_adjudicated": false,
+      "evidence_rows": 0,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "queue_ref": "LAW25-LAW21-EST-09",
+      "queue_sequence": 9,
+      "packet_ref": "LAW23-LAW21-EST-09",
+      "source_queue_ref": "LAW21-EST-09",
+      "source_task_ref": "LAW21-EST-09/T01",
+      "consumer_key": "us-defense-estate",
+      "queue_class": "split_authority_execution_queue",
+      "source_route_authority": "split_reviewed_wave_01_and_unreviewed_wave_02",
+      "task_authority": "split_reviewed_and_unreviewed_sources",
+      "source_acquisition_disposition": "partial_source_recovery",
+      "source_institutional_gate_state": "named_defense_selection_and_procurement_surfaces_partial_denominator",
+      "queue_state": "ready_for_targeted_acquisition",
+      "closure_task_count": 3,
+      "ready_task_count": 3,
+      "blocked_task_count": 0,
+      "gate_identification_task_count": 0,
+      "task_classes": {
+        "denominator_closure": 2,
+        "instrument_rights_recovery": 1
+      },
+      "priorities": {
+        "P0": 2,
+        "P1": 1
+      },
+      "source_refs": [
+        "LAW24-S001",
+        "LAW24-S005",
+        "LAW24-S006",
+        "LAW24-S008",
+        "LAW24-S010",
+        "LAW24-S011"
+      ],
+      "queue_path": "data/acquisition/lake-allocator-war-wave-25/law21-est-09.jsonl",
+      "queue_rows": 4,
+      "queue_sha256": "513f3db64a28edd6d25be8b1b1ed3d81d65733711c7bf0a6c87a21e62d7e4c04",
+      "evidence_adjudicated": false,
+      "evidence_rows": 0,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "queue_ref": "LAW25-LAW21-EST-10",
+      "queue_sequence": 10,
+      "packet_ref": "LAW23-LAW21-EST-10",
+      "source_queue_ref": "LAW21-EST-10",
+      "source_task_ref": "LAW21-EST-10/T01",
+      "consumer_key": "us-executive-appointments-ethics-estate",
+      "queue_class": "split_authority_execution_queue",
+      "source_route_authority": "split_reviewed_wave_01_and_unreviewed_wave_02",
+      "task_authority": "split_reviewed_and_unreviewed_sources",
+      "source_acquisition_disposition": "partial_source_recovery",
+      "source_institutional_gate_state": "named_appointment_removal_and_policy_surfaces_partial_denominator",
+      "queue_state": "ready_for_targeted_acquisition",
+      "closure_task_count": 5,
+      "ready_task_count": 5,
+      "blocked_task_count": 0,
+      "gate_identification_task_count": 0,
+      "task_classes": {
+        "denominator_closure": 2,
+        "outcome_correction_recovery": 3
+      },
+      "priorities": {
+        "P0": 2,
+        "P2": 3
+      },
+      "source_refs": [
+        "LAW24-S019",
+        "LAW24-S020",
+        "LAW24-S021",
+        "LAW24-S022",
+        "LAW24-S012",
+        "LAW24-S024",
+        "LAW24-S025",
+        "LAW24-S026",
+        "LAW24-S027"
+      ],
+      "queue_path": "data/acquisition/lake-allocator-war-wave-25/law21-est-10.jsonl",
+      "queue_rows": 6,
+      "queue_sha256": "f072e510f07ca452767ccf1cd5d8713ad9cd78183819484a2b877aed54ae9afd",
+      "evidence_adjudicated": false,
+      "evidence_rows": 0,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "queue_ref": "LAW25-LAW21-EST-11",
+      "queue_sequence": 11,
+      "packet_ref": "LAW23-LAW21-EST-11",
+      "source_queue_ref": "LAW21-EST-11",
+      "source_task_ref": "LAW21-EST-11/T01",
+      "consumer_key": "us-legislative-political-finance-estate",
+      "queue_class": "unreviewed_acquisition_queue",
+      "source_route_authority": "unreviewed_wave_02_acquisition_only",
+      "task_authority": "unreviewed_intake_acquisition_only",
+      "source_acquisition_disposition": "bounded_public_record_recovered_gate_unspecified",
+      "source_institutional_gate_state": "no_bounded_institutional_gate_identified",
+      "queue_state": "gate_first_acquisition_required",
+      "closure_task_count": 3,
+      "ready_task_count": 1,
+      "blocked_task_count": 2,
+      "gate_identification_task_count": 1,
+      "task_classes": {
+        "denominator_closure": 2,
+        "gate_identification": 1
+      },
+      "priorities": {
+        "G0": 1,
+        "P0": 2
+      },
+      "source_refs": [
+        "LAW24-S016",
+        "LAW24-S017",
+        "LAW24-S018",
+        "LAW24-S028"
+      ],
+      "queue_path": "data/acquisition/lake-allocator-war-wave-25/law21-est-11.jsonl",
+      "queue_rows": 4,
+      "queue_sha256": "0ec147847851fbc6ce936c70d0593ba89f89fab200b5df35c3e62fcd101e4dc0",
+      "evidence_adjudicated": false,
+      "evidence_rows": 0,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    }
+  ],
+  "boundaries": {
+    "closure_queue_is_acquisition_execution": false,
+    "closure_task_is_evidence_row": false,
+    "task_priority_is_truth_or_merit_score": false,
+    "unavailable_obligation_is_null": false,
+    "gate_unspecified_packet_has_institutional_gate": false,
+    "downstream_task_may_bypass_gate_identification": false,
+    "queue_recurrence_is_prevalence": false,
+    "shared_source_is_relationship": false,
+    "reviewed_route_is_second_party_review": false,
+    "split_route_launders_unreviewed_intake": false,
+    "unreviewed_route_may_promote_finding": false,
+    "identity_created": false,
+    "relationship_created": false,
+    "participation_created": false,
+    "active_claim_created": false,
+    "hop_created": false,
+    "evidence_adjudicated": false,
+    "finding_promoted": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}

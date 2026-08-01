@@ -262,3 +262,8 @@ Wave 23 selects one lead acquisition packet from each of the eleven Wave 22 esta
 ## Allocator-war lead acquisition execution
 
 Wave 24 converts the eleven lead packets into eleven packet-specific acquisition ledgers containing sixty-two bounded acquisition rows. Nine packets retain partial institutional recoveries and two retain gate-unspecified public records. Complete denominators, evidence rows, findings, graph effects, and publication clearances remain zero. See `reports/lake-allocator-war-lead-execution-wave-24.md`.
+
+
+## Allocator-war denominator closure fan-out
+
+Wave 25 converts forty explicit missing-record obligations into eleven estate-owned closure queues. Thirty-six tasks are ready for targeted acquisition, while four downstream tasks remain blocked behind two gate-identification tasks. Evidence rows, findings, graph effects, and publication clearances remain zero. See `reports/lake-allocator-war-denominator-closure-wave-25.md`.
