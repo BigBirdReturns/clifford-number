@@ -4,12 +4,12 @@ on:
   push:
     branches: [agent/ssc-sg10-final-materializer]
     paths:
-      - '.github/tmp/ssc-sg10-nonworkflow.patch.xz.b64'
+      - '.github/tmp/ssc-sg10-nonworkflow.part-*.b64'
       - '.github/workflows/temporary-materialize-ssc-sg10-final.yml'
   pull_request:
     branches: [main]
     paths:
-      - '.github/tmp/ssc-sg10-nonworkflow.patch.xz.b64'
+      - '.github/tmp/ssc-sg10-nonworkflow.part-*.b64'
       - '.github/workflows/temporary-materialize-ssc-sg10-final.yml'
   workflow_dispatch:
 
@@ -30,9 +30,22 @@ jobs:
       - name: Verify and reconstruct bounded patch
         run: |
           set -Eeuo pipefail
-          payload=.github/tmp/ssc-sg10-nonworkflow.patch.xz.b64
-          test "$(sha256sum "$payload" | cut -d' ' -f1)" = fc0dfdb948c43c48622ef49b420f3f2eb710f0e694215d457efe561f9e637689
-          base64 -d "$payload" > /tmp/sg10.patch.xz
+          declare -A expected=(
+            [00]=1a39065bb99bf519f5f1883717f972c2a67396c514bc9f2ca2077372bd5f8e13
+            [01]=a642283727b86ee451c6baf516bd0c1a5043245595c02f741a390a7d72b499ce
+            [02]=54d5470a7b4eca93c43afa37af18c3433e531d8b628089fd083c3558a9299204
+            [03]=5f2f24aab030a2f68933c199ce92d9cc809ee46cbd8f6eacd7d70af6e8cc8ab2
+          )
+          : > /tmp/sg10.patch.xz.b64
+          for part in 00 01 02 03; do
+            file=".github/tmp/ssc-sg10-nonworkflow.part-${part}.b64"
+            test -f "$file"
+            test "$(sha256sum "$file" | cut -d' ' -f1)" = "${expected[$part]}"
+            cat "$file" >> /tmp/sg10.patch.xz.b64
+          done
+          test "$(wc -c < /tmp/sg10.patch.xz.b64)" -eq 31532
+          test "$(sha256sum /tmp/sg10.patch.xz.b64 | cut -d' ' -f1)" = fc0dfdb948c43c48622ef49b420f3f2eb710f0e694215d457efe561f9e637689
+          base64 -d /tmp/sg10.patch.xz.b64 > /tmp/sg10.patch.xz
           test "$(sha256sum /tmp/sg10.patch.xz | cut -d' ' -f1)" = 6aae4a724f09adf2589e110238788f11873fe7bff657bbc20002f9a48e91dcba
           xz -dc /tmp/sg10.patch.xz > /tmp/sg10.patch
           test "$(sha256sum /tmp/sg10.patch | cut -d' ' -f1)" = 848432dad675a535dce8058ba2b56716903f656918edc6b7da942321ae60c3b6
