@@ -1,21 +1,21 @@
 # Lake index gap summary
 
-Source fingerprint: `f929141a09d2b8b6cebaea44e7a98c38dc25402bb0588bb9fd06137abdad60cf`
+Source fingerprint: `074afe79775cd9695159d19c2681eef848e40580de5789da8fce8884e23815b2`
 
 ## Finding
 
-The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1456 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
+The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1461 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
 
 ## By evidence role
 
 | Role | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
-| generated_artifact | 594 | 594 | 0 | 0 |
-| project_governance | 182 | 182 | 0 | 0 |
+| generated_artifact | 595 | 595 | 0 | 0 |
+| project_governance | 183 | 183 | 0 | 0 |
 | repository_root | 142 | 142 | 0 | 0 |
 | intake | 141 | 141 | 0 | 0 |
-| documentation | 135 | 135 | 0 | 0 |
-| report_product | 110 | 110 | 0 | 0 |
+| documentation | 137 | 137 | 0 | 0 |
+| report_product | 111 | 111 | 0 | 0 |
 | research_record | 48 | 48 | 0 | 0 |
 | case_source | 43 | 43 | 0 | 0 |
 | receipt_artifact | 32 | 32 | 0 | 0 |
@@ -29,19 +29,19 @@ The current Git tree is physically censused, but the evidence lake is not semant
 |---|---:|---:|---:|---:|
 | build/estate-game-trails | 313 | 313 | 0 | 0 |
 | build/core-thesis | 184 | 184 | 0 | 0 |
-| data/project | 182 | 182 | 0 | 0 |
+| data/project | 183 | 183 | 0 | 0 |
 | data/intake | 141 | 141 | 0 | 0 |
 | reports/core-thesis | 96 | 96 | 0 | 0 |
-| docs/milestones | 71 | 71 | 0 | 0 |
+| docs/milestones | 72 | 72 | 0 | 0 |
 | data/research-tracks | 52 | 52 | 0 | 0 |
 | data/research | 48 | 48 | 0 | 0 |
 | data/estates | 43 | 43 | 0 | 0 |
 | data/acquisition | 33 | 33 | 0 | 0 |
-| build/lake-actions | 28 | 28 | 0 | 0 |
+| build/lake-actions | 29 | 29 | 0 | 0 |
 | cases/arcadia-field-autopsy | 21 | 21 | 0 | 0 |
 | receipts/crawl | 19 | 19 | 0 | 0 |
+| docs/methods | 16 | 16 | 0 | 0 |
 | build/estate-closures | 15 | 15 | 0 | 0 |
-| docs/methods | 15 | 15 | 0 | 0 |
 
 ## First repair queues
 
@@ -69,7 +69,7 @@ missing repository path tokens: 200
 ```text
 not reachable from any detected index: 0
 not reachable from authoritative roots: 0
-not reachable from public roots: 1212
+not reachable from public roots: 1217
 case IDs absent from public catalog: 26
 ```
 
@@ -79,6 +79,7 @@ case IDs absent from public catalog: 26
 |---|---:|
 | #529 Temporary recover SG-10 payload bytes | 27 |
 | #488 Converge production publication and preserve pre-assemblage origins | 25 |
+| #568 Temporary export exact SSC SG-10 live head | 22 |
 | #493 Temporary SG-06 historical carrier export | 21 |
 | #524 Review SSC-H01 Wave 02 and append stable-ground SG-10 | 21 |
 | #564 Temporary export exact SSC SG-10 a042 tree | 21 |
@@ -93,10 +94,9 @@ case IDs absent from public catalog: 26
 | #530 Temporary export exact Wave 02 review commit | 13 |
 | #531 Temporary export SSC Wave 02 reviewed transition | 13 |
 | #535 Temporary export exact SSC Wave 02 reviewed tree for SG-10 | 13 |
+| #563 Temporary materialize final SSC SG-10 estate | 13 |
 | #537 Review SSC-H01 Wave 02 and append SG-10 | 12 |
-| #563 Temporary materialize final SSC SG-10 estate | 12 |
 | #404 Recover exact source-bound cross-case mention recurrence | 11 |
-| #362 Stage biological Omega control-surface research program | 9 |
 
 ### P5 — history and semantics
 

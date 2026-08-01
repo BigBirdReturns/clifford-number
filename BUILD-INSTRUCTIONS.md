@@ -459,3 +459,9 @@ Closure queues are work-ordering surfaces, not evidence. Priority is not truth o
 Wave 26 executes only Wave 25 tasks already marked ready, records bounded source outcomes, preserves all blocked tasks, and moves newly eligible downstream work into a later-wave state rather than executing it immediately.
 
 Execution results remain acquisition records. Partial does not mean complete; unavailable-after-search is not null; a completed gate-identification task does not close its downstream denominator; a no-gate result does not foreclose future source-addressed gates. Evidence, findings, graph effects, and publication authority remain zero.
+
+
+3.26.1 **Allocator-war Wave 26 source-custody repair.**
+The public-interest institutional-gate result must cite the exact executive, Foreign Service, judicial, and procurement-control records that establish the gate. Status, hierarchy, demographic, electorate, and representation research may not substitute for institutional decision instruments.
+
+The repair changes source custody and generated hashes only. It does not change a result state, execute downstream work, close a denominator, adjudicate evidence, create a finding, alter the graph, or clear publication.
