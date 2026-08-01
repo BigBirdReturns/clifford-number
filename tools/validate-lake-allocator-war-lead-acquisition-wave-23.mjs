@@ -161,13 +161,10 @@ export function validateRepository(root = defaultRoot) {
         return false;
       }
     };
-    const isShallowRepository = () => {
+    const isAncestor = (ancestor, target) => {
       try {
-        return execFileSync('git', ['rev-parse', '--is-shallow-repository'], {
-          cwd: root,
-          encoding: 'utf8',
-          stdio: ['ignore', 'pipe', 'ignore']
-        }).trim() === 'true';
+        quietGit(['merge-base', '--is-ancestor', ancestor, target]);
+        return true;
       } catch {
         return false;
       }
@@ -176,27 +173,30 @@ export function validateRepository(root = defaultRoot) {
     const githubHeadRef = String(process.env.GITHUB_HEAD_REF ?? '').trim();
     const remoteHeadRef = githubHeadRef ? 'refs/remotes/origin/' + githubHeadRef : null;
     let ancestryTarget = 'HEAD';
+    let baseAvailable = hasCommit(baseCommit);
+    let ancestrySatisfied = baseAvailable && isAncestor(baseCommit, ancestryTarget);
 
-    if (process.env.GITHUB_ACTIONS === 'true' && remoteHeadRef) {
+    if (!ancestrySatisfied && process.env.GITHUB_ACTIONS === 'true' && remoteHeadRef) {
       try {
-        const fetchArgs = ['fetch', '--no-tags'];
-        if (isShallowRepository()) fetchArgs.push('--unshallow');
-        fetchArgs.push('origin', '+refs/heads/' + githubHeadRef + ':' + remoteHeadRef);
-        quietGit(fetchArgs);
+        quietGit([
+          'fetch',
+          '--no-tags',
+          '--depth=1000000',
+          'origin',
+          '+refs/heads/' + githubHeadRef + ':' + remoteHeadRef
+        ]);
       } catch {
         // The availability and ancestry checks below record bounded recovery failure.
       }
       if (hasCommit(remoteHeadRef)) ancestryTarget = remoteHeadRef;
+      baseAvailable = hasCommit(baseCommit);
+      ancestrySatisfied = baseAvailable && isAncestor(baseCommit, ancestryTarget);
     }
 
-    if (!hasCommit(baseCommit)) {
-      fail(errors, 'Wave 23 base checkpoint unavailable after targeted full-history recovery');
-    } else {
-      try {
-        quietGit(['merge-base', '--is-ancestor', baseCommit, ancestryTarget]);
-      } catch {
-        fail(errors, 'Wave 23 base checkpoint is not an ancestor');
-      }
+    if (!baseAvailable) {
+      fail(errors, 'Wave 23 base checkpoint unavailable after targeted deep-history recovery');
+    } else if (!ancestrySatisfied) {
+      fail(errors, 'Wave 23 base checkpoint is not an ancestor');
     }
   }
 
