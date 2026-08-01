@@ -26,9 +26,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Reconstruct and materialize candidate transition and SG-12
+      - name: Reconstruct, dynamically freeze, and materialize candidate transition and SG-12
         env:
-          EXPECTED_MAIN: 873597f8254b8fb67452ffbb4146e607afad770b
+          MINIMUM_MAIN: 873597f8254b8fb67452ffbb4146e607afad770b
           FINAL_PR_NUMBER: '655'
         run: |
           set -euo pipefail
@@ -36,6 +36,78 @@ jobs:
           echo '4a3fb8777f9b3f0f881de29dc1d36165a06e9cd2c75ce7dbf9ff68ccb202a98d  /tmp/sg12-materializer.b64' | sha256sum --check --strict
           base64 --decode /tmp/sg12-materializer.b64 | gzip --decompress > /tmp/materialize-sg12-candidate-wave.mjs
           echo 'f0b95e0ae9de7371cbc46c1f8b3909c9ba710d77e7f6fa416ee2924384473995  /tmp/materialize-sg12-candidate-wave.mjs' | sha256sum --check --strict
+          python <<'PY'
+          from pathlib import Path
+          target = Path('/tmp/materialize-sg12-candidate-wave.mjs')
+          source = target.read_text()
+          old = """const EXPECTED_MAIN = process.env.EXPECTED_MAIN;
+          if (!/^[0-9a-f]{40}$/.test(EXPECTED_MAIN || '')) throw new Error('EXPECTED_MAIN must be a full commit SHA');
+          const FINAL_PR_NUMBER = Number(process.env.FINAL_PR_NUMBER);
+          if (!Number.isInteger(FINAL_PR_NUMBER) || FINAL_PR_NUMBER <= 0) throw new Error('FINAL_PR_NUMBER must be a positive integer');
+          run('git', ['config', 'user.name', 'github-actions[bot]']);
+          run('git', ['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com']);
+          run('git', ['fetch', '--no-tags', 'origin', 'main']);
+          const liveMain = capture('git', ['rev-parse', 'origin/main']);
+          if (liveMain !== EXPECTED_MAIN) throw new Error(`main lease mismatch before materialization: ${EXPECTED_MAIN} -> ${liveMain}`);
+          run('git', ['checkout', '-B', 'agent/ssc-wave02-candidate-discovery-sg12', liveMain]);
+          """
+          new = """const MINIMUM_MAIN = process.env.MINIMUM_MAIN;
+          if (!/^[0-9a-f]{40}$/.test(MINIMUM_MAIN || '')) throw new Error('MINIMUM_MAIN must be a full commit SHA');
+          const FINAL_PR_NUMBER = Number(process.env.FINAL_PR_NUMBER);
+          if (!Number.isInteger(FINAL_PR_NUMBER) || FINAL_PR_NUMBER <= 0) throw new Error('FINAL_PR_NUMBER must be a positive integer');
+          run('git', ['config', 'user.name', 'github-actions[bot]']);
+          run('git', ['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com']);
+          run('git', ['fetch', '--no-tags', 'origin', 'main']);
+          const liveMain = capture('git', ['rev-parse', 'origin/main']);
+          const ancestry = spawnSync('git', ['merge-base', '--is-ancestor', MINIMUM_MAIN, liveMain], { cwd: root });
+          if (ancestry.status !== 0) throw new Error(`live main ${liveMain} is not descended from certified minimum ${MINIMUM_MAIN}`);
+          const interveningMainPaths = liveMain === MINIMUM_MAIN
+            ? []
+            : capture('git', ['diff', '--name-only', MINIMUM_MAIN, liveMain]).split(/\\n/).filter(Boolean).sort();
+          const protectedStartPatterns = [
+            /^package\\.json$/,
+            /^\\.github\\/workflows\\/(project-stable-ground-sg1[12]|status-sovereignty-wave-02-second-party-review)\\.yml$/,
+            /^data\\/project\\/project-stable-ground-/,
+            /^data\\/project\\/status-sovereignty-/,
+            /^data\\/research\\/status-sovereignty-wave-02-second-party-review-/,
+            /^schemas\\/status-sovereignty-wave-02-second-party-review-/,
+            /^docs\\/(ssc-wave-02-second-party-review-intake|milestones\\/(m05-status-sovereignty-wave-02-second-party-review|project-stable-ground-sg1[12]))\\.md$/,
+            /^tools\\/(build|validate)-(status-sovereignty-wave-02-second-party-review|project-stable-ground-sg1[12])\\.mjs$/,
+            /^test\\/(status-sovereignty-wave-02-second-party-review|project-stable-ground-sg1[12])\\.test\\.js$/,
+            /^build\\/core-thesis\\/status-sovereignty\\//,
+            /^reports\\/core-thesis\\/status-sovereignty\\//,
+            /^reports\\/core-thesis\\/stable-ground\\/sg1[12]\\//,
+            /^build\\/core-thesis\\/poof-clifford-ecology\\//,
+            /^reports\\/core-thesis\\/poof-clifford-ecology\\//,
+            /^data\\/project\\/poof-clifford-ecology-release-manifest\\.json$/,
+            /^tools\\/build-pages\\.mjs$/
+          ];
+          const interveningProtectedOverlap = interveningMainPaths.filter((rel) =>
+            protectedStartPatterns.some((pattern) => pattern.test(rel))
+          );
+          if (interveningProtectedOverlap.length) {
+            throw new Error(`main advanced across protected SG-12 paths:\\n${interveningProtectedOverlap.join('\\n')}`);
+          }
+          console.log(`certified dynamic start: ${MINIMUM_MAIN} -> ${liveMain}; ${interveningMainPaths.length} intervening paths; 0 protected overlaps`);
+          run('git', ['checkout', '-B', 'agent/ssc-wave02-candidate-discovery-sg12', liveMain]);
+          """
+          if old not in source:
+              raise SystemExit('static main-lease block missing')
+          source = source.replace(old, new)
+          old_summary = """  `main=${liveMain}`,
+            `final_pr=${FINAL_PR_NUMBER}`,
+          """
+          new_summary = """  `minimum_main=${MINIMUM_MAIN}`,
+            `main=${liveMain}`,
+            `intervening_main_paths=${interveningMainPaths.length}`,
+            'intervening_protected_overlap=0',
+            `final_pr=${FINAL_PR_NUMBER}`,
+          """
+          if old_summary not in source:
+              raise SystemExit('static summary block missing')
+          target.write_text(source.replace(old_summary, new_summary))
+          PY
+          echo 'd458c7193e387bf680f1af65bba47235a5e780a53198a0143144dbd064c8234f  /tmp/materialize-sg12-candidate-wave.mjs' | sha256sum --check --strict
           node --check /tmp/materialize-sg12-candidate-wave.mjs
           node /tmp/materialize-sg12-candidate-wave.mjs
       - name: Upload exact materializer receipt
