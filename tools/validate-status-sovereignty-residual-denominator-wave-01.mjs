@@ -55,7 +55,7 @@ ok(result?.reviewed_disposition_changed?.const === false && result?.graph_effect
 function validateAcquisition(root, receipt) {
 const lane = read(root, receipt.acquisition_path);
 ok(lane.schema_version === 'status-sovereignty-residual-execution@1', `${receipt.lane_id}: acquisition schema changed`);
-ok(lane.execution_id.startsWith(`SSC-${receipt.lane_id}`), `${receipt.lane_id}: execution id mismatch`);
+ok(lane.execution_id.startsWith(`SSC-${receipt.lane_id.replace('-', '')}`), `${receipt.lane_id}: execution id mismatch`);
 ok(lane.hypothesis_id === 'SSC-H01' && lane.parent_issue === 615 && lane.issue === receipt.issue, `${receipt.lane_id}: issue custody mismatch`);
 ok(lane.gate_id === receipt.gate_id && lane.observation_id === receipt.observation_id && lane.as_of === '2026-08-01', `${receipt.lane_id}: gate custody mismatch`);
 ok(lane.authority === 'source_acquisition_only_not_review_or_adjudication', `${receipt.lane_id}: authority escalated`);
