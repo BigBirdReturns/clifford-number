@@ -32,9 +32,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: npm
-      - name: Install exact repository dependencies
-        run: npm ci
       - name: Rebuild Wave 01 deterministic outputs
         run: node tools/build-status-sovereignty-residual-denominator-wave-01.mjs
       - name: Refuse generated drift
