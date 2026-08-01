@@ -1,4 +1,4 @@
-# Allocator-war estate acquisition execution Wave 23
+# Allocator-war lead acquisition launch Wave 23
 
 Wave 23 selects and equips the first acquisition front from the Wave 22 estate queues.
 
