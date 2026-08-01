@@ -178,14 +178,14 @@ export function validateWave01(context = loadWave01Context()) {
     eq(JSON.stringify(observedUsage), JSON.stringify(expectedUsage), `${source.source_id}: observation usage drift`);
   }
 
-  eq(hypothesis.status, 'canonical_field_hypothesis_wave_01_maintainer_reviewed_targeted_acquisition_open_no_prevalence_finding', 'Wave 01 parent hypothesis status');
+  eq(hypothesis.status, 'canonical_field_hypothesis_two_waves_maintainer_reviewed_open_no_prevalence_finding', 'Wave 01 parent hypothesis status');
   eq(hypothesis.current_state?.query_or_field_execution_started, true, 'Wave 01 parent execution state');
-  eq(hypothesis.current_state?.waves_executed, 1, 'Wave 01 parent wave count');
-  eq(hypothesis.current_state?.executed_lanes, 8, 'Wave 01 parent executed-lane count');
-  eq(hypothesis.current_state?.observations_retained, 14, 'Wave 01 parent retained count');
-  eq(hypothesis.current_state?.terminal_observations, 14, 'Wave 01 parent terminal count');
+  eq(hypothesis.current_state?.waves_executed, 2, 'Wave 01 parent wave count');
+  eq(hypothesis.current_state?.executed_lanes, 16, 'Wave 01 parent executed-lane count');
+  eq(hypothesis.current_state?.observations_retained, 22, 'Wave 01 parent retained count');
+  eq(hypothesis.current_state?.terminal_observations, 22, 'Wave 01 parent terminal count');
   eq(hypothesis.current_state?.complete_compact_findings, 0, 'Wave 01 parent complete compact count');
-  eq(hypothesis.current_state?.maintainer_reviewed_observations, 14, 'Wave 01 parent maintainer review count');
+  eq(hypothesis.current_state?.maintainer_reviewed_observations, 22, 'Wave 01 parent maintainer review count');
   eq(hypothesis.current_state?.second_party_reviewed_observations, 0, 'Wave 01 parent second-party review count');
   eq(hypothesis.current_state?.adjudicated_observations, 0, 'Wave 01 parent adjudication count');
   for (const key of ['prevalence_finding_generated','racial_order_finding_generated','coordination_finding_generated','common_purpose_finding_generated','personal_hostility_finding_generated']) {
@@ -193,19 +193,21 @@ export function validateWave01(context = loadWave01Context()) {
   }
   eq(hypothesis.current_state?.publication_status, 'blocked_pending_second_party_review_and_still_open_denominators', 'Wave 01 parent publication state');
   eq(hypothesis.current_state?.graph_effect, 'none', 'Wave 01 parent graph effect');
-  eq(hypothesis.field_waves?.length, 1, 'Wave 01 parent wave registry count');
+  eq(hypothesis.field_waves?.length, 2, 'Wave 01 parent wave registry count');
   eq(hypothesis.field_waves?.[0]?.wave_id, 'SSC-W01', 'Wave 01 parent wave registry identity');
+  eq(hypothesis.field_waves?.[1]?.wave_id, 'SSC-W02', 'Wave 02 successor wave registry identity');
 
-  eq(fanout.status, 'canonical_fanout_wave_01_maintainer_reviewed', 'Wave 01 fanout status');
+  eq(fanout.status, 'canonical_fanout_two_waves_maintainer_reviewed', 'Wave 01 fanout status');
   eq(fanout.counts?.query_or_field_execution_started, true, 'Wave 01 fanout execution state');
-  eq(fanout.counts?.waves_executed, 1, 'Wave 01 fanout wave count');
-  eq(fanout.counts?.executed_lanes, 8, 'Wave 01 fanout executed count');
-  eq(fanout.counts?.records_observed, 14, 'Wave 01 fanout observed count');
-  eq(fanout.counts?.records_retained, 14, 'Wave 01 fanout retained count');
-  eq(fanout.counts?.terminal_records, 14, 'Wave 01 fanout terminal count');
-  eq(fanout.waves?.length, 1, 'Wave 01 fanout wave registry count');
+  eq(fanout.counts?.waves_executed, 2, 'Wave 01 fanout wave count');
+  eq(fanout.counts?.executed_lanes, 16, 'Wave 01 fanout executed count');
+  eq(fanout.counts?.records_observed, 22, 'Wave 01 fanout observed count');
+  eq(fanout.counts?.records_retained, 22, 'Wave 01 fanout retained count');
+  eq(fanout.counts?.terminal_records, 22, 'Wave 01 fanout terminal count');
+  eq(fanout.waves?.length, 2, 'Wave 01 fanout wave registry count');
+  const wave02LaneCounts = { 'SSC-F01':1, 'SSC-F02':1, 'SSC-F03':1, 'SSC-F04':1, 'SSC-F08':1, 'SSC-F12':1, 'SSC-F13':1, 'SSC-F15':1 };
   for (const lane of fanout.lanes) {
-    const expected = expectedLaneCounts[lane.lane_id] ?? 0;
+    const expected = (expectedLaneCounts[lane.lane_id] ?? 0) + (wave02LaneCounts[lane.lane_id] ?? 0);
     eq(lane.execution?.started, expected > 0, `${lane.lane_id}: execution state`);
     eq(lane.execution?.records_observed, expected, `${lane.lane_id}: observed count`);
     eq(lane.execution?.records_retained, expected, `${lane.lane_id}: retained count`);
@@ -213,10 +215,11 @@ export function validateWave01(context = loadWave01Context()) {
     eq(lane.graph_effect, 'none', `${lane.lane_id}: graph effect`);
   }
 
-  eq(sourceRegistry.field_source_receipts?.length, 1, 'Wave 01 source-registry field receipt count');
-  eq(sourceRegistry.field_source_receipts?.[0]?.wave_id, 'SSC-W01', 'Wave 01 source-registry wave identity');
-  eq(sourceRegistry.counts?.field_source_records, 15, 'Wave 01 source-registry field source count');
-  eq(sourceRegistry.counts?.independently_reviewed_field_sources, 15, 'Wave 01 source-registry reviewed count');
+  eq(sourceRegistry.field_source_receipts?.length, 2, 'Wave 01 source-registry field receipt count');
+  const wave01Receipt = sourceRegistry.field_source_receipts?.find((row) => row.wave_id === 'SSC-W01');
+  eq(wave01Receipt?.records, 15, 'Wave 01 source-registry wave identity');
+  eq(sourceRegistry.counts?.field_source_records, 29, 'Wave 01 source-registry field source count');
+  eq(sourceRegistry.counts?.independently_reviewed_field_sources, 26, 'Wave 01 source-registry reviewed count');
   eq(sourceRegistry.counts?.field_source_bytes_preserved, 0, 'Wave 01 source-registry byte count');
   eq(sourceRegistry.boundaries?.normalized_fact_records_equal_source_bytes, false, 'Wave 01 normalized-fact boundary');
   eq(sourceRegistry.boundaries?.field_source_review_is_maintainer_review, false, 'Wave 01 review-authority boundary');
