@@ -465,3 +465,9 @@ Execution results remain acquisition records. Partial does not mean complete; un
 The public-interest institutional-gate result must cite the exact executive, Foreign Service, judicial, and procurement-control records that establish the gate. Status, hierarchy, demographic, electorate, and representation research may not substitute for institutional decision instruments.
 
 The repair changes source custody and generated hashes only. It does not change a result state, execute downstream work, close a denominator, adjudicate evidence, create a finding, alter the graph, or clear publication.
+
+
+3.27 **Allocator-war public-interest downstream execution — Wave 27.**
+Execute only the two public-interest rows marked `unblocked_for_next_wave` by the repaired Wave 26 gate. The deservingness-category row may recover formal programme, employment, contractor, grant, funding-recipient, and enforcement scope without treating that scope as a complete affected roster. The consequence row may recover formal authority and bounded correction controls without treating them as observed use or system-wide remedy adequacy.
+
+The two legislative and political-finance rows marked `blocked_no_qualifying_gate` receive no plan, source references, or synthetic result. Wave 27 creates no evidence row, finding, graph effect, or publication clearance.

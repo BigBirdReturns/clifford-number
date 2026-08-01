@@ -277,3 +277,8 @@ Wave 26 executes thirty-six ready closure tasks, preserves four blocked tasks, i
 ## Wave 26 public-interest gate source custody
 
 The Wave 26 public-interest gate is bound to nine exact executive, Foreign Service, judicial, and procurement-control sources. Research sources remain confined to the separate legislative no-gate search. The source-custody repair preserves both result states, two downstream public-interest tasks, two blocked legislative-finance tasks, and zero evidence, finding, graph, or publication effect. See `reports/lake-allocator-war-wave26-source-custody-repair.md`.
+
+
+## Allocator-war public-interest downstream Wave 27
+
+Wave 27 executes the two public-interest tasks unlocked by the repaired federal institutional gate. It records partial formal-category and consequence-and-correction recoveries, preserves the legislative and political-finance no-gate blocks, and retains zero complete denominators, evidence rows, findings, graph effects, or publication clearances. See `reports/lake-allocator-war-public-interest-downstream-wave-27.md`.

@@ -124,10 +124,15 @@ export function validateArtifacts(state) {
       'data/acquisition/lake-allocator-war-wave-26/law21-est-11.jsonl',
       'data/project/lake-allocator-war-wave26-source-custody-repair-policy.json',
       'docs/methods/lake-allocator-war-wave26-source-custody-repair.md',
-      'docs/milestones/lake-allocator-war-wave26-source-custody-repair.md'
+      'docs/milestones/lake-allocator-war-wave26-source-custody-repair.md',
+      'data/project/lake-allocator-war-public-interest-downstream-wave-27-policy.json',
+      'docs/methods/lake-allocator-war-public-interest-downstream-wave-27.md',
+      'docs/milestones/lake-allocator-war-public-interest-downstream-wave-27.md',
+      'data/acquisition/lake-allocator-war-wave-27/law21-est-05.jsonl',
+      'data/acquisition/lake-allocator-war-wave-27/law21-est-11.jsonl'
     ]],
-    ['allocator-war-lake-actions', [policy.paths.projection, policy.paths.reconciliation, 'build/lake-actions/allocator-war-estate-execution-wave-22.json', 'build/lake-actions/allocator-war-lead-acquisition-wave-23.json', 'build/lake-actions/allocator-war-lead-execution-wave-24.json', 'build/lake-actions/allocator-war-denominator-closure-wave-25.json', 'build/lake-actions/allocator-war-targeted-closure-wave-26.json', 'build/lake-actions/allocator-war-wave26-source-custody-repair.json']],
-    ['allocator-war-reports', [policy.paths.report, 'reports/lake-allocator-war-estate-execution-wave-22.md', 'reports/lake-allocator-war-lead-acquisition-wave-23.md', 'reports/lake-allocator-war-lead-execution-wave-24.md', 'reports/lake-allocator-war-denominator-closure-wave-25.md', 'reports/lake-allocator-war-targeted-closure-wave-26.md', 'reports/lake-allocator-war-wave26-source-custody-repair.md']]
+    ['allocator-war-lake-actions', [policy.paths.projection, policy.paths.reconciliation, 'build/lake-actions/allocator-war-estate-execution-wave-22.json', 'build/lake-actions/allocator-war-lead-acquisition-wave-23.json', 'build/lake-actions/allocator-war-lead-execution-wave-24.json', 'build/lake-actions/allocator-war-denominator-closure-wave-25.json', 'build/lake-actions/allocator-war-targeted-closure-wave-26.json', 'build/lake-actions/allocator-war-wave26-source-custody-repair.json', 'build/lake-actions/allocator-war-public-interest-downstream-wave-27-source-plan.json', 'build/lake-actions/allocator-war-public-interest-downstream-wave-27.json']],
+    ['allocator-war-reports', [policy.paths.report, 'reports/lake-allocator-war-estate-execution-wave-22.md', 'reports/lake-allocator-war-lead-acquisition-wave-23.md', 'reports/lake-allocator-war-lead-execution-wave-24.md', 'reports/lake-allocator-war-denominator-closure-wave-25.md', 'reports/lake-allocator-war-targeted-closure-wave-26.md', 'reports/lake-allocator-war-wave26-source-custody-repair.md', 'reports/lake-allocator-war-public-interest-downstream-wave-27.md']]
   ]);
   for (const [basinId, expectedPaths] of exactBasinPaths) {
     const basin = policy.basin_contract.find(row => row.basin_id === basinId);
@@ -314,7 +319,15 @@ export function validateRepository(root = defaultRoot) {
     'build/lake-actions/allocator-war-wave26-source-custody-repair.json',
     'reports/lake-allocator-war-wave26-source-custody-repair.md',
     'docs/methods/lake-allocator-war-wave26-source-custody-repair.md',
-    'docs/milestones/lake-allocator-war-wave26-source-custody-repair.md'
+    'docs/milestones/lake-allocator-war-wave26-source-custody-repair.md',
+    'data/project/lake-allocator-war-public-interest-downstream-wave-27-policy.json',
+    'docs/methods/lake-allocator-war-public-interest-downstream-wave-27.md',
+    'docs/milestones/lake-allocator-war-public-interest-downstream-wave-27.md',
+    'data/acquisition/lake-allocator-war-wave-27/law21-est-05.jsonl',
+    'data/acquisition/lake-allocator-war-wave-27/law21-est-11.jsonl',
+    'build/lake-actions/allocator-war-public-interest-downstream-wave-27-source-plan.json',
+    'build/lake-actions/allocator-war-public-interest-downstream-wave-27.json',
+    'reports/lake-allocator-war-public-interest-downstream-wave-27.md'
   ]) if (!lakePolicy.authoritative_roots.includes(relative)) fail(errors, `${relative}: missing authoritative root`);
 
   const pkg = readJson(root, 'package.json');

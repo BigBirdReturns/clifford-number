@@ -87,7 +87,15 @@ for (const relative of [
   'build/lake-actions/allocator-war-wave26-source-custody-repair.json',
   'reports/lake-allocator-war-wave26-source-custody-repair.md',
   'docs/methods/lake-allocator-war-wave26-source-custody-repair.md',
-  'docs/milestones/lake-allocator-war-wave26-source-custody-repair.md'
+  'docs/milestones/lake-allocator-war-wave26-source-custody-repair.md',
+  'data/project/lake-allocator-war-public-interest-downstream-wave-27-policy.json',
+  'docs/methods/lake-allocator-war-public-interest-downstream-wave-27.md',
+  'docs/milestones/lake-allocator-war-public-interest-downstream-wave-27.md',
+  'data/acquisition/lake-allocator-war-wave-27/law21-est-05.jsonl',
+  'data/acquisition/lake-allocator-war-wave-27/law21-est-11.jsonl',
+  'build/lake-actions/allocator-war-public-interest-downstream-wave-27-source-plan.json',
+  'build/lake-actions/allocator-war-public-interest-downstream-wave-27.json',
+  'reports/lake-allocator-war-public-interest-downstream-wave-27.md'
 ]) roots.add(relative);
 lakePolicy.authoritative_roots = [...roots].sort();
 lakePolicy.boundaries.allocator_war_routing_proves_finding = false;
