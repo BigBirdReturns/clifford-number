@@ -82,6 +82,17 @@ jobs:
           test "$(jq -r '.combined_sha256' data/project/status-sovereignty-release-manifest.json)" = 4587ef3565285a41a433ee460d97172d826f5a3f73c05fd1f0e4d1ebb36abf95
           test "$(jq -r '.combined_sha256' data/project/project-stable-ground-sg10-release-manifest.json)" = 33e94ab2d918a2338f61e3b921052aae133726a3d86c7cab81411f14b9ac6c53
           npm run release:check
+          git restore --worktree -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json
           test -z "$(git diff --name-only)"
           git diff --cached --name-only | sort > /tmp/observed-after-release
           diff -u /tmp/expected-paths /tmp/observed-after-release
