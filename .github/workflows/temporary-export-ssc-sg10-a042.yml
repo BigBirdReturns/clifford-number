@@ -1,0 +1,46 @@
+name: Temporary export exact SSC SG-10 a042 tree
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-export-ssc-sg10-a042.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-maintainer-review-sg10-v2
+          fetch-depth: 0
+      - name: Package exact target tree and history
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = a0429f0f0055d2d2de9ea6c15c4358aff278476a
+          repo="$GITHUB_WORKSPACE"
+          parent="$(dirname "$repo")"
+          base="$(basename "$repo")"
+          tar -C "$parent" --exclude="$base/.git" -cJf /tmp/ssc-sg10-a042-tree.tar.xz "$base"
+          git update-ref refs/heads/ssc-sg10-a042-export HEAD
+          git bundle create /tmp/ssc-sg10-a042.bundle refs/heads/ssc-sg10-a042-export
+          git update-ref -d refs/heads/ssc-sg10-a042-export
+          sha256sum /tmp/ssc-sg10-a042-tree.tar.xz > /tmp/ssc-sg10-a042-tree.tar.xz.sha256
+          sha256sum /tmp/ssc-sg10-a042.bundle > /tmp/ssc-sg10-a042.bundle.sha256
+          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/SSC-SG10-A042-COMMIT.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-sg10-a042-exact
+          path: |
+            /tmp/ssc-sg10-a042-tree.tar.xz
+            /tmp/ssc-sg10-a042-tree.tar.xz.sha256
+            /tmp/ssc-sg10-a042.bundle
+            /tmp/ssc-sg10-a042.bundle.sha256
+            /tmp/SSC-SG10-A042-COMMIT.txt
+          if-no-files-found: error
+          retention-days: 1
