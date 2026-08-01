@@ -17,6 +17,7 @@ parts=(
   '.github/tmp/wave32-source.part-09-3'
 )
 trigger='.github/tmp/wave32-source-trigger.json'
+export_trigger='.github/tmp/wave32-tree-export-trigger.json'
 runner='tools/run-wave32-source-materializer.sh'
 archive='/tmp/wave32-source.tar.gz'
 b64='/tmp/wave32-source.tar.gz.b64'
@@ -70,7 +71,7 @@ node --check tools/install-lake-allocator-war-wave-21.mjs
 node --check tools/validate-lake-allocator-war-wave-21.mjs
 node -e "for (const p of ['package.json','data/project/lake-allocator-war-wave-21-policy.json','data/project/lake-allocator-war-bounded-source-snapshots-wave-32-policy.json','data/project/lake-allocator-war-bounded-source-snapshots-wave-32-plan.json']) JSON.parse(require('fs').readFileSync(p,'utf8'));"
 
-rm -f "${parts[@]}" "$trigger" "$runner"
+rm -f "${parts[@]}" "$trigger" "$export_trigger" "$runner"
 rmdir .github/tmp 2>/dev/null || true
 
 git config user.name 'github-actions[bot]'
