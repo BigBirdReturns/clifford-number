@@ -231,6 +231,15 @@ function countReviewStates(responses) {
 export function buildSecondPartyReviewCampaign() {
   const context = loadSecondPartyReviewSources();
   const { campaign, candidates, responses } = context;
+  const pointer = read('data/project/project-stable-ground-current.json');
+  if (
+    pointer.current_checkpoint_id !== 'SG-2026-07-31-09' &&
+    candidates.records.length === 0 &&
+    responses.records.length === 0
+  ) {
+    console.log(`build-status-sovereignty-wave-01-second-party-review: historical zero-state preserved; current checkpoint ${pointer.current_checkpoint_id}; no write`);
+    return { ...context, historical: true, pointer };
+  }
   const packetRegistry = deriveSecondPartyPacketRegistry(context);
   const manifest = computeSecondPartyReviewManifest();
   const candidateCounts = countCandidateStates(candidates);

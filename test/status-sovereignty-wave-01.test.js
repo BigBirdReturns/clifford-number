@@ -39,7 +39,7 @@ const mutations = [
   ['parent execution erased', (c) => { c.hypothesis.current_state.query_or_field_execution_started = false; }, 'Wave 01 parent execution state'],
   ['parent finding invented', (c) => { c.hypothesis.current_state.common_purpose_finding_generated = true; }, 'Wave 01 parent common_purpose_finding_generated'],
   ['fanout lane erased', (c) => { c.fanout.lanes.find((row) => row.lane_id === 'SSC-F05').execution.started = false; }, 'SSC-F05: execution state'],
-  ['unexecuted lane invented', (c) => { const row = c.fanout.lanes.find((lane) => lane.lane_id === 'SSC-F01'); row.execution = { started: true, records_observed: 1, records_retained: 1, terminal_records: 1 }; }, 'SSC-F01: execution state'],
+  ['successor lane erased', (c) => { const row = c.fanout.lanes.find((lane) => lane.lane_id === 'SSC-F01'); row.execution.started = false; }, 'SSC-F01: execution state'],
   ['field source count inflated', (c) => { c.sourceRegistry.counts.field_source_records = 16; }, 'Wave 01 source-registry field source count'],
   ['field review laundered', (c) => { c.sourceRegistry.boundaries.field_source_review_is_maintainer_review = true; }, 'Wave 01 review-authority boundary'],
   ['release manifest drift', (c) => { c.manifest.combined_sha256 = 'f'.repeat(64); }, 'Wave 01 exact-byte manifest'],
