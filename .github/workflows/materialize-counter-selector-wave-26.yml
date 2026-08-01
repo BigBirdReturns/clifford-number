@@ -15,6 +15,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: counter-selector-wave-26-materializer
+  cancel-in-progress: true
+
 jobs:
   materialize:
     runs-on: ubuntu-latest
@@ -49,17 +53,18 @@ jobs:
           echo 'f6bfe530c3c8de4ed80804b0295a2bad9fb454f0196ef9f8d658225a36324be2  /tmp/counter-selector-wave-26.tar.gz' \
             | sha256sum --check --strict
           tar -xzf /tmp/counter-selector-wave-26.tar.gz -C .
-          rm -rf .github/materializers/counter-selector-wave-26
-          rm -f .github/workflows/materialize-counter-selector-wave-26.yml
+          cp .github/workflows/counter-selector-wave-26.yml /tmp/counter-selector-wave-26.yml
       - name: Build, validate, and attack Wave 26
         run: |
           set -euo pipefail
           node tools/build-counter-selector-wave-26.mjs
           node tools/validate-counter-selector-wave-26.mjs
           node test/counter-selector-wave-26.test.js
-      - name: Commit exact permanent Wave 26 estate
+      - name: Commit exact permanent non-workflow Wave 26 estate
         run: |
           set -euo pipefail
+          rm -rf .github/materializers/counter-selector-wave-26
+          rm -f .github/workflows/counter-selector-wave-26.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
@@ -69,8 +74,6 @@ jobs:
             .github/materializers/counter-selector-wave-26/payload-01 \
             .github/materializers/counter-selector-wave-26/payload-02 \
             .github/materializers/counter-selector-wave-26/payload-03 \
-            .github/workflows/materialize-counter-selector-wave-26.yml \
-            .github/workflows/counter-selector-wave-26.yml \
             data/project/counter-selector-wave-26-observability-pivot.json \
             data/project/counter-selector-wave-26-candidate-registry.json \
             data/project/counter-selector-wave-26-release-manifest.json \
@@ -95,12 +98,18 @@ jobs:
         run: |
           set -euo pipefail
           git restore --staged --worktree .
+          cp /tmp/counter-selector-wave-26.yml .github/workflows/counter-selector-wave-26.yml
           node tools/build-counter-selector-wave-26.mjs
           node tools/validate-counter-selector-wave-26.mjs
           node test/counter-selector-wave-26.test.js
-          git diff --exit-code
+          git diff --exit-code -- \
+            data/project/counter-selector-wave-26-candidate-registry.json \
+            data/project/counter-selector-wave-26-release-manifest.json \
+            reports/core-thesis/counter-selector-wave-26/data.json \
+            reports/core-thesis/counter-selector-wave-26/index.html
+          rm -f .github/workflows/counter-selector-wave-26.yml
           test -z "$(git status --porcelain)"
-      - name: Publish permanent Wave 26 head
+      - name: Publish permanent non-workflow Wave 26 head
         run: git push origin HEAD:agent/counter-selector-wave-26-observability-pivot
 
-# PR and push transport routes; evidence bytes remain archive-bound.
+# Workflow custody is completed by the GitHub connector after this runner publishes the tested non-workflow estate.
