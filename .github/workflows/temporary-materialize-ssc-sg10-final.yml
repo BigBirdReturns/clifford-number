@@ -1,0 +1,103 @@
+name: Temporary materialize SSC SG-10 final non-workflow estate
+
+on:
+  push:
+    branches: [agent/ssc-sg10-final-materializer]
+    paths:
+      - '.github/tmp/ssc-sg10-nonworkflow.patch.xz.b64'
+      - '.github/workflows/temporary-materialize-ssc-sg10-final.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/tmp/ssc-sg10-nonworkflow.patch.xz.b64'
+      - '.github/workflows/temporary-materialize-ssc-sg10-final.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify and reconstruct bounded patch
+        run: |
+          set -Eeuo pipefail
+          payload=.github/tmp/ssc-sg10-nonworkflow.patch.xz.b64
+          test "$(sha256sum "$payload" | cut -d' ' -f1)" = fc0dfdb948c43c48622ef49b420f3f2eb710f0e694215d457efe561f9e637689
+          base64 -d "$payload" > /tmp/sg10.patch.xz
+          test "$(sha256sum /tmp/sg10.patch.xz | cut -d' ' -f1)" = 6aae4a724f09adf2589e110238788f11873fe7bff657bbc20002f9a48e91dcba
+          xz -dc /tmp/sg10.patch.xz > /tmp/sg10.patch
+          test "$(sha256sum /tmp/sg10.patch | cut -d' ' -f1)" = 848432dad675a535dce8058ba2b56716903f656918edc6b7da942321ae60c3b6
+      - name: Apply exact patch to the clean review branch
+        env:
+          TARGET_BRANCH: agent/ssc-wave02-maintainer-review-sg10-v2
+          EXPECTED_HEAD: fe39ce09f71ab819fb2fc749f7e8120fc9f5bc89
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          git switch -C sg10-target "origin/$TARGET_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git apply --check --index /tmp/sg10.patch
+          git apply --index /tmp/sg10.patch
+          cat > /tmp/expected-paths <<'PATHS'
+          build/core-thesis/status-sovereignty/data.json
+          build/core-thesis/status-sovereignty/manifest.json
+          build/core-thesis/status-sovereignty/wave-02-review/data.json
+          build/core-thesis/status-sovereignty/wave-02-review/manifest.json
+          data/project/poof-clifford-ecology-release-manifest.json
+          data/project/project-stable-ground-current.json
+          data/project/project-stable-ground-sg10-release-manifest.json
+          data/project/project-stable-ground-sg10.json
+          data/project/status-sovereignty-compact.json
+          data/project/status-sovereignty-release-manifest.json
+          data/project/status-sovereignty-wave-02-maintainer-review-release-manifest.json
+          docs/milestones/project-stable-ground-sg10.md
+          package.json
+          reports/core-thesis/poof-clifford-ecology/release-manifest.json
+          reports/core-thesis/stable-ground/sg10/checkpoint.json
+          reports/core-thesis/stable-ground/sg10/index.html
+          reports/core-thesis/status-sovereignty/data.json
+          reports/core-thesis/status-sovereignty/index.html
+          reports/core-thesis/status-sovereignty/wave-02-review/data.json
+          reports/core-thesis/status-sovereignty/wave-02-review/index.html
+          test/project-stable-ground-sg09.test.js
+          test/project-stable-ground-sg10.test.js
+          tools/build-project-stable-ground-sg10.mjs
+          tools/validate-project-stable-ground-sg09.mjs
+          tools/validate-project-stable-ground-sg10.mjs
+          tools/validate-status-sovereignty-compact.mjs
+          PATHS
+          git diff --cached --name-only | sort > /tmp/observed-paths
+          sort -o /tmp/expected-paths /tmp/expected-paths
+          diff -u /tmp/expected-paths /tmp/observed-paths
+          test "$(wc -l < /tmp/observed-paths)" -eq 26
+          ! grep -Eq '^\.github/(tmp/|workflows/)' /tmp/observed-paths
+      - name: Validate the bounded non-workflow state
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-status-sovereignty-wave-02-review.mjs
+          node test/status-sovereignty-wave-02-review.test.js
+          node tools/validate-status-sovereignty-compact.mjs
+          node test/status-sovereignty-compact.test.js
+          node tools/validate-project-stable-ground-sg09.mjs
+          node test/project-stable-ground-sg09.test.js
+          test "$(jq -r '.current_state.open_acquisition_obligations' data/project/status-sovereignty-compact.json)" = 6
+          test "$(jq -r '.current_checkpoint_id' data/project/project-stable-ground-current.json)" = SG-2026-07-31-10
+          test "$(jq -r '.boundaries.graph_effect' data/project/project-stable-ground-sg10.json)" = none
+      - name: Publish the bounded non-workflow commit
+        env:
+          TARGET_BRANCH: agent/ssc-wave02-maintainer-review-sg10-v2
+        run: |
+          set -Eeuo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m 'Stage SG-10 non-workflow estate'
+          git push origin "HEAD:$TARGET_BRANCH"
