@@ -17,3 +17,5 @@ publication clearances:                  0
 Each task has a stable reference, deterministic priority, required output, closure test, allowed result states, and blocked promotion set. Queue admission does not establish estate adoption, evidentiary truth, second-party review, prevalence, coordination, common purpose, or a graph relationship.
 
 The next transition is execution against external and repository source routes, with source bytes or stable official identifiers, dated denominators, explicit nulls, failed paths, controls, and correction outcomes retained.
+
+Temporary connector workflow trigger. This line is removed by the immediately following byte-restore commit.
