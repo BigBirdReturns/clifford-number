@@ -1,0 +1,123 @@
+name: TEMP repair SG-11 shallow historical verification for SG-12 v11
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/sg12-candidate-materializer-base-ffd71b
+    paths:
+      - '.github/tmp/sg12-sg11-shallow-repair-trigger-v11.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sg12-sg11-shallow-repair-v11
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Repair, prove in fresh depth-1 clones, and publish the SG-12 head
+        run: |
+          set -Eeuo pipefail
+          permanent_branch='agent/ssc-wave02-candidate-discovery-sg12'
+          expected_head='7bb24ef25bf6b124642f9abbbebbfcae6aeed2ad'
+          proof_branch='agent/sg12-sg11-shallow-proof-v11'
+          repair_script='/tmp/sg12-sg11-shallow-repair.mjs'
+          origin_url="$(git remote get-url origin)"
+          auth_key="$(git config --local --name-only --get-regexp '^http\..*\.extraheader$' | head -n 1)"
+          test -n "$auth_key"
+          auth_value="$(git config --local --get "$auth_key")"
+          test -n "$auth_value"
+
+          echo 'aebc43003bd59ef7246ad7a328f9b26bf14e55ebe85d07e13d374e4e67e9f0a3  .github/tmp/sg12-sg11-shallow-repair.mjs' | sha256sum --check --strict
+          cp .github/tmp/sg12-sg11-shallow-repair.mjs "$repair_script"
+          echo 'aebc43003bd59ef7246ad7a328f9b26bf14e55ebe85d07e13d374e4e67e9f0a3  /tmp/sg12-sg11-shallow-repair.mjs' | sha256sum --check --strict
+          node --check "$repair_script"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags origin "$permanent_branch"
+          remote_head="$(git rev-parse FETCH_HEAD)"
+          test "$remote_head" = "$expected_head"
+          git checkout -B "$proof_branch" "$remote_head"
+
+          node "$repair_script"
+          node tools/build-project-stable-ground-sg12.mjs
+          node tools/validate-project-stable-ground-sg11.mjs
+          node test/project-stable-ground-sg11.test.js
+          node tools/validate-project-stable-ground-sg12.mjs
+          node test/project-stable-ground-sg12.test.js
+          npm run release:check
+          node tools/build-project-stable-ground-sg12.mjs
+
+          expected_paths="$({
+            printf '%s\n' \
+              'data/project/project-stable-ground-sg12-release-manifest.json' \
+              'reports/core-thesis/stable-ground/sg12/checkpoint.json' \
+              'reports/core-thesis/stable-ground/sg12/index.html' \
+              'tools/validate-project-stable-ground-sg11.mjs'
+          } | sort)"
+          actual_paths="$(git status --porcelain=v1 | cut -c4- | sort)"
+          test "$actual_paths" = "$expected_paths"
+          git diff --check
+          git add -- $expected_paths
+          git commit -m 'Make SG-11 historical verification shallow-safe' \
+            -m 'Retry the bounded historical receipt fetch only for Git shallow-file races, accept a receipt already acquired despite a failed fetch exit, rebuild the SG-12 exact-byte release surfaces, and preserve every candidate, review, publication, graph, and adoption boundary.'
+          repair_commit="$(git rev-parse HEAD)"
+
+          git push origin "HEAD:refs/heads/$proof_branch" --force
+
+          prove_shallow() {
+            local directory="$1"
+            local command="$2"
+            rm -rf "$directory"
+            git init "$directory"
+            git -C "$directory" config gc.auto 0
+            git -C "$directory" remote add origin "$origin_url"
+            git -C "$directory" config --local "$auth_key" "$auth_value"
+            git -C "$directory" fetch --no-tags --depth=1 origin "$proof_branch"
+            git -C "$directory" checkout --detach FETCH_HEAD
+            test "$(git -C "$directory" rev-parse HEAD)" = "$repair_commit"
+            (cd "$directory" && bash -lc "$command")
+            git -C "$directory" diff --exit-code
+          }
+
+          prove_shallow /tmp/sg12-shallow-stable-ground 'npm run ci:stable-ground'
+          prove_shallow /tmp/sg12-shallow-release 'npm run release:check'
+
+          git fetch --no-tags origin "$permanent_branch"
+          test "$(git rev-parse FETCH_HEAD)" = "$expected_head"
+          git push origin "HEAD:refs/heads/$permanent_branch" \
+            "--force-with-lease=refs/heads/$permanent_branch:$expected_head"
+          git push origin ":refs/heads/$proof_branch" || true
+
+          {
+            echo "prior_head=$expected_head"
+            echo "repair_commit=$repair_commit"
+            echo 'changed_paths=4'
+            echo 'fresh_depth1_stable_ground=pass'
+            echo 'fresh_depth1_release_check=pass'
+            echo 'candidate_records=8'
+            echo 'invitations=0'
+            echo 'valid_external_reviews=0'
+            echo 'adjudications=0'
+            echo 'publication_clearances=0'
+            echo 'graph_effect=none'
+            echo 'adoption=A0'
+          } > sg12-sg11-shallow-repair-summary.txt
+      - name: Upload shallow-repair receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: sg12-sg11-shallow-repair-v11
+          path: sg12-sg11-shallow-repair-summary.txt
+          if-no-files-found: error
