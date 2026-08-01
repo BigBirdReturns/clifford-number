@@ -1,0 +1,105 @@
+name: Repair Counter-Selector Wave 26 generated products
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-26-fix.yml'
+  push:
+    branches:
+      - 'agent/counter-selector-wave-26-observability-pivot'
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-26-fix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: counter-selector-wave-26-generated-product-repair
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/counter-selector-wave-26-observability-pivot
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct exact corrected report
+        run: |
+          set -euo pipefail
+          cat > /tmp/w26-report-blobs <<'EOF'
+          e245a43c5919242a177f0711221f8ef995e35e2b  .github/materializers/counter-selector-wave-26-fix/report-00
+          a6e991e42dc92b36e867da4e56064886a43de209  .github/materializers/counter-selector-wave-26-fix/report-01
+          e61d5b26ff6aa9853a0ff7689ae2ee4a3dedcebf  .github/materializers/counter-selector-wave-26-fix/report-02
+          8bb45f923ed70a69f16fa21a72ef858dca306220  .github/materializers/counter-selector-wave-26-fix/report-03
+          0c1b819f55ee992828ab71be752fb51273c382c5  .github/materializers/counter-selector-wave-26-fix/report-04
+          990e2df5775f22377a943bd6bb0e113b02f851dd  .github/materializers/counter-selector-wave-26-fix/report-05
+          EOF
+          while read -r expected path; do
+            actual="$(git hash-object "$path")"
+            test "$actual" = "$expected" || {
+              echo "repair-fragment mismatch: $path expected=$expected actual=$actual" >&2
+              exit 1
+            }
+          done < /tmp/w26-report-blobs
+          cat .github/materializers/counter-selector-wave-26-fix/report-* \
+            | base64 --decode \
+            > reports/core-thesis/counter-selector-wave-26/data.json
+          echo '731b2c4eb6438bd284c6e2aeb29886f19e063696cdac9698320c877fd1b8eaf0  reports/core-thesis/counter-selector-wave-26/data.json' \
+            | sha256sum --check --strict
+          test "$(git hash-object reports/core-thesis/counter-selector-wave-26/data.json)" = '44b8f24995303888228ee5299a3ad2f2b22cbe83'
+          test "$(git hash-object data/project/counter-selector-wave-26-release-manifest.json)" = 'a8efa761a3e858990d9b2a1269e4c90b6348415d'
+      - name: Build, validate, and attack corrected Wave 26
+        run: |
+          set -euo pipefail
+          node tools/build-counter-selector-wave-26.mjs
+          node tools/validate-counter-selector-wave-26.mjs
+          node test/counter-selector-wave-26.test.js
+          git diff --exit-code -- \
+            data/project/counter-selector-wave-26-candidate-registry.json \
+            data/project/counter-selector-wave-26-release-manifest.json \
+            reports/core-thesis/counter-selector-wave-26/data.json \
+            reports/core-thesis/counter-selector-wave-26/index.html
+      - name: Commit corrected report and retire repair fragments
+        run: |
+          set -euo pipefail
+          rm -rf .github/materializers/counter-selector-wave-26-fix
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          actual="$(git diff --cached --name-only | sort)"
+          expected="$(printf '%s\n' \
+            .github/materializers/counter-selector-wave-26-fix/report-00 \
+            .github/materializers/counter-selector-wave-26-fix/report-01 \
+            .github/materializers/counter-selector-wave-26-fix/report-02 \
+            .github/materializers/counter-selector-wave-26-fix/report-03 \
+            .github/materializers/counter-selector-wave-26-fix/report-04 \
+            .github/materializers/counter-selector-wave-26-fix/report-05 \
+            reports/core-thesis/counter-selector-wave-26/data.json | sort)"
+          test "$actual" = "$expected" || {
+            echo 'unexpected repaired paths' >&2
+            printf 'actual:\n%s\nexpected:\n%s\n' "$actual" "$expected" >&2
+            exit 1
+          }
+          git diff --cached --check
+          git commit -m 'Correct Counter-Selector Wave 26 generated custody'
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic corrected reconstruction
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          node tools/build-counter-selector-wave-26.mjs
+          node tools/validate-counter-selector-wave-26.mjs
+          node test/counter-selector-wave-26.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+      - name: Publish corrected non-workflow head
+        run: git push origin HEAD:agent/counter-selector-wave-26-observability-pivot
