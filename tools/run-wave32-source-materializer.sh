@@ -11,7 +11,10 @@ parts=(
   '.github/tmp/wave32-source.part-06'
   '.github/tmp/wave32-source.part-07'
   '.github/tmp/wave32-source.part-08'
-  '.github/tmp/wave32-source.part-09'
+  '.github/tmp/wave32-source.part-09-0'
+  '.github/tmp/wave32-source.part-09-1'
+  '.github/tmp/wave32-source.part-09-2'
+  '.github/tmp/wave32-source.part-09-3'
 )
 trigger='.github/tmp/wave32-source-trigger.json'
 runner='tools/run-wave32-source-materializer.sh'
