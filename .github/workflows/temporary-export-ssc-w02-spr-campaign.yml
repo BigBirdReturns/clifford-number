@@ -1,0 +1,52 @@
+name: Temporary export SSC-W02 review campaign head
+
+on:
+  push:
+    branches: [agent/ssc-w02-spr-campaign-export]
+    paths:
+      - '.github/workflows/temporary-export-ssc-w02-spr-campaign.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-export-ssc-w02-spr-campaign.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 04649fafcc517c0d7eef6279818dd309366eb49b
+          fetch-depth: 0
+      - name: Package exact campaign tree and history
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = 04649fafcc517c0d7eef6279818dd309366eb49b
+          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/CAMPAIGN-HEAD.txt
+          printf '%s\n' "$(git show -s --format=%T HEAD)" > /tmp/CAMPAIGN-TREE.txt
+          repo="$GITHUB_WORKSPACE"
+          parent="$(dirname "$repo")"
+          base="$(basename "$repo")"
+          tar -C "$parent" --exclude="$base/.git" -cJf /tmp/ssc-w02-spr-campaign-tree.tar.xz "$base"
+          git update-ref refs/heads/ssc-w02-spr-export HEAD
+          git bundle create /tmp/ssc-w02-spr-campaign.bundle refs/heads/ssc-w02-spr-export
+          git update-ref -d refs/heads/ssc-w02-spr-export
+          sha256sum /tmp/ssc-w02-spr-campaign-tree.tar.xz > /tmp/ssc-w02-spr-campaign-tree.tar.xz.sha256
+          sha256sum /tmp/ssc-w02-spr-campaign.bundle > /tmp/ssc-w02-spr-campaign.bundle.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-w02-spr-campaign
+          path: |
+            /tmp/ssc-w02-spr-campaign-tree.tar.xz
+            /tmp/ssc-w02-spr-campaign-tree.tar.xz.sha256
+            /tmp/ssc-w02-spr-campaign.bundle
+            /tmp/ssc-w02-spr-campaign.bundle.sha256
+            /tmp/CAMPAIGN-HEAD.txt
+            /tmp/CAMPAIGN-TREE.txt
+          if-no-files-found: error
+          retention-days: 1
