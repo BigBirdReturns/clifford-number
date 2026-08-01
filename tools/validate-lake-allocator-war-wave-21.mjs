@@ -71,10 +71,13 @@ export function validateArtifacts(state) {
       policy.paths.program_registry,
       policy.paths.receipt,
       'docs/methods/lake-allocator-war-wave-21.md',
-      'docs/milestones/lake-allocator-war-wave-21.md'
+      'docs/milestones/lake-allocator-war-wave-21.md',
+      'data/project/lake-allocator-war-estate-execution-wave-22-policy.json',
+      'docs/methods/lake-allocator-war-estate-execution-wave-22.md',
+      'docs/milestones/lake-allocator-war-estate-execution-wave-22.md'
     ]],
-    ['allocator-war-lake-actions', [policy.paths.projection, policy.paths.reconciliation]],
-    ['allocator-war-reports', [policy.paths.report]]
+    ['allocator-war-lake-actions', [policy.paths.projection, policy.paths.reconciliation, 'build/lake-actions/allocator-war-estate-execution-wave-22.json']],
+    ['allocator-war-reports', [policy.paths.report, 'reports/lake-allocator-war-estate-execution-wave-22.md']]
   ]);
   for (const [basinId, expectedPaths] of exactBasinPaths) {
     const basin = policy.basin_contract.find(row => row.basin_id === basinId);
@@ -196,7 +199,12 @@ export function validateRepository(root = defaultRoot) {
     policy.paths.reconciliation,
     policy.paths.report,
     'docs/methods/lake-allocator-war-wave-21.md',
-    'docs/milestones/lake-allocator-war-wave-21.md'
+    'docs/milestones/lake-allocator-war-wave-21.md',
+    'data/project/lake-allocator-war-estate-execution-wave-22-policy.json',
+    'build/lake-actions/allocator-war-estate-execution-wave-22.json',
+    'reports/lake-allocator-war-estate-execution-wave-22.md',
+    'docs/methods/lake-allocator-war-estate-execution-wave-22.md',
+    'docs/milestones/lake-allocator-war-estate-execution-wave-22.md'
   ]) if (!lakePolicy.authoritative_roots.includes(relative)) fail(errors, `${relative}: missing authoritative root`);
 
   const pkg = readJson(root, 'package.json');
@@ -243,11 +251,16 @@ export function validateRepository(root = defaultRoot) {
         policy.paths.program_registry,
         policy.paths.receipt,
         'docs/methods/lake-allocator-war-wave-21.md',
-        'docs/milestones/lake-allocator-war-wave-21.md'
+        'docs/milestones/lake-allocator-war-wave-21.md',
+        'data/project/lake-allocator-war-estate-execution-wave-22-policy.json',
+        'docs/methods/lake-allocator-war-estate-execution-wave-22.md',
+        'docs/milestones/lake-allocator-war-estate-execution-wave-22.md'
       ]) if (byPath.get(relative)?.basin_id !== 'allocator-war-source') fail(errors, `${relative}: wrong source basin`);
       if (byPath.get(policy.paths.projection)?.basin_id !== 'allocator-war-lake-actions') fail(errors, 'projection wrong basin');
       if (byPath.get(policy.paths.reconciliation)?.basin_id !== 'allocator-war-lake-actions') fail(errors, 'reconciliation wrong basin');
+      if (byPath.get('build/lake-actions/allocator-war-estate-execution-wave-22.json')?.basin_id !== 'allocator-war-lake-actions') fail(errors, 'Wave 22 projection wrong basin');
       if (byPath.get(policy.paths.report)?.basin_id !== 'allocator-war-reports') fail(errors, 'report wrong basin');
+      if (byPath.get('reports/lake-allocator-war-estate-execution-wave-22.md')?.basin_id !== 'allocator-war-reports') fail(errors, 'Wave 22 report wrong basin');
     }
   }
 

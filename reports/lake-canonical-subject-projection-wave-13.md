@@ -1,6 +1,6 @@
 # Canonical subject projection Wave 13
 
-Source fingerprint: `5f6e08c54c8ff0ee4421a1940fafc11ac677371111bf5f50be54ee37e07acd7f`
+Source fingerprint: `139407cdf475eff070e0845b80c293bc32a02e1376cf2638f3a7c2a38fc519a5`
 
 ## Projection census
 

@@ -247,3 +247,8 @@ remain byte-stable.
 ## Allocator-war lake waterline
 
 Wave 21 imports the reviewed allocator-war Wave 01 waterline and the unreviewed SSC Wave 02 frontier through exact commit-and-path custody. It exposes separate observation, findings-waterline, estate-acquisition, and program-feed registries while retaining zero graph and publication effect. See `reports/lake-allocator-war-wave-21.md`.
+
+
+## Allocator-war estate execution queues
+
+Wave 22 converts the eleven allocator-war estate feeds into 52 deterministic acquisition tasks while retaining reviewed, split-authority, and unreviewed-intake states. See `reports/lake-allocator-war-estate-execution-wave-22.md`.
