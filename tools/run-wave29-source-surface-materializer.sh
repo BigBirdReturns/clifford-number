@@ -23,7 +23,7 @@ echo "$base64_sha  /tmp/wave29-source-surface.tar.gz.b64" | sha256sum -c -
 base64 -d /tmp/wave29-source-surface.tar.gz.b64 > /tmp/wave29-source-surface.tar.gz
 echo "$archive_sha  /tmp/wave29-source-surface.tar.gz" | sha256sum -c -
 
-mapfile -t archive_paths < <(tar -tzf /tmp/wave29-source-surface.tar.gz | sed '/\/$/d' | sort)
+mapfile -t archive_paths < <(tar -tzf /tmp/wave29-source-surface.tar.gz | sed -e '/\/$/d' -e 's#^\./##' | sort)
 expected_paths=(
   '.github/workflows/lake-allocator-war-public-interest-execution-wave-29.yml'
   'data/project/lake-allocator-war-public-interest-execution-wave-29-policy.json'
