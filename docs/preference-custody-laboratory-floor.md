@@ -1,10 +1,10 @@
-# Preference custody laboratory floor v6
+# Preference custody laboratory floor v7
 
-The preference-custody laboratory joins eight deterministic controls into one minimum identification, package, agenda, and authority floor for issue [#594](https://github.com/BigBirdReturns/clifford-number/issues/594).
+The preference-custody laboratory joins nine deterministic controls into one minimum identification, package, succession, agenda, and authority floor for issue [#594](https://github.com/BigBirdReturns/clifford-number/issues/594).
 
-The controls remain synthetic. They create no graph effect, thesis evidence, real-world causal conclusion, preference-change finding, discrimination finding, legitimacy verdict, agenda-suppression finding, bargaining-denial finding, imposed-package finding, manipulation claim, or inference of intent. Their purpose is to establish what a real deployment must preserve before observed behavior can be narrated as population preference, population support, a complete public agenda, a negotiated collective agreement, distributional acceptability, or public authorization.
+The controls remain synthetic. They create no graph effect, thesis evidence, real-world causal conclusion, preference-change finding, discrimination finding, legitimacy verdict, agenda-suppression finding, bargaining-denial finding, package-imposition finding, stale-validation finding, unvalidated-deployment finding, manipulation claim, or inference of intent. Their purpose is to establish what a real deployment must preserve before observed behavior can be narrated as population preference, population support, a complete public agenda, a negotiated collective agreement, a current validated capability, distributional acceptability, or public authorization.
 
-## The eight-control floor
+## The nine-control floor
 
 ### PC-01: exposure-policy confounding
 
@@ -122,9 +122,34 @@ package terms require versioned custody
 
 The bargaining chain seals the conditional package rules, component poll, complete package version, representative mandates, bargaining instrument, group ratification, agreement or impasse disposition, and implementation consequence.
 
-## The identification, package, agenda, and authority ladder
+### PC-09: model, metric, policy, and validation succession
 
-A conforming real-world case must preserve eight distinct stages.
+Six succession worlds preserve one public headline:
+
+```text
+validated accuracy = 90%
+```
+
+The headline appears over materially different systems and consequences. Exact artifact and scope replay can inherit the original receipt. A changed runtime with no new validation is blocked even while the old badge remains visible. A changed metric can produce a current 90 percent result while remaining noncomparable to the earlier score without a crosswalk. An unchanged predictor can retain predictive validity while a new automatic-targeting policy remains blocked until its consequences are tested. A fully revalidated runtime, metric, and policy can carry a bounded successor claim. A changed runtime that scores 75 percent against an 85 percent threshold preserves the failed receipt, blocks deployment, and requires rollback despite the previous public 90 percent badge.
+
+```text
+validation binds exact artifact, metric, policy, and scope
+runtime change requires revalidation
+prompt, retrieval, or postprocess change requires revalidation
+metric change requires new validation and a comparability crosswalk
+policy change requires consequence validation
+same headline ≠ same measurement or scope
+old badge cannot authorize successor
+failed revalidation = negative evidence, not missing data
+rollback or abstention preserves the failed result
+publication claim requires current receipt and version
+```
+
+The succession chain seals the baseline artifact, metric, policy, benchmark, and validation receipt; the successor artifact and lineage diff; the revalidation or inheritance action; metric-comparability and policy-consequence evidence; the current claim eligibility; and the deployment, rollback, or abstention consequence.
+
+## The identification, package, succession, agenda, and authority ladder
+
+A conforming real-world case must preserve nine distinct stages.
 
 1. **Exposure policy.** Who was eligible, what each person could encounter, and whether assignment was logged or randomized.
 2. **Option set.** Every offered, excluded, rejected, unavailable, and never-generated alternative.
@@ -133,15 +158,16 @@ A conforming real-world case must preserve eight distinct stages.
 5. **Response mechanism.** Direct first choice, fallback, adaptation, compliance, conditional acceptance, or competing candidate explanations.
 6. **Attrition and refusal.** Complete disposition, denominator history, exit, churn, nonresponse, organized refusal, and the reasons those states were assigned.
 7. **Subgroup distribution.** Group denominators, assignment, outcomes, adaptation cost, burden, counterfactuals, and affected-group contestation.
-8. **Public authorization.** A binding affected-public instrument that defines the constituency and decision rule, preserves agenda and objective amendment, suspension, veto, challenge, appeal, and remedy, and changes the implementation state when the public approves, rejects, ratifies, or reaches impasse.
+8. **System succession and validation.** Exact runtime identity, model, prompt, retrieval, postprocessing, benchmark, metric, policy, validation receipt, lineage diff, crosswalk, policy-consequence test, public badge scope, and rollback or abstention history.
+9. **Public authorization.** A binding affected-public instrument that defines the constituency and decision rule, preserves agenda and objective amendment, suspension, veto, challenge, appeal, and remedy, and changes the implementation state when the public approves, rejects, ratifies, or reaches impasse.
 
-Passing a predictive benchmark answers fit under the tested instrument. It does not establish exogeneity of later behavior, completeness of the option set, legitimacy or completeness of the agenda, package-level acceptance, negotiated agreement, identification of the response mechanism, absence of dissent, population support, subgroup parity, acceptable burden, or authorization of the intervention. Human feedback and high package support remain advisory unless the governing instrument permits affected groups to negotiate terms, ratify the package, enforce obligations, and bind implementation.
+Passing a predictive benchmark answers fit under the tested instrument. It does not establish exogeneity of later behavior, completeness of the option set, legitimacy or completeness of the agenda, package-level acceptance, negotiated agreement, identification of the response mechanism, absence of dissent, population support, subgroup parity, acceptable burden, validity of a changed successor, consequence validity of a changed policy, or authorization of the intervention. Human feedback and high package support remain advisory unless the governing instrument permits affected groups to negotiate terms, ratify the package, enforce obligations, and bind implementation. A favorable historical badge remains historical unless its receipt identifies the current runtime, measurement, policy, and scope.
 
 ## Open frontiers
 
-The laboratory floor remains deliberately incomplete. It does not yet qualify dynamic preference change in an open environment, intertemporal and repeated bargaining, commitment after leadership or model succession, intersectional and unobserved group custody, federated or multilevel authority, successor legitimacy, or a real deployment chain from synthetic output through intervention and feedback reuse.
+The laboratory floor remains deliberately incomplete. It does not yet qualify dynamic preference change in an open environment, intertemporal and repeated bargaining, commitment after leadership or organizational succession, intersectional and unobserved group custody, cross-organizational vendor, customer, and regulator succession, federated or multilevel authority, successor legitimacy, or a real deployment chain from synthetic output through intervention and feedback reuse.
 
-Those remain open frontiers rather than being inferred from the eight controls.
+Those remain open frontiers rather than being inferred from the nine controls.
 
 ## Run
 
@@ -154,6 +180,7 @@ node tools/compile-preference-subgroup.mjs
 node tools/compile-preference-standing.mjs
 node tools/compile-preference-agenda.mjs
 node tools/compile-preference-package.mjs
+node tools/compile-preference-succession.mjs
 node tools/compile-preference-custody-manifest.mjs
 
 node tools/validate-performative-synthetic-constituency.mjs
@@ -164,6 +191,7 @@ node tools/validate-preference-subgroup.mjs
 node tools/validate-preference-standing.mjs
 node tools/validate-preference-agenda.mjs
 node tools/validate-preference-package.mjs
+node tools/validate-preference-succession.mjs
 node tools/validate-preference-custody-manifest.mjs
 
 node test/performative-synthetic-constituency.test.js
@@ -174,6 +202,7 @@ node test/preference-subgroup.test.js
 node test/preference-standing.test.js
 node test/preference-agenda.test.js
 node test/preference-package.test.js
+node test/preference-succession.test.js
 node test/preference-custody-manifest.test.js
 ```
 
@@ -186,6 +215,6 @@ build/research/preference-custody-laboratory-floor.md
 
 ## Promotion boundary
 
-A real case requires the model and version, source population and data window, complete question and option set, option-origin and amendment history, complete package terms and conditionality, representative mandates, concession and ratification records, enforceable obligations and reopen terms, attributed institutional and public dispositions, exposure and eligibility, complete disposition and denominator history, group denominators and burden distribution, counterfactual design, post-intervention outcomes, feedback reuse, a defined affected constituency, binding decision and bargaining rules with thresholds, enforceable agenda and objective-control rights, and an implementation or blocking receipt showing that the disposition carried consequence.
+A real case requires the runtime artifact identity and hashes, model and prompt lineage, retrieval and postprocessing versions, benchmark and data window, metric code and crosswalk, policy action and consequence test, baseline and successor validation receipts, public badge scope, rollback or abstention receipt, source population, complete question and option set, option-origin and amendment history, complete package terms and conditionality, representative mandates, concession and ratification records, enforceable obligations and reopen terms, attributed institutional and public dispositions, exposure and eligibility, complete disposition and denominator history, group denominators and burden distribution, counterfactual design, post-intervention outcomes, feedback reuse, a defined affected constituency, binding decision and bargaining rules with thresholds, enforceable agenda and objective-control rights, and an implementation or blocking receipt showing that the disposition carried consequence.
 
-The laboratory can refuse unsupported interpretation. It cannot grant publication authority to a real-world causal, bargaining-denial, package-imposition, agenda-suppression, or legitimacy claim.
+The laboratory can refuse unsupported interpretation. It cannot grant publication authority to a real-world causal, stale-validation, unvalidated-deployment, bargaining-denial, package-imposition, agenda-suppression, or legitimacy claim.

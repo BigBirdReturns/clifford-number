@@ -1,12 +1,13 @@
 export const PREFERENCE_CUSTODY_MANIFEST_SCHEMA_VERSION = 'preference-custody-control-manifest@1';
 export const PREFERENCE_CUSTODY_MANIFEST_BUILD_SCHEMA_VERSION = 'preference-custody-control-manifest-build@1';
 
-const REQUIRED_CONTROL_IDS = ['PC-01', 'PC-02', 'PC-03', 'PC-04', 'PC-05', 'PC-06', 'PC-07', 'PC-08'];
+const REQUIRED_CONTROL_IDS = ['PC-01', 'PC-02', 'PC-03', 'PC-04', 'PC-05', 'PC-06', 'PC-07', 'PC-08', 'PC-09'];
 const REQUIRED_FAILURE_CLASSES = [
   'agenda_formation_and_collective_option_generation',
   'attrition_and_refusal_censoring',
   'authority_laundering_and_nonbinding_consultation',
   'exposure_policy_confounding',
+  'model_metric_policy_and_validation_succession',
   'negotiated_package_formation_and_collective_bargaining',
   'observational_equivalence',
   'option_set_starvation',
@@ -20,7 +21,8 @@ const REQUIRED_IDENTIFICATION_STAGES = [
   'package_formation_and_bargaining',
   'public_authorization',
   'response_mechanism',
-  'subgroup_distribution'
+  'subgroup_distribution',
+  'system_succession_and_validation'
 ];
 
 function object(value) {
@@ -172,7 +174,7 @@ function summarizeControl(control, build) {
           forced_choice_support_identifies_objective_acceptance: build.classification?.forced_choice_support_identifies_objective_acceptance
         }
       };
-    default:
+    case 'PC-08':
       return {
         ...common,
         proof_summary: {
@@ -195,6 +197,34 @@ function summarizeControl(control, build) {
           bargaining_impasse_is_missing_preference_data: build.classification?.bargaining_impasse_is_missing_preference_data
         }
       };
+    default:
+      return {
+        ...common,
+        proof_summary: {
+          distinct_public_headline_signatures: build.metrics?.distinct_public_headline_signatures,
+          distinct_successor_artifact_signatures: build.metrics?.distinct_successor_artifact_signatures,
+          distinct_successor_metric_signatures: build.metrics?.distinct_successor_metric_signatures,
+          distinct_successor_policy_signatures: build.metrics?.distinct_successor_policy_signatures,
+          distinct_resolution_signatures: build.metrics?.distinct_resolution_signatures,
+          exact_inheritance_worlds: build.metrics?.exact_inheritance_worlds,
+          unvalidated_runtime_successor_worlds: build.metrics?.unvalidated_runtime_successor_worlds,
+          current_noncomparable_metric_worlds: build.metrics?.current_noncomparable_metric_worlds,
+          policy_validation_required_worlds: build.metrics?.policy_validation_required_worlds,
+          revalidated_successor_worlds: build.metrics?.revalidated_successor_worlds,
+          failed_revalidation_worlds: build.metrics?.failed_revalidation_worlds,
+          current_predictive_claim_worlds: build.metrics?.current_predictive_claim_worlds,
+          continuity_claim_worlds: build.metrics?.continuity_claim_worlds,
+          deployment_allowed_worlds: build.metrics?.deployment_allowed_worlds,
+          deployment_blocked_worlds: build.metrics?.deployment_blocked_worlds,
+          public_badge_unbound_worlds: build.metrics?.public_badge_unbound_worlds,
+          shared_headline_but_deployment_blocked_worlds: build.metrics?.shared_headline_but_deployment_blocked_worlds,
+          rollback_required_worlds: build.metrics?.rollback_required_worlds,
+          prior_validation_transfers_across_runtime_change: build.classification?.prior_validation_transfers_across_runtime_change,
+          same_score_under_changed_metric_is_comparable: build.classification?.same_score_under_changed_metric_is_comparable,
+          predictive_validation_authorizes_changed_policy: build.classification?.predictive_validation_authorizes_changed_policy,
+          public_badge_identifies_current_artifact: build.classification?.public_badge_identifies_current_artifact
+        }
+      };
   }
 }
 
@@ -209,7 +239,7 @@ export function validatePreferenceCustodyManifest(manifest) {
   if (manifest?.graph_effect !== 'none') errors.push('manifest graph_effect must remain none');
   requireFalse(manifest?.counts_toward_thesis_evidence, 'manifest counts_toward_thesis_evidence', errors);
   if (!sameMembers(controls.map(control => control.control_id), REQUIRED_CONTROL_IDS)) {
-    errors.push('manifest must contain exactly PC-01, PC-02, PC-03, PC-04, PC-05, PC-06, PC-07, and PC-08');
+    errors.push('manifest must contain exactly PC-01, PC-02, PC-03, PC-04, PC-05, PC-06, PC-07, PC-08, and PC-09');
   }
   if (!sameMembers(controls.map(control => control.failure_class), REQUIRED_FAILURE_CLASSES)) errors.push('manifest failure-class coverage is incomplete');
 
@@ -229,7 +259,7 @@ export function validatePreferenceCustodyManifest(manifest) {
   }
   if (unique(manifest?.open_frontiers).length < 5) errors.push('manifest must preserve at least five open frontiers');
   requireFalse(manifest?.promotion_boundary?.laboratory_controls_are_real_world_evidence, 'laboratory_controls_are_real_world_evidence', errors);
-  if (unique(manifest?.promotion_boundary?.real_case_requires).length < 20) errors.push('real-case promotion requirements are incomplete');
+  if (unique(manifest?.promotion_boundary?.real_case_requires).length < 28) errors.push('real-case promotion requirements are incomplete');
   if (!text(manifest?.promotion_boundary?.promotion_authority)) errors.push('promotion authority is required');
   if (!array(manifest?.prohibited_inferences).length) errors.push('prohibited inferences are required');
   if (!text(manifest?.interpretation_contract?.contract_id)) errors.push('interpretation contract ID is required');
@@ -292,7 +322,7 @@ export function validatePreferenceCustodyManifestBuild(compiled) {
   requireFalse(compiled?.counts_toward_thesis_evidence, 'compiled counts_toward_thesis_evidence', errors);
   requireFalse(compiled?.conclusion_generated, 'compiled conclusion_generated', errors);
   if (compiled?.real_world_evidence_state !== 'none') errors.push('compiled manifest must preserve real_world_evidence_state none');
-  if (compiled?.control_count !== 8) errors.push('compiled manifest must contain eight controls');
+  if (compiled?.control_count !== 9) errors.push('compiled manifest must contain nine controls');
   if (!sameMembers(compiled?.failure_classes, REQUIRED_FAILURE_CLASSES)) errors.push('compiled failure-class coverage is incomplete');
   if (!sameMembers(array(compiled?.controls).map(control => control.control_id), REQUIRED_CONTROL_IDS)) errors.push('compiled control IDs are incomplete');
 
@@ -317,6 +347,7 @@ export function validatePreferenceCustodyManifestBuild(compiled) {
   const pc6 = controls['PC-06'];
   const pc7 = controls['PC-07'];
   const pc8 = controls['PC-08'];
+  const pc9 = controls['PC-09'];
 
   if (!(pc1?.proof_summary?.maximum_naive_drift > 0.3)) errors.push('PC-01 must demonstrate material exposure drift');
   if (!(pc1?.proof_summary?.maximum_corrected_drift <= 1e-12)) errors.push('PC-01 corrected drift must recover the frozen distribution');
@@ -380,6 +411,28 @@ export function validatePreferenceCustodyManifestBuild(compiled) {
   if (pc8?.proof_summary?.synthetic_candidate_can_bind_representatives !== false) errors.push('PC-08 must refuse synthetic candidate authority over representatives');
   if (pc8?.proof_summary?.advisory_co_design_is_collective_agreement !== false) errors.push('PC-08 must refuse advisory co-design as collective agreement');
   if (pc8?.proof_summary?.bargaining_impasse_is_missing_preference_data !== false) errors.push('PC-08 must preserve bargaining impasse as a disposition');
+  if (pc9?.proof_summary?.distinct_public_headline_signatures !== 1) errors.push('PC-09 must preserve one public validation headline');
+  if (pc9?.proof_summary?.distinct_successor_artifact_signatures !== 4) errors.push('PC-09 must preserve four runtime artifact identities');
+  if (pc9?.proof_summary?.distinct_successor_metric_signatures !== 2) errors.push('PC-09 must preserve two metric identities');
+  if (pc9?.proof_summary?.distinct_successor_policy_signatures !== 2) errors.push('PC-09 must preserve two policy identities');
+  if (pc9?.proof_summary?.distinct_resolution_signatures !== 6) errors.push('PC-09 must preserve six succession consequences');
+  if (pc9?.proof_summary?.exact_inheritance_worlds !== 1) errors.push('PC-09 must preserve one exact inheritance world');
+  if (pc9?.proof_summary?.unvalidated_runtime_successor_worlds !== 1) errors.push('PC-09 must preserve one unvalidated runtime successor');
+  if (pc9?.proof_summary?.current_noncomparable_metric_worlds !== 1) errors.push('PC-09 must preserve one noncomparable metric world');
+  if (pc9?.proof_summary?.policy_validation_required_worlds !== 1) errors.push('PC-09 must preserve one changed-policy validation gap');
+  if (pc9?.proof_summary?.revalidated_successor_worlds !== 1) errors.push('PC-09 must preserve one fully revalidated successor');
+  if (pc9?.proof_summary?.failed_revalidation_worlds !== 1) errors.push('PC-09 must preserve one failed revalidation');
+  if (pc9?.proof_summary?.current_predictive_claim_worlds !== 4) errors.push('PC-09 must preserve four current predictive claim worlds');
+  if (pc9?.proof_summary?.continuity_claim_worlds !== 2) errors.push('PC-09 must preserve two continuity claim worlds');
+  if (pc9?.proof_summary?.deployment_allowed_worlds !== 3) errors.push('PC-09 must preserve three deployable worlds');
+  if (pc9?.proof_summary?.deployment_blocked_worlds !== 3) errors.push('PC-09 must preserve three blocked worlds');
+  if (pc9?.proof_summary?.public_badge_unbound_worlds !== 2) errors.push('PC-09 must preserve two unbound public badge worlds');
+  if (pc9?.proof_summary?.shared_headline_but_deployment_blocked_worlds !== 3) errors.push('PC-09 must preserve three shared-headline blocked worlds');
+  if (pc9?.proof_summary?.rollback_required_worlds !== 1) errors.push('PC-09 must preserve one rollback requirement');
+  if (pc9?.proof_summary?.prior_validation_transfers_across_runtime_change !== false) errors.push('PC-09 must refuse validation transfer across runtime change');
+  if (pc9?.proof_summary?.same_score_under_changed_metric_is_comparable !== false) errors.push('PC-09 must refuse same score as metric comparability');
+  if (pc9?.proof_summary?.predictive_validation_authorizes_changed_policy !== false) errors.push('PC-09 must refuse predictive validation as changed-policy authority');
+  if (pc9?.proof_summary?.public_badge_identifies_current_artifact !== false) errors.push('PC-09 must refuse badge as current artifact identity');
 
   if (!sameMembers(array(compiled?.identification_requirements).map(item => item.stage), REQUIRED_IDENTIFICATION_STAGES)) errors.push('compiled identification stages are incomplete');
   if (unique(compiled?.open_frontiers).length < 5) errors.push('compiled manifest must preserve open frontiers');
@@ -394,7 +447,7 @@ function percentage(value) {
 
 export function renderPreferenceCustodyManifestMarkdown(compiled) {
   const lines = [
-    '# Preference custody laboratory floor v6',
+    '# Preference custody laboratory floor v7',
     '',
     `**Status:** ${compiled.status}`,
     '',
@@ -455,7 +508,7 @@ export function renderPreferenceCustodyManifestMarkdown(compiled) {
         lines.push(`- Binding option-generation worlds: ${control.proof_summary.binding_collective_option_generation_worlds}`);
         lines.push(`- Binding objective-rejection worlds: ${control.proof_summary.binding_objective_rejection_worlds}`);
         break;
-      default:
+      case 'PC-08':
         lines.push(`- Distinct package versions: ${control.proof_summary.distinct_package_signatures}`);
         lines.push(`- Distinct package-support states: ${control.proof_summary.distinct_package_support_signatures}`);
         lines.push(`- Marginal-majority package support: ${percentage(control.proof_summary.marginal_majority_package_support_share)}`);
@@ -463,6 +516,18 @@ export function renderPreferenceCustodyManifestMarkdown(compiled) {
         lines.push(`- High-support nonagreement worlds: ${control.proof_summary.high_support_nonagreement_worlds}`);
         lines.push(`- Binding collective agreements: ${control.proof_summary.binding_collective_agreement_worlds}`);
         lines.push(`- Binding impasses: ${control.proof_summary.binding_impasse_worlds}`);
+        break;
+      default:
+        lines.push(`- Distinct runtime artifacts: ${control.proof_summary.distinct_successor_artifact_signatures}`);
+        lines.push(`- Distinct metrics: ${control.proof_summary.distinct_successor_metric_signatures}`);
+        lines.push(`- Distinct policies: ${control.proof_summary.distinct_successor_policy_signatures}`);
+        lines.push(`- Exact inheritance worlds: ${control.proof_summary.exact_inheritance_worlds}`);
+        lines.push(`- Unvalidated runtime successors: ${control.proof_summary.unvalidated_runtime_successor_worlds}`);
+        lines.push(`- Noncomparable metric worlds: ${control.proof_summary.current_noncomparable_metric_worlds}`);
+        lines.push(`- Changed-policy validation gaps: ${control.proof_summary.policy_validation_required_worlds}`);
+        lines.push(`- Fully revalidated successors: ${control.proof_summary.revalidated_successor_worlds}`);
+        lines.push(`- Failed revalidations: ${control.proof_summary.failed_revalidation_worlds}`);
+        lines.push(`- Shared-headline blocked worlds: ${control.proof_summary.shared_headline_but_deployment_blocked_worlds}`);
         break;
     }
     lines.push('');
