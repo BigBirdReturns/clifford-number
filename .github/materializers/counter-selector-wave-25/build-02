@@ -1,0 +1,32 @@
+eport.counts.supported_dimensions_after_update}</b>supported dimensions retained</article>
+<article class="card"><b>${report.counts.complete_operator_findings}</b>complete operators</article></div>
+<h2>Supported vector retained</h2><ul>${supported}</ul>
+<table><thead><tr><th>ID</th><th>Control</th><th>Admissibility</th><th>Finding</th><th>Surplus?</th></tr></thead><tbody>${rows}</tbody></table>
+<div class="boundary"><strong>Authority ceiling</strong><pre>same event ≠ normalized comparator
+joint success ≠ person surplus
+changed mandate ≠ comparable outcome
+missing comparator ≠ surplus
+seven dimensions ≠ rank
+internal audit ≠ external review</pre></div>
+</body></html>
+`;
+}
+
+export function buildAll() {
+  const source = readJson(SOURCE_PATH);
+  const registry = deriveRegistry(source);
+  fs.mkdirSync(path.dirname(path.join(ROOT, REGISTRY_PATH)), { recursive: true });
+  fs.writeFileSync(path.join(ROOT, REGISTRY_PATH), stableJson(registry));
+  const manifest = deriveManifest(source);
+  fs.writeFileSync(path.join(ROOT, MANIFEST_PATH), stableJson(manifest));
+  const report = deriveReport(source, registry, manifest);
+  fs.mkdirSync(path.dirname(path.join(ROOT, REPORT_PATH)), { recursive: true });
+  fs.writeFileSync(path.join(ROOT, REPORT_PATH), stableJson(report));
+  fs.writeFileSync(path.join(ROOT, HTML_PATH), renderHtml(report));
+  return { source, registry, manifest, report };
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const { registry } = buildAll();
+  console.log(`build-counter-selector-wave-25: ${registry.comparator_counts.tested} comparator lanes, ${registry.comparator_counts.valid_resource_normalized} valid normalized comparators`);
+}

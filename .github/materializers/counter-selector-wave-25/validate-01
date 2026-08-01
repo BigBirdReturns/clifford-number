@@ -1,0 +1,76 @@
+gs, 0);
+  assert.equal(counts.public_identity_profiles, 0);
+  assert.equal(counts.graph_effects, 0);
+  assert.equal(counts.adversarial_mutations, 64);
+
+  const adjudication = source.support_adjusted_surplus_adjudication;
+  assert.equal(adjudication.state, 'insufficient_evidence_after_matched_control_attack');
+  assert.equal(adjudication.dimension_support_added, false);
+  assert.equal(adjudication.valid_resource_normalized_comparator_acquired, false);
+  assert.equal(adjudication.contradicted, false);
+  assert.ok(adjudication.candidate_support_elements.length >= 6);
+  assert.ok(adjudication.why_support_is_not_added.length >= 5);
+
+  assert.equal(source.independent_review.issue_number, 597);
+  assert.equal(source.independent_review.responses_received, 0);
+  assert.equal(source.independent_review.reviews_executed, 0);
+  assert.equal(source.independent_review.internal_comparator_audit_counts_as_external_review, false);
+
+  const boundaryKeys = Object.keys(source.boundaries).filter(key => key !== 'graph_effect');
+  assert.equal(boundaryKeys.length, 40);
+  for (const key of boundaryKeys) assert.equal(source.boundaries[key], false, `boundary ${key} must be false`);
+  assert.equal(source.boundaries.graph_effect, 'none');
+
+  return true;
+}
+
+export function validateAll() {
+  const source = readJson(SOURCE_PATH);
+  validateSource(source);
+
+  const registry = readJson(REGISTRY_PATH);
+  const expectedRegistry = deriveRegistry(source);
+  sameJson(registry, expectedRegistry, 'registry');
+  assert.deepEqual(registry.comparator_counts, {
+    tested: 4,
+    partial: 2,
+    inadmissible: 1,
+    absent: 1,
+    valid_resource_normalized: 0
+  });
+  assert.equal(registry.adjudication.dimension_support_added, false);
+  assert.equal(registry.complete_operator_finding, false);
+  assert.equal(registry.field_test_eligible, false);
+  assert.equal(registry.external_reviews_executed, 0);
+  assert.equal(registry.graph_effect, 'none');
+
+  const manifest = readJson(MANIFEST_PATH);
+  const expectedManifest = deriveManifest(source);
+  sameJson(manifest, expectedManifest, 'manifest');
+  assert.deepEqual(manifest.entries.map(item => item.path), STATIC_MANIFEST_PATHS);
+  assert.equal(manifest.boundaries.exact_bytes_prove_valid_comparator, false);
+  assert.equal(manifest.boundaries.exact_bytes_prove_support_adjusted_surplus, false);
+  assert.equal(manifest.boundaries.exact_bytes_prove_complete_operator, false);
+  assert.equal(manifest.boundaries.graph_effect, 'none');
+
+  const report = readJson(REPORT_PATH);
+  const expectedReport = deriveReport(source, registry, manifest);
+  sameJson(report, expectedReport, 'report');
+  assert.equal(report.counts.valid_resource_normalized_comparators, 0);
+  assert.equal(report.counts.support_adjusted_surplus_supports_added, 0);
+  assert.equal(report.counts.complete_operator_findings, 0);
+  assert.equal(report.candidate.field_test_eligible, false);
+  assert.equal(report.release_manifest.combined_sha256, manifest.combined_sha256);
+
+  const html = fs.readFileSync(path.join(ROOT, HTML_PATH), 'utf8');
+  assert.equal(html, renderHtml(report), 'HTML drift');
+  assert.match(html, /ZERO VALID NORMALIZED COMPARATORS/);
+  assert.match(html, /internal audit ≠ external review/);
+
+  return { source, registry, manifest, report };
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  validateAll();
+  console.log('validate-counter-selector-wave-25: contract and products valid');
+}

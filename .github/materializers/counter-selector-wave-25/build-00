@@ -1,0 +1,89 @@
+#!/usr/bin/env node
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = process.cwd();
+const SOURCE_PATH = 'data/project/counter-selector-wave-25-support-adjusted-surplus.json';
+const REGISTRY_PATH = 'data/project/counter-selector-wave-25-comparator-registry.json';
+const MANIFEST_PATH = 'data/project/counter-selector-wave-25-release-manifest.json';
+const REPORT_PATH = 'reports/core-thesis/counter-selector-wave-25/data.json';
+const HTML_PATH = 'reports/core-thesis/counter-selector-wave-25/index.html';
+
+export const STATIC_MANIFEST_PATHS = [
+  '.github/workflows/counter-selector-wave-25.yml',
+  SOURCE_PATH,
+  'schemas/counter-selector-support-adjusted-surplus.schema.json',
+  'docs/methods/counter-selector-support-adjusted-surplus.md',
+  'docs/milestones/counter-selector-wave-25.md',
+  'tools/build-counter-selector-wave-25.mjs',
+  'tools/validate-counter-selector-wave-25.mjs',
+  'test/counter-selector-wave-25.test.js'
+];
+
+export function stableJson(value) {
+  return `${JSON.stringify(value, null, 2)}\n`;
+}
+
+export function sha256(buffer) {
+  return crypto.createHash('sha256').update(buffer).digest('hex');
+}
+
+export function readJson(relativePath) {
+  return JSON.parse(fs.readFileSync(path.join(ROOT, relativePath), 'utf8'));
+}
+
+export function deriveRegistry(source) {
+  return {
+    schema_version: 'counter-selector-wave-25-comparator-registry@1',
+    program_id: source.program_id,
+    wave_id: source.wave_id,
+    as_of: source.as_of,
+    status: source.status,
+    candidate_id: source.candidate.candidate_id,
+    candidate_supported_dimensions: source.candidate.supported_dimensions,
+    unresolved_dimension: source.candidate.unresolved_dimensions[0],
+    comparator_counts: {
+      tested: source.comparator_lanes.length,
+      partial: source.comparator_lanes.filter(item => item.admissibility === 'partial').length,
+      inadmissible: source.comparator_lanes.filter(item => item.admissibility === 'inadmissible').length,
+      absent: source.comparator_lanes.filter(item => item.admissibility === 'absent').length,
+      valid_resource_normalized: source.comparator_lanes.filter(item => item.admissibility === 'valid').length
+    },
+    comparators: source.comparator_lanes.map(item => ({
+      comparator_id: item.comparator_id,
+      label: item.label,
+      domain: item.domain,
+      admissibility: item.admissibility,
+      comparison_people: item.comparison_people,
+      support_adjusted_surplus_supported: item.support_adjusted_surplus_supported,
+      reason: item.reason
+    })),
+    adjudication: {
+      state: source.support_adjusted_surplus_adjudication.state,
+      dimension_support_added: source.support_adjusted_surplus_adjudication.dimension_support_added,
+      valid_resource_normalized_comparator_acquired:
+        source.support_adjusted_surplus_adjudication.valid_resource_normalized_comparator_acquired,
+      contradicted: source.support_adjusted_surplus_adjudication.contradicted
+    },
+    complete_operator_finding: source.candidate.complete_operator_finding,
+    field_test_eligible: source.candidate.field_test_eligible,
+    external_reviews_executed: source.independent_review.reviews_executed,
+    graph_effect: source.graph_effect
+  };
+}
+
+export function deriveManifest(source) {
+  const entries = STATIC_MANIFEST_PATHS.map(relativePath => {
+    const bytes = fs.readFileSync(path.join(ROOT, relativePath));
+    return {
+      path: relativePath,
+      sha256: sha256(bytes),
+      bytes: bytes.length
+    };
+  });
+  const combined = sha256(Buffer.from(entries.map(entry =>
+    `${entry.path}\t${entry.sha256}\t${entry.bytes}\n`).join(''), 'utf8'));
+  return {
+    schema_version: 'counter-selec
