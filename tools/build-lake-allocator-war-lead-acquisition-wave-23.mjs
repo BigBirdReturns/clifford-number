@@ -46,16 +46,6 @@ export function selectLeadTask(queue, policy) {
     })[0];
 }
 
-function graphDigests() {
-  return {
-    participation_sha256: digest(readJson('data/ledger/participation.jsonl'.replace('.jsonl', '.jsonl'))),
-    active_claims_sha256: digest(readJson('build/axm-identity.json').claims),
-    hop_edges_sha256: digest(readJson('build/hop-graph.json').edges),
-    rejected_hop_surfaces_sha256: digest(readJson('build/hop-graph.json').rejected_hop_surfaces),
-    rejected_hop_pairs_sha256: digest(readJson('build/hop-graph.json').rejected_hop_pairs)
-  };
-}
-
 function graphDigestsSafe() {
   const participation = fs.readFileSync(full('data/ledger/participation.jsonl'), 'utf8')
     .split(/\r?\n/)

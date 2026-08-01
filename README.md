@@ -252,3 +252,8 @@ Wave 21 imports the reviewed allocator-war Wave 01 waterline and the unreviewed 
 ## Allocator-war estate execution queues
 
 Wave 22 converts the eleven allocator-war estate feeds into 52 deterministic acquisition tasks while retaining reviewed, split-authority, and unreviewed-intake states. See `reports/lake-allocator-war-estate-execution-wave-22.md`.
+
+
+## Allocator-war lead acquisition launch
+
+Wave 23 selects one lead acquisition packet from each of the eleven Wave 22 estate queues and attaches official-first source families, exact receipt requirements, negative-search duties, and packet-specific future result ledgers. No evidence rows, findings, graph effects, or publication clearances are created. See `reports/lake-allocator-war-lead-acquisition-wave-23.md`.

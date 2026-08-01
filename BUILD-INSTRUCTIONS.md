@@ -435,3 +435,9 @@ Estate and program routing is one-way. It does not create a finding, identity, r
 The eleven Wave 21 estate routes compile into deterministic acquisition queues. Reviewed-only, split-authority, and unreviewed-only lanes remain distinct. Priority orders execution and does not score truth, merit, guilt, risk, or importance.
 
 Queue admission does not create estate adoption, evidence review, a finding, identity, relationship, participation, graph edge, prevalence, coordination, common purpose, or publication clearance.
+
+
+3.23 **Allocator-war lead acquisition launch — Wave 23.**
+One lead task per Wave 22 estate queue is selected by declared priority and source sequence, then equipped with an official-first retrieval contract and estate-specific source families. Lead selection is work ordering, not acquisition, review, truth, merit, prevalence, relationship, or estate adoption.
+
+Every packet retains authority state, controls, refusals, negative search, exact receipt fields, a separate future result-ledger path, zero evidence rows, zero graph effect, and blocked publication.

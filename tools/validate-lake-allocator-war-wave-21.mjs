@@ -74,10 +74,13 @@ export function validateArtifacts(state) {
       'docs/milestones/lake-allocator-war-wave-21.md',
       'data/project/lake-allocator-war-estate-execution-wave-22-policy.json',
       'docs/methods/lake-allocator-war-estate-execution-wave-22.md',
-      'docs/milestones/lake-allocator-war-estate-execution-wave-22.md'
+      'docs/milestones/lake-allocator-war-estate-execution-wave-22.md',
+      'data/project/lake-allocator-war-lead-acquisition-wave-23-policy.json',
+      'docs/methods/lake-allocator-war-lead-acquisition-wave-23.md',
+      'docs/milestones/lake-allocator-war-lead-acquisition-wave-23.md'
     ]],
-    ['allocator-war-lake-actions', [policy.paths.projection, policy.paths.reconciliation, 'build/lake-actions/allocator-war-estate-execution-wave-22.json']],
-    ['allocator-war-reports', [policy.paths.report, 'reports/lake-allocator-war-estate-execution-wave-22.md']]
+    ['allocator-war-lake-actions', [policy.paths.projection, policy.paths.reconciliation, 'build/lake-actions/allocator-war-estate-execution-wave-22.json', 'build/lake-actions/allocator-war-lead-acquisition-wave-23.json']],
+    ['allocator-war-reports', [policy.paths.report, 'reports/lake-allocator-war-estate-execution-wave-22.md', 'reports/lake-allocator-war-lead-acquisition-wave-23.md']]
   ]);
   for (const [basinId, expectedPaths] of exactBasinPaths) {
     const basin = policy.basin_contract.find(row => row.basin_id === basinId);
@@ -204,7 +207,12 @@ export function validateRepository(root = defaultRoot) {
     'build/lake-actions/allocator-war-estate-execution-wave-22.json',
     'reports/lake-allocator-war-estate-execution-wave-22.md',
     'docs/methods/lake-allocator-war-estate-execution-wave-22.md',
-    'docs/milestones/lake-allocator-war-estate-execution-wave-22.md'
+    'docs/milestones/lake-allocator-war-estate-execution-wave-22.md',
+    'data/project/lake-allocator-war-lead-acquisition-wave-23-policy.json',
+    'build/lake-actions/allocator-war-lead-acquisition-wave-23.json',
+    'reports/lake-allocator-war-lead-acquisition-wave-23.md',
+    'docs/methods/lake-allocator-war-lead-acquisition-wave-23.md',
+    'docs/milestones/lake-allocator-war-lead-acquisition-wave-23.md'
   ]) if (!lakePolicy.authoritative_roots.includes(relative)) fail(errors, `${relative}: missing authoritative root`);
 
   const pkg = readJson(root, 'package.json');

@@ -1,14 +1,14 @@
 # Lake index census
 
-Source fingerprint: `c52b5ab633d989f4efa5d9fa20941e887639b93e2c220975ee1daec7d2ca7cff`
+Source fingerprint: `5031228ffd4975b3f00f0eef95b2d56c1b3babd5f4dc87c67a7b1155d7f1433a`
 
 ## The six waterlines
 
 | Waterline | Count | Share of evidence files |
 |---|---:|---:|
-| Tracked evidence-bearing files physically present | 1401 | 100.0% |
-| Reachable from declared authoritative roots | 1401 | 100.0% |
-| Reachable from any detected index or manifest | 1401 | 100.0% |
+| Tracked evidence-bearing files physically present | 1406 | 100.0% |
+| Reachable from declared authoritative roots | 1406 | 100.0% |
+| Reachable from any detected index or manifest | 1406 | 100.0% |
 | Reachable from current public entry roots | 244 | 17.4% |
 | Exact orphan evidence files with no inbound repository reference | 0 | 0.0% |
 | Evidence files with no detected program owner | 0 | 0.0% |
@@ -43,9 +43,9 @@ report IDs:                              5
 ## Branch-shadow census
 
 ```text
-open pull requests observed:              46
-changed paths across open pull requests:  676
-branch-only paths observed:               209
+open pull requests observed:              48
+changed paths across open pull requests:  684
+branch-only paths observed:               219
 ```
 
 Open-PR paths are a shadow inventory only. They are not merged corpus, evidence truth, or publication state.
