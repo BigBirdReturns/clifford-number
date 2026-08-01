@@ -1,0 +1,46 @@
+name: Temporary export exact SSC Wave 02 reviewed tree for SG-10
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-export-ssc-wave02-sg10-final.yml'
+  push:
+    branches: [agent/ssc-wave02-sg10-final-export]
+    paths:
+      - '.github/workflows/temporary-export-ssc-wave02-sg10-final.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Export exact branch head tree and history
+        run: |
+          set -Eeuo pipefail
+          git fetch origin agent/ssc-wave02-sg10-final-export
+          git checkout --detach refs/remotes/origin/agent/ssc-wave02-sg10-final-export
+          head=$(git rev-parse HEAD)
+          printf '%s\n' "$head" > /tmp/SSC-W02-SG10-REVIEW-COMMIT.txt
+          git archive --format=tar "$head" | xz -T0 -9e > /tmp/ssc-wave02-sg10-review-tree.tar.xz
+          git bundle create /tmp/ssc-wave02-sg10-review.bundle --all
+          sha256sum /tmp/ssc-wave02-sg10-review-tree.tar.xz > /tmp/ssc-wave02-sg10-review-tree.tar.xz.sha256
+          sha256sum /tmp/ssc-wave02-sg10-review.bundle > /tmp/ssc-wave02-sg10-review.bundle.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-sg10-review-export
+          path: |
+            /tmp/ssc-wave02-sg10-review-tree.tar.xz
+            /tmp/ssc-wave02-sg10-review-tree.tar.xz.sha256
+            /tmp/ssc-wave02-sg10-review.bundle
+            /tmp/ssc-wave02-sg10-review.bundle.sha256
+            /tmp/SSC-W02-SG10-REVIEW-COMMIT.txt
+          if-no-files-found: error
+          retention-days: 1
