@@ -218,7 +218,7 @@ assert.throws(() => compilePreferenceTrustFederationFixture(expectedFlagLeak), /
 const authorityLaundering = structuredClone(fixture);
 const authorityState = authorityLaundering.worlds.find(world => world.world_id === 'technical-revocation-without-contractual-authority').organization_states.find(state => state.org_id === 'ORG-CUSTOMER');
 authorityState.contractual_authority = true;
-assert.throws(() => compilePreferenceTrustFederationFixture(authorityLaundering), /contractual_authority_gap_present mismatch/);
+assert.throws(() => compilePreferenceTrustFederationFixture(authorityLaundering), /blocked replay under retained contractual authority must preserve blocked implementation|contractual_authority_gap_present mismatch/);
 
 const publicRightsInflation = structuredClone(fixture);
 const publicState = publicRightsInflation.worlds.find(world => world.world_id === 'technical-recovery-notification-remedy-gap').organization_states.find(state => state.org_id === 'ORG-PUBLIC');
@@ -233,7 +233,8 @@ authorityConclusionLeak.expected_classification.binding_public_authority_support
 assert.ok(validatePreferenceTrustFederationFixture(authorityConclusionLeak).some(error => /binding_public_authority_supported/.test(error)));
 
 const tamperedBuild = structuredClone(compiled);
-tamperedBuild.worlds[0].custody_chain[4].payload.full_revocation_delivery = false;
+const tamperedWorld = tamperedBuild.worlds.find(world => world.world_id === 'complete-federated-recovery');
+tamperedWorld.custody_chain[4].payload.full_revocation_delivery = false;
 assert.ok(validatePreferenceTrustFederationBuild(tamperedBuild).some(error => /hash mismatch/.test(error)));
 
 const metricInflation = structuredClone(compiled);

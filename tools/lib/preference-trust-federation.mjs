@@ -150,7 +150,7 @@ function validateOrganizationState(state, worldId, baseline, orgById, errors) {
   }
   if (state?.implementation_state === 'compromised_active' && (state?.artifact_state !== 'compromised_retained' || state?.residual_exposure_count <= 0)) errors.push(`world ${worldId} organization ${orgId} compromised_active requires a retained compromised artifact and positive residual exposure`);
   if (state?.replay_state === 'success' && state?.clean_input_access !== 'full') errors.push(`world ${worldId} organization ${orgId} successful replay requires full clean-input access`);
-  if (state?.replay_state === 'blocked' && state?.implementation_state !== 'blocked') errors.push(`world ${worldId} organization ${orgId} blocked replay must preserve blocked implementation`);
+  if (state?.replay_state === 'blocked' && state?.contractual_authority !== false && state?.implementation_state !== 'blocked') errors.push(`world ${worldId} organization ${orgId} blocked replay under retained contractual authority must preserve blocked implementation`);
   if (state?.trust_epoch !== baseline.federation_epoch && state?.artifact_state === 'clean_current') errors.push(`world ${worldId} organization ${orgId} cannot carry a current clean artifact under a stale trust epoch`);
 }
 
