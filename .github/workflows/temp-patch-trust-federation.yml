@@ -1,0 +1,44 @@
+name: TEMP patch trust-federation validator
+
+on:
+  push:
+    branches:
+      - research/preference-trust-federation-v1
+    paths:
+      - 'tools/temp-patch-trust-federation.mjs'
+      - '.github/workflows/temp-patch-trust-federation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-retire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/preference-trust-federation-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Apply exact validator repair
+        run: node tools/temp-patch-trust-federation.mjs
+      - name: Qualify focused and integrated controls before publication
+        run: |
+          node tools/compile-preference-trust-federation.mjs
+          node tools/validate-preference-trust-federation.mjs
+          node test/preference-trust-federation.test.js
+          node tools/compile-preference-custody-manifest-v13.mjs
+          node tools/validate-preference-custody-manifest-v13.mjs
+          node test/preference-custody-manifest-v13.test.js
+      - name: Retire temporary transport and publish repair
+        run: |
+          rm tools/temp-patch-trust-federation.mjs
+          rm .github/workflows/temp-patch-trust-federation.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Repair trust-federation authority-gap validation'
+          git push origin HEAD:research/preference-trust-federation-v1
