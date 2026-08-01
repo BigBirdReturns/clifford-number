@@ -12,6 +12,12 @@ const repairs = [
     before: "assert.throws(() => compilePreferenceTrustFederationFixture(authorityLaundering), /contractual_authority_gap_present mismatch/);",
     after: "assert.throws(() => compilePreferenceTrustFederationFixture(authorityLaundering), /blocked replay under retained contractual authority must preserve blocked implementation|contractual_authority_gap_present mismatch/);",
     label: 'authority-laundering refusal expectation'
+  },
+  {
+    path: 'test/preference-trust-federation.test.js',
+    before: "const tamperedBuild = structuredClone(compiled);\ntamperedBuild.worlds[0].custody_chain[4].payload.full_revocation_delivery = false;\nassert.ok(validatePreferenceTrustFederationBuild(tamperedBuild).some(error => /hash mismatch/.test(error)));",
+    after: "const tamperedBuild = structuredClone(compiled);\nconst tamperedWorld = tamperedBuild.worlds.find(world => world.world_id === 'complete-federated-recovery');\ntamperedWorld.custody_chain[4].payload.full_revocation_delivery = false;\nassert.ok(validatePreferenceTrustFederationBuild(tamperedBuild).some(error => /hash mismatch/.test(error)));",
+    label: 'custody-tamper target selection'
   }
 ];
 
