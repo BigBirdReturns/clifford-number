@@ -28,30 +28,30 @@ const ancestry = spawnSync('git', ['merge-base', '--is-ancestor', MINIMUM_MAIN, 
 if (ancestry.status !== 0) throw new Error(`live main ${liveMain} is not descended from certified minimum ${MINIMUM_MAIN}`);
 const interveningMainPaths = liveMain === MINIMUM_MAIN
   ? []
-  : capture('git', ['diff', '--name-only', MINIMUM_MAIN, liveMain]).split(/\\n/).filter(Boolean).sort();
+  : capture('git', ['diff', '--name-only', MINIMUM_MAIN, liveMain]).split(/\n/).filter(Boolean).sort();
 const protectedStartPatterns = [
-  /^package\\.json$/,
-  /^\\.github\\/workflows\\/(project-stable-ground-sg1[12]|status-sovereignty-wave-02-second-party-review)\\.yml$/,
-  /^data\\/project\\/project-stable-ground-/,
-  /^data\\/project\\/status-sovereignty-/,
-  /^data\\/research\\/status-sovereignty-wave-02-second-party-review-/,
-  /^schemas\\/status-sovereignty-wave-02-second-party-review-/,
-  /^docs\\/(ssc-wave-02-second-party-review-intake|milestones\\/(m05-status-sovereignty-wave-02-second-party-review|project-stable-ground-sg1[12]))\\.md$/,
-  /^tools\\/(build|validate)-(status-sovereignty-wave-02-second-party-review|project-stable-ground-sg1[12])\\.mjs$/,
-  /^test\\/(status-sovereignty-wave-02-second-party-review|project-stable-ground-sg1[12])\\.test\\.js$/,
-  /^build\\/core-thesis\\/status-sovereignty\\//,
-  /^reports\\/core-thesis\\/status-sovereignty\\//,
-  /^reports\\/core-thesis\\/stable-ground\\/sg1[12]\\//,
-  /^build\\/core-thesis\\/poof-clifford-ecology\\//,
-  /^reports\\/core-thesis\\/poof-clifford-ecology\\//,
-  /^data\\/project\\/poof-clifford-ecology-release-manifest\\.json$/,
-  /^tools\\/build-pages\\.mjs$/
+  /^package\.json$/,
+  /^\.github\/workflows\/(project-stable-ground-sg1[12]|status-sovereignty-wave-02-second-party-review)\.yml$/,
+  /^data\/project\/project-stable-ground-/,
+  /^data\/project\/status-sovereignty-/,
+  /^data\/research\/status-sovereignty-wave-02-second-party-review-/,
+  /^schemas\/status-sovereignty-wave-02-second-party-review-/,
+  /^docs\/(ssc-wave-02-second-party-review-intake|milestones\/(m05-status-sovereignty-wave-02-second-party-review|project-stable-ground-sg1[12]))\.md$/,
+  /^tools\/(build|validate)-(status-sovereignty-wave-02-second-party-review|project-stable-ground-sg1[12])\.mjs$/,
+  /^test\/(status-sovereignty-wave-02-second-party-review|project-stable-ground-sg1[12])\.test\.js$/,
+  /^build\/core-thesis\/status-sovereignty\//,
+  /^reports\/core-thesis\/status-sovereignty\//,
+  /^reports\/core-thesis\/stable-ground\/sg1[12]\//,
+  /^build\/core-thesis\/poof-clifford-ecology\//,
+  /^reports\/core-thesis\/poof-clifford-ecology\//,
+  /^data\/project\/poof-clifford-ecology-release-manifest\.json$/,
+  /^tools\/build-pages\.mjs$/
 ];
 const interveningProtectedOverlap = interveningMainPaths.filter((rel) =>
   protectedStartPatterns.some((pattern) => pattern.test(rel))
 );
 if (interveningProtectedOverlap.length) {
-  throw new Error(`main advanced across protected SG-12 paths:\\n${interveningProtectedOverlap.join('\\n')}`);
+  throw new Error(`main advanced across protected SG-12 paths:\n${interveningProtectedOverlap.join('\n')}`);
 }
 console.log(`certified dynamic start: ${MINIMUM_MAIN} -> ${liveMain}; ${interveningMainPaths.length} intervening paths; 0 protected overlaps`);
 run('git', ['checkout', '-B', 'agent/ssc-wave02-candidate-discovery-sg12', liveMain]);
@@ -69,20 +69,39 @@ run('git', ['checkout', '-B', 'agent/ssc-wave02-candidate-discovery-sg12', liveM
 """
   ),
   (
-    "const base = loadSg11HistoricalContext({ historicalVerifier: () => [] });\\nassert.deepEqual(validateSg11(base), []);",
-    "const base = loadSg11HistoricalContext({ historicalVerifier: () => [] });\\nconst clone = () => {\\n  const { historicalVerifier, ...data } = base;\\n  return { ...structuredClone(data), historicalVerifier };\\n};\\nassert.deepEqual(validateSg11(base), []);"
+    "const base = loadSg11HistoricalContext({ historicalVerifier: () => [] });\nassert.deepEqual(validateSg11(base), []);",
+    "const base = loadSg11HistoricalContext({ historicalVerifier: () => [] });\nconst clone = () => {\n  const { historicalVerifier, ...data } = base;\n  return { ...structuredClone(data), historicalVerifier };\n};\nassert.deepEqual(validateSg11(base), []);"
   ),
   (
-    "for (const mutate of cases) {\\n  const context = structuredClone(base);\\n  mutate(context);\\n  assert.ok(validateSg11(context).length > 0);\\n}",
-    "for (const mutate of cases) {\\n  const context = clone();\\n  mutate(context);\\n  assert.ok(validateSg11(context).length > 0);\\n}"
+    "for (const mutate of cases) {\n  const context = structuredClone(base);\n  mutate(context);\n  assert.ok(validateSg11(context).length > 0);\n}",
+    "for (const mutate of cases) {\n  const context = clone();\n  mutate(context);\n  assert.ok(validateSg11(context).length > 0);\n}"
   ),
   (
-    "const base = loadSg12Context({ gitVerifier: () => [] });\\nassert.deepEqual(validateSg12(base), []);",
-    "const base = loadSg12Context({ gitVerifier: () => [] });\\nconst clone = () => {\\n  const { gitVerifier, ...data } = base;\\n  return { ...structuredClone(data), gitVerifier };\\n};\\nassert.deepEqual(validateSg12(base), []);"
+    "const base = loadSg12Context({ gitVerifier: () => [] });\nassert.deepEqual(validateSg12(base), []);",
+    "const base = loadSg12Context({ gitVerifier: () => [] });\nconst clone = () => {\n  const { gitVerifier, ...data } = base;\n  return { ...structuredClone(data), gitVerifier };\n};\nassert.deepEqual(validateSg12(base), []);"
   ),
   (
-    "for (const [name, mutate] of cases) {\\n  const context = structuredClone(base);\\n  mutate(context);\\n  assert.ok(validateSg12(context).length > 0, name);\\n}",
-    "for (const [name, mutate] of cases) {\\n  const context = clone();\\n  mutate(context);\\n  assert.ok(validateSg12(context).length > 0, name);\\n}"
+    "for (const [name, mutate] of cases) {\n  const context = structuredClone(base);\n  mutate(context);\n  assert.ok(validateSg12(context).length > 0, name);\n}",
+    "for (const [name, mutate] of cases) {\n  const context = clone();\n  mutate(context);\n  assert.ok(validateSg12(context).length > 0, name);\n}"
+  ),
+  (
+    """  pointer.history.push({
+    checkpoint_id: sg12.checkpoint_id,
+    path: 'data/project/project-stable-ground-sg12.json',
+    trigger_commit: CANDIDATE,
+    status: 'current'
+  });""",
+    """  pointer.history.push({
+    checkpoint_id: sg12.checkpoint_id,
+    path: 'data/project/project-stable-ground-sg12.json',
+    transition_base: liveMain,
+    trigger_commit: CANDIDATE,
+    status: 'current'
+  });"""
+  ),
+  (
+    "eq(currentRow?.trigger_commit, trigger.transition_commit, 'SG-12 pointer trigger receipt');\\n",
+    "eq(currentRow?.trigger_commit, trigger.transition_commit, 'SG-12 pointer trigger receipt');\\neq(currentRow?.transition_base, trigger.transition_base, 'SG-12 pointer transition base receipt');\\n"
   )
 ]
 
