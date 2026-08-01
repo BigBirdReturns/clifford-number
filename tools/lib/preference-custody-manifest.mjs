@@ -1,9 +1,9 @@
 export const PREFERENCE_CUSTODY_MANIFEST_SCHEMA_VERSION = 'preference-custody-control-manifest@1';
 export const PREFERENCE_CUSTODY_MANIFEST_BUILD_SCHEMA_VERSION = 'preference-custody-control-manifest-build@1';
 
-const REQUIRED_CONTROL_IDS = ['PC-01', 'PC-02', 'PC-03'];
-const REQUIRED_FAILURE_CLASSES = ['exposure_policy_confounding', 'observational_equivalence', 'option_set_starvation'];
-const REQUIRED_IDENTIFICATION_STAGES = ['exposure_policy', 'option_set', 'public_authorization', 'response_mechanism'];
+const REQUIRED_CONTROL_IDS = ['PC-01', 'PC-02', 'PC-03', 'PC-04'];
+const REQUIRED_FAILURE_CLASSES = ['attrition_and_refusal_censoring', 'exposure_policy_confounding', 'observational_equivalence', 'option_set_starvation'];
+const REQUIRED_IDENTIFICATION_STAGES = ['attrition_and_refusal', 'exposure_policy', 'option_set', 'public_authorization', 'response_mechanism'];
 
 function object(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -73,14 +73,30 @@ function summarizeControl(control, build) {
       }
     };
   }
+  if (control.control_id === 'PC-03') {
+    return {
+      ...common,
+      proof_summary: {
+        distinct_latent_world_signatures: build.metrics?.distinct_latent_world_signatures,
+        distinct_observation_signatures: build.metrics?.distinct_observation_signatures,
+        maximum_pairwise_latent_total_variation: build.metrics?.maximum_pairwise_latent_total_variation,
+        latent_first_choice_identification: build.classification?.latent_first_choice_identification,
+        response_mechanism_identification: build.classification?.response_mechanism_identification
+      }
+    };
+  }
   return {
     ...common,
     proof_summary: {
-      distinct_latent_world_signatures: build.metrics?.distinct_latent_world_signatures,
-      distinct_observation_signatures: build.metrics?.distinct_observation_signatures,
-      maximum_pairwise_latent_total_variation: build.metrics?.maximum_pairwise_latent_total_variation,
-      latent_first_choice_identification: build.classification?.latent_first_choice_identification,
-      response_mechanism_identification: build.classification?.response_mechanism_identification
+      distinct_headline_signatures: build.metrics?.distinct_headline_signatures,
+      distinct_full_outcome_signatures: build.metrics?.distinct_full_outcome_signatures,
+      distinct_mechanism_signatures: build.metrics?.distinct_mechanism_signatures,
+      observed_total_range: build.metrics?.observed_total_range,
+      exit_total_range: build.metrics?.exit_total_range,
+      nonresponse_total_range: build.metrics?.nonresponse_total_range,
+      preference_change_identification: build.classification?.preference_change_identification_from_headline,
+      strategic_refusal_identification: build.classification?.strategic_refusal_identification_from_headline,
+      population_support_identification: build.classification?.population_support_identification_from_headline
     }
   };
 }
@@ -95,7 +111,7 @@ export function validatePreferenceCustodyManifest(manifest) {
   if (manifest?.status !== 'synthetic_control_floor') errors.push('manifest status must remain synthetic_control_floor');
   if (manifest?.graph_effect !== 'none') errors.push('manifest graph_effect must remain none');
   requireFalse(manifest?.counts_toward_thesis_evidence, 'manifest counts_toward_thesis_evidence', errors);
-  if (!sameMembers(controls.map(control => control.control_id), REQUIRED_CONTROL_IDS)) errors.push('manifest must contain exactly PC-01, PC-02, and PC-03');
+  if (!sameMembers(controls.map(control => control.control_id), REQUIRED_CONTROL_IDS)) errors.push('manifest must contain exactly PC-01, PC-02, PC-03, and PC-04');
   if (!sameMembers(controls.map(control => control.failure_class), REQUIRED_FAILURE_CLASSES)) errors.push('manifest failure-class coverage is incomplete');
 
   const fixtureIds = controls.map(control => text(control?.fixture_id));
@@ -177,7 +193,7 @@ export function validatePreferenceCustodyManifestBuild(compiled) {
   requireFalse(compiled?.counts_toward_thesis_evidence, 'compiled counts_toward_thesis_evidence', errors);
   requireFalse(compiled?.conclusion_generated, 'compiled conclusion_generated', errors);
   if (compiled?.real_world_evidence_state !== 'none') errors.push('compiled manifest must preserve real_world_evidence_state none');
-  if (compiled?.control_count !== 3) errors.push('compiled manifest must contain three controls');
+  if (compiled?.control_count !== 4) errors.push('compiled manifest must contain four controls');
   if (!sameMembers(compiled?.failure_classes, REQUIRED_FAILURE_CLASSES)) errors.push('compiled failure-class coverage is incomplete');
   if (!sameMembers(array(compiled?.controls).map(control => control.control_id), REQUIRED_CONTROL_IDS)) errors.push('compiled control IDs are incomplete');
 
@@ -196,6 +212,7 @@ export function validatePreferenceCustodyManifestBuild(compiled) {
   const pc1 = array(compiled?.controls).find(control => control.control_id === 'PC-01');
   const pc2 = array(compiled?.controls).find(control => control.control_id === 'PC-02');
   const pc3 = array(compiled?.controls).find(control => control.control_id === 'PC-03');
+  const pc4 = array(compiled?.controls).find(control => control.control_id === 'PC-04');
   if (!(pc1?.proof_summary?.maximum_naive_drift > 0.3)) errors.push('PC-01 must demonstrate material exposure drift');
   if (!(pc1?.proof_summary?.maximum_corrected_drift <= 1e-12)) errors.push('PC-01 corrected drift must recover the frozen distribution');
   if (!(pc2?.proof_summary?.distinct_observation_signatures >= 2)) errors.push('PC-02 must demonstrate distinct observations from one population');
@@ -203,6 +220,12 @@ export function validatePreferenceCustodyManifestBuild(compiled) {
   if (!(pc3?.proof_summary?.distinct_latent_world_signatures >= 3)) errors.push('PC-03 must preserve at least three latent worlds');
   if (pc3?.proof_summary?.distinct_observation_signatures !== 1) errors.push('PC-03 must preserve one shared observation signature');
   if (!(pc3?.proof_summary?.maximum_pairwise_latent_total_variation >= 0.3)) errors.push('PC-03 must preserve material latent separation');
+  if (pc4?.proof_summary?.distinct_headline_signatures !== 1) errors.push('PC-04 must preserve one shared normalized headline');
+  if (!(pc4?.proof_summary?.distinct_full_outcome_signatures >= 3)) errors.push('PC-04 must preserve at least three distinct full outcomes');
+  if (!(pc4?.proof_summary?.distinct_mechanism_signatures >= 3)) errors.push('PC-04 must preserve at least three distinct disposition mechanisms');
+  if (!(pc4?.proof_summary?.observed_total_range >= 250)) errors.push('PC-04 must preserve material denominator variation');
+  if (!(pc4?.proof_summary?.exit_total_range >= 250)) errors.push('PC-04 must preserve material exit variation');
+  if (!(pc4?.proof_summary?.nonresponse_total_range >= 250)) errors.push('PC-04 must preserve material nonresponse variation');
 
   if (!sameMembers(array(compiled?.identification_requirements).map(item => item.stage), REQUIRED_IDENTIFICATION_STAGES)) errors.push('compiled identification stages are incomplete');
   if (unique(compiled?.open_frontiers).length < 5) errors.push('compiled manifest must preserve open frontiers');
@@ -217,7 +240,7 @@ function percentage(value) {
 
 export function renderPreferenceCustodyManifestMarkdown(compiled) {
   const lines = [
-    '# Preference custody laboratory floor v1',
+    '# Preference custody laboratory floor v2',
     '',
     `**Status:** ${compiled.status}`,
     '',
@@ -240,10 +263,16 @@ export function renderPreferenceCustodyManifestMarkdown(compiled) {
     } else if (control.control_id === 'PC-02') {
       lines.push(`- Distinct observations from one population: ${control.proof_summary.distinct_observation_signatures}`);
       lines.push(`- Maximum inadmissible full-vector drift: ${percentage(control.proof_summary.maximum_naive_full_vector_drift)}`);
-    } else {
+    } else if (control.control_id === 'PC-03') {
       lines.push(`- Distinct latent worlds: ${control.proof_summary.distinct_latent_world_signatures}`);
       lines.push(`- Distinct observation signatures: ${control.proof_summary.distinct_observation_signatures}`);
       lines.push(`- Maximum pairwise latent total variation: ${percentage(control.proof_summary.maximum_pairwise_latent_total_variation)}`);
+    } else {
+      lines.push(`- Distinct normalized headline signatures: ${control.proof_summary.distinct_headline_signatures}`);
+      lines.push(`- Distinct full outcomes: ${control.proof_summary.distinct_full_outcome_signatures}`);
+      lines.push(`- Observed denominator range: ${control.proof_summary.observed_total_range}`);
+      lines.push(`- Exit range: ${control.proof_summary.exit_total_range}`);
+      lines.push(`- Nonresponse range: ${control.proof_summary.nonresponse_total_range}`);
     }
     lines.push('');
   }
