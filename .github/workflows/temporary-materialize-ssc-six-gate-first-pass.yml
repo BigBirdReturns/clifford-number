@@ -1,0 +1,86 @@
+name: Temporary materialize SSC six-gate first-pass reconciliation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-materialize-ssc-six-gate-first-pass.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build exact products on the authorized reconciliation head
+        env:
+          TARGET_BRANCH: agent/ssc-six-gate-first-pass-reconciliation
+          EXPECTED_HEAD: 09efd98443ff8c683c84df5aa9e6af2215572714
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          git switch -C target "origin/$TARGET_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          node tools/build-status-sovereignty-six-gate-first-pass-reconciliation.mjs
+          node tools/validate-status-sovereignty-six-gate-first-pass-reconciliation.mjs
+          node test/status-sovereignty-six-gate-first-pass-reconciliation.test.js
+          cat > /tmp/expected-paths <<'PATHS'
+          build/core-thesis/status-sovereignty/six-gate-first-pass/data.json
+          build/core-thesis/status-sovereignty/six-gate-first-pass/manifest.json
+          data/project/status-sovereignty-six-gate-first-pass-reconciliation-release-manifest.json
+          reports/core-thesis/status-sovereignty/six-gate-first-pass/data.json
+          reports/core-thesis/status-sovereignty/six-gate-first-pass/index.html
+          PATHS
+          git status --porcelain=v1 --untracked-files=all | cut -c4- | sort > /tmp/observed-paths
+          sort -o /tmp/expected-paths /tmp/expected-paths
+          diff -u /tmp/expected-paths /tmp/observed-paths
+          test "$(wc -l < /tmp/observed-paths)" -eq 5
+      - name: Prove publication exclusion and repository compatibility
+        run: |
+          set -Eeuo pipefail
+          npm run build:pages
+          npm run build:standalone
+          npm run validate:pages
+          test ! -e dist/data/intake/status-sovereignty-six-gate-first-pass-reconciliation.json
+          test ! -e dist/build/core-thesis/status-sovereignty/six-gate-first-pass
+          test ! -e dist/reports/core-thesis/status-sovereignty/six-gate-first-pass
+          npm run release:check
+          git restore --worktree -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json
+          git status --porcelain=v1 --untracked-files=all | cut -c4- | sort > /tmp/observed-after-release
+          diff -u /tmp/expected-paths /tmp/observed-after-release
+      - name: Publish only the five deterministic products
+        env:
+          TARGET_BRANCH: agent/ssc-six-gate-first-pass-reconciliation
+        run: |
+          set -Eeuo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            build/core-thesis/status-sovereignty/six-gate-first-pass/data.json \
+            build/core-thesis/status-sovereignty/six-gate-first-pass/manifest.json \
+            data/project/status-sovereignty-six-gate-first-pass-reconciliation-release-manifest.json \
+            reports/core-thesis/status-sovereignty/six-gate-first-pass/data.json \
+            reports/core-thesis/status-sovereignty/six-gate-first-pass/index.html
+          git diff --cached --name-only | sort > /tmp/staged-paths
+          diff -u /tmp/expected-paths /tmp/staged-paths
+          git commit -m 'Materialize SSC six-gate first-pass reconciliation products'
+          git push origin "HEAD:$TARGET_BRANCH"
