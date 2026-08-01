@@ -1,0 +1,117 @@
+name: Repair Counter-Selector Wave 16 source summary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/repair-counter-selector-wave-16-source-summary.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: counter-selector-wave-16-source-summary-repair
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/counter-selector-wave-16-targeted-receipts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Make source categories disjoint and strengthen validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          builder = Path('tools/build-counter-selector-wave-16.mjs')
+          text = builder.read_text()
+          old = "full_text_or_official_record_sources: registry.sources.filter((row) => !row.record_state.includes('route_only') && !row.record_state.includes('locator')).length,"
+          new = "full_text_or_official_record_sources: registry.sources.filter((row) => !row.record_state.includes('route') && !row.record_state.includes('locator')).length,"
+          if text.count(old) != 1:
+              raise SystemExit('builder source-summary expression not found exactly once')
+          builder.write_text(text.replace(old, new))
+
+          validator = Path('tools/validate-counter-selector-wave-16.mjs')
+          text = validator.read_text()
+          old = """  const routeCount = contract.sources.filter((row) => row.record_state.includes('route') || row.record_state.includes('locator')).length;
+          assert(routeCount === 3, 'three route or locator sources');
+          assert(contract.sources.every((row) => row.supports.length && row.limits.length), 'source limits');
+          """
+          new = """  const routeCount = contract.sources.filter((row) => row.record_state.includes('route') || row.record_state.includes('locator')).length;
+          const fullRecordCount = contract.sources.filter((row) => !row.record_state.includes('route') && !row.record_state.includes('locator')).length;
+          assert(routeCount === 3, 'three route or locator sources');
+          assert(fullRecordCount === 7, 'seven full-text or official-record sources');
+          assert(routeCount + fullRecordCount === contract.sources.length, 'source categories disjoint and complete');
+          assert(contract.sources.every((row) => row.supports.length && row.limits.length), 'source limits');
+          """
+          if text.count(old) != 1:
+              raise SystemExit('validator contract source block not found exactly once')
+          text = text.replace(old, new)
+          old = """  assert(report.counts.person_attributable_bounded_supports_total === 11, 'report total support');
+          assert(report.release_manifest.combined_sha256 === manifest.combined_sha256, 'manifest link');
+          """
+          new = """  assert(report.counts.person_attributable_bounded_supports_total === 11, 'report total support');
+          assert(report.source_summary.targeted_source_records === contract.counts.targeted_source_records, 'report source total');
+          assert(report.source_summary.full_text_or_official_record_sources === contract.counts.full_text_or_official_record_sources, 'report full-record count');
+          assert(report.source_summary.route_or_locator_sources === contract.counts.route_only_sources, 'report route count');
+          assert(report.source_summary.full_text_or_official_record_sources + report.source_summary.route_or_locator_sources === report.source_summary.targeted_source_records, 'report source categories disjoint and complete');
+          assert(report.release_manifest.combined_sha256 === manifest.combined_sha256, 'manifest link');
+          """
+          if text.count(old) != 1:
+              raise SystemExit('validator product block not found exactly once')
+          validator.write_text(text.replace(old, new))
+          PY
+      - name: Rebuild, validate, and attack repaired products
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-counter-selector-wave-16.mjs
+          node tools/validate-counter-selector-wave-16.mjs
+          node test/counter-selector-wave-16.test.js
+      - name: Commit exact repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            tools/build-counter-selector-wave-16.mjs \
+            tools/validate-counter-selector-wave-16.mjs \
+            data/project/counter-selector-wave-16-release-manifest.json \
+            reports/core-thesis/counter-selector-wave-16/data.json \
+            reports/core-thesis/counter-selector-wave-16/index.html
+          actual="$(git diff --cached --name-only | sort)"
+          expected="$(printf '%s\n' \
+            data/project/counter-selector-wave-16-release-manifest.json \
+            reports/core-thesis/counter-selector-wave-16/data.json \
+            reports/core-thesis/counter-selector-wave-16/index.html \
+            tools/build-counter-selector-wave-16.mjs \
+            tools/validate-counter-selector-wave-16.mjs | sort)"
+          test "$actual" = "$expected"
+          git diff --cached --check
+          git commit -m 'Repair Wave 16 source-summary partition'
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic reconstruction
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          node tools/build-counter-selector-wave-16.mjs
+          node tools/validate-counter-selector-wave-16.mjs
+          node test/counter-selector-wave-16.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+      - name: Publish repaired permanent head
+        run: git push origin HEAD:agent/counter-selector-wave-16-targeted-receipts
