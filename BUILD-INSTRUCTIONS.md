@@ -429,3 +429,9 @@ a relationship or participation row, or alter the active graph.
 Reviewed Wave 01 allocator-war packets and unreviewed Wave 02 intake packets enter separate source registries. Exact commit-and-path custody preserves their authority difference. Reviewed packets may feed bounded findings and controls; unreviewed packets may feed acquisition only.
 
 Estate and program routing is one-way. It does not create a finding, identity, relationship, participation, graph edge, prevalence estimate, racial-order conclusion, coordination conclusion, common purpose, publication clearance, or adoption effect.
+
+
+3.22 **Allocator-war estate acquisition execution — Wave 22.**
+The eleven Wave 21 estate routes compile into deterministic acquisition queues. Reviewed-only, split-authority, and unreviewed-only lanes remain distinct. Priority orders execution and does not score truth, merit, guilt, risk, or importance.
+
+Queue admission does not create estate adoption, evidence review, a finding, identity, relationship, participation, graph edge, prevalence, coordination, common purpose, or publication clearance.
