@@ -1,0 +1,42 @@
+name: Materialize SSC residual-denominator Wave 01
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd-wave-materialize-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Generate exact Wave 01 outputs
+        run: node tools/build-status-sovereignty-residual-denominator-wave-01.mjs
+      - name: Publish generated custody and retire this materializer
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/status-sovereignty-residual-denominator-wave-01-bootstrap.yml
+          git add \
+            data/project/status-sovereignty-residual-denominator-wave-01-release-manifest.json \
+            build/core-thesis/status-sovereignty/residual-denominator-wave-01 \
+            reports/core-thesis/status-sovereignty/residual-denominator-wave-01
+          git config user.name "undercast-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Materialize SSC residual-denominator Wave 01 custody"
+          git push origin "HEAD:${{ github.head_ref || github.ref_name }}"
