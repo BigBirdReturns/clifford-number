@@ -83,17 +83,82 @@ jobs:
           diff -u /tmp/expected /tmp/observed
           test "$(wc -l < /tmp/observed)" -eq 19
           ! grep -Eq '^\.github/(tmp/|workflows/)' /tmp/observed
-      - name: Validate campaign source plane
+      - name: Validate campaign source plane with reviewed workflow bytes
         run: |
           set -Eeuo pipefail
+          mkdir -p .github/workflows
+          cat > .github/workflows/status-sovereignty-wave-02-second-party-review.yml <<'PERMANENT'
+          name: Status-for-sovereignty Wave 02 second-party review campaign
+
+          on:
+            pull_request:
+              branches: [main]
+              paths:
+                - 'data/project/status-sovereignty-wave-02-second-party-review-*.json'
+                - 'data/research/status-sovereignty-wave-02-second-party-review-*.json'
+                - 'schemas/status-sovereignty-wave-02-second-party-review-*.json'
+                - 'tools/*wave-02-second-party-review*'
+                - 'test/status-sovereignty-wave-02-second-party-review.test.js'
+                - '.github/workflows/status-sovereignty-wave-02-second-party-review.yml'
+            push:
+              branches: [main]
+              paths:
+                - 'data/project/status-sovereignty-wave-02-second-party-review-*.json'
+                - 'data/research/status-sovereignty-wave-02-second-party-review-*.json'
+                - 'schemas/status-sovereignty-wave-02-second-party-review-*.json'
+                - 'tools/*wave-02-second-party-review*'
+                - 'test/status-sovereignty-wave-02-second-party-review.test.js'
+                - '.github/workflows/status-sovereignty-wave-02-second-party-review.yml'
+            workflow_dispatch:
+
+          permissions:
+            contents: read
+
+          jobs:
+            validate:
+              runs-on: ubuntu-latest
+              timeout-minutes: 120
+              steps:
+                - uses: actions/checkout@v4
+                  with:
+                    fetch-depth: 0
+                - uses: actions/setup-node@v4
+                  with:
+                    node-version: '24'
+                - name: Build and validate campaign
+                  run: |
+                    node tools/build-status-sovereignty-wave-02-second-party-review.mjs
+                    node tools/validate-status-sovereignty-wave-02-second-party-review.mjs
+                    node test/status-sovereignty-wave-02-second-party-review.test.js
+                - name: Prove publication hold
+                  run: |
+                    npm run build:pages
+                    npm run build:standalone
+                    npm run validate:pages
+                    test ! -e dist/reports/core-thesis/status-sovereignty/wave-02-second-party-review
+                    test ! -e dist/data/research/status-sovereignty-wave-02-second-party-review-candidates.json
+                - name: Run complete repository release gate
+                  run: npm run release:check
+                - name: Prove deterministic campaign products
+                  run: |
+                    git restore --staged --worktree .
+                    node tools/build-status-sovereignty-wave-02-second-party-review.mjs
+                    node tools/validate-status-sovereignty-wave-02-second-party-review.mjs
+                    node test/status-sovereignty-wave-02-second-party-review.test.js
+                    git diff --exit-code
+                    test -z "$(git status --porcelain)"
+          PERMANENT
+          printf '%s  %s\n' 208e74a16ea18bf823e586977fd753b93704e6ffc5c343eeb90de88af62da231 .github/workflows/status-sovereignty-wave-02-second-party-review.yml | sha256sum -c -
           node tools/build-status-sovereignty-wave-02-second-party-review.mjs
           node tools/validate-status-sovereignty-wave-02-second-party-review.mjs
           node test/status-sovereignty-wave-02-second-party-review.test.js
           test "$(jq -r '.counts.wave_packets' data/project/status-sovereignty-wave-02-second-party-review-campaign.json)" = 8
           test "$(jq -r '.counts.valid_reviews' data/project/status-sovereignty-wave-02-second-party-review-campaign.json)" = 0
           test "$(jq -r '.combined_sha256' data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json)" = 44e7e8c2b66997ddde3890bdfb1f94994e211ce9308be74f97ca968098cc4106
+          rm .github/workflows/status-sovereignty-wave-02-second-party-review.yml
           git diff --cached --name-only | sort > /tmp/observed-after
           diff -u /tmp/expected /tmp/observed-after
+          test -z "$(git status --porcelain | grep '^??' || true)"
       - name: Publish workflow-neutral campaign staging commit
         env:
           TARGET_BRANCH: agent/ssc-wave02-second-party-review-sg11
