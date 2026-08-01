@@ -44,33 +44,33 @@ jobs:
 
           validator = Path('tools/validate-counter-selector-wave-16.mjs')
           text = validator.read_text()
-          old = """  const routeCount = contract.sources.filter((row) => row.record_state.includes('route') || row.record_state.includes('locator')).length;
-          assert(routeCount === 3, 'three route or locator sources');
-          assert(contract.sources.every((row) => row.supports.length && row.limits.length), 'source limits');
-          """
-          new = """  const routeCount = contract.sources.filter((row) => row.record_state.includes('route') || row.record_state.includes('locator')).length;
-          const fullRecordCount = contract.sources.filter((row) => !row.record_state.includes('route') && !row.record_state.includes('locator')).length;
-          assert(routeCount === 3, 'three route or locator sources');
-          assert(fullRecordCount === 7, 'seven full-text or official-record sources');
-          assert(routeCount + fullRecordCount === contract.sources.length, 'source categories disjoint and complete');
-          assert(contract.sources.every((row) => row.supports.length && row.limits.length), 'source limits');
-          """
-          if text.count(old) != 1:
-              raise SystemExit('validator contract source block not found exactly once')
-          text = text.replace(old, new)
-          old = """  assert(report.counts.person_attributable_bounded_supports_total === 11, 'report total support');
-          assert(report.release_manifest.combined_sha256 === manifest.combined_sha256, 'manifest link');
-          """
-          new = """  assert(report.counts.person_attributable_bounded_supports_total === 11, 'report total support');
-          assert(report.source_summary.targeted_source_records === contract.counts.targeted_source_records, 'report source total');
-          assert(report.source_summary.full_text_or_official_record_sources === contract.counts.full_text_or_official_record_sources, 'report full-record count');
-          assert(report.source_summary.route_or_locator_sources === contract.counts.route_only_sources, 'report route count');
-          assert(report.source_summary.full_text_or_official_record_sources + report.source_summary.route_or_locator_sources === report.source_summary.targeted_source_records, 'report source categories disjoint and complete');
-          assert(report.release_manifest.combined_sha256 === manifest.combined_sha256, 'manifest link');
-          """
-          if text.count(old) != 1:
-              raise SystemExit('validator product block not found exactly once')
-          validator.write_text(text.replace(old, new))
+
+          route_line = "  const routeCount = contract.sources.filter((row) => row.record_state.includes('route') || row.record_state.includes('locator')).length;\n"
+          full_line = "  const fullRecordCount = contract.sources.filter((row) => !row.record_state.includes('route') && !row.record_state.includes('locator')).length;\n"
+          if text.count(route_line) != 1:
+              raise SystemExit('validator route-count line not found exactly once')
+          text = text.replace(route_line, route_line + full_line)
+
+          route_assert = "  assert(routeCount === 3, 'three route or locator sources');\n"
+          extra_asserts = (
+              "  assert(fullRecordCount === 7, 'seven full-text or official-record sources');\n"
+              "  assert(routeCount + fullRecordCount === contract.sources.length, 'source categories disjoint and complete');\n"
+          )
+          if text.count(route_assert) != 1:
+              raise SystemExit('validator route-count assertion not found exactly once')
+          text = text.replace(route_assert, route_assert + extra_asserts)
+
+          report_assert = "  assert(report.counts.person_attributable_bounded_supports_total === 11, 'report total support');\n"
+          report_source_asserts = (
+              "  assert(report.source_summary.targeted_source_records === contract.counts.targeted_source_records, 'report source total');\n"
+              "  assert(report.source_summary.full_text_or_official_record_sources === contract.counts.full_text_or_official_record_sources, 'report full-record count');\n"
+              "  assert(report.source_summary.route_or_locator_sources === contract.counts.route_only_sources, 'report route count');\n"
+              "  assert(report.source_summary.full_text_or_official_record_sources + report.source_summary.route_or_locator_sources === report.source_summary.targeted_source_records, 'report source categories disjoint and complete');\n"
+          )
+          if text.count(report_assert) != 1:
+              raise SystemExit('validator report support assertion not found exactly once')
+          text = text.replace(report_assert, report_assert + report_source_asserts)
+          validator.write_text(text)
           PY
       - name: Rebuild, validate, and attack repaired products
         shell: bash
