@@ -9,7 +9,7 @@ const read = (rel) => JSON.parse(fs.readFileSync(path.join(root, rel), 'utf8'));
 
 export function loadAcesGovernanceContext() {
   return {
-    record: read('data/research/status-sovereignty-f04-aces-governance-first-pass.json'),
+    record: read('data/intake/status-sovereignty-f04-aces-governance-first-pass.json'),
     schema: read('schemas/status-sovereignty-governance-denominator-first-pass.schema.json'),
     manifest: read('data/project/status-sovereignty-f04-aces-governance-first-pass-release-manifest.json'),
     buildManifest: read('build/core-thesis/status-sovereignty/f04-aces/manifest.json'),

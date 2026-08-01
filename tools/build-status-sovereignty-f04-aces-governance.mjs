@@ -24,7 +24,7 @@ const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
 
 export const releaseScope = [
   '.github/workflows/status-sovereignty-f04-aces.yml',
-  'data/research/status-sovereignty-f04-aces-governance-first-pass.json',
+  'data/intake/status-sovereignty-f04-aces-governance-first-pass.json',
   'schemas/status-sovereignty-governance-denominator-first-pass.schema.json',
   'docs/milestones/ssc-f04-aces-governance-first-pass.md',
   'tools/build-status-sovereignty-f04-aces-governance.mjs',
@@ -64,7 +64,7 @@ export function computeAcesGovernanceManifest() {
 }
 
 export function buildAcesGovernanceFirstPass() {
-  const record = read('data/research/status-sovereignty-f04-aces-governance-first-pass.json');
+  const record = read('data/intake/status-sovereignty-f04-aces-governance-first-pass.json');
   const manifest = computeAcesGovernanceManifest();
   const report = {
     schema_version: 'status-sovereignty-governance-denominator-first-pass-report@1',
