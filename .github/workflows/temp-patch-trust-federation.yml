@@ -7,6 +7,12 @@ on:
     paths:
       - 'tools/temp-patch-trust-federation.mjs'
       - '.github/workflows/temp-patch-trust-federation.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tools/temp-patch-trust-federation.mjs'
+      - '.github/workflows/temp-patch-trust-federation.yml'
   workflow_dispatch:
 
 permissions:
@@ -14,6 +20,7 @@ permissions:
 
 jobs:
   patch-and-retire:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
