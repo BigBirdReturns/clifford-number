@@ -1,6 +1,6 @@
 {
   "schema_version": "preference-custody-control-manifest@1",
-  "manifest_id": "preference-custody-laboratory-floor-v5",
+  "manifest_id": "preference-custody-laboratory-floor-v6",
   "issue": 594,
   "captured_at": "2026-08-01",
   "status": "synthetic_control_floor",
@@ -110,6 +110,25 @@
         "synthetic_prediction_cannot_exercise_amendment_rights",
         "binding_objective_rejection_blocks_implementation"
       ]
+    },
+    {
+      "control_id": "PC-08",
+      "fixture_id": "same-marginals-different-package-agreement-v1",
+      "failure_class": "negotiated_package_formation_and_collective_bargaining",
+      "source_fixture_path": "data/research/preference-custody/package-bargaining.fixture.json",
+      "build_artifact_path": "build/research/preference-package-bargaining.json",
+      "expected_build_schema": "preference-package-build@1",
+      "required_refusal_rules": [
+        "marginal_clause_support_is_not_package_acceptance",
+        "package_support_is_not_collective_agreement",
+        "synthetic_package_is_candidate_not_bargain",
+        "advisory_co_design_is_not_binding_bargaining",
+        "representative_mandate_requires_attributed_membership",
+        "negotiated_package_requires_reciprocity_ratification_enforcement_and_reopen",
+        "failed_ratification_is_binding_impasse_not_missing_data",
+        "package_terms_require_versioned_custody",
+        "collective_agreement_requires_group_disposition"
+      ]
     }
   ],
   "identification_requirements": [
@@ -127,6 +146,11 @@
       "stage": "agenda_formation",
       "required_state": "option_origin_proposal_coalition_amendment_and_objective_challenge_history",
       "refused_inference": "preference_among_institution_authored_options_does_not_identify_the_public_agenda_or_objective_acceptance"
+    },
+    {
+      "stage": "package_formation_and_bargaining",
+      "required_state": "versioned_terms_conditionality_mandates_concessions_ratification_enforcement_and_reopen_history",
+      "refused_inference": "component_or_package_support_does_not_identify_a_negotiated_collective_agreement"
     },
     {
       "stage": "response_mechanism",
@@ -151,7 +175,7 @@
   ],
   "open_frontiers": [
     "dynamic_preference_change",
-    "negotiated_package_formation_and_collective_bargaining",
+    "intertemporal_repeated_bargaining_and_commitment",
     "intersectional_and_unobserved_group_custody",
     "model_policy_and_metric_succession",
     "federated_multilevel_and_successor_authority",
@@ -164,6 +188,12 @@
       "source_population_and_data_window",
       "complete_question_and_option_set",
       "option_origin_proposal_coalition_amendment_and_objective_challenge_history",
+      "complete_package_terms_versions_and_conditional_acceptance_rules",
+      "representative_identity_membership_and_mandate",
+      "proposal_counterproposal_and_reciprocal_concession_history",
+      "group_ratification_denominators_thresholds_and_results",
+      "enforceable_obligations_reopen_appeal_and_remedy_terms",
+      "agreement_or_impasse_disposition",
       "institutional_disposition",
       "exposure_and_eligibility_state",
       "complete_disposition_and_denominator_history",
@@ -174,23 +204,24 @@
       "eligible_affected_constituency_definition",
       "binding_decision_rule_quorum_and_thresholds",
       "objective_amendment_suspension_veto_appeal_and_remedy_rights",
-      "attributed_agenda_and_constituency_dispositions",
+      "attributed_agenda_bargaining_and_constituency_dispositions",
       "implementation_or_blocking_enforcement_receipt"
     ],
     "promotion_authority": "human_review_plus_repository_gates"
   },
   "prohibited_inferences": [
     "Do not treat a laboratory control as evidence about a named deployment.",
-    "Do not infer preference change, suppression, discrimination, manipulation, illegitimacy, or intent from identification, agenda, or authority failure alone.",
-    "Do not treat a passing predictive benchmark as a pass on exposure, option-set, agenda-formation, mechanism, attrition, subgroup distribution, or public-authorization validity.",
-    "Do not treat synthetic prediction, observed behavior, advisory consultation, commissioner approval, or popular suggestion as binding affected-public agenda authority.",
-    "Do not treat preference among institution-authored options as acceptance of the objective or proof that no better collective alternative exists.",
-    "Do not treat the seven controls as exhaustive of every performative or constitutional failure mode."
+    "Do not infer preference change, suppression, discrimination, bargaining denial, package imposition, manipulation, illegitimacy, or intent from identification, package, agenda, or authority failure alone.",
+    "Do not treat a passing predictive benchmark as a pass on exposure, option-set, agenda-formation, package bargaining, mechanism, attrition, subgroup distribution, or public-authorization validity.",
+    "Do not treat synthetic prediction, observed behavior, advisory consultation, commissioner approval, a popular suggestion, or high package support as binding affected-public agenda or bargaining authority.",
+    "Do not treat component support as package acceptance, package acceptance as collective agreement, or failed ratification as missing data.",
+    "Do not treat preference among institution-authored options as acceptance of the objective or proof that no better collective alternative or package exists.",
+    "Do not treat the eight controls as exhaustive of every performative or constitutional failure mode."
   ],
   "interpretation_contract": {
     "contract_id": "preference-custody-control-manifest@1",
-    "what_this_is": "A compiled laboratory floor joining seven deterministic controls for exposure confounding, option-set starvation, agenda formation, observational equivalence, attrition or refusal censoring, subgroup response capacity or burden, and standing or objective-control authority.",
-    "what_this_is_not": "A real-world findings dossier, a market-wide claim, evidence against a named actor, a legitimacy verdict, or a complete universal constitution for preference formation and public standing.",
-    "copy_ready_caveat": "The preference-custody floor proves seven identification, agenda, and authority separations in synthetic controls. It requires real deployments to preserve exposure, option-set, agenda-formation, mechanism, attrition, subgroup, counterfactual, and binding authority evidence, but it creates no real-world causal or legitimacy conclusion by itself."
+    "what_this_is": "A compiled laboratory floor joining eight deterministic controls for exposure confounding, option-set starvation, agenda formation, negotiated package formation, observational equivalence, attrition or refusal censoring, subgroup response capacity or burden, and standing or objective-control authority.",
+    "what_this_is_not": "A real-world findings dossier, a market-wide claim, evidence against a named actor, a bargaining or legitimacy verdict, or a complete universal constitution for preference formation and public standing.",
+    "copy_ready_caveat": "The preference-custody floor proves eight identification, package, agenda, and authority separations in synthetic controls. It requires real deployments to preserve exposure, option-set, agenda-formation, package-bargaining, mechanism, attrition, subgroup, counterfactual, and binding authority evidence, but it creates no real-world causal or legitimacy conclusion by itself."
   }
 }
