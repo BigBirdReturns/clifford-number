@@ -1,0 +1,102 @@
+name: Temporary materialize SSC-W02 separated-review campaign
+
+on:
+  push:
+    branches: [agent/ssc-wave02-spr-campaign-materializer]
+    paths:
+      - '.github/tmp/ssc-w02-spr-campaign-nonworkflow.patch.xz.b64'
+      - '.github/workflows/temporary-materialize-ssc-w02-spr-campaign.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-w02-spr-campaign-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-spr-campaign-materializer
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify and reconstruct exact non-workflow campaign patch
+        run: |
+          set -Eeuo pipefail
+          carrier=.github/tmp/ssc-w02-spr-campaign-nonworkflow.patch.xz.b64
+          test "$(wc -c < "$carrier")" -eq 12392
+          printf '%s  %s\n' 3955c16665bdc049fffd3cf6ad85834684abc0e12e73b7a780b24c66304036e1 "$carrier" | sha256sum -c -
+          base64 -d "$carrier" > /tmp/campaign.patch.xz
+          test "$(wc -c < /tmp/campaign.patch.xz)" -eq 9292
+          printf '%s  %s\n' 32c54adbb857ee972fe5bd613718c5736fb8c6f3a693f7181d2ba560841c3335 /tmp/campaign.patch.xz | sha256sum -c -
+          xz -dc /tmp/campaign.patch.xz > /tmp/campaign.patch
+          test "$(wc -c < /tmp/campaign.patch)" -eq 86613
+          printf '%s  %s\n' 0acbc51e45ac517a1700d73252ad546f852f0d393a430ce4c5ca308a4513ff8f /tmp/campaign.patch | sha256sum -c -
+      - name: Apply exact patch to isolated target branch
+        env:
+          TARGET_BRANCH: agent/ssc-wave02-second-party-review-sg11
+          EXPECTED_HEAD: b952da00932012be409c63554d6c81f8367723cb
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          lease="$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')"
+          test "$lease" = "$EXPECTED_HEAD"
+          git switch -C campaign-target "origin/$TARGET_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git apply --check --index /tmp/campaign.patch
+          git apply --index /tmp/campaign.patch
+          cat > /tmp/expected <<'PATHS'
+          build/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+          build/core-thesis/status-sovereignty/wave-02-second-party-review/manifest.json
+          data/project/status-sovereignty-wave-02-second-party-review-campaign.json
+          data/project/status-sovereignty-wave-02-second-party-review-packet-registry.json
+          data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json
+          data/research/status-sovereignty-wave-02-second-party-review-candidates.json
+          data/research/status-sovereignty-wave-02-second-party-review-responses.json
+          docs/milestones/m05-status-sovereignty-wave-02-second-party-review.md
+          docs/ssc-wave-02-second-party-review-intake.md
+          package.json
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/index.html
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/intake.html
+          schemas/status-sovereignty-wave-02-second-party-review-campaign.schema.json
+          schemas/status-sovereignty-wave-02-second-party-review-candidate.schema.json
+          schemas/status-sovereignty-wave-02-second-party-review-receipt.schema.json
+          test/status-sovereignty-wave-02-second-party-review.test.js
+          tools/build-status-sovereignty-wave-02-second-party-review.mjs
+          tools/validate-status-sovereignty-wave-02-second-party-review.mjs
+          PATHS
+          sort -o /tmp/expected /tmp/expected
+          git diff --cached --name-only | sort > /tmp/observed
+          diff -u /tmp/expected /tmp/observed
+          test "$(wc -l < /tmp/observed)" -eq 19
+          ! grep -Eq '^\.github/(tmp/|workflows/)' /tmp/observed
+      - name: Validate campaign source plane
+        run: |
+          set -Eeuo pipefail
+          node tools/build-status-sovereignty-wave-02-second-party-review.mjs
+          node tools/validate-status-sovereignty-wave-02-second-party-review.mjs
+          node test/status-sovereignty-wave-02-second-party-review.test.js
+          test "$(jq -r '.counts.wave_packets' data/project/status-sovereignty-wave-02-second-party-review-campaign.json)" = 8
+          test "$(jq -r '.counts.valid_reviews' data/project/status-sovereignty-wave-02-second-party-review-campaign.json)" = 0
+          test "$(jq -r '.combined_sha256' data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json)" = 44e7e8c2b66997ddde3890bdfb1f94994e211ce9308be74f97ca968098cc4106
+          git diff --cached --name-only | sort > /tmp/observed-after
+          diff -u /tmp/expected /tmp/observed-after
+      - name: Publish workflow-neutral campaign staging commit
+        env:
+          TARGET_BRANCH: agent/ssc-wave02-second-party-review-sg11
+          EXPECTED_HEAD: b952da00932012be409c63554d6c81f8367723cb
+        run: |
+          set -Eeuo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m 'Stage SSC-W02 separated-review campaign source plane'
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_HEAD" origin "HEAD:refs/heads/$TARGET_BRANCH"
+          echo "campaign_nonworkflow_sha=$(git rev-parse HEAD)"
