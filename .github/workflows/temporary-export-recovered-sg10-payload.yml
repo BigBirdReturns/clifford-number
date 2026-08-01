@@ -1,0 +1,41 @@
+name: Temporary export recovered SG-10 payload scaffold
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-export-recovered-sg10-payload.yml'
+  push:
+    branches: [agent/ssc-sg10-payload-recovery]
+    paths:
+      - '.github/workflows/temporary-export-recovered-sg10-payload.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-sg10-payload-recovery
+          fetch-depth: 0
+      - name: Decode and inventory recovered payload
+        run: |
+          set -Eeuo pipefail
+          test "$(git hash-object .github/tmp/ssc-w02-sg10.part-00.b64)" = '332b824ad26015a943d0a046d2aad6f263fd3bc4'
+          base64 --decode .github/tmp/ssc-w02-sg10.part-00.b64 > /tmp/ssc-w02-sg10-scaffold.tar.xz
+          tar -tJf /tmp/ssc-w02-sg10-scaffold.tar.xz | sed 's#^\./##' | sort > /tmp/ssc-w02-sg10-scaffold-paths.txt
+          sha256sum /tmp/ssc-w02-sg10-scaffold.tar.xz > /tmp/ssc-w02-sg10-scaffold.tar.xz.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-w02-sg10-scaffold
+          path: |
+            /tmp/ssc-w02-sg10-scaffold.tar.xz
+            /tmp/ssc-w02-sg10-scaffold.tar.xz.sha256
+            /tmp/ssc-w02-sg10-scaffold-paths.txt
+          if-no-files-found: error
+          retention-days: 1
