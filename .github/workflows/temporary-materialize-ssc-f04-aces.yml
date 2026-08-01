@@ -25,36 +25,55 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Build exact products on the authorized evidence head
+      - name: Repair publication custody and build exact products
         env:
           TARGET_BRANCH: agent/ssc-f04-governance-denominator
-          EXPECTED_HEAD: 1197eaa881ca2e2e21db9c5ffa73fc487d3f25df
+          EXPECTED_HEAD: 2854dfb7328861c81c25fa7779d9b6de566b780d
         run: |
           set -Eeuo pipefail
           git fetch --no-tags origin "$TARGET_BRANCH"
           git switch -C target "origin/$TARGET_BRANCH"
           test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          python - <<'PY'
+          from pathlib import Path
+
+          old = 'data/research/status-sovereignty-f04-aces-governance-first-pass.json'
+          new = 'data/intake/status-sovereignty-f04-aces-governance-first-pass.json'
+          paths = [
+              Path('tools/build-status-sovereignty-f04-aces-governance.mjs'),
+              Path('tools/validate-status-sovereignty-f04-aces-governance.mjs'),
+              Path('.github/workflows/status-sovereignty-f04-aces.yml'),
+          ]
+          for path in paths:
+              text = path.read_text()
+              if old not in text:
+                  raise SystemExit(f'missing ACES source path in {path}')
+              path.write_text(text.replace(old, new))
+          PY
           node tools/build-status-sovereignty-f04-aces-governance.mjs
           node tools/validate-status-sovereignty-f04-aces-governance.mjs
           node test/status-sovereignty-f04-aces-governance.test.js
           cat > /tmp/expected-paths <<'PATHS'
+          .github/workflows/status-sovereignty-f04-aces.yml
           build/core-thesis/status-sovereignty/f04-aces/data.json
           build/core-thesis/status-sovereignty/f04-aces/manifest.json
           data/project/status-sovereignty-f04-aces-governance-first-pass-release-manifest.json
           reports/core-thesis/status-sovereignty/f04-aces/data.json
           reports/core-thesis/status-sovereignty/f04-aces/index.html
+          tools/build-status-sovereignty-f04-aces-governance.mjs
+          tools/validate-status-sovereignty-f04-aces-governance.mjs
           PATHS
           git status --porcelain=v1 --untracked-files=all | cut -c4- | sort > /tmp/observed-paths
           sort -o /tmp/expected-paths /tmp/expected-paths
           diff -u /tmp/expected-paths /tmp/observed-paths
-          test "$(wc -l < /tmp/observed-paths)" -eq 5
+          test "$(wc -l < /tmp/observed-paths)" -eq 8
       - name: Prove publication exclusion and repository compatibility
         run: |
           set -Eeuo pipefail
           npm run build:pages
           npm run build:standalone
           npm run validate:pages
-          test ! -e dist/data/research/status-sovereignty-f04-aces-governance-first-pass.json
+          test ! -e dist/data/intake/status-sovereignty-f04-aces-governance-first-pass.json
           test ! -e dist/build/core-thesis/status-sovereignty/f04-aces
           test ! -e dist/reports/core-thesis/status-sovereignty/f04-aces
           npm run release:check
@@ -71,7 +90,7 @@ jobs:
             build/surface-graph.json
           git status --porcelain=v1 --untracked-files=all | cut -c4- | sort > /tmp/observed-after-release
           diff -u /tmp/expected-paths /tmp/observed-after-release
-      - name: Publish only the five deterministic products
+      - name: Publish only the eight authorized paths
         env:
           TARGET_BRANCH: agent/ssc-f04-governance-denominator
         run: |
@@ -79,11 +98,14 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add \
+            .github/workflows/status-sovereignty-f04-aces.yml \
             build/core-thesis/status-sovereignty/f04-aces/data.json \
             build/core-thesis/status-sovereignty/f04-aces/manifest.json \
             data/project/status-sovereignty-f04-aces-governance-first-pass-release-manifest.json \
             reports/core-thesis/status-sovereignty/f04-aces/data.json \
-            reports/core-thesis/status-sovereignty/f04-aces/index.html
+            reports/core-thesis/status-sovereignty/f04-aces/index.html \
+            tools/build-status-sovereignty-f04-aces-governance.mjs \
+            tools/validate-status-sovereignty-f04-aces-governance.mjs
           git diff --cached --name-only | sort > /tmp/staged-paths
           diff -u /tmp/expected-paths /tmp/staged-paths
           git commit -m 'Materialize SSC-F04 ACES first-pass products'
