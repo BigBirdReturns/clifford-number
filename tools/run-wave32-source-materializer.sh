@@ -19,6 +19,9 @@ parts=(
 trigger='.github/tmp/wave32-source-trigger.json'
 export_trigger='.github/tmp/wave32-tree-export-trigger.json'
 runner='tools/run-wave32-source-materializer.sh'
+workflow_path='.github/workflows/lake-allocator-war-bounded-source-snapshots-wave-32.yml'
+workflow_export='/tmp/wave32-permanent-workflow.yml'
+workflow_digest='/tmp/wave32-permanent-workflow.sha256'
 archive='/tmp/wave32-source.tar.gz'
 b64='/tmp/wave32-source.tar.gz.b64'
 stage='/tmp/wave32-source'
@@ -58,7 +61,13 @@ mapfile -t actual_paths < <(cd "$stage" && find . -type f -printf '%P\n' | sort)
 mapfile -t sorted_expected < <(printf '%s\n' "${expected_paths[@]}" | sort)
 [[ "${actual_paths[*]}" == "${sorted_expected[*]}" ]] || { printf 'Wave 32 source archive path drift\nexpected:\n%s\nactual:\n%s\n' "${sorted_expected[*]}" "${actual_paths[*]}" >&2; exit 1; }
 
+cp "$stage/$workflow_path" "$workflow_export"
+sha256sum "$workflow_export" > "$workflow_digest"
+wc -c "$workflow_export"
+cat "$workflow_digest"
+
 for relative in "${expected_paths[@]}"; do
+  [[ "$relative" == "$workflow_path" ]] && continue
   mkdir -p "$(dirname "$relative")"
   cp "$stage/$relative" "$relative"
 done
