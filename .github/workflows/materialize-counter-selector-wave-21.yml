@@ -31,19 +31,41 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Verify exact archive and unpack Wave 21 estate
+      - name: Verify exact chunks and unpack Wave 21 estate
         shell: bash
         run: |
           set -euo pipefail
-          payload=.github/materializers/counter-selector-wave-21/payload.tar.gz
-          actual="$(git hash-object "$payload")"
-          test "$actual" = "0ac76986044d491ae6cf2f1dd0466a8b91130b0c" || {
-            echo "carrier blob mismatch: expected=0ac76986044d491ae6cf2f1dd0466a8b91130b0c actual=$actual" >&2
-            exit 1
-          }
-          echo '4accb305b265c701699d192f95e911bd10a99039a26900da63484d577799c4b9  .github/materializers/counter-selector-wave-21/payload.tar.gz' \
+          cat > /tmp/wave21-expected-blobs <<'EOF'
+          a0b18fbc5f6e3e8cc59d2b80d84d5e936af23800  .github/materializers/counter-selector-wave-21/payload-000
+          b75f913155ab154bc81f47fcb527abc5c2d37e49  .github/materializers/counter-selector-wave-21/payload-001
+          fe9003fade3e7b8ff1d073cf2b40d85a8dde5f97  .github/materializers/counter-selector-wave-21/payload-002
+          aa9fdb23f3fb6841ecedf9b976bbbacde115edeb  .github/materializers/counter-selector-wave-21/payload-003
+          c743f5bbbcdd7ee83abd439ba0d5e2ff1745abbd  .github/materializers/counter-selector-wave-21/payload-004
+          6d5b0645caa1df9c4b5998c87a1af2653bc54818  .github/materializers/counter-selector-wave-21/payload-005
+          1738e2565e6a916a95d5d56a84b38455056bfc5d  .github/materializers/counter-selector-wave-21/payload-006
+          afaa65002c54310ffce55dba649752df03de21c7  .github/materializers/counter-selector-wave-21/payload-007
+          4f35249d679991900fc0375bc083dc75aff3197a  .github/materializers/counter-selector-wave-21/payload-008
+          13eed5bdb9857db2eda3076060735f9d85ff0856  .github/materializers/counter-selector-wave-21/payload-009
+          a700a1b2470ee796675d2d695d4fdcb765b19e60  .github/materializers/counter-selector-wave-21/payload-010
+          0a0127d62ca62af9e5ba48c7f05c170d139d38b4  .github/materializers/counter-selector-wave-21/payload-011
+          35e1f29a45d544cbcdd606a3b1f8577dfee7921a  .github/materializers/counter-selector-wave-21/payload-012
+          d0ac4f926e1ec351c7d22118333240e9e6acd774  .github/materializers/counter-selector-wave-21/payload-013
+          3753ad1374b444f4c8d6ee073fea48bf32ac1749  .github/materializers/counter-selector-wave-21/payload-014
+          EOF
+          while read -r expected path; do
+            actual="$(git hash-object "$path")"
+            test "$actual" = "$expected" || {
+              echo "carrier blob mismatch: $path expected=$expected actual=$actual" >&2
+              exit 1
+            }
+          done < /tmp/wave21-expected-blobs
+
+          cat .github/materializers/counter-selector-wave-21/payload-* \
+            | base64 --decode \
+            > /tmp/counter-selector-wave-21.tar.gz
+          echo '4accb305b265c701699d192f95e911bd10a99039a26900da63484d577799c4b9  /tmp/counter-selector-wave-21.tar.gz' \
             | sha256sum --check --strict
-          tar -xzf "$payload" -C .
+          tar -xzf /tmp/counter-selector-wave-21.tar.gz -C .
           rm -rf .github/materializers/counter-selector-wave-21
 
       - name: Build, validate, and attack Wave 21
@@ -54,7 +76,7 @@ jobs:
           node tools/validate-counter-selector-wave-21.mjs
           node test/counter-selector-wave-21.test.js
 
-      - name: Commit exact permanent Wave 21 estate
+      - name: Commit exact permanent non-workflow Wave 21 estate
         shell: bash
         run: |
           set -euo pipefail
@@ -63,7 +85,21 @@ jobs:
           git add -A
           actual="$(git diff --cached --name-only | sort)"
           expected="$(printf '%s\n' \
-            .github/materializers/counter-selector-wave-21/payload.tar.gz \
+            .github/materializers/counter-selector-wave-21/payload-000 \
+            .github/materializers/counter-selector-wave-21/payload-001 \
+            .github/materializers/counter-selector-wave-21/payload-002 \
+            .github/materializers/counter-selector-wave-21/payload-003 \
+            .github/materializers/counter-selector-wave-21/payload-004 \
+            .github/materializers/counter-selector-wave-21/payload-005 \
+            .github/materializers/counter-selector-wave-21/payload-006 \
+            .github/materializers/counter-selector-wave-21/payload-007 \
+            .github/materializers/counter-selector-wave-21/payload-008 \
+            .github/materializers/counter-selector-wave-21/payload-009 \
+            .github/materializers/counter-selector-wave-21/payload-010 \
+            .github/materializers/counter-selector-wave-21/payload-011 \
+            .github/materializers/counter-selector-wave-21/payload-012 \
+            .github/materializers/counter-selector-wave-21/payload-013 \
+            .github/materializers/counter-selector-wave-21/payload-014 \
             data/project/counter-selector-wave-21-archive-request-registry.json \
             data/project/counter-selector-wave-21-external-review-registry.json \
             data/project/counter-selector-wave-21-gate-exhaustion.json \
@@ -102,5 +138,5 @@ jobs:
           git diff --exit-code
           test -z "$(git status --porcelain)"
 
-      - name: Publish permanent Wave 21 head
+      - name: Publish permanent non-workflow Wave 21 head
         run: git push origin HEAD:agent/counter-selector-wave-21-gate-exhaustion
