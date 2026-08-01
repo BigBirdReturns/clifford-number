@@ -1,0 +1,83 @@
+name: Temporary fix SG-09 append awareness
+
+on:
+  push:
+    branches: [agent/ssc-sg10-final-materializer]
+    paths:
+      - '.github/workflows/temporary-fix-sg09-append-awareness.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Patch the historical builder on the exact target head
+        env:
+          TARGET_BRANCH: agent/ssc-wave02-maintainer-review-sg10-v2
+          EXPECTED_HEAD: e15425522f0a67857edd0ff5c6a661e10ba0c82a
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          git switch -C target "origin/$TARGET_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('tools/build-project-stable-ground-sg09.mjs')
+          text = path.read_text()
+          old = """export function buildStableGroundSG09() {
+            const checkpoint = read('data/project/project-stable-ground-sg09.json');
+            const pointer = read('data/project/project-stable-ground-current.json');
+          """
+          new = """export function buildStableGroundSG09() {
+            const pointer = read('data/project/project-stable-ground-current.json');
+            if (pointer.current_checkpoint_id !== 'SG-2026-07-31-09') {
+              console.log(`build-project-stable-ground-sg09: historical checkpoint preserved; current checkpoint ${pointer.current_checkpoint_id}; no write`);
+              return { historical: true, pointer };
+            }
+            const checkpoint = read('data/project/project-stable-ground-sg09.json');
+          """
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one SG-09 builder anchor, found {text.count(old)}')
+          path.write_text(text.replace(old, new))
+          PY
+          test "$(git diff --name-only | wc -l)" -eq 1
+          test "$(git diff --name-only)" = tools/build-project-stable-ground-sg09.mjs
+      - name: Prove successor execution cannot rewrite SG-09
+        run: |
+          set -Eeuo pipefail
+          before=$(sha256sum \
+            data/project/project-stable-ground-sg09-release-manifest.json \
+            reports/core-thesis/stable-ground/sg09/checkpoint.json \
+            reports/core-thesis/stable-ground/sg09/index.html)
+          node tools/build-project-stable-ground-sg09.mjs
+          after=$(sha256sum \
+            data/project/project-stable-ground-sg09-release-manifest.json \
+            reports/core-thesis/stable-ground/sg09/checkpoint.json \
+            reports/core-thesis/stable-ground/sg09/index.html)
+          test "$before" = "$after"
+          node tools/validate-project-stable-ground-sg09.mjs
+          node test/project-stable-ground-sg09.test.js
+          node tools/validate-project-stable-ground-sg10.mjs
+          node test/project-stable-ground-sg10.test.js
+      - name: Publish only the builder repair
+        env:
+          TARGET_BRANCH: agent/ssc-wave02-maintainer-review-sg10-v2
+        run: |
+          set -Eeuo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add tools/build-project-stable-ground-sg09.mjs
+          git diff --cached --name-only | grep -qx tools/build-project-stable-ground-sg09.mjs
+          git commit -m 'Preserve historical SG-09 under successor checkpoints'
+          git push origin "HEAD:$TARGET_BRANCH"
