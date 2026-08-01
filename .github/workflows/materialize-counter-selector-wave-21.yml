@@ -1,0 +1,106 @@
+name: Materialize Counter-Selector Wave 21
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-21.yml'
+      - '.github/materializers/counter-selector-wave-21/**'
+      - '.github/workflows/counter-selector-wave-21.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: counter-selector-wave-21-materializer
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/counter-selector-wave-21-gate-exhaustion
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify exact archive and unpack Wave 21 estate
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload=.github/materializers/counter-selector-wave-21/payload.tar.gz
+          actual="$(git hash-object "$payload")"
+          test "$actual" = "0ac76986044d491ae6cf2f1dd0466a8b91130b0c" || {
+            echo "carrier blob mismatch: expected=0ac76986044d491ae6cf2f1dd0466a8b91130b0c actual=$actual" >&2
+            exit 1
+          }
+          echo '4accb305b265c701699d192f95e911bd10a99039a26900da63484d577799c4b9  .github/materializers/counter-selector-wave-21/payload.tar.gz' \
+            | sha256sum --check --strict
+          tar -xzf "$payload" -C .
+          rm -rf .github/materializers/counter-selector-wave-21
+
+      - name: Build, validate, and attack Wave 21
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-counter-selector-wave-21.mjs
+          node tools/validate-counter-selector-wave-21.mjs
+          node test/counter-selector-wave-21.test.js
+
+      - name: Commit exact permanent Wave 21 estate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          actual="$(git diff --cached --name-only | sort)"
+          expected="$(printf '%s\n' \
+            .github/materializers/counter-selector-wave-21/payload.tar.gz \
+            data/project/counter-selector-wave-21-archive-request-registry.json \
+            data/project/counter-selector-wave-21-external-review-registry.json \
+            data/project/counter-selector-wave-21-gate-exhaustion.json \
+            data/project/counter-selector-wave-21-gate-registry.json \
+            data/project/counter-selector-wave-21-release-manifest.json \
+            docs/methods/counter-selector-gate-exhaustion.md \
+            docs/milestones/counter-selector-wave-21.md \
+            docs/requests/counter-selector-wave-21-carter-library-request.md \
+            docs/requests/counter-selector-wave-21-loc-request.md \
+            docs/requests/counter-selector-wave-21-un-arms-request.md \
+            reports/core-thesis/counter-selector-wave-21/data.json \
+            reports/core-thesis/counter-selector-wave-21/index.html \
+            schemas/counter-selector-gate-exhaustion.schema.json \
+            test/counter-selector-wave-21.test.js \
+            tools/build-counter-selector-wave-21.mjs \
+            tools/validate-counter-selector-wave-21.mjs | sort)"
+          test "$actual" = "$expected" || {
+            echo "unexpected staged paths" >&2
+            printf 'actual:\n%s\nexpected:\n%s\n' "$actual" "$expected" >&2
+            exit 1
+          }
+          git diff --cached --check
+          git commit -m 'Exhaust Counter-Selector Wave 21 remaining gates'
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Prove deterministic Wave 21 reconstruction
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          node tools/build-counter-selector-wave-21.mjs
+          node tools/validate-counter-selector-wave-21.mjs
+          node test/counter-selector-wave-21.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+
+      - name: Publish permanent Wave 21 head
+        run: git push origin HEAD:agent/counter-selector-wave-21-gate-exhaustion
