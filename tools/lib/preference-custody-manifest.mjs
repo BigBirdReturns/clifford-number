@@ -1,11 +1,24 @@
 export const PREFERENCE_CUSTODY_MANIFEST_SCHEMA_VERSION = 'preference-custody-control-manifest@1';
 export const PREFERENCE_CUSTODY_MANIFEST_BUILD_SCHEMA_VERSION = 'preference-custody-control-manifest-build@1';
 
-const REQUIRED_CONTROL_IDS = ['PC-01', 'PC-02', 'PC-03', 'PC-04', 'PC-05', 'PC-06', 'PC-07', 'PC-08', 'PC-09'];
+const REQUIRED_CONTROL_IDS = [
+  'PC-01',
+  'PC-02',
+  'PC-03',
+  'PC-04',
+  'PC-05',
+  'PC-06',
+  'PC-07',
+  'PC-08',
+  'PC-09',
+  'PC-10'
+];
+
 const REQUIRED_FAILURE_CLASSES = [
   'agenda_formation_and_collective_option_generation',
   'attrition_and_refusal_censoring',
   'authority_laundering_and_nonbinding_consultation',
+  'dynamic_preference_change_and_measurement_equifinality',
   'exposure_policy_confounding',
   'model_metric_policy_and_validation_succession',
   'negotiated_package_formation_and_collective_bargaining',
@@ -13,9 +26,11 @@ const REQUIRED_FAILURE_CLASSES = [
   'option_set_starvation',
   'subgroup_response_capacity_and_burden'
 ];
+
 const REQUIRED_IDENTIFICATION_STAGES = [
   'agenda_formation',
   'attrition_and_refusal',
+  'dynamic_preference_change',
   'exposure_policy',
   'option_set',
   'package_formation_and_bargaining',
@@ -24,6 +39,8 @@ const REQUIRED_IDENTIFICATION_STAGES = [
   'subgroup_distribution',
   'system_succession_and_validation'
 ];
+
+const EPSILON = 1e-12;
 
 function object(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -47,6 +64,10 @@ function sorted(values) {
 
 function sameMembers(left, right) {
   return JSON.stringify(sorted(unique(left))) === JSON.stringify(sorted(unique(right)));
+}
+
+function close(left, right, tolerance = EPSILON) {
+  return Math.abs(Number(left) - Number(right)) <= tolerance;
 }
 
 function requireFalse(value, label, errors) {
@@ -197,7 +218,7 @@ function summarizeControl(control, build) {
           bargaining_impasse_is_missing_preference_data: build.classification?.bargaining_impasse_is_missing_preference_data
         }
       };
-    default:
+    case 'PC-09':
       return {
         ...common,
         proof_summary: {
@@ -225,6 +246,37 @@ function summarizeControl(control, build) {
           public_badge_identifies_current_artifact: build.classification?.public_badge_identifies_current_artifact
         }
       };
+    case 'PC-10':
+      return {
+        ...common,
+        proof_summary: {
+          world_count: build.metrics?.world_count,
+          distinct_observed_headline_signatures: build.metrics?.distinct_observed_headline_signatures,
+          distinct_latent_headline_signatures: build.metrics?.distinct_latent_headline_signatures,
+          distinct_mechanism_signatures: build.metrics?.distinct_mechanism_signatures,
+          worlds_with_individual_conversion: build.metrics?.worlds_with_individual_conversion,
+          worlds_without_individual_conversion: build.metrics?.worlds_without_individual_conversion,
+          worlds_with_stable_panel_identity: build.metrics?.worlds_with_stable_panel_identity,
+          worlds_with_composition_change: build.metrics?.worlds_with_composition_change,
+          worlds_with_instrument_drift: build.metrics?.worlds_with_instrument_drift,
+          worlds_with_strategic_compliance: build.metrics?.worlds_with_strategic_compliance,
+          worlds_with_imputation: build.metrics?.worlds_with_imputation,
+          worlds_with_targeted_performative_path: build.metrics?.worlds_with_targeted_performative_path,
+          maximum_observed_latent_total_variation: build.metrics?.maximum_observed_latent_total_variation,
+          baseline_A_share: build.metrics?.baseline_A_share,
+          post_A_share: build.metrics?.post_A_share,
+          observed_A_share_shift: build.metrics?.observed_A_share_shift,
+          aggregate_shift_identifies_individual_preference_change: build.classification?.aggregate_shift_identifies_individual_preference_change,
+          stable_panel_identity_alone_is_sufficient: build.classification?.stable_panel_identity_alone_is_sufficient,
+          instrument_invariance_or_crosswalk_required: build.classification?.instrument_invariance_or_crosswalk_required,
+          reported_choice_always_equals_latent_preference: build.classification?.reported_choice_always_equals_latent_preference,
+          targeted_exposure_conversion_supports_performative_path: build.classification?.targeted_exposure_conversion_supports_performative_path,
+          targeted_exposure_conversion_establishes_manipulation: build.classification?.targeted_exposure_conversion_establishes_manipulation,
+          binding_public_authority_supported: build.classification?.binding_public_authority_supported
+        }
+      };
+    default:
+      throw new Error(`unsupported preference custody control ${control.control_id}`);
   }
 }
 
@@ -234,12 +286,12 @@ export function validatePreferenceCustodyManifest(manifest) {
   const requirements = array(manifest?.identification_requirements);
 
   if (manifest?.schema_version !== PREFERENCE_CUSTODY_MANIFEST_SCHEMA_VERSION) errors.push('preference custody manifest schema mismatch');
-  if (!text(manifest?.manifest_id)) errors.push('manifest_id is required');
+  if (manifest?.manifest_id !== 'preference-custody-laboratory-floor-v8') errors.push('manifest_id must remain preference-custody-laboratory-floor-v8');
   if (manifest?.status !== 'synthetic_control_floor') errors.push('manifest status must remain synthetic_control_floor');
   if (manifest?.graph_effect !== 'none') errors.push('manifest graph_effect must remain none');
   requireFalse(manifest?.counts_toward_thesis_evidence, 'manifest counts_toward_thesis_evidence', errors);
   if (!sameMembers(controls.map(control => control.control_id), REQUIRED_CONTROL_IDS)) {
-    errors.push('manifest must contain exactly PC-01, PC-02, PC-03, PC-04, PC-05, PC-06, PC-07, PC-08, and PC-09');
+    errors.push('manifest must contain exactly PC-01 through PC-10');
   }
   if (!sameMembers(controls.map(control => control.failure_class), REQUIRED_FAILURE_CLASSES)) errors.push('manifest failure-class coverage is incomplete');
 
@@ -258,8 +310,9 @@ export function validatePreferenceCustodyManifest(manifest) {
     if (!text(requirement?.required_state) || !text(requirement?.refused_inference)) errors.push(`identification stage ${requirement?.stage} lacks state or refusal`);
   }
   if (unique(manifest?.open_frontiers).length < 5) errors.push('manifest must preserve at least five open frontiers');
+  if (array(manifest?.open_frontiers).includes('dynamic_preference_change')) errors.push('dynamic_preference_change must be removed from open frontiers after PC-10 admission');
   requireFalse(manifest?.promotion_boundary?.laboratory_controls_are_real_world_evidence, 'laboratory_controls_are_real_world_evidence', errors);
-  if (unique(manifest?.promotion_boundary?.real_case_requires).length < 28) errors.push('real-case promotion requirements are incomplete');
+  if (unique(manifest?.promotion_boundary?.real_case_requires).length < 36) errors.push('real-case promotion requirements are incomplete');
   if (!text(manifest?.promotion_boundary?.promotion_authority)) errors.push('promotion authority is required');
   if (!array(manifest?.prohibited_inferences).length) errors.push('prohibited inferences are required');
   if (!text(manifest?.interpretation_contract?.contract_id)) errors.push('interpretation contract ID is required');
@@ -282,7 +335,9 @@ export function compilePreferenceCustodyManifest(manifest, buildsByPath) {
   });
 
   const refusalRules = unique(controls.flatMap(control => control.observed_refusal_rules));
-  const allRequiredRulesPresent = controls.every(control => control.required_refusal_rules.every(rule => control.observed_refusal_rules.includes(rule)));
+  const allRequiredRulesPresent = controls.every(control => (
+    control.required_refusal_rules.every(rule => control.observed_refusal_rules.includes(rule))
+  ));
 
   return {
     schema_version: PREFERENCE_CUSTODY_MANIFEST_BUILD_SCHEMA_VERSION,
@@ -314,15 +369,20 @@ export function compilePreferenceCustodyManifest(manifest, buildsByPath) {
   };
 }
 
+function check(condition, message, errors) {
+  if (!condition) errors.push(message);
+}
+
 export function validatePreferenceCustodyManifestBuild(compiled) {
   const errors = [];
   if (compiled?.schema_version !== PREFERENCE_CUSTODY_MANIFEST_BUILD_SCHEMA_VERSION) errors.push('preference custody manifest build schema mismatch');
+  if (compiled?.manifest_id !== 'preference-custody-laboratory-floor-v8') errors.push('compiled manifest_id must remain preference-custody-laboratory-floor-v8');
   if (compiled?.status !== 'laboratory_floor_qualified') errors.push('compiled manifest status must be laboratory_floor_qualified');
   if (compiled?.graph_effect !== 'none') errors.push('compiled manifest graph_effect must remain none');
   requireFalse(compiled?.counts_toward_thesis_evidence, 'compiled counts_toward_thesis_evidence', errors);
   requireFalse(compiled?.conclusion_generated, 'compiled conclusion_generated', errors);
   if (compiled?.real_world_evidence_state !== 'none') errors.push('compiled manifest must preserve real_world_evidence_state none');
-  if (compiled?.control_count !== 9) errors.push('compiled manifest must contain nine controls');
+  if (compiled?.control_count !== 10) errors.push('compiled manifest must contain ten controls');
   if (!sameMembers(compiled?.failure_classes, REQUIRED_FAILURE_CLASSES)) errors.push('compiled failure-class coverage is incomplete');
   if (!sameMembers(array(compiled?.controls).map(control => control.control_id), REQUIRED_CONTROL_IDS)) errors.push('compiled control IDs are incomplete');
 
@@ -348,94 +408,120 @@ export function validatePreferenceCustodyManifestBuild(compiled) {
   const pc7 = controls['PC-07'];
   const pc8 = controls['PC-08'];
   const pc9 = controls['PC-09'];
+  const pc10 = controls['PC-10'];
 
-  if (!(pc1?.proof_summary?.maximum_naive_drift > 0.3)) errors.push('PC-01 must demonstrate material exposure drift');
-  if (!(pc1?.proof_summary?.maximum_corrected_drift <= 1e-12)) errors.push('PC-01 corrected drift must recover the frozen distribution');
-  if (!(pc2?.proof_summary?.distinct_observation_signatures >= 2)) errors.push('PC-02 must demonstrate distinct observations from one population');
-  if (!(pc2?.proof_summary?.maximum_naive_full_vector_drift >= 0.3)) errors.push('PC-02 must demonstrate material option-set drift');
-  if (!(pc3?.proof_summary?.distinct_latent_world_signatures >= 3)) errors.push('PC-03 must preserve at least three latent worlds');
-  if (pc3?.proof_summary?.distinct_observation_signatures !== 1) errors.push('PC-03 must preserve one shared observation signature');
-  if (!(pc3?.proof_summary?.maximum_pairwise_latent_total_variation >= 0.3)) errors.push('PC-03 must preserve material latent separation');
-  if (pc4?.proof_summary?.distinct_headline_signatures !== 1) errors.push('PC-04 must preserve one shared normalized headline');
-  if (!(pc4?.proof_summary?.distinct_full_outcome_signatures >= 3)) errors.push('PC-04 must preserve at least three distinct full outcomes');
-  if (!(pc4?.proof_summary?.distinct_mechanism_signatures >= 3)) errors.push('PC-04 must preserve at least three distinct disposition mechanisms');
-  if (!(pc4?.proof_summary?.observed_total_range >= 250)) errors.push('PC-04 must preserve material denominator variation');
-  if (!(pc4?.proof_summary?.exit_total_range >= 250)) errors.push('PC-04 must preserve material exit variation');
-  if (!(pc4?.proof_summary?.nonresponse_total_range >= 250)) errors.push('PC-04 must preserve material nonresponse variation');
-  if (pc5?.proof_summary?.distinct_aggregate_headline_signatures !== 1) errors.push('PC-05 must preserve one shared aggregate headline');
-  if (!(pc5?.proof_summary?.distinct_subgroup_outcome_signatures >= 3)) errors.push('PC-05 must preserve at least three subgroup outcomes');
-  if (!(pc5?.proof_summary?.distinct_burden_signatures >= 3)) errors.push('PC-05 must preserve at least three burden distributions');
-  if (!(pc5?.proof_summary?.maximum_subgroup_success_rate_gap >= 0.4)) errors.push('PC-05 must preserve a material subgroup success-rate gap');
-  if (!(pc5?.proof_summary?.maximum_adaptation_cost_ratio >= 15)) errors.push('PC-05 must preserve material adaptation-cost inequality');
-  if (pc5?.proof_summary?.aggregate_success_rate !== 0.8) errors.push('PC-05 must preserve the frozen 80 percent aggregate success rate');
-  if (pc6?.proof_summary?.distinct_aggregate_headline_signatures !== 1) errors.push('PC-06 must preserve one shared support headline');
-  if (!(pc6?.proof_summary?.distinct_support_evidence_classes >= 3)) errors.push('PC-06 must preserve at least three support-evidence classes');
-  if (!(pc6?.proof_summary?.distinct_authority_classes >= 3)) errors.push('PC-06 must preserve at least three authority classes');
-  if (!(pc6?.proof_summary?.distinct_authority_resolution_signatures >= 3)) errors.push('PC-06 must preserve at least three authority consequences');
-  if (pc6?.proof_summary?.public_authorized_worlds !== 1) errors.push('PC-06 must preserve exactly one publicly authorized world');
-  if (pc6?.proof_summary?.institutionally_approved_without_public_authorization_worlds !== 2) errors.push('PC-06 must preserve two institutional-only approval worlds');
-  if (pc6?.proof_summary?.binding_public_rejection_worlds !== 1) errors.push('PC-06 must preserve one binding public rejection');
-  if (pc6?.proof_summary?.aggregate_support_rate !== 0.8) errors.push('PC-06 must preserve the frozen 80 percent support rate');
-  if (pc6?.proof_summary?.modeled_support_confers_authorization !== false) errors.push('PC-06 must refuse modeled support as authorization');
-  if (pc6?.proof_summary?.advisory_feedback_confers_authorization !== false) errors.push('PC-06 must refuse advisory feedback as authorization');
-  if (pc6?.proof_summary?.institutional_approval_is_public_authorization !== false) errors.push('PC-06 must separate institutional approval from public authorization');
-  if (pc6?.proof_summary?.aggregate_support_identifies_authorization !== false) errors.push('PC-06 must refuse aggregate support as authorization');
-  if (pc7?.proof_summary?.distinct_preliminary_headline_signatures !== 1) errors.push('PC-07 must preserve one preliminary forced-choice headline');
-  if (pc7?.proof_summary?.distinct_final_option_set_signatures !== 2) errors.push('PC-07 must preserve two final option-set states');
-  if (pc7?.proof_summary?.distinct_agenda_resolution_signatures !== 4) errors.push('PC-07 must preserve four agenda consequences');
-  if (pc7?.proof_summary?.institutionally_controlled_agenda_worlds !== 2) errors.push('PC-07 must preserve two institutionally controlled agenda worlds');
-  if (pc7?.proof_summary?.public_agenda_authority_worlds !== 2) errors.push('PC-07 must preserve two public agenda-authority worlds');
-  if (pc7?.proof_summary?.binding_collective_option_generation_worlds !== 1) errors.push('PC-07 must preserve one binding collective option-generation world');
-  if (pc7?.proof_summary?.binding_objective_rejection_worlds !== 1) errors.push('PC-07 must preserve one binding objective rejection');
-  if (pc7?.proof_summary?.preliminary_A_share !== 0.8) errors.push('PC-07 must preserve the frozen 80 percent preliminary A share');
-  if (pc7?.proof_summary?.latent_C_first_choice_share !== 0.8) errors.push('PC-07 must preserve the frozen 80 percent C first-choice share');
-  if (pc7?.proof_summary?.objective_reject_share !== 0.6) errors.push('PC-07 must preserve the frozen 60 percent objective-rejection share');
-  if (pc7?.proof_summary?.winner_changed_by_binding_amendment !== true) errors.push('PC-07 binding amendment must change the winner');
-  if (pc7?.proof_summary?.forced_choice_identifies_complete_agenda !== false) errors.push('PC-07 must refuse forced choice as the complete agenda');
-  if (pc7?.proof_summary?.advisory_proposal_confers_agenda_authority !== false) errors.push('PC-07 must refuse advisory proposal as agenda authority');
-  if (pc7?.proof_summary?.forced_choice_support_identifies_objective_acceptance !== false) errors.push('PC-07 must separate option preference from objective acceptance');
-  if (pc8?.proof_summary?.distinct_component_poll_signatures !== 1) errors.push('PC-08 must preserve one component poll');
-  if (pc8?.proof_summary?.distinct_package_signatures !== 3) errors.push('PC-08 must preserve three package versions');
-  if (pc8?.proof_summary?.distinct_package_support_signatures !== 3) errors.push('PC-08 must preserve three package-support states');
-  if (pc8?.proof_summary?.marginal_majority_package_support_share !== 0.2) errors.push('PC-08 must preserve 20 percent support for the marginal-majority package');
-  if (pc8?.proof_summary?.protected_package_support_share !== 1) errors.push('PC-08 must preserve complete support for the protected package');
-  if (pc8?.proof_summary?.package_support_gap !== 0.8) errors.push('PC-08 must preserve the 80-point package support gap');
-  if (pc8?.proof_summary?.high_support_nonagreement_worlds !== 2) errors.push('PC-08 must preserve two high-support nonagreement worlds');
-  if (pc8?.proof_summary?.binding_collective_agreement_worlds !== 1) errors.push('PC-08 must preserve one binding collective agreement');
-  if (pc8?.proof_summary?.binding_impasse_worlds !== 1) errors.push('PC-08 must preserve one binding impasse');
-  if (pc8?.proof_summary?.institutionally_approved_without_collective_agreement_worlds !== 2) errors.push('PC-08 must preserve two institutional approvals without collective agreement');
-  if (pc8?.proof_summary?.synthetic_candidate_worlds !== 1) errors.push('PC-08 must preserve one synthetic package candidate');
-  if (pc8?.proof_summary?.maximum_one_sided_group_ratification_gap !== 0.8) errors.push('PC-08 must preserve the 80-point one-sided ratification gap');
-  if (pc8?.proof_summary?.component_marginals_identify_package_acceptance !== false) errors.push('PC-08 must refuse component marginals as package acceptance');
-  if (pc8?.proof_summary?.high_package_support_is_collective_agreement !== false) errors.push('PC-08 must refuse package support as collective agreement');
-  if (pc8?.proof_summary?.synthetic_candidate_can_bind_representatives !== false) errors.push('PC-08 must refuse synthetic candidate authority over representatives');
-  if (pc8?.proof_summary?.advisory_co_design_is_collective_agreement !== false) errors.push('PC-08 must refuse advisory co-design as collective agreement');
-  if (pc8?.proof_summary?.bargaining_impasse_is_missing_preference_data !== false) errors.push('PC-08 must preserve bargaining impasse as a disposition');
-  if (pc9?.proof_summary?.distinct_public_headline_signatures !== 1) errors.push('PC-09 must preserve one public validation headline');
-  if (pc9?.proof_summary?.distinct_successor_artifact_signatures !== 4) errors.push('PC-09 must preserve four runtime artifact identities');
-  if (pc9?.proof_summary?.distinct_successor_metric_signatures !== 2) errors.push('PC-09 must preserve two metric identities');
-  if (pc9?.proof_summary?.distinct_successor_policy_signatures !== 2) errors.push('PC-09 must preserve two policy identities');
-  if (pc9?.proof_summary?.distinct_resolution_signatures !== 6) errors.push('PC-09 must preserve six succession consequences');
-  if (pc9?.proof_summary?.exact_inheritance_worlds !== 1) errors.push('PC-09 must preserve one exact inheritance world');
-  if (pc9?.proof_summary?.unvalidated_runtime_successor_worlds !== 1) errors.push('PC-09 must preserve one unvalidated runtime successor');
-  if (pc9?.proof_summary?.current_noncomparable_metric_worlds !== 1) errors.push('PC-09 must preserve one noncomparable metric world');
-  if (pc9?.proof_summary?.policy_validation_required_worlds !== 1) errors.push('PC-09 must preserve one changed-policy validation gap');
-  if (pc9?.proof_summary?.revalidated_successor_worlds !== 1) errors.push('PC-09 must preserve one fully revalidated successor');
-  if (pc9?.proof_summary?.failed_revalidation_worlds !== 1) errors.push('PC-09 must preserve one failed revalidation');
-  if (pc9?.proof_summary?.current_predictive_claim_worlds !== 4) errors.push('PC-09 must preserve four current predictive claim worlds');
-  if (pc9?.proof_summary?.continuity_claim_worlds !== 2) errors.push('PC-09 must preserve two continuity claim worlds');
-  if (pc9?.proof_summary?.deployment_allowed_worlds !== 3) errors.push('PC-09 must preserve three deployable worlds');
-  if (pc9?.proof_summary?.deployment_blocked_worlds !== 3) errors.push('PC-09 must preserve three blocked worlds');
-  if (pc9?.proof_summary?.public_badge_unbound_worlds !== 2) errors.push('PC-09 must preserve two unbound public badge worlds');
-  if (pc9?.proof_summary?.shared_headline_but_deployment_blocked_worlds !== 3) errors.push('PC-09 must preserve three shared-headline blocked worlds');
-  if (pc9?.proof_summary?.rollback_required_worlds !== 1) errors.push('PC-09 must preserve one rollback requirement');
-  if (pc9?.proof_summary?.prior_validation_transfers_across_runtime_change !== false) errors.push('PC-09 must refuse validation transfer across runtime change');
-  if (pc9?.proof_summary?.same_score_under_changed_metric_is_comparable !== false) errors.push('PC-09 must refuse same score as metric comparability');
-  if (pc9?.proof_summary?.predictive_validation_authorizes_changed_policy !== false) errors.push('PC-09 must refuse predictive validation as changed-policy authority');
-  if (pc9?.proof_summary?.public_badge_identifies_current_artifact !== false) errors.push('PC-09 must refuse badge as current artifact identity');
+  check(pc1?.proof_summary?.maximum_naive_drift > 0.3, 'PC-01 must demonstrate material exposure drift', errors);
+  check(pc1?.proof_summary?.maximum_corrected_drift <= 1e-12, 'PC-01 corrected drift must recover the frozen distribution', errors);
+  check(pc2?.proof_summary?.distinct_observation_signatures >= 2, 'PC-02 must demonstrate distinct observations from one population', errors);
+  check(pc2?.proof_summary?.maximum_naive_full_vector_drift >= 0.3, 'PC-02 must demonstrate material option-set drift', errors);
+  check(pc3?.proof_summary?.distinct_latent_world_signatures >= 3, 'PC-03 must preserve at least three latent worlds', errors);
+  check(pc3?.proof_summary?.distinct_observation_signatures === 1, 'PC-03 must preserve one shared observation signature', errors);
+  check(pc3?.proof_summary?.maximum_pairwise_latent_total_variation >= 0.3, 'PC-03 must preserve material latent separation', errors);
+  check(pc4?.proof_summary?.distinct_headline_signatures === 1, 'PC-04 must preserve one shared normalized headline', errors);
+  check(pc4?.proof_summary?.distinct_full_outcome_signatures >= 3, 'PC-04 must preserve at least three distinct full outcomes', errors);
+  check(pc4?.proof_summary?.distinct_mechanism_signatures >= 3, 'PC-04 must preserve at least three distinct disposition mechanisms', errors);
+  check(pc4?.proof_summary?.observed_total_range >= 250, 'PC-04 must preserve material denominator variation', errors);
+  check(pc4?.proof_summary?.exit_total_range >= 250, 'PC-04 must preserve material exit variation', errors);
+  check(pc4?.proof_summary?.nonresponse_total_range >= 250, 'PC-04 must preserve material nonresponse variation', errors);
+  check(pc5?.proof_summary?.distinct_aggregate_headline_signatures === 1, 'PC-05 must preserve one shared aggregate headline', errors);
+  check(pc5?.proof_summary?.distinct_subgroup_outcome_signatures >= 3, 'PC-05 must preserve at least three subgroup outcomes', errors);
+  check(pc5?.proof_summary?.distinct_burden_signatures >= 3, 'PC-05 must preserve at least three burden distributions', errors);
+  check(pc5?.proof_summary?.maximum_subgroup_success_rate_gap >= 0.4, 'PC-05 must preserve a material subgroup success-rate gap', errors);
+  check(pc5?.proof_summary?.maximum_adaptation_cost_ratio >= 15, 'PC-05 must preserve material adaptation-cost inequality', errors);
+  check(pc5?.proof_summary?.aggregate_success_rate === 0.8, 'PC-05 must preserve the frozen 80 percent aggregate success rate', errors);
+  check(pc6?.proof_summary?.distinct_aggregate_headline_signatures === 1, 'PC-06 must preserve one shared support headline', errors);
+  check(pc6?.proof_summary?.distinct_support_evidence_classes >= 3, 'PC-06 must preserve at least three support-evidence classes', errors);
+  check(pc6?.proof_summary?.distinct_authority_classes >= 3, 'PC-06 must preserve at least three authority classes', errors);
+  check(pc6?.proof_summary?.distinct_authority_resolution_signatures >= 3, 'PC-06 must preserve at least three authority consequences', errors);
+  check(pc6?.proof_summary?.public_authorized_worlds === 1, 'PC-06 must preserve exactly one publicly authorized world', errors);
+  check(pc6?.proof_summary?.institutionally_approved_without_public_authorization_worlds === 2, 'PC-06 must preserve two institutional-only approval worlds', errors);
+  check(pc6?.proof_summary?.binding_public_rejection_worlds === 1, 'PC-06 must preserve one binding public rejection', errors);
+  check(pc6?.proof_summary?.aggregate_support_rate === 0.8, 'PC-06 must preserve the frozen 80 percent support rate', errors);
+  check(pc6?.proof_summary?.modeled_support_confers_authorization === false, 'PC-06 must refuse modeled support as authorization', errors);
+  check(pc6?.proof_summary?.advisory_feedback_confers_authorization === false, 'PC-06 must refuse advisory feedback as authorization', errors);
+  check(pc6?.proof_summary?.institutional_approval_is_public_authorization === false, 'PC-06 must separate institutional approval from public authorization', errors);
+  check(pc6?.proof_summary?.aggregate_support_identifies_authorization === false, 'PC-06 must refuse aggregate support as authorization', errors);
+  check(pc7?.proof_summary?.distinct_preliminary_headline_signatures === 1, 'PC-07 must preserve one preliminary forced-choice headline', errors);
+  check(pc7?.proof_summary?.distinct_final_option_set_signatures === 2, 'PC-07 must preserve two final option-set states', errors);
+  check(pc7?.proof_summary?.distinct_agenda_resolution_signatures === 4, 'PC-07 must preserve four agenda consequences', errors);
+  check(pc7?.proof_summary?.institutionally_controlled_agenda_worlds === 2, 'PC-07 must preserve two institutionally controlled agenda worlds', errors);
+  check(pc7?.proof_summary?.public_agenda_authority_worlds === 2, 'PC-07 must preserve two public agenda-authority worlds', errors);
+  check(pc7?.proof_summary?.binding_collective_option_generation_worlds === 1, 'PC-07 must preserve one binding collective option-generation world', errors);
+  check(pc7?.proof_summary?.binding_objective_rejection_worlds === 1, 'PC-07 must preserve one binding objective rejection', errors);
+  check(pc7?.proof_summary?.preliminary_A_share === 0.8, 'PC-07 must preserve the frozen 80 percent preliminary A share', errors);
+  check(pc7?.proof_summary?.latent_C_first_choice_share === 0.8, 'PC-07 must preserve the frozen 80 percent C first-choice share', errors);
+  check(pc7?.proof_summary?.objective_reject_share === 0.6, 'PC-07 must preserve the frozen 60 percent objective-rejection share', errors);
+  check(pc7?.proof_summary?.winner_changed_by_binding_amendment === true, 'PC-07 binding amendment must change the winner', errors);
+  check(pc7?.proof_summary?.forced_choice_identifies_complete_agenda === false, 'PC-07 must refuse forced choice as the complete agenda', errors);
+  check(pc7?.proof_summary?.advisory_proposal_confers_agenda_authority === false, 'PC-07 must refuse advisory proposal as agenda authority', errors);
+  check(pc7?.proof_summary?.forced_choice_support_identifies_objective_acceptance === false, 'PC-07 must separate option preference from objective acceptance', errors);
+  check(pc8?.proof_summary?.distinct_component_poll_signatures === 1, 'PC-08 must preserve one component poll', errors);
+  check(pc8?.proof_summary?.distinct_package_signatures === 3, 'PC-08 must preserve three package versions', errors);
+  check(pc8?.proof_summary?.distinct_package_support_signatures === 3, 'PC-08 must preserve three package-support states', errors);
+  check(pc8?.proof_summary?.marginal_majority_package_support_share === 0.2, 'PC-08 must preserve 20 percent support for the marginal-majority package', errors);
+  check(pc8?.proof_summary?.protected_package_support_share === 1, 'PC-08 must preserve complete support for the protected package', errors);
+  check(pc8?.proof_summary?.package_support_gap === 0.8, 'PC-08 must preserve the 80-point package support gap', errors);
+  check(pc8?.proof_summary?.high_support_nonagreement_worlds === 2, 'PC-08 must preserve two high-support nonagreement worlds', errors);
+  check(pc8?.proof_summary?.binding_collective_agreement_worlds === 1, 'PC-08 must preserve one binding collective agreement', errors);
+  check(pc8?.proof_summary?.binding_impasse_worlds === 1, 'PC-08 must preserve one binding impasse', errors);
+  check(pc8?.proof_summary?.institutionally_approved_without_collective_agreement_worlds === 2, 'PC-08 must preserve two institutional approvals without collective agreement', errors);
+  check(pc8?.proof_summary?.synthetic_candidate_worlds === 1, 'PC-08 must preserve one synthetic package candidate', errors);
+  check(pc8?.proof_summary?.maximum_one_sided_group_ratification_gap === 0.8, 'PC-08 must preserve the 80-point one-sided ratification gap', errors);
+  check(pc8?.proof_summary?.component_marginals_identify_package_acceptance === false, 'PC-08 must refuse component marginals as package acceptance', errors);
+  check(pc8?.proof_summary?.high_package_support_is_collective_agreement === false, 'PC-08 must refuse package support as collective agreement', errors);
+  check(pc8?.proof_summary?.synthetic_candidate_can_bind_representatives === false, 'PC-08 must refuse synthetic candidate authority over representatives', errors);
+  check(pc8?.proof_summary?.advisory_co_design_is_collective_agreement === false, 'PC-08 must refuse advisory co-design as collective agreement', errors);
+  check(pc8?.proof_summary?.bargaining_impasse_is_missing_preference_data === false, 'PC-08 must preserve bargaining impasse as a disposition', errors);
+  check(pc9?.proof_summary?.distinct_public_headline_signatures === 1, 'PC-09 must preserve one public validation headline', errors);
+  check(pc9?.proof_summary?.distinct_successor_artifact_signatures === 4, 'PC-09 must preserve four runtime artifact identities', errors);
+  check(pc9?.proof_summary?.distinct_successor_metric_signatures === 2, 'PC-09 must preserve two metric identities', errors);
+  check(pc9?.proof_summary?.distinct_successor_policy_signatures === 2, 'PC-09 must preserve two policy identities', errors);
+  check(pc9?.proof_summary?.distinct_resolution_signatures === 6, 'PC-09 must preserve six succession consequences', errors);
+  check(pc9?.proof_summary?.exact_inheritance_worlds === 1, 'PC-09 must preserve one exact inheritance world', errors);
+  check(pc9?.proof_summary?.unvalidated_runtime_successor_worlds === 1, 'PC-09 must preserve one unvalidated runtime successor', errors);
+  check(pc9?.proof_summary?.current_noncomparable_metric_worlds === 1, 'PC-09 must preserve one noncomparable metric world', errors);
+  check(pc9?.proof_summary?.policy_validation_required_worlds === 1, 'PC-09 must preserve one changed-policy validation gap', errors);
+  check(pc9?.proof_summary?.revalidated_successor_worlds === 1, 'PC-09 must preserve one fully revalidated successor', errors);
+  check(pc9?.proof_summary?.failed_revalidation_worlds === 1, 'PC-09 must preserve one failed revalidation', errors);
+  check(pc9?.proof_summary?.current_predictive_claim_worlds === 4, 'PC-09 must preserve four current predictive claim worlds', errors);
+  check(pc9?.proof_summary?.continuity_claim_worlds === 2, 'PC-09 must preserve two continuity claim worlds', errors);
+  check(pc9?.proof_summary?.deployment_allowed_worlds === 3, 'PC-09 must preserve three deployable worlds', errors);
+  check(pc9?.proof_summary?.deployment_blocked_worlds === 3, 'PC-09 must preserve three blocked worlds', errors);
+  check(pc9?.proof_summary?.public_badge_unbound_worlds === 2, 'PC-09 must preserve two unbound public badge worlds', errors);
+  check(pc9?.proof_summary?.shared_headline_but_deployment_blocked_worlds === 3, 'PC-09 must preserve three shared-headline blocked worlds', errors);
+  check(pc9?.proof_summary?.rollback_required_worlds === 1, 'PC-09 must preserve one rollback requirement', errors);
+  check(pc9?.proof_summary?.prior_validation_transfers_across_runtime_change === false, 'PC-09 must refuse validation transfer across runtime change', errors);
+  check(pc9?.proof_summary?.same_score_under_changed_metric_is_comparable === false, 'PC-09 must refuse same score as metric comparability', errors);
+  check(pc9?.proof_summary?.predictive_validation_authorizes_changed_policy === false, 'PC-09 must refuse predictive validation as changed-policy authority', errors);
+  check(pc9?.proof_summary?.public_badge_identifies_current_artifact === false, 'PC-09 must refuse badge as current artifact identity', errors);
+
+  check(pc10?.proof_summary?.world_count === 6, 'PC-10 must preserve six dynamic worlds', errors);
+  check(pc10?.proof_summary?.distinct_observed_headline_signatures === 1, 'PC-10 must preserve one shared observed headline', errors);
+  check(pc10?.proof_summary?.distinct_latent_headline_signatures === 2, 'PC-10 must preserve two latent headline states', errors);
+  check(pc10?.proof_summary?.distinct_mechanism_signatures === 6, 'PC-10 must preserve six distinct mechanisms', errors);
+  check(pc10?.proof_summary?.worlds_with_individual_conversion === 2, 'PC-10 must preserve two conversion worlds', errors);
+  check(pc10?.proof_summary?.worlds_without_individual_conversion === 4, 'PC-10 must preserve four nonconversion worlds', errors);
+  check(pc10?.proof_summary?.worlds_with_stable_panel_identity === 5, 'PC-10 must preserve five stable-panel worlds', errors);
+  check(pc10?.proof_summary?.worlds_with_composition_change === 1, 'PC-10 must preserve one composition-change world', errors);
+  check(pc10?.proof_summary?.worlds_with_instrument_drift === 1, 'PC-10 must preserve one instrument-drift world', errors);
+  check(pc10?.proof_summary?.worlds_with_strategic_compliance === 1, 'PC-10 must preserve one strategic-compliance world', errors);
+  check(pc10?.proof_summary?.worlds_with_imputation === 1, 'PC-10 must preserve one imputation world', errors);
+  check(pc10?.proof_summary?.worlds_with_targeted_performative_path === 1, 'PC-10 must preserve one targeted performative-path world', errors);
+  check(close(pc10?.proof_summary?.maximum_observed_latent_total_variation, 0.2), 'PC-10 must preserve 20 percent maximum observed-latent separation', errors);
+  check(close(pc10?.proof_summary?.baseline_A_share, 0.6), 'PC-10 must preserve the 60 percent baseline A share', errors);
+  check(close(pc10?.proof_summary?.post_A_share, 0.8), 'PC-10 must preserve the 80 percent post-period A share', errors);
+  check(close(pc10?.proof_summary?.observed_A_share_shift, 0.2), 'PC-10 must preserve the 20-point observed A shift', errors);
+  check(pc10?.proof_summary?.aggregate_shift_identifies_individual_preference_change === false, 'PC-10 must refuse aggregate shift as individual preference change', errors);
+  check(pc10?.proof_summary?.stable_panel_identity_alone_is_sufficient === false, 'PC-10 must refuse stable panel identity as sufficient', errors);
+  check(pc10?.proof_summary?.instrument_invariance_or_crosswalk_required === true, 'PC-10 must require instrument invariance or crosswalk', errors);
+  check(pc10?.proof_summary?.reported_choice_always_equals_latent_preference === false, 'PC-10 must separate reported and latent preference', errors);
+  check(pc10?.proof_summary?.targeted_exposure_conversion_supports_performative_path === true, 'PC-10 must preserve one bounded targeted performative path', errors);
+  check(pc10?.proof_summary?.targeted_exposure_conversion_establishes_manipulation === false, 'PC-10 must refuse performative path as manipulation', errors);
+  check(pc10?.proof_summary?.binding_public_authority_supported === false, 'PC-10 must refuse dynamic change as public authority', errors);
 
   if (!sameMembers(array(compiled?.identification_requirements).map(item => item.stage), REQUIRED_IDENTIFICATION_STAGES)) errors.push('compiled identification stages are incomplete');
   if (unique(compiled?.open_frontiers).length < 5) errors.push('compiled manifest must preserve open frontiers');
+  if (array(compiled?.open_frontiers).includes('dynamic_preference_change')) errors.push('compiled open frontiers must not retain dynamic_preference_change');
   requireFalse(compiled?.promotion_boundary?.laboratory_controls_are_real_world_evidence, 'compiled laboratory_controls_are_real_world_evidence', errors);
   if (!text(compiled?.interpretation_contract?.copy_ready_caveat)) errors.push('compiled caveat is required');
   return errors;
@@ -447,7 +533,7 @@ function percentage(value) {
 
 export function renderPreferenceCustodyManifestMarkdown(compiled) {
   const lines = [
-    '# Preference custody laboratory floor v7',
+    '# Preference custody laboratory floor v8',
     '',
     `**Status:** ${compiled.status}`,
     '',
@@ -514,13 +600,10 @@ export function renderPreferenceCustodyManifestMarkdown(compiled) {
         lines.push(`- Marginal-majority package support: ${percentage(control.proof_summary.marginal_majority_package_support_share)}`);
         lines.push(`- Protected package support: ${percentage(control.proof_summary.protected_package_support_share)}`);
         lines.push(`- High-support nonagreement worlds: ${control.proof_summary.high_support_nonagreement_worlds}`);
-        lines.push(`- Binding collective agreements: ${control.proof_summary.binding_collective_agreement_worlds}`);
-        lines.push(`- Binding impasses: ${control.proof_summary.binding_impasse_worlds}`);
+        lines.push(`- Binding collective-agreement worlds: ${control.proof_summary.binding_collective_agreement_worlds}`);
+        lines.push(`- Binding impasse worlds: ${control.proof_summary.binding_impasse_worlds}`);
         break;
-      default:
-        lines.push(`- Distinct runtime artifacts: ${control.proof_summary.distinct_successor_artifact_signatures}`);
-        lines.push(`- Distinct metrics: ${control.proof_summary.distinct_successor_metric_signatures}`);
-        lines.push(`- Distinct policies: ${control.proof_summary.distinct_successor_policy_signatures}`);
+      case 'PC-09':
         lines.push(`- Exact inheritance worlds: ${control.proof_summary.exact_inheritance_worlds}`);
         lines.push(`- Unvalidated runtime successors: ${control.proof_summary.unvalidated_runtime_successor_worlds}`);
         lines.push(`- Noncomparable metric worlds: ${control.proof_summary.current_noncomparable_metric_worlds}`);
@@ -529,21 +612,53 @@ export function renderPreferenceCustodyManifestMarkdown(compiled) {
         lines.push(`- Failed revalidations: ${control.proof_summary.failed_revalidation_worlds}`);
         lines.push(`- Shared-headline blocked worlds: ${control.proof_summary.shared_headline_but_deployment_blocked_worlds}`);
         break;
+      case 'PC-10':
+        lines.push(`- Dynamic worlds: ${control.proof_summary.world_count}`);
+        lines.push(`- Distinct observed headlines: ${control.proof_summary.distinct_observed_headline_signatures}`);
+        lines.push(`- Distinct latent headlines: ${control.proof_summary.distinct_latent_headline_signatures}`);
+        lines.push(`- Distinct mechanisms: ${control.proof_summary.distinct_mechanism_signatures}`);
+        lines.push(`- Individual-conversion worlds: ${control.proof_summary.worlds_with_individual_conversion}`);
+        lines.push(`- Nonconversion worlds: ${control.proof_summary.worlds_without_individual_conversion}`);
+        lines.push(`- Composition-change worlds: ${control.proof_summary.worlds_with_composition_change}`);
+        lines.push(`- Instrument-drift worlds: ${control.proof_summary.worlds_with_instrument_drift}`);
+        lines.push(`- Strategic-compliance worlds: ${control.proof_summary.worlds_with_strategic_compliance}`);
+        lines.push(`- Imputation worlds: ${control.proof_summary.worlds_with_imputation}`);
+        lines.push(`- Targeted performative-path worlds: ${control.proof_summary.worlds_with_targeted_performative_path}`);
+        lines.push(`- Frozen observed A shift: ${percentage(control.proof_summary.observed_A_share_shift)}`);
+        lines.push(`- Maximum observed-latent separation: ${percentage(control.proof_summary.maximum_observed_latent_total_variation)}`);
+        break;
+      default:
+        break;
     }
+    lines.push(`- Graph effect: ${control.graph_effect}`);
+    lines.push(`- Counts toward thesis evidence: ${control.counts_toward_thesis_evidence}`);
+    lines.push(`- Real-world effect claimed: ${control.real_world_effect_claimed}`);
     lines.push('');
   }
 
-  lines.push('## Identification requirements', '');
+  lines.push('## Control integrity', '');
+  for (const [key, value] of Object.entries(compiled.control_integrity)) lines.push(`- ${key}: ${value}`);
+  lines.push('', '## Identification requirements', '');
   for (const requirement of compiled.identification_requirements) {
-    lines.push(`- ${requirement.stage}: ${requirement.required_state}; refusal: ${requirement.refused_inference}`);
+    lines.push(`### ${requirement.stage}`, '');
+    lines.push(`- Required state: ${requirement.required_state}`);
+    lines.push(`- Refusal: ${requirement.refused_inference}`, '');
   }
-  lines.push('', '## Open frontiers', '');
+  lines.push('## Open frontiers', '');
   for (const frontier of compiled.open_frontiers) lines.push(`- ${frontier}`);
-  lines.push('', '## Promotion boundary', '');
-  lines.push(`- Laboratory controls are real-world evidence: ${compiled.promotion_boundary.laboratory_controls_are_real_world_evidence}`);
-  lines.push(`- Promotion authority: ${compiled.promotion_boundary.promotion_authority}`);
-  lines.push('', '## Common refusal rules', '');
-  for (const rule of compiled.refusal_rule_union) lines.push(`- ${rule}`);
+  lines.push(
+    '',
+    '## Promotion boundary',
+    '',
+    `- Laboratory controls are real-world evidence: ${compiled.promotion_boundary.laboratory_controls_are_real_world_evidence}`,
+    `- Promotion authority: ${compiled.promotion_boundary.promotion_authority}`,
+    '',
+    '### Required real-case evidence',
+    ''
+  );
+  for (const item of compiled.promotion_boundary.real_case_requires) lines.push(`- ${item}`);
+  lines.push('', '## Prohibited inferences', '');
+  for (const item of compiled.prohibited_inferences) lines.push(`- ${item}`);
   lines.push('');
   return lines.join('\n');
 }
