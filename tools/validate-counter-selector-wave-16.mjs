@@ -90,7 +90,10 @@ export function validateContract(contract) {
   }
 
   const routeCount = contract.sources.filter((row) => row.record_state.includes('route') || row.record_state.includes('locator')).length;
+  const fullRecordCount = contract.sources.filter((row) => !row.record_state.includes('route') && !row.record_state.includes('locator')).length;
   assert(routeCount === 3, 'three route or locator sources');
+  assert(fullRecordCount === 7, 'seven full-text or official-record sources');
+  assert(routeCount + fullRecordCount === contract.sources.length, 'source categories disjoint and complete');
   assert(contract.sources.every((row) => row.supports.length && row.limits.length), 'source limits');
   assert(contract.boundaries.independent_source_inquiry_is_external_selector_review === false, 'source review boundary');
   assert(contract.boundaries.safe_patient_transition_is_independent_project_handoff === false, 'handoff boundary');
@@ -114,6 +117,10 @@ export function validateProducts() {
   const manifest = read('data/project/counter-selector-wave-16-release-manifest.json');
   assert(registry.counts.new_person_bounded_supports === 4, 'registry support count');
   assert(report.counts.person_attributable_bounded_supports_total === 11, 'report total support');
+  assert(report.source_summary.targeted_source_records === contract.counts.targeted_source_records, 'report source total');
+  assert(report.source_summary.full_text_or_official_record_sources === contract.counts.full_text_or_official_record_sources, 'report full-record count');
+  assert(report.source_summary.route_or_locator_sources === contract.counts.route_only_sources, 'report route count');
+  assert(report.source_summary.full_text_or_official_record_sources + report.source_summary.route_or_locator_sources === report.source_summary.targeted_source_records, 'report source categories disjoint and complete');
   assert(report.release_manifest.combined_sha256 === manifest.combined_sha256, 'manifest link');
   assert(/^[0-9a-f]{64}$/.test(manifest.combined_sha256), 'manifest digest');
   assert(manifest.boundaries.manifest_authorizes_field_test === false, 'manifest field test boundary');

@@ -104,7 +104,7 @@ export function deriveReport(contract, registry, manifest) {
     })),
     source_summary: {
       targeted_source_records: registry.sources.length,
-      full_text_or_official_record_sources: registry.sources.filter((row) => !row.record_state.includes('route_only') && !row.record_state.includes('locator')).length,
+      full_text_or_official_record_sources: registry.sources.filter((row) => !row.record_state.includes('route') && !row.record_state.includes('locator')).length,
       route_or_locator_sources: registry.sources.filter((row) => row.record_state.includes('route') || row.record_state.includes('locator')).length
     },
     next_action: registry.next_action,
