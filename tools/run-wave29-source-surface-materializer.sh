@@ -5,6 +5,7 @@ branch='agent/lake-allocator-war-public-interest-execution-wave-29'
 segments='.github/tmp/wave29-source-surface'
 trigger='.github/tmp/wave29-source-surface-trigger.json'
 temporary_workflow='.github/workflows/temporary-wave29-source-surface-materializer.yml'
+permanent_workflow='.github/workflows/lake-allocator-war-public-interest-execution-wave-29.yml'
 runner='tools/run-wave29-source-surface-materializer.sh'
 base64_sha='36d777b90f63e0b41b2bc7f65b4edd3c3c2b8c2c6302a81126fa4088c01c1d0e'
 archive_sha='59b29c2056b05552a6d3955627cbd816766b2791fe8fc201c088bb86b618e796'
@@ -44,18 +45,34 @@ node --check tools/build-lake-allocator-war-public-interest-execution-wave-29.mj
 node --check tools/validate-lake-allocator-war-public-interest-execution-wave-29.mjs
 node --check test/lake-allocator-war-public-interest-execution-wave-29.test.js
 node -e "JSON.parse(require('fs').readFileSync('data/project/lake-allocator-war-public-interest-execution-wave-29-policy.json','utf8'))"
+test -f "$permanent_workflow"
+cp "$permanent_workflow" /tmp/wave29-permanent-workflow.yml
+workflow_sha="$(sha256sum /tmp/wave29-permanent-workflow.yml | awk '{print $1}')"
+workflow_bytes="$(wc -c < /tmp/wave29-permanent-workflow.yml | tr -d ' ')"
+base64 -w0 /tmp/wave29-permanent-workflow.yml > /tmp/wave29-permanent-workflow.b64
 
+# The workflow-issued token may write ordinary repository content but may not
+# create a permanent workflow file. Commit the six source files and transport
+# cleanup here; publish the checksum-bound workflow separately through the
+# GitHub connector after reading the emitted payload below.
+rm -f "$permanent_workflow"
 rm -rf "$segments"
 rm -f "$trigger" "$temporary_workflow" "$runner"
 git add -A
 git diff --cached --check
-for path in "$segments" "$trigger" "$temporary_workflow" "$runner"; do
+for path in "$segments" "$trigger" "$temporary_workflow" "$runner" "$permanent_workflow"; do
   test ! -e "$path"
 done
 
 git config user.name 'github-actions[bot]'
 git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-git commit -m 'Install allocator-war public-interest execution Wave 29 source surface'
+git commit -m 'Install Wave 29 non-workflow source surface and retire transport'
 git fetch origin "$branch"
 test "$(git rev-parse "origin/$branch")" = "$original_sha"
 git push origin "HEAD:$branch"
+
+printf 'WAVE29_WORKFLOW_SHA256=%s\n' "$workflow_sha"
+printf 'WAVE29_WORKFLOW_BYTES=%s\n' "$workflow_bytes"
+printf 'WAVE29_WORKFLOW_BASE64_BEGIN\n'
+cat /tmp/wave29-permanent-workflow.b64
+printf '\nWAVE29_WORKFLOW_BASE64_END\n'
