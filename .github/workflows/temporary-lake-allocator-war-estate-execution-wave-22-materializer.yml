@@ -143,12 +143,48 @@ jobs:
           git add -A
           git diff --check
 
-      - name: Run complete repository gate
+      - name: Run complete repository gate and reseal lake
         shell: bash
         run: |
           set -euo pipefail
           npm run release:check
+          for pass in 1 2 3; do
+            echo "allocator-war estate execution Wave 22 post-release seal pass $pass"
+            node tools/build-lake-index.mjs
+            node tools/stabilize-lake-index.mjs
+            node tools/stabilize-lake-generator-contracts-wave-19.mjs
+            node tools/reconcile-lake-receipt-semantics.mjs
+            node tools/stabilize-lake-receipt-custody-wave-20.mjs
+            node tools/stabilize-lake-allocator-war-wave-21.mjs
+            node tools/build-lake-gap-summary.mjs
+            node tools/validate-lake-index.mjs
+            node tools/validate-lake-receipt-semantics.mjs
+            node tools/validate-lake-gap-summary.mjs
+            node tools/reconcile-lake-identifier-topology-wave-18.mjs
+            node tools/reconcile-lake-generator-contracts-wave-19.mjs
+            node tools/reconcile-lake-receipt-custody-wave-20.mjs
+            node tools/reconcile-lake-allocator-war-wave-21.mjs
+            LAW22_SKIP_SHARDS=1 node tools/validate-lake-allocator-war-estate-execution-wave-22.mjs
+            git add -A
+          done
+          node tools/shard-lake-index.mjs
+          node tools/validate-lake-index-shards.mjs
+          node tools/build-lake-basin-index.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-residual-frontier-wave-17.mjs
+          node test/lake-residual-frontier-wave-17.test.js
+          node tools/validate-lake-identifier-topology-wave-18.mjs
+          node test/lake-identifier-topology-wave-18.test.js
+          node tools/validate-lake-generator-contracts-wave-19.mjs
+          node test/lake-generator-contracts-wave-19.test.js
+          node tools/validate-lake-receipt-custody-wave-20.mjs
+          node test/lake-receipt-custody-wave-20.test.js
+          node tools/validate-lake-allocator-war-wave-21.mjs
+          node test/lake-allocator-war-wave-21.test.js
+          node tools/validate-lake-allocator-war-estate-execution-wave-22.mjs
+          node test/lake-allocator-war-estate-execution-wave-22.test.js
           git add -A
+          git diff --cached --check
           echo "staged_tree=$(git write-tree)" >> "$GITHUB_ENV"
 
       - name: Restore and revalidate the staged lake epoch
@@ -170,7 +206,11 @@ jobs:
           git add -A
           git diff --cached --check
           git diff --quiet
-          test "$(git write-tree)" = "$staged_tree"
+          current_tree="$(git write-tree)"
+          if [ "$current_tree" != "$staged_tree" ]; then
+            git diff --name-status "$staged_tree" "$current_tree"
+            exit 1
+          fi
           test ! -e .github/tmp/lake-allocator-war-estate-execution-wave-22-trigger.json
           test ! -e .github/workflows/temporary-lake-allocator-war-estate-execution-wave-22-materializer.yml
           test ! -e tools/materialize-lake-allocator-war-estate-execution-wave-22.mjs
@@ -186,6 +226,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git diff --cached --check
+          test "$(git write-tree)" = "$staged_tree"
           git commit -m "Materialize allocator-war estate execution Wave 22"
           git fetch origin agent/allocator-war-estate-acquisition-wave-22
           test "$(git rev-parse origin/agent/allocator-war-estate-acquisition-wave-22)" = "$original_sha"
