@@ -1,6 +1,10 @@
 name: Materialize Counter-Selector Wave 26
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-26.yml'
   push:
     branches:
       - 'agent/counter-selector-wave-26-observability-pivot'
@@ -99,4 +103,4 @@ jobs:
       - name: Publish permanent Wave 26 head
         run: git push origin HEAD:agent/counter-selector-wave-26-observability-pivot
 
-# rearmed after PR registration
+# PR and push transport routes; evidence bytes remain archive-bound.
