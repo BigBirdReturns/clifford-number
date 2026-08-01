@@ -287,3 +287,8 @@ Wave 27 executes the two public-interest tasks unlocked by the repaired federal 
 ## Allocator-war public-interest implementation Wave 28
 
 Wave 28 converts the two partial public-interest results into twelve exact implementation acquisition tasks across five estate owners. The queues preserve zero evidence, estate adoption, findings, graph effects, and publication authority. See `reports/lake-allocator-war-public-interest-implementation-wave-28.md`.
+
+
+## Allocator-war public-interest execution Wave 29
+
+Wave 29 executes all twelve public-interest implementation obligations against thirty-four exact official source receipts. Eleven results remain partial and one terminates as unavailable after bounded search. The wave preserves zero complete denominators, evidence rows, estate adoptions, findings, graph effects, and publication clearances. See `reports/lake-allocator-war-public-interest-execution-wave-29.md`.

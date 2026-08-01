@@ -111,8 +111,13 @@ export function validateArtifacts(state) {
   const inheritedByRef = new Map(inheritedRegistry.source_registry.map(row => [row.source_ref, row]));
   const expectedInherited = policy.source_contract.inherited_source_refs.map(ref => inheritedByRef.get(ref));
   if (expectedInherited.some(row => !row)) fail(errors, 'Wave 29 inherited source absent');
-  const expectedSourcePlan = buildSourcePlan(policy, inheritedRegistry);
-  if (!same(sourcePlan, expectedSourcePlan)) fail(errors, 'Wave 29 source plan differs from deterministic build');
+  let expectedSourcePlan = null;
+  try {
+    expectedSourcePlan = buildSourcePlan(policy, inheritedRegistry);
+  } catch (error) {
+    fail(errors, 'Wave 29 deterministic source-plan build failed: ' + error.message);
+  }
+  if (expectedSourcePlan && !same(sourcePlan, expectedSourcePlan)) fail(errors, 'Wave 29 source plan differs from deterministic build');
   const sources = sourcePlan.source_registry;
   const plans = sourcePlan.task_plans;
   if (!unique(sources.map(row => row.source_ref))) fail(errors, 'duplicate Wave 29 source reference');

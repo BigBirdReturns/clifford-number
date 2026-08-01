@@ -477,3 +477,9 @@ The two legislative and political-finance rows marked `blocked_no_qualifying_gat
 The two partial Wave 27 public-interest results are decomposed into twelve exact acquisition obligations owned by five estates. Each obligation preserves the repaired nine-source institutional custody, defines a receipt-complete closure target, and requires controls, nulls, refusals, failed paths, no-action rows, comparators, and no-observed-effect rows where applicable.
 
 Queue admission is acquisition routing only. It does not close a source partial, establish estate adoption, adjudicate evidence, create a complete denominator or finding, modify the graph, or clear publication.
+
+
+3.29 **Allocator-war public-interest implementation execution — Wave 29.**
+All twelve Wave 28 implementation obligations are executed against thirty-four exact official source receipts. Eleven results remain partial and one person-level personnel-decision ledger remains unavailable after bounded search. Missing rows, failed searches, no-action states, comparators, controls, refusals, and correction routes remain explicit.
+
+Execution is acquisition only. It does not adjudicate evidence, close a denominator, establish estate adoption, create a finding, modify the graph, treat unavailability as null, or clear publication.
