@@ -47,7 +47,6 @@ jobs:
             | sha256sum --check --strict
           tar -xzf /tmp/counter-selector-wave-08.tar.gz -C .
           rm -rf .github/materializers/counter-selector-wave-08
-          rm .github/workflows/materialize-counter-selector-wave-08.yml
 
       - name: Build, validate, and attack Batch 02 blind review
         shell: bash
@@ -73,8 +72,6 @@ jobs:
             .github/materializers/counter-selector-wave-08/payload-04 \
             .github/materializers/counter-selector-wave-08/payload-05 \
             .github/materializers/counter-selector-wave-08/payload-06 \
-            .github/workflows/counter-selector-wave-08.yml \
-            .github/workflows/materialize-counter-selector-wave-08.yml \
             data/project/counter-selector-blind-review-b02-registry.json \
             data/project/counter-selector-review-disagreement-b02-ledger.json \
             data/project/counter-selector-wave-08-blind-review.json \
