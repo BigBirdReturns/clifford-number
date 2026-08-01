@@ -1,0 +1,94 @@
+name: Temporary materialize corrected SSC Wave 02 review
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/tmp/ssc-wave02-review-correction.b64'
+      - '.github/workflows/temporary-materialize-ssc-wave02-corrected.yml'
+  push:
+    branches: [agent/ssc-wave02-review-corrected-transport]
+    paths:
+      - '.github/tmp/ssc-wave02-review-correction.b64'
+      - '.github/workflows/temporary-materialize-ssc-wave02-corrected.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      BASE: 52a363704857a2da5035c24898f9dfdc38b56754
+      SOURCE: 4c8ec34686d7005b06a94dc75bb8828610be60a1
+      TARGET: agent/ssc-wave02-maintainer-review-sg10
+      B64_SHA: d0c6567afbd5a91dbea50cdf1af0cb3367020240aa853badeb7525d06d039a71
+      XZ_SHA: a3cbc1e554b922114ce5e786dcc634b278480cea1fbfbe691006e358dacbb8d4
+      EXPECTED_TREE: 1ac7c1754aaf3c57347e176ffd0dccbd1a7b57ba
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-review-corrected-transport
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Correct and collapse the reviewed transition
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'OpenAI'
+          git config user.email 'noreply@openai.com'
+
+          cat > /tmp/expected-transport.txt <<'EOF'
+          .github/tmp/ssc-wave02-review-correction.b64
+          .github/workflows/temporary-materialize-ssc-wave02-corrected.yml
+          EOF
+          git diff --name-only "$BASE" HEAD | sort > /tmp/observed-transport.txt
+          sort /tmp/expected-transport.txt -o /tmp/expected-transport.txt
+          diff -u /tmp/expected-transport.txt /tmp/observed-transport.txt
+
+          echo "$B64_SHA  .github/tmp/ssc-wave02-review-correction.b64" | sha256sum -c -
+          base64 --decode .github/tmp/ssc-wave02-review-correction.b64 > /tmp/correction.patch.xz
+          echo "$XZ_SHA  /tmp/correction.patch.xz" | sha256sum -c -
+          xz -dc /tmp/correction.patch.xz > /tmp/correction.patch
+
+          git fetch origin "$TARGET"
+          test "$(git rev-parse "refs/remotes/origin/$TARGET")" = "$BASE"
+          git fetch origin "$SOURCE"
+
+          work=/tmp/ssc-wave02-review-corrected
+          rm -rf "$work"
+          git worktree add --detach "$work" "$SOURCE"
+          git -C "$work" apply --index /tmp/correction.patch
+
+          cd "$work"
+          node tools/build-status-sovereignty-wave-02-review.mjs
+          node tools/validate-status-sovereignty-wave-02-review.mjs
+          node test/status-sovereignty-wave-02-review.test.js
+          node tools/build-status-sovereignty-compact.mjs
+          node tools/validate-status-sovereignty-compact.mjs
+          node test/status-sovereignty-compact.test.js
+          node tools/validate-status-sovereignty-wave-01.mjs
+          node tools/validate-status-sovereignty-wave-01-review.mjs
+          node tools/validate-status-sovereignty-wave-01-second-party-review.mjs
+          node tools/validate-status-sovereignty-wave-02-intake.mjs
+          node tools/build-poof-clifford-ecology.mjs
+          node tools/validate-poof-clifford-ecology.mjs
+          npm run build:pages
+          npm run build:standalone
+          npm run validate:pages
+          test ! -e dist/data/research/status-sovereignty-wave-02-maintainer-review.json
+          test ! -e dist/reports/core-thesis/status-sovereignty/wave-02-review
+          git diff --exit-code
+
+          git reset --soft "$BASE"
+          test "$(git diff --cached --name-only | wc -l)" -eq 35
+          test "$(git write-tree)" = "$EXPECTED_TREE"
+          test -z "$(git diff --cached --name-only | grep -E '(^|/)temporary-|^\.github/tmp/' || true)"
+          git commit -m 'Review SSC-H01 Wave 02 observation packets'
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-parse HEAD^{tree})" = "$EXPECTED_TREE"
+          git push --force-with-lease="refs/heads/$TARGET:$BASE" origin "HEAD:refs/heads/$TARGET"
