@@ -1,0 +1,149 @@
+name: Materialize Counter-Selector Wave 16 targeted receipts
+
+on:
+  push:
+    branches:
+      - 'agent/counter-selector-wave-16-targeted-receipts'
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-16.yml'
+      - '.github/materializers/counter-selector-wave-16/**'
+  workflow_dispatch:
+
+concurrency:
+  group: counter-selector-wave-16-materializer
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/counter-selector-wave-16-targeted-receipts
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify carrier blobs and unpack exact Wave 16 estate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/wave16-expected-blobs <<'EOF'
+            e14e9bf9c1c3e09f3f3658e2e5c9b2d16bb0e1ce  .github/materializers/counter-selector-wave-16/hex-000
+            f35b81a58a41f1d7f8c0bdd5520ff14065e3a649  .github/materializers/counter-selector-wave-16/hex-001
+            a78af43c4a90fb04cc2ae2fea4b9f044c5b6289c  .github/materializers/counter-selector-wave-16/hex-002
+            73ae1b762f872dcd789e1a87c9961d883bfc8f64  .github/materializers/counter-selector-wave-16/hex-003
+            315b176bd2a57e6141210452c1a12e44d4f777fe  .github/materializers/counter-selector-wave-16/hex-004
+            59b9742e3e13f01fcdd9224d2b772513e25868e4  .github/materializers/counter-selector-wave-16/hex-005
+            f4f7bd998cf7b49ed2eb31be38fc8f318e406a5b  .github/materializers/counter-selector-wave-16/hex-006
+            39c75af3f7627ecdd21cc6074984c8f678df57d2  .github/materializers/counter-selector-wave-16/hex-007
+            141ae43e06380c884076f598a148a2339e9bc36d  .github/materializers/counter-selector-wave-16/hex-008
+            23e1f78d9a3b63ebfeb7f628caa9dd47a335b9c2  .github/materializers/counter-selector-wave-16/hex-009
+            e6c552cf2c5d7f3c115f1a4d2dda18e99645a126  .github/materializers/counter-selector-wave-16/hex-010
+            f33634fdb8f0e74efe6d8a826b3cadbc5e3bc705  .github/materializers/counter-selector-wave-16/hex-011
+            f730d610c87004913a6c300a1f4844ec812283c4  .github/materializers/counter-selector-wave-16/hex-012
+            46674f161de4a774331e44e17f0ff5d96db3eeff  .github/materializers/counter-selector-wave-16/hex-013
+            01e194d4dfbc25d63ccaa938ab77eaf76455aad5  .github/materializers/counter-selector-wave-16/hex-014
+            176c4701931d8362d312f03d9dffb11ab609dbf6  .github/materializers/counter-selector-wave-16/hex-015
+            7c5c0cd09cfd8463271705e2b87ad64d0e7e31ce  .github/materializers/counter-selector-wave-16/hex-016
+            e3a9aa3eb47e5147707222fbee2990a5b96c88fd  .github/materializers/counter-selector-wave-16/hex-017
+            656a146bf68ee4326d55facac13a60af879e158a  .github/materializers/counter-selector-wave-16/hex-018
+            f5269e872c394662deaa67d67008b55c80fe503a  .github/materializers/counter-selector-wave-16/hex-019
+            05bfd4cbbb2cde44fa48614d2225a166b55c8239  .github/materializers/counter-selector-wave-16/hex-020
+            31183ad63c1c0c1925c8ed36cb6c2581356ce593  .github/materializers/counter-selector-wave-16/hex-021
+            5777b21cef158b92d9afe7766402c0f85491ddba  .github/materializers/counter-selector-wave-16/hex-022
+          EOF
+          while read -r expected path; do
+            actual="$(git hash-object "$path")"
+            test "$actual" = "$expected" || {
+              echo "carrier blob mismatch: $path expected=$expected actual=$actual" >&2
+              exit 1
+            }
+          done < /tmp/wave16-expected-blobs
+
+          cat .github/materializers/counter-selector-wave-16/hex-* \
+            | xxd -r -p \
+            > /tmp/counter-selector-wave-16.tar.gz
+          echo 'd8475ab3c0379044f33fffe9ae0d91b0582b5893921b067401532fcaaab4e475  /tmp/counter-selector-wave-16.tar.gz' \
+            | sha256sum --check --strict
+          tar -xzf /tmp/counter-selector-wave-16.tar.gz -C .
+          rm -rf .github/materializers/counter-selector-wave-16
+
+      - name: Build, validate, and attack targeted receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-counter-selector-wave-16.mjs
+          node tools/validate-counter-selector-wave-16.mjs
+          node test/counter-selector-wave-16.test.js
+
+      - name: Commit exact permanent Wave 16 estate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          actual="$(git diff --cached --name-only | sort)"
+          expected="$(printf '%s\n' \
+            .github/materializers/counter-selector-wave-16/hex-000 \
+            .github/materializers/counter-selector-wave-16/hex-001 \
+            .github/materializers/counter-selector-wave-16/hex-002 \
+            .github/materializers/counter-selector-wave-16/hex-003 \
+            .github/materializers/counter-selector-wave-16/hex-004 \
+            .github/materializers/counter-selector-wave-16/hex-005 \
+            .github/materializers/counter-selector-wave-16/hex-006 \
+            .github/materializers/counter-selector-wave-16/hex-007 \
+            .github/materializers/counter-selector-wave-16/hex-008 \
+            .github/materializers/counter-selector-wave-16/hex-009 \
+            .github/materializers/counter-selector-wave-16/hex-010 \
+            .github/materializers/counter-selector-wave-16/hex-011 \
+            .github/materializers/counter-selector-wave-16/hex-012 \
+            .github/materializers/counter-selector-wave-16/hex-013 \
+            .github/materializers/counter-selector-wave-16/hex-014 \
+            .github/materializers/counter-selector-wave-16/hex-015 \
+            .github/materializers/counter-selector-wave-16/hex-016 \
+            .github/materializers/counter-selector-wave-16/hex-017 \
+            .github/materializers/counter-selector-wave-16/hex-018 \
+            .github/materializers/counter-selector-wave-16/hex-019 \
+            .github/materializers/counter-selector-wave-16/hex-020 \
+            .github/materializers/counter-selector-wave-16/hex-021 \
+            .github/materializers/counter-selector-wave-16/hex-022 \
+            data/project/counter-selector-targeted-receipt-registry.json \
+            data/project/counter-selector-wave-16-release-manifest.json \
+            data/project/counter-selector-wave-16-targeted-receipts.json \
+            docs/methods/counter-selector-targeted-receipts.md \
+            docs/milestones/counter-selector-wave-16.md \
+            reports/core-thesis/counter-selector-wave-16/data.json \
+            reports/core-thesis/counter-selector-wave-16/index.html \
+            schemas/counter-selector-targeted-receipts.schema.json \
+            test/counter-selector-wave-16.test.js \
+            tools/build-counter-selector-wave-16.mjs \
+            tools/validate-counter-selector-wave-16.mjs | sort)"
+          test "$actual" = "$expected"
+          git diff --cached --check
+          git commit -m 'Acquire Counter-Selector Wave 16 targeted receipts'
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Prove deterministic Wave 16 reconstruction
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          node tools/build-counter-selector-wave-16.mjs
+          node tools/validate-counter-selector-wave-16.mjs
+          node test/counter-selector-wave-16.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+
+      - name: Publish permanent Wave 16 head
+        run: git push origin HEAD:agent/counter-selector-wave-16-targeted-receipts
