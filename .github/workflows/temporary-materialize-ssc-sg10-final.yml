@@ -1,111 +1,34 @@
-name: Temporary rebind SG-10 custody after historical-builder repairs
+name: Temporary export exact SSC SG-10 target tree
 
 on:
   push:
     branches: [agent/ssc-sg10-final-materializer]
     paths:
       - '.github/workflows/temporary-materialize-ssc-sg10-final.yml'
-  pull_request:
-    branches: [main]
-    paths:
-      - '.github/workflows/temporary-materialize-ssc-sg10-final.yml'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  rebind:
+  export-tree:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Recover and verify the immutable custody patch
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PATCH_BLOB: bf958abb7931914d17234b240b7ccde043dc9a32
-        run: |
-          set -Eeuo pipefail
-          curl -fsSL \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H 'Accept: application/vnd.github+json' \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/${PATCH_BLOB}" > /tmp/blob.json
-          test "$(jq -r '.sha' /tmp/blob.json)" = "$PATCH_BLOB"
-          jq -r '.content' /tmp/blob.json | tr -d '\n' | base64 -d > /tmp/sg10-custody.patch.xz
-          test "$(wc -c < /tmp/sg10-custody.patch.xz)" -eq 2424
-          test "$(sha256sum /tmp/sg10-custody.patch.xz | cut -d' ' -f1)" = cf40ef1a170cd06acdfbc7270fb609e6a904805338e485068f180d4f580df284
-          xz -dc /tmp/sg10-custody.patch.xz > /tmp/sg10-custody.patch
-          test "$(wc -c < /tmp/sg10-custody.patch)" -eq 11891
-          test "$(sha256sum /tmp/sg10-custody.patch | cut -d' ' -f1)" = 5766c1fb030f25236c6cd2eaa83e283be1f056217ae6218be67e2bd4d2afc2b8
-      - name: Apply exactly nine custody products to the authorized head
+      - name: Export exact target commit and tree receipts
         env:
           TARGET_BRANCH: agent/ssc-wave02-maintainer-review-sg10-v2
-          EXPECTED_HEAD: 565e17a900ca9752515d64a2ea443705d0eb79c3
+          EXPECTED_HEAD: 8665d17120b936a1bc6cfee42d01a405cbdb11b6
         run: |
           set -Eeuo pipefail
           git fetch --no-tags origin "$TARGET_BRANCH"
-          git switch -C target "origin/$TARGET_BRANCH"
-          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
-          git apply --check --index /tmp/sg10-custody.patch
-          git apply --index /tmp/sg10-custody.patch
-          cat > /tmp/expected-paths <<'PATHS'
-          build/core-thesis/status-sovereignty/data.json
-          build/core-thesis/status-sovereignty/manifest.json
-          data/project/project-stable-ground-sg10-release-manifest.json
-          data/project/project-stable-ground-sg10.json
-          data/project/status-sovereignty-release-manifest.json
-          reports/core-thesis/stable-ground/sg10/checkpoint.json
-          reports/core-thesis/stable-ground/sg10/index.html
-          reports/core-thesis/status-sovereignty/data.json
-          reports/core-thesis/status-sovereignty/index.html
-          PATHS
-          git diff --cached --name-only | sort > /tmp/observed-paths
-          sort -o /tmp/expected-paths /tmp/expected-paths
-          diff -u /tmp/expected-paths /tmp/observed-paths
-          test "$(wc -l < /tmp/observed-paths)" -eq 9
-          ! grep -Eq '^\.github/' /tmp/observed-paths
-      - name: Validate rebound SSC and stable-ground custody
-        run: |
-          set -Eeuo pipefail
-          node tools/validate-status-sovereignty-wave-01-second-party-review.mjs
-          node test/status-sovereignty-wave-01-second-party-review.test.js
-          node tools/validate-status-sovereignty-wave-02-intake.mjs
-          node test/status-sovereignty-wave-02-intake.test.js
-          node tools/validate-status-sovereignty-compact.mjs
-          node test/status-sovereignty-compact.test.js
-          node tools/validate-project-stable-ground-sg09.mjs
-          node test/project-stable-ground-sg09.test.js
-          node tools/validate-project-stable-ground-sg10.mjs
-          node test/project-stable-ground-sg10.test.js
-          test "$(jq -r '.combined_sha256' data/project/status-sovereignty-release-manifest.json)" = 4587ef3565285a41a433ee460d97172d826f5a3f73c05fd1f0e4d1ebb36abf95
-          test "$(jq -r '.combined_sha256' data/project/project-stable-ground-sg10-release-manifest.json)" = 33e94ab2d918a2338f61e3b921052aae133726a3d86c7cab81411f14b9ac6c53
-          npm run release:check
-          git restore --worktree -- \
-            build/axm-identity.json \
-            build/build-hop-report.json \
-            build/hop-graph.json \
-            build/migration-review.md \
-            build/migration-summary.json \
-            build/receipt-graph.json \
-            build/scores.json \
-            build/scout-report.json \
-            build/scout-report.md \
-            build/surface-graph.json
-          test -z "$(git diff --name-only)"
-          git diff --cached --name-only | sort > /tmp/observed-after-release
-          diff -u /tmp/expected-paths /tmp/observed-after-release
-      - name: Publish only the rebound custody products
-        env:
-          TARGET_BRANCH: agent/ssc-wave02-maintainer-review-sg10-v2
-        run: |
-          set -Eeuo pipefail
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git commit -m 'Rebind SG-10 after historical-builder repairs'
-          git push origin "HEAD:$TARGET_BRANCH"
+          actual=$(git rev-parse "origin/$TARGET_BRANCH")
+          test "$actual" = "$EXPECTED_HEAD"
+          tree=$(git rev-parse "$actual^{tree}")
+          echo "TARGET_COMMIT=$actual"
+          echo "TARGET_TREE=$tree"
+          git diff-tree --no-commit-id --name-only -r "$actual" | sort
+          test "$(git diff-tree --no-commit-id --name-only -r "$actual" | wc -l)" -eq 9
