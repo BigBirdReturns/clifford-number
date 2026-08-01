@@ -1,0 +1,46 @@
+name: Temporary export SSC SG-10 exact graph
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-export-ssc-sg10-current.yml'
+  push:
+    branches: [agent/ssc-sg10-current-export-2]
+    paths:
+      - '.github/workflows/temporary-export-ssc-sg10-current.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Package exact current graph
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*'
+          printf '%s\n' "$(git rev-parse origin/main)" > /tmp/SSC-SG10-MAIN.txt
+          printf '%s\n' "$(git rev-parse origin/agent/ssc-wave02-maintainer-review-sg10-v2)" > /tmp/SSC-SG10-REVIEW.txt
+          git archive --format=tar origin/main | xz -T0 -9e > /tmp/ssc-sg10-main-tree.tar.xz
+          git bundle create /tmp/ssc-sg10-graph.bundle --all
+          sha256sum /tmp/ssc-sg10-main-tree.tar.xz > /tmp/ssc-sg10-main-tree.tar.xz.sha256
+          sha256sum /tmp/ssc-sg10-graph.bundle > /tmp/ssc-sg10-graph.bundle.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-sg10-exact-graph
+          path: |
+            /tmp/ssc-sg10-main-tree.tar.xz
+            /tmp/ssc-sg10-main-tree.tar.xz.sha256
+            /tmp/ssc-sg10-graph.bundle
+            /tmp/ssc-sg10-graph.bundle.sha256
+            /tmp/SSC-SG10-MAIN.txt
+            /tmp/SSC-SG10-REVIEW.txt
+          if-no-files-found: error
+          retention-days: 1
