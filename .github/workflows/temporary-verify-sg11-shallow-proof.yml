@@ -1,0 +1,221 @@
+name: TEMP verify SG-11 exact objects and shallow release
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/sg11-shallow-proof-base
+    paths:
+      - '.github/tmp/sg11-shallow-proof-trigger.txt'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sg11-shallow-proof-verifier
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      EXPECTED_MAIN: 2a441e71921b81c997c350683f3c7f6c032ef0fd
+      EXPECTED_CAMPAIGN: 04649fafcc517c0d7eef6279818dd309366eb49b
+      EXPECTED_INTEGRATION: a228e24a6d45516cb507919e5b8999a62e4bc702
+      EXPECTED_PRODUCT: 45cf5c0937f6a9dd5b84abdb5bbd3a2025d0bb5b
+      EXPECTED_PROOF: 5ce0d98aa40f759394570c61c8cca2674ff03159
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify exact lineage and path denominators
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin \
+            main \
+            refs/heads/agent/sg11-campaign-source-04649:refs/remotes/origin/agent/sg11-campaign-source-04649 \
+            refs/heads/agent/sg11-shallow-fetch-integration:refs/remotes/origin/agent/sg11-shallow-fetch-integration \
+            refs/heads/agent/sg11-shallow-fetch-product:refs/remotes/origin/agent/sg11-shallow-fetch-product \
+            refs/heads/agent/sg11-shallow-fetch-proof:refs/remotes/origin/agent/sg11-shallow-fetch-proof
+
+          MAIN="$(git rev-parse origin/main)"
+          CAMPAIGN="$(git rev-parse origin/agent/sg11-campaign-source-04649)"
+          INTEGRATION="$(git rev-parse origin/agent/sg11-shallow-fetch-integration)"
+          PRODUCT="$(git rev-parse origin/agent/sg11-shallow-fetch-product)"
+          PROOF="$(git rev-parse origin/agent/sg11-shallow-fetch-proof)"
+          test "$MAIN" = "$EXPECTED_MAIN"
+          test "$CAMPAIGN" = "$EXPECTED_CAMPAIGN"
+          test "$INTEGRATION" = "$EXPECTED_INTEGRATION"
+          test "$PRODUCT" = "$EXPECTED_PRODUCT"
+          test "$PROOF" = "$EXPECTED_PROOF"
+          test "$(git show -s --format=%P "$INTEGRATION")" = "$MAIN $CAMPAIGN"
+          test "$(git show -s --format=%P "$PRODUCT")" = "$INTEGRATION"
+          test "$(git show -s --format=%P "$PROOF")" = "$MAIN $PRODUCT"
+
+          cat > /tmp/campaign-paths.txt <<'EOF'
+          .github/workflows/status-sovereignty-wave-02-second-party-review.yml
+          build/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+          build/core-thesis/status-sovereignty/wave-02-second-party-review/manifest.json
+          data/project/status-sovereignty-wave-02-second-party-review-campaign.json
+          data/project/status-sovereignty-wave-02-second-party-review-packet-registry.json
+          data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json
+          data/research/status-sovereignty-wave-02-second-party-review-candidates.json
+          data/research/status-sovereignty-wave-02-second-party-review-responses.json
+          docs/milestones/m05-status-sovereignty-wave-02-second-party-review.md
+          docs/ssc-wave-02-second-party-review-intake.md
+          package.json
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/index.html
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/intake.html
+          schemas/status-sovereignty-wave-02-second-party-review-campaign.schema.json
+          schemas/status-sovereignty-wave-02-second-party-review-candidate.schema.json
+          schemas/status-sovereignty-wave-02-second-party-review-receipt.schema.json
+          test/status-sovereignty-wave-02-second-party-review.test.js
+          tools/build-status-sovereignty-wave-02-second-party-review.mjs
+          tools/validate-status-sovereignty-wave-02-second-party-review.mjs
+          EOF
+          sed -i 's/^          //' /tmp/campaign-paths.txt
+          sort -o /tmp/campaign-paths.txt /tmp/campaign-paths.txt
+
+          cat > /tmp/product-paths.txt <<'EOF'
+          .github/workflows/project-stable-ground-sg10.yml
+          .github/workflows/project-stable-ground-sg11.yml
+          .github/workflows/status-sovereignty-wave-02-second-party-review.yml
+          build/core-thesis/status-sovereignty/data.json
+          build/core-thesis/status-sovereignty/manifest.json
+          build/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+          build/core-thesis/status-sovereignty/wave-02-second-party-review/manifest.json
+          data/project/poof-clifford-ecology-release-manifest.json
+          data/project/project-stable-ground-current.json
+          data/project/project-stable-ground-sg11-release-manifest.json
+          data/project/project-stable-ground-sg11.json
+          data/project/status-sovereignty-release-manifest.json
+          data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json
+          docs/milestones/project-stable-ground-sg11.md
+          package.json
+          reports/core-thesis/poof-clifford-ecology/release-manifest.json
+          reports/core-thesis/stable-ground/sg11/checkpoint.json
+          reports/core-thesis/stable-ground/sg11/index.html
+          reports/core-thesis/status-sovereignty/data.json
+          reports/core-thesis/status-sovereignty/index.html
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/data.json
+          reports/core-thesis/status-sovereignty/wave-02-second-party-review/index.html
+          test/project-stable-ground-sg10.test.js
+          test/project-stable-ground-sg11.test.js
+          tools/build-pages.mjs
+          tools/build-project-stable-ground-sg10.mjs
+          tools/build-project-stable-ground-sg11.mjs
+          tools/validate-project-stable-ground-sg10.mjs
+          tools/validate-project-stable-ground-sg11.mjs
+          EOF
+          sed -i 's/^          //' /tmp/product-paths.txt
+          sort -o /tmp/product-paths.txt /tmp/product-paths.txt
+
+          git diff --name-only "$MAIN" "$INTEGRATION" | sort > /tmp/actual-campaign-paths.txt
+          git diff --name-only "$INTEGRATION" "$PRODUCT" | sort > /tmp/actual-product-paths.txt
+          diff -u /tmp/campaign-paths.txt /tmp/actual-campaign-paths.txt
+          diff -u /tmp/product-paths.txt /tmp/actual-product-paths.txt
+          test "$(wc -l < /tmp/actual-campaign-paths.txt)" -eq 20
+          test "$(wc -l < /tmp/actual-product-paths.txt)" -eq 29
+          ! grep -q '^\.github/tmp/' /tmp/actual-product-paths.txt
+          ! grep -q '^\.github/workflows/temporary-' /tmp/actual-product-paths.txt
+
+          git checkout --detach "$PRODUCT"
+          INTEGRATION_TREE="$(git show -s --format=%T "$INTEGRATION")"
+          node <<'NODE'
+          const fs = require('node:fs');
+          const checkpoint = JSON.parse(fs.readFileSync('data/project/project-stable-ground-sg11.json', 'utf8'));
+          const pointer = JSON.parse(fs.readFileSync('data/project/project-stable-ground-current.json', 'utf8'));
+          const expectedMain = process.env.EXPECTED_MAIN;
+          const expectedIntegration = process.env.EXPECTED_INTEGRATION;
+          const expectedTree = process.env.INTEGRATION_TREE;
+          if (checkpoint.trigger.integration_base !== expectedMain) throw new Error('checkpoint integration base mismatch');
+          if (checkpoint.trigger.integration_commit !== expectedIntegration) throw new Error('checkpoint integration commit mismatch');
+          if (checkpoint.trigger.integration_tree !== expectedTree) throw new Error('checkpoint integration tree mismatch');
+          if (checkpoint.canonical_main.commit !== expectedIntegration) throw new Error('checkpoint canonical main mismatch');
+          if (pointer.current_canonical_main_commit !== expectedIntegration) throw new Error('current pointer mismatch');
+          const row = pointer.history.find((entry) => entry.checkpoint_id === 'SG-2026-07-31-11');
+          if (!row || row.integration_commit !== expectedIntegration) throw new Error('pointer history mismatch');
+          NODE
+        env:
+          INTEGRATION_TREE: ${{ env.INTEGRATION_TREE }}
+      - name: Prove full-history release and publication custody
+        run: |
+          set -euo pipefail
+          git checkout --detach "$EXPECTED_PRODUCT"
+          node tools/validate-project-stable-ground-sg11.mjs
+          node test/project-stable-ground-sg11.test.js
+          npm run release:check
+          git reset --hard "$EXPECTED_PRODUCT"
+          git clean -fdx
+          npm run build:pages
+          npm run build:standalone
+          npm run validate:pages
+          for held in \
+            build/core-thesis/status-sovereignty/wave-02-second-party-review \
+            reports/core-thesis/status-sovereignty/wave-02-second-party-review \
+            data/project/status-sovereignty-wave-02-second-party-review-campaign.json \
+            data/project/status-sovereignty-wave-02-second-party-review-packet-registry.json \
+            data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json \
+            data/research/status-sovereignty-wave-02-second-party-review-candidates.json \
+            data/research/status-sovereignty-wave-02-second-party-review-responses.json \
+            docs/milestones/m05-status-sovereignty-wave-02-second-party-review.md \
+            docs/ssc-wave-02-second-party-review-intake.md
+          do
+            test ! -e "dist/$held"
+          done
+          git reset --hard "$EXPECTED_PRODUCT"
+          git clean -fdx
+          node tools/validate-project-stable-ground-sg11.mjs
+          node test/project-stable-ground-sg11.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+      - name: Prove depth-1 synthetic merge release
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/sg11-depth1-proof
+          git clone --no-tags --depth=1 --branch agent/sg11-shallow-fetch-proof \
+            "https://github.com/${GITHUB_REPOSITORY}.git" /tmp/sg11-depth1-proof
+          cd /tmp/sg11-depth1-proof
+          test "$(git rev-parse HEAD)" = "$EXPECTED_PROOF"
+          test "$(git rev-parse --is-shallow-repository)" = true
+          node tools/validate-project-stable-ground-sg11.mjs
+          node test/project-stable-ground-sg11.test.js
+          npm run release:check
+          git reset --hard "$EXPECTED_PROOF"
+          git clean -fdx
+          node tools/validate-project-stable-ground-sg11.mjs
+          node test/project-stable-ground-sg11.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
+      - name: Recheck live-main lease and emit receipt
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          CURRENT_MAIN="$(git rev-parse origin/main)"
+          test "$CURRENT_MAIN" = "$EXPECTED_MAIN"
+          RELEASE_SHA256="$(git show "$EXPECTED_PRODUCT:data/project/project-stable-ground-sg11-release-manifest.json" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).combined_sha256))")"
+          {
+            echo "main=$EXPECTED_MAIN"
+            echo "campaign=$EXPECTED_CAMPAIGN"
+            echo "integration=$EXPECTED_INTEGRATION"
+            echo "integration_tree=$(git show -s --format=%T "$EXPECTED_INTEGRATION")"
+            echo "product=$EXPECTED_PRODUCT"
+            echo "shallow_proof_merge=$EXPECTED_PROOF"
+            echo "sg11_release_sha256=$RELEASE_SHA256"
+            echo "campaign_paths=20"
+            echo "product_paths=29"
+            echo "transport_paths=0"
+            echo "publication_hold_paths=9"
+            echo "full_history_release_check=pass"
+            echo "depth1_release_check=pass"
+          } | tee sg11-exact-shallow-proof-summary.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sg11-exact-shallow-proof-receipt
+          path: sg11-exact-shallow-proof-summary.txt
+          if-no-files-found: error
