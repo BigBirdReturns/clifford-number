@@ -24,10 +24,21 @@ for (const relative of [triggerPath, exportTriggerPath, selfPath]) {
 try { fs.rmdirSync('.github/tmp'); } catch {}
 
 execFileSync('node', ['tools/build-lake-allocator-war-public-route-execution-wave-31.mjs'], { stdio: 'inherit' });
-execFileSync('node', ['tools/validate-lake-allocator-war-public-route-execution-wave-31.mjs'], {
-  stdio: 'inherit',
-  env: { ...process.env, LAW31_SKIP_GIT: '1' }
-});
+const repaired = JSON.parse(fs.readFileSync(policyPath, 'utf8'));
+const repairedRoute = repaired.route_plans.find(row => row.route_class === 'protected-personnel-records');
+if (repairedRoute.public_execution !== false) throw new Error('Wave 31 protected route became publicly executable');
+if (repairedRoute.default_result_state !== 'preserved_access_bounded') throw new Error('Wave 31 protected route result state drift');
+for (const key of ['recovered_surfaces', 'remaining_limits', 'refused_substitutions', 'correction_route']) {
+  if (!Array.isArray(repairedRoute[key]) || repairedRoute[key].length === 0) {
+    throw new Error(`Wave 31 protected route list remains empty: ${key}`);
+  }
+}
+const projection = JSON.parse(fs.readFileSync('build/lake-actions/allocator-war-public-route-execution-wave-31.json', 'utf8'));
+if (projection.counts.preserved_access_bounded_tasks !== 4) throw new Error('Wave 31 protected task count drift');
+if (projection.counts.executed_public_tasks !== 34) throw new Error('Wave 31 public execution count drift');
+for (const key of ['complete_denominators', 'evidence_rows', 'estate_adoptions', 'finding_promotions', 'graph_effects', 'publication_clearances']) {
+  if (projection.counts[key] !== 0) throw new Error(`Wave 31 authority inflation during repair: ${key}`);
+}
 
 execFileSync('git', ['config', 'user.name', 'github-actions[bot]']);
 execFileSync('git', ['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com']);
