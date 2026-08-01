@@ -21,9 +21,10 @@ stage='/tmp/wave32-source'
 expected_archive='25c1cea4adde79a0ebbc4d5f0327c787310aeaa50c633df28fc97af2ccbe4042'
 expected_b64='eed50ae1dba876ccef97a8e5bd51ae89e164bdd487980113a6dbdedbfc9449f1'
 
+for part in "${parts[@]}"; do wc -c "$part"; sha256sum "$part"; done
 cat "${parts[@]}" > "$b64"
 actual_b64="$(sha256sum "$b64" | awk '{print $1}')"
-[[ "$actual_b64" == "$expected_b64" ]] || { echo "Wave 32 source carrier hash mismatch" >&2; exit 1; }
+[[ "$actual_b64" == "$expected_b64" ]] || { echo "Wave 32 source carrier hash mismatch: expected=$expected_b64 actual=$actual_b64" >&2; exit 1; }
 base64 -d "$b64" > "$archive"
 actual_archive="$(sha256sum "$archive" | awk '{print $1}')"
 [[ "$actual_archive" == "$expected_archive" ]] || { echo "Wave 32 source archive hash mismatch" >&2; exit 1; }
