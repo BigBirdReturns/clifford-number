@@ -1,0 +1,39 @@
+name: Preference matched-study admission laboratory
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/matched-study-admission/**'
+      - 'tools/lib/preference-matched-study-admission.mjs'
+      - 'tools/compile-preference-matched-study-admission.mjs'
+      - 'tools/validate-preference-matched-study-admission.mjs'
+      - 'test/preference-matched-study-admission.test.js'
+      - 'docs/preference-custody-matched-study-admission.md'
+      - '.github/workflows/preference-matched-study-admission.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  admission:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Compile matched-study admission fixtures
+        run: node tools/compile-preference-matched-study-admission.mjs
+      - name: Validate comparability execution governance and authority boundaries
+        run: node tools/validate-preference-matched-study-admission.mjs
+      - name: Exercise positive negative refusal succession and tamper fixtures
+        run: node test/preference-matched-study-admission.test.js
+      - name: Preserve deterministic admission projections
+        uses: actions/upload-artifact@v4
+        with:
+          name: preference-matched-study-admission
+          path: |
+            build/research/preference-custody/matched-study-admission.json
+            build/research/preference-custody/matched-study-admission.md
+          if-no-files-found: error
