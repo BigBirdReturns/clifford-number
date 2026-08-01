@@ -1,8 +1,9 @@
 export const PREFERENCE_CUSTODY_MANIFEST_SCHEMA_VERSION = 'preference-custody-control-manifest@1';
 export const PREFERENCE_CUSTODY_MANIFEST_BUILD_SCHEMA_VERSION = 'preference-custody-control-manifest-build@1';
 
-const REQUIRED_CONTROL_IDS = ['PC-01', 'PC-02', 'PC-03', 'PC-04', 'PC-05', 'PC-06'];
+const REQUIRED_CONTROL_IDS = ['PC-01', 'PC-02', 'PC-03', 'PC-04', 'PC-05', 'PC-06', 'PC-07'];
 const REQUIRED_FAILURE_CLASSES = [
+  'agenda_formation_and_collective_option_generation',
   'attrition_and_refusal_censoring',
   'authority_laundering_and_nonbinding_consultation',
   'exposure_policy_confounding',
@@ -11,6 +12,7 @@ const REQUIRED_FAILURE_CLASSES = [
   'subgroup_response_capacity_and_burden'
 ];
 const REQUIRED_IDENTIFICATION_STAGES = [
+  'agenda_formation',
   'attrition_and_refusal',
   'exposure_policy',
   'option_set',
@@ -47,8 +49,8 @@ function requireFalse(value, label, errors) {
   if (value !== false) errors.push(`${label} must remain false`);
 }
 
-function summarizeControl(control, build) {
-  const common = {
+function commonSummary(control, build) {
+  return {
     control_id: control.control_id,
     fixture_id: control.fixture_id,
     failure_class: control.failure_class,
@@ -64,90 +66,111 @@ function summarizeControl(control, build) {
     required_refusal_rules: control.required_refusal_rules,
     observed_refusal_rules: array(build.refusal_rules)
   };
+}
 
-  if (control.control_id === 'PC-01') {
-    return {
-      ...common,
-      proof_summary: {
-        maximum_naive_drift: build.metrics?.max_naive_absolute_drift_from_latent,
-        maximum_corrected_drift: build.metrics?.max_propensity_corrected_absolute_drift_from_latent,
-        exposure_confounding_supported: build.classification?.exposure_confounding_supported,
-        preference_identification_without_propensity: build.classification?.preference_identification_without_propensity
-      }
-    };
+function summarizeControl(control, build) {
+  const common = commonSummary(control, build);
+  switch (control.control_id) {
+    case 'PC-01':
+      return {
+        ...common,
+        proof_summary: {
+          maximum_naive_drift: build.metrics?.max_naive_absolute_drift_from_latent,
+          maximum_corrected_drift: build.metrics?.max_propensity_corrected_absolute_drift_from_latent,
+          exposure_confounding_supported: build.classification?.exposure_confounding_supported,
+          preference_identification_without_propensity: build.classification?.preference_identification_without_propensity
+        }
+      };
+    case 'PC-02':
+      return {
+        ...common,
+        proof_summary: {
+          distinct_observation_signatures: build.metrics?.distinct_observation_signatures,
+          same_population_distinct_observations: build.metrics?.same_population_distinct_observations,
+          maximum_naive_full_vector_drift: build.metrics?.max_unsupported_naive_full_vector_absolute_drift,
+          first_choice_identification: build.classification?.first_choice_identification_from_raw_choices
+        }
+      };
+    case 'PC-03':
+      return {
+        ...common,
+        proof_summary: {
+          distinct_latent_world_signatures: build.metrics?.distinct_latent_world_signatures,
+          distinct_observation_signatures: build.metrics?.distinct_observation_signatures,
+          maximum_pairwise_latent_total_variation: build.metrics?.maximum_pairwise_latent_total_variation,
+          latent_first_choice_identification: build.classification?.latent_first_choice_identification,
+          response_mechanism_identification: build.classification?.response_mechanism_identification
+        }
+      };
+    case 'PC-04':
+      return {
+        ...common,
+        proof_summary: {
+          distinct_headline_signatures: build.metrics?.distinct_headline_signatures,
+          distinct_full_outcome_signatures: build.metrics?.distinct_full_outcome_signatures,
+          distinct_mechanism_signatures: build.metrics?.distinct_mechanism_signatures,
+          observed_total_range: build.metrics?.observed_total_range,
+          exit_total_range: build.metrics?.exit_total_range,
+          nonresponse_total_range: build.metrics?.nonresponse_total_range,
+          preference_change_identification: build.classification?.preference_change_identification_from_headline,
+          strategic_refusal_identification: build.classification?.strategic_refusal_identification_from_headline,
+          population_support_identification: build.classification?.population_support_identification_from_headline
+        }
+      };
+    case 'PC-05':
+      return {
+        ...common,
+        proof_summary: {
+          distinct_aggregate_headline_signatures: build.metrics?.distinct_aggregate_headline_signatures,
+          distinct_subgroup_outcome_signatures: build.metrics?.distinct_subgroup_outcome_signatures,
+          distinct_burden_signatures: build.metrics?.distinct_burden_signatures,
+          maximum_subgroup_success_rate_gap: build.metrics?.maximum_subgroup_success_rate_gap,
+          maximum_adaptation_cost_ratio: build.metrics?.maximum_adaptation_cost_ratio,
+          aggregate_success_rate: build.metrics?.aggregate_success_rate,
+          subgroup_outcome_identification: build.classification?.subgroup_outcome_identification_from_aggregate,
+          adaptation_burden_identification: build.classification?.adaptation_burden_identification_from_aggregate,
+          willingness_identification: build.classification?.willingness_identification_from_adaptation
+        }
+      };
+    case 'PC-06':
+      return {
+        ...common,
+        proof_summary: {
+          distinct_aggregate_headline_signatures: build.metrics?.distinct_aggregate_headline_signatures,
+          distinct_support_evidence_classes: build.metrics?.distinct_support_evidence_classes,
+          distinct_authority_classes: build.metrics?.distinct_authority_classes,
+          distinct_authority_resolution_signatures: build.metrics?.distinct_authority_resolution_signatures,
+          public_authorized_worlds: build.metrics?.public_authorized_worlds,
+          institutionally_approved_without_public_authorization_worlds: build.metrics?.institutionally_approved_without_public_authorization_worlds,
+          binding_public_rejection_worlds: build.metrics?.binding_public_rejection_worlds,
+          aggregate_support_rate: build.metrics?.aggregate_support_rate,
+          modeled_support_confers_authorization: build.classification?.modeled_support_confers_authorization,
+          advisory_feedback_confers_authorization: build.classification?.advisory_feedback_confers_authorization,
+          institutional_approval_is_public_authorization: build.classification?.institutional_approval_is_public_authorization,
+          aggregate_support_identifies_authorization: build.classification?.aggregate_support_identifies_authorization
+        }
+      };
+    default:
+      return {
+        ...common,
+        proof_summary: {
+          distinct_preliminary_headline_signatures: build.metrics?.distinct_preliminary_headline_signatures,
+          distinct_final_option_set_signatures: build.metrics?.distinct_final_option_set_signatures,
+          distinct_agenda_resolution_signatures: build.metrics?.distinct_agenda_resolution_signatures,
+          institutionally_controlled_agenda_worlds: build.metrics?.institutionally_controlled_agenda_worlds,
+          public_agenda_authority_worlds: build.metrics?.public_agenda_authority_worlds,
+          binding_collective_option_generation_worlds: build.metrics?.binding_collective_option_generation_worlds,
+          binding_objective_rejection_worlds: build.metrics?.binding_objective_rejection_worlds,
+          preliminary_A_share: build.metrics?.preliminary_A_share,
+          latent_C_first_choice_share: build.metrics?.latent_C_first_choice_share,
+          objective_reject_share: build.metrics?.objective_reject_share,
+          winner_changed_by_binding_amendment: build.metrics?.winner_changed_by_binding_amendment,
+          forced_choice_identifies_complete_agenda: build.classification?.forced_choice_identifies_complete_agenda,
+          advisory_proposal_confers_agenda_authority: build.classification?.advisory_proposal_confers_agenda_authority,
+          forced_choice_support_identifies_objective_acceptance: build.classification?.forced_choice_support_identifies_objective_acceptance
+        }
+      };
   }
-  if (control.control_id === 'PC-02') {
-    return {
-      ...common,
-      proof_summary: {
-        distinct_observation_signatures: build.metrics?.distinct_observation_signatures,
-        same_population_distinct_observations: build.metrics?.same_population_distinct_observations,
-        maximum_naive_full_vector_drift: build.metrics?.max_unsupported_naive_full_vector_absolute_drift,
-        first_choice_identification: build.classification?.first_choice_identification_from_raw_choices
-      }
-    };
-  }
-  if (control.control_id === 'PC-03') {
-    return {
-      ...common,
-      proof_summary: {
-        distinct_latent_world_signatures: build.metrics?.distinct_latent_world_signatures,
-        distinct_observation_signatures: build.metrics?.distinct_observation_signatures,
-        maximum_pairwise_latent_total_variation: build.metrics?.maximum_pairwise_latent_total_variation,
-        latent_first_choice_identification: build.classification?.latent_first_choice_identification,
-        response_mechanism_identification: build.classification?.response_mechanism_identification
-      }
-    };
-  }
-  if (control.control_id === 'PC-04') {
-    return {
-      ...common,
-      proof_summary: {
-        distinct_headline_signatures: build.metrics?.distinct_headline_signatures,
-        distinct_full_outcome_signatures: build.metrics?.distinct_full_outcome_signatures,
-        distinct_mechanism_signatures: build.metrics?.distinct_mechanism_signatures,
-        observed_total_range: build.metrics?.observed_total_range,
-        exit_total_range: build.metrics?.exit_total_range,
-        nonresponse_total_range: build.metrics?.nonresponse_total_range,
-        preference_change_identification: build.classification?.preference_change_identification_from_headline,
-        strategic_refusal_identification: build.classification?.strategic_refusal_identification_from_headline,
-        population_support_identification: build.classification?.population_support_identification_from_headline
-      }
-    };
-  }
-  if (control.control_id === 'PC-05') {
-    return {
-      ...common,
-      proof_summary: {
-        distinct_aggregate_headline_signatures: build.metrics?.distinct_aggregate_headline_signatures,
-        distinct_subgroup_outcome_signatures: build.metrics?.distinct_subgroup_outcome_signatures,
-        distinct_burden_signatures: build.metrics?.distinct_burden_signatures,
-        maximum_subgroup_success_rate_gap: build.metrics?.maximum_subgroup_success_rate_gap,
-        maximum_adaptation_cost_ratio: build.metrics?.maximum_adaptation_cost_ratio,
-        aggregate_success_rate: build.metrics?.aggregate_success_rate,
-        subgroup_outcome_identification: build.classification?.subgroup_outcome_identification_from_aggregate,
-        adaptation_burden_identification: build.classification?.adaptation_burden_identification_from_aggregate,
-        willingness_identification: build.classification?.willingness_identification_from_adaptation
-      }
-    };
-  }
-  return {
-    ...common,
-    proof_summary: {
-      distinct_aggregate_headline_signatures: build.metrics?.distinct_aggregate_headline_signatures,
-      distinct_support_evidence_classes: build.metrics?.distinct_support_evidence_classes,
-      distinct_authority_classes: build.metrics?.distinct_authority_classes,
-      distinct_authority_resolution_signatures: build.metrics?.distinct_authority_resolution_signatures,
-      public_authorized_worlds: build.metrics?.public_authorized_worlds,
-      institutionally_approved_without_public_authorization_worlds: build.metrics?.institutionally_approved_without_public_authorization_worlds,
-      binding_public_rejection_worlds: build.metrics?.binding_public_rejection_worlds,
-      aggregate_support_rate: build.metrics?.aggregate_support_rate,
-      modeled_support_confers_authorization: build.classification?.modeled_support_confers_authorization,
-      advisory_feedback_confers_authorization: build.classification?.advisory_feedback_confers_authorization,
-      institutional_approval_is_public_authorization: build.classification?.institutional_approval_is_public_authorization,
-      aggregate_support_identifies_authorization: build.classification?.aggregate_support_identifies_authorization
-    }
-  };
 }
 
 export function validatePreferenceCustodyManifest(manifest) {
@@ -161,7 +184,7 @@ export function validatePreferenceCustodyManifest(manifest) {
   if (manifest?.graph_effect !== 'none') errors.push('manifest graph_effect must remain none');
   requireFalse(manifest?.counts_toward_thesis_evidence, 'manifest counts_toward_thesis_evidence', errors);
   if (!sameMembers(controls.map(control => control.control_id), REQUIRED_CONTROL_IDS)) {
-    errors.push('manifest must contain exactly PC-01, PC-02, PC-03, PC-04, PC-05, and PC-06');
+    errors.push('manifest must contain exactly PC-01, PC-02, PC-03, PC-04, PC-05, PC-06, and PC-07');
   }
   if (!sameMembers(controls.map(control => control.failure_class), REQUIRED_FAILURE_CLASSES)) errors.push('manifest failure-class coverage is incomplete');
 
@@ -181,7 +204,7 @@ export function validatePreferenceCustodyManifest(manifest) {
   }
   if (unique(manifest?.open_frontiers).length < 5) errors.push('manifest must preserve at least five open frontiers');
   requireFalse(manifest?.promotion_boundary?.laboratory_controls_are_real_world_evidence, 'laboratory_controls_are_real_world_evidence', errors);
-  if (unique(manifest?.promotion_boundary?.real_case_requires).length < 12) errors.push('real-case promotion requirements are incomplete');
+  if (unique(manifest?.promotion_boundary?.real_case_requires).length < 14) errors.push('real-case promotion requirements are incomplete');
   if (!text(manifest?.promotion_boundary?.promotion_authority)) errors.push('promotion authority is required');
   if (!array(manifest?.prohibited_inferences).length) errors.push('prohibited inferences are required');
   if (!text(manifest?.interpretation_contract?.contract_id)) errors.push('interpretation contract ID is required');
@@ -244,7 +267,7 @@ export function validatePreferenceCustodyManifestBuild(compiled) {
   requireFalse(compiled?.counts_toward_thesis_evidence, 'compiled counts_toward_thesis_evidence', errors);
   requireFalse(compiled?.conclusion_generated, 'compiled conclusion_generated', errors);
   if (compiled?.real_world_evidence_state !== 'none') errors.push('compiled manifest must preserve real_world_evidence_state none');
-  if (compiled?.control_count !== 6) errors.push('compiled manifest must contain six controls');
+  if (compiled?.control_count !== 7) errors.push('compiled manifest must contain seven controls');
   if (!sameMembers(compiled?.failure_classes, REQUIRED_FAILURE_CLASSES)) errors.push('compiled failure-class coverage is incomplete');
   if (!sameMembers(array(compiled?.controls).map(control => control.control_id), REQUIRED_CONTROL_IDS)) errors.push('compiled control IDs are incomplete');
 
@@ -266,6 +289,7 @@ export function validatePreferenceCustodyManifestBuild(compiled) {
   const pc4 = array(compiled?.controls).find(control => control.control_id === 'PC-04');
   const pc5 = array(compiled?.controls).find(control => control.control_id === 'PC-05');
   const pc6 = array(compiled?.controls).find(control => control.control_id === 'PC-06');
+  const pc7 = array(compiled?.controls).find(control => control.control_id === 'PC-07');
 
   if (!(pc1?.proof_summary?.maximum_naive_drift > 0.3)) errors.push('PC-01 must demonstrate material exposure drift');
   if (!(pc1?.proof_summary?.maximum_corrected_drift <= 1e-12)) errors.push('PC-01 corrected drift must recover the frozen distribution');
@@ -298,6 +322,20 @@ export function validatePreferenceCustodyManifestBuild(compiled) {
   if (pc6?.proof_summary?.advisory_feedback_confers_authorization !== false) errors.push('PC-06 must refuse advisory feedback as authorization');
   if (pc6?.proof_summary?.institutional_approval_is_public_authorization !== false) errors.push('PC-06 must separate institutional approval from public authorization');
   if (pc6?.proof_summary?.aggregate_support_identifies_authorization !== false) errors.push('PC-06 must refuse aggregate support as authorization');
+  if (pc7?.proof_summary?.distinct_preliminary_headline_signatures !== 1) errors.push('PC-07 must preserve one preliminary forced-choice headline');
+  if (pc7?.proof_summary?.distinct_final_option_set_signatures !== 2) errors.push('PC-07 must preserve two final option-set states');
+  if (pc7?.proof_summary?.distinct_agenda_resolution_signatures !== 4) errors.push('PC-07 must preserve four agenda consequences');
+  if (pc7?.proof_summary?.institutionally_controlled_agenda_worlds !== 2) errors.push('PC-07 must preserve two institutionally controlled agenda worlds');
+  if (pc7?.proof_summary?.public_agenda_authority_worlds !== 2) errors.push('PC-07 must preserve two public agenda-authority worlds');
+  if (pc7?.proof_summary?.binding_collective_option_generation_worlds !== 1) errors.push('PC-07 must preserve one binding collective option-generation world');
+  if (pc7?.proof_summary?.binding_objective_rejection_worlds !== 1) errors.push('PC-07 must preserve one binding objective rejection');
+  if (pc7?.proof_summary?.preliminary_A_share !== 0.8) errors.push('PC-07 must preserve the frozen 80 percent preliminary A share');
+  if (pc7?.proof_summary?.latent_C_first_choice_share !== 0.8) errors.push('PC-07 must preserve the frozen 80 percent C first-choice share');
+  if (pc7?.proof_summary?.objective_reject_share !== 0.6) errors.push('PC-07 must preserve the frozen 60 percent objective-rejection share');
+  if (pc7?.proof_summary?.winner_changed_by_binding_amendment !== true) errors.push('PC-07 binding amendment must change the winner');
+  if (pc7?.proof_summary?.forced_choice_identifies_complete_agenda !== false) errors.push('PC-07 must refuse forced choice as the complete agenda');
+  if (pc7?.proof_summary?.advisory_proposal_confers_agenda_authority !== false) errors.push('PC-07 must refuse advisory proposal as agenda authority');
+  if (pc7?.proof_summary?.forced_choice_support_identifies_objective_acceptance !== false) errors.push('PC-07 must separate option preference from objective acceptance');
 
   if (!sameMembers(array(compiled?.identification_requirements).map(item => item.stage), REQUIRED_IDENTIFICATION_STAGES)) errors.push('compiled identification stages are incomplete');
   if (unique(compiled?.open_frontiers).length < 5) errors.push('compiled manifest must preserve open frontiers');
@@ -312,7 +350,7 @@ function percentage(value) {
 
 export function renderPreferenceCustodyManifestMarkdown(compiled) {
   const lines = [
-    '# Preference custody laboratory floor v4',
+    '# Preference custody laboratory floor v5',
     '',
     `**Status:** ${compiled.status}`,
     '',
@@ -329,35 +367,50 @@ export function renderPreferenceCustodyManifestMarkdown(compiled) {
   for (const control of compiled.controls) {
     lines.push(`### ${control.control_id}: ${control.failure_class}`, '');
     lines.push(`- Fixture: ${control.fixture_id}`);
-    if (control.control_id === 'PC-01') {
-      lines.push(`- Maximum naive drift: ${percentage(control.proof_summary.maximum_naive_drift)}`);
-      lines.push(`- Maximum corrected drift: ${percentage(control.proof_summary.maximum_corrected_drift)}`);
-    } else if (control.control_id === 'PC-02') {
-      lines.push(`- Distinct observations from one population: ${control.proof_summary.distinct_observation_signatures}`);
-      lines.push(`- Maximum inadmissible full-vector drift: ${percentage(control.proof_summary.maximum_naive_full_vector_drift)}`);
-    } else if (control.control_id === 'PC-03') {
-      lines.push(`- Distinct latent worlds: ${control.proof_summary.distinct_latent_world_signatures}`);
-      lines.push(`- Distinct observation signatures: ${control.proof_summary.distinct_observation_signatures}`);
-      lines.push(`- Maximum pairwise latent total variation: ${percentage(control.proof_summary.maximum_pairwise_latent_total_variation)}`);
-    } else if (control.control_id === 'PC-04') {
-      lines.push(`- Distinct normalized headline signatures: ${control.proof_summary.distinct_headline_signatures}`);
-      lines.push(`- Distinct full outcomes: ${control.proof_summary.distinct_full_outcome_signatures}`);
-      lines.push(`- Observed denominator range: ${control.proof_summary.observed_total_range}`);
-      lines.push(`- Exit range: ${control.proof_summary.exit_total_range}`);
-      lines.push(`- Nonresponse range: ${control.proof_summary.nonresponse_total_range}`);
-    } else if (control.control_id === 'PC-05') {
-      lines.push(`- Distinct aggregate headline signatures: ${control.proof_summary.distinct_aggregate_headline_signatures}`);
-      lines.push(`- Distinct subgroup outcomes: ${control.proof_summary.distinct_subgroup_outcome_signatures}`);
-      lines.push(`- Distinct burden distributions: ${control.proof_summary.distinct_burden_signatures}`);
-      lines.push(`- Maximum subgroup success-rate gap: ${percentage(control.proof_summary.maximum_subgroup_success_rate_gap)}`);
-      lines.push(`- Maximum adaptation-cost ratio: ${Number(control.proof_summary.maximum_adaptation_cost_ratio).toFixed(2)}×`);
-    } else {
-      lines.push(`- Distinct support-evidence classes: ${control.proof_summary.distinct_support_evidence_classes}`);
-      lines.push(`- Distinct authority classes: ${control.proof_summary.distinct_authority_classes}`);
-      lines.push(`- Distinct authority consequences: ${control.proof_summary.distinct_authority_resolution_signatures}`);
-      lines.push(`- Publicly authorized worlds: ${control.proof_summary.public_authorized_worlds}`);
-      lines.push(`- Institutional-only approval worlds: ${control.proof_summary.institutionally_approved_without_public_authorization_worlds}`);
-      lines.push(`- Binding public rejection worlds: ${control.proof_summary.binding_public_rejection_worlds}`);
+    switch (control.control_id) {
+      case 'PC-01':
+        lines.push(`- Maximum naive drift: ${percentage(control.proof_summary.maximum_naive_drift)}`);
+        lines.push(`- Maximum corrected drift: ${percentage(control.proof_summary.maximum_corrected_drift)}`);
+        break;
+      case 'PC-02':
+        lines.push(`- Distinct observations from one population: ${control.proof_summary.distinct_observation_signatures}`);
+        lines.push(`- Maximum inadmissible full-vector drift: ${percentage(control.proof_summary.maximum_naive_full_vector_drift)}`);
+        break;
+      case 'PC-03':
+        lines.push(`- Distinct latent worlds: ${control.proof_summary.distinct_latent_world_signatures}`);
+        lines.push(`- Distinct observation signatures: ${control.proof_summary.distinct_observation_signatures}`);
+        lines.push(`- Maximum pairwise latent total variation: ${percentage(control.proof_summary.maximum_pairwise_latent_total_variation)}`);
+        break;
+      case 'PC-04':
+        lines.push(`- Distinct normalized headline signatures: ${control.proof_summary.distinct_headline_signatures}`);
+        lines.push(`- Distinct full outcomes: ${control.proof_summary.distinct_full_outcome_signatures}`);
+        lines.push(`- Observed denominator range: ${control.proof_summary.observed_total_range}`);
+        lines.push(`- Exit range: ${control.proof_summary.exit_total_range}`);
+        lines.push(`- Nonresponse range: ${control.proof_summary.nonresponse_total_range}`);
+        break;
+      case 'PC-05':
+        lines.push(`- Distinct aggregate headline signatures: ${control.proof_summary.distinct_aggregate_headline_signatures}`);
+        lines.push(`- Distinct subgroup outcomes: ${control.proof_summary.distinct_subgroup_outcome_signatures}`);
+        lines.push(`- Distinct burden distributions: ${control.proof_summary.distinct_burden_signatures}`);
+        lines.push(`- Maximum subgroup success-rate gap: ${percentage(control.proof_summary.maximum_subgroup_success_rate_gap)}`);
+        lines.push(`- Maximum adaptation-cost ratio: ${Number(control.proof_summary.maximum_adaptation_cost_ratio).toFixed(2)}×`);
+        break;
+      case 'PC-06':
+        lines.push(`- Distinct support-evidence classes: ${control.proof_summary.distinct_support_evidence_classes}`);
+        lines.push(`- Distinct authority classes: ${control.proof_summary.distinct_authority_classes}`);
+        lines.push(`- Distinct authority consequences: ${control.proof_summary.distinct_authority_resolution_signatures}`);
+        lines.push(`- Publicly authorized worlds: ${control.proof_summary.public_authorized_worlds}`);
+        lines.push(`- Institutional-only approval worlds: ${control.proof_summary.institutionally_approved_without_public_authorization_worlds}`);
+        lines.push(`- Binding public rejection worlds: ${control.proof_summary.binding_public_rejection_worlds}`);
+        break;
+      default:
+        lines.push(`- Distinct preliminary headline signatures: ${control.proof_summary.distinct_preliminary_headline_signatures}`);
+        lines.push(`- Distinct final option sets: ${control.proof_summary.distinct_final_option_set_signatures}`);
+        lines.push(`- Distinct agenda consequences: ${control.proof_summary.distinct_agenda_resolution_signatures}`);
+        lines.push(`- Public agenda-authority worlds: ${control.proof_summary.public_agenda_authority_worlds}`);
+        lines.push(`- Binding option-generation worlds: ${control.proof_summary.binding_collective_option_generation_worlds}`);
+        lines.push(`- Binding objective-rejection worlds: ${control.proof_summary.binding_objective_rejection_worlds}`);
+        break;
     }
     lines.push('');
   }
