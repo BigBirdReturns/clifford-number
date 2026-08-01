@@ -1,0 +1,49 @@
+name: TEMP materialize SSC-W02 candidate wave and SG-12 v4
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/sg12-candidate-materializer-base-ffd71b
+    paths:
+      - '.github/tmp/sg12-candidate-materializer-trigger-v4.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sg12-candidate-materializer-v4
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct repaired materializer and establish SG-12
+        env:
+          MINIMUM_MAIN: 873597f8254b8fb67452ffbb4146e607afad770b
+          FINAL_PR_NUMBER: '655'
+        run: |
+          set -euo pipefail
+          cat .github/tmp/sg12-candidate-materializer.carrier.* > /tmp/sg12-materializer.b64
+          echo '4a3fb8777f9b3f0f881de29dc1d36165a06e9cd2c75ce7dbf9ff68ccb202a98d  /tmp/sg12-materializer.b64' | sha256sum --check --strict
+          base64 --decode /tmp/sg12-materializer.b64 | gzip --decompress > /tmp/materialize-sg12-candidate-wave.mjs
+          echo 'f0b95e0ae9de7371cbc46c1f8b3909c9ba710d77e7f6fa416ee2924384473995  /tmp/materialize-sg12-candidate-wave.mjs' | sha256sum --check --strict
+          echo 'ab07e249ea4a94d97685eeaa47edb697d48c09db618160807a784ad7f81a8461  .github/tmp/sg12-candidate-materializer-repair.py' | sha256sum --check --strict
+          python .github/tmp/sg12-candidate-materializer-repair.py
+          echo '2d4b280afa7e06e1a5d377a8f00b0357e645d92da5d7e4d6cf6161e5958b0cff  /tmp/materialize-sg12-candidate-wave.mjs' | sha256sum --check --strict
+          node --check /tmp/materialize-sg12-candidate-wave.mjs
+          node /tmp/materialize-sg12-candidate-wave.mjs
+      - name: Upload exact materializer receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: sg12-candidate-materializer-receipt-v4
+          path: sg12-candidate-materializer-summary.txt
+          if-no-files-found: error
