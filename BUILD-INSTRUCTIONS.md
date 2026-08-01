@@ -441,3 +441,9 @@ Queue admission does not create estate adoption, evidence review, a finding, ide
 One lead task per Wave 22 estate queue is selected by declared priority and source sequence, then equipped with an official-first retrieval contract and estate-specific source families. Lead selection is work ordering, not acquisition, review, truth, merit, prevalence, relationship, or estate adoption.
 
 Every packet retains authority state, controls, refusals, negative search, exact receipt fields, a separate future result-ledger path, zero evidence rows, zero graph effect, and blocked publication.
+
+
+3.24 **Allocator-war lead acquisition execution — Wave 24.**
+Wave 24 writes one packet-specific acquisition ledger for every Wave 23 lead packet. Each ledger preserves exact source custody, retrieval state, negative search, excluded and unavailable rows, refusals, correction routes, and gate-unspecified states.
+
+Acquisition rows remain below evidence review. Partial recovery is not a complete denominator, gate-unspecified public records are not institutional gates, shared sources create no relationship, and the wave creates no finding, graph effect, or publication authority.

@@ -257,3 +257,8 @@ Wave 22 converts the eleven allocator-war estate feeds into 52 deterministic acq
 ## Allocator-war lead acquisition launch
 
 Wave 23 selects one lead acquisition packet from each of the eleven Wave 22 estate queues and attaches official-first source families, exact receipt requirements, negative-search duties, and packet-specific future result ledgers. No evidence rows, findings, graph effects, or publication clearances are created. See `reports/lake-allocator-war-lead-acquisition-wave-23.md`.
+
+
+## Allocator-war lead acquisition execution
+
+Wave 24 converts the eleven lead packets into eleven packet-specific acquisition ledgers containing sixty-two bounded acquisition rows. Nine packets retain partial institutional recoveries and two retain gate-unspecified public records. Complete denominators, evidence rows, findings, graph effects, and publication clearances remain zero. See `reports/lake-allocator-war-lead-execution-wave-24.md`.
