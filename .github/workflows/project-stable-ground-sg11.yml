@@ -1,0 +1,88 @@
+name: Project stable-ground supersession 11
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/project-stable-ground-current.json'
+      - 'data/project/project-stable-ground-sg10*.json'
+      - 'data/project/project-stable-ground-sg11*.json'
+      - 'data/project/status-sovereignty-wave-02-second-party-review-*.json'
+      - 'data/research/status-sovereignty-wave-02-second-party-review-*.json'
+      - 'reports/core-thesis/status-sovereignty/wave-02-second-party-review/**'
+      - 'reports/core-thesis/stable-ground/sg11/**'
+      - 'tools/*project-stable-ground-sg11*'
+      - 'test/project-stable-ground-sg11.test.js'
+      - '.github/workflows/project-stable-ground-sg10.yml'
+      - '.github/workflows/project-stable-ground-sg11.yml'
+      - '.github/workflows/status-sovereignty-wave-02-second-party-review.yml'
+      - 'package.json'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/project-stable-ground-current.json'
+      - 'data/project/project-stable-ground-sg10*.json'
+      - 'data/project/project-stable-ground-sg11*.json'
+      - 'data/project/status-sovereignty-wave-02-second-party-review-*.json'
+      - 'data/research/status-sovereignty-wave-02-second-party-review-*.json'
+      - 'reports/core-thesis/status-sovereignty/wave-02-second-party-review/**'
+      - 'reports/core-thesis/stable-ground/sg11/**'
+      - 'tools/*project-stable-ground-sg11*'
+      - 'test/project-stable-ground-sg11.test.js'
+      - '.github/workflows/project-stable-ground-sg10.yml'
+      - '.github/workflows/project-stable-ground-sg11.yml'
+      - '.github/workflows/status-sovereignty-wave-02-second-party-review.yml'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build and validate campaign, SSC, and POOF custody
+        run: |
+          npm run build:status-sovereignty
+          npm run validate:status-sovereignty
+          node test/status-sovereignty-wave-02-second-party-review.test.js
+          npm run build:poof-ecology
+          npm run validate:poof-ecology
+          node test/poof-clifford-ecology.test.js
+      - name: Validate SG-10 history and SG-11 current state
+        run: |
+          node tools/validate-project-stable-ground-sg10.mjs
+          node test/project-stable-ground-sg10.test.js
+          node tools/build-project-stable-ground-sg11.mjs
+          node tools/validate-project-stable-ground-sg11.mjs
+          node test/project-stable-ground-sg11.test.js
+      - name: Prove campaign publication hold
+        run: |
+          npm run build:pages
+          npm run build:standalone
+          npm run validate:pages
+          test ! -e dist/reports/core-thesis/status-sovereignty/wave-02-second-party-review
+          test ! -e dist/data/research/status-sovereignty-wave-02-second-party-review-candidates.json
+          test ! -e dist/data/research/status-sovereignty-wave-02-second-party-review-responses.json
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic current products and frozen SG-10
+        run: |
+          git restore --staged --worktree .
+          git clean -fdx
+          npm run build:status-sovereignty
+          npm run validate:status-sovereignty
+          npm run build:poof-ecology
+          npm run validate:poof-ecology
+          npm run build:stable-ground
+          npm run validate:stable-ground
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
