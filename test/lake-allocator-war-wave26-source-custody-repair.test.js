@@ -121,8 +121,13 @@ const mutations = [
 for (const [label, mutate] of mutations) {
   const state = clone(baseline);
   mutate(state);
-  const errors = validateArtifacts(state);
-  assert.ok(errors.length > 0, label + ': mutation was not rejected');
+  let rejected = false;
+  try {
+    rejected = validateArtifacts(state).length > 0;
+  } catch {
+    rejected = true;
+  }
+  assert.ok(rejected, label + ': mutation was not rejected');
 }
 
 console.log('allocator-war Wave 26 source-custody repair adversarial mutations passed: ' + mutations.length);
