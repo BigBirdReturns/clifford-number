@@ -1,0 +1,48 @@
+name: Temporary export SG-11 exact current main
+
+on:
+  push:
+    branches: [agent/sg11-d92c-main-export]
+    paths:
+      - '.github/workflows/temporary-export-sg11-d92c-main.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: d92c018e85a7099a3c6965da66646295bb2a3b5e
+          fetch-depth: 0
+      - name: Package exact current-main tree and history
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = d92c018e85a7099a3c6965da66646295bb2a3b5e
+          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/MAIN-HEAD.txt
+          printf '%s\n' "$(git show -s --format=%T HEAD)" > /tmp/MAIN-TREE.txt
+          repo="$GITHUB_WORKSPACE"
+          parent="$(dirname "$repo")"
+          base="$(basename "$repo")"
+          tar -C "$parent" --exclude="$base/.git" -cJf /tmp/sg11-d92c-main-tree.tar.xz "$base"
+          git update-ref refs/heads/sg11-d92c-main-export HEAD
+          git bundle create /tmp/sg11-d92c-main.bundle refs/heads/sg11-d92c-main-export
+          git update-ref -d refs/heads/sg11-d92c-main-export
+          sha256sum /tmp/sg11-d92c-main-tree.tar.xz > /tmp/sg11-d92c-main-tree.tar.xz.sha256
+          sha256sum /tmp/sg11-d92c-main.bundle > /tmp/sg11-d92c-main.bundle.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sg11-d92c-main
+          path: |
+            /tmp/sg11-d92c-main-tree.tar.xz
+            /tmp/sg11-d92c-main-tree.tar.xz.sha256
+            /tmp/sg11-d92c-main.bundle
+            /tmp/sg11-d92c-main.bundle.sha256
+            /tmp/MAIN-HEAD.txt
+            /tmp/MAIN-TREE.txt
+          if-no-files-found: error
+          retention-days: 1
