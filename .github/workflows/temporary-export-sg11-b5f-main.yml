@@ -1,4 +1,4 @@
-name: Temporary export SG-11 exact b5f main
+name: Temporary export SG-11 exact 97c895 main
 
 on:
   push:
@@ -21,31 +21,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: b5f93086de47486081269b34cf2eec9a1d887675
+          ref: 97c895626179a0442b084ca423f222ad57d9dcee
           fetch-depth: 0
       - name: Package exact current-main tree and history
         run: |
           set -Eeuo pipefail
-          test "$(git rev-parse HEAD)" = b5f93086de47486081269b34cf2eec9a1d887675
+          test "$(git rev-parse HEAD)" = 97c895626179a0442b084ca423f222ad57d9dcee
           printf '%s\n' "$(git rev-parse HEAD)" > /tmp/MAIN-HEAD.txt
           printf '%s\n' "$(git show -s --format=%T HEAD)" > /tmp/MAIN-TREE.txt
           repo="$GITHUB_WORKSPACE"
           parent="$(dirname "$repo")"
           base="$(basename "$repo")"
-          tar -C "$parent" --exclude="$base/.git" -cJf /tmp/sg11-b5f-main-tree.tar.xz "$base"
-          git update-ref refs/heads/sg11-b5f-main-export HEAD
-          git bundle create /tmp/sg11-b5f-main.bundle refs/heads/sg11-b5f-main-export
-          git update-ref -d refs/heads/sg11-b5f-main-export
-          sha256sum /tmp/sg11-b5f-main-tree.tar.xz > /tmp/sg11-b5f-main-tree.tar.xz.sha256
-          sha256sum /tmp/sg11-b5f-main.bundle > /tmp/sg11-b5f-main.bundle.sha256
+          tar -C "$parent" --exclude="$base/.git" -cJf /tmp/sg11-97c-main-tree.tar.xz "$base"
+          git update-ref refs/heads/sg11-97c-main-export HEAD
+          git bundle create /tmp/sg11-97c-main.bundle refs/heads/sg11-97c-main-export
+          git update-ref -d refs/heads/sg11-97c-main-export
+          sha256sum /tmp/sg11-97c-main-tree.tar.xz > /tmp/sg11-97c-main-tree.tar.xz.sha256
+          sha256sum /tmp/sg11-97c-main.bundle > /tmp/sg11-97c-main.bundle.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: sg11-b5f-main
+          name: sg11-97c-main
           path: |
-            /tmp/sg11-b5f-main-tree.tar.xz
-            /tmp/sg11-b5f-main-tree.tar.xz.sha256
-            /tmp/sg11-b5f-main.bundle
-            /tmp/sg11-b5f-main.bundle.sha256
+            /tmp/sg11-97c-main-tree.tar.xz
+            /tmp/sg11-97c-main-tree.tar.xz.sha256
+            /tmp/sg11-97c-main.bundle
+            /tmp/sg11-97c-main.bundle.sha256
             /tmp/MAIN-HEAD.txt
             /tmp/MAIN-TREE.txt
           if-no-files-found: error
