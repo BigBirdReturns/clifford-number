@@ -35,7 +35,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Correct and collapse the reviewed transition
+      - name: Correct or verify the reviewed transition
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -88,13 +88,24 @@ jobs:
           xz -dc /tmp/correction.patch.xz > /tmp/correction.patch
 
           git fetch origin "$TARGET"
-          test "$(git rev-parse "refs/remotes/origin/$TARGET")" = "$BASE"
-          git fetch origin "$SOURCE"
+          target_sha=$(git rev-parse "refs/remotes/origin/$TARGET")
+          existing=false
+          if [ "$target_sha" != "$BASE" ]; then
+            test "$(git rev-parse "$target_sha^")" = "$BASE"
+            test "$(git rev-parse "$target_sha^{tree}")" = "$EXPECTED_TREE"
+            work_source="$target_sha"
+            existing=true
+          else
+            git fetch origin "$SOURCE"
+            work_source="$SOURCE"
+          fi
 
           work=/tmp/ssc-wave02-review-corrected
           rm -rf "$work"
-          git worktree add --detach "$work" "$SOURCE"
-          git -C "$work" apply --index /tmp/correction.patch
+          git worktree add --detach "$work" "$work_source"
+          if [ "$existing" = false ]; then
+            git -C "$work" apply --index /tmp/correction.patch
+          fi
 
           cd "$work"
           node tools/build-status-sovereignty-wave-02-review.mjs
@@ -115,6 +126,11 @@ jobs:
           test ! -e dist/data/research/status-sovereignty-wave-02-maintainer-review.json
           test ! -e dist/reports/core-thesis/status-sovereignty/wave-02-review
           git diff --exit-code
+
+          if [ "$existing" = true ]; then
+            printf 'verified_existing_review_commit=%s\n' "$target_sha"
+            exit 0
+          fi
 
           git reset --soft "$BASE"
           test "$(git diff --cached --name-only | wc -l)" -eq 35
