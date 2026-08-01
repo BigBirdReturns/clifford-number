@@ -1,0 +1,60 @@
+name: Temporary Wave 29 source-surface split materializer
+
+on:
+  pull_request:
+    branches:
+      - agent/lake-allocator-war-wave-21
+    paths:
+      - '.github/tmp/wave29-source-surface-trigger.json'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: temporary-wave29-source-surface-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Await transport-workflow deletion
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          path='.github/workflows/temporary-wave29-source-surface-materializer.yml'
+          encoded_ref='agent%2Flake-allocator-war-public-interest-execution-wave-29'
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/${path}?ref=${encoded_ref}"
+          for attempt in $(seq 1 150); do
+            status="$(curl -sS -o /dev/null -w '%{http_code}' \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "$api")"
+            if [[ "$status" == '404' ]]; then
+              exit 0
+            fi
+            if [[ "$status" != '200' ]]; then
+              echo "unexpected GitHub contents status: $status" >&2
+              exit 1
+            fi
+            sleep 2
+          done
+          echo 'temporary Wave 29 workflow was not deleted before checkout' >&2
+          exit 1
+
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lake-allocator-war-public-interest-execution-wave-29
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Publish non-workflow source surface
+        run: bash tools/run-wave29-source-surface-materializer.sh
