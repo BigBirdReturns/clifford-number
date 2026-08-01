@@ -149,13 +149,44 @@ const buildsByPath = {
       real_world_effect_claimed: false
     },
     refusal_rules: manifest.controls[5].required_refusal_rules
+  },
+  'build/research/preference-agenda-formation.json': {
+    schema_version: 'preference-agenda-build@1',
+    fixture_id: 'same-forced-choice-different-agenda-v1',
+    graph_effect: 'none',
+    counts_toward_thesis_evidence: false,
+    conclusion_generated: false,
+    metrics: {
+      distinct_preliminary_headline_signatures: 1,
+      distinct_final_option_set_signatures: 2,
+      distinct_agenda_resolution_signatures: 4,
+      institutionally_controlled_agenda_worlds: 2,
+      public_agenda_authority_worlds: 2,
+      binding_collective_option_generation_worlds: 1,
+      binding_objective_rejection_worlds: 1,
+      preliminary_A_share: 0.8,
+      latent_C_first_choice_share: 0.8,
+      objective_reject_share: 0.6,
+      winner_changed_by_binding_amendment: true
+    },
+    classification: {
+      forced_choice_identifies_complete_agenda: false,
+      advisory_proposal_confers_agenda_authority: false,
+      binding_collective_option_generation_changes_outcome: true,
+      forced_choice_support_identifies_objective_acceptance: false,
+      synthetic_prediction_can_exercise_agenda_rights: false,
+      preference_change_present: false,
+      manipulative_intent_inferable: false,
+      real_world_effect_claimed: false
+    },
+    refusal_rules: manifest.controls[6].required_refusal_rules
   }
 };
 
 const compiled = compilePreferenceCustodyManifest(manifest, buildsByPath);
 assert.deepEqual(validatePreferenceCustodyManifestBuild(compiled), []);
 assert.equal(compiled.status, 'laboratory_floor_qualified');
-assert.equal(compiled.control_count, 6);
+assert.equal(compiled.control_count, 7);
 assert.equal(compiled.real_world_evidence_state, 'none');
 assert.equal(compiled.control_integrity.all_graph_effect_none, true);
 assert.equal(compiled.control_integrity.no_thesis_evidence_consumption, true);
@@ -165,29 +196,35 @@ assert.equal(compiled.control_integrity.no_intent_inference, true);
 assert.equal(compiled.control_integrity.all_required_refusal_rules_present, true);
 assert.ok(compiled.refusal_rule_union.includes('same_behavior_does_not_imply_same_preference'));
 assert.ok(compiled.open_frontiers.includes('federated_multilevel_and_successor_authority'));
-assert.ok(!compiled.open_frontiers.includes('binding_public_standing_and_objective_control'));
+assert.ok(compiled.open_frontiers.includes('negotiated_package_formation_and_collective_bargaining'));
+assert.ok(!compiled.open_frontiers.includes('coordinated_refusal_and_collective_bargaining'));
 assert.ok(compiled.refusal_rule_union.includes('organized_refusal_is_not_missing_data'));
 assert.ok(compiled.refusal_rule_union.includes('distributional_acceptability_requires_external_authority'));
 assert.ok(compiled.refusal_rule_union.includes('prediction_is_evidence_not_authority'));
 assert.ok(compiled.refusal_rule_union.includes('public_rejection_blocks_implementation'));
+assert.ok(compiled.refusal_rule_union.includes('forced_choice_is_not_complete_agenda'));
+assert.ok(compiled.refusal_rule_union.includes('binding_objective_rejection_blocks_implementation'));
 
 const markdown = renderPreferenceCustodyManifestMarkdown(compiled);
-assert.match(markdown, /Preference custody laboratory floor v4/);
+assert.match(markdown, /Preference custody laboratory floor v5/);
 assert.match(markdown, /PC-01: exposure_policy_confounding/);
 assert.match(markdown, /PC-02: option_set_starvation/);
 assert.match(markdown, /PC-03: observational_equivalence/);
 assert.match(markdown, /PC-04: attrition_and_refusal_censoring/);
 assert.match(markdown, /PC-05: subgroup_response_capacity_and_burden/);
 assert.match(markdown, /PC-06: authority_laundering_and_nonbinding_consultation/);
+assert.match(markdown, /PC-07: agenda_formation_and_collective_option_generation/);
 assert.match(markdown, /Publicly authorized worlds: 1/);
 assert.match(markdown, /Institutional-only approval worlds: 2/);
 assert.match(markdown, /Binding public rejection worlds: 1/);
+assert.match(markdown, /Binding option-generation worlds: 1/);
+assert.match(markdown, /Binding objective-rejection worlds: 1/);
 assert.match(markdown, /Laboratory controls are real-world evidence: false/);
-assert.doesNotMatch(markdown, /Electric Twin caused|News UK caused|illegitimate institution|manipulated the public/i);
+assert.doesNotMatch(markdown, /Electric Twin caused|News UK caused|illegitimate institution|suppressed the public|manipulated the public/i);
 
 const missingControl = structuredClone(manifest);
 missingControl.controls.pop();
-assert.ok(validatePreferenceCustodyManifest(missingControl).some(error => /exactly PC-01, PC-02, PC-03, PC-04, PC-05, and PC-06/.test(error)));
+assert.ok(validatePreferenceCustodyManifest(missingControl).some(error => /exactly PC-01, PC-02, PC-03, PC-04, PC-05, PC-06, and PC-07/.test(error)));
 
 const graphLeak = structuredClone(buildsByPath);
 graphLeak['build/research/preference-custody-option-set-fixture.json'].graph_effect = 'asserted';
@@ -223,5 +260,15 @@ const resolutionLeak = structuredClone(buildsByPath);
 resolutionLeak['build/research/preference-standing-authority.json'].metrics.binding_public_rejection_worlds = 0;
 const resolutionLeakCompiled = compilePreferenceCustodyManifest(manifest, resolutionLeak);
 assert.ok(validatePreferenceCustodyManifestBuild(resolutionLeakCompiled).some(error => /preserve one binding public rejection/.test(error)));
+
+const agendaLeak = structuredClone(buildsByPath);
+agendaLeak['build/research/preference-agenda-formation.json'].classification.forced_choice_identifies_complete_agenda = true;
+const agendaLeakCompiled = compilePreferenceCustodyManifest(manifest, agendaLeak);
+assert.ok(validatePreferenceCustodyManifestBuild(agendaLeakCompiled).some(error => /refuse forced choice as the complete agenda/.test(error)));
+
+const objectiveLeak = structuredClone(buildsByPath);
+objectiveLeak['build/research/preference-agenda-formation.json'].metrics.binding_objective_rejection_worlds = 0;
+const objectiveLeakCompiled = compilePreferenceCustodyManifest(manifest, objectiveLeak);
+assert.ok(validatePreferenceCustodyManifestBuild(objectiveLeakCompiled).some(error => /preserve one binding objective rejection/.test(error)));
 
 console.log('preference-custody-manifest.test.js: OK');
