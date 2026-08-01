@@ -56,13 +56,22 @@ jobs:
           node tools/materialize-lake-allocator-war-estate-execution-wave-22.mjs
           node - <<'NODE'
           const fs = require('node:fs');
+
           const testPath = 'test/lake-allocator-war-estate-execution-wave-22.test.js';
-          let source = fs.readFileSync(testPath, 'utf8');
-          const before = "  ['change priority', state => { state.projection.queues[0].tasks[0].priority_tier = 'P2'; }],";
-          const after = "  ['change priority', state => { const task = state.projection.queues[0].tasks[0]; task.priority_tier = task.priority_tier === 'P0' ? 'P1' : 'P0'; }],";
-          if (!source.includes(before)) throw new Error('Wave 22 priority mutation marker missing');
-          source = source.replace(before, after);
-          fs.writeFileSync(testPath, source);
+          let testSource = fs.readFileSync(testPath, 'utf8');
+          const priorityBefore = "  ['change priority', state => { state.projection.queues[0].tasks[0].priority_tier = 'P2'; }],";
+          const priorityAfter = "  ['change priority', state => { const task = state.projection.queues[0].tasks[0]; task.priority_tier = task.priority_tier === 'P0' ? 'P1' : 'P0'; }],";
+          if (!testSource.includes(priorityBefore)) throw new Error('Wave 22 priority mutation marker missing');
+          testSource = testSource.replace(priorityBefore, priorityAfter);
+          fs.writeFileSync(testPath, testSource);
+
+          const validatorPath = 'tools/validate-lake-allocator-war-estate-execution-wave-22.mjs';
+          let validatorSource = fs.readFileSync(validatorPath, 'utf8');
+          const authorityBefore = "    const authority = policy.authority_law[source.route_authority];\n    if (queue.consumer_key !== source.consumer_key) fail(errors, queue.allocator_estate_feed_id + ': consumer drift');";
+          const authorityAfter = "    const authority = policy.authority_law[source.route_authority];\n    if (!authority) {\n      fail(errors, queue.allocator_estate_feed_id + ': unknown queue authority');\n      continue;\n    }\n    if (queue.consumer_key !== source.consumer_key) fail(errors, queue.allocator_estate_feed_id + ': consumer drift');";
+          if (!validatorSource.includes(authorityBefore)) throw new Error('Wave 22 authority guard marker missing');
+          validatorSource = validatorSource.replace(authorityBefore, authorityAfter);
+          fs.writeFileSync(validatorPath, validatorSource);
           NODE
           rm -f tools/materialize-lake-allocator-war-estate-execution-wave-22.mjs
           rm -f .github/tmp/lake-allocator-war-estate-execution-wave-22-trigger.json
