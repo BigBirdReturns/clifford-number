@@ -1,0 +1,48 @@
+name: Temporary export exact SSC SG-10 live head
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-export-ssc-sg10-live-head.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-maintainer-review-sg10-v2
+          fetch-depth: 0
+      - name: Package exact live target tree and history
+        run: |
+          set -Eeuo pipefail
+          target="$(git rev-parse HEAD)"
+          printf '%s\n' "$target" > /tmp/SSC-SG10-LIVE-HEAD.txt
+          printf '%s\n' "$(git show -s --format=%T HEAD)" > /tmp/SSC-SG10-LIVE-TREE.txt
+          repo="$GITHUB_WORKSPACE"
+          parent="$(dirname "$repo")"
+          base="$(basename "$repo")"
+          tar -C "$parent" --exclude="$base/.git" -cJf /tmp/ssc-sg10-live-tree.tar.xz "$base"
+          git update-ref refs/heads/ssc-sg10-live-export HEAD
+          git bundle create /tmp/ssc-sg10-live.bundle refs/heads/ssc-sg10-live-export
+          git update-ref -d refs/heads/ssc-sg10-live-export
+          sha256sum /tmp/ssc-sg10-live-tree.tar.xz > /tmp/ssc-sg10-live-tree.tar.xz.sha256
+          sha256sum /tmp/ssc-sg10-live.bundle > /tmp/ssc-sg10-live.bundle.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-sg10-live-head
+          path: |
+            /tmp/ssc-sg10-live-tree.tar.xz
+            /tmp/ssc-sg10-live-tree.tar.xz.sha256
+            /tmp/ssc-sg10-live.bundle
+            /tmp/ssc-sg10-live.bundle.sha256
+            /tmp/SSC-SG10-LIVE-HEAD.txt
+            /tmp/SSC-SG10-LIVE-TREE.txt
+          if-no-files-found: error
+          retention-days: 1
