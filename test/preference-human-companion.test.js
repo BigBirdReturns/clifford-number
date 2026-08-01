@@ -97,6 +97,6 @@ assert.ok(validatePreferenceHumanCompanionBuild(tamperedBuild).some(error => /ha
 
 const strippedCaveat = structuredClone(packet);
 delete strippedCaveat.interpretation_contract.copy_ready_caveat;
-assert.ok(validatePreferenceHumanCompanion(strippedCaveat).some(error => /copy_ready_caveat/.test(error)));
+assert.ok(validatePreferenceHumanCompanion(strippedCaveat).some(error => /copy-ready caveat/.test(error)));
 
 console.log('preference-human-companion.test.js: OK');
