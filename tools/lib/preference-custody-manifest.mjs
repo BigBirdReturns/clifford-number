@@ -1,9 +1,9 @@
 export const PREFERENCE_CUSTODY_MANIFEST_SCHEMA_VERSION = 'preference-custody-control-manifest@1';
 export const PREFERENCE_CUSTODY_MANIFEST_BUILD_SCHEMA_VERSION = 'preference-custody-control-manifest-build@1';
 
-const REQUIRED_CONTROL_IDS = ['PC-01', 'PC-02', 'PC-03', 'PC-04'];
-const REQUIRED_FAILURE_CLASSES = ['attrition_and_refusal_censoring', 'exposure_policy_confounding', 'observational_equivalence', 'option_set_starvation'];
-const REQUIRED_IDENTIFICATION_STAGES = ['attrition_and_refusal', 'exposure_policy', 'option_set', 'public_authorization', 'response_mechanism'];
+const REQUIRED_CONTROL_IDS = ['PC-01', 'PC-02', 'PC-03', 'PC-04', 'PC-05'];
+const REQUIRED_FAILURE_CLASSES = ['attrition_and_refusal_censoring', 'exposure_policy_confounding', 'observational_equivalence', 'option_set_starvation', 'subgroup_response_capacity_and_burden'];
+const REQUIRED_IDENTIFICATION_STAGES = ['attrition_and_refusal', 'exposure_policy', 'option_set', 'public_authorization', 'response_mechanism', 'subgroup_distribution'];
 
 function object(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -85,18 +85,34 @@ function summarizeControl(control, build) {
       }
     };
   }
+  if (control.control_id === 'PC-04') {
+    return {
+      ...common,
+      proof_summary: {
+        distinct_headline_signatures: build.metrics?.distinct_headline_signatures,
+        distinct_full_outcome_signatures: build.metrics?.distinct_full_outcome_signatures,
+        distinct_mechanism_signatures: build.metrics?.distinct_mechanism_signatures,
+        observed_total_range: build.metrics?.observed_total_range,
+        exit_total_range: build.metrics?.exit_total_range,
+        nonresponse_total_range: build.metrics?.nonresponse_total_range,
+        preference_change_identification: build.classification?.preference_change_identification_from_headline,
+        strategic_refusal_identification: build.classification?.strategic_refusal_identification_from_headline,
+        population_support_identification: build.classification?.population_support_identification_from_headline
+      }
+    };
+  }
   return {
     ...common,
     proof_summary: {
-      distinct_headline_signatures: build.metrics?.distinct_headline_signatures,
-      distinct_full_outcome_signatures: build.metrics?.distinct_full_outcome_signatures,
-      distinct_mechanism_signatures: build.metrics?.distinct_mechanism_signatures,
-      observed_total_range: build.metrics?.observed_total_range,
-      exit_total_range: build.metrics?.exit_total_range,
-      nonresponse_total_range: build.metrics?.nonresponse_total_range,
-      preference_change_identification: build.classification?.preference_change_identification_from_headline,
-      strategic_refusal_identification: build.classification?.strategic_refusal_identification_from_headline,
-      population_support_identification: build.classification?.population_support_identification_from_headline
+      distinct_aggregate_headline_signatures: build.metrics?.distinct_aggregate_headline_signatures,
+      distinct_subgroup_outcome_signatures: build.metrics?.distinct_subgroup_outcome_signatures,
+      distinct_burden_signatures: build.metrics?.distinct_burden_signatures,
+      maximum_subgroup_success_rate_gap: build.metrics?.maximum_subgroup_success_rate_gap,
+      maximum_adaptation_cost_ratio: build.metrics?.maximum_adaptation_cost_ratio,
+      aggregate_success_rate: build.metrics?.aggregate_success_rate,
+      subgroup_outcome_identification: build.classification?.subgroup_outcome_identification_from_aggregate,
+      adaptation_burden_identification: build.classification?.adaptation_burden_identification_from_aggregate,
+      willingness_identification: build.classification?.willingness_identification_from_adaptation
     }
   };
 }
@@ -111,7 +127,7 @@ export function validatePreferenceCustodyManifest(manifest) {
   if (manifest?.status !== 'synthetic_control_floor') errors.push('manifest status must remain synthetic_control_floor');
   if (manifest?.graph_effect !== 'none') errors.push('manifest graph_effect must remain none');
   requireFalse(manifest?.counts_toward_thesis_evidence, 'manifest counts_toward_thesis_evidence', errors);
-  if (!sameMembers(controls.map(control => control.control_id), REQUIRED_CONTROL_IDS)) errors.push('manifest must contain exactly PC-01, PC-02, PC-03, and PC-04');
+  if (!sameMembers(controls.map(control => control.control_id), REQUIRED_CONTROL_IDS)) errors.push('manifest must contain exactly PC-01, PC-02, PC-03, PC-04, and PC-05');
   if (!sameMembers(controls.map(control => control.failure_class), REQUIRED_FAILURE_CLASSES)) errors.push('manifest failure-class coverage is incomplete');
 
   const fixtureIds = controls.map(control => text(control?.fixture_id));
@@ -130,7 +146,7 @@ export function validatePreferenceCustodyManifest(manifest) {
   }
   if (unique(manifest?.open_frontiers).length < 5) errors.push('manifest must preserve at least five open frontiers');
   requireFalse(manifest?.promotion_boundary?.laboratory_controls_are_real_world_evidence, 'laboratory_controls_are_real_world_evidence', errors);
-  if (unique(manifest?.promotion_boundary?.real_case_requires).length < 7) errors.push('real-case promotion requirements are incomplete');
+  if (unique(manifest?.promotion_boundary?.real_case_requires).length < 8) errors.push('real-case promotion requirements are incomplete');
   if (!text(manifest?.promotion_boundary?.promotion_authority)) errors.push('promotion authority is required');
   if (!array(manifest?.prohibited_inferences).length) errors.push('prohibited inferences are required');
   if (!text(manifest?.interpretation_contract?.contract_id)) errors.push('interpretation contract ID is required');
@@ -193,7 +209,7 @@ export function validatePreferenceCustodyManifestBuild(compiled) {
   requireFalse(compiled?.counts_toward_thesis_evidence, 'compiled counts_toward_thesis_evidence', errors);
   requireFalse(compiled?.conclusion_generated, 'compiled conclusion_generated', errors);
   if (compiled?.real_world_evidence_state !== 'none') errors.push('compiled manifest must preserve real_world_evidence_state none');
-  if (compiled?.control_count !== 4) errors.push('compiled manifest must contain four controls');
+  if (compiled?.control_count !== 5) errors.push('compiled manifest must contain five controls');
   if (!sameMembers(compiled?.failure_classes, REQUIRED_FAILURE_CLASSES)) errors.push('compiled failure-class coverage is incomplete');
   if (!sameMembers(array(compiled?.controls).map(control => control.control_id), REQUIRED_CONTROL_IDS)) errors.push('compiled control IDs are incomplete');
 
@@ -213,6 +229,7 @@ export function validatePreferenceCustodyManifestBuild(compiled) {
   const pc2 = array(compiled?.controls).find(control => control.control_id === 'PC-02');
   const pc3 = array(compiled?.controls).find(control => control.control_id === 'PC-03');
   const pc4 = array(compiled?.controls).find(control => control.control_id === 'PC-04');
+  const pc5 = array(compiled?.controls).find(control => control.control_id === 'PC-05');
   if (!(pc1?.proof_summary?.maximum_naive_drift > 0.3)) errors.push('PC-01 must demonstrate material exposure drift');
   if (!(pc1?.proof_summary?.maximum_corrected_drift <= 1e-12)) errors.push('PC-01 corrected drift must recover the frozen distribution');
   if (!(pc2?.proof_summary?.distinct_observation_signatures >= 2)) errors.push('PC-02 must demonstrate distinct observations from one population');
@@ -226,6 +243,12 @@ export function validatePreferenceCustodyManifestBuild(compiled) {
   if (!(pc4?.proof_summary?.observed_total_range >= 250)) errors.push('PC-04 must preserve material denominator variation');
   if (!(pc4?.proof_summary?.exit_total_range >= 250)) errors.push('PC-04 must preserve material exit variation');
   if (!(pc4?.proof_summary?.nonresponse_total_range >= 250)) errors.push('PC-04 must preserve material nonresponse variation');
+  if (pc5?.proof_summary?.distinct_aggregate_headline_signatures !== 1) errors.push('PC-05 must preserve one shared aggregate headline');
+  if (!(pc5?.proof_summary?.distinct_subgroup_outcome_signatures >= 3)) errors.push('PC-05 must preserve at least three subgroup outcomes');
+  if (!(pc5?.proof_summary?.distinct_burden_signatures >= 3)) errors.push('PC-05 must preserve at least three burden distributions');
+  if (!(pc5?.proof_summary?.maximum_subgroup_success_rate_gap >= 0.4)) errors.push('PC-05 must preserve a material subgroup success-rate gap');
+  if (!(pc5?.proof_summary?.maximum_adaptation_cost_ratio >= 15)) errors.push('PC-05 must preserve material adaptation-cost inequality');
+  if (!(pc5?.proof_summary?.aggregate_success_rate === 0.8)) errors.push('PC-05 must preserve the frozen 80 percent aggregate success rate');
 
   if (!sameMembers(array(compiled?.identification_requirements).map(item => item.stage), REQUIRED_IDENTIFICATION_STAGES)) errors.push('compiled identification stages are incomplete');
   if (unique(compiled?.open_frontiers).length < 5) errors.push('compiled manifest must preserve open frontiers');
@@ -240,7 +263,7 @@ function percentage(value) {
 
 export function renderPreferenceCustodyManifestMarkdown(compiled) {
   const lines = [
-    '# Preference custody laboratory floor v2',
+    '# Preference custody laboratory floor v3',
     '',
     `**Status:** ${compiled.status}`,
     '',
@@ -267,12 +290,18 @@ export function renderPreferenceCustodyManifestMarkdown(compiled) {
       lines.push(`- Distinct latent worlds: ${control.proof_summary.distinct_latent_world_signatures}`);
       lines.push(`- Distinct observation signatures: ${control.proof_summary.distinct_observation_signatures}`);
       lines.push(`- Maximum pairwise latent total variation: ${percentage(control.proof_summary.maximum_pairwise_latent_total_variation)}`);
-    } else {
+    } else if (control.control_id === 'PC-04') {
       lines.push(`- Distinct normalized headline signatures: ${control.proof_summary.distinct_headline_signatures}`);
       lines.push(`- Distinct full outcomes: ${control.proof_summary.distinct_full_outcome_signatures}`);
       lines.push(`- Observed denominator range: ${control.proof_summary.observed_total_range}`);
       lines.push(`- Exit range: ${control.proof_summary.exit_total_range}`);
       lines.push(`- Nonresponse range: ${control.proof_summary.nonresponse_total_range}`);
+    } else {
+      lines.push(`- Distinct aggregate headline signatures: ${control.proof_summary.distinct_aggregate_headline_signatures}`);
+      lines.push(`- Distinct subgroup outcomes: ${control.proof_summary.distinct_subgroup_outcome_signatures}`);
+      lines.push(`- Distinct burden distributions: ${control.proof_summary.distinct_burden_signatures}`);
+      lines.push(`- Maximum subgroup success-rate gap: ${percentage(control.proof_summary.maximum_subgroup_success_rate_gap)}`);
+      lines.push(`- Maximum adaptation-cost ratio: ${control.proof_summary.maximum_adaptation_cost_ratio.toFixed(2)}×`);
     }
     lines.push('');
   }
