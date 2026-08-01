@@ -98,13 +98,37 @@ const buildsByPath = {
       real_world_effect_claimed: false
     },
     refusal_rules: manifest.controls[3].required_refusal_rules
+  },
+  'build/research/preference-subgroup-capacity.json': {
+    schema_version: 'preference-subgroup-build@1',
+    fixture_id: 'aggregate-success-equivalence-three-worlds-v1',
+    graph_effect: 'none',
+    counts_toward_thesis_evidence: false,
+    conclusion_generated: false,
+    metrics: {
+      distinct_aggregate_headline_signatures: 1,
+      distinct_subgroup_outcome_signatures: 3,
+      distinct_burden_signatures: 3,
+      maximum_subgroup_success_rate_gap: 0.4,
+      maximum_adaptation_cost_ratio: 15,
+      aggregate_success_rate: 0.8
+    },
+    classification: {
+      subgroup_outcome_identification_from_aggregate: 'unavailable',
+      adaptation_burden_identification_from_aggregate: 'unavailable',
+      willingness_identification_from_adaptation: 'unavailable',
+      preference_change_present: false,
+      manipulative_intent_inferable: false,
+      real_world_effect_claimed: false
+    },
+    refusal_rules: manifest.controls[4].required_refusal_rules
   }
 };
 
 const compiled = compilePreferenceCustodyManifest(manifest, buildsByPath);
 assert.deepEqual(validatePreferenceCustodyManifestBuild(compiled), []);
 assert.equal(compiled.status, 'laboratory_floor_qualified');
-assert.equal(compiled.control_count, 4);
+assert.equal(compiled.control_count, 5);
 assert.equal(compiled.real_world_evidence_state, 'none');
 assert.equal(compiled.control_integrity.all_graph_effect_none, true);
 assert.equal(compiled.control_integrity.no_thesis_evidence_consumption, true);
@@ -114,20 +138,25 @@ assert.equal(compiled.control_integrity.no_intent_inference, true);
 assert.equal(compiled.control_integrity.all_required_refusal_rules_present, true);
 assert.ok(compiled.refusal_rule_union.includes('same_behavior_does_not_imply_same_preference'));
 assert.ok(compiled.open_frontiers.includes('binding_public_standing_and_objective_control'));
+assert.ok(compiled.open_frontiers.includes('intersectional_and_unobserved_group_custody'));
 assert.ok(compiled.refusal_rule_union.includes('organized_refusal_is_not_missing_data'));
+assert.ok(compiled.refusal_rule_union.includes('distributional_acceptability_requires_external_authority'));
 
 const markdown = renderPreferenceCustodyManifestMarkdown(compiled);
-assert.match(markdown, /Preference custody laboratory floor v2/);
+assert.match(markdown, /Preference custody laboratory floor v3/);
 assert.match(markdown, /PC-01: exposure_policy_confounding/);
 assert.match(markdown, /PC-02: option_set_starvation/);
 assert.match(markdown, /PC-03: observational_equivalence/);
 assert.match(markdown, /PC-04: attrition_and_refusal_censoring/);
+assert.match(markdown, /PC-05: subgroup_response_capacity_and_burden/);
+assert.match(markdown, /Maximum subgroup success-rate gap: 40.00%/);
+assert.match(markdown, /Maximum adaptation-cost ratio: 15.00×/);
 assert.match(markdown, /Laboratory controls are real-world evidence: false/);
-assert.doesNotMatch(markdown, /Electric Twin caused|News UK caused|manipulated the public/i);
+assert.doesNotMatch(markdown, /Electric Twin caused|News UK caused|discriminated against the public/i);
 
 const missingControl = structuredClone(manifest);
 missingControl.controls.pop();
-assert.ok(validatePreferenceCustodyManifest(missingControl).some(error => /exactly PC-01, PC-02, PC-03, and PC-04/.test(error)));
+assert.ok(validatePreferenceCustodyManifest(missingControl).some(error => /exactly PC-01, PC-02, PC-03, PC-04, and PC-05/.test(error)));
 
 const graphLeak = structuredClone(buildsByPath);
 graphLeak['build/research/preference-custody-option-set-fixture.json'].graph_effect = 'asserted';
@@ -148,5 +177,10 @@ const attritionLeak = structuredClone(buildsByPath);
 attritionLeak['build/research/preference-attrition-refusal.json'].classification.preference_change_present = true;
 const attritionLeakCompiled = compilePreferenceCustodyManifest(manifest, attritionLeak);
 assert.ok(validatePreferenceCustodyManifestBuild(attritionLeakCompiled).some(error => /no_preference_change_claim/.test(error)));
+
+const subgroupLeak = structuredClone(buildsByPath);
+subgroupLeak['build/research/preference-subgroup-capacity.json'].classification.manipulative_intent_inferable = true;
+const subgroupLeakCompiled = compilePreferenceCustodyManifest(manifest, subgroupLeak);
+assert.ok(validatePreferenceCustodyManifestBuild(subgroupLeakCompiled).some(error => /no_intent_inference/.test(error)));
 
 console.log('preference-custody-manifest.test.js: OK');
