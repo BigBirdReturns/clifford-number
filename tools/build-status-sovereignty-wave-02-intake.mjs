@@ -26,6 +26,11 @@ export function computeWave02IntakeManifest(){
  return{schema_version:'status-sovereignty-wave-02-intake-release-manifest@1',hypothesis_id:'SSC-H01',wave_id:'SSC-W02',intake_id:'SSC-W02-I01',as_of:'2026-07-31',hash_mode:'sha256_exact_bytes',scope_ordered:true,self_included:false,entries,combined_sha256:sha(entries.map(r=>`${r.path}\0${r.sha256}\0${r.bytes}\n`).join('')),boundaries:{exact_bytes_prove_source_truth:false,manifest_promotes_intake_to_field_wave:false,manifest_proves_review:false,manifest_changes_wave_01:false,manifest_closes_acquisition_obligation:false,manifest_authorizes_sg09:false,manifest_proves_complete_compact:false,manifest_proves_racial_order:false,manifest_proves_prevalence:false,manifest_proves_coordination:false,manifest_authorizes_graph_edge:false,manifest_authorizes_publication:false,graph_effect:'none'}};
 }
 export function buildWave02Intake(){
+ const reviewPath=path.join(root,'data/research/status-sovereignty-wave-02-maintainer-review.json');
+ if(fs.existsSync(reviewPath)){
+  console.log('build-status-sovereignty-wave-02-intake: historical intake preserved after maintainer review; no write');
+  return{historical:true};
+ }
  const intake=read('data/intake/status-sovereignty-wave-02-candidate-observations.json');
  const sources=read('data/intake/status-sovereignty-wave-02-source-denominator.json');
  const fanout=read('data/project/status-sovereignty-fanout.json');

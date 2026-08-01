@@ -41,12 +41,18 @@ for (const heldPath of [
   ['data', 'project', 'status-sovereignty-wave-01-second-party-review-release-manifest.json'],
   ['data', 'research', 'status-sovereignty-wave-01-second-party-review-candidates.json'],
   ['data', 'research', 'status-sovereignty-wave-01-second-party-review-responses.json'],
+  ['data', 'project', 'status-sovereignty-wave-02-intake-release-manifest.json'],
+  ['data', 'project', 'status-sovereignty-wave-02-maintainer-review-release-manifest.json'],
+  ['data', 'research', 'status-sovereignty-wave-02.json'],
+  ['data', 'research', 'status-sovereignty-wave-02-maintainer-review.json'],
   ['docs', 'methods', 'status-sovereignty-compact.md'],
   ['docs', 'milestones', 'm05-status-sovereignty-fanout.md'],
   ['docs', 'milestones', 'm05-status-sovereignty-wave-01.md'],
   ['docs', 'milestones', 'm05-status-sovereignty-wave-01-review.md'],
   ['docs', 'milestones', 'm05-status-sovereignty-wave-01-targeted-acquisition.md'],
   ['docs', 'milestones', 'm05-status-sovereignty-wave-01-second-party-review.md'],
+  ['docs', 'milestones', 'm05-status-sovereignty-wave-02-intake.md'],
+  ['docs', 'milestones', 'm05-status-sovereignty-wave-02-review.md'],
 ]) fs.rmSync(path.join(destination, ...heldPath), { recursive: true, force: true });
 fs.writeFileSync(path.join(destination, '.nojekyll'), '');
 console.log(`build-pages: ${files.length} files and ${directories.length} directories copied`);
