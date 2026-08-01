@@ -1,6 +1,10 @@
 name: Temporary export SSC Wave 02 reviewed transition
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-export-ssc-wave02-review-v2.yml'
   push:
     branches: [agent/ssc-wave02-review-v2-export]
     paths:
@@ -21,16 +25,17 @@ jobs:
       - name: Package exact reviewed transition tree and history
         run: |
           set -Eeuo pipefail
+          # On pull_request, export the branch head rather than GitHub's synthetic merge commit.
+          git fetch origin agent/ssc-wave02-review-v2-export
+          git checkout --detach refs/remotes/origin/agent/ssc-wave02-review-v2-export
           head=$(git rev-parse HEAD)
           parent=$(git rev-parse HEAD^)
-          printf '%s\n' "$head" > SSC-W02-REVIEW-V2-COMMIT.txt
-          printf '%s\n' "$parent" > SSC-W02-REVIEW-V2-PARENT.txt
+          printf '%s\n' "$head" > /tmp/SSC-W02-REVIEW-V2-COMMIT.txt
+          printf '%s\n' "$parent" > /tmp/SSC-W02-REVIEW-V2-PARENT.txt
           git archive --format=tar "$head" | xz -T0 -9e > /tmp/ssc-wave02-review-v2-tree.tar.xz
           git bundle create /tmp/ssc-wave02-review-v2.bundle --all
           sha256sum /tmp/ssc-wave02-review-v2-tree.tar.xz > /tmp/ssc-wave02-review-v2-tree.tar.xz.sha256
           sha256sum /tmp/ssc-wave02-review-v2.bundle > /tmp/ssc-wave02-review-v2.bundle.sha256
-          cp SSC-W02-REVIEW-V2-COMMIT.txt /tmp/
-          cp SSC-W02-REVIEW-V2-PARENT.txt /tmp/
       - uses: actions/upload-artifact@v4
         with:
           name: ssc-wave02-review-v2
