@@ -1,0 +1,94 @@
+{
+  "schema_version": "lake-allocator-war-wave26-source-custody-repair-policy@1",
+  "program_ref": "CN-LAKE-ALLOCATOR-WAR-W26-SC01",
+  "wave_ref": "LAW-W26-SC01",
+  "as_of": "2026-07-31",
+  "title": "Allocator-war Wave 26 public-interest gate source-custody repair",
+  "purpose": "Replace the research-only source references mistakenly attached to the completed public-interest institutional-gate result with the exact executive, Foreign Service, judicial, and procurement-control records that establish that gate, while preserving the separate legislative no-gate research source set and every authority boundary.",
+  "base_checkpoint": {
+    "branch": "agent/lake-allocator-war-wave-21",
+    "commit": "8f6fcf160d3c5ac0824263513337d21645cbd57f",
+    "required_ancestry": true
+  },
+  "paths": {
+    "source_builder": "tools/build-lake-allocator-war-targeted-closure-wave-26-source-plan.mjs",
+    "wave26_source_plan": "data/project/lake-allocator-war-targeted-closure-wave-26-source-plan.json",
+    "wave26_projection": "build/lake-actions/allocator-war-targeted-closure-wave-26.json",
+    "public_interest_ledger": "data/acquisition/lake-allocator-war-wave-26/law21-est-05.jsonl",
+    "legislative_finance_ledger": "data/acquisition/lake-allocator-war-wave-26/law21-est-11.jsonl",
+    "projection": "build/lake-actions/allocator-war-wave26-source-custody-repair.json",
+    "report": "reports/lake-allocator-war-wave26-source-custody-repair.md",
+    "method": "docs/methods/lake-allocator-war-wave26-source-custody-repair.md",
+    "milestone": "docs/milestones/lake-allocator-war-wave26-source-custody-repair.md"
+  },
+  "public_interest_gate": {
+    "closure_ref": "LAW25-LAW21-EST-05/C02",
+    "result_state": "complete",
+    "required_source_refs": [
+      "LAW24-S012",
+      "LAW24-S013",
+      "LAW24-S014",
+      "LAW24-S015",
+      "LAW24-S019",
+      "LAW24-S020",
+      "LAW24-S021",
+      "LAW24-S022",
+      "LAW24-S023"
+    ],
+    "prohibited_source_refs": [
+      "LAW24-S016",
+      "LAW24-S017",
+      "LAW24-S018"
+    ],
+    "expected_downstream_state": "unblocked_for_next_wave",
+    "expected_downstream_tasks": 2
+  },
+  "legislative_no_gate": {
+    "closure_ref": "LAW25-LAW21-EST-11/C02",
+    "result_state": "no_qualifying_gate",
+    "required_source_refs": [
+      "LAW24-S016",
+      "LAW24-S017",
+      "LAW24-S018",
+      "LAW24-S028"
+    ],
+    "expected_downstream_state": "blocked_no_qualifying_gate",
+    "expected_downstream_tasks": 2
+  },
+  "expected_counts": {
+    "source_tasks": 40,
+    "ready_task_plans": 36,
+    "blocked_tasks_without_plans": 4,
+    "result_complete": 1,
+    "result_partial": 26,
+    "result_unavailable_after_search": 8,
+    "result_no_qualifying_gate": 1,
+    "public_interest_gate_sources": 9,
+    "legislative_no_gate_sources": 4,
+    "public_interest_unblocked_tasks": 2,
+    "legislative_blocked_tasks": 2,
+    "complete_denominators": 0,
+    "evidence_rows": 0,
+    "finding_promotions": 0,
+    "graph_effects": 0,
+    "publication_clearances": 0
+  },
+  "boundaries": {
+    "research_sources_establish_public_interest_gate": false,
+    "source_custody_repair_changes_result_state": false,
+    "source_custody_repair_closes_downstream_denominator": false,
+    "source_custody_repair_is_evidence_adjudication": false,
+    "source_custody_repair_creates_prevalence": false,
+    "source_custody_repair_creates_coordination": false,
+    "source_custody_repair_creates_common_purpose": false,
+    "identity_created": false,
+    "relationship_created": false,
+    "participation_created": false,
+    "active_claim_created": false,
+    "hop_created": false,
+    "evidence_adjudicated": false,
+    "finding_promoted": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}
