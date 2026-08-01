@@ -5,6 +5,10 @@ on:
     branches: [agent/ssc-sg10-five-file-materializer]
     paths:
       - '.github/workflows/temporary-stage-ssc-sg10-three-files.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-stage-ssc-sg10-three-files.yml'
   workflow_dispatch:
 
 permissions:
@@ -16,11 +20,13 @@ concurrency:
 
 jobs:
   stage:
+    if: github.event_name != 'pull_request' || github.head_ref == 'agent/ssc-sg10-five-file-materializer'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: agent/ssc-sg10-five-file-materializer
           fetch-depth: 0
       - name: Verify carrier and publish workflow-neutral staging commit
         env:
