@@ -86,12 +86,18 @@ for (const forbidden of [
   'data/project/status-sovereignty-wave-01-second-party-review-release-manifest.json',
   'data/research/status-sovereignty-wave-01-second-party-review-candidates.json',
   'data/research/status-sovereignty-wave-01-second-party-review-responses.json',
+  'data/project/status-sovereignty-wave-02-intake-release-manifest.json',
+  'data/project/status-sovereignty-wave-02-maintainer-review-release-manifest.json',
+  'data/research/status-sovereignty-wave-02.json',
+  'data/research/status-sovereignty-wave-02-maintainer-review.json',
   'docs/methods/status-sovereignty-compact.md',
   'docs/milestones/m05-status-sovereignty-fanout.md',
   'docs/milestones/m05-status-sovereignty-wave-01.md',
   'docs/milestones/m05-status-sovereignty-wave-01-review.md',
   'docs/milestones/m05-status-sovereignty-wave-01-targeted-acquisition.md',
   'docs/milestones/m05-status-sovereignty-wave-01-second-party-review.md',
+  'docs/milestones/m05-status-sovereignty-wave-02-intake.md',
+  'docs/milestones/m05-status-sovereignty-wave-02-review.md',
 ]) {
   if (fs.existsSync(path.join(destination, forbidden))) {
     console.error(`validate-pages failed: intake path ${forbidden} must not be published`);
@@ -121,12 +127,18 @@ for (const held of [
   'data/project/status-sovereignty-wave-01-second-party-review-release-manifest.json',
   'data/research/status-sovereignty-wave-01-second-party-review-candidates.json',
   'data/research/status-sovereignty-wave-01-second-party-review-responses.json',
+  'data/project/status-sovereignty-wave-02-intake-release-manifest.json',
+  'data/project/status-sovereignty-wave-02-maintainer-review-release-manifest.json',
+  'data/research/status-sovereignty-wave-02.json',
+  'data/research/status-sovereignty-wave-02-maintainer-review.json',
   'docs/methods/status-sovereignty-compact.md',
   'docs/milestones/m05-status-sovereignty-fanout.md',
   'docs/milestones/m05-status-sovereignty-wave-01.md',
   'docs/milestones/m05-status-sovereignty-wave-01-review.md',
   'docs/milestones/m05-status-sovereignty-wave-01-targeted-acquisition.md',
   'docs/milestones/m05-status-sovereignty-wave-01-second-party-review.md',
+  'docs/milestones/m05-status-sovereignty-wave-02-intake.md',
+  'docs/milestones/m05-status-sovereignty-wave-02-review.md',
 ]) {
   if (fs.existsSync(path.join(destination, held))) {
     console.error(`validate-pages failed: publication-blocked SSC path ${held} must not be published`);

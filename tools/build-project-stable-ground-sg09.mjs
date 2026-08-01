@@ -84,8 +84,12 @@ export function computeSg09Manifest() {
 }
 
 export function buildStableGroundSG09() {
-  const checkpoint = read('data/project/project-stable-ground-sg09.json');
   const pointer = read('data/project/project-stable-ground-current.json');
+  if (pointer.current_checkpoint_id !== 'SG-2026-07-31-09') {
+    console.log(`build-project-stable-ground-sg09: historical checkpoint preserved; current checkpoint ${pointer.current_checkpoint_id}; no write`);
+    return { historical: true, pointer };
+  }
+  const checkpoint = read('data/project/project-stable-ground-sg09.json');
   const governor = read('data/project/project-stable-ground-governor.json');
   const campaign = read('data/project/status-sovereignty-wave-01-second-party-review-campaign.json');
   const packets = read('data/project/status-sovereignty-wave-01-second-party-review-packet-registry.json');

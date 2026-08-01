@@ -24,7 +24,7 @@ const mutations=[
  ['publication cleared',(c)=>{c.review.current_result.publication_status='public'},'Review publication state'],
  ['graph effect created',(c)=>{c.review.current_result.graph_effect='edge'},'Review graph result'],
  ['compact review erased',(c)=>{c.compact.current_state.maintainer_reviewed_observations=0},'Compact reviewed count'],
- ['fanout review inflated',(c)=>{c.fanout.counts.maintainer_reviewed_records=15},'Fanout reviewed count'],
+ ['fanout review inflated',(c)=>{c.fanout.counts.maintainer_reviewed_records=23},'Fanout reviewed count'],
  ['source review conflated',(c)=>{c.registry.boundaries.field_source_review_is_maintainer_review=true},'Registry source/review separation'],
  ['manifest drift',(c)=>{c.manifest.combined_sha256='f'.repeat(64)},'Review exact-byte manifest'],
  ['public report drift',(c)=>{c.publicReport.counts.maintainer_reviewed=0},'Review build/public report drift']
