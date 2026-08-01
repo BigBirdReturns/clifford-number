@@ -1,0 +1,52 @@
+name: Temporary export SG-11 dfb7 products
+
+on:
+  push:
+    branches: [agent/sg11-dfb7-products-export]
+    paths:
+      - '.github/workflows/temporary-export-sg11-dfb7-products.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-export-sg11-dfb7-products.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dfb7a1040f9c865d17e5bd711726d6bc085c6cd9
+          fetch-depth: 0
+      - name: Package exact SG-11 product tree and history
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = dfb7a1040f9c865d17e5bd711726d6bc085c6cd9
+          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/PRODUCTS-HEAD.txt
+          printf '%s\n' "$(git show -s --format=%T HEAD)" > /tmp/PRODUCTS-TREE.txt
+          repo="$GITHUB_WORKSPACE"
+          parent="$(dirname "$repo")"
+          base="$(basename "$repo")"
+          tar -C "$parent" --exclude="$base/.git" -cJf /tmp/sg11-dfb7-products-tree.tar.xz "$base"
+          git update-ref refs/heads/sg11-dfb7-products-export HEAD
+          git bundle create /tmp/sg11-dfb7-products.bundle refs/heads/sg11-dfb7-products-export
+          git update-ref -d refs/heads/sg11-dfb7-products-export
+          sha256sum /tmp/sg11-dfb7-products-tree.tar.xz > /tmp/sg11-dfb7-products-tree.tar.xz.sha256
+          sha256sum /tmp/sg11-dfb7-products.bundle > /tmp/sg11-dfb7-products.bundle.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sg11-dfb7-products
+          path: |
+            /tmp/sg11-dfb7-products-tree.tar.xz
+            /tmp/sg11-dfb7-products-tree.tar.xz.sha256
+            /tmp/sg11-dfb7-products.bundle
+            /tmp/sg11-dfb7-products.bundle.sha256
+            /tmp/PRODUCTS-HEAD.txt
+            /tmp/PRODUCTS-TREE.txt
+          if-no-files-found: error
+          retention-days: 1
