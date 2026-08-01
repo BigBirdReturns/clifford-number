@@ -1,4 +1,4 @@
-# Trigger exact materialization through push or draft-PR custody.
+# Repaired transport: deterministic four-part Base64 tar carrier.
 name: Materialize Counter-Selector Wave 25
 
 on:
@@ -28,46 +28,28 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Verify exact fragments and reconstruct Wave 25 sources
+      - name: Verify exact carrier and unpack Wave 25 estate
         run: |
           set -euo pipefail
           cat > /tmp/wave25-expected-blobs <<'EOF'
-          60e7b75c9c90bca31e36909538af24071a82065f  .github/materializers/counter-selector-wave-25/source-00
-          dc8578f05b2e61e03dc71c3b201900ae61475e6e  .github/materializers/counter-selector-wave-25/source-01
-          f9a1a2aeca9a3a066f5a088c66e11a4407bdd35f  .github/materializers/counter-selector-wave-25/source-02
-          ab014fa906b49188b98749adaa341e2b94638aa3  .github/materializers/counter-selector-wave-25/source-03
-          26feb22818df116d755b34ce93662588209a63f4  .github/materializers/counter-selector-wave-25/source-04
-          db28d170d0ae176d3f7804704f53457ea62ed196  .github/materializers/counter-selector-wave-25/report-00
-          d7c15ec53d40d0f17ac55027faba1bfcdfa3faf6  .github/materializers/counter-selector-wave-25/report-01
-          e14bdd5f232e4648e8b8e78d4d2898a73a5ac470  .github/materializers/counter-selector-wave-25/report-02
-          18610a5126f9ea3c6a015a1716bc8b15db82feba  .github/materializers/counter-selector-wave-25/build-00
-          df6cb56e4078fea553dd12c9569c10f272483d62  .github/materializers/counter-selector-wave-25/build-01
-          347b4867c18ccbeeed77ebe15cc25e71c79992f0  .github/materializers/counter-selector-wave-25/build-02
-          adb1e0a51125db0e7f906dfe076bf80c8d475bd4  .github/materializers/counter-selector-wave-25/validate-00
-          f39da55256d7b7bc7e2fed9cc1268684ff4de207  .github/materializers/counter-selector-wave-25/validate-01
+          38ea9be569e2a0360afd7d32d8b0870c58110467  .github/materializers/counter-selector-wave-25/payload-00
+          5d72de2f6a1033a2192189ae493b5aba1ab25c8e  .github/materializers/counter-selector-wave-25/payload-01
+          92c2994fab5a451f8618f3088be988699090ab02  .github/materializers/counter-selector-wave-25/payload-02
+          93b378e6677e0d7ae7bf571c293631e30434b1f8  .github/materializers/counter-selector-wave-25/payload-03
           EOF
           while read -r expected path; do
             actual="$(git hash-object "$path")"
             test "$actual" = "$expected" || {
-              echo "fragment blob mismatch: $path expected=$expected actual=$actual" >&2
+              echo "carrier blob mismatch: $path expected=$expected actual=$actual" >&2
               exit 1
             }
           done < /tmp/wave25-expected-blobs
-
-          mkdir -p data/project reports/core-thesis/counter-selector-wave-25 tools
-          cat .github/materializers/counter-selector-wave-25/source-* \
-            > data/project/counter-selector-wave-25-support-adjusted-surplus.json
-          cat .github/materializers/counter-selector-wave-25/report-* \
-            > reports/core-thesis/counter-selector-wave-25/data.json
-          cat .github/materializers/counter-selector-wave-25/build-* \
-            > tools/build-counter-selector-wave-25.mjs
-          cat .github/materializers/counter-selector-wave-25/validate-* \
-            > tools/validate-counter-selector-wave-25.mjs
-
-          echo 'fa131a047d1df0d478b23f9d8559e3fe9f4761b8497818c0901b5bae9127c956  data/project/counter-selector-wave-25-support-adjusted-surplus.json' | sha256sum --check --strict
-          echo '94041cc8dac981327aed53065d1d1d423da829b3b1465ab6c29dde14f5a1e643  reports/core-thesis/counter-selector-wave-25/data.json' | sha256sum --check --strict
-          echo '05bff6d09fa866d974f80dcc46cfb91c260dbd2333cbc2aa38016038e02275ee  tools/build-counter-selector-wave-25.mjs' | sha256sum --check --strict
-          echo 'bac5bf55dc3bf3f0f7f6638994f066bccd407c27e271baa1e01c043bb52cb50d  tools/validate-counter-selector-wave-25.mjs' | sha256sum --check --strict
+          cat .github/materializers/counter-selector-wave-25/payload-* \
+            | base64 --decode \
+            > /tmp/counter-selector-wave-25.tar.gz
+          echo '17f4dac7f72b8627b31f5ad6cae7058a611d537c338e4d51a6290d36d3c7bb77  /tmp/counter-selector-wave-25.tar.gz' \
+            | sha256sum --check --strict
+          tar -xzf /tmp/counter-selector-wave-25.tar.gz -C .
       - name: Build, validate, and attack Wave 25
         run: |
           set -euo pipefail
