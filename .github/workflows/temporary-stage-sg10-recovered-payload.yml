@@ -1,0 +1,104 @@
+name: Temporary stage recovered SG-10 payload
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temporary-stage-sg10-recovered-payload.yml'
+      - '.github/tmp/ssc-w02-sg10.part-00.b64'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stage-recovered-sg10
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    if: github.head_ref == 'agent/ssc-sg10-payload-recovery' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-sg10-payload-recovery
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Materialize and validate SG-10
+        run: |
+          set -Eeuo pipefail
+          test "$(git hash-object .github/tmp/ssc-w02-sg10.part-00.b64)" = '332b824ad26015a943d0a046d2aad6f263fd3bc4'
+          base64 --decode .github/tmp/ssc-w02-sg10.part-00.b64 > /tmp/sg10.tar.xz
+          tar -tJf /tmp/sg10.tar.xz | sed 's#^\./##' | sort > /tmp/observed-paths.txt
+          cat > /tmp/expected-paths.txt <<'PATHS'
+          .github/workflows/project-stable-ground-sg09.yml
+          .github/workflows/project-stable-ground-sg10.yml
+          build/core-thesis/status-sovereignty/data.json
+          build/core-thesis/status-sovereignty/manifest.json
+          data/project/poof-clifford-ecology-release-manifest.json
+          data/project/project-stable-ground-current.json
+          data/project/project-stable-ground-sg10-release-manifest.json
+          data/project/project-stable-ground-sg10.json
+          data/project/status-sovereignty-release-manifest.json
+          docs/milestones/project-stable-ground-sg10.md
+          package.json
+          reports/core-thesis/poof-clifford-ecology/release-manifest.json
+          reports/core-thesis/stable-ground/sg10/checkpoint.json
+          reports/core-thesis/stable-ground/sg10/index.html
+          reports/core-thesis/status-sovereignty/data.json
+          reports/core-thesis/status-sovereignty/index.html
+          test/project-stable-ground-sg09.test.js
+          test/project-stable-ground-sg10.test.js
+          tools/build-project-stable-ground-sg10.mjs
+          tools/validate-project-stable-ground-sg09.mjs
+          tools/validate-project-stable-ground-sg10.mjs
+          PATHS
+          sed -i 's/^          //' /tmp/expected-paths.txt
+          sort -o /tmp/expected-paths.txt /tmp/expected-paths.txt
+          diff -u /tmp/expected-paths.txt /tmp/observed-paths.txt
+
+          git reset --hard 4c8ec34686d7005b06a94dc75bb8828610be60a1
+          tar -xJf /tmp/sg10.tar.xz
+
+          npm run build:status-sovereignty
+          npm run validate:status-sovereignty
+          node test/status-sovereignty-wave-02-review.test.js
+          npm run build:poof-ecology
+          npm run validate:poof-ecology
+          node tools/build-project-stable-ground-sg10.mjs
+          node test/project-stable-ground-sg09.test.js
+          node test/project-stable-ground-sg10.test.js
+          npm run release:check
+
+          rm -rf dist
+          git restore -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json
+
+          git restore --source=4c8ec34686d7005b06a94dc75bb8828610be60a1 -- .github/workflows/project-stable-ground-sg09.yml
+          rm -f .github/workflows/project-stable-ground-sg10.yml
+
+          grep -v '^\.github/workflows/' /tmp/expected-paths.txt > /tmp/nonworkflow-paths.txt
+          git add --pathspec-from-file=/tmp/nonworkflow-paths.txt
+          git diff --cached --name-only | sort > /tmp/staged-paths.txt
+          diff -u /tmp/nonworkflow-paths.txt /tmp/staged-paths.txt
+          test -z "$(git status --porcelain | grep -v '^?? .github/workflows/project-stable-ground-sg10.yml$' | grep -v '^ M .github/workflows/project-stable-ground-sg09.yml$' || true)"
+
+          git config user.name 'OpenAI'
+          git config user.email 'noreply@openai.com'
+          git commit -m 'Stage SG-10 non-workflow tree'
+          git push --force origin HEAD:agent/ssc-wave02-sg10-final-staging
+          echo "staging_sha=$(git rev-parse HEAD)"
