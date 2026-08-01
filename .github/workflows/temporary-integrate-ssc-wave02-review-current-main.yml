@@ -1,0 +1,87 @@
+name: Temporary integrate SSC Wave 02 review over current main
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-integrate-ssc-wave02-review-current-main.yml'
+  push:
+    branches: [agent/ssc-wave02-review-corrected-transport]
+    paths:
+      - '.github/workflows/temporary-integrate-ssc-wave02-review-current-main.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      OLD_BASE: 52a363704857a2da5035c24898f9dfdc38b56754
+      REVIEW: 70183d64eec8cbdf1f825e3e610d14a9ca7f2c43
+      CURRENT_BASE: ef32bbb6fae63266ed5047181ce55486b85638ef
+      TARGET: agent/ssc-wave02-maintainer-review-sg10-final
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-review-corrected-transport
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Replay exact reviewed transition on current main
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'OpenAI'
+          git config user.email 'noreply@openai.com'
+
+          git fetch origin main "$TARGET"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$CURRENT_BASE"
+          test "$(git rev-parse refs/remotes/origin/$TARGET)" = "$CURRENT_BASE"
+          git cat-file -e "$OLD_BASE^{commit}"
+          git cat-file -e "$REVIEW^{commit}"
+          test "$(git rev-parse "$REVIEW^")" = "$OLD_BASE"
+
+          git diff --binary --full-index "$OLD_BASE" "$REVIEW" > /tmp/wave02-review.patch
+          git diff --name-only "$OLD_BASE" "$REVIEW" | sort > /tmp/expected-paths.txt
+          test "$(wc -l < /tmp/expected-paths.txt)" -eq 35
+          test -z "$(grep -E '(^|/)temporary-|^\.github/tmp/' /tmp/expected-paths.txt || true)"
+
+          work=/tmp/ssc-wave02-review-current-main
+          rm -rf "$work"
+          git worktree add --detach "$work" "$CURRENT_BASE"
+          git -C "$work" apply --index --3way /tmp/wave02-review.patch
+          git -C "$work" diff --cached --name-only | sort > /tmp/observed-paths.txt
+          diff -u /tmp/expected-paths.txt /tmp/observed-paths.txt
+
+          cd "$work"
+          node tools/build-status-sovereignty-wave-02-review.mjs
+          node tools/validate-status-sovereignty-wave-02-review.mjs
+          node test/status-sovereignty-wave-02-review.test.js
+          node tools/build-status-sovereignty-compact.mjs
+          node tools/validate-status-sovereignty-compact.mjs
+          node test/status-sovereignty-compact.test.js
+          node tools/validate-status-sovereignty-wave-01.mjs
+          node tools/validate-status-sovereignty-wave-01-review.mjs
+          node tools/validate-status-sovereignty-wave-01-targeted-acquisition.mjs
+          node tools/validate-status-sovereignty-wave-01-second-party-review.mjs
+          node tools/validate-status-sovereignty-wave-02-intake.mjs
+          node test/status-sovereignty-wave-02-intake.test.js
+          node tools/build-poof-clifford-ecology.mjs
+          node tools/validate-poof-clifford-ecology.mjs
+          npm run build:pages
+          npm run build:standalone
+          npm run validate:pages
+          test ! -e dist/data/research/status-sovereignty-wave-02.json
+          test ! -e dist/data/research/status-sovereignty-wave-02-maintainer-review.json
+          test ! -e dist/reports/core-thesis/status-sovereignty/wave-02-review
+          git diff --exit-code
+
+          git commit -m 'Review SSC-H01 Wave 02 observation packets'
+          test "$(git rev-parse HEAD^)" = "$CURRENT_BASE"
+          git diff --name-only "$CURRENT_BASE" HEAD | sort > /tmp/final-paths.txt
+          diff -u /tmp/expected-paths.txt /tmp/final-paths.txt
+          git push --force-with-lease="refs/heads/$TARGET:$CURRENT_BASE" origin "HEAD:refs/heads/$TARGET"
