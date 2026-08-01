@@ -27,7 +27,12 @@ for (const relative of [
   'build/lake-actions/allocator-war-estate-execution-wave-22.json',
   'reports/lake-allocator-war-estate-execution-wave-22.md',
   'docs/methods/lake-allocator-war-estate-execution-wave-22.md',
-  'docs/milestones/lake-allocator-war-estate-execution-wave-22.md'
+  'docs/milestones/lake-allocator-war-estate-execution-wave-22.md',
+  'data/project/lake-allocator-war-lead-acquisition-wave-23-policy.json',
+  'build/lake-actions/allocator-war-lead-acquisition-wave-23.json',
+  'reports/lake-allocator-war-lead-acquisition-wave-23.md',
+  'docs/methods/lake-allocator-war-lead-acquisition-wave-23.md',
+  'docs/milestones/lake-allocator-war-lead-acquisition-wave-23.md'
 ]) roots.add(relative);
 lakePolicy.authoritative_roots = [...roots].sort();
 lakePolicy.boundaries.allocator_war_routing_proves_finding = false;

@@ -1,0 +1,1066 @@
+{
+  "schema_version": "lake-allocator-war-lead-acquisition-wave-23@1",
+  "program_ref": "CN-LAKE-ALLOCATOR-WAR-W23",
+  "wave_ref": "LAW-W23",
+  "as_of": "2026-07-31",
+  "generated_from": {
+    "policy_path": "data/project/lake-allocator-war-lead-acquisition-wave-23-policy.json",
+    "source_projection_path": "build/lake-actions/allocator-war-estate-execution-wave-22.json",
+    "source_projection_bytes": 97274,
+    "source_projection_sha256": "ee0d639ee30e62a9660c3d197d5e6ac7ecf11a567667409caa2ec750b8d9ae29"
+  },
+  "counts": {
+    "estate_queues": 11,
+    "lead_packets": 11,
+    "selected_priorities": {
+      "P0": 10,
+      "P1": 1
+    },
+    "authority_classes": {
+      "reviewed_execution_queue": 3,
+      "split_authority_execution_queue": 5,
+      "unreviewed_acquisition_queue": 3
+    },
+    "reviewed_only_packets": 3,
+    "split_authority_packets": 5,
+    "unreviewed_only_packets": 3,
+    "execution_ready_packets": 11,
+    "evidence_rows": 0,
+    "finding_promotions": 0,
+    "graph_effects": 0,
+    "publication_clearances": 0
+  },
+  "graph_digests": {
+    "participation_sha256": "4d3251dca3760bae9459cd46ac33455663ae7943680fb6184d6c517e026ad83a",
+    "active_claims_sha256": "3ccda11961cc6e1bec1b5675418004a8cb98d62a891f710599f81c36a8e0eaf7",
+    "hop_edges_sha256": "aa080592cb62dee1f7d39ed6d8a0d7c2d3f674c1bb2a0bacbc959c84f8a601cd",
+    "rejected_hop_surfaces_sha256": "82774168d65b67ba1b3c3071a67142bf454bab75b82fa21bbf193642bc05c7a5",
+    "rejected_hop_pairs_sha256": "e8511b978ddfaae049cd4673ef98946932fc354050d6b5259218794ad7bf38ab"
+  },
+  "packets": [
+    {
+      "packet_ref": "LAW23-LAW21-EST-01",
+      "packet_sequence": 1,
+      "source_queue_ref": "LAW21-EST-01",
+      "source_task_ref": "LAW21-EST-01/T02",
+      "source_task_sequence": 2,
+      "consumer_key": "dialog-estate",
+      "queue_class": "split_authority_execution_queue",
+      "source_route_authority": "split_reviewed_wave_01_and_unreviewed_wave_02",
+      "task_authority": "split_reviewed_and_unreviewed_sources",
+      "selection_priority": "P0",
+      "selection_rule": "highest_priority_then_lowest_source_task_sequence",
+      "acquisition_target": "complete preselection candidate universe",
+      "required_output": "Complete denominator-and-correction ledger with included, excluded, null, unavailable, appealed, and resolved rows. Target: complete preselection candidate universe",
+      "closure_test": "The declared denominator and correction route are complete for the bounded window, every missing row has an explicit availability disposition, and no unresolved exclusion is silently treated as a null.",
+      "allowed_results": [
+        "supported",
+        "contradicted",
+        "mixed",
+        "no_observed_effect",
+        "unavailable_after_search",
+        "outside_bounded_window"
+      ],
+      "reviewed_source_finding_refs": [
+        "AW-O01"
+      ],
+      "reviewed_source_observation_refs": [
+        "SSC-OBS-0007"
+      ],
+      "unreviewed_intake_observation_refs": [
+        "SSC-OBS-0020"
+      ],
+      "source_families": [
+        "official methodology and eligibility records",
+        "complete preselection rosters and archived cohort materials",
+        "selection, nonselection, correction, and disclosure records"
+      ],
+      "query_seed": "dialog-estate :: complete preselection candidate universe",
+      "search_protocol": {
+        "source_scope": "official_first_party_then_bounded_public_record",
+        "primary_source_required": true,
+        "negative_search_required": true,
+        "controls_nulls_refusals_and_failed_paths_required": true,
+        "cross_estate_join_authorized": false
+      },
+      "receipt_contract": {
+        "exact_source_locator_required": true,
+        "source_bytes_or_stable_official_identifier_required": true,
+        "required_fields": [
+          "source_locator",
+          "issuing_body",
+          "source_type",
+          "jurisdiction",
+          "bounded_window",
+          "retrieved_at",
+          "content_sha256_or_stable_official_identifier",
+          "coverage_statement",
+          "included_rows",
+          "excluded_rows",
+          "null_rows",
+          "unavailable_rows",
+          "refused_rows",
+          "correction_route",
+          "correction_outcome"
+        ]
+      },
+      "result_ledger_path": "data/acquisition/lake-allocator-war-wave-23/law21-est-01.jsonl",
+      "execution_state": "ready_for_acquisition",
+      "result_rows": 0,
+      "evidence_adjudicated": false,
+      "controls_and_refusals_required": true,
+      "blocked_promotions": [
+        "estate_finding",
+        "complete_compact_finding",
+        "racial_order_finding",
+        "prevalence_finding",
+        "coordination_finding",
+        "common_purpose_finding",
+        "identity_edge",
+        "relationship_edge",
+        "participation_row",
+        "active_claim",
+        "hop_edge",
+        "publication_clearance"
+      ],
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "packet_ref": "LAW23-LAW21-EST-02",
+      "packet_sequence": 2,
+      "source_queue_ref": "LAW21-EST-02",
+      "source_task_ref": "LAW21-EST-02/T01",
+      "source_task_sequence": 1,
+      "consumer_key": "intellectual-property-standards-data-rights-estate",
+      "queue_class": "reviewed_execution_queue",
+      "source_route_authority": "reviewed_wave_01_routing",
+      "task_authority": "maintainer_reviewed_routing_below_second_party_review",
+      "selection_priority": "P1",
+      "selection_rule": "highest_priority_then_lowest_source_task_sequence",
+      "acquisition_target": "complete loan, award, data-rights, software-rights, interface, and IP schedules",
+      "required_output": "Operative selector-and-rights ledger with exact criteria, custody, selected and nonselected rows, instruments, exceptions, and review routes. Target: complete loan, award, data-rights, software-rights, interface, and IP schedules",
+      "closure_test": "The operative rule or instrument, decision custody, comparator rows, exceptions, and appeal route are source-addressed and reversible.",
+      "allowed_results": [
+        "supported",
+        "contradicted",
+        "mixed",
+        "no_observed_effect",
+        "unavailable_after_search",
+        "outside_bounded_window"
+      ],
+      "reviewed_source_finding_refs": [
+        "AW-C02",
+        "AW-F02",
+        "AW-R01"
+      ],
+      "reviewed_source_observation_refs": [
+        "SSC-OBS-0010",
+        "SSC-OBS-0011",
+        "SSC-OBS-0012",
+        "SSC-OBS-0013"
+      ],
+      "unreviewed_intake_observation_refs": [],
+      "source_families": [
+        "executed award, loan, contract, and amendment instruments",
+        "IP, software, data-rights, interface, and operating-knowledge schedules",
+        "audit, termination, portability, substitution, and recovery records"
+      ],
+      "query_seed": "intellectual-property-standards-data-rights-estate :: complete loan, award, data-rights, software-rights, interface, and IP schedules",
+      "search_protocol": {
+        "source_scope": "official_first_party_then_bounded_public_record",
+        "primary_source_required": true,
+        "negative_search_required": true,
+        "controls_nulls_refusals_and_failed_paths_required": true,
+        "cross_estate_join_authorized": false
+      },
+      "receipt_contract": {
+        "exact_source_locator_required": true,
+        "source_bytes_or_stable_official_identifier_required": true,
+        "required_fields": [
+          "source_locator",
+          "issuing_body",
+          "source_type",
+          "jurisdiction",
+          "bounded_window",
+          "retrieved_at",
+          "content_sha256_or_stable_official_identifier",
+          "coverage_statement",
+          "included_rows",
+          "excluded_rows",
+          "null_rows",
+          "unavailable_rows",
+          "refused_rows",
+          "correction_route",
+          "correction_outcome"
+        ]
+      },
+      "result_ledger_path": "data/acquisition/lake-allocator-war-wave-23/law21-est-02.jsonl",
+      "execution_state": "ready_for_acquisition",
+      "result_rows": 0,
+      "evidence_adjudicated": false,
+      "controls_and_refusals_required": true,
+      "blocked_promotions": [
+        "estate_finding",
+        "complete_compact_finding",
+        "racial_order_finding",
+        "prevalence_finding",
+        "coordination_finding",
+        "common_purpose_finding",
+        "identity_edge",
+        "relationship_edge",
+        "participation_row",
+        "active_claim",
+        "hop_edge",
+        "publication_clearance"
+      ],
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "packet_ref": "LAW23-LAW21-EST-03",
+      "packet_sequence": 3,
+      "source_queue_ref": "LAW21-EST-03",
+      "source_task_ref": "LAW21-EST-03/T01",
+      "source_task_sequence": 1,
+      "consumer_key": "judicial-administrative-adjudication-estate",
+      "queue_class": "unreviewed_acquisition_queue",
+      "source_route_authority": "unreviewed_wave_02_acquisition_only",
+      "task_authority": "unreviewed_intake_acquisition_only",
+      "selection_priority": "P0",
+      "selection_rule": "highest_priority_then_lowest_source_task_sequence",
+      "acquisition_target": "complete bidder and architecture universe",
+      "required_output": "Complete denominator-and-correction ledger with included, excluded, null, unavailable, appealed, and resolved rows. Target: complete bidder and architecture universe",
+      "closure_test": "The declared denominator and correction route are complete for the bounded window, every missing row has an explicit availability disposition, and no unresolved exclusion is silently treated as a null.",
+      "allowed_results": [
+        "supported",
+        "contradicted",
+        "mixed",
+        "no_observed_effect",
+        "unavailable_after_search",
+        "outside_bounded_window"
+      ],
+      "reviewed_source_finding_refs": [],
+      "reviewed_source_observation_refs": [],
+      "unreviewed_intake_observation_refs": [
+        "SSC-OBS-0019",
+        "SSC-OBS-0021",
+        "SSC-OBS-0022"
+      ],
+      "source_families": [
+        "solicitations, bidder lists, architecture submissions, and award records",
+        "administrative dockets, inspector-general records, and court filings",
+        "remand, replacement, continuity, correction, and outcome records"
+      ],
+      "query_seed": "judicial-administrative-adjudication-estate :: complete bidder and architecture universe",
+      "search_protocol": {
+        "source_scope": "official_first_party_then_bounded_public_record",
+        "primary_source_required": true,
+        "negative_search_required": true,
+        "controls_nulls_refusals_and_failed_paths_required": true,
+        "cross_estate_join_authorized": false
+      },
+      "receipt_contract": {
+        "exact_source_locator_required": true,
+        "source_bytes_or_stable_official_identifier_required": true,
+        "required_fields": [
+          "source_locator",
+          "issuing_body",
+          "source_type",
+          "jurisdiction",
+          "bounded_window",
+          "retrieved_at",
+          "content_sha256_or_stable_official_identifier",
+          "coverage_statement",
+          "included_rows",
+          "excluded_rows",
+          "null_rows",
+          "unavailable_rows",
+          "refused_rows",
+          "correction_route",
+          "correction_outcome"
+        ]
+      },
+      "result_ledger_path": "data/acquisition/lake-allocator-war-wave-23/law21-est-03.jsonl",
+      "execution_state": "ready_for_acquisition",
+      "result_rows": 0,
+      "evidence_adjudicated": false,
+      "controls_and_refusals_required": true,
+      "blocked_promotions": [
+        "estate_finding",
+        "complete_compact_finding",
+        "racial_order_finding",
+        "prevalence_finding",
+        "coordination_finding",
+        "common_purpose_finding",
+        "identity_edge",
+        "relationship_edge",
+        "participation_row",
+        "active_claim",
+        "hop_edge",
+        "publication_clearance"
+      ],
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "packet_ref": "LAW23-LAW21-EST-04",
+      "packet_sequence": 4,
+      "source_queue_ref": "LAW21-EST-04",
+      "source_task_ref": "LAW21-EST-04/T01",
+      "source_task_sequence": 1,
+      "consumer_key": "labor-immigration-workforce-mobility-estate",
+      "queue_class": "split_authority_execution_queue",
+      "source_route_authority": "split_reviewed_wave_01_and_unreviewed_wave_02",
+      "task_authority": "split_reviewed_and_unreviewed_sources",
+      "selection_priority": "P0",
+      "selection_rule": "highest_priority_then_lowest_source_task_sequence",
+      "acquisition_target": "complete decision and affected-person denominator",
+      "required_output": "Complete denominator-and-correction ledger with included, excluded, null, unavailable, appealed, and resolved rows. Target: complete decision and affected-person denominator",
+      "closure_test": "The declared denominator and correction route are complete for the bounded window, every missing row has an explicit availability disposition, and no unresolved exclusion is silently treated as a null.",
+      "allowed_results": [
+        "supported",
+        "contradicted",
+        "mixed",
+        "no_observed_effect",
+        "unavailable_after_search",
+        "outside_bounded_window"
+      ],
+      "reviewed_source_finding_refs": [
+        "AW-F01"
+      ],
+      "reviewed_source_observation_refs": [
+        "SSC-OBS-0005"
+      ],
+      "unreviewed_intake_observation_refs": [
+        "SSC-OBS-0022"
+      ],
+      "source_families": [
+        "OPM and agency personnel criteria, rosters, and decision records",
+        "MSPB, EEOC, OSC, labor, grievance, and judicial records",
+        "promotion, retention, discipline, appeal, remand, and outcome records"
+      ],
+      "query_seed": "labor-immigration-workforce-mobility-estate :: complete decision and affected-person denominator",
+      "search_protocol": {
+        "source_scope": "official_first_party_then_bounded_public_record",
+        "primary_source_required": true,
+        "negative_search_required": true,
+        "controls_nulls_refusals_and_failed_paths_required": true,
+        "cross_estate_join_authorized": false
+      },
+      "receipt_contract": {
+        "exact_source_locator_required": true,
+        "source_bytes_or_stable_official_identifier_required": true,
+        "required_fields": [
+          "source_locator",
+          "issuing_body",
+          "source_type",
+          "jurisdiction",
+          "bounded_window",
+          "retrieved_at",
+          "content_sha256_or_stable_official_identifier",
+          "coverage_statement",
+          "included_rows",
+          "excluded_rows",
+          "null_rows",
+          "unavailable_rows",
+          "refused_rows",
+          "correction_route",
+          "correction_outcome"
+        ]
+      },
+      "result_ledger_path": "data/acquisition/lake-allocator-war-wave-23/law21-est-04.jsonl",
+      "execution_state": "ready_for_acquisition",
+      "result_rows": 0,
+      "evidence_adjudicated": false,
+      "controls_and_refusals_required": true,
+      "blocked_promotions": [
+        "estate_finding",
+        "complete_compact_finding",
+        "racial_order_finding",
+        "prevalence_finding",
+        "coordination_finding",
+        "common_purpose_finding",
+        "identity_edge",
+        "relationship_edge",
+        "participation_row",
+        "active_claim",
+        "hop_edge",
+        "publication_clearance"
+      ],
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "packet_ref": "LAW23-LAW21-EST-05",
+      "packet_sequence": 5,
+      "source_queue_ref": "LAW21-EST-05",
+      "source_task_ref": "LAW21-EST-05/T01",
+      "source_task_sequence": 1,
+      "consumer_key": "public-interest-crossing-estate",
+      "queue_class": "unreviewed_acquisition_queue",
+      "source_route_authority": "unreviewed_wave_02_acquisition_only",
+      "task_authority": "unreviewed_intake_acquisition_only",
+      "selection_priority": "P0",
+      "selection_rule": "highest_priority_then_lowest_source_task_sequence",
+      "acquisition_target": "complete deservingness-category denominator",
+      "required_output": "Complete denominator-and-correction ledger with included, excluded, null, unavailable, appealed, and resolved rows. Target: complete deservingness-category denominator",
+      "closure_test": "The declared denominator and correction route are complete for the bounded window, every missing row has an explicit availability disposition, and no unresolved exclusion is silently treated as a null.",
+      "allowed_results": [
+        "supported",
+        "contradicted",
+        "mixed",
+        "no_observed_effect",
+        "unavailable_after_search",
+        "outside_bounded_window"
+      ],
+      "reviewed_source_finding_refs": [],
+      "reviewed_source_observation_refs": [],
+      "unreviewed_intake_observation_refs": [
+        "SSC-OBS-0015",
+        "SSC-OBS-0016",
+        "SSC-OBS-0017"
+      ],
+      "source_families": [
+        "official program definitions, category rules, and institutional rosters",
+        "complete affected-population and decision denominators",
+        "burden, consequence, collective-claim, correction, and remedy records"
+      ],
+      "query_seed": "public-interest-crossing-estate :: complete deservingness-category denominator",
+      "search_protocol": {
+        "source_scope": "official_first_party_then_bounded_public_record",
+        "primary_source_required": true,
+        "negative_search_required": true,
+        "controls_nulls_refusals_and_failed_paths_required": true,
+        "cross_estate_join_authorized": false
+      },
+      "receipt_contract": {
+        "exact_source_locator_required": true,
+        "source_bytes_or_stable_official_identifier_required": true,
+        "required_fields": [
+          "source_locator",
+          "issuing_body",
+          "source_type",
+          "jurisdiction",
+          "bounded_window",
+          "retrieved_at",
+          "content_sha256_or_stable_official_identifier",
+          "coverage_statement",
+          "included_rows",
+          "excluded_rows",
+          "null_rows",
+          "unavailable_rows",
+          "refused_rows",
+          "correction_route",
+          "correction_outcome"
+        ]
+      },
+      "result_ledger_path": "data/acquisition/lake-allocator-war-wave-23/law21-est-05.jsonl",
+      "execution_state": "ready_for_acquisition",
+      "result_rows": 0,
+      "evidence_adjudicated": false,
+      "controls_and_refusals_required": true,
+      "blocked_promotions": [
+        "estate_finding",
+        "complete_compact_finding",
+        "racial_order_finding",
+        "prevalence_finding",
+        "coordination_finding",
+        "common_purpose_finding",
+        "identity_edge",
+        "relationship_edge",
+        "participation_row",
+        "active_claim",
+        "hop_edge",
+        "publication_clearance"
+      ],
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "packet_ref": "LAW23-LAW21-EST-06",
+      "packet_sequence": 6,
+      "source_queue_ref": "LAW21-EST-06",
+      "source_task_ref": "LAW21-EST-06/T01",
+      "source_task_sequence": 1,
+      "consumer_key": "public-money-industrial-policy-estate",
+      "queue_class": "reviewed_execution_queue",
+      "source_route_authority": "reviewed_wave_01_routing",
+      "task_authority": "maintainer_reviewed_routing_below_second_party_review",
+      "selection_priority": "P0",
+      "selection_rule": "highest_priority_then_lowest_source_task_sequence",
+      "acquisition_target": "complete applicant, selected, rejected, withdrawn, and failed denominators",
+      "required_output": "Complete denominator-and-correction ledger with included, excluded, null, unavailable, appealed, and resolved rows. Target: complete applicant, selected, rejected, withdrawn, and failed denominators",
+      "closure_test": "The declared denominator and correction route are complete for the bounded window, every missing row has an explicit availability disposition, and no unresolved exclusion is silently treated as a null.",
+      "allowed_results": [
+        "supported",
+        "contradicted",
+        "mixed",
+        "no_observed_effect",
+        "unavailable_after_search",
+        "outside_bounded_window"
+      ],
+      "reviewed_source_finding_refs": [
+        "AW-C02",
+        "AW-F02",
+        "AW-O01",
+        "AW-R01"
+      ],
+      "reviewed_source_observation_refs": [
+        "SSC-OBS-0008",
+        "SSC-OBS-0009",
+        "SSC-OBS-0010",
+        "SSC-OBS-0011",
+        "SSC-OBS-0012",
+        "SSC-OBS-0013"
+      ],
+      "unreviewed_intake_observation_refs": [],
+      "source_families": [
+        "application, selection, rejection, withdrawal, and failure rosters",
+        "award, loan, milestone, disbursement, repayment, default, and clawback instruments",
+        "audits, performance records, substitutions, and public recovery records"
+      ],
+      "query_seed": "public-money-industrial-policy-estate :: complete applicant, selected, rejected, withdrawn, and failed denominators",
+      "search_protocol": {
+        "source_scope": "official_first_party_then_bounded_public_record",
+        "primary_source_required": true,
+        "negative_search_required": true,
+        "controls_nulls_refusals_and_failed_paths_required": true,
+        "cross_estate_join_authorized": false
+      },
+      "receipt_contract": {
+        "exact_source_locator_required": true,
+        "source_bytes_or_stable_official_identifier_required": true,
+        "required_fields": [
+          "source_locator",
+          "issuing_body",
+          "source_type",
+          "jurisdiction",
+          "bounded_window",
+          "retrieved_at",
+          "content_sha256_or_stable_official_identifier",
+          "coverage_statement",
+          "included_rows",
+          "excluded_rows",
+          "null_rows",
+          "unavailable_rows",
+          "refused_rows",
+          "correction_route",
+          "correction_outcome"
+        ]
+      },
+      "result_ledger_path": "data/acquisition/lake-allocator-war-wave-23/law21-est-06.jsonl",
+      "execution_state": "ready_for_acquisition",
+      "result_rows": 0,
+      "evidence_adjudicated": false,
+      "controls_and_refusals_required": true,
+      "blocked_promotions": [
+        "estate_finding",
+        "complete_compact_finding",
+        "racial_order_finding",
+        "prevalence_finding",
+        "coordination_finding",
+        "common_purpose_finding",
+        "identity_edge",
+        "relationship_edge",
+        "participation_row",
+        "active_claim",
+        "hop_edge",
+        "publication_clearance"
+      ],
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "packet_ref": "LAW23-LAW21-EST-07",
+      "packet_sequence": 7,
+      "source_queue_ref": "LAW21-EST-07",
+      "source_task_ref": "LAW21-EST-07/T02",
+      "source_task_sequence": 2,
+      "consumer_key": "regulatory-markets-estate",
+      "queue_class": "split_authority_execution_queue",
+      "source_route_authority": "split_reviewed_wave_01_and_unreviewed_wave_02",
+      "task_authority": "split_reviewed_and_unreviewed_sources",
+      "selection_priority": "P0",
+      "selection_rule": "highest_priority_then_lowest_source_task_sequence",
+      "acquisition_target": "complete regulated and affected denominator",
+      "required_output": "Complete denominator-and-correction ledger with included, excluded, null, unavailable, appealed, and resolved rows. Target: complete regulated and affected denominator",
+      "closure_test": "The declared denominator and correction route are complete for the bounded window, every missing row has an explicit availability disposition, and no unresolved exclusion is silently treated as a null.",
+      "allowed_results": [
+        "supported",
+        "contradicted",
+        "mixed",
+        "no_observed_effect",
+        "unavailable_after_search",
+        "outside_bounded_window"
+      ],
+      "reviewed_source_finding_refs": [
+        "AW-C01",
+        "AW-F01"
+      ],
+      "reviewed_source_observation_refs": [
+        "SSC-OBS-0002",
+        "SSC-OBS-0003",
+        "SSC-OBS-0004",
+        "SSC-OBS-0014"
+      ],
+      "unreviewed_intake_observation_refs": [
+        "SSC-OBS-0022"
+      ],
+      "source_families": [
+        "final rules, Federal Register records, sector guidance, and implementation materials",
+        "regulated-entity and affected-person denominators",
+        "enforcement actions, administrative appeals, litigation, remand, and remedy records"
+      ],
+      "query_seed": "regulatory-markets-estate :: complete regulated and affected denominator",
+      "search_protocol": {
+        "source_scope": "official_first_party_then_bounded_public_record",
+        "primary_source_required": true,
+        "negative_search_required": true,
+        "controls_nulls_refusals_and_failed_paths_required": true,
+        "cross_estate_join_authorized": false
+      },
+      "receipt_contract": {
+        "exact_source_locator_required": true,
+        "source_bytes_or_stable_official_identifier_required": true,
+        "required_fields": [
+          "source_locator",
+          "issuing_body",
+          "source_type",
+          "jurisdiction",
+          "bounded_window",
+          "retrieved_at",
+          "content_sha256_or_stable_official_identifier",
+          "coverage_statement",
+          "included_rows",
+          "excluded_rows",
+          "null_rows",
+          "unavailable_rows",
+          "refused_rows",
+          "correction_route",
+          "correction_outcome"
+        ]
+      },
+      "result_ledger_path": "data/acquisition/lake-allocator-war-wave-23/law21-est-07.jsonl",
+      "execution_state": "ready_for_acquisition",
+      "result_rows": 0,
+      "evidence_adjudicated": false,
+      "controls_and_refusals_required": true,
+      "blocked_promotions": [
+        "estate_finding",
+        "complete_compact_finding",
+        "racial_order_finding",
+        "prevalence_finding",
+        "coordination_finding",
+        "common_purpose_finding",
+        "identity_edge",
+        "relationship_edge",
+        "participation_row",
+        "active_claim",
+        "hop_edge",
+        "publication_clearance"
+      ],
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "packet_ref": "LAW23-LAW21-EST-08",
+      "packet_sequence": 8,
+      "source_queue_ref": "LAW21-EST-08",
+      "source_task_ref": "LAW21-EST-08/T01",
+      "source_task_sequence": 1,
+      "consumer_key": "transatlantic-defense-innovation-estate",
+      "queue_class": "reviewed_execution_queue",
+      "source_route_authority": "reviewed_wave_01_routing",
+      "task_authority": "maintainer_reviewed_routing_below_second_party_review",
+      "selection_priority": "P0",
+      "selection_rule": "highest_priority_then_lowest_source_task_sequence",
+      "acquisition_target": "cross-year complete cohorts and candidate universes",
+      "required_output": "Complete denominator-and-correction ledger with included, excluded, null, unavailable, appealed, and resolved rows. Target: cross-year complete cohorts and candidate universes",
+      "closure_test": "The declared denominator and correction route are complete for the bounded window, every missing row has an explicit availability disposition, and no unresolved exclusion is silently treated as a null.",
+      "allowed_results": [
+        "supported",
+        "contradicted",
+        "mixed",
+        "no_observed_effect",
+        "unavailable_after_search",
+        "outside_bounded_window"
+      ],
+      "reviewed_source_finding_refs": [
+        "AW-F02",
+        "AW-O01",
+        "AW-R01"
+      ],
+      "reviewed_source_observation_refs": [
+        "SSC-OBS-0007",
+        "SSC-OBS-0008",
+        "SSC-OBS-0011",
+        "SSC-OBS-0012"
+      ],
+      "unreviewed_intake_observation_refs": [],
+      "source_families": [
+        "complete fund, cohort, ranking, and candidate rosters across bounded years",
+        "company-registry and legal-entity resolution records",
+        "later award, nonaward, failure, comparator, and recovery records"
+      ],
+      "query_seed": "transatlantic-defense-innovation-estate :: cross-year complete cohorts and candidate universes",
+      "search_protocol": {
+        "source_scope": "official_first_party_then_bounded_public_record",
+        "primary_source_required": true,
+        "negative_search_required": true,
+        "controls_nulls_refusals_and_failed_paths_required": true,
+        "cross_estate_join_authorized": false
+      },
+      "receipt_contract": {
+        "exact_source_locator_required": true,
+        "source_bytes_or_stable_official_identifier_required": true,
+        "required_fields": [
+          "source_locator",
+          "issuing_body",
+          "source_type",
+          "jurisdiction",
+          "bounded_window",
+          "retrieved_at",
+          "content_sha256_or_stable_official_identifier",
+          "coverage_statement",
+          "included_rows",
+          "excluded_rows",
+          "null_rows",
+          "unavailable_rows",
+          "refused_rows",
+          "correction_route",
+          "correction_outcome"
+        ]
+      },
+      "result_ledger_path": "data/acquisition/lake-allocator-war-wave-23/law21-est-08.jsonl",
+      "execution_state": "ready_for_acquisition",
+      "result_rows": 0,
+      "evidence_adjudicated": false,
+      "controls_and_refusals_required": true,
+      "blocked_promotions": [
+        "estate_finding",
+        "complete_compact_finding",
+        "racial_order_finding",
+        "prevalence_finding",
+        "coordination_finding",
+        "common_purpose_finding",
+        "identity_edge",
+        "relationship_edge",
+        "participation_row",
+        "active_claim",
+        "hop_edge",
+        "publication_clearance"
+      ],
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "packet_ref": "LAW23-LAW21-EST-09",
+      "packet_sequence": 9,
+      "source_queue_ref": "LAW21-EST-09",
+      "source_task_ref": "LAW21-EST-09/T01",
+      "source_task_sequence": 1,
+      "consumer_key": "us-defense-estate",
+      "queue_class": "split_authority_execution_queue",
+      "source_route_authority": "split_reviewed_wave_01_and_unreviewed_wave_02",
+      "task_authority": "split_reviewed_and_unreviewed_sources",
+      "selection_priority": "P0",
+      "selection_rule": "highest_priority_then_lowest_source_task_sequence",
+      "acquisition_target": "candidate and supplier universes",
+      "required_output": "Complete denominator-and-correction ledger with included, excluded, null, unavailable, appealed, and resolved rows. Target: candidate and supplier universes",
+      "closure_test": "The declared denominator and correction route are complete for the bounded window, every missing row has an explicit availability disposition, and no unresolved exclusion is silently treated as a null.",
+      "allowed_results": [
+        "supported",
+        "contradicted",
+        "mixed",
+        "no_observed_effect",
+        "unavailable_after_search",
+        "outside_bounded_window"
+      ],
+      "reviewed_source_finding_refs": [
+        "AW-C02",
+        "AW-F02",
+        "AW-O01",
+        "AW-R01"
+      ],
+      "reviewed_source_observation_refs": [
+        "SSC-OBS-0007",
+        "SSC-OBS-0008",
+        "SSC-OBS-0009",
+        "SSC-OBS-0010",
+        "SSC-OBS-0011",
+        "SSC-OBS-0012"
+      ],
+      "unreviewed_intake_observation_refs": [
+        "SSC-OBS-0021"
+      ],
+      "source_families": [
+        "solicitations, candidate and supplier universes, bidder lists, and architecture records",
+        "evaluation, FOCI, committee, contract, rights, interface, and acceptance records",
+        "award, nonaward, protest, performance, substitution, exit, and recovery records"
+      ],
+      "query_seed": "us-defense-estate :: candidate and supplier universes",
+      "search_protocol": {
+        "source_scope": "official_first_party_then_bounded_public_record",
+        "primary_source_required": true,
+        "negative_search_required": true,
+        "controls_nulls_refusals_and_failed_paths_required": true,
+        "cross_estate_join_authorized": false
+      },
+      "receipt_contract": {
+        "exact_source_locator_required": true,
+        "source_bytes_or_stable_official_identifier_required": true,
+        "required_fields": [
+          "source_locator",
+          "issuing_body",
+          "source_type",
+          "jurisdiction",
+          "bounded_window",
+          "retrieved_at",
+          "content_sha256_or_stable_official_identifier",
+          "coverage_statement",
+          "included_rows",
+          "excluded_rows",
+          "null_rows",
+          "unavailable_rows",
+          "refused_rows",
+          "correction_route",
+          "correction_outcome"
+        ]
+      },
+      "result_ledger_path": "data/acquisition/lake-allocator-war-wave-23/law21-est-09.jsonl",
+      "execution_state": "ready_for_acquisition",
+      "result_rows": 0,
+      "evidence_adjudicated": false,
+      "controls_and_refusals_required": true,
+      "blocked_promotions": [
+        "estate_finding",
+        "complete_compact_finding",
+        "racial_order_finding",
+        "prevalence_finding",
+        "coordination_finding",
+        "common_purpose_finding",
+        "identity_edge",
+        "relationship_edge",
+        "participation_row",
+        "active_claim",
+        "hop_edge",
+        "publication_clearance"
+      ],
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "packet_ref": "LAW23-LAW21-EST-10",
+      "packet_sequence": 10,
+      "source_queue_ref": "LAW21-EST-10",
+      "source_task_ref": "LAW21-EST-10/T01",
+      "source_task_sequence": 1,
+      "consumer_key": "us-executive-appointments-ethics-estate",
+      "queue_class": "split_authority_execution_queue",
+      "source_route_authority": "split_reviewed_wave_01_and_unreviewed_wave_02",
+      "task_authority": "split_reviewed_and_unreviewed_sources",
+      "selection_priority": "P0",
+      "selection_rule": "highest_priority_then_lowest_source_task_sequence",
+      "acquisition_target": "appointment, removal, enforcement, appeal, and outcome records",
+      "required_output": "Complete denominator-and-correction ledger with included, excluded, null, unavailable, appealed, and resolved rows. Target: appointment, removal, enforcement, appeal, and outcome records",
+      "closure_test": "The declared denominator and correction route are complete for the bounded window, every missing row has an explicit availability disposition, and no unresolved exclusion is silently treated as a null.",
+      "allowed_results": [
+        "supported",
+        "contradicted",
+        "mixed",
+        "no_observed_effect",
+        "unavailable_after_search",
+        "outside_bounded_window"
+      ],
+      "reviewed_source_finding_refs": [
+        "AW-C01",
+        "AW-F01"
+      ],
+      "reviewed_source_observation_refs": [
+        "SSC-OBS-0001",
+        "SSC-OBS-0002",
+        "SSC-OBS-0003",
+        "SSC-OBS-0004",
+        "SSC-OBS-0005",
+        "SSC-OBS-0006"
+      ],
+      "unreviewed_intake_observation_refs": [
+        "SSC-OBS-0018",
+        "SSC-OBS-0019",
+        "SSC-OBS-0020"
+      ],
+      "source_families": [
+        "White House, agency, Senate, OGE, and appointment rosters",
+        "removal, enforcement, inspector-general, ethics, appeal, and litigation records",
+        "authority, veto, budget, burden, outcome, and practical correction records"
+      ],
+      "query_seed": "us-executive-appointments-ethics-estate :: appointment, removal, enforcement, appeal, and outcome records",
+      "search_protocol": {
+        "source_scope": "official_first_party_then_bounded_public_record",
+        "primary_source_required": true,
+        "negative_search_required": true,
+        "controls_nulls_refusals_and_failed_paths_required": true,
+        "cross_estate_join_authorized": false
+      },
+      "receipt_contract": {
+        "exact_source_locator_required": true,
+        "source_bytes_or_stable_official_identifier_required": true,
+        "required_fields": [
+          "source_locator",
+          "issuing_body",
+          "source_type",
+          "jurisdiction",
+          "bounded_window",
+          "retrieved_at",
+          "content_sha256_or_stable_official_identifier",
+          "coverage_statement",
+          "included_rows",
+          "excluded_rows",
+          "null_rows",
+          "unavailable_rows",
+          "refused_rows",
+          "correction_route",
+          "correction_outcome"
+        ]
+      },
+      "result_ledger_path": "data/acquisition/lake-allocator-war-wave-23/law21-est-10.jsonl",
+      "execution_state": "ready_for_acquisition",
+      "result_rows": 0,
+      "evidence_adjudicated": false,
+      "controls_and_refusals_required": true,
+      "blocked_promotions": [
+        "estate_finding",
+        "complete_compact_finding",
+        "racial_order_finding",
+        "prevalence_finding",
+        "coordination_finding",
+        "common_purpose_finding",
+        "identity_edge",
+        "relationship_edge",
+        "participation_row",
+        "active_claim",
+        "hop_edge",
+        "publication_clearance"
+      ],
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "packet_ref": "LAW23-LAW21-EST-11",
+      "packet_sequence": 11,
+      "source_queue_ref": "LAW21-EST-11",
+      "source_task_ref": "LAW21-EST-11/T01",
+      "source_task_sequence": 1,
+      "consumer_key": "us-legislative-political-finance-estate",
+      "queue_class": "unreviewed_acquisition_queue",
+      "source_route_authority": "unreviewed_wave_02_acquisition_only",
+      "task_authority": "unreviewed_intake_acquisition_only",
+      "selection_priority": "P0",
+      "selection_rule": "highest_priority_then_lowest_source_task_sequence",
+      "acquisition_target": "complete deservingness-category denominator",
+      "required_output": "Complete denominator-and-correction ledger with included, excluded, null, unavailable, appealed, and resolved rows. Target: complete deservingness-category denominator",
+      "closure_test": "The declared denominator and correction route are complete for the bounded window, every missing row has an explicit availability disposition, and no unresolved exclusion is silently treated as a null.",
+      "allowed_results": [
+        "supported",
+        "contradicted",
+        "mixed",
+        "no_observed_effect",
+        "unavailable_after_search",
+        "outside_bounded_window"
+      ],
+      "reviewed_source_finding_refs": [],
+      "reviewed_source_observation_refs": [],
+      "unreviewed_intake_observation_refs": [
+        "SSC-OBS-0015",
+        "SSC-OBS-0016",
+        "SSC-OBS-0017",
+        "SSC-OBS-0018"
+      ],
+      "source_families": [
+        "Congressional, committee, party, finance, and institutional rosters",
+        "FEC, ethics, disclosure, budget, vote, hearing, and selection records",
+        "affected-population, burden, consequence, collective-claim, and remedy denominators"
+      ],
+      "query_seed": "us-legislative-political-finance-estate :: complete deservingness-category denominator",
+      "search_protocol": {
+        "source_scope": "official_first_party_then_bounded_public_record",
+        "primary_source_required": true,
+        "negative_search_required": true,
+        "controls_nulls_refusals_and_failed_paths_required": true,
+        "cross_estate_join_authorized": false
+      },
+      "receipt_contract": {
+        "exact_source_locator_required": true,
+        "source_bytes_or_stable_official_identifier_required": true,
+        "required_fields": [
+          "source_locator",
+          "issuing_body",
+          "source_type",
+          "jurisdiction",
+          "bounded_window",
+          "retrieved_at",
+          "content_sha256_or_stable_official_identifier",
+          "coverage_statement",
+          "included_rows",
+          "excluded_rows",
+          "null_rows",
+          "unavailable_rows",
+          "refused_rows",
+          "correction_route",
+          "correction_outcome"
+        ]
+      },
+      "result_ledger_path": "data/acquisition/lake-allocator-war-wave-23/law21-est-11.jsonl",
+      "execution_state": "ready_for_acquisition",
+      "result_rows": 0,
+      "evidence_adjudicated": false,
+      "controls_and_refusals_required": true,
+      "blocked_promotions": [
+        "estate_finding",
+        "complete_compact_finding",
+        "racial_order_finding",
+        "prevalence_finding",
+        "coordination_finding",
+        "common_purpose_finding",
+        "identity_edge",
+        "relationship_edge",
+        "participation_row",
+        "active_claim",
+        "hop_edge",
+        "publication_clearance"
+      ],
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    }
+  ],
+  "boundaries": {
+    "lead_selection_is_evidence_acquisition": false,
+    "lead_selection_is_evidence_review": false,
+    "ready_for_acquisition_is_execution_complete": false,
+    "source_family_is_source_receipt": false,
+    "reviewed_route_is_second_party_review": false,
+    "split_route_launders_unreviewed_intake": false,
+    "unreviewed_route_may_promote_finding": false,
+    "one_packet_per_estate_is_prevalence": false,
+    "same_source_family_is_relationship": false,
+    "identity_created": false,
+    "relationship_created": false,
+    "participation_created": false,
+    "active_claim_created": false,
+    "hop_created": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}

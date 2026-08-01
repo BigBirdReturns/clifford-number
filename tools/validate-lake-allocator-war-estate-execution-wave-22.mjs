@@ -192,35 +192,42 @@ export function validateRepository(root = defaultRoot) {
         return false;
       }
     };
+    const isAncestor = (ancestor, target) => {
+      try {
+        quietGit(['merge-base', '--is-ancestor', ancestor, target]);
+        return true;
+      } catch {
+        return false;
+      }
+    };
 
     const githubHeadRef = String(process.env.GITHUB_HEAD_REF ?? '').trim();
     const remoteHeadRef = githubHeadRef ? 'refs/remotes/origin/' + githubHeadRef : null;
     let ancestryTarget = 'HEAD';
     let baseAvailable = hasCommit(baseCommit);
+    let ancestrySatisfied = baseAvailable && isAncestor(baseCommit, ancestryTarget);
 
-    if (!baseAvailable && process.env.GITHUB_ACTIONS === 'true' && remoteHeadRef) {
+    if (!ancestrySatisfied && process.env.GITHUB_ACTIONS === 'true' && remoteHeadRef) {
       try {
         quietGit([
           'fetch',
           '--no-tags',
+          '--depth=1000000',
           'origin',
           '+refs/heads/' + githubHeadRef + ':' + remoteHeadRef
         ]);
       } catch {
-        // The availability check below records a bounded targeted-recovery failure.
+        // The availability and ancestry checks below record bounded recovery failure.
       }
       if (hasCommit(remoteHeadRef)) ancestryTarget = remoteHeadRef;
       baseAvailable = hasCommit(baseCommit);
+      ancestrySatisfied = baseAvailable && isAncestor(baseCommit, ancestryTarget);
     }
 
     if (!baseAvailable) {
-      fail(errors, 'Wave 22 base checkpoint unavailable after explicit head-ref recovery');
-    } else {
-      try {
-        quietGit(['merge-base', '--is-ancestor', baseCommit, ancestryTarget]);
-      } catch {
-        fail(errors, 'Wave 22 base checkpoint is not an ancestor');
-      }
+      fail(errors, 'Wave 22 base checkpoint unavailable after targeted deep-history recovery');
+    } else if (!ancestrySatisfied) {
+      fail(errors, 'Wave 22 base checkpoint is not an ancestor');
     }
   }
 

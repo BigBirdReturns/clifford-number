@@ -1,0 +1,172 @@
+{
+  "schema_version": "lake-allocator-war-lead-acquisition-wave-23-policy@1",
+  "program_ref": "CN-LAKE-ALLOCATOR-WAR-W23",
+  "wave_ref": "LAW-W23",
+  "as_of": "2026-07-31",
+  "title": "Allocator-war lead acquisition launch Wave 23",
+  "purpose": "Select one lead acquisition task from each Wave 22 estate queue by deterministic priority and sequence, attach an estate-specific official-source retrieval contract, and admit the resulting packets for acquisition without creating evidence findings, graph effects, or publication authority.",
+  "base_checkpoint": {
+    "branch": "agent/lake-allocator-war-wave-21",
+    "commit": "28328956d9b0d413555629aaafa093a2c6a83195",
+    "required_ancestry": true
+  },
+  "paths": {
+    "source_projection": "build/lake-actions/allocator-war-estate-execution-wave-22.json",
+    "projection": "build/lake-actions/allocator-war-lead-acquisition-wave-23.json",
+    "report": "reports/lake-allocator-war-lead-acquisition-wave-23.md",
+    "method": "docs/methods/lake-allocator-war-lead-acquisition-wave-23.md",
+    "milestone": "docs/milestones/lake-allocator-war-lead-acquisition-wave-23.md",
+    "result_ledger_root": "data/acquisition/lake-allocator-war-wave-23"
+  },
+  "expected_counts": {
+    "estate_queues": 11,
+    "lead_packets": 11,
+    "selected_p0": 10,
+    "selected_p1": 1,
+    "selected_p2": 0,
+    "reviewed_only_packets": 3,
+    "split_authority_packets": 5,
+    "unreviewed_only_packets": 3,
+    "execution_ready_packets": 11,
+    "evidence_rows": 0,
+    "finding_promotions": 0,
+    "graph_effects": 0,
+    "publication_clearances": 0
+  },
+  "selection_law": {
+    "priority_order": [
+      "P0",
+      "P1",
+      "P2"
+    ],
+    "tie_breaker": "lowest_source_task_sequence",
+    "packets_per_queue": 1,
+    "empty_queue_disposition": "blocking_error",
+    "selection_is_truth_or_merit_score": false
+  },
+  "retrieval_contract": {
+    "execution_state": "ready_for_acquisition",
+    "source_scope": "official_first_party_then_bounded_public_record",
+    "primary_source_required": true,
+    "exact_source_locator_required": true,
+    "source_bytes_or_stable_official_identifier_required": true,
+    "negative_search_required": true,
+    "controls_nulls_refusals_and_failed_paths_required": true,
+    "cross_estate_join_authorized": false,
+    "result_rows_created": false,
+    "required_receipt_fields": [
+      "source_locator",
+      "issuing_body",
+      "source_type",
+      "jurisdiction",
+      "bounded_window",
+      "retrieved_at",
+      "content_sha256_or_stable_official_identifier",
+      "coverage_statement",
+      "included_rows",
+      "excluded_rows",
+      "null_rows",
+      "unavailable_rows",
+      "refused_rows",
+      "correction_route",
+      "correction_outcome"
+    ],
+    "allowed_result_states": [
+      "supported",
+      "contradicted",
+      "mixed",
+      "no_observed_effect",
+      "unavailable_after_search",
+      "outside_bounded_window"
+    ]
+  },
+  "consumer_source_families": {
+    "dialog-estate": [
+      "official methodology and eligibility records",
+      "complete preselection rosters and archived cohort materials",
+      "selection, nonselection, correction, and disclosure records"
+    ],
+    "intellectual-property-standards-data-rights-estate": [
+      "executed award, loan, contract, and amendment instruments",
+      "IP, software, data-rights, interface, and operating-knowledge schedules",
+      "audit, termination, portability, substitution, and recovery records"
+    ],
+    "judicial-administrative-adjudication-estate": [
+      "solicitations, bidder lists, architecture submissions, and award records",
+      "administrative dockets, inspector-general records, and court filings",
+      "remand, replacement, continuity, correction, and outcome records"
+    ],
+    "labor-immigration-workforce-mobility-estate": [
+      "OPM and agency personnel criteria, rosters, and decision records",
+      "MSPB, EEOC, OSC, labor, grievance, and judicial records",
+      "promotion, retention, discipline, appeal, remand, and outcome records"
+    ],
+    "public-interest-crossing-estate": [
+      "official program definitions, category rules, and institutional rosters",
+      "complete affected-population and decision denominators",
+      "burden, consequence, collective-claim, correction, and remedy records"
+    ],
+    "public-money-industrial-policy-estate": [
+      "application, selection, rejection, withdrawal, and failure rosters",
+      "award, loan, milestone, disbursement, repayment, default, and clawback instruments",
+      "audits, performance records, substitutions, and public recovery records"
+    ],
+    "regulatory-markets-estate": [
+      "final rules, Federal Register records, sector guidance, and implementation materials",
+      "regulated-entity and affected-person denominators",
+      "enforcement actions, administrative appeals, litigation, remand, and remedy records"
+    ],
+    "transatlantic-defense-innovation-estate": [
+      "complete fund, cohort, ranking, and candidate rosters across bounded years",
+      "company-registry and legal-entity resolution records",
+      "later award, nonaward, failure, comparator, and recovery records"
+    ],
+    "us-defense-estate": [
+      "solicitations, candidate and supplier universes, bidder lists, and architecture records",
+      "evaluation, FOCI, committee, contract, rights, interface, and acceptance records",
+      "award, nonaward, protest, performance, substitution, exit, and recovery records"
+    ],
+    "us-executive-appointments-ethics-estate": [
+      "White House, agency, Senate, OGE, and appointment rosters",
+      "removal, enforcement, inspector-general, ethics, appeal, and litigation records",
+      "authority, veto, budget, burden, outcome, and practical correction records"
+    ],
+    "us-legislative-political-finance-estate": [
+      "Congressional, committee, party, finance, and institutional rosters",
+      "FEC, ethics, disclosure, budget, vote, hearing, and selection records",
+      "affected-population, burden, consequence, collective-claim, and remedy denominators"
+    ]
+  },
+  "blocked_promotions": [
+    "estate_finding",
+    "complete_compact_finding",
+    "racial_order_finding",
+    "prevalence_finding",
+    "coordination_finding",
+    "common_purpose_finding",
+    "identity_edge",
+    "relationship_edge",
+    "participation_row",
+    "active_claim",
+    "hop_edge",
+    "publication_clearance"
+  ],
+  "boundaries": {
+    "lead_selection_is_evidence_acquisition": false,
+    "lead_selection_is_evidence_review": false,
+    "ready_for_acquisition_is_execution_complete": false,
+    "source_family_is_source_receipt": false,
+    "reviewed_route_is_second_party_review": false,
+    "split_route_launders_unreviewed_intake": false,
+    "unreviewed_route_may_promote_finding": false,
+    "one_packet_per_estate_is_prevalence": false,
+    "same_source_family_is_relationship": false,
+    "identity_created": false,
+    "relationship_created": false,
+    "participation_created": false,
+    "active_claim_created": false,
+    "hop_created": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}
