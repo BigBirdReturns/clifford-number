@@ -30,6 +30,7 @@ jobs:
       - name: Diagnose descendant history recovery
         shell: bash
         run: |
+          set +e
           set -u
           base='ec730441e4779b24226f12f556707f4a89b7fe3f'
           remote_head="refs/remotes/origin/${GITHUB_HEAD_REF}"
