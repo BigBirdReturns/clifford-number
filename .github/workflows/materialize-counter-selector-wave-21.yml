@@ -36,21 +36,21 @@ jobs:
         run: |
           set -euo pipefail
           cat > /tmp/wave21-expected-blobs <<'EOF'
-          a0b18fbc5f6e3e8cc59d2b80d84d5e936af23800  .github/materializers/counter-selector-wave-21/payload-000
-          b75f913155ab154bc81f47fcb527abc5c2d37e49  .github/materializers/counter-selector-wave-21/payload-001
-          fe9003fade3e7b8ff1d073cf2b40d85a8dde5f97  .github/materializers/counter-selector-wave-21/payload-002
-          aa9fdb23f3fb6841ecedf9b976bbbacde115edeb  .github/materializers/counter-selector-wave-21/payload-003
-          c743f5bbbcdd7ee83abd439ba0d5e2ff1745abbd  .github/materializers/counter-selector-wave-21/payload-004
-          6d5b0645caa1df9c4b5998c87a1af2653bc54818  .github/materializers/counter-selector-wave-21/payload-005
-          1738e2565e6a916a95d5d56a84b38455056bfc5d  .github/materializers/counter-selector-wave-21/payload-006
-          afaa65002c54310ffce55dba649752df03de21c7  .github/materializers/counter-selector-wave-21/payload-007
-          4f35249d679991900fc0375bc083dc75aff3197a  .github/materializers/counter-selector-wave-21/payload-008
-          13eed5bdb9857db2eda3076060735f9d85ff0856  .github/materializers/counter-selector-wave-21/payload-009
-          a700a1b2470ee796675d2d695d4fdcb765b19e60  .github/materializers/counter-selector-wave-21/payload-010
-          0a0127d62ca62af9e5ba48c7f05c170d139d38b4  .github/materializers/counter-selector-wave-21/payload-011
-          35e1f29a45d544cbcdd606a3b1f8577dfee7921a  .github/materializers/counter-selector-wave-21/payload-012
-          d0ac4f926e1ec351c7d22118333240e9e6acd774  .github/materializers/counter-selector-wave-21/payload-013
-          3753ad1374b444f4c8d6ee073fea48bf32ac1749  .github/materializers/counter-selector-wave-21/payload-014
+          a1dcd795b22a54c38ccde52a3c93bcbdd094aab4  .github/materializers/counter-selector-wave-21/payload-000
+          edf6a115bb9d0e1181dff1f359fd369eee2ebc4b  .github/materializers/counter-selector-wave-21/payload-001
+          df9d62dc9c878255af0258a9fdb10232cdeeea37  .github/materializers/counter-selector-wave-21/payload-002
+          48cbfb82b5e43a3a9b912ca474123ac70ad51d90  .github/materializers/counter-selector-wave-21/payload-003
+          640b6345eea720d423049404d03027e9d2dc30ba  .github/materializers/counter-selector-wave-21/payload-004
+          cfdf6d3da20ea7575999515be2145fa21583f967  .github/materializers/counter-selector-wave-21/payload-005
+          dcec6063952740c7fd12dfb013653d7d75a6a14b  .github/materializers/counter-selector-wave-21/payload-006
+          e14b8115d9ae56b5bfdd86a2c9b4e36c516feee2  .github/materializers/counter-selector-wave-21/payload-007
+          47333ae9e25b73f015b631ec57d3934fdc759edd  .github/materializers/counter-selector-wave-21/payload-008
+          cb761d687b013040caef6fc53527876ae32a47a4  .github/materializers/counter-selector-wave-21/payload-009
+          e5bdc8b5810e2dc51a623eb48845951b200d6267  .github/materializers/counter-selector-wave-21/payload-010
+          186127ed2790fe28b7926c717d6321b8988f6e5e  .github/materializers/counter-selector-wave-21/payload-011
+          dc1625fb19cc446a8358e5e760e0254ce1f32a59  .github/materializers/counter-selector-wave-21/payload-012
+          5d17b975f5230eeed2de3de12abd4b7e61804a3d  .github/materializers/counter-selector-wave-21/payload-013
+          6728bf2de1e8bb25fcc6c29666593684e94dd41d  .github/materializers/counter-selector-wave-21/payload-014
           EOF
           while read -r expected path; do
             actual="$(git hash-object "$path")"
@@ -63,7 +63,7 @@ jobs:
           cat .github/materializers/counter-selector-wave-21/payload-* \
             | base64 --decode \
             > /tmp/counter-selector-wave-21.tar.gz
-          echo '4accb305b265c701699d192f95e911bd10a99039a26900da63484d577799c4b9  /tmp/counter-selector-wave-21.tar.gz' \
+          echo '150408e518dd132c4a604d559f9bcd854285671cd51108979908130f7ab10e8e  /tmp/counter-selector-wave-21.tar.gz' \
             | sha256sum --check --strict
           tar -xzf /tmp/counter-selector-wave-21.tar.gz -C .
           rm -rf .github/materializers/counter-selector-wave-21
