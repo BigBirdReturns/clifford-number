@@ -1,0 +1,173 @@
+name: TEMP SG-12 exact-main post-merge proof
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/sg12-postmerge-proof-base-5b015
+    paths:
+      - '.github/tmp/sg12-postmerge-proof-trigger.txt'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sg12-postmerge-proof-5b015
+  cancel-in-progress: false
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prove exact canonical main bytes and authority boundaries
+        env:
+          EXPECTED_MAIN: 5b0155dc451fce80c83fbd5e2eb4e90984a3d663
+          EXPECTED_FIRST_PARENT: c89073412e705ca93b37dd857f07c90774a5722d
+          EXPECTED_SECOND_PARENT: 1a264a9f027a4786d89799004c78fbc3ec1a3d38
+          EXPECTED_RELEASE: 91436a45974414e4d9a3fbf5692500da2a55bc9bfd4f29ffb457b09b1341c3c0
+        run: |
+          set -Eeuo pipefail
+          proof=/tmp/sg12-canonical-main-proof
+          origin_url="$(git remote get-url origin)"
+          auth_key="$(git config --local --name-only --get-regexp '^http\..*\.extraheader$' | head -n 1)"
+          test -n "$auth_key"
+          auth_value="$(git config --local --get "$auth_key")"
+          test -n "$auth_value"
+
+          rm -rf "$proof"
+          git init "$proof"
+          git -C "$proof" config gc.auto 0
+          git -C "$proof" remote add origin "$origin_url"
+          git -C "$proof" config --local "$auth_key" "$auth_value"
+          git -C "$proof" fetch --no-tags --depth=1 origin main
+          git -C "$proof" checkout --detach FETCH_HEAD
+          test "$(git -C "$proof" rev-parse HEAD)" = "$EXPECTED_MAIN"
+          test "$(git -C "$proof" show -s --format=%P HEAD)" = "$EXPECTED_FIRST_PARENT $EXPECTED_SECOND_PARENT"
+          test "$(git -C "$proof" hash-object reports/core-thesis/stable-ground/sg12/index.html)" = 'ec60f04ce4617c47f1c96e5a45b1904643ad6e71'
+
+          cd "$proof"
+          npm run ci:stable-ground
+          npm run release:check
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const pointer = JSON.parse(fs.readFileSync('data/project/project-stable-ground-current.json', 'utf8'));
+          const manifest = JSON.parse(fs.readFileSync('data/project/project-stable-ground-sg12-release-manifest.json', 'utf8'));
+          const campaign = JSON.parse(fs.readFileSync('data/project/status-sovereignty-wave-02-second-party-review-campaign.json', 'utf8'));
+          const expectedRelease = process.env.EXPECTED_RELEASE;
+          const fail = (message) => { throw new Error(message); };
+          if (pointer.current_checkpoint_id !== 'SG-2026-08-01-12') fail('SG-12 is not current');
+          if (pointer.current_checkpoint_path !== 'data/project/project-stable-ground-sg12.json') fail('SG-12 pointer path drifted');
+          if (pointer.boundaries?.graph_effect !== 'none') fail('pointer graph boundary drifted');
+          if (manifest.combined_sha256 !== expectedRelease) fail('SG-12 release digest drifted');
+          if (manifest.boundaries?.exact_bytes_prove_external_review !== false) fail('external-review boundary drifted');
+          const expected = {
+            wave_packets: 8,
+            maintainer_reviewed_packets: 8,
+            unassigned_packets: 8,
+            reviewer_candidates: 8,
+            invitations: 0,
+            ineligible: 2,
+            accepted_assignments: 0,
+            valid_reviews: 0,
+            second_party_reviewed_packets: 0,
+            adjudicated_packets: 0,
+            canonical_disposition_changes: 0,
+            publication_clearances: 0,
+            graph_effects: 0
+          };
+          for (const [key, value] of Object.entries(expected)) {
+            if (campaign.counts?.[key] !== value) fail(`campaign count ${key} drifted`);
+          }
+          if (campaign.boundaries?.publication_effect !== 'none') fail('publication boundary drifted');
+          if (campaign.boundaries?.graph_effect !== 'none') fail('campaign graph boundary drifted');
+          if (campaign.boundaries?.adoption_effect !== 'none') fail('adoption boundary drifted');
+          console.log('canonical SG-12 pointer, release, campaign, and authority boundaries: PASS');
+          NODE
+
+          timestamp_paths=(
+            build/axm-identity.json
+            build/build-hop-report.json
+            build/hop-graph.json
+            build/migration-review.md
+            build/migration-summary.json
+            build/receipt-graph.json
+            build/scores.json
+            build/scout-report.json
+            build/scout-report.md
+            build/surface-graph.json
+          )
+          expected_timestamp_paths="$(printf '%s\n' "${timestamp_paths[@]}" | sort)"
+          actual_timestamp_paths="$(git status --porcelain=v1 | cut -c4- | sort)"
+          if [[ "$actual_timestamp_paths" != "$expected_timestamp_paths" ]]; then
+            echo 'expected timestamp-only release drift:'
+            printf '%s\n' "$expected_timestamp_paths"
+            echo 'observed release drift:'
+            printf '%s\n' "$actual_timestamp_paths"
+            exit 1
+          fi
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const paths = [
+            'build/axm-identity.json',
+            'build/build-hop-report.json',
+            'build/hop-graph.json',
+            'build/migration-review.md',
+            'build/migration-summary.json',
+            'build/receipt-graph.json',
+            'build/scores.json',
+            'build/scout-report.json',
+            'build/scout-report.md',
+            'build/surface-graph.json'
+          ];
+          const normalize = (value) => value
+            .replace(/"generated":\s*"[^"]+"/, '"generated": "<normalized>"')
+            .replace(/^Generated: .*$/m, 'Generated: <normalized>');
+          for (const rel of paths) {
+            const before = execFileSync('git', ['show', `HEAD:${rel}`], { encoding: 'utf8' });
+            const after = fs.readFileSync(rel, 'utf8');
+            if (normalize(before) !== normalize(after)) throw new Error(`non-timestamp release drift in ${rel}`);
+          }
+          console.log('release drift: ten timestamp-only surfaces verified');
+          NODE
+
+          git checkout -- "${timestamp_paths[@]}"
+          git clean -fdx
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1)"
+
+          {
+            echo "canonical_main=$EXPECTED_MAIN"
+            echo "first_parent=$EXPECTED_FIRST_PARENT"
+            echo "second_parent=$EXPECTED_SECOND_PARENT"
+            echo "release_sha256=$EXPECTED_RELEASE"
+            echo 'hosted_pr_matrix=32/32_success'
+            echo 'fresh_depth1_stable_ground=pass'
+            echo 'fresh_depth1_release_check=pass'
+            echo 'release_timestamp_only_paths=10'
+            echo 'release_non_timestamp_drift=0'
+            echo 'candidate_records=8'
+            echo 'screened_ineligible=2'
+            echo 'invitations=0'
+            echo 'accepted_assignments=0'
+            echo 'valid_external_reviews=0'
+            echo 'adjudications=0'
+            echo 'publication_clearances=0'
+            echo 'graph_effect=none'
+            echo 'adoption=A0'
+          } > "$GITHUB_WORKSPACE/sg12-postmerge-proof.txt"
+      - name: Upload post-merge proof receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: sg12-postmerge-proof-5b015
+          path: sg12-postmerge-proof.txt
+          if-no-files-found: error
