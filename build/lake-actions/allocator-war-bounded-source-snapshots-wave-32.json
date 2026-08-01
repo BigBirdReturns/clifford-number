@@ -1,0 +1,956 @@
+{
+  "schema_version": "lake-allocator-war-bounded-source-snapshots-wave-32@1",
+  "program_ref": "CN-LAKE-ALLOCATOR-WAR-W32",
+  "wave_ref": "LAW-W32",
+  "as_of": "2026-08-01",
+  "generated_from": {
+    "policy_path": "data/project/lake-allocator-war-bounded-source-snapshots-wave-32-policy.json",
+    "snapshot_plan_path": "data/project/lake-allocator-war-bounded-source-snapshots-wave-32-plan.json",
+    "snapshot_plan_bytes": 22899,
+    "snapshot_plan_sha256": "47cdae93114361d7427c4dffdfce38f09cb7f850136b89af6b10b0f0007bbce1",
+    "source_plan_path": "data/project/lake-allocator-war-public-route-execution-wave-31-source-plan.json",
+    "source_plan_bytes": 14963,
+    "source_plan_sha256": "62490828eb06100ecff2abeb9faeee0fe1754aa5c3998e63e2c2912dab5f8cb3",
+    "source_projection_path": "build/lake-actions/allocator-war-public-route-execution-wave-31.json",
+    "source_projection_bytes": 19907,
+    "source_projection_sha256": "3313afc6f36342cc95860e53d6e4652010f0e4fb9fab0636d638fcf0a4649d05",
+    "snapshot_ledger_path": "data/acquisition/lake-allocator-war-wave-32/snapshot-ledger.jsonl",
+    "snapshot_ledger_bytes": 38358,
+    "snapshot_ledger_sha256": "7af4d5b760dc5ec0d88ff61ea7e5829abe947edad84f1a88eaf09c43dc5d4fe1",
+    "source_ledger_custody": {
+      "data/acquisition/lake-allocator-war-wave-31/protected-personnel-records.jsonl": {
+        "bytes": 11069,
+        "sha256": "54006d2b3a10f258b7c307bdfb3be7f97664a9dc29da93951291cab45dcf5b29",
+        "declared_sha256": "54006d2b3a10f258b7c307bdfb3be7f97664a9dc29da93951291cab45dcf5b29"
+      },
+      "data/acquisition/lake-allocator-war-wave-31/internal-authority-and-inventory.jsonl": {
+        "bytes": 23655,
+        "sha256": "11bac50bd46c15e303fadade3925e7616b02f474917335867665e9af1c20dc44",
+        "declared_sha256": "11bac50bd46c15e303fadade3925e7616b02f474917335867665e9af1c20dc44"
+      },
+      "data/acquisition/lake-allocator-war-wave-31/public-award-and-contract-denominators.jsonl": {
+        "bytes": 12384,
+        "sha256": "e1ed7d999b2a59aecf81a2eeec16d2b5b93681f7c084690ed05a2bd5bbd558af",
+        "declared_sha256": "e1ed7d999b2a59aecf81a2eeec16d2b5b93681f7c084690ed05a2bd5bbd558af"
+      },
+      "data/acquisition/lake-allocator-war-wave-31/published-enforcement-and-action-registers.jsonl": {
+        "bytes": 12730,
+        "sha256": "97a34a86cebe1287de31aac9208439c95bf543a0111facdd72d1b270d9c3857d",
+        "declared_sha256": "97a34a86cebe1287de31aac9208439c95bf543a0111facdd72d1b270d9c3857d"
+      },
+      "data/acquisition/lake-allocator-war-wave-31/correction-dockets-and-outcomes.jsonl": {
+        "bytes": 26895,
+        "sha256": "7fee27c9c02294b0a2be2dd5ef2c55db4c1e497efcff034d62198968487c0f9d",
+        "declared_sha256": "7fee27c9c02294b0a2be2dd5ef2c55db4c1e497efcff034d62198968487c0f9d"
+      },
+      "data/acquisition/lake-allocator-war-wave-31/affected-comparator-and-distributional-joins.jsonl": {
+        "bytes": 18102,
+        "sha256": "ce51603a0e2bc0fcc65383a02705407d542254c8a07ca2008954d26f1a7cf46d",
+        "declared_sha256": "ce51603a0e2bc0fcc65383a02705407d542254c8a07ca2008954d26f1a7cf46d"
+      },
+      "data/acquisition/lake-allocator-war-wave-31/financial-recovery-and-continuity.jsonl": {
+        "bytes": 9500,
+        "sha256": "87d2b99cc09517274908978ed6d6e0eb03dd3d529990444b566597a04bc2e71b",
+        "declared_sha256": "87d2b99cc09517274908978ed6d6e0eb03dd3d529990444b566597a04bc2e71b"
+      }
+    },
+    "snapshot_response_custody": {
+      "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s001.json": {
+        "bytes": 651,
+        "sha256": "6c96e4049e9573bd9a267a9fdad69dc06497451489e99887bc7f17fae91c2615",
+        "declared_bytes": 651,
+        "declared_sha256": "6c96e4049e9573bd9a267a9fdad69dc06497451489e99887bc7f17fae91c2615"
+      },
+      "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s002.json": {
+        "bytes": 651,
+        "sha256": "7918612028f3809178fdaa95ccc95d53f010894a3376a192c21853ab3720e23b",
+        "declared_bytes": 651,
+        "declared_sha256": "7918612028f3809178fdaa95ccc95d53f010894a3376a192c21853ab3720e23b"
+      },
+      "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s003.json": {
+        "bytes": 656,
+        "sha256": "0a95279c42a00ff924f9b2eb632c502e48321bd61c8b30e76f1def6f25d28b96",
+        "declared_bytes": 656,
+        "declared_sha256": "0a95279c42a00ff924f9b2eb632c502e48321bd61c8b30e76f1def6f25d28b96"
+      },
+      "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s004.json": {
+        "bytes": 239255,
+        "sha256": "e9594fe57bda1fb3002b71c3a4c93b09f7db8260388ebe6e802242e6a72aee64",
+        "declared_bytes": 239255,
+        "declared_sha256": "e9594fe57bda1fb3002b71c3a4c93b09f7db8260388ebe6e802242e6a72aee64"
+      },
+      "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s005.json": {
+        "bytes": 472,
+        "sha256": "a9491b5e54ed0d9a8736b4d7b7d35c7e7bab0fc6fa8a847324eb7dda55f9248e",
+        "declared_bytes": 472,
+        "declared_sha256": "a9491b5e54ed0d9a8736b4d7b7d35c7e7bab0fc6fa8a847324eb7dda55f9248e"
+      },
+      "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s006.json": {
+        "bytes": 1271,
+        "sha256": "682269b46e0cf200c7002ca7d55ba3da3de8dc345958d579ec98e579fc6782e7",
+        "declared_bytes": 1271,
+        "declared_sha256": "682269b46e0cf200c7002ca7d55ba3da3de8dc345958d579ec98e579fc6782e7"
+      },
+      "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s008.html": {
+        "bytes": 36340,
+        "sha256": "7b3ab0ab3222745e876ac313aa54d701959552066835e2b9884f5b329058284d",
+        "declared_bytes": 36340,
+        "declared_sha256": "7b3ab0ab3222745e876ac313aa54d701959552066835e2b9884f5b329058284d"
+      },
+      "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s010.json": {
+        "bytes": 45083,
+        "sha256": "3484bf52bafecaac7de2312774d5a5021f6e9799928016fb5db6001794da2888",
+        "declared_bytes": 45083,
+        "declared_sha256": "3484bf52bafecaac7de2312774d5a5021f6e9799928016fb5db6001794da2888"
+      },
+      "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s011.html": {
+        "bytes": 90210,
+        "sha256": "edab35c636d4ca0dd686fea60816f81ee0e420097d175ef45eb42c85cbf30b72",
+        "declared_bytes": 90210,
+        "declared_sha256": "edab35c636d4ca0dd686fea60816f81ee0e420097d175ef45eb42c85cbf30b72"
+      },
+      "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s012.html": {
+        "bytes": 93100,
+        "sha256": "6d8f63b969a7e0c86fb20757134eb93e8992f58529ca43b95f7ca3595441f0e4",
+        "declared_bytes": 93100,
+        "declared_sha256": "6d8f63b969a7e0c86fb20757134eb93e8992f58529ca43b95f7ca3595441f0e4"
+      },
+      "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s013.html": {
+        "bytes": 62948,
+        "sha256": "3a70a93810ed75b33dabe9e1f8c88a4795520015f7f532f2d3066fdcb2f43430",
+        "declared_bytes": 62948,
+        "declared_sha256": "3a70a93810ed75b33dabe9e1f8c88a4795520015f7f532f2d3066fdcb2f43430"
+      },
+      "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s014.html": {
+        "bytes": 391,
+        "sha256": "cbfaf818f7aaf69fd6386e0c6a81d9e4423c904425c3087cc8a0e83bdf5ee84e",
+        "declared_bytes": 391,
+        "declared_sha256": "cbfaf818f7aaf69fd6386e0c6a81d9e4423c904425c3087cc8a0e83bdf5ee84e"
+      },
+      "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s015.html": {
+        "bytes": 400,
+        "sha256": "b0adfc87d27a7789a7e73c966c66c04ed8fd2e5f87908b2cfc6507edfccf130e",
+        "declared_bytes": 400,
+        "declared_sha256": "b0adfc87d27a7789a7e73c966c66c04ed8fd2e5f87908b2cfc6507edfccf130e"
+      },
+      "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s017.html": {
+        "bytes": 18768,
+        "sha256": "a1cc5e51a9a99bb507f969c8d0ce5e048e93ea1a8ffdd6d0cea8bbc6842d8870",
+        "declared_bytes": 18768,
+        "declared_sha256": "a1cc5e51a9a99bb507f969c8d0ce5e048e93ea1a8ffdd6d0cea8bbc6842d8870"
+      },
+      "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s018.html": {
+        "bytes": 56102,
+        "sha256": "768a22b317bff06d8a93920f5c352c43b232171343bb81cce073aa2cf12a4d13",
+        "declared_bytes": 56102,
+        "declared_sha256": "768a22b317bff06d8a93920f5c352c43b232171343bb81cce073aa2cf12a4d13"
+      }
+    }
+  },
+  "counts": {
+    "source_routes": 7,
+    "source_tasks": 38,
+    "source_receipts": 19,
+    "source_receipt_uses": 153,
+    "snapshot_specs": 19,
+    "snapshot_rows": 19,
+    "public_http_specs": 15,
+    "credential_boundary_specs": 4,
+    "json_specs": 7,
+    "html_specs": 8,
+    "required_success_specs": 7,
+    "required_success_captured": 7,
+    "response_snapshot_files": 15,
+    "response_snapshot_bytes": 646298,
+    "capture_states": {
+      "captured_html_response": 6,
+      "captured_http_error_response": 2,
+      "captured_json_response": 7,
+      "credential_boundary_preserved": 4
+    },
+    "route_summary_rows": 7,
+    "task_result_rows": 38,
+    "execution_rows": 45,
+    "task_result_states": {
+      "bounded_snapshot_preserved_join_block": 6,
+      "bounded_snapshot_preserved_partial": 26,
+      "bounded_snapshot_preserved_unavailable": 2,
+      "preserved_access_bounded": 4
+    },
+    "complete_denominators": 0,
+    "evidence_rows": 0,
+    "estate_adoptions": 0,
+    "finding_promotions": 0,
+    "graph_effects": 0,
+    "publication_clearances": 0
+  },
+  "graph_digests": {
+    "participation_sha256": "4d3251dca3760bae9459cd46ac33455663ae7943680fb6184d6c517e026ad83a",
+    "active_claims_sha256": "3ccda11961cc6e1bec1b5675418004a8cb98d62a891f710599f81c36a8e0eaf7",
+    "hop_edges_sha256": "aa080592cb62dee1f7d39ed6d8a0d7c2d3f674c1bb2a0bacbc959c84f8a601cd",
+    "rejected_hop_surfaces_sha256": "82774168d65b67ba1b3c3071a67142bf454bab75b82fa21bbf193642bc05c7a5",
+    "rejected_hop_pairs_sha256": "e8511b978ddfaae049cd4673ef98946932fc354050d6b5259218794ad7bf38ab"
+  },
+  "snapshots": [
+    {
+      "snapshot_ref": "LAW32-S001",
+      "source_ref": "LAW31-S001",
+      "capture_mode": "public_http",
+      "expected_format": "json",
+      "required_success": true,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "captured_json_response",
+      "request_fingerprint_sha256": "cc66931b2163ccaa72fafc5ebd329faa0b0dec80053c1763295c62e93d9f4e68",
+      "response_status": 200,
+      "response_final_url": "https://data.opm.gov/api/v1/files/employment?current=true&year=2026",
+      "response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s001.json",
+      "response_body_bytes": 651,
+      "response_body_sha256": "6c96e4049e9573bd9a267a9fdad69dc06497451489e99887bc7f17fae91c2615",
+      "parsed_summary": {
+        "root_type": "array",
+        "root_keys": [],
+        "row_count": 5
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "snapshot_ref": "LAW32-S002",
+      "source_ref": "LAW31-S002",
+      "capture_mode": "public_http",
+      "expected_format": "json",
+      "required_success": true,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "captured_json_response",
+      "request_fingerprint_sha256": "8f6fb6bb314b6558e05e004060b8941f5e408e5a500f14defe730745abaa0c0f",
+      "response_status": 200,
+      "response_final_url": "https://data.opm.gov/api/v1/files/accessions?current=true&year=2026",
+      "response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s002.json",
+      "response_body_bytes": 651,
+      "response_body_sha256": "7918612028f3809178fdaa95ccc95d53f010894a3376a192c21853ab3720e23b",
+      "parsed_summary": {
+        "root_type": "array",
+        "root_keys": [],
+        "row_count": 5
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "snapshot_ref": "LAW32-S003",
+      "source_ref": "LAW31-S003",
+      "capture_mode": "public_http",
+      "expected_format": "json",
+      "required_success": true,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "captured_json_response",
+      "request_fingerprint_sha256": "cfe99d1ced1780c9fdd660211954c0b31a690b458e793a146a19b247db8e4d92",
+      "response_status": 200,
+      "response_final_url": "https://data.opm.gov/api/v1/files/separations?current=true&year=2026",
+      "response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s003.json",
+      "response_body_bytes": 656,
+      "response_body_sha256": "0a95279c42a00ff924f9b2eb632c502e48321bd61c8b30e76f1def6f25d28b96",
+      "parsed_summary": {
+        "root_type": "array",
+        "root_keys": [],
+        "row_count": 5
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "snapshot_ref": "LAW32-S004",
+      "source_ref": "LAW31-S004",
+      "capture_mode": "public_http",
+      "expected_format": "json",
+      "required_success": true,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "captured_json_response",
+      "request_fingerprint_sha256": "f53fb5402c9e4c6ec44f8520446cdcc12474072f8e0660ff38f6c305746c20a6",
+      "response_status": 200,
+      "response_final_url": "https://www.federalregister.gov/api/v1/documents.json?per_page=100&order=newest&conditions%5Bpublication_date%5D%5Bgte%5D=2025-01-20&conditions%5Bterm%5D=diversity%20equity%20inclusion",
+      "response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s004.json",
+      "response_body_bytes": 239255,
+      "response_body_sha256": "e9594fe57bda1fb3002b71c3a4c93b09f7db8260388ebe6e802242e6a72aee64",
+      "parsed_summary": {
+        "root_type": "object",
+        "root_keys": [
+          "count",
+          "description",
+          "next_page_url",
+          "results",
+          "total_pages"
+        ],
+        "row_array_key": "results",
+        "row_count": 100,
+        "reported_count_key": "count",
+        "reported_count": 111
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "snapshot_ref": "LAW32-S005",
+      "source_ref": "LAW31-S005",
+      "capture_mode": "public_http",
+      "expected_format": "json",
+      "required_success": true,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "captured_json_response",
+      "request_fingerprint_sha256": "c916f9bff992eca456bc81791d5f77385985475ecf003c3281055fe21dadb42c",
+      "response_status": 200,
+      "response_final_url": "https://api.usaspending.gov/api/v2/search/spending_by_award_count/",
+      "response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s005.json",
+      "response_body_bytes": 472,
+      "response_body_sha256": "a9491b5e54ed0d9a8736b4d7b7d35c7e7bab0fc6fa8a847324eb7dda55f9248e",
+      "parsed_summary": {
+        "root_type": "object",
+        "root_keys": [
+          "messages",
+          "results",
+          "spending_level"
+        ]
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "snapshot_ref": "LAW32-S006",
+      "source_ref": "LAW31-S006",
+      "capture_mode": "public_http",
+      "expected_format": "json",
+      "required_success": true,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "captured_json_response",
+      "request_fingerprint_sha256": "9d0dbf83144b06ca834bdc583cf26e40cccc1c33f68475d812e7f14717cdf51e",
+      "response_status": 200,
+      "response_final_url": "https://api.usaspending.gov/api/v2/references/award_types/",
+      "response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s006.json",
+      "response_body_bytes": 1271,
+      "response_body_sha256": "682269b46e0cf200c7002ca7d55ba3da3de8dc345958d579ec98e579fc6782e7",
+      "parsed_summary": {
+        "root_type": "object",
+        "root_keys": [
+          "contracts",
+          "direct_payments",
+          "grants",
+          "idvs",
+          "loans",
+          "other_financial_assistance"
+        ]
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "snapshot_ref": "LAW32-S007",
+      "source_ref": "LAW31-S007",
+      "capture_mode": "credential_boundary",
+      "expected_format": "none",
+      "required_success": false,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "credential_boundary_preserved",
+      "request_fingerprint_sha256": null,
+      "response_status": null,
+      "response_final_url": null,
+      "response_body_path": null,
+      "response_body_bytes": null,
+      "response_body_sha256": null,
+      "parsed_summary": null,
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "snapshot_ref": "LAW32-S008",
+      "source_ref": "LAW31-S008",
+      "capture_mode": "public_http",
+      "expected_format": "html",
+      "required_success": false,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "captured_html_response",
+      "request_fingerprint_sha256": "d6a43f677be7c989224a54307aaa044376038770329227ce5fa1cd88d8833329",
+      "response_status": 200,
+      "response_final_url": "https://sam.gov/fpds",
+      "response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s008.html",
+      "response_body_bytes": 36340,
+      "response_body_sha256": "7b3ab0ab3222745e876ac313aa54d701959552066835e2b9884f5b329058284d",
+      "parsed_summary": {
+        "title": "Contract Award Data in SAM.gov | SAM.gov",
+        "has_html_element": true,
+        "has_body_element": true
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "snapshot_ref": "LAW32-S009",
+      "source_ref": "LAW31-S009",
+      "capture_mode": "credential_boundary",
+      "expected_format": "none",
+      "required_success": false,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "credential_boundary_preserved",
+      "request_fingerprint_sha256": null,
+      "response_status": null,
+      "response_final_url": null,
+      "response_body_path": null,
+      "response_body_bytes": null,
+      "response_body_sha256": null,
+      "parsed_summary": null,
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "snapshot_ref": "LAW32-S010",
+      "source_ref": "LAW31-S010",
+      "capture_mode": "public_http",
+      "expected_format": "json",
+      "required_success": true,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "captured_json_response",
+      "request_fingerprint_sha256": "5fca168d1b8d86e52ccde6c76ccc06fff60e28d0f00b49dd42f0993cf7768673",
+      "response_status": 200,
+      "response_final_url": "https://api.grants.gov/v1/api/search2",
+      "response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s010.json",
+      "response_body_bytes": 45083,
+      "response_body_sha256": "3484bf52bafecaac7de2312774d5a5021f6e9799928016fb5db6001794da2888",
+      "parsed_summary": {
+        "root_type": "object",
+        "root_keys": [
+          "data",
+          "errorcode",
+          "msg",
+          "token"
+        ]
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "snapshot_ref": "LAW32-S011",
+      "source_ref": "LAW31-S011",
+      "capture_mode": "public_http",
+      "expected_format": "html",
+      "required_success": false,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "captured_html_response",
+      "request_fingerprint_sha256": "115f9bf717f34c723cf7ee35560574476b71dfe22d0aa781d6d81368c1a185ae",
+      "response_status": 200,
+      "response_final_url": "https://www.justice.gov/opa/pr/justice-department-establishes-civil-rights-fraud-initiative",
+      "response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s011.html",
+      "response_body_bytes": 90210,
+      "response_body_sha256": "edab35c636d4ca0dd686fea60816f81ee0e420097d175ef45eb42c85cbf30b72",
+      "parsed_summary": {
+        "title": "Office of Public Affairs | Justice Department Establishes Civil Rights Fraud Initiative | United States Department of Justice",
+        "has_html_element": true,
+        "has_body_element": true
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "snapshot_ref": "LAW32-S012",
+      "source_ref": "LAW31-S012",
+      "capture_mode": "public_http",
+      "expected_format": "html",
+      "required_success": false,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "captured_html_response",
+      "request_fingerprint_sha256": "2a7e4771fca922bec23ce48c9afba7424b4232865bbef966354d09201af7b438",
+      "response_status": 200,
+      "response_final_url": "https://www.justice.gov/opa/pr/ibm-pays-17-million-resolve-allegations-discrimination-through-illegal-dei-practices",
+      "response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s012.html",
+      "response_body_bytes": 93100,
+      "response_body_sha256": "6d8f63b969a7e0c86fb20757134eb93e8992f58529ca43b95f7ca3595441f0e4",
+      "parsed_summary": {
+        "title": "Office of Public Affairs | IBM Pays $17 Million to Resolve Allegations of Discrimination Through Illegal DEI Practices | United States Department of Justice",
+        "has_html_element": true,
+        "has_body_element": true
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "snapshot_ref": "LAW32-S013",
+      "source_ref": "LAW31-S013",
+      "capture_mode": "public_http",
+      "expected_format": "html",
+      "required_success": false,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "captured_html_response",
+      "request_fingerprint_sha256": "f78a920cb670bc81e1912804ba0e53e8972332f8909d4cd6a58b0c3c8b46addd",
+      "response_status": 200,
+      "response_final_url": "https://www.justice.gov/dag/select-publications",
+      "response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s013.html",
+      "response_body_bytes": 62948,
+      "response_body_sha256": "3a70a93810ed75b33dabe9e1f8c88a4795520015f7f532f2d3066fdcb2f43430",
+      "parsed_summary": {
+        "title": "Office of the Deputy Attorney General | Select Publications",
+        "has_html_element": true,
+        "has_body_element": true
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "snapshot_ref": "LAW32-S014",
+      "source_ref": "LAW31-S014",
+      "capture_mode": "public_http",
+      "expected_format": "html",
+      "required_success": false,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "captured_http_error_response",
+      "request_fingerprint_sha256": "3d7f603a94638537707a6d323a91c38c914461fb22bf6d8b34a31918c8ac9aa5",
+      "response_status": 403,
+      "response_final_url": "https://www.gao.gov/legal/bid-protests",
+      "response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s014.html",
+      "response_body_bytes": 391,
+      "response_body_sha256": "cbfaf818f7aaf69fd6386e0c6a81d9e4423c904425c3087cc8a0e83bdf5ee84e",
+      "parsed_summary": null,
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "snapshot_ref": "LAW32-S015",
+      "source_ref": "LAW31-S015",
+      "capture_mode": "public_http",
+      "expected_format": "html",
+      "required_success": false,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "captured_http_error_response",
+      "request_fingerprint_sha256": "78b91d21efdf39f25603e5d2e958196c6419e995ee37db6da00feb08616a1c8f",
+      "response_status": 403,
+      "response_final_url": "https://www.gao.gov/legal/bid-protests/faqs",
+      "response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s015.html",
+      "response_body_bytes": 400,
+      "response_body_sha256": "b0adfc87d27a7789a7e73c966c66c04ed8fd2e5f87908b2cfc6507edfccf130e",
+      "parsed_summary": null,
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "snapshot_ref": "LAW32-S016",
+      "source_ref": "LAW31-S016",
+      "capture_mode": "credential_boundary",
+      "expected_format": "none",
+      "required_success": false,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "credential_boundary_preserved",
+      "request_fingerprint_sha256": null,
+      "response_status": null,
+      "response_final_url": null,
+      "response_body_path": null,
+      "response_body_bytes": null,
+      "response_body_sha256": null,
+      "parsed_summary": null,
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "snapshot_ref": "LAW32-S017",
+      "source_ref": "LAW31-S017",
+      "capture_mode": "public_http",
+      "expected_format": "html",
+      "required_success": false,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "captured_html_response",
+      "request_fingerprint_sha256": "827694614fcfa051259cf681e1b47f5f8f038fca49866dc981fe2af76ec108e4",
+      "response_status": 200,
+      "response_final_url": "https://www.mspb.gov/decisions/casereports.htm",
+      "response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s017.html",
+      "response_body_bytes": 18768,
+      "response_body_sha256": "a1cc5e51a9a99bb507f969c8d0ce5e048e93ea1a8ffdd6d0cea8bbc6842d8870",
+      "parsed_summary": {
+        "title": "U.S. Merit Systems Protection Board | Case Reports",
+        "has_html_element": true,
+        "has_body_element": true
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "snapshot_ref": "LAW32-S018",
+      "source_ref": "LAW31-S018",
+      "capture_mode": "public_http",
+      "expected_format": "html",
+      "required_success": false,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "captured_html_response",
+      "request_fingerprint_sha256": "0b52d2f6e6f06ee0e5063775b21841969410013e7569cda20c8b181e51206922",
+      "response_status": 200,
+      "response_final_url": "https://www.fac.gov/data/",
+      "response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s018.html",
+      "response_body_bytes": 56102,
+      "response_body_sha256": "768a22b317bff06d8a93920f5c352c43b232171343bb81cce073aa2cf12a4d13",
+      "parsed_summary": {
+        "title": "Using FAC data",
+        "has_html_element": true,
+        "has_body_element": true
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "snapshot_ref": "LAW32-S019",
+      "source_ref": "LAW31-S019",
+      "capture_mode": "credential_boundary",
+      "expected_format": "none",
+      "required_success": false,
+      "observed_at": "2026-08-01T21:07:48Z",
+      "capture_state": "credential_boundary_preserved",
+      "request_fingerprint_sha256": null,
+      "response_status": null,
+      "response_final_url": null,
+      "response_body_path": null,
+      "response_body_bytes": null,
+      "response_body_sha256": null,
+      "parsed_summary": null,
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    }
+  ],
+  "routes": [
+    {
+      "route_ref": "LAW30-R01",
+      "route_class": "protected-personnel-records",
+      "route_sequence": 1,
+      "route_owner": "labor-immigration-workforce-mobility-estate",
+      "public_execution": false,
+      "source_task_count": 4,
+      "source_refs": [],
+      "snapshot_refs": [],
+      "snapshot_count": 0,
+      "snapshot_capture_states": {},
+      "response_snapshot_count": 0,
+      "credential_boundary_count": 0,
+      "task_result_states": {
+        "preserved_access_bounded": 4
+      },
+      "result_path": "data/acquisition/lake-allocator-war-wave-32/routes/protected-personnel-records.jsonl",
+      "result_rows": 5,
+      "result_sha256": "ae3832f002c9df5c23dd2fa913d835b3ec41a2e5ccc9f2405fa8c2cb0f835f4f",
+      "complete_denominators": 0,
+      "evidence_rows": 0,
+      "estate_adoptions": 0,
+      "finding_promotions": 0,
+      "graph_effects": 0,
+      "publication_clearances": 0
+    },
+    {
+      "route_ref": "LAW30-R02",
+      "route_class": "internal-authority-and-inventory",
+      "route_sequence": 2,
+      "route_owner": "us-executive-appointments-ethics-estate",
+      "public_execution": true,
+      "source_task_count": 8,
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S002",
+        "LAW31-S003",
+        "LAW31-S004"
+      ],
+      "snapshot_refs": [
+        "LAW32-S001",
+        "LAW32-S002",
+        "LAW32-S003",
+        "LAW32-S004"
+      ],
+      "snapshot_count": 4,
+      "snapshot_capture_states": {
+        "captured_json_response": 4
+      },
+      "response_snapshot_count": 4,
+      "credential_boundary_count": 0,
+      "task_result_states": {
+        "bounded_snapshot_preserved_partial": 6,
+        "bounded_snapshot_preserved_unavailable": 2
+      },
+      "result_path": "data/acquisition/lake-allocator-war-wave-32/routes/internal-authority-and-inventory.jsonl",
+      "result_rows": 9,
+      "result_sha256": "da4637604fa80379d3b50c1ca74bb266385c27e3f309cd5fe962bdd21ec38d2c",
+      "complete_denominators": 0,
+      "evidence_rows": 0,
+      "estate_adoptions": 0,
+      "finding_promotions": 0,
+      "graph_effects": 0,
+      "publication_clearances": 0
+    },
+    {
+      "route_ref": "LAW30-R03",
+      "route_class": "public-award-and-contract-denominators",
+      "route_sequence": 3,
+      "route_owner": "public-money-industrial-policy-estate",
+      "public_execution": true,
+      "source_task_count": 4,
+      "source_refs": [
+        "LAW31-S005",
+        "LAW31-S006",
+        "LAW31-S007",
+        "LAW31-S008",
+        "LAW31-S009",
+        "LAW31-S010"
+      ],
+      "snapshot_refs": [
+        "LAW32-S005",
+        "LAW32-S006",
+        "LAW32-S007",
+        "LAW32-S008",
+        "LAW32-S009",
+        "LAW32-S010"
+      ],
+      "snapshot_count": 6,
+      "snapshot_capture_states": {
+        "captured_html_response": 1,
+        "captured_json_response": 3,
+        "credential_boundary_preserved": 2
+      },
+      "response_snapshot_count": 4,
+      "credential_boundary_count": 2,
+      "task_result_states": {
+        "bounded_snapshot_preserved_partial": 4
+      },
+      "result_path": "data/acquisition/lake-allocator-war-wave-32/routes/public-award-and-contract-denominators.jsonl",
+      "result_rows": 5,
+      "result_sha256": "6d350ee659dea818dcc87940cf19eaa161245eb1172bb36ee1ba8e0cb2756088",
+      "complete_denominators": 0,
+      "evidence_rows": 0,
+      "estate_adoptions": 0,
+      "finding_promotions": 0,
+      "graph_effects": 0,
+      "publication_clearances": 0
+    },
+    {
+      "route_ref": "LAW30-R04",
+      "route_class": "published-enforcement-and-action-registers",
+      "route_sequence": 4,
+      "route_owner": "regulatory-markets-estate",
+      "public_execution": true,
+      "source_task_count": 4,
+      "source_refs": [
+        "LAW31-S004",
+        "LAW31-S011",
+        "LAW31-S012",
+        "LAW31-S013"
+      ],
+      "snapshot_refs": [
+        "LAW32-S004",
+        "LAW32-S011",
+        "LAW32-S012",
+        "LAW32-S013"
+      ],
+      "snapshot_count": 4,
+      "snapshot_capture_states": {
+        "captured_html_response": 3,
+        "captured_json_response": 1
+      },
+      "response_snapshot_count": 4,
+      "credential_boundary_count": 0,
+      "task_result_states": {
+        "bounded_snapshot_preserved_partial": 4
+      },
+      "result_path": "data/acquisition/lake-allocator-war-wave-32/routes/published-enforcement-and-action-registers.jsonl",
+      "result_rows": 5,
+      "result_sha256": "4b560950f231b7486f7eb4bb723d17cfce7ab0e17be9167011df2a56c5bf767b",
+      "complete_denominators": 0,
+      "evidence_rows": 0,
+      "estate_adoptions": 0,
+      "finding_promotions": 0,
+      "graph_effects": 0,
+      "publication_clearances": 0
+    },
+    {
+      "route_ref": "LAW30-R05",
+      "route_class": "correction-dockets-and-outcomes",
+      "route_sequence": 5,
+      "route_owner": "public-interest-crossing-estate",
+      "public_execution": true,
+      "source_task_count": 9,
+      "source_refs": [
+        "LAW31-S014",
+        "LAW31-S015",
+        "LAW31-S016",
+        "LAW31-S017"
+      ],
+      "snapshot_refs": [
+        "LAW32-S014",
+        "LAW32-S015",
+        "LAW32-S016",
+        "LAW32-S017"
+      ],
+      "snapshot_count": 4,
+      "snapshot_capture_states": {
+        "captured_html_response": 1,
+        "captured_http_error_response": 2,
+        "credential_boundary_preserved": 1
+      },
+      "response_snapshot_count": 3,
+      "credential_boundary_count": 1,
+      "task_result_states": {
+        "bounded_snapshot_preserved_partial": 9
+      },
+      "result_path": "data/acquisition/lake-allocator-war-wave-32/routes/correction-dockets-and-outcomes.jsonl",
+      "result_rows": 10,
+      "result_sha256": "6204dda22959fa4feb5903eb7ec567e5b71c47e5de155c5745ed028ce09d1a50",
+      "complete_denominators": 0,
+      "evidence_rows": 0,
+      "estate_adoptions": 0,
+      "finding_promotions": 0,
+      "graph_effects": 0,
+      "publication_clearances": 0
+    },
+    {
+      "route_ref": "LAW30-R06",
+      "route_class": "affected-comparator-and-distributional-joins",
+      "route_sequence": 6,
+      "route_owner": "public-interest-crossing-estate",
+      "public_execution": true,
+      "source_task_count": 6,
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S005",
+        "LAW31-S007",
+        "LAW31-S009",
+        "LAW31-S018"
+      ],
+      "snapshot_refs": [
+        "LAW32-S001",
+        "LAW32-S005",
+        "LAW32-S007",
+        "LAW32-S009",
+        "LAW32-S018"
+      ],
+      "snapshot_count": 5,
+      "snapshot_capture_states": {
+        "captured_html_response": 1,
+        "captured_json_response": 2,
+        "credential_boundary_preserved": 2
+      },
+      "response_snapshot_count": 3,
+      "credential_boundary_count": 2,
+      "task_result_states": {
+        "bounded_snapshot_preserved_join_block": 6
+      },
+      "result_path": "data/acquisition/lake-allocator-war-wave-32/routes/affected-comparator-and-distributional-joins.jsonl",
+      "result_rows": 7,
+      "result_sha256": "0a0e93ae7bc997f4038307319f28e5b0b73ff21cc0c5e551db343cac86e5f783",
+      "complete_denominators": 0,
+      "evidence_rows": 0,
+      "estate_adoptions": 0,
+      "finding_promotions": 0,
+      "graph_effects": 0,
+      "publication_clearances": 0
+    },
+    {
+      "route_ref": "LAW30-R07",
+      "route_class": "financial-recovery-and-continuity",
+      "route_sequence": 7,
+      "route_owner": "public-money-industrial-policy-estate",
+      "public_execution": true,
+      "source_task_count": 3,
+      "source_refs": [
+        "LAW31-S005",
+        "LAW31-S009",
+        "LAW31-S012",
+        "LAW31-S018",
+        "LAW31-S019"
+      ],
+      "snapshot_refs": [
+        "LAW32-S005",
+        "LAW32-S009",
+        "LAW32-S012",
+        "LAW32-S018",
+        "LAW32-S019"
+      ],
+      "snapshot_count": 5,
+      "snapshot_capture_states": {
+        "captured_html_response": 2,
+        "captured_json_response": 1,
+        "credential_boundary_preserved": 2
+      },
+      "response_snapshot_count": 3,
+      "credential_boundary_count": 2,
+      "task_result_states": {
+        "bounded_snapshot_preserved_partial": 3
+      },
+      "result_path": "data/acquisition/lake-allocator-war-wave-32/routes/financial-recovery-and-continuity.jsonl",
+      "result_rows": 4,
+      "result_sha256": "6a66480c33edd7e3d7ccf4d880a7aff2c128ada8103da5656962fe7e2895d1fb",
+      "complete_denominators": 0,
+      "evidence_rows": 0,
+      "estate_adoptions": 0,
+      "finding_promotions": 0,
+      "graph_effects": 0,
+      "publication_clearances": 0
+    }
+  ],
+  "execution_contract": {
+    "one_snapshot_per_source_receipt": true,
+    "public_http_requests_attempted_once_per_source_spec": true,
+    "credential_boundaries_preserved_without_secret_use": true,
+    "source_snapshots_reused_by_route": true,
+    "manual_per_task_network_dispatch_required": false,
+    "release_validation_refetches_network": false,
+    "complete_denominator_created": false
+  },
+  "boundaries": {
+    "snapshot_result_is_evidence_row": false,
+    "snapshot_execution_is_estate_adoption": false,
+    "snapshot_execution_closes_source_gap": false,
+    "snapshot_response_is_complete_denominator": false,
+    "http_success_is_substantive_finding": false,
+    "http_error_is_absence": false,
+    "network_error_is_absence": false,
+    "credential_boundary_is_no_records": false,
+    "public_html_is_complete_register": false,
+    "api_count_is_row_denominator": false,
+    "shared_snapshot_is_relationship": false,
+    "snapshot_recurrence_is_prevalence": false,
+    "identity_created": false,
+    "relationship_created": false,
+    "participation_created": false,
+    "active_claim_created": false,
+    "hop_created": false,
+    "evidence_adjudicated": false,
+    "finding_promoted": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}

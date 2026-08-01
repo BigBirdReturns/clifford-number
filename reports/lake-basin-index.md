@@ -5,15 +5,15 @@ This report partitions the current tracked lake census into declared semantic ba
 ## Current assignment
 
 ```text
-source rows:                         2284
+source rows:                         2318
 semantic basins:                    40
-classified without default:         2284
+classified without default:         2318
 unclassified paths:                 0
-evidence-bearing files:             1515
-evidence files with registry owner: 1515
-evidence files previously unowned:  1515
+evidence-bearing files:             1544
+evidence files with registry owner: 1544
+evidence files previously unowned:  1544
 exact orphan evidence files:        0
-gap rows:                           156
+gap rows:                           183
 ```
 
 ## Basin waterline
@@ -24,7 +24,7 @@ gap rows:                           156
 | core-thesis-build-products | generated_projection | 184 | 184 | 184 | 0 | 184 | yes |
 | project-governance | project_governance | 169 | 169 | 169 | 0 | 169 | yes |
 | intake-custody | intake_only | 142 | 142 | 142 | 0 | 142 | yes |
-| allocator-war-source | research_routing_source | 104 | 104 | 104 | 0 | 104 | yes |
+| allocator-war-source | research_routing_source | 131 | 131 | 131 | 0 | 131 | yes |
 | core-thesis-report-products | report_projection | 96 | 96 | 96 | 0 | 96 | yes |
 | milestone-governance | governance_history | 65 | 65 | 65 | 0 | 65 | yes |
 | documentation | documentation | 58 | 58 | 58 | 0 | 58 | yes |
@@ -35,9 +35,9 @@ gap rows:                           156
 | general-build-products | generated_projection | 35 | 35 | 35 | 0 | 35 | yes |
 | receipt-artifacts | receipt_artifact | 32 | 32 | 32 | 0 | 32 | yes |
 | lake-action-products | operational_decision_projection | 22 | 22 | 22 | 0 | 22 | yes |
+| allocator-war-lake-actions | operational_decision_projection | 15 | 15 | 15 | 0 | 15 | yes |
 | estate-closure-products | generated_projection | 15 | 15 | 15 | 0 | 15 | yes |
-| allocator-war-lake-actions | operational_decision_projection | 14 | 14 | 14 | 0 | 14 | yes |
-| allocator-war-reports | report_projection | 12 | 12 | 12 | 0 | 12 | yes |
+| allocator-war-reports | report_projection | 13 | 13 | 13 | 0 | 13 | yes |
 | canonical-registries | canonical_registry | 12 | 12 | 12 | 0 | 12 | yes |
 | estate-frontier-products | generated_projection | 11 | 11 | 11 | 0 | 11 | yes |
 | residual-current-tree | residual_current_tree_path | 51 | 8 | 51 | 0 | 51 | yes |
@@ -50,9 +50,9 @@ gap rows:                           156
 | legacy-history | historical_legacy | 3 | 3 | 3 | 0 | 3 | yes |
 | gametrail-public-products | public_projection | 2 | 2 | 2 | 0 | 2 | yes |
 | contribution-pipeline | contribution_source_or_template | 1 | 1 | 1 | 0 | 1 | yes |
-| toolchain | tooling | 374 | 0 | 278 | 21 | 374 | yes |
-| regressions | test_fixture | 179 | 0 | 138 | 6 | 179 | yes |
-| automation | automation | 89 | 0 | 31 | 55 | 89 | yes |
+| toolchain | tooling | 377 | 0 | 281 | 21 | 377 | yes |
+| regressions | test_fixture | 180 | 0 | 139 | 6 | 180 | yes |
+| automation | automation | 90 | 0 | 31 | 56 | 90 | yes |
 | public-runtime | public_runtime | 52 | 0 | 41 | 10 | 52 | yes |
 | temporary-transport | temporary_transport | 17 | 0 | 1 | 16 | 17 | yes |
 | comprehension-protocol | method_and_fixture | 8 | 0 | 8 | 0 | 8 | yes |
@@ -65,7 +65,7 @@ gap rows:                           156
 
 | Gap type | Count |
 |---|---:|
-| public_reachability_requires_authorization_review | 156 |
+| public_reachability_requires_authorization_review | 183 |
 
 ## Honest terminal state
 
