@@ -1,0 +1,84 @@
+name: Temporary Wave 24 lead execution materializer
+
+on:
+  pull_request:
+    branches:
+      - agent/lake-allocator-war-wave-21
+    paths:
+      - '.github/tmp/wave24-lead-execution-trigger.json'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: temporary-wave24-lead-execution-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - name: Await transport-workflow deletion
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          path='.github/workflows/temporary-wave24-lead-execution-materializer.yml'
+          encoded_ref='agent%2Flake-allocator-war-lead-execution-wave-24'
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/${path}?ref=${encoded_ref}"
+          for attempt in $(seq 1 150); do
+            status="$(curl -sS -o /dev/null -w '%{http_code}' \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "$api")"
+            if [[ "$status" == '404' ]]; then
+              exit 0
+            fi
+            if [[ "$status" != '200' ]]; then
+              echo "unexpected GitHub contents status: $status" >&2
+              exit 1
+            fi
+            sleep 2
+          done
+          echo 'temporary Wave 24 workflow was not deleted before checkout' >&2
+          exit 1
+
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lake-allocator-war-lead-execution-wave-24
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Repair unknown-source validation path
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = 'tools/validate-lake-allocator-war-lead-execution-wave-24.mjs';
+          let text = fs.readFileSync(path, 'utf8');
+          const before = `      const source = sourceByRef.get(sourceRef);
+                if (sourceRow.schema_version !== policy.execution_contract.source_receipt_schema || sourceRow.row_type !== 'source_receipt') fail(errors, packet.packet_ref + ': source row schema drift');`;
+          const after = `      const source = sourceByRef.get(sourceRef);
+                if (!source) {
+                  fail(errors, packet.packet_ref + ': source plan reference absent during ledger validation: ' + sourceRef);
+                  continue;
+                }
+                if (sourceRow.schema_version !== policy.execution_contract.source_receipt_schema || sourceRow.row_type !== 'source_receipt') fail(errors, packet.packet_ref + ': source row schema drift');`;
+          if (!text.includes(before)) throw new Error('Wave 24 unknown-source repair marker absent');
+          text = text.replace(before, after);
+          fs.writeFileSync(path, text);
+          NODE
+          node --check tools/validate-lake-allocator-war-lead-execution-wave-24.mjs
+
+      - name: Materialize and seal Wave 24
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash tools/run-wave24-lead-execution-materializer.sh
