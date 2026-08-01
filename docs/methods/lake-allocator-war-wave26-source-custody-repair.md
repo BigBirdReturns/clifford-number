@@ -9,3 +9,8 @@ The three status, hierarchy, and electorate sources are expressly prohibited fro
 The permanent source-plan builder now carries two exact custody sets and fails closed if either changes. The repair validator reconciles those sets against the generated source plan, both Wave 26 result ledgers, the two downstream state transitions, deterministic repair receipt, lake ownership, release-gate registration, and graph digests. Adversarial mutations cover research-source substitution, missing or reordered institutional records, ledger drift, downstream execution, authority inflation, graph effects, and publication clearance.
 
 The repair changes source references, source-use counts, content hashes, projections, reports, and lake products. It does not change a result state, execute Wave 27 work, close a denominator, adjudicate evidence, create a finding, alter the graph, or clear publication.
+
+
+## CI ancestry portability
+
+The repair retains the exact required base checkpoint. In full-history repositories the validator tests that checkpoint directly against `HEAD`. In GitHub Actions pull-request jobs, a depth-one synthetic merge may omit the checkpoint object even when the feature branch descends from it. When direct validation cannot prove ancestry, the validator fetches only the exact `GITHUB_HEAD_REF` into an explicit remote-tracking reference with a bounded depth and reruns the unchanged `merge-base --is-ancestor` predicate against that branch tip. Missing history, failed recovery, or a recovered branch that does not descend from the checkpoint remains blocking.

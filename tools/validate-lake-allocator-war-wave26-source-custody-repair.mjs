@@ -37,11 +37,40 @@ function ancestryErrors(root, policy) {
   const errors = [];
   if (process.env.LAW26_SC_SKIP_GIT === '1') return errors;
   const checkpoint = policy.base_checkpoint.commit;
-  try {
-    execFileSync('git', ['merge-base', '--is-ancestor', checkpoint, 'HEAD'], { cwd: root, stdio: 'ignore' });
-  } catch {
-    fail(errors, checkpoint + ': repair base checkpoint is not an ancestor');
+  const quietGit = args => execFileSync('git', args, { cwd: root, stdio: 'ignore' });
+  const hasCommit = commitish => {
+    try {
+      quietGit(['cat-file', '-e', commitish + '^{commit}']);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const isAncestor = (ancestor, target) => {
+    try {
+      quietGit(['merge-base', '--is-ancestor', ancestor, target]);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const githubHeadRef = String(process.env.GITHUB_HEAD_REF ?? '').trim();
+  const remoteHeadRef = githubHeadRef ? 'refs/remotes/origin/' + githubHeadRef : null;
+  let ancestryTarget = 'HEAD';
+  let checkpointAvailable = hasCommit(checkpoint);
+  let ancestrySatisfied = checkpointAvailable && isAncestor(checkpoint, ancestryTarget);
+  if (!ancestrySatisfied && process.env.GITHUB_ACTIONS === 'true' && remoteHeadRef) {
+    try {
+      quietGit(['fetch', '--no-tags', '--depth=1000000', 'origin', '+refs/heads/' + githubHeadRef + ':' + remoteHeadRef]);
+    } catch {
+      // Bounded recovery failure is reported below.
+    }
+    if (hasCommit(remoteHeadRef)) ancestryTarget = remoteHeadRef;
+    checkpointAvailable = hasCommit(checkpoint);
+    ancestrySatisfied = checkpointAvailable && isAncestor(checkpoint, ancestryTarget);
   }
+  if (!checkpointAvailable) fail(errors, checkpoint + ': repair base checkpoint unavailable after targeted history recovery');
+  else if (!ancestrySatisfied) fail(errors, checkpoint + ': repair base checkpoint is not an ancestor');
   return errors;
 }
 

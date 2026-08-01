@@ -1,6 +1,6 @@
 # Lake index gap summary
 
-Source fingerprint: `074afe79775cd9695159d19c2681eef848e40580de5789da8fce8884e23815b2`
+Source fingerprint: `e8ca23eec88b8bed588b937dfa9d98e052bda4da456c0bf4003e124e812c6a2f`
 
 ## Finding
 
@@ -77,12 +77,8 @@ case IDs absent from public catalog: 26
 
 | Open PR | Branch-only paths |
 |---|---:|
-| #529 Temporary recover SG-10 payload bytes | 27 |
 | #488 Converge production publication and preserve pre-assemblage origins | 25 |
-| #568 Temporary export exact SSC SG-10 live head | 22 |
 | #493 Temporary SG-06 historical carrier export | 21 |
-| #524 Review SSC-H01 Wave 02 and append stable-ground SG-10 | 21 |
-| #564 Temporary export exact SSC SG-10 a042 tree | 21 |
 | #491 Temporary final SG-06 export | 20 |
 | #386 Make evidence-grounded judgments without a human-permission gate | 18 |
 | #494 Temporary PR 484 exact-head export | 18 |
@@ -93,10 +89,14 @@ case IDs absent from public catalog: 26
 | #483 Enforce deterministic publication safety and append SG-06 | 13 |
 | #530 Temporary export exact Wave 02 review commit | 13 |
 | #531 Temporary export SSC Wave 02 reviewed transition | 13 |
-| #535 Temporary export exact SSC Wave 02 reviewed tree for SG-10 | 13 |
-| #563 Temporary materialize final SSC SG-10 estate | 13 |
-| #537 Review SSC-H01 Wave 02 and append SG-10 | 12 |
 | #404 Recover exact source-bound cross-case mention recurrence | 11 |
+| #362 Stage biological Omega control-surface research program | 9 |
+| #527 Execute Counter-Selector Wave 08 Batch 02 blind review | 9 |
+| #50 Stage synthetic-population research program | 8 |
+| #380 Build root Evidence Desk publication estate from WebsiteIQ audit | 6 |
+| #378 Run WebsiteIQ baseline audit before website remediation | 4 |
+| #211 Map every case and report membership across the estates | 2 |
+| #379 Run corrected WebsiteIQ landing-path audit | 2 |
 
 ### P5 — history and semantics
 
