@@ -1,0 +1,264 @@
+name: TEMP materialize SSC RD-01 Wave 02 roster scaffold v1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd01-wave02-roster-materializer-base-v1
+    paths:
+      - '.github/tmp/ssc-rd01-wave02-roster-materializer-v1.trigger'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: ssc-rd01-wave02-roster-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd01-legal-entity
+      EXPECTED_START_SHA: f84b4403c6dd9b97234bd43cff48e8947c1bc55f
+      CAPTURE_RUN: '30771394498'
+      CAPTURE_ARTIFACT: '8840520391'
+      CAPTURE_ARTIFACT_SHA256: b9f9633864d1f1321617c86ec241194123686ec397f44feb941e0e25f24a2d89
+      CAPTURE_MANIFEST_SHA256: 4ee77d62291198e34727bd027a28898b6ed0931170584194f647a72ab6753747
+      BODY_BYTES: '529673'
+      BODY_SHA256: d500dba0f4937ed78f595974031b3f6b29d68805d47c9d59dc58c553ef8dadb8
+      SOURCE_ROOT: data/intake/status-sovereignty-rd-wave02-rd01-legal-entity/source-custody/natsec100-2026
+      SCAFFOLD_PATH: data/intake/status-sovereignty-rd-wave02-rd01-legal-entity/roster-scaffold.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd01-legal-entity
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Download exact roster-source artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd01-wave02-roster-source-capture-v1
+          path: /tmp/rd01-roster-capture
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 30771394498
+      - name: Verify artifact and materialize exact retained source custody
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          start_sha="$(git rev-parse "origin/$TARGET_BRANCH")"
+          test "$start_sha" = "$EXPECTED_START_SHA"
+          test "$(git rev-parse HEAD)" = "$start_sha"
+          node tools/validate-no-magic-human-gate.mjs
+
+          test "$(jq -r '.combined_sha256' /tmp/rd01-roster-capture/manifest.json)" = "$CAPTURE_MANIFEST_SHA256"
+          test "$(jq -r '.schema_version' /tmp/rd01-roster-capture/receipt.json)" = 'ssc-rd01-wave02-roster-source-capture@1'
+          test "$(jq -r '.terminal_state' /tmp/rd01-roster-capture/receipt.json)" = 'http_success_exact_body_captured'
+          test "$(jq -r '.resolved' /tmp/rd01-roster-capture/receipt.json)" = 'true'
+          test "$(jq -r '.terminal_body_bytes' /tmp/rd01-roster-capture/receipt.json)" = "$BODY_BYTES"
+          test "$(jq -r '.terminal_body_sha256' /tmp/rd01-roster-capture/receipt.json)" = "$BODY_SHA256"
+          terminal_path="$(jq -r '.terminal_body_path' /tmp/rd01-roster-capture/receipt.json)"
+          test "$terminal_path" = 'attempt-1/body.bin'
+          test "$(stat -c '%s' "/tmp/rd01-roster-capture/$terminal_path")" = "$BODY_BYTES"
+          test "$(sha256sum "/tmp/rd01-roster-capture/$terminal_path" | awk '{print $1}')" = "$BODY_SHA256"
+
+          mkdir -p "$SOURCE_ROOT/attempt-1"
+          cp /tmp/rd01-roster-capture/attempt-1/body.bin "$SOURCE_ROOT/attempt-1/body.bin"
+          cp /tmp/rd01-roster-capture/attempt-1/headers.txt "$SOURCE_ROOT/attempt-1/headers.txt"
+          cp /tmp/rd01-roster-capture/attempt-1/curl-meta.txt "$SOURCE_ROOT/attempt-1/curl-meta.txt"
+          cp /tmp/rd01-roster-capture/attempt-1/curl-stderr.txt "$SOURCE_ROOT/attempt-1/curl-stderr.txt"
+          cp /tmp/rd01-roster-capture/attempt-1/curl-exit.txt "$SOURCE_ROOT/attempt-1/curl-exit.txt"
+
+          export SOURCE_ROOT CAPTURE_RUN CAPTURE_ARTIFACT CAPTURE_ARTIFACT_SHA256 CAPTURE_MANIFEST_SHA256 BODY_BYTES BODY_SHA256
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
+          const root = process.env.SOURCE_ROOT;
+          const attempt = path.join(root, 'attempt-1');
+          const body = fs.readFileSync(path.join(attempt, 'body.bin'));
+          const headers = fs.readFileSync(path.join(attempt, 'headers.txt'));
+          const meta = fs.readFileSync(path.join(attempt, 'curl-meta.txt'), 'utf8').split(/\r?\n/);
+          const stderr = fs.readFileSync(path.join(attempt, 'curl-stderr.txt'));
+          const curlExit = Number(fs.readFileSync(path.join(attempt, 'curl-exit.txt'), 'utf8').trim());
+          const receipt = {
+            schema_version: 'ssc-rd01-wave02-retained-roster-source@1',
+            issue: 786,
+            class_id: 'RD-01-C03',
+            source_id: 'NATSEC100-2026-FIRST-PARTY',
+            source_url: 'https://www.natsec100.org/natsec100-2026',
+            final_url: meta[1] || 'https://www.natsec100.org/natsec100-2026',
+            retrieved_at: '2026-08-02T22:27:39Z',
+            terminal_state: 'http_success_exact_body_captured',
+            resolved: true,
+            execution: {
+              workflow_run: Number(process.env.CAPTURE_RUN),
+              artifact_id: Number(process.env.CAPTURE_ARTIFACT),
+              artifact_name: 'ssc-rd01-wave02-roster-source-capture-v1',
+              artifact_zip_sha256: process.env.CAPTURE_ARTIFACT_SHA256,
+              artifact_manifest_sha256: process.env.CAPTURE_MANIFEST_SHA256
+            },
+            request: {
+              curl_exit: curlExit,
+              http_status: Number(meta[0] || 0),
+              content_type: meta[2] || '',
+              reported_download_bytes: Number(meta[3] || 0),
+              attempts: 1,
+              bounded_retry_used: false
+            },
+            retained: {
+              body_path: `${root}/attempt-1/body.bin`,
+              body_bytes: body.length,
+              body_sha256: sha256(body),
+              headers_path: `${root}/attempt-1/headers.txt`,
+              headers_bytes: headers.length,
+              headers_sha256: sha256(headers),
+              curl_meta_path: `${root}/attempt-1/curl-meta.txt`,
+              curl_stderr_path: `${root}/attempt-1/curl-stderr.txt`,
+              curl_stderr_bytes: stderr.length,
+              curl_exit_path: `${root}/attempt-1/curl-exit.txt`
+            },
+            authority: {
+              source_capture_is_roster_parse: false,
+              source_capture_is_legal_entity_resolution: false,
+              ranked_display_name_is_legal_entity: false,
+              failed_fetch_is_record_absence: false,
+              failed_fetch_is_noncompliance: false,
+              outside_human_dependency: false,
+              external_contacts: 0,
+              external_reviews: 0,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            }
+          };
+          if (body.length !== Number(process.env.BODY_BYTES) || sha256(body) !== process.env.BODY_SHA256) throw new Error('retained body mismatch');
+          if (receipt.request.curl_exit !== 0 || receipt.request.http_status !== 200) throw new Error('retained source request not successful');
+          fs.writeFileSync(path.join(root, 'source-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+
+          node tools/acquisition/status-sovereignty-rd-wave02-rd01/build-roster-scaffold.mjs
+          node tools/acquisition/status-sovereignty-rd-wave02-rd01/validate-roster-scaffold.mjs
+          node test/status-sovereignty-rd-wave02-rd01-roster-scaffold.test.js
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const schema = JSON.parse(fs.readFileSync('schemas/status-sovereignty-rd-wave02-rd01-roster-scaffold.schema.json', 'utf8'));
+          if (schema.additionalProperties !== false) throw new Error('schema root is not closed');
+          if (schema.properties?.class_id?.const !== 'RD-01-C03' || schema.properties?.issue?.const !== 786) throw new Error('schema identity changed');
+          if (schema.properties?.rows?.minItems !== 102 || schema.properties?.rows?.maxItems !== 102) throw new Error('schema row denominator changed');
+          NODE
+
+          git status --porcelain=v1 --untracked-files=all | sort > /tmp/observed-status
+          cat > /tmp/expected-status <<'STATUS'
+          ?? data/intake/status-sovereignty-rd-wave02-rd01-legal-entity/roster-scaffold.json
+          ?? data/intake/status-sovereignty-rd-wave02-rd01-legal-entity/source-custody/natsec100-2026/attempt-1/body.bin
+          ?? data/intake/status-sovereignty-rd-wave02-rd01-legal-entity/source-custody/natsec100-2026/attempt-1/curl-exit.txt
+          ?? data/intake/status-sovereignty-rd-wave02-rd01-legal-entity/source-custody/natsec100-2026/attempt-1/curl-meta.txt
+          ?? data/intake/status-sovereignty-rd-wave02-rd01-legal-entity/source-custody/natsec100-2026/attempt-1/curl-stderr.txt
+          ?? data/intake/status-sovereignty-rd-wave02-rd01-legal-entity/source-custody/natsec100-2026/attempt-1/headers.txt
+          ?? data/intake/status-sovereignty-rd-wave02-rd01-legal-entity/source-custody/natsec100-2026/source-receipt.json
+          STATUS
+          diff -u /tmp/expected-status /tmp/observed-status
+          git diff --check
+          git add "$SOURCE_ROOT" "$SCAFFOLD_PATH"
+          git commit -m 'Freeze exact NatSec100 102-row roster scaffold'
+          product_sha="$(git rev-parse HEAD)"
+          git diff --name-only "$start_sha...$product_sha" | sort > /tmp/observed-paths
+          sed 's/^?? //' /tmp/expected-status | sort > /tmp/expected-paths
+          diff -u /tmp/expected-paths /tmp/observed-paths
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          end_sha="$(git rev-parse "origin/$TARGET_BRANCH")"
+          test "$end_sha" = "$start_sha"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          printf '%s\n' "$start_sha" > /tmp/rd01-start-sha.txt
+          printf '%s\n' "$product_sha" > /tmp/rd01-product-sha.txt
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Reproduce the exact scaffold from committed source bytes
+        run: |
+          set -Eeuo pipefail
+          git restore --staged --worktree .
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/acquisition/status-sovereignty-rd-wave02-rd01/build-roster-scaffold.mjs
+          node tools/acquisition/status-sovereignty-rd-wave02-rd01/validate-roster-scaffold.mjs
+          node test/status-sovereignty-rd-wave02-rd01-roster-scaffold.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+      - name: Emit exact materialization receipt
+        run: |
+          set -Eeuo pipefail
+          export SCAFFOLD_PATH SOURCE_ROOT
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
+          const body = fs.readFileSync(process.env.SCAFFOLD_PATH);
+          const value = JSON.parse(body.toString('utf8'));
+          const source = JSON.parse(fs.readFileSync(`${process.env.SOURCE_ROOT}/source-receipt.json`, 'utf8'));
+          const receipt = {
+            schema_version: 'ssc-rd01-wave02-roster-materializer-receipt@1',
+            issue: 786,
+            class_id: 'RD-01-C03',
+            start_sha: fs.readFileSync('/tmp/rd01-start-sha.txt', 'utf8').trim(),
+            product_sha: fs.readFileSync('/tmp/rd01-product-sha.txt', 'utf8').trim(),
+            product_paths: 7,
+            scaffold: {
+              path: process.env.SCAFFOLD_PATH,
+              bytes: body.length,
+              sha256: sha256(body),
+              selected_rows: value.counts.selected_roster_rows,
+              explicit_control_rows: value.counts.explicit_control_rows,
+              total_rows: value.counts.total_rows,
+              required_fields: value.required_fields.length
+            },
+            source: {
+              artifact_id: source.execution.artifact_id,
+              artifact_zip_sha256: source.execution.artifact_zip_sha256,
+              body_path: source.retained.body_path,
+              body_bytes: source.retained.body_bytes,
+              body_sha256: source.retained.body_sha256
+            },
+            gates: {
+              no_magic_human: 'pass',
+              exact_source_custody: 'pass',
+              deterministic_builder: 'pass',
+              structural_validator: 'pass',
+              adversarial_mutations: 28,
+              closed_schema: 'pass',
+              exact_seven_path_diff: 'pass',
+              branch_lease: 'pass',
+              complete_repository_release_gate: 'pass',
+              deterministic_replay: 'pass'
+            },
+            authority: {
+              fixed_legal_entity_protocol_complete: false,
+              legal_entities_resolved: 0,
+              rows_closed: 0,
+              class_closed: false,
+              substantive_finding_created: false,
+              external_contacts: 0,
+              external_reviews: 0,
+              outside_human_dependency: false,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            }
+          };
+          fs.writeFileSync('ssc-rd01-wave02-roster-materializer-receipt.json', `${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+      - name: Upload exact roster materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd01-wave02-roster-materializer-v1
+          path: ssc-rd01-wave02-roster-materializer-receipt.json
+          if-no-files-found: error
+          retention-days: 90
