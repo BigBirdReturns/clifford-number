@@ -1,0 +1,134 @@
+name: TEMP supervise SSC RD-04 A07 transport retries v1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a07-transport-supervisor-base-v1
+    paths:
+      - '.github/tmp/ssc-rd04-a07-transport-supervisor-v1.trigger'
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: ssc-rd04-a07-transport-supervisor-v1
+  cancel-in-progress: false
+
+jobs:
+  supervise:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a07-transport-supervisor-base-v1
+          fetch-depth: 1
+      - name: Rerun only completed transport failures until permanent A07 is on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          repo="$GITHUB_REPOSITORY"
+          declare -A retries
+          branches=(
+            'agent/ssc-rd04-a07-shn-full-trigger-v2'
+            'agent/ssc-rd04-a07-candidate-receipts-trigger-v3'
+            'agent/ssc-rd04-a07-official-sitemap-probe-trigger'
+            'agent/ssc-rd04-a07-official-crawl-trigger-v1'
+            'agent/ssc-rd04-a07-permanent-materializer-trigger-v1'
+          )
+          names=(
+            'TEMP execute SSC RD-04 A07 full exact-SHN denominator v2'
+            'TEMP custody SSC RD-04 A07 candidate receipts v3'
+            'TEMP probe SSC RD-04 A07 official sitemaps'
+            'TEMP crawl SSC RD-04 A07 official public surfaces v1'
+            'TEMP materialize and merge SSC RD-04 A07 permanent product v1'
+          )
+          pass_refs=(
+            'agent/ssc-rd04-a07-shn-full-pass-v2'
+            'agent/ssc-rd04-a07-candidate-receipts-pass-v3'
+            'agent/ssc-rd04-a07-official-sitemap-probe-pass'
+            'agent/ssc-rd04-a07-official-crawl-pass-v1'
+            ''
+          )
+
+          product_path='data/intake/status-sovereignty-rd04-public-implementation-receipts-a07/core.json'
+          latest_run() {
+            local branch="$1"
+            local expected="$2"
+            RUNS_JSON="$(gh run list --repo "$repo" --branch "$branch" --limit 100 --json databaseId,name,workflowName,status,conclusion,createdAt,url)" EXPECTED="$expected" node --input-type=module <<'NODE'
+const rows = JSON.parse(process.env.RUNS_JSON);
+const expected = process.env.EXPECTED;
+const row = rows
+  .filter((item) => item.name === expected || item.workflowName === expected)
+  .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
+if (row) process.stdout.write(JSON.stringify(row));
+NODE
+          }
+
+          comment_retry() {
+            local label="$1"
+            local run_id="$2"
+            local count="$3"
+            gh api --method POST "repos/$repo/issues/739/comments" \
+              -f body="A07 transport supervisor: rerunning completed failure for **$label** (run \`$run_id\`, bounded retry $count/3). No evidence gate, denominator, claim ceiling, or outside-human rule is changed."
+          }
+
+          for cycle in $(seq 1 330); do
+            if gh api -H 'Accept: application/vnd.github.raw+json' "repos/$repo/contents/$product_path?ref=main" >/dev/null 2>&1; then
+              gh api --method POST "repos/$repo/issues/739/comments" \
+                -f body="A07 transport supervisor: permanent A07 is present on \`main\`; no further transport retries are authorized."
+              exit 0
+            fi
+
+            for index in 0 1 2 3 4; do
+              branch="${branches[$index]}"
+              expected="${names[$index]}"
+              pass_ref="${pass_refs[$index]}"
+
+              if [[ -n "$pass_ref" ]] && git ls-remote --exit-code --heads origin "refs/heads/$pass_ref" >/dev/null 2>&1; then
+                continue
+              fi
+
+              # The permanent materializer must not be rerun until all four machine pass refs exist.
+              if [[ "$index" = 4 ]]; then
+                ready=1
+                for ref in "${pass_refs[@]:0:4}"; do
+                  if ! git ls-remote --exit-code --heads origin "refs/heads/$ref" >/dev/null 2>&1; then ready=0; break; fi
+                done
+                [[ "$ready" = 1 ]] || continue
+              fi
+
+              run_json="$(latest_run "$branch" "$expected")"
+              [[ -n "$run_json" ]] || continue
+              status="$(RUN_JSON="$run_json" node -e 'const r=JSON.parse(process.env.RUN_JSON); process.stdout.write(String(r.status ?? ""))')"
+              conclusion="$(RUN_JSON="$run_json" node -e 'const r=JSON.parse(process.env.RUN_JSON); process.stdout.write(String(r.conclusion ?? ""))')"
+              run_id="$(RUN_JSON="$run_json" node -e 'const r=JSON.parse(process.env.RUN_JSON); process.stdout.write(String(r.databaseId ?? ""))')"
+              [[ "$status" = completed ]] || continue
+              case "$conclusion" in
+                failure|cancelled|timed_out|action_required|startup_failure|stale)
+                  count="${retries[$branch]:-0}"
+                  if [[ "$count" -lt 3 ]]; then
+                    count=$((count + 1))
+                    retries[$branch]="$count"
+                    gh run rerun "$run_id" --repo "$repo" --failed || gh run rerun "$run_id" --repo "$repo"
+                    comment_retry "$expected" "$run_id" "$count"
+                  fi
+                  ;;
+              esac
+            done
+
+            if (( cycle % 20 == 0 )); then
+              gh api --method POST "repos/$repo/issues/739/comments" \
+                -f body="A07 transport supervisor heartbeat $cycle/330: waiting only for machine jobs or permanent publication. No person or agency response is required."
+            fi
+            sleep 60
+          done
+
+          gh api --method POST "repos/$repo/issues/739/comments" \
+            -f body="A07 transport supervisor exhausted its bounded observation window. All evidence states remain unchanged; no human dependency was created."
+          exit 1
