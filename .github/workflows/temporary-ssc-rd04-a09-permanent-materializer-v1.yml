@@ -1,0 +1,178 @@
+name: TEMP materialize SSC RD-04 A09 permanent changed-input gate v1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a09-permanent-materializer-base-v1
+    paths:
+      - '.github/tmp/ssc-rd04-a09-permanent-materializer-v1.trigger'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd04-a09-permanent-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a09-permanent-materializer-base-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct, gate, and publish the transport-free A09 product
+        env:
+          AUTHORIZED_MAIN: 30cdc27e3c90ceec06773616edc49d7338bb43c5
+          CANONICAL_A08: 68f4cb2aeccb129a3789b0b1b5da0f1e1c52cab6
+          TARGET_BRANCH: agent/ssc-rd04-changed-input-gate-a09
+          EXPECTED_B64_BYTES: '24352'
+          EXPECTED_B64_SHA256: 1eed7d95b4365eacd10ddf5228eec69d2464daa2763e74bbb3dec93fa72c757b
+          EXPECTED_TGZ_SHA256: 5c9377d5e1f356298521359dcaa2f3c33a8864547363105d3bef30922c47801d
+          EXPECTED_RELEASE_SHA256: f494526c2b4bb0d8b710ce40925b9a7fe3a988ad0cc139fb7e7b1301e9bf3736
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git fetch --no-tags origin main
+          start_main="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$CANONICAL_A08" "$start_main"
+          git merge-base --is-ancestor "$AUTHORIZED_MAIN" "$start_main"
+          git diff --name-only "$AUTHORIZED_MAIN" "$start_main" | sort > /tmp/a09-main-drift-paths
+          if grep -E '(^|/)(status-sovereignty-rd04-changed-input-gate-a09|rd04-changed-input-gate-a09|status-sovereignty-rd04-a09|ssc-rd04-changed-input-gate-a09)(/|\.|$)' /tmp/a09-main-drift-paths; then
+            echo 'live main overlaps the permanent A09 namespace' >&2
+            exit 1
+          fi
+
+          carrier_b64='/tmp/ssc-rd04-a09-product.tar.gz.b64'
+          carrier_tgz='/tmp/ssc-rd04-a09-product.tar.gz'
+          product_root='/tmp/ssc-rd04-a09-product'
+          reference_root='/tmp/ssc-rd04-a09-reference'
+          : > "$carrier_b64"
+          for part in \
+            .github/tmp/ssc-rd04-a09-product.tar.gz.b64.part000 \
+            .github/tmp/ssc-rd04-a09-product.tar.gz.b64.part001 \
+            .github/tmp/ssc-rd04-a09-product.tar.gz.b64.part002 \
+            .github/tmp/ssc-rd04-a09-product.tar.gz.b64.part003; do
+            test -f "$part"
+            tr -d '\r\n\t ' < "$part" >> "$carrier_b64"
+          done
+          test "$(stat -c '%s' "$carrier_b64")" = "$EXPECTED_B64_BYTES"
+          printf '%s  %s\n' "$EXPECTED_B64_SHA256" "$carrier_b64" | sha256sum --check --strict
+          CARRIER="$carrier_b64" node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const value = fs.readFileSync(process.env.CARRIER, 'ascii');
+          if (value.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(value)) throw new Error('noncanonical base64 carrier');
+          NODE
+          base64 --decode "$carrier_b64" > "$carrier_tgz"
+          printf '%s  %s\n' "$EXPECTED_TGZ_SHA256" "$carrier_tgz" | sha256sum --check --strict
+          rm -rf "$product_root" "$reference_root"
+          mkdir -p "$product_root" "$reference_root"
+          tar -xzf "$carrier_tgz" -C "$product_root"
+          cp -a "$product_root/." "$reference_root/"
+
+          PRODUCT_ROOT="$product_root" EXPECTED_RELEASE_SHA256="$EXPECTED_RELEASE_SHA256" node --input-type=module <<'NODE' > /tmp/a09-product-paths
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          const root = process.env.PRODUCT_ROOT;
+          const manifestRelative = 'data/project/status-sovereignty-rd04-changed-input-gate-a09-release-manifest.json';
+          const manifest = JSON.parse(fs.readFileSync(path.join(root, manifestRelative), 'utf8'));
+          const sha256 = (body) => crypto.createHash('sha256').update(body).digest('hex');
+          if (manifest.schema_version !== 'ssc-rd04-a09-release-manifest@1') throw new Error(`release schema ${manifest.schema_version}`);
+          if (manifest.acquisition_id !== 'SSC-RD04-CHANGED-INPUT-GATE-A09') throw new Error(`acquisition ${manifest.acquisition_id}`);
+          if (manifest.entries.length !== 22) throw new Error(`manifest entries ${manifest.entries.length}`);
+          if (manifest.combined_sha256 !== process.env.EXPECTED_RELEASE_SHA256) throw new Error(`release ${manifest.combined_sha256}`);
+          const paths = [];
+          for (const entry of manifest.entries) {
+            if (!entry.path || entry.path.startsWith('.github/tmp/') || entry.path.includes('temporary')) throw new Error(`forbidden permanent path ${entry.path}`);
+            const target = path.join(root, entry.path);
+            if (!fs.existsSync(target) || !fs.statSync(target).isFile()) throw new Error(`missing product path ${entry.path}`);
+            const body = fs.readFileSync(target);
+            if (body.length !== entry.bytes) throw new Error(`byte drift ${entry.path}`);
+            if (sha256(body) !== entry.sha256) throw new Error(`digest drift ${entry.path}`);
+            paths.push(entry.path);
+          }
+          paths.push(manifestRelative);
+          const unique = [...new Set(paths)].sort();
+          if (unique.length !== 23) throw new Error(`permanent path denominator ${unique.length}`);
+          process.stdout.write(`${unique.join('\n')}\n`);
+          NODE
+          test "$(wc -l < /tmp/a09-product-paths)" -eq 23
+          tar -tzf "$carrier_tgz" | sed 's#^\./##' | sed '/^[[:space:]]*$/d' | sort > /tmp/a09-carrier-paths
+          diff -u /tmp/a09-product-paths /tmp/a09-carrier-paths
+
+          git switch -C "$TARGET_BRANCH" "$start_main"
+          while IFS= read -r relative; do
+            mkdir -p "$(dirname "$relative")"
+            cp "$product_root/$relative" "$relative"
+          done < /tmp/a09-product-paths
+
+          node --check tools/acquisition/status-sovereignty-rd04-a09/detect-changed-input.mjs
+          node --check tools/build-status-sovereignty-rd04-changed-input-gate-a09.mjs
+          node --check tools/validate-status-sovereignty-rd04-changed-input-gate-a09.mjs
+          node --check test/status-sovereignty-rd04-changed-input-gate-a09.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/build-status-sovereignty-rd04-changed-input-gate-a09.mjs
+          node tools/validate-status-sovereignty-rd04-changed-input-gate-a09.mjs
+          node test/status-sovereignty-rd04-changed-input-gate-a09.test.js
+          npm run release:check
+
+          while IFS= read -r relative; do
+            cmp "$reference_root/$relative" "$relative"
+          done < /tmp/a09-product-paths
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const workflow = fs.readFileSync('.github/workflows/status-sovereignty-rd04-changed-input-gate-a09.yml', 'utf8');
+          if (/^\s*schedule\s*:/m.test(workflow)) throw new Error('automatic schedule installed');
+          if (!workflow.includes('workflow_dispatch:')) throw new Error('manual dispatch missing');
+          NODE
+
+          git fetch --no-tags origin main
+          end_main="$(git rev-parse origin/main)"
+          test "$end_main" = "$start_main"
+
+          workflow_path='.github/workflows/status-sovereignty-rd04-changed-input-gate-a09.yml'
+          grep -vxF "$workflow_path" /tmp/a09-product-paths > /tmp/a09-staged-paths
+          test "$(wc -l < /tmp/a09-staged-paths)" -eq 22
+          while IFS= read -r relative; do git add -- "$relative"; done < /tmp/a09-staged-paths
+          test "$(git diff --cached --name-only | wc -l)" -eq 22
+          diff -u /tmp/a09-staged-paths <(git diff --cached --name-only | sort)
+          git commit -m 'Stage SSC RD-04 A09 reusable changed-input gate'
+          product_head="$(git rev-parse HEAD)"
+          git push --force origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          PRODUCT_HEAD="$product_head" START_MAIN="$start_main" END_MAIN="$end_main" node --input-type=module <<'NODE' > ssc-rd04-a09-materializer-receipt.json
+          const receipt = {
+            schema_version: 'ssc-rd04-a09-materializer-receipt@1',
+            start_main: process.env.START_MAIN,
+            end_main: process.env.END_MAIN,
+            staged_product_head: process.env.PRODUCT_HEAD,
+            staged_permanent_paths: 22,
+            connector_workflow_path: '.github/workflows/status-sovereignty-rd04-changed-input-gate-a09.yml',
+            final_permanent_path_denominator: 23,
+            release_manifest_entries: 22,
+            release_sha256: 'f494526c2b4bb0d8b710ce40925b9a7fe3a988ad0cc139fb7e7b1301e9bf3736',
+            terminal_state: 'no_changed_input_observed',
+            automatic_schedule_installed: false,
+            external_contacts: 0,
+            external_reviews: 0,
+            graph_effect: 'none',
+            status: 'pass_staged_for_connector_workflow_publication'
+          };
+          process.stdout.write(`${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+      - name: Upload A09 permanent materializer receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a09-permanent-materializer-receipt-v1
+          path: ssc-rd04-a09-materializer-receipt.json
+          if-no-files-found: error
+          retention-days: 90
