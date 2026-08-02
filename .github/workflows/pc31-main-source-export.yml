@@ -1,0 +1,37 @@
+name: Temporary PC-31 canonical-main source export
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pc31-main-source-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Export exact tracked source tree
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > pc31-main-head.txt
+          git ls-files -z | tar --null -T - -czf pc31-main-source.tgz
+          sha256sum pc31-main-source.tgz > pc31-main-source.sha256
+          printf 'tracked_files=%s\n' "$(git ls-files | wc -l)" > pc31-main-source-summary.txt
+          printf 'head=%s\n' "$(cat pc31-main-head.txt)" >> pc31-main-source-summary.txt
+          printf 'archive_bytes=%s\n' "$(wc -c < pc31-main-source.tgz)" >> pc31-main-source-summary.txt
+          cat pc31-main-source-summary.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc31-canonical-main-source
+          path: |
+            pc31-main-source.tgz
+            pc31-main-source.sha256
+            pc31-main-head.txt
+            pc31-main-source-summary.txt
+          if-no-files-found: error
