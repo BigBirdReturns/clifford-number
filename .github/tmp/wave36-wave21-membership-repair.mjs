@@ -3,6 +3,7 @@ import fs from 'node:fs';
 
 const validatorPath = 'tools/validate-lake-allocator-war-wave-21.mjs';
 const testPath = 'test/lake-allocator-war-wave-21.test.js';
+const packagePath = 'package.json';
 
 let validator = fs.readFileSync(validatorPath, 'utf8');
 const oldSetup = `  const wave36Policy = readJson(root, 'data/project/lake-allocator-war-public-acquisition-wave-36-policy.json');
@@ -65,6 +66,17 @@ const newImport = `import { validateArtifacts, validateRepository } from '../too
 if (test.includes(oldImport)) test = test.replace(oldImport, newImport);
 else if (!test.includes(newImport)) throw new Error('Wave 21 test import drifted');
 
+const oldLoadTail = `    projection: readJson(policy.paths.projection),
+    reconciliation: fs.existsSync(policy.paths.reconciliation) ? readJson(policy.paths.reconciliation) : null
+  };`;
+const newLoadTail = `    projection: readJson(policy.paths.projection),
+    reconciliation: fs.existsSync(policy.paths.reconciliation) ? readJson(policy.paths.reconciliation) : null,
+    wave36Policy: readJson('data/project/lake-allocator-war-public-acquisition-wave-36-policy.json'),
+    wave36Plan: readJson('data/project/lake-allocator-war-public-acquisition-wave-36-plan.json')
+  };`;
+if (test.includes(oldLoadTail)) test = test.replace(oldLoadTail, newLoadTail);
+else if (!test.includes(`wave36Policy: readJson('data/project/lake-allocator-war-public-acquisition-wave-36-policy.json')`)) throw new Error('Wave 21 test state loader drifted');
+
 const marker = `// LAW36-OPTIONAL-MISSING-SNAPSHOT-CUSTODY: basin membership covers existing files; the capture ledger covers lawful request failures.`;
 const addition = `
 
@@ -98,7 +110,18 @@ if (fs.existsSync(wave36PolicyPath) && fs.existsSync(wave36PlanPath)) {
 if (!test.includes(marker)) test = `${test.trimEnd()}${addition}\n`;
 fs.writeFileSync(testPath, test);
 
+const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+const validatorCommand = 'node tools/validate-lake-allocator-war-wave-21.mjs';
+const durableCommand = `${validatorCommand} && node test/lake-allocator-war-wave-21.test.js`;
+if (![validatorCommand, durableCommand].includes(pkg.scripts['validate:lake-allocator-war-wave-21'])) {
+  throw new Error('Wave 21 package validator command drifted');
+}
+pkg.scripts['validate:lake-allocator-war-wave-21'] = durableCommand;
+pkg.scripts['ci:lake-allocator-war-wave-21'] = 'npm run build:lake-allocator-war-wave-21 && npm run validate:lake-allocator-war-wave-21';
+fs.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
+
 console.log('Wave 36 Wave 21 membership repair staged');
 console.log('  existing snapshot membership: required');
 console.log('  absent optional snapshot custody: capture ledger');
 console.log('  required or unexplained absent snapshots: rejected');
+console.log('  regression bound into validate:lake-allocator-war-wave-21');
