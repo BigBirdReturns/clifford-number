@@ -1,0 +1,35 @@
+name: Status-sovereignty RD-04 A06 full corpus gate
+
+on:
+  pull_request:
+    paths:
+      - 'data/status-sovereignty/ssc/rd04/a06/**'
+      - 'tools/ssc-rd04-a06-full-corpus.mjs'
+      - 'test/status-sovereignty-rd04-a06-full-corpus.test.js'
+      - '.github/workflows/status-sovereignty-rd04-a06-full-corpus.yml'
+      - 'docs/milestones/ssc-rd04-a06-full-corpus.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'data/status-sovereignty/ssc/rd04/a06/**'
+      - 'tools/ssc-rd04-a06-full-corpus.mjs'
+      - 'test/status-sovereignty-rd04-a06-full-corpus.test.js'
+      - '.github/workflows/status-sovereignty-rd04-a06-full-corpus.yml'
+      - 'docs/milestones/ssc-rd04-a06-full-corpus.md'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node tools/ssc-rd04-a06-full-corpus.mjs validate .
+      - run: node test/status-sovereignty-rd04-a06-full-corpus.test.js
+      - run: node tools/validate-no-magic-human-gate.mjs
+      - run: npm run release:check
