@@ -1,0 +1,157 @@
+name: Counter-Selector Wave 34 executable handoff control
+
+on:
+  pull_request:
+    paths:
+      - 'data/project/counter-selector-wave-34-*.json'
+      - 'data/project/counter-selector-wave-34-package/**'
+      - 'schemas/counter-selector-executable-handoff-control.schema.json'
+      - 'docs/methods/counter-selector-executable-handoff-control.md'
+      - 'docs/milestones/counter-selector-wave-34.md'
+      - 'tools/*counter-selector-wave-34*'
+      - 'test/counter-selector-wave-34.test.js'
+      - 'reports/core-thesis/counter-selector-wave-34/**'
+      - '.github/workflows/counter-selector-wave-34.yml'
+  push:
+    branches:
+      - 'agent/counter-selector-wave-34-executable-handoff-control'
+    paths:
+      - 'data/project/counter-selector-wave-34-*.json'
+      - 'data/project/counter-selector-wave-34-package/**'
+      - 'schemas/counter-selector-executable-handoff-control.schema.json'
+      - 'docs/methods/counter-selector-executable-handoff-control.md'
+      - 'docs/milestones/counter-selector-wave-34.md'
+      - 'tools/*counter-selector-wave-34*'
+      - 'test/counter-selector-wave-34.test.js'
+      - 'reports/core-thesis/counter-selector-wave-34/**'
+      - '.github/workflows/counter-selector-wave-34.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build Wave 34 products
+        run: node tools/build-counter-selector-wave-34.mjs
+      - name: Validate executable-handoff contract
+        run: node tools/validate-counter-selector-wave-34.mjs
+      - name: Run adversarial mutations
+        run: node test/counter-selector-wave-34.test.js
+      - name: Require exact committed Wave 34 products
+        run: git diff --exit-code -- data/project/counter-selector-wave-34-package/package-manifest.json data/project/counter-selector-wave-34-handoff-registry.json data/project/counter-selector-wave-34-release-manifest.json reports/core-thesis/counter-selector-wave-34/data.json reports/core-thesis/counter-selector-wave-34/index.html
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Reconstruct Wave 34 deterministically
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          node tools/build-counter-selector-wave-34.mjs
+          node tools/validate-counter-selector-wave-34.mjs
+          node test/counter-selector-wave-34.test.js
+          git diff --exit-code -- data/project/counter-selector-wave-34-package/package-manifest.json data/project/counter-selector-wave-34-handoff-registry.json data/project/counter-selector-wave-34-release-manifest.json reports/core-thesis/counter-selector-wave-34/data.json reports/core-thesis/counter-selector-wave-34/index.html
+          test -z "$(git status --porcelain)"
+
+  outgoing-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Rebuild and validate outgoing package
+        run: |
+          set -euo pipefail
+          node tools/build-counter-selector-wave-34.mjs
+          node tools/validate-counter-selector-wave-34.mjs
+          git diff --exit-code -- data/project/counter-selector-wave-34-package/package-manifest.json
+      - name: Stage exact package artifact
+        run: |
+          set -euo pipefail
+          mkdir transfer-package
+          cp data/project/counter-selector-wave-34-package/* transfer-package/
+          test "$(find transfer-package -maxdepth 1 -type f | wc -l)" -eq 8
+      - uses: actions/upload-artifact@v4
+        with:
+          name: counter-selector-wave-34-handoff-package
+          path: transfer-package
+          if-no-files-found: error
+          retention-days: 7
+
+  recipient:
+    needs: outgoing-package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        with:
+          name: counter-selector-wave-34-handoff-package
+          path: handoff-package
+      - name: Prove safe decline before valid resumption
+        run: |
+          set -euo pipefail
+          cp -a handoff-package corrupted-package
+          printf ' ' >> corrupted-package/object-before.json
+          set +e
+          node corrupted-package/resume.mjs corrupted-package refused-output >decline.stdout 2>decline.stderr
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -Eq 'package entry (byte-count|hash) mismatch' decline.stderr
+          test ! -e refused-output/successor-object.json
+          test ! -e refused-output/recipient-acknowledgment.json
+      - name: Resume from package-only state
+        run: |
+          set -euo pipefail
+          node handoff-package/resume.mjs handoff-package successor-output
+          cat > successor-output/safe-decline-proof.json <<'JSON'
+          {
+            "schema_version": "counter-selector-wave-34-safe-decline-proof@1",
+            "package_id": "CS-W34-PACKAGE-01",
+            "corrupted_entry": "object-before.json",
+            "recipient_exit_nonzero": true,
+            "successor_output_absent": true,
+            "acknowledgment_output_absent": true,
+            "classification": "corrupted_package_refused_before_publication"
+          }
+          JSON
+          test ! -d .git
+      - uses: actions/upload-artifact@v4
+        with:
+          name: counter-selector-wave-34-successor
+          path: successor-output
+          if-no-files-found: error
+          retention-days: 7
+
+  successor-verifier:
+    needs:
+      - validate
+      - recipient
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        with:
+          name: counter-selector-wave-34-successor
+          path: successor-output
+      - name: Verify successor, acknowledgment, and safe decline
+        run: |
+          set -euo pipefail
+          node tools/verify-counter-selector-wave-34-successor.mjs successor-output
+          node tools/validate-counter-selector-wave-34.mjs
