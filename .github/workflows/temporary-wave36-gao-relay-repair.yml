@@ -1,0 +1,117 @@
+name: Temporary Wave 36 GAO relay repair
+
+on:
+  pull_request:
+    branches:
+      - agent/lake-allocator-war-wave-21
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-wave36-gao-relay-repair.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: temporary-wave36-gao-relay-repair-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lake-allocator-war-public-acquisition-wave-36
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify, apply, test, and publish the GAO relay custody repair
+        shell: bash
+        env:
+          BRANCH: agent/lake-allocator-war-public-acquisition-wave-36
+          EXPECTED_B64_BYTES: '16852'
+          EXPECTED_B64_SHA256: 966af4a06d45f1de2aa91a4c5587d7900e0368f9abb5917e3495422c6183994d
+          EXPECTED_GZIP_SHA256: 4876dae8b17b04d4bd6577460ca013f19ac418dcb17c39259a961fb344bf3ba8
+          EXPECTED_PATCH_SHA256: e792497af90d899408f929d8d46bb32697c3708e7096639d029b8ea882a2e1c3
+        run: |
+          set -euo pipefail
+          before="$(git rev-parse HEAD)"
+          carrier='.github/tmp/wave36-gao-relay-repair.patch.gz.b64'
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          gzip_path="$tmp/wave36-gao-relay-repair.patch.gz"
+          patch_path="$tmp/wave36-gao-relay-repair.patch"
+
+          test "$(wc -c < "$carrier" | tr -d ' ')" = "$EXPECTED_B64_BYTES"
+          test "$(sha256sum "$carrier" | awk '{print $1}')" = "$EXPECTED_B64_SHA256"
+          base64 -d "$carrier" > "$gzip_path"
+          test "$(sha256sum "$gzip_path" | awk '{print $1}')" = "$EXPECTED_GZIP_SHA256"
+          gzip -t "$gzip_path"
+          gzip -dc "$gzip_path" > "$patch_path"
+          test "$(sha256sum "$patch_path" | awk '{print $1}')" = "$EXPECTED_PATCH_SHA256"
+
+          git apply --check "$patch_path"
+          git apply "$patch_path"
+          rm -f "$carrier"
+
+          node --check tools/acquire-lake-allocator-war-public-acquisition-wave-36.mjs
+          node --check tools/build-lake-allocator-war-public-acquisition-wave-36.mjs
+          node --check tools/validate-lake-allocator-war-public-acquisition-wave-36.mjs
+          node --check test/lake-allocator-war-public-acquisition-wave-36.test.js
+          node - <<'NODE'
+          const fs = require('fs');
+          for (const path of [
+            'data/project/lake-allocator-war-public-acquisition-wave-36-plan.json',
+            'data/project/lake-allocator-war-public-acquisition-wave-36-policy.json',
+            'data/project/lake-allocator-war-wave-21-policy.json',
+            'data/project/lake-index-policy.json',
+            'data/project/lake-basin-registry.json'
+          ]) JSON.parse(fs.readFileSync(path, 'utf8'));
+          NODE
+
+          fixture="$tmp/fixture"
+          mkdir -p "$fixture"
+          tar --exclude=.git -cf - . | tar -xf - -C "$fixture"
+          (
+            cd "$fixture"
+            LAW36_FIXTURE_MODE=1 LAW36_OBSERVED_AT=2026-08-02T16:30:00Z node tools/acquire-lake-allocator-war-public-acquisition-wave-36.mjs
+            node tools/build-lake-allocator-war-public-acquisition-wave-36.mjs
+            node tools/validate-lake-allocator-war-public-acquisition-wave-36.mjs
+            node test/lake-allocator-war-public-acquisition-wave-36.test.js | tee "$tmp/mutations.log"
+            grep -F '167' "$tmp/mutations.log"
+          )
+
+          expected="$tmp/expected-paths.txt"
+          cat > "$expected" <<'EOF'
+          .github/tmp/wave36-gao-relay-repair.patch.gz.b64
+          data/project/lake-allocator-war-public-acquisition-wave-36-plan.json
+          data/project/lake-allocator-war-public-acquisition-wave-36-policy.json
+          data/project/lake-allocator-war-wave-21-policy.json
+          data/project/lake-basin-registry.json
+          data/project/lake-index-policy.json
+          docs/methods/lake-allocator-war-public-acquisition-wave-36.md
+          docs/milestones/lake-allocator-war-public-acquisition-wave-36.md
+          test/lake-allocator-war-public-acquisition-wave-36.test.js
+          tools/acquire-lake-allocator-war-public-acquisition-wave-36.mjs
+          tools/build-lake-allocator-war-public-acquisition-wave-36.mjs
+          tools/validate-lake-allocator-war-public-acquisition-wave-36.mjs
+          EOF
+          sed -i 's/^          //' "$expected"
+          git diff --name-only "$before" | sort > "$tmp/actual-paths.txt"
+          sort -o "$expected" "$expected"
+          diff -u "$expected" "$tmp/actual-paths.txt"
+          git diff --check
+
+          git config user.name 'BigBirdReturns'
+          git config user.email '219768509+BigBirdReturns@users.noreply.github.com'
+          git add -A
+          git commit -m 'Repair Wave 36 GAO source transport custody'
+
+          git fetch origin "$BRANCH"
+          test "$(git rev-parse FETCH_HEAD)" = "$before"
+          git push origin "HEAD:$BRANCH"
