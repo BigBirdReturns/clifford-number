@@ -1,0 +1,17 @@
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
+import {
+  compilePreferenceMarketServiceAssuranceFixture,
+  renderPreferenceMarketServiceAssuranceMarkdown
+} from './lib/preference-market-service-assurance.mjs';
+
+const fixturePath = process.argv[2] ?? 'data/research/preference-custody/market-service-assurance.fixture.json';
+const jsonPath = process.argv[3] ?? 'build/research/preference-market-service-assurance.json';
+const markdownPath = process.argv[4] ?? 'build/research/preference-market-service-assurance.md';
+const fixture = JSON.parse(readFileSync(fixturePath, 'utf8'));
+const compiled = compilePreferenceMarketServiceAssuranceFixture(fixture);
+mkdirSync(dirname(jsonPath), { recursive: true });
+mkdirSync(dirname(markdownPath), { recursive: true });
+writeFileSync(jsonPath, JSON.stringify(compiled, null, 2) + '\n');
+writeFileSync(markdownPath, renderPreferenceMarketServiceAssuranceMarkdown(compiled));
+console.log(`compiled ${compiled.fixture_id} -> ${jsonPath}, ${markdownPath}`);
