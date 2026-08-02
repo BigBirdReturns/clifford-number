@@ -27,8 +27,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Apply exact reconciliation patches
-        run: node tools/temporary-reconcile-a07-county-progress.mjs
+      - name: Repair and apply exact reconciliation patches
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tools/temporary-reconcile-a07-county-progress.mjs')
+          text = path.read_text()
+          old = "for (const error of countyErrors) errors.push(`county agency-root custody: ${error}`);"
+          new = "for (const error of countyErrors) errors.push('county agency-root custody: ' + error);"
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one nested-template target, observed {text.count(old)}')
+          path.write_text(text.replace(old, new))
+          PY
+          node --check tools/temporary-reconcile-a07-county-progress.mjs
+          node tools/temporary-reconcile-a07-county-progress.mjs
       - name: Validate reconciled exact state
         run: |
           node --check tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.mjs
