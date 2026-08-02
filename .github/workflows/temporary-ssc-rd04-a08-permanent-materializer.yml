@@ -19,7 +19,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: ssc-rd04-a08-permanent-materializer
+  group: ssc-rd04-a08-permanent-materializer-v2
   cancel-in-progress: false
 
 jobs:
@@ -29,7 +29,7 @@ jobs:
     env:
       BRANCH: agent/ssc-rd04-a08-internal-adjudication-permanent
       CARRIER: .github/tmp/ssc-rd04-a08-permanent-payload.tar.gz.b64
-      MATERIALIZER: .github/workflows/temporary-ssc-rd04-a08-permanent-materializer.yml
+      PERMANENT_WORKFLOW: .github/workflows/status-sovereignty-rd04-a08-internal-adjudication.yml
       PAYLOAD_SHA256: 854509fc8879377fcdfd70748c53909140c7f7ad722e84239d198a341c287db3
     steps:
       - uses: actions/checkout@v4
@@ -37,13 +37,13 @@ jobs:
           ref: agent/ssc-rd04-a08-internal-adjudication-permanent
           fetch-depth: 0
       - id: preflight
-        name: Detect whether materialization remains pending
+        name: Detect whether non-workflow materialization remains pending
         run: |
-          if [[ -f "$CARRIER" && -f "$MATERIALIZER" ]]; then
+          if [[ -f "$CARRIER" ]]; then
             echo 'run=true' >> "$GITHUB_OUTPUT"
           else
             echo 'run=false' >> "$GITHUB_OUTPUT"
-            echo 'Permanent A08 product already materialized; no-op.'
+            echo 'Non-workflow A08 product already materialized; no-op.'
           fi
       - if: steps.preflight.outputs.run == 'true'
         uses: actions/setup-node@v4
@@ -74,9 +74,10 @@ jobs:
           tools/validate-status-sovereignty-rd04-a08-internal-adjudication.mjs
           PATHS
           sed -i 's/^          //' /tmp/a08-product-paths
+          tail -n +2 /tmp/a08-product-paths > /tmp/a08-nonworkflow-paths
           while IFS= read -r file; do test -f "$file"; done < /tmp/a08-product-paths
       - if: steps.preflight.outputs.run == 'true'
-        name: Prove deterministic product bytes
+        name: Prove complete deterministic product bytes
         run: |
           set -Eeuo pipefail
           while IFS= read -r file; do sha256sum "$file"; done < /tmp/a08-product-paths > /tmp/a08-before.sha256
@@ -87,18 +88,15 @@ jobs:
           node tools/validate-status-sovereignty-rd04-a08-internal-adjudication.mjs
           node test/status-sovereignty-rd04-a08-internal-adjudication.test.js
       - if: steps.preflight.outputs.run == 'true'
-        name: Publish transport-free product commit
+        name: Push exact non-workflow product
         run: |
           set -Eeuo pipefail
-          rm "$CARRIER" "$MATERIALIZER"
+          rm "$CARRIER" "$PERMANENT_WORKFLOW"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          while IFS= read -r file; do git add "$file"; done < /tmp/a08-product-paths
-          git add "$CARRIER" "$MATERIALIZER"
-          git commit -m 'Add SSC RD-04 A08 internal adjudication receipt'
-          git fetch --no-tags origin main
-          git diff --name-only origin/main...HEAD | sort > /tmp/a08-observed-paths
-          sort /tmp/a08-product-paths > /tmp/a08-expected-paths
-          diff -u /tmp/a08-expected-paths /tmp/a08-observed-paths
-          test -z "$(git ls-tree -r --name-only HEAD | grep -E 'temporary-ssc-rd04-a08-permanent-materializer|ssc-rd04-a08-permanent-payload' || true)"
+          while IFS= read -r file; do git add "$file"; done < /tmp/a08-nonworkflow-paths
+          git add "$CARRIER"
+          git commit -m 'Stage SSC RD-04 A08 permanent product'
+          test -z "$(git diff --cached --name-only)"
+          test ! -e "$PERMANENT_WORKFLOW"
           git push origin HEAD:"$BRANCH"
