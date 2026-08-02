@@ -1,0 +1,238 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.schema.json",
+  "title": "SSC RD-04 A07 execution progress",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "execution_id",
+    "issue",
+    "as_of",
+    "status",
+    "constitution",
+    "parent_denominator",
+    "official_source_acquisition",
+    "content_neutral_extraction",
+    "county_census",
+    "current_counts",
+    "authority",
+    "next_transactions"
+  ],
+  "properties": {
+    "schema_version": { "const": "ssc-rd04-a07-progress@1" },
+    "execution_id": { "const": "SSC-RD04-SNAP-A07" },
+    "issue": { "const": 741 },
+    "as_of": { "const": "2026-08-02" },
+    "status": { "const": "initial_official_source_custody_and_content_neutral_pilot_complete" },
+    "constitution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "phase_zero_snapshot",
+        "current_authoritative_state_path",
+        "denominator_reopened",
+        "selection_rules_changed_after_result_inspection"
+      ],
+      "properties": {
+        "path": { "const": "data/intake/status-sovereignty-rd04-calfresh-compliance-receipts-a07/core.json" },
+        "phase_zero_snapshot": { "const": true },
+        "current_authoritative_state_path": { "const": "data/intake/status-sovereignty-rd04-calfresh-compliance-receipts-a07/progress.json" },
+        "denominator_reopened": { "const": false },
+        "selection_rules_changed_after_result_inspection": { "const": false }
+      }
+    },
+    "parent_denominator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "registry_rows",
+        "documents",
+        "exact_pdf_documents",
+        "exact_text_documents",
+        "missing_documents",
+        "shards"
+      ],
+      "properties": {
+        "registry_rows": { "const": 12282 },
+        "documents": { "const": 11672 },
+        "exact_pdf_documents": { "const": 11672 },
+        "exact_text_documents": { "const": 11672 },
+        "missing_documents": { "const": 0 },
+        "shards": { "const": 64 }
+      }
+    },
+    "official_source_acquisition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ledger_path",
+        "workflow_run",
+        "source_head",
+        "product_head",
+        "frozen_sources",
+        "terminal_sources",
+        "exact_responses_preserved",
+        "exact_successful_bodies",
+        "source_unavailable_receipts",
+        "semantic_classifications_complete",
+        "case_level_receipts"
+      ],
+      "properties": {
+        "ledger_path": { "const": "data/intake/status-sovereignty-rd04-calfresh-compliance-receipts-a07/source-custody/a07-official-source-acquisition/source-acquisition-ledger.json" },
+        "workflow_run": { "const": 30736660191 },
+        "source_head": { "const": "835b51072ef48d6bb36e504e79e3de32031a8e33" },
+        "product_head": { "const": "d1ae04f1504d725609a4177b31f1b0c35c170502" },
+        "frozen_sources": { "const": 9 },
+        "terminal_sources": { "const": 9 },
+        "exact_responses_preserved": { "const": 9 },
+        "exact_successful_bodies": { "const": 8 },
+        "source_unavailable_receipts": { "const": 1 },
+        "semantic_classifications_complete": { "const": 0 },
+        "case_level_receipts": { "const": 0 }
+      }
+    },
+    "content_neutral_extraction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rules_path",
+        "dictionary_version",
+        "rules_sha256",
+        "pattern_count",
+        "pilot_receipt_path",
+        "workflow_run",
+        "workflow_head",
+        "product_head",
+        "artifact_id",
+        "artifact_digest",
+        "pilot_shard",
+        "pilot_documents_processed",
+        "pilot_registry_rows_represented",
+        "candidate_documents",
+        "support_only_documents",
+        "negative_documents",
+        "total_matches",
+        "pilot_population_complete",
+        "full_population_documents_processed",
+        "full_population_registry_rows_represented",
+        "full_population_complete",
+        "follow_up_authorized"
+      ],
+      "properties": {
+        "rules_path": { "const": "data/intake/status-sovereignty-rd04-calfresh-compliance-receipts-a07/candidate-extraction-rules.json" },
+        "dictionary_version": { "const": "a07-order-candidate-v1" },
+        "rules_sha256": { "const": "0c3825e76582d464ad62cdeafa8df42faaf70a7e297813f85ffd1e899f99ba29" },
+        "pattern_count": { "const": 19 },
+        "pilot_receipt_path": { "const": "data/intake/status-sovereignty-rd04-calfresh-compliance-receipts-a07/pilot/shard-00-receipt.json" },
+        "workflow_run": { "const": 30736912580 },
+        "workflow_head": { "const": "c54e35a9aa24768cac5c16664226c43a2e0b8006" },
+        "product_head": { "const": "a916d86382c9faa4f5e915399ca6ecb3b6c2be0d" },
+        "artifact_id": { "const": 8829896177 },
+        "artifact_digest": { "const": "26cf6e9f532a1f7f475ad7595b315d0c251b2e462a098475b960595d60ec94e1" },
+        "pilot_shard": { "const": "00" },
+        "pilot_documents_processed": { "const": 192 },
+        "pilot_registry_rows_represented": { "const": 212 },
+        "candidate_documents": { "const": 131 },
+        "support_only_documents": { "const": 50 },
+        "negative_documents": { "const": 61 },
+        "total_matches": { "const": 13860 },
+        "pilot_population_complete": { "const": false },
+        "full_population_documents_processed": { "const": 0 },
+        "full_population_registry_rows_represented": { "const": 0 },
+        "full_population_complete": { "const": false },
+        "follow_up_authorized": { "const": false }
+      }
+    },
+    "county_census": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected_counties",
+        "agency_roots_materialized",
+        "counties_censused",
+        "complete",
+        "county_selection_authorized"
+      ],
+      "properties": {
+        "expected_counties": { "const": 58 },
+        "agency_roots_materialized": { "const": 0 },
+        "counties_censused": { "const": 0 },
+        "complete": { "const": false },
+        "county_selection_authorized": { "const": false }
+      }
+    },
+    "current_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exact_public_case_receipts",
+        "case_level_implementation_joins",
+        "complete_restoration_chains",
+        "remedy_timeliness_observations",
+        "reviewed_disposition_changes",
+        "residual_classes_closed",
+        "external_contacts",
+        "external_reviews"
+      ],
+      "properties": {
+        "exact_public_case_receipts": { "const": 0 },
+        "case_level_implementation_joins": { "const": 0 },
+        "complete_restoration_chains": { "const": 0 },
+        "remedy_timeliness_observations": { "const": 0 },
+        "reviewed_disposition_changes": { "const": 0 },
+        "residual_classes_closed": { "const": 0 },
+        "external_contacts": { "const": 0 },
+        "external_reviews": { "const": 0 }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pilot_candidate_is_ordered_relief",
+        "pilot_candidate_authorizes_follow_up",
+        "exact_policy_response_is_case_compliance",
+        "source_unavailable_is_noncompliance",
+        "case_level_implementation_supported",
+        "complete_restoration_supported",
+        "remedy_timeliness_supported",
+        "prevalence_supported",
+        "racial_order_supported",
+        "coordination_supported",
+        "common_purpose_supported",
+        "graph_effect",
+        "publication_effect",
+        "adoption_effect"
+      ],
+      "properties": {
+        "pilot_candidate_is_ordered_relief": { "const": false },
+        "pilot_candidate_authorizes_follow_up": { "const": false },
+        "exact_policy_response_is_case_compliance": { "const": false },
+        "source_unavailable_is_noncompliance": { "const": false },
+        "case_level_implementation_supported": { "const": false },
+        "complete_restoration_supported": { "const": false },
+        "remedy_timeliness_supported": { "const": false },
+        "prevalence_supported": { "const": false },
+        "racial_order_supported": { "const": false },
+        "coordination_supported": { "const": false },
+        "common_purpose_supported": { "const": false },
+        "graph_effect": { "const": "none" },
+        "publication_effect": { "const": "none" },
+        "adoption_effect": { "const": "none" }
+      }
+    },
+    "next_transactions": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [
+        { "const": "materialize_all_58_county_agency_roots_from_exact_cdss_county_office_custody" },
+        { "const": "resolve_exact_mpp_22_078_authority_from_the_confidentiality_fraud_civil_rights_and_state_hearings_manual" },
+        { "const": "execute_all_64_content_neutral_parent_shards_before_any_case_follow_up" }
+      ],
+      "items": false
+    }
+  }
+}
