@@ -311,3 +311,8 @@ Wave 32 freezes each of the nineteen Wave 31 official locators as one exact publ
 ## Allocator-war frozen source structural parses Wave 33
 
 Wave 33 verifies every permanent Wave 32 response hash and emits one deterministic structural parse row for each of the nineteen source objects. Seven JSON, eight HTML, and four credential-boundary rows are reused across the unchanged route and task denominator. Structural addressability creates no complete denominator, evidence adjudication, finding, graph effect, or publication authority. See `reports/lake-allocator-war-structural-parses-wave-33.md`.
+
+
+## Allocator-war source schemas and lawful joins Wave 34
+
+Wave 34 maps all nineteen permanent Wave 33 parse objects through source-specific schema adapters and defines seven explicit lawful-join contracts. The thirty-one missing institutional requirements remain open, including three protected-personnel requirements that require lawful or privacy-safe access. Schema addressability creates no authorized join, complete denominator, evidence adjudication, finding, graph effect, or publication authority. See `reports/lake-allocator-war-schema-joins-wave-34.md`.

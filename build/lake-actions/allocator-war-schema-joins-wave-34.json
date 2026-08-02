@@ -1,0 +1,966 @@
+{
+  "schema_version": "lake-allocator-war-schema-joins-wave-34@1",
+  "program_ref": "CN-LAKE-ALLOCATOR-WAR-W34",
+  "wave_ref": "LAW-W34",
+  "as_of": "2026-08-01",
+  "generated_from": {
+    "policy_path": "data/project/lake-allocator-war-schema-joins-wave-34-policy.json",
+    "policy_sha256": "d8794d14c69c83896a378a7eca67ce828cafae1d738d4c503e6a18b5e1d22c83",
+    "plan_path": "data/project/lake-allocator-war-schema-joins-wave-34-plan.json",
+    "plan_sha256": "6367a391897a963d11e9e35dd21c529be2d42aea67a6f2805722862d0aef889f",
+    "source_policy_path": "data/project/lake-allocator-war-structural-parses-wave-33-policy.json",
+    "source_policy_sha256": "55f278bb1ac69601cd79bf4d4587c158ca67f90ad9ea3e83314a4d829622f3ac",
+    "source_plan_path": "data/project/lake-allocator-war-structural-parses-wave-33-plan.json",
+    "source_plan_sha256": "75f209a2be70fcbfaafab1a46e9db4e40dc4f860790fa85481ebad4ee82f26e3",
+    "source_projection_path": "build/lake-actions/allocator-war-structural-parses-wave-33.json",
+    "source_projection_sha256": "201ba71e680c95f96b4fbea8f992f7b144c8a018e32b01f839b7280ad849349b",
+    "source_parse_ledger_path": "data/acquisition/lake-allocator-war-wave-33/parse-ledger.jsonl",
+    "builder_implementation_path": "tools/build-lake-allocator-war-schema-joins-wave-34.mjs",
+    "builder_implementation_sha256": "6b3842fbbc3146c3d570e7a8ad0bfb0f910523885b99f63290be965d5f8c78ef"
+  },
+  "counts": {
+    "source_routes": 7,
+    "source_tasks": 38,
+    "source_receipts": 19,
+    "source_receipt_uses": 153,
+    "schema_adapters": 19,
+    "adapter_profiles": 19,
+    "declared_field_mappings": 50,
+    "structural_handles": 39,
+    "sensitive_exclusions": 1,
+    "adapter_states": {
+      "access_boundary_preserved_no_join_authority": 4,
+      "schema_mapped_no_join_authority": 15
+    },
+    "lawful_join_contracts": 7,
+    "candidate_key_classes": 35,
+    "missing_institutional_requirements": 31,
+    "requirement_access_classes": {
+      "authorized_lawful_access_only": 3,
+      "public_or_authorized_acquisition": 25,
+      "public_or_lawful_case_access": 3
+    },
+    "authorized_joins": 0,
+    "joined_rows": 0,
+    "complete_denominators": 0,
+    "evidence_rows": 0,
+    "estate_adoptions": 0,
+    "finding_promotions": 0,
+    "graph_effects": 0,
+    "publication_clearances": 0
+  },
+  "graph_digests": {
+    "participation_sha256": "4d3251dca3760bae9459cd46ac33455663ae7943680fb6184d6c517e026ad83a",
+    "active_claims_sha256": "3ccda11961cc6e1bec1b5675418004a8cb98d62a891f710599f81c36a8e0eaf7",
+    "hop_edges_sha256": "aa080592cb62dee1f7d39ed6d8a0d7c2d3f674c1bb2a0bacbc959c84f8a601cd",
+    "rejected_hop_surfaces_sha256": "82774168d65b67ba1b3c3071a67142bf454bab75b82fa21bbf193642bc05c7a5",
+    "rejected_hop_pairs_sha256": "e8511b978ddfaae049cd4673ef98946932fc354050d6b5259218794ad7bf38ab"
+  },
+  "schema_adapters": [
+    {
+      "adapter_ref": "LAW34-A001",
+      "adapter_sequence": 1,
+      "adapter_profile": "opm-fwd-file-inventory-v1",
+      "parse_ref": "LAW33-P001",
+      "source_ref": "LAW31-S001",
+      "parse_state": "parsed_json_structure",
+      "field_mapping_count": 3,
+      "structural_handle_count": 2,
+      "sensitive_exclusion_count": 0,
+      "route_refs": [
+        "LAW30-R02",
+        "LAW30-R06"
+      ],
+      "task_use_count": 14,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "adapter_ref": "LAW34-A002",
+      "adapter_sequence": 2,
+      "adapter_profile": "opm-public-dataset-catalogue-v1",
+      "parse_ref": "LAW33-P002",
+      "source_ref": "LAW31-S002",
+      "parse_state": "parsed_json_structure",
+      "field_mapping_count": 3,
+      "structural_handle_count": 2,
+      "sensitive_exclusion_count": 0,
+      "route_refs": [
+        "LAW30-R02"
+      ],
+      "task_use_count": 8,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "adapter_ref": "LAW34-A003",
+      "adapter_sequence": 3,
+      "adapter_profile": "opm-fwd-getting-started-catalogue-v1",
+      "parse_ref": "LAW33-P003",
+      "source_ref": "LAW31-S003",
+      "parse_state": "parsed_json_structure",
+      "field_mapping_count": 3,
+      "structural_handle_count": 2,
+      "sensitive_exclusion_count": 0,
+      "route_refs": [
+        "LAW30-R02"
+      ],
+      "task_use_count": 8,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "adapter_ref": "LAW34-A004",
+      "adapter_sequence": 4,
+      "adapter_profile": "federal-register-document-index-v1",
+      "parse_ref": "LAW33-P004",
+      "source_ref": "LAW31-S004",
+      "parse_state": "parsed_json_structure",
+      "field_mapping_count": 5,
+      "structural_handle_count": 4,
+      "sensitive_exclusion_count": 0,
+      "route_refs": [
+        "LAW30-R02",
+        "LAW30-R04"
+      ],
+      "task_use_count": 12,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "adapter_ref": "LAW34-A005",
+      "adapter_sequence": 5,
+      "adapter_profile": "usaspending-aggregate-count-v1",
+      "parse_ref": "LAW33-P005",
+      "source_ref": "LAW31-S005",
+      "parse_state": "parsed_json_structure",
+      "field_mapping_count": 5,
+      "structural_handle_count": 2,
+      "sensitive_exclusion_count": 0,
+      "route_refs": [
+        "LAW30-R03",
+        "LAW30-R06",
+        "LAW30-R07"
+      ],
+      "task_use_count": 13,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "adapter_ref": "LAW34-A006",
+      "adapter_sequence": 6,
+      "adapter_profile": "usaspending-award-type-vocabulary-v1",
+      "parse_ref": "LAW33-P006",
+      "source_ref": "LAW31-S006",
+      "parse_state": "parsed_json_structure",
+      "field_mapping_count": 4,
+      "structural_handle_count": 2,
+      "sensitive_exclusion_count": 0,
+      "route_refs": [
+        "LAW30-R03"
+      ],
+      "task_use_count": 4,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "adapter_ref": "LAW34-A007",
+      "adapter_sequence": 7,
+      "adapter_profile": "sam-contract-award-access-boundary-v1",
+      "parse_ref": "LAW33-P007",
+      "source_ref": "LAW31-S007",
+      "parse_state": "credential_boundary_preserved",
+      "field_mapping_count": 1,
+      "structural_handle_count": 1,
+      "sensitive_exclusion_count": 0,
+      "route_refs": [
+        "LAW30-R03",
+        "LAW30-R06"
+      ],
+      "task_use_count": 10,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "adapter_ref": "LAW34-A008",
+      "adapter_sequence": 8,
+      "adapter_profile": "sam-contract-awards-public-guide-v1",
+      "parse_ref": "LAW33-P008",
+      "source_ref": "LAW31-S008",
+      "parse_state": "parsed_html_structure",
+      "field_mapping_count": 2,
+      "structural_handle_count": 2,
+      "sensitive_exclusion_count": 0,
+      "route_refs": [
+        "LAW30-R03"
+      ],
+      "task_use_count": 4,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "adapter_ref": "LAW34-A009",
+      "adapter_sequence": 9,
+      "adapter_profile": "sam-assistance-access-boundary-v1",
+      "parse_ref": "LAW33-P009",
+      "source_ref": "LAW31-S009",
+      "parse_state": "credential_boundary_preserved",
+      "field_mapping_count": 1,
+      "structural_handle_count": 1,
+      "sensitive_exclusion_count": 0,
+      "route_refs": [
+        "LAW30-R03",
+        "LAW30-R06",
+        "LAW30-R07"
+      ],
+      "task_use_count": 13,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "adapter_ref": "LAW34-A010",
+      "adapter_sequence": 10,
+      "adapter_profile": "grants-opportunity-envelope-v1",
+      "parse_ref": "LAW33-P010",
+      "source_ref": "LAW31-S010",
+      "parse_state": "parsed_json_structure",
+      "field_mapping_count": 7,
+      "structural_handle_count": 5,
+      "sensitive_exclusion_count": 1,
+      "route_refs": [
+        "LAW30-R03"
+      ],
+      "task_use_count": 4,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "adapter_ref": "LAW34-A011",
+      "adapter_sequence": 11,
+      "adapter_profile": "doj-initiative-publication-structure-v1",
+      "parse_ref": "LAW33-P011",
+      "source_ref": "LAW31-S011",
+      "parse_state": "parsed_html_structure",
+      "field_mapping_count": 2,
+      "structural_handle_count": 2,
+      "sensitive_exclusion_count": 0,
+      "route_refs": [
+        "LAW30-R04"
+      ],
+      "task_use_count": 4,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "adapter_ref": "LAW34-A012",
+      "adapter_sequence": 12,
+      "adapter_profile": "doj-resolution-publication-structure-v1",
+      "parse_ref": "LAW33-P012",
+      "source_ref": "LAW31-S012",
+      "parse_state": "parsed_html_structure",
+      "field_mapping_count": 2,
+      "structural_handle_count": 2,
+      "sensitive_exclusion_count": 0,
+      "route_refs": [
+        "LAW30-R04",
+        "LAW30-R07"
+      ],
+      "task_use_count": 7,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "adapter_ref": "LAW34-A013",
+      "adapter_sequence": 13,
+      "adapter_profile": "doj-publications-index-structure-v1",
+      "parse_ref": "LAW33-P013",
+      "source_ref": "LAW31-S013",
+      "parse_state": "parsed_html_structure",
+      "field_mapping_count": 2,
+      "structural_handle_count": 2,
+      "sensitive_exclusion_count": 0,
+      "route_refs": [
+        "LAW30-R04"
+      ],
+      "task_use_count": 4,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "adapter_ref": "LAW34-A014",
+      "adapter_sequence": 14,
+      "adapter_profile": "gao-bid-protest-http-access-state-v1",
+      "parse_ref": "LAW33-P014",
+      "source_ref": "LAW31-S014",
+      "parse_state": "parsed_http_error_structure",
+      "field_mapping_count": 1,
+      "structural_handle_count": 1,
+      "sensitive_exclusion_count": 0,
+      "route_refs": [
+        "LAW30-R05"
+      ],
+      "task_use_count": 9,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "adapter_ref": "LAW34-A015",
+      "adapter_sequence": 15,
+      "adapter_profile": "gao-bid-protest-faq-http-access-state-v1",
+      "parse_ref": "LAW33-P015",
+      "source_ref": "LAW31-S015",
+      "parse_state": "parsed_http_error_structure",
+      "field_mapping_count": 1,
+      "structural_handle_count": 1,
+      "sensitive_exclusion_count": 0,
+      "route_refs": [
+        "LAW30-R05"
+      ],
+      "task_use_count": 9,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "adapter_ref": "LAW34-A016",
+      "adapter_sequence": 16,
+      "adapter_profile": "pacer-case-locator-access-boundary-v1",
+      "parse_ref": "LAW33-P016",
+      "source_ref": "LAW31-S016",
+      "parse_state": "credential_boundary_preserved",
+      "field_mapping_count": 1,
+      "structural_handle_count": 1,
+      "sensitive_exclusion_count": 0,
+      "route_refs": [
+        "LAW30-R05"
+      ],
+      "task_use_count": 9,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "adapter_ref": "LAW34-A017",
+      "adapter_sequence": 17,
+      "adapter_profile": "mspb-case-report-index-structure-v1",
+      "parse_ref": "LAW33-P017",
+      "source_ref": "LAW31-S017",
+      "parse_state": "parsed_html_structure",
+      "field_mapping_count": 3,
+      "structural_handle_count": 3,
+      "sensitive_exclusion_count": 0,
+      "route_refs": [
+        "LAW30-R05"
+      ],
+      "task_use_count": 9,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "adapter_ref": "LAW34-A018",
+      "adapter_sequence": 18,
+      "adapter_profile": "fac-public-data-guide-structure-v1",
+      "parse_ref": "LAW33-P018",
+      "source_ref": "LAW31-S018",
+      "parse_state": "parsed_html_structure",
+      "field_mapping_count": 3,
+      "structural_handle_count": 3,
+      "sensitive_exclusion_count": 0,
+      "route_refs": [
+        "LAW30-R06",
+        "LAW30-R07"
+      ],
+      "task_use_count": 9,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "adapter_ref": "LAW34-A019",
+      "adapter_sequence": 19,
+      "adapter_profile": "fac-api-access-boundary-v1",
+      "parse_ref": "LAW33-P019",
+      "source_ref": "LAW31-S019",
+      "parse_state": "credential_boundary_preserved",
+      "field_mapping_count": 1,
+      "structural_handle_count": 1,
+      "sensitive_exclusion_count": 0,
+      "route_refs": [
+        "LAW30-R07"
+      ],
+      "task_use_count": 3,
+      "join_authorized": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    }
+  ],
+  "lawful_join_contracts": [
+    {
+      "join_ref": "LAW34-J001",
+      "join_sequence": 1,
+      "route_ref": "LAW30-R02",
+      "route_class": "internal-authority-and-inventory",
+      "route_owner": "us-executive-appointments-ethics-estate",
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S002",
+        "LAW31-S003",
+        "LAW31-S004"
+      ],
+      "adapter_refs": [
+        "LAW34-A001",
+        "LAW34-A002",
+        "LAW34-A003",
+        "LAW34-A004"
+      ],
+      "candidate_key_classes": [
+        "published_document_number",
+        "agency_or_subcomponent_identifier",
+        "implementing_office_identifier",
+        "instrument_version_or_revision",
+        "effective_or_decision_date"
+      ],
+      "missing_requirements": [
+        {
+          "requirement_ref": "LAW34-R001",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "complete agency implementation file",
+          "completion_test": "All implementing offices, delegations, versions, exceptions, overrides, recusals, dissent, and dispositions are source-addressed.",
+          "refused_substitution": "Published Federal Register metadata is not an internal implementation file.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R002",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "complete agency submission and inventory roster",
+          "completion_test": "Every required agency submission, non-submission, correction, and no-action row is preserved.",
+          "refused_substitution": "A public workforce dataset is not an agency inventory submission.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R003",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "decision-custody chronology",
+          "completion_test": "Attributed office, author, reviewer, approver, effective date, supersession, and withdrawal are preserved.",
+          "refused_substitution": "A named agency or office is not personal motive, authorship, or coordination.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R004",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "implementation consequence and correction row",
+          "completion_test": "Observed implementation, exception, challenge, correction, and no-action outcomes are joined to the exact instrument version.",
+          "refused_substitution": "Publication of an instrument is not observed implementation or practical correction.",
+          "satisfied": false
+        }
+      ],
+      "requirement_access_classes": {
+        "public_or_authorized_acquisition": 4
+      },
+      "join_state": "blocked_missing_institutional_requirements",
+      "join_authorized": false,
+      "joined_rows": 0,
+      "complete_denominator": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "join_ref": "LAW34-J002",
+      "join_sequence": 2,
+      "route_ref": "LAW30-R03",
+      "route_class": "public-award-and-contract-denominators",
+      "route_owner": "public-money-industrial-policy-estate",
+      "source_refs": [
+        "LAW31-S005",
+        "LAW31-S006",
+        "LAW31-S007",
+        "LAW31-S008",
+        "LAW31-S009",
+        "LAW31-S010"
+      ],
+      "adapter_refs": [
+        "LAW34-A005",
+        "LAW34-A006",
+        "LAW34-A007",
+        "LAW34-A008",
+        "LAW34-A009",
+        "LAW34-A010"
+      ],
+      "candidate_key_classes": [
+        "award_or_contract_identifier",
+        "recipient_or_contractor_identifier",
+        "assistance_listing_or_program_identifier",
+        "awarding_agency_identifier",
+        "action_or_obligation_date"
+      ],
+      "missing_requirements": [
+        {
+          "requirement_ref": "LAW34-R005",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "complete covered-instrument universe",
+          "completion_test": "All contracts, assistance awards, modifications, terminations, and no-action rows under the contested condition are enumerated.",
+          "refused_substitution": "USAspending aggregate counts or Grants.gov opportunities are not the covered-instrument universe.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R006",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "condition-specific certification and review ledger",
+          "completion_test": "Every certification, records request, referral, review, exception, sanction, declination, appeal, and no-action row is preserved.",
+          "refused_substitution": "Award receipt is not certification, violation, liability, or enforcement.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R007",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "legal-entity resolution ledger",
+          "completion_test": "Recipient, parent, contractor, subcontractor, awardee, and successor identities are resolved with effective dates.",
+          "refused_substitution": "Name similarity or shared programme participation is not legal-entity identity or relationship.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R008",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "post-award consequence and correction history",
+          "completion_test": "Condition-specific action, burden, correction, closeout, continuity, substitution, and no-effect rows are linked to the exact instrument.",
+          "refused_substitution": "An opportunity or award announcement is not a post-award outcome.",
+          "satisfied": false
+        }
+      ],
+      "requirement_access_classes": {
+        "public_or_authorized_acquisition": 4
+      },
+      "join_state": "blocked_missing_institutional_requirements",
+      "join_authorized": false,
+      "joined_rows": 0,
+      "complete_denominator": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "join_ref": "LAW34-J003",
+      "join_sequence": 3,
+      "route_ref": "LAW30-R04",
+      "route_class": "published-enforcement-and-action-registers",
+      "route_owner": "regulatory-markets-estate",
+      "source_refs": [
+        "LAW31-S004",
+        "LAW31-S011",
+        "LAW31-S012",
+        "LAW31-S013"
+      ],
+      "adapter_refs": [
+        "LAW34-A004",
+        "LAW34-A011",
+        "LAW34-A012",
+        "LAW34-A013"
+      ],
+      "candidate_key_classes": [
+        "enforcement_matter_or_case_identifier",
+        "referral_or_investigation_identifier",
+        "covered_entity_identifier",
+        "policy_or_instrument_identifier",
+        "action_or_disposition_date"
+      ],
+      "missing_requirements": [
+        {
+          "requirement_ref": "LAW34-R009",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "complete referral and intake register",
+          "completion_test": "All referrals, complaints, certifications, records requests, routed matters, rejections, and no-action rows are enumerated.",
+          "refused_substitution": "A public reporting channel or initiative announcement is not the referral denominator.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R010",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "complete investigation and action register",
+          "completion_test": "All investigations, settlements, litigations, withdrawals, declinations, sanctions, and no-action rows are source-addressed.",
+          "refused_substitution": "Press releases are not a complete enforcement register.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R011",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "covered-entity and sector denominator",
+          "completion_test": "The complete covered population, excluded population, and sector scope are preserved with effective dates.",
+          "refused_substitution": "One named resolution or selected publication list is not prevalence or coverage.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R012",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "appeal, correction, and final disposition ledger",
+          "completion_test": "Challenges, appeals, remands, modifications, compliance, recurrence, and finality are preserved.",
+          "refused_substitution": "Settlement or investigation is not admission or final merits success unless the instrument states it.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R013",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "staffing, budget, timing, and recurrence denominator",
+          "completion_test": "Institutional capacity, timing, repeat actions, and no-action intervals are preserved without converting recurrence into coordination.",
+          "refused_substitution": "Repeated publication does not establish prevalence, common purpose, or coordination.",
+          "satisfied": false
+        }
+      ],
+      "requirement_access_classes": {
+        "public_or_authorized_acquisition": 5
+      },
+      "join_state": "blocked_missing_institutional_requirements",
+      "join_authorized": false,
+      "joined_rows": 0,
+      "complete_denominator": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "join_ref": "LAW34-J004",
+      "join_sequence": 4,
+      "route_ref": "LAW30-R05",
+      "route_class": "correction-dockets-and-outcomes",
+      "route_owner": "public-interest-crossing-estate",
+      "source_refs": [
+        "LAW31-S014",
+        "LAW31-S015",
+        "LAW31-S016",
+        "LAW31-S017"
+      ],
+      "adapter_refs": [
+        "LAW34-A014",
+        "LAW34-A015",
+        "LAW34-A016",
+        "LAW34-A017"
+      ],
+      "candidate_key_classes": [
+        "docket_or_case_number",
+        "tribunal_or_review_body_identifier",
+        "party_or_entity_identifier",
+        "challenged_action_identifier",
+        "disposition_or_compliance_date"
+      ],
+      "missing_requirements": [
+        {
+          "requirement_ref": "LAW34-R014",
+          "access_class": "public_or_lawful_case_access",
+          "target_row": "complete docket and filing history",
+          "completion_test": "All filings, pleadings, sealed or restricted entries, dismissals, settlements, abandoned paths, and final dispositions are preserved.",
+          "refused_substitution": "A published decision index is not the complete docket.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R015",
+          "access_class": "public_or_lawful_case_access",
+          "target_row": "underlying challenged-action record",
+          "completion_test": "The exact decision, instrument, evidence, criteria, and administrative record under review are joined to the docket.",
+          "refused_substitution": "A docket number alone does not identify the complete challenged action.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R016",
+          "access_class": "public_or_lawful_case_access",
+          "target_row": "final correction, compliance, and durability record",
+          "completion_test": "Remand implementation, payment, reinstatement, reevaluation, recurrence, and durability are observed.",
+          "refused_substitution": "Formal remand, dismissal, or settlement is not practical correction.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R017",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "access, cost, timing, and abandonment denominator",
+          "completion_test": "Filing access, representation, fees, delays, abandonment, and unavailable routes are measured across the eligible universe.",
+          "refused_substitution": "Existence of a formal route is not effective counterpower.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R018",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "matched unsuccessful and no-correction controls",
+          "completion_test": "Comparable denied, dismissed, withdrawn, unfiled, and no-correction rows are preserved.",
+          "refused_substitution": "Published successful cases are not the correction denominator.",
+          "satisfied": false
+        }
+      ],
+      "requirement_access_classes": {
+        "public_or_authorized_acquisition": 2,
+        "public_or_lawful_case_access": 3
+      },
+      "join_state": "blocked_missing_institutional_requirements",
+      "join_authorized": false,
+      "joined_rows": 0,
+      "complete_denominator": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "join_ref": "LAW34-J005",
+      "join_sequence": 5,
+      "route_ref": "LAW30-R01",
+      "route_class": "protected-personnel-records",
+      "route_owner": "labor-immigration-workforce-mobility-estate",
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S002",
+        "LAW31-S003",
+        "LAW31-S016",
+        "LAW31-S017"
+      ],
+      "adapter_refs": [
+        "LAW34-A001",
+        "LAW34-A002",
+        "LAW34-A003",
+        "LAW34-A016",
+        "LAW34-A017"
+      ],
+      "candidate_key_classes": [
+        "privacy_safe_person_or_position_identifier",
+        "agency_and_subcomponent_identifier",
+        "decision_type_identifier",
+        "decision_effective_date",
+        "appeal_or_grievance_identifier"
+      ],
+      "missing_requirements": [
+        {
+          "requirement_ref": "LAW34-R019",
+          "access_class": "authorized_lawful_access_only",
+          "target_row": "lawful personnel decision roster",
+          "completion_test": "A privacy-safe aggregate or authorized person-level roster includes promotion, tenure, retention, discipline, reassignment, separation, and no-action rows.",
+          "refused_substitution": "Public workforce aggregates are not protected personnel decisions.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R020",
+          "access_class": "authorized_lawful_access_only",
+          "target_row": "lawful comparator and reason ledger",
+          "completion_test": "Eligible comparators, decision criteria, stated reasons, exceptions, overrides, and decision custody are preserved under lawful access.",
+          "refused_substitution": "Public category membership or aggregate movement is not an individual comparator or reason.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R021",
+          "access_class": "authorized_lawful_access_only",
+          "target_row": "lawful appeal, correction, and outcome ledger",
+          "completion_test": "Grievance, MSPB, EEOC, FSGB, union, court, settlement, remedy, timing, and no-correction rows are preserved.",
+          "refused_substitution": "A published case report is not the complete protected correction denominator.",
+          "satisfied": false
+        }
+      ],
+      "requirement_access_classes": {
+        "authorized_lawful_access_only": 3
+      },
+      "join_state": "blocked_missing_institutional_requirements",
+      "join_authorized": false,
+      "joined_rows": 0,
+      "complete_denominator": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "join_ref": "LAW34-J006",
+      "join_sequence": 6,
+      "route_ref": "LAW30-R06",
+      "route_class": "affected-comparator-and-distributional-joins",
+      "route_owner": "public-interest-crossing-estate",
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S005",
+        "LAW31-S007",
+        "LAW31-S009",
+        "LAW31-S018"
+      ],
+      "adapter_refs": [
+        "LAW34-A001",
+        "LAW34-A005",
+        "LAW34-A007",
+        "LAW34-A009",
+        "LAW34-A018"
+      ],
+      "candidate_key_classes": [
+        "lawful_person_or_entity_join_identifier",
+        "program_or_condition_identifier",
+        "exposure_or_action_date",
+        "affected_or_comparator_class",
+        "outcome_window_identifier"
+      ],
+      "missing_requirements": [
+        {
+          "requirement_ref": "LAW34-R022",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "complete affected-row predicate",
+          "completion_test": "A source-explicit rule identifies every included, excluded, burdened, corrected, and no-effect person or entity row.",
+          "refused_substitution": "Formal categories are not observed affected rows.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R023",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "complete unaffected and comparator population",
+          "completion_test": "Eligible unaffected, unselected, untreated, and alternative-path rows are preserved under the same time and scope rules.",
+          "refused_substitution": "Named litigants, awardees, or recipients are not the comparator population.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R024",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "lawful cross-system entity resolution",
+          "completion_test": "Join keys, effective dates, parent and successor rules, ambiguity holds, and refusals are explicit.",
+          "refused_substitution": "Name matching, shared programme presence, or repeated source appearance is not identity or relationship.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R025",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "burden, no-effect, recurrence, and substitution outcomes",
+          "completion_test": "Outcome windows include burden, no observed effect, recurrence, reversal, substitution, exit, and durability rows.",
+          "refused_substitution": "An aggregate base universe is not a distributional outcome ledger.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R026",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "group ontology and distributional denominator",
+          "completion_test": "Group definitions, eligibility, denominators, missingness, lawful privacy treatment, and correction routes are preserved.",
+          "refused_substitution": "Unequal observed outcomes alone do not establish motive, racial order, prevalence, coordination, or common purpose.",
+          "satisfied": false
+        }
+      ],
+      "requirement_access_classes": {
+        "public_or_authorized_acquisition": 5
+      },
+      "join_state": "blocked_missing_institutional_requirements",
+      "join_authorized": false,
+      "joined_rows": 0,
+      "complete_denominator": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "join_ref": "LAW34-J007",
+      "join_sequence": 7,
+      "route_ref": "LAW30-R07",
+      "route_class": "financial-recovery-and-continuity",
+      "route_owner": "public-money-industrial-policy-estate",
+      "source_refs": [
+        "LAW31-S005",
+        "LAW31-S009",
+        "LAW31-S012",
+        "LAW31-S018",
+        "LAW31-S019"
+      ],
+      "adapter_refs": [
+        "LAW34-A005",
+        "LAW34-A009",
+        "LAW34-A012",
+        "LAW34-A018",
+        "LAW34-A019"
+      ],
+      "candidate_key_classes": [
+        "award_settlement_or_audit_identifier",
+        "recipient_or_obligor_identifier",
+        "obligation_payment_or_receivable_identifier",
+        "corrective_action_identifier",
+        "closeout_recovery_or_continuity_date"
+      ],
+      "missing_requirements": [
+        {
+          "requirement_ref": "LAW34-R027",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "complete obligation and payment ledger",
+          "completion_test": "Obligations, outlays, settlement amounts, payment dates, receivables, offsets, and nonpayment rows are preserved.",
+          "refused_substitution": "Announced value is not realized payment or recovery.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R028",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "complete clawback, repayment, loss, and no-recovery ledger",
+          "completion_test": "Clawbacks, repayments, write-offs, defaults, losses, waivers, and no-recovery rows are enumerated.",
+          "refused_substitution": "An audit finding is not a realized recovery.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R029",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "substitution and service-continuity ledger",
+          "completion_test": "Replacement providers, transition costs, service continuity, exit, interruption, and no-substitution rows are preserved.",
+          "refused_substitution": "Programme termination is not successful substitution or continuity.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R030",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "corrective-action completion and performance ledger",
+          "completion_test": "Corrective plans, milestones, verification, recurrence, performance, and durability are observed.",
+          "refused_substitution": "A corrective-action plan is not completed correction.",
+          "satisfied": false
+        },
+        {
+          "requirement_ref": "LAW34-R031",
+          "access_class": "public_or_authorized_acquisition",
+          "target_row": "public-private residual-value allocation ledger",
+          "completion_test": "Public contribution, private residual rights, data, IP, operating knowledge, enterprise value, and public recovery terms are explicit.",
+          "refused_substitution": "Public support or private gain alone does not establish extraction, favoritism, or common purpose.",
+          "satisfied": false
+        }
+      ],
+      "requirement_access_classes": {
+        "public_or_authorized_acquisition": 5
+      },
+      "join_state": "blocked_missing_institutional_requirements",
+      "join_authorized": false,
+      "joined_rows": 0,
+      "complete_denominator": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    }
+  ],
+  "execution_contract": {
+    "one_adapter_per_source_parse": true,
+    "network_requests_performed": 0,
+    "source_parse_rows_reused": true,
+    "structurally_observed_mapping_required": true,
+    "sensitive_exclusions_applied_before_projection": true,
+    "candidate_keys_authorize_join": false,
+    "all_join_requirements_unsatisfied": true,
+    "protected_personnel_public_substitution": false,
+    "authorized_join_created": false
+  },
+  "boundaries": {
+    "schema_mapping_is_institutional_semantics": false,
+    "field_name_is_complete_denominator": false,
+    "candidate_key_authorizes_join": false,
+    "shared_identifier_proves_identity_or_relationship": false,
+    "public_base_universe_is_action_denominator": false,
+    "published_action_is_complete_register": false,
+    "formal_review_is_effective_correction": false,
+    "announced_value_is_realized_recovery": false,
+    "aggregate_workforce_data_is_personnel_decision": false,
+    "http_error_is_record_absence": false,
+    "credential_boundary_is_no_records": false,
+    "sensitive_token_projected": false,
+    "identity_created": false,
+    "relationship_created": false,
+    "participation_created": false,
+    "active_claim_created": false,
+    "hop_created": false,
+    "evidence_adjudicated": false,
+    "finding_promoted": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}

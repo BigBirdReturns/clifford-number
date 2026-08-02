@@ -1,0 +1,85 @@
+#!/usr/bin/env node
+import assert from 'node:assert/strict';
+import { loadState, validateState } from '../tools/validate-lake-allocator-war-schema-joins-wave-34.mjs';
+
+const baseline = loadState();
+validateState(baseline, { skipAncestry: true });
+const clone = value => structuredClone(value);
+const mutations = [];
+const add = (name, mutate) => mutations.push({ name, mutate });
+
+add('policy schema drift', s => { s.policy.schema_version = 'bad'; });
+add('program reference drift', s => { s.policy.program_ref = 'BAD'; });
+add('expected adapter count inflation', s => { s.policy.expected_counts.schema_adapters = 20; });
+add('source policy contract drift', s => { s.sourcePolicy.schema_version = 'bad'; });
+add('plan schema drift', s => { s.plan.schema_version = 'bad'; });
+add('adapter removal', s => { s.plan.adapters.pop(); });
+add('duplicate adapter reference', s => { s.plan.adapters[1].adapter_ref = s.plan.adapters[0].adapter_ref; });
+add('duplicate adapter profile', s => { s.plan.adapters[1].adapter_profile = s.plan.adapters[0].adapter_profile; });
+add('duplicate parse reference', s => { s.plan.adapters[1].parse_ref = s.plan.adapters[0].parse_ref; });
+add('adapter source drift', s => { s.plan.adapters[0].source_ref = 'LAW31-S999'; });
+add('invalid mapping basis', s => { s.plan.adapters[0].field_mappings[0].mapping_basis = 'semantic_guess'; });
+add('mapping join authority inflation', s => { s.plan.adapters[0].field_mappings[0].join_authority = true; });
+add('unobserved mapping path', s => { s.plan.adapters[0].field_mappings[0].source_path = '$.not_observed'; });
+add('invalid handle basis', s => { s.plan.adapters[0].structural_handles[0].handle_basis = 'semantic_guess'; });
+add('unobserved handle path', s => { s.plan.adapters[0].structural_handles[0].source_path = '$.not_observed'; });
+add('sensitive exclusion removal', s => { s.plan.adapters[9].sensitive_exclusions = []; });
+add('sensitive exclusion projection inflation', s => { s.plan.adapters[9].sensitive_exclusions[0].projected = true; });
+add('sensitive exclusion join authority inflation', s => { s.plan.adapters[9].sensitive_exclusions[0].join_authority = true; });
+add('sensitive token mapped', s => { s.plan.adapters[9].field_mappings[0].source_path = '$.token'; });
+add('sensitive token used as handle', s => { s.plan.adapters[9].structural_handles[0].source_path = '$.token'; });
+add('sensitive token used as candidate key', s => { s.plan.join_contracts[0].candidate_key_classes[0] = 'token'; });
+add('join contract removal', s => { s.plan.join_contracts.pop(); });
+add('duplicate join reference', s => { s.plan.join_contracts[1].join_ref = s.plan.join_contracts[0].join_ref; });
+add('duplicate route reference', s => { s.plan.join_contracts[1].route_ref = s.plan.join_contracts[0].route_ref; });
+add('route class drift', s => { s.plan.join_contracts[0].route_class = 'wrong'; });
+add('route owner drift', s => { s.plan.join_contracts[0].route_owner = 'wrong'; });
+add('public route source set drift', s => { s.plan.join_contracts[1].source_refs.pop(); });
+add('join source adapter missing', s => { s.plan.join_contracts[4].source_refs[0] = 'LAW31-S999'; });
+add('join authorized in source plan', s => { s.plan.join_contracts[0].join_authorized = true; });
+add('joined rows inflated in source plan', s => { s.plan.join_contracts[0].joined_rows = 1; });
+add('complete denominator inflated in source plan', s => { s.plan.join_contracts[0].complete_denominator = true; });
+add('requirement satisfaction inflation', s => { s.plan.join_contracts[0].missing_requirements[0].satisfied = true; });
+add('invalid requirement access class', s => { s.plan.join_contracts[0].missing_requirements[0].access_class = 'unbounded'; });
+add('missing institutional requirement removed', s => { s.plan.join_contracts[0].missing_requirements.pop(); });
+add('duplicate requirement reference', s => { s.plan.join_contracts[0].missing_requirements[1].requirement_ref = s.plan.join_contracts[0].missing_requirements[0].requirement_ref; });
+add('duplicate field mapping reference', s => { s.plan.adapters[1].field_mappings[0].mapping_ref = s.plan.adapters[0].field_mappings[0].mapping_ref; });
+add('duplicate structural handle reference', s => { s.plan.adapters[1].structural_handles[0].handle_ref = s.plan.adapters[0].structural_handles[0].handle_ref; });
+add('exclusion reference drift', s => { s.plan.adapters[9].sensitive_exclusions[0].exclusion_ref = ''; });
+add('projection authorized join count inflation', s => { s.projection.counts.authorized_joins = 1; });
+add('projection graph digest mutation', s => { s.projection.graph_digests.participation_sha256 = '0'.repeat(64); });
+add('projection candidate-key authority inflation', s => { s.projection.execution_contract.candidate_keys_authorize_join = true; });
+add('projection adapter join authority inflation', s => { s.projection.schema_adapters[0].join_authorized = true; });
+add('projection join authority inflation', s => { s.projection.lawful_join_contracts[0].join_authorized = true; });
+add('adapter ledger graph effect inflation', s => { s.adapterRows[0].graph_effect = 'added'; });
+add('adapter ledger publication inflation', s => { s.adapterRows[0].publication_status = 'cleared'; });
+add('join ledger graph effect inflation', s => { s.joinRows[0].graph_effect = 'added'; });
+add('join ledger evidence inflation', s => { s.joinRows[0].evidence_rows = 1; });
+add('projection sensitive token leakage', s => { s.projection.leaked = '$.token'; });
+add('report drift', s => { s.report += '\nmutated\n'; });
+add('authoritative root removal', s => { s.lakeIndexPolicy.authoritative_roots = s.lakeIndexPolicy.authoritative_roots.filter(x => x !== s.policy.paths.projection); });
+add('source basin path removal', s => { const b=s.wave21Policy.basin_contract.find(x=>x.basin_id==='allocator-war-source'); b.path_prefixes=b.path_prefixes.filter(x=>x!==s.policy.paths.schema_join_plan); });
+add('basin registry mismatch', s => { const b=s.basinRegistry.basins.find(x=>x.basin_id==='allocator-war-reports'); b.path_prefixes=[]; });
+add('generated path allowlist removal', s => { s.wave21Policy.projection_contract.allowed_generated_paths=s.wave21Policy.projection_contract.allowed_generated_paths.filter(x=>x!==s.policy.paths.join_ledger); });
+add('package build script removal', s => { delete s.packageJson.scripts['build:lake-allocator-war-schema-joins-wave-34']; });
+add('release ordering removal', s => { s.packageJson.scripts.check=s.packageJson.scripts.check.replace(' && npm run validate:lake-allocator-war-schema-joins-wave-34',''); });
+add('installer registration removal', s => { s.installer=s.installer.replaceAll('lake-allocator-war-schema-joins-wave-34-policy.json','removed-policy.json'); });
+add('Wave 21 validator registration removal', s => { s.wave21Validator=s.wave21Validator.replaceAll('lake-allocator-war-schema-joins-wave-34-policy.json','removed-policy.json'); });
+add('workflow release gate removal', s => { s.workflow=s.workflow.replace('Run complete repository release gate','Removed gate'); });
+add('README marker removal', s => { s.readme=s.readme.replace('## Allocator-war source schemas and lawful joins Wave 34',''); });
+add('build instructions marker removal', s => { s.buildInstructions=s.buildInstructions.replace('3.34 **Allocator-war source schemas and lawful joins — Wave 34.**',''); });
+add('temporary trigger survives', s => { s.temporaryTriggerPresent=true; });
+add('source projection route count drift', s => { s.sourceProjection.counts.source_routes=8; });
+add('source parse row removal', s => { s.sourceRows.pop(); });
+add('source parse state drift', s => { s.sourceRows[0].parse_state='credential_boundary_preserved'; s.sourceRows[0].structure=null; });
+add('Wave 21 graph digest mutation', s => { s.wave21Receipt.graph_digests.participation_sha256='f'.repeat(64); });
+add('plan count contract drift', s => { s.plan.counts.missing_institutional_requirements=30; });
+
+assert.equal(mutations.length, 66);
+for (const { name, mutate } of mutations) {
+  const state = clone(baseline);
+  mutate(state);
+  assert.throws(() => validateState(state, { skipAncestry: true }), undefined, name);
+}
+
+console.log(`allocator-war source schemas and lawful joins Wave 34 adversarial mutations passed: ${mutations.length}`);

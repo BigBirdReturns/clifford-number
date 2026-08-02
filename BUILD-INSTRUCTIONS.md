@@ -504,3 +504,9 @@ Run `node tools/build-lake-allocator-war-bounded-source-snapshots-wave-32.mjs` a
 Run `node tools/build-lake-allocator-war-structural-parses-wave-33.mjs` only after the permanent Wave 32 snapshot ledger and response bytes are present. The builder must verify all response hashes, emit exactly nineteen parse rows, perform no network requests, preserve HTTP errors and credential boundaries, and reuse the unchanged seven-route, thirty-eight-task, 153-use denominator.
 
 A structural parse is addressability only. JSON array lengths, field names, HTML tags, links, text counts, HTTP error bodies, and credential boundaries do not establish institutional completeness, authorize joins, adjudicate evidence, create findings, alter the graph, or clear publication.
+
+
+3.34 **Allocator-war source schemas and lawful joins — Wave 34.**
+Run `node tools/build-lake-allocator-war-schema-joins-wave-34.mjs` only after the permanent Wave 33 parse ledger is present. The builder must adapt all nineteen parse objects exactly once, preserve source-specific structural limits and sensitive exclusions, and emit seven blocked lawful-join contracts covering all route classes.
+
+A schema adapter or candidate key is not institutional semantics or join authority. Every join remains blocked until its exact action, no-action, affected-party, comparator, correction, recovery, or lawful-access requirements are satisfied. Protected personnel rows may not be replaced with public aggregate workforce data.
