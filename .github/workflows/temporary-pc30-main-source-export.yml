@@ -1,0 +1,39 @@
+name: TEMP export canonical main for PC-30 composition
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.pc30-export.trigger'
+      - '.github/workflows/temporary-pc30-main-source-export.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Package exact canonical main source
+        run: |
+          set -Eeuo pipefail
+          git rev-parse HEAD > canonical-main.sha
+          tar --exclude='./.git' --exclude='./node_modules' --exclude='./dist' \
+            --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
+            -czf canonical-main-source.tar.gz .
+          sha256sum canonical-main-source.tar.gz > canonical-main-source.sha256
+          wc -c canonical-main-source.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc30-canonical-main-source
+          path: |
+            canonical-main.sha
+            canonical-main-source.tar.gz
+            canonical-main-source.sha256
+          if-no-files-found: error
+          retention-days: 7
