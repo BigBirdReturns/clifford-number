@@ -6,6 +6,11 @@ on:
       - research/preference-identity-boundary-assurance-v3
     paths:
       - '.pc31/materialize.trigger'
+      - '.github/workflows/temporary-pc31-materializer.yml'
+  pull_request:
+    paths:
+      - '.pc31/**'
+      - '.github/workflows/temporary-pc31-materializer.yml'
   workflow_dispatch:
 
 permissions:
@@ -34,7 +39,7 @@ jobs:
           EXPECTED_B64_BYTES: '33252'
           EXPECTED_B64_SHA256: 3d0de63314dbc8fe37f4e0660bba2d412e7862bac9130c71de4a821e65ae05c8
           EXPECTED_TGZ_SHA256: bb2bfc2a14325a5755bf5e39c567856378ecea0200101b55712ed628a13705ad
-          EXPECTED_PATH_DIGEST: 938fee5f793a49348720e62500f90b4fecca63f53c18b980589dad086b5accfc
+          EXPECTED_PATH_DIGEST: 53fb03a8647f4d5d76dca641b3dc2ecf97a95fa5febef46b26f522eef9aeeaed
         run: |
           set -Eeuo pipefail
           git config user.name 'github-actions[bot]'
@@ -91,6 +96,21 @@ jobs:
           tar -tzf /tmp/pc31-product.tar.gz | sed 's#^\./##' | sed '/\/$/d' > /tmp/pc31-observed-paths
           diff -u /tmp/pc31-permanent-paths /tmp/pc31-observed-paths
 
+          extract_product() {
+            tar -xzf /tmp/pc31-product.tar.gz
+            python - <<'PY'
+          from pathlib import Path
+          path = Path('docs/preference-custody-laboratory-floor-v29.md')
+          text = path.read_text()
+          before = text
+          text = text.replace('base controls       28', 'base controls       30')
+          text = text.replace('final controls      29', 'final controls      31')
+          if text == before:
+              raise SystemExit('PC-31 denominator correction did not match the frozen source carrier')
+          path.write_text(text)
+          PY
+          }
+
           qualify_product() {
             node tools/compile-preference-identity-boundary-assurance.mjs
             node tools/validate-preference-identity-boundary-assurance.mjs
@@ -114,7 +134,7 @@ jobs:
               git merge --no-ff "$candidate_main" -m "Rebind PC-31 permanent surface to current main attempt $attempt"
             fi
 
-            tar -xzf /tmp/pc31-product.tar.gz
+            extract_product
             qualify_product
 
             git restore --staged --worktree .
@@ -130,7 +150,7 @@ jobs:
           done
           test -n "$stable_main"
 
-          tar -xzf /tmp/pc31-product.tar.gz
+          extract_product
           while IFS= read -r path; do test -f "$path"; done < /tmp/pc31-permanent-paths
           sha256sum $(cat /tmp/pc31-permanent-paths) | sort -k2 > /tmp/pc31-path-digests
           printf '%s  %s\n' "$EXPECTED_PATH_DIGEST" /tmp/pc31-path-digests | sha256sum --check --strict
@@ -155,10 +175,11 @@ jobs:
             materialized_nonworkflow_paths: 12,
             permanent_paths_expected: 14,
             carrier_shards: 4,
-            base64_bytes: 33252,
-            base64_sha256: process.env.EXPECTED_B64_SHA256,
-            tar_sha256: process.env.EXPECTED_TGZ_SHA256,
-            path_digest_sha256: process.env.EXPECTED_PATH_DIGEST,
+            source_carrier_base64_bytes: 33252,
+            source_carrier_base64_sha256: process.env.EXPECTED_B64_SHA256,
+            source_carrier_tar_sha256: process.env.EXPECTED_TGZ_SHA256,
+            final_path_digest_sha256: process.env.EXPECTED_PATH_DIGEST,
+            denominator_correction: 'base_controls_30_final_controls_31',
             outside_human_dependency: false,
             graph_effect: 'none'
           };
