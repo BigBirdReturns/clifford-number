@@ -1,11 +1,14 @@
-name: TEMP derive SSC RD-04-C01 version cross-references
+name: TEMP derive SSC RD-04-C01 version cross-references v2
 
 on:
   pull_request:
     paths:
       - '.github/workflows/temporary-ssc-rd-wave02-rd04-cross-references.yml'
       - 'data/intake/status-sovereignty-rd-wave02-rd04-version-history/seed-capture-receipt.json'
+      - 'data/intake/status-sovereignty-rd-wave02-rd04-version-history/cross-reference-receipt.json'
+      - 'data/intake/status-sovereignty-rd-wave02-rd04-version-history/cross-reference-parser-repair.json'
       - 'tools/acquisition/status-sovereignty-rd-wave02-rd04/derive-version-cross-references.mjs'
+      - 'test/status-sovereignty-rd-wave02-rd04-cross-reference.test.js'
   workflow_dispatch:
 
 permissions:
@@ -13,7 +16,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ssc-rd-wave02-rd04-cross-references-${{ github.event.pull_request.number || github.ref }}
+  group: ssc-rd-wave02-rd04-cross-references-v2-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -27,7 +30,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Install PDF text extraction dependency
+      - name: Install exact PDF text extraction dependency
         run: |
           set -Eeuo pipefail
           sudo apt-get update -qq
@@ -41,28 +44,42 @@ jobs:
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
           run-id: 30765064506
-      - name: Derive immutable cross-reference candidates
+      - name: Download superseded v1 cross-reference artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-version-cross-references
+          path: /tmp/rd04-cross-references-v1
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30765689103
+      - name: Derive corrected immutable cross-reference denominator
         env:
           RD04_REPOSITORY_ROOT: ${{ github.workspace }}
           RD04_VERSION_ARTIFACT: /tmp/rd04-version-seed
-          RD04_CROSSREF_OUTPUT: /tmp/rd04-cross-references
+          RD04_CROSSREF_V1_ARTIFACT: /tmp/rd04-cross-references-v1
+          RD04_CROSSREF_OUTPUT: /tmp/rd04-cross-references-v2
         run: |
           set -Eeuo pipefail
           node tools/validate-no-magic-human-gate.mjs
+          node test/status-sovereignty-rd-wave02-rd04-cross-reference.test.js
           node tools/acquisition/status-sovereignty-rd-wave02-rd04/derive-version-cross-references.mjs
-          test -f /tmp/rd04-cross-references/registry.json
-          test -f /tmp/rd04-cross-references/receipt.json
+          test -f /tmp/rd04-cross-references-v2/registry.json
+          test -f /tmp/rd04-cross-references-v2/delta.json
+          test -f /tmp/rd04-cross-references-v2/receipt.json
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
-          const registry = JSON.parse(fs.readFileSync('/tmp/rd04-cross-references/registry.json', 'utf8'));
+          const registry = JSON.parse(fs.readFileSync('/tmp/rd04-cross-references-v2/registry.json', 'utf8'));
           const expected = {
             source_units: 14,
             source_units_extracted: 13,
             source_units_unresolved: 1,
-            reference_occurrences: 485,
-            unique_reference_ids: 103,
-            seed_alias_reference_ids: 13,
-            new_cross_reference_candidates: 90,
+            reference_occurrences: 660,
+            unique_reference_ids: 154,
+            seed_alias_reference_ids: 14,
+            new_cross_reference_candidates: 140,
+            v1_reference_ids_preserved: 101,
+            v1_reference_ids_typed_superseded: 2,
+            v2_reference_ids_added: 53,
             version_edges_adjudicated: 0,
             class_closed: 0,
             external_contacts: 0,
@@ -73,17 +90,36 @@ jobs:
           for (const [key, value] of Object.entries(expected)) {
             if (registry.counts?.[key] !== value) throw new Error(`${key}: ${registry.counts?.[key]} != ${value}`);
           }
-          if (registry.current_result?.class_closed !== false) throw new Error('class closure escalated');
+          const ids = new Set(registry.references.map((row) => row.reference_id));
+          for (const required of [
+            '25-USC-1603(13)',
+            '45-CFR-164.502(a)(5)',
+            '7-CFR-273.24(b)(2)',
+            'CA-ACL-15-08',
+            'CA-HSC-123110(d)(1)',
+            'CA-HSC-1231110(d)(1)',
+            'CA-MPP-63-407',
+            'CA-WIC-11403(b)(4)',
+            'US-FNA-2008-SEC-6(o)',
+            'US-FRA-2023-SEC-311-312',
+            'US-TRADE-ACT-1974-SEC-236'
+          ]) {
+            if (!ids.has(required)) throw new Error(`required repaired ID missing: ${required}`);
+          }
+          if (ids.has('7-CFR-273.24(b)')) throw new Error('truncated wrapped CFR ID survived repair');
+          if (ids.has('CA-WIC-11403')) throw new Error('subsection-discarding WIC ID survived repair');
+          if (registry.current_result?.parser_repair_complete !== true) throw new Error('parser repair not terminal');
+          if (registry.current_result?.corrected_cross_reference_denominator_frozen !== true) throw new Error('corrected denominator not frozen');
           if (registry.current_result?.version_edge_adjudication_complete !== false) throw new Error('version-edge adjudication escalated');
-          if (registry.unresolved_seed_source?.alternative_locator_fetched !== false) throw new Error('alternative locator represented as fetched');
+          if (registry.current_result?.class_closed !== false) throw new Error('class closure escalated');
           if (registry.boundaries?.reference_occurrence_is_version_edge !== false) throw new Error('reference occurrence promoted to version edge');
           if (registry.boundaries?.unresolved_statute_page_is_missing_law !== false) throw new Error('HTTP 403 promoted to missing law');
-          console.log('cross-reference denominator and authority ceiling: PASS');
+          console.log('corrected cross-reference denominator and authority ceiling: PASS');
           NODE
-      - name: Upload exact cross-reference registry
+      - name: Upload corrected cross-reference registry
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd-wave02-rd04-version-cross-references
-          path: /tmp/rd04-cross-references
+          name: ssc-rd-wave02-rd04-version-cross-references-v2
+          path: /tmp/rd04-cross-references-v2
           if-no-files-found: error
           retention-days: 90
