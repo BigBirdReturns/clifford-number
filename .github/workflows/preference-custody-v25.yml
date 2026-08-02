@@ -1,0 +1,54 @@
+name: Preference custody laboratory floor v25
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/performative-synthetic-constituencies/**'
+      - 'data/research/preference-custody/**'
+      - 'tools/lib/performative-synthetic-constituency.mjs'
+      - 'tools/lib/preference-*.mjs'
+      - 'tools/compile-preference-interference-mapping.mjs'
+      - 'tools/validate-preference-interference-mapping.mjs'
+      - 'tools/compile-preference-custody-manifest-v25.mjs'
+      - 'tools/validate-preference-custody-manifest-v25.mjs'
+      - 'test/preference-interference-mapping.test.js'
+      - 'test/preference-custody-manifest-v25.test.js'
+      - 'docs/preference-custody-interference-mapping.md'
+      - 'docs/preference-custody-laboratory-floor-v25.md'
+      - '.github/workflows/preference-interference-mapping.yml'
+      - '.github/workflows/preference-custody-v25.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  floor-v25:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Compile PC-27 and the compositional v25 floor
+        run: |
+          node tools/compile-preference-interference-mapping.mjs
+          node tools/compile-preference-custody-manifest-v25.mjs
+      - name: Validate interference-assurance and floor boundaries
+        run: |
+          node tools/validate-preference-interference-mapping.mjs
+          node tools/validate-preference-custody-manifest-v25.mjs
+      - name: Exercise standalone and integrated adversarial fixtures
+        run: |
+          node test/preference-interference-mapping.test.js
+          node test/preference-custody-manifest-v25.test.js
+      - name: Preserve deterministic v25 projections
+        uses: actions/upload-artifact@v4
+        with:
+          name: preference-custody-laboratory-floor-v25
+          path: |
+            build/research/preference-interference-mapping.json
+            build/research/preference-interference-mapping.md
+            build/research/preference-custody-laboratory-floor-v25.json
+            build/research/preference-custody-laboratory-floor-v25.md
+          if-no-files-found: error
