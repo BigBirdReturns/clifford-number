@@ -1,0 +1,200 @@
+name: TEMP prove canonical SSC RD-04 A07 merge v2
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a07-postmerge-proof-base-v2
+    paths:
+      - '.github/tmp/ssc-rd04-a07-postmerge-proof-v2.trigger'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd04-a07-postmerge-proof-v2
+  cancel-in-progress: false
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prove exact two-parent A07 merge and permanent denominator
+        run: |
+          set -Eeuo pipefail
+          expected_merge='281f2c5ef735d3e2a744f5977061c7c36b97a8a9'
+          expected_first='3bd46186c2b70ae08e68a5888b9030d445239cfa'
+          expected_second='ffbbbf832a264b15f7c10cf9f6c4ff407134e01c'
+          expected_release='a4be788259cd48235006d06b43271e61de625b72f2c7bb6d8663e63b82d520a3'
+          manifest_path='data/project/status-sovereignty-rd04-public-implementation-receipts-a07-release-manifest.json'
+          core_path='data/intake/status-sovereignty-rd04-public-implementation-receipts-a07/core.json'
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse HEAD)" = "$expected_merge"
+          test "$(git rev-parse origin/main)" = "$expected_merge"
+
+          read -r merge first second extra <<< "$(git rev-list --parents -n 1 HEAD)"
+          test "$merge" = "$expected_merge"
+          test "$first" = "$expected_first"
+          test "$second" = "$expected_second"
+          test -z "${extra:-}"
+
+          git diff --name-only "$first" "$merge" | sort > /tmp/a07-merge-paths.txt
+          test "$(wc -l < /tmp/a07-merge-paths.txt | tr -d ' ')" = 101
+          if grep -E '(^|/)(\.github/tmp|data/transport|temporary-|carrier|materializer|trigger)' /tmp/a07-merge-paths.txt; then
+            echo 'temporary or transport path survived in canonical A07 merge' >&2
+            exit 1
+          fi
+
+          test -f "$manifest_path"
+          test -f "$core_path"
+          CORE_PATH="$core_path" MANIFEST_PATH="$manifest_path" MERGE_PATHS=/tmp/a07-merge-paths.txt EXPECTED_RELEASE="$expected_release" node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const core = JSON.parse(fs.readFileSync(process.env.CORE_PATH, 'utf8'));
+          const manifest = JSON.parse(fs.readFileSync(process.env.MANIFEST_PATH, 'utf8'));
+          const mergePaths = fs.readFileSync(process.env.MERGE_PATHS, 'utf8').trim().split('\n').filter(Boolean).sort();
+          const manifestPaths = [...manifest.entries.map((entry) => entry.path), process.env.MANIFEST_PATH].sort();
+          if (manifest.combined_sha256 !== process.env.EXPECTED_RELEASE) throw new Error(`release digest ${manifest.combined_sha256}`);
+          if (manifest.entries.length !== 100) throw new Error(`manifest entries ${manifest.entries.length}`);
+          if (JSON.stringify(mergePaths) !== JSON.stringify(manifestPaths)) throw new Error('first-parent path set differs from exact manifest scope');
+          const expectedCounts = {
+            D1_shns: 6292,
+            exact_shn_query_receipts: 6292,
+            exact_shn_candidate_rows: 1630,
+            exact_shn_candidate_documents: 1433,
+            valid_candidate_pdfs: 1433,
+            official_selected_urls: 347,
+            official_attempted_urls: 347,
+            official_successful_bodies: 346,
+            official_unresolved_urls: 1,
+            verified_public_implementation_receipts: 0,
+            verified_public_restoration_receipts: 0,
+            external_contacts: 0,
+            external_reviews: 0,
+            graph_effects: 0
+          };
+          for (const [key, expected] of Object.entries(expectedCounts)) {
+            if (core.counts?.[key] !== expected) throw new Error(`${key}: ${core.counts?.[key]} != ${expected}`);
+          }
+          if (core.status !== 'complete_bounded_public_record_search_denominators_machine_candidates_unverified') throw new Error(`status ${core.status}`);
+          if (core.denominator_contract?.outside_human_dependency !== false) throw new Error('outside-human dependency advanced');
+          if (core.denominator_contract?.project_blocking !== false) throw new Error('A07 became project-blocking');
+          if (core.current_result?.terminal_state !== 'bounded_public_search_complete_no_verified_implementation_or_restoration_receipt') throw new Error(`terminal state ${core.current_result?.terminal_state}`);
+          if (core.current_result?.missing_public_receipt_is_noncompliance !== false) throw new Error('missing-public-receipt boundary drift');
+          if (core.current_result?.graph_effect !== 'none') throw new Error('graph effect advanced');
+          if (core.next_handoff?.outside_human_dependency !== false || core.next_handoff?.project_blocking !== false) throw new Error('A08 handoff became a human or blocking dependency');
+          console.log('canonical A07 merge topology, path scope, counts, and authority ceiling: PASS');
+          NODE
+      - name: Rebuild and adversarially validate canonical A07 bytes
+        run: |
+          set -Eeuo pipefail
+          custody='data/intake/status-sovereignty-rd04-public-implementation-receipts-a07/source-custody'
+          scratch="$(mktemp -d)"
+          cp -a "$custody/shn-full" "$scratch/shn-full"
+          cp -a "$custody/candidate-receipts" "$scratch/candidate-receipts"
+          cp -a "$custody/sitemap-probe" "$scratch/sitemap-probe"
+          cp -a "$custody/official-crawl" "$scratch/official-crawl"
+          cp "$custody/artifact-archive-ledger.json" "$scratch/artifact-archive-ledger.json"
+          cp "$custody/run-ledger.json" "$scratch/run-ledger.json"
+          A07_SHN_RECONCILED="$scratch/shn-full" \
+          A07_CANDIDATE_RECEIPTS="$scratch/candidate-receipts" \
+          A07_SITEMAP_PROBE="$scratch/sitemap-probe" \
+          A07_OFFICIAL_CRAWL_RECONCILED="$scratch/official-crawl" \
+          A07_ARCHIVE_LEDGER="$scratch/artifact-archive-ledger.json" \
+          A07_RUN_LEDGER="$scratch/run-ledger.json" \
+            node tools/build-status-sovereignty-rd04-public-implementation-receipts-a07.mjs
+          rm -rf "$scratch"
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/validate-status-sovereignty-rd04-public-implementation-receipts-a07.mjs
+          node test/status-sovereignty-rd04-public-implementation-receipts-a07.test.js
+          git diff --exit-code
+      - name: Run complete repository release gate and prove semantic cleanliness
+        run: |
+          set -Eeuo pipefail
+          npm run release:check
+          git diff --name-only | sort > /tmp/a07-release-changed-paths.txt
+          test -z "$(git ls-files --others --exclude-standard)"
+          CHANGED_PATHS=/tmp/a07-release-changed-paths.txt node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const list = fs.readFileSync(process.env.CHANGED_PATHS, 'utf8').trim().split('\n').filter(Boolean);
+          const normalize = (value) => value
+            .replace(/"generated"\s*:\s*"[^"]+"/g, '"generated":"<normalized>"')
+            .replace(/"generated_at"\s*:\s*"[^"]+"/g, '"generated_at":"<normalized>"')
+            .replace(/"generatedAt"\s*:\s*"[^"]+"/g, '"generatedAt":"<normalized>"')
+            .replace(/^Generated: .*$/gm, 'Generated: <normalized>');
+          for (const rel of list) {
+            const before = execFileSync('git', ['show', `HEAD:${rel}`], { encoding: 'utf8' });
+            const after = fs.readFileSync(rel, 'utf8');
+            if (normalize(before) !== normalize(after)) throw new Error(`non-timestamp release drift in ${rel}`);
+          }
+          console.log(`release drift: ${list.length} timestamp-only tracked surfaces verified`);
+          NODE
+          if [[ -s /tmp/a07-release-changed-paths.txt ]]; then
+            xargs -d '\n' git checkout -- < /tmp/a07-release-changed-paths.txt
+          fi
+          git clean -fdx
+          test -z "$(git status --porcelain=v1)"
+      - name: Emit exact post-merge proof receipt
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module <<'NODE' > ssc-rd04-a07-postmerge-proof-v2.json
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const core = JSON.parse(fs.readFileSync('data/intake/status-sovereignty-rd04-public-implementation-receipts-a07/core.json', 'utf8'));
+          const manifest = JSON.parse(fs.readFileSync('data/project/status-sovereignty-rd04-public-implementation-receipts-a07-release-manifest.json', 'utf8'));
+          const [merge, firstParent, secondParent] = execFileSync('git', ['rev-list', '--parents', '-n', '1', 'HEAD'], { encoding: 'utf8' }).trim().split(/\s+/);
+          const receipt = {
+            schema_version: 'ssc-rd04-a07-postmerge-proof@2',
+            repository: process.env.GITHUB_REPOSITORY,
+            workflow_run: Number(process.env.GITHUB_RUN_ID),
+            merge_commit: merge,
+            first_parent: firstParent,
+            second_parent: secondParent,
+            first_parent_changed_paths: 101,
+            manifest_entries: manifest.entries.length,
+            release_sha256: manifest.combined_sha256,
+            execution_id: core.execution_id,
+            status: core.status,
+            counts: core.counts,
+            current_result: core.current_result,
+            next_handoff: core.next_handoff,
+            gates: {
+              exact_two_parent_topology: 'pass',
+              exact_first_parent_path_scope: 'pass',
+              deterministic_rebuild: 'pass',
+              focused_validator: 'pass',
+              adversarial_mutations: '125/125 pass',
+              no_magic_human: 'pass',
+              complete_repository_release: 'pass',
+              post_release_semantic_cleanliness: 'pass'
+            },
+            authority: {
+              external_contacts: core.counts.external_contacts,
+              external_reviews: core.counts.external_reviews,
+              verified_public_implementation_receipts: core.counts.verified_public_implementation_receipts,
+              verified_public_restoration_receipts: core.counts.verified_public_restoration_receipts,
+              missing_public_material_is_noncompliance: core.boundaries.missing_public_material_is_noncompliance,
+              graph_effect: core.current_result.graph_effect
+            }
+          };
+          process.stdout.write(`${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+          cp ssc-rd04-a07-postmerge-proof-v2.json ssc-rd04-a07-postmerge-proof-v2.txt
+      - name: Upload exact post-merge proof receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a07-postmerge-proof-v2
+          path: |
+            ssc-rd04-a07-postmerge-proof-v2.json
+            ssc-rd04-a07-postmerge-proof-v2.txt
+          if-no-files-found: error
+          retention-days: 90
