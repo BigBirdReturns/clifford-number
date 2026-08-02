@@ -1,0 +1,46 @@
+name: Counter-Selector Wave 36 portable proof closure
+
+on:
+  pull_request:
+    paths:
+      - 'data/project/counter-selector-wave-36-*.json'
+      - 'schemas/counter-selector-portable-proof-closure.schema.json'
+      - 'docs/methods/counter-selector-portable-proof-closure.md'
+      - 'docs/milestones/counter-selector-wave-36.md'
+      - 'tools/*counter-selector-wave-36*'
+      - 'test/counter-selector-wave-36.test.js'
+      - 'reports/core-thesis/counter-selector-wave-36/**'
+      - '.github/workflows/counter-selector-wave-36.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build Wave 36 products
+        run: node tools/build-counter-selector-wave-36.mjs
+      - name: Validate portable-proof closure contract
+        run: node tools/validate-counter-selector-wave-36.mjs
+      - name: Run adversarial mutations
+        run: node test/counter-selector-wave-36.test.js
+      - name: Require exact committed Wave 36 products
+        run: git diff --exit-code -- data/project/counter-selector-wave-36-control-registry.json data/project/counter-selector-wave-36-release-manifest.json reports/core-thesis/counter-selector-wave-36/data.json reports/core-thesis/counter-selector-wave-36/index.html
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Reconstruct Wave 36 deterministically
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          node tools/build-counter-selector-wave-36.mjs
+          node tools/validate-counter-selector-wave-36.mjs
+          node test/counter-selector-wave-36.test.js
+          git diff --exit-code -- data/project/counter-selector-wave-36-control-registry.json data/project/counter-selector-wave-36-release-manifest.json reports/core-thesis/counter-selector-wave-36/data.json reports/core-thesis/counter-selector-wave-36/index.html
+          test -z "$(git status --porcelain)"
