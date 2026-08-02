@@ -176,7 +176,7 @@ function validateWorld(world, baseline, errors) {
   for (const key of ['model_assistance_count','answer_prompt_count','answer_completion_count','score_override_count','human_override_count','automated_override_count']) if (!nonNegativeInteger(administration[key])) errors.push(`world ${worldId} administration.${key} must be a non-negative integer`);
   for (const key of ['administrator_independent','scoring_independent']) if (typeof administration[key] !== 'boolean') errors.push(`world ${worldId} administration.${key} must be boolean`);
   if (administration.score_override_count !== administration.human_override_count + administration.automated_override_count) errors.push(`world ${worldId} score overrides must reconcile to human plus automated overrides`);
-  if (population.assisted_count !== Math.max(administration.model_assistance_count, items.teaching_to_test_count)) errors.push(`world ${worldId} assisted population must reconcile to the dominant assistance or instructional exposure count`);
+  if (population.assisted_count !== Math.max(administration.model_assistance_count, items.teaching_to_test_count)) errors.push(`world ${worldId} assisted population cannot be smaller than model assistance or instructional exposure and must reconcile to the dominant count`);
   if (population.overridden_score_count !== administration.score_override_count) errors.push(`world ${worldId} overridden score population must match the score override ledger`);
   for (const key of ['model_assistance_count','answer_prompt_count','answer_completion_count','score_override_count']) if (administration[key] > baseline.affected_population) errors.push(`world ${worldId} administration.${key} exceeds the affected population`);
 
