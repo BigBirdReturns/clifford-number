@@ -1,0 +1,166 @@
+name: TEMP archive and remove stale SSC A08 A09 and Wave 02 refs
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-wave02-stale-ref-cleanup-base-v1
+    paths:
+      - '.github/tmp/ssc-wave02-stale-ref-cleanup-v1.trigger'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-wave02-stale-ref-cleanup-v1
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-stale-ref-cleanup-base-v1
+          fetch-depth: 0
+      - name: Archive evidentiary refs and delete exact stale branches
+        env:
+          CANONICAL_A09: c1997a1bfea3e214e2769df31f64f6fad6a4295c
+          CANONICAL_WAVE02: 69c06a2cc552a09588b2657e247b301468ccae87
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin main
+          current_main="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$CANONICAL_A09" "$current_main"
+          git merge-base --is-ancestor "$CANONICAL_WAVE02" "$current_main"
+
+          protected=(
+            main
+            agent/ssc-rd-wave02-rd01-legal-entity
+            agent/ssc-rd-wave02-rd02-license-leverage
+            agent/ssc-rd-wave02-rd03-negotiated-terms
+            agent/ssc-rd-wave02-rd04-version-history
+            agent/ssc-rd-wave02-rd05-recommendation-disposition
+            agent/ssc-rd-wave02-rd06-offeror-universe
+            agent/ssc-wave02-stale-ref-cleanup-base-v1
+            agent/ssc-wave02-stale-ref-cleanup-trigger-v1
+          )
+          archive_then_delete=(
+            agent/ssc-rd04-a08-internal-adjudication-pass-v2
+            agent/ssc-rd04-a08-public-refresh-pass-v1
+            agent/ssc-rd04-a09-changed-input-base-v1
+            agent/ssc-rd04-a09-changed-input-pass-v1
+            agent/ssc-rd04-a09-changed-input-trigger-v1
+            agent/ssc-rd04-a09-current-main-rebind-base-v1
+            agent/ssc-rd04-a09-current-main-rebind-trigger-v1
+            agent/ssc-rd04-a09-permanent-materializer-base-v1
+            agent/ssc-rd04-a09-permanent-materializer-trigger-v1
+            agent/ssc-rd04-a09-postmerge-proof-base-c1997
+            agent/ssc-rd04-a09-postmerge-proof-trigger-c1997
+            agent/ssc-rd04-changed-input-gate-a09
+            agent/ssc-residual-wave02-seed-fanout-base-c1997
+            agent/ssc-residual-wave02-seed-fanout-trigger-c1997
+            agent/ssc-residual-denominator-wave-02
+          )
+          delete_only=(
+            agent/ssc-rd-wave02-rd01-legal-entity-closure
+            agent/ssc-rd-wave02-rd02-license-leverage-closure
+            agent/ssc-rd-wave02-rd03-negotiated-terms-closure
+            agent/ssc-rd-wave02-rd04-version-history-closure
+            agent/ssc-rd-wave02-rd05-recommendation-disposition-closure
+            agent/ssc-rd-wave02-rd06-offeror-universe-closure
+          )
+
+          declare -A protected_map=()
+          for branch in "${protected[@]}"; do protected_map["$branch"]=1; done
+          : > /tmp/ssc-stale-ref-cleanup.tsv
+
+          archive_and_remove() {
+            local branch="$1"
+            test -z "${protected_map[$branch]:-}"
+            local sha
+            sha="$(git ls-remote --heads origin "refs/heads/$branch" | awk '{print $1}')"
+            if test -z "$sha"; then
+              printf '%s\t%s\t%s\t%s\n' "$branch" '' '' absent >> /tmp/ssc-stale-ref-cleanup.tsv
+              return
+            fi
+            local tag="archive/$branch"
+            local existing_tag
+            existing_tag="$(git ls-remote --tags origin "refs/tags/$tag" | awk '!/\^\{\}$/ {print $1}')"
+            if test -n "$existing_tag"; then
+              test "$existing_tag" = "$sha"
+            else
+              git push origin "$sha:refs/tags/$tag"
+            fi
+            test "$(git ls-remote --tags origin "refs/tags/$tag" | awk '!/\^\{\}$/ {print $1}')" = "$sha"
+            git push origin --delete "$branch"
+            test -z "$(git ls-remote --heads origin "refs/heads/$branch")"
+            printf '%s\t%s\t%s\t%s\n' "$branch" "$sha" "$tag" archived_and_deleted >> /tmp/ssc-stale-ref-cleanup.tsv
+          }
+
+          remove_only() {
+            local branch="$1"
+            test -z "${protected_map[$branch]:-}"
+            local sha
+            sha="$(git ls-remote --heads origin "refs/heads/$branch" | awk '{print $1}')"
+            if test -z "$sha"; then
+              printf '%s\t%s\t%s\t%s\n' "$branch" '' '' absent >> /tmp/ssc-stale-ref-cleanup.tsv
+              return
+            fi
+            test "$sha" = "$CANONICAL_A09"
+            git push origin --delete "$branch"
+            test -z "$(git ls-remote --heads origin "refs/heads/$branch")"
+            printf '%s\t%s\t%s\t%s\n' "$branch" "$sha" '' deleted_duplicate_empty_ref >> /tmp/ssc-stale-ref-cleanup.tsv
+          }
+
+          for branch in "${archive_then_delete[@]}"; do archive_and_remove "$branch"; done
+          for branch in "${delete_only[@]}"; do remove_only "$branch"; done
+
+          export CURRENT_MAIN="$current_main"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const rows = fs.readFileSync('/tmp/ssc-stale-ref-cleanup.tsv', 'utf8').trim().split(/\n/).filter(Boolean).map((line) => {
+            const [branch, prior_sha, archive_tag, state] = line.split('\t');
+            return { branch, prior_sha: prior_sha || null, archive_tag: archive_tag || null, state };
+          });
+          if (rows.length !== 21) throw new Error(`cleanup denominator ${rows.length}`);
+          const deleted = rows.filter((row) => row.state === 'archived_and_deleted' || row.state === 'deleted_duplicate_empty_ref');
+          const absent = rows.filter((row) => row.state === 'absent');
+          const receipt = {
+            schema_version: 'ssc-stale-ref-cleanup-receipt@1',
+            observed_current_main: process.env.CURRENT_MAIN,
+            canonical_a09: process.env.CANONICAL_A09,
+            canonical_wave02_constitution: process.env.CANONICAL_WAVE02,
+            exact_ref_denominator: rows.length,
+            archived_and_deleted: rows.filter((row) => row.state === 'archived_and_deleted').length,
+            duplicate_empty_refs_deleted: rows.filter((row) => row.state === 'deleted_duplicate_empty_ref').length,
+            already_absent: absent.length,
+            rows,
+            protected_live_branches: [
+              'agent/ssc-rd-wave02-rd01-legal-entity',
+              'agent/ssc-rd-wave02-rd02-license-leverage',
+              'agent/ssc-rd-wave02-rd03-negotiated-terms',
+              'agent/ssc-rd-wave02-rd04-version-history',
+              'agent/ssc-rd-wave02-rd05-recommendation-disposition',
+              'agent/ssc-rd-wave02-rd06-offeror-universe'
+            ],
+            authority: {
+              product_content_changed: false,
+              issue_or_pr_state_changed: false,
+              evidence_or_review_state_changed: false,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            }
+          };
+          if (deleted.length + absent.length !== rows.length) throw new Error('unclassified cleanup row');
+          fs.writeFileSync('ssc-stale-ref-cleanup-receipt.json', `${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+      - name: Upload exact stale-ref cleanup receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-stale-ref-cleanup-v1
+          path: ssc-stale-ref-cleanup-receipt.json
+          if-no-files-found: error
+          retention-days: 90
