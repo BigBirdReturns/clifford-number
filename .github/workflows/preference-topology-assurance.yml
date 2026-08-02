@@ -1,0 +1,39 @@
+name: Preference custody topology assurance control
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/topology-assurance.fixture.json'
+      - 'tools/lib/preference-topology-assurance.mjs'
+      - 'tools/compile-preference-topology-assurance.mjs'
+      - 'tools/validate-preference-topology-assurance.mjs'
+      - 'test/preference-topology-assurance.test.js'
+      - 'docs/preference-custody-topology-assurance.md'
+      - '.github/workflows/preference-topology-assurance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  topology-assurance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Compile identity, boundary, edge, temporal, reconstruction, path, and dynamic-exposure worlds
+        run: node tools/compile-preference-topology-assurance.mjs
+      - name: Validate topology provenance, hidden-edge, path-validity, lineage, correction, and authority boundaries
+        run: node tools/validate-preference-topology-assurance.mjs
+      - name: Exercise identity, boundary, censoring, structural-collapse, temporal, rewiring, reconstruction, authority, and tamper fixtures
+        run: node test/preference-topology-assurance.test.js
+      - name: Preserve deterministic topology-assurance projections
+        uses: actions/upload-artifact@v4
+        with:
+          name: preference-topology-assurance-pc28
+          path: |
+            build/research/preference-topology-assurance.json
+            build/research/preference-topology-assurance.md
+          if-no-files-found: error
