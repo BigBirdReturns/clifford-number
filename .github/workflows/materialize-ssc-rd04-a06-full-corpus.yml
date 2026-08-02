@@ -6,7 +6,7 @@ on:
       - agent/ssc-rd04-a06-full-decision-corpus
     paths:
       - '.github/workflows/materialize-ssc-rd04-a06-full-corpus.yml'
-      - '.github/tmp/ssc-rd04-a06-full-source.tgz.b64.part*'
+      - '.github/tmp/ssc-rd04-a06-recovery-overlay.tgz.b64.part*'
   workflow_dispatch:
 
 permissions:
@@ -29,10 +29,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Materialize and repair exact A06 source files
+      - name: Materialize exact A06 source and completed-release recovery
         env:
           SOURCE_B64_SHA256: 01d31daa01fc288956b08b5f6058eb26a0bc6df57014a6563171d1ddcf35889b
           SOURCE_TGZ_SHA256: 9a9e6fb15016146fecbe6752642273371c8bfaa291076862c6dcbff0b1109a40
+          OVERLAY_B64_SHA256: a913180696539c102874ae32caf6c01246f92499ca5b796040e88a0847db61cd
+          OVERLAY_TGZ_SHA256: 92fde70c19421bf0b26b181add058c1410091968fb87dc3e237cee79e2fb1430
+          RECOVERY_SCRIPT_SHA256: f41454aed6204ee91b5aaf651233ea18ae2dd29b260e57c6d38da1f0dc937464
+          MILESTONE_SHA256: 1a3ccd6fa3a689fada8236efadfc975e6e96d0e5a11e2c9451bf9ab5f3b10bc0
         run: |
           set -Eeuo pipefail
           cat \
@@ -46,54 +50,34 @@ jobs:
           printf '%s  %s\n' "$SOURCE_TGZ_SHA256" "${RUNNER_TEMP}/ssc-rd04-a06-full-source.tgz" | sha256sum --check --strict
           tar -xzf "${RUNNER_TEMP}/ssc-rd04-a06-full-source.tgz" -C .
 
-          python - <<'PY'
-          from pathlib import Path
+          cat \
+            .github/tmp/ssc-rd04-a06-recovery-overlay.tgz.b64.part00 \
+            .github/tmp/ssc-rd04-a06-recovery-overlay.tgz.b64.part01 \
+            .github/tmp/ssc-rd04-a06-recovery-overlay.tgz.b64.part02 \
+            .github/tmp/ssc-rd04-a06-recovery-overlay.tgz.b64.part03 \
+            > "${RUNNER_TEMP}/a06-recovery-overlay.tgz.b64"
+          printf '%s  %s\n' "$OVERLAY_B64_SHA256" "${RUNNER_TEMP}/a06-recovery-overlay.tgz.b64" | sha256sum --check --strict
+          base64 --decode "${RUNNER_TEMP}/a06-recovery-overlay.tgz.b64" > "${RUNNER_TEMP}/a06-recovery-overlay.tgz"
+          printf '%s  %s\n' "$OVERLAY_TGZ_SHA256" "${RUNNER_TEMP}/a06-recovery-overlay.tgz" | sha256sum --check --strict
+          tar -xzf "${RUNNER_TEMP}/a06-recovery-overlay.tgz" -C .
 
-          path = Path('tools/materialize-ssc-rd04-a06-full-corpus.sh')
-          text = path.read_text()
-
-          old_download = '''gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${PROOF_ARTIFACT_ID}/zip" > "${RUNNER_TEMP}/a06-proof.zip"'''
-          new_download = '''curl --fail --location --silent --show-error \\
-            -H "Accept: application/vnd.github+json" \\
-            -H "Authorization: Bearer ${GH_TOKEN}" \\
-            -H "X-GitHub-Api-Version: 2022-11-28" \\
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${PROOF_ARTIFACT_ID}/zip" \\
-            -o "${RUNNER_TEMP}/a06-proof.zip"'''
-          if text.count(old_download) != 1:
-              raise SystemExit('expected one legacy proof-artifact download command')
-          text = text.replace(old_download, new_download)
-
-          old_release_lookup = '''gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" > "$release_json"'''
-          new_release_lookup = '''release_id="$(gh release view "$RELEASE_TAG" --json databaseId --jq '.databaseId')"
-          test -n "$release_id"
-          gh api "repos/${GITHUB_REPOSITORY}/releases/${release_id}" > "$release_json"'''
-          if text.count(old_release_lookup) != 1:
-              raise SystemExit('expected one legacy draft-release tag lookup')
-          text = text.replace(old_release_lookup, new_release_lookup)
-
-          old_cleanup = '''rm -f .github/workflows/materialize-ssc-rd04-a06-full-corpus.yml
-          rm -f .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part00'''
-          new_cleanup = '''rm -f .github/workflows/materialize-ssc-rd04-a06-full-corpus.yml
-          rm -f tools/materialize-ssc-rd04-a06-full-corpus.sh
-          rm -f .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part00'''
-          if text.count(old_cleanup) != 1:
-              raise SystemExit('expected one legacy materializer-cleanup block')
-          text = text.replace(old_cleanup, new_cleanup)
-          path.write_text(text)
-          PY
-
+          printf '%s  %s\n' "$RECOVERY_SCRIPT_SHA256" tools/materialize-ssc-rd04-a06-full-corpus.sh | sha256sum --check --strict
+          printf '%s  %s\n' "$MILESTONE_SHA256" docs/milestones/ssc-rd04-a06-full-corpus.md | sha256sum --check --strict
           node --check tools/ssc-rd04-a06-full-corpus.mjs
           bash -n tools/materialize-ssc-rd04-a06-full-corpus.sh
-          grep -Fq 'curl --fail --location --silent --show-error' tools/materialize-ssc-rd04-a06-full-corpus.sh
+          ! grep -nE '[[:blank:]]+$' docs/milestones/ssc-rd04-a06-full-corpus.md
+          grep -Fq 'release_assets_page3=' tools/materialize-ssc-rd04-a06-full-corpus.sh
+          grep -Fq 'Reusing the exact completed 64-shard draft release; no source document is refetched' tools/materialize-ssc-rd04-a06-full-corpus.sh
+          grep -Fq 'rm -f .github/tmp/ssc-rd04-a06-recovery-overlay.tgz.b64.part03' tools/materialize-ssc-rd04-a06-full-corpus.sh
           grep -Fq 'rm -f tools/materialize-ssc-rd04-a06-full-corpus.sh' tools/materialize-ssc-rd04-a06-full-corpus.sh
-          grep -Fq 'gh release view "$RELEASE_TAG" --json databaseId' tools/materialize-ssc-rd04-a06-full-corpus.sh
+          ! grep -Fq '/releases/tags/' tools/materialize-ssc-rd04-a06-full-corpus.sh
       - name: Install bounded PDF and archive tools when absent
         run: |
           if ! command -v pdftotext >/dev/null 2>&1 || ! command -v pdfinfo >/dev/null 2>&1 || ! command -v zstd >/dev/null 2>&1; then
             sudo apt-get update
             sudo apt-get install -y poppler-utils zstd
           fi
-      - name: Execute full exact-source corpus transaction
+      - name: Execute exact completed-release recovery transaction
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash tools/materialize-ssc-rd04-a06-full-corpus.sh
