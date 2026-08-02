@@ -33,7 +33,6 @@ jobs:
           import hashlib
           import io
           import json
-          import lzma
           import subprocess
           import tarfile
 
@@ -57,7 +56,7 @@ jobs:
           if [path.name for path in parts] != [f'payload.part-{index:02d}' for index in range(4)]:
               raise SystemExit(f'expected four ordered payload shards, found {[path.name for path in parts]}')
 
-          encoded = ''.join(path.read_text().split() for path in parts)
+          encoded = ''.join(''.join(path.read_text().split()) for path in parts)
           try:
               xz_bytes = base64.b64decode(encoded, validate=True)
           except Exception as error:
