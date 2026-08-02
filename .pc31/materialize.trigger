@@ -1,1 +1,1 @@
-materialize exact checksum-bound PC-31 and Preference Custody floor-v29 product
+dispatch hardened checksum-bound PC-31 materializer with corrected 30-to-31 floor denominator
