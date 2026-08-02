@@ -1,0 +1,121 @@
+name: TEMP adjudicate SSC RD-04-C01 source identities
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd-wave02-rd04-source-identities.yml'
+      - '.rd04-source-identity/**'
+      - 'data/intake/status-sovereignty-rd-wave02-rd04-version-history/ecfr-api-correction-execution-receipt.json'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ssc-rd-wave02-rd04-source-identities-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  adjudicate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install exact document extraction dependencies
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends poppler-utils unzip
+          pdftotext -v
+          unzip -v | head -1
+      - name: Download exact fourteen-source seed artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-version-seed
+          path: /tmp/rd04-version-seed
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30765064506
+      - name: Download immutable fixed-source capture
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-fixed-source-capture
+          path: /tmp/rd04-source-capture-v1
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30768610215
+      - name: Download immutable historical-route correction
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-source-route-correction
+          path: /tmp/rd04-source-route-correction
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30769105132
+      - name: Download immutable eCFR identity correction
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-ecfr-api-correction
+          path: /tmp/rd04-ecfr-correction
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30769770546
+      - name: Reconstruct and verify exact adjudication runtime
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/rd04-source-identity-runtime
+          base64 --decode .rd04-source-identity/adjudicate-source-identities.mjs.gz.b64 | gzip --decompress > /tmp/rd04-source-identity-runtime/adjudicate-source-identities.mjs
+          base64 --decode .rd04-source-identity/source-identities-test.js.gz.b64 | gzip --decompress > /tmp/rd04-source-identity-runtime/source-identities.test.js
+          echo 'c5a87f604afe3e5f70b1e7286adc56146f5f72fb129ba7a046baa2297aaa6090  /tmp/rd04-source-identity-runtime/adjudicate-source-identities.mjs' | sha256sum --check --strict
+          echo '6bcd53250cab73a349f7fbd5f19d178888999726c56ccce00233cb9ac0e01477  /tmp/rd04-source-identity-runtime/source-identities.test.js' | sha256sum --check --strict
+          node --check /tmp/rd04-source-identity-runtime/adjudicate-source-identities.mjs
+          node /tmp/rd04-source-identity-runtime/source-identities.test.js
+      - name: Adjudicate all ninety-three exact source identities
+        env:
+          RD04_VERSION_SEED_ARTIFACT: /tmp/rd04-version-seed
+          RD04_SOURCE_CAPTURE: /tmp/rd04-source-capture-v1
+          RD04_SOURCE_ROUTE_CORRECTION: /tmp/rd04-source-route-correction
+          RD04_ECFR_CORRECTION: /tmp/rd04-ecfr-correction
+          RD04_SOURCE_IDENTITY_OUTPUT: /tmp/rd04-source-identities
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node /tmp/rd04-source-identity-runtime/adjudicate-source-identities.mjs
+          test -f /tmp/rd04-source-identities/source-identity-ledger.json
+          test -f /tmp/rd04-source-identities/combined-unit-ledger.json
+          test -f /tmp/rd04-source-identities/summary.json
+          test -f /tmp/rd04-source-identities/manifest.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const summary = JSON.parse(fs.readFileSync('/tmp/rd04-source-identities/summary.json', 'utf8'));
+          const ledger = JSON.parse(fs.readFileSync('/tmp/rd04-source-identities/source-identity-ledger.json', 'utf8')).execution_units;
+          const combined = JSON.parse(fs.readFileSync('/tmp/rd04-source-identities/combined-unit-ledger.json', 'utf8')).execution_units;
+          const c = summary.counts;
+          if (c?.execution_units !== 93 || c?.source_identity_adjudications !== 93) throw new Error('identity denominator changed');
+          if (c?.exact_source_identities_observed !== 92) throw new Error('exact identity count changed');
+          if (c?.bounded_source_identity_nonlinks !== 1) throw new Error('bounded nonlink count changed');
+          if (c?.unresolved_source_identity_failures !== 0) throw new Error('unresolved identity failure');
+          if (c?.version_edges_adjudicated !== 0 || c?.class_closed !== 0) throw new Error('authority ceiling changed');
+          if (ledger.length !== 93 || combined.length !== 93) throw new Error('identity ledger incomplete');
+          if (new Set(combined.map((row) => row.execution_unit_id)).size !== 93) throw new Error('duplicate execution unit');
+          if (!ledger.every((row) => row.source_identity_adjudicated === true)) throw new Error('unterminated identity row');
+          const nonlinks = ledger.filter((row) => row.bounded_nonlink === true);
+          if (nonlinks.length !== 1 || nonlinks[0].execution_unit_id !== 'AUTH-CA-HSC-1231110') throw new Error('typed nonlink changed');
+          if (summary.current_result?.source_identity_adjudication_complete !== true) throw new Error('identity adjudication incomplete');
+          if (summary.current_result?.version_edge_adjudication_complete !== false || summary.current_result?.class_closed !== false) throw new Error('chronology or class escalated');
+          if (summary.current_result?.graph_effect !== 'none' || summary.current_result?.publication_effect !== 'none') throw new Error('effect authority changed');
+          console.log('source identity denominator and authority ceiling: PASS');
+          NODE
+      - name: Upload exact source-identity adjudication
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-source-identities
+          path: /tmp/rd04-source-identities
+          if-no-files-found: error
+          retention-days: 90
