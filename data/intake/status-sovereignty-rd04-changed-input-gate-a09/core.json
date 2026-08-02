@@ -1,0 +1,155 @@
+{
+  "schema_version": "ssc-rd04-a09-core@1",
+  "hypothesis_id": "SSC-H01",
+  "lane_id": "SSC-RD04",
+  "execution_id": "SSC-RD04-CHANGED-INPUT-GATE-A09",
+  "issue": 777,
+  "as_of": "2026-08-02",
+  "title": "California CalFresh changed-input gate and periodic public-record refresh control",
+  "status": "complete_no_changed_input_observed_reusable_changed_input_gate_installed",
+  "parent": {
+    "canonical_merge": "68f4cb2aeccb129a3789b0b1b5da0f1e1c52cab6",
+    "execution_id": "SSC-RD04-INTERNAL-ADJUDICATION-A08",
+    "release_sha256": "0f53625ade42bf3278429040d50a74a6a52714d28e6f8e754b11f31acb710356",
+    "terminal_state": "zero_machine_candidates_adjudicated_one_public_url_unresolved_after_bounded_refresh"
+  },
+  "execution_receipt": {
+    "workflow_run": 30761731270,
+    "artifact_id": 8837670685,
+    "artifact_zip_sha256": "3249ef058e95652c0aff6167524b99ea5e78b582e4b6f752d37a30993fc070a4",
+    "pass_ref_commit": "7d8908e11dd94e6a96f25ae49dfaaa4c083a6b6a",
+    "start_main": "30cdc27e3c90ceec06773616edc49d7338bb43c5",
+    "end_main": "30cdc27e3c90ceec06773616edc49d7338bb43c5"
+  },
+  "denominator_contract": {
+    "candidate_ledger_paths": [
+      "data/intake/status-sovereignty-rd04-public-implementation-receipts-a07/source-custody/candidate-receipts/explicit-language-candidates.json",
+      "data/intake/status-sovereignty-rd04-public-implementation-receipts-a07/source-custody/official-crawl/case-joined-machine-candidates.json"
+    ],
+    "expected_empty_candidate_blob_sha1": "fe51488c7066f6687ef680d6bfaa4f7768ef205c",
+    "frozen_public_urls": [
+      "https://courts.ca.gov/california-courts-where-balance-restored"
+    ],
+    "baseline_public_response": {
+      "http_status": 500,
+      "final_url": "https://courts.ca.gov/california-courts-where-balance-restored",
+      "body_bytes": 68,
+      "body_sha256": "1f883abab1679fe55395f88313619fa1ed2236c6875895ac37cd4a1f11e511ce"
+    },
+    "request_limit_per_cycle": 1,
+    "changed_dimensions": [
+      "candidate ledger bytes or entries",
+      "HTTP status",
+      "final URL",
+      "response body bytes or SHA-256"
+    ],
+    "automatic_schedule_installed": false,
+    "outcome_selection_after_reading": false,
+    "outside_human_dependency": false,
+    "project_blocking": false
+  },
+  "stages": [
+    {
+      "stage_id": "A09-S1",
+      "title": "Frozen candidate-ledger change input",
+      "state": "complete_unchanged_zero_candidate_denominator",
+      "candidate_ledgers": 2,
+      "candidate_entries": 0,
+      "changed_candidate_inputs": 0,
+      "finding": "Both authoritative A07 machine-candidate ledgers remain the exact empty A08 blob; unchanged zero is a complete detector result.",
+      "proves_implementation": false
+    },
+    {
+      "stage_id": "A09-S2",
+      "title": "Single-request public-source change detector",
+      "state": "complete_unchanged_public_source_response",
+      "frozen_urls": 1,
+      "requests": 1,
+      "changed_public_sources": 0,
+      "finding": "The frozen California Courts URL retained the A08 HTTP 500 status, final target, 68-byte body, and body digest on one exact change-detection request.",
+      "failed_fetch_is_record_absence": false,
+      "missing_public_material_is_noncompliance": false
+    },
+    {
+      "stage_id": "A09-S3",
+      "title": "Changed-input classification",
+      "state": "no_changed_input_observed",
+      "changed_input_observed": false,
+      "broader_crawl_authorized": false,
+      "finding": "No admissible input changed, so this cycle terminates without a broader crawl or case-level adjudication.",
+      "proves_implementation": false
+    },
+    {
+      "stage_id": "A09-S4",
+      "title": "Reusable changed-input gate",
+      "state": "installed_manual_dispatch_without_schedule",
+      "workflow_path": ".github/workflows/status-sovereignty-rd04-changed-input-gate-a09.yml",
+      "detector_path": "tools/acquisition/status-sovereignty-rd04-a09/detect-changed-input.mjs",
+      "finding": "Future cycles can reproduce the same bounded decision rule through manual workflow dispatch or an explicit source-change signal; no automatic crawl schedule or outside-human dependency is installed."
+    }
+  ],
+  "counts": {
+    "candidate_ledgers": 2,
+    "candidate_entries": 0,
+    "frozen_urls": 1,
+    "requests": 1,
+    "changed_candidate_inputs": 0,
+    "changed_public_sources": 0,
+    "changed_inputs_observed": 0,
+    "external_contacts": 0,
+    "external_reviews": 0,
+    "adjudications": 0,
+    "publication_clearances": 0,
+    "graph_effects": 0,
+    "adversarial_mutations": 45
+  },
+  "current_result": {
+    "terminal_state": "no_changed_input_observed",
+    "changed_input_observed": false,
+    "reusable_gate_installed": true,
+    "automatic_schedule_installed": false,
+    "broader_crawl_authorized": false,
+    "exact_source_adjudication_authorized": false,
+    "case_specific_implementation_receipt_supported": false,
+    "restoration_receipt_supported": false,
+    "missing_public_material_is_noncompliance": false,
+    "project_blocking": false,
+    "publication_effect": "none",
+    "graph_effect": "none",
+    "adoption_effect": "none"
+  },
+  "standing_gate": {
+    "gate_id": "SSC-RD04-A09-CHANGED-INPUT-GATE",
+    "status": "standing_nonblocking_recheck_only_on_explicit_source_change_signal_or_bounded_periodic_cycle",
+    "workflow_path": ".github/workflows/status-sovereignty-rd04-changed-input-gate-a09.yml",
+    "detector_path": "tools/acquisition/status-sovereignty-rd04-a09/detect-changed-input.mjs",
+    "dispatch_mode": "manual_workflow_dispatch_or_explicit_source_change_signal",
+    "schedule_installed": false,
+    "unchanged_inputs_terminate_honestly": true,
+    "outside_human_dependency": false,
+    "project_blocking": false,
+    "forbidden_shortcuts": [
+      "contacting a person or agency merely to make the lane progress",
+      "treating unchanged zero candidate ledgers as failed work",
+      "treating HTTP 500 or a missing public page as noncompliance",
+      "treating a changed page as case-specific implementation without exact identity and completed-action evidence",
+      "starting a broader crawl when no changed input was observed",
+      "advancing publication, adoption, or graph effect without exact evidence"
+    ]
+  },
+  "boundaries": {
+    "unchanged_zero_ledgers_are_failed_work": false,
+    "changed_page_is_case_specific_implementation": false,
+    "http_failure_is_record_absence": false,
+    "missing_public_material_is_noncompliance": false,
+    "change_detection_is_external_review": false,
+    "no_change_closes_the_residual_class": false,
+    "result_proves_effective_counterpower": false,
+    "result_proves_national_prevalence": false,
+    "result_proves_racial_hierarchy": false,
+    "result_proves_unlawful_motive": false,
+    "result_proves_coordination": false,
+    "result_proves_common_purpose": false,
+    "graph_effect": "none"
+  }
+}

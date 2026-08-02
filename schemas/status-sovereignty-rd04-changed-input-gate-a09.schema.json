@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clifford-number.invalid/schemas/status-sovereignty-rd04-changed-input-gate-a09.schema.json",
+  "title": "SSC RD-04 A09 changed-input gate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "hypothesis_id",
+    "lane_id",
+    "execution_id",
+    "issue",
+    "as_of",
+    "title",
+    "status",
+    "parent",
+    "execution_receipt",
+    "denominator_contract",
+    "stages",
+    "counts",
+    "current_result",
+    "standing_gate",
+    "boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "ssc-rd04-a09-core@1"
+    },
+    "hypothesis_id": {
+      "const": "SSC-H01"
+    },
+    "lane_id": {
+      "const": "SSC-RD04"
+    },
+    "execution_id": {
+      "const": "SSC-RD04-CHANGED-INPUT-GATE-A09"
+    },
+    "issue": {
+      "const": 777
+    },
+    "as_of": {
+      "const": "2026-08-02"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "const": "complete_no_changed_input_observed_reusable_changed_input_gate_installed"
+    },
+    "parent": {
+      "type": "object"
+    },
+    "execution_receipt": {
+      "type": "object"
+    },
+    "denominator_contract": {
+      "type": "object"
+    },
+    "stages": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "counts": {
+      "type": "object"
+    },
+    "current_result": {
+      "type": "object"
+    },
+    "standing_gate": {
+      "type": "object"
+    },
+    "boundaries": {
+      "type": "object"
+    }
+  }
+}
