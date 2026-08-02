@@ -8,7 +8,9 @@ on:
       - 'docs/milestones/ssc-rd04-calfresh-compliance-receipts-a07.md'
       - 'schemas/status-sovereignty-rd04-calfresh-compliance-receipts-a07.schema.json'
       - 'tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs'
+      - 'tools/ssc-rd04-a07-order-candidate-extractor.mjs'
       - 'test/status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js'
+      - 'test/ssc-rd04-a07-order-candidate-extractor.test.js'
   push:
     branches: [main]
     paths:
@@ -17,7 +19,9 @@ on:
       - 'docs/milestones/ssc-rd04-calfresh-compliance-receipts-a07.md'
       - 'schemas/status-sovereignty-rd04-calfresh-compliance-receipts-a07.schema.json'
       - 'tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs'
+      - 'tools/ssc-rd04-a07-order-candidate-extractor.mjs'
       - 'test/status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js'
+      - 'test/ssc-rd04-a07-order-candidate-extractor.test.js'
   workflow_dispatch:
 
 permissions:
@@ -41,5 +45,11 @@ jobs:
           node tools/validate-no-magic-human-gate.mjs
           node tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs .
           node test/status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js
+      - name: Validate content-neutral candidate extraction contract
+        run: |
+          node --check tools/ssc-rd04-a07-order-candidate-extractor.mjs
+          node --check test/ssc-rd04-a07-order-candidate-extractor.test.js
+          node tools/ssc-rd04-a07-order-candidate-extractor.mjs validate-rules
+          node test/ssc-rd04-a07-order-candidate-extractor.test.js
       - name: Refuse deterministic drift
         run: git diff --exit-code
