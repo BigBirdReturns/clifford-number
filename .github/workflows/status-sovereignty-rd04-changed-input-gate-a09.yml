@@ -1,0 +1,91 @@
+name: SSC RD-04 A09 changed-input gate
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/status-sovereignty-rd04-changed-input-gate-a09.yml'
+      - 'data/intake/status-sovereignty-rd04-changed-input-gate-a09/**'
+      - 'data/project/status-sovereignty-rd04-changed-input-gate-a09-release-manifest.json'
+      - 'docs/milestones/ssc-rd04-changed-input-gate-a09.md'
+      - 'schemas/status-sovereignty-rd04-changed-input-gate-a09.schema.json'
+      - 'tools/build-status-sovereignty-rd04-changed-input-gate-a09.mjs'
+      - 'tools/validate-status-sovereignty-rd04-changed-input-gate-a09.mjs'
+      - 'tools/acquisition/status-sovereignty-rd04-a09/**'
+      - 'test/status-sovereignty-rd04-changed-input-gate-a09.test.js'
+      - 'reports/core-thesis/status-sovereignty/rd04-changed-input-gate-a09/**'
+      - 'build/core-thesis/status-sovereignty/rd04-changed-input-gate-a09/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd04-changed-input-gate-a09.yml'
+      - 'data/intake/status-sovereignty-rd04-changed-input-gate-a09/**'
+      - 'data/project/status-sovereignty-rd04-changed-input-gate-a09-release-manifest.json'
+      - 'docs/milestones/ssc-rd04-changed-input-gate-a09.md'
+      - 'schemas/status-sovereignty-rd04-changed-input-gate-a09.schema.json'
+      - 'tools/build-status-sovereignty-rd04-changed-input-gate-a09.mjs'
+      - 'tools/validate-status-sovereignty-rd04-changed-input-gate-a09.mjs'
+      - 'tools/acquisition/status-sovereignty-rd04-a09/**'
+      - 'test/status-sovereignty-rd04-changed-input-gate-a09.test.js'
+      - 'reports/core-thesis/status-sovereignty/rd04-changed-input-gate-a09/**'
+      - 'build/core-thesis/status-sovereignty/rd04-changed-input-gate-a09/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd04-a09-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Rebuild and validate permanent A09 gate
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/build-status-sovereignty-rd04-changed-input-gate-a09.mjs
+          node tools/validate-status-sovereignty-rd04-changed-input-gate-a09.mjs
+          node test/status-sovereignty-rd04-changed-input-gate-a09.test.js
+      - name: Refuse deterministic drift
+        run: git diff --exit-code
+      - name: Run complete repository release gate
+        run: npm run release:check
+  detect:
+    if: github.event_name == 'workflow_dispatch'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Execute one exact changed-input request
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin main
+          start_main="$(git rev-parse HEAD)"
+          test "$start_main" = "$(git rev-parse origin/main)"
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/acquisition/status-sovereignty-rd04-a09/detect-changed-input.mjs --output a09-changed-input
+          git fetch --no-tags origin main
+          test "$start_main" = "$(git rev-parse origin/main)"
+      - name: Upload exact changed-input receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a09-changed-input
+          path: a09-changed-input
+          if-no-files-found: error
+          retention-days: 90
