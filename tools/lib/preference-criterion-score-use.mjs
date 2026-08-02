@@ -328,7 +328,7 @@ function exactLineage(succession) {
 
 function qualifiedSuccession(succession) {
   return exactLineage(succession)
-    || (text(succession.succession_receipt) && succession.revalidation_state === 'current');
+    || (Boolean(text(succession.succession_receipt)) && succession.revalidation_state === 'current');
 }
 
 function replicationIndependence(replications) {
