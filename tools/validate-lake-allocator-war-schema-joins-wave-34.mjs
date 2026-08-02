@@ -31,14 +31,35 @@ export function ensureAncestry(root, requiredCommit) {
     if (process.env.GITHUB_ACTIONS === 'true') throw new Error('Wave 34 ancestry cannot be checked without Git metadata');
     return 'not_checked_no_git_metadata';
   }
-  const available = spawnSync('git', ['cat-file', '-e', `${requiredCommit}^{commit}`], { cwd: root, encoding: 'utf8' });
-  if (available.status !== 0) {
+
+  const run = args => spawnSync('git', args, { cwd: root, encoding: 'utf8' });
+  const hasCommit = ref => run(['cat-file', '-e', `${ref}^{commit}`]).status === 0;
+  const isAncestor = (ancestor, target) => run(['merge-base', '--is-ancestor', ancestor, target]).status === 0;
+
+  if (hasCommit(requiredCommit) && isAncestor(requiredCommit, 'HEAD')) return 'verified_ancestor';
+
+  const headRef = String(process.env.GITHUB_HEAD_REF ?? '').trim();
+  if (process.env.GITHUB_ACTIONS === 'true' && headRef) {
+    const remoteRef = `refs/remotes/origin/${headRef}`;
+    const recovered = run([
+      'fetch',
+      '--no-tags',
+      '--prune',
+      '--depth=1000000',
+      'origin',
+      `+refs/heads/${headRef}:${remoteRef}`
+    ]);
+    if (recovered.status !== 0) throw new Error(`Wave 34 ancestry recovery failed for ${headRef}`);
+    if (!hasCommit(requiredCommit)) throw new Error(`Wave 34 base checkpoint remains unavailable after history recovery: ${requiredCommit}`);
+    if (!isAncestor(requiredCommit, remoteRef)) throw new Error('Wave 34 base checkpoint is not an ancestor of recovered head');
+    return 'verified_recovered_head_ancestor';
+  }
+
+  if (!hasCommit(requiredCommit)) {
     if (process.env.GITHUB_ACTIONS === 'true') throw new Error(`Wave 34 base checkpoint unavailable: ${requiredCommit}`);
     return 'not_checked_local_archive_missing_historical_commit';
   }
-  const ancestor = spawnSync('git', ['merge-base', '--is-ancestor', requiredCommit, 'HEAD'], { cwd: root, encoding: 'utf8' });
-  if (ancestor.status !== 0) throw new Error('Wave 34 base checkpoint is not an ancestor');
-  return 'verified_ancestor';
+  throw new Error('Wave 34 base checkpoint is not an ancestor');
 }
 
 export function loadState(root = defaultRoot) {

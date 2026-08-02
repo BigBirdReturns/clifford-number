@@ -1,6 +1,6 @@
 # Lake index gap summary
 
-Source fingerprint: `2eac151247b24d96b096ce9d44d0926677d30702b9f5e14efcda6aaba3eeaa2a`
+Source fingerprint: `c398e180414c1f90a033be6fee7658c9188550434320519b5a0409c6778fc494`
 
 ## Finding
 

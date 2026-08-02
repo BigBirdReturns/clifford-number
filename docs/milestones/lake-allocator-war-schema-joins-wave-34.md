@@ -25,3 +25,6 @@ publication clearances:                 0
 Wave 34 maps the frozen source shapes and defines the institutional records required to join them. It does not authorize any join. The one observed Grants.gov token is excluded from projections, candidate keys, and reports.
 
 A source field, identifier, array, table, index, HTTP response, or access boundary establishes only a bounded source surface. It does not complete an action or no-action denominator, prove identity, establish a relationship, adjudicate evidence, promote a finding, alter the graph, or clear publication.
+
+
+The exact-head integration proof also distinguishes a missing historical object in a depth-one pull-request checkout from a genuine lineage failure. It recovers only the exact feature-branch ref and reruns the unchanged Wave 33 ancestry predicate; no lineage requirement is relaxed.
