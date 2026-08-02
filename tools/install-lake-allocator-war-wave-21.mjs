@@ -155,7 +155,14 @@ for (const relative of [
   'data/acquisition/lake-allocator-war-wave-32/routes/public-award-and-contract-denominators.jsonl',
   'data/acquisition/lake-allocator-war-wave-32/routes/published-enforcement-and-action-registers.jsonl',
   'build/lake-actions/allocator-war-bounded-source-snapshots-wave-32.json',
-  'reports/lake-allocator-war-bounded-source-snapshots-wave-32.md'
+  'reports/lake-allocator-war-bounded-source-snapshots-wave-32.md',
+  'data/project/lake-allocator-war-structural-parses-wave-33-policy.json',
+  'data/project/lake-allocator-war-structural-parses-wave-33-plan.json',
+  'data/acquisition/lake-allocator-war-wave-33/parse-ledger.jsonl',
+  'docs/methods/lake-allocator-war-structural-parses-wave-33.md',
+  'docs/milestones/lake-allocator-war-structural-parses-wave-33.md',
+  'build/lake-actions/allocator-war-structural-parses-wave-33.json',
+  'reports/lake-allocator-war-structural-parses-wave-33.md'
 ]) roots.add(relative);
 lakePolicy.authoritative_roots = [...roots].sort();
 lakePolicy.boundaries.allocator_war_routing_proves_finding = false;
@@ -210,6 +217,14 @@ if (!pkg.scripts.check.includes('npm run validate:lake-allocator-war-bounded-sou
   if (!pkg.scripts.check.includes(marker)) throw new Error('Wave 31 release-gate marker missing');
   pkg.scripts.check = pkg.scripts.check.replace(marker, `${marker} && npm run validate:lake-allocator-war-bounded-source-snapshots-wave-32`);
 }
+pkg.scripts['build:lake-allocator-war-structural-parses-wave-33'] = 'node tools/build-lake-allocator-war-structural-parses-wave-33.mjs';
+pkg.scripts['validate:lake-allocator-war-structural-parses-wave-33'] = 'node tools/validate-lake-allocator-war-structural-parses-wave-33.mjs && node test/lake-allocator-war-structural-parses-wave-33.test.js';
+pkg.scripts['ci:lake-allocator-war-structural-parses-wave-33'] = 'npm run build:lake-allocator-war-structural-parses-wave-33 && npm run validate:lake-allocator-war-structural-parses-wave-33';
+if (!pkg.scripts.check.includes('npm run validate:lake-allocator-war-structural-parses-wave-33')) {
+  const marker = 'npm run validate:lake-allocator-war-bounded-source-snapshots-wave-32';
+  if (!pkg.scripts.check.includes(marker)) throw new Error('Wave 32 release-gate marker missing');
+  pkg.scripts.check = pkg.scripts.check.replace(marker, `${marker} && npm run validate:lake-allocator-war-structural-parses-wave-33`);
+}
 writeJson(packagePath, pkg);
 
 const buildInstructionsPath = 'BUILD-INSTRUCTIONS.md';
@@ -228,6 +243,10 @@ Run \`node tools/acquire-lake-allocator-war-bounded-source-snapshots-wave-32.mjs
 Run \`node tools/build-lake-allocator-war-bounded-source-snapshots-wave-32.mjs\` after the snapshot ledger is complete. The builder preserves the exact thirty-eight-task Wave 31 denominator and creates no complete denominator, evidence adjudication, estate adoption, finding, graph effect, or publication clearance.
 `;
 }
+const wave33BuildMarker = '3.33 **Allocator-war frozen source structural parses — Wave 33.**';
+if (!buildInstructions.includes(wave33BuildMarker)) {
+  buildInstructions += `\n\n${wave33BuildMarker}\nRun \`node tools/build-lake-allocator-war-structural-parses-wave-33.mjs\` only after the permanent Wave 32 snapshot ledger and response bytes are present. The builder must verify all response hashes, emit exactly nineteen parse rows, perform no network requests, preserve HTTP errors and credential boundaries, and reuse the unchanged seven-route, thirty-eight-task, 153-use denominator.\n\nA structural parse is addressability only. JSON array lengths, field names, HTML tags, links, text counts, HTTP error bodies, and credential boundaries do not establish institutional completeness, authorize joins, adjudicate evidence, create findings, alter the graph, or clear publication.\n`;
+}
 fs.writeFileSync(full(buildInstructionsPath), buildInstructions);
 
 const readmePath = 'README.md';
@@ -244,6 +263,10 @@ ${wave32ReadmeMarker}
 
 Wave 32 freezes each of the nineteen Wave 31 official locators as one exact public request-response object or one explicit credential boundary. Fifteen bounded requests and four access boundaries are reused across the unchanged thirty-eight-task route denominator. Frozen source responses remain acquisition-only and create no evidence, finding, graph, or publication effect. See \`reports/lake-allocator-war-bounded-source-snapshots-wave-32.md\`.
 `;
+}
+const wave33ReadmeMarker = '## Allocator-war frozen source structural parses Wave 33';
+if (!readme.includes(wave33ReadmeMarker)) {
+  readme += `\n\n${wave33ReadmeMarker}\n\nWave 33 verifies every permanent Wave 32 response hash and emits one deterministic structural parse row for each of the nineteen source objects. Seven JSON, eight HTML, and four credential-boundary rows are reused across the unchanged route and task denominator. Structural addressability creates no complete denominator, evidence adjudication, finding, graph effect, or publication authority. See \`reports/lake-allocator-war-structural-parses-wave-33.md\`.\n`;
 }
 fs.writeFileSync(full(readmePath), readme);
 

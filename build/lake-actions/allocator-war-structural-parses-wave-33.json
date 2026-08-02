@@ -1,0 +1,4156 @@
+{
+  "schema_version": "lake-allocator-war-structural-parses-wave-33@1",
+  "program_ref": "CN-LAKE-ALLOCATOR-WAR-W33",
+  "wave_ref": "LAW-W33",
+  "as_of": "2026-08-01",
+  "generated_from": {
+    "policy_path": "data/project/lake-allocator-war-structural-parses-wave-33-policy.json",
+    "policy_sha256": "55f278bb1ac69601cd79bf4d4587c158ca67f90ad9ea3e83314a4d829622f3ac",
+    "plan_path": "data/project/lake-allocator-war-structural-parses-wave-33-plan.json",
+    "plan_sha256": "75f209a2be70fcbfaafab1a46e9db4e40dc4f860790fa85481ebad4ee82f26e3",
+    "source_policy_path": "data/project/lake-allocator-war-bounded-source-snapshots-wave-32-policy.json",
+    "source_policy_sha256": "655711f37c7adcbe9d34ee3ffa3e9ea16123ffdcd4413cfe4138b568ba370c76",
+    "source_plan_path": "data/project/lake-allocator-war-bounded-source-snapshots-wave-32-plan.json",
+    "source_plan_sha256": "47cdae93114361d7427c4dffdfce38f09cb7f850136b89af6b10b0f0007bbce1",
+    "source_projection_path": "build/lake-actions/allocator-war-bounded-source-snapshots-wave-32.json",
+    "source_projection_sha256": "46c4252feb2d9ccbddf15f89891d7f01b9c03aa6558ad23559b5a3755c078477",
+    "source_snapshot_ledger_path": "data/acquisition/lake-allocator-war-wave-32/snapshot-ledger.jsonl",
+    "parser_implementation_path": "tools/build-lake-allocator-war-structural-parses-wave-33.mjs",
+    "parser_implementation_sha256": "fb8c9133d6e0452656dbc92846922fbeed465d701260c1fcaf96e18a027daa14"
+  },
+  "counts": {
+    "source_routes": 7,
+    "source_tasks": 38,
+    "source_receipts": 19,
+    "source_receipt_uses": 153,
+    "parse_specs": 19,
+    "parse_rows": 19,
+    "parser_profiles": 8,
+    "json_parse_rows": 7,
+    "html_parse_rows": 8,
+    "credential_boundary_rows": 4,
+    "response_parse_rows": 15,
+    "response_parse_bytes": 646298,
+    "parse_states": {
+      "credential_boundary_preserved": 4,
+      "parsed_html_structure": 6,
+      "parsed_http_error_structure": 2,
+      "parsed_json_structure": 7
+    },
+    "route_rows": 7,
+    "task_rows": 38,
+    "complete_denominators": 0,
+    "evidence_rows": 0,
+    "estate_adoptions": 0,
+    "finding_promotions": 0,
+    "graph_effects": 0,
+    "publication_clearances": 0
+  },
+  "parse_objects": [
+    {
+      "parse_ref": "LAW33-P001",
+      "parse_sequence": 1,
+      "snapshot_ref": "LAW32-S001",
+      "source_ref": "LAW31-S001",
+      "parser_profile": "json-root-array-catalog-v1",
+      "parse_state": "parsed_json_structure",
+      "source_response_status": 200,
+      "source_response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s001.json",
+      "source_response_body_bytes": 651,
+      "source_response_body_sha256": "6c96e4049e9573bd9a267a9fdad69dc06497451489e99887bc7f17fae91c2615",
+      "source_snapshot_row_sha256": "d14671339673590140e5eab1143db01ca670501bd4b898ade0a9847b2cc515d8",
+      "structure": {
+        "parser_family": "deterministic-json-recursive-v1",
+        "input_utf8_characters": 651,
+        "root_type": "array",
+        "root_keys": [],
+        "node_type_counts": {
+          "array": 1,
+          "boolean": 5,
+          "null": 0,
+          "number": 5,
+          "object": 5,
+          "string": 20
+        },
+        "maximum_depth": 2,
+        "distinct_key_names": 6,
+        "key_occurrences": {
+          "current": 5,
+          "filename": 5,
+          "month": 5,
+          "publishDate": 5,
+          "version": 5,
+          "year": 5
+        },
+        "array_paths": [
+          {
+            "path": "$",
+            "length": 5
+          }
+        ],
+        "array_paths_truncated": false,
+        "key_names_truncated": false,
+        "candidate_arrays": [
+          {
+            "path": "$",
+            "state": "array_observed",
+            "row_count": 5,
+            "row_types": {
+              "object": 5
+            },
+            "distinct_object_shapes": 1,
+            "shape_signatures": [
+              {
+                "signature_sha256": "4092101dd8725d80e236b79085f53bf68133f1b77867cd872fb9776acc29ac99",
+                "keys": [
+                  "current",
+                  "filename",
+                  "month",
+                  "publishDate",
+                  "version",
+                  "year"
+                ],
+                "count": 5
+              }
+            ]
+          }
+        ]
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "parse_ref": "LAW33-P002",
+      "parse_sequence": 2,
+      "snapshot_ref": "LAW32-S002",
+      "source_ref": "LAW31-S002",
+      "parser_profile": "json-root-array-catalog-v1",
+      "parse_state": "parsed_json_structure",
+      "source_response_status": 200,
+      "source_response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s002.json",
+      "source_response_body_bytes": 651,
+      "source_response_body_sha256": "7918612028f3809178fdaa95ccc95d53f010894a3376a192c21853ab3720e23b",
+      "source_snapshot_row_sha256": "f491725bb480384a6102db8f04b813bbfdb684c11b69b8ccbca72c02668bfa8c",
+      "structure": {
+        "parser_family": "deterministic-json-recursive-v1",
+        "input_utf8_characters": 651,
+        "root_type": "array",
+        "root_keys": [],
+        "node_type_counts": {
+          "array": 1,
+          "boolean": 5,
+          "null": 0,
+          "number": 5,
+          "object": 5,
+          "string": 20
+        },
+        "maximum_depth": 2,
+        "distinct_key_names": 6,
+        "key_occurrences": {
+          "current": 5,
+          "filename": 5,
+          "month": 5,
+          "publishDate": 5,
+          "version": 5,
+          "year": 5
+        },
+        "array_paths": [
+          {
+            "path": "$",
+            "length": 5
+          }
+        ],
+        "array_paths_truncated": false,
+        "key_names_truncated": false,
+        "candidate_arrays": [
+          {
+            "path": "$",
+            "state": "array_observed",
+            "row_count": 5,
+            "row_types": {
+              "object": 5
+            },
+            "distinct_object_shapes": 1,
+            "shape_signatures": [
+              {
+                "signature_sha256": "4092101dd8725d80e236b79085f53bf68133f1b77867cd872fb9776acc29ac99",
+                "keys": [
+                  "current",
+                  "filename",
+                  "month",
+                  "publishDate",
+                  "version",
+                  "year"
+                ],
+                "count": 5
+              }
+            ]
+          }
+        ]
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "parse_ref": "LAW33-P003",
+      "parse_sequence": 3,
+      "snapshot_ref": "LAW32-S003",
+      "source_ref": "LAW31-S003",
+      "parser_profile": "json-root-array-catalog-v1",
+      "parse_state": "parsed_json_structure",
+      "source_response_status": 200,
+      "source_response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s003.json",
+      "source_response_body_bytes": 656,
+      "source_response_body_sha256": "0a95279c42a00ff924f9b2eb632c502e48321bd61c8b30e76f1def6f25d28b96",
+      "source_snapshot_row_sha256": "d0753bbb2c9dd036abaffb47f7cf44a0dea68cb5e077b921d0e571dd079a757c",
+      "structure": {
+        "parser_family": "deterministic-json-recursive-v1",
+        "input_utf8_characters": 656,
+        "root_type": "array",
+        "root_keys": [],
+        "node_type_counts": {
+          "array": 1,
+          "boolean": 5,
+          "null": 0,
+          "number": 5,
+          "object": 5,
+          "string": 20
+        },
+        "maximum_depth": 2,
+        "distinct_key_names": 6,
+        "key_occurrences": {
+          "current": 5,
+          "filename": 5,
+          "month": 5,
+          "publishDate": 5,
+          "version": 5,
+          "year": 5
+        },
+        "array_paths": [
+          {
+            "path": "$",
+            "length": 5
+          }
+        ],
+        "array_paths_truncated": false,
+        "key_names_truncated": false,
+        "candidate_arrays": [
+          {
+            "path": "$",
+            "state": "array_observed",
+            "row_count": 5,
+            "row_types": {
+              "object": 5
+            },
+            "distinct_object_shapes": 1,
+            "shape_signatures": [
+              {
+                "signature_sha256": "4092101dd8725d80e236b79085f53bf68133f1b77867cd872fb9776acc29ac99",
+                "keys": [
+                  "current",
+                  "filename",
+                  "month",
+                  "publishDate",
+                  "version",
+                  "year"
+                ],
+                "count": 5
+              }
+            ]
+          }
+        ]
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "parse_ref": "LAW33-P004",
+      "parse_sequence": 4,
+      "snapshot_ref": "LAW32-S004",
+      "source_ref": "LAW31-S004",
+      "parser_profile": "json-object-results-v1",
+      "parse_state": "parsed_json_structure",
+      "source_response_status": 200,
+      "source_response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s004.json",
+      "source_response_body_bytes": 239255,
+      "source_response_body_sha256": "e9594fe57bda1fb3002b71c3a4c93b09f7db8260388ebe6e802242e6a72aee64",
+      "source_snapshot_row_sha256": "f19d15a5c6fcadc7e35455657e0e19a832a18bfc983dc00f582faf44eeeff36b",
+      "structure": {
+        "parser_family": "deterministic-json-recursive-v1",
+        "input_utf8_characters": 238815,
+        "root_type": "object",
+        "root_keys": [
+          "count",
+          "description",
+          "next_page_url",
+          "results",
+          "total_pages"
+        ],
+        "node_type_counts": {
+          "array": 101,
+          "boolean": 0,
+          "null": 183,
+          "number": 225,
+          "object": 296,
+          "string": 1831
+        },
+        "maximum_depth": 5,
+        "distinct_key_names": 22,
+        "key_occurrences": {
+          "abstract": 100,
+          "agencies": 100,
+          "count": 1,
+          "description": 1,
+          "document_number": 100,
+          "excerpts": 100,
+          "html_url": 100,
+          "id": 190,
+          "json_url": 190,
+          "name": 190,
+          "next_page_url": 1,
+          "parent_id": 190,
+          "pdf_url": 100,
+          "public_inspection_pdf_url": 100,
+          "publication_date": 100,
+          "raw_name": 195,
+          "results": 1,
+          "slug": 190,
+          "title": 100,
+          "total_pages": 1,
+          "type": 100,
+          "url": 190
+        },
+        "array_paths": [
+          {
+            "path": "$.results",
+            "length": 100
+          },
+          {
+            "path": "$.results[0].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[1].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[10].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[11].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[12].agencies",
+            "length": 5
+          },
+          {
+            "path": "$.results[13].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[14].agencies",
+            "length": 2
+          },
+          {
+            "path": "$.results[15].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[16].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[17].agencies",
+            "length": 6
+          },
+          {
+            "path": "$.results[18].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[19].agencies",
+            "length": 44
+          },
+          {
+            "path": "$.results[2].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[20].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[21].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[22].agencies",
+            "length": 5
+          },
+          {
+            "path": "$.results[23].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[24].agencies",
+            "length": 2
+          },
+          {
+            "path": "$.results[25].agencies",
+            "length": 2
+          },
+          {
+            "path": "$.results[26].agencies",
+            "length": 2
+          },
+          {
+            "path": "$.results[27].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[28].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[29].agencies",
+            "length": 4
+          },
+          {
+            "path": "$.results[3].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[30].agencies",
+            "length": 4
+          },
+          {
+            "path": "$.results[31].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[32].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[33].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[34].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[35].agencies",
+            "length": 2
+          },
+          {
+            "path": "$.results[36].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[37].agencies",
+            "length": 5
+          },
+          {
+            "path": "$.results[38].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[39].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[4].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[40].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[41].agencies",
+            "length": 2
+          },
+          {
+            "path": "$.results[42].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[43].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[44].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[45].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[46].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[47].agencies",
+            "length": 2
+          },
+          {
+            "path": "$.results[48].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[49].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[5].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[50].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[51].agencies",
+            "length": 2
+          },
+          {
+            "path": "$.results[52].agencies",
+            "length": 2
+          },
+          {
+            "path": "$.results[53].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[54].agencies",
+            "length": 4
+          },
+          {
+            "path": "$.results[55].agencies",
+            "length": 2
+          },
+          {
+            "path": "$.results[56].agencies",
+            "length": 3
+          },
+          {
+            "path": "$.results[57].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[58].agencies",
+            "length": 2
+          },
+          {
+            "path": "$.results[59].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[6].agencies",
+            "length": 2
+          },
+          {
+            "path": "$.results[60].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[61].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[62].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[63].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[64].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[65].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[66].agencies",
+            "length": 2
+          },
+          {
+            "path": "$.results[67].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[68].agencies",
+            "length": 3
+          },
+          {
+            "path": "$.results[69].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[7].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[70].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[71].agencies",
+            "length": 3
+          },
+          {
+            "path": "$.results[72].agencies",
+            "length": 2
+          },
+          {
+            "path": "$.results[73].agencies",
+            "length": 2
+          },
+          {
+            "path": "$.results[74].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[75].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[76].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[77].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[78].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[79].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[8].agencies",
+            "length": 2
+          },
+          {
+            "path": "$.results[80].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[81].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[82].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[83].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[84].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[85].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[86].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[87].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[88].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[89].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[9].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[90].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[91].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[92].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[93].agencies",
+            "length": 2
+          },
+          {
+            "path": "$.results[94].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[95].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[96].agencies",
+            "length": 4
+          },
+          {
+            "path": "$.results[97].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[98].agencies",
+            "length": 1
+          },
+          {
+            "path": "$.results[99].agencies",
+            "length": 1
+          }
+        ],
+        "array_paths_truncated": false,
+        "key_names_truncated": false,
+        "candidate_arrays": [
+          {
+            "path": "$.results",
+            "state": "array_observed",
+            "row_count": 100,
+            "row_types": {
+              "object": 100
+            },
+            "distinct_object_shapes": 1,
+            "shape_signatures": [
+              {
+                "signature_sha256": "81cdb3f6dcbfbf453228de7151435c51900fb9c41d089eadc9b55c32a47f7e5d",
+                "keys": [
+                  "abstract",
+                  "agencies",
+                  "document_number",
+                  "excerpts",
+                  "html_url",
+                  "pdf_url",
+                  "public_inspection_pdf_url",
+                  "publication_date",
+                  "title",
+                  "type"
+                ],
+                "count": 100
+              }
+            ]
+          }
+        ]
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "parse_ref": "LAW33-P005",
+      "parse_sequence": 5,
+      "snapshot_ref": "LAW32-S005",
+      "source_ref": "LAW31-S005",
+      "parser_profile": "json-object-aggregate-v1",
+      "parse_state": "parsed_json_structure",
+      "source_response_status": 200,
+      "source_response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s005.json",
+      "source_response_body_bytes": 472,
+      "source_response_body_sha256": "a9491b5e54ed0d9a8736b4d7b7d35c7e7bab0fc6fa8a847324eb7dda55f9248e",
+      "source_snapshot_row_sha256": "e5cb73fa339317796deae03ece9fbe071a6006bead7f8e8200f843b798b56546",
+      "structure": {
+        "parser_family": "deterministic-json-recursive-v1",
+        "input_utf8_characters": 472,
+        "root_type": "object",
+        "root_keys": [
+          "messages",
+          "results",
+          "spending_level"
+        ],
+        "node_type_counts": {
+          "array": 1,
+          "boolean": 0,
+          "null": 0,
+          "number": 6,
+          "object": 2,
+          "string": 2
+        },
+        "maximum_depth": 2,
+        "distinct_key_names": 9,
+        "key_occurrences": {
+          "contracts": 1,
+          "direct_payments": 1,
+          "grants": 1,
+          "idvs": 1,
+          "loans": 1,
+          "messages": 1,
+          "other": 1,
+          "results": 1,
+          "spending_level": 1
+        },
+        "array_paths": [
+          {
+            "path": "$.messages",
+            "length": 1
+          }
+        ],
+        "array_paths_truncated": false,
+        "key_names_truncated": false,
+        "candidate_arrays": [
+          {
+            "path": "$.messages",
+            "state": "array_observed",
+            "row_count": 1,
+            "row_types": {
+              "string": 1
+            },
+            "distinct_object_shapes": 0,
+            "shape_signatures": []
+          }
+        ]
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "parse_ref": "LAW33-P006",
+      "parse_sequence": 6,
+      "snapshot_ref": "LAW32-S006",
+      "source_ref": "LAW31-S006",
+      "parser_profile": "json-object-vocabulary-v1",
+      "parse_state": "parsed_json_structure",
+      "source_response_status": 200,
+      "source_response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s006.json",
+      "source_response_body_bytes": 1271,
+      "source_response_body_sha256": "682269b46e0cf200c7002ca7d55ba3da3de8dc345958d579ec98e579fc6782e7",
+      "source_snapshot_row_sha256": "18a2e335f513b4dbca2071967edca6b71bf706cfb2f40c9a96f2aca4e5005ae1",
+      "structure": {
+        "parser_family": "deterministic-json-recursive-v1",
+        "input_utf8_characters": 1271,
+        "root_type": "object",
+        "root_keys": [
+          "contracts",
+          "direct_payments",
+          "grants",
+          "idvs",
+          "loans",
+          "other_financial_assistance"
+        ],
+        "node_type_counts": {
+          "array": 0,
+          "boolean": 0,
+          "null": 0,
+          "number": 0,
+          "object": 7,
+          "string": 33
+        },
+        "maximum_depth": 2,
+        "distinct_key_names": 39,
+        "key_occurrences": {
+          "10": 1,
+          "11": 1,
+          "-1": 1,
+          "02": 1,
+          "03": 1,
+          "04": 1,
+          "05": 1,
+          "06": 1,
+          "07": 1,
+          "08": 1,
+          "09": 1,
+          "A": 1,
+          "B": 1,
+          "C": 1,
+          "contracts": 1,
+          "D": 1,
+          "direct_payments": 1,
+          "F001": 1,
+          "F002": 1,
+          "F003": 1,
+          "F004": 1,
+          "F005": 1,
+          "F006": 1,
+          "F007": 1,
+          "F008": 1,
+          "F009": 1,
+          "F010": 1,
+          "grants": 1,
+          "IDV_A": 1,
+          "IDV_B": 1,
+          "IDV_B_A": 1,
+          "IDV_B_B": 1,
+          "IDV_B_C": 1,
+          "IDV_C": 1,
+          "IDV_D": 1,
+          "IDV_E": 1,
+          "idvs": 1,
+          "loans": 1,
+          "other_financial_assistance": 1
+        },
+        "array_paths": [],
+        "array_paths_truncated": false,
+        "key_names_truncated": false,
+        "candidate_arrays": []
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "parse_ref": "LAW33-P007",
+      "parse_sequence": 7,
+      "snapshot_ref": "LAW32-S007",
+      "source_ref": "LAW31-S007",
+      "parser_profile": "credential-boundary-v1",
+      "parse_state": "credential_boundary_preserved",
+      "source_response_status": null,
+      "source_response_body_path": null,
+      "source_response_body_bytes": null,
+      "source_response_body_sha256": null,
+      "source_snapshot_row_sha256": "c0ba472bd4ff88e4d4b159a15cd2f66f02bf7e9f11d892932c7b7a4c8e6fb3a2",
+      "structure": null,
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "parse_ref": "LAW33-P008",
+      "parse_sequence": 8,
+      "snapshot_ref": "LAW32-S008",
+      "source_ref": "LAW31-S008",
+      "parser_profile": "html-document-v1",
+      "parse_state": "parsed_html_structure",
+      "source_response_status": 200,
+      "source_response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s008.html",
+      "source_response_body_bytes": 36340,
+      "source_response_body_sha256": "7b3ab0ab3222745e876ac313aa54d701959552066835e2b9884f5b329058284d",
+      "source_snapshot_row_sha256": "4b1da8fd69930a10da15f5758ef5829efb9d1c7d8162d423242e8de9b0c6a8b4",
+      "structure": {
+        "parser_family": "deterministic-html-token-count-v1",
+        "input_utf8_characters": 36328,
+        "line_count": 533,
+        "doctype_present": true,
+        "html_element_present": true,
+        "head_element_present": true,
+        "body_element_present": true,
+        "comment_count": 5,
+        "total_tag_tokens": 530,
+        "closing_tag_tokens": 256,
+        "self_closing_tag_tokens": 15,
+        "distinct_tag_names": 40,
+        "tag_counts": {
+          "a": 38,
+          "app-root": 1,
+          "article": 1,
+          "body": 1,
+          "br": 3,
+          "button": 1,
+          "div": 62,
+          "footer": 1,
+          "form": 1,
+          "g": 1,
+          "h1": 1,
+          "h2": 4,
+          "h5": 1,
+          "head": 1,
+          "html": 1,
+          "i": 1,
+          "i-bs": 1,
+          "iframe": 1,
+          "img": 1,
+          "input": 3,
+          "label": 2,
+          "li": 28,
+          "link": 7,
+          "main": 1,
+          "meta": 5,
+          "nav": 4,
+          "noscript": 1,
+          "option": 5,
+          "p": 37,
+          "path": 5,
+          "script": 9,
+          "section": 7,
+          "select": 1,
+          "span": 5,
+          "strong": 8,
+          "svg": 2,
+          "title": 1,
+          "u": 13,
+          "ul": 7,
+          "usa-icon": 1
+        },
+        "distinct_attribute_names": 48,
+        "attribute_counts": {
+          "_ngcontent-ng-c3644247382": 1,
+          "_nghost-ng-c3644247382": 1,
+          "accept-charset": 1,
+          "action": 1,
+          "alt": 2,
+          "aria-hidden": 3,
+          "aria-label": 8,
+          "aria-required": 1,
+          "assetsurl": 1,
+          "autocomplete": 1,
+          "charset": 1,
+          "class": 141,
+          "content": 4,
+          "d": 5,
+          "data-drupal-link-system-path": 10,
+          "data-drupal-messages-fallback": 1,
+          "data-drupal-selector": 8,
+          "data-history-node-id": 1,
+          "data-off-canvas-main-canvas": 1,
+          "dir": 24,
+          "fill": 4,
+          "for": 2,
+          "height": 2,
+          "hidealerts": 1,
+          "hideprimarylinks": 1,
+          "hidesecondarylinks": 1,
+          "href": 45,
+          "id": 10,
+          "lang": 1,
+          "maxlength": 1,
+          "media": 4,
+          "method": 1,
+          "name": 9,
+          "placeholder": 1,
+          "rel": 7,
+          "required": 1,
+          "role": 9,
+          "selected": 1,
+          "showheaderlogo": 1,
+          "size": 1,
+          "src": 9,
+          "style": 1,
+          "title": 7,
+          "type": 6,
+          "value": 9,
+          "viewbox": 2,
+          "width": 2,
+          "xmlns": 2
+        },
+        "title_present": true,
+        "title_characters": 40,
+        "title_sha256": "678fb520b9409a814feecc175a0964fd258f40274e1ad00b3de14b668474da67",
+        "heading_counts": {
+          "h1": 1,
+          "h2": 4,
+          "h3": 0,
+          "h4": 0,
+          "h5": 1,
+          "h6": 0
+        },
+        "structure_counts": {
+          "anchors": 38,
+          "forms": 1,
+          "inputs": 3,
+          "buttons": 1,
+          "tables": 0,
+          "table_rows": 0,
+          "table_headers": 0,
+          "table_cells": 0,
+          "ordered_lists": 0,
+          "unordered_lists": 7,
+          "list_items": 28,
+          "paragraphs": 37,
+          "scripts": 9,
+          "styles": 0,
+          "meta": 5,
+          "links": 7
+        },
+        "visible_text_characters": 4875,
+        "visible_word_tokens": 729,
+        "tag_names_truncated": false,
+        "attribute_names_truncated": false,
+        "parser_constructs_dom": false,
+        "parser_executes_scripts": false
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "parse_ref": "LAW33-P009",
+      "parse_sequence": 9,
+      "snapshot_ref": "LAW32-S009",
+      "source_ref": "LAW31-S009",
+      "parser_profile": "credential-boundary-v1",
+      "parse_state": "credential_boundary_preserved",
+      "source_response_status": null,
+      "source_response_body_path": null,
+      "source_response_body_bytes": null,
+      "source_response_body_sha256": null,
+      "source_snapshot_row_sha256": "3767a9a42d6360d21037aa1d37f8d3362f1523e6396b1752ec11a638fb7d7826",
+      "structure": null,
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "parse_ref": "LAW33-P010",
+      "parse_sequence": 10,
+      "snapshot_ref": "LAW32-S010",
+      "source_ref": "LAW31-S010",
+      "parser_profile": "json-object-envelope-v1",
+      "parse_state": "parsed_json_structure",
+      "source_response_status": 200,
+      "source_response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s010.json",
+      "source_response_body_bytes": 45083,
+      "source_response_body_sha256": "3484bf52bafecaac7de2312774d5a5021f6e9799928016fb5db6001794da2888",
+      "source_snapshot_row_sha256": "6388e5ff974b4385c7866789308a52f521f3075385f5f8b714b65bed4c860c6c",
+      "structure": {
+        "parser_family": "deterministic-json-recursive-v1",
+        "input_utf8_characters": 45083,
+        "root_type": "object",
+        "root_keys": [
+          "data",
+          "errorcode",
+          "msg",
+          "token"
+        ],
+        "node_type_counts": {
+          "array": 129,
+          "boolean": 2,
+          "null": 0,
+          "number": 222,
+          "object": 320,
+          "string": 1467
+        },
+        "maximum_depth": 6,
+        "distinct_key_names": 41,
+        "key_occurrences": {
+          "accessKey": 1,
+          "agencies": 2,
+          "agency": 100,
+          "agencyCode": 100,
+          "cfda": 1,
+          "cfdaList": 100,
+          "closeDate": 100,
+          "count": 217,
+          "data": 1,
+          "dateRangeOptions": 1,
+          "docType": 100,
+          "eligibilities": 2,
+          "errorcode": 1,
+          "errorMsgs": 1,
+          "fundingCategories": 2,
+          "fundingInstruments": 2,
+          "hitCount": 1,
+          "id": 100,
+          "keyword": 1,
+          "keywordEncoded": 1,
+          "label": 217,
+          "msg": 1,
+          "number": 100,
+          "openDate": 100,
+          "oppHits": 1,
+          "oppNum": 1,
+          "oppStatus": 100,
+          "oppStatuses": 1,
+          "oppStatusOptions": 1,
+          "resultType": 1,
+          "rows": 1,
+          "searchOnly": 1,
+          "searchParams": 1,
+          "sortBy": 1,
+          "startRecord": 1,
+          "startRecordNum": 1,
+          "subAgencyOptions": 21,
+          "suggestion": 1,
+          "title": 100,
+          "token": 1,
+          "value": 217
+        },
+        "array_paths": [
+          {
+            "path": "$.data.agencies",
+            "length": 21
+          },
+          {
+            "path": "$.data.agencies[0].subAgencyOptions",
+            "length": 7
+          },
+          {
+            "path": "$.data.agencies[1].subAgencyOptions",
+            "length": 6
+          },
+          {
+            "path": "$.data.agencies[10].subAgencyOptions",
+            "length": 2
+          },
+          {
+            "path": "$.data.agencies[11].subAgencyOptions",
+            "length": 67
+          },
+          {
+            "path": "$.data.agencies[12].subAgencyOptions",
+            "length": 5
+          },
+          {
+            "path": "$.data.agencies[13].subAgencyOptions",
+            "length": 5
+          },
+          {
+            "path": "$.data.agencies[14].subAgencyOptions",
+            "length": 1
+          },
+          {
+            "path": "$.data.agencies[15].subAgencyOptions",
+            "length": 0
+          },
+          {
+            "path": "$.data.agencies[16].subAgencyOptions",
+            "length": 0
+          },
+          {
+            "path": "$.data.agencies[17].subAgencyOptions",
+            "length": 1
+          },
+          {
+            "path": "$.data.agencies[18].subAgencyOptions",
+            "length": 0
+          },
+          {
+            "path": "$.data.agencies[19].subAgencyOptions",
+            "length": 0
+          },
+          {
+            "path": "$.data.agencies[2].subAgencyOptions",
+            "length": 19
+          },
+          {
+            "path": "$.data.agencies[20].subAgencyOptions",
+            "length": 0
+          },
+          {
+            "path": "$.data.agencies[3].subAgencyOptions",
+            "length": 0
+          },
+          {
+            "path": "$.data.agencies[4].subAgencyOptions",
+            "length": 3
+          },
+          {
+            "path": "$.data.agencies[5].subAgencyOptions",
+            "length": 1
+          },
+          {
+            "path": "$.data.agencies[6].subAgencyOptions",
+            "length": 17
+          },
+          {
+            "path": "$.data.agencies[7].subAgencyOptions",
+            "length": 1
+          },
+          {
+            "path": "$.data.agencies[8].subAgencyOptions",
+            "length": 0
+          },
+          {
+            "path": "$.data.agencies[9].subAgencyOptions",
+            "length": 1
+          },
+          {
+            "path": "$.data.dateRangeOptions",
+            "length": 9
+          },
+          {
+            "path": "$.data.eligibilities",
+            "length": 17
+          },
+          {
+            "path": "$.data.errorMsgs",
+            "length": 0
+          },
+          {
+            "path": "$.data.fundingCategories",
+            "length": 26
+          },
+          {
+            "path": "$.data.fundingInstruments",
+            "length": 4
+          },
+          {
+            "path": "$.data.oppHits",
+            "length": 100
+          },
+          {
+            "path": "$.data.oppHits[0].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[1].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[10].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[11].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[12].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[13].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[14].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[15].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[16].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[17].cfdaList",
+            "length": 2
+          },
+          {
+            "path": "$.data.oppHits[18].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[19].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[2].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[20].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[21].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[22].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[23].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[24].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[25].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[26].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[27].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[28].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[29].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[3].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[30].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[31].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[32].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[33].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[34].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[35].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[36].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[37].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[38].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[39].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[4].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[40].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[41].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[42].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[43].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[44].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[45].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[46].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[47].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[48].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[49].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[5].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[50].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[51].cfdaList",
+            "length": 2
+          },
+          {
+            "path": "$.data.oppHits[52].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[53].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[54].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[55].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[56].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[57].cfdaList",
+            "length": 3
+          },
+          {
+            "path": "$.data.oppHits[58].cfdaList",
+            "length": 9
+          },
+          {
+            "path": "$.data.oppHits[59].cfdaList",
+            "length": 8
+          },
+          {
+            "path": "$.data.oppHits[6].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[60].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[61].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[62].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[63].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[64].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[65].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[66].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[67].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[68].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[69].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[7].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[70].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[71].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[72].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[73].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[74].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[75].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[76].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[77].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[78].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[79].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[8].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[80].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[81].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[82].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[83].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[84].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[85].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[86].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[87].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[88].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[89].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[9].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[90].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[91].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[92].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[93].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[94].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[95].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[96].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[97].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[98].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppHits[99].cfdaList",
+            "length": 1
+          },
+          {
+            "path": "$.data.oppStatusOptions",
+            "length": 4
+          }
+        ],
+        "array_paths_truncated": false,
+        "key_names_truncated": false,
+        "candidate_arrays": [
+          {
+            "path": "$.data.oppHits",
+            "state": "array_observed",
+            "row_count": 100,
+            "row_types": {
+              "object": 100
+            },
+            "distinct_object_shapes": 1,
+            "shape_signatures": [
+              {
+                "signature_sha256": "f30d9f50e54b707d3344fe16334e5d25c252bc9e1912d99d0e5397e7b8856f4c",
+                "keys": [
+                  "agency",
+                  "agencyCode",
+                  "cfdaList",
+                  "closeDate",
+                  "docType",
+                  "id",
+                  "number",
+                  "openDate",
+                  "oppStatus",
+                  "title"
+                ],
+                "count": 100
+              }
+            ]
+          },
+          {
+            "path": "$.data.oppStatusOptions",
+            "state": "array_observed",
+            "row_count": 4,
+            "row_types": {
+              "object": 4
+            },
+            "distinct_object_shapes": 1,
+            "shape_signatures": [
+              {
+                "signature_sha256": "706f3a076ccc463e3d3e11eb5fd09d4885dcf7877eefddd2b3a09ddb9e388501",
+                "keys": [
+                  "count",
+                  "label",
+                  "value"
+                ],
+                "count": 4
+              }
+            ]
+          },
+          {
+            "path": "$.data.dateRangeOptions",
+            "state": "array_observed",
+            "row_count": 9,
+            "row_types": {
+              "object": 9
+            },
+            "distinct_object_shapes": 1,
+            "shape_signatures": [
+              {
+                "signature_sha256": "706f3a076ccc463e3d3e11eb5fd09d4885dcf7877eefddd2b3a09ddb9e388501",
+                "keys": [
+                  "count",
+                  "label",
+                  "value"
+                ],
+                "count": 9
+              }
+            ]
+          },
+          {
+            "path": "$.data.eligibilities",
+            "state": "array_observed",
+            "row_count": 17,
+            "row_types": {
+              "object": 17
+            },
+            "distinct_object_shapes": 1,
+            "shape_signatures": [
+              {
+                "signature_sha256": "706f3a076ccc463e3d3e11eb5fd09d4885dcf7877eefddd2b3a09ddb9e388501",
+                "keys": [
+                  "count",
+                  "label",
+                  "value"
+                ],
+                "count": 17
+              }
+            ]
+          },
+          {
+            "path": "$.data.fundingCategories",
+            "state": "array_observed",
+            "row_count": 26,
+            "row_types": {
+              "object": 26
+            },
+            "distinct_object_shapes": 1,
+            "shape_signatures": [
+              {
+                "signature_sha256": "706f3a076ccc463e3d3e11eb5fd09d4885dcf7877eefddd2b3a09ddb9e388501",
+                "keys": [
+                  "count",
+                  "label",
+                  "value"
+                ],
+                "count": 26
+              }
+            ]
+          },
+          {
+            "path": "$.data.fundingInstruments",
+            "state": "array_observed",
+            "row_count": 4,
+            "row_types": {
+              "object": 4
+            },
+            "distinct_object_shapes": 1,
+            "shape_signatures": [
+              {
+                "signature_sha256": "706f3a076ccc463e3d3e11eb5fd09d4885dcf7877eefddd2b3a09ddb9e388501",
+                "keys": [
+                  "count",
+                  "label",
+                  "value"
+                ],
+                "count": 4
+              }
+            ]
+          },
+          {
+            "path": "$.data.agencies",
+            "state": "array_observed",
+            "row_count": 21,
+            "row_types": {
+              "object": 21
+            },
+            "distinct_object_shapes": 1,
+            "shape_signatures": [
+              {
+                "signature_sha256": "855ac188603f1f4ff48dfe031d0bf0afcb607315517549503f7a76d5fb50bb38",
+                "keys": [
+                  "count",
+                  "label",
+                  "subAgencyOptions",
+                  "value"
+                ],
+                "count": 21
+              }
+            ]
+          }
+        ]
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "parse_ref": "LAW33-P011",
+      "parse_sequence": 11,
+      "snapshot_ref": "LAW32-S011",
+      "source_ref": "LAW31-S011",
+      "parser_profile": "html-document-v1",
+      "parse_state": "parsed_html_structure",
+      "source_response_status": 200,
+      "source_response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s011.html",
+      "source_response_body_bytes": 90210,
+      "source_response_body_sha256": "edab35c636d4ca0dd686fea60816f81ee0e420097d175ef45eb42c85cbf30b72",
+      "source_snapshot_row_sha256": "39b32ddd93fd63dc88f6095a2077aa4c955f8e2213e3d61ce8930e55b837eda5",
+      "structure": {
+        "parser_family": "deterministic-html-token-count-v1",
+        "input_utf8_characters": 90175,
+        "line_count": 1922,
+        "doctype_present": true,
+        "html_element_present": true,
+        "head_element_present": true,
+        "body_element_present": true,
+        "comment_count": 3,
+        "total_tag_tokens": 1365,
+        "closing_tag_tokens": 647,
+        "self_closing_tag_tokens": 41,
+        "distinct_tag_names": 36,
+        "tag_counts": {
+          "a": 120,
+          "article": 1,
+          "body": 1,
+          "br": 9,
+          "button": 15,
+          "desc": 1,
+          "div": 178,
+          "em": 2,
+          "footer": 1,
+          "form": 2,
+          "h1": 1,
+          "h2": 4,
+          "h3": 1,
+          "head": 1,
+          "header": 2,
+          "hr": 1,
+          "html": 1,
+          "img": 25,
+          "input": 6,
+          "label": 3,
+          "li": 116,
+          "link": 14,
+          "main": 1,
+          "meta": 14,
+          "nav": 3,
+          "ol": 1,
+          "p": 19,
+          "path": 1,
+          "script": 11,
+          "section": 4,
+          "span": 112,
+          "strong": 14,
+          "svg": 1,
+          "time": 4,
+          "title": 2,
+          "ul": 26
+        },
+        "distinct_attribute_names": 60,
+        "attribute_counts": {
+          "accept-charset": 2,
+          "accesskey": 1,
+          "action": 2,
+          "alt": 25,
+          "aria-controls": 13,
+          "aria-expanded": 13,
+          "aria-hidden": 7,
+          "aria-label": 5,
+          "aria-labelledby": 3,
+          "aria-multiselectable": 1,
+          "async": 1,
+          "autocomplete": 1,
+          "charset": 1,
+          "class": 449,
+          "content": 13,
+          "crossorigin": 1,
+          "d": 1,
+          "data-content-type": 1,
+          "data-drupal-form-fields": 1,
+          "data-drupal-link-system-path": 8,
+          "data-drupal-messages-fallback": 1,
+          "data-drupal-selector": 1,
+          "data-drupal-settingstray": 12,
+          "data-entity-substitution": 13,
+          "data-entity-type": 13,
+          "data-entity-uuid": 13,
+          "data-event-label": 4,
+          "data-off-canvas-main-canvas": 1,
+          "data-once": 1,
+          "datetime": 4,
+          "dir": 1,
+          "fill": 1,
+          "fill-rule": 1,
+          "focusable": 1,
+          "for": 3,
+          "height": 3,
+          "hidden": 10,
+          "href": 133,
+          "hreflang": 4,
+          "id": 44,
+          "lang": 1,
+          "media": 2,
+          "method": 2,
+          "name": 12,
+          "placeholder": 2,
+          "prefix": 1,
+          "property": 6,
+          "rel": 14,
+          "role": 9,
+          "size": 3,
+          "src": 34,
+          "style": 2,
+          "tabindex": 2,
+          "target": 9,
+          "title": 22,
+          "type": 14,
+          "value": 3,
+          "viewbox": 1,
+          "width": 4,
+          "xmlns": 1
+        },
+        "title_present": true,
+        "title_characters": 125,
+        "title_sha256": "37fc5e04cf77a7c3c96ed61f7b0fb24f0fba11779d275692bc45dc43b1068cbf",
+        "heading_counts": {
+          "h1": 1,
+          "h2": 4,
+          "h3": 1,
+          "h4": 0,
+          "h5": 0,
+          "h6": 0
+        },
+        "structure_counts": {
+          "anchors": 120,
+          "forms": 2,
+          "inputs": 6,
+          "buttons": 15,
+          "tables": 0,
+          "table_rows": 0,
+          "table_headers": 0,
+          "table_cells": 0,
+          "ordered_lists": 1,
+          "unordered_lists": 26,
+          "list_items": 116,
+          "paragraphs": 19,
+          "scripts": 11,
+          "styles": 0,
+          "meta": 14,
+          "links": 14
+        },
+        "visible_text_characters": 5575,
+        "visible_word_tokens": 815,
+        "tag_names_truncated": false,
+        "attribute_names_truncated": false,
+        "parser_constructs_dom": false,
+        "parser_executes_scripts": false
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "parse_ref": "LAW33-P012",
+      "parse_sequence": 12,
+      "snapshot_ref": "LAW32-S012",
+      "source_ref": "LAW31-S012",
+      "parser_profile": "html-document-v1",
+      "parse_state": "parsed_html_structure",
+      "source_response_status": 200,
+      "source_response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s012.html",
+      "source_response_body_bytes": 93100,
+      "source_response_body_sha256": "6d8f63b969a7e0c86fb20757134eb93e8992f58529ca43b95f7ca3595441f0e4",
+      "source_snapshot_row_sha256": "e17d1113a2c5a13001feb6573b3f9a3cf73cf6f7892942f8695188a5f61bc5e0",
+      "structure": {
+        "parser_family": "deterministic-html-token-count-v1",
+        "input_utf8_characters": 93048,
+        "line_count": 1922,
+        "doctype_present": true,
+        "html_element_present": true,
+        "head_element_present": true,
+        "body_element_present": true,
+        "comment_count": 3,
+        "total_tag_tokens": 1369,
+        "closing_tag_tokens": 649,
+        "self_closing_tag_tokens": 41,
+        "distinct_tag_names": 36,
+        "tag_counts": {
+          "a": 119,
+          "article": 1,
+          "body": 1,
+          "br": 9,
+          "button": 15,
+          "desc": 1,
+          "div": 177,
+          "em": 2,
+          "footer": 1,
+          "form": 2,
+          "h1": 1,
+          "h2": 4,
+          "h3": 1,
+          "head": 1,
+          "header": 2,
+          "hr": 1,
+          "html": 1,
+          "img": 25,
+          "input": 6,
+          "label": 3,
+          "li": 116,
+          "link": 14,
+          "main": 1,
+          "meta": 14,
+          "nav": 3,
+          "ol": 1,
+          "p": 24,
+          "path": 1,
+          "script": 11,
+          "section": 4,
+          "span": 112,
+          "strong": 13,
+          "svg": 1,
+          "time": 4,
+          "title": 2,
+          "ul": 26
+        },
+        "distinct_attribute_names": 60,
+        "attribute_counts": {
+          "accept-charset": 2,
+          "accesskey": 1,
+          "action": 2,
+          "alt": 25,
+          "aria-controls": 13,
+          "aria-expanded": 13,
+          "aria-hidden": 7,
+          "aria-label": 5,
+          "aria-labelledby": 3,
+          "aria-multiselectable": 1,
+          "async": 1,
+          "autocomplete": 1,
+          "charset": 1,
+          "class": 448,
+          "content": 13,
+          "crossorigin": 1,
+          "d": 1,
+          "data-content-type": 1,
+          "data-drupal-form-fields": 1,
+          "data-drupal-link-system-path": 8,
+          "data-drupal-messages-fallback": 1,
+          "data-drupal-selector": 1,
+          "data-drupal-settingstray": 12,
+          "data-entity-substitution": 12,
+          "data-entity-type": 12,
+          "data-entity-uuid": 12,
+          "data-event-label": 4,
+          "data-off-canvas-main-canvas": 1,
+          "data-once": 1,
+          "datetime": 4,
+          "dir": 1,
+          "fill": 1,
+          "fill-rule": 1,
+          "focusable": 1,
+          "for": 3,
+          "height": 3,
+          "hidden": 10,
+          "href": 132,
+          "hreflang": 4,
+          "id": 44,
+          "lang": 1,
+          "media": 2,
+          "method": 2,
+          "name": 12,
+          "placeholder": 2,
+          "prefix": 1,
+          "property": 6,
+          "rel": 14,
+          "role": 9,
+          "size": 3,
+          "src": 34,
+          "style": 2,
+          "tabindex": 2,
+          "target": 8,
+          "title": 21,
+          "type": 14,
+          "value": 3,
+          "viewbox": 1,
+          "width": 4,
+          "xmlns": 1
+        },
+        "title_present": true,
+        "title_characters": 156,
+        "title_sha256": "5c990ac3bac4813e7b8547b3bac3edb45153648f0d783c5d836fb48fd0cc0811",
+        "heading_counts": {
+          "h1": 1,
+          "h2": 4,
+          "h3": 1,
+          "h4": 0,
+          "h5": 0,
+          "h6": 0
+        },
+        "structure_counts": {
+          "anchors": 119,
+          "forms": 2,
+          "inputs": 6,
+          "buttons": 15,
+          "tables": 0,
+          "table_rows": 0,
+          "table_headers": 0,
+          "table_cells": 0,
+          "ordered_lists": 1,
+          "unordered_lists": 26,
+          "list_items": 116,
+          "paragraphs": 24,
+          "scripts": 11,
+          "styles": 0,
+          "meta": 14,
+          "links": 14
+        },
+        "visible_text_characters": 8322,
+        "visible_word_tokens": 1179,
+        "tag_names_truncated": false,
+        "attribute_names_truncated": false,
+        "parser_constructs_dom": false,
+        "parser_executes_scripts": false
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "parse_ref": "LAW33-P013",
+      "parse_sequence": 13,
+      "snapshot_ref": "LAW32-S013",
+      "source_ref": "LAW31-S013",
+      "parser_profile": "html-document-v1",
+      "parse_state": "parsed_html_structure",
+      "source_response_status": 200,
+      "source_response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s013.html",
+      "source_response_body_bytes": 62948,
+      "source_response_body_sha256": "3a70a93810ed75b33dabe9e1f8c88a4795520015f7f532f2d3066fdcb2f43430",
+      "source_snapshot_row_sha256": "a4552a4443d90e40382c5538a4112f568e7f277003788154833b03b3524b18f0",
+      "structure": {
+        "parser_family": "deterministic-html-token-count-v1",
+        "input_utf8_characters": 62944,
+        "line_count": 1261,
+        "doctype_present": true,
+        "html_element_present": true,
+        "head_element_present": true,
+        "body_element_present": true,
+        "comment_count": 3,
+        "total_tag_tokens": 980,
+        "closing_tag_tokens": 458,
+        "self_closing_tag_tokens": 40,
+        "distinct_tag_names": 35,
+        "tag_counts": {
+          "a": 83,
+          "article": 1,
+          "body": 1,
+          "br": 7,
+          "button": 9,
+          "desc": 1,
+          "div": 181,
+          "em": 4,
+          "footer": 1,
+          "form": 2,
+          "h1": 1,
+          "h2": 2,
+          "h3": 1,
+          "head": 1,
+          "header": 2,
+          "hr": 1,
+          "html": 1,
+          "img": 19,
+          "input": 6,
+          "label": 3,
+          "li": 46,
+          "link": 14,
+          "main": 1,
+          "meta": 15,
+          "nav": 3,
+          "ol": 1,
+          "p": 19,
+          "path": 1,
+          "script": 11,
+          "section": 4,
+          "span": 56,
+          "strong": 7,
+          "svg": 1,
+          "title": 2,
+          "ul": 14
+        },
+        "distinct_attribute_names": 61,
+        "attribute_counts": {
+          "accept-charset": 2,
+          "accesskey": 1,
+          "action": 2,
+          "alt": 19,
+          "aria-controls": 7,
+          "aria-disabled": 1,
+          "aria-expanded": 7,
+          "aria-hidden": 4,
+          "aria-label": 5,
+          "aria-labelledby": 3,
+          "aria-multiselectable": 1,
+          "async": 1,
+          "autocomplete": 1,
+          "charset": 1,
+          "class": 304,
+          "content": 14,
+          "crossorigin": 1,
+          "d": 1,
+          "data-content-type": 1,
+          "data-drupal-form-fields": 1,
+          "data-drupal-link-system-path": 4,
+          "data-drupal-messages-fallback": 1,
+          "data-drupal-selector": 1,
+          "data-drupal-settingstray": 9,
+          "data-entity-substitution": 19,
+          "data-entity-type": 19,
+          "data-entity-uuid": 19,
+          "data-event-label": 4,
+          "data-off-canvas-main-canvas": 1,
+          "data-once": 1,
+          "dir": 1,
+          "disabled": 1,
+          "fill": 1,
+          "fill-rule": 1,
+          "focusable": 1,
+          "for": 3,
+          "height": 3,
+          "hidden": 5,
+          "href": 96,
+          "hreflang": 1,
+          "id": 35,
+          "lang": 1,
+          "media": 2,
+          "method": 2,
+          "name": 13,
+          "placeholder": 2,
+          "prefix": 1,
+          "property": 6,
+          "rel": 14,
+          "role": 9,
+          "size": 3,
+          "src": 28,
+          "style": 2,
+          "tabindex": 2,
+          "target": 8,
+          "title": 27,
+          "type": 14,
+          "value": 3,
+          "viewbox": 1,
+          "width": 4,
+          "xmlns": 1
+        },
+        "title_present": true,
+        "title_characters": 59,
+        "title_sha256": "32506f10c22bfd6d940c3d2ef6e09f69d0fc505969a54fa79d56285e1bb396b9",
+        "heading_counts": {
+          "h1": 1,
+          "h2": 2,
+          "h3": 1,
+          "h4": 0,
+          "h5": 0,
+          "h6": 0
+        },
+        "structure_counts": {
+          "anchors": 83,
+          "forms": 2,
+          "inputs": 6,
+          "buttons": 9,
+          "tables": 0,
+          "table_rows": 0,
+          "table_headers": 0,
+          "table_cells": 0,
+          "ordered_lists": 1,
+          "unordered_lists": 14,
+          "list_items": 46,
+          "paragraphs": 19,
+          "scripts": 11,
+          "styles": 0,
+          "meta": 15,
+          "links": 14
+        },
+        "visible_text_characters": 2473,
+        "visible_word_tokens": 368,
+        "tag_names_truncated": false,
+        "attribute_names_truncated": false,
+        "parser_constructs_dom": false,
+        "parser_executes_scripts": false
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "parse_ref": "LAW33-P014",
+      "parse_sequence": 14,
+      "snapshot_ref": "LAW32-S014",
+      "source_ref": "LAW31-S014",
+      "parser_profile": "html-http-error-v1",
+      "parse_state": "parsed_http_error_structure",
+      "source_response_status": 403,
+      "source_response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s014.html",
+      "source_response_body_bytes": 391,
+      "source_response_body_sha256": "cbfaf818f7aaf69fd6386e0c6a81d9e4423c904425c3087cc8a0e83bdf5ee84e",
+      "source_snapshot_row_sha256": "63f148a5f8c96d98525e9ba6e2b0297376895ada113a69f60eac7935956aea4f",
+      "structure": {
+        "parser_family": "deterministic-html-token-count-v1",
+        "input_utf8_characters": 391,
+        "line_count": 11,
+        "doctype_present": false,
+        "html_element_present": true,
+        "head_element_present": true,
+        "body_element_present": true,
+        "comment_count": 0,
+        "total_tag_tokens": 13,
+        "closing_tag_tokens": 6,
+        "self_closing_tag_tokens": 0,
+        "distinct_tag_names": 6,
+        "tag_counts": {
+          "body": 1,
+          "h1": 1,
+          "head": 1,
+          "html": 1,
+          "p": 2,
+          "title": 1
+        },
+        "distinct_attribute_names": 0,
+        "attribute_counts": {},
+        "title_present": true,
+        "title_characters": 13,
+        "title_sha256": "d134ca025a6c63b2555200885d71cb6e61f8097cdfd7ecf13675b3df0c721797",
+        "heading_counts": {
+          "h1": 1,
+          "h2": 0,
+          "h3": 0,
+          "h4": 0,
+          "h5": 0,
+          "h6": 0
+        },
+        "structure_counts": {
+          "anchors": 0,
+          "forms": 0,
+          "inputs": 0,
+          "buttons": 0,
+          "tables": 0,
+          "table_rows": 0,
+          "table_headers": 0,
+          "table_cells": 0,
+          "ordered_lists": 0,
+          "unordered_lists": 0,
+          "list_items": 0,
+          "paragraphs": 2,
+          "scripts": 0,
+          "styles": 0,
+          "meta": 0,
+          "links": 0
+        },
+        "visible_text_characters": 218,
+        "visible_word_tokens": 33,
+        "tag_names_truncated": false,
+        "attribute_names_truncated": false,
+        "parser_constructs_dom": false,
+        "parser_executes_scripts": false
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "parse_ref": "LAW33-P015",
+      "parse_sequence": 15,
+      "snapshot_ref": "LAW32-S015",
+      "source_ref": "LAW31-S015",
+      "parser_profile": "html-http-error-v1",
+      "parse_state": "parsed_http_error_structure",
+      "source_response_status": 403,
+      "source_response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s015.html",
+      "source_response_body_bytes": 400,
+      "source_response_body_sha256": "b0adfc87d27a7789a7e73c966c66c04ed8fd2e5f87908b2cfc6507edfccf130e",
+      "source_snapshot_row_sha256": "6fb15a012b0523fce3553cc8c159cd22c0569d536b079d566c32daf776494b63",
+      "structure": {
+        "parser_family": "deterministic-html-token-count-v1",
+        "input_utf8_characters": 400,
+        "line_count": 11,
+        "doctype_present": false,
+        "html_element_present": true,
+        "head_element_present": true,
+        "body_element_present": true,
+        "comment_count": 0,
+        "total_tag_tokens": 13,
+        "closing_tag_tokens": 6,
+        "self_closing_tag_tokens": 0,
+        "distinct_tag_names": 6,
+        "tag_counts": {
+          "body": 1,
+          "h1": 1,
+          "head": 1,
+          "html": 1,
+          "p": 2,
+          "title": 1
+        },
+        "distinct_attribute_names": 0,
+        "attribute_counts": {},
+        "title_present": true,
+        "title_characters": 13,
+        "title_sha256": "d134ca025a6c63b2555200885d71cb6e61f8097cdfd7ecf13675b3df0c721797",
+        "heading_counts": {
+          "h1": 1,
+          "h2": 0,
+          "h3": 0,
+          "h4": 0,
+          "h5": 0,
+          "h6": 0
+        },
+        "structure_counts": {
+          "anchors": 0,
+          "forms": 0,
+          "inputs": 0,
+          "buttons": 0,
+          "tables": 0,
+          "table_rows": 0,
+          "table_headers": 0,
+          "table_cells": 0,
+          "ordered_lists": 0,
+          "unordered_lists": 0,
+          "list_items": 0,
+          "paragraphs": 2,
+          "scripts": 0,
+          "styles": 0,
+          "meta": 0,
+          "links": 0
+        },
+        "visible_text_characters": 223,
+        "visible_word_tokens": 34,
+        "tag_names_truncated": false,
+        "attribute_names_truncated": false,
+        "parser_constructs_dom": false,
+        "parser_executes_scripts": false
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "parse_ref": "LAW33-P016",
+      "parse_sequence": 16,
+      "snapshot_ref": "LAW32-S016",
+      "source_ref": "LAW31-S016",
+      "parser_profile": "credential-boundary-v1",
+      "parse_state": "credential_boundary_preserved",
+      "source_response_status": null,
+      "source_response_body_path": null,
+      "source_response_body_bytes": null,
+      "source_response_body_sha256": null,
+      "source_snapshot_row_sha256": "de7fd10776d62b533721f53f340039694ccc44101523a13926d16aac19202de6",
+      "structure": null,
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "parse_ref": "LAW33-P017",
+      "parse_sequence": 17,
+      "snapshot_ref": "LAW32-S017",
+      "source_ref": "LAW31-S017",
+      "parser_profile": "html-document-v1",
+      "parse_state": "parsed_html_structure",
+      "source_response_status": 200,
+      "source_response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s017.html",
+      "source_response_body_bytes": 18768,
+      "source_response_body_sha256": "a1cc5e51a9a99bb507f969c8d0ce5e048e93ea1a8ffdd6d0cea8bbc6842d8870",
+      "source_snapshot_row_sha256": "b8f98742cca6ada19a3e627e1bdac9c4b54372643f1ffcbe0156a3e9e6821dc7",
+      "structure": {
+        "parser_family": "deterministic-html-token-count-v1",
+        "input_utf8_characters": 18764,
+        "line_count": 378,
+        "doctype_present": true,
+        "html_element_present": true,
+        "head_element_present": true,
+        "body_element_present": true,
+        "comment_count": 29,
+        "total_tag_tokens": 513,
+        "closing_tag_tokens": 239,
+        "self_closing_tag_tokens": 4,
+        "distinct_tag_names": 36,
+        "tag_counts": {
+          "a": 70,
+          "address": 1,
+          "article": 1,
+          "aside": 1,
+          "body": 1,
+          "br": 2,
+          "button": 9,
+          "div": 24,
+          "em": 1,
+          "footer": 1,
+          "form": 1,
+          "h1": 1,
+          "h3": 2,
+          "head": 1,
+          "header": 2,
+          "html": 2,
+          "img": 5,
+          "input": 4,
+          "label": 1,
+          "li": 68,
+          "link": 10,
+          "main": 1,
+          "meta": 12,
+          "nav": 3,
+          "p": 5,
+          "script": 11,
+          "section": 1,
+          "span": 9,
+          "strong": 3,
+          "table": 1,
+          "tfoot": 1,
+          "th": 6,
+          "thead": 1,
+          "title": 1,
+          "tr": 2,
+          "ul": 9
+        },
+        "distinct_attribute_names": 28,
+        "attribute_counts": {
+          "accept-charset": 1,
+          "action": 1,
+          "alt": 5,
+          "aria-controls": 6,
+          "aria-expanded": 6,
+          "aria-label": 1,
+          "async": 2,
+          "autocomplete": 2,
+          "charset": 1,
+          "class": 108,
+          "content": 11,
+          "for": 1,
+          "href": 80,
+          "http-equiv": 1,
+          "id": 15,
+          "lang": 1,
+          "name": 10,
+          "property": 4,
+          "rel": 10,
+          "role": 4,
+          "sizes": 4,
+          "src": 13,
+          "style": 2,
+          "target": 6,
+          "title": 1,
+          "type": 17,
+          "value": 2,
+          "width": 2
+        },
+        "title_present": true,
+        "title_characters": 50,
+        "title_sha256": "e297a36cdae66af270152107ff85af71c5347bbe541d1eb80cbd3f0c0ab37c24",
+        "heading_counts": {
+          "h1": 1,
+          "h2": 0,
+          "h3": 2,
+          "h4": 0,
+          "h5": 0,
+          "h6": 0
+        },
+        "structure_counts": {
+          "anchors": 70,
+          "forms": 1,
+          "inputs": 4,
+          "buttons": 9,
+          "tables": 1,
+          "table_rows": 2,
+          "table_headers": 6,
+          "table_cells": 0,
+          "ordered_lists": 0,
+          "unordered_lists": 9,
+          "list_items": 68,
+          "paragraphs": 5,
+          "scripts": 11,
+          "styles": 0,
+          "meta": 12,
+          "links": 10
+        },
+        "visible_text_characters": 1874,
+        "visible_word_tokens": 255,
+        "tag_names_truncated": false,
+        "attribute_names_truncated": false,
+        "parser_constructs_dom": false,
+        "parser_executes_scripts": false
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "parse_ref": "LAW33-P018",
+      "parse_sequence": 18,
+      "snapshot_ref": "LAW32-S018",
+      "source_ref": "LAW31-S018",
+      "parser_profile": "html-document-v1",
+      "parse_state": "parsed_html_structure",
+      "source_response_status": 200,
+      "source_response_body_path": "data/acquisition/lake-allocator-war-wave-32/snapshots/law32-s018.html",
+      "source_response_body_bytes": 56102,
+      "source_response_body_sha256": "768a22b317bff06d8a93920f5c352c43b232171343bb81cce073aa2cf12a4d13",
+      "source_snapshot_row_sha256": "473a18b7e60b711c2ac7fb95b353d51d437a347e91f5a8f7846d0facce635b2d",
+      "structure": {
+        "parser_family": "deterministic-html-token-count-v1",
+        "input_utf8_characters": 56094,
+        "line_count": 990,
+        "doctype_present": true,
+        "html_element_present": true,
+        "head_element_present": true,
+        "body_element_present": true,
+        "comment_count": 4,
+        "total_tag_tokens": 648,
+        "closing_tag_tokens": 314,
+        "self_closing_tag_tokens": 10,
+        "distinct_tag_names": 35,
+        "tag_counts": {
+          "a": 72,
+          "aside": 1,
+          "body": 1,
+          "br": 2,
+          "button": 13,
+          "desc": 1,
+          "div": 50,
+          "e": 1,
+          "em": 2,
+          "footer": 1,
+          "form": 1,
+          "h1": 1,
+          "h2": 3,
+          "h3": 3,
+          "head": 1,
+          "header": 2,
+          "html": 1,
+          "img": 7,
+          "input": 2,
+          "label": 1,
+          "li": 70,
+          "link": 2,
+          "main": 1,
+          "meta": 5,
+          "nav": 3,
+          "p": 21,
+          "path": 1,
+          "script": 4,
+          "section": 9,
+          "span": 17,
+          "strong": 10,
+          "svg": 4,
+          "title": 2,
+          "ul": 17,
+          "use": 2
+        },
+        "distinct_attribute_names": 58,
+        "attribute_counts": {
+          "a": 1,
+          "action": 1,
+          "alt": 7,
+          "aria-controls": 8,
+          "aria-describedby": 1,
+          "aria-expanded": 7,
+          "aria-hidden": 6,
+          "aria-label": 4,
+          "aria-labelledby": 2,
+          "async": 1,
+          "autocomplete": 1,
+          "b": 1,
+          "charset": 1,
+          "class": 197,
+          "content": 3,
+          "d": 2,
+          "d.substring": 1,
+          "data-close-modal": 3,
+          "data-disable-with": 1,
+          "data-open-modal": 1,
+          "data-root-margin": 1,
+          "data-scroll-offset": 1,
+          "data-threshold": 1,
+          "data-title-heading-level": 1,
+          "data-title-text": 1,
+          "date": 1,
+          "description": 1,
+          "expires": 1,
+          "fill": 1,
+          "fill-rule": 1,
+          "focusable": 4,
+          "for": 1,
+          "height": 1,
+          "href": 74,
+          "http-equiv": 2,
+          "id": 20,
+          "if": 1,
+          "lang": 1,
+          "media": 1,
+          "method": 1,
+          "name": 4,
+          "null": 1,
+          "path": 1,
+          "placeholder": 1,
+          "rel": 26,
+          "role": 11,
+          "src": 9,
+          "style": 1,
+          "tabindex": 1,
+          "this.check": 1,
+          "this.set": 1,
+          "title": 6,
+          "type": 12,
+          "value": 1,
+          "viewbox": 1,
+          "width": 1,
+          "xlink:href": 2,
+          "xmlns": 1
+        },
+        "title_present": true,
+        "title_characters": 14,
+        "title_sha256": "e4f05d2883882e9c70bf5503c2b01dbbc0199c635320c156018e86f1cffd693b",
+        "heading_counts": {
+          "h1": 1,
+          "h2": 3,
+          "h3": 3,
+          "h4": 0,
+          "h5": 0,
+          "h6": 0
+        },
+        "structure_counts": {
+          "anchors": 72,
+          "forms": 1,
+          "inputs": 2,
+          "buttons": 13,
+          "tables": 0,
+          "table_rows": 0,
+          "table_headers": 0,
+          "table_cells": 0,
+          "ordered_lists": 0,
+          "unordered_lists": 17,
+          "list_items": 70,
+          "paragraphs": 21,
+          "scripts": 4,
+          "styles": 0,
+          "meta": 5,
+          "links": 2
+        },
+        "visible_text_characters": 5024,
+        "visible_word_tokens": 814,
+        "tag_names_truncated": false,
+        "attribute_names_truncated": false,
+        "parser_constructs_dom": false,
+        "parser_executes_scripts": false
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "parse_ref": "LAW33-P019",
+      "parse_sequence": 19,
+      "snapshot_ref": "LAW32-S019",
+      "source_ref": "LAW31-S019",
+      "parser_profile": "credential-boundary-v1",
+      "parse_state": "credential_boundary_preserved",
+      "source_response_status": null,
+      "source_response_body_path": null,
+      "source_response_body_bytes": null,
+      "source_response_body_sha256": null,
+      "source_snapshot_row_sha256": "a3d52a9528094869a233809281246382aaaa271d25270fb0fb624f840e22a973",
+      "structure": null,
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    }
+  ],
+  "routes": [
+    {
+      "route_ref": "LAW30-R01",
+      "route_class": "protected-personnel-records",
+      "route_sequence": 1,
+      "route_owner": "labor-immigration-workforce-mobility-estate",
+      "source_task_count": 4,
+      "source_refs": [],
+      "parse_refs": [],
+      "parse_states": {},
+      "complete_denominators": 0,
+      "evidence_rows": 0,
+      "estate_adoptions": 0,
+      "finding_promotions": 0,
+      "graph_effects": 0,
+      "publication_clearances": 0
+    },
+    {
+      "route_ref": "LAW30-R02",
+      "route_class": "internal-authority-and-inventory",
+      "route_sequence": 2,
+      "route_owner": "us-executive-appointments-ethics-estate",
+      "source_task_count": 8,
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S002",
+        "LAW31-S003",
+        "LAW31-S004"
+      ],
+      "parse_refs": [
+        "LAW33-P001",
+        "LAW33-P002",
+        "LAW33-P003",
+        "LAW33-P004"
+      ],
+      "parse_states": {
+        "parsed_json_structure": 4
+      },
+      "complete_denominators": 0,
+      "evidence_rows": 0,
+      "estate_adoptions": 0,
+      "finding_promotions": 0,
+      "graph_effects": 0,
+      "publication_clearances": 0
+    },
+    {
+      "route_ref": "LAW30-R03",
+      "route_class": "public-award-and-contract-denominators",
+      "route_sequence": 3,
+      "route_owner": "public-money-industrial-policy-estate",
+      "source_task_count": 4,
+      "source_refs": [
+        "LAW31-S005",
+        "LAW31-S006",
+        "LAW31-S007",
+        "LAW31-S008",
+        "LAW31-S009",
+        "LAW31-S010"
+      ],
+      "parse_refs": [
+        "LAW33-P005",
+        "LAW33-P006",
+        "LAW33-P007",
+        "LAW33-P008",
+        "LAW33-P009",
+        "LAW33-P010"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 2,
+        "parsed_html_structure": 1,
+        "parsed_json_structure": 3
+      },
+      "complete_denominators": 0,
+      "evidence_rows": 0,
+      "estate_adoptions": 0,
+      "finding_promotions": 0,
+      "graph_effects": 0,
+      "publication_clearances": 0
+    },
+    {
+      "route_ref": "LAW30-R04",
+      "route_class": "published-enforcement-and-action-registers",
+      "route_sequence": 4,
+      "route_owner": "regulatory-markets-estate",
+      "source_task_count": 4,
+      "source_refs": [
+        "LAW31-S004",
+        "LAW31-S011",
+        "LAW31-S012",
+        "LAW31-S013"
+      ],
+      "parse_refs": [
+        "LAW33-P004",
+        "LAW33-P011",
+        "LAW33-P012",
+        "LAW33-P013"
+      ],
+      "parse_states": {
+        "parsed_html_structure": 3,
+        "parsed_json_structure": 1
+      },
+      "complete_denominators": 0,
+      "evidence_rows": 0,
+      "estate_adoptions": 0,
+      "finding_promotions": 0,
+      "graph_effects": 0,
+      "publication_clearances": 0
+    },
+    {
+      "route_ref": "LAW30-R05",
+      "route_class": "correction-dockets-and-outcomes",
+      "route_sequence": 5,
+      "route_owner": "public-interest-crossing-estate",
+      "source_task_count": 9,
+      "source_refs": [
+        "LAW31-S014",
+        "LAW31-S015",
+        "LAW31-S016",
+        "LAW31-S017"
+      ],
+      "parse_refs": [
+        "LAW33-P014",
+        "LAW33-P015",
+        "LAW33-P016",
+        "LAW33-P017"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 1,
+        "parsed_html_structure": 1,
+        "parsed_http_error_structure": 2
+      },
+      "complete_denominators": 0,
+      "evidence_rows": 0,
+      "estate_adoptions": 0,
+      "finding_promotions": 0,
+      "graph_effects": 0,
+      "publication_clearances": 0
+    },
+    {
+      "route_ref": "LAW30-R06",
+      "route_class": "affected-comparator-and-distributional-joins",
+      "route_sequence": 6,
+      "route_owner": "public-interest-crossing-estate",
+      "source_task_count": 6,
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S005",
+        "LAW31-S007",
+        "LAW31-S009",
+        "LAW31-S018"
+      ],
+      "parse_refs": [
+        "LAW33-P001",
+        "LAW33-P005",
+        "LAW33-P007",
+        "LAW33-P009",
+        "LAW33-P018"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 2,
+        "parsed_html_structure": 1,
+        "parsed_json_structure": 2
+      },
+      "complete_denominators": 0,
+      "evidence_rows": 0,
+      "estate_adoptions": 0,
+      "finding_promotions": 0,
+      "graph_effects": 0,
+      "publication_clearances": 0
+    },
+    {
+      "route_ref": "LAW30-R07",
+      "route_class": "financial-recovery-and-continuity",
+      "route_sequence": 7,
+      "route_owner": "public-money-industrial-policy-estate",
+      "source_task_count": 3,
+      "source_refs": [
+        "LAW31-S005",
+        "LAW31-S009",
+        "LAW31-S012",
+        "LAW31-S018",
+        "LAW31-S019"
+      ],
+      "parse_refs": [
+        "LAW33-P005",
+        "LAW33-P009",
+        "LAW33-P012",
+        "LAW33-P018",
+        "LAW33-P019"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 2,
+        "parsed_html_structure": 2,
+        "parsed_json_structure": 1
+      },
+      "complete_denominators": 0,
+      "evidence_rows": 0,
+      "estate_adoptions": 0,
+      "finding_promotions": 0,
+      "graph_effects": 0,
+      "publication_clearances": 0
+    }
+  ],
+  "tasks": [
+    {
+      "source_task_ref": "LAW30-G001",
+      "source_route_ref": "LAW30-R01",
+      "source_route_class": "protected-personnel-records",
+      "source_result_state": "preserved_access_bounded",
+      "source_refs": [],
+      "parse_refs": [],
+      "parse_states": {},
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G002",
+      "source_route_ref": "LAW30-R02",
+      "source_route_class": "internal-authority-and-inventory",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S002",
+        "LAW31-S003",
+        "LAW31-S004"
+      ],
+      "parse_refs": [
+        "LAW33-P001",
+        "LAW33-P002",
+        "LAW33-P003",
+        "LAW33-P004"
+      ],
+      "parse_states": {
+        "parsed_json_structure": 4
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G003",
+      "source_route_ref": "LAW30-R01",
+      "source_route_class": "protected-personnel-records",
+      "source_result_state": "preserved_access_bounded",
+      "source_refs": [],
+      "parse_refs": [],
+      "parse_states": {},
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G004",
+      "source_route_ref": "LAW30-R05",
+      "source_route_class": "correction-dockets-and-outcomes",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S014",
+        "LAW31-S015",
+        "LAW31-S016",
+        "LAW31-S017"
+      ],
+      "parse_refs": [
+        "LAW33-P014",
+        "LAW33-P015",
+        "LAW33-P016",
+        "LAW33-P017"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 1,
+        "parsed_html_structure": 1,
+        "parsed_http_error_structure": 2
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G005",
+      "source_route_ref": "LAW30-R05",
+      "source_route_class": "correction-dockets-and-outcomes",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S014",
+        "LAW31-S015",
+        "LAW31-S016",
+        "LAW31-S017"
+      ],
+      "parse_refs": [
+        "LAW33-P014",
+        "LAW33-P015",
+        "LAW33-P016",
+        "LAW33-P017"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 1,
+        "parsed_html_structure": 1,
+        "parsed_http_error_structure": 2
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G006",
+      "source_route_ref": "LAW30-R05",
+      "source_route_class": "correction-dockets-and-outcomes",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S014",
+        "LAW31-S015",
+        "LAW31-S016",
+        "LAW31-S017"
+      ],
+      "parse_refs": [
+        "LAW33-P014",
+        "LAW33-P015",
+        "LAW33-P016",
+        "LAW33-P017"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 1,
+        "parsed_html_structure": 1,
+        "parsed_http_error_structure": 2
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G007",
+      "source_route_ref": "LAW30-R02",
+      "source_route_class": "internal-authority-and-inventory",
+      "source_result_state": "bounded_snapshot_preserved_unavailable",
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S002",
+        "LAW31-S003",
+        "LAW31-S004"
+      ],
+      "parse_refs": [
+        "LAW33-P001",
+        "LAW33-P002",
+        "LAW33-P003",
+        "LAW33-P004"
+      ],
+      "parse_states": {
+        "parsed_json_structure": 4
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G008",
+      "source_route_ref": "LAW30-R02",
+      "source_route_class": "internal-authority-and-inventory",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S002",
+        "LAW31-S003",
+        "LAW31-S004"
+      ],
+      "parse_refs": [
+        "LAW33-P001",
+        "LAW33-P002",
+        "LAW33-P003",
+        "LAW33-P004"
+      ],
+      "parse_states": {
+        "parsed_json_structure": 4
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G009",
+      "source_route_ref": "LAW30-R02",
+      "source_route_class": "internal-authority-and-inventory",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S002",
+        "LAW31-S003",
+        "LAW31-S004"
+      ],
+      "parse_refs": [
+        "LAW33-P001",
+        "LAW33-P002",
+        "LAW33-P003",
+        "LAW33-P004"
+      ],
+      "parse_states": {
+        "parsed_json_structure": 4
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G010",
+      "source_route_ref": "LAW30-R01",
+      "source_route_class": "protected-personnel-records",
+      "source_result_state": "preserved_access_bounded",
+      "source_refs": [],
+      "parse_refs": [],
+      "parse_states": {},
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G011",
+      "source_route_ref": "LAW30-R01",
+      "source_route_class": "protected-personnel-records",
+      "source_result_state": "preserved_access_bounded",
+      "source_refs": [],
+      "parse_refs": [],
+      "parse_states": {},
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G012",
+      "source_route_ref": "LAW30-R06",
+      "source_route_class": "affected-comparator-and-distributional-joins",
+      "source_result_state": "bounded_snapshot_preserved_join_block",
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S005",
+        "LAW31-S007",
+        "LAW31-S009",
+        "LAW31-S018"
+      ],
+      "parse_refs": [
+        "LAW33-P001",
+        "LAW33-P005",
+        "LAW33-P007",
+        "LAW33-P009",
+        "LAW33-P018"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 2,
+        "parsed_html_structure": 1,
+        "parsed_json_structure": 2
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G013",
+      "source_route_ref": "LAW30-R06",
+      "source_route_class": "affected-comparator-and-distributional-joins",
+      "source_result_state": "bounded_snapshot_preserved_join_block",
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S005",
+        "LAW31-S007",
+        "LAW31-S009",
+        "LAW31-S018"
+      ],
+      "parse_refs": [
+        "LAW33-P001",
+        "LAW33-P005",
+        "LAW33-P007",
+        "LAW33-P009",
+        "LAW33-P018"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 2,
+        "parsed_html_structure": 1,
+        "parsed_json_structure": 2
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G014",
+      "source_route_ref": "LAW30-R06",
+      "source_route_class": "affected-comparator-and-distributional-joins",
+      "source_result_state": "bounded_snapshot_preserved_join_block",
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S005",
+        "LAW31-S007",
+        "LAW31-S009",
+        "LAW31-S018"
+      ],
+      "parse_refs": [
+        "LAW33-P001",
+        "LAW33-P005",
+        "LAW33-P007",
+        "LAW33-P009",
+        "LAW33-P018"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 2,
+        "parsed_html_structure": 1,
+        "parsed_json_structure": 2
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G015",
+      "source_route_ref": "LAW30-R06",
+      "source_route_class": "affected-comparator-and-distributional-joins",
+      "source_result_state": "bounded_snapshot_preserved_join_block",
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S005",
+        "LAW31-S007",
+        "LAW31-S009",
+        "LAW31-S018"
+      ],
+      "parse_refs": [
+        "LAW33-P001",
+        "LAW33-P005",
+        "LAW33-P007",
+        "LAW33-P009",
+        "LAW33-P018"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 2,
+        "parsed_html_structure": 1,
+        "parsed_json_structure": 2
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G016",
+      "source_route_ref": "LAW30-R05",
+      "source_route_class": "correction-dockets-and-outcomes",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S014",
+        "LAW31-S015",
+        "LAW31-S016",
+        "LAW31-S017"
+      ],
+      "parse_refs": [
+        "LAW33-P014",
+        "LAW33-P015",
+        "LAW33-P016",
+        "LAW33-P017"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 1,
+        "parsed_html_structure": 1,
+        "parsed_http_error_structure": 2
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G017",
+      "source_route_ref": "LAW30-R03",
+      "source_route_class": "public-award-and-contract-denominators",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S005",
+        "LAW31-S006",
+        "LAW31-S007",
+        "LAW31-S008",
+        "LAW31-S009",
+        "LAW31-S010"
+      ],
+      "parse_refs": [
+        "LAW33-P005",
+        "LAW33-P006",
+        "LAW33-P007",
+        "LAW33-P008",
+        "LAW33-P009",
+        "LAW33-P010"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 2,
+        "parsed_html_structure": 1,
+        "parsed_json_structure": 3
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G018",
+      "source_route_ref": "LAW30-R04",
+      "source_route_class": "published-enforcement-and-action-registers",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S004",
+        "LAW31-S011",
+        "LAW31-S012",
+        "LAW31-S013"
+      ],
+      "parse_refs": [
+        "LAW33-P004",
+        "LAW33-P011",
+        "LAW33-P012",
+        "LAW33-P013"
+      ],
+      "parse_states": {
+        "parsed_html_structure": 3,
+        "parsed_json_structure": 1
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G019",
+      "source_route_ref": "LAW30-R03",
+      "source_route_class": "public-award-and-contract-denominators",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S005",
+        "LAW31-S006",
+        "LAW31-S007",
+        "LAW31-S008",
+        "LAW31-S009",
+        "LAW31-S010"
+      ],
+      "parse_refs": [
+        "LAW33-P005",
+        "LAW33-P006",
+        "LAW33-P007",
+        "LAW33-P008",
+        "LAW33-P009",
+        "LAW33-P010"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 2,
+        "parsed_html_structure": 1,
+        "parsed_json_structure": 3
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G020",
+      "source_route_ref": "LAW30-R07",
+      "source_route_class": "financial-recovery-and-continuity",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S005",
+        "LAW31-S009",
+        "LAW31-S012",
+        "LAW31-S018",
+        "LAW31-S019"
+      ],
+      "parse_refs": [
+        "LAW33-P005",
+        "LAW33-P009",
+        "LAW33-P012",
+        "LAW33-P018",
+        "LAW33-P019"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 2,
+        "parsed_html_structure": 2,
+        "parsed_json_structure": 1
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G021",
+      "source_route_ref": "LAW30-R07",
+      "source_route_class": "financial-recovery-and-continuity",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S005",
+        "LAW31-S009",
+        "LAW31-S012",
+        "LAW31-S018",
+        "LAW31-S019"
+      ],
+      "parse_refs": [
+        "LAW33-P005",
+        "LAW33-P009",
+        "LAW33-P012",
+        "LAW33-P018",
+        "LAW33-P019"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 2,
+        "parsed_html_structure": 2,
+        "parsed_json_structure": 1
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G022",
+      "source_route_ref": "LAW30-R07",
+      "source_route_class": "financial-recovery-and-continuity",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S005",
+        "LAW31-S009",
+        "LAW31-S012",
+        "LAW31-S018",
+        "LAW31-S019"
+      ],
+      "parse_refs": [
+        "LAW33-P005",
+        "LAW33-P009",
+        "LAW33-P012",
+        "LAW33-P018",
+        "LAW33-P019"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 2,
+        "parsed_html_structure": 2,
+        "parsed_json_structure": 1
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G023",
+      "source_route_ref": "LAW30-R03",
+      "source_route_class": "public-award-and-contract-denominators",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S005",
+        "LAW31-S006",
+        "LAW31-S007",
+        "LAW31-S008",
+        "LAW31-S009",
+        "LAW31-S010"
+      ],
+      "parse_refs": [
+        "LAW33-P005",
+        "LAW33-P006",
+        "LAW33-P007",
+        "LAW33-P008",
+        "LAW33-P009",
+        "LAW33-P010"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 2,
+        "parsed_html_structure": 1,
+        "parsed_json_structure": 3
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G024",
+      "source_route_ref": "LAW30-R04",
+      "source_route_class": "published-enforcement-and-action-registers",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S004",
+        "LAW31-S011",
+        "LAW31-S012",
+        "LAW31-S013"
+      ],
+      "parse_refs": [
+        "LAW33-P004",
+        "LAW33-P011",
+        "LAW33-P012",
+        "LAW33-P013"
+      ],
+      "parse_states": {
+        "parsed_html_structure": 3,
+        "parsed_json_structure": 1
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G025",
+      "source_route_ref": "LAW30-R03",
+      "source_route_class": "public-award-and-contract-denominators",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S005",
+        "LAW31-S006",
+        "LAW31-S007",
+        "LAW31-S008",
+        "LAW31-S009",
+        "LAW31-S010"
+      ],
+      "parse_refs": [
+        "LAW33-P005",
+        "LAW33-P006",
+        "LAW33-P007",
+        "LAW33-P008",
+        "LAW33-P009",
+        "LAW33-P010"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 2,
+        "parsed_html_structure": 1,
+        "parsed_json_structure": 3
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G026",
+      "source_route_ref": "LAW30-R04",
+      "source_route_class": "published-enforcement-and-action-registers",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S004",
+        "LAW31-S011",
+        "LAW31-S012",
+        "LAW31-S013"
+      ],
+      "parse_refs": [
+        "LAW33-P004",
+        "LAW33-P011",
+        "LAW33-P012",
+        "LAW33-P013"
+      ],
+      "parse_states": {
+        "parsed_html_structure": 3,
+        "parsed_json_structure": 1
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G027",
+      "source_route_ref": "LAW30-R04",
+      "source_route_class": "published-enforcement-and-action-registers",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S004",
+        "LAW31-S011",
+        "LAW31-S012",
+        "LAW31-S013"
+      ],
+      "parse_refs": [
+        "LAW33-P004",
+        "LAW33-P011",
+        "LAW33-P012",
+        "LAW33-P013"
+      ],
+      "parse_states": {
+        "parsed_html_structure": 3,
+        "parsed_json_structure": 1
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G028",
+      "source_route_ref": "LAW30-R06",
+      "source_route_class": "affected-comparator-and-distributional-joins",
+      "source_result_state": "bounded_snapshot_preserved_join_block",
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S005",
+        "LAW31-S007",
+        "LAW31-S009",
+        "LAW31-S018"
+      ],
+      "parse_refs": [
+        "LAW33-P001",
+        "LAW33-P005",
+        "LAW33-P007",
+        "LAW33-P009",
+        "LAW33-P018"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 2,
+        "parsed_html_structure": 1,
+        "parsed_json_structure": 2
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G029",
+      "source_route_ref": "LAW30-R02",
+      "source_route_class": "internal-authority-and-inventory",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S002",
+        "LAW31-S003",
+        "LAW31-S004"
+      ],
+      "parse_refs": [
+        "LAW33-P001",
+        "LAW33-P002",
+        "LAW33-P003",
+        "LAW33-P004"
+      ],
+      "parse_states": {
+        "parsed_json_structure": 4
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G030",
+      "source_route_ref": "LAW30-R05",
+      "source_route_class": "correction-dockets-and-outcomes",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S014",
+        "LAW31-S015",
+        "LAW31-S016",
+        "LAW31-S017"
+      ],
+      "parse_refs": [
+        "LAW33-P014",
+        "LAW33-P015",
+        "LAW33-P016",
+        "LAW33-P017"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 1,
+        "parsed_html_structure": 1,
+        "parsed_http_error_structure": 2
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G031",
+      "source_route_ref": "LAW30-R05",
+      "source_route_class": "correction-dockets-and-outcomes",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S014",
+        "LAW31-S015",
+        "LAW31-S016",
+        "LAW31-S017"
+      ],
+      "parse_refs": [
+        "LAW33-P014",
+        "LAW33-P015",
+        "LAW33-P016",
+        "LAW33-P017"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 1,
+        "parsed_html_structure": 1,
+        "parsed_http_error_structure": 2
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G032",
+      "source_route_ref": "LAW30-R05",
+      "source_route_class": "correction-dockets-and-outcomes",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S014",
+        "LAW31-S015",
+        "LAW31-S016",
+        "LAW31-S017"
+      ],
+      "parse_refs": [
+        "LAW33-P014",
+        "LAW33-P015",
+        "LAW33-P016",
+        "LAW33-P017"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 1,
+        "parsed_html_structure": 1,
+        "parsed_http_error_structure": 2
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G033",
+      "source_route_ref": "LAW30-R02",
+      "source_route_class": "internal-authority-and-inventory",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S002",
+        "LAW31-S003",
+        "LAW31-S004"
+      ],
+      "parse_refs": [
+        "LAW33-P001",
+        "LAW33-P002",
+        "LAW33-P003",
+        "LAW33-P004"
+      ],
+      "parse_states": {
+        "parsed_json_structure": 4
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G034",
+      "source_route_ref": "LAW30-R02",
+      "source_route_class": "internal-authority-and-inventory",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S002",
+        "LAW31-S003",
+        "LAW31-S004"
+      ],
+      "parse_refs": [
+        "LAW33-P001",
+        "LAW33-P002",
+        "LAW33-P003",
+        "LAW33-P004"
+      ],
+      "parse_states": {
+        "parsed_json_structure": 4
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G035",
+      "source_route_ref": "LAW30-R02",
+      "source_route_class": "internal-authority-and-inventory",
+      "source_result_state": "bounded_snapshot_preserved_unavailable",
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S002",
+        "LAW31-S003",
+        "LAW31-S004"
+      ],
+      "parse_refs": [
+        "LAW33-P001",
+        "LAW33-P002",
+        "LAW33-P003",
+        "LAW33-P004"
+      ],
+      "parse_states": {
+        "parsed_json_structure": 4
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G036",
+      "source_route_ref": "LAW30-R05",
+      "source_route_class": "correction-dockets-and-outcomes",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S014",
+        "LAW31-S015",
+        "LAW31-S016",
+        "LAW31-S017"
+      ],
+      "parse_refs": [
+        "LAW33-P014",
+        "LAW33-P015",
+        "LAW33-P016",
+        "LAW33-P017"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 1,
+        "parsed_html_structure": 1,
+        "parsed_http_error_structure": 2
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G037",
+      "source_route_ref": "LAW30-R05",
+      "source_route_class": "correction-dockets-and-outcomes",
+      "source_result_state": "bounded_snapshot_preserved_partial",
+      "source_refs": [
+        "LAW31-S014",
+        "LAW31-S015",
+        "LAW31-S016",
+        "LAW31-S017"
+      ],
+      "parse_refs": [
+        "LAW33-P014",
+        "LAW33-P015",
+        "LAW33-P016",
+        "LAW33-P017"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 1,
+        "parsed_html_structure": 1,
+        "parsed_http_error_structure": 2
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    },
+    {
+      "source_task_ref": "LAW30-G038",
+      "source_route_ref": "LAW30-R06",
+      "source_route_class": "affected-comparator-and-distributional-joins",
+      "source_result_state": "bounded_snapshot_preserved_join_block",
+      "source_refs": [
+        "LAW31-S001",
+        "LAW31-S005",
+        "LAW31-S007",
+        "LAW31-S009",
+        "LAW31-S018"
+      ],
+      "parse_refs": [
+        "LAW33-P001",
+        "LAW33-P005",
+        "LAW33-P007",
+        "LAW33-P009",
+        "LAW33-P018"
+      ],
+      "parse_states": {
+        "credential_boundary_preserved": 2,
+        "parsed_html_structure": 1,
+        "parsed_json_structure": 2
+      },
+      "complete_denominator": false,
+      "evidence_adjudicated": false,
+      "estate_adopted": false,
+      "finding_promoted": false,
+      "graph_effect": "none",
+      "publication_status": "blocked"
+    }
+  ],
+  "execution_contract": {
+    "one_parse_per_source_snapshot": true,
+    "network_requests_performed": 0,
+    "frozen_response_hashes_verified": true,
+    "parser_identity_hash_bound": true,
+    "parse_objects_reused_by_route_and_task": true,
+    "release_validation_refetches_network": false,
+    "complete_denominator_created": false
+  },
+  "boundaries": {
+    "structural_parse_is_evidence_row": false,
+    "structural_parse_closes_source_gap": false,
+    "json_array_length_is_complete_denominator": false,
+    "json_key_is_institutional_semantics": false,
+    "html_link_count_is_docket_denominator": false,
+    "html_text_count_is_affected_population": false,
+    "http_error_is_record_absence": false,
+    "credential_boundary_is_no_records": false,
+    "parser_success_authorizes_join": false,
+    "shared_structure_is_relationship": false,
+    "parse_recurrence_is_prevalence": false,
+    "identity_created": false,
+    "relationship_created": false,
+    "participation_created": false,
+    "active_claim_created": false,
+    "hop_created": false,
+    "evidence_adjudicated": false,
+    "finding_promoted": false,
+    "publication_cleared": false,
+    "graph_effect": "none"
+  }
+}

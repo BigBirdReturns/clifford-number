@@ -1,15 +1,15 @@
 # Lake index census
 
-Source fingerprint: `4d46b0f2aa6199d1b7044dee01e237ad849e3667ee0a87cde1023fde45b4c0e1`
+Source fingerprint: `0f3b67de86d68779413bfbbab1c7270c26b93617dcf314e6185600a74e34e9dd`
 
 ## The six waterlines
 
 | Waterline | Count | Share of evidence files |
 |---|---:|---:|
-| Tracked evidence-bearing files physically present | 1544 | 100.0% |
-| Reachable from declared authoritative roots | 1544 | 100.0% |
-| Reachable from any detected index or manifest | 1544 | 100.0% |
-| Reachable from current public entry roots | 393 | 25.5% |
+| Tracked evidence-bearing files physically present | 1551 | 100.0% |
+| Reachable from declared authoritative roots | 1551 | 100.0% |
+| Reachable from any detected index or manifest | 1551 | 100.0% |
+| Reachable from current public entry roots | 400 | 25.8% |
 | Exact orphan evidence files with no inbound repository reference | 0 | 0.0% |
 | Evidence files with no detected program owner | 0 | 0.0% |
 

@@ -306,3 +306,8 @@ Wave 31 executes the thirty-four publicly addressable Wave 30 obligations throug
 ## Allocator-war bounded source snapshots Wave 32
 
 Wave 32 freezes each of the nineteen Wave 31 official locators as one exact public request-response object or one explicit credential boundary. Fifteen bounded requests and four access boundaries are reused across the unchanged thirty-eight-task route denominator. Frozen source responses remain acquisition-only and create no evidence, finding, graph, or publication effect. See `reports/lake-allocator-war-bounded-source-snapshots-wave-32.md`.
+
+
+## Allocator-war frozen source structural parses Wave 33
+
+Wave 33 verifies every permanent Wave 32 response hash and emits one deterministic structural parse row for each of the nineteen source objects. Seven JSON, eight HTML, and four credential-boundary rows are reused across the unchanged route and task denominator. Structural addressability creates no complete denominator, evidence adjudication, finding, graph effect, or publication authority. See `reports/lake-allocator-war-structural-parses-wave-33.md`.
