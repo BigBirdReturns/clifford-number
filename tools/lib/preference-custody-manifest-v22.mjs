@@ -150,6 +150,7 @@ export function validatePreferenceCustodyManifestV22(manifest) {
   if (transition.resolved_base_frontier !== 'measurement_construct_validity_item_security_and_administration_independence_assurance') errors.push('v22 resolved frontier mismatch');
   if (!sameMembers(transition.successor_frontiers, REQUIRED_SUCCESSOR_FRONTIERS)) errors.push('v22 successor frontiers are incomplete');
   if (unique(manifest?.real_case_requirements_added).length < 55) errors.push('v22 instrument-validity real-case requirements are incomplete');
+  if (array(manifest?.real_case_requirements_added).some(item => !/^[a-z0-9_]+$/.test(text(item)))) errors.push('v22 instrument-validity real-case requirements must be lowercase underscore-delimited machine identifiers');
   if (unique(manifest?.prohibited_inferences).length < 10) errors.push('v22 prohibited-inference ledger is incomplete');
   if (!text(manifest?.interpretation_contract?.contract_id) || !text(manifest?.interpretation_contract?.what_this_is) || !text(manifest?.interpretation_contract?.what_this_is_not) || !text(manifest?.interpretation_contract?.copy_ready_caveat)) errors.push('v22 interpretation contract is incomplete');
   return errors;
