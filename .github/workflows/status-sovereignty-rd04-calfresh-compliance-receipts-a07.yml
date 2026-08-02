@@ -7,10 +7,13 @@ on:
       - 'data/intake/status-sovereignty-rd04-calfresh-compliance-receipts-a07/**'
       - 'docs/milestones/ssc-rd04-calfresh-compliance-receipts-a07.md'
       - 'schemas/status-sovereignty-rd04-calfresh-compliance-receipts-a07.schema.json'
+      - 'schemas/status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.schema.json'
       - 'tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs'
+      - 'tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.mjs'
       - 'tools/ssc-rd04-a07-order-candidate-extractor.mjs'
       - 'tools/acquire-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs'
       - 'test/status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js'
+      - 'test/status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.test.js'
       - 'test/ssc-rd04-a07-order-candidate-extractor.test.js'
       - 'test/acquire-status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js'
   push:
@@ -20,10 +23,13 @@ on:
       - 'data/intake/status-sovereignty-rd04-calfresh-compliance-receipts-a07/**'
       - 'docs/milestones/ssc-rd04-calfresh-compliance-receipts-a07.md'
       - 'schemas/status-sovereignty-rd04-calfresh-compliance-receipts-a07.schema.json'
+      - 'schemas/status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.schema.json'
       - 'tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs'
+      - 'tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.mjs'
       - 'tools/ssc-rd04-a07-order-candidate-extractor.mjs'
       - 'tools/acquire-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs'
       - 'test/status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js'
+      - 'test/status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.test.js'
       - 'test/ssc-rd04-a07-order-candidate-extractor.test.js'
       - 'test/acquire-status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js'
   workflow_dispatch:
@@ -34,7 +40,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,5 +67,11 @@ jobs:
           node --check test/acquire-status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js
           node tools/acquire-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs validate-ledger
           node test/acquire-status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js
+      - name: Validate current A07 execution progress and exact receipts
+        run: |
+          node --check tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.mjs
+          node --check test/status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.test.js
+          node tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.mjs .
+          node test/status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.test.js
       - name: Refuse deterministic drift
         run: git diff --exit-code
