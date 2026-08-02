@@ -29,24 +29,24 @@ const newSetup = `  const wave36Policy = readJson(root, 'data/project/lake-alloc
     for (const relative of wave36SourcePaths) {
       if (fs.existsSync(full(root, relative))) continue;
       if (!snapshotPathSet.has(relative)) {
-        fail(errors, \\`\${relative}: missing permanent Wave 36 source path\\`);
+        fail(errors, relative + ': missing permanent Wave 36 source path');
         continue;
       }
       const spec = snapshotSpecByPath.get(relative);
       const capture = spec ? captureBySourceRef.get(spec.source_ref) : null;
       if (!spec || !capture) {
-        fail(errors, \\`\${relative}: missing Wave 36 failed-capture custody\\`);
+        fail(errors, relative + ': missing Wave 36 failed-capture custody');
         continue;
       }
       if (spec.required_success !== false || capture.required_success !== false) {
-        fail(errors, \\`\${relative}: required Wave 36 snapshot is absent\\`);
+        fail(errors, relative + ': required Wave 36 snapshot is absent');
       }
-      if (capture.response_ok !== false) fail(errors, \\`\${relative}: absent snapshot claims a successful response\\`);
+      if (capture.response_ok !== false) fail(errors, relative + ': absent snapshot claims a successful response');
       if (capture.response_body_path !== null || capture.response_body_bytes !== 0 || capture.response_body_sha256 !== null) {
-        fail(errors, \\`\${relative}: absent snapshot claims retained response bytes\\`);
+        fail(errors, relative + ': absent snapshot claims retained response bytes');
       }
       if (!['request_failed', 'response_refused_too_large'].includes(capture.capture_state)) {
-        fail(errors, \\`\${relative}: absent snapshot has unsupported capture state \${capture.capture_state}\\`);
+        fail(errors, relative + ': absent snapshot has unsupported capture state ' + capture.capture_state);
       }
     }
   }
@@ -54,8 +54,8 @@ const newSetup = `  const wave36Policy = readJson(root, 'data/project/lake-alloc
 if (validator.includes(oldSetup)) validator = validator.replace(oldSetup, newSetup);
 else if (!validator.includes('const wave36MembershipSourcePaths = wave36SourcePaths.filter')) throw new Error('Wave 21 validator setup drifted');
 
-const oldMembershipLoop = `      for (const relative of wave36SourcePaths) if (byPath.get(relative)?.basin_id !== 'allocator-war-source') fail(errors, \\`\${relative}: wrong Wave 36 source basin\\`);`;
-const newMembershipLoop = `      for (const relative of wave36MembershipSourcePaths) if (byPath.get(relative)?.basin_id !== 'allocator-war-source') fail(errors, \\`\${relative}: wrong Wave 36 source basin\\`);`;
+const oldMembershipLoop = "      for (const relative of wave36SourcePaths) if (byPath.get(relative)?.basin_id !== 'allocator-war-source') fail(errors, `${relative}: wrong Wave 36 source basin`);";
+const newMembershipLoop = "      for (const relative of wave36MembershipSourcePaths) if (byPath.get(relative)?.basin_id !== 'allocator-war-source') fail(errors, `${relative}: wrong Wave 36 source basin`);";
 if (validator.includes(oldMembershipLoop)) validator = validator.replace(oldMembershipLoop, newMembershipLoop);
 else if (!validator.includes(newMembershipLoop)) throw new Error('Wave 21 membership loop drifted');
 fs.writeFileSync(validatorPath, validator);
@@ -75,9 +75,9 @@ const newLoadTail = `    projection: readJson(policy.paths.projection),
     wave36Plan: readJson('data/project/lake-allocator-war-public-acquisition-wave-36-plan.json')
   };`;
 if (test.includes(oldLoadTail)) test = test.replace(oldLoadTail, newLoadTail);
-else if (!test.includes(`wave36Policy: readJson('data/project/lake-allocator-war-public-acquisition-wave-36-policy.json')`)) throw new Error('Wave 21 test state loader drifted');
+else if (!test.includes("wave36Policy: readJson('data/project/lake-allocator-war-public-acquisition-wave-36-policy.json')")) throw new Error('Wave 21 test state loader drifted');
 
-const marker = `// LAW36-OPTIONAL-MISSING-SNAPSHOT-CUSTODY: basin membership covers existing files; the capture ledger covers lawful request failures.`;
+const marker = '// LAW36-OPTIONAL-MISSING-SNAPSHOT-CUSTODY: basin membership covers existing files; the capture ledger covers lawful request failures.';
 const addition = `
 
 ${marker}
@@ -92,14 +92,14 @@ if (fs.existsSync(wave36PolicyPath) && fs.existsSync(wave36PlanPath)) {
     const absent = wave36Plan.source_specs.filter(spec => !fs.existsSync(spec.storage_path));
     for (const spec of absent) {
       const capture = captureBySourceRef.get(spec.source_ref);
-      assert.ok(capture, \\`\${spec.storage_path}: absent snapshot lacks capture-ledger custody\\`);
-      assert.equal(spec.required_success, false, \\`\${spec.storage_path}: required source cannot be absent\\`);
-      assert.equal(capture.required_success, false, \\`\${spec.storage_path}: required capture cannot be absent\\`);
-      assert.equal(capture.response_ok, false, \\`\${spec.storage_path}: absent snapshot claims response success\\`);
-      assert.equal(capture.response_body_path, null, \\`\${spec.storage_path}: absent snapshot claims a retained body path\\`);
-      assert.equal(capture.response_body_bytes, 0, \\`\${spec.storage_path}: absent snapshot claims retained bytes\\`);
-      assert.equal(capture.response_body_sha256, null, \\`\${spec.storage_path}: absent snapshot claims a body digest\\`);
-      assert.ok(['request_failed', 'response_refused_too_large'].includes(capture.capture_state), \\`\${spec.storage_path}: unsupported absent capture state \${capture.capture_state}\\`);
+      assert.ok(capture, spec.storage_path + ': absent snapshot lacks capture-ledger custody');
+      assert.equal(spec.required_success, false, spec.storage_path + ': required source cannot be absent');
+      assert.equal(capture.required_success, false, spec.storage_path + ': required capture cannot be absent');
+      assert.equal(capture.response_ok, false, spec.storage_path + ': absent snapshot claims response success');
+      assert.equal(capture.response_body_path, null, spec.storage_path + ': absent snapshot claims a retained body path');
+      assert.equal(capture.response_body_bytes, 0, spec.storage_path + ': absent snapshot claims retained bytes');
+      assert.equal(capture.response_body_sha256, null, spec.storage_path + ': absent snapshot claims a body digest');
+      assert.ok(['request_failed', 'response_refused_too_large'].includes(capture.capture_state), spec.storage_path + ': unsupported absent capture state ' + capture.capture_state);
     }
     const bodyless = captures.filter(row => row.response_body_path === null);
     assert.equal(absent.length, bodyless.length, 'planned absent snapshots and bodyless capture rows must be one-to-one');
@@ -112,13 +112,13 @@ fs.writeFileSync(testPath, test);
 
 const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
 const validatorCommand = 'node tools/validate-lake-allocator-war-wave-21.mjs';
-const durableCommand = `${validatorCommand} && node test/lake-allocator-war-wave-21.test.js`;
+const durableCommand = validatorCommand + ' && node test/lake-allocator-war-wave-21.test.js';
 if (![validatorCommand, durableCommand].includes(pkg.scripts['validate:lake-allocator-war-wave-21'])) {
   throw new Error('Wave 21 package validator command drifted');
 }
 pkg.scripts['validate:lake-allocator-war-wave-21'] = durableCommand;
 pkg.scripts['ci:lake-allocator-war-wave-21'] = 'npm run build:lake-allocator-war-wave-21 && npm run validate:lake-allocator-war-wave-21';
-fs.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
+fs.writeFileSync(packagePath, JSON.stringify(pkg, null, 2) + '\n');
 
 console.log('Wave 36 Wave 21 membership repair staged');
 console.log('  existing snapshot membership: required');
