@@ -1,0 +1,82 @@
+name: Materialize SSC RD-04 California remedy and outcomes A05
+
+on:
+  pull_request:
+    paths:
+      - 'data/transport/ssc-rd04-a05-materializer-rearm.json'
+      - '.github/workflows/materialize-ssc-rd04-california-remedy-outcomes-a05.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd04-a05-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Recover and verify exact product archive from trusted base
+        run: |
+          BASE=agent/ssc-rd04-a05-materializer-base
+          git fetch origin "refs/heads/${BASE}:refs/remotes/origin/${BASE}"
+          for i in 000 001 002 003; do
+            git show "origin/${BASE}:data/transport/ssc-rd04-a05-payload-${i}.b64" > "/tmp/a05-${i}.b64"
+          done
+          echo '18704d5fcf89a5ff684f1d6e80a4994c5a1a0e7a38320ad214f44c26f93c47ae  /tmp/a05-000.b64' | sha256sum --check
+          echo '5d0e7448d4660a6c445f39ddde27efec7c9d05df9270f847806ab6cd55262fee  /tmp/a05-001.b64' | sha256sum --check
+          echo '8536c25f2360688076973c6caa940b986a8b8789f7cd91fe5bffb9070b794bae  /tmp/a05-002.b64' | sha256sum --check
+          echo '49a442e8aa97a66c69b109b38898c42927620ca3cdfce61f9fe96971e320c502  /tmp/a05-003.b64' | sha256sum --check
+          cat /tmp/a05-*.b64 > /tmp/a05.tar.gz.b64
+          echo '7faca09b44885916f866808e1d6c50d076009863c648e8f0b243cc65406b7b7d  /tmp/a05.tar.gz.b64' | sha256sum --check
+          base64 --decode /tmp/a05.tar.gz.b64 > /tmp/a05.tar.gz
+          echo 'a79103fd8f0fad3bf099b8c4545c085eabd81d273aa15cf49d4d0795d0949f9e  /tmp/a05.tar.gz' | sha256sum --check
+          tar -tzf /tmp/a05.tar.gz | sed 's#^\./##' | grep -v '/$' | sort > /tmp/observed-paths
+          cat > /tmp/expected-paths <<'EOF'
+build/core-thesis/status-sovereignty/rd04-california-remedy-outcomes-a05/manifest.json
+build/core-thesis/status-sovereignty/rd04-california-remedy-outcomes-a05/summary.json
+data/intake/status-sovereignty-rd04-california-remedy-outcomes-a05.json
+data/project/status-sovereignty-rd04-california-remedy-outcomes-a05-release-manifest.json
+docs/milestones/ssc-rd04-california-remedy-outcomes-a05.md
+reports/core-thesis/status-sovereignty/rd04-california-remedy-outcomes-a05/index.html
+reports/core-thesis/status-sovereignty/rd04-california-remedy-outcomes-a05/summary.json
+schemas/status-sovereignty-rd04-california-remedy-outcomes-a05.schema.json
+test/status-sovereignty-rd04-california-remedy-outcomes-a05.test.mjs
+tools/build-status-sovereignty-rd04-california-remedy-outcomes-a05.mjs
+tools/validate-status-sovereignty-rd04-california-remedy-outcomes-a05.mjs
+EOF
+          diff -u /tmp/expected-paths /tmp/observed-paths
+      - name: Extract transport-free A05 product and retire trigger
+        run: |
+          tar -xzf /tmp/a05.tar.gz
+          rm -f data/transport/ssc-rd04-a05-materializer-rearm.json
+          rm -f .github/workflows/materialize-ssc-rd04-california-remedy-outcomes-a05.yml
+      - name: Validate exact proposed bytes
+        run: |
+          node tools/build-status-sovereignty-rd04-california-remedy-outcomes-a05.mjs
+          node tools/validate-status-sovereignty-rd04-california-remedy-outcomes-a05.mjs
+          node test/status-sovereignty-rd04-california-remedy-outcomes-a05.test.mjs
+          npm run release:check
+          git diff --check
+      - name: Publish exact transport-free product
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+        run: |
+          expected="$(git rev-parse HEAD)"
+          remote="$(git ls-remote origin "refs/heads/${BRANCH}" | awk '{print $1}')"
+          test "$remote" = "$expected"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Complete SSC RD-04 California remedy and outcomes A05"
+          git push origin "HEAD:${BRANCH}"
