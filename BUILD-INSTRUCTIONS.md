@@ -498,3 +498,9 @@ Run `node tools/build-lake-allocator-war-public-route-execution-wave-31.mjs` onl
 Run `node tools/acquire-lake-allocator-war-bounded-source-snapshots-wave-32.mjs` only in the bounded acquisition lane. The acquisition must emit nineteen exact source objects: fifteen public HTTP requests and four credential boundaries. The seven required JSON controls must parse successfully. Release validation reads the frozen bytes and must never refetch the network.
 
 Run `node tools/build-lake-allocator-war-bounded-source-snapshots-wave-32.mjs` after the snapshot ledger is complete. The builder preserves the exact thirty-eight-task Wave 31 denominator and creates no complete denominator, evidence adjudication, estate adoption, finding, graph effect, or publication clearance.
+
+
+3.33 **Allocator-war frozen source structural parses — Wave 33.**
+Run `node tools/build-lake-allocator-war-structural-parses-wave-33.mjs` only after the permanent Wave 32 snapshot ledger and response bytes are present. The builder must verify all response hashes, emit exactly nineteen parse rows, perform no network requests, preserve HTTP errors and credential boundaries, and reuse the unchanged seven-route, thirty-eight-task, 153-use denominator.
+
+A structural parse is addressability only. JSON array lengths, field names, HTML tags, links, text counts, HTTP error bodies, and credential boundaries do not establish institutional completeness, authorize joins, adjudicate evidence, create findings, alter the graph, or clear publication.
