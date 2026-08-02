@@ -27,13 +27,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Execute frozen query and count-only form-semantics diagnostics
-        run: node .github/tmp/ssc-rd04-a06-registry-semantics.mjs
-      - name: Upload exact A06 registry semantics receipt
+      - name: Prove corrected registry-row and document identities
+        run: node .github/tmp/ssc-rd04-a06-registry-proof.mjs
+      - name: Upload exact A06 registry identity proof
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd04-a06-registry-semantics
-          path: a06-semantics
+          name: ssc-rd04-a06-registry-identity-proof
+          path: a06-proof
           if-no-files-found: error
           retention-days: 30
