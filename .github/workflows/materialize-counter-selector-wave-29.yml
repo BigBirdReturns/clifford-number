@@ -1,6 +1,11 @@
 name: Materialize Counter-Selector Wave 29
 
 on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-29.yml'
   push:
     branches:
       - 'agent/counter-selector-wave-29-resumability-audit'
@@ -87,4 +92,4 @@ jobs:
       - name: Publish permanent non-workflow Wave 29 head
         run: git push origin HEAD:agent/counter-selector-wave-29-resumability-audit
 
-# rearm
+# rearm-pr
