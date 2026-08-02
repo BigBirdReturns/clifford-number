@@ -1,0 +1,116 @@
+name: TEMP materialize PC-34 identity-boundary package
+
+on:
+  push:
+    branches:
+      - agent/pc34-identity-boundary-materializer
+    paths:
+      - '.pc34/materialize.trigger'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc34-identity-boundary-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc34-identity-boundary-materializer
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify, qualify, and publish exact PC-34 source blobs
+        env:
+          TARGET_BRANCH: agent/pc34-identity-boundary-materializer
+          EXPECTED_MAIN: 4f4c0173c42c73ebd339d0dd4f04b6ab04678724
+          EXPECTED_PARTS: '8'
+          EXPECTED_B64_BYTES: '33860'
+          EXPECTED_B64_SHA256: a27b8fcf38f7b7db7dbeafd52fbfa334868b46da28167c1b0dd221805e8eba42
+          EXPECTED_TGZ_BYTES: '25393'
+          EXPECTED_TGZ_SHA256: cf507b3c6f9939394656ff15c98a5f60e687deb6f4f1899d2fd9ddd8ebce53f4
+          EXPECTED_PATH_DIGEST: e81ea7dff763204415309ec5b42953c53a29aab04dd7037afa1b9d373cc83bd0
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          git switch -C "$TARGET_BRANCH" "origin/$TARGET_BRANCH"
+          start_main="$(git rev-parse origin/main)"
+          test "$start_main" = "$EXPECTED_MAIN"
+
+          cat > /tmp/pc34-permanent-paths <<'PATHS'
+          .github/workflows/preference-custody-v32.yml
+          .github/workflows/preference-identity-boundary-assurance.yml
+          data/research/preference-custody/control-manifest-v32.json
+          data/research/preference-custody/identity-boundary-assurance.fixture.json
+          docs/preference-custody-identity-boundary-assurance.md
+          docs/preference-custody-laboratory-floor-v32.md
+          test/preference-custody-manifest-v32.test.js
+          test/preference-identity-boundary-assurance.test.js
+          tools/compile-preference-custody-manifest-v32.mjs
+          tools/compile-preference-identity-boundary-assurance.mjs
+          tools/lib/preference-custody-manifest-v32.mjs
+          tools/lib/preference-identity-boundary-assurance.mjs
+          tools/validate-preference-custody-manifest-v32.mjs
+          tools/validate-preference-identity-boundary-assurance.mjs
+          PATHS
+          sed -i 's/^          //' /tmp/pc34-permanent-paths
+          LC_ALL=C sort -o /tmp/pc34-permanent-paths /tmp/pc34-permanent-paths
+          grep -v '^\.github/workflows/' /tmp/pc34-permanent-paths > /tmp/pc34-nonworkflow-paths
+          test "$(wc -l < /tmp/pc34-permanent-paths | tr -d ' ')" = 14
+          test "$(wc -l < /tmp/pc34-nonworkflow-paths | tr -d ' ')" = 12
+
+          carrier=/tmp/pc34-product.tar.gz.b64
+          : > "$carrier"
+          mapfile -t parts < <(find .pc34 -maxdepth 1 -type f -name 'payload-*.b64' | LC_ALL=C sort)
+          test "${#parts[@]}" = "$EXPECTED_PARTS"
+          for part in "${parts[@]}"; do tr -d '\r\n\t ' < "$part" >> "$carrier"; done
+          test "$(stat -c '%s' "$carrier")" = "$EXPECTED_B64_BYTES"
+          printf '%s  %s\n' "$EXPECTED_B64_SHA256" "$carrier" | sha256sum --check --strict
+          base64 --decode "$carrier" > /tmp/pc34-product.tar.gz
+          test "$(stat -c '%s' /tmp/pc34-product.tar.gz)" = "$EXPECTED_TGZ_BYTES"
+          printf '%s  %s\n' "$EXPECTED_TGZ_SHA256" /tmp/pc34-product.tar.gz | sha256sum --check --strict
+          tar -tzf /tmp/pc34-product.tar.gz | sed 's#^\./##' | sed '/\/$/d' | LC_ALL=C sort > /tmp/pc34-observed-paths
+          diff -u /tmp/pc34-permanent-paths /tmp/pc34-observed-paths
+
+          tar -xzf /tmp/pc34-product.tar.gz
+          while IFS= read -r path; do test -f "$path"; done < /tmp/pc34-permanent-paths
+          sha256sum $(cat /tmp/pc34-permanent-paths) | LC_ALL=C sort -k2 > /tmp/pc34-path-sha256
+          printf '%s  %s\n' "$EXPECTED_PATH_DIGEST" /tmp/pc34-path-sha256 | sha256sum --check --strict
+          ! grep -RInE 'PC-33|pc33' -- $(cat /tmp/pc34-permanent-paths)
+
+          node tools/compile-preference-identity-boundary-assurance.mjs
+          node tools/validate-preference-identity-boundary-assurance.mjs
+          node test/preference-identity-boundary-assurance.test.js
+          node tools/compile-preference-custody-manifest-v32.mjs
+          node tools/validate-preference-custody-manifest-v32.mjs
+          node test/preference-custody-manifest-v32.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+
+          git add --pathspec-from-file=/tmp/pc34-nonworkflow-paths
+          git diff --cached --check
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/pc34-staged-paths
+          diff -u /tmp/pc34-nonworkflow-paths /tmp/pc34-staged-paths
+          git commit -m 'Materialize PC-34 identity-boundary source package'
+
+          git fetch --no-tags origin main
+          end_main="$(git rev-parse origin/main)"
+          test "$end_main" = "$start_main"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+      - name: Record completion
+        run: |
+          printf '%s\n' "$(git rev-parse HEAD)" > pc34-product-head.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc34-materializer-receipt
+          path: pc34-product-head.txt
+          if-no-files-found: error
+          retention-days: 30
