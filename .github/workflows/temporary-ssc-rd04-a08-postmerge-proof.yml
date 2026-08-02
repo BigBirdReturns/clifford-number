@@ -1,0 +1,179 @@
+name: TEMP prove canonical SSC RD-04 A08 merge
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - '.github/tmp/ssc-rd04-a08-postmerge-proof.trigger'
+      - '.github/workflows/temporary-ssc-rd04-a08-postmerge-proof.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd04-a08-postmerge-proof
+  cancel-in-progress: false
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prove exact A08 merge topology and denominator
+        run: |
+          set -Eeuo pipefail
+          expected_merge='68f4cb2aeccb129a3789b0b1b5da0f1e1c52cab6'
+          expected_first='6f6dbeeacf9ac29c9c8ddb78e51d036b82026ee7'
+          expected_second='56a038fb532a7ef44397ba0c97c96724ecc813e2'
+          expected_release='0f53625ade42bf3278429040d50a74a6a52714d28e6f8e754b11f31acb710356'
+          manifest='data/project/status-sovereignty-rd04-internal-adjudication-a08-release-manifest.json'
+          core='data/intake/status-sovereignty-rd04-internal-adjudication-a08/core.json'
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse HEAD)" = "$expected_merge"
+          test "$(git rev-parse origin/main)" = "$expected_merge"
+          read -r merge first second extra <<< "$(git rev-list --parents -n 1 HEAD)"
+          test "$merge" = "$expected_merge"
+          test "$first" = "$expected_first"
+          test "$second" = "$expected_second"
+          test -z "${extra:-}"
+
+          git diff --name-only "$first" "$merge" | sort > /tmp/a08-merge-paths
+          test "$(wc -l < /tmp/a08-merge-paths | tr -d ' ')" = 37
+          if grep -E '(^|/)(\.github/tmp|data/transport|temporary-|carrier|materializer|trigger)' /tmp/a08-merge-paths; then
+            echo 'temporary or transport path survived in canonical A08 merge' >&2
+            exit 1
+          fi
+
+          CORE="$core" MANIFEST="$manifest" PATHS=/tmp/a08-merge-paths EXPECTED_RELEASE="$expected_release" node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const core = JSON.parse(fs.readFileSync(process.env.CORE, 'utf8'));
+          const manifest = JSON.parse(fs.readFileSync(process.env.MANIFEST, 'utf8'));
+          const mergePaths = fs.readFileSync(process.env.PATHS, 'utf8').trim().split('\n').filter(Boolean).sort();
+          const manifestPaths = [...manifest.entries.map((entry) => entry.path), process.env.MANIFEST].sort();
+          if (manifest.combined_sha256 !== process.env.EXPECTED_RELEASE) throw new Error(`release digest ${manifest.combined_sha256}`);
+          if (manifest.entries.length !== 36) throw new Error(`manifest entries ${manifest.entries.length}`);
+          if (JSON.stringify(mergePaths) !== JSON.stringify(manifestPaths)) throw new Error('merge path set differs from manifest scope');
+          const expected = {
+            total_machine_candidates: 0,
+            adjudicated_candidates: 0,
+            negative_controls: 5,
+            negative_control_failures: 0,
+            source_or_structure_failures: 0,
+            refresh_frozen_urls: 1,
+            refresh_attempts: 3,
+            refresh_resolved_urls: 0,
+            refresh_unresolved_urls: 1,
+            external_contacts: 0,
+            external_reviews: 0,
+            graph_effects: 0,
+            adversarial_mutations: 52
+          };
+          for (const [key, value] of Object.entries(expected)) {
+            if (core.counts?.[key] !== value) throw new Error(`${key}: ${core.counts?.[key]} != ${value}`);
+          }
+          if (core.current_result?.terminal_state !== 'zero_machine_candidates_adjudicated_one_public_url_unresolved_after_bounded_refresh') throw new Error('terminal state drift');
+          if (core.current_result?.public_source_refresh_complete !== true) throw new Error('refresh not terminal');
+          if (core.current_result?.missing_public_material_is_noncompliance !== false) throw new Error('noncompliance boundary drift');
+          if (core.current_result?.graph_effect !== 'none') throw new Error('graph effect drift');
+          if (core.next_handoff?.outside_human_dependency !== false || core.next_handoff?.project_blocking !== false) throw new Error('A09 handoff became blocking or human-dependent');
+          console.log('canonical A08 topology, 37-path scope, denominator, and authority ceiling: PASS');
+          NODE
+      - name: Reproduce and adversarially validate canonical A08
+        run: |
+          set -Eeuo pipefail
+          scratch="$(mktemp -d)"
+          A08_OUTPUT="$scratch/internal-adjudication" node tools/acquisition/status-sovereignty-rd04-a08/reduce-zero-candidate-denominator.mjs
+          diff -ru data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/internal-adjudication "$scratch/internal-adjudication"
+          rm -rf "$scratch"
+          node tools/acquisition/status-sovereignty-rd04-a08/verify-bounded-public-refresh-v1.mjs
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/build-status-sovereignty-rd04-internal-adjudication-a08.mjs
+          node tools/validate-status-sovereignty-rd04-internal-adjudication-a08.mjs
+          node test/status-sovereignty-rd04-internal-adjudication-a08.test.js
+          git diff --exit-code
+      - name: Run complete release gate and prove semantic cleanliness
+        run: |
+          set -Eeuo pipefail
+          npm run release:check
+          git diff --name-only | sort > /tmp/a08-release-changed-paths
+          test -z "$(git ls-files --others --exclude-standard)"
+          CHANGED_PATHS=/tmp/a08-release-changed-paths node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const list = fs.readFileSync(process.env.CHANGED_PATHS, 'utf8').trim().split('\n').filter(Boolean);
+          const normalize = (value) => value
+            .replace(/"generated"\s*:\s*"[^"]+"/g, '"generated":"<normalized>"')
+            .replace(/"generated_at"\s*:\s*"[^"]+"/g, '"generated_at":"<normalized>"')
+            .replace(/"generatedAt"\s*:\s*"[^"]+"/g, '"generatedAt":"<normalized>"')
+            .replace(/^Generated: .*$/gm, 'Generated: <normalized>');
+          for (const rel of list) {
+            const before = execFileSync('git', ['show', `HEAD:${rel}`], { encoding: 'utf8' });
+            const after = fs.readFileSync(rel, 'utf8');
+            if (normalize(before) !== normalize(after)) throw new Error(`non-timestamp release drift in ${rel}`);
+          }
+          console.log(`release drift: ${list.length} timestamp-only tracked surfaces verified`);
+          NODE
+          if [[ -s /tmp/a08-release-changed-paths ]]; then
+            xargs -d '\n' git checkout -- < /tmp/a08-release-changed-paths
+          fi
+          git clean -fdx
+          test -z "$(git status --porcelain=v1)"
+      - name: Emit exact post-merge receipt
+        run: |
+          node --input-type=module <<'NODE' > ssc-rd04-a08-postmerge-proof.json
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const core = JSON.parse(fs.readFileSync('data/intake/status-sovereignty-rd04-internal-adjudication-a08/core.json', 'utf8'));
+          const manifest = JSON.parse(fs.readFileSync('data/project/status-sovereignty-rd04-internal-adjudication-a08-release-manifest.json', 'utf8'));
+          const [merge, firstParent, secondParent] = execFileSync('git', ['rev-list', '--parents', '-n', '1', 'HEAD'], { encoding: 'utf8' }).trim().split(/\s+/);
+          const receipt = {
+            schema_version: 'ssc-rd04-a08-postmerge-proof@1',
+            repository: process.env.GITHUB_REPOSITORY,
+            workflow_run: Number(process.env.GITHUB_RUN_ID),
+            merge_commit: merge,
+            first_parent: firstParent,
+            second_parent: secondParent,
+            first_parent_changed_paths: 37,
+            manifest_entries: manifest.entries.length,
+            release_sha256: manifest.combined_sha256,
+            execution_id: core.execution_id,
+            terminal_state: core.current_result.terminal_state,
+            counts: core.counts,
+            gates: {
+              exact_two_parent_topology: 'pass',
+              exact_first_parent_path_scope: 'pass',
+              deterministic_rebuild: 'pass',
+              bounded_refresh_custody: 'pass',
+              focused_validator: 'pass',
+              adversarial_mutations: '52/52 pass',
+              no_magic_human: 'pass',
+              complete_repository_release: 'pass',
+              post_release_semantic_cleanliness: 'pass'
+            },
+            authority: {
+              external_contacts: core.counts.external_contacts,
+              external_reviews: core.counts.external_reviews,
+              verified_implementation_supported: core.current_result.verified_implementation_supported,
+              verified_restoration_supported: core.current_result.verified_restoration_supported,
+              missing_public_material_is_noncompliance: core.current_result.missing_public_material_is_noncompliance,
+              graph_effect: core.current_result.graph_effect
+            }
+          };
+          process.stdout.write(`${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+      - name: Upload exact post-merge receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a08-postmerge-proof
+          path: ssc-rd04-a08-postmerge-proof.json
+          if-no-files-found: error
+          retention-days: 90
