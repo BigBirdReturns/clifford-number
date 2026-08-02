@@ -1,0 +1,39 @@
+name: Preference custody eligibility-outreach assurance control
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/eligibility-outreach-assurance.fixture.json'
+      - 'tools/lib/preference-eligibility-outreach-assurance.mjs'
+      - 'tools/compile-preference-eligibility-outreach-assurance.mjs'
+      - 'tools/validate-preference-eligibility-outreach-assurance.mjs'
+      - 'test/preference-eligibility-outreach-assurance.test.js'
+      - 'docs/preference-custody-eligibility-outreach-assurance.md'
+      - '.github/workflows/preference-eligibility-outreach-assurance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  eligibility-outreach-assurance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Compile source-population, rule, awareness, invitation, reachability, usability, assistance, and lineage worlds
+        run: node tools/compile-preference-eligibility-outreach-assurance.mjs
+      - name: Validate population-frame, rule, awareness, delivery, reachability, assistance, correction, and authority boundaries
+        run: node tools/validate-preference-eligibility-outreach-assurance.mjs
+      - name: Exercise source, rule, awareness, invitation, reachability, usability, lineage, authority, and tamper fixtures
+        run: node test/preference-eligibility-outreach-assurance.test.js
+      - name: Preserve deterministic eligibility-outreach projections
+        uses: actions/upload-artifact@v4
+        with:
+          name: preference-eligibility-outreach-assurance-pc33
+          path: |
+            build/research/preference-eligibility-outreach-assurance.json
+            build/research/preference-eligibility-outreach-assurance.md
+          if-no-files-found: error
