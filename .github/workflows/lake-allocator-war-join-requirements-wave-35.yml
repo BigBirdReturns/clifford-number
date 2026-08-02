@@ -1,0 +1,96 @@
+name: Allocator-war lawful join requirement fan-out Wave 35
+
+on:
+  pull_request:
+    branches:
+      - agent/lake-allocator-war-wave-21
+    paths:
+      - 'data/project/lake-allocator-war-join-requirements-wave-35-policy.json'
+      - 'data/acquisition/lake-allocator-war-wave-35/**'
+      - 'build/lake-actions/allocator-war-join-requirements-wave-35.json'
+      - 'reports/lake-allocator-war-join-requirements-wave-35.md'
+      - 'docs/methods/lake-allocator-war-join-requirements-wave-35.md'
+      - 'docs/milestones/lake-allocator-war-join-requirements-wave-35.md'
+      - 'tools/build-lake-allocator-war-join-requirements-wave-35.mjs'
+      - 'tools/validate-lake-allocator-war-join-requirements-wave-35.mjs'
+      - 'test/lake-allocator-war-join-requirements-wave-35.test.js'
+      - 'data/project/lake-allocator-war-wave-21-policy.json'
+      - 'data/project/lake-index-policy.json'
+      - 'data/project/lake-basin-registry.json'
+      - 'tools/install-lake-allocator-war-wave-21.mjs'
+      - 'tools/validate-lake-allocator-war-wave-21.mjs'
+      - 'BUILD-INSTRUCTIONS.md'
+      - 'README.md'
+      - 'package.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lake-allocator-war-join-requirements-wave-35-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Rebuild lawful join requirement queues
+        run: node tools/build-lake-allocator-war-join-requirements-wave-35.mjs
+
+      - name: Refuse generated Wave 35 drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- \
+            data/acquisition/lake-allocator-war-wave-35 \
+            build/lake-actions/allocator-war-join-requirements-wave-35.json \
+            reports/lake-allocator-war-join-requirements-wave-35.md
+
+      - name: Validate Wave 35 contracts
+        run: node tools/validate-lake-allocator-war-join-requirements-wave-35.mjs
+
+      - name: Run Wave 35 adversarial mutations
+        run: node test/lake-allocator-war-join-requirements-wave-35.test.js
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Restore and prove the committed epoch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore --worktree .
+          git clean -fd
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-residual-frontier-wave-17.mjs
+          node tools/validate-lake-identifier-topology-wave-18.mjs
+          node tools/validate-lake-generator-contracts-wave-19.mjs
+          node tools/validate-lake-receipt-custody-wave-20.mjs
+          node tools/validate-lake-allocator-war-wave-21.mjs
+          node tools/validate-lake-allocator-war-estate-execution-wave-22.mjs
+          node tools/validate-lake-allocator-war-lead-acquisition-wave-23.mjs
+          node tools/validate-lake-allocator-war-lead-execution-wave-24.mjs
+          node tools/validate-lake-allocator-war-denominator-closure-wave-25.mjs
+          node tools/validate-lake-allocator-war-targeted-closure-wave-26.mjs
+          node tools/validate-lake-allocator-war-wave26-source-custody-repair.mjs
+          node tools/validate-lake-allocator-war-public-interest-downstream-wave-27.mjs
+          node tools/validate-lake-allocator-war-public-interest-implementation-wave-28.mjs
+          node tools/validate-lake-allocator-war-public-interest-execution-wave-29.mjs
+          node tools/validate-lake-allocator-war-gap-fanout-wave-30.mjs
+          node tools/validate-lake-allocator-war-public-route-execution-wave-31.mjs
+          node tools/validate-lake-allocator-war-bounded-source-snapshots-wave-32.mjs
+          node tools/validate-lake-allocator-war-structural-parses-wave-33.mjs
+          node tools/validate-lake-allocator-war-schema-joins-wave-34.mjs
+          node tools/validate-lake-allocator-war-join-requirements-wave-35.mjs
+          git diff --check
+          test -z "$(git status --porcelain)"
