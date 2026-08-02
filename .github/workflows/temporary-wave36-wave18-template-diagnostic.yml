@@ -1,0 +1,52 @@
+name: Temporary Wave 36 Wave 18 template diagnostic
+
+on:
+  pull_request:
+    branches:
+      - agent/lake-allocator-war-wave-21
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-wave36-wave18-template-diagnostic.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Await temporary workflow deletion
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          path='.github/workflows/temporary-wave36-wave18-template-diagnostic.yml'
+          encoded_ref='agent%2Flake-allocator-war-public-acquisition-wave-36'
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/${path}?ref=${encoded_ref}"
+          for attempt in $(seq 1 180); do
+            status="$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer ${GITHUB_TOKEN}" -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' "$api")"
+            [[ "$status" == '404' ]] && exit 0
+            sleep 2
+          done
+          exit 1
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lake-allocator-war-public-acquisition-wave-36
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Print one complete post-freeze source-only template
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const registry = JSON.parse(fs.readFileSync('data/project/lake-identifier-topology-registry-wave-18.json','utf8'));
+          const row = registry.records.slice(10371).find(item => item.indexing?.baseline_indexed === false && item.source_only?.final_classification === 'external_or_domain_identifier_source_only')
+            ?? registry.records.slice(10371).find(item => item.indexing?.baseline_indexed === false && item.source_only);
+          if (!row) throw new Error('no post-freeze source-only template');
+          console.log(JSON.stringify(row, null, 2));
+          NODE
