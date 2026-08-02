@@ -1,0 +1,39 @@
+name: Preference custody comprehension-assurance control
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/comprehension-assurance.fixture.json'
+      - 'tools/lib/preference-comprehension-assurance.mjs'
+      - 'tools/compile-preference-comprehension-assurance.mjs'
+      - 'tools/validate-preference-comprehension-assurance.mjs'
+      - 'test/preference-comprehension-assurance.test.js'
+      - 'docs/preference-custody-comprehension-assurance.md'
+      - '.github/workflows/preference-comprehension-assurance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  comprehension-assurance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Compile comprehension measurement, translation, accessibility, transfer, and retention worlds
+        run: node tools/compile-preference-comprehension-assurance.mjs
+      - name: Validate population, construct, item, administration, access, subgroup, validation, and authority boundaries
+        run: node tools/validate-preference-comprehension-assurance.mjs
+      - name: Exercise recognition, leakage, coaching, translation, accessibility, denominator, retention, authority, and tamper fixtures
+        run: node test/preference-comprehension-assurance.test.js
+      - name: Preserve deterministic comprehension-assurance projections
+        uses: actions/upload-artifact@v4
+        with:
+          name: preference-comprehension-assurance-pc23
+          path: |
+            build/research/preference-comprehension-assurance.json
+            build/research/preference-comprehension-assurance.md
+          if-no-files-found: error
