@@ -1,1 +1,1 @@
-ssc-rd04-a08-permanent-materializer-rebind-v4-canonical-whitespace-normalization
+ssc-rd04-a08-permanent-materializer-rebind-v5-repository-recovery
