@@ -1,0 +1,222 @@
+name: TEMP materialize SSC RD-04 A05 California remedy chain
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a05-materializer-base-v2
+    paths:
+      - '.github/tmp/ssc-rd04-a05-materialize.trigger'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd04-a05-materializer-v2
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-california-remedy-chain-a05
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct, acquire, validate, and publish transport-free A05
+        env:
+          TARGET_BRANCH: agent/ssc-rd04-california-remedy-chain-a05
+          EXPECTED_PRODUCT: 9da312448450f447ab1cb4f3077df250d17e4a71
+          MINIMUM_MAIN: a290c0471995386c6659e63de6f14e8278ed121c
+          EXPECTED_B64_SHA256: 430f3d2df90160ba81c3564dc881b0d69b0969323b6904fdc8fd1c2016788516
+          EXPECTED_TGZ_SHA256: 9477c4818ee064bbbc805ea833d18ca28d2e82c60edab2d8e5257e8183f7ce2c
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_PRODUCT"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_PRODUCT"
+          start_main="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$MINIMUM_MAIN" "$start_main"
+          if ! git merge-base --is-ancestor "$start_main" HEAD; then
+            git merge --no-edit "$start_main"
+          fi
+
+          cat \
+            .github/tmp/ssc-rd04-a05-source-files.tgz.b64.part00 \
+            .github/tmp/ssc-rd04-a05-source-files.tgz.b64.part01 \
+            > /tmp/ssc-rd04-a05-source-files.tgz.b64
+          printf '%s  %s\n' "$EXPECTED_B64_SHA256" /tmp/ssc-rd04-a05-source-files.tgz.b64 | sha256sum --check --strict
+          base64 --decode /tmp/ssc-rd04-a05-source-files.tgz.b64 > /tmp/ssc-rd04-a05-source-files.tgz
+          printf '%s  %s\n' "$EXPECTED_TGZ_SHA256" /tmp/ssc-rd04-a05-source-files.tgz | sha256sum --check --strict
+
+          cat > /tmp/expected-source-paths <<'PATHS'
+          docs/milestones/ssc-rd04-california-remedy-chain-a05.md
+          schemas/status-sovereignty-rd04-california-remedy-chain-a05.schema.json
+          test/status-sovereignty-rd04-california-remedy-chain-a05.test.js
+          tools/acquire-status-sovereignty-rd04-california-remedy-chain-a05.mjs
+          tools/build-status-sovereignty-rd04-california-remedy-chain-a05.mjs
+          tools/validate-status-sovereignty-rd04-california-remedy-chain-a05.mjs
+          PATHS
+          sort -o /tmp/expected-source-paths /tmp/expected-source-paths
+          tar -tzf /tmp/ssc-rd04-a05-source-files.tgz | sort > /tmp/observed-source-paths
+          diff -u /tmp/expected-source-paths /tmp/observed-source-paths
+          tar -xzf /tmp/ssc-rd04-a05-source-files.tgz
+          rm -f \
+            .github/tmp/ssc-rd04-a05-source-files.tgz.b64.part00 \
+            .github/tmp/ssc-rd04-a05-source-files.tgz.b64.part01
+
+          if ! command -v pdftotext >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y poppler-utils
+          fi
+
+          node tools/acquire-status-sovereignty-rd04-california-remedy-chain-a05.mjs
+          node tools/build-status-sovereignty-rd04-california-remedy-chain-a05.mjs
+          node tools/validate-status-sovereignty-rd04-california-remedy-chain-a05.mjs
+          node test/status-sovereignty-rd04-california-remedy-chain-a05.test.js
+          node tools/validate-no-magic-human-gate.mjs
+
+          cat > /tmp/expected-product-paths <<'PATHS'
+          .github/workflows/status-sovereignty-rd04-california-remedy-chain-a05.yml
+          build/core-thesis/status-sovereignty/rd04-california-remedy-chain-a05/data.json
+          build/core-thesis/status-sovereignty/rd04-california-remedy-chain-a05/manifest.json
+          data/intake/status-sovereignty-rd04-california-remedy-chain-a05/core.json
+          data/intake/status-sovereignty-rd04-california-remedy-chain-a05/source-custody/DECISION-REGISTRY/fetch.json
+          data/intake/status-sovereignty-rd04-california-remedy-chain-a05/source-custody/DECISION-REGISTRY/headers.txt
+          data/intake/status-sovereignty-rd04-california-remedy-chain-a05/source-custody/DECISION-REGISTRY/page.html
+          data/intake/status-sovereignty-rd04-california-remedy-chain-a05/source-custody/DECISION-REGISTRY/page.txt
+          data/intake/status-sovereignty-rd04-california-remedy-chain-a05/source-custody/HEARING-REQUESTS/fetch.json
+          data/intake/status-sovereignty-rd04-california-remedy-chain-a05/source-custody/HEARING-REQUESTS/headers.txt
+          data/intake/status-sovereignty-rd04-california-remedy-chain-a05/source-custody/HEARING-REQUESTS/page.html
+          data/intake/status-sovereignty-rd04-california-remedy-chain-a05/source-custody/HEARING-REQUESTS/page.txt
+          data/intake/status-sovereignty-rd04-california-remedy-chain-a05/source-custody/SHD-FY2025-26/fetch.json
+          data/intake/status-sovereignty-rd04-california-remedy-chain-a05/source-custody/SHD-FY2025-26/headers.txt
+          data/intake/status-sovereignty-rd04-california-remedy-chain-a05/source-custody/SHD-FY2025-26/report.pdf
+          data/intake/status-sovereignty-rd04-california-remedy-chain-a05/source-custody/SHD-FY2025-26/report.txt
+          data/intake/status-sovereignty-rd04-california-remedy-chain-a05/source-custody/source-ledger.json
+          data/project/status-sovereignty-rd04-california-remedy-chain-a05-release-manifest.json
+          docs/milestones/ssc-rd04-california-remedy-chain-a05.md
+          reports/core-thesis/status-sovereignty/rd04-california-remedy-chain-a05/data.json
+          reports/core-thesis/status-sovereignty/rd04-california-remedy-chain-a05/index.html
+          schemas/status-sovereignty-rd04-california-remedy-chain-a05.schema.json
+          test/status-sovereignty-rd04-california-remedy-chain-a05.test.js
+          tools/acquire-status-sovereignty-rd04-california-remedy-chain-a05.mjs
+          tools/build-status-sovereignty-rd04-california-remedy-chain-a05.mjs
+          tools/validate-status-sovereignty-rd04-california-remedy-chain-a05.mjs
+          PATHS
+          sort -o /tmp/expected-product-paths /tmp/expected-product-paths
+
+          find data/intake/status-sovereignty-rd04-california-remedy-chain-a05/source-custody -type f | sort > /tmp/observed-custody-paths
+          grep 'source-custody/' /tmp/expected-product-paths > /tmp/expected-custody-paths
+          diff -u /tmp/expected-custody-paths /tmp/observed-custody-paths
+
+          git add -A
+          node tools/build-status-sovereignty-rd04-california-remedy-chain-a05.mjs
+          git diff --exit-code
+          git diff --cached --check
+          git commit -m 'Add SSC RD-04 A05 California remedy chain'
+          product_head="$(git rev-parse HEAD)"
+
+          node tools/build-status-sovereignty-rd04-california-remedy-chain-a05.mjs
+          git diff --exit-code
+          node tools/validate-status-sovereignty-rd04-california-remedy-chain-a05.mjs
+          node test/status-sovereignty-rd04-california-remedy-chain-a05.test.js
+          observed_release="$(node --input-type=module -e "import fs from 'node:fs'; const m=JSON.parse(fs.readFileSync('data/project/status-sovereignty-rd04-california-remedy-chain-a05-release-manifest.json','utf8')); process.stdout.write(m.combined_sha256)")"
+          test -n "$observed_release"
+
+          npm run release:check
+          timestamp_paths=(
+            build/axm-identity.json
+            build/build-hop-report.json
+            build/hop-graph.json
+            build/migration-review.md
+            build/migration-summary.json
+            build/receipt-graph.json
+            build/scores.json
+            build/scout-report.json
+            build/scout-report.md
+            build/surface-graph.json
+          )
+          expected_timestamp_paths="$(printf '%s\n' "${timestamp_paths[@]}" | sort)"
+          actual_tracked_paths="$(git status --porcelain=v1 | awk '$1 != "??" {print substr($0,4)}' | sort)"
+          if [[ "$actual_tracked_paths" != "$expected_timestamp_paths" ]]; then
+            echo 'expected timestamp-only tracked release drift:'
+            printf '%s\n' "$expected_timestamp_paths"
+            echo 'observed tracked release drift:'
+            printf '%s\n' "$actual_tracked_paths"
+            exit 1
+          fi
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const paths = [
+            'build/axm-identity.json',
+            'build/build-hop-report.json',
+            'build/hop-graph.json',
+            'build/migration-review.md',
+            'build/migration-summary.json',
+            'build/receipt-graph.json',
+            'build/scores.json',
+            'build/scout-report.json',
+            'build/scout-report.md',
+            'build/surface-graph.json'
+          ];
+          const normalize = (value) => value
+            .replace(/"generated":\s*"[^"]+"/, '"generated": "<normalized>"')
+            .replace(/^Generated: .*$/m, 'Generated: <normalized>');
+          for (const rel of paths) {
+            const before = execFileSync('git', ['show', `HEAD:${rel}`], { encoding: 'utf8' });
+            const after = fs.readFileSync(rel, 'utf8');
+            if (normalize(before) !== normalize(after)) throw new Error(`non-timestamp release drift in ${rel}`);
+          }
+          console.log('release drift: ten timestamp-only surfaces verified');
+          NODE
+
+          git checkout -- "${timestamp_paths[@]}"
+          git clean -fdx
+          test -z "$(git status --porcelain=v1)"
+
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          end_main="$(git rev-parse origin/main)"
+          test "$end_main" = "$start_main"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_PRODUCT"
+          git diff --name-only "$start_main"...HEAD | sort > /tmp/cumulative-product-paths
+          diff -u /tmp/expected-product-paths /tmp/cumulative-product-paths
+          if grep -E '(^|/)(\.github/tmp|data/transport|temporary-|carrier|materializer|trigger)' /tmp/cumulative-product-paths; then
+            echo 'transport path survived in permanent product' >&2
+            exit 1
+          fi
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_PRODUCT" origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          node --input-type=module <<'NODE' > ssc-rd04-a05-materializer-receipt.txt
+          import fs from 'node:fs';
+          const core = JSON.parse(fs.readFileSync('data/intake/status-sovereignty-rd04-california-remedy-chain-a05/core.json', 'utf8'));
+          const manifest = JSON.parse(fs.readFileSync('data/project/status-sovereignty-rd04-california-remedy-chain-a05-release-manifest.json', 'utf8'));
+          console.log(`start_main=${process.env.START_MAIN ?? ''}`);
+          console.log(`product_head=${process.env.PRODUCT_HEAD ?? ''}`);
+          console.log(`release_sha256=${manifest.combined_sha256}`);
+          console.log(`release_entries=${manifest.entries.length}`);
+          console.log(`permanent_paths=26`);
+          console.log(`transport_paths=0`);
+          console.log(`stages=${core.counts.stages}`);
+          console.log(`program_specific_aggregate_stages=${core.counts.program_specific_aggregate_stages}`);
+          console.log(`case_level_linked_stages=${core.counts.case_level_linked_stages}`);
+          console.log(`complete_case_chains=${core.counts.complete_case_chains}`);
+          console.log(`external_contacts=${core.counts.external_contacts}`);
+          console.log(`external_reviews=${core.counts.external_reviews}`);
+          console.log(`graph_effect=${core.current_result.graph_effect}`);
+          NODE
+          sed -i "s/^start_main=$/start_main=$start_main/; s/^product_head=$/product_head=$product_head/" ssc-rd04-a05-materializer-receipt.txt
+      - name: Upload A05 materializer receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a05-materializer-receipt-v2
+          path: ssc-rd04-a05-materializer-receipt.txt
+          if-no-files-found: error
