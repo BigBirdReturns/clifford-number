@@ -1,0 +1,267 @@
+#!/usr/bin/env node
+import fs from 'node:fs';
+
+const replaceOne = (text, oldValue, newValue, label) => {
+  const first = text.indexOf(oldValue);
+  if (first < 0) throw new Error(`missing replacement target: ${label}`);
+  if (text.indexOf(oldValue, first + oldValue.length) >= 0) {
+    throw new Error(`non-unique replacement target: ${label}`);
+  }
+  return `${text.slice(0, first)}${newValue}${text.slice(first + oldValue.length)}`;
+};
+
+const patch = (file, transforms) => {
+  let text = fs.readFileSync(file, 'utf8');
+  for (const [oldValue, newValue, label] of transforms) {
+    text = replaceOne(text, oldValue, newValue, `${file}: ${label}`);
+  }
+  fs.writeFileSync(file, text);
+};
+
+const validator = 'tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.mjs';
+patch(validator, [
+  [
+`import {
+  validateRules
+} from './ssc-rd04-a07-order-candidate-extractor.mjs';
+`,
+`import {
+  validateRules
+} from './ssc-rd04-a07-order-candidate-extractor.mjs';
+import {
+  countyRootPaths,
+  validateCountyAgencyRoots
+} from './build-status-sovereignty-rd04-calfresh-county-agency-roots-a07.mjs';
+`,
+    'county validator import'
+  ],
+  [
+`  parentReleaseLedger: 'data/intake/status-sovereignty-rd04-calfresh-decision-corpus-a06/release-assets.json',
+  parentShard00: 'data/intake/status-sovereignty-rd04-calfresh-decision-corpus-a06/denominator-shards/00.json'
+`,
+`  parentReleaseLedger: 'data/intake/status-sovereignty-rd04-calfresh-decision-corpus-a06/release-assets.json',
+  parentShard00: 'data/intake/status-sovereignty-rd04-calfresh-decision-corpus-a06/denominator-shards/00.json',
+  countyAgencyRoots: 'data/intake/status-sovereignty-rd04-calfresh-compliance-receipts-a07/county-agency-roots.json'
+`,
+    'county path'
+  ],
+  [
+`const EXPECTED_NEXT_TRANSACTIONS = Object.freeze([
+  'materialize_all_58_county_agency_roots_from_exact_cdss_county_office_custody',
+  'resolve_exact_mpp_22_078_authority_from_the_confidentiality_fraud_civil_rights_and_state_hearings_manual',
+  'execute_all_64_content_neutral_parent_shards_before_any_case_follow_up'
+]);
+`,
+`const EXPECTED_NEXT_TRANSACTIONS = Object.freeze([
+  'resolve_exact_mpp_22_078_authority_from_the_confidentiality_fraud_civil_rights_and_state_hearings_manual',
+  'execute_all_64_content_neutral_parent_shards_before_any_case_follow_up',
+  'execute_complete_58_county_public_surface_census_in_frozen_alphabetical_order'
+]);
+`,
+    'next transactions'
+  ],
+  [
+`    parentReleaseLedgerBytes: readBytes(root, progressPaths.parentReleaseLedger),
+    parentShard00: readJson(root, progressPaths.parentShard00)
+`,
+`    parentReleaseLedgerBytes: readBytes(root, progressPaths.parentReleaseLedger),
+    parentShard00: readJson(root, progressPaths.parentShard00),
+    countyAgencyRoots: readJson(root, progressPaths.countyAgencyRoots)
+`,
+    'load county ledger'
+  ],
+  [
+`    parentReleaseLedgerBytes,
+    parentShard00
+`,
+`    parentReleaseLedgerBytes,
+    parentShard00,
+    countyAgencyRoots
+`,
+    'destructure county ledger'
+  ],
+  [
+`  eq(progress.status, 'initial_official_source_custody_and_content_neutral_pilot_complete', 'progress status');
+`,
+`  eq(progress.status, 'initial_source_custody_pilot_and_county_agency_roots_complete', 'progress status');
+`,
+    'progress status'
+  ],
+  [
+`  eq(progress.county_census?.expected_counties, 58, 'county denominator');
+  eq(progress.county_census?.agency_roots_materialized, 0, 'county root materialization state');
+  eq(progress.county_census?.counties_censused, 0, 'county census state');
+  eq(progress.county_census?.complete, false, 'county census completion boundary');
+  eq(progress.county_census?.county_selection_authorized, false, 'county selection boundary');
+`,
+`  const county = progress.county_census ?? {};
+  eq(county.agency_root_ledger_path, progressPaths.countyAgencyRoots, 'progress county-root ledger path');
+  eq(county.workflow_run, 30737524831, 'progress county-root workflow run');
+  eq(county.workflow_head, 'e8a884e60053eff4503f5c99c0370160397370a0', 'progress county-root workflow head');
+  eq(county.product_head, '460350e060915175ba929c136ebc41e7c81b60ac', 'progress county-root product head');
+  eq(county.source_body_sha256, '748fe853b679bea0850056442f133e79018aebdfcaa006b346483b82bace8e9a', 'progress county-root source hash');
+  const countyErrors = validateCountyAgencyRoots(root, progressPaths.countyAgencyRoots);
+  for (const error of countyErrors) errors.push(`county agency-root custody: ${error}`);
+  eq(countyAgencyRoots.schema_version, 'ssc-rd04-a07-county-agency-roots@1', 'county-root schema parity');
+  eq(countyAgencyRoots.execution_id, progress.execution_id, 'county-root execution parity');
+  eq(countyAgencyRoots.issue, progress.issue, 'county-root issue parity');
+  eq(countyAgencyRoots.source?.body_sha256, county.source_body_sha256, 'county-root source hash parity');
+  eq(county.expected_counties, countyAgencyRoots.denominator?.expected_counties, 'progress county denominator');
+  eq(county.agency_roots_materialized, countyAgencyRoots.denominator?.agency_root_rows_materialized, 'progress county-root materialized rows');
+  eq(county.exact_public_agency_roots, countyAgencyRoots.counts?.exact_public_agency_roots, 'progress exact county roots');
+  eq(county.multiple_public_root_candidates, countyAgencyRoots.counts?.multiple_public_root_candidates, 'progress ambiguous county roots');
+  eq(county.public_sections_without_agency_root, countyAgencyRoots.counts?.public_sections_without_agency_root, 'progress absent county roots');
+  eq(county.link_candidates, countyAgencyRoots.counts?.link_candidates, 'progress county link candidates');
+  eq(county.counties_censused, countyAgencyRoots.counts?.counties_censused, 'progress county census state');
+  eq(county.complete, false, 'county census completion boundary');
+  eq(county.county_selection_authorized, false, 'county selection boundary');
+  eq(countyAgencyRoots.authority?.county_follow_up_authorized, false, 'county-root follow-up boundary');
+  eq(countyAgencyRoots.authority?.county_census_complete, false, 'county-root census authority boundary');
+`,
+    'county reconciliation block'
+  ],
+  [
+`  eq(schema.properties?.county_census?.properties?.counties_censused?.const, 0, 'progress schema county-census ceiling');
+`,
+`  eq(schema.properties?.county_census?.properties?.agency_root_ledger_path?.const, progressPaths.countyAgencyRoots, 'progress schema county-root path');
+  eq(schema.properties?.county_census?.properties?.workflow_run?.const, 30737524831, 'progress schema county-root workflow run');
+  eq(schema.properties?.county_census?.properties?.product_head?.const, '460350e060915175ba929c136ebc41e7c81b60ac', 'progress schema county-root product head');
+  eq(schema.properties?.county_census?.properties?.agency_roots_materialized?.const, 58, 'progress schema county-root materialized rows');
+  eq(schema.properties?.county_census?.properties?.exact_public_agency_roots?.const, 58, 'progress schema exact county roots');
+  eq(schema.properties?.county_census?.properties?.link_candidates?.const, 68, 'progress schema county link candidates');
+  eq(schema.properties?.county_census?.properties?.counties_censused?.const, 0, 'progress schema county-census ceiling');
+  check(sameArray(
+    schema.properties?.next_transactions?.prefixItems?.map((row) => row.const),
+    EXPECTED_NEXT_TRANSACTIONS
+  ), 'progress schema next transaction order');
+`,
+    'schema county reconciliation'
+  ],
+  [
+`  console.log('validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress: PASS — 9 source receipts, 192-document pilot, 0 full-population documents, 0 county census, 0 joins');
+`,
+`  console.log('validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress: PASS — 9 source receipts, 192-document pilot, 58 county roots, 0 full-population documents, 0 county census, 0 joins');
+`,
+    'success output'
+  ]
+]);
+
+const test = 'test/status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.test.js';
+patch(test, [
+  [
+`const D = progressPaths.parentShard00;
+`,
+`const D = progressPaths.parentShard00;
+const CR = progressPaths.countyAgencyRoots;
+`,
+    'county ledger test path'
+  ],
+  [
+`  ['county-root inflation', P, (row) => { row.county_census.agency_roots_materialized = 58; }, 'county root materialization state'],
+  ['county-census inflation', P, (row) => { row.county_census.counties_censused = 58; }, 'county census state'],
+`,
+`  ['county-root reduction', P, (row) => { row.county_census.agency_roots_materialized = 57; }, 'progress county-root materialized rows'],
+  ['county-root ledger drift', P, (row) => { row.county_census.agency_root_ledger_path = 'other.json'; }, 'progress county-root ledger path'],
+  ['county-root workflow drift', P, (row) => { row.county_census.workflow_run = 1; }, 'progress county-root workflow run'],
+  ['county-root product drift', P, (row) => { row.county_census.product_head = '0'.repeat(40); }, 'progress county-root product head'],
+  ['county-root source hash drift', P, (row) => { row.county_census.source_body_sha256 = '0'.repeat(64); }, 'progress county-root source hash'],
+  ['county-root exact count drift', P, (row) => { row.county_census.exact_public_agency_roots = 57; }, 'progress exact county roots'],
+  ['county-root link count drift', P, (row) => { row.county_census.link_candidates = 67; }, 'progress county link candidates'],
+  ['county-census inflation', P, (row) => { row.county_census.counties_censused = 58; }, 'progress county census state'],
+`,
+    'county progress mutations'
+  ],
+  [
+`  ['shard document drift', D, (row) => { row.counts.documents = 191; }, 'parent shard documents'],
+
+  ['schema opening', S, (row) => { row.additionalProperties = true; }, 'progress schema closed shape'],
+`,
+`  ['shard document drift', D, (row) => { row.counts.documents = 191; }, 'parent shard documents'],
+  ['county-root output tampering', CR, (row) => { row.counties.pop(); }, 'county agency-root custody: deterministic county agency-root rebuild'],
+  ['county-root authority inflation', CR, (row) => { row.authority.county_follow_up_authorized = true; }, 'county agency-root custody: deterministic county agency-root rebuild'],
+
+  ['schema opening', S, (row) => { row.additionalProperties = true; }, 'progress schema closed shape'],
+`,
+    'county ledger mutations'
+  ],
+  [
+`  ['schema full-population weakening', S, (row) => { row.properties.content_neutral_extraction.properties.full_population_documents_processed.const = 1; }, 'progress schema full-population ceiling'],
+  ['schema authority weakening', S, (row) => { row.properties.authority.properties.source_unavailable_is_noncompliance.const = true; }, 'progress schema authority source_unavailable_is_noncompliance']
+`,
+`  ['schema full-population weakening', S, (row) => { row.properties.content_neutral_extraction.properties.full_population_documents_processed.const = 1; }, 'progress schema full-population ceiling'],
+  ['schema county-root weakening', S, (row) => { row.properties.county_census.properties.agency_roots_materialized.const = 0; }, 'progress schema county-root materialized rows'],
+  ['schema authority weakening', S, (row) => { row.properties.authority.properties.source_unavailable_is_noncompliance.const = true; }, 'progress schema authority source_unavailable_is_noncompliance']
+`,
+    'schema county mutation'
+  ]
+]);
+
+const workflow = '.github/workflows/status-sovereignty-rd04-calfresh-compliance-receipts-a07.yml';
+patch(workflow, [[
+`          node --check test/status-sovereignty-rd04-calfresh-county-agency-roots-a07.test.js
+          node test/status-sovereignty-rd04-calfresh-county-agency-roots-a07.test.js
+`,
+`          node --check test/status-sovereignty-rd04-calfresh-county-agency-roots-a07.test.js
+          node tools/build-status-sovereignty-rd04-calfresh-county-agency-roots-a07.mjs validate .
+          node test/status-sovereignty-rd04-calfresh-county-agency-roots-a07.test.js
+`,
+  'explicit county deterministic validation'
+]]);
+
+const milestone = 'docs/milestones/ssc-rd04-calfresh-compliance-receipts-a07.md';
+patch(milestone, [
+  [
+`county agency roots materialized:          0 / 58
+counties censused:                         0 / 58
+`,
+`county agency roots materialized:         58 / 58
+exact public agency roots:                 58 / 58
+preserved county-root link candidates:     68
+counties censused:                          0 / 58
+`,
+    'milestone county state'
+  ],
+  [
+`## Frozen source universe
+`,
+`## County agency-root denominator complete
+
+The exact preserved CDSS county-office body was parsed in frozen alphabetical order without selecting a county or reading county outcomes. Workflow run \`30737524831\` published the deterministic 58-row ledger at product commit:
+
+\`\`\`text
+460350e060915175ba929c136ebc41e7c81b60ac
+\`\`\`
+
+\`\`\`text
+expected counties:                  58
+parsed counties:                    58
+unique counties:                    58
+agency-root rows materialized:      58
+exact public agency roots:          58
+ambiguous roots:                     0
+sections without a root:             0
+preserved link candidates:          68
+counties substantively censused:     0
+county follow-up authorized:        no
+\`\`\`
+
+Each row preserves the exact source section byte range and SHA-256, agency heading, every candidate link, selected root, and explicit null authority. An agency root is a locator, not a compliance record, implementation receipt, restoration receipt, or county-level finding.
+
+## Frozen source universe
+`,
+    'county milestone section'
+  ],
+  [
+`1. Materialize all 58 county agency roots from the exact preserved CDSS county-office body.
+2. Recover exact current and historical MPP 22-078 authority from the corrected Confidentiality, Fraud, Civil Rights, and State Hearings manual route.
+3. Execute all 64 content-neutral parent shards and reconcile all 11,672 documents and 12,282 row links before any case follow-up.
+`,
+`1. Recover exact current and historical MPP 22-078 authority from the corrected Confidentiality, Fraud, Civil Rights, and State Hearings manual route.
+2. Execute all 64 content-neutral parent shards and reconcile all 11,672 documents and 12,282 row links before any case follow-up.
+3. Execute the complete 58-county public-surface census in frozen alphabetical order after the full text denominator is terminal.
+`,
+    'milestone next moves'
+  ]
+]);
+
+console.log('A07 county progress reconciliation patches applied');
