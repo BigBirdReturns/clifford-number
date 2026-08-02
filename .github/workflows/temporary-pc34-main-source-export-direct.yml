@@ -1,0 +1,37 @@
+name: TEMP export exact canonical main for PC-34
+
+on:
+  push:
+    branches:
+      - agent/pc34-main-source-export-direct
+    paths:
+      - '.github/workflows/temporary-pc34-main-source-export-direct.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 4f4c0173c42c73ebd339d0dd4f04b6ab04678724
+          fetch-depth: 1
+      - name: Export exact canonical source
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = '4f4c0173c42c73ebd339d0dd4f04b6ab04678724'
+          mkdir -p /tmp/pc34-source
+          printf '%s\n' "$(git rev-parse HEAD)" > /tmp/pc34-source/canonical-main.sha
+          git archive --format=tar --prefix=clifford-number/ HEAD > /tmp/pc34-source/canonical-main-source.tar
+          gzip -n -9 /tmp/pc34-source/canonical-main-source.tar
+          sha256sum /tmp/pc34-source/canonical-main-source.tar.gz > /tmp/pc34-source/canonical-main-source.sha256
+          wc -c /tmp/pc34-source/canonical-main-source.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc34-canonical-main-source
+          path: /tmp/pc34-source
+          if-no-files-found: error
+          retention-days: 7
