@@ -1,0 +1,121 @@
+name: TEMP materialize SSC-W02 internal adversarial review
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-wave02-iar-materializer-base
+    paths:
+      - '.github/tmp/ssc-wave02-iar-materialize.trigger'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-wave02-iar-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-internal-adversarial-review
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct, prove, and publish transport-free product
+        env:
+          TARGET_BRANCH: agent/ssc-wave02-internal-adversarial-review
+          MINIMUM_BASE: 9fe995c23044a18ff1ce8c15e16f63ab3a950781
+          EXPECTED_B64_SHA256: 11b253d4ced02b4ea2406c651220c72e292fabdd583a7d6a319485877ed1306c
+          EXPECTED_TGZ_SHA256: 2a8a38c986a4610df0a6afc95cf7e0bd6c595f0af551040b23ab4202783904b8
+          EXPECTED_RELEASE_SHA256: d4ecb39230b8b1a65581995a1ccae0888766f527e67454c826abfb23abf46a0c
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          start_main="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$MINIMUM_BASE" HEAD
+          git merge-base --is-ancestor "$MINIMUM_BASE" "$start_main"
+          if ! git merge-base --is-ancestor "$start_main" HEAD; then
+            git merge --no-edit "$start_main"
+          fi
+
+          cat \
+            .github/tmp/ssc-wave02-iar-files.tgz.b64.part00 \
+            .github/tmp/ssc-wave02-iar-files.tgz.b64.part01 \
+            .github/tmp/ssc-wave02-iar-files.tgz.b64.part02 \
+            .github/tmp/ssc-wave02-iar-files.tgz.b64.part03 \
+            > /tmp/ssc-wave02-iar-files.tgz.b64
+          printf '%s  %s\n' "$EXPECTED_B64_SHA256" /tmp/ssc-wave02-iar-files.tgz.b64 | sha256sum --check --strict
+          base64 --decode /tmp/ssc-wave02-iar-files.tgz.b64 > /tmp/ssc-wave02-iar-files.tgz
+          printf '%s  %s\n' "$EXPECTED_TGZ_SHA256" /tmp/ssc-wave02-iar-files.tgz | sha256sum --check --strict
+
+          cat > /tmp/expected-product-paths <<'PATHS'
+          .github/workflows/status-sovereignty-wave-02-internal-adversarial-review.yml
+          data/project/status-sovereignty-wave-02-internal-adversarial-review-release-manifest.json
+          data/research/status-sovereignty-wave-02-internal-adversarial-review.json
+          docs/milestones/m05-status-sovereignty-wave-02-internal-adversarial-review.md
+          reports/core-thesis/status-sovereignty/wave-02-internal-adversarial-review/data.json
+          reports/core-thesis/status-sovereignty/wave-02-internal-adversarial-review/index.html
+          schemas/status-sovereignty-wave-02-internal-adversarial-review.schema.json
+          test/status-sovereignty-wave-02-internal-adversarial-review.test.js
+          tools/build-status-sovereignty-wave-02-internal-adversarial-review.mjs
+          tools/validate-status-sovereignty-wave-02-internal-adversarial-review.mjs
+          PATHS
+          sort -o /tmp/expected-product-paths /tmp/expected-product-paths
+          tar -tzf /tmp/ssc-wave02-iar-files.tgz | sort > /tmp/observed-product-paths
+          diff -u /tmp/expected-product-paths /tmp/observed-product-paths
+          tar -xzf /tmp/ssc-wave02-iar-files.tgz
+          rm -f .github/tmp/ssc-wave02-iar-files.tgz.b64.part{00,01,02,03}
+
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/build-status-sovereignty-wave-02-internal-adversarial-review.mjs
+          node tools/validate-status-sovereignty-wave-02-internal-adversarial-review.mjs
+          node test/status-sovereignty-wave-02-internal-adversarial-review.test.js
+
+          observed_release="$(node --input-type=module -e "import fs from 'node:fs'; const m=JSON.parse(fs.readFileSync('data/project/status-sovereignty-wave-02-internal-adversarial-review-release-manifest.json','utf8')); process.stdout.write(m.combined_sha256)")"
+          test "$observed_release" = "$EXPECTED_RELEASE_SHA256"
+
+          git add -A
+          node tools/build-status-sovereignty-wave-02-internal-adversarial-review.mjs
+          git diff --exit-code
+          git diff --cached --check
+          git commit -m 'Add SSC-W02 internal adversarial counter-review'
+
+          git fetch --no-tags origin main
+          end_main="$(git rev-parse origin/main)"
+          test "$end_main" = "$start_main"
+          git diff --name-only "$start_main"...HEAD | sort > /tmp/cumulative-product-paths
+          diff -u /tmp/expected-product-paths /tmp/cumulative-product-paths
+          if grep -E '(^|/)(\.github/tmp|temporary-|carrier|materializer)' /tmp/cumulative-product-paths; then
+            echo 'transport path survived in permanent product' >&2
+            exit 1
+          fi
+          test -z "$(git status --porcelain=v1)"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          {
+            echo "start_main=$start_main"
+            echo "product_head=$(git rev-parse HEAD)"
+            echo "release_sha256=$observed_release"
+            echo 'product_paths=10'
+            echo 'transport_paths=0'
+            echo 'internal_counterreviews=8'
+            echo 'external_reviews=0'
+            echo 'canonical_disposition_changes=0'
+            echo 'adjudications=0'
+            echo 'publication_clearances=0'
+            echo 'graph_effect=none'
+          } > ssc-wave02-iar-materializer-receipt.txt
+      - name: Upload materializer receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-iar-materializer-receipt
+          path: ssc-wave02-iar-materializer-receipt.txt
+          if-no-files-found: error
