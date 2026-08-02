@@ -1,0 +1,129 @@
+name: TEMP freeze SSC RD-04-C01 authority units
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd-wave02-rd04-authority-units.yml'
+      - 'data/intake/status-sovereignty-rd-wave02-rd04-version-history/cross-reference-receipt.json'
+      - 'tools/acquisition/status-sovereignty-rd-wave02-rd04/derive-authority-units.mjs'
+      - 'test/status-sovereignty-rd-wave02-rd04-authority-units.test.js'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ssc-rd-wave02-rd04-authority-units-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Download corrected cross-reference denominator
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-version-cross-references-v2
+          path: /tmp/rd04-cross-references-v2
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30767610459
+      - name: Freeze exact authority-unit denominator
+        env:
+          RD04_REPOSITORY_ROOT: ${{ github.workspace }}
+          RD04_CROSSREF_V2_ARTIFACT: /tmp/rd04-cross-references-v2
+          RD04_AUTHORITY_UNIT_OUTPUT: /tmp/rd04-authority-units
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node test/status-sovereignty-rd-wave02-rd04-authority-units.test.js
+          node tools/acquisition/status-sovereignty-rd-wave02-rd04/derive-authority-units.mjs
+          test -f /tmp/rd04-authority-units/authority-units.json
+          test -f /tmp/rd04-authority-units/receipt.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const product = JSON.parse(
+            fs.readFileSync('/tmp/rd04-authority-units/authority-units.json', 'utf8')
+          );
+          const expected = {
+            cross_reference_ids: 154,
+            seed_alias_reference_ids: 14,
+            candidate_reference_ids: 140,
+            candidate_reference_ids_mapped: 140,
+            candidate_authority_units: 79,
+            seed_source_units: 14,
+            preadjudication_execution_units: 93,
+            source_acquisitions_executed: 0,
+            source_acquisitions_terminal: 0,
+            version_edges_adjudicated: 0,
+            class_closed: 0,
+            external_contacts: 0,
+            external_reviews: 0,
+            graph_effects: 0,
+            publication_effects: 0
+          };
+          for (const [key, value] of Object.entries(expected)) {
+            if (product.counts?.[key] !== value) {
+              throw new Error(`${key}: ${product.counts?.[key]} != ${value}`);
+            }
+          }
+          const expectedClasses = {
+            california_all_county_information_notice: 3,
+            california_all_county_letter: 28,
+            california_bill: 2,
+            california_handbook: 1,
+            california_manual_section: 16,
+            california_statute_section: 10,
+            federal_guidance_document: 3,
+            federal_regulation_section: 8,
+            federal_statute: 8
+          };
+          if (JSON.stringify(product.counts.authority_class_counts) !== JSON.stringify(expectedClasses)) {
+            throw new Error('authority-class counts changed');
+          }
+          const mapped = product.authority_units.flatMap((unit) => unit.reference_ids);
+          if (mapped.length !== 140 || new Set(mapped).size !== 140) {
+            throw new Error('candidate references were omitted or multiply mapped');
+          }
+          if (product.current_result?.authority_unit_denominator_frozen !== true) {
+            throw new Error('authority-unit denominator not frozen');
+          }
+          if (product.current_result?.all_candidate_reference_ids_mapped_exactly_once !== true) {
+            throw new Error('exact-once reference mapping not terminal');
+          }
+          if (product.current_result?.source_acquisition_complete !== false) {
+            throw new Error('source acquisition escalated');
+          }
+          if (product.current_result?.version_edge_adjudication_complete !== false) {
+            throw new Error('version-edge adjudication escalated');
+          }
+          if (product.current_result?.class_closed !== false) {
+            throw new Error('class closure escalated');
+          }
+          if (product.boundaries?.authority_unit_is_controlling_authority !== false) {
+            throw new Error('authority unit promoted to controlling authority');
+          }
+          if (product.boundaries?.reference_group_is_version_edge !== false) {
+            throw new Error('reference grouping promoted to version edge');
+          }
+          if (product.current_result?.graph_effect !== 'none' ||
+              product.current_result?.publication_effect !== 'none') {
+            throw new Error('effect authority changed');
+          }
+          console.log('authority-unit denominator and authority ceiling: PASS');
+          NODE
+      - name: Upload exact authority-unit denominator
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-authority-units
+          path: /tmp/rd04-authority-units
+          if-no-files-found: error
+          retention-days: 90
