@@ -1,0 +1,173 @@
+name: Temporary PC-30 exact product materializer
+
+on:
+  pull_request:
+    paths:
+      - '.pc30/payload.part-*'
+      - '.github/workflows/pc30-materialize.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc30-exact-product-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/preference-market-service-assurance-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify and extract the exact twelve-file PC-30 product
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64
+          import hashlib
+          import io
+          import json
+          import subprocess
+          import tarfile
+
+          expected_xz_sha256 = '620b00128a269ef95499c980a9a331cd687d1c97db3598826bad5a913c97102c'
+          expected = {
+              'data/research/preference-custody/market-service-assurance.fixture.json': 'f0b26f0bd3ae61d7c859afe7c14441bef792dbeddd5c514d857e16c29673a885',
+              'tools/lib/preference-market-service-assurance.mjs': '9db2af591ce203f90213013ba8b036ba21702ff8dfe170039a51b0d2dc90840f',
+              'tools/compile-preference-market-service-assurance.mjs': '5b0fc4fc1b2cf99055f53a248e159a901a4acbec636a94875747591d52595713',
+              'tools/validate-preference-market-service-assurance.mjs': '4c44fb9abbe4f24d3ea9566eb63596b72503dbe18cef1265cea97bc5745af3ba',
+              'test/preference-market-service-assurance.test.js': '3eeffc46a8cfc501c1c25a2fd2d8e95825c3c679328cb619186cf8526e95f106',
+              'docs/preference-custody-market-service-assurance.md': '285b006268129a33714f2b1d3ff5141dff6e634b06d5603b3cfe5019a26d4fae',
+              'data/research/preference-custody/control-manifest-v28.json': '26e7e214cb049066e4069a1d9387354cf9a55f6d6472fb23884507ac9823407a',
+              'tools/lib/preference-custody-manifest-v28.mjs': '7b564cecf173c940d9a9c205f12b29fc39f7592567bbfe0bb7dea978447031f7',
+              'tools/compile-preference-custody-manifest-v28.mjs': 'a87dba72d4985d0405dbbb38b81a0465f06a5209ef5d089fdd6ba448121d16d1',
+              'tools/validate-preference-custody-manifest-v28.mjs': 'ee0fcbcfac92cef6599786a7ad9e163d629049687fdb9efe3db7a187cc6890a9',
+              'test/preference-custody-manifest-v28.test.js': 'b0ed0f4724c6f20b8b1c321f0cf24d5781774b1628cdd628c181b11313d89faf',
+              'docs/preference-custody-laboratory-floor-v28.md': '5494f650550cad927f84e5bec784e6863237d9bead46d7fb25f577a767d33ff1',
+          }
+
+          parts = sorted(Path('.pc30').glob('payload.part-*'))
+          required_names = [f'payload.part-{index:02d}' for index in range(6)]
+          if [path.name for path in parts] != required_names:
+              raise SystemExit(f'expected six ordered payload shards, found {[path.name for path in parts]}')
+
+          encoded = ''.join(''.join(path.read_text().split()) for path in parts)
+          try:
+              xz_bytes = base64.b64decode(encoded, validate=True)
+          except Exception as error:
+              raise SystemExit(f'invalid payload base64: {error}')
+
+          actual_xz_sha256 = hashlib.sha256(xz_bytes).hexdigest()
+          if actual_xz_sha256 != expected_xz_sha256:
+              raise SystemExit(f'payload xz SHA-256 mismatch: {actual_xz_sha256}')
+
+          with tarfile.open(fileobj=io.BytesIO(xz_bytes), mode='r:xz') as archive:
+              members = archive.getmembers()
+              names = [member.name for member in members]
+              if names != list(expected):
+                  raise SystemExit(f'archive path/order mismatch: {names}')
+              for member in members:
+                  if not member.isfile() or member.issym() or member.islnk():
+                      raise SystemExit(f'archive member must be a regular file: {member.name}')
+                  if Path(member.name).is_absolute() or '..' in Path(member.name).parts:
+                      raise SystemExit(f'unsafe archive member: {member.name}')
+                  source = archive.extractfile(member)
+                  if source is None:
+                      raise SystemExit(f'archive member has no bytes: {member.name}')
+                  target = Path(member.name)
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(source.read())
+
+          observed = {}
+          for name, required_sha256 in expected.items():
+              raw = Path(name).read_bytes()
+              actual_sha256 = hashlib.sha256(raw).hexdigest()
+              if actual_sha256 != required_sha256:
+                  raise SystemExit(f'file SHA-256 mismatch for {name}: {actual_sha256}')
+              observed[name] = {'bytes': len(raw), 'sha256': actual_sha256}
+
+          receipt = {
+              'schema_version': 'pc30-materialization-receipt@1',
+              'source_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'payload_xz_sha256': actual_xz_sha256,
+              'permanent_nonworkflow_file_count': len(expected),
+              'files': observed,
+              'outside_human_dependency': False,
+          }
+          Path('/tmp/pc30-materialization-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+      - name: Qualify standalone PC-30 and compositional floor v28
+        run: |
+          node tools/compile-preference-market-service-assurance.mjs
+          node tools/validate-preference-market-service-assurance.mjs
+          node test/preference-market-service-assurance.test.js
+          node tools/compile-preference-custody-manifest-v28.mjs
+          node tools/validate-preference-custody-manifest-v28.mjs
+          node test/preference-custody-manifest-v28.test.js
+      - name: Regress historical Preference Custody floors and no-magic-human gate
+        run: |
+          for test_file in test/preference-custody-manifest-v{9..28}.test.js; do
+            node "$test_file"
+          done
+          node test/preference-custody.test.js
+          node tools/validate-no-magic-human-gate.mjs
+      - name: Commit only the exact product and retire all six payload shards
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -- \
+            data/research/preference-custody/market-service-assurance.fixture.json \
+            tools/lib/preference-market-service-assurance.mjs \
+            tools/compile-preference-market-service-assurance.mjs \
+            tools/validate-preference-market-service-assurance.mjs \
+            test/preference-market-service-assurance.test.js \
+            docs/preference-custody-market-service-assurance.md \
+            data/research/preference-custody/control-manifest-v28.json \
+            tools/lib/preference-custody-manifest-v28.mjs \
+            tools/compile-preference-custody-manifest-v28.mjs \
+            tools/validate-preference-custody-manifest-v28.mjs \
+            test/preference-custody-manifest-v28.test.js \
+            docs/preference-custody-laboratory-floor-v28.md
+          git rm -- .pc30/payload.part-00 .pc30/payload.part-01 .pc30/payload.part-02 .pc30/payload.part-03 .pc30/payload.part-04 .pc30/payload.part-05
+          python - <<'PY'
+          import subprocess
+          expected = sorted([
+              'data/research/preference-custody/market-service-assurance.fixture.json',
+              'tools/lib/preference-market-service-assurance.mjs',
+              'tools/compile-preference-market-service-assurance.mjs',
+              'tools/validate-preference-market-service-assurance.mjs',
+              'test/preference-market-service-assurance.test.js',
+              'docs/preference-custody-market-service-assurance.md',
+              'data/research/preference-custody/control-manifest-v28.json',
+              'tools/lib/preference-custody-manifest-v28.mjs',
+              'tools/compile-preference-custody-manifest-v28.mjs',
+              'tools/validate-preference-custody-manifest-v28.mjs',
+              'test/preference-custody-manifest-v28.test.js',
+              'docs/preference-custody-laboratory-floor-v28.md',
+              '.pc30/payload.part-00',
+              '.pc30/payload.part-01',
+              '.pc30/payload.part-02',
+              '.pc30/payload.part-03',
+              '.pc30/payload.part-04',
+              '.pc30/payload.part-05',
+          ])
+          observed = sorted(subprocess.check_output(['git', 'diff', '--cached', '--name-only'], text=True).splitlines())
+          if observed != expected:
+              raise SystemExit(f'staged path mismatch:\nexpected={expected}\nobserved={observed}')
+          print(f'exact staged path set verified: {len(observed)} paths')
+          PY
+          git commit -m 'Materialize PC-30 and Preference Custody floor v28'
+          git push origin HEAD:research/preference-market-service-assurance-v1
+      - name: Preserve the exact materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc30-exact-materialization-receipt
+          path: /tmp/pc30-materialization-receipt.json
+          if-no-files-found: error
