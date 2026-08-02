@@ -1,29 +1,45 @@
 {
-  "schema_version": "ssc-rd-wave02-rd04-cross-reference-execution-receipt@1",
+  "schema_version": "ssc-rd-wave02-rd04-cross-reference-execution-receipt@2",
   "wave_id": "SSC-RD-W02",
   "lane_id": "RD-04",
   "class_id": "RD-04-C01",
   "issue": 789,
   "as_of": "2026-08-02",
   "execution": {
-    "workflow_run": 30765689103,
-    "workflow_head": "f69866673fb13555bafcbae9c2c168277b5f33f7",
-    "artifact_id": 8838855765,
-    "artifact_name": "ssc-rd-wave02-rd04-version-cross-references",
-    "artifact_bytes": 32379,
-    "artifact_zip_sha256": "04d93768ef7af0f626f30b9fc22e62b66593d8eb3b1b979cab1e637f9f33b95c",
-    "source_artifact_id": 8838664098,
-    "registry_bytes": 245561,
-    "registry_sha256": "1f820604ad6f2a8fa383ce30eebe7bd1326ec433fc2153e9737cc846233260f7"
+    "workflow_run": 30767610459,
+    "workflow_head": "c5f016710dfe1c5767d9158993d58bd27f8042a5",
+    "artifact_id": 8839456800,
+    "artifact_name": "ssc-rd-wave02-rd04-version-cross-references-v2",
+    "artifact_bytes": 117679,
+    "artifact_zip_sha256": "ea30dc14f7faeabbba39f9921250c540ac2685352f647a9b6b7fb053888660f2",
+    "source_seed_artifact_id": 8838664098,
+    "source_v1_artifact_id": 8838855765,
+    "registry_bytes": 612641,
+    "registry_sha256": "77f4038e4663caf5ee639f58bb39f0ca120d88a93ae0d0b7a3ab98bd9319ba19",
+    "delta_bytes": 5021,
+    "delta_sha256": "f05043d6480cef9ba9b4b574dcf4026a79a9480ec50b7c7bfde8bfd9e6d312b0"
+  },
+  "grammar": {
+    "version": "rd04-version-cross-reference-grammar@2",
+    "scan_scope": "page_normalized_with_original_line_locator",
+    "page_boundaries_preserved": true,
+    "cross_page_joining": false,
+    "v1_workflow_run": 30765689103,
+    "v1_artifact_id": 8838855765,
+    "v1_registry_sha256": "1f820604ad6f2a8fa383ce30eebe7bd1326ec433fc2153e9737cc846233260f7",
+    "v1_status": "superseded_underinclusive_parser_denominator"
   },
   "counts": {
     "source_units": 14,
     "source_units_extracted": 13,
     "source_units_unresolved": 1,
-    "reference_occurrences": 485,
-    "unique_reference_ids": 103,
-    "seed_alias_reference_ids": 13,
-    "new_cross_reference_candidates": 90,
+    "reference_occurrences": 660,
+    "unique_reference_ids": 154,
+    "seed_alias_reference_ids": 14,
+    "new_cross_reference_candidates": 140,
+    "v1_reference_ids_preserved": 101,
+    "v1_reference_ids_typed_superseded": 2,
+    "v2_reference_ids_added": 53,
     "version_edges_adjudicated": 0,
     "class_closed": 0,
     "external_contacts": 0,
@@ -34,25 +50,72 @@
   "reference_class_counts": {
     "california_abawd_handbook": 2,
     "california_all_county_information_notice": 4,
-    "california_all_county_letter": 35,
-    "california_welfare_and_institutions_code": 7,
-    "cfr": 48,
+    "california_all_county_letter": 36,
+    "california_assembly_bill": 1,
+    "california_health_and_safety_code": 2,
+    "california_manual_of_policies_and_procedures": 16,
+    "california_senate_bill": 1,
+    "california_welfare_and_institutions_code": 10,
+    "cfr": 63,
     "fiscal_responsibility_act_2023": 1,
     "fns_handbook": 1,
-    "fns_memo": 1,
+    "fns_memo": 2,
+    "food_and_nutrition_act_2008": 1,
     "house_bill": 1,
+    "indian_health_care_improvement_act": 1,
+    "one_big_beautiful_bill_act_2025": 1,
+    "prwora_1996": 1,
     "public_law": 1,
-    "usc": 2
+    "statutory_section": 3,
+    "trade_act_1974": 1,
+    "usc": 5
   },
   "new_candidate_class_counts": {
     "california_abawd_handbook": 1,
     "california_all_county_information_notice": 3,
-    "california_all_county_letter": 27,
-    "california_welfare_and_institutions_code": 7,
-    "cfr": 48,
+    "california_all_county_letter": 28,
+    "california_assembly_bill": 1,
+    "california_health_and_safety_code": 2,
+    "california_manual_of_policies_and_procedures": 16,
+    "california_senate_bill": 1,
+    "california_welfare_and_institutions_code": 10,
+    "cfr": 63,
     "fns_handbook": 1,
-    "fns_memo": 1,
-    "usc": 2
+    "fns_memo": 2,
+    "food_and_nutrition_act_2008": 1,
+    "indian_health_care_improvement_act": 1,
+    "prwora_1996": 1,
+    "statutory_section": 3,
+    "trade_act_1974": 1,
+    "usc": 5
+  },
+  "parser_repair": {
+    "status": "complete_v1_underinclusive_denominator_superseded",
+    "defects_repaired": [
+      "line-scoped parsing split authority labels from identifiers",
+      "title-seven-only federal code grammars omitted cited Title 25 USC and Title 45 CFR authorities",
+      "WIC grammar discarded cited subsection identity",
+      "MPP, HSC, California bill, and named statutory-act authority classes were absent"
+    ],
+    "typed_supersessions": [
+      {
+        "v1_reference_id": "7-CFR-273.24(b)",
+        "reason": "wrapped subsection citation was truncated at a line boundary",
+        "replacement_reference_ids": [
+          "7-CFR-273.24(b)(2)"
+        ]
+      },
+      {
+        "v1_reference_id": "CA-WIC-11403",
+        "reason": "v1 grammar discarded cited subsection identity",
+        "replacement_reference_ids": [
+          "CA-WIC-11403(b)",
+          "CA-WIC-11403(b)(4)",
+          "CA-WIC-11403(b)(5)"
+        ]
+      }
+    ],
+    "reviewed_disposition_changed": false
   },
   "unresolved_seed_source": {
     "source_id": "FED-PL119-21",
@@ -64,9 +127,12 @@
     "source_failure_is_noncompliance": false
   },
   "current_result": {
-    "terminal_state": "cross_reference_candidates_derived_from_thirteen_exact_sources_one_seed_source_unresolved",
+    "terminal_state": "corrected_cross_reference_denominator_frozen_from_thirteen_exact_sources_one_seed_source_unresolved",
+    "parser_repair_complete": true,
+    "corrected_cross_reference_denominator_frozen": true,
     "cross_reference_candidate_derivation_complete_for_recovered_sources": true,
     "full_source_cross_reference_universe_complete": false,
+    "authority_unit_denominator_frozen": false,
     "version_edge_adjudication_complete": false,
     "class_closed": false,
     "outside_human_dependency": false,
@@ -76,10 +142,10 @@
     "adoption_effect": "none"
   },
   "next_handoff": {
-    "stage": "derive_typed_authority_units_from_ninety_new_reference_ids_and_recover_the_one_unresolved_seed_source",
+    "stage": "map_all_one_hundred_forty_new_reference_ids_exactly_once_into_typed_authority_units_and_recover_the_unresolved_public_law_source",
     "reference_occurrence_is_version_edge": false,
     "source_title_is_supersession": false,
-    "one_hundred_three_reference_ids_is_complete_class": false,
+    "one_hundred_fifty_four_reference_ids_is_complete_class": false,
     "outside_human_dependency": false
   },
   "authority": {
@@ -89,7 +155,9 @@
     "official_alternative_locator_is_fetched_source": false,
     "unresolved_statute_page_is_missing_law": false,
     "successful_source_extraction_is_implementation": false,
-    "one_hundred_three_reference_ids_is_complete_class": false,
+    "one_hundred_fifty_four_reference_ids_is_complete_class": false,
+    "parser_delta_is_version_edge": false,
+    "added_reference_is_controlling_authority": false,
     "external_contacts": 0,
     "external_reviews": 0,
     "graph_effect": "none",
