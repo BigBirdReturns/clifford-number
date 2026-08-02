@@ -87,6 +87,9 @@ def classify_candidate(candidate: dict[str, Any], fetch: dict[str, Any]) -> dict
     else:
         disposition = "official_relevant_support"
 
+    if disposition != "official_relevant_support":
+        supporting = {}
+
     limitations = [
         "Search rank and query-slot appearance do not establish source authority.",
         "Official-domain status does not establish SNAP or dimension relevance.",
