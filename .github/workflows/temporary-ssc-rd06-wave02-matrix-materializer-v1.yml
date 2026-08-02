@@ -1,0 +1,112 @@
+name: TEMP materialize SSC RD-06 Wave 02 offeror matrix
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd06-wave02-matrix-materializer-base-v1
+    paths:
+      - '.github/tmp/ssc-rd06-wave02-matrix-materializer-v1.trigger'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd06-wave02-matrix-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd06-offeror-universe
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build, validate, and publish one exact eight-slot matrix
+        env:
+          TARGET_BRANCH: agent/ssc-rd-wave02-rd06-offeror-universe
+          EXPECTED_START: 2bce5711bfc32f2a37292bf9a0c6abf02c680ab7
+          OUTPUT_PATH: data/intake/status-sovereignty-rd-wave02-rd06-offeror-universe/field-matrix.json
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          start_sha="$(git rev-parse "origin/$TARGET_BRANCH")"
+          test "$start_sha" = "$EXPECTED_START"
+          test "$(git rev-parse HEAD)" = "$start_sha"
+
+          node tools/validate-no-magic-human-gate.mjs
+          test ! -e "$OUTPUT_PATH"
+          node tools/acquisition/status-sovereignty-rd-wave02-rd06/build-field-matrix.mjs
+          node tools/acquisition/status-sovereignty-rd-wave02-rd06/validate-field-matrix.mjs
+          node test/status-sovereignty-rd-wave02-rd06-field-matrix.test.js
+
+          export OUTPUT_PATH
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          const body = fs.readFileSync(process.env.OUTPUT_PATH);
+          const value = JSON.parse(body.toString('utf8'));
+          if (!Array.isArray(value.slots) || value.slots.length !== 8) throw new Error(`slot denominator ${value.slots?.length}`);
+          if (!Array.isArray(value.required_fields) || value.required_fields.length !== 10) throw new Error(`field denominator ${value.required_fields?.length}`);
+          if (value.counts.publicly_named_offerors !== 3 || value.counts.unresolved_offeror_identities !== 5) throw new Error('named/unresolved accounting');
+          if (value.current_result.class_closed !== false || value.current_result.fixed_protocol_complete !== false) throw new Error('premature closure');
+          console.log(JSON.stringify({ bytes: body.length, sha256: crypto.createHash('sha256').update(body).digest('hex'), slots: value.slots.length, fields: value.required_fields.length }));
+          NODE
+
+          git status --porcelain=v1 --untracked-files=all > /tmp/status
+          cat /tmp/status
+          test "$(wc -l < /tmp/status | tr -d ' ')" = 1
+          grep -Fxq "?? $OUTPUT_PATH" /tmp/status
+          test -z "$(git diff --name-only)"
+          git add "$OUTPUT_PATH"
+          git commit -m 'Materialize exact RD-06 eight-slot offeror field matrix'
+          product_sha="$(git rev-parse HEAD)"
+          printf '%s\n' "$OUTPUT_PATH" > /tmp/expected
+          git diff --name-only "$start_sha...$product_sha" | sort > /tmp/observed
+          diff -u /tmp/expected /tmp/observed
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          end_sha="$(git rev-parse "origin/$TARGET_BRANCH")"
+          test "$end_sha" = "$start_sha"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          export START_SHA="$start_sha" END_SHA="$end_sha" PRODUCT_SHA="$product_sha"
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          const body = fs.readFileSync(process.env.OUTPUT_PATH);
+          const value = JSON.parse(body.toString('utf8'));
+          const receipt = {
+            schema_version: 'ssc-rd06-wave02-matrix-materializer-receipt@1',
+            class_id: 'RD-06-C01',
+            target_branch: process.env.TARGET_BRANCH,
+            start_sha: process.env.START_SHA,
+            end_sha_before_push: process.env.END_SHA,
+            product_sha: process.env.PRODUCT_SHA,
+            output_path: process.env.OUTPUT_PATH,
+            output_bytes: body.length,
+            output_sha256: crypto.createHash('sha256').update(body).digest('hex'),
+            proposal_slots: value.slots.length,
+            required_fields: value.required_fields.length,
+            publicly_named_offerors: value.counts.publicly_named_offerors,
+            unresolved_offeror_identities: value.counts.unresolved_offeror_identities,
+            gates: { no_magic_human: 'pass', deterministic_builder: 'pass', structural_validator: 'pass', adversarial_mutations: 20, exact_one_path_diff: 'pass', branch_lease: 'pass' },
+            authority: { fixed_protocol_complete: false, class_closed: false, substantive_finding_created: false, external_contacts: 0, external_reviews: 0, publication_effect: 'none', adoption_effect: 'none', graph_effect: 'none' }
+          };
+          fs.writeFileSync('rd06-matrix-materializer-receipt.json', `${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+      - name: Upload exact RD-06 matrix receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd06-wave02-matrix-materializer-v1
+          path: rd06-matrix-materializer-receipt.json
+          if-no-files-found: error
+          retention-days: 90
