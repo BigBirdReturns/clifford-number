@@ -1,0 +1,62 @@
+name: Temporary PC-27 preference-source export
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pc27-source-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Export exact preference-custody source surface
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import tarfile
+
+          roots = [
+              Path('data/research/preference-custody'),
+              Path('tools'),
+              Path('test'),
+              Path('docs'),
+              Path('.github/workflows'),
+          ]
+          prefixes = (
+              'data/research/preference-custody/',
+              'tools/compile-preference-',
+              'tools/validate-preference-',
+              'tools/lib/preference-',
+              'test/preference-',
+              'docs/preference-',
+              '.github/workflows/preference-',
+              '.github/workflows/no-magic-human',
+          )
+          files = []
+          for root in roots:
+              if not root.exists():
+                  continue
+              for path in root.rglob('*'):
+                  if path.is_file() and str(path).startswith(prefixes):
+                      files.append(path)
+          files = sorted(set(files), key=lambda path: str(path))
+          if not files:
+              raise SystemExit('no preference-custody files selected')
+          with tarfile.open('pc27-preference-source.tgz', 'w:gz') as archive:
+              for path in files:
+                  archive.add(path, arcname=str(path), recursive=False)
+          Path('pc27-preference-source.files.txt').write_text('\n'.join(map(str, files)) + '\n')
+          print(f'exported {len(files)} exact files')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc27-preference-source
+          path: |
+            pc27-preference-source.tgz
+            pc27-preference-source.files.txt
+          if-no-files-found: error
