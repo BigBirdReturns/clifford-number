@@ -1,0 +1,165 @@
+name: TEMP execute SSC RD-04-C01 fixed source capture
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd-wave02-rd04-source-capture.yml'
+      - 'data/intake/status-sovereignty-rd-wave02-rd04-version-history/authority-unit-receipt.json'
+      - 'data/intake/status-sovereignty-rd-wave02-rd04-version-history/seed-capture-receipt.json'
+      - 'tools/acquisition/status-sovereignty-rd-wave02-rd04/build-source-plan.mjs'
+      - 'tools/acquisition/status-sovereignty-rd-wave02-rd04/capture-source-plan.mjs'
+      - 'test/status-sovereignty-rd-wave02-rd04-source-plan.test.js'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ssc-rd-wave02-rd04-source-capture-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Download exact authority-unit denominator
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-authority-units
+          path: /tmp/rd04-authority-units
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30768012480
+      - name: Freeze fixed official-source plan
+        env:
+          RD04_REPOSITORY_ROOT: ${{ github.workspace }}
+          RD04_AUTHORITY_UNIT_ARTIFACT: /tmp/rd04-authority-units
+          RD04_SOURCE_PLAN_OUTPUT: /tmp/rd04-source-plan
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node --check tools/acquisition/status-sovereignty-rd-wave02-rd04/build-source-plan.mjs
+          node --check tools/acquisition/status-sovereignty-rd-wave02-rd04/capture-source-plan.mjs
+          node test/status-sovereignty-rd-wave02-rd04-source-plan.test.js
+          node tools/acquisition/status-sovereignty-rd-wave02-rd04/build-source-plan.mjs
+          test -f /tmp/rd04-source-plan/source-plan.json
+          test -f /tmp/rd04-source-plan/receipt.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const plan = JSON.parse(fs.readFileSync('/tmp/rd04-source-plan/source-plan.json', 'utf8'));
+          const expected = {
+            execution_units: 93,
+            reused_seed_units: 13,
+            acquisition_target_units: 80,
+            candidate_authority_target_units: 79,
+            unresolved_seed_recovery_target_units: 1,
+            locator_candidates: 81,
+            unique_routes: 68,
+            official_hosts: 6,
+            target_units_with_two_locators: 1,
+            source_requests_executed: 0,
+            source_requests_terminal: 0,
+            source_identity_adjudications: 0,
+            version_edges_adjudicated: 0,
+            class_closed: 0,
+            external_contacts: 0,
+            external_reviews: 0,
+            graph_effects: 0,
+            publication_effects: 0
+          };
+          for (const [key, value] of Object.entries(expected)) {
+            if (plan.counts?.[key] !== value) throw new Error(`${key}: ${plan.counts?.[key]} != ${value}`);
+          }
+          if (new Set(plan.target_units.map((unit) => unit.execution_unit_id)).size !== 80) {
+            throw new Error('duplicate or missing target unit');
+          }
+          if (new Set(plan.routes.map((route) => route.route_id)).size !== 68) {
+            throw new Error('duplicate or missing route');
+          }
+          if (plan.current_result?.plan_frozen_before_fetch !== true) throw new Error('plan not frozen');
+          if (plan.current_result?.source_capture_complete !== false) throw new Error('source capture escalated');
+          if (plan.current_result?.source_identity_adjudication_complete !== false) throw new Error('source identity escalated');
+          if (plan.current_result?.version_edge_adjudication_complete !== false) throw new Error('version edge escalated');
+          if (plan.current_result?.class_closed !== false) throw new Error('class closure escalated');
+          if (plan.boundaries?.locator_is_source_custody !== false) throw new Error('locator promoted to source custody');
+          if (plan.boundaries?.failed_route_is_noncompliance !== false) throw new Error('failure promoted to noncompliance');
+          console.log('fixed source-plan denominator and authority ceiling: PASS');
+          NODE
+      - name: Execute every frozen official route
+        env:
+          RD04_SOURCE_PLAN: /tmp/rd04-source-plan
+          RD04_SOURCE_CAPTURE_OUTPUT: /tmp/rd04-source-capture
+        run: |
+          set -Eeuo pipefail
+          node tools/acquisition/status-sovereignty-rd-wave02-rd04/capture-source-plan.mjs
+          test -f /tmp/rd04-source-capture/source-plan.json
+          test -f /tmp/rd04-source-capture/route-ledger.json
+          test -f /tmp/rd04-source-capture/unit-ledger.json
+          test -f /tmp/rd04-source-capture/summary.json
+          test -f /tmp/rd04-source-capture/manifest.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const summary = JSON.parse(fs.readFileSync('/tmp/rd04-source-capture/summary.json', 'utf8'));
+          const routes = JSON.parse(fs.readFileSync('/tmp/rd04-source-capture/route-ledger.json', 'utf8'));
+          const units = JSON.parse(fs.readFileSync('/tmp/rd04-source-capture/unit-ledger.json', 'utf8'));
+          if (summary.counts?.execution_units !== 93) throw new Error('execution-unit denominator changed');
+          if (summary.counts?.reused_seed_units !== 13) throw new Error('reused seed denominator changed');
+          if (summary.counts?.acquisition_target_units !== 80) throw new Error('target denominator changed');
+          if (summary.counts?.terminal_acquisition_target_units !== 80) throw new Error('unterminated target unit');
+          if (summary.counts?.unique_routes !== 68 || summary.counts?.terminal_routes !== 68) {
+            throw new Error('route denominator or terminality changed');
+          }
+          if (summary.counts.resolved_acquisition_target_units +
+              summary.counts.unavailable_acquisition_target_units !== 80) {
+            throw new Error('target source-state accounting changed');
+          }
+          if (summary.counts.resolved_routes + summary.counts.unresolved_routes !== 68) {
+            throw new Error('route-state accounting changed');
+          }
+          if (summary.counts.total_attempts < 68 || summary.counts.total_attempts > 136) {
+            throw new Error('attempt count escaped bounded protocol');
+          }
+          if (routes.route_receipts?.length !== 68) throw new Error('route ledger incomplete');
+          if (units.execution_units?.length !== 93) throw new Error('unit ledger incomplete');
+          if (new Set(units.execution_units.map((unit) => unit.execution_unit_id)).size !== 93) {
+            throw new Error('duplicate execution unit');
+          }
+          if (!units.execution_units.every((unit) => unit.source_capture_terminal === true)) {
+            throw new Error('nonterminal execution unit');
+          }
+          if (summary.current_result?.source_capture_complete !== true) throw new Error('source capture incomplete');
+          if (summary.current_result?.all_execution_units_terminal !== true) throw new Error('execution units not terminal');
+          if (summary.current_result?.all_target_units_terminal !== true) throw new Error('target units not terminal');
+          if (summary.current_result?.source_identity_adjudication_complete !== false) throw new Error('source identity escalated');
+          if (summary.current_result?.version_edge_adjudication_complete !== false) throw new Error('version edge escalated');
+          if (summary.current_result?.class_closed !== false) throw new Error('class closure escalated');
+          if (summary.counts?.source_identity_adjudications !== 0 ||
+              summary.counts?.version_edges_adjudicated !== 0 ||
+              summary.counts?.class_closed !== 0) {
+            throw new Error('authority ceiling changed');
+          }
+          if (summary.current_result?.graph_effect !== 'none' ||
+              summary.current_result?.publication_effect !== 'none') {
+            throw new Error('effect authority changed');
+          }
+          if (summary.boundaries?.unavailable_route_is_record_absence !== false ||
+              summary.boundaries?.unavailable_route_is_noncompliance !== false) {
+            throw new Error('unavailable source promoted');
+          }
+          console.log('fixed source capture and authority ceiling: PASS');
+          NODE
+      - name: Upload exact fixed-source custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-fixed-source-capture
+          path: /tmp/rd04-source-capture
+          if-no-files-found: error
+          retention-days: 90
