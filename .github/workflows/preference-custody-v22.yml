@@ -1,0 +1,54 @@
+name: Preference custody laboratory floor v22
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/performative-synthetic-constituencies/**'
+      - 'data/research/preference-custody/**'
+      - 'tools/lib/performative-synthetic-constituency.mjs'
+      - 'tools/lib/preference-*.mjs'
+      - 'tools/compile-preference-instrument-validity.mjs'
+      - 'tools/validate-preference-instrument-validity.mjs'
+      - 'tools/compile-preference-custody-manifest-v22.mjs'
+      - 'tools/validate-preference-custody-manifest-v22.mjs'
+      - 'test/preference-instrument-validity.test.js'
+      - 'test/preference-custody-manifest-v22.test.js'
+      - 'docs/preference-custody-instrument-validity.md'
+      - 'docs/preference-custody-laboratory-floor-v22.md'
+      - '.github/workflows/preference-instrument-validity.yml'
+      - '.github/workflows/preference-custody-v22.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  floor-v22:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Compile PC-24 and the compositional v22 floor
+        run: |
+          node tools/compile-preference-instrument-validity.mjs
+          node tools/compile-preference-custody-manifest-v22.mjs
+      - name: Validate instrument-validity and floor boundaries
+        run: |
+          node tools/validate-preference-instrument-validity.mjs
+          node tools/validate-preference-custody-manifest-v22.mjs
+      - name: Exercise standalone and integrated adversarial fixtures
+        run: |
+          node test/preference-instrument-validity.test.js
+          node test/preference-custody-manifest-v22.test.js
+      - name: Preserve deterministic v22 projections
+        uses: actions/upload-artifact@v4
+        with:
+          name: preference-custody-laboratory-floor-v22
+          path: |
+            build/research/preference-instrument-validity.json
+            build/research/preference-instrument-validity.md
+            build/research/preference-custody-laboratory-floor-v22.json
+            build/research/preference-custody-laboratory-floor-v22.md
+          if-no-files-found: error
