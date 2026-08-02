@@ -73,6 +73,26 @@ wave21Policy.boundaries = {
 };
 writeJson(wave21PolicyPath, wave21Policy);
 
+const wave21ValidatorPath = 'tools/validate-lake-allocator-war-wave-21.mjs';
+let wave21Validator = fs.readFileSync(full(wave21ValidatorPath), 'utf8');
+const sourceMarker = `      ...wave36SourcePaths\n    ]],`;
+if (wave21Validator.includes(sourceMarker)) {
+  const inserted = sourcePaths.map(relative => `      ${JSON.stringify(relative)}`).join(',\n');
+  wave21Validator = wave21Validator.replace(sourceMarker, `      ...wave36SourcePaths,\n${inserted}\n    ]],`);
+}
+const actionMarker = `wave36Policy.paths.projection]],`;
+if (wave21Validator.includes(actionMarker)) {
+  wave21Validator = wave21Validator.replace(actionMarker, `wave36Policy.paths.projection, ${JSON.stringify(policy.paths.projection)}]],`);
+}
+const reportMarker = `wave36Policy.paths.report]]\n  ]);`;
+if (wave21Validator.includes(reportMarker)) {
+  wave21Validator = wave21Validator.replace(reportMarker, `wave36Policy.paths.report, ${JSON.stringify(policy.paths.report)}]]\n  ]);`);
+}
+for (const relative of authorityPaths) {
+  if (!wave21Validator.includes(JSON.stringify(relative))) throw new Error(`${relative}: Wave 21 exact-path validator registration absent`);
+}
+fs.writeFileSync(full(wave21ValidatorPath), wave21Validator);
+
 const packagePath = 'package.json';
 const pkg = readJson(packagePath);
 pkg.scripts['build:lake-allocator-war-residual-obligations-wave-37'] = 'node tools/build-lake-allocator-war-residual-obligations-wave-37.mjs';
@@ -117,4 +137,5 @@ console.log('allocator-war residual institutional obligations Wave 37 authority 
 console.log(`  authoritative roots: ${lakePolicy.authoritative_roots.length}`);
 console.log(`  semantic basins: ${basinRegistry.basins.length}`);
 console.log('  Wave 21 basin contracts: synchronized');
+console.log('  Wave 21 exact-path validator: extended');
 console.log('  release gate: registered');
