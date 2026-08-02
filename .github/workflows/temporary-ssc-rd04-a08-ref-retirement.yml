@@ -23,10 +23,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 1
+          fetch-depth: 0
       - name: Prove canonical A08 and retire temporary refs
         env:
-          EXPECTED_MAIN: 68f4cb2aeccb129a3789b0b1b5da0f1e1c52cab6
+          A08_MERGE: 68f4cb2aeccb129a3789b0b1b5da0f1e1c52cab6
           EXPECTED_RELEASE_SHA256: 0f53625ade42bf3278429040d50a74a6a52714d28e6f8e754b11f31acb710356
           EXPECTED_WORKFLOW_SHA256: 6547a55d2eeba7977aa1ca4547ea0115c6fe77a2a41cb7a4cc5c2efbbb338f2a
           INTERNAL_PASS_REF: agent/ssc-rd04-a08-internal-adjudication-pass-v2
@@ -39,7 +39,13 @@ jobs:
           set -Eeuo pipefail
 
           git fetch --no-tags origin main
-          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          observed_main="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$A08_MERGE" "$observed_main"
+          git diff --name-only "$A08_MERGE" "$observed_main" > /tmp/a08-postmerge-main-drift.txt
+          if grep -E '(^\.github/workflows/status-sovereignty-rd04-internal-adjudication-a08\.yml$|^data/intake/status-sovereignty-rd04-internal-adjudication-a08/|^data/project/status-sovereignty-rd04-internal-adjudication-a08-release-manifest\.json$|^docs/milestones/ssc-rd04-internal-adjudication-a08\.md$|^schemas/status-sovereignty-rd04-internal-adjudication-a08\.schema\.json$|^tools/(build|validate)-status-sovereignty-rd04-internal-adjudication-a08\.mjs$|^tools/acquisition/status-sovereignty-rd04-a08/|^test/status-sovereignty-rd04-internal-adjudication-a08\.test\.js$|^reports/core-thesis/status-sovereignty/rd04-internal-adjudication-a08/|^build/core-thesis/status-sovereignty/rd04-internal-adjudication-a08/)' /tmp/a08-postmerge-main-drift.txt; then
+            echo 'post-A08 mainline overlaps the permanent A08 namespace' >&2
+            exit 1
+          fi
 
           observed_release="$(node --input-type=module -e "import fs from 'node:fs'; const value=JSON.parse(fs.readFileSync('data/project/status-sovereignty-rd04-internal-adjudication-a08-release-manifest.json','utf8')); process.stdout.write(value.combined_sha256);")"
           test "$observed_release" = "$EXPECTED_RELEASE_SHA256"
@@ -89,9 +95,11 @@ jobs:
 
           test "$(read_ref "$INTERNAL_PASS_REF")" = "$INTERNAL_PASS_SHA"
           test "$(read_ref "$REFRESH_PASS_REF")" = "$REFRESH_PASS_SHA"
-          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$observed_main"
 
-          EXPECTED_MAIN="$EXPECTED_MAIN" \
+          A08_MERGE="$A08_MERGE" \
+          OBSERVED_MAIN="$observed_main" \
           EXPECTED_RELEASE_SHA256="$EXPECTED_RELEASE_SHA256" \
           INTERNAL_PASS_REF="$INTERNAL_PASS_REF" \
           INTERNAL_PASS_SHA="$INTERNAL_PASS_SHA" \
@@ -102,7 +110,8 @@ jobs:
           const lines = (path) => fs.readFileSync(path, 'utf8').split('\n').filter(Boolean);
           const receipt = {
             schema_version: 'ssc-rd04-a08-ref-retirement-receipt@1',
-            canonical_main: process.env.EXPECTED_MAIN,
+            canonical_a08_merge: process.env.A08_MERGE,
+            observed_main: process.env.OBSERVED_MAIN,
             release_sha256: process.env.EXPECTED_RELEASE_SHA256,
             deleted_refs: lines('/tmp/deleted-refs.txt'),
             already_absent_refs: lines('/tmp/already-absent-refs.txt'),
