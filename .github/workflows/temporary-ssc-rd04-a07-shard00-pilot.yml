@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   pilot:
@@ -46,14 +47,12 @@ jobs:
           set -Eeuo pipefail
           work="${RUNNER_TEMP}/a07-shard00-pilot"
           mkdir -p "$work"
-          gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100&page=1" > "$work/releases-1.json"
-          gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100&page=2" > "$work/releases-2.json"
+          gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/releases?per_page=100" > "$work/release-pages.json"
           node --input-type=module <<'NODE' > "$work/asset-selection.env"
           import fs from 'node:fs';
-          const releases = [
-            ...JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-pilot/releases-1.json`, 'utf8')),
-            ...JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-pilot/releases-2.json`, 'utf8'))
-          ];
+          const releases = JSON.parse(
+            fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-pilot/release-pages.json`, 'utf8')
+          ).flat();
           const matches = releases.filter((release) =>
             release.tag_name === process.env.RELEASE_TAG
             && release.draft === true
@@ -65,14 +64,12 @@ jobs:
           console.log(`release_created_at=${release.created_at}`);
           NODE
           source "$work/asset-selection.env"
-          gh api "repos/${GITHUB_REPOSITORY}/releases/${release_id}/assets?per_page=100&page=1" > "$work/assets-1.json"
-          gh api "repos/${GITHUB_REPOSITORY}/releases/${release_id}/assets?per_page=100&page=2" > "$work/assets-2.json"
+          gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/releases/${release_id}/assets?per_page=100" > "$work/asset-pages.json"
           node --input-type=module <<'NODE' >> "$work/asset-selection.env"
           import fs from 'node:fs';
-          const assets = [
-            ...JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-pilot/assets-1.json`, 'utf8')),
-            ...JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-pilot/assets-2.json`, 'utf8'))
-          ];
+          const assets = JSON.parse(
+            fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-pilot/asset-pages.json`, 'utf8')
+          ).flat();
           const select = (name) => {
             const matches = assets.filter((asset) => asset.name === name);
             if (matches.length !== 1) throw new Error(`expected one asset ${name}, observed ${matches.length}`);
@@ -227,7 +224,8 @@ jobs:
           fs.writeFileSync(`${work}/receipt.json`, stable(receipt));
           console.log(JSON.stringify(receipt.extraction, null, 2));
           NODE
-      - uses: actions/upload-artifact@v4
+      - id: upload
+        uses: actions/upload-artifact@v4
         with:
           name: ssc-rd04-a07-shard00-extraction-pilot
           path: |
@@ -237,3 +235,47 @@ jobs:
             ${{ runner.temp }}/a07-shard00-pilot/asset-selection.env
           if-no-files-found: error
           retention-days: 90
+      - name: Record bounded pilot receipt on issue 741
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+        run: |
+          set -Eeuo pipefail
+          work="${RUNNER_TEMP}/a07-shard00-pilot"
+          node --input-type=module <<'NODE' > "$work/report.md"
+          import fs from 'node:fs';
+          const receipt = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-pilot/receipt.json`, 'utf8'));
+          console.log('## A07 content-neutral shard-00 extraction pilot');
+          console.log('');
+          console.log('```text');
+          console.log(`workflow_run=${process.env.GITHUB_RUN_ID}`);
+          console.log(`branch_head=${receipt.branch_head}`);
+          console.log(`artifact_id=${process.env.ARTIFACT_ID}`);
+          console.log(`artifact_digest=${process.env.ARTIFACT_DIGEST}`);
+          console.log(`source_release_id=${receipt.source.release_id}`);
+          console.log(`source_asset_id=${receipt.source.archive_asset_id}`);
+          console.log(`source_archive_sha256=${receipt.source.archive_sha256}`);
+          console.log(`rules_sha256=${receipt.rules.sha256}`);
+          console.log(`documents=${receipt.denominator.documents}`);
+          console.log(`registry_rows=${receipt.denominator.registry_rows}`);
+          console.log(`candidate_documents=${receipt.extraction.candidate_documents}`);
+          console.log(`support_only_documents=${receipt.extraction.support_only_documents}`);
+          console.log(`negative_documents=${receipt.extraction.negative_documents}`);
+          console.log(`total_matches=${receipt.extraction.total_matches}`);
+          console.log(`ledger_sha256=${receipt.extraction.ledger_sha256}`);
+          console.log('population_complete=false');
+          console.log('follow_up_authorized=false');
+          console.log('implementation_observed=false');
+          console.log('separate_public_compliance_receipt_observed=false');
+          console.log('complete_restoration_observed=false');
+          console.log('remedy_timeliness_observed=false');
+          console.log('graph_effect=none');
+          console.log('publication_effect=none');
+          console.log('adoption_effect=none');
+          console.log('```');
+          console.log('');
+          console.log('Shard 00 is one of the sixty-four SHA-256-preassigned A06 shards. This pilot tests transport, exact-byte custody, identity reconciliation, and the frozen extraction machinery only. It does not select decisions by outcome, complete the 11,672-document population, authorize case follow-up, or establish implementation or restoration.');
+          NODE
+          gh issue comment 741 --repo "$GITHUB_REPOSITORY" --body-file "$work/report.md"
