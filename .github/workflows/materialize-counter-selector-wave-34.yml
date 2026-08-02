@@ -1,0 +1,83 @@
+name: Materialize Counter-Selector Wave 34
+
+on:
+  push:
+    branches:
+      - 'agent/counter-selector-wave-34-executable-handoff-control'
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-34.yml'
+      - '.github/materializers/counter-selector-wave-34/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/counter-selector-wave-34-executable-handoff-control
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct exact archive
+        run: |
+          set -euo pipefail
+          cat .github/materializers/counter-selector-wave-34/payload-000 \
+              .github/materializers/counter-selector-wave-34/payload-001 \
+              .github/materializers/counter-selector-wave-34/payload-002 \
+              .github/materializers/counter-selector-wave-34/payload-003 \
+            > /tmp/w34.b64
+          base64 -d /tmp/w34.b64 > /tmp/w34.tar.gz
+          echo "e80198ba32fd3aebe6dfd6b0173b41be268bc46388e73ccdb4e47d5f6d8cf8a3  /tmp/w34.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/w34.tar.gz -C .
+      - name: Validate exact estate
+        run: |
+          set -euo pipefail
+          node tools/build-counter-selector-wave-34.mjs
+          node tools/validate-counter-selector-wave-34.mjs
+          node test/counter-selector-wave-34.test.js
+          npm run release:check
+          mkdir /tmp/w34-products
+          cp data/project/counter-selector-wave-34-package/package-manifest.json /tmp/w34-products/
+          cp data/project/counter-selector-wave-34-handoff-registry.json /tmp/w34-products/
+          cp data/project/counter-selector-wave-34-release-manifest.json /tmp/w34-products/
+          cp reports/core-thesis/counter-selector-wave-34/data.json /tmp/w34-products/report-data.json
+          cp reports/core-thesis/counter-selector-wave-34/index.html /tmp/w34-products/report-index.html
+          node tools/build-counter-selector-wave-34.mjs
+          cmp data/project/counter-selector-wave-34-package/package-manifest.json /tmp/w34-products/package-manifest.json
+          cmp data/project/counter-selector-wave-34-handoff-registry.json /tmp/w34-products/counter-selector-wave-34-handoff-registry.json
+          cmp data/project/counter-selector-wave-34-release-manifest.json /tmp/w34-products/counter-selector-wave-34-release-manifest.json
+          cmp reports/core-thesis/counter-selector-wave-34/data.json /tmp/w34-products/report-data.json
+          cmp reports/core-thesis/counter-selector-wave-34/index.html /tmp/w34-products/report-index.html
+      - name: Publish transport-free non-workflow estate
+        run: |
+          set -euo pipefail
+          rm .github/workflows/counter-selector-wave-34.yml
+          rm .github/materializers/counter-selector-wave-34/payload-000
+          rm .github/materializers/counter-selector-wave-34/payload-001
+          rm .github/materializers/counter-selector-wave-34/payload-002
+          rm .github/materializers/counter-selector-wave-34/payload-003
+          git add \
+            data/project/counter-selector-wave-34-executable-handoff-control.json \
+            data/project/counter-selector-wave-34-handoff-registry.json \
+            data/project/counter-selector-wave-34-package \
+            data/project/counter-selector-wave-34-release-manifest.json \
+            docs/methods/counter-selector-executable-handoff-control.md \
+            docs/milestones/counter-selector-wave-34.md \
+            reports/core-thesis/counter-selector-wave-34 \
+            schemas/counter-selector-executable-handoff-control.schema.json \
+            test/counter-selector-wave-34.test.js \
+            tools/build-counter-selector-wave-34.mjs \
+            tools/validate-counter-selector-wave-34.mjs \
+            tools/verify-counter-selector-wave-34-successor.mjs
+          git add -A .github/materializers/counter-selector-wave-34
+          git diff --cached --check
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m "Install Counter-Selector Wave 34 executable handoff control"
+          git push origin HEAD:agent/counter-selector-wave-34-executable-handoff-control
