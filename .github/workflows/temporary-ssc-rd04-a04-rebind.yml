@@ -1,0 +1,163 @@
+name: TEMP rebind SSC RD-04 A04 to live main
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a04-rebind-base
+    paths:
+      - '.github/tmp/ssc-rd04-a04-rebind.trigger'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd04-a04-rebind
+  cancel-in-progress: false
+
+jobs:
+  rebind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-snap-route-adjudication-a04
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Merge live main, prove gates, and publish only on a clean lease
+        env:
+          TARGET_BRANCH: agent/ssc-rd04-snap-route-adjudication-a04
+          EXPECTED_PRODUCT: 95422516dd83cbe67a2fdcb013207cd41129465a
+          MINIMUM_MAIN: 681b72e38fcaeac745a6ec7c45eb3dd2b8898f89
+          EXPECTED_RELEASE: 861fa4ee56fc9caccc0616af5a189a332b812e7d78fa67109150615a83fe7f32
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          remote_product="$(git rev-parse "origin/$TARGET_BRANCH")"
+          test "$remote_product" = "$EXPECTED_PRODUCT"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_PRODUCT"
+          start_main="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$MINIMUM_MAIN" "$start_main"
+
+          set +e
+          git merge --no-ff --no-commit "$start_main"
+          merge_status=$?
+          set -e
+          if [[ $merge_status -ne 0 ]]; then
+            git diff --name-only --diff-filter=U | sort | tee ssc-rd04-a04-rebind-conflicts.txt
+            test -s ssc-rd04-a04-rebind-conflicts.txt
+            exit 1
+          fi
+
+          timestamp_paths=(
+            build/axm-identity.json
+            build/build-hop-report.json
+            build/hop-graph.json
+            build/migration-review.md
+            build/migration-summary.json
+            build/receipt-graph.json
+            build/scores.json
+            build/scout-report.json
+            build/scout-report.md
+            build/surface-graph.json
+          )
+          for rel in "${timestamp_paths[@]}"; do
+            if git cat-file -e "$start_main:$rel" 2>/dev/null; then
+              git checkout "$start_main" -- "$rel"
+            fi
+          done
+
+          git commit -m 'Rebind SSC RD-04 A04 to live main'
+          integration_head="$(git rev-parse HEAD)"
+          test "$(git show -s --format=%P HEAD)" = "$EXPECTED_PRODUCT $start_main"
+
+          python tools/build-status-sovereignty-rd04-snap-route-adjudication-a04.py
+          git diff --exit-code -- \
+            data/intake/status-sovereignty-rd04-snap-route-adjudication-a04 \
+            data/project/status-sovereignty-rd04-snap-route-adjudication-a04-release-manifest.json \
+            build/core-thesis/status-sovereignty/rd04-snap-route-adjudication-a04 \
+            reports/core-thesis/status-sovereignty/rd04-snap-route-adjudication-a04
+          python tools/validate-status-sovereignty-rd04-snap-route-adjudication-a04.py
+          python test/status-sovereignty-rd04-snap-route-adjudication-a04.test.py
+          node tools/validate-no-magic-human-gate.mjs
+
+          observed_release="$(node --input-type=module -e "import fs from 'node:fs'; const m=JSON.parse(fs.readFileSync('data/project/status-sovereignty-rd04-snap-route-adjudication-a04-release-manifest.json','utf8')); process.stdout.write(m.combined_sha256)")"
+          test "$observed_release" = "$EXPECTED_RELEASE"
+
+          npm run release:check
+          expected_timestamp_paths="$(printf '%s\n' "${timestamp_paths[@]}" | sort)"
+          actual_tracked_paths="$(git status --porcelain=v1 | awk '$1 != "??" {print substr($0,4)}' | sort)"
+          if [[ "$actual_tracked_paths" != "$expected_timestamp_paths" ]]; then
+            echo 'expected timestamp-only tracked release drift:'
+            printf '%s\n' "$expected_timestamp_paths"
+            echo 'observed tracked release drift:'
+            printf '%s\n' "$actual_tracked_paths"
+            exit 1
+          fi
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const paths = [
+            'build/axm-identity.json',
+            'build/build-hop-report.json',
+            'build/hop-graph.json',
+            'build/migration-review.md',
+            'build/migration-summary.json',
+            'build/receipt-graph.json',
+            'build/scores.json',
+            'build/scout-report.json',
+            'build/scout-report.md',
+            'build/surface-graph.json'
+          ];
+          const normalize = (value) => value
+            .replace(/"generated":\s*"[^"]+"/, '"generated": "<normalized>"')
+            .replace(/^Generated: .*$/m, 'Generated: <normalized>');
+          for (const rel of paths) {
+            const before = execFileSync('git', ['show', `HEAD:${rel}`], { encoding: 'utf8' });
+            const after = fs.readFileSync(rel, 'utf8');
+            if (normalize(before) !== normalize(after)) throw new Error(`non-timestamp release drift in ${rel}`);
+          }
+          console.log('release drift: ten timestamp-only surfaces verified');
+          NODE
+
+          git checkout -- "${timestamp_paths[@]}"
+          git clean -fdx
+          test -z "$(git status --porcelain=v1)"
+
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          end_main="$(git rev-parse origin/main)"
+          test "$end_main" = "$start_main"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_PRODUCT"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_PRODUCT" origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          {
+            echo "start_main=$start_main"
+            echo "product_parent=$EXPECTED_PRODUCT"
+            echo "integration_head=$integration_head"
+            echo "release_sha256=$observed_release"
+            echo 'merge_conflicts=0'
+            echo 'release_non_timestamp_drift=0'
+            echo 'score_changes=0'
+            echo 'reviewed_disposition_changes=0'
+            echo 'residual_classes_closed=0'
+            echo 'graph_effect=none'
+            echo 'publication_effect=none'
+          } > ssc-rd04-a04-rebind-receipt.txt
+      - name: Upload rebind receipt or conflict ledger
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a04-rebind
+          path: |
+            ssc-rd04-a04-rebind-receipt.txt
+            ssc-rd04-a04-rebind-conflicts.txt
+          if-no-files-found: warn
