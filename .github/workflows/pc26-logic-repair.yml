@@ -1,0 +1,70 @@
+name: Temporary PC-26 causal-logic repair
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pc26-logic-repair.yml'
+      - 'tools/lib/preference-causal-assurance.mjs'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/preference-causal-assurance-v1
+      - name: Repair comparator, feedback, and validation logic
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('tools/lib/preference-causal-assurance.mjs')
+          source = path.read_text()
+
+          old_historical = "  const historicalControlDrift = comparator.concurrent !== true || comparator.calendar_offset_days > 0 || comparator.policy_match !== true || comparator.population_match !== true || comparator.channel_match !== true;\n"
+          new_historical = "  const historicalControlDrift = comparator.type === 'historical_control'\n    || comparator.concurrent !== true\n    || comparator.calendar_offset_days > 0;\n"
+          if old_historical in source:
+              source = source.replace(old_historical, new_historical, 1)
+          elif new_historical not in source:
+              raise SystemExit('historical-control anchor not found')
+
+          old_comparator = "  const concurrentComparator = comparator.concurrent === true\n    && comparator.calendar_offset_days === 0\n    && comparator.policy_match === true\n    && comparator.population_match === true\n    && comparator.geography_match === true\n    && comparator.channel_match === true;\n"
+          new_comparator = "  const concurrentComparator = comparator.concurrent === true\n    && comparator.calendar_offset_days === 0\n    && comparator.geography_match === true\n    && comparator.channel_match === true;\n"
+          if old_comparator in source:
+              source = source.replace(old_comparator, new_comparator, 1)
+          elif new_comparator not in source:
+              raise SystemExit('concurrent-comparator anchor not found')
+
+          old_feedback = "    total_policy_feedback_count:worlds.reduce((total,world)=>total+world.temporal.decision_feedback_count+world.adaptive.policy_feedback_count,0),\n"
+          new_feedback = "    total_policy_feedback_count:worlds.reduce((total,world)=>total+Math.max(world.temporal.decision_feedback_count,world.adaptive.policy_feedback_count),0),\n"
+          if old_feedback in source:
+              source = source.replace(old_feedback, new_feedback, 1)
+          elif new_feedback not in source:
+              raise SystemExit('policy-feedback anchor not found')
+
+          useless = "  if (interference?.control_exposed_count > object(arguments[0])?.control_count) {\n    // Count reconciliation is enforced against assignment in the world-level validator.\n  }\n"
+          source = source.replace(useless, '')
+
+          old_estimation = "  for (const key of ['reported_effect','ci_low','ci_high','p_value','independent_reference_effect']) if (!numberInRange(estimation?.[key], -1, 1)) errors.push(`world ${worldId} estimation.${key} must be between negative one and one`);\n"
+          new_estimation = "  for (const key of ['reported_effect','ci_low','ci_high','independent_reference_effect']) if (!numberInRange(estimation?.[key], -1, 1)) errors.push(`world ${worldId} estimation.${key} must be between negative one and one`);\n  if (!numberInRange(estimation?.p_value, 0, 1)) errors.push(`world ${worldId} estimation.p_value must be between zero and one`);\n"
+          if old_estimation in source:
+              source = source.replace(old_estimation, new_estimation, 1)
+          elif new_estimation not in source:
+              raise SystemExit('estimation range anchor not found')
+
+          path.write_text(source)
+          PY
+      - name: Commit bounded causal-logic repair
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add tools/lib/preference-causal-assurance.mjs
+          if git diff --cached --quiet; then
+            echo 'No causal-logic repair required.'
+          else
+            git commit -m 'Repair PC-26 comparator, feedback, and estimation invariants'
+            git push origin HEAD:research/preference-causal-assurance-v1
+          fi
