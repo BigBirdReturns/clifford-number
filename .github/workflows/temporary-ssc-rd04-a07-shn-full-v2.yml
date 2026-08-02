@@ -1,0 +1,164 @@
+name: TEMP execute SSC RD-04 A07 full exact-SHN denominator v2
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a07-shn-semantics-base-v2
+    paths:
+      - '.github/tmp/ssc-rd04-a07-shn-full-v2.trigger'
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: ssc-rd04-a07-shn-full-v2
+  cancel-in-progress: false
+
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a07-shn-semantics-base-v2
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reprove exact-SHN semantics before broad execution
+        run: node .github/tmp/ssc-rd04-a07-shn-semantics-v2.mjs
+      - name: Preserve pilot custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a07-shn-full-pilot-v2
+          path: a07-shn-semantics
+          if-no-files-found: error
+          retention-days: 30
+
+  full:
+    needs: pilot
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        shard: ['00','01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25','26','27','28','29','30','31']
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a07-shn-semantics-base-v2
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - id: acquire
+        name: Acquire exact-SHN shard ${{ matrix.shard }}
+        continue-on-error: true
+        env:
+          SHARD_INDEX: ${{ matrix.shard }}
+        run: node .github/tmp/ssc-rd04-a07-shn-full-shard-v2.mjs
+      - name: Upload complete shard custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a07-shn-full-${{ matrix.shard }}
+          path: a07-shn-full-${{ matrix.shard }}
+          if-no-files-found: error
+          retention-days: 30
+      - name: Fail shard after custody when acquisition failed
+        if: steps.acquire.outcome != 'success'
+        run: exit 1
+
+  reconcile:
+    needs: full
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a07-shn-semantics-base-v2
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ssc-rd04-a07-shn-full-??
+          path: a07-shn-download
+          merge-multiple: false
+      - id: reconcile
+        name: Reconcile all 6,292 exact-SHN queries
+        continue-on-error: true
+        run: node .github/tmp/ssc-rd04-a07-shn-full-reconcile-v2.mjs
+      - name: Upload complete reconciled denominator
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a07-shn-full-reconciled-v2
+          path: a07-shn-full-reconciled
+          if-no-files-found: error
+          retention-days: 30
+      - name: Record full denominator result on issue 739
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOME: ${{ steps.reconcile.outcome }}
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module <<'NODE' > /tmp/a07-shn-full-comment.md
+          import fs from 'node:fs';
+          let summary = null;
+          try { summary = JSON.parse(fs.readFileSync('a07-shn-full-reconciled/summary.json', 'utf8')); } catch {}
+          const counts = summary?.counts ?? {};
+          console.log('### A07 complete exact-SHN public-registry denominator v2');
+          console.log('');
+          console.log('```text');
+          console.log(`status:                                  ${summary?.status ?? process.env.OUTCOME ?? 'unknown'}`);
+          console.log(`D1 SHNs:                                 ${counts.D1_shns ?? 0}`);
+          console.log(`query receipts:                          ${counts.query_receipts ?? 0}`);
+          console.log(`capped parent slices:                    ${counts.capped_parent_slices ?? 0}`);
+          console.log(`unresolved capped SHNs:                  ${counts.unresolved_capped_shns ?? 0}`);
+          console.log(`unique registry rows returned:           ${counts.unique_registry_rows_returned ?? 0}`);
+          console.log(`public-follow-up candidate rows:         ${counts.public_followup_candidate_rows ?? 0}`);
+          console.log(`candidate decision documents:            ${counts.public_followup_candidate_documents ?? 0}`);
+          console.log(`D1 SHNs with candidates:                 ${counts.D1_shns_with_public_followup_candidates ?? 0}`);
+          console.log(`cross-program candidate rows:            ${counts.cross_program_candidate_rows ?? 0}`);
+          console.log(`post-FY candidate rows:                  ${counts.post_FY_candidate_rows ?? 0}`);
+          console.log(`failures:                                ${counts.failures ?? 0}`);
+          console.log('external contacts:                       0');
+          console.log('graph effect:                            none');
+          console.log('```');
+          console.log('');
+          console.log(`Workflow run: ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`);
+          console.log('');
+          console.log('The denominator covers the predeclared 6,292 D1 SHNs against the all-program public registry from July 1, 2025 through August 1, 2026. A candidate means only that the public registry returned the same SHN outside canonical A06. It is not claimant identity, implementation, restoration, payment, timeliness, or compliance. Absence remains absence of observed public follow-up, not noncompliance.');
+          if (summary?.failures?.length) {
+            console.log('');
+            console.log('Fail-closed errors:');
+            for (const failure of summary.failures.slice(0, 20)) console.log(`- ${failure.message ?? String(failure)}`);
+          }
+          NODE
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/739/comments" -f body="$(cat /tmp/a07-shn-full-comment.md)"
+      - name: Publish pass-only disposable handoff branch
+        if: steps.reconcile.outcome == 'success'
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -C agent/ssc-rd04-a07-shn-full-pass-v2
+          mkdir -p .github/tmp/ssc-rd04-a07-shn-full-pass-v2
+          cp a07-shn-full-reconciled/summary.json .github/tmp/ssc-rd04-a07-shn-full-pass-v2/summary.json
+          cp a07-shn-full-reconciled/candidate-rows.json .github/tmp/ssc-rd04-a07-shn-full-pass-v2/candidate-rows.json
+          cp a07-shn-full-reconciled/candidate-documents.json .github/tmp/ssc-rd04-a07-shn-full-pass-v2/candidate-documents.json
+          git add .github/tmp/ssc-rd04-a07-shn-full-pass-v2
+          git commit -m 'Record passing SSC RD-04 A07 full exact-SHN denominator'
+          git push --force origin HEAD:refs/heads/agent/ssc-rd04-a07-shn-full-pass-v2
+      - name: Fail reconciliation after custody when incomplete
+        if: steps.reconcile.outcome != 'success'
+        run: exit 1
