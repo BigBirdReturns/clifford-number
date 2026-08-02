@@ -1,0 +1,68 @@
+name: Temporary Wave 35 actual-tree export
+
+on:
+  pull_request:
+    branches:
+      - agent/lake-allocator-war-wave-21
+    paths:
+      - '.github/workflows/temporary-wave35-actual-tree-export.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: temporary-wave35-actual-tree-export-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Await temporary workflow deletion
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          path='.github/workflows/temporary-wave35-actual-tree-export.yml'
+          encoded_ref='agent%2Flake-allocator-war-join-requirements-wave-35'
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/${path}?ref=${encoded_ref}"
+          for attempt in $(seq 1 180); do
+            status="$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer ${GITHUB_TOKEN}" -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' "$api")"
+            [[ "$status" == '404' ]] && exit 0
+            [[ "$status" == '200' ]] || { echo "unexpected GitHub contents status: $status" >&2; exit 1; }
+            sleep 2
+          done
+          echo 'temporary Wave 35 actual-tree export workflow was not deleted before checkout' >&2
+          exit 1
+
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lake-allocator-war-join-requirements-wave-35
+          fetch-depth: 0
+
+      - name: Export exact tracked tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > /tmp/wave35-actual-head.txt
+          git rev-parse 'HEAD^{tree}' > /tmp/wave35-actual-tree.txt
+          git ls-files -s > /tmp/wave35-actual-index.txt
+          git status --porcelain > /tmp/wave35-actual-status.txt
+          git archive --format=tar.gz --output=/tmp/wave35-actual-tree.tar.gz HEAD
+          sha256sum /tmp/wave35-actual-tree.tar.gz > /tmp/wave35-actual-tree.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wave35-actual-tree
+          path: |
+            /tmp/wave35-actual-tree.tar.gz
+            /tmp/wave35-actual-tree.sha256
+            /tmp/wave35-actual-head.txt
+            /tmp/wave35-actual-tree.txt
+            /tmp/wave35-actual-index.txt
+            /tmp/wave35-actual-status.txt
+          if-no-files-found: error
+          retention-days: 1
