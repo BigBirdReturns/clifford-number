@@ -1,0 +1,405 @@
+{
+  "schema_version": "counter-selector-recipient-handoff-controls@1",
+  "program_id": "counter-selector-v1",
+  "wave_id": "CS-W31-RH-01",
+  "parent_wave_id": "CS-W30-HC-01",
+  "as_of": "2026-08-01",
+  "observed_at": "2026-08-01T20:30:00-07:00",
+  "title": "Counter-Selector Wave 31: recipient-acknowledged handoff controls",
+  "status": "two_recipient_handover_acknowledgments_one_authority_before_access_control_zero_complete_state_packages_zero_operator_findings",
+  "purpose": "Strengthen the public handoff calibration set with two named incoming operators who explicitly acknowledged handover events and one matched authority-before-access control. Separate acknowledgment of a meeting, role, or state category from acknowledgment of a complete recoverable package.",
+  "counts": {
+    "handoff_controls_audited": 3,
+    "public_source_records": 18,
+    "named_outgoing_units": 3,
+    "named_incoming_units": 3,
+    "authorizing_surfaces": 3,
+    "authority_transfer_events": 3,
+    "recipient_handover_acknowledgment_events": 2,
+    "partial_state_category_inventories": 3,
+    "authority_before_access_controls": 1,
+    "successor_action_chains": 2,
+    "function_custody_refinements": 3,
+    "complete_outgoing_state_packages": 0,
+    "recipient_acknowledged_state_packages": 0,
+    "complete_open_decision_inventories": 0,
+    "rollback_or_safe_decline_packages": 0,
+    "complete_direct_handoffs": 0,
+    "person_dimension_supports_added": 0,
+    "valid_resource_normalized_comparators": 0,
+    "external_independent_reviews": 0,
+    "complete_operator_findings": 0,
+    "field_test_eligible_candidates": 0,
+    "contacts_authorized": 0,
+    "bounded_collaborations_authorized": 0,
+    "promotions": 0,
+    "person_rankings": 0,
+    "public_identity_profiles": 0,
+    "graph_effects": 0,
+    "adversarial_mutations": 72
+  },
+  "handoff_contract": {
+    "component_order": [
+      "outgoing_intent_or_departure",
+      "authorizing_body_or_rule",
+      "incoming_identity_or_function",
+      "authority_or_credential_transfer",
+      "recipient_acceptance_or_role_occupancy",
+      "open_decision_and_dependency_inventory",
+      "rollback_and_safe_decline_conditions",
+      "successor_action",
+      "observable_continuity"
+    ],
+    "recipient_acknowledgment_levels": [
+      "none",
+      "role_occupancy_only",
+      "handover_event_acknowledged",
+      "partial_state_categories_acknowledged",
+      "complete_state_package_acknowledged"
+    ],
+    "complete_direct_handoff_requires": [
+      "attributable outgoing state package",
+      "attributable recipient acknowledgment of the package rather than only the role or meeting",
+      "authority, credentials, dependencies, and open decisions inventoried",
+      "rollback, refusal, and safe-decline conditions preserved",
+      "successor action observed from the transferred state",
+      "continuity observed without hidden focal-person state"
+    ],
+    "contact_required": false,
+    "positive_control_is_promotion": false
+  },
+  "controls": [
+    {
+      "control_id": "CS-W31-RH-01",
+      "public_label": "recipient-acknowledged elected project-leader handover with partial state categories",
+      "transition_type": "named_person_to_person_elected_role_handover",
+      "outgoing_entity": "Sam Hartman",
+      "incoming_entities": [
+        "Jonathan Carter"
+      ],
+      "authorizing_body": "Debian Developers election under the Debian Constitution",
+      "source_records": [
+        {
+          "source_id": "CS-W31-S01",
+          "title": "Debian Project Leader Elections 2020",
+          "publisher": "Debian Project",
+          "date": "2020-04-19",
+          "url": "https://www.debian.org/vote/2020/vote_001",
+          "source_class": "election_authority_record",
+          "artifact_scope": "Preserves the election process, candidates, ballots, and result surface for the incoming leader."
+        },
+        {
+          "source_id": "CS-W31-S02",
+          "title": "DPL elections 2020, congratulations Jonathan Carter!",
+          "publisher": "Bits from Debian",
+          "date": "2020-04-19",
+          "url": "https://bits.debian.org/2020/04/results-dpl-elections-2020.html",
+          "source_class": "named_role_transition_record",
+          "artifact_scope": "Names the elected successor, term start, and outgoing leader."
+        },
+        {
+          "source_id": "CS-W31-S03",
+          "title": "Bits from the new DPL",
+          "publisher": "Debian Developer Announcements",
+          "date": "2020-04-21",
+          "url": "https://lists.debian.org/debian-devel-announce/2020/04/msg00013.html",
+          "source_class": "recipient_handover_acknowledgment",
+          "artifact_scope": "The incoming leader states that he and the outgoing leader held a handover meeting and names finances, delegations, legal matters, outreach, and other questions as discussed state categories."
+        },
+        {
+          "source_id": "CS-W31-S04",
+          "title": "DPL Activity logs for April/May 2020",
+          "publisher": "Debian Project Leader Blog",
+          "date": "2020-06-03",
+          "url": "https://bits.debian.org/dpl/2020/06/dpl-updates-jcc-t01-m01.html",
+          "source_class": "posttransition_successor_action_record",
+          "artifact_scope": "The incoming leader records the handover session and a first-month sequence of decisions, delegation work, financial coordination, and external representation."
+        },
+        {
+          "source_id": "CS-W31-S05",
+          "title": "Debian Project Leader",
+          "publisher": "Debian Project",
+          "date": "current_as_of_2026-08-01",
+          "url": "https://www.debian.org/devel/leader",
+          "source_class": "role_and_task_contract",
+          "artifact_scope": "Defines the DPL role, election mechanism, coordination responsibilities, delegation authority, urgent decisions, and financial duties."
+        },
+        {
+          "source_id": "CS-W31-S06",
+          "title": "Debian Constitution",
+          "publisher": "Debian Project",
+          "date": "current_as_of_2026-08-01",
+          "url": "https://www.debian.org/devel/constitution",
+          "source_class": "constitutional_authority_contract",
+          "artifact_scope": "Defines the Project Leader's powers, appointment, resignation, delegation, and decision authority."
+        }
+      ],
+      "components": {
+        "outgoing_intent_or_departure": "observed_term_end_and_named_outgoing_leader",
+        "authorizing_body_or_rule": "observed_developer_election_and_constitutional_role",
+        "incoming_identity_or_function": "observed_elected_named_successor",
+        "authority_or_credential_transfer": "observed_term_transition_and_role_authority_credentials_not_inventoried",
+        "recipient_acceptance_or_role_occupancy": "observed_incoming_public_handover_meeting_acknowledgment",
+        "open_decision_and_dependency_inventory": "partial_state_categories_finances_delegations_legal_outreach_and_questions_not_itemized",
+        "rollback_and_safe_decline_conditions": "not_observed",
+        "successor_action": "observed_first_month_decisions_delegation_updates_financial_coordination_and_external_representation",
+        "observable_continuity": "observed_immediate_role_operation_after_term_start"
+      },
+      "recipient_acknowledgment_level": "partial_state_categories_acknowledged",
+      "adjudication": {
+        "authority_transfer": "bounded_positive",
+        "recipient_acknowledgment": "bounded_event_and_partial_category_acknowledgment",
+        "direct_state_handoff": "not_established",
+        "person_custody_support_added": false,
+        "function_refinement": "named_recipient_acknowledged_role_handover_with_partial_state_categories_and_successor_operation",
+        "classification": "bounded_recipient_acknowledged_handover_not_complete_state_package"
+      },
+      "counterevidence": [
+        "The public record describes a meeting and subject categories, not an itemized outgoing state package.",
+        "No public inventory of credentials, access, dependencies, open decisions, or pending deadlines was located.",
+        "No rollback, refusal, safe-decline, or emergency-access conditions were located.",
+        "The successor activity log proves operation after the transition but not that each action arose from transferred state.",
+        "The principal handover evidence is the incoming participant's own public account rather than an independent audit."
+      ],
+      "falsifiers": [
+        "evidence that no handover meeting occurred",
+        "evidence that the named incoming person did not assume the role",
+        "evidence that the listed responsibility categories were not discussed",
+        "a public itemized outgoing package and recipient acknowledgment that would justify a stronger handoff state"
+      ],
+      "operator_finding": false,
+      "field_test_eligible": false,
+      "contact_authorized": false,
+      "graph_effect": "none"
+    },
+    {
+      "control_id": "CS-W31-RH-02",
+      "public_label": "recipient-acknowledged elected project-leader handover with stated open items",
+      "transition_type": "named_person_to_person_elected_role_handover",
+      "outgoing_entity": "Andreas Tille",
+      "incoming_entities": [
+        "Sruthi Chandran"
+      ],
+      "authorizing_body": "Debian Developers election under the Debian Constitution",
+      "source_records": [
+        {
+          "source_id": "CS-W31-S07",
+          "title": "Debian Project Leader Elections 2026: Call for nominations",
+          "publisher": "Debian Project Secretary",
+          "date": "2026-03-06",
+          "url": "https://lists.debian.org/debian-devel-announce/2026/03/msg00003.html",
+          "source_class": "election_timeline_and_authority_record",
+          "artifact_scope": "Defines the constitutional election timeline and the date on which the new leader's term begins."
+        },
+        {
+          "source_id": "CS-W31-S08",
+          "title": "Debian Project Leader Election 2026 Results",
+          "publisher": "Debian Project Secretary",
+          "date": "2026-04-19",
+          "url": "https://lists.debian.org/debian-devel-announce/2026/04/msg00006.html",
+          "source_class": "named_election_result",
+          "artifact_scope": "Names the incoming leader selected by the developer vote."
+        },
+        {
+          "source_id": "CS-W31-S09",
+          "title": "Bits from the DPL",
+          "publisher": "Debian Developer Announcements",
+          "date": "2026-04-04",
+          "url": "https://lists.debian.org/debian-devel-announce/2026/04/msg00001.html",
+          "source_class": "outgoing_transition_intent",
+          "artifact_scope": "The outgoing leader states that he will not run again and expects to hand duties to the incoming candidate if elected."
+        },
+        {
+          "source_id": "CS-W31-S10",
+          "title": "(A short) Bits from the new DPL",
+          "publisher": "Debian Developer Announcements",
+          "date": "2026-04-22",
+          "url": "https://lists.debian.org/debian-devel-announce/2026/04/msg00009.html",
+          "source_class": "recipient_handover_acknowledgment_and_open_item_record",
+          "artifact_scope": "The incoming leader says she took charge, describes a smooth video-call handover, and names re-delegations, a time-limited delegation, DPL Helpers, and platform topics as open work."
+        },
+        {
+          "source_id": "CS-W31-S11",
+          "title": "Bits from past DPL",
+          "publisher": "Debian Developer Announcements",
+          "date": "2026-05-06",
+          "url": "https://lists.debian.org/debian-devel-announce/2026/05/msg00000.html",
+          "source_class": "posttransition_outgoing_role_exit_record",
+          "artifact_scope": "The former leader publicly addresses the incoming leader after the term transition and treats the prior term as ended."
+        },
+        {
+          "source_id": "CS-W31-S12",
+          "title": "Debian Project Leader",
+          "publisher": "Debian Project",
+          "date": "current_as_of_2026-08-01",
+          "url": "https://www.debian.org/devel/leader",
+          "source_class": "current_role_registry",
+          "artifact_scope": "Lists the incoming person as the current Debian Project Leader and preserves the role's authority and task surface."
+        }
+      ],
+      "components": {
+        "outgoing_intent_or_departure": "observed_named_outgoing_nonrenomination_and_term_end",
+        "authorizing_body_or_rule": "observed_developer_election_and_constitutional_term_transition",
+        "incoming_identity_or_function": "observed_elected_named_successor",
+        "authority_or_credential_transfer": "observed_role_authority_transition_credentials_not_inventoried",
+        "recipient_acceptance_or_role_occupancy": "observed_incoming_took_charge_and_smooth_video_handover_acknowledgment",
+        "open_decision_and_dependency_inventory": "partial_redelegations_time_limited_delegation_helpers_and_platform_topics_not_complete",
+        "rollback_and_safe_decline_conditions": "not_observed",
+        "successor_action": "partial_initial_role_operation_and_announced_followups_substantive_completion_not_observed",
+        "observable_continuity": "observed_current_role_occupancy_after_outgoing_term_end"
+      },
+      "recipient_acknowledgment_level": "partial_state_categories_acknowledged",
+      "adjudication": {
+        "authority_transfer": "bounded_positive",
+        "recipient_acknowledgment": "bounded_event_and_partial_open_item_acknowledgment",
+        "direct_state_handoff": "not_established",
+        "person_custody_support_added": false,
+        "function_refinement": "named_recipient_acknowledged_role_handover_with_partial_open_items_and_current_occupancy",
+        "classification": "bounded_recipient_acknowledged_handover_without_complete_package_or_successor_action_chain"
+      },
+      "counterevidence": [
+        "A statement that the handover was smooth does not identify the package, credentials, dependencies, or deadlines transferred.",
+        "The listed delegations, helpers, and platform topics are a partial open-work surface, not a complete decision inventory.",
+        "No public rollback, refusal, emergency-access, or safe-decline conditions were located.",
+        "Current role occupancy does not prove independent resumability from a transferred state package.",
+        "The incoming and outgoing messages are participant-authored rather than an independent handoff audit."
+      ],
+      "falsifiers": [
+        "evidence that the video handover did not occur",
+        "evidence that the incoming person did not assume the role",
+        "evidence that the listed open items were not inherited work",
+        "a public complete package, recipient acknowledgment, and successor action chain that would justify a stronger handoff state"
+      ],
+      "operator_finding": false,
+      "field_test_eligible": false,
+      "contact_authorized": false,
+      "graph_effect": "none"
+    },
+    {
+      "control_id": "CS-W31-RH-03",
+      "public_label": "formal delegated authority preceding operational access and later team operation",
+      "transition_type": "function_authority_before_access_negative_control",
+      "outgoing_entity": "FTP Master delegation and Archive Operations holders",
+      "incoming_entities": [
+        "DFSG, Licensing & New Packages Team"
+      ],
+      "authorizing_body": "Debian Project Leader delegation under Debian Constitution section 8",
+      "source_records": [
+        {
+          "source_id": "CS-W31-S13",
+          "title": "New delegation for DFSG, Licensing & New Packages Team",
+          "publisher": "Debian Developer Announcements",
+          "date": "2025-10-26",
+          "url": "https://lists.debian.org/debian-devel-announce/2025/10/msg00002.html",
+          "source_class": "initial_formal_delegation_record",
+          "artifact_scope": "Creates the new delegated team, names members, revokes the previous FTP Master delegation, and defines continuing authority."
+        },
+        {
+          "source_id": "CS-W31-S14",
+          "title": "Bits from the DPL",
+          "publisher": "Debian Developer Announcements",
+          "date": "2025-12-03",
+          "url": "https://lists.debian.org/debian-devel-announce/2025/12/msg00000.html",
+          "source_class": "preaccess_training_record",
+          "artifact_scope": "States that candidate team members were training on NEW packages without direct access to the NEW queue."
+        },
+        {
+          "source_id": "CS-W31-S15",
+          "title": "Bits from the DPL",
+          "publisher": "Debian Developer Announcements",
+          "date": "2026-01-07",
+          "url": "https://lists.debian.org/debian-devel-announce/2026/01/msg00004.html",
+          "source_class": "handover_in_progress_and_access_gap_record",
+          "artifact_scope": "States that the handover was in progress, technical details remained under discussion, and the future team lacked queue access before formal delegation."
+        },
+        {
+          "source_id": "CS-W31-S16",
+          "title": "New delegation for DFSG, Licensing & New Packages Team (superseding previous announcement)",
+          "publisher": "Debian Developer Announcements",
+          "date": "2026-01-23",
+          "url": "https://lists.debian.org/debian-devel-announce/2026/01/msg00008.html",
+          "source_class": "superseding_authority_delegation",
+          "artifact_scope": "Supersedes the earlier announcement and establishes the active delegated team and responsibility surface."
+        },
+        {
+          "source_id": "CS-W31-S17",
+          "title": "Bits from the DPL",
+          "publisher": "Debian Developer Announcements",
+          "date": "2026-02-04",
+          "url": "https://lists.debian.org/debian-devel-announce/2026/02/msg00000.html",
+          "source_class": "postdelegation_access_delay_and_late_handover_record",
+          "artifact_scope": "States that access and operational details were not immediately available after delegation and that technical and procedural handover steps completed only later."
+        },
+        {
+          "source_id": "CS-W31-S18",
+          "title": "Bits from the DFSG Team: New Dashboard & Queue Processes",
+          "publisher": "Debian Developer Announcements",
+          "date": "2026-02-12",
+          "url": "https://lists.debian.org/debian-devel-announce/2026/02/msg00003.html",
+          "source_class": "later_successor_operation_and_support_record",
+          "artifact_scope": "The incoming team states that it is operational, describes the dashboard and queue process, and credits Archive Operations and DSA support."
+        }
+      ],
+      "components": {
+        "outgoing_intent_or_departure": "observed_function_reorganization_and_previous_delegation_revocation",
+        "authorizing_body_or_rule": "observed_dpl_delegation_and_superseding_authority_record",
+        "incoming_identity_or_function": "observed_named_incoming_team_and_responsibility_surface",
+        "authority_or_credential_transfer": "observed_formal_authority_before_complete_queue_access_and_operational_details",
+        "recipient_acceptance_or_role_occupancy": "partial_team_readiness_and_later_operational_announcement_no_package_acknowledgment",
+        "open_decision_and_dependency_inventory": "partial_queue_access_training_tooling_workflows_and_process_details_not_complete",
+        "rollback_and_safe_decline_conditions": "not_observed",
+        "successor_action": "observed_team_operation_dashboard_and_queue_process_after_delayed_access",
+        "observable_continuity": "observed_delayed_transition_with_access_gap_then_supported_operation"
+      },
+      "recipient_acknowledgment_level": "role_occupancy_only",
+      "adjudication": {
+        "authority_transfer": "bounded_positive_with_timing_failure",
+        "recipient_acknowledgment": "operational_role_acknowledgment_not_state_package_acknowledgment",
+        "direct_state_handoff": "not_established",
+        "person_custody_support_added": false,
+        "function_refinement": "formal_authority_before_access_negative_control_with_delayed_supported_operation",
+        "classification": "bounded_authority_transfer_and_eventual_operation_with_handoff_timing_gap"
+      },
+      "counterevidence": [
+        "Formal delegation occurred before complete access and operational details were available.",
+        "Training without direct queue access did not constitute operational custody.",
+        "Later operation depended on Archive Operations, DSA, infrastructure, and tooling support.",
+        "No complete outgoing state package, recipient acknowledgment, dependency inventory, or rollback package was located.",
+        "Eventual operation does not erase the timing gap between authority and usable state."
+      ],
+      "falsifiers": [
+        "evidence that the incoming team had complete operational access at delegation",
+        "evidence that no access or procedural delay occurred",
+        "evidence that the team never became operational",
+        "a public complete package and acknowledgment showing timely authority-and-state transfer"
+      ],
+      "operator_finding": false,
+      "field_test_eligible": false,
+      "contact_authorized": false,
+      "graph_effect": "none"
+    }
+  ],
+  "boundaries": {
+    "handover_meeting_is_complete_state_package": false,
+    "recipient_says_smooth_is_complete_custody": false,
+    "state_category_discussion_is_itemized_package": false,
+    "role_election_is_credential_transfer": false,
+    "listed_open_items_are_complete_open_decision_inventory": false,
+    "formal_delegation_is_operational_access": false,
+    "eventual_operation_is_timely_handoff": false,
+    "current_role_page_is_recipient_state_acknowledgment": false,
+    "successor_action_is_proof_of_predecessor_package": false,
+    "first_party_recipient_account_is_external_review": false,
+    "positive_control_is_candidate_promotion": false,
+    "function_refinement_is_person_support": false,
+    "same_system_adjudication_is_external_review": false,
+    "living_person_is_contact_authorization": false,
+    "field_test_authorized": false,
+    "promotion_authorized": false,
+    "person_ranking_authorized": false,
+    "public_identity_profile_authorized": false,
+    "graph_effect": "none"
+  },
+  "next_action": "Apply the recipient-acknowledgment ladder to candidate lanes and acquire public outgoing packages, itemized dependencies and open decisions, credential transfer, rollback conditions, and recipient acknowledgment of the package without contacting source subjects.",
+  "graph_effect": "none"
+}
