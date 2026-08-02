@@ -1,1 +1,1 @@
-publish exact checksum-bound A08 product without the permanent workflow
+publish exact checksum-bound A08 product without the permanent workflow v2
