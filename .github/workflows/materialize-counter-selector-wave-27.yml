@@ -1,0 +1,140 @@
+name: Materialize Counter-Selector Wave 27
+
+on:
+  push:
+    branches:
+      - 'agent/counter-selector-wave-27-batch-a-blind-review'
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-27.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: counter-selector-wave-27-materialize-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/counter-selector-wave-27-batch-a-blind-review
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify exact carrier and unpack Wave 27 estate
+        run: |
+          set -euo pipefail
+          cat > /tmp/wave27-expected-blobs <<'EOF'
+          0097b3dfc7a2444caf5ea03a0210caf4de8cbabe  .github/materializers/counter-selector-wave-27/payload-00
+          92bd3abba6fa2aa1f0a214fbd0e1595e6ab9e5b7  .github/materializers/counter-selector-wave-27/payload-01
+          a4bd166f4e6ed42d7516e278f0fcfaa401c1833b  .github/materializers/counter-selector-wave-27/payload-02
+          ba5f6c9fcb2791345c7b52f36659fae987589a32  .github/materializers/counter-selector-wave-27/payload-03
+          6fe2810626f0c3def95f6dcde3ba8ac4a775bdb2  .github/materializers/counter-selector-wave-27/payload-04
+          630cae741ea4503fbf2dbdf305907ffe3e5a8c1b  .github/materializers/counter-selector-wave-27/payload-05
+          b708d8cf0f26f99732f93c6d8af7188bbb1daa38  .github/materializers/counter-selector-wave-27/payload-06
+          9f4974be6476fb88f62e1a465e2ab4268707d704  .github/materializers/counter-selector-wave-27/payload-07
+          3ff206c45f4aee8f31d1790adf7c6dcb5cf5e814  .github/materializers/counter-selector-wave-27/payload-08
+          35f80917982b7d6a9da75d5124a22af2f3ea7974  .github/materializers/counter-selector-wave-27/payload-09
+          c481c096b9c4009e62828dc9c30c0819c52aec3b  .github/materializers/counter-selector-wave-27/payload-10
+          08ecb9796b41d19b413851ae98e8b2770c7fc95e  .github/materializers/counter-selector-wave-27/payload-11
+          85430a62d3220e036e91a18ca7c49fd2b96f5c8f  .github/materializers/counter-selector-wave-27/payload-12
+          EOF
+          while read -r expected path; do
+            actual="$(git hash-object "$path")"
+            test "$actual" = "$expected" || {
+              echo "carrier blob mismatch: $path expected=$expected actual=$actual" >&2
+              exit 1
+            }
+          done < /tmp/wave27-expected-blobs
+          cat .github/materializers/counter-selector-wave-27/payload-* \
+            | base64 --decode \
+            > /tmp/counter-selector-wave-27.tar.xz
+          echo '8fa72f8833e664190ea5c432c36db618883f01ae1a8a2963b5bb7fabdacabf68  /tmp/counter-selector-wave-27.tar.xz' \
+            | sha256sum --check --strict
+          tar -xJf /tmp/counter-selector-wave-27.tar.xz -C .
+          rm -rf .github/materializers/counter-selector-wave-27
+      - name: Build, validate, and attack Wave 27
+        run: |
+          set -euo pipefail
+          node tools/build-counter-selector-wave-27.mjs
+          node tools/validate-counter-selector-wave-27.mjs
+          node test/counter-selector-wave-27.test.js
+      - name: Commit exact permanent non-workflow Wave 27 estate
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A -- \
+            .github/materializers/counter-selector-wave-27 \
+            data/project/counter-selector-wave-27-batch-a-blind-review.json \
+            data/project/counter-selector-wave-27-blind-packet-registry.json \
+            data/project/counter-selector-wave-27-disagreement-ledger.json \
+            data/project/counter-selector-wave-27-release-manifest.json \
+            data/project/counter-selector-wave-27-review-registry.json \
+            docs/methods/counter-selector-observability-blind-review.md \
+            docs/milestones/counter-selector-wave-27.md \
+            reports/core-thesis/counter-selector-wave-27/data.json \
+            reports/core-thesis/counter-selector-wave-27/index.html \
+            schemas/counter-selector-observability-blind-review.schema.json \
+            test/counter-selector-wave-27.test.js \
+            tools/build-counter-selector-wave-27.mjs \
+            tools/validate-counter-selector-wave-27.mjs
+          actual="$(git diff --cached --name-only | sort)"
+          expected="$(printf '%s\n' \
+            .github/materializers/counter-selector-wave-27/payload-00 \
+            .github/materializers/counter-selector-wave-27/payload-01 \
+            .github/materializers/counter-selector-wave-27/payload-02 \
+            .github/materializers/counter-selector-wave-27/payload-03 \
+            .github/materializers/counter-selector-wave-27/payload-04 \
+            .github/materializers/counter-selector-wave-27/payload-05 \
+            .github/materializers/counter-selector-wave-27/payload-06 \
+            .github/materializers/counter-selector-wave-27/payload-07 \
+            .github/materializers/counter-selector-wave-27/payload-08 \
+            .github/materializers/counter-selector-wave-27/payload-09 \
+            .github/materializers/counter-selector-wave-27/payload-10 \
+            .github/materializers/counter-selector-wave-27/payload-11 \
+            .github/materializers/counter-selector-wave-27/payload-12 \
+            data/project/counter-selector-wave-27-batch-a-blind-review.json \
+            data/project/counter-selector-wave-27-blind-packet-registry.json \
+            data/project/counter-selector-wave-27-disagreement-ledger.json \
+            data/project/counter-selector-wave-27-release-manifest.json \
+            data/project/counter-selector-wave-27-review-registry.json \
+            docs/methods/counter-selector-observability-blind-review.md \
+            docs/milestones/counter-selector-wave-27.md \
+            reports/core-thesis/counter-selector-wave-27/data.json \
+            reports/core-thesis/counter-selector-wave-27/index.html \
+            schemas/counter-selector-observability-blind-review.schema.json \
+            test/counter-selector-wave-27.test.js \
+            tools/build-counter-selector-wave-27.mjs \
+            tools/validate-counter-selector-wave-27.mjs | sort)"
+          test "$actual" = "$expected" || {
+            echo 'unexpected staged paths' >&2
+            printf 'actual:\n%s\nexpected:\n%s\n' "$actual" "$expected" >&2
+            exit 1
+          }
+          git diff --cached --check
+          git commit -m 'Execute Counter-Selector Wave 27 Batch A blind review'
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic non-workflow reconstruction
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          node tools/build-counter-selector-wave-27.mjs
+          node tools/validate-counter-selector-wave-27.mjs
+          node test/counter-selector-wave-27.test.js
+          git diff --exit-code
+          actual_status="$(git status --porcelain)"
+          test "$actual_status" = '?? .github/workflows/counter-selector-wave-27.yml' || {
+            echo 'unexpected working-tree state before connector workflow custody' >&2
+            printf '%s\n' "$actual_status" >&2
+            exit 1
+          }
+      - name: Publish permanent non-workflow Wave 27 head
+        run: git push origin HEAD:agent/counter-selector-wave-27-batch-a-blind-review
