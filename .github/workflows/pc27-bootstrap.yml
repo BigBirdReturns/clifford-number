@@ -1,0 +1,36 @@
+name: Temporary PC-27 permanent-surface bootstrap
+
+on:
+  pull_request:
+    paths:
+      - '.pc27/bootstrap.py'
+      - '.github/workflows/pc27-bootstrap.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/preference-interference-mapping-v1
+      - name: Materialize the permanent PC-27 surface
+        run: python .pc27/bootstrap.py
+      - name: Commit the permanent surface
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            data/research/preference-custody/interference-mapping.fixture.json \
+            test/preference-interference-mapping.test.js \
+            docs/preference-custody-interference-mapping.md \
+            .github/workflows/preference-interference-mapping.yml
+          if git diff --cached --quiet; then
+            echo 'Permanent PC-27 files already exist.'
+          else
+            git commit -m 'Materialize PC-27 fixture, tests, documentation, and workflow'
+            git push origin HEAD:research/preference-interference-mapping-v1
+          fi
