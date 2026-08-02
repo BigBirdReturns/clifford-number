@@ -1,0 +1,78 @@
+name: Temporary Wave 36 basin-contract diff diagnostic
+
+on:
+  pull_request:
+    branches:
+      - agent/lake-allocator-war-wave-21
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-wave36-basin-contract-diff-diagnostic.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-wave36-basin-contract-diff-diagnostic-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lake-allocator-war-public-acquisition-wave-36
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Diagnose constitutional basin-contract rewrite
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain)"
+          before="$(git rev-parse HEAD)"
+          before_policy="$(sha256sum data/project/lake-allocator-war-wave-21-policy.json | awk '{print $1}')"
+          before_registry="$(sha256sum data/project/lake-basin-registry.json | awk '{print $1}')"
+
+          node - <<'NODE'
+          const fs = require('fs');
+          const policyPath = 'data/project/lake-allocator-war-wave-21-policy.json';
+          const registryPath = 'data/project/lake-basin-registry.json';
+          const policy = JSON.parse(fs.readFileSync(policyPath,'utf8'));
+          const registry = JSON.parse(fs.readFileSync(registryPath,'utf8'));
+          const ids = ['allocator-war-source','allocator-war-lake-actions','allocator-war-reports'];
+          for (const id of ids) {
+            const contract = policy.basin_contract.find(row => row.basin_id === id);
+            const canonical = registry.basins.find(row => row.basin_id === id);
+            if (!contract || !canonical) throw new Error(`${id}: basin missing from policy or registry`);
+            const pathEqual = JSON.stringify(contract.path_prefixes) === JSON.stringify(canonical.path_prefixes);
+            const entryEqual = JSON.stringify(contract.authoritative_entrypoints) === JSON.stringify(canonical.authoritative_entrypoints);
+            const wave36ContractPaths = contract.path_prefixes.filter(path => path.includes('wave-36')).length;
+            const wave36RegistryPaths = canonical.path_prefixes.filter(path => path.includes('wave-36')).length;
+            console.log(JSON.stringify({id,pathEqual,entryEqual,contractPaths:contract.path_prefixes.length,registryPaths:canonical.path_prefixes.length,wave36ContractPaths,wave36RegistryPaths}));
+            contract.path_prefixes = [...canonical.path_prefixes];
+            contract.authoritative_entrypoints = [...canonical.authoritative_entrypoints];
+          }
+          fs.writeFileSync(policyPath, `${JSON.stringify(policy,null,2)}\n`);
+          NODE
+
+          after_policy="$(sha256sum data/project/lake-allocator-war-wave-21-policy.json | awk '{print $1}')"
+          after_registry="$(sha256sum data/project/lake-basin-registry.json | awk '{print $1}')"
+          echo "before_policy=$before_policy"
+          echo "after_policy=$after_policy"
+          echo "before_registry=$before_registry"
+          echo "after_registry=$after_registry"
+          echo 'git-status:'
+          git status --short
+          echo 'changed-paths:'
+          git diff --name-only "$before"
+          echo 'changed-path-count:'
+          git diff --name-only "$before" | sed '/^$/d' | wc -l
+          echo 'policy-diff-stat:'
+          git diff --stat -- data/project/lake-allocator-war-wave-21-policy.json
+          echo 'policy-diff-check:'
+          git diff --check
