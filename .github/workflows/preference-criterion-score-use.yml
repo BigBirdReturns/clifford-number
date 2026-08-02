@@ -1,0 +1,39 @@
+name: Preference custody criterion and score-use control
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/criterion-score-use.fixture.json'
+      - 'tools/lib/preference-criterion-score-use.mjs'
+      - 'tools/compile-preference-criterion-score-use.mjs'
+      - 'tools/validate-preference-criterion-score-use.mjs'
+      - 'test/preference-criterion-score-use.test.js'
+      - 'docs/preference-custody-criterion-score-use.md'
+      - '.github/workflows/preference-criterion-score-use.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  criterion-score-use:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Compile criterion, replication, transport, score-use, and succession worlds
+        run: node tools/compile-preference-criterion-score-use.mjs
+      - name: Validate criterion, timing, overlap, transport, use, succession, and authority boundaries
+        run: node tools/validate-preference-criterion-score-use.mjs
+      - name: Exercise same-team, post-decision, overlap, proxy, transport, use, succession, authority, and tamper fixtures
+        run: node test/preference-criterion-score-use.test.js
+      - name: Preserve deterministic criterion-score-use projections
+        uses: actions/upload-artifact@v4
+        with:
+          name: preference-criterion-score-use-pc25
+          path: |
+            build/research/preference-criterion-score-use.json
+            build/research/preference-criterion-score-use.md
+          if-no-files-found: error
