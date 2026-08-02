@@ -36,7 +36,7 @@ jobs:
           OVERLAY_B64_SHA256: a913180696539c102874ae32caf6c01246f92499ca5b796040e88a0847db61cd
           OVERLAY_TGZ_SHA256: 92fde70c19421bf0b26b181add058c1410091968fb87dc3e237cee79e2fb1430
           RECOVERY_SCRIPT_SHA256: f41454aed6204ee91b5aaf651233ea18ae2dd29b260e57c6d38da1f0dc937464
-          PRODUCT_PUSH_SCRIPT_SHA256: 324dbbd07472df72786afe2bc2b99b32ed8f522328014f12434a1bf9306745e3
+          PRODUCT_PUSH_SCRIPT_SHA256: beac0216ea7c3d3a7c2b004616397c03183e40ea81c864b508eb069c2a061da8
           MILESTONE_SHA256: 1a3ccd6fa3a689fada8236efadfc975e6e96d0e5a11e2c9451bf9ab5f3b10bc0
         run: |
           set -Eeuo pipefail
@@ -109,7 +109,11 @@ jobs:
           git commit --amend --no-edit
           product_head="$(git rev-parse HEAD)"
           test -z "$(git status --porcelain=v1)"
-          test -z "$(git diff --name-only "$source_head" HEAD -- .github/workflows)"
+          test "$(git rev-parse "$source_head:.github/workflows/materialize-ssc-rd04-a06-full-corpus.yml")" = "$(git rev-parse "HEAD:.github/workflows/materialize-ssc-rd04-a06-full-corpus.yml")"
+          if git cat-file -e "HEAD:.github/workflows/status-sovereignty-rd04-a06-full-corpus.yml" 2>/dev/null; then
+            echo 'generated permanent workflow remained in the Actions-token product commit'
+            exit 1
+          fi
 
           git push --force-with-lease="refs/heads/$TARGET_BRANCH:$source_head" origin "HEAD:refs/heads/$TARGET_BRANCH"
           '''
@@ -125,7 +129,9 @@ jobs:
           grep -Fq 'release_assets_page3=' tools/materialize-ssc-rd04-a06-full-corpus.sh
           grep -Fq 'Reusing the exact completed 64-shard draft release; no source document is refetched' tools/materialize-ssc-rd04-a06-full-corpus.sh
           grep -Fq 'git rm .github/workflows/status-sovereignty-rd04-a06-full-corpus.yml' tools/materialize-ssc-rd04-a06-full-corpus.sh
-          grep -Fq 'test -z "$(git diff --name-only "$source_head" HEAD -- .github/workflows)"' tools/materialize-ssc-rd04-a06-full-corpus.sh
+          grep -Fq 'git rev-parse "$source_head:.github/workflows/materialize-ssc-rd04-a06-full-corpus.yml"' tools/materialize-ssc-rd04-a06-full-corpus.sh
+          grep -Fq 'generated permanent workflow remained in the Actions-token product commit' tools/materialize-ssc-rd04-a06-full-corpus.sh
+          ! grep -Fq 'git diff --name-only "$source_head" HEAD -- .github/workflows' tools/materialize-ssc-rd04-a06-full-corpus.sh
           ! grep -Fq 'rm -f .github/workflows/materialize-ssc-rd04-a06-full-corpus.yml' tools/materialize-ssc-rd04-a06-full-corpus.sh
           ! grep -Fq 'rm -f .github/tmp/ssc-rd04-a06-recovery-overlay.tgz.b64.part03' tools/materialize-ssc-rd04-a06-full-corpus.sh
           grep -Fq 'rm -f tools/materialize-ssc-rd04-a06-full-corpus.sh' tools/materialize-ssc-rd04-a06-full-corpus.sh
