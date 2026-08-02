@@ -1,0 +1,218 @@
+{
+  "schema_version": "counter-selector-wave-34-report@1",
+  "program_id": "counter-selector-v1",
+  "wave_id": "CS-W34-EH-01",
+  "parent_wave_ids": [
+    "CS-W30-HC-01",
+    "CS-W31-RH-01",
+    "CS-W32-CH-01",
+    "CS-W33-PT-01"
+  ],
+  "as_of": "2026-08-02",
+  "observed_at": "2026-08-02T00:00:00-07:00",
+  "title": "Counter-Selector Wave 34: executable bounded-package handoff control",
+  "status": "one_complete_bounded_package_handoff_zero_person_findings",
+  "purpose": "Demonstrate that the handoff gate can clear when a versioned package, exact authority and dependency ledgers, explicit open-decision and rollback state, package-level recipient acknowledgment, safe decline, fresh-workspace successor operation, and separate verification all join on one bounded object.",
+  "counts": {
+    "controls_audited": 1,
+    "public_source_records": 4,
+    "package_entries": 7,
+    "versioned_outgoing_packages": 1,
+    "fresh_workspace_recipient_jobs": 1,
+    "corrupted_package_decline_probes": 1,
+    "recipient_package_acknowledgments": 1,
+    "successor_operation_chains": 1,
+    "separate_verifier_jobs": 1,
+    "complete_bounded_package_handoffs": 1,
+    "complete_direct_person_handoffs": 0,
+    "person_dimension_supports_added": 0,
+    "valid_resource_normalized_comparators": 0,
+    "external_independent_reviews": 0,
+    "complete_operator_findings": 0,
+    "field_test_eligible_candidates": 0,
+    "contacts_authorized": 0,
+    "bounded_collaborations_authorized": 0,
+    "promotions": 0,
+    "person_rankings": 0,
+    "public_identity_profiles": 0,
+    "graph_effects": 0,
+    "adversarial_mutations": 84
+  },
+  "handoff_contract": {
+    "component_order": [
+      "versioned_package_identity",
+      "outgoing_and_incoming_authority",
+      "credential_and_access_ledger",
+      "dependency_inventory",
+      "open_decision_inventory",
+      "rollback_and_safe_decline",
+      "package_level_recipient_acknowledgment",
+      "successor_operation_from_package_state",
+      "separate_successor_verification"
+    ],
+    "complete_bounded_package_requires": [
+      "one identified package with exact entry hashes and combined digest",
+      "bounded outgoing and incoming authority with prohibited actions",
+      "explicit credential and access inventory including an explicit empty set",
+      "complete runtime, tool, repository, network, and external-service dependency inventory",
+      "explicit open-decision inventory including an explicit empty set",
+      "decline conditions and rollback state that prevent partial publication",
+      "recipient acknowledgment of the exact identified package and entries",
+      "successor operation in a fresh workspace using the package as the sole state bridge",
+      "separate verification of the successor object and acknowledgment"
+    ],
+    "contact_required": false,
+    "control_is_candidate_promotion": false,
+    "control_counts_toward_person_support": false
+  },
+  "control": {
+    "control_id": "CS-W34-EH-01",
+    "public_label": "fresh-workspace package-only deterministic state continuation",
+    "control_type": "synthetic_executable_positive_control",
+    "package_id": "CS-W34-PACKAGE-01",
+    "package_version": "1.0.0",
+    "package_paths": [
+      "object-before.json",
+      "operation-contract.json",
+      "authority-ledger.json",
+      "dependency-inventory.json",
+      "open-decision-inventory.json",
+      "rollback-plan.json",
+      "resume.mjs"
+    ],
+    "source_records": [
+      {
+        "source_id": "CS-W34-S01",
+        "title": "Wave 33 public handoff package truth table",
+        "publisher": "BigBirdReturns/clifford-number",
+        "date": "2026-08-01",
+        "url": "https://github.com/BigBirdReturns/clifford-number/blob/main/reports/core-thesis/counter-selector-wave-33/data.json",
+        "source_class": "parent_package_completeness_contract",
+        "artifact_scope": "Defines the difference between labels, templates, partial packages, source-restricted packages, recipient acknowledgment, and complete direct handoff."
+      },
+      {
+        "source_id": "CS-W34-S02",
+        "title": "Storing and sharing data from a workflow",
+        "publisher": "GitHub Docs",
+        "date": "current_as_of_2026-08-02",
+        "url": "https://docs.github.com/actions/using-workflows/storing-workflow-data-as-artifacts",
+        "source_class": "official_cross_job_artifact_transport_contract",
+        "artifact_scope": "Documents upload and download of workflow artifacts used as the bounded package transport between separate jobs."
+      },
+      {
+        "source_id": "CS-W34-S03",
+        "title": "Workflow syntax for GitHub Actions",
+        "publisher": "GitHub Docs",
+        "date": "current_as_of_2026-08-02",
+        "url": "https://docs.github.com/actions/writing-workflows/workflow-syntax-for-github-actions",
+        "source_class": "official_job_dependency_and_permission_contract",
+        "artifact_scope": "Documents job dependencies, permissions, and fresh runner execution surfaces used to separate outgoing, recipient, and verifier roles."
+      },
+      {
+        "source_id": "CS-W34-S04",
+        "title": "Node.js Crypto API",
+        "publisher": "Node.js",
+        "date": "current_as_of_2026-08-02",
+        "url": "https://nodejs.org/api/crypto.html",
+        "source_class": "official_digest_implementation_contract",
+        "artifact_scope": "Documents the SHA-256 primitive used to bind package entries, package manifests, successor objects, and acknowledgments."
+      }
+    ],
+    "execution_roles": {
+      "outgoing_package_builder": {
+        "repository_checkout": true,
+        "may_build_package": true,
+        "may_certify_recipient_operation": false
+      },
+      "fresh_workspace_recipient": {
+        "repository_checkout": false,
+        "repository_permissions": "none",
+        "package_is_sole_state_bridge": true,
+        "may_modify_package": false,
+        "may_emit_successor_state": true
+      },
+      "successor_verifier": {
+        "repository_checkout": true,
+        "may_compare_outputs_to_canonical_contract": true,
+        "may_modify_recipient_outputs": false
+      }
+    },
+    "expected_successor_object": {
+      "schema_version": "counter-selector-handoff-object@1",
+      "object_id": "CS-W34-OBJECT-01",
+      "state": "resumed",
+      "sequence": 18,
+      "value": 42,
+      "lineage": [
+        "prepared@17",
+        "resumed@18"
+      ],
+      "preserved_valid_work": [
+        "bounded object identity",
+        "pretransition sequence lineage",
+        "pretransition value"
+      ]
+    },
+    "adjudication": {
+      "package_state": "versioned_exact_entry_bound_package",
+      "recipient_state": "package_level_acknowledgment_in_fresh_workspace",
+      "safe_decline_state": "corrupted_package_refused_before_successor_outputs",
+      "successor_state": "bounded_successor_operation_from_package_only_state",
+      "verification_state": "separate_job_compares_exact_successor_and_acknowledgment",
+      "complete_bounded_package_handoff": true,
+      "complete_direct_person_handoff": false,
+      "person_support_added": false,
+      "operator_finding": false,
+      "field_test_eligible": false,
+      "classification": "complete_bounded_process_package_handoff_positive_control"
+    },
+    "counterevidence": [
+      "The object and transition are deliberately small and deterministic.",
+      "The outgoing, recipient, and verifier are process roles inside one repository and one workflow institution.",
+      "No unfamiliar problem, real secret custody, live external service, interpersonal repair, or cross-domain transfer is tested.",
+      "A fresh runner job is process separation, not an independent human or institution.",
+      "The package proves a bounded handoff contract, not a person-level operator phenotype."
+    ],
+    "falsifiers": [
+      "the recipient can complete after an entry hash mismatch",
+      "the recipient requires repository checkout or hidden external state",
+      "the recipient emits output before package validation finishes",
+      "the acknowledgment does not bind the exact package manifest",
+      "the successor object differs from the canonical transition contract",
+      "the verifier accepts a modified successor object or acknowledgment"
+    ],
+    "operator_finding": false,
+    "field_test_eligible": false,
+    "contact_authorized": false,
+    "graph_effect": "none",
+    "package_manifest": {
+      "path": "data/project/counter-selector-wave-34-package/package-manifest.json",
+      "entry_count": 7,
+      "combined_sha256": "ba07ea14ce89b0523eff34a57832ddbfa63aa98aa49af74764b3e00862af7d8f"
+    }
+  },
+  "boundaries": {
+    "complete_bounded_package_is_complete_production_system": false,
+    "fresh_job_is_external_institution": false,
+    "process_role_separation_is_independent_human_review": false,
+    "predeclared_transition_is_unfamiliar_problem_test": false,
+    "deterministic_resumption_is_cross_domain_transfer": false,
+    "explicit_empty_secret_ledger_is_real_secret_custody": false,
+    "complete_process_handoff_is_person_level_custody": false,
+    "control_success_is_support_adjusted_surplus": false,
+    "control_success_is_candidate_promotion": false,
+    "same_workflow_verifier_is_external_independent_review": false,
+    "living_person_is_contact_authorization": false,
+    "field_test_authorized": false,
+    "promotion_authorized": false,
+    "person_ranking_authorized": false,
+    "public_identity_profile_authorized": false,
+    "graph_effect": "none"
+  },
+  "next_action": "Apply the now-proven package contract to real candidate and public control surfaces; require one identified outgoing package, package-level recipient acknowledgment, authority and credential ledger, dependency and open-decision inventory, rollback conditions, successor operation without hidden predecessor state, and genuinely independent review before any person-level custody upgrade.",
+  "release_manifest": {
+    "path": "data/project/counter-selector-wave-34-release-manifest.json",
+    "combined_sha256": "58d78ac21c119c59cb49e76168e057f3641be4f714398d750870b365c94db1d3"
+  },
+  "graph_effect": "none"
+}
