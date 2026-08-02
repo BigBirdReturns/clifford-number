@@ -1,1 +1,1 @@
-freeze and reconcile six canonical residual class seeds in parallel
+rerun six residual class seeds with canonical SSC path prefixes v2
