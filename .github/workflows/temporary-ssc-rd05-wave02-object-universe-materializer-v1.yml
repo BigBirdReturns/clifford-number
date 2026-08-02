@@ -1,0 +1,209 @@
+name: TEMP materialize SSC RD-05 Wave 02 official-object universe
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-wave02-object-universe-materializer-base-v1
+    paths:
+      - '.github/tmp/ssc-rd05-wave02-object-universe-materializer-v1.trigger'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: ssc-rd05-wave02-object-universe-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd05-recommendation-disposition
+      EXPECTED_START_SHA: 2b3a73448759bac1210988a25e3d3b8c745a58b7
+      CAPTURE_RUN: '30767628840'
+      CAPTURE_ARTIFACT: '8839459127'
+      CAPTURE_NAME: ssc-rd05-wave02-official-record-surface-capture
+      CAPTURE_ZIP_SHA256: 3ce25b7e94d677a7210dbf1475b631078baa55bf779631340fe861c636478e48
+      CAPTURE_MANIFEST_SHA256: adf851d4a570baaed0a4308c72552f9da8dfe5655c6517a9b613259e5274d76f
+      BUILDER_BLOB: 1ebe1dc4f0830c441f4196aea3275f43ae4bf6a4
+      VALIDATOR_BLOB: 644e626f2bf1c1d3763e9997ec6ef6fcb0508bb9
+      TEST_BLOB: 29917b837bcbc5ff8896a5ce85626fc79cd9e2c4
+      BUILDER_PATH: tools/acquisition/status-sovereignty-rd-wave02-rd05/build-official-object-universe.mjs
+      VALIDATOR_PATH: tools/acquisition/status-sovereignty-rd-wave02-rd05/validate-official-object-universe.mjs
+      TEST_PATH: test/status-sovereignty-rd-wave02-rd05-official-object-universe.test.js
+      SOURCE_ROOT: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/source-custody/initial-surface-capture
+      OUTPUT_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/official-object-candidate-universe.json
+      EXPECTED_OUTPUT_SHA256: 42a1ea373378f8061dd0877bf1951231fa94cf05a1a5db6308091f42ca2ff083
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Download exact retained ten-source capture
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd05-wave02-official-record-surface-capture
+          path: /tmp/rd05-capture
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: BigBirdReturns/clifford-number
+          run-id: 30767628840
+      - name: Install exact program blobs and materialize candidate universe
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          start_sha="$(git rev-parse "origin/$TARGET_BRANCH")"
+          test "$start_sha" = "$EXPECTED_START_SHA"
+          test "$(git rev-parse HEAD)" = "$start_sha"
+          node tools/validate-no-magic-human-gate.mjs
+
+          artifact_json="$(curl --fail --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/$CAPTURE_ARTIFACT")"
+          test "$(jq -r '.name' <<<"$artifact_json")" = "$CAPTURE_NAME"
+          test "$(jq -r '.workflow_run.id' <<<"$artifact_json")" = "$CAPTURE_RUN"
+          test "$(jq -r '.digest' <<<"$artifact_json")" = "sha256:$CAPTURE_ZIP_SHA256"
+          test "$(jq -r '.expired' <<<"$artifact_json")" = 'false'
+
+          install_blob() {
+            local blob_sha="$1" target="$2"
+            mkdir -p "$(dirname "$target")"
+            curl --fail --silent --show-error \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/$blob_sha" \
+              | jq -r '.content' | tr -d '\n' | base64 --decode > "$target"
+            test "$(git hash-object "$target")" = "$blob_sha"
+          }
+          install_blob "$BUILDER_BLOB" "$BUILDER_PATH"
+          install_blob "$VALIDATOR_BLOB" "$VALIDATOR_PATH"
+          install_blob "$TEST_BLOB" "$TEST_PATH"
+
+          test "$(find /tmp/rd05-capture -type f | wc -l | tr -d ' ')" = 42
+          test "$(jq -r '.schema_version' /tmp/rd05-capture/manifest.json)" = 'ssc-rd05-wave02-official-record-surface-manifest@1'
+          test "$(jq -r '.combined_sha256' /tmp/rd05-capture/manifest.json)" = "$CAPTURE_MANIFEST_SHA256"
+          test "$(jq -r '.entries | length' /tmp/rd05-capture/manifest.json)" = 41
+          test "$(jq -r '.schema_version' /tmp/rd05-capture/summary.json)" = 'ssc-rd05-wave02-official-record-surface-capture@1'
+          test "$(jq -r '.sources | length' /tmp/rd05-capture/summary.json)" = 10
+          test "$(jq -r '.candidate_official_objects | length' /tmp/rd05-capture/summary.json)" = 55
+          test "$(jq -r '[.sources[] | select(.resolved == true and .terminal_state == "http_success")] | length' /tmp/rd05-capture/summary.json)" = 10
+
+          mkdir -p "$SOURCE_ROOT"
+          cp -a /tmp/rd05-capture/. "$SOURCE_ROOT/"
+          node "$BUILDER_PATH"
+          node "$VALIDATOR_PATH"
+          node "$TEST_PATH"
+          test "$(sha256sum "$OUTPUT_PATH" | awk '{print $1}')" = "$EXPECTED_OUTPUT_SHA256"
+
+          {
+            printf '%s\n' "$BUILDER_PATH" "$VALIDATOR_PATH" "$TEST_PATH" "$OUTPUT_PATH"
+            find /tmp/rd05-capture -type f -printf "$SOURCE_ROOT/%P\n"
+          } | sort -u > /tmp/expected-paths
+          test "$(wc -l < /tmp/expected-paths | tr -d ' ')" = 46
+          git status --porcelain=v1 --untracked-files=all | sed -E 's/^.. //' | sort -u > /tmp/observed-paths
+          diff -u /tmp/expected-paths /tmp/observed-paths
+          git add --pathspec-from-file=/tmp/expected-paths
+          git diff --cached --name-only | sort -u > /tmp/staged-paths
+          diff -u /tmp/expected-paths /tmp/staged-paths
+          git diff --cached --check
+          git commit -m 'Freeze RD-05 ACES official-object candidate universe'
+          product_sha="$(git rev-parse HEAD)"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          npm run release:check
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          node "$BUILDER_PATH"
+          node "$VALIDATOR_PATH"
+          node "$TEST_PATH"
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          end_sha="$(git rev-parse "origin/$TARGET_BRANCH")"
+          test "$end_sha" = "$start_sha"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          printf '%s\n' "$start_sha" > /tmp/rd05-start-sha.txt
+          printf '%s\n' "$product_sha" > /tmp/rd05-product-sha.txt
+      - name: Emit exact materialization receipt
+        run: |
+          set -Eeuo pipefail
+          export SOURCE_ROOT OUTPUT_PATH EXPECTED_OUTPUT_SHA256 CAPTURE_RUN CAPTURE_ARTIFACT CAPTURE_NAME CAPTURE_ZIP_SHA256 CAPTURE_MANIFEST_SHA256 BUILDER_BLOB VALIDATOR_BLOB TEST_BLOB
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const value = JSON.parse(fs.readFileSync(process.env.OUTPUT_PATH, 'utf8'));
+          const receipt = {
+            schema_version: 'ssc-rd05-wave02-object-universe-materializer-receipt@1',
+            issue: 790,
+            class_id: 'RD-05-C03',
+            start_sha: fs.readFileSync('/tmp/rd05-start-sha.txt', 'utf8').trim(),
+            product_sha: fs.readFileSync('/tmp/rd05-product-sha.txt', 'utf8').trim(),
+            product_paths: 46,
+            source_capture: {
+              workflow_run: Number(process.env.CAPTURE_RUN),
+              artifact_id: Number(process.env.CAPTURE_ARTIFACT),
+              artifact_name: process.env.CAPTURE_NAME,
+              artifact_zip_sha256: process.env.CAPTURE_ZIP_SHA256,
+              manifest_sha256: process.env.CAPTURE_MANIFEST_SHA256,
+              frozen_parent_sources: 10,
+              linked_candidates: 55
+            },
+            program_blobs: {
+              builder: process.env.BUILDER_BLOB,
+              validator: process.env.VALIDATOR_BLOB,
+              adversarial_suite: process.env.TEST_BLOB
+            },
+            universe: {
+              path: process.env.OUTPUT_PATH,
+              sha256: process.env.EXPECTED_OUTPUT_SHA256,
+              unique_objects: value.counts.unique_object_candidates,
+              aces_target_objects: value.counts.aces_target_objects,
+              matched_control_objects: value.counts.matched_control_objects,
+              exact_parent_bodies: value.counts.exact_object_bodies,
+              completed_recommendations: value.counts.completed_recommendations,
+              closed_objects: value.counts.closed_objects
+            },
+            gates: {
+              no_magic_human: 'pass',
+              exact_artifact_identity: 'pass',
+              exact_manifest_and_entry_custody: 'pass',
+              deterministic_builder: 'pass',
+              structural_validator: 'pass',
+              adversarial_mutations: 32,
+              exact_path_denominator: 'pass',
+              complete_repository_release_gate: 'pass',
+              deterministic_replay: 'pass',
+              child_branch_lease: 'pass'
+            },
+            authority: {
+              complete_official_object_universe_frozen: false,
+              recommendation_disposition_protocol_complete: false,
+              class_closed: false,
+              external_contacts: 0,
+              external_reviews: 0,
+              outside_human_dependency: false,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            }
+          };
+          fs.writeFileSync('ssc-rd05-wave02-object-universe-materializer-receipt.json', `${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+      - name: Upload exact RD-05 universe receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-wave02-object-universe-materializer-v1
+          path: ssc-rd05-wave02-object-universe-materializer-receipt.json
+          if-no-files-found: error
+          retention-days: 90
