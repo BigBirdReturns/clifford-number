@@ -1,0 +1,217 @@
+name: TEMP materialize SSC Wave 02 RD-02 and RD-03 field matrices
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-wave02-rd02-rd03-matrix-materializer-base-v1
+    paths:
+      - '.github/tmp/ssc-wave02-rd02-rd03-matrix-materializer-v1.trigger'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-wave02-rd02-rd03-matrix-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    name: materialize-${{ matrix.class_id }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - class_id: RD-02-C04
+            target_branch: agent/ssc-rd-wave02-rd02-license-leverage
+            builder: tools/acquisition/status-sovereignty-rd-wave02-rd02/build-field-matrix.mjs
+            validator: tools/acquisition/status-sovereignty-rd-wave02-rd02/validate-field-matrix.mjs
+            test: test/status-sovereignty-rd-wave02-rd02-field-matrix.test.js
+            output: data/intake/status-sovereignty-rd-wave02-rd02-license-leverage/field-matrix.json
+            expected_rows: '18'
+            expected_fields: '10'
+            commit_message: Materialize exact RD-02 eighteen-row field matrix
+          - class_id: RD-03-C04
+            target_branch: agent/ssc-rd-wave02-rd03-negotiated-terms
+            builder: tools/acquisition/status-sovereignty-rd-wave02-rd03/build-field-matrix.mjs
+            validator: tools/acquisition/status-sovereignty-rd-wave02-rd03/validate-field-matrix.mjs
+            test: test/status-sovereignty-rd-wave02-rd03-field-matrix.test.js
+            output: data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/field-matrix.json
+            expected_rows: '5'
+            expected_fields: '14'
+            commit_message: Materialize exact RD-03 five-instrument field matrix
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.target_branch }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build, validate, test, and publish exact matrix
+        env:
+          CLASS_ID: ${{ matrix.class_id }}
+          TARGET_BRANCH: ${{ matrix.target_branch }}
+          BUILDER: ${{ matrix.builder }}
+          VALIDATOR: ${{ matrix.validator }}
+          TEST_PATH: ${{ matrix.test }}
+          OUTPUT_PATH: ${{ matrix.output }}
+          EXPECTED_ROWS: ${{ matrix.expected_rows }}
+          EXPECTED_FIELDS: ${{ matrix.expected_fields }}
+          COMMIT_MESSAGE: ${{ matrix.commit_message }}
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          start_sha="$(git rev-parse "origin/$TARGET_BRANCH")"
+          test "$(git rev-parse HEAD)" = "$start_sha"
+          node tools/validate-no-magic-human-gate.mjs
+          test ! -e "$OUTPUT_PATH"
+          node "$BUILDER"
+          node "$VALIDATOR"
+          node "$TEST_PATH"
+
+          export OUTPUT_PATH EXPECTED_ROWS EXPECTED_FIELDS CLASS_ID
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          const body = fs.readFileSync(process.env.OUTPUT_PATH);
+          const value = JSON.parse(body.toString('utf8'));
+          const rows = Array.isArray(value.rows) ? value.rows : value.instruments;
+          if (!Array.isArray(rows) || rows.length !== Number(process.env.EXPECTED_ROWS)) {
+            throw new Error(`${process.env.CLASS_ID} row denominator ${rows?.length}`);
+          }
+          if (!Array.isArray(value.required_fields) || value.required_fields.length !== Number(process.env.EXPECTED_FIELDS)) {
+            throw new Error(`${process.env.CLASS_ID} field denominator ${value.required_fields?.length}`);
+          }
+          if (value.current_result?.class_closed !== false || value.current_result?.fixed_protocol_complete !== false) {
+            throw new Error(`${process.env.CLASS_ID} prematurely closed`);
+          }
+          console.log(JSON.stringify({
+            class_id: process.env.CLASS_ID,
+            bytes: body.length,
+            sha256: crypto.createHash('sha256').update(body).digest('hex'),
+            rows: rows.length,
+            required_fields: value.required_fields.length
+          }));
+          NODE
+
+          git status --porcelain=v1 > /tmp/status-before-commit
+          test "$(wc -l < /tmp/status-before-commit | tr -d ' ')" = 1
+          grep -Fxq "?? $OUTPUT_PATH" /tmp/status-before-commit
+          git add "$OUTPUT_PATH"
+          git commit -m "$COMMIT_MESSAGE"
+          product_sha="$(git rev-parse HEAD)"
+          git diff --name-only "$start_sha...$product_sha" | sort > /tmp/observed-paths
+          printf '%s\n' "$OUTPUT_PATH" > /tmp/expected-paths
+          diff -u /tmp/expected-paths /tmp/observed-paths
+          test -z "$(git status --porcelain=v1)"
+
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          end_sha="$(git rev-parse "origin/$TARGET_BRANCH")"
+          test "$end_sha" = "$start_sha"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          export START_SHA="$start_sha" END_SHA="$end_sha" PRODUCT_SHA="$product_sha"
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          const body = fs.readFileSync(process.env.OUTPUT_PATH);
+          const value = JSON.parse(body.toString('utf8'));
+          const rows = Array.isArray(value.rows) ? value.rows : value.instruments;
+          const receipt = {
+            schema_version: 'ssc-wave02-field-matrix-materializer-receipt@1',
+            class_id: process.env.CLASS_ID,
+            target_branch: process.env.TARGET_BRANCH,
+            start_sha: process.env.START_SHA,
+            end_sha_before_push: process.env.END_SHA,
+            product_sha: process.env.PRODUCT_SHA,
+            output_path: process.env.OUTPUT_PATH,
+            output_bytes: body.length,
+            output_sha256: crypto.createHash('sha256').update(body).digest('hex'),
+            unit_rows: rows.length,
+            required_fields: value.required_fields.length,
+            gates: {
+              no_magic_human: 'pass',
+              deterministic_builder: 'pass',
+              structural_validator: 'pass',
+              adversarial_mutations: 20,
+              exact_one_path_diff: 'pass',
+              branch_lease: 'pass'
+            },
+            authority: {
+              fixed_protocol_complete: false,
+              class_closed: false,
+              substantive_finding_created: false,
+              reviewed_disposition_changed: false,
+              external_contacts: 0,
+              external_reviews: 0,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            }
+          };
+          fs.writeFileSync(`matrix-materializer-${process.env.CLASS_ID}.json`, `${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+      - name: Upload exact matrix materializer receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-matrix-materializer-${{ matrix.class_id }}
+          path: matrix-materializer-${{ matrix.class_id }}.json
+          if-no-files-found: error
+          retention-days: 90
+
+  reconcile:
+    needs: materialize
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ssc-wave02-matrix-materializer-*
+          path: matrix-receipts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconcile exact two-matrix publication
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          const files = fs.readdirSync('matrix-receipts', { recursive: true })
+            .filter((name) => String(name).endsWith('.json'))
+            .map((name) => path.join('matrix-receipts', String(name)));
+          if (files.length !== 2) throw new Error(`receipt denominator ${files.length}`);
+          const rows = files.map((file) => JSON.parse(fs.readFileSync(file, 'utf8'))).sort((a, b) => a.class_id.localeCompare(b.class_id));
+          if (JSON.stringify(rows.map((row) => row.class_id)) !== JSON.stringify(['RD-02-C04','RD-03-C04'])) throw new Error('class denominator');
+          const receipt = {
+            schema_version: 'ssc-wave02-two-matrix-reconciliation@1',
+            matrices: rows,
+            status: 'two_exact_immutable_field_matrices_materialized',
+            total_unit_rows: rows.reduce((sum, row) => sum + row.unit_rows, 0),
+            total_required_fields_per_unit: rows.reduce((sum, row) => sum + row.required_fields, 0),
+            authority: {
+              fixed_protocol_complete: false,
+              classes_closed: 0,
+              substantive_findings_created: 0,
+              external_contacts: 0,
+              external_reviews: 0,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            }
+          };
+          fs.writeFileSync('matrix-receipts/reconciliation.json', `${JSON.stringify(receipt, null, 2)}\n`);
+          console.log(receipt.status);
+          NODE
+      - name: Upload reconciled matrix receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-rd02-rd03-matrix-reconciliation
+          path: matrix-receipts
+          if-no-files-found: error
+          retention-days: 90
