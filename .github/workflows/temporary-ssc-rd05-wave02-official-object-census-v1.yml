@@ -1,0 +1,303 @@
+name: TEMP census SSC RD-05 Wave 02 official ACES objects v1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-wave02-official-object-census-base-v1
+    paths:
+      - '.github/tmp/ssc-rd05-wave02-official-object-census-v1.trigger'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd05-wave02-official-object-census-v1
+  cancel-in-progress: false
+
+jobs:
+  census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 2b3a73448759bac1210988a25e3d3b8c745a58b7
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Capture eleven frozen ACES target surfaces and derive the official-object candidate universe
+        env:
+          OUTPUT: ${{ github.workspace }}/rd05-official-object-census
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { spawnSync } from 'node:child_process';
+
+          const root = process.env.OUTPUT;
+          fs.mkdirSync(root, { recursive: true });
+          const parentPath = 'data/intake/status-sovereignty-rd05-aces-authority-control.json';
+          const parentBody = fs.readFileSync(parentPath);
+          const parent = JSON.parse(parentBody.toString('utf8'));
+          const expectedIds = Array.from({ length: 11 }, (_, index) => `SSC-RD05-S${String(index + 1).padStart(3, '0')}`);
+          if (!Array.isArray(parent.sources) || parent.sources.length !== 13) throw new Error(`parent source denominator ${parent.sources?.length}`);
+          const selected = expectedIds.map((sourceId) => {
+            const source = parent.sources.find((row) => row.source_id === sourceId);
+            if (!source) throw new Error(`missing frozen target source ${sourceId}`);
+            return source;
+          });
+          if (new Set(selected.map((row) => row.url)).size !== 11) throw new Error('duplicate frozen target URL');
+
+          const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
+          const stable = (value) => `${JSON.stringify(value, null, 2)}\n`;
+          const ensure = (target) => { if (!fs.existsSync(target)) fs.writeFileSync(target, Buffer.alloc(0)); };
+          const decode = (value) => value
+            .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+            .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&quot;/g, '"')
+            .replace(/&#x27;|&#39;/g, "'")
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
+            .replace(/\s+/g, ' ')
+            .trim();
+          const canonicalize = (raw, base) => {
+            try {
+              const url = new URL(raw, base);
+              if (!['http:', 'https:'].includes(url.protocol)) return null;
+              url.hash = '';
+              for (const key of [...url.searchParams.keys()]) {
+                if (/^(utm_|fbclid|gclid|mc_)/i.test(key)) url.searchParams.delete(key);
+              }
+              url.hostname = url.hostname.toLowerCase();
+              if ((url.protocol === 'https:' && url.port === '443') || (url.protocol === 'http:' && url.port === '80')) url.port = '';
+              return url.href;
+            } catch {
+              return null;
+            }
+          };
+          const approvedHosts = new Set(selected.map((row) => new URL(row.url).hostname.toLowerCase()));
+          for (const host of ['facadatabase.gov', 'www.facadatabase.gov']) approvedHosts.add(host);
+          const approved = (url) => {
+            const host = new URL(url).hostname.toLowerCase();
+            if (approvedHosts.has(host)) return true;
+            return [...approvedHosts].some((candidate) => host.endsWith(`.${candidate.replace(/^www\./, '')}`));
+          };
+          const relevance = /(advisory committee on excellence in space|\baces\b|charter|meeting|agenda|minutes|transcript|recording|presentation|subcommittee|recommendation|cancell?ation|terminat|federal register|committee|faca)/i;
+
+          const receipts = [];
+          const discovered = new Map();
+          for (const source of selected) {
+            const sourceDir = path.join(root, 'sources', source.source_id);
+            fs.mkdirSync(sourceDir, { recursive: true });
+            const attempts = [];
+            for (let attempt = 1; attempt <= 2; attempt += 1) {
+              const attemptDir = path.join(sourceDir, `attempt-${attempt}`);
+              fs.mkdirSync(attemptDir, { recursive: true });
+              const headersPath = path.join(attemptDir, 'headers.txt');
+              const bodyPath = path.join(attemptDir, 'body.bin');
+              const stderrPath = path.join(attemptDir, 'curl-stderr.txt');
+              const metaPath = path.join(attemptDir, 'curl-meta.txt');
+              const result = spawnSync('curl', [
+                '--location', '--silent', '--show-error', '--compressed',
+                '--connect-timeout', '15', '--max-time', '90',
+                '--user-agent', 'clifford-number-rd05-official-object-custody/1.0',
+                '--dump-header', headersPath,
+                '--output', bodyPath,
+                '--write-out', '%{http_code}\n%{url_effective}\n%{content_type}\n%{size_download}\n',
+                source.url
+              ], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+              ensure(headersPath);
+              ensure(bodyPath);
+              fs.writeFileSync(stderrPath, result.stderr || '', 'utf8');
+              fs.writeFileSync(metaPath, result.stdout || '', 'utf8');
+              const meta = String(result.stdout || '').split(/\r?\n/);
+              const body = fs.readFileSync(bodyPath);
+              const headers = fs.readFileSync(headersPath);
+              const curlExit = Number.isInteger(result.status) ? result.status : 255;
+              const httpStatus = Number(meta[0] || 0);
+              const resolved = curlExit === 0 && httpStatus === 200 && body.length > 0;
+              attempts.push({
+                attempt,
+                request_url: source.url,
+                final_url: meta[1] || source.url,
+                content_type: meta[2] || '',
+                reported_download_bytes: Number(meta[3] || 0),
+                curl_exit: curlExit,
+                http_status: httpStatus,
+                headers_path: path.relative(root, headersPath).split(path.sep).join('/'),
+                headers_bytes: headers.length,
+                headers_sha256: sha256(headers),
+                body_path: path.relative(root, bodyPath).split(path.sep).join('/'),
+                body_bytes: body.length,
+                body_sha256: sha256(body),
+                stderr_path: path.relative(root, stderrPath).split(path.sep).join('/'),
+                stderr_bytes: Buffer.byteLength(result.stderr || ''),
+                meta_path: path.relative(root, metaPath).split(path.sep).join('/'),
+                resolved
+              });
+              if (resolved) break;
+            }
+            if (attempts.length === 2 && attempts[0].resolved) throw new Error(`${source.source_id}: outcome-selected retry`);
+            const last = attempts.at(-1);
+            const terminalState = last.resolved ? 'http_success' : last.curl_exit !== 0 ? 'transport_failure_after_bounded_retry' : 'http_non_200_after_bounded_retry';
+            receipts.push({
+              source_id: source.source_id,
+              publisher: source.publisher,
+              title: source.title,
+              source_class: source.source_class,
+              original_url: source.url,
+              attempts,
+              terminal_state: terminalState,
+              resolved: last.resolved
+            });
+
+            const seedCanonical = canonicalize(source.url, source.url);
+            discovered.set(seedCanonical, {
+              url: seedCanonical,
+              candidate_class: 'frozen_seed_surface',
+              seed_source_ids: [source.source_id],
+              discovery_rows: [{ source_id: source.source_id, anchor_text: source.title, relation: 'frozen_seed' }]
+            });
+
+            if (last.resolved) {
+              const body = fs.readFileSync(path.join(root, last.body_path));
+              const contentType = String(last.content_type || '').toLowerCase();
+              const text = body.toString('utf8');
+              if (contentType.includes('html') || /<html\b/i.test(text)) {
+                const links = [];
+                for (const match of text.matchAll(/<a\b[^>]*href\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s>]+))[^>]*>([\s\S]*?)<\/a>/gi)) {
+                  links.push({ href: match[1] || match[2] || match[3], text: decode(match[4]) });
+                }
+                for (const match of text.matchAll(/<(?:iframe|embed)\b[^>]*src\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s>]+))/gi)) {
+                  links.push({ href: match[1] || match[2] || match[3], text: 'embedded official object' });
+                }
+                for (const link of links) {
+                  const canonical = canonicalize(link.href, last.final_url);
+                  if (!canonical || !approved(canonical)) continue;
+                  if (!relevance.test(`${link.text} ${canonical}`)) continue;
+                  const existing = discovered.get(canonical) || {
+                    url: canonical,
+                    candidate_class: 'linked_official_object_candidate',
+                    seed_source_ids: [],
+                    discovery_rows: []
+                  };
+                  if (!existing.seed_source_ids.includes(source.source_id)) existing.seed_source_ids.push(source.source_id);
+                  existing.seed_source_ids.sort();
+                  const row = { source_id: source.source_id, anchor_text: link.text, relation: 'official_link' };
+                  if (!existing.discovery_rows.some((candidate) => JSON.stringify(candidate) === JSON.stringify(row))) existing.discovery_rows.push(row);
+                  existing.discovery_rows.sort((a, b) => `${a.source_id}\0${a.anchor_text}`.localeCompare(`${b.source_id}\0${b.anchor_text}`));
+                  discovered.set(canonical, existing);
+                }
+              }
+            }
+          }
+
+          const candidates = [...discovered.values()].sort((a, b) => a.url.localeCompare(b.url)).map((candidate, index) => ({
+            object_id: `RD05-OBJECT-${String(index + 1).padStart(3, '0')}`,
+            ...candidate,
+            object_type: 'unadjudicated',
+            recommendation_state: 'unadjudicated',
+            agency_response_state: 'unadjudicated',
+            adoption_or_rejection_state: 'unadjudicated',
+            implementation_or_outcome_state: 'unadjudicated',
+            terminal_record_state: 'still_open'
+          }));
+          if (candidates.length < 11) throw new Error(`candidate denominator ${candidates.length}`);
+          if (new Set(candidates.map((row) => row.url)).size !== candidates.length) throw new Error('duplicate candidate URL');
+
+          const summary = {
+            schema_version: 'ssc-rd05-wave02-official-object-census@1',
+            issue: 790,
+            class_id: 'RD-05-C03',
+            parent_path: parentPath,
+            parent_sha256: sha256(parentBody),
+            frozen_seed_source_ids: expectedIds,
+            approved_hosts: [...approvedHosts].sort(),
+            link_relevance_rule: relevance.source,
+            seed_receipts: receipts,
+            candidate_objects: candidates,
+            counts: {
+              parent_sources: parent.sources.length,
+              frozen_target_seed_sources: selected.length,
+              resolved_seed_sources: receipts.filter((row) => row.resolved).length,
+              unresolved_seed_sources: receipts.filter((row) => !row.resolved).length,
+              total_seed_attempts: receipts.reduce((sum, row) => sum + row.attempts.length, 0),
+              candidate_objects: candidates.length,
+              frozen_seed_objects: candidates.filter((row) => row.candidate_class === 'frozen_seed_surface').length,
+              linked_official_object_candidates: candidates.filter((row) => row.candidate_class === 'linked_official_object_candidate').length,
+              object_types_adjudicated: 0,
+              recommendations_adjudicated: 0,
+              agency_responses_adjudicated: 0,
+              dispositions_adjudicated: 0,
+              class_closed: 0,
+              external_contacts: 0,
+              external_reviews: 0,
+              graph_effects: 0
+            },
+            current_result: {
+              terminal_state: 'official_object_candidate_universe_frozen_pending_exact_object_capture_and_adjudication',
+              candidate_universe_frozen: true,
+              object_capture_complete: false,
+              object_type_adjudication_complete: false,
+              recommendation_disposition_adjudication_complete: false,
+              class_closed: false,
+              outside_human_dependency: false,
+              project_blocking: false,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            },
+            authority: {
+              agenda_item_is_recommendation: false,
+              subcommittee_formation_is_completed_report: false,
+              draft_is_final_output: false,
+              recommendation_is_agency_adoption: false,
+              cancellation_is_suppression_or_rejection: false,
+              termination_is_adoption_rejection_or_destruction: false,
+              no_public_output_is_no_influence: false,
+              source_failure_is_record_absence: false,
+              source_failure_is_noncompliance: false,
+              outside_human_dependency: false,
+              external_contacts: 0,
+              external_reviews: 0,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            }
+          };
+          fs.writeFileSync(path.join(root, 'census.json'), stable(summary));
+          const files = [];
+          const walk = (target) => {
+            for (const entry of fs.readdirSync(target, { withFileTypes: true })) {
+              const full = path.join(target, entry.name);
+              if (entry.isDirectory()) walk(full);
+              else if (entry.name !== 'manifest.json') {
+                const body = fs.readFileSync(full);
+                files.push({ path: path.relative(root, full).split(path.sep).join('/'), bytes: body.length, sha256: sha256(body) });
+              }
+            }
+          };
+          walk(root);
+          files.sort((a, b) => a.path.localeCompare(b.path));
+          const combined = sha256(Buffer.from(files.map((row) => `${row.path}\0${row.bytes}\0${row.sha256}\n`).join('')));
+          fs.writeFileSync(path.join(root, 'manifest.json'), stable({
+            schema_version: 'ssc-rd05-wave02-official-object-census-manifest@1',
+            entries: files,
+            combined_sha256: combined
+          }));
+          console.log(`RD-05 census: ${summary.counts.resolved_seed_sources}/${summary.counts.frozen_target_seed_sources} seed surfaces resolved; ${summary.counts.candidate_objects} immutable object candidates`);
+          NODE
+      - name: Upload exact RD-05 official-object census
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-wave02-official-object-census-v1
+          path: rd05-official-object-census
+          if-no-files-found: error
+          retention-days: 90
