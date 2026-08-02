@@ -167,9 +167,6 @@ function validateInterference(interference, baseline, worldId, errors) {
   for (const key of ['unit','exposure_mapping_state']) if (!text(interference?.[key])) errors.push(`world ${worldId} interference.${key} is required`);
   for (const key of ['stable_unit_assumption','cluster_randomized']) if (typeof interference?.[key] !== 'boolean') errors.push(`world ${worldId} interference.${key} must be boolean`);
   for (const key of ['spillover_count','control_exposed_count']) if (!integerInRange(interference?.[key], 0, baseline.scored_decisions)) errors.push(`world ${worldId} interference.${key} must be within the scored population`);
-  if (interference?.control_exposed_count > object(arguments[0])?.control_count) {
-    // Count reconciliation is enforced against assignment in the world-level validator.
-  }
 }
 
 function validateComparator(comparator, worldId, errors) {
@@ -194,7 +191,8 @@ function validateAdaptive(adaptive, baseline, worldId, errors) {
 function validateEstimation(estimation, baseline, worldId, errors) {
   for (const key of ['estimand','estimator']) if (!text(estimation?.[key])) errors.push(`world ${worldId} estimation.${key} is required`);
   for (const key of ['predeclared','sensitivity_complete','falsification_complete','multiplicity_corrected']) if (typeof estimation?.[key] !== 'boolean') errors.push(`world ${worldId} estimation.${key} must be boolean`);
-  for (const key of ['reported_effect','ci_low','ci_high','p_value','independent_reference_effect']) if (!numberInRange(estimation?.[key], -1, 1)) errors.push(`world ${worldId} estimation.${key} must be between negative one and one`);
+  for (const key of ['reported_effect','ci_low','ci_high','independent_reference_effect']) if (!numberInRange(estimation?.[key], -1, 1)) errors.push(`world ${worldId} estimation.${key} must be between negative one and one`);
+  if (!numberInRange(estimation?.p_value, 0, 1)) errors.push(`world ${worldId} estimation.p_value must be between zero and one`);
   if (estimation?.ci_low > estimation?.reported_effect || estimation?.reported_effect > estimation?.ci_high) errors.push(`world ${worldId} reported effect must fall inside its interval`);
   if (!close(estimation?.reported_effect, baseline.reported_average_effect) || !close(estimation?.ci_low, baseline.published_ci_low) || !close(estimation?.ci_high, baseline.published_ci_high) || !close(estimation?.p_value, baseline.published_p_value)) errors.push(`world ${worldId} estimation must preserve the frozen published effect surface`);
 }
@@ -335,7 +333,9 @@ export function simulatePreferenceCausalAssuranceWorld(fixture, world) {
   const postTreatmentBias = temporal.post_treatment_conditioned_count > 0 || estimation.estimand.includes('post_treatment') || estimation.estimand.includes('conditioned');
   const colliderSelection = observation.collider_conditioned_count > 0 || observation.appeal_conditioned_count > 0 || observation.survival_conditioned_count > 0;
   const interferenceSpillover = interference.stable_unit_assumption !== true || interference.spillover_count > 0 || interference.control_exposed_count > 0;
-  const historicalControlDrift = comparator.concurrent !== true || comparator.calendar_offset_days > 0 || comparator.policy_match !== true || comparator.population_match !== true || comparator.channel_match !== true;
+  const historicalControlDrift = comparator.type === 'historical_control'
+    || comparator.concurrent !== true
+    || comparator.calendar_offset_days > 0;
   const regressionToMean = baselineSelection.regression_to_mean_count > 0 || (baselineSelection.selected_high_risk_count > 0 && (baselineSelection.repeated_measurement !== true || baselineSelection.untreated_trajectory_observed !== true));
   const adaptiveFeedback = adaptive.adaptive_assignment === true && (adaptive.exploration_probability <= 0 || adaptive.propensity_logged !== true || adaptive.off_policy_evaluation !== true || adaptive.selective_label_count > 0 || adaptive.policy_feedback_count > 0);
   const lineageCurrent = currentLineage(lineage);
@@ -367,8 +367,6 @@ export function simulatePreferenceCausalAssuranceWorld(fixture, world) {
     && interference.control_exposed_count === 0;
   const concurrentComparator = comparator.concurrent === true
     && comparator.calendar_offset_days === 0
-    && comparator.policy_match === true
-    && comparator.population_match === true
     && comparator.geography_match === true
     && comparator.channel_match === true;
   const baselineRegressionControl = baselineSelection.regression_to_mean_count === 0
@@ -527,7 +525,7 @@ export function compilePreferenceCausalAssuranceFixture(fixture) {
     total_historical_calendar_offset_days:worlds.reduce((total,world)=>total+world.comparator.calendar_offset_days,0),
     total_regression_to_mean_count:worlds.reduce((total,world)=>total+world.baseline_selection.regression_to_mean_count,0),
     total_selective_label_count:worlds.reduce((total,world)=>total+world.adaptive.selective_label_count,0),
-    total_policy_feedback_count:worlds.reduce((total,world)=>total+world.temporal.decision_feedback_count+world.adaptive.policy_feedback_count,0),
+    total_policy_feedback_count:worlds.reduce((total,world)=>total+Math.max(world.temporal.decision_feedback_count,world.adaptive.policy_feedback_count),0),
     total_pooled_successor_decision_count:worlds.reduce((total,world)=>total+world.lineage.pooled_successor_decision_count,0),
     total_imputed_outcome_count:worlds.reduce((total,world)=>total+world.observation.imputed_count,0),
     total_unsupported_causal_decisions:worlds.reduce((total,world)=>total+world.unsupported_causal_decision_count,0),
