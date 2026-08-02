@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "counter-selector-package-truth-table.schema.json",
+  "title": "Counter-Selector package truth table",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "program_id",
+    "wave_id",
+    "parent_wave_ids",
+    "as_of",
+    "title",
+    "status",
+    "purpose",
+    "counts",
+    "package_contract",
+    "controls",
+    "boundaries",
+    "next_action",
+    "graph_effect"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "counter-selector-package-truth-table@1"
+    },
+    "program_id": {
+      "const": "counter-selector-v1"
+    },
+    "wave_id": {
+      "const": "CS-W33-PT-01"
+    },
+    "parent_wave_ids": {
+      "type": "array",
+      "minItems": 3,
+      "uniqueItems": true
+    },
+    "as_of": {
+      "type": "string"
+    },
+    "observed_at": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "purpose": {
+      "type": "string"
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "package_contract": {
+      "type": "object"
+    },
+    "controls": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": [
+          "control_id",
+          "public_label",
+          "claim_type",
+          "source_records",
+          "components",
+          "adjudication",
+          "counterevidence",
+          "operator_finding",
+          "field_test_eligible",
+          "contact_authorized",
+          "graph_effect"
+        ]
+      }
+    },
+    "boundaries": {
+      "type": "object"
+    },
+    "next_action": {
+      "type": "string"
+    },
+    "graph_effect": {
+      "const": "none"
+    }
+  },
+  "additionalProperties": false
+}
