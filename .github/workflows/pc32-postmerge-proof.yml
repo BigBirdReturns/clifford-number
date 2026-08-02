@@ -96,7 +96,116 @@ jobs:
           node test/no-magic-human-gate.test.js
       - name: Run complete repository release gate
         run: npm run release:check
-      - name: Capture exact tracked state after successful replay
+      - name: Prove and normalize generated-timestamp-only tracked drift
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          from datetime import datetime
+          import json
+          import re
+          import subprocess
+
+          expected_paths = sorted([
+              'build/axm-identity.json',
+              'build/build-hop-report.json',
+              'build/hop-graph.json',
+              'build/migration-review.md',
+              'build/migration-summary.json',
+              'build/receipt-graph.json',
+              'build/scores.json',
+              'build/scout-report.json',
+              'build/scout-report.md',
+              'build/surface-graph.json',
+          ])
+          observed_paths = sorted(subprocess.check_output(
+              ['git', 'diff', '--name-only'], text=True
+          ).splitlines())
+          cached_paths = sorted(subprocess.check_output(
+              ['git', 'diff', '--cached', '--name-only'], text=True
+          ).splitlines())
+          if cached_paths:
+              raise SystemExit(f'unexpected cached drift: {cached_paths}')
+          if observed_paths != expected_paths:
+              raise SystemExit(
+                  f'tracked drift path mismatch:\nexpected={expected_paths}\nobserved={observed_paths}'
+              )
+
+          records = []
+          json_pattern = re.compile(r'(?m)^  "generated": "([^"]+)",$')
+          markdown_pattern = re.compile(r'(?m)^Generated: ([^\n]+)$')
+
+          for path_name in expected_paths:
+              path = Path(path_name)
+              committed = subprocess.check_output(
+                  ['git', 'show', f'HEAD:{path_name}'], text=True
+              )
+              regenerated = path.read_text()
+              pattern = markdown_pattern if path.suffix == '.md' else json_pattern
+              committed_matches = pattern.findall(committed)
+              regenerated_matches = pattern.findall(regenerated)
+              if len(committed_matches) != 1 or len(regenerated_matches) != 1:
+                  raise SystemExit(
+                      f'{path_name} must contain exactly one recognized generated timestamp; '
+                      f'committed={committed_matches}, regenerated={regenerated_matches}'
+                  )
+              committed_timestamp = committed_matches[0]
+              regenerated_timestamp = regenerated_matches[0]
+              for label, value in (
+                  ('committed', committed_timestamp),
+                  ('regenerated', regenerated_timestamp),
+              ):
+                  try:
+                      datetime.fromisoformat(value.replace('Z', '+00:00'))
+                  except ValueError as error:
+                      raise SystemExit(f'{path_name} {label} timestamp is invalid: {value}: {error}')
+              committed_normalized = pattern.sub('GENERATED_TIMESTAMP_SENTINEL', committed)
+              regenerated_normalized = pattern.sub('GENERATED_TIMESTAMP_SENTINEL', regenerated)
+              if committed_normalized != regenerated_normalized:
+                  raise SystemExit(f'{path_name} changed beyond its generated timestamp')
+              if committed_timestamp == regenerated_timestamp:
+                  raise SystemExit(f'{path_name} did not exercise timestamp regeneration')
+              records.append({
+                  'path': path_name,
+                  'committed_generated_timestamp': committed_timestamp,
+                  'regenerated_generated_timestamp': regenerated_timestamp,
+                  'non_timestamp_bytes_identical': True,
+              })
+
+          drift_receipt = {
+              'schema_version': 'generated-timestamp-normalization@1',
+              'path_count': len(records),
+              'paths': records,
+              'normalization_rule': 'restore exact committed bytes only after proving every tracked difference is the single generated timestamp field or line',
+              'semantic_or_structural_drift': False,
+          }
+          Path('/tmp/pc32-generated-timestamp-normalization.json').write_text(
+              json.dumps(drift_receipt, indent=2) + '\n'
+          )
+
+          subprocess.run(
+              ['git', 'restore', '--source=HEAD', '--worktree', '--', *expected_paths],
+              check=True,
+          )
+          remaining = sorted(subprocess.check_output(
+              ['git', 'diff', '--name-only'], text=True
+          ).splitlines())
+          if remaining:
+              raise SystemExit(f'tracked drift remains after bounded restoration: {remaining}')
+
+          receipt_path = Path('/tmp/pc32-postmerge-proof.json')
+          receipt = json.loads(receipt_path.read_text())
+          receipt.update({
+              'generated_timestamp_drift_path_count': len(records),
+              'generated_timestamp_drift_paths': expected_paths,
+              'generated_timestamp_only_drift_proved': True,
+              'semantic_or_structural_drift_after_release_gate': False,
+              'bounded_timestamp_restoration_complete': True,
+          })
+          receipt_path.write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(drift_receipt, indent=2))
+          PY
+      - name: Capture exact tracked state after bounded normalization
         if: always()
         run: |
           set -uo pipefail
@@ -125,14 +234,14 @@ jobs:
               'base_floor_passed': True,
               'no_magic_human_gate_passed': True,
               'repository_release_gate_passed': True,
-              'tracked_diff_paths_after_replay': tracked,
-              'cached_diff_paths_after_replay': cached,
-              'git_status_after_replay': status,
+              'tracked_diff_paths_after_normalization': tracked,
+              'cached_diff_paths_after_normalization': cached,
+              'git_status_after_normalization': status,
               'tracked_tree_clean_after_replay': not tracked and not cached,
               'terminal_state': (
                   'canonical_pc32_floor_v30_reproved_after_disjoint_wave36_composition'
                   if not tracked and not cached
-                  else 'tracked_drift_detected_after_successful_canonical_replay'
+                  else 'tracked_drift_remains_after_bounded_timestamp_normalization'
               ),
           })
           receipt_path.write_text(json.dumps(receipt, indent=2) + '\n')
@@ -142,20 +251,21 @@ jobs:
         run: |
           set -euo pipefail
           if test -s /tmp/pc32-tracked-diff.txt || test -s /tmp/pc32-cached-diff.txt; then
-            echo 'Tracked drift detected after otherwise successful canonical replay:'
+            echo 'Tracked drift remains after bounded timestamp normalization:'
             cat /tmp/pc32-tracked-diff.txt
             cat /tmp/pc32-cached-diff.txt
             cat /tmp/pc32-diff-stat.txt
             exit 1
           fi
           test -z "$(git status --porcelain --untracked-files=no)"
-      - name: Preserve exact canonical proof and drift diagnostics
+      - name: Preserve exact canonical proof and normalization diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pc32-exact-postmerge-proof
           path: |
             /tmp/pc32-postmerge-proof.json
+            /tmp/pc32-generated-timestamp-normalization.json
             /tmp/pc32-git-status.txt
             /tmp/pc32-tracked-diff.txt
             /tmp/pc32-cached-diff.txt
