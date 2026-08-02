@@ -1,0 +1,54 @@
+name: Preference custody laboratory floor v24
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/performative-synthetic-constituencies/**'
+      - 'data/research/preference-custody/**'
+      - 'tools/lib/performative-synthetic-constituency.mjs'
+      - 'tools/lib/preference-*.mjs'
+      - 'tools/compile-preference-causal-assurance.mjs'
+      - 'tools/validate-preference-causal-assurance.mjs'
+      - 'tools/compile-preference-custody-manifest-v24.mjs'
+      - 'tools/validate-preference-custody-manifest-v24.mjs'
+      - 'test/preference-causal-assurance.test.js'
+      - 'test/preference-custody-manifest-v24.test.js'
+      - 'docs/preference-custody-causal-assurance.md'
+      - 'docs/preference-custody-laboratory-floor-v24.md'
+      - '.github/workflows/preference-causal-assurance.yml'
+      - '.github/workflows/preference-custody-v24.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  floor-v24:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Compile PC-26 and the compositional v24 floor
+        run: |
+          node tools/compile-preference-causal-assurance.mjs
+          node tools/compile-preference-custody-manifest-v24.mjs
+      - name: Validate causal-assurance and floor boundaries
+        run: |
+          node tools/validate-preference-causal-assurance.mjs
+          node tools/validate-preference-custody-manifest-v24.mjs
+      - name: Exercise standalone and integrated adversarial fixtures
+        run: |
+          node test/preference-causal-assurance.test.js
+          node test/preference-custody-manifest-v24.test.js
+      - name: Preserve deterministic v24 projections
+        uses: actions/upload-artifact@v4
+        with:
+          name: preference-custody-laboratory-floor-v24
+          path: |
+            build/research/preference-causal-assurance.json
+            build/research/preference-causal-assurance.md
+            build/research/preference-custody-laboratory-floor-v24.json
+            build/research/preference-custody-laboratory-floor-v24.md
+          if-no-files-found: error
