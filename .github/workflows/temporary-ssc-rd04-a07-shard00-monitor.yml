@@ -1,0 +1,153 @@
+name: TEMP inspect SSC RD-04 A07 shard-00 pilot
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-a07-public-compliance-receipts
+    paths:
+      - '.github/workflows/temporary-ssc-rd04-a07-shard00-monitor.yml'
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TARGET_BRANCH: agent/ssc-rd04-a07-public-compliance-receipts
+      TARGET_HEAD: 72744fc04c74048cb684f1b1d32489ce4b17bdf0
+      TARGET_WORKFLOW: temporary-ssc-rd04-a07-shard00-pilot.yml
+      TARGET_ARTIFACT: ssc-rd04-a07-shard00-extraction-pilot
+    steps:
+      - name: Recover terminal pilot run and artifact receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          work="${RUNNER_TEMP}/a07-shard00-monitor"
+          mkdir -p "$work"
+          run_id=""
+          for attempt in $(seq 1 60); do
+            gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${TARGET_WORKFLOW}/runs?branch=${TARGET_BRANCH}&event=push&per_page=20" > "$work/runs.json"
+            run_id="$(node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const runs = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-monitor/runs.json`, 'utf8')).workflow_runs ?? [];
+          const run = runs.find((candidate) => candidate.head_sha === process.env.TARGET_HEAD);
+          process.stdout.write(run ? String(run.id) : '');
+          NODE
+            )"
+            if [[ -n "$run_id" ]]; then
+              status="$(node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const runs = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-monitor/runs.json`, 'utf8')).workflow_runs ?? [];
+          const run = runs.find((candidate) => candidate.head_sha === process.env.TARGET_HEAD);
+          process.stdout.write(run?.status ?? '');
+          NODE
+              )"
+              [[ "$status" == "completed" ]] && break
+            fi
+            sleep 10
+          done
+          if [[ -z "$run_id" ]]; then
+            echo 'target pilot run never became visible' >&2
+            exit 1
+          fi
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" > "$work/jobs.json"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts?per_page=100" > "$work/artifacts.json"
+          node --input-type=module <<'NODE' > "$work/state.env"
+          import fs from 'node:fs';
+          const runs = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-monitor/runs.json`, 'utf8')).workflow_runs ?? [];
+          const run = runs.find((candidate) => candidate.head_sha === process.env.TARGET_HEAD);
+          if (!run) throw new Error('target run disappeared');
+          const artifacts = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-monitor/artifacts.json`, 'utf8')).artifacts ?? [];
+          const matches = artifacts.filter((artifact) => artifact.name === process.env.TARGET_ARTIFACT && artifact.expired === false);
+          console.log(`run_id=${run.id}`);
+          console.log(`run_status=${run.status}`);
+          console.log(`run_conclusion=${run.conclusion ?? ''}`);
+          console.log(`run_created_at=${run.created_at}`);
+          console.log(`run_updated_at=${run.updated_at}`);
+          console.log(`artifact_count=${artifacts.length}`);
+          console.log(`artifact_match_count=${matches.length}`);
+          if (matches.length === 1) {
+            console.log(`artifact_id=${matches[0].id}`);
+            console.log(`artifact_name=${matches[0].name}`);
+            console.log(`artifact_size=${matches[0].size_in_bytes}`);
+            console.log(`artifact_digest=${matches[0].digest ?? ''}`);
+          }
+          NODE
+          source "$work/state.env"
+          if [[ "$run_status" != "completed" ]]; then
+            echo "pilot remained nonterminal: $run_status" >&2
+            exit 1
+          fi
+          if [[ "$run_conclusion" == "success" && "$artifact_match_count" == "1" ]]; then
+            gh api -H 'Accept: application/octet-stream' "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > "$work/artifact.zip"
+            mkdir -p "$work/artifact"
+            unzip -q "$work/artifact.zip" -d "$work/artifact"
+            test -f "$work/artifact/receipt.json"
+          fi
+          node --input-type=module <<'NODE' > "$work/report.md"
+          import fs from 'node:fs';
+          const env = Object.fromEntries(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-monitor/state.env`, 'utf8').trim().split(/\n/).map((line) => {
+            const at = line.indexOf('=');
+            return [line.slice(0, at), line.slice(at + 1)];
+          }));
+          const jobs = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-monitor/jobs.json`, 'utf8')).jobs ?? [];
+          const receiptPath = `${process.env.RUNNER_TEMP}/a07-shard00-monitor/artifact/receipt.json`;
+          const receipt = fs.existsSync(receiptPath) ? JSON.parse(fs.readFileSync(receiptPath, 'utf8')) : null;
+          console.log('## A07 shard-00 extraction pilot terminal monitor');
+          console.log('');
+          console.log('```text');
+          console.log(`target_head=${process.env.TARGET_HEAD}`);
+          console.log(`run_id=${env.run_id}`);
+          console.log(`status=${env.run_status}`);
+          console.log(`conclusion=${env.run_conclusion}`);
+          console.log(`created_at=${env.run_created_at}`);
+          console.log(`updated_at=${env.run_updated_at}`);
+          for (const job of jobs) {
+            console.log(`job=${job.id}|${job.name}|${job.status}|${job.conclusion ?? ''}`);
+            for (const step of job.steps ?? []) console.log(`step_${step.number}=${step.name}|${step.status}|${step.conclusion ?? ''}`);
+          }
+          console.log(`artifact_count=${env.artifact_count}`);
+          console.log(`artifact_match_count=${env.artifact_match_count}`);
+          if (env.artifact_id) {
+            console.log(`artifact_id=${env.artifact_id}`);
+            console.log(`artifact_size=${env.artifact_size}`);
+            console.log(`artifact_digest=${env.artifact_digest}`);
+          }
+          if (receipt) {
+            console.log(`source_release_id=${receipt.source.release_id}`);
+            console.log(`source_archive_asset_id=${receipt.source.archive_asset_id}`);
+            console.log(`source_archive_sha256=${receipt.source.archive_sha256}`);
+            console.log(`rules_sha256=${receipt.rules.sha256}`);
+            console.log(`documents=${receipt.denominator.documents}`);
+            console.log(`registry_rows=${receipt.denominator.registry_rows}`);
+            console.log(`identity_match=${receipt.denominator.identity_match}`);
+            console.log(`candidate_documents=${receipt.extraction.candidate_documents}`);
+            console.log(`support_only_documents=${receipt.extraction.support_only_documents}`);
+            console.log(`negative_documents=${receipt.extraction.negative_documents}`);
+            console.log(`total_matches=${receipt.extraction.total_matches}`);
+            console.log(`ledger_sha256=${receipt.extraction.ledger_sha256}`);
+            console.log(`population_complete=${receipt.extraction.population_complete}`);
+            console.log(`follow_up_authorized=${receipt.boundaries.follow_up_authorized}`);
+            console.log(`implementation_observed=${receipt.boundaries.implementation_observed}`);
+            console.log(`restoration_observed=${receipt.boundaries.restoration_observed}`);
+            console.log(`remedy_timeliness_observed=${receipt.boundaries.remedy_timeliness_observed}`);
+            console.log(`graph_effect=${receipt.boundaries.graph_effect}`);
+            console.log(`publication_effect=${receipt.boundaries.publication_effect}`);
+            console.log(`adoption_effect=${receipt.boundaries.adoption_effect}`);
+          }
+          console.log('```');
+          console.log('');
+          if (receipt) {
+            console.log('The artifact receipt was recovered and checksum-bound to the exact preassigned A06 shard and frozen A07 dictionary. Candidate counts are pilot extraction states only; they authorize no case follow-up or implementation claim.');
+          } else {
+            console.log('No valid pilot receipt was recovered. The run and job states above are the terminal transport evidence.');
+          }
+          NODE
+          gh issue comment 741 --repo "$GITHUB_REPOSITORY" --body-file "$work/report.md"
+          [[ "$run_conclusion" == "success" ]]
+          [[ "$artifact_match_count" == "1" ]]
