@@ -1,0 +1,65 @@
+name: TEMP materialize SSC RD-04 A06 full decision corpus
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-a06-full-decision-corpus
+    paths:
+      - '.github/workflows/materialize-ssc-rd04-a06-full-corpus.yml'
+      - '.github/tmp/ssc-rd04-a06-full-source.tgz.b64.part*'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: ssc-rd04-a06-full-corpus-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a06-full-decision-corpus
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Materialize exact A06 source files
+        env:
+          SOURCE_B64_SHA256: 01d31daa01fc288956b08b5f6058eb26a0bc6df57014a6563171d1ddcf35889b
+          SOURCE_TGZ_SHA256: 9a9e6fb15016146fecbe6752642273371c8bfaa291076862c6dcbff0b1109a40
+        run: |
+          set -Eeuo pipefail
+          cat \
+            .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part00 \
+            .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part01 \
+            .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part02 \
+            .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part03 \
+            > "${RUNNER_TEMP}/ssc-rd04-a06-full-source.tgz.b64"
+          printf '%s  %s\n' "$SOURCE_B64_SHA256" "${RUNNER_TEMP}/ssc-rd04-a06-full-source.tgz.b64" | sha256sum --check --strict
+          base64 --decode "${RUNNER_TEMP}/ssc-rd04-a06-full-source.tgz.b64" > "${RUNNER_TEMP}/ssc-rd04-a06-full-source.tgz"
+          printf '%s  %s\n' "$SOURCE_TGZ_SHA256" "${RUNNER_TEMP}/ssc-rd04-a06-full-source.tgz" | sha256sum --check --strict
+          tar -xzf "${RUNNER_TEMP}/ssc-rd04-a06-full-source.tgz" -C .
+          node --check tools/ssc-rd04-a06-full-corpus.mjs
+          bash -n tools/materialize-ssc-rd04-a06-full-corpus.sh
+      - name: Install bounded PDF and archive tools when absent
+        run: |
+          if ! command -v pdftotext >/dev/null 2>&1 || ! command -v pdfinfo >/dev/null 2>&1 || ! command -v zstd >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y poppler-utils zstd
+          fi
+      - name: Execute full exact-source corpus transaction
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tools/materialize-ssc-rd04-a06-full-corpus.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a06-full-corpus-receipt
+          path: ssc-rd04-a06-full-corpus-receipt.txt
+          if-no-files-found: error
+          retention-days: 90
