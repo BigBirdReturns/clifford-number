@@ -1,0 +1,67 @@
+name: TEMP observe clean SSC RD-04 A08 rebuild
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - '.github/tmp/ssc-rd04-a08-clean-rebuild.trigger'
+      - '.github/tmp/ssc-rd04-a08-clean-rebuild-carrier/**'
+      - '.github/workflows/temporary-ssc-rd04-a08-clean-rebuild-materializer.yml'
+      - '.github/workflows/temporary-ssc-rd04-a08-clean-rebuild-pr-observer.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd04-a08-clean-rebuild-pr-observer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      A07_PARENT: 281f2c5ef735d3e2a744f5977061c7c36b97a8a9
+      STAGING_BRANCH: agent/ssc-rd04-a08-rebuild-materializer
+      TARGET_BRANCH: agent/ssc-rd04-internal-adjudication-a08-rebuild
+      EXPECTED_B64_SHA256: c109a413eddb9a69c0307cf5c250c9801844b41dfa2a54cb34f3255863a52127
+      EXPECTED_TGZ_SHA256: 448461b176a2308a3b93041873f0054215236205a5f21daf242a622fce178ec6
+      EXPECTED_RELEASE_SHA256: f5561607feac7047fd15b0f2829a69817885860f180808531e536f4fcdcd932c
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a08-rebuild-materializer
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Execute the staged checksum-bound materializer verbatim
+        run: |
+          set -Eeuo pipefail
+          ruby <<'RUBY'
+          require 'yaml'
+          source = '.github/workflows/temporary-ssc-rd04-a08-clean-rebuild-materializer.yml'
+          document = YAML.load_file(source)
+          steps = document.fetch('jobs').fetch('materialize').fetch('steps')
+          names = [
+            'Assemble and verify exact clean payload',
+            'Reconstruct, validate, and publish the non-workflow product'
+          ]
+          names.each_with_index do |name, index|
+            step = steps.find { |entry| entry.is_a?(Hash) && entry['name'] == name }
+            abort "missing staged materializer step: #{name}" unless step && step['run']
+            path = "/tmp/a08-clean-rebuild-step-#{index + 1}.sh"
+            File.write(path, "#!/usr/bin/env bash\n#{step.fetch('run')}")
+            File.chmod(0700, path)
+          end
+          RUBY
+          /tmp/a08-clean-rebuild-step-1.sh
+          /tmp/a08-clean-rebuild-step-2.sh
+      - name: Upload exact clean rebuild receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a08-clean-rebuild-receipt-observed
+          path: ssc-rd04-a08-clean-rebuild-receipt.json
+          if-no-files-found: error
+          retention-days: 90
