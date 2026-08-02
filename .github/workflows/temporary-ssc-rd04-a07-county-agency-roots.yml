@@ -1,0 +1,126 @@
+name: TEMP SSC RD-04 A07 county agency-root materialization
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-a07-public-compliance-receipts
+    paths:
+      - '.github/workflows/temporary-ssc-rd04-a07-county-agency-roots.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TARGET_BRANCH: agent/ssc-rd04-a07-public-compliance-receipts
+      OUTPUT_PATH: data/intake/status-sovereignty-rd04-calfresh-compliance-receipts-a07/county-agency-roots.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a07-public-compliance-receipts
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate parser and exact source custody
+        id: preflight
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node --check tools/build-status-sovereignty-rd04-calfresh-county-agency-roots-a07.mjs
+          node --check test/status-sovereignty-rd04-calfresh-county-agency-roots-a07.test.js
+          node test/status-sovereignty-rd04-calfresh-county-agency-roots-a07.test.js
+      - name: Build complete county agency-root denominator
+        id: build
+        run: |
+          set -Eeuo pipefail
+          node tools/build-status-sovereignty-rd04-calfresh-county-agency-roots-a07.mjs build .
+      - name: Validate deterministic output and authority ceiling
+        id: validation
+        run: |
+          set -Eeuo pipefail
+          node tools/build-status-sovereignty-rd04-calfresh-county-agency-roots-a07.mjs validate .
+          git diff --check
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const output = JSON.parse(fs.readFileSync(process.env.OUTPUT_PATH, 'utf8'));
+          if (output.denominator.agency_root_rows_materialized !== 58) throw new Error('materialized row denominator');
+          if (output.denominator.county_census_complete !== false) throw new Error('county census promoted');
+          if (output.denominator.county_selection_authorized !== false) throw new Error('county selection promoted');
+          if (output.counts.counties_censused !== 0) throw new Error('county census count promoted');
+          if (output.counts.exact_public_case_receipts !== 0) throw new Error('case receipt count promoted');
+          if (output.counts.case_level_implementation_joins !== 0) throw new Error('case join count promoted');
+          if (output.authority.county_follow_up_authorized !== false) throw new Error('county follow-up promoted');
+          NODE
+      - name: Publish only the county agency-root product
+        id: publication
+        run: |
+          set -Eeuo pipefail
+          source_head="$(git rev-parse HEAD)"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "$OUTPUT_PATH"
+          test "$(git diff --cached --name-only)" = "$OUTPUT_PATH"
+          git commit -m 'Materialize SSC RD-04 A07 county agency roots'
+          product_head="$(git rev-parse HEAD)"
+          test -z "$(git status --porcelain=v1)"
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$source_head"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$source_head" origin "HEAD:refs/heads/$TARGET_BRANCH"
+          echo "source_head=$source_head" >> "$GITHUB_OUTPUT"
+          echo "product_head=$product_head" >> "$GITHUB_OUTPUT"
+      - name: Record terminal materialization state on issue 741
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREFLIGHT_OUTCOME: ${{ steps.preflight.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          VALIDATION_OUTCOME: ${{ steps.validation.outcome }}
+          PUBLICATION_OUTCOME: ${{ steps.publication.outcome }}
+          SOURCE_HEAD: ${{ steps.publication.outputs.source_head }}
+          PRODUCT_HEAD: ${{ steps.publication.outputs.product_head }}
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module <<'NODE' > "${RUNNER_TEMP}/a07-county-roots-report.md"
+          import fs from 'node:fs';
+          const output = fs.existsSync(process.env.OUTPUT_PATH)
+            ? JSON.parse(fs.readFileSync(process.env.OUTPUT_PATH, 'utf8'))
+            : null;
+          console.log('## A07 county agency-root materialization terminal state');
+          console.log('');
+          console.log('```text');
+          console.log(`workflow_run=${process.env.GITHUB_RUN_ID}`);
+          console.log(`workflow_head=${process.env.GITHUB_SHA}`);
+          console.log(`preflight=${process.env.PREFLIGHT_OUTCOME}`);
+          console.log(`build=${process.env.BUILD_OUTCOME}`);
+          console.log(`validation=${process.env.VALIDATION_OUTCOME}`);
+          console.log(`publication=${process.env.PUBLICATION_OUTCOME}`);
+          console.log(`source_head=${process.env.SOURCE_HEAD ?? ''}`);
+          console.log(`product_head=${process.env.PRODUCT_HEAD ?? ''}`);
+          if (output) {
+            console.log(`source_body_sha256=${output.source.body_sha256}`);
+            console.log(`expected_counties=${output.denominator.expected_counties}`);
+            console.log(`parsed_counties=${output.denominator.parsed_counties}`);
+            console.log(`agency_root_rows_materialized=${output.denominator.agency_root_rows_materialized}`);
+            console.log(`exact_public_agency_roots=${output.counts.exact_public_agency_roots}`);
+            console.log(`multiple_public_root_candidates=${output.counts.multiple_public_root_candidates}`);
+            console.log(`public_sections_without_agency_root=${output.counts.public_sections_without_agency_root}`);
+            console.log(`link_candidates=${output.counts.link_candidates}`);
+            console.log(`counties_censused=${output.counts.counties_censused}`);
+            console.log(`county_census_complete=${output.denominator.county_census_complete}`);
+            console.log(`county_selection_authorized=${output.denominator.county_selection_authorized}`);
+            console.log(`case_level_implementation_joins=${output.counts.case_level_implementation_joins}`);
+          }
+          console.log('graph_effect=none');
+          console.log('publication_effect=none');
+          console.log('adoption_effect=none');
+          console.log('```');
+          console.log('');
+          console.log('All 58 county rows are materialized from the exact preserved CDSS body. An agency-root row is only a public locator; it is not a completed county census, case receipt, compliance record, implementation receipt, restoration, or authorization to select a county.');
+          NODE
+          gh issue comment 741 --repo "$GITHUB_REPOSITORY" --body-file "${RUNNER_TEMP}/a07-county-roots-report.md"
