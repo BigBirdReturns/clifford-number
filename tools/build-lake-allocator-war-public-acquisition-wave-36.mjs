@@ -46,16 +46,19 @@ function captureUsable(row) {
 }
 
 function makeRecord(policy, spec, capture, taskRefs, sequence) {
+  const relay = capture.transport_mode === 'transparent_text_relay_of_official_pdf';
   return {
     schema_version: 'lake-allocator-war-institutional-record-wave-36@1', row_type: 'source_backed_institutional_component',
     program_ref: policy.program_ref, wave_ref: policy.wave_ref, record_ref: `LAW36-R${String(sequence).padStart(3, '0')}`,
     record_sequence: sequence, capture_ref: capture.capture_ref, source_ref: spec.source_ref, inherited_source_ref: spec.inherited_source_ref,
     stable_identifier: spec.stable_identifier, title: spec.title, publisher: spec.publisher, source_type: spec.source_type,
     action_class: spec.action_class, jurisdiction: spec.jurisdiction, issued_at: spec.issued_at, source_locator: spec.source_locator,
+    official_origin_url: capture.official_origin_url, transport_mode: capture.transport_mode, transport_locator: capture.transport_locator,
     response_final_url: capture.response_final_url, response_status: capture.response_status, response_body_path: capture.response_body_path,
     response_body_bytes: capture.response_body_bytes, response_body_sha256: capture.response_body_sha256, observed_format: capture.observed_format,
     marker_audit: capture.marker_audit, represented_value: spec.represented_value, task_refs: taskRefs,
-    component_state: 'captured_source_backed_official_record', component_authority: 'official_record_component_acquisition_only',
+    component_state: relay ? 'captured_source_backed_official_record_text_render' : 'captured_source_backed_official_record',
+    component_authority: relay ? 'official_record_text_render_component_acquisition_only' : 'official_record_component_acquisition_only',
     requirement_satisfied: false, authorized_join: false, joined_rows: 0, complete_denominator: false, evidence_adjudicated: false,
     evidence_rows: 0, estate_adopted: false, finding_promoted: false, graph_effect: 'none', publication_status: 'blocked'
   };
@@ -67,6 +70,7 @@ function renderReport(policy, plan, captures, records, taskResults, routeSummari
     captures: captures.length,
     response_files: captures.filter(row => row.response_body_path).length,
     usable_official_records: records.length,
+    transparent_text_relay_sources: captures.filter(row => row.transport_mode === 'transparent_text_relay_of_official_pdf').length,
     capture_states: countBy(captures, 'capture_state'),
     route_summaries: routeSummaries.length,
     task_results: taskResults.length,
@@ -85,6 +89,7 @@ function renderReport(policy, plan, captures, records, taskResults, routeSummari
     '# Allocator-war official-record public acquisition execution Wave 36', '', '```text',
     `source specs / captures:               ${counts.source_specs} / ${counts.captures}`,
     `response files / institutional rows:  ${counts.response_files} / ${counts.usable_official_records}`,
+    `transparent text renders:                ${counts.transparent_text_relay_sources}`,
     `capture states:                        ${JSON.stringify(counts.capture_states)}`,
     `route summaries / task results:        ${counts.route_summaries} / ${counts.task_results}`,
     `executed / protected tasks:            ${counts.executed_public_or_lawful_tasks} / ${counts.protected_tasks}`,
@@ -98,7 +103,7 @@ function renderReport(policy, plan, captures, records, taskResults, routeSummari
   ];
   for (const row of routeSummaries) lines.push(`| ${row.route_class} | ${row.task_count} | ${row.executed_tasks} | ${row.protected_tasks} | ${row.public_record_component_uses} | ${JSON.stringify(row.result_states)} |`);
   lines.push('',
-    'Wave 36 freezes a bounded cohort of official instruments, implementation guidance, public-money records, enforcement actions, adjudicative records, and correction-route documentation, then maps those bytes to every Wave 35 task. A successful capture contributes a source-backed institutional component row only. It does not satisfy the task completion test or establish a complete action and no-action universe.', '',
+    'Wave 36 freezes a bounded cohort of official instruments, implementation guidance, public-money records, enforcement actions, adjudicative records, and correction-route documentation. Three GAO PDFs are preserved as hash-bound transparent text renders because the GAO edge rejects GitHub-hosted automation; their exact official origin URLs and relay transport remain separate. The wave then maps each captured component to every applicable Wave 35 task. A successful capture contributes a source-backed institutional component row only. It does not satisfy the task completion test or establish a complete action and no-action universe.', '',
     'The three protected-personnel tasks perform no network requests and remain in lawful-access-only custody. Public workforce, award, litigation, or enforcement records may not be used to manufacture protected personnel decisions, comparators, reasons, appeals, or outcomes.', '',
     'The controlling unresolved objects remain the complete internal implementation files, agency submissions, action and no-action registers, covered instrument universes, lawful entity joins, practical correction records, affected and comparator populations, realized payment and recovery ledgers, and protected personnel records named by Wave 35.'
   );
@@ -184,9 +189,9 @@ export function buildRepository(root = defaultRoot) {
   writeText(root, policy.paths.report, report.text);
   const projection = {
     schema_version: 'lake-allocator-war-public-acquisition-wave-36@1', program_ref: policy.program_ref, wave_ref: policy.wave_ref,
-    as_of: policy.as_of, title: policy.title, authority: 'official_record_component_acquisition_only',
+    as_of: policy.as_of, title: policy.title, authority: 'official_record_component_and_transparent_text_render_acquisition_only',
     source_policy: POLICY_PATH, source_plan: PLAN_PATH, source_projection: policy.paths.source_projection,
-    counts: report.counts, captures: captures.map(row => ({ capture_ref: row.capture_ref, source_ref: row.source_ref, capture_state: row.capture_state, response_status: row.response_status, response_body_path: row.response_body_path, response_body_sha256: row.response_body_sha256, marker_passed: row.marker_audit?.passed ?? false })),
+    counts: report.counts, captures: captures.map(row => ({ capture_ref: row.capture_ref, source_ref: row.source_ref, transport_mode: row.transport_mode, official_origin_url: row.official_origin_url, capture_state: row.capture_state, response_status: row.response_status, response_body_path: row.response_body_path, response_body_sha256: row.response_body_sha256, marker_passed: row.marker_audit?.passed ?? false })),
     records: records.map(row => ({ record_ref: row.record_ref, source_ref: row.source_ref, action_class: row.action_class, response_body_sha256: row.response_body_sha256, task_refs: row.task_refs })),
     routes: routeSummaries, tasks: taskResults.map(row => ({ result_ref: row.result_ref, source_task_ref: row.source_task_ref, route_class: row.route_class, result_state: row.result_state, source_refs: row.source_refs, public_record_refs: row.public_record_refs, public_record_component_count: row.public_record_component_count, requirement_satisfied: false, join_authorized: false, complete_denominator: false, graph_effect: 'none', publication_status: 'blocked' })),
     boundaries: policy.boundaries, graph_effect: 'none', publication_status: 'blocked'

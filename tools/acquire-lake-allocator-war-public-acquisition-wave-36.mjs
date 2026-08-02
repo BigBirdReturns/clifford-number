@@ -156,6 +156,11 @@ function parseSummary(response, format) {
 
 async function acquireOne(root, policy, plan, spec) {
   const defaults = plan.request_defaults;
+  const transportMode = spec.transport_mode ?? 'direct_official_http';
+  const officialOriginUrl = spec.official_origin_url ?? spec.source_locator;
+  const captureAuthority = transportMode === 'transparent_text_relay_of_official_pdf'
+    ? 'frozen_transparent_text_render_of_official_pdf_acquisition_only'
+    : 'frozen_official_source_response_acquisition_only';
   const observedAt = FIXED_OBSERVED_AT ?? new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
   const request = requestDescriptor(spec, defaults);
   let response = null;
@@ -171,11 +176,12 @@ async function acquireOne(root, policy, plan, spec) {
       schema_version: 'lake-allocator-war-public-capture-wave-36@1', row_type: 'official_record_capture',
       program_ref: policy.program_ref, wave_ref: policy.wave_ref, capture_ref: spec.capture_ref, capture_sequence: spec.capture_sequence,
       source_ref: spec.source_ref, title: spec.title, publisher: spec.publisher, source_type: spec.source_type, action_class: spec.action_class,
-      source_locator: spec.source_locator, stable_identifier: spec.stable_identifier, required_success: spec.required_success, observed_at: observedAt,
+      source_locator: spec.source_locator, official_origin_url: officialOriginUrl, transport_mode: transportMode, transport_locator: spec.transport_locator ?? null,
+      stable_identifier: spec.stable_identifier, required_success: spec.required_success, observed_at: observedAt,
       request, attempts: defaults.max_attempts, capture_state: 'request_failed', response_status: null, response_ok: false, response_final_url: null,
       response_headers: {}, response_body_path: null, response_body_bytes: 0, response_body_sha256: null, observed_format: null,
       marker_audit: { required_groups: (spec.marker_groups ?? []).length, matched_groups: 0, passed: false, matches: [] }, parsed_summary: null,
-      request_error: requestError, capture_authority: 'frozen_official_source_response_acquisition_only', requirement_satisfied: false,
+      request_error: requestError, capture_authority: captureAuthority, requirement_satisfied: false,
       authorized_join: false, complete_denominator: false, evidence_adjudicated: false, graph_effect: 'none', publication_status: 'blocked'
     };
   }
@@ -201,14 +207,15 @@ async function acquireOne(root, policy, plan, spec) {
     program_ref: policy.program_ref, wave_ref: policy.wave_ref, capture_ref: spec.capture_ref, capture_sequence: spec.capture_sequence,
     source_ref: spec.source_ref, inherited_source_ref: spec.inherited_source_ref, title: spec.title, publisher: spec.publisher,
     source_type: spec.source_type, jurisdiction: spec.jurisdiction, issued_at: spec.issued_at, action_class: spec.action_class,
-    source_locator: spec.source_locator, stable_identifier: spec.stable_identifier, custody_refs: spec.custody_refs,
+    source_locator: spec.source_locator, official_origin_url: officialOriginUrl, transport_mode: transportMode, transport_locator: spec.transport_locator ?? null,
+    stable_identifier: spec.stable_identifier, custody_refs: spec.custody_refs,
     required_success: spec.required_success, observed_at: observedAt, request, attempts: response.attempts,
     capture_state: captureState, response_status: response.status, response_ok: response.ok, response_final_url: response.finalUrl,
     response_headers: Object.fromEntries(Object.entries(response.headers).filter(([key]) => ['content-type','content-length','date','last-modified','etag','cache-control'].includes(key))),
     response_body_path: bodyPath, response_body_bytes: bodyTooLarge ? 0 : response.body.length, response_body_sha256: bodyHash,
     observed_format: classified.format, marker_audit: markers, parsed_summary: bodyTooLarge ? null : parseSummary(response, classified.format),
     request_error: null, represented_value: spec.represented_value, request_purpose: spec.request_purpose, coverage: spec.coverage, limits: spec.limits,
-    capture_authority: 'frozen_official_source_response_acquisition_only', requirement_satisfied: false, authorized_join: false,
+    capture_authority: captureAuthority, requirement_satisfied: false, authorized_join: false,
     complete_denominator: false, evidence_adjudicated: false, graph_effect: 'none', publication_status: 'blocked'
   };
 }

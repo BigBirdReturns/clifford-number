@@ -82,6 +82,7 @@ mutateJson(POLICY, v => { v.base_checkpoint.commit = '0'.repeat(40); });
 mutateJson(POLICY, v => { v.source_contract.required_policy_schema = 'bad'; });
 mutateJson(POLICY, v => { v.source_contract.required_projection_schema = 'bad'; });
 mutateJson(POLICY, v => { v.expected_counts.source_specs = 49; });
+mutateJson(POLICY, v => { v.expected_counts.transparent_text_relay_sources = 2; });
 mutateJson(POLICY, v => { v.expected_counts.task_results = 30; });
 mutateJson(POLICY, v => { v.expected_counts.route_summaries = 6; });
 mutateJson(POLICY, v => { v.expected_counts.execution_ready_tasks = 27; });
@@ -118,6 +119,7 @@ mutateJson(PLAN, v => { v.task_plans[0].completion_gap = ''; });
 mutateJson(PLAN, v => { v.task_plans[0].result_ceiling = 'satisfied'; });
 mutateJson(PLAN, v => { const p=v.task_plans.find(x=>x.protected_lawful_access_only); p.source_refs=['LAW24-S005']; });
 mutateJson(PLAN, v => { v.counts.source_specs = 49; });
+mutateJson(PLAN, v => { v.counts.transparent_text_relay_sources = 2; });
 mutateJson(PLAN, v => { v.counts.task_plans = 30; });
 mutateJson(PLAN, v => { v.counts.execution_ready_tasks = 27; });
 mutateJson(PLAN, v => { v.counts.protected_tasks = 2; });
@@ -127,6 +129,9 @@ mutateJson(PLAN, v => { v.source_specs[0].storage_path = v.source_specs[1].stora
 mutateJson(PLAN, v => { v.source_specs[0].request.body = { drift: true }; });
 mutateJson(PLAN, v => { v.source_specs[0].represented_value.status = 'realized payment'; });
 mutateJson(PLAN, v => { v.boundaries.capture_is_evidence = true; });
+mutateJson(PLAN, v => { const r=v.source_specs.find(x=>x.transport_mode==='transparent_text_relay_of_official_pdf'); r.transport_mode='direct_official_http'; });
+mutateJson(PLAN, v => { const r=v.source_specs.find(x=>x.transport_mode==='transparent_text_relay_of_official_pdf'); r.request.url=r.official_origin_url; });
+mutateJson(PLAN, v => { const r=v.source_specs.find(x=>x.transport_mode==='transparent_text_relay_of_official_pdf'); r.source_locator=r.request.url; });
 
 // Capture custody and authority mutations.
 mutateJsonl(CAPTURES, rows => { rows.pop(); });
@@ -150,6 +155,9 @@ mutateJsonl(CAPTURES, rows => { rows[0].complete_denominator = true; });
 mutateJsonl(CAPTURES, rows => { rows[0].evidence_adjudicated = true; });
 mutateJsonl(CAPTURES, rows => { rows[0].graph_effect = 'created'; });
 mutateJsonl(CAPTURES, rows => { rows[0].publication_status = 'cleared'; });
+mutateJsonl(CAPTURES, rows => { const r=rows.find(x=>x.transport_mode==='transparent_text_relay_of_official_pdf'); r.transport_mode='direct_official_http'; });
+mutateJsonl(CAPTURES, rows => { const r=rows.find(x=>x.transport_mode==='transparent_text_relay_of_official_pdf'); r.official_origin_url='https://example.invalid'; });
+mutateJsonl(CAPTURES, rows => { const r=rows.find(x=>x.transport_mode==='transparent_text_relay_of_official_pdf'); r.capture_authority='frozen_official_source_response_acquisition_only'; });
 add('snapshot byte drift', root => { fs.appendFileSync(path.join(root, firstSnapshot), 'x'); });
 add('snapshot missing', root => { fs.rmSync(path.join(root, firstSnapshot)); });
 mutateJsonl(CAPTURES, rows => { rows[0].response_body_path = 'data/acquisition/lake-allocator-war-wave-36/snapshots/missing.html'; });
@@ -172,6 +180,8 @@ mutateJsonl(RECORDS, rows => { rows[0].evidence_adjudicated = true; });
 mutateJsonl(RECORDS, rows => { rows[0].finding_promoted = true; });
 mutateJsonl(RECORDS, rows => { rows[0].graph_effect = 'created'; });
 mutateJsonl(RECORDS, rows => { rows[0].publication_status = 'cleared'; });
+mutateJsonl(RECORDS, rows => { const r=rows.find(x=>x.transport_mode==='transparent_text_relay_of_official_pdf'); r.transport_mode='direct_official_http'; });
+mutateJsonl(RECORDS, rows => { const r=rows.find(x=>x.transport_mode==='transparent_text_relay_of_official_pdf'); r.component_authority='official_record_component_acquisition_only'; });
 
 // Route summary and task-result mutations.
 mutateJsonl(ROUTE, rows => { rows.shift(); });
@@ -215,6 +225,8 @@ mutateJsonl(PROTECTED_ROUTE, rows => { rows[1].result_state = 'source_backed_com
 // Projection, lake integration, report, and temporary transport mutations.
 mutateJson(PROJECTION, v => { v.schema_version = 'bad'; });
 mutateJson(PROJECTION, v => { v.counts.source_specs = 49; });
+mutateJson(PROJECTION, v => { v.counts.transparent_text_relay_sources = 2; });
+mutateJson(PROJECTION, v => { v.authority = 'official_record_component_acquisition_only'; });
 mutateJson(PROJECTION, v => { v.counts.captures = 49; });
 mutateJson(PROJECTION, v => { v.counts.usable_official_records = 49; });
 mutateJson(PROJECTION, v => { v.counts.route_summaries = 6; });

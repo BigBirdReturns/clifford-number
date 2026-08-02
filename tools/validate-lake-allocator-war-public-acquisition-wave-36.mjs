@@ -61,7 +61,7 @@ export function validateRepository(root = defaultRoot) {
   if (policy.program_ref !== 'CN-LAKE-ALLOCATOR-WAR-W36' || plan.program_ref !== policy.program_ref) fail(errors, 'program reference drift');
   if (policy.wave_ref !== 'LAW-W36' || plan.wave_ref !== policy.wave_ref) fail(errors, 'wave reference drift');
   const expectedPolicyCounts = {
-    source_specs: 50, task_results: 31, route_summaries: 7, execution_ready_tasks: 28, protected_tasks: 3,
+    source_specs: 50, transparent_text_relay_sources: 3, task_results: 31, route_summaries: 7, execution_ready_tasks: 28, protected_tasks: 3,
     requirements_satisfied: 0, authorized_joins: 0, joined_rows: 0, complete_denominators: 0,
     evidence_rows: 0, estate_adoptions: 0, finding_promotions: 0, graph_effects: 0, publication_clearances: 0
   };
@@ -82,7 +82,7 @@ export function validateRepository(root = defaultRoot) {
     if (plan.boundaries[key] !== expected) fail(errors, `plan boundary drift ${key}`);
   }
   for (const [key, expected] of Object.entries({ requirement_satisfied: false, authorized_join: false, joined_rows: 0, complete_denominator: false, evidence_adjudicated: false, finding_promoted: false, publication_cleared: false })) if (policy.boundaries[key] !== expected) fail(errors, `policy authority boundary drift ${key}`);
-  const expectedPlanCounts = { source_specs: 50, task_plans: 31, execution_ready_tasks: 28, protected_tasks: 3, required_success_sources: 22, network_request_specs: 50 };
+  const expectedPlanCounts = { source_specs: 50, transparent_text_relay_sources: 3, task_plans: 31, execution_ready_tasks: 28, protected_tasks: 3, required_success_sources: 22, network_request_specs: 50 };
   for (const [key, expected] of Object.entries(expectedPlanCounts)) if (plan.counts[key] !== expected) fail(errors, `plan count drift ${key}`);
   if (plan.request_defaults.concurrency !== 6 || plan.request_defaults.max_attempts !== 2 || plan.request_defaults.max_response_bytes !== 6291456) fail(errors, 'request-default execution ceiling drift');
   if (policy.base_checkpoint.commit !== '4e6f046eeb08ef38a85287ba09e64906c52571c6') fail(errors, 'Wave 35 merge checkpoint drift');
@@ -103,6 +103,8 @@ export function validateRepository(root = defaultRoot) {
   if (!unique(plan.source_specs.map(row => row.storage_path))) fail(errors, 'duplicate storage_path');
   if (!unique(plan.task_plans.map(row => row.task_ref))) fail(errors, 'duplicate task plan');
   const specBySource = new Map(plan.source_specs.map(row => [row.source_ref, row]));
+  const relaySourceRefs = new Set(['LAW24-S023','LAW36-S046','LAW36-S047']);
+  if (plan.source_specs.filter(row => row.transport_mode === 'transparent_text_relay_of_official_pdf').length !== 3) fail(errors, 'transparent relay denominator drift');
   const taskByRef = new Map(tasks.map(row => [row.task_ref, row]));
   const taskPlanByRef = new Map(plan.task_plans.map(row => [row.task_ref, row]));
   for (let i = 0; i < plan.source_specs.length; i += 1) {
@@ -112,6 +114,13 @@ export function validateRepository(root = defaultRoot) {
     if (!['GET','POST'].includes(spec.request?.method)) fail(errors, `${spec.source_ref}: unsupported method`);
     if (spec.required_success !== plan.required_success_source_refs.includes(spec.source_ref)) fail(errors, `${spec.source_ref}: required-success registry drift`);
     if (spec.represented_value?.status?.includes('payment') && spec.source_ref !== 'LAW29-S009') fail(errors, `${spec.source_ref}: represented payment wording unexpected`);
+    const isRelay = relaySourceRefs.has(spec.source_ref);
+    if ((spec.transport_mode === 'transparent_text_relay_of_official_pdf') !== isRelay) fail(errors, `${spec.source_ref}: transparent relay registry drift`);
+    if (isRelay) {
+      if (!/^https:\/\/www\.gao\.gov\/assets\/.+\.pdf$/.test(spec.official_origin_url ?? '') || spec.source_locator !== spec.official_origin_url) fail(errors, `${spec.source_ref}: official GAO origin drift`);
+      if (!/^https:\/\/r\.jina\.ai\/http:\/\/www\.gao\.gov\/assets\/.+\.pdf$/.test(spec.request.url) || spec.transport_locator !== 'https://r.jina.ai/') fail(errors, `${spec.source_ref}: transparent relay locator drift`);
+      if (spec.expected_format !== 'text' || !spec.storage_path.endsWith('.txt')) fail(errors, `${spec.source_ref}: transparent relay format drift`);
+    } else if ((spec.transport_mode ?? 'direct_official_http') !== 'direct_official_http' || (spec.official_origin_url ?? spec.source_locator) !== spec.source_locator) fail(errors, `${spec.source_ref}: direct transport drift`);
   }
   for (const task of tasks) {
     const taskPlan = taskPlanByRef.get(task.task_ref);
@@ -135,6 +144,9 @@ export function validateRepository(root = defaultRoot) {
     const request = requestDescriptor(spec, plan.request_defaults);
     if (stableJson(capture.request) !== stableJson(request)) fail(errors, `${spec.source_ref}: request fingerprint drift`);
     if (capture.required_success !== spec.required_success) fail(errors, `${spec.source_ref}: required state drift`);
+    if (capture.transport_mode !== spec.transport_mode || capture.official_origin_url !== spec.official_origin_url || capture.transport_locator !== (spec.transport_locator ?? null)) fail(errors, `${spec.source_ref}: transport custody drift`);
+    const expectedCaptureAuthority = spec.transport_mode === 'transparent_text_relay_of_official_pdf' ? 'frozen_transparent_text_render_of_official_pdf_acquisition_only' : 'frozen_official_source_response_acquisition_only';
+    if (capture.capture_authority !== expectedCaptureAuthority) fail(errors, `${spec.source_ref}: capture transport authority drift`);
     if (capture.response_body_path) {
       if (!fs.existsSync(full(root, capture.response_body_path))) fail(errors, `${spec.source_ref}: body file missing`);
       else {
@@ -163,6 +175,9 @@ export function validateRepository(root = defaultRoot) {
     if (!capture || !spec || !usable(capture)) fail(errors, `${record.record_ref}: record lacks usable capture`);
     if (record.record_sequence !== i + 1 || record.record_ref !== `LAW36-R${String(i + 1).padStart(3, '0')}`) fail(errors, `${record.record_ref}: record order drift`);
     if (record.response_body_sha256 !== capture.response_body_sha256 || record.response_body_path !== capture.response_body_path) fail(errors, `${record.record_ref}: response custody drift`);
+    if (record.transport_mode !== capture.transport_mode || record.official_origin_url !== capture.official_origin_url || record.transport_locator !== capture.transport_locator) fail(errors, `${record.record_ref}: transport custody drift`);
+    const expectedComponentAuthority = capture.transport_mode === 'transparent_text_relay_of_official_pdf' ? 'official_record_text_render_component_acquisition_only' : 'official_record_component_acquisition_only';
+    if (record.component_authority !== expectedComponentAuthority) fail(errors, `${record.record_ref}: component transport authority drift`);
     if (stableJson(record.task_refs) !== stableJson(reverseTasks.get(record.source_ref))) fail(errors, `${record.record_ref}: task map drift`);
     for (const [field, expected] of [['requirement_satisfied',false],['authorized_join',false],['joined_rows',0],['complete_denominator',false],['evidence_adjudicated',false],['evidence_rows',0],['estate_adopted',false],['finding_promoted',false]]) if (record[field] !== expected) fail(errors, `${record.record_ref}: authority inflation ${field}`);
     if (record.graph_effect !== 'none' || record.publication_status !== 'blocked') fail(errors, `${record.record_ref}: graph/publication inflation`);
@@ -207,11 +222,13 @@ export function validateRepository(root = defaultRoot) {
 
   const projection = readJson(root, policy.paths.projection);
   if (projection.schema_version !== 'lake-allocator-war-public-acquisition-wave-36@1') fail(errors, 'projection schema mismatch');
-  if (projection.counts.source_specs !== plan.source_specs.length || projection.counts.captures !== captures.length || projection.counts.usable_official_records !== records.length) fail(errors, 'projection source counts drift');
+  if (projection.counts.source_specs !== plan.source_specs.length || projection.counts.captures !== captures.length || projection.counts.usable_official_records !== records.length || projection.counts.transparent_text_relay_sources !== 3) fail(errors, 'projection source counts drift');
   if (projection.counts.route_summaries !== 7 || projection.counts.task_results !== 31 || projection.counts.executed_public_or_lawful_tasks !== 28 || projection.counts.protected_tasks !== 3) fail(errors, 'projection task counts drift');
   for (const zero of ['requirements_satisfied','authorized_joins','complete_denominators','evidence_rows','finding_promotions','graph_effects','publication_clearances']) if (projection.counts[zero] !== 0) fail(errors, `projection inflated ${zero}`);
+  if (projection.authority !== 'official_record_component_and_transparent_text_render_acquisition_only') fail(errors, 'projection transport authority drift');
   if (projection.graph_effect !== 'none' || projection.publication_status !== 'blocked') fail(errors, 'projection authority inflation');
-  if (!fs.existsSync(full(root, policy.paths.report)) || !fs.readFileSync(full(root, policy.paths.report), 'utf8').includes('requirements satisfied:                0')) fail(errors, 'report missing zero waterline');
+  if (!fs.existsSync(full(root, policy.paths.report))) fail(errors, 'report missing');
+  else { const report = fs.readFileSync(full(root, policy.paths.report), 'utf8'); if (!report.includes('requirements satisfied:                0') || !report.includes('transparent text renders:                3')) fail(errors, 'report missing bounded transport waterline'); }
 
   const lakePolicy = readJson(root, 'data/project/lake-index-policy.json');
   const permanentPaths = [POLICY_PATH, PLAN_PATH, policy.paths.capture_ledger, policy.paths.record_ledger, policy.paths.projection, policy.paths.report, policy.paths.method, policy.paths.milestone,
