@@ -1,0 +1,239 @@
+name: TEMP SSC RD-04 A07 shard-00 extraction pilot
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-a07-public-compliance-receipts
+    paths:
+      - '.github/workflows/temporary-ssc-rd04-a07-shard00-pilot.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RELEASE_TAG: ssc-rd04-a06-fy2025-26-corpus-v1
+      ARCHIVE_NAME: ssc-rd04-a06-pdf-shard-00.tar.zst
+      HASH_NAME: ssc-rd04-a06-pdf-shard-00.tar.zst.sha256
+      EXPECTED_DOCUMENTS: '192'
+      EXPECTED_REGISTRY_ROWS: '212'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate the frozen extractor before source access
+        run: |
+          node tools/ssc-rd04-a07-order-candidate-extractor.mjs validate-rules
+          node test/ssc-rd04-a07-order-candidate-extractor.test.js
+      - name: Install archive support when absent
+        run: |
+          if ! command -v zstd >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y zstd
+          fi
+      - name: Resolve exact draft release and immutable shard assets
+        id: assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          work="${RUNNER_TEMP}/a07-shard00-pilot"
+          mkdir -p "$work"
+          gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100&page=1" > "$work/releases-1.json"
+          gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100&page=2" > "$work/releases-2.json"
+          node --input-type=module <<'NODE' > "$work/asset-selection.env"
+          import fs from 'node:fs';
+          const releases = [
+            ...JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-pilot/releases-1.json`, 'utf8')),
+            ...JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-pilot/releases-2.json`, 'utf8'))
+          ];
+          const matches = releases.filter((release) =>
+            release.tag_name === process.env.RELEASE_TAG
+            && release.draft === true
+            && release.published_at === null
+          );
+          if (matches.length !== 1) throw new Error(`expected one exact draft release, observed ${matches.length}`);
+          const release = matches[0];
+          console.log(`release_id=${release.id}`);
+          console.log(`release_created_at=${release.created_at}`);
+          NODE
+          source "$work/asset-selection.env"
+          gh api "repos/${GITHUB_REPOSITORY}/releases/${release_id}/assets?per_page=100&page=1" > "$work/assets-1.json"
+          gh api "repos/${GITHUB_REPOSITORY}/releases/${release_id}/assets?per_page=100&page=2" > "$work/assets-2.json"
+          node --input-type=module <<'NODE' >> "$work/asset-selection.env"
+          import fs from 'node:fs';
+          const assets = [
+            ...JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-pilot/assets-1.json`, 'utf8')),
+            ...JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-pilot/assets-2.json`, 'utf8'))
+          ];
+          const select = (name) => {
+            const matches = assets.filter((asset) => asset.name === name);
+            if (matches.length !== 1) throw new Error(`expected one asset ${name}, observed ${matches.length}`);
+            return matches[0];
+          };
+          const archive = select(process.env.ARCHIVE_NAME);
+          const hash = select(process.env.HASH_NAME);
+          console.log(`archive_id=${archive.id}`);
+          console.log(`archive_api_url=${archive.url}`);
+          console.log(`archive_size=${archive.size}`);
+          console.log(`hash_id=${hash.id}`);
+          console.log(`hash_api_url=${hash.url}`);
+          console.log(`hash_size=${hash.size}`);
+          console.log(`release_asset_count=${assets.length}`);
+          NODE
+          cat "$work/asset-selection.env" >> "$GITHUB_OUTPUT"
+      - name: Download, checksum, and extract content-neutral shard 00
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_ID: ${{ steps.assets.outputs.release_id }}
+          ARCHIVE_ID: ${{ steps.assets.outputs.archive_id }}
+          HASH_ID: ${{ steps.assets.outputs.hash_id }}
+        run: |
+          set -Eeuo pipefail
+          work="${RUNNER_TEMP}/a07-shard00-pilot"
+          cd "$work"
+          gh api -H 'Accept: application/octet-stream' "repos/${GITHUB_REPOSITORY}/releases/assets/${ARCHIVE_ID}" > "$ARCHIVE_NAME"
+          gh api -H 'Accept: application/octet-stream' "repos/${GITHUB_REPOSITORY}/releases/assets/${HASH_ID}" > "$HASH_NAME"
+          sha256sum --check --strict "$HASH_NAME"
+          mkdir -p extracted
+          tar --zstd -xf "$ARCHIVE_NAME" -C extracted
+          test "$(find extracted -type f -name fetch.json | wc -l | tr -d ' ')" = "$EXPECTED_DOCUMENTS"
+          test "$(find extracted -type f -name decision.txt | wc -l | tr -d ' ')" = "$EXPECTED_DOCUMENTS"
+      - name: Execute bounded content-neutral extraction
+        run: |
+          set -Eeuo pipefail
+          work="${RUNNER_TEMP}/a07-shard00-pilot"
+          node tools/ssc-rd04-a07-order-candidate-extractor.mjs extract \
+            --source "$work/extracted" \
+            --output "$work/ledger.json" \
+            --mode pilot \
+            --expected "$EXPECTED_DOCUMENTS"
+      - name: Reconcile exact shard identity and write pilot receipt
+        env:
+          RELEASE_ID: ${{ steps.assets.outputs.release_id }}
+          RELEASE_CREATED_AT: ${{ steps.assets.outputs.release_created_at }}
+          RELEASE_ASSET_COUNT: ${{ steps.assets.outputs.release_asset_count }}
+          ARCHIVE_ID: ${{ steps.assets.outputs.archive_id }}
+          ARCHIVE_SIZE: ${{ steps.assets.outputs.archive_size }}
+          HASH_ID: ${{ steps.assets.outputs.hash_id }}
+        run: |
+          set -Eeuo pipefail
+          work="${RUNNER_TEMP}/a07-shard00-pilot"
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
+          const stable = (value) => `${JSON.stringify(value, null, 2)}\n`;
+          const work = `${process.env.RUNNER_TEMP}/a07-shard00-pilot`;
+          const plan = JSON.parse(fs.readFileSync(
+            'data/intake/status-sovereignty-rd04-calfresh-decision-corpus-a06/denominator-shards/00.json',
+            'utf8'
+          ));
+          const ledgerBytes = fs.readFileSync(`${work}/ledger.json`);
+          const ledger = JSON.parse(ledgerBytes);
+          const rulesBytes = fs.readFileSync(
+            'data/intake/status-sovereignty-rd04-calfresh-compliance-receipts-a07/candidate-extraction-rules.json'
+          );
+          const expectedIds = plan.documents.map((row) => row.document_identity).sort();
+          const observedIds = ledger.documents.map((row) => row.document_identity).sort();
+          if (JSON.stringify(expectedIds) !== JSON.stringify(observedIds)) {
+            throw new Error('pilot document identities do not equal frozen shard-00 denominator');
+          }
+          const expectedRegistryIds = plan.documents.flatMap((row) => row.registry_ids).map(String).sort();
+          const observedRegistryIds = ledger.documents.flatMap((row) => row.registry_ids).map(String).sort();
+          if (JSON.stringify(expectedRegistryIds) !== JSON.stringify(observedRegistryIds)) {
+            throw new Error('pilot registry identities do not equal frozen shard-00 denominator');
+          }
+          if (ledger.extraction_mode !== 'pilot') throw new Error('pilot mode absent');
+          if (ledger.population.documents_processed !== Number(process.env.EXPECTED_DOCUMENTS)) throw new Error('pilot document denominator');
+          if (ledger.population.registry_rows_represented !== Number(process.env.EXPECTED_REGISTRY_ROWS)) throw new Error('pilot registry-row denominator');
+          if (ledger.population.population_complete !== false) throw new Error('pilot was promoted to population complete');
+          if (ledger.rules.sha256 !== sha256(rulesBytes)) throw new Error('rules hash mismatch');
+          for (const document of ledger.documents) {
+            if (document.follow_up_authorized !== false) throw new Error('pilot authorized follow-up');
+            if (document.ordered_relief_observed !== false) throw new Error('pilot inferred ordered relief');
+            if (document.implementation_observed !== false) throw new Error('pilot inferred implementation');
+            if (document.separate_public_compliance_receipt_observed !== false) throw new Error('pilot inferred compliance receipt');
+            if (document.complete_restoration_observed !== false) throw new Error('pilot inferred restoration');
+            if (document.remedy_timeliness_observed !== false) throw new Error('pilot inferred timeliness');
+          }
+          const archiveBytes = fs.readFileSync(`${work}/${process.env.ARCHIVE_NAME}`);
+          const hashBytes = fs.readFileSync(`${work}/${process.env.HASH_NAME}`);
+          const receipt = {
+            schema_version: 'ssc-rd04-a07-shard00-pilot-receipt@1',
+            execution_id: 'SSC-RD04-SNAP-A07',
+            issue: 741,
+            branch_head: process.env.GITHUB_SHA,
+            source: {
+              release_tag: process.env.RELEASE_TAG,
+              release_id: Number(process.env.RELEASE_ID),
+              release_created_at: process.env.RELEASE_CREATED_AT,
+              release_draft_required: true,
+              release_asset_count: Number(process.env.RELEASE_ASSET_COUNT),
+              archive_name: process.env.ARCHIVE_NAME,
+              archive_asset_id: Number(process.env.ARCHIVE_ID),
+              archive_bytes: archiveBytes.length,
+              archive_sha256: sha256(archiveBytes),
+              checksum_asset_name: process.env.HASH_NAME,
+              checksum_asset_id: Number(process.env.HASH_ID),
+              checksum_bytes: hashBytes.length,
+              checksum_sha256: sha256(hashBytes)
+            },
+            rules: {
+              dictionary_version: ledger.rules.dictionary_version,
+              exact_bytes: rulesBytes.length,
+              sha256: sha256(rulesBytes),
+              pattern_count: ledger.rules.pattern_count
+            },
+            denominator: {
+              shard: '00',
+              assignment: plan.assignment,
+              documents: plan.counts.documents,
+              registry_rows: plan.counts.registry_rows,
+              identity_match: true
+            },
+            extraction: {
+              ledger_bytes: ledgerBytes.length,
+              ledger_sha256: sha256(ledgerBytes),
+              candidate_documents: ledger.counts.candidate_documents,
+              support_only_documents: ledger.counts.support_only_documents,
+              negative_documents: ledger.counts.negative_documents,
+              total_matches: ledger.counts.total_matches,
+              field_match_counts: ledger.counts.field_match_counts,
+              pattern_match_counts: ledger.counts.pattern_match_counts,
+              population_complete: false
+            },
+            authority: ledger.authority,
+            boundaries: {
+              content_neutral_preassigned_shard: true,
+              rule_change_authorized: false,
+              follow_up_authorized: false,
+              source_receipt_observed: false,
+              implementation_observed: false,
+              restoration_observed: false,
+              remedy_timeliness_observed: false,
+              graph_effect: 'none',
+              publication_effect: 'none',
+              adoption_effect: 'none'
+            }
+          };
+          fs.writeFileSync(`${work}/receipt.json`, stable(receipt));
+          console.log(JSON.stringify(receipt.extraction, null, 2));
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a07-shard00-extraction-pilot
+          path: |
+            ${{ runner.temp }}/a07-shard00-pilot/ledger.json
+            ${{ runner.temp }}/a07-shard00-pilot/receipt.json
+            ${{ runner.temp }}/a07-shard00-pilot/ssc-rd04-a06-pdf-shard-00.tar.zst.sha256
+            ${{ runner.temp }}/a07-shard00-pilot/asset-selection.env
+          if-no-files-found: error
+          retention-days: 90
