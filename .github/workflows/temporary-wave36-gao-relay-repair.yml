@@ -58,6 +58,9 @@ jobs:
           git apply --check "$patch_path"
           git apply "$patch_path"
           rm -f "$carrier"
+          perl -0pi -e 's/\n+\z/\n/' \
+            docs/methods/lake-allocator-war-public-acquisition-wave-36.md \
+            docs/milestones/lake-allocator-war-public-acquisition-wave-36.md
 
           node --check tools/acquire-lake-allocator-war-public-acquisition-wave-36.mjs
           node --check tools/build-lake-allocator-war-public-acquisition-wave-36.mjs
