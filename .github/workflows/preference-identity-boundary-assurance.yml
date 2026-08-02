@@ -1,0 +1,39 @@
+name: Preference custody identity-boundary assurance control
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/identity-boundary-assurance.fixture.json'
+      - 'tools/lib/preference-identity-boundary-assurance.mjs'
+      - 'tools/compile-preference-identity-boundary-assurance.mjs'
+      - 'tools/validate-preference-identity-boundary-assurance.mjs'
+      - 'test/preference-identity-boundary-assurance.test.js'
+      - 'docs/preference-custody-identity-boundary-assurance.md'
+      - '.github/workflows/preference-identity-boundary-assurance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  identity-boundary-assurance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Compile record, namespace, entity, temporal-identity, boundary, frame, membership, and denominator worlds
+        run: node tools/compile-preference-identity-boundary-assurance.mjs
+      - name: Validate identity, boundary, frame, membership, lineage, correction, and authority boundaries
+        run: node tools/validate-preference-identity-boundary-assurance.mjs
+      - name: Exercise merge, split, recycling, truncation, ineligibility, frame, drift, authority, and tamper fixtures
+        run: node test/preference-identity-boundary-assurance.test.js
+      - name: Preserve deterministic identity-boundary projections
+        uses: actions/upload-artifact@v4
+        with:
+          name: preference-identity-boundary-assurance-pc33
+          path: |
+            build/research/preference-identity-boundary-assurance.json
+            build/research/preference-identity-boundary-assurance.md
+          if-no-files-found: error
