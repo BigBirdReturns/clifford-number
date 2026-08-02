@@ -1,0 +1,44 @@
+name: Temporary PC-25 lineage-boolean repair
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pc25-lineage-repair.yml'
+      - 'tools/lib/preference-criterion-score-use.mjs'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/preference-criterion-score-use-v1
+      - name: Normalize succession qualification to a boolean
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('tools/lib/preference-criterion-score-use.mjs')
+          source = path.read_text()
+          old = "  return exactLineage(succession)\n    || (text(succession.succession_receipt) && succession.revalidation_state === 'current');\n"
+          new = "  return exactLineage(succession)\n    || (Boolean(text(succession.succession_receipt)) && succession.revalidation_state === 'current');\n"
+          if new in source:
+              raise SystemExit(0)
+          if old not in source:
+              raise SystemExit('qualifiedSuccession anchor not found')
+          path.write_text(source.replace(old, new, 1))
+          PY
+      - name: Commit bounded repair
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add tools/lib/preference-criterion-score-use.mjs
+          if git diff --cached --quiet; then
+            echo 'No repair required.'
+          else
+            git commit -m 'Normalize PC-25 succession qualification to boolean'
+            git push origin HEAD:research/preference-criterion-score-use-v1
+          fi
