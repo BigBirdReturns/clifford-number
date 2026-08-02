@@ -1,0 +1,65 @@
+name: TEMP execute SSC RD-04 A07 all-program SHN registry
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a07-full-shn-registry-base
+    paths:
+      - '.github/tmp/ssc-rd04-a07-full-shn-registry.trigger'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd04-a07-full-shn-registry
+  cancel-in-progress: false
+
+jobs:
+  acquire:
+    name: shard-${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        shard:
+          - '00'
+          - '01'
+          - '02'
+          - '03'
+          - '04'
+          - '05'
+          - '06'
+          - '07'
+          - '08'
+          - '09'
+          - '10'
+          - '11'
+          - '12'
+          - '13'
+          - '14'
+          - '15'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a07-full-shn-registry-base
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Enforce no-magic-human contract
+        run: node tools/validate-no-magic-human-gate.mjs
+      - name: Execute exact all-program SHN registry shard
+        env:
+          A07_SHARD: ${{ matrix.shard }}
+        run: node .github/tmp/ssc-rd04-a07-full-shn-registry.mjs
+      - name: Upload exact A07 SHN shard receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a07-all-program-shn-shard-${{ matrix.shard }}
+          path: a07-full-shn-registry/shard-${{ matrix.shard }}
+          if-no-files-found: error
+          retention-days: 30
