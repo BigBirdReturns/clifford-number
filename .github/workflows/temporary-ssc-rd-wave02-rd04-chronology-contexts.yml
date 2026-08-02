@@ -1,0 +1,154 @@
+name: TEMP derive SSC RD-04-C01 chronology contexts
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd-wave02-rd04-chronology-contexts.yml'
+      - '.rd04-chronology-contexts/**'
+      - 'data/intake/status-sovereignty-rd-wave02-rd04-version-history/supplemental-acl-execution-receipt.json'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ssc-rd-wave02-rd04-chronology-contexts-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  derive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install exact PDF text extraction dependency
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends poppler-utils
+          pdftotext -v
+      - name: Download corrected v3 reference denominator
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-version-cross-references-v3
+          path: /tmp/rd04-crossref-v3
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30771206317
+      - name: Download immutable ninety-three-unit identity custody
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-source-identities
+          path: /tmp/rd04-source-identities-v2
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30770617475
+      - name: Download corrected ninety-eight-unit source custody
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-supplemental-acls
+          path: /tmp/rd04-supplemental-acls
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30771516122
+      - name: Download exact fourteen-source seed custody
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-version-seed
+          path: /tmp/rd04-version-seed
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30765064506
+      - name: Download immutable fixed-source capture
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-fixed-source-capture
+          path: /tmp/rd04-source-capture
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30768610215
+      - name: Download immutable historical-route correction
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-source-route-correction
+          path: /tmp/rd04-source-correction
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30769105132
+      - name: Download immutable eCFR identity correction
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-ecfr-api-correction
+          path: /tmp/rd04-ecfr-correction
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30769770546
+      - name: Reconstruct and verify exact context runtime
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/rd04-chronology-runtime
+          base64 --decode .rd04-chronology-contexts/derive-chronology-contexts.mjs.gz.b64 | gzip --decompress > /tmp/rd04-chronology-runtime/derive-chronology-contexts.mjs
+          base64 --decode .rd04-chronology-contexts/chronology-contexts-test.js.gz.b64 | gzip --decompress > /tmp/rd04-chronology-runtime/chronology-contexts.test.js
+          echo '497dbe4ebf6448ae6288a64b563a7f3a11d2246d911b74fdbd38cf92519048f4  /tmp/rd04-chronology-runtime/derive-chronology-contexts.mjs' | sha256sum --check --strict
+          echo 'b7e2611e5c45aedc502fb3ca170b14554e89e5f15ed3fefbdf058600e7dcd039  /tmp/rd04-chronology-runtime/chronology-contexts.test.js' | sha256sum --check --strict
+          node --check /tmp/rd04-chronology-runtime/derive-chronology-contexts.mjs
+          cp /tmp/rd04-chronology-runtime/derive-chronology-contexts.mjs /tmp/rd04-chronology-runtime/chronology-census.mjs
+          node /tmp/rd04-chronology-runtime/chronology-contexts.test.js
+      - name: Derive exact source-bound context denominator
+        env:
+          RD04_CROSSREF_V3_ARTIFACT: /tmp/rd04-crossref-v3
+          RD04_SOURCE_IDENTITIES_V2: /tmp/rd04-source-identities-v2
+          RD04_SUPPLEMENTAL_ACLS: /tmp/rd04-supplemental-acls
+          RD04_VERSION_SEED: /tmp/rd04-version-seed
+          RD04_SOURCE_CAPTURE: /tmp/rd04-source-capture
+          RD04_SOURCE_CORRECTION: /tmp/rd04-source-correction
+          RD04_ECFR_CORRECTION: /tmp/rd04-ecfr-correction
+          RD04_CHRONOLOGY_CONTEXT_OUTPUT: /tmp/rd04-chronology-contexts
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node /tmp/rd04-chronology-runtime/derive-chronology-contexts.mjs
+          test -f /tmp/rd04-chronology-contexts/relationship-contexts.json
+          test -f /tmp/rd04-chronology-contexts/interval-contexts.json
+          test -f /tmp/rd04-chronology-contexts/second-order-reference-contexts.json
+          test -f /tmp/rd04-chronology-contexts/source-scan-ledger.json
+          test -f /tmp/rd04-chronology-contexts/summary.json
+          test -f /tmp/rd04-chronology-contexts/manifest.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const rel = JSON.parse(fs.readFileSync('/tmp/rd04-chronology-contexts/relationship-contexts.json', 'utf8')).contexts;
+          const intervals = JSON.parse(fs.readFileSync('/tmp/rd04-chronology-contexts/interval-contexts.json', 'utf8')).contexts;
+          const second = JSON.parse(fs.readFileSync('/tmp/rd04-chronology-contexts/second-order-reference-contexts.json', 'utf8')).references;
+          const scans = JSON.parse(fs.readFileSync('/tmp/rd04-chronology-contexts/source-scan-ledger.json', 'utf8')).execution_units;
+          const summary = JSON.parse(fs.readFileSync('/tmp/rd04-chronology-contexts/summary.json', 'utf8'));
+          const c = summary.counts;
+          if (c?.execution_units !== 98 || c?.exact_identity_units_scanned !== 97 || c?.bounded_nonlink_units_excluded !== 1) throw new Error('scan denominator changed');
+          if (c?.known_reference_ids !== 159) throw new Error('known reference denominator changed');
+          if (c?.relationship_contexts !== rel.length || c?.interval_contexts !== intervals.length || c?.second_order_reference_ids !== second.length) throw new Error('context accounting changed');
+          if (c?.candidate_records_total !== rel.length + intervals.length + second.length) throw new Error('candidate total changed');
+          if (c?.positive_scan_units + c?.negative_scan_units !== 97) throw new Error('positive/negative scan accounting changed');
+          if (rel.length === 0 || intervals.length === 0) throw new Error('empty context denominator');
+          if (new Set(rel.map((row) => row.candidate_id)).size !== rel.length) throw new Error('duplicate relationship candidate');
+          if (new Set(intervals.map((row) => row.candidate_id)).size !== intervals.length) throw new Error('duplicate interval candidate');
+          if (scans.length !== 98 || scans.filter((row) => row.bounded_nonlink).map((row) => row.execution_unit_id).join(',') !== 'AUTH-CA-HSC-1231110') throw new Error('scan ledger incomplete');
+          if (!rel.every((row) => row.relation_adjudicated === false && row.edge_direction_adjudicated === false && row.version_edge_adjudicated === false)) throw new Error('relationship context escalated');
+          if (!intervals.every((row) => row.operative_interval_adjudicated === false && row.version_edge_adjudicated === false)) throw new Error('interval context escalated');
+          if (!second.every((row) => row.source_body_acquired === false && row.source_identity_adjudicated === false && row.version_edge_adjudicated === false)) throw new Error('second-order reference escalated');
+          if (c?.relationship_contexts_adjudicated !== 0 || c?.operative_intervals_adjudicated !== 0 || c?.version_edges_adjudicated !== 0 || c?.class_closed !== 0) throw new Error('authority ceiling changed');
+          if (summary.current_result?.context_denominator_frozen !== true || summary.current_result?.relationship_context_adjudication_complete !== false || summary.current_result?.class_closed !== false) throw new Error('result boundary changed');
+          if (summary.current_result?.graph_effect !== 'none' || summary.current_result?.publication_effect !== 'none') throw new Error('effect authority changed');
+          console.log('chronology context denominator and authority ceiling: PASS');
+          NODE
+      - name: Upload exact chronology-context custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-chronology-contexts
+          path: /tmp/rd04-chronology-contexts
+          if-no-files-found: error
+          retention-days: 90
