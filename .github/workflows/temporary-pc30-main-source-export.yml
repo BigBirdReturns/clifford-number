@@ -22,12 +22,15 @@ jobs:
       - name: Package exact canonical main source
         run: |
           set -Eeuo pipefail
-          git rev-parse HEAD > canonical-main.sha
+          git rev-parse HEAD > /tmp/canonical-main.sha
           tar --exclude='./.git' --exclude='./node_modules' --exclude='./dist' \
             --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
-            -czf canonical-main-source.tar.gz .
-          sha256sum canonical-main-source.tar.gz > canonical-main-source.sha256
-          wc -c canonical-main-source.tar.gz
+            -czf /tmp/canonical-main-source.tar.gz .
+          sha256sum /tmp/canonical-main-source.tar.gz > /tmp/canonical-main-source.sha256
+          wc -c /tmp/canonical-main-source.tar.gz
+          cp /tmp/canonical-main.sha canonical-main.sha
+          cp /tmp/canonical-main-source.tar.gz canonical-main-source.tar.gz
+          cp /tmp/canonical-main-source.sha256 canonical-main-source.sha256
       - uses: actions/upload-artifact@v4
         with:
           name: pc30-canonical-main-source
