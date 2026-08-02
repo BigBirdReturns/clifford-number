@@ -1,0 +1,284 @@
+name: TEMP census SSC Wave 02 frozen unit structures
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-wave02-structure-census-base-v1
+    paths:
+      - '.github/tmp/ssc-wave02-structure-census-v1.trigger'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-wave02-structure-census-v1
+  cancel-in-progress: true
+
+jobs:
+  census:
+    name: census-${{ matrix.class_id }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - class_id: RD-01-C03
+            child_issue: '786'
+            expected_denominator: '102'
+            keywords: 'natsec|rank|roster|company|entity|spacex|anthropic|selected|nonselection|ineligib'
+            files: |
+              data/intake/status-sovereignty-natsec100-denominator-first-pass.json
+              data/intake/status-sovereignty-rd01-natsec100-outcome-controls.json
+          - class_id: RD-02-C04
+            child_issue: '787'
+            expected_denominator: '18'
+            keywords: 'cohort|fund|vehicle|license|green light|leverage|draw|fee|covenant|amend|withheld'
+            files: |
+              data/intake/status-sovereignty-sbicct-denominator-first-pass.json
+              data/intake/status-sovereignty-rd02-sbicct-state-transitions.json
+          - class_id: RD-03-C04
+            child_issue: '788'
+            expected_denominator: '5'
+            keywords: 'instrument|borrower|loan|commitment|warrant|security|covenant|milestone|pricing|seniority|materials|vulcan|reelement|phoenix|energy fuels'
+            files: |
+              data/intake/status-sovereignty-osc-denominator-first-pass.json
+              data/intake/status-sovereignty-rd03-osc-instrument-lifecycle.json
+          - class_id: RD-05-C03
+            child_issue: '790'
+            expected_denominator: '0'
+            keywords: 'aces|committee|charter|meeting|agenda|minute|transcript|subcommittee|recommendation|response|adopt|reject|implement|termination|archive'
+            files: |
+              data/intake/status-sovereignty-f04-aces-governance-first-pass.json
+              data/intake/status-sovereignty-rd05-aces-authority-control.json
+          - class_id: RD-06-C01
+            child_issue: '791'
+            expected_denominator: '8'
+            keywords: 'capability drop|proposal|offeror|bidder|award|reject|withdraw|nonresponsive|architecture|subcontractor|palantir'
+            files: |
+              data/intake/status-sovereignty-f13-dcgsa-first-pass.json
+              data/intake/status-sovereignty-rd06-dcgsa-support-exit.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: c1997a1bfea3e214e2769df31f64f6fad6a4295c
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Export exact source bytes and inspect JSON topology
+        env:
+          CLASS_ID: ${{ matrix.class_id }}
+          CHILD_ISSUE: ${{ matrix.child_issue }}
+          EXPECTED_DENOMINATOR: ${{ matrix.expected_denominator }}
+          KEYWORDS: ${{ matrix.keywords }}
+          FILES: ${{ matrix.files }}
+          FROZEN_BASE: c1997a1bfea3e214e2769df31f64f6fad6a4295c
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          out="structure-census/$CLASS_ID"
+          mkdir -p "$out/files"
+          while IFS= read -r source_path; do
+            test -n "$source_path" || continue
+            test -f "$source_path"
+            mkdir -p "$out/files/$(dirname "$source_path")"
+            cp "$source_path" "$out/files/$source_path"
+          done <<< "$FILES"
+
+          export OUT="$out"
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          import path from 'node:path';
+
+          const stable = (value) => `${JSON.stringify(value, null, 2)}\n`;
+          const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
+          const assert = (condition, message) => { if (!condition) throw new Error(message); };
+          const sourcePaths = process.env.FILES.split(/\n/).map((item) => item.trim()).filter(Boolean);
+          const expected = Number(process.env.EXPECTED_DENOMINATOR);
+          const keywords = process.env.KEYWORDS.split('|').map((item) => item.trim()).filter(Boolean);
+          const keywordRegex = new RegExp(keywords.map((item) => item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'i');
+          const keyRegex = /(name|title|label|company|entity|fund|vehicle|borrower|offeror|bidder|instrument|member|recommendation|proposal|rank|state|status|date|amount|source|url)/i;
+
+          const sources = [];
+          const arrays = [];
+          const objects = [];
+          const keywordHits = [];
+          const identityLikeScalars = [];
+
+          function typeOf(value) {
+            if (Array.isArray(value)) return 'array';
+            if (value === null) return 'null';
+            return typeof value;
+          }
+
+          function walk(value, jsonPath, sourcePath) {
+            if (Array.isArray(value)) {
+              const objectRows = value.filter((item) => item && typeof item === 'object' && !Array.isArray(item));
+              const unionKeys = [...new Set(objectRows.flatMap((item) => Object.keys(item)))].sort();
+              arrays.push({
+                source_path: sourcePath,
+                json_path: jsonPath,
+                length: value.length,
+                element_types: [...new Set(value.map(typeOf))].sort(),
+                object_row_count: objectRows.length,
+                union_keys: unionKeys,
+                exact_expected_denominator_match: expected > 0 && value.length === expected,
+                sample: value.slice(0, Math.min(3, value.length))
+              });
+              value.forEach((item, index) => walk(item, `${jsonPath}[${index}]`, sourcePath));
+              return;
+            }
+            if (value && typeof value === 'object') {
+              const keys = Object.keys(value).sort();
+              objects.push({ source_path: sourcePath, json_path: jsonPath, key_count: keys.length, keys });
+              for (const [key, child] of Object.entries(value)) {
+                walk(child, `${jsonPath}.${key}`, sourcePath);
+              }
+              return;
+            }
+            const text = value === null ? 'null' : String(value);
+            if (keywordRegex.test(`${jsonPath} ${text}`)) {
+              keywordHits.push({ source_path: sourcePath, json_path: jsonPath, value });
+            }
+            const leafKey = jsonPath.split('.').at(-1)?.replace(/\[\d+\]$/g, '') ?? '';
+            if (typeof value === 'string' && keyRegex.test(leafKey)) {
+              identityLikeScalars.push({ source_path: sourcePath, json_path: jsonPath, value });
+            }
+          }
+
+          for (const sourcePath of sourcePaths) {
+            const body = fs.readFileSync(sourcePath);
+            const parsed = JSON.parse(body.toString('utf8'));
+            sources.push({
+              path: sourcePath,
+              bytes: body.length,
+              sha256: sha256(body),
+              top_level_type: typeOf(parsed),
+              top_level_keys: parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? Object.keys(parsed).sort() : []
+            });
+            walk(parsed, '$', sourcePath);
+          }
+
+          const exactMatches = arrays.filter((row) => row.exact_expected_denominator_match);
+          const nonemptyObjectArrays = arrays.filter((row) => row.length > 0 && row.object_row_count === row.length);
+          const census = {
+            schema_version: 'ssc-wave02-structure-census@1',
+            class_id: process.env.CLASS_ID,
+            child_issue: Number(process.env.CHILD_ISSUE),
+            frozen_base: process.env.FROZEN_BASE,
+            expected_unit_denominator: expected || null,
+            source_files: sources,
+            counts: {
+              source_files: sources.length,
+              arrays: arrays.length,
+              nonempty_object_arrays: nonemptyObjectArrays.length,
+              exact_denominator_array_matches: exactMatches.length,
+              objects: objects.length,
+              keyword_hits: keywordHits.length,
+              identity_like_scalars: identityLikeScalars.length
+            },
+            assessment: {
+              exact_denominator_materialized_in_frozen_json: exactMatches.length > 0,
+              candidate_unit_arrays: nonemptyObjectArrays.map((row) => ({
+                source_path: row.source_path,
+                json_path: row.json_path,
+                length: row.length,
+                union_keys: row.union_keys
+              })),
+              next_action: exactMatches.length > 0
+                ? 'bind exact denominator array and generate field matrix without changing row membership'
+                : 'construct immutable unit universe from source-addressable public records before substantive field adjudication'
+            },
+            authority: {
+              structure_census_is_substantive_finding: false,
+              denominator_changed: false,
+              outside_human_dependency: false,
+              external_contacts: 0,
+              external_reviews: 0,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            }
+          };
+
+          assert(sources.length === sourcePaths.length, 'source file denominator');
+          fs.writeFileSync(path.join(process.env.OUT, 'census.json'), stable(census));
+          fs.writeFileSync(path.join(process.env.OUT, 'arrays.json'), stable(arrays));
+          fs.writeFileSync(path.join(process.env.OUT, 'objects.json'), stable(objects));
+          fs.writeFileSync(path.join(process.env.OUT, 'keyword-hits.json'), stable(keywordHits.slice(0, 2000)));
+          fs.writeFileSync(path.join(process.env.OUT, 'identity-like-scalars.json'), stable(identityLikeScalars.slice(0, 2000)));
+          console.log(`${process.env.CLASS_ID}: ${arrays.length} arrays; ${exactMatches.length} exact denominator matches; ${nonemptyObjectArrays.length} object-array candidates`);
+          NODE
+      - name: Upload exact structure census
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-structure-census-${{ matrix.class_id }}
+          path: structure-census/${{ matrix.class_id }}
+          if-no-files-found: error
+          retention-days: 90
+
+  reconcile:
+    needs: census
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ssc-wave02-structure-census-*
+          path: structure-census
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconcile exact five-lane census
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          const collect = (target) => {
+            if (!fs.existsSync(target)) return [];
+            if (fs.statSync(target).isFile()) return path.basename(target) === 'census.json' ? [target] : [];
+            return fs.readdirSync(target).flatMap((name) => collect(path.join(target, name)));
+          };
+          const files = collect('structure-census').sort();
+          if (files.length !== 5) throw new Error(`census denominator ${files.length}`);
+          const rows = files.map((file) => JSON.parse(fs.readFileSync(file, 'utf8')));
+          const expectedClasses = ['RD-01-C03', 'RD-02-C04', 'RD-03-C04', 'RD-05-C03', 'RD-06-C01'];
+          const classes = rows.map((row) => row.class_id).sort();
+          if (JSON.stringify(classes) !== JSON.stringify(expectedClasses)) throw new Error(`classes ${JSON.stringify(classes)}`);
+          const reconciliation = {
+            schema_version: 'ssc-wave02-structure-census-reconciliation@1',
+            frozen_base: 'c1997a1bfea3e214e2769df31f64f6fad6a4295c',
+            lane_count: rows.length,
+            lanes: Object.fromEntries(rows.map((row) => [row.class_id, {
+              expected_unit_denominator: row.expected_unit_denominator,
+              source_files: row.counts.source_files,
+              arrays: row.counts.arrays,
+              exact_denominator_array_matches: row.counts.exact_denominator_array_matches,
+              exact_denominator_materialized_in_frozen_json: row.assessment.exact_denominator_materialized_in_frozen_json,
+              next_action: row.assessment.next_action
+            }])),
+            status: 'five_lane_frozen_structure_census_complete',
+            substantive_findings_created: 0,
+            authority: {
+              outside_human_dependency: false,
+              external_contacts: 0,
+              external_reviews: 0,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            }
+          };
+          fs.writeFileSync('structure-census/reconciliation.json', `${JSON.stringify(reconciliation, null, 2)}\n`);
+          console.log(reconciliation.status);
+          NODE
+      - name: Upload reconciled structure census
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-five-lane-structure-census
+          path: structure-census
+          if-no-files-found: error
+          retention-days: 90
