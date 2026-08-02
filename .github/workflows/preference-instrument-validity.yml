@@ -1,0 +1,39 @@
+name: Preference custody instrument-validity control
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/instrument-validity.fixture.json'
+      - 'tools/lib/preference-instrument-validity.mjs'
+      - 'tools/compile-preference-instrument-validity.mjs'
+      - 'tools/validate-preference-instrument-validity.mjs'
+      - 'test/preference-instrument-validity.test.js'
+      - 'docs/preference-custody-instrument-validity.md'
+      - '.github/workflows/preference-instrument-validity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  instrument-validity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Compile construct, item, criterion, administration, score, and equating worlds
+        run: node tools/compile-preference-instrument-validity.mjs
+      - name: Validate construct, item-security, criterion, response, score, form, and authority boundaries
+        run: node tools/validate-preference-instrument-validity.mjs
+      - name: Exercise underrepresentation, irrelevant variance, criterion, leakage, adaptive, override, drift, authority, and tamper fixtures
+        run: node test/preference-instrument-validity.test.js
+      - name: Preserve deterministic instrument-validity projections
+        uses: actions/upload-artifact@v4
+        with:
+          name: preference-instrument-validity-pc24
+          path: |
+            build/research/preference-instrument-validity.json
+            build/research/preference-instrument-validity.md
+          if-no-files-found: error
