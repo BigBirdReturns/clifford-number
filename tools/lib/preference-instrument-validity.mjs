@@ -150,7 +150,8 @@ function validateWorld(world, baseline, errors) {
   if (construct.total_reference_domains !== baseline.reference_domains.length) errors.push(`world ${worldId} construct domain count must preserve the reference domain count`);
   if (!Array.isArray(construct.covered_domains) || !Array.isArray(construct.excluded_domains)) errors.push(`world ${worldId} construct domain ledgers must be arrays`);
   if (!sameMembers([...array(construct.covered_domains), ...array(construct.excluded_domains)], baseline.reference_domains)) errors.push(`world ${worldId} construct domain coverage must partition the reference domains`);
-  if (unique([...array(construct.covered_domains), ...array(construct.excluded_domains)]).length !== baseline.reference_domains.length) errors.push(`world ${worldId} construct domains must not overlap`);
+  if (array(construct.covered_domains).some(domain => array(construct.excluded_domains).includes(domain))) errors.push(`world ${worldId} construct domains must not overlap`);
+  if (unique(array(construct.covered_domains)).length !== array(construct.covered_domains).length || unique(array(construct.excluded_domains)).length !== array(construct.excluded_domains).length) errors.push(`world ${worldId} construct domain ledgers must not repeat entries`);
   if (!probability(construct.construct_relevant_variance_share) || !probability(construct.construct_irrelevant_variance_share) || !close(Number(construct.construct_relevant_variance_share) + Number(construct.construct_irrelevant_variance_share), 1)) errors.push(`world ${worldId} construct variance shares must be probabilities summing to one`);
   for (const key of ['construct_underrepresentation','construct_irrelevant_variance_present']) if (typeof construct[key] !== 'boolean') errors.push(`world ${worldId} construct.${key} must be boolean`);
 
