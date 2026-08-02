@@ -1,0 +1,135 @@
+name: TEMP correct SSC RD-04-C01 eCFR source identities
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd-wave02-rd04-ecfr-api-correction.yml'
+      - 'data/intake/status-sovereignty-rd-wave02-rd04-version-history/ecfr-antibot-receipt.json'
+      - 'data/intake/status-sovereignty-rd-wave02-rd04-version-history/source-route-correction-receipt.json'
+      - 'tools/acquisition/status-sovereignty-rd-wave02-rd04/build-ecfr-api-correction-plan.mjs'
+      - 'tools/acquisition/status-sovereignty-rd-wave02-rd04/capture-ecfr-api-correction.mjs'
+      - 'test/status-sovereignty-rd-wave02-rd04-ecfr-api-correction.test.js'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ssc-rd-wave02-rd04-ecfr-api-correction-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  correct:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Download immutable fixed-source capture
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-fixed-source-capture
+          path: /tmp/rd04-source-capture-v1
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30768610215
+      - name: Download immutable combined source-route correction
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-source-route-correction
+          path: /tmp/rd04-source-route-correction
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30769105132
+      - name: Freeze official eCFR versioner API correction
+        env:
+          RD04_REPOSITORY_ROOT: ${{ github.workspace }}
+          RD04_SOURCE_CAPTURE_V1: /tmp/rd04-source-capture-v1
+          RD04_SOURCE_ROUTE_CORRECTION: /tmp/rd04-source-route-correction
+          RD04_ECFR_CORRECTION_PLAN_OUTPUT: /tmp/rd04-ecfr-correction-plan
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node --check tools/acquisition/status-sovereignty-rd-wave02-rd04/build-ecfr-api-correction-plan.mjs
+          node --check tools/acquisition/status-sovereignty-rd-wave02-rd04/capture-ecfr-api-correction.mjs
+          node test/status-sovereignty-rd-wave02-rd04-ecfr-api-correction.test.js
+          node tools/acquisition/status-sovereignty-rd-wave02-rd04/build-ecfr-api-correction-plan.mjs
+          test -f /tmp/rd04-ecfr-correction-plan/ecfr-api-correction-plan.json
+          test -f /tmp/rd04-ecfr-correction-plan/receipt.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const plan = JSON.parse(fs.readFileSync('/tmp/rd04-ecfr-correction-plan/ecfr-api-correction-plan.json', 'utf8'));
+          if (plan.counts?.original_antibot_routes !== 8) throw new Error('anti-bot route denominator changed');
+          if (plan.counts?.corrected_api_routes !== 8) throw new Error('API route denominator changed');
+          if (plan.counts?.affected_units !== 8) throw new Error('affected unit denominator changed');
+          if (plan.counts?.preserved_non_ecfr_execution_units !== 85) throw new Error('non-eCFR preservation changed');
+          if (plan.counts?.combined_execution_units !== 93) throw new Error('combined execution-unit denominator changed');
+          if (plan.official_api_contract?.snapshot_date !== '2026-07-30') throw new Error('snapshot date changed');
+          if (new Set(plan.corrected_routes.map((route) => route.target_unit_id)).size !== 8) throw new Error('duplicate API unit');
+          if (new Set(plan.corrected_routes.map((route) => route.corrected_url)).size !== 8) throw new Error('duplicate API route');
+          if (!plan.corrected_routes.every((route) => route.exact_url_frozen_before_fetch === true && route.outcome_selected === false)) {
+            throw new Error('API route mutability changed');
+          }
+          if (plan.current_result?.correction_plan_frozen !== true) throw new Error('API correction plan not frozen');
+          if (plan.current_result?.api_capture_complete !== false) throw new Error('API capture escalated');
+          if (plan.current_result?.version_edge_adjudication_complete !== false) throw new Error('version edge escalated');
+          if (plan.current_result?.class_closed !== false) throw new Error('class closure escalated');
+          if (plan.boundaries?.anti_bot_receipt_erased !== false) throw new Error('anti-bot receipt erased');
+          if (plan.boundaries?.unavailable_api_route_is_noncompliance !== false) throw new Error('API failure promoted to noncompliance');
+          console.log('eCFR API correction plan and authority ceiling: PASS');
+          NODE
+      - name: Execute all eight versioner API routes and adjudicate exact section identity
+        env:
+          RD04_ECFR_CORRECTION_PLAN: /tmp/rd04-ecfr-correction-plan
+          RD04_SOURCE_ROUTE_CORRECTION: /tmp/rd04-source-route-correction
+          RD04_ECFR_CORRECTION_OUTPUT: /tmp/rd04-ecfr-correction
+        run: |
+          set -Eeuo pipefail
+          node tools/acquisition/status-sovereignty-rd-wave02-rd04/capture-ecfr-api-correction.mjs
+          test -f /tmp/rd04-ecfr-correction/ecfr-api-route-ledger.json
+          test -f /tmp/rd04-ecfr-correction/ecfr-api-unit-ledger.json
+          test -f /tmp/rd04-ecfr-correction/combined-unit-ledger.json
+          test -f /tmp/rd04-ecfr-correction/summary.json
+          test -f /tmp/rd04-ecfr-correction/manifest.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const summary = JSON.parse(fs.readFileSync('/tmp/rd04-ecfr-correction/summary.json', 'utf8'));
+          const routes = JSON.parse(fs.readFileSync('/tmp/rd04-ecfr-correction/ecfr-api-route-ledger.json', 'utf8')).routes;
+          const units = JSON.parse(fs.readFileSync('/tmp/rd04-ecfr-correction/ecfr-api-unit-ledger.json', 'utf8')).execution_units;
+          const combined = JSON.parse(fs.readFileSync('/tmp/rd04-ecfr-correction/combined-unit-ledger.json', 'utf8')).execution_units;
+          const counts = summary.counts;
+          if (counts?.execution_units !== 93) throw new Error('execution-unit denominator changed');
+          if (counts?.affected_ecfr_units !== 8 || counts?.preserved_non_ecfr_units !== 85) throw new Error('affected/preserved unit accounting changed');
+          if (counts?.corrected_api_routes !== 8 || counts?.terminal_api_routes !== 8) throw new Error('API route terminality changed');
+          if (counts.transport_resolved_api_routes + counts.transport_unavailable_api_routes !== 8) throw new Error('API transport accounting changed');
+          if (counts.exact_section_identities_observed + counts.identity_failures_or_unavailable !== 8) throw new Error('API identity accounting changed');
+          if (counts.api_attempts < 8 || counts.api_attempts > 16) throw new Error('API attempts escaped bound');
+          if (counts.source_identity_adjudications_this_stage !== 8 || counts.combined_source_identity_adjudications !== 8) throw new Error('identity adjudication denominator changed');
+          if (counts.combined_source_identity_pending_units !== 85) throw new Error('remaining identity denominator changed');
+          if (routes.length !== 8 || units.length !== 8 || combined.length !== 93) throw new Error('ledger denominator changed');
+          if (new Set(combined.map((unit) => unit.execution_unit_id)).size !== 93) throw new Error('duplicate combined unit');
+          if (!routes.every((route) => route.source_identity_adjudicated === true && route.attempt_count >= 1 && route.attempt_count <= 2)) throw new Error('unterminated API route');
+          if (!units.every((unit) => unit.source_capture_terminal === true && unit.source_identity_adjudicated === true)) throw new Error('unterminated API unit');
+          if (summary.current_result?.api_capture_complete !== true) throw new Error('API capture incomplete');
+          if (summary.current_result?.affected_unit_identity_adjudication_complete !== true) throw new Error('affected identity adjudication incomplete');
+          if (summary.current_result?.combined_source_identity_adjudication_complete !== false) throw new Error('combined identity prematurely complete');
+          if (summary.current_result?.version_edge_adjudication_complete !== false) throw new Error('version edge escalated');
+          if (summary.current_result?.class_closed !== false) throw new Error('class closure escalated');
+          if (counts?.version_edges_adjudicated !== 0 || counts?.class_closed !== 0) throw new Error('authority ceiling changed');
+          if (summary.boundaries?.anti_bot_receipts_erased !== false) throw new Error('anti-bot receipts erased');
+          if (summary.boundaries?.unavailable_api_route_is_noncompliance !== false) throw new Error('API failure promoted');
+          if (summary.current_result?.graph_effect !== 'none' || summary.current_result?.publication_effect !== 'none') throw new Error('effect authority changed');
+          console.log(`eCFR API correction: ${counts.exact_section_identities_observed}/8 exact section identities; authority ceiling PASS`);
+          NODE
+      - name: Upload exact eCFR API correction custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-ecfr-api-correction
+          path: /tmp/rd04-ecfr-correction
+          if-no-files-found: error
+          retention-days: 90
