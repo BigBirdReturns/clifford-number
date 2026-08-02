@@ -1,0 +1,110 @@
+name: TEMP execute SSC RD-04-C01 five-ACL denominator extension
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd-wave02-rd04-supplemental-acls.yml'
+      - 'tools/acquisition/status-sovereignty-rd-wave02-rd04/capture-supplemental-acls.mjs'
+      - 'test/status-sovereignty-rd-wave02-rd04-supplemental-acls.test.js'
+      - 'data/intake/status-sovereignty-rd-wave02-rd04-version-history/cross-reference-receipt-v3.json'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ssc-rd-wave02-rd04-supplemental-acls-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install exact PDF text extraction dependency
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends poppler-utils
+          pdftotext -v
+      - name: Download corrected v3 reference denominator
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-version-cross-references-v3
+          path: /tmp/rd04-crossref-v3
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30771206317
+      - name: Download immutable v2 authority-unit denominator
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-authority-units
+          path: /tmp/rd04-authority-units-v2
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30768012480
+      - name: Download immutable ninety-three-unit identity custody
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-source-identities
+          path: /tmp/rd04-source-identities-v2
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30770617475
+      - name: Validate fixed extension contract
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node --check tools/acquisition/status-sovereignty-rd-wave02-rd04/capture-supplemental-acls.mjs
+          node test/status-sovereignty-rd-wave02-rd04-supplemental-acls.test.js
+      - name: Capture and adjudicate all five official ACLs
+        env:
+          RD04_CROSSREF_V3_ARTIFACT: /tmp/rd04-crossref-v3
+          RD04_AUTHORITY_UNITS_V2: /tmp/rd04-authority-units-v2
+          RD04_SOURCE_IDENTITIES_V2: /tmp/rd04-source-identities-v2
+          RD04_SUPPLEMENTAL_ACL_OUTPUT: /tmp/rd04-supplemental-acls
+        run: |
+          set -Eeuo pipefail
+          node tools/acquisition/status-sovereignty-rd-wave02-rd04/capture-supplemental-acls.mjs
+          test -f /tmp/rd04-supplemental-acls/plan.json
+          test -f /tmp/rd04-supplemental-acls/supplemental-unit-ledger.json
+          test -f /tmp/rd04-supplemental-acls/combined-authority-unit-ledger.json
+          test -f /tmp/rd04-supplemental-acls/combined-unit-ledger.json
+          test -f /tmp/rd04-supplemental-acls/summary.json
+          test -f /tmp/rd04-supplemental-acls/manifest.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const summary = JSON.parse(fs.readFileSync('/tmp/rd04-supplemental-acls/summary.json', 'utf8'));
+          const supplemental = JSON.parse(fs.readFileSync('/tmp/rd04-supplemental-acls/supplemental-unit-ledger.json', 'utf8')).execution_units;
+          const authority = JSON.parse(fs.readFileSync('/tmp/rd04-supplemental-acls/combined-authority-unit-ledger.json', 'utf8')).authority_units;
+          const combined = JSON.parse(fs.readFileSync('/tmp/rd04-supplemental-acls/combined-unit-ledger.json', 'utf8')).execution_units;
+          const c = summary.counts;
+          if (c?.cross_reference_ids !== 159 || c?.candidate_reference_ids !== 145) throw new Error('reference denominator changed');
+          if (c?.candidate_reference_ids_mapped !== 145 || c?.candidate_authority_units !== 84) throw new Error('authority-unit mapping changed');
+          if (c?.seed_source_units !== 14 || c?.execution_units !== 98) throw new Error('execution denominator changed');
+          if (c?.prior_execution_units_preserved !== 93 || c?.supplemental_acl_units !== 5) throw new Error('extension accounting changed');
+          if (c?.terminal_supplemental_acl_units !== 5 || c?.exact_supplemental_acl_identities !== 5) throw new Error('supplemental identities incomplete');
+          if (c?.unavailable_supplemental_acl_units !== 0 || c?.supplemental_identity_nonlinks !== 0) throw new Error('supplemental source failure');
+          if (c?.total_source_identity_adjudications !== 98 || c?.total_exact_source_identities_observed !== 97 || c?.total_bounded_source_identity_nonlinks !== 1) throw new Error('combined identity accounting changed');
+          if (supplemental.length !== 5 || !supplemental.every((row) => row.exact_source_identity_observed === true)) throw new Error('supplemental ledger incomplete');
+          if (authority.length !== 84 || new Set(authority.flatMap((row) => row.reference_ids)).size !== 145) throw new Error('candidate mapping incomplete');
+          if (combined.length !== 98 || new Set(combined.map((row) => row.execution_unit_id)).size !== 98) throw new Error('combined unit ledger incomplete');
+          if (summary.current_result?.source_identity_adjudication_complete !== true) throw new Error('source identity incomplete');
+          if (summary.current_result?.version_edge_adjudication_complete !== false || summary.current_result?.class_closed !== false) throw new Error('chronology or class escalated');
+          if (summary.current_result?.graph_effect !== 'none' || summary.current_result?.publication_effect !== 'none') throw new Error('effect authority changed');
+          console.log('five-ACL denominator extension and authority ceiling: PASS');
+          NODE
+      - name: Upload exact ninety-eight-unit custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-supplemental-acls
+          path: /tmp/rd04-supplemental-acls
+          if-no-files-found: error
+          retention-days: 90
