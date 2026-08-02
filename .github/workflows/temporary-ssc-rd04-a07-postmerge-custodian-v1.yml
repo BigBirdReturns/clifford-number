@@ -1,0 +1,240 @@
+name: TEMP verify and retire SSC RD-04 A07 execution estate v1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a07-postmerge-custodian-base-v1
+    paths:
+      - '.github/tmp/ssc-rd04-a07-postmerge-custodian-v1.trigger'
+
+permissions:
+  actions: read
+  checks: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: ssc-rd04-a07-postmerge-custodian-v1
+  cancel-in-progress: false
+
+jobs:
+  custody:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reprove canonical A07 on exact main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+          test -f data/intake/status-sovereignty-rd04-public-implementation-receipts-a07/core.json
+          test -f data/project/status-sovereignty-rd04-public-implementation-receipts-a07-release-manifest.json
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/validate-status-sovereignty-rd04-public-implementation-receipts-a07.mjs
+          node test/status-sovereignty-rd04-public-implementation-receipts-a07.test.js
+
+          node --input-type=module <<'NODE' > /tmp/a07-canonical.json
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const core = JSON.parse(fs.readFileSync('data/intake/status-sovereignty-rd04-public-implementation-receipts-a07/core.json', 'utf8'));
+          const manifest = JSON.parse(fs.readFileSync('data/project/status-sovereignty-rd04-public-implementation-receipts-a07-release-manifest.json', 'utf8'));
+          const main = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+          const introducing = execFileSync('git', ['log', '-1', '--format=%H', '--', 'data/intake/status-sovereignty-rd04-public-implementation-receipts-a07/core.json'], { encoding: 'utf8' }).trim();
+          const machineCandidates = Number(core.counts.same_shn_explicit_language_candidates ?? 0) + Number(core.counts.official_case_joined_machine_candidates ?? 0);
+          const receipt = {
+            schema_version: 'ssc-rd04-a07-postmerge-custodian@1',
+            verified_at_main: main,
+            introducing_commit: introducing,
+            execution_id: core.execution_id,
+            status: core.status,
+            release_sha256: manifest.combined_sha256,
+            release_entries: manifest.entries.length,
+            counts: core.counts,
+            current_result: core.current_result,
+            next_handoff: core.next_handoff,
+            machine_candidates: machineCandidates,
+            authority: {
+              verified_public_implementation_receipts: core.counts.verified_public_implementation_receipts,
+              verified_public_restoration_receipts: core.counts.verified_public_restoration_receipts,
+              external_contacts: core.counts.external_contacts,
+              external_reviews: core.counts.external_reviews,
+              missing_public_material_is_noncompliance: core.boundaries.missing_public_material_is_noncompliance,
+              graph_effect: core.current_result.graph_effect
+            }
+          };
+          if (receipt.authority.verified_public_implementation_receipts !== 0) throw new Error('implementation authority advanced unexpectedly');
+          if (receipt.authority.verified_public_restoration_receipts !== 0) throw new Error('restoration authority advanced unexpectedly');
+          if (receipt.authority.external_contacts !== 0 || receipt.authority.external_reviews !== 0) throw new Error('outside participation advanced unexpectedly');
+          if (receipt.authority.missing_public_material_is_noncompliance !== false) throw new Error('missing-public-material boundary drift');
+          if (receipt.authority.graph_effect !== 'none') throw new Error('graph effect drift');
+          fs.writeFileSync('/tmp/a07-canonical.json', `${JSON.stringify(receipt, null, 2)}\n`);
+          console.log(JSON.stringify(receipt));
+          NODE
+
+          issue_state="$(gh issue view 739 --repo "$GITHUB_REPOSITORY" --json state --jq .state)"
+          test "$issue_state" = CLOSED
+
+          product_pr="$(gh pr list --repo "$GITHUB_REPOSITORY" --state merged --search 'SSC RD-04 A07: public implementation and restoration receipt denominator in:title' --json number,mergeCommit,title,mergedAt --limit 20)"
+          PRODUCT_PRS="$product_pr" node --input-type=module <<'NODE' > /tmp/a07-product-pr.json
+          const rows = JSON.parse(process.env.PRODUCT_PRS);
+          const row = rows.find((item) => item.title === 'SSC RD-04 A07: public implementation and restoration receipt denominator');
+          if (!row?.number || !row?.mergeCommit?.oid || !row?.mergedAt) throw new Error('permanent A07 merged PR not found');
+          process.stdout.write(`${JSON.stringify(row, null, 2)}\n`);
+          NODE
+      - name: Ensure nonblocking A08 internal lane exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          machine_candidates="$(node --input-type=module -e "import fs from 'node:fs'; const r=JSON.parse(fs.readFileSync('/tmp/a07-canonical.json','utf8')); process.stdout.write(String(r.machine_candidates))")"
+          release="$(node --input-type=module -e "import fs from 'node:fs'; const r=JSON.parse(fs.readFileSync('/tmp/a07-canonical.json','utf8')); process.stdout.write(r.release_sha256)")"
+          main_sha="$(node --input-type=module -e "import fs from 'node:fs'; const r=JSON.parse(fs.readFileSync('/tmp/a07-canonical.json','utf8')); process.stdout.write(r.verified_at_main)")"
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state all --search 'SSC RD-04 A08 in:title' --json number,title,state --limit 50 --jq '[.[] | select(.title | startswith("SSC RD-04 A08"))] | sort_by(.number) | last | .number // empty')"
+          if [[ -z "$existing" ]]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" \
+              --title 'SSC RD-04 A08 · Internal adjudication and public-source refresh' \
+              --body "## Purpose
+
+Continue from canonical A07 without contacting, recruiting, persuading, or waiting for any outside person or agency.
+
+## Frozen parent
+
+\`\`\`text
+A07 main:                              $main_sha
+A07 release SHA-256:                  $release
+machine-screened candidates:          $machine_candidates
+verified implementation receipts:     0
+verified restoration receipts:        0
+external contacts:                    0
+graph effect:                         none
+\`\`\`
+
+## Internal denominator
+
+1. Adjudicate every retained A07 machine candidate against its exact source bytes and context. A candidate may advance only when the same-matter identity join and a completed action are explicit; SHN equality alone is insufficient.
+2. Refresh only the frozen public-source routes and unresolved URLs under bounded retry and exact custody. A failed or missing public source remains unresolved, not noncompliance.
+3. Zero candidates or zero verified receipts is an honest terminal state and does not block any unrelated project lane.
+
+## Prohibited shortcuts
+
+- outside outreach or review requests;
+- treating an order, allegation, plan, condition, or keyword hit as completed implementation;
+- treating same SHN as claimant identity without an explicit source join;
+- treating missing public evidence as agency noncompliance;
+- changing the denominator after reading candidate outcomes;
+- advancing publication, adoption, or graph effect without the required exact evidence."
+            existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search 'SSC RD-04 A08 in:title' --json number,title --limit 50 --jq '[.[] | select(.title | startswith("SSC RD-04 A08"))] | sort_by(.number) | last | .number')"
+          fi
+          printf '%s\n' "$existing" > /tmp/a08-issue-number.txt
+      - name: Retire A07 execution-only pull requests and branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          branches=(
+            agent/ssc-rd04-a07-shn-pilot-trigger
+            agent/ssc-rd04-a07-shn-semantics-trigger-v2
+            agent/ssc-rd04-a07-shn-full-trigger-v2
+            agent/ssc-rd04-a07-candidate-receipts-trigger-v3
+            agent/ssc-rd04-a07-official-sitemap-probe-trigger
+            agent/ssc-rd04-a07-official-crawl-trigger-v1
+            agent/ssc-rd04-a07-permanent-materializer-trigger-v1
+            agent/ssc-rd04-a07-transport-supervisor-trigger-v1
+          )
+          for branch in "${branches[@]}"; do
+            while IFS= read -r number; do
+              [[ -z "$number" ]] || gh pr close "$number" --repo "$GITHUB_REPOSITORY" --comment 'A07 is canonical on main; this execution-only lane is retired without merge.' || true
+            done < <(gh pr list --repo "$GITHUB_REPOSITORY" --head "$branch" --state open --json number --jq '.[].number')
+          done
+
+          refs=(
+            agent/ssc-rd04-a07-shn-pilot-base
+            agent/ssc-rd04-a07-shn-pilot-trigger
+            agent/ssc-rd04-a07-shn-semantics-base-v2
+            agent/ssc-rd04-a07-shn-semantics-trigger-v2
+            agent/ssc-rd04-a07-shn-semantics-pass-v2
+            agent/ssc-rd04-a07-shn-full-trigger-v2
+            agent/ssc-rd04-a07-shn-full-pass-v2
+            agent/ssc-rd04-a07-candidate-receipts-base-v2
+            agent/ssc-rd04-a07-candidate-receipts-base-v3
+            agent/ssc-rd04-a07-candidate-receipts-trigger-v3
+            agent/ssc-rd04-a07-candidate-receipts-pass-v3
+            agent/ssc-rd04-a07-official-sitemap-probe-base
+            agent/ssc-rd04-a07-official-sitemap-probe-trigger
+            agent/ssc-rd04-a07-official-sitemap-probe-pass
+            agent/ssc-rd04-a07-official-crawl-base-v1
+            agent/ssc-rd04-a07-official-crawl-trigger-v1
+            agent/ssc-rd04-a07-official-crawl-pass-v1
+            agent/ssc-rd04-a07-permanent-materializer-base-v1
+            agent/ssc-rd04-a07-permanent-materializer-trigger-v1
+            agent/ssc-rd04-a07-transport-supervisor-base-v1
+            agent/ssc-rd04-a07-transport-supervisor-trigger-v1
+            agent/ssc-rd04-a07-status-probe-shn-pass
+            agent/ssc-rd04-a07-status-probe-candidate-pass
+            agent/ssc-rd04-a07-status-probe-sitemap-pass
+            agent/ssc-rd04-a07-status-probe-crawl-pass
+          )
+          for ref in "${refs[@]}"; do
+            gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$ref" >/dev/null 2>&1 || true
+          done
+      - name: Emit exact canonical and cleanup receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module <<'NODE' > ssc-rd04-a07-postmerge-custodian-receipt.json
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const canonical = JSON.parse(fs.readFileSync('/tmp/a07-canonical.json', 'utf8'));
+          const productPr = JSON.parse(fs.readFileSync('/tmp/a07-product-pr.json', 'utf8'));
+          const a08 = Number(fs.readFileSync('/tmp/a08-issue-number.txt', 'utf8').trim());
+          const tempHeads = [
+            'agent/ssc-rd04-a07-shn-pilot-trigger',
+            'agent/ssc-rd04-a07-shn-semantics-trigger-v2',
+            'agent/ssc-rd04-a07-shn-full-trigger-v2',
+            'agent/ssc-rd04-a07-candidate-receipts-trigger-v3',
+            'agent/ssc-rd04-a07-official-sitemap-probe-trigger',
+            'agent/ssc-rd04-a07-official-crawl-trigger-v1',
+            'agent/ssc-rd04-a07-permanent-materializer-trigger-v1',
+            'agent/ssc-rd04-a07-transport-supervisor-trigger-v1'
+          ];
+          const remainingOpenTempPrs = [];
+          for (const head of tempHeads) {
+            const rows = JSON.parse(execFileSync('gh', ['pr', 'list', '--repo', process.env.GITHUB_REPOSITORY, '--head', head, '--state', 'open', '--json', 'number,title'], { encoding: 'utf8' }));
+            remainingOpenTempPrs.push(...rows.map((row) => ({ ...row, head })));
+          }
+          const receipt = {
+            ...canonical,
+            permanent_pr: productPr.number,
+            merge_commit: productPr.mergeCommit.oid,
+            merged_at: productPr.mergedAt,
+            issue_739: 'closed',
+            a08_issue: a08,
+            remaining_open_A07_execution_prs: remainingOpenTempPrs,
+            temporary_execution_refs_retired: true,
+            postmerge_custody: 'pass'
+          };
+          if (remainingOpenTempPrs.length) throw new Error(`remaining open A07 execution PRs: ${JSON.stringify(remainingOpenTempPrs)}`);
+          process.stdout.write(`${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+          cp ssc-rd04-a07-postmerge-custodian-receipt.json ssc-rd04-a07-postmerge-custodian-receipt.txt
+      - name: Upload post-merge custodian receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a07-postmerge-custodian-receipt-v1
+          path: |
+            ssc-rd04-a07-postmerge-custodian-receipt.json
+            ssc-rd04-a07-postmerge-custodian-receipt.txt
+          if-no-files-found: error
+          retention-days: 90
