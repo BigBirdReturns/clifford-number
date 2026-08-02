@@ -18,12 +18,38 @@ jobs:
         with:
           ref: research/preference-interference-mapping-v1
       - name: Materialize the permanent PC-27 surface
-        run: python .pc27/bootstrap.py
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64
+          import io
+          import re
+          import tarfile
+
+          source = Path('.pc27/bootstrap.py').read_text()
+          match = re.search(r"PAYLOAD = '''(.*)'''", source, re.S)
+          if not match:
+              raise SystemExit('PC-27 payload not found')
+
+          root = Path.cwd()
+          with tarfile.open(fileobj=io.BytesIO(base64.b64decode(match.group(1))), mode='r:gz') as archive:
+              for member in archive.getmembers():
+                  target = root / member.name
+                  if member.isdir():
+                      target.mkdir(parents=True, exist_ok=True)
+                      continue
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  extracted = archive.extractfile(member)
+                  if extracted is None:
+                      raise SystemExit(f'PC-27 archive member has no bytes: {member.name}')
+                  target.write_bytes(extracted.read())
+                  print(f'materialized {member.name}')
+          PY
       - name: Commit the permanent surface
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add \
+          git add -f \
             data/research/preference-custody/interference-mapping.fixture.json \
             test/preference-interference-mapping.test.js \
             docs/preference-custody-interference-mapping.md \
