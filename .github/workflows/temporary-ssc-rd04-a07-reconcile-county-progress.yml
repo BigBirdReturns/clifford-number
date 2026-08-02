@@ -1,6 +1,10 @@
 name: TEMP reconcile SSC RD-04 A07 county progress
 
 on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd04-a07-reconcile-county-progress.yml'
+      - 'tools/temporary-reconcile-a07-county-progress.mjs'
   push:
     branches:
       - agent/ssc-rd04-a07-public-compliance-receipts
