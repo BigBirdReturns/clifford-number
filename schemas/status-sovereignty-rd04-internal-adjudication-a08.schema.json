@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clifford-number.invalid/schemas/status-sovereignty-rd04-internal-adjudication-a08.schema.json",
+  "title": "SSC RD-04 A08 internal adjudication and bounded public-source refresh",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "execution_id",
+    "issue",
+    "status",
+    "parent",
+    "denominator_contract",
+    "counts",
+    "current_result",
+    "next_handoff",
+    "boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "ssc-rd04-a08-core@1"
+    },
+    "execution_id": {
+      "const": "SSC-RD04-INTERNAL-ADJUDICATION-A08"
+    },
+    "issue": {
+      "const": 765
+    },
+    "status": {
+      "const": "complete_zero_machine_candidate_adjudication_one_unresolved_public_source_after_bounded_refresh"
+    },
+    "counts": {
+      "type": "object",
+      "required": [
+        "total_machine_candidates",
+        "negative_controls",
+        "refresh_attempts",
+        "refresh_unresolved_urls",
+        "external_contacts",
+        "external_reviews",
+        "graph_effects"
+      ],
+      "properties": {
+        "total_machine_candidates": {
+          "const": 0
+        },
+        "negative_controls": {
+          "const": 5
+        },
+        "refresh_attempts": {
+          "const": 3
+        },
+        "refresh_unresolved_urls": {
+          "const": 1
+        },
+        "external_contacts": {
+          "const": 0
+        },
+        "external_reviews": {
+          "const": 0
+        },
+        "graph_effects": {
+          "const": 0
+        }
+      }
+    }
+  }
+}
