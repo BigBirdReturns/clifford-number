@@ -1,0 +1,200 @@
+name: TEMP crawl SSC RD-04 A07 official public surfaces v1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a07-official-crawl-base-v1
+    paths:
+      - '.github/tmp/ssc-rd04-a07-official-crawl-v1.trigger'
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: ssc-rd04-a07-official-crawl-v1
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a07-official-crawl-base-v1
+          fetch-depth: 1
+      - name: Acquire exact sitemap-probe handoff
+        run: |
+          set -Eeuo pipefail
+          ref='refs/heads/agent/ssc-rd04-a07-official-sitemap-probe-pass'
+          found=0
+          for attempt in $(seq 1 120); do
+            if git ls-remote --exit-code --heads origin "$ref" >/tmp/a07-sitemap-ls-remote.txt 2>/dev/null; then
+              found=1
+              break
+            fi
+            sleep 30
+          done
+          test "$found" = 1
+          git fetch --no-tags --depth=1 origin "$ref"
+          mkdir -p a07-sitemap-pass/inventories
+          git show FETCH_HEAD:.github/tmp/ssc-rd04-a07-official-sitemap-probe-pass/summary.json > a07-sitemap-pass/summary.json
+          for seed in CDSS DHCS AUDITOR COURTS COURTS-LEGACY; do
+            git show "FETCH_HEAD:.github/tmp/ssc-rd04-a07-official-sitemap-probe-pass/inventories/${seed}.json" > "a07-sitemap-pass/inventories/${seed}.json"
+          done
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const summary = JSON.parse(fs.readFileSync('a07-sitemap-pass/summary.json', 'utf8'));
+          if (summary.parent_a06_release_sha256 !== 'f9d1c128da51b43c3e06cca74ba9bc9cd5848729af4b1c4ca0269891ae85c7a5') {
+            throw new Error(`sitemap parent digest ${summary.parent_a06_release_sha256}`);
+          }
+          console.log(JSON.stringify(summary.counts));
+          NODE
+      - name: Upload frozen sitemap handoff
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a07-official-crawl-input-v1
+          path: a07-sitemap-pass
+          if-no-files-found: error
+          retention-days: 7
+
+  crawl:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        shard: ['00','01','02','03','04','05','06','07','08','09','10','11','12','13','14','15']
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a07-official-crawl-base-v1
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd04-a07-official-crawl-input-v1
+          path: a07-sitemap-pass
+      - name: Install PDF text extractor
+        run: |
+          if ! command -v pdftotext >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y poppler-utils
+          fi
+      - id: crawl
+        name: Crawl official-source shard ${{ matrix.shard }}
+        continue-on-error: true
+        env:
+          SHARD_INDEX: ${{ matrix.shard }}
+        run: node .github/tmp/ssc-rd04-a07-official-crawl-shard-v1.mjs
+      - name: Upload exact official-source shard custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a07-official-crawl-${{ matrix.shard }}
+          path: a07-official-crawl-${{ matrix.shard }}
+          if-no-files-found: error
+          retention-days: 30
+      - name: Fail shard after custody on structural failure
+        if: steps.crawl.outcome != 'success'
+        run: exit 1
+
+  reconcile:
+    needs: crawl
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a07-official-crawl-base-v1
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd04-a07-official-crawl-input-v1
+          path: a07-sitemap-pass
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ssc-rd04-a07-official-crawl-??
+          path: a07-official-crawl-download
+          merge-multiple: false
+      - id: reconcile
+        name: Reconcile official selected-URL denominator
+        continue-on-error: true
+        run: node .github/tmp/ssc-rd04-a07-official-crawl-reconcile-v1.mjs
+      - name: Upload complete reconciled official crawl
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a07-official-crawl-reconciled-v1
+          path: a07-official-crawl-reconciled
+          if-no-files-found: error
+          retention-days: 30
+      - name: Record official crawl result on issue 739
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOME: ${{ steps.reconcile.outcome }}
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module <<'NODE' > /tmp/a07-official-crawl-comment.md
+          import fs from 'node:fs';
+          let summary = null;
+          try { summary = JSON.parse(fs.readFileSync('a07-official-crawl-reconciled/summary.json', 'utf8')); } catch {}
+          const counts = summary?.counts ?? {};
+          console.log('### A07 official selected-URL crawl v1');
+          console.log('');
+          console.log('```text');
+          console.log(`status:                                                ${summary?.status ?? process.env.OUTCOME ?? 'unknown'}`);
+          console.log(`selected lexical URLs:                                 ${counts.selected_urls ?? 0}`);
+          console.log(`attempted URLs:                                        ${counts.attempted_urls ?? 0}`);
+          console.log(`successful bodies:                                     ${counts.successful_bodies ?? 0}`);
+          console.log(`unresolved URLs:                                       ${counts.unresolved_urls ?? 0}`);
+          console.log(`pages with exact D1 SHN strings:                       ${counts.pages_with_exact_D1_shn_strings ?? 0}`);
+          console.log(`exact D1 SHNs matched:                                 ${counts.exact_D1_shns_matched ?? 0}`);
+          console.log(`pages with completed-action language:                  ${counts.pages_with_completed_action_language ?? 0}`);
+          console.log(`pages with qualified completed-action language:        ${counts.pages_with_qualified_completed_action_language ?? 0}`);
+          console.log(`pages with exact SHN plus qualified language:           ${counts.pages_with_exact_D1_shn_and_qualified_completed_action_language ?? 0}`);
+          console.log(`structural failures:                                   ${counts.structural_failures ?? 0}`);
+          console.log('external contacts:                                     0');
+          console.log('graph effect:                                          none');
+          console.log('```');
+          console.log('');
+          console.log(`Workflow run: ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`);
+          console.log('');
+          console.log('This is the complete attempt denominator for the sitemap-selected official URLs, not the complete official-web universe. An exact SHN string does not prove claimant identity or implementation. Generic completed-action language is not case-specific without a valid join. Failed fetches remain unresolved, and missing public material is not noncompliance.');
+          if (summary?.failures?.length) {
+            console.log('');
+            console.log('Fail-closed errors:');
+            for (const failure of summary.failures.slice(0, 20)) console.log(`- ${failure.message ?? String(failure)}`);
+          }
+          NODE
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/739/comments" -f body="$(cat /tmp/a07-official-crawl-comment.md)"
+      - name: Publish pass-only disposable official-crawl handoff
+        if: steps.reconcile.outcome == 'success'
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -C agent/ssc-rd04-a07-official-crawl-pass-v1
+          mkdir -p .github/tmp/ssc-rd04-a07-official-crawl-pass-v1
+          cp a07-official-crawl-reconciled/summary.json .github/tmp/ssc-rd04-a07-official-crawl-pass-v1/summary.json
+          cp a07-official-crawl-reconciled/shn-page-candidates.json .github/tmp/ssc-rd04-a07-official-crawl-pass-v1/shn-page-candidates.json
+          cp a07-official-crawl-reconciled/generic-language-candidates.json .github/tmp/ssc-rd04-a07-official-crawl-pass-v1/generic-language-candidates.json
+          cp a07-official-crawl-reconciled/case-joined-machine-candidates.json .github/tmp/ssc-rd04-a07-official-crawl-pass-v1/case-joined-machine-candidates.json
+          cp a07-official-crawl-reconciled/unresolved-urls.json .github/tmp/ssc-rd04-a07-official-crawl-pass-v1/unresolved-urls.json
+          git add .github/tmp/ssc-rd04-a07-official-crawl-pass-v1
+          git commit -m 'Record passing SSC RD-04 A07 official selected-URL crawl'
+          git push --force origin HEAD:refs/heads/agent/ssc-rd04-a07-official-crawl-pass-v1
+      - name: Fail reconciliation after custody when structurally incomplete
+        if: steps.reconcile.outcome != 'success'
+        run: exit 1
