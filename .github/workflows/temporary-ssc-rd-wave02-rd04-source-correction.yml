@@ -1,0 +1,123 @@
+name: TEMP correct SSC RD-04-C01 historical source routes
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd-wave02-rd04-source-correction.yml'
+      - 'data/intake/status-sovereignty-rd-wave02-rd04-version-history/source-capture-receipt-v1.json'
+      - 'tools/acquisition/status-sovereignty-rd-wave02-rd04/build-source-correction-plan.mjs'
+      - 'tools/acquisition/status-sovereignty-rd-wave02-rd04/capture-source-correction.mjs'
+      - 'test/status-sovereignty-rd-wave02-rd04-source-correction.test.js'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ssc-rd-wave02-rd04-source-correction-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  correct:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Download immutable v1 fixed-source capture
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-fixed-source-capture
+          path: /tmp/rd04-source-capture-v1
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30768610215
+      - name: Freeze nine-route archive correction
+        env:
+          RD04_REPOSITORY_ROOT: ${{ github.workspace }}
+          RD04_SOURCE_CAPTURE_V1: /tmp/rd04-source-capture-v1
+          RD04_SOURCE_CORRECTION_PLAN_OUTPUT: /tmp/rd04-source-correction-plan
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node --check tools/acquisition/status-sovereignty-rd-wave02-rd04/build-source-correction-plan.mjs
+          node --check tools/acquisition/status-sovereignty-rd-wave02-rd04/capture-source-correction.mjs
+          node test/status-sovereignty-rd-wave02-rd04-source-correction.test.js
+          node tools/acquisition/status-sovereignty-rd-wave02-rd04/build-source-correction-plan.mjs
+          test -f /tmp/rd04-source-correction-plan/correction-plan.json
+          test -f /tmp/rd04-source-correction-plan/receipt.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const plan = JSON.parse(fs.readFileSync('/tmp/rd04-source-correction-plan/correction-plan.json', 'utf8'));
+          if (plan.counts?.original_unresolved_routes !== 9) throw new Error('original unresolved route denominator changed');
+          if (plan.counts?.corrected_routes !== 9) throw new Error('correction route denominator changed');
+          if (plan.counts?.affected_target_units !== 10) throw new Error('affected unit denominator changed');
+          if (plan.counts?.already_resolved_target_units_preserved !== 70) throw new Error('resolved target preservation changed');
+          if (plan.counts?.reused_seed_units_preserved !== 13) throw new Error('seed preservation changed');
+          if (new Set(plan.corrected_routes.map((row) => row.corrected_url)).size !== 9) throw new Error('duplicate correction URL');
+          if (!plan.corrected_routes.every((row) => row.exact_url_frozen_before_retry === true && row.outcome_selected === false)) {
+            throw new Error('correction route mutability changed');
+          }
+          if (plan.current_result?.correction_plan_frozen !== true) throw new Error('correction plan not frozen');
+          if (plan.current_result?.correction_capture_complete !== false) throw new Error('correction capture escalated');
+          if (plan.current_result?.source_identity_adjudication_complete !== false) throw new Error('source identity escalated');
+          if (plan.current_result?.version_edge_adjudication_complete !== false) throw new Error('version edge escalated');
+          if (plan.current_result?.class_closed !== false) throw new Error('class closure escalated');
+          if (plan.boundaries?.correction_rewrites_original_receipt !== false) throw new Error('original receipt rewrite authorized');
+          if (plan.boundaries?.failed_retry_is_noncompliance !== false) throw new Error('failure promoted to noncompliance');
+          console.log('historical route correction plan and authority ceiling: PASS');
+          NODE
+      - name: Execute only the nine corrected archive routes
+        env:
+          RD04_SOURCE_CORRECTION_PLAN: /tmp/rd04-source-correction-plan
+          RD04_SOURCE_CAPTURE_V1: /tmp/rd04-source-capture-v1
+          RD04_SOURCE_CORRECTION_OUTPUT: /tmp/rd04-source-correction
+        run: |
+          set -Eeuo pipefail
+          node tools/acquisition/status-sovereignty-rd-wave02-rd04/capture-source-correction.mjs
+          test -f /tmp/rd04-source-correction/correction-route-ledger.json
+          test -f /tmp/rd04-source-correction/correction-unit-ledger.json
+          test -f /tmp/rd04-source-correction/combined-unit-ledger.json
+          test -f /tmp/rd04-source-correction/summary.json
+          test -f /tmp/rd04-source-correction/manifest.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const summary = JSON.parse(fs.readFileSync('/tmp/rd04-source-correction/summary.json', 'utf8'));
+          const routes = JSON.parse(fs.readFileSync('/tmp/rd04-source-correction/correction-route-ledger.json', 'utf8'));
+          const correctionUnits = JSON.parse(fs.readFileSync('/tmp/rd04-source-correction/correction-unit-ledger.json', 'utf8'));
+          const combinedUnits = JSON.parse(fs.readFileSync('/tmp/rd04-source-correction/combined-unit-ledger.json', 'utf8'));
+          if (summary.counts?.execution_units !== 93) throw new Error('execution-unit denominator changed');
+          if (summary.counts?.correction_routes !== 9 || summary.counts?.terminal_correction_routes !== 9) throw new Error('correction route terminality changed');
+          if (summary.counts?.correction_target_units !== 10) throw new Error('correction unit denominator changed');
+          if (summary.counts?.combined_terminal_acquisition_target_units !== 80) throw new Error('combined target terminality changed');
+          if (summary.counts.resolved_correction_routes + summary.counts.unresolved_correction_routes !== 9) throw new Error('correction route accounting changed');
+          if (summary.counts.resolved_correction_target_units + summary.counts.unresolved_correction_target_units !== 10) throw new Error('correction unit accounting changed');
+          if (summary.counts.combined_resolved_acquisition_target_units + summary.counts.combined_unavailable_acquisition_target_units !== 80) throw new Error('combined target accounting changed');
+          if (summary.counts.correction_attempts < 9 || summary.counts.correction_attempts > 18) throw new Error('correction attempts escaped bound');
+          if (routes.correction_routes?.length !== 9) throw new Error('correction route ledger incomplete');
+          if (correctionUnits.correction_units?.length !== 10) throw new Error('correction unit ledger incomplete');
+          if (combinedUnits.execution_units?.length !== 93) throw new Error('combined unit ledger incomplete');
+          if (new Set(combinedUnits.execution_units.map((unit) => unit.execution_unit_id)).size !== 93) throw new Error('duplicate combined unit');
+          if (summary.current_result?.correction_capture_complete !== true) throw new Error('correction capture incomplete');
+          if (summary.current_result?.combined_source_capture_complete !== true) throw new Error('combined capture incomplete');
+          if (summary.current_result?.source_identity_adjudication_complete !== false) throw new Error('source identity escalated');
+          if (summary.current_result?.version_edge_adjudication_complete !== false) throw new Error('version edge escalated');
+          if (summary.current_result?.class_closed !== false) throw new Error('class closure escalated');
+          if (summary.counts?.source_identity_adjudications !== 0 || summary.counts?.version_edges_adjudicated !== 0 || summary.counts?.class_closed !== 0) throw new Error('authority ceiling changed');
+          if (summary.boundaries?.correction_rewrites_original_receipt !== false) throw new Error('original receipt rewritten');
+          if (summary.boundaries?.unresolved_retry_is_noncompliance !== false) throw new Error('unresolved retry promoted');
+          if (summary.current_result?.graph_effect !== 'none' || summary.current_result?.publication_effect !== 'none') throw new Error('effect authority changed');
+          console.log('historical route correction capture and authority ceiling: PASS');
+          NODE
+      - name: Upload exact correction and combined custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-source-route-correction
+          path: /tmp/rd04-source-correction
+          if-no-files-found: error
+          retention-days: 90
