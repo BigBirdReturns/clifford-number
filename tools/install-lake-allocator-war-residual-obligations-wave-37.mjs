@@ -7,6 +7,7 @@ const full = relative => path.join(root, relative);
 const readJson = relative => JSON.parse(fs.readFileSync(full(relative), 'utf8'));
 const writeJson = (relative, value) => fs.writeFileSync(full(relative), `${JSON.stringify(value, null, 2)}\n`);
 const addSorted = (values, additions) => [...new Set([...(values ?? []), ...additions])].sort();
+const clone = value => JSON.parse(JSON.stringify(value));
 
 const policyPath = 'data/project/lake-allocator-war-residual-obligations-wave-37-policy.json';
 const policy = readJson(policyPath);
@@ -15,6 +16,7 @@ if (policy.schema_version !== 'lake-allocator-war-residual-obligations-wave-37-p
 const sourcePaths = [policy.paths.program_manifest, policyPath, policy.paths.ledger, policy.paths.method, policy.paths.milestone];
 const projectionPaths = [policy.paths.projection];
 const reportPaths = [policy.paths.report];
+const generatedPaths = [policy.paths.ledger, policy.paths.projection, policy.paths.report];
 const authorityPaths = [...sourcePaths, ...projectionPaths, ...reportPaths];
 
 const lakePolicyPath = 'data/project/lake-index-policy.json';
@@ -28,6 +30,9 @@ lakePolicy.boundaries = {
   allocator_war_wave_37_external_review_required_to_classify: false
 };
 writeJson(lakePolicyPath, lakePolicy);
+
+const wave21PolicyPath = 'data/project/lake-allocator-war-wave-21-policy.json';
+const wave21Policy = readJson(wave21PolicyPath);
 
 const basinPath = 'data/project/lake-basin-registry.json';
 const basinRegistry = readJson(basinPath);
@@ -46,10 +51,19 @@ basinRegistry.boundaries = {
   allocator_war_wave_37_priority_is_evidence_strength: false,
   allocator_war_wave_37_external_review_required_to_classify: false
 };
+
+for (const basinId of ['allocator-war-source', 'allocator-war-lake-actions', 'allocator-war-reports']) {
+  const registryBasin = basinRegistry.basins.find(row => row.basin_id === basinId);
+  const contractIndex = wave21Policy.basin_contract.findIndex(row => row.basin_id === basinId);
+  if (!registryBasin || contractIndex < 0) throw new Error(`${basinId}: Wave 21 basin synchronization target missing`);
+  wave21Policy.basin_contract[contractIndex] = clone(registryBasin);
+}
 writeJson(basinPath, basinRegistry);
 
-const wave21PolicyPath = 'data/project/lake-allocator-war-wave-21-policy.json';
-const wave21Policy = readJson(wave21PolicyPath);
+wave21Policy.projection_contract.allowed_generated_paths = addSorted(
+  wave21Policy.projection_contract.allowed_generated_paths,
+  generatedPaths
+);
 wave21Policy.boundaries = {
   ...(wave21Policy.boundaries ?? {}),
   wave_37_component_is_requirement_satisfaction: false,
@@ -102,4 +116,5 @@ fs.writeFileSync(full(readmePath), readme);
 console.log('allocator-war residual institutional obligations Wave 37 authority surfaces installed');
 console.log(`  authoritative roots: ${lakePolicy.authoritative_roots.length}`);
 console.log(`  semantic basins: ${basinRegistry.basins.length}`);
+console.log('  Wave 21 basin contracts: synchronized');
 console.log('  release gate: registered');
