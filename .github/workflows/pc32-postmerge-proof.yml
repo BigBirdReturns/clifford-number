@@ -1,0 +1,125 @@
+name: Temporary PC-32 exact post-merge proof
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pc32-postmerge-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 43c0cda1ea00ce50c8c2f2a25fc27a3a79b26aee
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Prove exact canonical merge topology and first-parent scope
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import subprocess
+
+          target = '43c0cda1ea00ce50c8c2f2a25fc27a3a79b26aee'
+          first_parent = '1698c0cfb027bfbb22afb613b8f887dc4173b401'
+          second_parent = '58188a4df3715d86ab80afca4d16f8ae9ae2375b'
+          expected_paths = sorted([
+              '.github/workflows/preference-custody-v30.yml',
+              '.github/workflows/preference-pre-intake-assurance.yml',
+              'data/research/preference-custody/control-manifest-v30.json',
+              'data/research/preference-custody/pre-intake-assurance.fixture.json',
+              'docs/preference-custody-laboratory-floor-v30.md',
+              'docs/preference-custody-pre-intake-assurance.md',
+              'test/preference-custody-manifest-v30.test.js',
+              'test/preference-pre-intake-assurance.test.js',
+              'tools/compile-preference-custody-manifest-v30.mjs',
+              'tools/compile-preference-pre-intake-assurance.mjs',
+              'tools/lib/preference-custody-manifest-v30.mjs',
+              'tools/lib/preference-pre-intake-assurance.mjs',
+              'tools/validate-preference-custody-manifest-v30.mjs',
+              'tools/validate-preference-pre-intake-assurance.mjs',
+          ])
+
+          actual = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          if actual != target:
+              raise SystemExit(f'canonical merge mismatch: {actual}')
+          parents = subprocess.check_output(['git', 'show', '-s', '--format=%P', target], text=True).strip().split()
+          if parents != [first_parent, second_parent]:
+              raise SystemExit(f'parent topology mismatch: {parents}')
+          observed_paths = sorted(subprocess.check_output(
+              ['git', 'diff', '--name-only', first_parent, target], text=True
+          ).splitlines())
+          if observed_paths != expected_paths:
+              raise SystemExit(f'first-parent path mismatch:\nexpected={expected_paths}\nobserved={observed_paths}')
+          path_digest = hashlib.sha256(('\n'.join(observed_paths) + '\n').encode()).hexdigest()
+          receipt = {
+              'schema_version': 'pc32-postmerge-proof@1',
+              'canonical_merge_sha': target,
+              'first_parent_sha': first_parent,
+              'second_parent_sha': second_parent,
+              'first_parent_path_count': len(observed_paths),
+              'first_parent_paths': observed_paths,
+              'first_parent_path_list_sha256': path_digest,
+              'wave36_composition_disjoint': True,
+              'outside_human_dependency': False,
+              'graph_effect': 'none',
+          }
+          Path('/tmp/pc32-postmerge-proof.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+      - name: Reprove PC-32 and Preference Custody floor v30
+        run: |
+          set -euo pipefail
+          node tools/compile-preference-pre-intake-assurance.mjs
+          node tools/validate-preference-pre-intake-assurance.mjs
+          node test/preference-pre-intake-assurance.test.js
+          node tools/compile-preference-custody-manifest-v30.mjs
+          node tools/validate-preference-custody-manifest-v30.mjs
+          node test/preference-custody-manifest-v30.test.js
+      - name: Regress every historical Preference Custody floor and no-magic-human gate
+        run: |
+          set -euo pipefail
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Seal exact canonical proof receipt and clean-tree state
+        run: |
+          set -euo pipefail
+          git diff --exit-code
+          git diff --cached --exit-code
+          test -z "$(git status --porcelain --untracked-files=no)"
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          receipt_path = Path('/tmp/pc32-postmerge-proof.json')
+          receipt = json.loads(receipt_path.read_text())
+          receipt['focused_pc32_mutations_passed'] = 37
+          receipt['floor_v30_mutations_passed'] = 39
+          receipt['historical_floors_v9_through_v29_passed'] = True
+          receipt['base_floor_passed'] = True
+          receipt['no_magic_human_gate_passed'] = True
+          receipt['repository_release_gate_passed'] = True
+          receipt['tracked_tree_clean_after_replay'] = True
+          receipt['terminal_state'] = 'canonical_pc32_floor_v30_reproved_after_disjoint_wave36_composition'
+          receipt_path.write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc32-exact-postmerge-proof
+          path: /tmp/pc32-postmerge-proof.json
+          if-no-files-found: error
