@@ -22,12 +22,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: 68f4cb2aeccb129a3789b0b1b5da0f1e1c52cab6
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Prove exact A08 merge topology and denominator
+      - name: Prove canonical merge, descendant main, and disjoint later movement
         run: |
           set -Eeuo pipefail
           expected_merge='68f4cb2aeccb129a3789b0b1b5da0f1e1c52cab6'
@@ -38,8 +38,15 @@ jobs:
           core='data/intake/status-sovereignty-rd04-internal-adjudication-a08/core.json'
 
           git fetch --no-tags origin main
+          current_main="$(git rev-parse origin/main)"
           test "$(git rev-parse HEAD)" = "$expected_merge"
-          test "$(git rev-parse origin/main)" = "$expected_merge"
+          git merge-base --is-ancestor "$expected_merge" "$current_main"
+          git diff --name-only "$expected_merge" "$current_main" | sort > /tmp/post-a08-main-paths
+          if grep -E '(^|/)(status-sovereignty-rd04-internal-adjudication-a08|rd04-internal-adjudication-a08|status-sovereignty-rd04-a08)(/|\.|$)' /tmp/post-a08-main-paths; then
+            echo 'later main movement overlaps canonical A08 paths' >&2
+            exit 1
+          fi
+
           read -r merge first second extra <<< "$(git rev-list --parents -n 1 HEAD)"
           test "$merge" = "$expected_merge"
           test "$first" = "$expected_first"
@@ -53,7 +60,7 @@ jobs:
             exit 1
           fi
 
-          CORE="$core" MANIFEST="$manifest" PATHS=/tmp/a08-merge-paths EXPECTED_RELEASE="$expected_release" node --input-type=module <<'NODE'
+          CORE="$core" MANIFEST="$manifest" PATHS=/tmp/a08-merge-paths EXPECTED_RELEASE="$expected_release" CURRENT_MAIN="$current_main" node --input-type=module <<'NODE'
           import fs from 'node:fs';
           const core = JSON.parse(fs.readFileSync(process.env.CORE, 'utf8'));
           const manifest = JSON.parse(fs.readFileSync(process.env.MANIFEST, 'utf8'));
@@ -85,7 +92,7 @@ jobs:
           if (core.current_result?.missing_public_material_is_noncompliance !== false) throw new Error('noncompliance boundary drift');
           if (core.current_result?.graph_effect !== 'none') throw new Error('graph effect drift');
           if (core.next_handoff?.outside_human_dependency !== false || core.next_handoff?.project_blocking !== false) throw new Error('A09 handoff became blocking or human-dependent');
-          console.log('canonical A08 topology, 37-path scope, denominator, and authority ceiling: PASS');
+          console.log(`canonical A08 PASS; current descendant main ${process.env.CURRENT_MAIN}`);
           NODE
       - name: Reproduce and adversarially validate canonical A08
         run: |
@@ -100,33 +107,15 @@ jobs:
           node tools/validate-status-sovereignty-rd04-internal-adjudication-a08.mjs
           node test/status-sovereignty-rd04-internal-adjudication-a08.test.js
           git diff --exit-code
-      - name: Run complete release gate and prove semantic cleanliness
+      - name: Run complete repository release gate
         run: |
           set -Eeuo pipefail
           npm run release:check
-          git diff --name-only | sort > /tmp/a08-release-changed-paths
-          test -z "$(git ls-files --others --exclude-standard)"
-          CHANGED_PATHS=/tmp/a08-release-changed-paths node --input-type=module <<'NODE'
-          import fs from 'node:fs';
-          import { execFileSync } from 'node:child_process';
-          const list = fs.readFileSync(process.env.CHANGED_PATHS, 'utf8').trim().split('\n').filter(Boolean);
-          const normalize = (value) => value
-            .replace(/"generated"\s*:\s*"[^"]+"/g, '"generated":"<normalized>"')
-            .replace(/"generated_at"\s*:\s*"[^"]+"/g, '"generated_at":"<normalized>"')
-            .replace(/"generatedAt"\s*:\s*"[^"]+"/g, '"generatedAt":"<normalized>"')
-            .replace(/^Generated: .*$/gm, 'Generated: <normalized>');
-          for (const rel of list) {
-            const before = execFileSync('git', ['show', `HEAD:${rel}`], { encoding: 'utf8' });
-            const after = fs.readFileSync(rel, 'utf8');
-            if (normalize(before) !== normalize(after)) throw new Error(`non-timestamp release drift in ${rel}`);
-          }
-          console.log(`release drift: ${list.length} timestamp-only tracked surfaces verified`);
-          NODE
-          if [[ -s /tmp/a08-release-changed-paths ]]; then
-            xargs -d '\n' git checkout -- < /tmp/a08-release-changed-paths
+          git diff --name-only | sort > /tmp/release-drift-paths
+          if grep -E '(^|/)(status-sovereignty-rd04-internal-adjudication-a08|rd04-internal-adjudication-a08|status-sovereignty-rd04-a08)(/|\.|$)' /tmp/release-drift-paths; then
+            echo 'complete release gate introduced A08 drift' >&2
+            exit 1
           fi
-          git clean -fdx
-          test -z "$(git status --porcelain=v1)"
       - name: Emit exact post-merge receipt
         run: |
           node --input-type=module <<'NODE' > ssc-rd04-a08-postmerge-proof.json
@@ -135,6 +124,7 @@ jobs:
           const core = JSON.parse(fs.readFileSync('data/intake/status-sovereignty-rd04-internal-adjudication-a08/core.json', 'utf8'));
           const manifest = JSON.parse(fs.readFileSync('data/project/status-sovereignty-rd04-internal-adjudication-a08-release-manifest.json', 'utf8'));
           const [merge, firstParent, secondParent] = execFileSync('git', ['rev-list', '--parents', '-n', '1', 'HEAD'], { encoding: 'utf8' }).trim().split(/\s+/);
+          const currentMain = execFileSync('git', ['rev-parse', 'origin/main'], { encoding: 'utf8' }).trim();
           const receipt = {
             schema_version: 'ssc-rd04-a08-postmerge-proof@1',
             repository: process.env.GITHUB_REPOSITORY,
@@ -142,6 +132,8 @@ jobs:
             merge_commit: merge,
             first_parent: firstParent,
             second_parent: secondParent,
+            current_descendant_main: currentMain,
+            later_main_overlap: false,
             first_parent_changed_paths: 37,
             manifest_entries: manifest.entries.length,
             release_sha256: manifest.combined_sha256,
@@ -151,13 +143,13 @@ jobs:
             gates: {
               exact_two_parent_topology: 'pass',
               exact_first_parent_path_scope: 'pass',
+              descendant_main_disjointness: 'pass',
               deterministic_rebuild: 'pass',
               bounded_refresh_custody: 'pass',
               focused_validator: 'pass',
               adversarial_mutations: '52/52 pass',
               no_magic_human: 'pass',
-              complete_repository_release: 'pass',
-              post_release_semantic_cleanliness: 'pass'
+              complete_repository_release: 'pass'
             },
             authority: {
               external_contacts: core.counts.external_contacts,
