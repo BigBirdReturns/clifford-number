@@ -1,21 +1,21 @@
 # Lake index gap summary
 
-Source fingerprint: `a647e9ba8e1b1a5052261b2aa848b263dab188ab5e0749ad5d87bd9c70f94644`
+Source fingerprint: `5032b5d630b22f2f343c932e61f00d6be4d6bcb36f57dfcba9e2c73d229a36da`
 
 ## Finding
 
-The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1571 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
+The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1634 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
 
 ## By evidence role
 
 | Role | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
-| generated_artifact | 605 | 605 | 0 | 0 |
-| repository_root | 201 | 201 | 0 | 0 |
-| project_governance | 197 | 197 | 0 | 0 |
-| documentation | 155 | 155 | 0 | 0 |
+| generated_artifact | 606 | 606 | 0 | 0 |
+| repository_root | 258 | 258 | 0 | 0 |
+| project_governance | 199 | 199 | 0 | 0 |
+| documentation | 157 | 157 | 0 | 0 |
 | intake | 141 | 141 | 0 | 0 |
-| report_product | 120 | 120 | 0 | 0 |
+| report_product | 121 | 121 | 0 | 0 |
 | research_record | 48 | 48 | 0 | 0 |
 | case_source | 43 | 43 | 0 | 0 |
 | receipt_artifact | 32 | 32 | 0 | 0 |
@@ -28,17 +28,17 @@ The current Git tree is physically censused, but the evidence lake is not semant
 | Cluster | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
 | build/estate-game-trails | 313 | 313 | 0 | 0 |
-| data/project | 197 | 197 | 0 | 0 |
+| data/project | 199 | 199 | 0 | 0 |
 | build/core-thesis | 184 | 184 | 0 | 0 |
+| data/acquisition | 149 | 149 | 0 | 0 |
 | data/intake | 141 | 141 | 0 | 0 |
 | reports/core-thesis | 96 | 96 | 0 | 0 |
-| data/acquisition | 92 | 92 | 0 | 0 |
-| docs/milestones | 81 | 81 | 0 | 0 |
+| docs/milestones | 82 | 82 | 0 | 0 |
 | data/research-tracks | 52 | 52 | 0 | 0 |
 | data/research | 48 | 48 | 0 | 0 |
 | data/estates | 43 | 43 | 0 | 0 |
-| build/lake-actions | 39 | 39 | 0 | 0 |
-| docs/methods | 25 | 25 | 0 | 0 |
+| build/lake-actions | 40 | 40 | 0 | 0 |
+| docs/methods | 26 | 26 | 0 | 0 |
 | cases/arcadia-field-autopsy | 21 | 21 | 0 | 0 |
 | receipts/crawl | 19 | 19 | 0 | 0 |
 | build/estate-closures | 15 | 15 | 0 | 0 |
@@ -51,7 +51,7 @@ The current Git tree is physically censused, but the evidence lake is not semant
 parse errors:                   0
 undefined receipt references:   0
 projection IDs without source:  0
-missing repository path tokens: 202
+missing repository path tokens: 205
 ```
 
 ### P1 — exact orphan evidence

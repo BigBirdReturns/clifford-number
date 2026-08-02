@@ -516,3 +516,9 @@ A schema adapter or candidate key is not institutional semantics or join authori
 Run `node tools/build-lake-allocator-war-join-requirements-wave-35.mjs` only after the permanent Wave 34 lawful-join ledger is present. The builder must emit one estate-owned queue per join and one deterministic acquisition task per unsatisfied institutional requirement, preserving source receipts, schema adapters, candidate-key classes, access classes, completion tests, and refused substitutions.
 
 A requirement task is acquisition custody, not an acquisition result or join authorization. Public and lawful-case tasks remain separate from the three protected-personnel tasks that require authorized lawful access. Task admission creates no complete denominator, evidence adjudication, finding, graph effect, or publication clearance.
+
+
+3.36 **Allocator-war official-record public acquisition — Wave 36.**
+Run `node tools/acquire-lake-allocator-war-public-acquisition-wave-36.mjs` only in the bounded network acquisition lane. The acquisition freezes fifty exact official request-response objects through no more than six concurrent workers, including three bounded USAspending POST requests. Required-source failures are blocking. Protected personnel tasks perform zero network requests.
+
+Run `node tools/build-lake-allocator-war-public-acquisition-wave-36.mjs` only against frozen response bytes. The builder emits one institutional component row per usable capture and one result per Wave 35 task. Official-record custody does not satisfy a requirement, authorize a join, complete an action or no-action denominator, establish practical correction or realized recovery, adjudicate evidence, promote a finding, alter the graph, or clear publication.

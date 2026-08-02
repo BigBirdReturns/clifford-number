@@ -18,6 +18,30 @@ const digest = value => crypto.createHash('sha256').update(
   Buffer.isBuffer(value) ? value : JSON.stringify(canonical(value))
 ).digest('hex');
 const unique = values => new Set(values).size === values.length;
+const WAVE36_ROUTES = [
+  'internal-authority-and-inventory',
+  'public-award-and-contract-denominators',
+  'published-enforcement-and-action-registers',
+  'correction-dockets-and-outcomes',
+  'protected-personnel-records',
+  'affected-comparator-and-distributional-joins',
+  'financial-recovery-and-continuity'
+];
+function wave36PathContract(wave36Policy, wave36Plan) {
+  const routePaths = WAVE36_ROUTES.map(route => `${wave36Policy.paths.result_root}/${route}.jsonl`);
+  const snapshotPaths = wave36Plan.source_specs.map(row => row.storage_path);
+  const sourcePaths = [
+    'data/project/lake-allocator-war-public-acquisition-wave-36-policy.json',
+    'data/project/lake-allocator-war-public-acquisition-wave-36-plan.json',
+    wave36Policy.paths.capture_ledger,
+    wave36Policy.paths.record_ledger,
+    ...routePaths,
+    ...snapshotPaths,
+    wave36Policy.paths.method,
+    wave36Policy.paths.milestone
+  ];
+  return { routePaths, snapshotPaths, sourcePaths, permanentPaths: [...sourcePaths, wave36Policy.paths.projection, wave36Policy.paths.report] };
+}
 function ensureCommit(root, commit) {
   if (process.env.LAW_SKIP_GIT === '1') return;
   try {
@@ -47,9 +71,10 @@ function fail(errors, message) {
   errors.push(message);
 }
 export function validateArtifacts(state) {
-  const { policy, observations, waterline, estates, programs, receipt, projection, reconciliation } = state;
+  const { policy, observations, waterline, estates, programs, receipt, projection, reconciliation, wave36Policy, wave36Plan } = state;
   const errors = [];
   const expected = policy.expected_counts;
+  const { sourcePaths: wave36SourcePaths, permanentPaths: wave36PermanentPaths } = wave36PathContract(wave36Policy, wave36Plan);
 
   if (policy.schema_version !== 'lake-allocator-war-wave-21-policy@1') fail(errors, 'policy schema drift');
   if (policy.boundaries.graph_effect !== 'none') fail(errors, 'policy graph effect drift');
@@ -195,10 +220,11 @@ export function validateArtifacts(state) {
       'data/acquisition/lake-allocator-war-wave-35/affected-comparator-and-distributional-joins.jsonl',
       'data/acquisition/lake-allocator-war-wave-35/financial-recovery-and-continuity.jsonl',
       'docs/methods/lake-allocator-war-join-requirements-wave-35.md',
-      'docs/milestones/lake-allocator-war-join-requirements-wave-35.md'
+      'docs/milestones/lake-allocator-war-join-requirements-wave-35.md',
+      ...wave36SourcePaths
     ]],
-    ['allocator-war-lake-actions', [policy.paths.projection, policy.paths.reconciliation, 'build/lake-actions/allocator-war-estate-execution-wave-22.json', 'build/lake-actions/allocator-war-lead-acquisition-wave-23.json', 'build/lake-actions/allocator-war-lead-execution-wave-24.json', 'build/lake-actions/allocator-war-denominator-closure-wave-25.json', 'build/lake-actions/allocator-war-targeted-closure-wave-26.json', 'build/lake-actions/allocator-war-wave26-source-custody-repair.json', 'build/lake-actions/allocator-war-public-interest-downstream-wave-27-source-plan.json', 'build/lake-actions/allocator-war-public-interest-downstream-wave-27.json', 'build/lake-actions/allocator-war-public-interest-implementation-wave-28.json', 'build/lake-actions/allocator-war-public-interest-execution-wave-29.json', 'build/lake-actions/allocator-war-gap-fanout-wave-30.json', 'build/lake-actions/allocator-war-public-route-execution-wave-31.json', 'build/lake-actions/allocator-war-bounded-source-snapshots-wave-32.json', 'build/lake-actions/allocator-war-structural-parses-wave-33.json', 'build/lake-actions/allocator-war-schema-joins-wave-34.json', 'build/lake-actions/allocator-war-join-requirements-wave-35.json']],
-    ['allocator-war-reports', [policy.paths.report, 'reports/lake-allocator-war-estate-execution-wave-22.md', 'reports/lake-allocator-war-lead-acquisition-wave-23.md', 'reports/lake-allocator-war-lead-execution-wave-24.md', 'reports/lake-allocator-war-denominator-closure-wave-25.md', 'reports/lake-allocator-war-targeted-closure-wave-26.md', 'reports/lake-allocator-war-wave26-source-custody-repair.md', 'reports/lake-allocator-war-public-interest-downstream-wave-27.md', 'reports/lake-allocator-war-public-interest-implementation-wave-28.md', 'reports/lake-allocator-war-public-interest-execution-wave-29.md', 'reports/lake-allocator-war-gap-fanout-wave-30.md', 'reports/lake-allocator-war-public-route-execution-wave-31.md', 'reports/lake-allocator-war-bounded-source-snapshots-wave-32.md', 'reports/lake-allocator-war-structural-parses-wave-33.md', 'reports/lake-allocator-war-schema-joins-wave-34.md', 'reports/lake-allocator-war-join-requirements-wave-35.md']]
+    ['allocator-war-lake-actions', [policy.paths.projection, policy.paths.reconciliation, 'build/lake-actions/allocator-war-estate-execution-wave-22.json', 'build/lake-actions/allocator-war-lead-acquisition-wave-23.json', 'build/lake-actions/allocator-war-lead-execution-wave-24.json', 'build/lake-actions/allocator-war-denominator-closure-wave-25.json', 'build/lake-actions/allocator-war-targeted-closure-wave-26.json', 'build/lake-actions/allocator-war-wave26-source-custody-repair.json', 'build/lake-actions/allocator-war-public-interest-downstream-wave-27-source-plan.json', 'build/lake-actions/allocator-war-public-interest-downstream-wave-27.json', 'build/lake-actions/allocator-war-public-interest-implementation-wave-28.json', 'build/lake-actions/allocator-war-public-interest-execution-wave-29.json', 'build/lake-actions/allocator-war-gap-fanout-wave-30.json', 'build/lake-actions/allocator-war-public-route-execution-wave-31.json', 'build/lake-actions/allocator-war-bounded-source-snapshots-wave-32.json', 'build/lake-actions/allocator-war-structural-parses-wave-33.json', 'build/lake-actions/allocator-war-schema-joins-wave-34.json', 'build/lake-actions/allocator-war-join-requirements-wave-35.json', wave36Policy.paths.projection]],
+    ['allocator-war-reports', [policy.paths.report, 'reports/lake-allocator-war-estate-execution-wave-22.md', 'reports/lake-allocator-war-lead-acquisition-wave-23.md', 'reports/lake-allocator-war-lead-execution-wave-24.md', 'reports/lake-allocator-war-denominator-closure-wave-25.md', 'reports/lake-allocator-war-targeted-closure-wave-26.md', 'reports/lake-allocator-war-wave26-source-custody-repair.md', 'reports/lake-allocator-war-public-interest-downstream-wave-27.md', 'reports/lake-allocator-war-public-interest-implementation-wave-28.md', 'reports/lake-allocator-war-public-interest-execution-wave-29.md', 'reports/lake-allocator-war-gap-fanout-wave-30.md', 'reports/lake-allocator-war-public-route-execution-wave-31.md', 'reports/lake-allocator-war-bounded-source-snapshots-wave-32.md', 'reports/lake-allocator-war-structural-parses-wave-33.md', 'reports/lake-allocator-war-schema-joins-wave-34.md', 'reports/lake-allocator-war-join-requirements-wave-35.md', wave36Policy.paths.report]]
   ]);
   for (const [basinId, expectedPaths] of exactBasinPaths) {
     const basin = policy.basin_contract.find(row => row.basin_id === basinId);
@@ -290,7 +316,45 @@ export function validateRepository(root = defaultRoot) {
   const reconciliation = fs.existsSync(full(root, policy.paths.reconciliation))
     ? readJson(root, policy.paths.reconciliation)
     : null;
-  const errors = validateArtifacts({ policy, observations, waterline, estates, programs, receipt, projection, reconciliation });
+  const wave36Policy = readJson(root, 'data/project/lake-allocator-war-public-acquisition-wave-36-policy.json');
+  const wave36Plan = readJson(root, 'data/project/lake-allocator-war-public-acquisition-wave-36-plan.json');
+  const {
+    sourcePaths: wave36SourcePaths,
+    snapshotPaths: wave36SnapshotPaths,
+    permanentPaths: wave36PermanentPaths
+  } = wave36PathContract(wave36Policy, wave36Plan);
+  const errors = validateArtifacts({ policy, observations, waterline, estates, programs, receipt, projection, reconciliation, wave36Policy, wave36Plan });
+  const wave36MembershipSourcePaths = wave36SourcePaths.filter(relative => fs.existsSync(full(root, relative)));
+  const wave36CaptureLedgerExists = fs.existsSync(full(root, wave36Policy.paths.capture_ledger));
+  if (wave36CaptureLedgerExists) {
+    const wave36Captures = readJsonl(root, wave36Policy.paths.capture_ledger);
+    const captureBySourceRef = new Map(wave36Captures.map(row => [row.source_ref, row]));
+    const snapshotSpecByPath = new Map(wave36Plan.source_specs.map(row => [row.storage_path, row]));
+    const snapshotPathSet = new Set(wave36SnapshotPaths);
+    for (const relative of wave36SourcePaths) {
+      if (fs.existsSync(full(root, relative))) continue;
+      if (!snapshotPathSet.has(relative)) {
+        fail(errors, relative + ': missing permanent Wave 36 source path');
+        continue;
+      }
+      const spec = snapshotSpecByPath.get(relative);
+      const capture = spec ? captureBySourceRef.get(spec.source_ref) : null;
+      if (!spec || !capture) {
+        fail(errors, relative + ': missing Wave 36 failed-capture custody');
+        continue;
+      }
+      if (spec.required_success !== false || capture.required_success !== false) {
+        fail(errors, relative + ': required Wave 36 snapshot is absent');
+      }
+      if (capture.response_ok !== false) fail(errors, relative + ': absent snapshot claims a successful response');
+      if (capture.response_body_path !== null || capture.response_body_bytes !== 0 || capture.response_body_sha256 !== null) {
+        fail(errors, relative + ': absent snapshot claims retained response bytes');
+      }
+      if (!['request_failed', 'response_refused_too_large'].includes(capture.capture_state)) {
+        fail(errors, relative + ': absent snapshot has unsupported capture state ' + capture.capture_state);
+      }
+    }
+  }
 
   if (process.env.LAW_SKIP_GIT !== '1') {
     for (const imported of receipt.import_digests) {
@@ -317,6 +381,26 @@ export function validateRepository(root = defaultRoot) {
   ]) if (policy.boundaries[key] !== false) fail(errors, `${key}: Wave 35 boundary missing`);
   if (lakePolicy.boundaries.allocator_war_wave_35_requirement_task_is_evidence !== false) fail(errors, 'Wave 35 lake-index boundary missing');
   if (basinRegistry.boundaries.allocator_war_wave_35_task_is_join_authority !== false) fail(errors, 'Wave 35 basin boundary missing');
+  for (const key of [
+    'wave_36_official_record_component_is_requirement_satisfaction',
+    'wave_36_capture_authorizes_join',
+    'wave_36_public_record_completes_no_action_denominator',
+    'wave_36_public_record_authorizes_protected_personnel_access',
+    'wave_36_announced_amount_is_realized_payment',
+    'wave_36_docket_presence_is_practical_correction'
+  ]) if (policy.boundaries[key] !== false) fail(errors, `${key}: Wave 36 boundary missing`);
+  for (const key of [
+    'allocator_war_wave_36_official_record_component_is_requirement',
+    'allocator_war_wave_36_capture_authorizes_join',
+    'allocator_war_wave_36_public_record_authorizes_protected_access',
+    'allocator_war_wave_36_announced_amount_is_realized_recovery'
+  ]) if (lakePolicy.boundaries[key] !== false) fail(errors, `${key}: Wave 36 lake-index boundary missing`);
+  for (const key of [
+    'allocator_war_wave_36_component_is_requirement_satisfaction',
+    'allocator_war_wave_36_capture_authorizes_join',
+    'allocator_war_wave_36_public_record_completes_denominator',
+    'allocator_war_wave_36_public_record_authorizes_protected_access'
+  ]) if (basinRegistry.boundaries[key] !== false) fail(errors, `${key}: Wave 36 basin boundary missing`);
   for (const relative of [
     'data/project/lake-allocator-war-wave-21-policy.json',
     policy.paths.observation_registry,
@@ -446,12 +530,20 @@ export function validateRepository(root = defaultRoot) {
     'docs/methods/lake-allocator-war-join-requirements-wave-35.md',
     'docs/milestones/lake-allocator-war-join-requirements-wave-35.md',
     'build/lake-actions/allocator-war-join-requirements-wave-35.json',
-    'reports/lake-allocator-war-join-requirements-wave-35.md'
+    'reports/lake-allocator-war-join-requirements-wave-35.md',
+    ...wave36PermanentPaths
   ]) if (!lakePolicy.authoritative_roots.includes(relative)) fail(errors, `${relative}: missing authoritative root`);
 
   const pkg = readJson(root, 'package.json');
   if (!pkg.scripts['validate:lake-allocator-war-wave-21']) fail(errors, 'Wave 21 validator script absent');
   if (!pkg.scripts.check.includes('validate:lake-allocator-war-wave-21')) fail(errors, 'Wave 21 absent from complete release gate');
+  for (const key of [
+    'acquire:lake-allocator-war-public-acquisition-wave-36',
+    'build:lake-allocator-war-public-acquisition-wave-36',
+    'validate:lake-allocator-war-public-acquisition-wave-36',
+    'ci:lake-allocator-war-public-acquisition-wave-36'
+  ]) if (!pkg.scripts[key]) fail(errors, `${key}: Wave 36 script absent`);
+  if (!pkg.scripts.check.includes('validate:lake-allocator-war-public-acquisition-wave-36')) fail(errors, 'Wave 36 absent from complete release gate');
 
   if (reconciliation) {
     if (JSON.stringify(graphDigests(root)) !== JSON.stringify(receipt.graph_digests)) fail(errors, 'graph digest changed after Wave 21');
@@ -503,12 +595,18 @@ export function validateRepository(root = defaultRoot) {
       if (byPath.get('build/lake-actions/allocator-war-estate-execution-wave-22.json')?.basin_id !== 'allocator-war-lake-actions') fail(errors, 'Wave 22 projection wrong basin');
       if (byPath.get(policy.paths.report)?.basin_id !== 'allocator-war-reports') fail(errors, 'report wrong basin');
       if (byPath.get('reports/lake-allocator-war-estate-execution-wave-22.md')?.basin_id !== 'allocator-war-reports') fail(errors, 'Wave 22 report wrong basin');
+      for (const relative of wave36MembershipSourcePaths) if (byPath.get(relative)?.basin_id !== 'allocator-war-source') fail(errors, `${relative}: wrong Wave 36 source basin`);
+      if (byPath.get(wave36Policy.paths.projection)?.basin_id !== 'allocator-war-lake-actions') fail(errors, 'Wave 36 projection wrong basin');
+      if (byPath.get(wave36Policy.paths.report)?.basin_id !== 'allocator-war-reports') fail(errors, 'Wave 36 report wrong basin');
     }
   }
 
   for (const temporary of [
     '.github/tmp/lake-allocator-war-wave-21-trigger.json',
-    '.github/workflows/temporary-lake-allocator-war-wave-21-materializer.yml'
+    '.github/workflows/temporary-lake-allocator-war-wave-21-materializer.yml',
+    '.github/tmp/wave36-materialize-trigger.json',
+    '.github/workflows/temporary-wave36-materializer.yml',
+    'tools/run-wave36-materializer.sh'
   ]) if (fs.existsSync(full(root, temporary))) fail(errors, `${temporary}: temporary transport retained`);
 
   if (errors.length) throw new Error(`allocator-war Wave 21 validation failed:\n- ${errors.join('\n- ')}`);

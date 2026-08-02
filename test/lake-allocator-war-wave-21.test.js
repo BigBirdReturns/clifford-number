@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { validateArtifacts } from '../tools/validate-lake-allocator-war-wave-21.mjs';
+import { validateArtifacts, validateRepository } from '../tools/validate-lake-allocator-war-wave-21.mjs';
 
 const readJson = relative => JSON.parse(fs.readFileSync(relative, 'utf8'));
 const readJsonl = relative => fs.readFileSync(relative, 'utf8').split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
@@ -17,7 +17,9 @@ function load() {
     programs: readJsonl(policy.paths.program_registry),
     receipt: readJson(policy.paths.receipt),
     projection: readJson(policy.paths.projection),
-    reconciliation: fs.existsSync(policy.paths.reconciliation) ? readJson(policy.paths.reconciliation) : null
+    reconciliation: fs.existsSync(policy.paths.reconciliation) ? readJson(policy.paths.reconciliation) : null,
+    wave36Policy: readJson('data/project/lake-allocator-war-public-acquisition-wave-36-policy.json'),
+    wave36Plan: readJson('data/project/lake-allocator-war-public-acquisition-wave-36-plan.json')
   };
 }
 function expectFailure(label, mutate) {
@@ -58,3 +60,30 @@ const mutations = [
 for (const [label, mutate] of mutations) expectFailure(label, mutate);
 
 console.log(`allocator-war Wave 21 adversarial mutations passed: ${mutations.length}`);
+
+// LAW36-OPTIONAL-MISSING-SNAPSHOT-CUSTODY: basin membership covers existing files; the capture ledger covers lawful request failures.
+const wave36PolicyPath = 'data/project/lake-allocator-war-public-acquisition-wave-36-policy.json';
+const wave36PlanPath = 'data/project/lake-allocator-war-public-acquisition-wave-36-plan.json';
+if (fs.existsSync(wave36PolicyPath) && fs.existsSync(wave36PlanPath)) {
+  const wave36Policy = readJson(wave36PolicyPath);
+  if (fs.existsSync(wave36Policy.paths.capture_ledger) && fs.existsSync('build/lake-index/basin-membership.jsonl')) {
+    const wave36Plan = readJson(wave36PlanPath);
+    const captures = readJsonl(wave36Policy.paths.capture_ledger);
+    const captureBySourceRef = new Map(captures.map(row => [row.source_ref, row]));
+    const absent = wave36Plan.source_specs.filter(spec => !fs.existsSync(spec.storage_path));
+    for (const spec of absent) {
+      const capture = captureBySourceRef.get(spec.source_ref);
+      assert.ok(capture, spec.storage_path + ': absent snapshot lacks capture-ledger custody');
+      assert.equal(spec.required_success, false, spec.storage_path + ': required source cannot be absent');
+      assert.equal(capture.required_success, false, spec.storage_path + ': required capture cannot be absent');
+      assert.equal(capture.response_ok, false, spec.storage_path + ': absent snapshot claims response success');
+      assert.equal(capture.response_body_path, null, spec.storage_path + ': absent snapshot claims a retained body path');
+      assert.equal(capture.response_body_bytes, 0, spec.storage_path + ': absent snapshot claims retained bytes');
+      assert.equal(capture.response_body_sha256, null, spec.storage_path + ': absent snapshot claims a body digest');
+      assert.ok(['request_failed', 'response_refused_too_large'].includes(capture.capture_state), spec.storage_path + ': unsupported absent capture state ' + capture.capture_state);
+    }
+    const bodyless = captures.filter(row => row.response_body_path === null);
+    assert.equal(absent.length, bodyless.length, 'planned absent snapshots and bodyless capture rows must be one-to-one');
+    assert.doesNotThrow(() => validateRepository(process.cwd()), 'Wave 21 compatibility validator must accept receipted optional snapshot absences');
+  }
+}
