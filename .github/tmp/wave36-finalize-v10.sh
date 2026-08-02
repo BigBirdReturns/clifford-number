@@ -11,6 +11,11 @@ for required in "$SELF_PATH" "$REPAIR_PATH" "$ENGINE_PATH" "$TOPOLOGY_PATH"; do
 done
 
 node "$REPAIR_PATH"
+node - <<'NODE'
+const fs = require('fs');
+const file = 'test/lake-allocator-war-wave-21.test.js';
+fs.writeFileSync(file, fs.readFileSync(file, 'utf8').trimEnd() + '\n');
+NODE
 node --check tools/validate-lake-allocator-war-wave-21.mjs
 node --check test/lake-allocator-war-wave-21.test.js
 node -e "JSON.parse(require('fs').readFileSync('package.json','utf8'))"
