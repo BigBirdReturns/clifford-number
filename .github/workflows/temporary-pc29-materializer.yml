@@ -1,0 +1,98 @@
+name: TEMP materialize PC-29 and Preference Custody floor v27
+
+on:
+  pull_request:
+    paths:
+      - '.pc29/materialize.trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc29-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/preference-identity-boundary-assurance-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify, materialize, qualify, and publish exact PC-29 source set
+        env:
+          TARGET_BRANCH: research/preference-identity-boundary-assurance-v1
+          EXPECTED_B64_BYTES: '27744'
+          EXPECTED_B64_SHA256: b5632c1ca74c6cc65e714f723c751b6a9201988e1360526d2af14c86b20dd9ea
+          EXPECTED_TGZ_SHA256: 525e8842dc02d5e015e294b3de1d92c69c5559f93a37cece737453fb6fe6ec71
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          carrier=/tmp/pc29-source.tar.gz.b64
+          : > "$carrier"
+          for part in .pc29/payload-*.b64; do
+            tr -d '\r\n\t ' < "$part" >> "$carrier"
+          done
+          test "$(stat -c '%s' "$carrier")" = "$EXPECTED_B64_BYTES"
+          printf '%s  %s\n' "$EXPECTED_B64_SHA256" "$carrier" | sha256sum --check --strict
+          base64 --decode "$carrier" > /tmp/pc29-source.tar.gz
+          printf '%s  %s\n' "$EXPECTED_TGZ_SHA256" /tmp/pc29-source.tar.gz | sha256sum --check --strict
+
+          cat > /tmp/expected-pc29-paths <<'PATHS'
+          data/research/preference-custody/control-manifest-v27.json
+          data/research/preference-custody/identity-boundary-assurance.fixture.json
+          test/preference-custody-manifest-v27.test.js
+          test/preference-identity-boundary-assurance.test.js
+          tools/lib/preference-custody-manifest-v27.mjs
+          tools/lib/preference-identity-boundary-assurance.mjs
+          PATHS
+          sed -i 's/^          //' /tmp/expected-pc29-paths
+          sort -o /tmp/expected-pc29-paths /tmp/expected-pc29-paths
+          tar -tzf /tmp/pc29-source.tar.gz | sed 's#^\./##' | sed '/\/$/d' | sort > /tmp/observed-pc29-paths
+          diff -u /tmp/expected-pc29-paths /tmp/observed-pc29-paths
+          test "$(wc -l < /tmp/observed-pc29-paths | tr -d ' ')" = 6
+
+          tar -xzf /tmp/pc29-source.tar.gz
+          node tools/compile-preference-identity-boundary-assurance.mjs
+          node tools/validate-preference-identity-boundary-assurance.mjs
+          node test/preference-identity-boundary-assurance.test.js
+          node tools/compile-preference-custody-manifest-v27.mjs
+          node tools/validate-preference-custody-manifest-v27.mjs
+          node test/preference-custody-manifest-v27.test.js
+
+          git add --pathspec-from-file=/tmp/expected-pc29-paths
+          git diff --cached --check
+          test "$(git diff --cached --name-only | sort | wc -l | tr -d ' ')" = 6
+          diff -u /tmp/expected-pc29-paths <(git diff --cached --name-only | sort)
+          git commit -m 'Implement PC-29 and compose Preference Custody floor v27'
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          PRODUCT_HEAD="$(git rev-parse HEAD)" node --input-type=module <<'NODE' > pc29-materializer-receipt.json
+          const receipt = {
+            schema_version: 'pc29-materializer-receipt@1',
+            product_head: process.env.PRODUCT_HEAD,
+            materialized_paths: 6,
+            permanent_paths_expected: 14,
+            transport_paths_expected_after_cleanup: 0,
+            tar_sha256: process.env.EXPECTED_TGZ_SHA256,
+            base64_sha256: process.env.EXPECTED_B64_SHA256,
+            outside_human_dependency: false,
+            graph_effect: 'none'
+          };
+          process.stdout.write(`${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+      - name: Upload PC-29 materializer receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc29-materializer-receipt
+          path: pc29-materializer-receipt.json
+          if-no-files-found: error
+          retention-days: 90
