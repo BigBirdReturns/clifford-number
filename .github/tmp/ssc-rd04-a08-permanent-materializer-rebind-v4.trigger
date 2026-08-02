@@ -1,1 +1,1 @@
-normalize tar root entry and execute exact A08 permanent materializer v4
+stage 36 exact A08 files for connector workflow publication; retry 1
