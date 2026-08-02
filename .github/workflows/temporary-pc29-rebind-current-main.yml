@@ -1,11 +1,17 @@
 name: TEMP rebind PC-29 to current main
 
 on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.pc29-rebind.trigger'
+      - '.github/workflows/temporary-pc29-rebind-current-main.yml'
   push:
     branches:
       - research/preference-identity-boundary-assurance-v1
     paths:
       - '.pc29-rebind.trigger'
+      - '.github/workflows/temporary-pc29-rebind-current-main.yml'
   workflow_dispatch:
 
 permissions:
