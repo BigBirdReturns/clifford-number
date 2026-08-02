@@ -1,0 +1,305 @@
+name: TEMP seed SSC residual-denominator Wave 02 six-lane fanout
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-residual-wave02-seed-fanout-base-c1997
+    paths:
+      - '.github/tmp/ssc-residual-wave02-seed-fanout-c1997.trigger'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-residual-wave02-seed-fanout-c1997
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    name: seed-${{ matrix.lane_id }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lane_id: rd01-natsec100-legal-entity
+            child_issue: '786'
+            class_id: RD-01-C03
+            anchor: data/intake/status-sovereignty-rd01-natsec100-outcome-controls.json
+            execution_prefix: SSC-RD01
+            input_regex: '(natsec100|rd01)'
+            denominator: '102 immutable rows: 100 selected roster rows plus 2 explicit assessed nonselection or ineligibility examples'
+            closure_target: 'legal-entity resolution for selected and explicit assessed-control companies'
+          - lane_id: rd02-sbicct-license-leverage
+            child_issue: '787'
+            class_id: RD-02-C04
+            anchor: data/intake/status-sovereignty-rd02-sbicct-state-transitions.json
+            execution_prefix: SSC-RD02
+            input_regex: '(sbicct|rd02)'
+            denominator: '18 immutable first-cohort fund rows: 17 public identities plus 1 withheld row'
+            closure_target: 'Green Light, license, leverage commitment, draw, fee, covenant, and amendment chronology'
+          - lane_id: rd03-osc-negotiated-terms
+            child_issue: '788'
+            class_id: RD-03-C04
+            anchor: data/intake/status-sovereignty-rd03-osc-instrument-lifecycle.json
+            execution_prefix: SSC-RD03
+            input_regex: '(osc|rd03)'
+            denominator: '5 immutable named instruments: MP Materials, Vulcan Elements, ReElement Technologies, Phoenix Tailings, and Energy Fuels'
+            closure_target: 'loan, warrant, security, covenant, milestone, pricing, and seniority terms'
+          - lane_id: rd04-snap-version-history
+            child_issue: '789'
+            class_id: RD-04-C01
+            anchor: data/intake/status-sovereignty-rd04-changed-input-gate-a09/core.json
+            execution_prefix: SSC-RD04
+            input_regex: '(rd04|snap-state-remedy|snap-state-source-availability|snap-search-replay)'
+            denominator: 'immutable federal-and-California instrument universe frozen before chronology adjudication'
+            closure_target: 'post-2025 statutory, regulatory, manual, guidance, effective-date, supersession, and version history'
+          - lane_id: rd05-aces-recommendation-disposition
+            child_issue: '790'
+            class_id: RD-05-C03
+            anchor: data/intake/status-sovereignty-rd05-aces-authority-control.json
+            execution_prefix: SSC-RD05
+            input_regex: '(aces|rd05)'
+            denominator: 'immutable complete official ACES record universe through termination and archival transfer'
+            closure_target: 'recommendation, agency response, adoption, rejection, implementation, and outcome ledger'
+          - lane_id: rd06-dcgsa-offeror-universe
+            child_issue: '791'
+            class_id: RD-06-C01
+            anchor: data/intake/status-sovereignty-rd06-dcgsa-support-exit.json
+            execution_prefix: SSC-RD06
+            input_regex: '(dcgsa|rd06)'
+            denominator: '8 immutable Capability Drop proposal slots: 3 publicly named offerors and 5 unresolved identities'
+            closure_target: 'bidder, offeror, architecture, subcontractor, withdrawal, and nonresponsive public universe'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-residual-wave02-seed-fanout-base-c1997
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Freeze exact canonical inputs and emit lane seed
+        env:
+          FROZEN_BASE: c1997a1bfea3e214e2769df31f64f6fad6a4295c
+          PARENT_ISSUE: '785'
+          LANE_ID: ${{ matrix.lane_id }}
+          CHILD_ISSUE: ${{ matrix.child_issue }}
+          CLASS_ID: ${{ matrix.class_id }}
+          ANCHOR: ${{ matrix.anchor }}
+          EXECUTION_PREFIX: ${{ matrix.execution_prefix }}
+          INPUT_REGEX: ${{ matrix.input_regex }}
+          DENOMINATOR: ${{ matrix.denominator }}
+          CLOSURE_TARGET: ${{ matrix.closure_target }}
+        run: |
+          set -Eeuo pipefail
+          git switch --detach "$FROZEN_BASE"
+          test "$(git rev-parse HEAD)" = "$FROZEN_BASE"
+          node tools/validate-no-magic-human-gate.mjs
+          test -f "$ANCHOR"
+
+          out="wave02-seeds/$LANE_ID"
+          mkdir -p "$out"
+          : > "$out/input-paths.txt"
+          roots=(
+            data/intake
+            data/project
+            docs/milestones
+            schemas
+            tools
+            test
+            reports/core-thesis
+            build/core-thesis
+            .github/workflows
+          )
+          for root in "${roots[@]}"; do
+            if test -e "$root"; then
+              find "$root" -type f
+            fi
+          done | grep -Ei "$INPUT_REGEX" | sort -u > "$out/input-paths.txt"
+
+          grep -Fxq "$ANCHOR" "$out/input-paths.txt"
+          test "$(wc -l < "$out/input-paths.txt" | tr -d ' ')" -gt 0
+          if grep -E '(^|/)(\.github/tmp|temporary-|.*materializer.*|.*trigger.*|.*carrier.*)(/|\.|$)' "$out/input-paths.txt"; then
+            echo 'temporary transport entered a Wave 02 seed' >&2
+            exit 1
+          fi
+
+          export OUT="$out"
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+
+          const readJson = (target) => JSON.parse(fs.readFileSync(target, 'utf8'));
+          const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
+          const assert = (condition, message) => { if (!condition) throw new Error(message); };
+
+          const anchor = readJson(process.env.ANCHOR);
+          assert(String(anchor.execution_id ?? '').startsWith(process.env.EXECUTION_PREFIX), `anchor execution ${anchor.execution_id}`);
+
+          if (process.env.CLASS_ID === 'RD-01-C03') {
+            assert(anchor.matched_pilot_state?.published_selected_rows === 100, 'RD01 selected denominator');
+            assert(anchor.matched_pilot_state?.explicit_assessed_nonselection_or_ineligibility_examples === 2, 'RD01 explicit-control denominator');
+          }
+          if (process.env.CLASS_ID === 'RD-02-C04') {
+            assert(anchor.selection_contract?.frozen_cohort_rows === 18, 'RD02 cohort denominator');
+            assert(anchor.selection_contract?.publicly_named_rows === 17, 'RD02 public identities');
+            assert(anchor.selection_contract?.withheld_rows === 1, 'RD02 withheld row');
+            assert(Array.isArray(anchor.cohort_rows) && anchor.cohort_rows.length === 18, 'RD02 represented rows');
+          }
+          if (process.env.CLASS_ID === 'RD-03-C04') {
+            assert(String(anchor.selection_contract?.universe ?? '').includes('five named'), 'RD03 five-instrument universe');
+          }
+          if (process.env.CLASS_ID === 'RD-04-C01') {
+            assert(anchor.current_result?.terminal_state === 'no_changed_input_observed', 'RD04 A09 terminal state');
+            assert(anchor.current_result?.automatic_schedule_installed === false, 'RD04 no automatic schedule');
+          }
+          if (process.env.CLASS_ID === 'RD-05-C03') {
+            assert(anchor.selection_contract?.target_institution === 'Advisory Committee on Excellence in Space', 'RD05 target institution');
+          }
+          if (process.env.CLASS_ID === 'RD-06-C01') {
+            assert(String(anchor.selection_contract?.universe ?? '').includes('Capability Drop'), 'RD06 Capability Drop universe');
+          }
+
+          const paths = fs.readFileSync(`${process.env.OUT}/input-paths.txt`, 'utf8')
+            .split(/\n/)
+            .filter(Boolean);
+          assert(paths.length > 0, 'empty input set');
+          assert(new Set(paths).size === paths.length, 'duplicate input path');
+
+          const inputs = paths.map((path) => {
+            const body = fs.readFileSync(path);
+            return { path, bytes: body.length, sha256: sha256(body) };
+          });
+          const combined = sha256(Buffer.from(inputs.map((row) => `${row.path}\0${row.sha256}\0${row.bytes}\n`).join(''), 'utf8'));
+
+          const seed = {
+            schema_version: 'ssc-residual-denominator-wave02-lane-seed@1',
+            wave_issue: Number(process.env.PARENT_ISSUE),
+            child_issue: Number(process.env.CHILD_ISSUE),
+            class_id: process.env.CLASS_ID,
+            lane_id: process.env.LANE_ID,
+            frozen_base: process.env.FROZEN_BASE,
+            status: 'canonical_inputs_frozen_ready_for_class_closure',
+            closure_target: process.env.CLOSURE_TARGET,
+            denominator_contract: {
+              statement: process.env.DENOMINATOR,
+              immutable_before_outcome_review: true,
+              silent_unit_removal_allowed: false,
+              source_count_is_unit_denominator: false
+            },
+            canonical_anchor: {
+              path: process.env.ANCHOR,
+              execution_id: anchor.execution_id,
+              schema_version: anchor.schema_version
+            },
+            input_manifest: {
+              entries: inputs,
+              entry_count: inputs.length,
+              combined_sha256: combined
+            },
+            permitted_terminal_states: [
+              'evidence_complete',
+              'bounded_non_link',
+              'bounded_source_restricted',
+              'bounded_source_unavailable',
+              'still_open'
+            ],
+            next_stage: 'freeze_class_specific_unit_and_field_matrix_then_execute_fixed_public_record_protocol',
+            authority: {
+              source_acquisition_only: true,
+              outside_human_dependency: false,
+              external_contacts: 0,
+              external_reviews: 0,
+              project_blocking: false,
+              substantive_finding_created: false,
+              reviewed_disposition_changed: false,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            }
+          };
+          fs.writeFileSync(`${process.env.OUT}/seed.json`, `${JSON.stringify(seed, null, 2)}\n`);
+          console.log(`${seed.class_id}: ${inputs.length} canonical inputs, ${combined}`);
+          NODE
+      - name: Upload exact lane seed
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave02-seed-${{ matrix.lane_id }}
+          path: wave02-seeds/${{ matrix.lane_id }}
+          if-no-files-found: error
+          retention-days: 90
+
+  reconcile:
+    name: reconcile-six-seeds
+    needs: seed
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ssc-rd-wave02-seed-*
+          path: reconciled-seeds
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prove exact six-lane denominator and authority
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+
+          function collect(target) {
+            if (!fs.existsSync(target)) return [];
+            if (fs.statSync(target).isFile()) return path.basename(target) === 'seed.json' ? [target] : [];
+            return fs.readdirSync(target).flatMap((name) => collect(path.join(target, name)));
+          }
+          const files = collect('reconciled-seeds').sort();
+          if (files.length !== 6) throw new Error(`seed denominator ${files.length}`);
+          const seeds = files.map((file) => JSON.parse(fs.readFileSync(file, 'utf8')));
+          const expectedIssues = [786, 787, 788, 789, 790, 791];
+          const expectedClasses = ['RD-01-C03', 'RD-02-C04', 'RD-03-C04', 'RD-04-C01', 'RD-05-C03', 'RD-06-C01'];
+          const issues = seeds.map((row) => row.child_issue).sort((a, b) => a - b);
+          const classes = seeds.map((row) => row.class_id).sort();
+          if (JSON.stringify(issues) !== JSON.stringify(expectedIssues)) throw new Error(`child issues ${JSON.stringify(issues)}`);
+          if (JSON.stringify(classes) !== JSON.stringify(expectedClasses)) throw new Error(`classes ${JSON.stringify(classes)}`);
+          for (const seed of seeds) {
+            if (seed.wave_issue !== 785) throw new Error(`${seed.class_id} wave issue`);
+            if (seed.frozen_base !== 'c1997a1bfea3e214e2769df31f64f6fad6a4295c') throw new Error(`${seed.class_id} base`);
+            if (seed.status !== 'canonical_inputs_frozen_ready_for_class_closure') throw new Error(`${seed.class_id} status`);
+            if (seed.input_manifest.entry_count < 1) throw new Error(`${seed.class_id} empty inputs`);
+            if (seed.authority.outside_human_dependency !== false) throw new Error(`${seed.class_id} human dependency`);
+            if (seed.authority.external_contacts !== 0 || seed.authority.external_reviews !== 0) throw new Error(`${seed.class_id} outside activity`);
+            if (seed.authority.graph_effect !== 'none') throw new Error(`${seed.class_id} graph effect`);
+          }
+          const reconciliation = {
+            schema_version: 'ssc-residual-denominator-wave02-seed-reconciliation@1',
+            wave_issue: 785,
+            frozen_base: 'c1997a1bfea3e214e2769df31f64f6fad6a4295c',
+            lane_count: seeds.length,
+            class_ids: expectedClasses,
+            child_issues: expectedIssues,
+            status: 'six_exact_lane_seeds_ready_for_parallel_class_closure',
+            execution_completion_is_evidentiary_closure: false,
+            authority: {
+              outside_human_dependency: false,
+              external_contacts: 0,
+              external_reviews: 0,
+              project_blocking: false,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            }
+          };
+          fs.writeFileSync('reconciled-seeds/reconciliation.json', `${JSON.stringify(reconciliation, null, 2)}\n`);
+          console.log(reconciliation.status);
+          NODE
+      - name: Upload reconciled Wave 02 fanout
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-residual-wave02-six-lane-seeds
+          path: reconciled-seeds
+          if-no-files-found: error
+          retention-days: 90
