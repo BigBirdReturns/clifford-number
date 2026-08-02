@@ -1,0 +1,285 @@
+name: TEMP freeze SSC RD-04 Wave 02 authority units
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-wave02-authority-unit-freeze-base-v1
+    paths:
+      - '.github/tmp/ssc-rd04-wave02-authority-unit-freeze-v1.trigger'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ssc-rd04-wave02-authority-unit-freeze-v1
+  cancel-in-progress: false
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: c5f016710dfe1c5767d9158993d58bd27f8042a5
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-version-cross-references-v2
+          path: cross-reference-v2
+          github-token: ${{ github.token }}
+          repository: BigBirdReturns/clifford-number
+          run-id: 30767610459
+      - name: Recover same-law official alternative and freeze 154 authority units
+        env:
+          ALTERNATIVE_URL: https://www.govinfo.gov/content/pkg/PLAW-119publ21/pdf/PLAW-119publ21.pdf
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          test -f cross-reference-v2/registry.json
+          test "$(sha256sum cross-reference-v2/registry.json | awk '{print $1}')" = 77f4038e4663caf5ee639f58bb39f0ca120d88a93ae0d0b7a3ab98bd9319ba19
+          out='rd04-authority-unit-freeze'
+          mkdir -p "$out/alternative-source"
+          resolved=0
+          for attempt in 1 2; do
+            headers="$out/alternative-source/attempt-${attempt}.headers"
+            body="$out/alternative-source/attempt-${attempt}.body"
+            stderr="$out/alternative-source/attempt-${attempt}.stderr"
+            meta="$out/alternative-source/attempt-${attempt}.meta"
+            set +e
+            curl --location --silent --show-error --connect-timeout 15 --max-time 60 \
+              --user-agent 'clifford-number-rd04-authority-custody/1.0' \
+              --dump-header "$headers" --output "$body" \
+              --write-out '%{http_code}\n%{url_effective}\n%{content_type}\n%{size_download}\n' \
+              "$ALTERNATIVE_URL" > "$meta" 2> "$stderr"
+            code=$?
+            set -e
+            printf '%s\n' "$code" > "$out/alternative-source/attempt-${attempt}.curl-exit"
+            status="$(sed -n '1p' "$meta" || true)"
+            if test "$code" = 0 && test "$status" = 200 && test -s "$body"; then
+              resolved=1
+              printf '%s\n' "$attempt" > "$out/alternative-source/final-attempt.txt"
+              break
+            fi
+          done
+          printf '%s\n' "$resolved" > "$out/alternative-source/resolved.txt"
+
+          OUT="$out" ALTERNATIVE_URL="$ALTERNATIVE_URL" node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          const out = process.env.OUT;
+          const registryBody = fs.readFileSync('cross-reference-v2/registry.json');
+          const registry = JSON.parse(registryBody.toString('utf8'));
+          const sha256 = (body) => crypto.createHash('sha256').update(body).digest('hex');
+          const ok = (condition, message) => { if (!condition) throw new Error(message); };
+          ok(registry.schema_version === 'ssc-rd-wave02-rd04-cross-reference-registry@2', `registry schema ${registry.schema_version}`);
+          ok(registry.counts.unique_reference_ids === 154, `reference denominator ${registry.counts.unique_reference_ids}`);
+          ok(registry.counts.seed_alias_reference_ids === 14 && registry.counts.new_cross_reference_candidates === 140, 'reference class accounting');
+          ok(Array.isArray(registry.references) && registry.references.length === 154, 'reference rows');
+          const finalAttemptPath = path.join(out, 'alternative-source/final-attempt.txt');
+          const finalAttempt = fs.existsSync(finalAttemptPath) ? Number(fs.readFileSync(finalAttemptPath, 'utf8').trim()) : 2;
+          const altBodyPath = path.join(out, `alternative-source/attempt-${finalAttempt}.body`);
+          const altBody = fs.existsSync(altBodyPath) ? fs.readFileSync(altBodyPath) : Buffer.alloc(0);
+          const altMeta = fs.existsSync(path.join(out, `alternative-source/attempt-${finalAttempt}.meta`)) ? fs.readFileSync(path.join(out, `alternative-source/attempt-${finalAttempt}.meta`), 'utf8').split(/\r?\n/) : [];
+          const alternativeResolved = fs.readFileSync(path.join(out, 'alternative-source/resolved.txt'), 'utf8').trim() === '1';
+          const alternative = {
+            original_seed_source_id: 'FED-PL119-21',
+            original_state: registry.unresolved_seed_source.state,
+            identity_rule: 'same_public_law_number_and_official_federal_publisher',
+            requested_url: process.env.ALTERNATIVE_URL,
+            resolved: alternativeResolved,
+            final_attempt: finalAttempt,
+            http_status: Number(altMeta[0] || 0),
+            final_url: altMeta[1] || process.env.ALTERNATIVE_URL,
+            content_type: altMeta[2] || '',
+            body_bytes: altBody.length,
+            body_sha256: sha256(altBody),
+            terminal_state: alternativeResolved ? 'resolved_same_law_official_alternative' : 'official_alternative_unresolved_after_bounded_retry',
+            original_403_is_record_absence: false,
+            failed_alternative_is_noncompliance: false
+          };
+          const units = registry.references.map((reference) => {
+            const isPublicLaw = reference.reference_id === 'US-PL-119-21';
+            const seedAlias = reference.disposition === 'seed_alias';
+            return {
+              authority_unit_id: reference.reference_id,
+              reference_class: reference.reference_class,
+              denominator_disposition: reference.disposition,
+              seed_source_ids: reference.seed_source_ids,
+              occurrence_count: reference.occurrence_count,
+              source_ids: reference.source_ids,
+              exact_occurrences: reference.occurrences,
+              identity_state: isPublicLaw && alternativeResolved
+                ? 'exact_official_same_law_identity_recovered'
+                : seedAlias
+                  ? 'seed_authority_alias_observed'
+                  : 'cross_reference_identity_observed_from_exact_source',
+              locator_state: isPublicLaw && alternativeResolved
+                ? 'exact_official_alternative_locator_recovered'
+                : seedAlias
+                  ? 'seed_source_receipt_or_typed_unresolved_state_retained'
+                  : 'official_locator_not_yet_adjudicated',
+              official_locator: isPublicLaw && alternativeResolved ? alternative.final_url : null,
+              official_locator_body_sha256: isPublicLaw && alternativeResolved ? alternative.body_sha256 : null,
+              authority_identity_adjudication_complete: isPublicLaw && alternativeResolved,
+              publication_signature_effective_and_supersession_dates_adjudicated: false,
+              predecessor_successor_edges_adjudicated: false,
+              operative_interval_adjudicated: false,
+              terminal_unit_state: isPublicLaw && alternativeResolved ? 'identity_recovered_version_adjudication_pending' : 'candidate_requires_identity_and_version_adjudication'
+            };
+          });
+          const value = {
+            schema_version: 'ssc-rd-wave02-rd04-authority-unit-registry@1',
+            wave_id: 'SSC-RD-W02',
+            class_id: 'RD-04-C01',
+            issue: 789,
+            as_of: '2026-08-02',
+            status: 'immutable_154_authority_units_frozen_version_adjudication_pending',
+            source_registry: {
+              artifact_id: 8839456800,
+              workflow_run: 30767610459,
+              path: 'cross-reference-v2/registry.json',
+              bytes: registryBody.length,
+              sha256: sha256(registryBody),
+              grammar_version: registry.extraction_contract.grammar_version,
+              parser_repair_complete: registry.current_result.parser_repair_complete
+            },
+            unresolved_seed_source_recovery: alternative,
+            denominator_contract: {
+              authority_units: units.length,
+              seed_alias_units: units.filter((row) => row.denominator_disposition === 'seed_alias').length,
+              new_cross_reference_candidate_units: units.filter((row) => row.denominator_disposition === 'new_cross_reference_candidate').length,
+              silent_unit_removal_allowed: false,
+              source_count_is_authority_unit_denominator: false,
+              reference_occurrence_is_version_edge: false,
+              title_is_supersession: false
+            },
+            required_fields: [
+              'authority identity and class',
+              'exact occurrence custody',
+              'official locator state',
+              'publication, signature, effective and supersession dates',
+              'predecessor and successor edges',
+              'operative interval and uncertainty',
+              'federal and California dependency or divergence',
+              'terminal authority-unit state'
+            ],
+            units,
+            counts: {
+              authority_units: units.length,
+              seed_alias_units: units.filter((row) => row.denominator_disposition === 'seed_alias').length,
+              new_candidate_units: units.filter((row) => row.denominator_disposition === 'new_cross_reference_candidate').length,
+              exact_identity_recoveries: units.filter((row) => row.authority_identity_adjudication_complete).length,
+              official_alternative_sources_resolved: alternativeResolved ? 1 : 0,
+              version_edges_adjudicated: 0,
+              operative_intervals_adjudicated: 0,
+              terminal_authority_units: 0,
+              class_closed: 0,
+              external_contacts: 0,
+              external_reviews: 0,
+              graph_effects: 0
+            },
+            current_result: {
+              terminal_state: alternativeResolved ? 'authority_unit_denominator_frozen_all_fourteen_seed_identities_source_resolved' : 'authority_unit_denominator_frozen_one_seed_identity_source_unresolved',
+              corrected_cross_reference_denominator_frozen: true,
+              authority_unit_denominator_frozen: true,
+              full_seed_source_identity_universe_resolved: alternativeResolved,
+              version_edge_adjudication_complete: false,
+              operative_interval_adjudication_complete: false,
+              class_closed: false,
+              outside_human_dependency: false,
+              project_blocking: false,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            },
+            authority: {
+              reference_identity_is_controlling_authority: false,
+              same_law_alternative_is_new_denominator_member: false,
+              successful_fetch_is_observed_implementation: false,
+              source_failure_is_record_absence: false,
+              source_failure_is_noncompliance: false,
+              version_completeness_is_policy_legality_or_quality: false,
+              external_contacts: 0,
+              external_reviews: 0,
+              graph_effect: 'none'
+            }
+          };
+          function validate(candidate) {
+            ok(candidate.schema_version === 'ssc-rd-wave02-rd04-authority-unit-registry@1', 'schema');
+            ok(candidate.class_id === 'RD-04-C01' && candidate.issue === 789, 'identity');
+            ok(candidate.denominator_contract.authority_units === 154, 'unit denominator');
+            ok(candidate.denominator_contract.seed_alias_units === 14 && candidate.denominator_contract.new_cross_reference_candidate_units === 140, 'unit classes');
+            ok(Array.isArray(candidate.units) && candidate.units.length === 154, 'unit rows');
+            ok(new Set(candidate.units.map((row) => row.authority_unit_id)).size === 154, 'duplicate unit');
+            ok(candidate.units.every((row) => row.publication_signature_effective_and_supersession_dates_adjudicated === false), 'dates prematurely adjudicated');
+            ok(candidate.units.every((row) => row.predecessor_successor_edges_adjudicated === false && row.operative_interval_adjudicated === false), 'edges prematurely adjudicated');
+            ok(candidate.counts.version_edges_adjudicated === 0 && candidate.counts.terminal_authority_units === 0, 'terminal accounting');
+            ok(candidate.current_result.authority_unit_denominator_frozen === true && candidate.current_result.class_closed === false, 'closure');
+            ok(candidate.current_result.outside_human_dependency === false && candidate.counts.external_contacts === 0 && candidate.counts.external_reviews === 0, 'human authority');
+            ok(candidate.current_result.graph_effect === 'none' && candidate.current_result.publication_effect === 'none', 'effects');
+          }
+          validate(value);
+          const clone = () => JSON.parse(JSON.stringify(value));
+          const mutations = [
+            (m) => { m.schema_version = 'bad'; },
+            (m) => { m.class_id = 'RD-99'; },
+            (m) => { m.issue = 0; },
+            (m) => { m.denominator_contract.authority_units = 153; },
+            (m) => { m.denominator_contract.seed_alias_units = 13; },
+            (m) => { m.denominator_contract.new_cross_reference_candidate_units = 139; },
+            (m) => { m.units.pop(); },
+            (m) => { m.units[1].authority_unit_id = m.units[0].authority_unit_id; },
+            (m) => { m.units[0].publication_signature_effective_and_supersession_dates_adjudicated = true; },
+            (m) => { m.units[0].predecessor_successor_edges_adjudicated = true; },
+            (m) => { m.units[0].operative_interval_adjudicated = true; },
+            (m) => { m.counts.version_edges_adjudicated = 1; },
+            (m) => { m.counts.terminal_authority_units = 1; },
+            (m) => { m.current_result.authority_unit_denominator_frozen = false; },
+            (m) => { m.current_result.class_closed = true; },
+            (m) => { m.current_result.outside_human_dependency = true; },
+            (m) => { m.counts.external_contacts = 1; },
+            (m) => { m.counts.external_reviews = 1; },
+            (m) => { m.current_result.graph_effect = 'changed'; },
+            (m) => { m.current_result.publication_effect = 'changed'; },
+            (m) => { m.authority.reference_identity_is_controlling_authority = true; },
+            (m) => { m.authority.same_law_alternative_is_new_denominator_member = true; },
+            (m) => { m.authority.successful_fetch_is_observed_implementation = true; },
+            (m) => { m.authority.source_failure_is_record_absence = true; },
+            (m) => { m.authority.source_failure_is_noncompliance = true; },
+            (m) => { m.authority.version_completeness_is_policy_legality_or_quality = true; },
+            (m) => { m.denominator_contract.silent_unit_removal_allowed = true; },
+            (m) => { m.denominator_contract.source_count_is_authority_unit_denominator = true; },
+            (m) => { m.denominator_contract.reference_occurrence_is_version_edge = true; },
+            (m) => { m.denominator_contract.title_is_supersession = true; }
+          ];
+          let rejected = 0;
+          for (const mutate of mutations) {
+            const candidate = clone(); mutate(candidate);
+            try { validate(candidate); }
+            catch { rejected += 1; }
+          }
+          ok(rejected === mutations.length, `mutations rejected ${rejected}/${mutations.length}`);
+          fs.writeFileSync(path.join(out, 'authority-units.json'), `${JSON.stringify(value, null, 2)}\n`);
+          fs.writeFileSync(path.join(out, 'validation.json'), `${JSON.stringify({ schema_version: 'ssc-rd04-authority-unit-validation@1', adversarial_mutations: mutations.length, rejected, status: 'pass' }, null, 2)}\n`);
+          const files = [];
+          function walk(target) { for (const entry of fs.readdirSync(target, { withFileTypes: true })) { const full = path.join(target, entry.name); if (entry.isDirectory()) walk(full); else if (entry.name !== 'manifest.json') files.push(full); } }
+          walk(out);
+          const entries = files.sort().map((file) => { const body = fs.readFileSync(file); return { path: path.relative(out, file).split(path.sep).join('/'), bytes: body.length, sha256: sha256(body) }; });
+          const combined = sha256(Buffer.from(entries.map((row) => `${row.path}\0${row.bytes}\0${row.sha256}\n`).join(''), 'utf8'));
+          fs.writeFileSync(path.join(out, 'manifest.json'), `${JSON.stringify({ schema_version: 'ssc-rd04-authority-unit-manifest@1', entries, combined_sha256: combined }, null, 2)}\n`);
+          console.log(JSON.stringify({ authority_units: units.length, seed_aliases: value.counts.seed_alias_units, new_candidates: value.counts.new_candidate_units, alternative_resolved: alternativeResolved, mutations: rejected }));
+          NODE
+      - name: Upload exact authority-unit freeze
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-wave02-authority-unit-freeze-v1
+          path: rd04-authority-unit-freeze
+          if-no-files-found: error
+          retention-days: 90
