@@ -1,0 +1,203 @@
+name: TEMP refresh SSC RD-04 A08 unresolved official source v1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a08-public-refresh-base-v1
+    paths:
+      - '.github/tmp/ssc-rd04-a08-public-refresh-v1.trigger'
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: ssc-rd04-a08-public-refresh-v1
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reprove frozen A07 unresolved URL
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import crypto from 'node:crypto';
+          const unresolved = JSON.parse(fs.readFileSync('data/intake/status-sovereignty-rd04-public-implementation-receipts-a07/source-custody/official-crawl/unresolved-urls.json', 'utf8'));
+          const manifest = JSON.parse(fs.readFileSync('data/project/status-sovereignty-rd04-public-implementation-receipts-a07-release-manifest.json', 'utf8'));
+          if (manifest.combined_sha256 !== 'a4be788259cd48235006d06b43271e61de625b72f2c7bb6d8663e63b82d520a3') throw new Error(`A07 release ${manifest.combined_sha256}`);
+          if (unresolved.length !== 1) throw new Error(`A07 unresolved denominator ${unresolved.length}`);
+          const url = unresolved[0]?.url;
+          if (url !== 'https://courts.ca.gov/california-courts-where-balance-restored') throw new Error(`A07 unresolved URL ${url}`);
+          const digest = crypto.createHash('sha256').update(url).digest('hex');
+          if (digest !== '08a9cbb8b314e5389d73a61b06cc9b93c9df08eba0dd3e7318686d5888409c6b') throw new Error(`URL digest ${digest}`);
+          NODE
+      - name: Execute three-attempt exact public-source refresh
+        run: |
+          set -Eeuo pipefail
+          mkdir -p a08-public-refresh
+          url='https://courts.ca.gov/california-courts-where-balance-restored'
+          for attempt in 1 2 3; do
+            dir="a08-public-refresh/attempt-${attempt}"
+            mkdir -p "$dir"
+            set +e
+            curl \
+              --compressed --location --silent --show-error \
+              --max-time 180 \
+              --user-agent 'clifford-number-public-record-acquisition/1.0' \
+              --dump-header "$dir/headers.txt" \
+              --output "$dir/body.bin" \
+              --write-out '%{http_code}\n%{url_effective}\n%{content_type}\n' \
+              "$url" > "$dir/curl-meta.txt" 2> "$dir/curl-stderr.txt"
+            code=$?
+            set -e
+            printf '%s\n' "$code" > "$dir/curl-exit.txt"
+            status="$(head -n 1 "$dir/curl-meta.txt" 2>/dev/null || true)"
+            if [[ "$code" = 0 && "$status" =~ ^[23][0-9][0-9]$ ]]; then
+              break
+            fi
+            sleep 2
+          done
+
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          const root = 'a08-public-refresh';
+          const url = 'https://courts.ca.gov/california-courts-where-balance-restored';
+          const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
+          const stable = (value) => `${JSON.stringify(value, null, 2)}\n`;
+          const attempts = [];
+          for (let attempt = 1; attempt <= 3; attempt += 1) {
+            const dir = path.join(root, `attempt-${attempt}`);
+            if (!fs.existsSync(dir)) continue;
+            const meta = fs.existsSync(path.join(dir, 'curl-meta.txt'))
+              ? fs.readFileSync(path.join(dir, 'curl-meta.txt'), 'utf8').trim().split(/\n/)
+              : [];
+            const [statusText = '0', finalUrl = '', contentType = ''] = meta;
+            const headers = fs.existsSync(path.join(dir, 'headers.txt')) ? fs.readFileSync(path.join(dir, 'headers.txt')) : Buffer.alloc(0);
+            const body = fs.existsSync(path.join(dir, 'body.bin')) ? fs.readFileSync(path.join(dir, 'body.bin')) : Buffer.alloc(0);
+            const stderr = fs.existsSync(path.join(dir, 'curl-stderr.txt')) ? fs.readFileSync(path.join(dir, 'curl-stderr.txt'), 'utf8') : '';
+            const curlExit = Number(fs.readFileSync(path.join(dir, 'curl-exit.txt'), 'utf8').trim());
+            const httpStatus = Number(statusText);
+            attempts.push({
+              attempt,
+              curl_exit: curlExit,
+              http_status: Number.isFinite(httpStatus) ? httpStatus : 0,
+              final_url: finalUrl,
+              content_type: contentType,
+              headers_path: `${dir}/headers.txt`,
+              headers_bytes: headers.length,
+              headers_sha256: sha256(headers),
+              body_path: `${dir}/body.bin`,
+              body_bytes: body.length,
+              body_sha256: sha256(body),
+              stderr: stderr.trim()
+            });
+          }
+          if (attempts.length < 1 || attempts.length > 3) throw new Error(`attempt denominator ${attempts.length}`);
+          const resolved = attempts.some((row) => row.curl_exit === 0 && row.http_status >= 200 && row.http_status < 400);
+          const summary = {
+            schema_version: 'ssc-rd04-a08-public-source-refresh@1',
+            issue: 765,
+            parent_a07_release_sha256: 'a4be788259cd48235006d06b43271e61de625b72f2c7bb6d8663e63b82d520a3',
+            frozen_url: url,
+            frozen_url_sha256: sha256(Buffer.from(url, 'utf8')),
+            prior_a07_state: {
+              curl_exit: 22,
+              http_status: 500,
+              body_sha256: '1f883abab1679fe55395f88313619fa1ed2236c6875895ac37cd4a1f11e511ce'
+            },
+            attempt_limit: 3,
+            attempts,
+            counts: {
+              frozen_urls: 1,
+              attempts: attempts.length,
+              resolved_urls: resolved ? 1 : 0,
+              unresolved_urls: resolved ? 0 : 1,
+              external_contacts: 0,
+              external_reviews: 0,
+              graph_effects: 0
+            },
+            status: resolved ? 'pass_resolved_public_source' : 'pass_unresolved_after_bounded_retry',
+            authority: {
+              refreshed_body_is_case_specific_implementation_receipt: false,
+              refreshed_body_is_restoration_receipt: false,
+              failed_fetch_is_record_absence: false,
+              missing_public_material_is_noncompliance: false,
+              outside_human_dependency: false,
+              project_blocking: false,
+              external_contacts: 0,
+              external_reviews: 0,
+              graph_effect: 'none'
+            },
+            failures: []
+          };
+          fs.writeFileSync(path.join(root, 'summary.json'), stable(summary));
+          console.log(JSON.stringify(summary.counts));
+          NODE
+      - id: upload
+        name: Upload exact bounded A08 refresh custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a08-public-refresh-v1
+          path: a08-public-refresh
+          if-no-files-found: error
+          retention-days: 90
+      - name: Record bounded refresh result on issue 765
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module <<'NODE' > /tmp/a08-refresh-comment.md
+          import fs from 'node:fs';
+          const summary = JSON.parse(fs.readFileSync('a08-public-refresh/summary.json', 'utf8'));
+          console.log('### A08 bounded public-source refresh v1');
+          console.log('');
+          console.log('```text');
+          console.log(`status:                    ${summary.status}`);
+          console.log(`frozen URLs:               ${summary.counts.frozen_urls}`);
+          console.log(`attempts:                  ${summary.counts.attempts}`);
+          console.log(`resolved URLs:             ${summary.counts.resolved_urls}`);
+          console.log(`unresolved URLs:           ${summary.counts.unresolved_urls}`);
+          console.log('external contacts:         0');
+          console.log('external reviews:          0');
+          console.log('graph effect:              none');
+          console.log('```');
+          console.log('');
+          console.log(`Workflow run: ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`);
+          console.log('');
+          console.log('This refresh used only the frozen A07 public URL and three bounded machine requests. Continued failure remains unresolved public-source availability; it is not record absence, noncompliance, or a project blocker. A successful body would still require separate case-specific identity and completed-action evidence before it could count as implementation or restoration.');
+          NODE
+          gh issue comment 765 --repo "$GITHUB_REPOSITORY" --body-file /tmp/a08-refresh-comment.md
+      - name: Publish pass-only A08 refresh handoff
+        if: always() && steps.upload.outcome == 'success'
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -C agent/ssc-rd04-a08-public-refresh-pass-v1
+          mkdir -p .github/tmp/ssc-rd04-a08-public-refresh-pass-v1
+          cp a08-public-refresh/summary.json .github/tmp/ssc-rd04-a08-public-refresh-pass-v1/summary.json
+          for dir in a08-public-refresh/attempt-*; do
+            test -d "$dir" || continue
+            target=".github/tmp/ssc-rd04-a08-public-refresh-pass-v1/$(basename "$dir")"
+            mkdir -p "$target"
+            cp "$dir"/* "$target"/
+          done
+          git add .github/tmp/ssc-rd04-a08-public-refresh-pass-v1
+          git commit -m 'Record passing SSC RD-04 A08 bounded public-source refresh v1'
+          git push --force origin HEAD:refs/heads/agent/ssc-rd04-a08-public-refresh-pass-v1
