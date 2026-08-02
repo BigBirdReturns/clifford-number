@@ -321,3 +321,8 @@ Wave 34 maps all nineteen permanent Wave 33 parse objects through source-specifi
 ## Allocator-war lawful join requirement fan-out Wave 35
 
 Wave 35 converts all thirty-one unsatisfied Wave 34 institutional requirements into seven estate-owned acquisition queues. Twenty-eight tasks enter public, separately authorized, or lawful-case lanes; three protected-personnel tasks remain bounded to authorized lawful access. Task admission creates no acquisition result, join authorization, complete denominator, evidence adjudication, finding, graph effect, or publication authority. See `reports/lake-allocator-war-join-requirements-wave-35.md`.
+
+
+## Allocator-war official-record public acquisition Wave 36
+
+Wave 36 freezes fifty bounded official records and maps source-backed institutional components to all twenty-eight public or lawful-case Wave 35 tasks while preserving the three protected-personnel tasks. The permanent validator keeps requirement satisfaction, join authority, complete denominators, evidence, findings, graph effects, and publication clearance at zero. See `reports/lake-allocator-war-public-acquisition-wave-36.md`.
