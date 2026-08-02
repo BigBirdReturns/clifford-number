@@ -1,0 +1,39 @@
+name: Preference custody causal-assurance control
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/causal-assurance.fixture.json'
+      - 'tools/lib/preference-causal-assurance.mjs'
+      - 'tools/compile-preference-causal-assurance.mjs'
+      - 'tools/validate-preference-causal-assurance.mjs'
+      - 'test/preference-causal-assurance.test.js'
+      - 'docs/preference-custody-causal-assurance.md'
+      - '.github/workflows/preference-causal-assurance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  causal-assurance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Compile assignment, temporal, observation, interference, feedback, and succession worlds
+        run: node tools/compile-preference-causal-assurance.mjs
+      - name: Validate assignment, timing, selection, interference, feedback, lineage, and authority boundaries
+        run: node tools/validate-preference-causal-assurance.mjs
+      - name: Exercise post-treatment, collider, spillover, historical, regression, adaptive, succession, authority, and tamper fixtures
+        run: node test/preference-causal-assurance.test.js
+      - name: Preserve deterministic causal-assurance projections
+        uses: actions/upload-artifact@v4
+        with:
+          name: preference-causal-assurance-pc26
+          path: |
+            build/research/preference-causal-assurance.json
+            build/research/preference-causal-assurance.md
+          if-no-files-found: error
