@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: ssc-rd04-a06-full-corpus-materializer
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   materialize:
@@ -63,6 +63,14 @@ jobs:
               raise SystemExit('expected one legacy proof-artifact download command')
           text = text.replace(old_download, new_download)
 
+          old_release_lookup = '''gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" > "$release_json"'''
+          new_release_lookup = '''release_id="$(gh release view "$RELEASE_TAG" --json databaseId --jq '.databaseId')"
+          test -n "$release_id"
+          gh api "repos/${GITHUB_REPOSITORY}/releases/${release_id}" > "$release_json"'''
+          if text.count(old_release_lookup) != 1:
+              raise SystemExit('expected one legacy draft-release tag lookup')
+          text = text.replace(old_release_lookup, new_release_lookup)
+
           old_cleanup = '''rm -f .github/workflows/materialize-ssc-rd04-a06-full-corpus.yml
           rm -f .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part00'''
           new_cleanup = '''rm -f .github/workflows/materialize-ssc-rd04-a06-full-corpus.yml
@@ -78,6 +86,7 @@ jobs:
           bash -n tools/materialize-ssc-rd04-a06-full-corpus.sh
           grep -Fq 'curl --fail --location --silent --show-error' tools/materialize-ssc-rd04-a06-full-corpus.sh
           grep -Fq 'rm -f tools/materialize-ssc-rd04-a06-full-corpus.sh' tools/materialize-ssc-rd04-a06-full-corpus.sh
+          grep -Fq 'gh release view "$RELEASE_TAG" --json databaseId' tools/materialize-ssc-rd04-a06-full-corpus.sh
       - name: Install bounded PDF and archive tools when absent
         run: |
           if ! command -v pdftotext >/dev/null 2>&1 || ! command -v pdfinfo >/dev/null 2>&1 || ! command -v zstd >/dev/null 2>&1; then
