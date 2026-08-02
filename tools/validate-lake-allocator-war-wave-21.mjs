@@ -318,8 +318,43 @@ export function validateRepository(root = defaultRoot) {
     : null;
   const wave36Policy = readJson(root, 'data/project/lake-allocator-war-public-acquisition-wave-36-policy.json');
   const wave36Plan = readJson(root, 'data/project/lake-allocator-war-public-acquisition-wave-36-plan.json');
-  const { sourcePaths: wave36SourcePaths, permanentPaths: wave36PermanentPaths } = wave36PathContract(wave36Policy, wave36Plan);
+  const {
+    sourcePaths: wave36SourcePaths,
+    snapshotPaths: wave36SnapshotPaths,
+    permanentPaths: wave36PermanentPaths
+  } = wave36PathContract(wave36Policy, wave36Plan);
   const errors = validateArtifacts({ policy, observations, waterline, estates, programs, receipt, projection, reconciliation, wave36Policy, wave36Plan });
+  const wave36MembershipSourcePaths = wave36SourcePaths.filter(relative => fs.existsSync(full(root, relative)));
+  const wave36CaptureLedgerExists = fs.existsSync(full(root, wave36Policy.paths.capture_ledger));
+  if (wave36CaptureLedgerExists) {
+    const wave36Captures = readJsonl(root, wave36Policy.paths.capture_ledger);
+    const captureBySourceRef = new Map(wave36Captures.map(row => [row.source_ref, row]));
+    const snapshotSpecByPath = new Map(wave36Plan.source_specs.map(row => [row.storage_path, row]));
+    const snapshotPathSet = new Set(wave36SnapshotPaths);
+    for (const relative of wave36SourcePaths) {
+      if (fs.existsSync(full(root, relative))) continue;
+      if (!snapshotPathSet.has(relative)) {
+        fail(errors, relative + ': missing permanent Wave 36 source path');
+        continue;
+      }
+      const spec = snapshotSpecByPath.get(relative);
+      const capture = spec ? captureBySourceRef.get(spec.source_ref) : null;
+      if (!spec || !capture) {
+        fail(errors, relative + ': missing Wave 36 failed-capture custody');
+        continue;
+      }
+      if (spec.required_success !== false || capture.required_success !== false) {
+        fail(errors, relative + ': required Wave 36 snapshot is absent');
+      }
+      if (capture.response_ok !== false) fail(errors, relative + ': absent snapshot claims a successful response');
+      if (capture.response_body_path !== null || capture.response_body_bytes !== 0 || capture.response_body_sha256 !== null) {
+        fail(errors, relative + ': absent snapshot claims retained response bytes');
+      }
+      if (!['request_failed', 'response_refused_too_large'].includes(capture.capture_state)) {
+        fail(errors, relative + ': absent snapshot has unsupported capture state ' + capture.capture_state);
+      }
+    }
+  }
 
   if (process.env.LAW_SKIP_GIT !== '1') {
     for (const imported of receipt.import_digests) {
@@ -560,7 +595,7 @@ export function validateRepository(root = defaultRoot) {
       if (byPath.get('build/lake-actions/allocator-war-estate-execution-wave-22.json')?.basin_id !== 'allocator-war-lake-actions') fail(errors, 'Wave 22 projection wrong basin');
       if (byPath.get(policy.paths.report)?.basin_id !== 'allocator-war-reports') fail(errors, 'report wrong basin');
       if (byPath.get('reports/lake-allocator-war-estate-execution-wave-22.md')?.basin_id !== 'allocator-war-reports') fail(errors, 'Wave 22 report wrong basin');
-      for (const relative of wave36SourcePaths) if (byPath.get(relative)?.basin_id !== 'allocator-war-source') fail(errors, `${relative}: wrong Wave 36 source basin`);
+      for (const relative of wave36MembershipSourcePaths) if (byPath.get(relative)?.basin_id !== 'allocator-war-source') fail(errors, `${relative}: wrong Wave 36 source basin`);
       if (byPath.get(wave36Policy.paths.projection)?.basin_id !== 'allocator-war-lake-actions') fail(errors, 'Wave 36 projection wrong basin');
       if (byPath.get(wave36Policy.paths.report)?.basin_id !== 'allocator-war-reports') fail(errors, 'Wave 36 report wrong basin');
     }

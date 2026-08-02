@@ -2,13 +2,13 @@
 
 ```text
 unindexed machine identifiers:           6661 -> 0
-source IDs without projection (raw):      5612 -> 5613
+source IDs without projection (raw):      5612 -> 5713
 source-only IDs unadjudicated:             5612 -> 0
 divergent identifier projections (raw):   3129 -> 3438
 divergent projections unadjudicated:      3129 -> 0
 projection IDs without source:            0 -> 0
-frozen topology rows observed:            10613/10613
-topology decision IDs observed:            10613/10613
+frozen topology rows observed:            10713/10713
+topology decision IDs observed:            10713/10713
 generator-contract actions:               411
 human-permission dependencies:            0
 relationship/participation/graph:          0/0/0

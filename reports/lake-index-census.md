@@ -1,32 +1,32 @@
 # Lake index census
 
-Source fingerprint: `a647e9ba8e1b1a5052261b2aa848b263dab188ab5e0749ad5d87bd9c70f94644`
+Source fingerprint: `5032b5d630b22f2f343c932e61f00d6be4d6bcb36f57dfcba9e2c73d229a36da`
 
 ## The six waterlines
 
 | Waterline | Count | Share of evidence files |
 |---|---:|---:|
-| Tracked evidence-bearing files physically present | 1571 | 100.0% |
-| Reachable from declared authoritative roots | 1571 | 100.0% |
-| Reachable from any detected index or manifest | 1571 | 100.0% |
-| Reachable from current public entry roots | 430 | 27.4% |
+| Tracked evidence-bearing files physically present | 1634 | 100.0% |
+| Reachable from declared authoritative roots | 1634 | 100.0% |
+| Reachable from any detected index or manifest | 1634 | 100.0% |
+| Reachable from current public entry roots | 493 | 30.2% |
 | Exact orphan evidence files with no inbound repository reference | 0 | 0.0% |
 | Evidence files with no detected program owner | 0 | 0.0% |
 
 ## Object and receipt census
 
 ```text
-distinct machine-addressable IDs:       26109
+distinct machine-addressable IDs:       26309
 local-only identifier values observed:   1280
 local-only identifier occurrences:       8199
 unindexed machine-addressable IDs:      0
 unindexed IDs without topology decision:0
 divergent identifier projections:       3438
 divergent projections unadjudicated:    68
-source IDs without a projection:         5613
+source IDs without a projection:         5713
 source-only IDs unadjudicated:           0
 projection IDs without a source object:  0
-identifier topology decisions:           10613
+identifier topology decisions:           10713
 generator-contract actions:              411
 receipt IDs:                             350
 undefined receipt references:            0
