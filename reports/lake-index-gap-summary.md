@@ -1,21 +1,21 @@
 # Lake index gap summary
 
-Source fingerprint: `5032b5d630b22f2f343c932e61f00d6be4d6bcb36f57dfcba9e2c73d229a36da`
+Source fingerprint: `cb58f57f0fa80cceb3413e0848fd1d7743badb6073a6789390c1eef6c2101f00`
 
 ## Finding
 
-The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1634 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
+The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1641 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
 
 ## By evidence role
 
 | Role | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
-| generated_artifact | 606 | 606 | 0 | 0 |
-| repository_root | 258 | 258 | 0 | 0 |
-| project_governance | 199 | 199 | 0 | 0 |
-| documentation | 157 | 157 | 0 | 0 |
+| generated_artifact | 607 | 607 | 0 | 0 |
+| repository_root | 259 | 259 | 0 | 0 |
+| project_governance | 201 | 201 | 0 | 0 |
+| documentation | 159 | 159 | 0 | 0 |
 | intake | 141 | 141 | 0 | 0 |
-| report_product | 121 | 121 | 0 | 0 |
+| report_product | 122 | 122 | 0 | 0 |
 | research_record | 48 | 48 | 0 | 0 |
 | case_source | 43 | 43 | 0 | 0 |
 | receipt_artifact | 32 | 32 | 0 | 0 |
@@ -28,17 +28,17 @@ The current Git tree is physically censused, but the evidence lake is not semant
 | Cluster | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
 | build/estate-game-trails | 313 | 313 | 0 | 0 |
-| data/project | 199 | 199 | 0 | 0 |
+| data/project | 201 | 201 | 0 | 0 |
 | build/core-thesis | 184 | 184 | 0 | 0 |
-| data/acquisition | 149 | 149 | 0 | 0 |
+| data/acquisition | 150 | 150 | 0 | 0 |
 | data/intake | 141 | 141 | 0 | 0 |
 | reports/core-thesis | 96 | 96 | 0 | 0 |
-| docs/milestones | 82 | 82 | 0 | 0 |
+| docs/milestones | 83 | 83 | 0 | 0 |
 | data/research-tracks | 52 | 52 | 0 | 0 |
 | data/research | 48 | 48 | 0 | 0 |
 | data/estates | 43 | 43 | 0 | 0 |
-| build/lake-actions | 40 | 40 | 0 | 0 |
-| docs/methods | 26 | 26 | 0 | 0 |
+| build/lake-actions | 41 | 41 | 0 | 0 |
+| docs/methods | 27 | 27 | 0 | 0 |
 | cases/arcadia-field-autopsy | 21 | 21 | 0 | 0 |
 | receipts/crawl | 19 | 19 | 0 | 0 |
 | build/estate-closures | 15 | 15 | 0 | 0 |
@@ -69,7 +69,7 @@ missing repository path tokens: 205
 ```text
 not reachable from any detected index: 0
 not reachable from authoritative roots: 0
-not reachable from public roots: 1141
+not reachable from public roots: 0
 case IDs absent from public catalog: 26
 ```
 

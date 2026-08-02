@@ -522,3 +522,9 @@ A requirement task is acquisition custody, not an acquisition result or join aut
 Run `node tools/acquire-lake-allocator-war-public-acquisition-wave-36.mjs` only in the bounded network acquisition lane. The acquisition freezes fifty exact official request-response objects through no more than six concurrent workers, including three bounded USAspending POST requests. Required-source failures are blocking. Protected personnel tasks perform zero network requests.
 
 Run `node tools/build-lake-allocator-war-public-acquisition-wave-36.mjs` only against frozen response bytes. The builder emits one institutional component row per usable capture and one result per Wave 35 task. Official-record custody does not satisfy a requirement, authorize a join, complete an action or no-action denominator, establish practical correction or realized recovery, adjudicate evidence, promote a finding, alter the graph, or clear publication.
+
+
+3.37 **Allocator-war residual institutional obligations — Wave 37.**
+Run `node tools/build-lake-allocator-war-residual-obligations-wave-37.mjs` only after the permanent Wave 36 capture, institutional-record, and task-result products are present. The builder must preserve every inherited completion test, gap, refused substitution, access class, source requirement hash, component reference, and component digest while producing exactly seven route summaries and thirty-one residual obligations.
+
+Priority bands order the next bounded acquisition work and are not evidence strength. Official component count, provenance, partial registers, repeated identifiers, docket presence, announced amounts, and public workforce aggregates cannot satisfy a requirement or authorize a join. Missing outside reviewers do not block reversible internal classification. Protected personnel obligations remain lawful-access-only.

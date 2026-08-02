@@ -326,3 +326,8 @@ Wave 35 converts all thirty-one unsatisfied Wave 34 institutional requirements i
 ## Allocator-war official-record public acquisition Wave 36
 
 Wave 36 freezes fifty bounded official records and maps source-backed institutional components to all twenty-eight public or lawful-case Wave 35 tasks while preserving the three protected-personnel tasks. The permanent validator keeps requirement satisfaction, join authority, complete denominators, evidence, findings, graph effects, and publication clearance at zero. See `reports/lake-allocator-war-public-acquisition-wave-36.md`.
+
+
+## Allocator-war residual institutional obligations Wave 37
+
+Wave 37 compares all thirty-one permanent Wave 36 task results with their inherited completion tests and emits one exact residual institutional obligation per task. Twenty-eight obligations retain official component custody and three retain protected lawful-access-only custody. The complete priority denominator orders further acquisition without treating priority as evidence strength or waiting for undefined outside reviewers. Requirement satisfaction, joins, evidence, findings, graph effects, and publication clearance remain zero. See `reports/lake-allocator-war-residual-obligations-wave-37.md`.

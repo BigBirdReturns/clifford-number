@@ -1,30 +1,30 @@
 # Lake index census
 
-Source fingerprint: `5032b5d630b22f2f343c932e61f00d6be4d6bcb36f57dfcba9e2c73d229a36da`
+Source fingerprint: `cb58f57f0fa80cceb3413e0848fd1d7743badb6073a6789390c1eef6c2101f00`
 
 ## The six waterlines
 
 | Waterline | Count | Share of evidence files |
 |---|---:|---:|
-| Tracked evidence-bearing files physically present | 1634 | 100.0% |
-| Reachable from declared authoritative roots | 1634 | 100.0% |
-| Reachable from any detected index or manifest | 1634 | 100.0% |
-| Reachable from current public entry roots | 493 | 30.2% |
+| Tracked evidence-bearing files physically present | 1641 | 100.0% |
+| Reachable from declared authoritative roots | 1641 | 100.0% |
+| Reachable from any detected index or manifest | 1641 | 100.0% |
+| Reachable from current public entry roots | 1641 | 100.0% |
 | Exact orphan evidence files with no inbound repository reference | 0 | 0.0% |
 | Evidence files with no detected program owner | 0 | 0.0% |
 
 ## Object and receipt census
 
 ```text
-distinct machine-addressable IDs:       26309
+distinct machine-addressable IDs:       26310
 local-only identifier values observed:   1280
 local-only identifier occurrences:       8199
 unindexed machine-addressable IDs:      0
 unindexed IDs without topology decision:0
 divergent identifier projections:       3438
 divergent projections unadjudicated:    68
-source IDs without a projection:         5713
-source-only IDs unadjudicated:           0
+source IDs without a projection:         5714
+source-only IDs unadjudicated:           1
 projection IDs without a source object:  0
 identifier topology decisions:           10713
 generator-contract actions:              411
@@ -34,7 +34,7 @@ unused receipt definitions:              49
 receipt locator tokens:                   11
 receipt content-hash tokens:              30
 inline receipt-use IDs:                   224
-program IDs:                             22
+program IDs:                             23
 case IDs:                                30
 case IDs absent from public catalog:      26
 report IDs:                              5
