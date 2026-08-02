@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - research/preference-instrument-validity-v1
+  pull_request:
+    paths:
+      - '.github/workflows/pc24-repair.yml'
+      - 'data/research/preference-custody/instrument-validity.fixture.json'
+      - 'data/research/preference-custody/control-manifest-v22.json'
+      - 'tools/lib/preference-custody-manifest-v22.mjs'
 
 permissions:
   contents: write
