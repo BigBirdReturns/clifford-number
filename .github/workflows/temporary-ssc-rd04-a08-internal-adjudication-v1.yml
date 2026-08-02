@@ -1,0 +1,111 @@
+name: TEMP execute SSC RD-04 A08 internal candidate adjudication v1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a08-internal-adjudication-base-v1
+    paths:
+      - '.github/tmp/ssc-rd04-a08-internal-adjudication-v1.trigger'
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: ssc-rd04-a08-internal-adjudication-v1
+  cancel-in-progress: false
+
+jobs:
+  adjudicate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a08-internal-adjudication-base-v1
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reprove canonical A07 input
+        run: |
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/validate-status-sovereignty-rd04-public-implementation-receipts-a07.mjs
+          node test/status-sovereignty-rd04-public-implementation-receipts-a07.test.js
+      - id: adjudicate
+        name: Adjudicate every retained A07 machine candidate from exact bytes
+        continue-on-error: true
+        run: node .github/tmp/ssc-rd04-a08-internal-adjudication-v1.mjs
+      - name: Upload exact A08 adjudication custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a08-internal-adjudication-v1
+          path: a08-internal-adjudication
+          if-no-files-found: error
+          retention-days: 90
+      - name: Record A08 internal adjudication result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOME: ${{ steps.adjudicate.outcome }}
+        run: |
+          set -Eeuo pipefail
+          issue="$(gh issue list --repo "$GITHUB_REPOSITORY" --state all --search 'SSC RD-04 A08 in:title' --json number,title --limit 50 --jq '[.[] | select(.title | startswith("SSC RD-04 A08"))] | sort_by(.number) | last | .number // empty')"
+          if [[ -z "$issue" ]]; then
+            issue="$(gh issue create --repo "$GITHUB_REPOSITORY" --title 'SSC RD-04 A08 · Internal adjudication and public-source refresh' --body 'Internal, nonblocking evidence lane. No outside contact, review request, or agency response is required. Zero candidates and zero verified receipts are honest terminal states.' --json number --jq .number)"
+          fi
+          node --input-type=module <<'NODE' > /tmp/a08-comment.md
+          import fs from 'node:fs';
+          let summary = null;
+          try { summary = JSON.parse(fs.readFileSync('a08-internal-adjudication/summary.json', 'utf8')); } catch {}
+          const counts = summary?.counts ?? {};
+          console.log('### A08 internal candidate adjudication v1');
+          console.log('');
+          console.log('```text');
+          console.log(`status:                                           ${summary?.status ?? process.env.OUTCOME ?? 'unknown'}`);
+          console.log(`same-SHN decision candidates:                     ${counts.same_shn_decision_candidates ?? 0}`);
+          console.log(`official-page candidates:                         ${counts.official_page_candidates ?? 0}`);
+          console.log(`total machine candidates:                         ${counts.total_machine_candidates ?? 0}`);
+          console.log(`adjudicated candidates:                           ${counts.adjudicated_candidates ?? 0}`);
+          console.log(`internally supported completed-action receipts:   ${counts.internally_supported_public_completed_action_receipts ?? 0}`);
+          console.log(`internally supported restoration receipts:        ${counts.internally_supported_public_restoration_receipts ?? 0}`);
+          console.log(`rejected or unresolved candidates:                ${counts.rejected_or_unresolved_candidates ?? 0}`);
+          console.log(`negative-control failures:                        ${counts.negative_control_failures ?? 0}`);
+          console.log(`source or structure failures:                     ${counts.source_or_structure_failures ?? 0}`);
+          console.log('external contacts:                                0');
+          console.log('external reviews:                                 0');
+          console.log('graph effect:                                     none');
+          console.log('```');
+          console.log('');
+          console.log(`Workflow run: ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`);
+          console.log('');
+          console.log('Every retained A07 machine candidate was adjudicated from exact archived source bytes. Same SHN alone was insufficient. Official-page string hits remained unverified without a case-specific identity and date chain. No person or agency was contacted, and missing public material was not treated as noncompliance.');
+          if (summary?.failures?.length) {
+            console.log('');
+            console.log('Fail-closed errors:');
+            for (const failure of summary.failures.slice(0, 20)) console.log(`- ${failure.message ?? String(failure)}`);
+          }
+          NODE
+          gh issue comment "$issue" --repo "$GITHUB_REPOSITORY" --body-file /tmp/a08-comment.md
+          printf '%s\n' "$issue" > /tmp/a08-issue-number.txt
+      - name: Publish pass-only A08 adjudication handoff
+        if: steps.adjudicate.outcome == 'success'
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -C agent/ssc-rd04-a08-internal-adjudication-pass-v1
+          mkdir -p .github/tmp/ssc-rd04-a08-internal-adjudication-pass-v1
+          cp a08-internal-adjudication/summary.json .github/tmp/ssc-rd04-a08-internal-adjudication-pass-v1/summary.json
+          cp a08-internal-adjudication/adjudications.json .github/tmp/ssc-rd04-a08-internal-adjudication-pass-v1/adjudications.json
+          cp a08-internal-adjudication/internally-supported-receipts.json .github/tmp/ssc-rd04-a08-internal-adjudication-pass-v1/internally-supported-receipts.json
+          cp a08-internal-adjudication/rejected-or-unresolved-candidates.json .github/tmp/ssc-rd04-a08-internal-adjudication-pass-v1/rejected-or-unresolved-candidates.json
+          cp a08-internal-adjudication/failure-ledger.json .github/tmp/ssc-rd04-a08-internal-adjudication-pass-v1/failure-ledger.json
+          git add .github/tmp/ssc-rd04-a08-internal-adjudication-pass-v1
+          git commit -m 'Record passing SSC RD-04 A08 internal adjudication'
+          git push --force origin HEAD:refs/heads/agent/ssc-rd04-a08-internal-adjudication-pass-v1
+      - name: Fail workflow after custody when adjudication failed
+        if: steps.adjudicate.outcome != 'success'
+        run: exit 1
