@@ -1,0 +1,49 @@
+name: SSC residual-denominator Wave 02 constitution
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/status-sovereignty-residual-denominator-wave-02-constitution.yml'
+      - 'data/research/status-sovereignty-residual-denominator-wave-02-constitution.json'
+      - 'schemas/status-sovereignty-residual-denominator-wave-02-constitution.schema.json'
+      - 'tools/validate-status-sovereignty-residual-denominator-wave-02-constitution.mjs'
+      - 'test/status-sovereignty-residual-denominator-wave-02-constitution.test.js'
+      - 'docs/milestones/ssc-residual-denominator-wave-02.md'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-residual-denominator-wave-02-constitution.yml'
+      - 'data/research/status-sovereignty-residual-denominator-wave-02-constitution.json'
+      - 'schemas/status-sovereignty-residual-denominator-wave-02-constitution.schema.json'
+      - 'tools/validate-status-sovereignty-residual-denominator-wave-02-constitution.mjs'
+      - 'test/status-sovereignty-residual-denominator-wave-02-constitution.test.js'
+      - 'docs/milestones/ssc-residual-denominator-wave-02.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd-wave02-constitution-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate exact Wave 02 constitution and source bindings
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-constitution.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-constitution.test.js
+          git diff --exit-code
+      - name: Run complete repository release gate
+        run: npm run release:check
