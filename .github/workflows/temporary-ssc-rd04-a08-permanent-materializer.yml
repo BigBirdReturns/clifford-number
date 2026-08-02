@@ -1,0 +1,191 @@
+name: TEMP materialize SSC RD-04 A08 permanent product
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a08-permanent-materializer-base
+    paths:
+      - '.github/tmp/ssc-rd04-a08-permanent-materializer.trigger'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd04-a08-permanent-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a08-permanent-materializer-base
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct, gate, and publish transport-free A08
+        env:
+          EXPECTED_MAIN: 281f2c5ef735d3e2a744f5977061c7c36b97a8a9
+          TARGET_BRANCH: agent/ssc-rd04-internal-adjudication-a08
+          EXPECTED_B64_SHA256: 0f220ffb9f55624cff981c9b696094df30a7fea2868f17cf9e6a9ee4f9b815c0
+          EXPECTED_TGZ_SHA256: 23a0703d37c5f9b6c3a7695491d441776afa829c78f5ddfe4f7daca62a857110
+          EXPECTED_RELEASE_SHA256: 0f53625ade42bf3278429040d50a74a6a52714d28e6f8e754b11f31acb710356
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags origin main
+          start_main="$(git rev-parse origin/main)"
+          test "$start_main" = "$EXPECTED_MAIN"
+
+          cp .github/tmp/ssc-rd04-a08-product.tar.gz.b64 /tmp/ssc-rd04-a08-product.tar.gz.b64
+          printf '%s  %s\n' "$EXPECTED_B64_SHA256" /tmp/ssc-rd04-a08-product.tar.gz.b64 | sha256sum --check --strict
+          base64 --decode /tmp/ssc-rd04-a08-product.tar.gz.b64 > /tmp/ssc-rd04-a08-product.tar.gz
+          printf '%s  %s\n' "$EXPECTED_TGZ_SHA256" /tmp/ssc-rd04-a08-product.tar.gz | sha256sum --check --strict
+
+          cat > /tmp/expected-product-paths <<'PATHS'
+          .github/workflows/status-sovereignty-rd04-internal-adjudication-a08.yml
+          build/core-thesis/status-sovereignty/rd04-internal-adjudication-a08/data.json
+          build/core-thesis/status-sovereignty/rd04-internal-adjudication-a08/manifest.json
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/core.json
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/internal-adjudication/adjudications.json
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/internal-adjudication/failure-ledger.json
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/internal-adjudication/internally-supported-receipts.json
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/internal-adjudication/negative-controls.json
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/internal-adjudication/rejected-or-unresolved-candidates.json
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/internal-adjudication/summary.json
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/public-refresh/attempt-1/body.bin
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/public-refresh/attempt-1/curl-exit.txt
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/public-refresh/attempt-1/curl-meta.txt
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/public-refresh/attempt-1/curl-stderr.txt
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/public-refresh/attempt-1/headers.txt
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/public-refresh/attempt-2/body.bin
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/public-refresh/attempt-2/curl-exit.txt
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/public-refresh/attempt-2/curl-meta.txt
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/public-refresh/attempt-2/curl-stderr.txt
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/public-refresh/attempt-2/headers.txt
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/public-refresh/attempt-3/body.bin
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/public-refresh/attempt-3/curl-exit.txt
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/public-refresh/attempt-3/curl-meta.txt
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/public-refresh/attempt-3/curl-stderr.txt
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/public-refresh/attempt-3/headers.txt
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/public-refresh/summary.json
+          data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/source-ledger.json
+          data/project/status-sovereignty-rd04-internal-adjudication-a08-release-manifest.json
+          docs/milestones/ssc-rd04-internal-adjudication-a08.md
+          reports/core-thesis/status-sovereignty/rd04-internal-adjudication-a08/data.json
+          reports/core-thesis/status-sovereignty/rd04-internal-adjudication-a08/index.html
+          schemas/status-sovereignty-rd04-internal-adjudication-a08.schema.json
+          test/status-sovereignty-rd04-internal-adjudication-a08.test.js
+          tools/acquisition/status-sovereignty-rd04-a08/reduce-zero-candidate-denominator.mjs
+          tools/acquisition/status-sovereignty-rd04-a08/verify-bounded-public-refresh-v1.mjs
+          tools/build-status-sovereignty-rd04-internal-adjudication-a08.mjs
+          tools/validate-status-sovereignty-rd04-internal-adjudication-a08.mjs
+          PATHS
+          sort -o /tmp/expected-product-paths /tmp/expected-product-paths
+          tar -tzf /tmp/ssc-rd04-a08-product.tar.gz \
+            | sed 's#^\./##' \
+            | sed '/\/$/d' \
+            | sort > /tmp/carrier-product-paths
+          diff -u /tmp/expected-product-paths /tmp/carrier-product-paths
+
+          git switch -C "$TARGET_BRANCH" origin/main
+          tar -xzf /tmp/ssc-rd04-a08-product.tar.gz
+          git status --short
+
+          find data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody -type f | sort > /tmp/observed-custody-paths
+          grep '/source-custody/' /tmp/expected-product-paths > /tmp/expected-custody-paths
+          diff -u /tmp/expected-custody-paths /tmp/observed-custody-paths
+
+          scratch="$(mktemp -d)"
+          A08_OUTPUT="$scratch/internal-adjudication" \
+            node tools/acquisition/status-sovereignty-rd04-a08/reduce-zero-candidate-denominator.mjs
+          diff -ru \
+            data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/internal-adjudication \
+            "$scratch/internal-adjudication"
+          rm -rf "$scratch"
+          node tools/acquisition/status-sovereignty-rd04-a08/verify-bounded-public-refresh-v1.mjs
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/build-status-sovereignty-rd04-internal-adjudication-a08.mjs
+          node tools/validate-status-sovereignty-rd04-internal-adjudication-a08.mjs
+          node test/status-sovereignty-rd04-internal-adjudication-a08.test.js
+
+          observed_release="$(node --input-type=module -e "import fs from 'node:fs'; const m=JSON.parse(fs.readFileSync('data/project/status-sovereignty-rd04-internal-adjudication-a08-release-manifest.json','utf8')); process.stdout.write(m.combined_sha256)")"
+          test "$observed_release" = "$EXPECTED_RELEASE_SHA256"
+          git add --pathspec-from-file=/tmp/expected-product-paths
+          git diff --cached --check -- \
+            . \
+            ':(exclude)data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/public-refresh/**'
+          git commit -m 'Add SSC RD-04 A08 internal adjudication and bounded refresh'
+          product_head="$(git rev-parse HEAD)"
+
+          node tools/build-status-sovereignty-rd04-internal-adjudication-a08.mjs
+          node tools/validate-status-sovereignty-rd04-internal-adjudication-a08.mjs
+          node test/status-sovereignty-rd04-internal-adjudication-a08.test.js
+          git diff --exit-code
+
+          npm run release:check
+          git diff --name-only | sort > /tmp/release-changed-paths
+          test -z "$(git ls-files --others --exclude-standard)"
+          CHANGED_PATHS=/tmp/release-changed-paths node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const paths = fs.readFileSync(process.env.CHANGED_PATHS, 'utf8').trim().split('\n').filter(Boolean);
+          const normalize = (value) => value
+            .replace(/"generated"\s*:\s*"[^"]+"/g, '"generated":"<normalized>"')
+            .replace(/"generated_at"\s*:\s*"[^"]+"/g, '"generated_at":"<normalized>"')
+            .replace(/"generatedAt"\s*:\s*"[^"]+"/g, '"generatedAt":"<normalized>"')
+            .replace(/^Generated: .*$/gm, 'Generated: <normalized>');
+          for (const rel of paths) {
+            const before = execFileSync('git', ['show', `HEAD:${rel}`], { encoding: 'utf8' });
+            const after = fs.readFileSync(rel, 'utf8');
+            if (normalize(before) !== normalize(after)) throw new Error(`non-timestamp release drift in ${rel}`);
+          }
+          console.log(`release drift: ${paths.length} timestamp-only tracked surfaces verified`);
+          NODE
+          if [[ -s /tmp/release-changed-paths ]]; then
+            xargs -d '\n' git checkout -- < /tmp/release-changed-paths
+          fi
+          git clean -fdx
+          test -z "$(git status --porcelain=v1)"
+
+          git fetch --no-tags origin main
+          end_main="$(git rev-parse origin/main)"
+          test "$end_main" = "$start_main"
+          git diff --name-only "$start_main"...HEAD | sort > /tmp/cumulative-product-paths
+          diff -u /tmp/expected-product-paths /tmp/cumulative-product-paths
+          if grep -E '(^|/)(\.github/tmp|data/transport|temporary-|carrier|materializer|trigger)' /tmp/cumulative-product-paths; then
+            echo 'temporary or transport path survived in permanent A08 product' >&2
+            exit 1
+          fi
+          git push --force origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          PRODUCT_HEAD="$product_head" START_MAIN="$start_main" RELEASE="$observed_release" node --input-type=module <<'NODE' > ssc-rd04-a08-materializer-receipt.json
+          import fs from 'node:fs';
+          const core = JSON.parse(fs.readFileSync('data/intake/status-sovereignty-rd04-internal-adjudication-a08/core.json', 'utf8'));
+          const receipt = {
+            schema_version: 'ssc-rd04-a08-materializer-receipt@1',
+            start_main: process.env.START_MAIN,
+            product_head: process.env.PRODUCT_HEAD,
+            release_sha256: process.env.RELEASE,
+            permanent_paths: 37,
+            manifest_entries: 36,
+            transport_paths: 0,
+            counts: core.counts,
+            current_result: core.current_result,
+            outside_human_dependency: core.denominator_contract.outside_human_dependency,
+            project_blocking: core.denominator_contract.project_blocking
+          };
+          process.stdout.write(`${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+      - name: Upload exact A08 materializer receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a08-materializer-receipt
+          path: ssc-rd04-a08-materializer-receipt.json
+          if-no-files-found: error
+          retention-days: 90
