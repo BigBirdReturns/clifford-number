@@ -12,7 +12,7 @@ const policyPath = 'data/project/lake-allocator-war-residual-obligations-wave-37
 const policy = readJson(policyPath);
 if (policy.schema_version !== 'lake-allocator-war-residual-obligations-wave-37-policy@1') throw new Error('Wave 37 policy schema mismatch');
 
-const sourcePaths = [policyPath, policy.paths.ledger, policy.paths.method, policy.paths.milestone];
+const sourcePaths = [policy.paths.program_manifest, policyPath, policy.paths.ledger, policy.paths.method, policy.paths.milestone];
 const projectionPaths = [policy.paths.projection];
 const reportPaths = [policy.paths.report];
 const authorityPaths = [...sourcePaths, ...projectionPaths, ...reportPaths];
