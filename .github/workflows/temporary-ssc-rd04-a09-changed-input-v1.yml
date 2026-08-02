@@ -1,0 +1,284 @@
+name: TEMP execute SSC RD-04 A09 changed-input detector v1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a09-changed-input-base-v1
+    paths:
+      - '.github/tmp/ssc-rd04-a09-changed-input-v1.trigger'
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: ssc-rd04-a09-changed-input-v1
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - id: detector
+        name: Freeze exact inputs and execute one changed-input request
+        continue-on-error: true
+        run: |
+          set -Eeuo pipefail
+          out='a09-changed-input'
+          mkdir -p "$out/response"
+          git fetch --no-tags origin main
+          start_main="$(git rev-parse HEAD)"
+          test "$start_main" = "$(git rev-parse origin/main)"
+          printf '%s\n' "$start_main" > "$out/start-main.txt"
+          node tools/validate-no-magic-human-gate.mjs
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import crypto from 'node:crypto';
+          import { execFileSync } from 'node:child_process';
+
+          const out = 'a09-changed-input';
+          const releasePath = 'data/project/status-sovereignty-rd04-internal-adjudication-a08-release-manifest.json';
+          const ledgers = [
+            'data/intake/status-sovereignty-rd04-public-implementation-receipts-a07/source-custody/candidate-receipts/explicit-language-candidates.json',
+            'data/intake/status-sovereignty-rd04-public-implementation-receipts-a07/source-custody/official-crawl/case-joined-machine-candidates.json'
+          ];
+          const expectedRelease = '0f53625ade42bf3278429040d50a74a6a52714d28e6f8e754b11f31acb710356';
+          const expectedBlob = 'fe51488c7066f6687ef680d6bfaa4f7768ef205c';
+          const release = JSON.parse(fs.readFileSync(releasePath, 'utf8'));
+          if (release.combined_sha256 !== expectedRelease) throw new Error(`A08 release drift: ${release.combined_sha256}`);
+          const rows = ledgers.map((path) => {
+            const body = fs.readFileSync(path);
+            const parsed = JSON.parse(body.toString('utf8'));
+            if (!Array.isArray(parsed)) throw new Error(`candidate ledger is not an array: ${path}`);
+            const blob = execFileSync('git', ['hash-object', path], { encoding: 'utf8' }).trim();
+            return {
+              path,
+              bytes: body.length,
+              sha256: crypto.createHash('sha256').update(body).digest('hex'),
+              git_blob_sha1: blob,
+              entries: parsed.length,
+              changed_from_A08_baseline: blob !== expectedBlob || parsed.length !== 0
+            };
+          });
+          const receipt = {
+            schema_version: 'ssc-rd04-a09-candidate-input-receipt@1',
+            parent_a08_release_sha256: release.combined_sha256,
+            expected_empty_blob_sha1: expectedBlob,
+            ledgers: rows,
+            combined_candidate_denominator: rows.reduce((sum, row) => sum + row.entries, 0),
+            candidate_input_changed: rows.some((row) => row.changed_from_A08_baseline),
+            authority: {
+              unchanged_zero_ledgers_are_failed_work: false,
+              same_shn_is_claimant_identity: false,
+              external_contacts: 0,
+              external_reviews: 0,
+              graph_effect: 'none'
+            }
+          };
+          fs.writeFileSync(`${out}/candidate-input-receipt.json`, `${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+
+          url='https://courts.ca.gov/california-courts-where-balance-restored'
+          set +e
+          curl \
+            --compressed --location --silent --show-error \
+            --max-time 180 \
+            --user-agent 'clifford-number-public-record-change-detector/1.0' \
+            --dump-header "$out/response/headers.txt" \
+            --output "$out/response/body.bin" \
+            --write-out '%{http_code}\n%{url_effective}\n%{content_type}\n' \
+            "$url" > "$out/response/curl-meta.txt" 2> "$out/response/curl-stderr.txt"
+          curl_exit=$?
+          set -e
+          printf '%s\n' "$curl_exit" > "$out/response/curl-exit.txt"
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import crypto from 'node:crypto';
+          import path from 'node:path';
+
+          const out = 'a09-changed-input';
+          const response = path.join(out, 'response');
+          const stable = (value) => `${JSON.stringify(value, null, 2)}\n`;
+          const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
+          const candidate = JSON.parse(fs.readFileSync(path.join(out, 'candidate-input-receipt.json'), 'utf8'));
+          const meta = fs.existsSync(path.join(response, 'curl-meta.txt'))
+            ? fs.readFileSync(path.join(response, 'curl-meta.txt'), 'utf8').trim().split(/\n/)
+            : [];
+          const [statusText = '0', finalUrl = '', contentType = ''] = meta;
+          const curlExit = Number(fs.readFileSync(path.join(response, 'curl-exit.txt'), 'utf8').trim());
+          const headers = fs.existsSync(path.join(response, 'headers.txt')) ? fs.readFileSync(path.join(response, 'headers.txt')) : Buffer.alloc(0);
+          const body = fs.existsSync(path.join(response, 'body.bin')) ? fs.readFileSync(path.join(response, 'body.bin')) : Buffer.alloc(0);
+          const stderr = fs.existsSync(path.join(response, 'curl-stderr.txt')) ? fs.readFileSync(path.join(response, 'curl-stderr.txt'), 'utf8').trim() : '';
+          const httpStatus = Number(statusText);
+          const frozenUrl = 'https://courts.ca.gov/california-courts-where-balance-restored';
+          const baseline = {
+            http_status: 500,
+            final_url: frozenUrl,
+            body_bytes: 68,
+            body_sha256: '1f883abab1679fe55395f88313619fa1ed2236c6875895ac37cd4a1f11e511ce'
+          };
+          const current = {
+            curl_exit: curlExit,
+            http_status: Number.isFinite(httpStatus) ? httpStatus : 0,
+            final_url: finalUrl,
+            content_type: contentType,
+            headers_path: `${response}/headers.txt`,
+            headers_bytes: headers.length,
+            headers_sha256: sha256(headers),
+            body_path: `${response}/body.bin`,
+            body_bytes: body.length,
+            body_sha256: sha256(body),
+            stderr
+          };
+          const responseClassifiable = current.http_status > 0 && Boolean(current.final_url);
+          const publicSourceChanged = responseClassifiable && (
+            current.http_status !== baseline.http_status ||
+            current.final_url !== baseline.final_url ||
+            current.body_bytes !== baseline.body_bytes ||
+            current.body_sha256 !== baseline.body_sha256
+          );
+          let terminalState;
+          if (candidate.candidate_input_changed) {
+            terminalState = 'candidate_denominator_changed_requires_internal_adjudication';
+          } else if (!responseClassifiable || current.curl_exit !== 0) {
+            terminalState = 'source_request_unresolved_without_change_classification';
+          } else if (publicSourceChanged) {
+            terminalState = 'public_source_changed_requires_exact_source_adjudication';
+          } else {
+            terminalState = 'no_changed_input_observed';
+          }
+          const summary = {
+            schema_version: 'ssc-rd04-a09-changed-input-detector@1',
+            issue: 777,
+            as_of: '2026-08-02',
+            parent: {
+              canonical_a08_merge: '68f4cb2aeccb129a3789b0b1b5da0f1e1c52cab6',
+              a08_release_sha256: candidate.parent_a08_release_sha256,
+              a08_terminal_state: 'zero_machine_candidates_adjudicated_one_public_url_unresolved_after_bounded_refresh'
+            },
+            candidate_input: candidate,
+            public_source_input: {
+              frozen_url: frozenUrl,
+              frozen_url_sha256: sha256(Buffer.from(frozenUrl, 'utf8')),
+              baseline,
+              current,
+              response_classifiable: responseClassifiable,
+              changed_from_A08_baseline: publicSourceChanged
+            },
+            result: {
+              terminal_state: terminalState,
+              changed_input_observed: candidate.candidate_input_changed || publicSourceChanged,
+              candidate_denominator_changed: candidate.candidate_input_changed,
+              public_source_changed: publicSourceChanged,
+              case_specific_implementation_receipt_supported: false,
+              restoration_receipt_supported: false,
+              broader_crawl_authorized: candidate.candidate_input_changed || publicSourceChanged,
+              project_blocking: false
+            },
+            counts: {
+              candidate_ledgers: candidate.ledgers.length,
+              candidate_entries: candidate.combined_candidate_denominator,
+              frozen_urls: 1,
+              requests: 1,
+              changed_candidate_inputs: candidate.ledgers.filter((row) => row.changed_from_A08_baseline).length,
+              changed_public_sources: publicSourceChanged ? 1 : 0,
+              external_contacts: 0,
+              external_reviews: 0,
+              graph_effects: 0
+            },
+            authority: {
+              changed_page_is_case_specific_implementation: false,
+              http_failure_is_record_absence: false,
+              missing_public_material_is_noncompliance: false,
+              unchanged_inputs_are_failed_work: false,
+              outside_human_dependency: false,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            },
+            failures: []
+          };
+          fs.writeFileSync(path.join(out, 'summary.json'), stable(summary));
+          console.log(JSON.stringify(summary.result));
+          NODE
+
+          git fetch --no-tags origin main
+          end_main="$(git rev-parse origin/main)"
+          printf '%s\n' "$end_main" > "$out/end-main.txt"
+          if [[ "$end_main" != "$start_main" ]]; then
+            echo "main moved during A09 detector: $start_main -> $end_main" >&2
+            exit 1
+          fi
+      - name: Upload exact A09 changed-input custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a09-changed-input-v1
+          path: a09-changed-input
+          if-no-files-found: error
+          retention-days: 90
+      - name: Record A09 detector result on issue 777
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOME: ${{ steps.detector.outcome }}
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module <<'NODE' > /tmp/a09-comment.md
+          import fs from 'node:fs';
+          let summary = null;
+          try { summary = JSON.parse(fs.readFileSync('a09-changed-input/summary.json', 'utf8')); } catch {}
+          const counts = summary?.counts ?? {};
+          const result = summary?.result ?? {};
+          console.log('### A09 changed-input detector v1');
+          console.log('');
+          console.log('```text');
+          console.log(`workflow outcome:             ${process.env.OUTCOME ?? 'unknown'}`);
+          console.log(`terminal state:               ${result.terminal_state ?? 'not_classified'}`);
+          console.log(`candidate entries:            ${counts.candidate_entries ?? 0}`);
+          console.log(`changed candidate inputs:     ${counts.changed_candidate_inputs ?? 0}`);
+          console.log(`public requests:              ${counts.requests ?? 0}`);
+          console.log(`changed public sources:       ${counts.changed_public_sources ?? 0}`);
+          console.log(`changed input observed:       ${result.changed_input_observed ?? false}`);
+          console.log('external contacts:            0');
+          console.log('external reviews:             0');
+          console.log('graph effect:                 none');
+          console.log('```');
+          console.log('');
+          console.log(`Workflow run: ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`);
+          console.log('');
+          if (result.terminal_state === 'no_changed_input_observed') {
+            console.log('Both authoritative machine-candidate ledgers remain exact empty arrays and the one frozen public response retains the A08 status, final target, 68-byte body, and body digest. This cycle terminates honestly without a broader crawl.');
+          } else if (result.changed_input_observed) {
+            console.log('At least one frozen input changed. This is authorization for exact source adjudication only; it is not itself an implementation, restoration, compliance, publication, or graph finding.');
+          } else {
+            console.log('The detector failed closed or the one source request could not support a change classification. No outside participation is required and missing public material is not noncompliance.');
+          }
+          NODE
+          gh issue comment 777 --repo "$GITHUB_REPOSITORY" --body-file /tmp/a09-comment.md
+      - name: Publish pass-only A09 detector handoff
+        if: steps.detector.outcome == 'success'
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -C agent/ssc-rd04-a09-changed-input-pass-v1
+          mkdir -p .github/tmp/ssc-rd04-a09-changed-input-pass-v1
+          cp -a a09-changed-input/. .github/tmp/ssc-rd04-a09-changed-input-pass-v1/
+          git add .github/tmp/ssc-rd04-a09-changed-input-pass-v1
+          git commit -m 'Record SSC RD-04 A09 changed-input detector v1'
+          git push --force origin HEAD:refs/heads/agent/ssc-rd04-a09-changed-input-pass-v1
+      - name: Fail workflow after custody when detector failed
+        if: steps.detector.outcome != 'success'
+        run: exit 1
