@@ -1,0 +1,89 @@
+name: Temporary PC-33 Preference Custody source export
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pc33-preference-source-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Export exact Preference Custody development surface
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import subprocess
+          import tarfile
+
+          prefixes = (
+              'data/research/preference-custody/',
+              'data/research/performative-synthetic-constituencies/',
+              'tools/compile-preference-',
+              'tools/validate-preference-',
+              'tools/lib/preference-',
+              'tools/lib/performative-synthetic-constituency.mjs',
+              'test/preference-',
+              'docs/preference-',
+              '.github/workflows/preference-',
+              '.github/workflows/no-magic-human',
+          )
+          exact = {
+              'package.json',
+              'package-lock.json',
+              'tools/run-complete-gate.mjs',
+              'tools/validate-no-magic-human-gate.mjs',
+              'test/no-magic-human-gate.test.js',
+          }
+
+          tracked = subprocess.check_output(['git', 'ls-files'], text=True).splitlines()
+          paths = []
+          for name in tracked:
+              path = Path(name)
+              if name in exact or name.startswith(prefixes):
+                  if path.is_file():
+                      paths.append(path)
+          paths = sorted(set(paths), key=lambda path: str(path))
+          if not paths:
+              raise SystemExit('no Preference Custody files selected')
+
+          with tarfile.open('pc33-preference-source.tgz', 'w:gz') as archive:
+              for path in paths:
+                  archive.add(path, arcname=str(path), recursive=False)
+
+          files = []
+          for path in paths:
+              raw = path.read_bytes()
+              files.append({
+                  'path': str(path),
+                  'bytes': len(raw),
+                  'sha256': hashlib.sha256(raw).hexdigest(),
+              })
+          receipt = {
+              'schema_version': 'pc33-preference-source-export@1',
+              'head_sha': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'file_count': len(files),
+              'archive_sha256': hashlib.sha256(Path('pc33-preference-source.tgz').read_bytes()).hexdigest(),
+              'files': files,
+          }
+          Path('pc33-preference-source.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          Path('pc33-preference-source.files.txt').write_text('\n'.join(str(path) for path in paths) + '\n')
+          print(json.dumps({key: receipt[key] for key in ('head_sha', 'file_count', 'archive_sha256')}, indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc33-preference-source
+          path: |
+            pc33-preference-source.tgz
+            pc33-preference-source.json
+            pc33-preference-source.files.txt
+          if-no-files-found: error
