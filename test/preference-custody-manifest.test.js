@@ -1,5 +1,15 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { compilePerformativeFixture } from '../tools/lib/performative-synthetic-constituency.mjs';
+import { compilePreferenceCustodyFixture } from '../tools/lib/preference-custody.mjs';
+import { compilePreferenceEquifinalityFixture } from '../tools/lib/preference-equifinality.mjs';
+import { compilePreferenceAttritionFixture } from '../tools/lib/preference-attrition.mjs';
+import { compilePreferenceSubgroupFixture } from '../tools/lib/preference-subgroup.mjs';
+import { compilePreferenceStandingFixture } from '../tools/lib/preference-standing.mjs';
+import { compilePreferenceAgendaFixture } from '../tools/lib/preference-agenda.mjs';
+import { compilePreferencePackageFixture } from '../tools/lib/preference-package.mjs';
+import { compilePreferenceSuccessionFixture } from '../tools/lib/preference-succession.mjs';
+import { compilePreferenceDynamicChangeFixture } from '../tools/lib/preference-dynamic-change.mjs';
 import {
   compilePreferenceCustodyManifest,
   renderPreferenceCustodyManifestMarkdown,
@@ -7,258 +17,53 @@ import {
   validatePreferenceCustodyManifestBuild
 } from '../tools/lib/preference-custody-manifest.mjs';
 
-const manifest = JSON.parse(readFileSync('data/research/preference-custody/control-manifest.json', 'utf8'));
+const readJson = path => JSON.parse(readFileSync(path, 'utf8'));
+const manifest = readJson('data/research/preference-custody/control-manifest.json');
 assert.deepEqual(validatePreferenceCustodyManifest(manifest), []);
+assert.equal(manifest.manifest_id, 'preference-custody-laboratory-floor-v8');
+assert.equal(manifest.controls.length, 10);
+assert.equal(manifest.identification_requirements.length, 10);
+assert.ok(!manifest.open_frontiers.includes('dynamic_preference_change'));
+assert.ok(manifest.open_frontiers.includes('endogenous_network_and_collective_preference_formation'));
 
 const buildsByPath = {
-  'build/research/performative-synthetic-constituency-fixture.json': {
-    schema_version: 'performative-synthetic-constituency-build@1',
-    fixture_id: 'exposure-confounding-fixed-preference-v1',
-    graph_effect: 'none',
-    counts_toward_thesis_evidence: false,
-    conclusion_generated: false,
-    metrics: {
-      max_naive_absolute_drift_from_latent: 0.3529411764705882,
-      max_propensity_corrected_absolute_drift_from_latent: 0
-    },
-    classification: {
-      exposure_confounding_supported: true,
-      preference_identification_without_propensity: 'unavailable',
-      preference_change_present: false,
-      manipulative_intent_inferable: false,
-      real_world_effect_claimed: false
-    },
-    refusal_rules: [
-      'not_exposed_is_not_rejected',
-      'no_click_is_not_negative_preference',
-      'raw_engagement_share_is_not_population_preference',
-      'propensity_correction_requires_logged_exposure',
-      'synthetic_fixture_creates_no_real_world_claim'
-    ]
-  },
-  'build/research/preference-custody-option-set-fixture.json': {
-    schema_version: 'preference-custody-build@1',
-    fixture_id: 'option-set-starvation-fixed-preference-v1',
-    graph_effect: 'none',
-    counts_toward_thesis_evidence: false,
-    conclusion_generated: false,
-    metrics: {
-      distinct_observation_signatures: 2,
-      same_population_distinct_observations: true,
-      max_unsupported_naive_full_vector_absolute_drift: 0.3
-    },
-    classification: {
-      first_choice_identification_from_raw_choices: 'unavailable',
-      preference_change_present: false,
-      manipulative_intent_inferable: false,
-      real_world_effect_claimed: false
-    },
-    refusal_rules: manifest.controls[1].required_refusal_rules
-  },
-  'build/research/preference-observational-equivalence.json': {
-    schema_version: 'preference-equifinality-build@1',
-    fixture_id: 'observational-equivalence-three-worlds-v1',
-    graph_effect: 'none',
-    counts_toward_thesis_evidence: false,
-    conclusion_generated: false,
-    metrics: {
-      distinct_latent_world_signatures: 3,
-      distinct_observation_signatures: 1,
-      maximum_pairwise_latent_total_variation: 0.3
-    },
-    classification: {
-      latent_first_choice_identification: 'unavailable',
-      response_mechanism_identification: 'unavailable',
-      preference_change_present: false,
-      manipulative_intent_inferable: false,
-      real_world_effect_claimed: false
-    },
-    refusal_rules: manifest.controls[2].required_refusal_rules
-  },
-  'build/research/preference-attrition-refusal.json': {
-    schema_version: 'preference-attrition-build@1',
-    fixture_id: 'retained-share-equivalence-three-worlds-v1',
-    graph_effect: 'none',
-    counts_toward_thesis_evidence: false,
-    conclusion_generated: false,
-    metrics: {
-      distinct_headline_signatures: 1,
-      distinct_full_outcome_signatures: 3,
-      distinct_mechanism_signatures: 3,
-      observed_total_range: 250,
-      exit_total_range: 250,
-      nonresponse_total_range: 250
-    },
-    classification: {
-      preference_change_identification_from_headline: 'unavailable',
-      strategic_refusal_identification_from_headline: 'unavailable',
-      population_support_identification_from_headline: 'unavailable',
-      preference_change_present: false,
-      manipulative_intent_inferable: false,
-      real_world_effect_claimed: false
-    },
-    refusal_rules: manifest.controls[3].required_refusal_rules
-  },
-  'build/research/preference-subgroup-capacity.json': {
-    schema_version: 'preference-subgroup-build@1',
-    fixture_id: 'aggregate-success-equivalence-three-worlds-v1',
-    graph_effect: 'none',
-    counts_toward_thesis_evidence: false,
-    conclusion_generated: false,
-    metrics: {
-      distinct_aggregate_headline_signatures: 1,
-      distinct_subgroup_outcome_signatures: 3,
-      distinct_burden_signatures: 3,
-      maximum_subgroup_success_rate_gap: 0.4,
-      maximum_adaptation_cost_ratio: 15,
-      aggregate_success_rate: 0.8
-    },
-    classification: {
-      subgroup_outcome_identification_from_aggregate: 'unavailable',
-      adaptation_burden_identification_from_aggregate: 'unavailable',
-      willingness_identification_from_adaptation: 'unavailable',
-      preference_change_present: false,
-      manipulative_intent_inferable: false,
-      real_world_effect_claimed: false
-    },
-    refusal_rules: manifest.controls[4].required_refusal_rules
-  },
-  'build/research/preference-standing-authority.json': {
-    schema_version: 'preference-standing-build@1',
-    fixture_id: 'same-support-different-standing-v1',
-    graph_effect: 'none',
-    counts_toward_thesis_evidence: false,
-    conclusion_generated: false,
-    metrics: {
-      distinct_aggregate_headline_signatures: 1,
-      distinct_support_evidence_classes: 3,
-      distinct_authority_classes: 3,
-      distinct_authority_resolution_signatures: 3,
-      public_authorized_worlds: 1,
-      institutionally_approved_without_public_authorization_worlds: 2,
-      binding_public_rejection_worlds: 1,
-      aggregate_support_rate: 0.8
-    },
-    classification: {
-      modeled_support_confers_authorization: false,
-      advisory_feedback_confers_authorization: false,
-      institutional_approval_is_public_authorization: false,
-      aggregate_support_identifies_authorization: false,
-      preference_change_present: false,
-      manipulative_intent_inferable: false,
-      real_world_effect_claimed: false
-    },
-    refusal_rules: manifest.controls[5].required_refusal_rules
-  },
-  'build/research/preference-agenda-formation.json': {
-    schema_version: 'preference-agenda-build@1',
-    fixture_id: 'same-forced-choice-different-agenda-v1',
-    graph_effect: 'none',
-    counts_toward_thesis_evidence: false,
-    conclusion_generated: false,
-    metrics: {
-      distinct_preliminary_headline_signatures: 1,
-      distinct_final_option_set_signatures: 2,
-      distinct_agenda_resolution_signatures: 4,
-      institutionally_controlled_agenda_worlds: 2,
-      public_agenda_authority_worlds: 2,
-      binding_collective_option_generation_worlds: 1,
-      binding_objective_rejection_worlds: 1,
-      preliminary_A_share: 0.8,
-      latent_C_first_choice_share: 0.8,
-      objective_reject_share: 0.6,
-      winner_changed_by_binding_amendment: true
-    },
-    classification: {
-      forced_choice_identifies_complete_agenda: false,
-      advisory_proposal_confers_agenda_authority: false,
-      binding_collective_option_generation_changes_outcome: true,
-      forced_choice_support_identifies_objective_acceptance: false,
-      synthetic_prediction_can_exercise_agenda_rights: false,
-      preference_change_present: false,
-      manipulative_intent_inferable: false,
-      real_world_effect_claimed: false
-    },
-    refusal_rules: manifest.controls[6].required_refusal_rules
-  },
-  'build/research/preference-package-bargaining.json': {
-    schema_version: 'preference-package-build@1',
-    fixture_id: 'same-marginals-different-package-agreement-v1',
-    graph_effect: 'none',
-    counts_toward_thesis_evidence: false,
-    conclusion_generated: false,
-    metrics: {
-      distinct_component_poll_signatures: 1,
-      distinct_package_signatures: 3,
-      distinct_package_support_signatures: 3,
-      marginal_majority_package_support_share: 0.2,
-      protected_package_support_share: 1,
-      package_support_gap: 0.8,
-      high_support_nonagreement_worlds: 2,
-      binding_collective_agreement_worlds: 1,
-      binding_impasse_worlds: 1,
-      institutionally_approved_without_collective_agreement_worlds: 2,
-      synthetic_candidate_worlds: 1,
-      maximum_one_sided_group_ratification_gap: 0.8
-    },
-    classification: {
-      component_marginals_identify_package_acceptance: false,
-      high_package_support_is_collective_agreement: false,
-      synthetic_candidate_can_bind_representatives: false,
-      advisory_co_design_is_collective_agreement: false,
-      binding_ratification_creates_collective_agreement: true,
-      bargaining_impasse_is_missing_preference_data: false,
-      preference_change_present: false,
-      manipulative_intent_inferable: false,
-      real_world_effect_claimed: false
-    },
-    refusal_rules: manifest.controls[7].required_refusal_rules
-  },
-  'build/research/preference-succession-validation.json': {
-    schema_version: 'preference-succession-build@1',
-    fixture_id: 'same-validation-headline-different-successor-v1',
-    graph_effect: 'none',
-    counts_toward_thesis_evidence: false,
-    conclusion_generated: false,
-    metrics: {
-      distinct_public_headline_signatures: 1,
-      distinct_successor_artifact_signatures: 4,
-      distinct_successor_metric_signatures: 2,
-      distinct_successor_policy_signatures: 2,
-      distinct_resolution_signatures: 6,
-      exact_inheritance_worlds: 1,
-      unvalidated_runtime_successor_worlds: 1,
-      current_noncomparable_metric_worlds: 1,
-      policy_validation_required_worlds: 1,
-      revalidated_successor_worlds: 1,
-      failed_revalidation_worlds: 1,
-      current_predictive_claim_worlds: 4,
-      continuity_claim_worlds: 2,
-      deployment_allowed_worlds: 3,
-      deployment_blocked_worlds: 3,
-      public_badge_unbound_worlds: 2,
-      shared_headline_but_deployment_blocked_worlds: 3,
-      rollback_required_worlds: 1
-    },
-    classification: {
-      prior_validation_transfers_across_runtime_change: false,
-      same_score_under_changed_metric_is_comparable: false,
-      predictive_validation_authorizes_changed_policy: false,
-      revalidated_successor_can_carry_bounded_claim: true,
-      failed_revalidation_is_negative_evidence_not_missing_data: true,
-      public_badge_identifies_current_artifact: false,
-      preference_change_present: false,
-      manipulative_intent_inferable: false,
-      real_world_effect_claimed: false
-    },
-    refusal_rules: manifest.controls[8].required_refusal_rules
-  }
+  'build/research/performative-synthetic-constituency-fixture.json': compilePerformativeFixture(
+    readJson('data/research/performative-synthetic-constituencies/exposure-confounding.fixture.json')
+  ),
+  'build/research/preference-custody-option-set-fixture.json': compilePreferenceCustodyFixture(
+    readJson('data/research/preference-custody/option-set-starvation.fixture.json')
+  ),
+  'build/research/preference-observational-equivalence.json': compilePreferenceEquifinalityFixture(
+    readJson('data/research/preference-custody/observational-equivalence.fixture.json')
+  ),
+  'build/research/preference-attrition-refusal.json': compilePreferenceAttritionFixture(
+    readJson('data/research/preference-custody/refusal-exit.fixture.json')
+  ),
+  'build/research/preference-subgroup-capacity.json': compilePreferenceSubgroupFixture(
+    readJson('data/research/preference-custody/subgroup-capacity.fixture.json')
+  ),
+  'build/research/preference-standing-authority.json': compilePreferenceStandingFixture(
+    readJson('data/research/preference-custody/standing-authority.fixture.json')
+  ),
+  'build/research/preference-agenda-formation.json': compilePreferenceAgendaFixture(
+    readJson('data/research/preference-custody/agenda-formation.fixture.json')
+  ),
+  'build/research/preference-package-bargaining.json': compilePreferencePackageFixture(
+    readJson('data/research/preference-custody/package-bargaining.fixture.json')
+  ),
+  'build/research/preference-succession-validation.json': compilePreferenceSuccessionFixture(
+    readJson('data/research/preference-custody/succession-validation.fixture.json')
+  ),
+  'build/research/preference-dynamic-change.json': compilePreferenceDynamicChangeFixture(
+    readJson('data/research/preference-custody/dynamic-change.fixture.json')
+  )
 };
 
 const compiled = compilePreferenceCustodyManifest(manifest, buildsByPath);
 assert.deepEqual(validatePreferenceCustodyManifestBuild(compiled), []);
+assert.equal(compiled.manifest_id, 'preference-custody-laboratory-floor-v8');
 assert.equal(compiled.status, 'laboratory_floor_qualified');
-assert.equal(compiled.control_count, 9);
+assert.equal(compiled.control_count, 10);
 assert.equal(compiled.real_world_evidence_state, 'none');
 assert.equal(compiled.control_integrity.all_graph_effect_none, true);
 assert.equal(compiled.control_integrity.no_thesis_evidence_consumption, true);
@@ -267,16 +72,44 @@ assert.equal(compiled.control_integrity.no_preference_change_claim, true);
 assert.equal(compiled.control_integrity.no_intent_inference, true);
 assert.equal(compiled.control_integrity.all_required_refusal_rules_present, true);
 assert.ok(compiled.refusal_rule_union.includes('same_behavior_does_not_imply_same_preference'));
-assert.ok(compiled.open_frontiers.includes('cross_organizational_vendor_customer_and_regulator_succession'));
-assert.ok(!compiled.open_frontiers.includes('model_policy_and_metric_succession'));
 assert.ok(compiled.refusal_rule_union.includes('package_support_is_not_collective_agreement'));
 assert.ok(compiled.refusal_rule_union.includes('failed_ratification_is_binding_impasse_not_missing_data'));
 assert.ok(compiled.refusal_rule_union.includes('validation_binds_exact_artifact_metric_policy_and_scope'));
 assert.ok(compiled.refusal_rule_union.includes('old_badge_cannot_authorize_successor'));
-assert.ok(compiled.refusal_rule_union.includes('failed_revalidation_is_negative_evidence_not_missing_data'));
+assert.ok(compiled.refusal_rule_union.includes('aggregate_shift_is_not_individual_preference_change'));
+assert.ok(compiled.refusal_rule_union.includes('panel_continuity_is_not_instrument_invariance'));
+assert.ok(compiled.refusal_rule_union.includes('imputation_is_not_observed_response'));
+assert.ok(compiled.refusal_rule_union.includes('dynamic_preference_change_does_not_confer_public_authority'));
+assert.ok(compiled.open_frontiers.includes('cross_organizational_vendor_customer_and_regulator_succession'));
+assert.ok(!compiled.open_frontiers.includes('dynamic_preference_change'));
+
+const controls = Object.fromEntries(compiled.controls.map(control => [control.control_id, control]));
+assert.equal(controls['PC-10'].failure_class, 'dynamic_preference_change_and_measurement_equifinality');
+assert.equal(controls['PC-10'].proof_summary.world_count, 6);
+assert.equal(controls['PC-10'].proof_summary.distinct_observed_headline_signatures, 1);
+assert.equal(controls['PC-10'].proof_summary.distinct_latent_headline_signatures, 2);
+assert.equal(controls['PC-10'].proof_summary.distinct_mechanism_signatures, 6);
+assert.equal(controls['PC-10'].proof_summary.worlds_with_individual_conversion, 2);
+assert.equal(controls['PC-10'].proof_summary.worlds_without_individual_conversion, 4);
+assert.equal(controls['PC-10'].proof_summary.worlds_with_stable_panel_identity, 5);
+assert.equal(controls['PC-10'].proof_summary.worlds_with_composition_change, 1);
+assert.equal(controls['PC-10'].proof_summary.worlds_with_instrument_drift, 1);
+assert.equal(controls['PC-10'].proof_summary.worlds_with_strategic_compliance, 1);
+assert.equal(controls['PC-10'].proof_summary.worlds_with_imputation, 1);
+assert.equal(controls['PC-10'].proof_summary.worlds_with_targeted_performative_path, 1);
+assert.ok(Math.abs(controls['PC-10'].proof_summary.maximum_observed_latent_total_variation - 0.2) < 1e-12);
+assert.ok(Math.abs(controls['PC-10'].proof_summary.observed_A_share_shift - 0.2) < 1e-12);
+assert.equal(controls['PC-10'].proof_summary.aggregate_shift_identifies_individual_preference_change, false);
+assert.equal(controls['PC-10'].proof_summary.stable_panel_identity_alone_is_sufficient, false);
+assert.equal(controls['PC-10'].proof_summary.instrument_invariance_or_crosswalk_required, true);
+assert.equal(controls['PC-10'].proof_summary.reported_choice_always_equals_latent_preference, false);
+assert.equal(controls['PC-10'].proof_summary.targeted_exposure_conversion_supports_performative_path, true);
+assert.equal(controls['PC-10'].proof_summary.targeted_exposure_conversion_establishes_manipulation, false);
+assert.equal(controls['PC-10'].proof_summary.binding_public_authority_supported, false);
 
 const markdown = renderPreferenceCustodyManifestMarkdown(compiled);
-assert.match(markdown, /Preference custody laboratory floor v7/);
+assert.match(markdown, /Preference custody laboratory floor v8/);
+assert.match(markdown, /\*\*Controls:\*\* 10/);
 assert.match(markdown, /PC-01: exposure_policy_confounding/);
 assert.match(markdown, /PC-02: option_set_starvation/);
 assert.match(markdown, /PC-03: observational_equivalence/);
@@ -286,19 +119,33 @@ assert.match(markdown, /PC-06: authority_laundering_and_nonbinding_consultation/
 assert.match(markdown, /PC-07: agenda_formation_and_collective_option_generation/);
 assert.match(markdown, /PC-08: negotiated_package_formation_and_collective_bargaining/);
 assert.match(markdown, /PC-09: model_metric_policy_and_validation_succession/);
-assert.match(markdown, /Exact inheritance worlds: 1/);
-assert.match(markdown, /Unvalidated runtime successors: 1/);
-assert.match(markdown, /Noncomparable metric worlds: 1/);
-assert.match(markdown, /Changed-policy validation gaps: 1/);
-assert.match(markdown, /Fully revalidated successors: 1/);
-assert.match(markdown, /Failed revalidations: 1/);
-assert.match(markdown, /Shared-headline blocked worlds: 3/);
+assert.match(markdown, /PC-10: dynamic_preference_change_and_measurement_equifinality/);
+assert.match(markdown, /Dynamic worlds: 6/);
+assert.match(markdown, /Distinct observed headlines: 1/);
+assert.match(markdown, /Distinct latent headlines: 2/);
+assert.match(markdown, /Distinct mechanisms: 6/);
+assert.match(markdown, /Targeted performative-path worlds: 1/);
+assert.match(markdown, /Frozen observed A shift: 20\.00%/);
+assert.match(markdown, /Maximum observed-latent separation: 20\.00%/);
+assert.match(markdown, /dynamic_preference_change/);
 assert.match(markdown, /Laboratory controls are real-world evidence: false/);
-assert.doesNotMatch(markdown, /Electric Twin caused|News UK caused|stale badge used|unvalidated deployment|deceived the public|manipulated the public/i);
+assert.doesNotMatch(markdown, /Electric Twin caused|News UK caused|changed audience preferences|manipulated the public|publicly authorized the intervention/i);
 
 const missingControl = structuredClone(manifest);
 missingControl.controls.pop();
-assert.ok(validatePreferenceCustodyManifest(missingControl).some(error => /exactly PC-01, PC-02, PC-03, PC-04, PC-05, PC-06, PC-07, PC-08, and PC-09/.test(error)));
+assert.ok(validatePreferenceCustodyManifest(missingControl).some(error => /exactly PC-01 through PC-10/.test(error)));
+
+const oldManifestId = structuredClone(manifest);
+oldManifestId.manifest_id = 'preference-custody-laboratory-floor-v7';
+assert.ok(validatePreferenceCustodyManifest(oldManifestId).some(error => /manifest_id must remain preference-custody-laboratory-floor-v8/.test(error)));
+
+const retainedFrontier = structuredClone(manifest);
+retainedFrontier.open_frontiers.push('dynamic_preference_change');
+assert.ok(validatePreferenceCustodyManifest(retainedFrontier).some(error => /must be removed from open frontiers/.test(error)));
+
+const missingDynamicStage = structuredClone(manifest);
+missingDynamicStage.identification_requirements = missingDynamicStage.identification_requirements.filter(item => item.stage !== 'dynamic_preference_change');
+assert.ok(validatePreferenceCustodyManifest(missingDynamicStage).some(error => /identification requirement stages are incomplete/.test(error)));
 
 const graphLeak = structuredClone(buildsByPath);
 graphLeak['build/research/preference-custody-option-set-fixture.json'].graph_effect = 'asserted';
@@ -306,19 +153,19 @@ const graphCompiled = compilePreferenceCustodyManifest(manifest, graphLeak);
 assert.ok(validatePreferenceCustodyManifestBuild(graphCompiled).some(error => /all_graph_effect_none/.test(error)));
 
 const realWorldLeak = structuredClone(buildsByPath);
-realWorldLeak['build/research/preference-observational-equivalence.json'].classification.real_world_effect_claimed = true;
+realWorldLeak['build/research/preference-dynamic-change.json'].classification.real_world_effect_claimed = true;
 const realWorldCompiled = compilePreferenceCustodyManifest(manifest, realWorldLeak);
 assert.ok(validatePreferenceCustodyManifestBuild(realWorldCompiled).some(error => /no_real_world_conclusion/.test(error)));
 
 const missingRule = structuredClone(buildsByPath);
-missingRule['build/research/performative-synthetic-constituency-fixture.json'].refusal_rules = [];
+missingRule['build/research/preference-dynamic-change.json'].refusal_rules = [];
 const missingRuleCompiled = compilePreferenceCustodyManifest(manifest, missingRule);
 assert.ok(validatePreferenceCustodyManifestBuild(missingRuleCompiled).some(error => /all_required_refusal_rules_present/.test(error)));
 
-const attritionLeak = structuredClone(buildsByPath);
-attritionLeak['build/research/preference-attrition-refusal.json'].classification.preference_change_present = true;
-const attritionLeakCompiled = compilePreferenceCustodyManifest(manifest, attritionLeak);
-assert.ok(validatePreferenceCustodyManifestBuild(attritionLeakCompiled).some(error => /no_preference_change_claim/.test(error)));
+const preferenceClaimLeak = structuredClone(buildsByPath);
+preferenceClaimLeak['build/research/preference-dynamic-change.json'].classification.preference_change_present = true;
+const preferenceClaimCompiled = compilePreferenceCustodyManifest(manifest, preferenceClaimLeak);
+assert.ok(validatePreferenceCustodyManifestBuild(preferenceClaimCompiled).some(error => /no_preference_change_claim/.test(error)));
 
 const authorityLeak = structuredClone(buildsByPath);
 authorityLeak['build/research/preference-standing-authority.json'].classification.modeled_support_confers_authorization = true;
@@ -340,19 +187,24 @@ runtimeLeak['build/research/preference-succession-validation.json'].classificati
 const runtimeLeakCompiled = compilePreferenceCustodyManifest(manifest, runtimeLeak);
 assert.ok(validatePreferenceCustodyManifestBuild(runtimeLeakCompiled).some(error => /refuse validation transfer across runtime change/.test(error)));
 
-const metricLeak = structuredClone(buildsByPath);
-metricLeak['build/research/preference-succession-validation.json'].classification.same_score_under_changed_metric_is_comparable = true;
-const metricLeakCompiled = compilePreferenceCustodyManifest(manifest, metricLeak);
-assert.ok(validatePreferenceCustodyManifestBuild(metricLeakCompiled).some(error => /refuse same score as metric comparability/.test(error)));
+const dynamicHeadlineLeak = structuredClone(buildsByPath);
+dynamicHeadlineLeak['build/research/preference-dynamic-change.json'].metrics.distinct_observed_headline_signatures = 2;
+const dynamicHeadlineCompiled = compilePreferenceCustodyManifest(manifest, dynamicHeadlineLeak);
+assert.ok(validatePreferenceCustodyManifestBuild(dynamicHeadlineCompiled).some(error => /one shared observed headline/.test(error)));
 
-const policyLeak = structuredClone(buildsByPath);
-policyLeak['build/research/preference-succession-validation.json'].metrics.policy_validation_required_worlds = 0;
-const policyLeakCompiled = compilePreferenceCustodyManifest(manifest, policyLeak);
-assert.ok(validatePreferenceCustodyManifestBuild(policyLeakCompiled).some(error => /preserve one changed-policy validation gap/.test(error)));
+const dynamicConversionLeak = structuredClone(buildsByPath);
+dynamicConversionLeak['build/research/preference-dynamic-change.json'].metrics.worlds_with_individual_conversion = 6;
+const dynamicConversionCompiled = compilePreferenceCustodyManifest(manifest, dynamicConversionLeak);
+assert.ok(validatePreferenceCustodyManifestBuild(dynamicConversionCompiled).some(error => /two conversion worlds/.test(error)));
 
-const failedValidationLeak = structuredClone(buildsByPath);
-failedValidationLeak['build/research/preference-succession-validation.json'].metrics.failed_revalidation_worlds = 0;
-const failedValidationLeakCompiled = compilePreferenceCustodyManifest(manifest, failedValidationLeak);
-assert.ok(validatePreferenceCustodyManifestBuild(failedValidationLeakCompiled).some(error => /preserve one failed revalidation/.test(error)));
+const dynamicManipulationLeak = structuredClone(buildsByPath);
+dynamicManipulationLeak['build/research/preference-dynamic-change.json'].classification.targeted_exposure_conversion_establishes_manipulation = true;
+const dynamicManipulationCompiled = compilePreferenceCustodyManifest(manifest, dynamicManipulationLeak);
+assert.ok(validatePreferenceCustodyManifestBuild(dynamicManipulationCompiled).some(error => /refuse performative path as manipulation/.test(error)));
+
+const dynamicAuthorityLeak = structuredClone(buildsByPath);
+dynamicAuthorityLeak['build/research/preference-dynamic-change.json'].classification.binding_public_authority_supported = true;
+const dynamicAuthorityCompiled = compilePreferenceCustodyManifest(manifest, dynamicAuthorityLeak);
+assert.ok(validatePreferenceCustodyManifestBuild(dynamicAuthorityCompiled).some(error => /refuse dynamic change as public authority/.test(error)));
 
 console.log('preference-custody-manifest.test.js: OK');

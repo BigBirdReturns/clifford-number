@@ -14,6 +14,7 @@ on:
       - 'tools/lib/preference-agenda.mjs'
       - 'tools/lib/preference-package.mjs'
       - 'tools/lib/preference-succession.mjs'
+      - 'tools/lib/preference-dynamic-change.mjs'
       - 'tools/lib/preference-custody-manifest.mjs'
       - 'tools/compile-performative-synthetic-constituency.mjs'
       - 'tools/compile-preference-custody.mjs'
@@ -24,6 +25,7 @@ on:
       - 'tools/compile-preference-agenda.mjs'
       - 'tools/compile-preference-package.mjs'
       - 'tools/compile-preference-succession.mjs'
+      - 'tools/compile-preference-dynamic-change.mjs'
       - 'tools/compile-preference-custody-manifest.mjs'
       - 'tools/validate-performative-synthetic-constituency.mjs'
       - 'tools/validate-preference-custody.mjs'
@@ -34,6 +36,7 @@ on:
       - 'tools/validate-preference-agenda.mjs'
       - 'tools/validate-preference-package.mjs'
       - 'tools/validate-preference-succession.mjs'
+      - 'tools/validate-preference-dynamic-change.mjs'
       - 'tools/validate-preference-custody-manifest.mjs'
       - 'test/performative-synthetic-constituency.test.js'
       - 'test/preference-custody.test.js'
@@ -44,6 +47,7 @@ on:
       - 'test/preference-agenda.test.js'
       - 'test/preference-package.test.js'
       - 'test/preference-succession.test.js'
+      - 'test/preference-dynamic-change.test.js'
       - 'test/preference-custody-manifest.test.js'
       - 'docs/preference-custody-*.md'
       - '.github/workflows/preference-custody.yml'
@@ -71,8 +75,9 @@ jobs:
           node tools/compile-preference-agenda.mjs
           node tools/compile-preference-package.mjs
           node tools/compile-preference-succession.mjs
+          node tools/compile-preference-dynamic-change.mjs
           node tools/compile-preference-custody-manifest.mjs
-      - name: Validate custody, identification, package, succession, agenda, interpretation, and authority boundaries
+      - name: Validate custody, identification, longitudinal, package, succession, agenda, interpretation, and authority boundaries
         run: |
           node tools/validate-performative-synthetic-constituency.mjs
           node tools/validate-preference-custody.mjs
@@ -83,6 +88,7 @@ jobs:
           node tools/validate-preference-agenda.mjs
           node tools/validate-preference-package.mjs
           node tools/validate-preference-succession.mjs
+          node tools/validate-preference-dynamic-change.mjs
           node tools/validate-preference-custody-manifest.mjs
       - name: Exercise positive, tamper, and laundering fixtures
         run: |
@@ -95,11 +101,12 @@ jobs:
           node test/preference-agenda.test.js
           node test/preference-package.test.js
           node test/preference-succession.test.js
+          node test/preference-dynamic-change.test.js
           node test/preference-custody-manifest.test.js
       - name: Preserve deterministic preference-custody projections
         uses: actions/upload-artifact@v4
         with:
-          name: preference-custody-laboratory-floor-v7
+          name: preference-custody-laboratory-floor-v8
           path: |
             build/research/performative-synthetic-constituency-fixture.json
             build/research/performative-synthetic-constituency-fixture.md
@@ -119,6 +126,8 @@ jobs:
             build/research/preference-package-bargaining.md
             build/research/preference-succession-validation.json
             build/research/preference-succession-validation.md
+            build/research/preference-dynamic-change.json
+            build/research/preference-dynamic-change.md
             build/research/preference-custody-laboratory-floor.json
             build/research/preference-custody-laboratory-floor.md
           if-no-files-found: error
