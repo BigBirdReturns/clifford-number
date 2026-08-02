@@ -1,0 +1,133 @@
+name: TEMP custody SSC RD-04 A07 candidate receipts v3
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a07-candidate-receipts-base-v3
+    paths:
+      - '.github/tmp/ssc-rd04-a07-candidate-receipts-v3.trigger'
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: ssc-rd04-a07-candidate-receipts-v3
+  cancel-in-progress: false
+
+jobs:
+  custody:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a07-candidate-receipts-base-v3
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Acquire exact reconciled SHN handoff
+        run: |
+          set -Eeuo pipefail
+          ref='refs/heads/agent/ssc-rd04-a07-shn-full-pass-v2'
+          found=0
+          for attempt in $(seq 1 120); do
+            if git ls-remote --exit-code --heads origin "$ref" >/tmp/a07-pass-ls-remote.txt 2>/dev/null; then
+              found=1
+              break
+            fi
+            sleep 30
+          done
+          test "$found" = 1
+          git fetch --no-tags --depth=1 origin "$ref"
+          mkdir -p a07-shn-pass
+          git show FETCH_HEAD:.github/tmp/ssc-rd04-a07-shn-full-pass-v2/summary.json > a07-shn-pass/summary.json
+          git show FETCH_HEAD:.github/tmp/ssc-rd04-a07-shn-full-pass-v2/candidate-rows.json > a07-shn-pass/candidate-rows.json
+          git show FETCH_HEAD:.github/tmp/ssc-rd04-a07-shn-full-pass-v2/candidate-documents.json > a07-shn-pass/candidate-documents.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const summary = JSON.parse(fs.readFileSync('a07-shn-pass/summary.json', 'utf8'));
+          if (summary.status !== 'pass') throw new Error(`SHN handoff status ${summary.status}`);
+          if (summary.counts.D1_shns !== 6292) throw new Error(`SHN handoff count ${summary.counts.D1_shns}`);
+          if (summary.counts.failures !== 0) throw new Error(`SHN handoff failures ${summary.counts.failures}`);
+          console.log(JSON.stringify(summary.counts));
+          NODE
+      - name: Install PDF text extractor when candidate documents exist
+        run: |
+          set -Eeuo pipefail
+          candidate_count="$(node --input-type=module -e "import fs from 'node:fs'; const rows=JSON.parse(fs.readFileSync('a07-shn-pass/candidate-documents.json','utf8')); process.stdout.write(String(rows.length))")"
+          if [[ "$candidate_count" -gt 0 ]] && ! command -v pdftotext >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y poppler-utils
+          fi
+      - id: receipts
+        name: Preserve candidate documents and screen completed-action language
+        continue-on-error: true
+        run: node .github/tmp/ssc-rd04-a07-candidate-receipts-v3.mjs
+      - name: Upload complete candidate receipt custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a07-candidate-receipts-v3
+          path: a07-candidate-receipts
+          if-no-files-found: error
+          retention-days: 30
+      - name: Record candidate receipt result on issue 739
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOME: ${{ steps.receipts.outcome }}
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module <<'NODE' > /tmp/a07-candidate-receipts-comment.md
+          import fs from 'node:fs';
+          let summary = null;
+          try { summary = JSON.parse(fs.readFileSync('a07-candidate-receipts/summary.json', 'utf8')); } catch {}
+          const counts = summary?.counts ?? {};
+          console.log('### A07 same-SHN candidate document custody v3');
+          console.log('');
+          console.log('```text');
+          console.log(`status:                                           ${summary?.status ?? process.env.OUTCOME ?? 'unknown'}`);
+          console.log(`candidate rows:                                   ${counts.candidate_rows ?? 0}`);
+          console.log(`candidate documents:                              ${counts.candidate_documents ?? 0}`);
+          console.log(`valid candidate PDFs:                             ${counts.valid_candidate_pdfs ?? 0}`);
+          console.log(`invalid candidate documents:                      ${counts.invalid_candidate_documents ?? 0}`);
+          console.log(`later same-SHN documents:                         ${counts.later_same_shn_documents ?? 0}`);
+          console.log(`documents with completed-action language:         ${counts.documents_with_any_completed_action_language ?? 0}`);
+          console.log(`later documents with qualified language:          ${counts.later_documents_with_qualified_completed_action_language ?? 0}`);
+          console.log(`verified public implementation receipts:          ${counts.verified_public_implementation_receipts ?? 0}`);
+          console.log(`verified public restoration receipts:             ${counts.verified_public_restoration_receipts ?? 0}`);
+          console.log(`failures:                                         ${counts.failures ?? 0}`);
+          console.log('external contacts:                                0');
+          console.log('graph effect:                                     none');
+          console.log('```');
+          console.log('');
+          console.log(`Workflow run: ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`);
+          console.log('');
+          console.log('Every candidate document is retained exactly. Completed-action language is only a machine-screened candidate and is not promoted to verified implementation or restoration. Same SHN does not prove claimant identity, and absence of a public follow-up does not prove noncompliance.');
+          if (summary?.failures?.length) {
+            console.log('');
+            console.log('Fail-closed errors:');
+            for (const failure of summary.failures.slice(0, 20)) console.log(`- ${failure.message ?? String(failure)}`);
+          }
+          NODE
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/739/comments" -f body="$(cat /tmp/a07-candidate-receipts-comment.md)"
+      - name: Publish pass-only disposable receipt handoff
+        if: steps.receipts.outcome == 'success'
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -C agent/ssc-rd04-a07-candidate-receipts-pass-v3
+          mkdir -p .github/tmp/ssc-rd04-a07-candidate-receipts-pass-v3
+          cp a07-candidate-receipts/summary.json .github/tmp/ssc-rd04-a07-candidate-receipts-pass-v3/summary.json
+          cp a07-candidate-receipts/candidate-document-custody.json .github/tmp/ssc-rd04-a07-candidate-receipts-pass-v3/candidate-document-custody.json
+          cp a07-candidate-receipts/explicit-language-candidates.json .github/tmp/ssc-rd04-a07-candidate-receipts-pass-v3/explicit-language-candidates.json
+          git add .github/tmp/ssc-rd04-a07-candidate-receipts-pass-v3
+          git commit -m 'Record passing SSC RD-04 A07 candidate receipt custody'
+          git push --force origin HEAD:refs/heads/agent/ssc-rd04-a07-candidate-receipts-pass-v3
+      - name: Fail workflow after custody when incomplete
+        if: steps.receipts.outcome != 'success'
+        run: exit 1
