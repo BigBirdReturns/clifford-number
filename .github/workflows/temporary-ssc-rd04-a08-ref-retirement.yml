@@ -1,0 +1,123 @@
+name: TEMP retire SSC RD-04 A08 transport refs
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a08-ref-retirement-base
+    paths:
+      - '.github/tmp/ssc-rd04-a08-ref-retirement.trigger'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd04-a08-ref-retirement
+  cancel-in-progress: false
+
+jobs:
+  retire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Prove canonical A08 and retire temporary refs
+        env:
+          EXPECTED_MAIN: 68f4cb2aeccb129a3789b0b1b5da0f1e1c52cab6
+          EXPECTED_RELEASE_SHA256: 0f53625ade42bf3278429040d50a74a6a52714d28e6f8e754b11f31acb710356
+          EXPECTED_WORKFLOW_SHA256: 6547a55d2eeba7977aa1ca4547ea0115c6fe77a2a41cb7a4cc5c2efbbb338f2a
+          INTERNAL_PASS_REF: agent/ssc-rd04-a08-internal-adjudication-pass-v2
+          INTERNAL_PASS_SHA: bd446fb9fbac6c0f4cd3238eb4973ed3ac9ba341
+          REFRESH_PASS_REF: agent/ssc-rd04-a08-public-refresh-pass-v1
+          REFRESH_PASS_SHA: 23dd245b87747e7ea30af2e5658f5e75e0b723aa
+          SELF_HEAD: agent/ssc-rd04-a08-ref-retirement-trigger
+          SELF_BASE: agent/ssc-rd04-a08-ref-retirement-base
+        run: |
+          set -Eeuo pipefail
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+
+          observed_release="$(node --input-type=module -e "import fs from 'node:fs'; const value=JSON.parse(fs.readFileSync('data/project/status-sovereignty-rd04-internal-adjudication-a08-release-manifest.json','utf8')); process.stdout.write(value.combined_sha256);")"
+          test "$observed_release" = "$EXPECTED_RELEASE_SHA256"
+          printf '%s  %s\n' "$EXPECTED_WORKFLOW_SHA256" .github/workflows/status-sovereignty-rd04-internal-adjudication-a08.yml | sha256sum --check --strict
+
+          read_ref() {
+            git ls-remote --heads origin "refs/heads/$1" | awk 'NR == 1 { print $1 }'
+          }
+
+          test "$(read_ref "$INTERNAL_PASS_REF")" = "$INTERNAL_PASS_SHA"
+          test "$(read_ref "$REFRESH_PASS_REF")" = "$REFRESH_PASS_SHA"
+
+          targets=(
+            agent/ssc-rd04-a08-internal-adjudication-base-v1
+            agent/ssc-rd04-a08-internal-adjudication-base-v2
+            agent/ssc-rd04-a08-internal-adjudication-permanent
+            agent/ssc-rd04-a08-internal-adjudication-trigger-v1
+            agent/ssc-rd04-a08-internal-adjudication-trigger-v2
+            agent/ssc-rd04-a08-permanent-materializer-base
+            agent/ssc-rd04-a08-permanent-materializer-base-v1
+            agent/ssc-rd04-a08-permanent-materializer-trigger-v1
+            agent/ssc-rd04-a08-postmerge-proof
+            agent/ssc-rd04-a08-public-refresh-base-v1
+            agent/ssc-rd04-a08-public-refresh-trigger-v1
+            agent/ssc-rd04-a08-rebuild-materializer
+            agent/ssc-rd04-internal-adjudication-a08
+          )
+
+          : > /tmp/deleted-refs.txt
+          : > /tmp/already-absent-refs.txt
+          for ref in "${targets[@]}"; do
+            if [[ -n "$(read_ref "$ref")" ]]; then
+              git push origin --delete "$ref"
+              test -z "$(read_ref "$ref")"
+              printf '%s\n' "$ref" >> /tmp/deleted-refs.txt
+            else
+              printf '%s\n' "$ref" >> /tmp/already-absent-refs.txt
+            fi
+          done
+
+          for ref in "$SELF_HEAD" "$SELF_BASE"; do
+            test -n "$(read_ref "$ref")"
+            git push origin --delete "$ref"
+            test -z "$(read_ref "$ref")"
+            printf '%s\n' "$ref" >> /tmp/deleted-refs.txt
+          done
+
+          test "$(read_ref "$INTERNAL_PASS_REF")" = "$INTERNAL_PASS_SHA"
+          test "$(read_ref "$REFRESH_PASS_REF")" = "$REFRESH_PASS_SHA"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+
+          EXPECTED_MAIN="$EXPECTED_MAIN" \
+          EXPECTED_RELEASE_SHA256="$EXPECTED_RELEASE_SHA256" \
+          INTERNAL_PASS_REF="$INTERNAL_PASS_REF" \
+          INTERNAL_PASS_SHA="$INTERNAL_PASS_SHA" \
+          REFRESH_PASS_REF="$REFRESH_PASS_REF" \
+          REFRESH_PASS_SHA="$REFRESH_PASS_SHA" \
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const lines = (path) => fs.readFileSync(path, 'utf8').split('\n').filter(Boolean);
+          const receipt = {
+            schema_version: 'ssc-rd04-a08-ref-retirement-receipt@1',
+            canonical_main: process.env.EXPECTED_MAIN,
+            release_sha256: process.env.EXPECTED_RELEASE_SHA256,
+            deleted_refs: lines('/tmp/deleted-refs.txt'),
+            already_absent_refs: lines('/tmp/already-absent-refs.txt'),
+            preserved_evidence_refs: [
+              { ref: process.env.INTERNAL_PASS_REF, sha: process.env.INTERNAL_PASS_SHA },
+              { ref: process.env.REFRESH_PASS_REF, sha: process.env.REFRESH_PASS_SHA }
+            ],
+            outside_human_dependency: false
+          };
+          fs.writeFileSync('ssc-rd04-a08-ref-retirement-receipt.json', `${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+      - name: Upload ref-retirement receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a08-ref-retirement-receipt
+          path: ssc-rd04-a08-ref-retirement-receipt.json
+          if-no-files-found: error
+          retention-days: 90
