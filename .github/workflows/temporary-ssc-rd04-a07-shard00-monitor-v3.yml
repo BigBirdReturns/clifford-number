@@ -1,0 +1,83 @@
+name: TEMP inspect SSC RD-04 A07 shard-00 pilot v3
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-a07-public-compliance-receipts
+    paths:
+      - '.github/workflows/temporary-ssc-rd04-a07-shard00-monitor-v3.yml'
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TARGET_BRANCH: agent/ssc-rd04-a07-public-compliance-receipts
+      TARGET_HEAD: 2c57fdf8f46e3829d032e0ead7686084b3796f11
+      TARGET_WORKFLOW: temporary-ssc-rd04-a07-shard00-pilot.yml
+      TARGET_ARTIFACT: ssc-rd04-a07-shard00-extraction-pilot
+    steps:
+      - name: Report exact terminal pilot state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          work="${RUNNER_TEMP}/a07-shard00-monitor-v3"
+          mkdir -p "$work"
+          run_id=""
+          for attempt in $(seq 1 60); do
+            gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${TARGET_WORKFLOW}/runs?branch=${TARGET_BRANCH}&event=push&per_page=20" > "$work/runs.json"
+            read -r run_id status conclusion < <(node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const runs = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-monitor-v3/runs.json`, 'utf8')).workflow_runs ?? [];
+          const run = runs.find((candidate) => candidate.head_sha === process.env.TARGET_HEAD);
+          process.stdout.write(run ? `${run.id} ${run.status} ${run.conclusion ?? ''}` : '');
+          NODE
+            )
+            [[ -n "$run_id" && "$status" == "completed" ]] && break
+            sleep 10
+          done
+          [[ -n "$run_id" ]]
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" > "$work/jobs.json"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts?per_page=100" > "$work/artifacts.json"
+          node --input-type=module <<'NODE' > "$work/report.md"
+          import fs from 'node:fs';
+          const runs = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-monitor-v3/runs.json`, 'utf8')).workflow_runs ?? [];
+          const run = runs.find((candidate) => candidate.head_sha === process.env.TARGET_HEAD);
+          const jobs = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-monitor-v3/jobs.json`, 'utf8')).jobs ?? [];
+          const artifacts = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-monitor-v3/artifacts.json`, 'utf8')).artifacts ?? [];
+          const matches = artifacts.filter((artifact) => artifact.name === process.env.TARGET_ARTIFACT && artifact.expired === false);
+          console.log('## A07 shard-00 extraction pilot v3 terminal monitor');
+          console.log('');
+          console.log('```text');
+          console.log(`target_head=${process.env.TARGET_HEAD}`);
+          console.log(`run_id=${run?.id ?? ''}`);
+          console.log(`status=${run?.status ?? ''}`);
+          console.log(`conclusion=${run?.conclusion ?? ''}`);
+          console.log(`created_at=${run?.created_at ?? ''}`);
+          console.log(`updated_at=${run?.updated_at ?? ''}`);
+          for (const job of jobs) {
+            console.log(`job=${job.id}|${job.name}|${job.status}|${job.conclusion ?? ''}`);
+            for (const step of job.steps ?? []) console.log(`step_${step.number}=${step.name}|${step.status}|${step.conclusion ?? ''}`);
+          }
+          console.log(`artifact_count=${artifacts.length}`);
+          console.log(`artifact_match_count=${matches.length}`);
+          for (const artifact of matches) {
+            console.log(`artifact_id=${artifact.id}`);
+            console.log(`artifact_size=${artifact.size_in_bytes}`);
+            console.log(`artifact_digest=${artifact.digest ?? ''}`);
+          }
+          console.log('```');
+          NODE
+          gh issue comment 741 --repo "$GITHUB_REPOSITORY" --body-file "$work/report.md"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const runs = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-monitor-v3/runs.json`, 'utf8')).workflow_runs ?? [];
+          const run = runs.find((candidate) => candidate.head_sha === process.env.TARGET_HEAD);
+          if (run?.conclusion !== 'success') process.exit(1);
+          NODE
