@@ -1,0 +1,181 @@
+name: TEMP materialize PC-33 and Preference Custody floor v31
+
+on:
+  pull_request:
+    types: [opened, reopened]
+    paths:
+      - '.pc33/**'
+      - '.github/workflows/temporary-pc33-materializer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc33-identity-boundary-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/preference-identity-boundary-assurance-v5
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify, rebind, qualify, and publish exact PC-33 source set
+        env:
+          TARGET_BRANCH: research/preference-identity-boundary-assurance-v5
+          FROZEN_BASE: 43c0cda1ea00ce50c8c2f2a25fc27a3a79b26aee
+          CARRIER_PARTS: '10'
+          CARRIER_B64_BYTES: '33996'
+          CARRIER_B64_SHA256: d8bfa6c2577ec46748d2c57094dc757f2fa880c8a5946e041f83a8ee8631ab22
+          CARRIER_TGZ_BYTES: '25495'
+          CARRIER_TGZ_SHA256: fe176a9b0f0b213d100fd9a74cd60163521ed9e09ba153500bc66be3c0be263d
+          FINAL_TGZ_BYTES: '25314'
+          FINAL_TGZ_SHA256: 18399dc9ac3747cbc8edcd02652a6b33e532d41bae6d14a278fea728477c27ad
+          FINAL_B64_BYTES: '33752'
+          FINAL_B64_SHA256: 165b67012cfb743f030a97c8d362d9a6f0422d772358c9c4449e364a4b88ea0b
+          FINAL_PATH_DIGEST: 3912755295a77458969e95b5470454c3b21607f741a2d11f63f51b2ea070e934
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          git switch -C "$TARGET_BRANCH" "origin/$TARGET_BRANCH"
+
+          cat > /tmp/pc33-permanent-paths <<'PATHS'
+          .github/workflows/preference-custody-v31.yml
+          .github/workflows/preference-identity-boundary-assurance.yml
+          data/research/preference-custody/control-manifest-v31.json
+          data/research/preference-custody/identity-boundary-assurance.fixture.json
+          docs/preference-custody-identity-boundary-assurance.md
+          docs/preference-custody-laboratory-floor-v31.md
+          test/preference-custody-manifest-v31.test.js
+          test/preference-identity-boundary-assurance.test.js
+          tools/compile-preference-custody-manifest-v31.mjs
+          tools/compile-preference-identity-boundary-assurance.mjs
+          tools/lib/preference-custody-manifest-v31.mjs
+          tools/lib/preference-identity-boundary-assurance.mjs
+          tools/validate-preference-custody-manifest-v31.mjs
+          tools/validate-preference-identity-boundary-assurance.mjs
+          PATHS
+          sed -i 's/^          //' /tmp/pc33-permanent-paths
+          LC_ALL=C sort -o /tmp/pc33-permanent-paths /tmp/pc33-permanent-paths
+
+          grep -v '^\.github/workflows/' /tmp/pc33-permanent-paths > /tmp/pc33-nonworkflow-paths
+          test "$(wc -l < /tmp/pc33-permanent-paths | tr -d ' ')" = 14
+          test "$(wc -l < /tmp/pc33-nonworkflow-paths | tr -d ' ')" = 12
+
+          carrier=/tmp/pc33-product.tar.gz.b64
+          : > "$carrier"
+          mapfile -t parts < <(find .pc33 -maxdepth 1 -type f -name 'payload-*.b64' | LC_ALL=C sort)
+          test "${#parts[@]}" = "$CARRIER_PARTS"
+          for part in "${parts[@]}"; do tr -d '\r\n\t ' < "$part" >> "$carrier"; done
+          test "$(stat -c '%s' "$carrier")" = "$CARRIER_B64_BYTES"
+          printf '%s  %s\n' "$CARRIER_B64_SHA256" "$carrier" | sha256sum --check --strict
+          base64 --decode "$carrier" > /tmp/pc33-carrier.tar.gz
+          test "$(stat -c '%s' /tmp/pc33-carrier.tar.gz)" = "$CARRIER_TGZ_BYTES"
+          printf '%s  %s\n' "$CARRIER_TGZ_SHA256" /tmp/pc33-carrier.tar.gz | sha256sum --check --strict
+          tar -tzf /tmp/pc33-carrier.tar.gz | sed 's#^\./##' | sed '/\/$/d' | LC_ALL=C sort > /tmp/pc33-observed-paths
+          diff -u /tmp/pc33-permanent-paths /tmp/pc33-observed-paths
+
+          stable_main=''
+          for attempt in 1 2 3; do
+            git fetch --no-tags origin main
+            candidate_main="$(git rev-parse origin/main)"
+            git merge-base --is-ancestor "$FROZEN_BASE" "$candidate_main"
+            git diff --name-only "$FROZEN_BASE" "$candidate_main" | LC_ALL=C sort > /tmp/pc33-main-drift
+            test -z "$(comm -12 /tmp/pc33-permanent-paths /tmp/pc33-main-drift)"
+
+            if ! git merge-base --is-ancestor "$candidate_main" HEAD; then
+              git merge --no-ff "$candidate_main" -m "Rebind PC-33 permanent surface to current main attempt $attempt"
+            fi
+
+            tar -xzf /tmp/pc33-carrier.tar.gz
+            sed -i '1s/^# PC-29 /# PC-33 /' docs/preference-custody-identity-boundary-assurance.md
+            sed -i 's/preference-identity-boundary-assurance-pc29/preference-identity-boundary-assurance-pc33/' .github/workflows/preference-identity-boundary-assurance.yml
+            ! grep -RInE 'PC-2[89]|PC-3[012]|floor v2[789]|floor-v2[789]|pc2[89]|pc3[012]' -- $(cat /tmp/pc33-permanent-paths)
+
+            sha256sum $(cat /tmp/pc33-permanent-paths) | LC_ALL=C sort -k2 > /tmp/pc33-path-digests
+            printf '%s  %s\n' "$FINAL_PATH_DIGEST" /tmp/pc33-path-digests | sha256sum --check --strict
+
+            tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
+              -cf /tmp/pc33-final.tar --files-from=/tmp/pc33-permanent-paths
+            gzip -n -9 -c /tmp/pc33-final.tar > /tmp/pc33-final.tar.gz
+            test "$(stat -c '%s' /tmp/pc33-final.tar.gz)" = "$FINAL_TGZ_BYTES"
+            printf '%s  %s\n' "$FINAL_TGZ_SHA256" /tmp/pc33-final.tar.gz | sha256sum --check --strict
+            base64 -w0 /tmp/pc33-final.tar.gz > /tmp/pc33-final.tar.gz.b64
+            test "$(stat -c '%s' /tmp/pc33-final.tar.gz.b64)" = "$FINAL_B64_BYTES"
+            printf '%s  %s\n' "$FINAL_B64_SHA256" /tmp/pc33-final.tar.gz.b64 | sha256sum --check --strict
+
+            git add --pathspec-from-file=/tmp/pc33-permanent-paths
+            git diff --cached --check
+            node tools/compile-preference-identity-boundary-assurance.mjs
+            node tools/validate-preference-identity-boundary-assurance.mjs
+            node test/preference-identity-boundary-assurance.test.js
+            node tools/compile-preference-custody-manifest-v31.mjs
+            node tools/validate-preference-custody-manifest-v31.mjs
+            node test/preference-custody-manifest-v31.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            npm run release:check
+
+            git restore --worktree .
+            git clean -fdx
+            git diff --cached --name-only | LC_ALL=C sort > /tmp/pc33-staged-all
+            diff -u /tmp/pc33-permanent-paths /tmp/pc33-staged-all
+
+            git fetch --no-tags origin main
+            end_main="$(git rev-parse origin/main)"
+            if test "$end_main" = "$candidate_main"; then
+              stable_main="$candidate_main"
+              break
+            fi
+
+            git reset
+            git restore --worktree .
+            git clean -fdx
+          done
+          test -n "$stable_main"
+
+          git reset -- .github/workflows/preference-custody-v31.yml .github/workflows/preference-identity-boundary-assurance.yml
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/pc33-staged-nonworkflow
+          diff -u /tmp/pc33-nonworkflow-paths /tmp/pc33-staged-nonworkflow
+          git commit -m 'Implement PC-33 and compose Preference Custody floor v31'
+          product_head="$(git rev-parse HEAD)"
+
+          git fetch --no-tags origin main
+          final_main="$(git rev-parse origin/main)"
+          test "$final_main" = "$stable_main"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          PRODUCT_HEAD="$product_head" STABLE_MAIN="$stable_main" node --input-type=module <<'NODE' > pc33-materializer-receipt.json
+          const receipt = {
+            schema_version: 'pc33-materializer-receipt@1',
+            product_head: process.env.PRODUCT_HEAD,
+            qualified_main: process.env.STABLE_MAIN,
+            materialized_nonworkflow_paths: 12,
+            permanent_paths_expected: 14,
+            carrier_parts: Number(process.env.CARRIER_PARTS),
+            carrier_base64_sha256: process.env.CARRIER_B64_SHA256,
+            carrier_tar_sha256: process.env.CARRIER_TGZ_SHA256,
+            final_base64_sha256: process.env.FINAL_B64_SHA256,
+            final_tar_sha256: process.env.FINAL_TGZ_SHA256,
+            final_path_digest_sha256: process.env.FINAL_PATH_DIGEST,
+            normalization_edits: 2,
+            outside_human_dependency: false,
+            graph_effect: 'none'
+          };
+          process.stdout.write(`${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+      - name: Upload PC-33 materializer receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc33-materializer-receipt
+          path: pc33-materializer-receipt.json
+          if-no-files-found: error
+          retention-days: 90
