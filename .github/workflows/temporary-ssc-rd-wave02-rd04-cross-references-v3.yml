@@ -1,0 +1,98 @@
+name: TEMP repair SSC RD-04-C01 three-digit ACL references
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd-wave02-rd04-cross-references-v3.yml'
+      - 'tools/acquisition/status-sovereignty-rd-wave02-rd04/repair-three-digit-acl-cross-references.mjs'
+      - 'test/status-sovereignty-rd-wave02-rd04-cross-reference-v3.test.js'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ssc-rd-wave02-rd04-cross-references-v3-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install exact PDF text extraction dependency
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends poppler-utils
+          pdftotext -v
+      - name: Download exact fourteen-source seed artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-version-seed
+          path: /tmp/rd04-version-seed
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30765064506
+      - name: Download immutable v2 cross-reference artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-version-cross-references-v2
+          path: /tmp/rd04-crossref-v2
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30767610459
+      - name: Repair and freeze the v3 denominator
+        env:
+          RD04_VERSION_ARTIFACT: /tmp/rd04-version-seed
+          RD04_CROSSREF_V2_ARTIFACT: /tmp/rd04-crossref-v2
+          RD04_CROSSREF_V3_OUTPUT: /tmp/rd04-crossref-v3
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node --check tools/acquisition/status-sovereignty-rd-wave02-rd04/repair-three-digit-acl-cross-references.mjs
+          node test/status-sovereignty-rd-wave02-rd04-cross-reference-v3.test.js
+          node tools/acquisition/status-sovereignty-rd-wave02-rd04/repair-three-digit-acl-cross-references.mjs
+          test -f /tmp/rd04-crossref-v3/registry.json
+          test -f /tmp/rd04-crossref-v3/delta.json
+          test -f /tmp/rd04-crossref-v3/receipt.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const registry = JSON.parse(fs.readFileSync('/tmp/rd04-crossref-v3/registry.json', 'utf8'));
+          const delta = JSON.parse(fs.readFileSync('/tmp/rd04-crossref-v3/delta.json', 'utf8'));
+          const expected = {
+            reference_occurrences: 687,
+            unique_reference_ids: 159,
+            seed_alias_reference_ids: 14,
+            new_cross_reference_candidates: 145,
+            v2_reference_ids_preserved: 154,
+            v3_reference_ids_added: 5,
+            v2_reference_ids_removed: 0,
+            version_edges_adjudicated: 0,
+            class_closed: 0
+          };
+          for (const [key, value] of Object.entries(expected)) {
+            if (registry.counts?.[key] !== value) throw new Error(`${key}: ${registry.counts?.[key]} != ${value}`);
+          }
+          const required = ['CA-ACL-20-145','CA-ACL-21-101','CA-ACL-21-101E','CA-ACL-23-100','CA-ACL-23-107'];
+          const ids = new Set(registry.references.map((row) => row.reference_id));
+          if (!required.every((id) => ids.has(id))) throw new Error('supplemental ACL denominator incomplete');
+          if (delta.counts?.v2_reference_ids_removed !== 0) throw new Error('v2 row removed');
+          if (registry.current_result?.version_edge_adjudication_complete !== false || registry.current_result?.class_closed !== false) throw new Error('authority escalated');
+          if (registry.boundaries?.three_digit_acl_reference_is_version_edge !== false) throw new Error('identifier promoted to edge');
+          console.log('v3 cross-reference denominator and authority ceiling: PASS');
+          NODE
+      - name: Upload exact v3 cross-reference custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-version-cross-references-v3
+          path: /tmp/rd04-crossref-v3
+          if-no-files-found: error
+          retention-days: 90
