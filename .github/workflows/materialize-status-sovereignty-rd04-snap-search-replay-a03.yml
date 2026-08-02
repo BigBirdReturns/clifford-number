@@ -6,6 +6,9 @@ on:
       - 'agent/ssc-rd04-snap-search-replay-a03'
     paths:
       - '.github/workflows/materialize-status-sovereignty-rd04-snap-search-replay-a03.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/materialize-status-sovereignty-rd04-snap-search-replay-a03.yml'
   workflow_dispatch:
 
 permissions:
@@ -29,6 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
@@ -61,7 +65,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
@@ -147,8 +151,8 @@ jobs:
           git diff --check
       - name: Publish only the transport-free exact product
         env:
-          BRANCH: ${{ github.ref_name }}
-          EXPECTED_HEAD: ${{ github.sha }}
+          BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           remote="$(git ls-remote origin "refs/heads/${BRANCH}" | awk '{print $1}')"
           test "$remote" = "$EXPECTED_HEAD"
