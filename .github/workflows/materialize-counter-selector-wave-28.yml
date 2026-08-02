@@ -1,6 +1,11 @@
 name: Materialize Counter-Selector Wave 28
 
 on:
+  pull_request:
+    branches: [main]
+    types: [opened]
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-28.yml'
   push:
     branches:
       - 'agent/counter-selector-wave-28-batch-b-blind-review'
@@ -81,5 +86,3 @@ jobs:
           test -z "$(git status --porcelain)"
       - name: Publish permanent non-workflow Wave 28 head
         run: git push origin HEAD:agent/counter-selector-wave-28-batch-b-blind-review
-
-# rearm
