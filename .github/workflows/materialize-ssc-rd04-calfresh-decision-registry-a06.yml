@@ -1,0 +1,155 @@
+name: TEMP materialize SSC RD-04 A06 CalFresh Decision Registry denominator
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-calfresh-decision-registry-a06
+    paths:
+      - '.github/workflows/materialize-ssc-rd04-calfresh-decision-registry-a06.yml'
+      - '.github/workflows/status-sovereignty-rd04-calfresh-decision-registry-a06.yml'
+      - 'data/intake/status-sovereignty-rd04-calfresh-decision-registry-a06/contract.json'
+      - 'docs/milestones/ssc-rd04-calfresh-decision-registry-a06.md'
+      - 'schemas/status-sovereignty-rd04-calfresh-decision-registry-a06.schema.json'
+      - 'tools/acquire-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs'
+      - 'tools/build-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs'
+      - 'tools/validate-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs'
+      - 'test/status-sovereignty-rd04-calfresh-decision-registry-a06.test.js'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd04-a06-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-calfresh-decision-registry-a06
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install bounded PDF text extractor
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+      - name: Acquire, validate, and publish transport-free A06
+        env:
+          TARGET_BRANCH: agent/ssc-rd04-calfresh-decision-registry-a06
+          CANONICAL_PARENT: 80f6f10e0a0a631dd89d7b92df24fd1ffd2d1589
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          start_head="$(git rev-parse HEAD)"
+          git fetch --no-tags origin "$TARGET_BRANCH" main
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$start_head"
+          git merge-base --is-ancestor "$CANONICAL_PARENT" "$start_head"
+
+          node tools/acquire-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs
+          node tools/build-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs
+          node tools/validate-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs
+          node test/status-sovereignty-rd04-calfresh-decision-registry-a06.test.js
+          node tools/validate-no-magic-human-gate.mjs
+
+          rm -f .github/workflows/materialize-ssc-rd04-calfresh-decision-registry-a06.yml
+          git add -A
+          git diff --cached --check -- . \
+            ':(exclude)data/intake/status-sovereignty-rd04-calfresh-decision-registry-a06/source-custody/**'
+          git commit -m 'Add SSC RD-04 A06 CalFresh decision denominator'
+          product_head="$(git rev-parse HEAD)"
+
+          node tools/build-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs
+          git diff --exit-code
+          node tools/validate-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs
+          node test/status-sovereignty-rd04-calfresh-decision-registry-a06.test.js
+          node tools/validate-no-magic-human-gate.mjs
+
+          release_sha="$(node --input-type=module -e "import fs from 'node:fs'; const m=JSON.parse(fs.readFileSync('data/project/status-sovereignty-rd04-calfresh-decision-registry-a06-release-manifest.json','utf8')); process.stdout.write(m.combined_sha256)")"
+          registry_rows="$(node --input-type=module -e "import fs from 'node:fs'; const c=JSON.parse(fs.readFileSync('data/intake/status-sovereignty-rd04-calfresh-decision-registry-a06/core.json','utf8')); process.stdout.write(String(c.counts.registry_rows))")"
+          selected_decisions="$(node --input-type=module -e "import fs from 'node:fs'; const c=JSON.parse(fs.readFileSync('data/intake/status-sovereignty-rd04-calfresh-decision-registry-a06/core.json','utf8')); process.stdout.write(String(c.counts.selected_decisions))")"
+          parsed_decisions="$(node --input-type=module -e "import fs from 'node:fs'; const c=JSON.parse(fs.readFileSync('data/intake/status-sovereignty-rd04-calfresh-decision-registry-a06/core.json','utf8')); process.stdout.write(String(c.counts.exact_pdf_and_text_recovered))")"
+
+          npm run release:check
+          timestamp_paths=(
+            build/axm-identity.json
+            build/build-hop-report.json
+            build/hop-graph.json
+            build/migration-review.md
+            build/migration-summary.json
+            build/receipt-graph.json
+            build/scores.json
+            build/scout-report.json
+            build/scout-report.md
+            build/surface-graph.json
+          )
+          expected_timestamp_paths="$(printf '%s\n' "${timestamp_paths[@]}" | sort)"
+          actual_tracked_paths="$(git status --porcelain=v1 | awk '$1 != "??" {print substr($0,4)}' | sort)"
+          if [[ "$actual_tracked_paths" != "$expected_timestamp_paths" ]]; then
+            echo 'expected timestamp-only tracked release drift:'
+            printf '%s\n' "$expected_timestamp_paths"
+            echo 'observed tracked release drift:'
+            printf '%s\n' "$actual_tracked_paths"
+            exit 1
+          fi
+          git checkout -- "${timestamp_paths[@]}"
+          git clean -fdx
+          test -z "$(git status --porcelain=v1)"
+
+          git diff --name-only "$CANONICAL_PARENT"...HEAD | sort > /tmp/a06-permanent-paths
+          test -s /tmp/a06-permanent-paths
+          if grep -E '(^|/)(\.github/tmp|data/transport|temporary-|carrier|materializer|trigger)' /tmp/a06-permanent-paths; then
+            echo 'transport path survived in permanent A06 comparison' >&2
+            exit 1
+          fi
+          while IFS= read -r rel; do
+            case "$rel" in
+              .github/workflows/status-sovereignty-rd04-calfresh-decision-registry-a06.yml|\
+              data/intake/status-sovereignty-rd04-calfresh-decision-registry-a06/*|\
+              data/project/status-sovereignty-rd04-calfresh-decision-registry-a06-release-manifest.json|\
+              docs/milestones/ssc-rd04-calfresh-decision-registry-a06.md|\
+              schemas/status-sovereignty-rd04-calfresh-decision-registry-a06.schema.json|\
+              tools/acquire-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs|\
+              tools/build-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs|\
+              tools/validate-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs|\
+              test/status-sovereignty-rd04-calfresh-decision-registry-a06.test.js|\
+              build/core-thesis/status-sovereignty/rd04-calfresh-decision-registry-a06/*|\
+              reports/core-thesis/status-sovereignty/rd04-calfresh-decision-registry-a06/*) ;;
+              *) echo "unexpected permanent A06 path: $rel" >&2; exit 1 ;;
+            esac
+          done < /tmp/a06-permanent-paths
+          permanent_paths="$(wc -l < /tmp/a06-permanent-paths | tr -d ' ')"
+
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$start_head"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$start_head" origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          {
+            echo "canonical_parent=$CANONICAL_PARENT"
+            echo "source_head=$start_head"
+            echo "product_head=$product_head"
+            echo "release_sha256=$release_sha"
+            echo "permanent_paths=$permanent_paths"
+            echo "transport_paths=0"
+            echo "registry_rows=$registry_rows"
+            echo "selected_decisions=$selected_decisions"
+            echo "parsed_decisions=$parsed_decisions"
+            echo "separate_compliance_receipts=0"
+            echo "case_level_joins=0"
+            echo "residual_classes_closed=0"
+            echo "graph_effect=none"
+            echo "publication_effect=none"
+            echo "adoption_effect=none"
+          } > ssc-rd04-a06-materializer-receipt.txt
+      - name: Upload A06 materializer receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a06-materializer-receipt
+          path: ssc-rd04-a06-materializer-receipt.txt
+          if-no-files-found: error
