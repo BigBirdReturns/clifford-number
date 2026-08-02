@@ -1,0 +1,64 @@
+name: Temporary Wave 36 GAO relay probe
+
+on:
+  pull_request:
+    branches:
+      - agent/lake-allocator-war-wave-21
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-wave36-gao-relay-probe.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-wave36-gao-relay-probe-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lake-allocator-war-public-acquisition-wave-36
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Probe reproducible GAO text relay
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const originals = [
+            ['LAW36-C014','https://www.gao.gov/assets/880/876785.pdf',['VMD Systems Integrators','B-422384.3','March 25, 2025','We sustain the protest']],
+            ['LAW36-C046','https://www.gao.gov/assets/830/827222.pdf',['Electronic Protest Docketing System Instructions','September 2024','Agency Point of Contact','EPDS']],
+            ['LAW36-C047','https://www.gao.gov/assets/830/827221.pdf',['EPDS Frequently Asked Questions','September 2024','Electronic Protest Docketing System']]
+          ];
+          for (const [ref,original,markers] of originals) {
+            const candidates = [
+              `https://r.jina.ai/http://${original.replace(/^https?:\/\//,'')}`,
+              `https://r.jina.ai/https://${original.replace(/^https?:\/\//,'')}`
+            ];
+            let accepted = null;
+            for (const url of candidates) {
+              try {
+                const response = await fetch(url, {headers:{accept:'text/plain,text/markdown;q=0.9,*/*;q=0.8','user-agent':'allocator-war-source-custody/1.0'},redirect:'follow'});
+                const text = await response.text();
+                const markerAudit = markers.map(marker => ({marker,found:text.toLowerCase().includes(marker.toLowerCase())}));
+                console.log(JSON.stringify({ref,original,relay:url,status:response.status,ok:response.ok,bytes:Buffer.byteLength(text),content_type:response.headers.get('content-type'),markerAudit,head:text.slice(0,160).replace(/\s+/g,' ')}));
+                if (response.ok && text.length > 500 && markerAudit.every(row => row.found)) {
+                  accepted = {url,text};
+                  break;
+                }
+              } catch (error) {
+                console.log(JSON.stringify({ref,original,relay:url,error:String(error)}));
+              }
+            }
+            if (!accepted) process.exitCode = 1;
+          }
+          NODE
