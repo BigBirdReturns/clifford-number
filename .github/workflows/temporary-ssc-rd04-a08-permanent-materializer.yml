@@ -1,6 +1,12 @@
 name: TEMP materialize SSC RD-04 A08 permanent receipt
 
 on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-ssc-rd04-a08-permanent-materializer.yml'
+      - '.github/tmp/ssc-rd04-a08-permanent-payload.tar.gz.b64'
   push:
     branches:
       - agent/ssc-rd04-a08-internal-adjudication-permanent
@@ -30,10 +36,21 @@ jobs:
         with:
           ref: agent/ssc-rd04-a08-internal-adjudication-permanent
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - id: preflight
+        name: Detect whether materialization remains pending
+        run: |
+          if [[ -f "$CARRIER" && -f "$MATERIALIZER" ]]; then
+            echo 'run=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'run=false' >> "$GITHUB_OUTPUT"
+            echo 'Permanent A08 product already materialized; no-op.'
+          fi
+      - if: steps.preflight.outputs.run == 'true'
+        uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Verify and extract exact product payload
+      - if: steps.preflight.outputs.run == 'true'
+        name: Verify and extract exact product payload
         run: |
           set -Eeuo pipefail
           base64 --decode "$CARRIER" > /tmp/a08-product.tar.gz
@@ -58,7 +75,8 @@ jobs:
           PATHS
           sed -i 's/^          //' /tmp/a08-product-paths
           while IFS= read -r file; do test -f "$file"; done < /tmp/a08-product-paths
-      - name: Prove deterministic product bytes
+      - if: steps.preflight.outputs.run == 'true'
+        name: Prove deterministic product bytes
         run: |
           set -Eeuo pipefail
           while IFS= read -r file; do sha256sum "$file"; done < /tmp/a08-product-paths > /tmp/a08-before.sha256
@@ -68,7 +86,8 @@ jobs:
           node tools/validate-no-magic-human-gate.mjs
           node tools/validate-status-sovereignty-rd04-a08-internal-adjudication.mjs
           node test/status-sovereignty-rd04-a08-internal-adjudication.test.js
-      - name: Publish transport-free product commit
+      - if: steps.preflight.outputs.run == 'true'
+        name: Publish transport-free product commit
         run: |
           set -Eeuo pipefail
           rm "$CARRIER" "$MATERIALIZER"
