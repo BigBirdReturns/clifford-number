@@ -1,0 +1,88 @@
+name: Materialize Counter-Selector Wave 29
+
+on:
+  push:
+    branches:
+      - 'agent/counter-selector-wave-29-resumability-audit'
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-29.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/counter-selector-wave-29-resumability-audit
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify exact carrier and unpack Wave 29 estate
+        run: |
+          set -euo pipefail
+          cat > /tmp/wave29-expected-blobs <<'EOF'
+          c37c9885646714e7d6383b318b0e3121a39354bd  .github/materializers/counter-selector-wave-29/payload-00
+          ee0b30bdcb7175fa7929e41a35e976383e41722d  .github/materializers/counter-selector-wave-29/payload-01
+          045ed048b7afbb6026a51e63c66e344235abeba9  .github/materializers/counter-selector-wave-29/payload-02
+          4ca7afea2139b97e9dcc1f2c7b005d76fb8ef266  .github/materializers/counter-selector-wave-29/payload-03
+          EOF
+          while read -r expected path; do
+            actual="$(git hash-object "$path")"
+            test "$actual" = "$expected" || {
+              echo "carrier blob mismatch: $path expected=$expected actual=$actual" >&2
+              exit 1
+            }
+          done < /tmp/wave29-expected-blobs
+          cat .github/materializers/counter-selector-wave-29/payload-* | base64 --decode > /tmp/counter-selector-wave-29.tar.gz
+          echo '210b789547719120ed3bb221ae83e01d159327c5b925c0cc8d56ec8dbb78beaa  /tmp/counter-selector-wave-29.tar.gz' | sha256sum --check --strict
+          tar -xzf /tmp/counter-selector-wave-29.tar.gz -C .
+          cp .github/workflows/counter-selector-wave-29.yml /tmp/counter-selector-wave-29.yml
+      - name: Build, validate, and attack Wave 29
+        run: |
+          set -euo pipefail
+          node tools/build-counter-selector-wave-29.mjs
+          node tools/validate-counter-selector-wave-29.mjs
+          node test/counter-selector-wave-29.test.js
+      - name: Commit exact permanent non-workflow Wave 29 estate
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/counter-selector-wave-29.yml
+          rm -rf .github/materializers/counter-selector-wave-29
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          actual="$(git diff --cached --name-only | sort)"
+          expected="$(printf '%s\n' .github/materializers/counter-selector-wave-29/payload-00 .github/materializers/counter-selector-wave-29/payload-01 .github/materializers/counter-selector-wave-29/payload-02 .github/materializers/counter-selector-wave-29/payload-03 data/project/counter-selector-wave-29-resumability-audit.json data/project/counter-selector-wave-29-resumability-registry.json data/project/counter-selector-wave-29-disagreement-ledger.json data/project/counter-selector-wave-29-release-manifest.json schemas/counter-selector-resumability-audit.schema.json docs/methods/counter-selector-public-resumability-audit.md docs/milestones/counter-selector-wave-29.md tools/build-counter-selector-wave-29.mjs tools/validate-counter-selector-wave-29.mjs test/counter-selector-wave-29.test.js reports/core-thesis/counter-selector-wave-29/data.json reports/core-thesis/counter-selector-wave-29/index.html | sort)"
+          test "$actual" = "$expected" || {
+            echo 'unexpected staged paths' >&2
+            printf 'actual:\n%s\nexpected:\n%s\n' "$actual" "$expected" >&2
+            exit 1
+          }
+          git diff --cached --check
+          git commit -m 'Audit Counter-Selector Wave 29 public resumability'
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic Wave 29 reconstruction
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          cp /tmp/counter-selector-wave-29.yml .github/workflows/counter-selector-wave-29.yml
+          node tools/build-counter-selector-wave-29.mjs
+          node tools/validate-counter-selector-wave-29.mjs
+          node test/counter-selector-wave-29.test.js
+          git diff --exit-code -- \
+            data/project/counter-selector-wave-29-resumability-registry.json \
+            data/project/counter-selector-wave-29-disagreement-ledger.json \
+            data/project/counter-selector-wave-29-release-manifest.json \
+            reports/core-thesis/counter-selector-wave-29/data.json \
+            reports/core-thesis/counter-selector-wave-29/index.html
+          rm -f .github/workflows/counter-selector-wave-29.yml
+          test -z "$(git status --porcelain)"
+      - name: Publish permanent non-workflow Wave 29 head
+        run: git push origin HEAD:agent/counter-selector-wave-29-resumability-audit
