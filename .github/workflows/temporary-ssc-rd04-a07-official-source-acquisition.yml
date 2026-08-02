@@ -1,0 +1,130 @@
+name: TEMP SSC RD-04 A07 official-source acquisition
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-a07-public-compliance-receipts
+    paths:
+      - '.github/workflows/temporary-ssc-rd04-a07-official-source-acquisition.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TARGET_BRANCH: agent/ssc-rd04-a07-public-compliance-receipts
+      OUT_DIR: data/intake/status-sovereignty-rd04-calfresh-compliance-receipts-a07/source-custody/a07-official-source-acquisition
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a07-public-compliance-receipts
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate exact-byte acquisition machinery
+        id: preflight
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node --check tools/acquire-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs
+          node --check test/acquire-status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js
+          node tools/acquire-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs validate-ledger
+          node test/acquire-status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js
+      - name: Acquire all nine frozen official targets
+        id: acquisition
+        run: |
+          set -Eeuo pipefail
+          node tools/acquire-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs acquire \
+            --out "$OUT_DIR" \
+            --timeout 60000 \
+            --retry-delay 1000
+      - name: Validate exact receipts and authority ceiling
+        id: validation
+        run: |
+          set -Eeuo pipefail
+          node tools/acquire-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs validate-result \
+            --out "$OUT_DIR"
+          git diff --check
+          test "$(find "$OUT_DIR" -type f -name source-result.json | wc -l | tr -d ' ')" = 9
+          test "$(find "$OUT_DIR" -type f -name request.json | wc -l | tr -d ' ')" -ge 9
+      - name: Publish only exact source-custody product paths
+        id: publication
+        run: |
+          set -Eeuo pipefail
+          source_head="$(git rev-parse HEAD)"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "$OUT_DIR"
+          test -n "$(git diff --cached --name-only)"
+          outside="$(git diff --cached --name-only | grep -v "^${OUT_DIR}/" || true)"
+          if [[ -n "$outside" ]]; then
+            echo 'refusing staged paths outside the frozen acquisition directory:' >&2
+            printf '%s\n' "$outside" >&2
+            exit 1
+          fi
+          git commit -m 'Acquire SSC RD-04 A07 official source receipts'
+          product_head="$(git rev-parse HEAD)"
+          test -z "$(git status --porcelain=v1)"
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$source_head"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$source_head" origin "HEAD:refs/heads/$TARGET_BRANCH"
+          echo "source_head=$source_head" >> "$GITHUB_OUTPUT"
+          echo "product_head=$product_head" >> "$GITHUB_OUTPUT"
+      - name: Record terminal acquisition state on issue 741
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREFLIGHT_OUTCOME: ${{ steps.preflight.outcome }}
+          ACQUISITION_OUTCOME: ${{ steps.acquisition.outcome }}
+          VALIDATION_OUTCOME: ${{ steps.validation.outcome }}
+          PUBLICATION_OUTCOME: ${{ steps.publication.outcome }}
+          SOURCE_HEAD: ${{ steps.publication.outputs.source_head }}
+          PRODUCT_HEAD: ${{ steps.publication.outputs.product_head }}
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module <<'NODE' > "${RUNNER_TEMP}/a07-source-acquisition-report.md"
+          import fs from 'node:fs';
+          import path from 'node:path';
+          const ledgerPath = path.join(process.env.OUT_DIR, 'source-acquisition-ledger.json');
+          const ledger = fs.existsSync(ledgerPath) ? JSON.parse(fs.readFileSync(ledgerPath, 'utf8')) : null;
+          console.log('## A07 frozen official-source acquisition terminal state');
+          console.log('');
+          console.log('```text');
+          console.log(`workflow_run=${process.env.GITHUB_RUN_ID}`);
+          console.log(`workflow_head=${process.env.GITHUB_SHA}`);
+          console.log(`preflight=${process.env.PREFLIGHT_OUTCOME}`);
+          console.log(`acquisition=${process.env.ACQUISITION_OUTCOME}`);
+          console.log(`validation=${process.env.VALIDATION_OUTCOME}`);
+          console.log(`publication=${process.env.PUBLICATION_OUTCOME}`);
+          console.log(`source_head=${process.env.SOURCE_HEAD ?? ''}`);
+          console.log(`product_head=${process.env.PRODUCT_HEAD ?? ''}`);
+          if (ledger) {
+            console.log(`frozen_sources=${ledger.counts.frozen_sources}`);
+            console.log(`terminal_sources=${ledger.counts.terminal_sources}`);
+            console.log(`exact_responses_preserved=${ledger.counts.exact_responses_preserved}`);
+            console.log(`exact_successful_bodies=${ledger.counts.exact_successful_bodies}`);
+            for (const [state, count] of Object.entries(ledger.counts.terminal_states).sort()) {
+              console.log(`terminal_${state}=${count}`);
+            }
+            console.log(`semantic_classifications_complete=${ledger.counts.semantic_classifications_complete}`);
+            console.log(`case_level_implementation_joins=${ledger.counts.case_level_implementation_joins}`);
+            console.log(`complete_restorations_observed=${ledger.counts.complete_restorations_observed}`);
+            console.log(`remedy_timeliness_observed=${ledger.counts.remedy_timeliness_observed}`);
+            for (const source of ledger.sources) {
+              console.log(`source=${source.source_id}|${source.terminal_state}|attempts=${source.attempts}|status=${source.http_status ?? ''}|bytes=${source.body_bytes}`);
+            }
+          }
+          console.log('graph_effect=none');
+          console.log('publication_effect=none');
+          console.log('adoption_effect=none');
+          console.log('```');
+          console.log('');
+          console.log('Exact response custody is not semantic classification, case compliance, implementation, restoration, timeliness, prevalence, or evidence of noncompliance. Every source remains in the predeclared universe regardless of its terminal transport state.');
+          NODE
+          gh issue comment 741 --repo "$GITHUB_REPOSITORY" --body-file "${RUNNER_TEMP}/a07-source-acquisition-report.md"
