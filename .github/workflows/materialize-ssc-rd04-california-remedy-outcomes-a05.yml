@@ -1,6 +1,12 @@
 name: Materialize SSC RD-04 California remedy and outcomes A05
 
 on:
+  push:
+    branches:
+      - 'agent/ssc-rd04-california-remedy-outcomes-a05'
+    paths:
+      - 'data/transport/ssc-rd04-a05-materializer-rearm.json'
+      - '.github/workflows/materialize-ssc-rd04-california-remedy-outcomes-a05.yml'
   pull_request:
     paths:
       - 'data/transport/ssc-rd04-a05-materializer-rearm.json'
