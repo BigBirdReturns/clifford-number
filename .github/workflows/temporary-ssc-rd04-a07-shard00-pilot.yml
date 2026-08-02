@@ -47,43 +47,68 @@ jobs:
           set -Eeuo pipefail
           work="${RUNNER_TEMP}/a07-shard00-pilot"
           mkdir -p "$work"
-          gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/releases?per_page=100" > "$work/release-pages.json"
-          node --input-type=module <<'NODE' > "$work/asset-selection.env"
+          node --input-type=module <<'NODE' > "$work/ledger-selection.env"
           import fs from 'node:fs';
-          const releases = JSON.parse(
-            fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-pilot/release-pages.json`, 'utf8')
-          ).flat();
-          const matches = releases.filter((release) =>
-            release.tag_name === process.env.RELEASE_TAG
-            && release.draft === true
-            && release.published_at === null
-          );
-          if (matches.length !== 1) throw new Error(`expected one exact draft release, observed ${matches.length}`);
-          const release = matches[0];
-          console.log(`release_id=${release.id}`);
-          console.log(`release_created_at=${release.created_at}`);
-          NODE
-          source "$work/asset-selection.env"
-          gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/releases/${release_id}/assets?per_page=100" > "$work/asset-pages.json"
-          node --input-type=module <<'NODE' >> "$work/asset-selection.env"
-          import fs from 'node:fs';
-          const assets = JSON.parse(
-            fs.readFileSync(`${process.env.RUNNER_TEMP}/a07-shard00-pilot/asset-pages.json`, 'utf8')
-          ).flat();
+          const ledger = JSON.parse(fs.readFileSync(
+            'data/intake/status-sovereignty-rd04-calfresh-decision-corpus-a06/release-assets.json',
+            'utf8'
+          ));
           const select = (name) => {
-            const matches = assets.filter((asset) => asset.name === name);
-            if (matches.length !== 1) throw new Error(`expected one asset ${name}, observed ${matches.length}`);
+            const matches = ledger.assets.filter((asset) => asset.name === name);
+            if (matches.length !== 1) throw new Error(`expected one ledger asset ${name}, observed ${matches.length}`);
             return matches[0];
           };
           const archive = select(process.env.ARCHIVE_NAME);
           const hash = select(process.env.HASH_NAME);
+          if (ledger.tag !== process.env.RELEASE_TAG) throw new Error('committed release tag mismatch');
+          if (ledger.release_id !== 363688049) throw new Error('committed release id mismatch');
+          if (ledger.draft !== true || ledger.published_at !== null) throw new Error('committed draft boundary mismatch');
+          if (ledger.observed_assets !== 132 || ledger.expected_assets !== 132) throw new Error('committed asset denominator mismatch');
+          if (!archive.sha256) throw new Error('committed archive hash absent');
+          console.log(`release_id=${ledger.release_id}`);
           console.log(`archive_id=${archive.id}`);
-          console.log(`archive_api_url=${archive.url}`);
           console.log(`archive_size=${archive.size}`);
+          console.log(`archive_expected_sha256=${archive.sha256}`);
           console.log(`hash_id=${hash.id}`);
-          console.log(`hash_api_url=${hash.url}`);
           console.log(`hash_size=${hash.size}`);
-          console.log(`release_asset_count=${assets.length}`);
+          console.log(`release_asset_count=${ledger.observed_assets}`);
+          NODE
+          source "$work/ledger-selection.env"
+          gh api "repos/${GITHUB_REPOSITORY}/releases/${release_id}" > "$work/release.json"
+          gh api "repos/${GITHUB_REPOSITORY}/releases/assets/${archive_id}" > "$work/archive-metadata.json"
+          gh api "repos/${GITHUB_REPOSITORY}/releases/assets/${hash_id}" > "$work/hash-metadata.json"
+          node --input-type=module <<'NODE' > "$work/asset-selection.env"
+          import fs from 'node:fs';
+          const env = Object.fromEntries(fs.readFileSync(
+            `${process.env.RUNNER_TEMP}/a07-shard00-pilot/ledger-selection.env`,
+            'utf8'
+          ).trim().split(/\n/).map((line) => {
+            const at = line.indexOf('=');
+            return [line.slice(0, at), line.slice(at + 1)];
+          }));
+          const release = JSON.parse(fs.readFileSync(
+            `${process.env.RUNNER_TEMP}/a07-shard00-pilot/release.json`,
+            'utf8'
+          ));
+          const archive = JSON.parse(fs.readFileSync(
+            `${process.env.RUNNER_TEMP}/a07-shard00-pilot/archive-metadata.json`,
+            'utf8'
+          ));
+          const hash = JSON.parse(fs.readFileSync(
+            `${process.env.RUNNER_TEMP}/a07-shard00-pilot/hash-metadata.json`,
+            'utf8'
+          ));
+          if (release.id !== Number(env.release_id)) throw new Error('live release id mismatch');
+          if (release.tag_name !== process.env.RELEASE_TAG) throw new Error('live release tag mismatch');
+          if (release.draft !== true || release.published_at !== null) throw new Error('live release is not exact draft custody');
+          if (archive.id !== Number(env.archive_id) || archive.name !== process.env.ARCHIVE_NAME) throw new Error('live archive identity mismatch');
+          if (archive.size !== Number(env.archive_size)) throw new Error('live archive size mismatch');
+          if (hash.id !== Number(env.hash_id) || hash.name !== process.env.HASH_NAME) throw new Error('live hash identity mismatch');
+          if (hash.size !== Number(env.hash_size)) throw new Error('live hash size mismatch');
+          for (const [key, value] of Object.entries(env)) console.log(`${key}=${value}`);
+          console.log(`release_created_at=${release.created_at}`);
+          console.log(`archive_api_url=${archive.url}`);
+          console.log(`hash_api_url=${hash.url}`);
           NODE
           cat "$work/asset-selection.env" >> "$GITHUB_OUTPUT"
       - name: Download, checksum, and extract content-neutral shard 00
@@ -119,6 +144,7 @@ jobs:
           RELEASE_ASSET_COUNT: ${{ steps.assets.outputs.release_asset_count }}
           ARCHIVE_ID: ${{ steps.assets.outputs.archive_id }}
           ARCHIVE_SIZE: ${{ steps.assets.outputs.archive_size }}
+          ARCHIVE_EXPECTED_SHA256: ${{ steps.assets.outputs.archive_expected_sha256 }}
           HASH_ID: ${{ steps.assets.outputs.hash_id }}
         run: |
           set -Eeuo pipefail
@@ -162,6 +188,9 @@ jobs:
             if (document.remedy_timeliness_observed !== false) throw new Error('pilot inferred timeliness');
           }
           const archiveBytes = fs.readFileSync(`${work}/${process.env.ARCHIVE_NAME}`);
+          if (sha256(archiveBytes) !== process.env.ARCHIVE_EXPECTED_SHA256) {
+            throw new Error('downloaded archive hash differs from committed A06 release ledger');
+          }
           const hashBytes = fs.readFileSync(`${work}/${process.env.HASH_NAME}`);
           const receipt = {
             schema_version: 'ssc-rd04-a07-shard00-pilot-receipt@1',
