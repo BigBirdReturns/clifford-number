@@ -1,1 +1,2 @@
 execute complete SSC-RD04-A07 D1 relief-order denominator from canonical A06 shards
+canonical A06 release manifest f9d1c128da51b43c3e06cca74ba9bc9cd5848729af4b1c4ca0269891ae85c7a5
