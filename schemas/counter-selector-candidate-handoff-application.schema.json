@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/counter-selector-candidate-handoff-application.schema.json",
+  "title": "Counter-Selector candidate handoff application",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "program_id",
+    "wave_id",
+    "parent_wave_ids",
+    "as_of",
+    "observed_at",
+    "title",
+    "status",
+    "purpose",
+    "counts",
+    "handoff_contract",
+    "review_independence",
+    "candidate_lanes",
+    "boundaries",
+    "next_action",
+    "graph_effect"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "counter-selector-candidate-handoff-application@1"
+    },
+    "program_id": {
+      "const": "counter-selector-v1"
+    },
+    "wave_id": {
+      "const": "CS-W32-CH-01"
+    },
+    "parent_wave_ids": {
+      "type": "array",
+      "minItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "as_of": {
+      "type": "string"
+    },
+    "observed_at": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "const": "four_candidate_lanes_scored_one_bounded_incoming_custody_support_zero_complete_handoffs_zero_operator_findings"
+    },
+    "purpose": {
+      "type": "string"
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "handoff_contract": {
+      "type": "object"
+    },
+    "review_independence": {
+      "type": "object"
+    },
+    "candidate_lanes": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "lane_id",
+          "candidate_id",
+          "source_identity",
+          "public_label",
+          "candidate_type",
+          "prior_person_supports",
+          "source_records",
+          "components",
+          "recipient_acknowledgment_level",
+          "review",
+          "adjudication",
+          "current_person_supports",
+          "counterevidence",
+          "falsifiers",
+          "contact_authorized",
+          "graph_effect"
+        ],
+        "properties": {
+          "lane_id": {
+            "type": "string"
+          },
+          "candidate_id": {
+            "type": "string"
+          },
+          "source_identity": {
+            "type": "string"
+          },
+          "public_label": {
+            "type": "string"
+          },
+          "candidate_type": {
+            "type": "string"
+          },
+          "prior_person_supports": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "source_records": {
+            "type": "array",
+            "minItems": 3,
+            "items": {
+              "type": "object",
+              "required": [
+                "source_id",
+                "title",
+                "publisher",
+                "date",
+                "url",
+                "source_class",
+                "artifact_scope"
+              ]
+            }
+          },
+          "components": {
+            "type": "object",
+            "minProperties": 9,
+            "maxProperties": 9
+          },
+          "recipient_acknowledgment_level": {
+            "enum": [
+              "none",
+              "role_occupancy_only",
+              "handover_event_acknowledged",
+              "partial_state_categories_acknowledged",
+              "complete_state_package_acknowledged"
+            ]
+          },
+          "review": {
+            "type": "object"
+          },
+          "adjudication": {
+            "type": "object"
+          },
+          "current_person_supports": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "counterevidence": {
+            "type": "array",
+            "minItems": 4,
+            "items": {
+              "type": "string"
+            }
+          },
+          "falsifiers": {
+            "type": "array",
+            "minItems": 4,
+            "items": {
+              "type": "string"
+            }
+          },
+          "contact_authorized": {
+            "const": false
+          },
+          "graph_effect": {
+            "const": "none"
+          }
+        }
+      }
+    },
+    "boundaries": {
+      "type": "object"
+    },
+    "next_action": {
+      "type": "string"
+    },
+    "graph_effect": {
+      "const": "none"
+    }
+  }
+}
