@@ -1,0 +1,319 @@
+{
+  "schema_version": "ssc-rd04-a07-official-source-acquisition@1",
+  "execution_id": "SSC-RD04-SNAP-A07",
+  "issue": 741,
+  "as_of": "2026-08-02",
+  "source_ledger": {
+    "path": "data/intake/status-sovereignty-rd04-calfresh-compliance-receipts-a07/source-custody/source-ledger.json",
+    "exact_bytes": 9853,
+    "sha256": "fc72021c082344527ea4c453663fd5b49701334e3c15b9eee4e81e82c9088cec"
+  },
+  "request_contract": {
+    "method": "GET",
+    "ordered_headers": [
+      [
+        "User-Agent",
+        "clifford-number-a07-public-source-custody/1.0"
+      ],
+      [
+        "Accept",
+        "text/html,application/xhtml+xml,application/pdf;q=0.9,*/*;q=0.8"
+      ],
+      [
+        "Accept-Language",
+        "en-US,en;q=0.5"
+      ],
+      [
+        "Accept-Encoding",
+        "identity"
+      ],
+      [
+        "Connection",
+        "close"
+      ]
+    ],
+    "accept_encoding": "identity",
+    "redirect_limit": 10,
+    "retry_limit": 2,
+    "timeout_ms": 60000,
+    "query_expansion_after_result_inspection": false
+  },
+  "counts": {
+    "frozen_sources": 9,
+    "terminal_sources": 9,
+    "exact_responses_preserved": 9,
+    "exact_successful_bodies": 8,
+    "terminal_states": {
+      "exact_response_preserved_pending_semantic_classification": 8,
+      "source_unavailable": 1
+    },
+    "semantic_classifications_complete": 0,
+    "case_level_implementation_joins": 0,
+    "complete_restorations_observed": 0,
+    "remedy_timeliness_observed": 0,
+    "external_contacts": 0,
+    "external_reviews": 0
+  },
+  "sources": [
+    {
+      "source_id": "CDSS-STATE-HEARINGS",
+      "source_class": "official_state_rule_and_process_surfaces",
+      "authority": "official_state_hearings_program_surface",
+      "requested_url": "https://www.cdss.ca.gov/inforesources/state-hearings",
+      "official_host": "www.cdss.ca.gov",
+      "county": null,
+      "expected_use": "state hearing process and public versus claimant-only boundary",
+      "attempts": 1,
+      "attempt_receipts": [
+        "CDSS-STATE-HEARINGS/attempt-1/attempt.json"
+      ],
+      "terminal_state": "exact_response_preserved_pending_semantic_classification",
+      "exact_response_preserved": true,
+      "final_url": "https://www.cdss.ca.gov/inforesources/state-hearings",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "body_path": "CDSS-STATE-HEARINGS/attempt-1/hop-01.body.bin",
+      "body_bytes": 26817,
+      "body_sha256": "afaf559139a387aa57335b2683c2006a8dd8bc07b572f4c657d9ac6f1b216e64",
+      "semantic_classification_complete": false,
+      "eligible_for_case_level_implementation_join": false,
+      "implementation_observed": false,
+      "separate_public_compliance_receipt_observed": false,
+      "complete_restoration_observed": false,
+      "remedy_timeliness_observed": false
+    },
+    {
+      "source_id": "CDSS-HEARING-REQUESTS",
+      "source_class": "official_state_rule_and_process_surfaces",
+      "authority": "official_hearing_request_and_aid_pending_surface",
+      "requested_url": "https://www.cdss.ca.gov/hearing-requests",
+      "official_host": "www.cdss.ca.gov",
+      "county": null,
+      "expected_use": "appeal, continuity, reopening, and escalation procedure",
+      "attempts": 1,
+      "attempt_receipts": [
+        "CDSS-HEARING-REQUESTS/attempt-1/attempt.json"
+      ],
+      "terminal_state": "exact_response_preserved_pending_semantic_classification",
+      "exact_response_preserved": true,
+      "final_url": "https://www.cdss.ca.gov/hearing-requests",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "body_path": "CDSS-HEARING-REQUESTS/attempt-1/hop-01.body.bin",
+      "body_bytes": 30848,
+      "body_sha256": "d7989a8bf382de44627740af45411d540a95b6e9cc5cff147ee9b8fabb70249b",
+      "semantic_classification_complete": false,
+      "eligible_for_case_level_implementation_join": false,
+      "implementation_observed": false,
+      "separate_public_compliance_receipt_observed": false,
+      "complete_restoration_observed": false,
+      "remedy_timeliness_observed": false
+    },
+    {
+      "source_id": "CDSS-REGULATIONS-HOME",
+      "source_class": "official_state_rule_and_process_surfaces",
+      "authority": "official_cdss_regulations_locator",
+      "requested_url": "https://www.cdss.ca.gov/inforesources/cdss-regulations-home-page",
+      "official_host": "www.cdss.ca.gov",
+      "county": null,
+      "expected_use": "resolve exact current and historical MPP authority",
+      "attempts": 1,
+      "attempt_receipts": [
+        "CDSS-REGULATIONS-HOME/attempt-1/attempt.json"
+      ],
+      "terminal_state": "exact_response_preserved_pending_semantic_classification",
+      "exact_response_preserved": true,
+      "final_url": "https://www.cdss.ca.gov/inforesources/cdss-regulations-home-page",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "body_path": "CDSS-REGULATIONS-HOME/attempt-1/hop-01.body.bin",
+      "body_bytes": 29580,
+      "body_sha256": "284a21040021cb55797b58abf2eb57a4e2e11f3121703f5e68c6e26c5c960a7a",
+      "semantic_classification_complete": false,
+      "eligible_for_case_level_implementation_join": false,
+      "implementation_observed": false,
+      "separate_public_compliance_receipt_observed": false,
+      "complete_restoration_observed": false,
+      "remedy_timeliness_observed": false
+    },
+    {
+      "source_id": "CDSS-SOCIAL-SERVICE-STANDARDS-MANUAL-LETTERS",
+      "source_class": "official_state_rule_and_process_surfaces",
+      "authority": "official_manual_letter_and_version_locator",
+      "requested_url": "https://www.cdss.ca.gov/inforesources/legislation-and-regulations/manual-letters/social-service-standards",
+      "official_host": "www.cdss.ca.gov",
+      "county": null,
+      "expected_use": "versioned compliance-duty text and change history",
+      "attempts": 1,
+      "attempt_receipts": [
+        "CDSS-SOCIAL-SERVICE-STANDARDS-MANUAL-LETTERS/attempt-1/attempt.json"
+      ],
+      "terminal_state": "exact_response_preserved_pending_semantic_classification",
+      "exact_response_preserved": true,
+      "final_url": "https://www.cdss.ca.gov/inforesources/legislation-and-regulations/manual-letters/social-service-standards",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "body_path": "CDSS-SOCIAL-SERVICE-STANDARDS-MANUAL-LETTERS/attempt-1/hop-01.body.bin",
+      "body_bytes": 26545,
+      "body_sha256": "6bc661af74eeffd52f768b7aa4d680b05c54bec695770f0d2e23056c91ff86b8",
+      "semantic_classification_complete": false,
+      "eligible_for_case_level_implementation_join": false,
+      "implementation_observed": false,
+      "separate_public_compliance_receipt_observed": false,
+      "complete_restoration_observed": false,
+      "remedy_timeliness_observed": false
+    },
+    {
+      "source_id": "CDSS-COUNTY-OFFICES",
+      "source_class": "complete_58_county_public_source_census",
+      "authority": "official_state_county_social_services_master_locator",
+      "requested_url": "https://www.cdss.ca.gov/county-offices",
+      "official_host": "www.cdss.ca.gov",
+      "county": null,
+      "expected_use": "reconcile county names, aliases, agencies, and official website roots",
+      "attempts": 1,
+      "attempt_receipts": [
+        "CDSS-COUNTY-OFFICES/attempt-1/attempt.json"
+      ],
+      "terminal_state": "exact_response_preserved_pending_semantic_classification",
+      "exact_response_preserved": true,
+      "final_url": "https://www.cdss.ca.gov/county-offices",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "body_path": "CDSS-COUNTY-OFFICES/attempt-1/hop-01.body.bin",
+      "body_bytes": 50202,
+      "body_sha256": "748fe853b679bea0850056442f133e79018aebdfcaa006b346483b82bace8e9a",
+      "semantic_classification_complete": false,
+      "eligible_for_case_level_implementation_join": false,
+      "implementation_observed": false,
+      "separate_public_compliance_receipt_observed": false,
+      "complete_restoration_observed": false,
+      "remedy_timeliness_observed": false
+    },
+    {
+      "source_id": "CDSS-CALFRESH-DASHBOARD",
+      "source_class": "official_aggregate_controls",
+      "authority": "official_calfresh_county_aggregate_dashboard",
+      "requested_url": "https://www.cdss.ca.gov/inforesources/data-portal/research-and-data/calfresh-data-dashboard",
+      "official_host": "www.cdss.ca.gov",
+      "county": null,
+      "expected_use": "county participation, timeliness, accuracy, and churn controls only",
+      "attempts": 1,
+      "attempt_receipts": [
+        "CDSS-CALFRESH-DASHBOARD/attempt-1/attempt.json"
+      ],
+      "terminal_state": "exact_response_preserved_pending_semantic_classification",
+      "exact_response_preserved": true,
+      "final_url": "https://www.cdss.ca.gov/inforesources/data-portal/research-and-data/calfresh-data-dashboard",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "body_path": "CDSS-CALFRESH-DASHBOARD/attempt-1/hop-01.body.bin",
+      "body_bytes": 25275,
+      "body_sha256": "70ed495947a935c048d0468a7dc981f4efbe0d518bced31f247967361360d1bd",
+      "semantic_classification_complete": false,
+      "eligible_for_case_level_implementation_join": false,
+      "implementation_observed": false,
+      "separate_public_compliance_receipt_observed": false,
+      "complete_restoration_observed": false,
+      "remedy_timeliness_observed": false
+    },
+    {
+      "source_id": "CDSS-CALFRESH-DATA-TABLES",
+      "source_class": "official_aggregate_controls",
+      "authority": "official_calfresh_county_data_table_locator",
+      "requested_url": "https://www.cdss.ca.gov/inforesources/research-and-data/calfresh-data-tables",
+      "official_host": "www.cdss.ca.gov",
+      "county": null,
+      "expected_use": "benefit issuance, churn, caseload, and work-registrant aggregates only",
+      "attempts": 1,
+      "attempt_receipts": [
+        "CDSS-CALFRESH-DATA-TABLES/attempt-1/attempt.json"
+      ],
+      "terminal_state": "exact_response_preserved_pending_semantic_classification",
+      "exact_response_preserved": true,
+      "final_url": "https://www.cdss.ca.gov/inforesources/research-and-data/calfresh-data-tables",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "body_path": "CDSS-CALFRESH-DATA-TABLES/attempt-1/hop-01.body.bin",
+      "body_bytes": 25757,
+      "body_sha256": "24ad491e35afe3c8573ca1df28f245e7898cad4391888d39fc6230b1d9f5d3e5",
+      "semantic_classification_complete": false,
+      "eligible_for_case_level_implementation_join": false,
+      "implementation_observed": false,
+      "separate_public_compliance_receipt_observed": false,
+      "complete_restoration_observed": false,
+      "remedy_timeliness_observed": false
+    },
+    {
+      "source_id": "LAC-DPSS-ASH-001",
+      "source_class": "official_county_policy_control",
+      "authority": "official_los_angeles_county_state_hearing_procedure",
+      "requested_url": "https://my.dpss.lacounty.gov/public/en/home/epolicy/integrity/ash/state-hearing-procedures.html",
+      "official_host": "my.dpss.lacounty.gov",
+      "county": "Los Angeles",
+      "expected_use": "county implementation of state hearing compliance procedure",
+      "attempts": 1,
+      "attempt_receipts": [
+        "LAC-DPSS-ASH-001/attempt-1/attempt.json"
+      ],
+      "terminal_state": "exact_response_preserved_pending_semantic_classification",
+      "exact_response_preserved": true,
+      "final_url": "https://my.dpss.lacounty.gov/public/en/home/epolicy/integrity/ash/state-hearing-procedures.html",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "body_path": "LAC-DPSS-ASH-001/attempt-1/hop-01.body.bin",
+      "body_bytes": 252946,
+      "body_sha256": "a545916bbbc2c2a5b261a7d09e317de4b5034de545e7cbad1b2dfef93d961426",
+      "semantic_classification_complete": false,
+      "eligible_for_case_level_implementation_join": false,
+      "implementation_observed": false,
+      "separate_public_compliance_receipt_observed": false,
+      "complete_restoration_observed": false,
+      "remedy_timeliness_observed": false
+    },
+    {
+      "source_id": "LAC-DPSS-ASH-008",
+      "source_class": "official_county_policy_control",
+      "authority": "official_los_angeles_county_hearing_decision_compliance_policy",
+      "requested_url": "https://epolicy.dpss.lacounty.gov/epolicy/epolicy/server/general/projects_responsive/ePolicyMaster/mergedProjects/ASH/ASH/ASH_008_-_Compliance_-_Hearing_Decisions/ASH_008_-_Compliance_-_Hearing_Decisions.htm",
+      "official_host": "epolicy.dpss.lacounty.gov",
+      "county": "Los Angeles",
+      "expected_use": "matched county policy control for report timing and state review",
+      "attempts": 2,
+      "attempt_receipts": [
+        "LAC-DPSS-ASH-008/attempt-1/attempt.json",
+        "LAC-DPSS-ASH-008/attempt-2/attempt.json"
+      ],
+      "terminal_state": "source_unavailable",
+      "exact_response_preserved": true,
+      "final_url": "https://epolicy.dpss.lacounty.gov/epolicy/epolicy/server/general/projects_responsive/ePolicyMaster/mergedProjects/ASH/ASH/ASH_008_-_Compliance_-_Hearing_Decisions/ASH_008_-_Compliance_-_Hearing_Decisions.htm",
+      "http_status": 503,
+      "content_type": "text/html",
+      "body_path": "LAC-DPSS-ASH-008/attempt-2/hop-01.body.bin",
+      "body_bytes": 964,
+      "body_sha256": "5557ef80e787d69d7cc5ff1dd8c71950dc7cf2e817ea75b0f294c43ae0a378a2",
+      "semantic_classification_complete": false,
+      "eligible_for_case_level_implementation_join": false,
+      "implementation_observed": false,
+      "separate_public_compliance_receipt_observed": false,
+      "complete_restoration_observed": false,
+      "remedy_timeliness_observed": false
+    }
+  ],
+  "authority": {
+    "policy_proves_case_compliance": false,
+    "aggregate_proves_case_compliance": false,
+    "exact_response_proves_case_compliance": false,
+    "exact_response_proves_implementation": false,
+    "exact_response_proves_restoration": false,
+    "source_unavailable_proves_noncompliance": false,
+    "case_level_follow_up_authorized": false,
+    "prevalence_supported": false,
+    "racial_order_supported": false,
+    "coordination_supported": false,
+    "common_purpose_supported": false,
+    "graph_effect": "none",
+    "publication_effect": "none",
+    "adoption_effect": "none"
+  }
+}
