@@ -1,0 +1,152 @@
+name: TEMP capture SSC RD-01 Wave 02 NatSec100 roster source v1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd01-wave02-roster-capture-base-v1
+    paths:
+      - '.github/tmp/ssc-rd01-wave02-roster-capture-v1.trigger'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd01-wave02-roster-capture-v1
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Capture one bounded first-party roster source
+        env:
+          SOURCE_URL: https://www.natsec100.org/natsec100-2026
+          OUTPUT: ${{ github.workspace }}/rd01-roster-capture
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          mkdir -p "$OUTPUT"
+          printf '%s\n' "$SOURCE_URL" > "$OUTPUT/request-url.txt"
+          for attempt in 1 2; do
+            dir="$OUTPUT/attempt-$attempt"
+            mkdir -p "$dir"
+            set +e
+            curl --location --silent --show-error --compressed \
+              --connect-timeout 15 --max-time 90 \
+              --user-agent 'clifford-number-rd01-roster-custody/1.0' \
+              --dump-header "$dir/headers.txt" \
+              --output "$dir/body.bin" \
+              --write-out '%{http_code}\n%{url_effective}\n%{content_type}\n%{size_download}\n' \
+              "$SOURCE_URL" > "$dir/curl-meta.txt" 2> "$dir/curl-stderr.txt"
+            exit_code=$?
+            set -e
+            printf '%s\n' "$exit_code" > "$dir/curl-exit.txt"
+            test -f "$dir/headers.txt" || : > "$dir/headers.txt"
+            test -f "$dir/body.bin" || : > "$dir/body.bin"
+            http_status="$(sed -n '1p' "$dir/curl-meta.txt" || true)"
+            if test "$exit_code" = 0 && test "$http_status" = 200 && test -s "$dir/body.bin"; then
+              break
+            fi
+          done
+      - name: Emit exact terminal receipt
+        env:
+          SOURCE_URL: https://www.natsec100.org/natsec100-2026
+          OUTPUT: ${{ github.workspace }}/rd01-roster-capture
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          const root = process.env.OUTPUT;
+          const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
+          const attempts = [];
+          for (const name of fs.readdirSync(root).filter((value) => /^attempt-\d+$/.test(value)).sort()) {
+            const dir = path.join(root, name);
+            const body = fs.readFileSync(path.join(dir, 'body.bin'));
+            const headers = fs.readFileSync(path.join(dir, 'headers.txt'));
+            const meta = fs.readFileSync(path.join(dir, 'curl-meta.txt'), 'utf8').split(/\r?\n/);
+            const stderr = fs.readFileSync(path.join(dir, 'curl-stderr.txt'));
+            const curlExit = Number(fs.readFileSync(path.join(dir, 'curl-exit.txt'), 'utf8').trim());
+            const httpStatus = Number(meta[0] || 0);
+            attempts.push({
+              attempt: Number(name.split('-')[1]),
+              request_url: process.env.SOURCE_URL,
+              final_url: meta[1] || process.env.SOURCE_URL,
+              content_type: meta[2] || '',
+              reported_download_bytes: Number(meta[3] || 0),
+              curl_exit: curlExit,
+              http_status: httpStatus,
+              headers_path: `${name}/headers.txt`,
+              headers_bytes: headers.length,
+              headers_sha256: sha256(headers),
+              body_path: `${name}/body.bin`,
+              body_bytes: body.length,
+              body_sha256: sha256(body),
+              stderr_path: `${name}/curl-stderr.txt`,
+              stderr_bytes: stderr.length,
+              resolved: curlExit === 0 && httpStatus === 200 && body.length > 0
+            });
+          }
+          if (attempts.length < 1 || attempts.length > 2) throw new Error(`attempt denominator ${attempts.length}`);
+          if (attempts.length === 2 && attempts[0].resolved) throw new Error('outcome-selected retry');
+          const last = attempts.at(-1);
+          const receipt = {
+            schema_version: 'ssc-rd01-wave02-roster-source-capture@1',
+            issue: 786,
+            class_id: 'RD-01-C03',
+            source_id: 'NATSEC100-2026-FIRST-PARTY',
+            source_url: process.env.SOURCE_URL,
+            attempts,
+            terminal_state: last.resolved ? 'http_success_exact_body_captured' : last.curl_exit !== 0 ? 'transport_failure_after_bounded_retry' : 'http_non_200_after_bounded_retry',
+            resolved: last.resolved,
+            terminal_body_path: last.body_path,
+            terminal_body_bytes: last.body_bytes,
+            terminal_body_sha256: last.body_sha256,
+            authority: {
+              source_capture_is_roster_parse: false,
+              source_capture_is_legal_entity_resolution: false,
+              failed_fetch_is_record_absence: false,
+              failed_fetch_is_noncompliance: false,
+              outside_human_dependency: false,
+              external_contacts: 0,
+              external_reviews: 0,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            }
+          };
+          fs.writeFileSync(path.join(root, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`);
+          const files = [];
+          const walk = (target) => {
+            for (const entry of fs.readdirSync(target, { withFileTypes: true })) {
+              const full = path.join(target, entry.name);
+              if (entry.isDirectory()) walk(full);
+              else if (entry.name !== 'manifest.json') {
+                const body = fs.readFileSync(full);
+                files.push({ path: path.relative(root, full).split(path.sep).join('/'), bytes: body.length, sha256: sha256(body) });
+              }
+            }
+          };
+          walk(root);
+          files.sort((a,b) => a.path.localeCompare(b.path));
+          const combined = sha256(Buffer.from(files.map((row) => `${row.path}\0${row.bytes}\0${row.sha256}\n`).join('')));
+          fs.writeFileSync(path.join(root, 'manifest.json'), `${JSON.stringify({ schema_version: 'ssc-rd01-wave02-roster-source-manifest@1', entries: files, combined_sha256: combined }, null, 2)}\n`);
+          console.log(`RD-01 roster source: ${receipt.terminal_state}, ${receipt.terminal_body_bytes} bytes, ${receipt.terminal_body_sha256}`);
+          NODE
+      - name: Upload exact roster-source custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd01-wave02-roster-source-capture-v1
+          path: rd01-roster-capture
+          if-no-files-found: error
+          retention-days: 90
