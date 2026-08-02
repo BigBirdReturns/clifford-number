@@ -147,7 +147,7 @@ mutateJsonl(CAPTURES, rows => { rows[0].response_body_bytes += 1; });
 mutateJsonl(CAPTURES, rows => { rows[0].response_body_sha256 = '0'.repeat(64); });
 mutateJsonl(CAPTURES, rows => { rows[0].response_body_path = null; });
 mutateJsonl(CAPTURES, rows => { const r=rows.find(x=>x.response_ok===true); assert.ok(r); r.response_ok=false; });
-mutateJsonl(CAPTURES, rows => { const r=rows.find(x=>x.marker_audit?.passed===true); assert.ok(r); r.marker_audit.passed=false; });
+mutateJsonl(CAPTURES, rows => { const r=rows.find(x=>x.required_success===true && x.marker_audit?.passed===true); assert.ok(r); r.marker_audit.passed=false; });
 mutateJsonl(CAPTURES, rows => { const r=rows.find(x=>x.response_ok===true && x.capture_state!=='captured_marker_mismatch'); assert.ok(r); r.capture_state='captured_marker_mismatch'; });
 mutateJsonl(CAPTURES, rows => { rows[0].requirement_satisfied = true; });
 mutateJsonl(CAPTURES, rows => { rows[0].authorized_join = true; });
