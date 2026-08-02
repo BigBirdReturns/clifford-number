@@ -14,6 +14,19 @@ on:
       - 'tools/build-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs'
       - 'tools/validate-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs'
       - 'test/status-sovereignty-rd04-calfresh-decision-registry-a06.test.js'
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - '.github/workflows/materialize-ssc-rd04-calfresh-decision-registry-a06.yml'
+      - '.github/workflows/status-sovereignty-rd04-calfresh-decision-registry-a06.yml'
+      - 'data/intake/status-sovereignty-rd04-calfresh-decision-registry-a06/contract.json'
+      - 'docs/milestones/ssc-rd04-calfresh-decision-registry-a06.md'
+      - 'schemas/status-sovereignty-rd04-calfresh-decision-registry-a06.schema.json'
+      - 'tools/acquire-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs'
+      - 'tools/build-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs'
+      - 'tools/validate-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs'
+      - 'test/status-sovereignty-rd04-calfresh-decision-registry-a06.test.js'
   workflow_dispatch:
 
 permissions:
