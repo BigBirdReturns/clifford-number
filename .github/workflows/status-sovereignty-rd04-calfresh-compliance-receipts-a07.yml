@@ -8,14 +8,17 @@ on:
       - 'docs/milestones/ssc-rd04-calfresh-compliance-receipts-a07.md'
       - 'schemas/status-sovereignty-rd04-calfresh-compliance-receipts-a07.schema.json'
       - 'schemas/status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.schema.json'
+      - 'schemas/status-sovereignty-rd04-calfresh-county-agency-roots-a07.schema.json'
       - 'tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs'
       - 'tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.mjs'
       - 'tools/ssc-rd04-a07-order-candidate-extractor.mjs'
       - 'tools/acquire-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs'
+      - 'tools/build-status-sovereignty-rd04-calfresh-county-agency-roots-a07.mjs'
       - 'test/status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js'
       - 'test/status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.test.js'
       - 'test/ssc-rd04-a07-order-candidate-extractor.test.js'
       - 'test/acquire-status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js'
+      - 'test/status-sovereignty-rd04-calfresh-county-agency-roots-a07.test.js'
   push:
     branches: [main]
     paths:
@@ -24,14 +27,17 @@ on:
       - 'docs/milestones/ssc-rd04-calfresh-compliance-receipts-a07.md'
       - 'schemas/status-sovereignty-rd04-calfresh-compliance-receipts-a07.schema.json'
       - 'schemas/status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.schema.json'
+      - 'schemas/status-sovereignty-rd04-calfresh-county-agency-roots-a07.schema.json'
       - 'tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs'
       - 'tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.mjs'
       - 'tools/ssc-rd04-a07-order-candidate-extractor.mjs'
       - 'tools/acquire-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs'
+      - 'tools/build-status-sovereignty-rd04-calfresh-county-agency-roots-a07.mjs'
       - 'test/status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js'
       - 'test/status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.test.js'
       - 'test/ssc-rd04-a07-order-candidate-extractor.test.js'
       - 'test/acquire-status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js'
+      - 'test/status-sovereignty-rd04-calfresh-county-agency-roots-a07.test.js'
   workflow_dispatch:
 
 permissions:
@@ -73,5 +79,10 @@ jobs:
           node --check test/status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.test.js
           node tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.mjs .
           node test/status-sovereignty-rd04-calfresh-compliance-receipts-a07-progress.test.js
+      - name: Validate complete 58-county agency-root parser contract
+        run: |
+          node --check tools/build-status-sovereignty-rd04-calfresh-county-agency-roots-a07.mjs
+          node --check test/status-sovereignty-rd04-calfresh-county-agency-roots-a07.test.js
+          node test/status-sovereignty-rd04-calfresh-county-agency-roots-a07.test.js
       - name: Refuse deterministic drift
         run: git diff --exit-code
