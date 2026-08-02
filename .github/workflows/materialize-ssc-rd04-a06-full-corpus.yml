@@ -36,6 +36,7 @@ jobs:
           OVERLAY_B64_SHA256: a913180696539c102874ae32caf6c01246f92499ca5b796040e88a0847db61cd
           OVERLAY_TGZ_SHA256: 92fde70c19421bf0b26b181add058c1410091968fb87dc3e237cee79e2fb1430
           RECOVERY_SCRIPT_SHA256: f41454aed6204ee91b5aaf651233ea18ae2dd29b260e57c6d38da1f0dc937464
+          PUBLISH_SCRIPT_SHA256: f37c4b9dfe2bca87832935fb25a69786ba241af47a3c6f52f9c0749c999641e8
           MILESTONE_SHA256: 1a3ccd6fa3a689fada8236efadfc975e6e96d0e5a11e2c9451bf9ab5f3b10bc0
         run: |
           set -Eeuo pipefail
@@ -63,12 +64,44 @@ jobs:
 
           printf '%s  %s\n' "$RECOVERY_SCRIPT_SHA256" tools/materialize-ssc-rd04-a06-full-corpus.sh | sha256sum --check --strict
           printf '%s  %s\n' "$MILESTONE_SHA256" docs/milestones/ssc-rd04-a06-full-corpus.md | sha256sum --check --strict
+
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('tools/materialize-ssc-rd04-a06-full-corpus.sh')
+          text = path.read_text()
+          old = '''rm -f .github/workflows/materialize-ssc-rd04-a06-full-corpus.yml
+          rm -f tools/materialize-ssc-rd04-a06-full-corpus.sh
+          rm -f .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part00
+          rm -f .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part01
+          rm -f .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part02
+          rm -f .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part03
+          rm -f .github/tmp/ssc-rd04-a06-recovery-overlay.tgz.b64.part00
+          rm -f .github/tmp/ssc-rd04-a06-recovery-overlay.tgz.b64.part01
+          rm -f .github/tmp/ssc-rd04-a06-recovery-overlay.tgz.b64.part02
+          rm -f .github/tmp/ssc-rd04-a06-recovery-overlay.tgz.b64.part03
+          '''
+          new = '''rm -f .github/workflows/status-sovereignty-rd04-a06-full-corpus.yml
+          rm -f tools/materialize-ssc-rd04-a06-full-corpus.sh
+          rm -f .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part00
+          rm -f .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part01
+          rm -f .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part02
+          rm -f .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part03
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one workflow-publication cleanup block, observed {text.count(old)}')
+          path.write_text(text.replace(old, new))
+          PY
+
+          printf '%s  %s\n' "$PUBLISH_SCRIPT_SHA256" tools/materialize-ssc-rd04-a06-full-corpus.sh | sha256sum --check --strict
           node --check tools/ssc-rd04-a06-full-corpus.mjs
           bash -n tools/materialize-ssc-rd04-a06-full-corpus.sh
           ! grep -nE '[[:blank:]]+$' docs/milestones/ssc-rd04-a06-full-corpus.md
           grep -Fq 'release_assets_page3=' tools/materialize-ssc-rd04-a06-full-corpus.sh
           grep -Fq 'Reusing the exact completed 64-shard draft release; no source document is refetched' tools/materialize-ssc-rd04-a06-full-corpus.sh
-          grep -Fq 'rm -f .github/tmp/ssc-rd04-a06-recovery-overlay.tgz.b64.part03' tools/materialize-ssc-rd04-a06-full-corpus.sh
+          grep -Fq 'rm -f .github/workflows/status-sovereignty-rd04-a06-full-corpus.yml' tools/materialize-ssc-rd04-a06-full-corpus.sh
+          ! grep -Fq 'rm -f .github/workflows/materialize-ssc-rd04-a06-full-corpus.yml' tools/materialize-ssc-rd04-a06-full-corpus.sh
+          ! grep -Fq 'rm -f .github/tmp/ssc-rd04-a06-recovery-overlay.tgz.b64.part03' tools/materialize-ssc-rd04-a06-full-corpus.sh
           grep -Fq 'rm -f tools/materialize-ssc-rd04-a06-full-corpus.sh' tools/materialize-ssc-rd04-a06-full-corpus.sh
           ! grep -Fq '/releases/tags/' tools/materialize-ssc-rd04-a06-full-corpus.sh
       - name: Install bounded PDF and archive tools when absent
