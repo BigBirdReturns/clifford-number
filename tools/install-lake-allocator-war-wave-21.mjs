@@ -162,7 +162,15 @@ for (const relative of [
   'docs/methods/lake-allocator-war-structural-parses-wave-33.md',
   'docs/milestones/lake-allocator-war-structural-parses-wave-33.md',
   'build/lake-actions/allocator-war-structural-parses-wave-33.json',
-  'reports/lake-allocator-war-structural-parses-wave-33.md'
+  'reports/lake-allocator-war-structural-parses-wave-33.md',
+  'data/project/lake-allocator-war-schema-joins-wave-34-policy.json',
+  'data/project/lake-allocator-war-schema-joins-wave-34-plan.json',
+  'data/acquisition/lake-allocator-war-wave-34/schema-adapter-ledger.jsonl',
+  'data/acquisition/lake-allocator-war-wave-34/lawful-join-contract-ledger.jsonl',
+  'docs/methods/lake-allocator-war-schema-joins-wave-34.md',
+  'docs/milestones/lake-allocator-war-schema-joins-wave-34.md',
+  'build/lake-actions/allocator-war-schema-joins-wave-34.json',
+  'reports/lake-allocator-war-schema-joins-wave-34.md'
 ]) roots.add(relative);
 lakePolicy.authoritative_roots = [...roots].sort();
 lakePolicy.boundaries.allocator_war_routing_proves_finding = false;
@@ -188,6 +196,7 @@ for (const basin of policy.basin_contract) {
 }
 basinRegistry.basins.sort((a, b) => a.basin_id.localeCompare(b.basin_id));
 basinRegistry.boundaries.allocator_war_basin_membership_proves_common_purpose = false;
+basinRegistry.boundaries.allocator_war_wave_34_schema_is_join_authority = false;
 writeJson(basinPath, basinRegistry);
 
 const packagePath = 'package.json';
@@ -225,6 +234,14 @@ if (!pkg.scripts.check.includes('npm run validate:lake-allocator-war-structural-
   if (!pkg.scripts.check.includes(marker)) throw new Error('Wave 32 release-gate marker missing');
   pkg.scripts.check = pkg.scripts.check.replace(marker, `${marker} && npm run validate:lake-allocator-war-structural-parses-wave-33`);
 }
+pkg.scripts['build:lake-allocator-war-schema-joins-wave-34'] = 'node tools/build-lake-allocator-war-schema-joins-wave-34.mjs';
+pkg.scripts['validate:lake-allocator-war-schema-joins-wave-34'] = 'node tools/validate-lake-allocator-war-schema-joins-wave-34.mjs && node test/lake-allocator-war-schema-joins-wave-34.test.js';
+pkg.scripts['ci:lake-allocator-war-schema-joins-wave-34'] = 'npm run build:lake-allocator-war-schema-joins-wave-34 && npm run validate:lake-allocator-war-schema-joins-wave-34';
+if (!pkg.scripts.check.includes('npm run validate:lake-allocator-war-schema-joins-wave-34')) {
+  const marker = 'npm run validate:lake-allocator-war-structural-parses-wave-33';
+  if (!pkg.scripts.check.includes(marker)) throw new Error('Wave 33 release-gate marker missing');
+  pkg.scripts.check = pkg.scripts.check.replace(marker, `${marker} && npm run validate:lake-allocator-war-schema-joins-wave-34`);
+}
 writeJson(packagePath, pkg);
 
 const buildInstructionsPath = 'BUILD-INSTRUCTIONS.md';
@@ -247,6 +264,10 @@ const wave33BuildMarker = '3.33 **Allocator-war frozen source structural parses 
 if (!buildInstructions.includes(wave33BuildMarker)) {
   buildInstructions += `\n\n${wave33BuildMarker}\nRun \`node tools/build-lake-allocator-war-structural-parses-wave-33.mjs\` only after the permanent Wave 32 snapshot ledger and response bytes are present. The builder must verify all response hashes, emit exactly nineteen parse rows, perform no network requests, preserve HTTP errors and credential boundaries, and reuse the unchanged seven-route, thirty-eight-task, 153-use denominator.\n\nA structural parse is addressability only. JSON array lengths, field names, HTML tags, links, text counts, HTTP error bodies, and credential boundaries do not establish institutional completeness, authorize joins, adjudicate evidence, create findings, alter the graph, or clear publication.\n`;
 }
+const wave34BuildMarker = '3.34 **Allocator-war source schemas and lawful joins — Wave 34.**';
+if (!buildInstructions.includes(wave34BuildMarker)) {
+  buildInstructions += `\n\n${wave34BuildMarker}\nRun \`node tools/build-lake-allocator-war-schema-joins-wave-34.mjs\` only after the permanent Wave 33 parse ledger is present. The builder must adapt all nineteen parse objects exactly once, preserve source-specific structural limits and sensitive exclusions, and emit seven blocked lawful-join contracts covering all route classes.\n\nA schema adapter or candidate key is not institutional semantics or join authority. Every join remains blocked until its exact action, no-action, affected-party, comparator, correction, recovery, or lawful-access requirements are satisfied. Protected personnel rows may not be replaced with public aggregate workforce data.\n`;
+}
 fs.writeFileSync(full(buildInstructionsPath), buildInstructions);
 
 const readmePath = 'README.md';
@@ -267,6 +288,10 @@ Wave 32 freezes each of the nineteen Wave 31 official locators as one exact publ
 const wave33ReadmeMarker = '## Allocator-war frozen source structural parses Wave 33';
 if (!readme.includes(wave33ReadmeMarker)) {
   readme += `\n\n${wave33ReadmeMarker}\n\nWave 33 verifies every permanent Wave 32 response hash and emits one deterministic structural parse row for each of the nineteen source objects. Seven JSON, eight HTML, and four credential-boundary rows are reused across the unchanged route and task denominator. Structural addressability creates no complete denominator, evidence adjudication, finding, graph effect, or publication authority. See \`reports/lake-allocator-war-structural-parses-wave-33.md\`.\n`;
+}
+const wave34ReadmeMarker = '## Allocator-war source schemas and lawful joins Wave 34';
+if (!readme.includes(wave34ReadmeMarker)) {
+  readme += `\n\n${wave34ReadmeMarker}\n\nWave 34 maps all nineteen permanent Wave 33 parse objects through source-specific schema adapters and defines seven explicit lawful-join contracts. The thirty-one missing institutional requirements remain open, including three protected-personnel requirements that require lawful or privacy-safe access. Schema addressability creates no authorized join, complete denominator, evidence adjudication, finding, graph effect, or publication authority. See \`reports/lake-allocator-war-schema-joins-wave-34.md\`.\n`;
 }
 fs.writeFileSync(full(readmePath), readme);
 
