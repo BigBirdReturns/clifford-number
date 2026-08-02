@@ -1,0 +1,54 @@
+name: TEMP materialize and merge SSC RD-04 A07 permanent product v1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a07-permanent-materializer-base-v1
+    paths:
+      - '.github/tmp/ssc-rd04-a07-permanent-materializer-v1.trigger'
+
+permissions:
+  actions: read
+  checks: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: ssc-rd04-a07-permanent-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a07-permanent-materializer-base-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate permanent sources and repair disposable transport
+        run: |
+          set -Eeuo pipefail
+          node --check tools/build-status-sovereignty-rd04-public-implementation-receipts-a07.mjs
+          node --check tools/validate-status-sovereignty-rd04-public-implementation-receipts-a07.mjs
+          node --check test/status-sovereignty-rd04-public-implementation-receipts-a07.test.js
+          node .github/tmp/patch-ssc-rd04-a07-permanent-materializer-v1.mjs
+          bash -n /tmp/ssc-rd04-a07-permanent-materializer-v1.patched.sh
+      - id: materialize
+        name: Wait for machine receipts, publish exact product, gate, merge, and prove
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: /tmp/ssc-rd04-a07-permanent-materializer-v1.patched.sh
+      - name: Upload A07 permanent materializer and post-merge proof receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a07-permanent-materializer-receipt-v1
+          path: ssc-rd04-a07-permanent-materializer-receipt.txt
+          if-no-files-found: warn
+          retention-days: 90
