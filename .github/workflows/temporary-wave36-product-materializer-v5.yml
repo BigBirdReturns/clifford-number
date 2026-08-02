@@ -1,0 +1,208 @@
+name: Temporary Wave 36 product materializer v5
+
+on:
+  pull_request:
+    branches:
+      - agent/lake-allocator-war-wave-21
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-wave36-product-materializer-v5.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: temporary-wave36-product-materializer-v5-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Await temporary workflow deletion
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          path='.github/workflows/temporary-wave36-product-materializer-v5.yml'
+          encoded_ref='agent%2Flake-allocator-war-public-acquisition-wave-36'
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/${path}?ref=${encoded_ref}"
+          for attempt in $(seq 1 180); do
+            status="$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer ${GITHUB_TOKEN}" -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' "$api")"
+            [[ "$status" == '404' ]] && exit 0
+            [[ "$status" == '200' ]] || { echo "unexpected GitHub contents status: $status" >&2; exit 1; }
+            sleep 2
+          done
+          echo 'temporary Wave 36 product workflow was not deleted before checkout' >&2
+          exit 1
+
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lake-allocator-war-public-acquisition-wave-36
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Acquire the bounded official-record cohort
+        shell: bash
+        env:
+          LAW36_ALLOW_REQUIRED_FAILURES: '1'
+          LAW36_OBSERVED_AT: '2026-08-02T16:30:00Z'
+        run: |
+          set -euo pipefail
+          node tools/acquire-lake-allocator-war-public-acquisition-wave-36.mjs
+
+      - name: Preserve acquisition diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wave36-acquisition-diagnostics-final-v5
+          path: data/acquisition/lake-allocator-war-wave-36/capture-ledger.jsonl
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Refuse missing required official records
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('fs');
+          const rows = fs.readFileSync('data/acquisition/lake-allocator-war-wave-36/capture-ledger.jsonl','utf8')
+            .trim().split(/\n+/).filter(Boolean).map(JSON.parse);
+          const failed = rows.filter(row => row.required_success && !(row.response_ok && row.response_body_path && row.marker_audit?.passed));
+          if (failed.length) {
+            console.error('Wave 36 required-source failures:');
+            for (const row of failed) console.error(`- ${row.capture_ref} ${row.source_ref}: ${row.capture_state} ${row.request_error ?? ''}`);
+            process.exit(1);
+          }
+          console.log(`Wave 36 required-source gate passed: ${rows.filter(row => row.required_success).length}`);
+          NODE
+
+      - name: Build and validate the Wave 36 execution layer
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-lake-allocator-war-public-acquisition-wave-36.mjs
+          node tools/validate-lake-allocator-war-public-acquisition-wave-36.mjs
+          node test/lake-allocator-war-public-acquisition-wave-36.test.js
+
+      - name: Materialize, release-check, restore, and publish the sealed epoch
+        shell: bash
+        env:
+          BRANCH: agent/lake-allocator-war-public-acquisition-wave-36
+          BASE_COMMIT: 4e6f046eeb08ef38a85287ba09e64906c52571c6
+        run: |
+          set -euo pipefail
+          before="$(git rev-parse HEAD)"
+          test "$(git merge-base "$BASE_COMMIT" "$before")" = "$BASE_COMMIT"
+
+          tree_hash() {
+            git add -A
+            git write-tree
+            git reset -q
+          }
+
+          lake_pass() {
+            node tools/build-lake-index.mjs
+            node tools/stabilize-lake-index.mjs
+            node tools/stabilize-lake-generator-contracts-wave-19.mjs
+            node tools/reconcile-lake-receipt-semantics.mjs
+            node tools/stabilize-lake-receipt-custody-wave-20.mjs
+            node tools/stabilize-lake-allocator-war-wave-21.mjs
+            node tools/build-lake-gap-summary.mjs
+            node tools/validate-lake-index.mjs
+            node tools/validate-lake-receipt-semantics.mjs
+            node tools/validate-lake-gap-summary.mjs
+            node tools/reconcile-lake-identifier-topology-wave-18.mjs
+            node tools/reconcile-lake-generator-contracts-wave-19.mjs
+            node tools/reconcile-lake-receipt-custody-wave-20.mjs
+            node tools/reconcile-lake-allocator-war-wave-21.mjs
+            node tools/validate-lake-allocator-war-public-acquisition-wave-36.mjs
+          }
+
+          shard_and_validate() {
+            node tools/shard-lake-index.mjs
+            node tools/validate-lake-index-shards.mjs
+            node tools/build-lake-basin-index.mjs
+            node tools/validate-lake-basin-index.mjs
+          }
+
+          focused_validate() {
+            node tools/validate-lake-residual-frontier-wave-17.mjs
+            node tools/validate-lake-identifier-topology-wave-18.mjs
+            node tools/validate-lake-generator-contracts-wave-19.mjs
+            node tools/validate-lake-receipt-custody-wave-20.mjs
+            node tools/validate-lake-allocator-war-wave-21.mjs
+            node tools/validate-lake-allocator-war-bounded-source-snapshots-wave-32.mjs
+            node tools/validate-lake-allocator-war-structural-parses-wave-33.mjs
+            node tools/validate-lake-allocator-war-schema-joins-wave-34.mjs
+            node tools/validate-lake-allocator-war-join-requirements-wave-35.mjs
+            node tools/validate-lake-allocator-war-public-acquisition-wave-36.mjs
+            node test/lake-allocator-war-public-acquisition-wave-36.test.js
+          }
+
+          registry_before="$(sha256sum data/project/lake-basin-registry.json | awk '{print $1}')"
+          node tools/install-lake-allocator-war-wave-21.mjs
+          registry_after="$(sha256sum data/project/lake-basin-registry.json | awk '{print $1}')"
+          test "$registry_before" = "$registry_after"
+          echo "Wave 36 basin installer fixed point: $registry_after"
+          node tools/build-lake-allocator-war-public-acquisition-wave-36.mjs
+
+          lake_pass
+          pre1="$(tree_hash)"
+          lake_pass
+          pre2="$(tree_hash)"
+          lake_pass
+          pre3="$(tree_hash)"
+          test "$pre2" = "$pre3"
+          echo "Wave 36 pre-release fixed point: $pre3"
+
+          shard_and_validate
+          npm run release:check
+
+          lake_pass
+          post1="$(tree_hash)"
+          lake_pass
+          post2="$(tree_hash)"
+          test "$post1" = "$post2"
+          echo "Wave 36 post-release fixed point: $post2"
+
+          shard_and_validate
+          focused_validate
+          git diff --check
+
+          git config user.name 'BigBirdReturns'
+          git config user.email '219768509+BigBirdReturns@users.noreply.github.com'
+          git add -A
+          git commit -m 'Materialize allocator-war public acquisition Wave 36'
+          product_commit="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse 'HEAD^{tree}')"
+
+          git reset --hard HEAD
+          git clean -fd
+          registry_before_restore="$(sha256sum data/project/lake-basin-registry.json | awk '{print $1}')"
+          node tools/install-lake-allocator-war-wave-21.mjs
+          registry_after_restore="$(sha256sum data/project/lake-basin-registry.json | awk '{print $1}')"
+          test "$registry_before_restore" = "$registry_after_restore"
+          node tools/build-lake-allocator-war-public-acquisition-wave-36.mjs
+          lake_pass
+          restored1="$(tree_hash)"
+          lake_pass
+          restored2="$(tree_hash)"
+          test "$restored1" = "$restored2"
+          shard_and_validate
+          focused_validate
+          test -z "$(git status --porcelain)"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$product_tree"
+          echo "Wave 36 restored epoch: $restored2"
+
+          git fetch origin "$BRANCH"
+          test "$(git rev-parse FETCH_HEAD)" = "$before"
+          git push origin "HEAD:$BRANCH"
+          echo "Wave 36 product commit: $product_commit"
+          echo "Wave 36 product tree: $product_tree"
