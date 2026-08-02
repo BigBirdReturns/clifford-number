@@ -292,6 +292,7 @@ const driftFixture = falseDriftRepair.worlds.find(world => world.world_id === 'f
 driftFixture.equating.approved_form_id = 'FORM-DRIFT-B';
 driftFixture.equating.version_drift = false;
 driftFixture.equating.form_comparable = true;
+driftFixture.items.anchor_items_count = 4;
 driftFixture.equating.secure_anchor_count = 4;
 driftFixture.equating.anchor_security_state = 'verified';
 assert.throws(() => compilePreferenceInstrumentValidityFixture(falseDriftRepair), /form_equating_version_drift_present mismatch|form_comparability_complete mismatch/);
