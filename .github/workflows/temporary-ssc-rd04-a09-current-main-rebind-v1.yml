@@ -1,0 +1,203 @@
+name: TEMP rebind SSC RD-04 A09 changed-input gate to current main v1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a09-current-main-rebind-base-v1
+    paths:
+      - '.github/tmp/ssc-rd04-a09-current-main-rebind-v1.trigger'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd04-a09-current-main-rebind-v1
+  cancel-in-progress: false
+
+jobs:
+  rebind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a09-current-main-rebind-base-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Rebind, gate, and publish exact A09 product
+        env:
+          OLD_BASE: 30cdc27e3c90ceec06773616edc49d7338bb43c5
+          SOURCE_HEAD: 81009d0eeea33b6eb288829d68dece2bfeb744cf
+          TARGET_BRANCH: agent/ssc-rd04-changed-input-gate-a09
+          EXPECTED_RELEASE_SHA256: f494526c2b4bb0d8b710ce40925b9a7fe3a988ad0cc139fb7e7b1301e9bf3736
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git fetch --no-tags origin main
+          start_main="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$OLD_BASE" "$start_main"
+          git merge-base --is-ancestor "$OLD_BASE" "$SOURCE_HEAD"
+
+          git diff --name-only "$OLD_BASE...$start_main" | sort > /tmp/a09-main-drift-paths
+          if grep -E '(^|/)(status-sovereignty-rd04-changed-input-gate-a09|rd04-changed-input-gate-a09|status-sovereignty-rd04-a09|ssc-rd04-changed-input-gate-a09)(/|\.|$)' /tmp/a09-main-drift-paths; then
+            echo 'current main overlaps the permanent A09 namespace' >&2
+            exit 1
+          fi
+
+          cat > /tmp/a09-expected-product-paths <<'PATHS'
+          .github/workflows/status-sovereignty-rd04-changed-input-gate-a09.yml
+          build/core-thesis/status-sovereignty/rd04-changed-input-gate-a09/data.json
+          build/core-thesis/status-sovereignty/rd04-changed-input-gate-a09/manifest.json
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/core.json
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/candidate-input-receipt.json
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/current-cycle/end-main.txt
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/current-cycle/response/body.bin
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/current-cycle/response/curl-exit.txt
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/current-cycle/response/curl-meta.txt
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/current-cycle/response/curl-stderr.txt
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/current-cycle/response/headers.txt
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/current-cycle/start-main.txt
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/current-cycle/summary.json
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/source-ledger.json
+          data/project/status-sovereignty-rd04-changed-input-gate-a09-release-manifest.json
+          docs/milestones/ssc-rd04-changed-input-gate-a09.md
+          reports/core-thesis/status-sovereignty/rd04-changed-input-gate-a09/data.json
+          reports/core-thesis/status-sovereignty/rd04-changed-input-gate-a09/index.html
+          schemas/status-sovereignty-rd04-changed-input-gate-a09.schema.json
+          test/status-sovereignty-rd04-changed-input-gate-a09.test.js
+          tools/acquisition/status-sovereignty-rd04-a09/detect-changed-input.mjs
+          tools/build-status-sovereignty-rd04-changed-input-gate-a09.mjs
+          tools/validate-status-sovereignty-rd04-changed-input-gate-a09.mjs
+          PATHS
+          sed -i 's/^[[:space:]]*//' /tmp/a09-expected-product-paths
+          sort -o /tmp/a09-expected-product-paths /tmp/a09-expected-product-paths
+          test "$(wc -l < /tmp/a09-expected-product-paths | tr -d ' ')" = 23
+
+          git diff --name-only "$OLD_BASE...$SOURCE_HEAD" | sort > /tmp/a09-source-product-paths
+          diff -u /tmp/a09-expected-product-paths /tmp/a09-source-product-paths
+
+          git switch --detach "$start_main"
+          git switch -C "$TARGET_BRANCH"
+          while IFS= read -r product_path; do
+            git checkout "$SOURCE_HEAD" -- "$product_path"
+          done < /tmp/a09-expected-product-paths
+
+          git diff --cached --name-only | sort > /tmp/a09-staged-product-paths
+          diff -u /tmp/a09-expected-product-paths /tmp/a09-staged-product-paths
+
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/build-status-sovereignty-rd04-changed-input-gate-a09.mjs
+          node tools/validate-status-sovereignty-rd04-changed-input-gate-a09.mjs
+          node test/status-sovereignty-rd04-changed-input-gate-a09.test.js
+          git diff --exit-code
+
+          RELEASE_PATH='data/project/status-sovereignty-rd04-changed-input-gate-a09-release-manifest.json' \
+          EXPECTED_RELEASE_SHA256="$EXPECTED_RELEASE_SHA256" \
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const release = JSON.parse(fs.readFileSync(process.env.RELEASE_PATH, 'utf8'));
+          if (release.combined_sha256 !== process.env.EXPECTED_RELEASE_SHA256) {
+            throw new Error(`release digest drift: ${release.combined_sha256}`);
+          }
+          if (!Array.isArray(release.entries) || release.entries.length !== 22) {
+            throw new Error(`release entry denominator: ${release.entries?.length}`);
+          }
+          console.log(`A09 release verified: ${release.entries.length} entries, ${release.combined_sha256}`);
+          NODE
+
+          npm run release:check
+          git restore --worktree -- .
+          git clean -fd
+
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/build-status-sovereignty-rd04-changed-input-gate-a09.mjs
+          node tools/validate-status-sovereignty-rd04-changed-input-gate-a09.mjs
+          node test/status-sovereignty-rd04-changed-input-gate-a09.test.js
+          git diff --exit-code
+
+          permanent_workflow='.github/workflows/status-sovereignty-rd04-changed-input-gate-a09.yml'
+          exported_workflow='/tmp/status-sovereignty-rd04-changed-input-gate-a09.yml'
+          cp "$permanent_workflow" "$exported_workflow"
+          workflow_sha256="$(sha256sum "$exported_workflow" | awk '{print $1}')"
+          workflow_bytes="$(stat -c '%s' "$exported_workflow")"
+
+          grep -v '^\.github/workflows/status-sovereignty-rd04-changed-input-gate-a09.yml$' \
+            /tmp/a09-expected-product-paths > /tmp/a09-expected-nonworkflow-paths
+          test "$(wc -l < /tmp/a09-expected-nonworkflow-paths | tr -d ' ')" = 22
+
+          git restore --staged -- "$permanent_workflow"
+          rm -f "$permanent_workflow"
+          git diff --cached --name-only | sort > /tmp/a09-observed-nonworkflow-paths
+          diff -u /tmp/a09-expected-nonworkflow-paths /tmp/a09-observed-nonworkflow-paths
+          test -z "$(git status --porcelain=v1 | grep '^??' || true)"
+
+          git commit -m 'Add SSC RD-04 A09 changed-input gate'
+          product_head="$(git rev-parse HEAD)"
+          git diff --name-only "$start_main...$product_head" | sort > /tmp/a09-committed-nonworkflow-paths
+          diff -u /tmp/a09-expected-nonworkflow-paths /tmp/a09-committed-nonworkflow-paths
+          test -z "$(git status --porcelain=v1)"
+
+          git fetch --no-tags origin main
+          end_main="$(git rev-parse origin/main)"
+          test "$end_main" = "$start_main"
+          git push --force origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          export START_MAIN="$start_main"
+          export END_MAIN="$end_main"
+          export PRODUCT_HEAD="$product_head"
+          export SOURCE_HEAD
+          export EXPECTED_RELEASE_SHA256
+          export WORKFLOW_SHA256="$workflow_sha256"
+          export WORKFLOW_BYTES="$workflow_bytes"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const receipt = {
+            schema_version: 'ssc-rd04-a09-current-main-rebind-receipt@1',
+            source_head: process.env.SOURCE_HEAD,
+            start_main: process.env.START_MAIN,
+            end_main: process.env.END_MAIN,
+            product_head: process.env.PRODUCT_HEAD,
+            target_branch: 'agent/ssc-rd04-changed-input-gate-a09',
+            permanent_paths: 23,
+            published_nonworkflow_paths: 22,
+            release_sha256: process.env.EXPECTED_RELEASE_SHA256,
+            workflow: {
+              path: '.github/workflows/status-sovereignty-rd04-changed-input-gate-a09.yml',
+              bytes: Number(process.env.WORKFLOW_BYTES),
+              sha256: process.env.WORKFLOW_SHA256,
+              published_separately_by_connector: true
+            },
+            gates: {
+              no_magic_human: 'pass',
+              deterministic_builder: 'pass',
+              structural_validator: 'pass',
+              adversarial_and_classifier_controls: 45,
+              complete_repository_release_gate: 'pass',
+              current_main_lease: 'pass',
+              namespace_disjointness: 'pass'
+            },
+            authority: {
+              outside_human_dependency: false,
+              automatic_schedule_installed: false,
+              broader_crawl_authorized: false,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            }
+          };
+          fs.writeFileSync('ssc-rd04-a09-current-main-rebind-receipt.json', `${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+      - name: Upload exact A09 rebind receipt and permanent workflow
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a09-current-main-rebind-v1
+          path: |
+            ssc-rd04-a09-current-main-rebind-receipt.json
+            /tmp/status-sovereignty-rd04-changed-input-gate-a09.yml
+          if-no-files-found: error
+          retention-days: 90
