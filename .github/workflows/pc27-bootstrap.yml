@@ -45,18 +45,17 @@ jobs:
                   target.write_bytes(extracted.read())
                   print(f'materialized {member.name}')
           PY
-      - name: Commit the permanent surface
+      - name: Commit the non-workflow permanent surface
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -f \
             data/research/preference-custody/interference-mapping.fixture.json \
             test/preference-interference-mapping.test.js \
-            docs/preference-custody-interference-mapping.md \
-            .github/workflows/preference-interference-mapping.yml
+            docs/preference-custody-interference-mapping.md
           if git diff --cached --quiet; then
-            echo 'Permanent PC-27 files already exist.'
+            echo 'Non-workflow PC-27 files already exist.'
           else
-            git commit -m 'Materialize PC-27 fixture, tests, documentation, and workflow'
+            git commit -m 'Materialize PC-27 fixture, tests, and documentation'
             git push origin HEAD:research/preference-interference-mapping-v1
           fi
