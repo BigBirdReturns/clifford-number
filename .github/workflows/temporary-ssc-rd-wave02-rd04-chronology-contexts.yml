@@ -93,8 +93,17 @@ jobs:
         run: |
           set -Eeuo pipefail
           mkdir -p /tmp/rd04-chronology-runtime
-          base64 --decode .rd04-chronology-contexts/derive-chronology-contexts.mjs.gz.b64 | gzip --decompress > /tmp/rd04-chronology-runtime/derive-chronology-contexts.mjs
-          base64 --decode .rd04-chronology-contexts/chronology-contexts-test.js.gz.b64 | gzip --decompress > /tmp/rd04-chronology-runtime/chronology-contexts.test.js
+          echo '9eb143f99596e7c12b5f0d9b7af2ce989d5a04ab71697d36ffb99918be1148c4  .rd04-chronology-contexts/derive.part.00.b64' | sha256sum --check --strict
+          echo '5e3e2e3c062db4bc53fe4ea75b110750adb787c38457bc0f11670c51150f5eac  .rd04-chronology-contexts/derive.part.01.b64' | sha256sum --check --strict
+          echo '492541f9916b342ac45f24761e6c2cc621bbf12bde0b18ebdde7b7a2d0295b9b  .rd04-chronology-contexts/derive.part.02.b64' | sha256sum --check --strict
+          echo 'ac47602f22fd6f01fb882a3c2ce429b0588f50eb428b9e592c3ee7e5854ff8b6  .rd04-chronology-contexts/derive.part.03.b64' | sha256sum --check --strict
+          echo '9b594fce2dc7ece9829612f05d080fb27e62eef6c0e64623bf8ee21ce1ce6679  .rd04-chronology-contexts/test.part.00.b64' | sha256sum --check --strict
+          cat .rd04-chronology-contexts/derive.part.00.b64 .rd04-chronology-contexts/derive.part.01.b64 .rd04-chronology-contexts/derive.part.02.b64 .rd04-chronology-contexts/derive.part.03.b64 > /tmp/rd04-chronology-runtime/derive.b64
+          cat .rd04-chronology-contexts/test.part.00.b64 > /tmp/rd04-chronology-runtime/test.b64
+          echo '0e30b840d372cccd862bd14ebfcb8545ca0ec267f23502e64e9c88b5b44b1e7a  /tmp/rd04-chronology-runtime/derive.b64' | sha256sum --check --strict
+          echo '9b594fce2dc7ece9829612f05d080fb27e62eef6c0e64623bf8ee21ce1ce6679  /tmp/rd04-chronology-runtime/test.b64' | sha256sum --check --strict
+          base64 --decode /tmp/rd04-chronology-runtime/derive.b64 | gzip --decompress > /tmp/rd04-chronology-runtime/derive-chronology-contexts.mjs
+          base64 --decode /tmp/rd04-chronology-runtime/test.b64 | gzip --decompress > /tmp/rd04-chronology-runtime/chronology-contexts.test.js
           echo '497dbe4ebf6448ae6288a64b563a7f3a11d2246d911b74fdbd38cf92519048f4  /tmp/rd04-chronology-runtime/derive-chronology-contexts.mjs' | sha256sum --check --strict
           echo 'b7e2611e5c45aedc502fb3ca170b14554e89e5f15ed3fefbdf058600e7dcd039  /tmp/rd04-chronology-runtime/chronology-contexts.test.js' | sha256sum --check --strict
           node --check /tmp/rd04-chronology-runtime/derive-chronology-contexts.mjs
