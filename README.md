@@ -316,3 +316,8 @@ Wave 33 verifies every permanent Wave 32 response hash and emits one determinist
 ## Allocator-war source schemas and lawful joins Wave 34
 
 Wave 34 maps all nineteen permanent Wave 33 parse objects through source-specific schema adapters and defines seven explicit lawful-join contracts. The thirty-one missing institutional requirements remain open, including three protected-personnel requirements that require lawful or privacy-safe access. Schema addressability creates no authorized join, complete denominator, evidence adjudication, finding, graph effect, or publication authority. See `reports/lake-allocator-war-schema-joins-wave-34.md`.
+
+
+## Allocator-war lawful join requirement fan-out Wave 35
+
+Wave 35 converts all thirty-one unsatisfied Wave 34 institutional requirements into seven estate-owned acquisition queues. Twenty-eight tasks enter public, separately authorized, or lawful-case lanes; three protected-personnel tasks remain bounded to authorized lawful access. Task admission creates no acquisition result, join authorization, complete denominator, evidence adjudication, finding, graph effect, or publication authority. See `reports/lake-allocator-war-join-requirements-wave-35.md`.
