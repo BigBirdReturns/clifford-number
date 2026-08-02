@@ -1,0 +1,250 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-rd04-calfresh-decision-registry-a06.schema.json",
+  "title": "SSC RD-04 A06 CalFresh Decision Registry denominator",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "execution_id",
+    "issue",
+    "as_of",
+    "title",
+    "parent",
+    "query",
+    "selection",
+    "counts",
+    "registry_distributions",
+    "selected_distributions",
+    "current_result",
+    "next_handoff",
+    "authority",
+    "boundaries"
+  ],
+  "properties": {
+    "schema_version": { "const": "ssc-rd04-a06-core@1" },
+    "execution_id": { "const": "SSC-RD04-SNAP-A06" },
+    "issue": { "const": 722 },
+    "as_of": { "const": "2026-08-02" },
+    "title": { "type": "string", "minLength": 1 },
+    "parent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["main_commit", "a05_release_sha256"],
+      "properties": {
+        "main_commit": { "const": "80f6f10e0a0a631dd89d7b92df24fd1ffd2d1589" },
+        "a05_release_sha256": { "const": "b3f36dff2969d95767e6f0d564f7d3744bd72de98cf2b758d4729c6bc0de50c4" }
+      }
+    },
+    "query": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exact_request_url", "ordered_parameters", "date_boundary_semantics", "raw_body_path", "raw_body_sha256"],
+      "properties": {
+        "exact_request_url": { "type": "string", "pattern": "^https://acms\\.dss\\.ca\\.gov/acms/page\\.request\\.do\\?" },
+        "ordered_parameters": { "type": "array", "minItems": 5, "maxItems": 5 },
+        "date_boundary_semantics": { "const": "registry_defined_not_assumed_inclusive" },
+        "raw_body_path": { "type": "string", "minLength": 1 },
+        "raw_body_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cap", "selected_before_pdf_content", "replacements_after_content_inspection", "selected_count", "selection_method"],
+      "properties": {
+        "cap": { "const": 24 },
+        "selected_before_pdf_content": { "const": true },
+        "replacements_after_content_inspection": { "const": 0 },
+        "selected_count": { "type": "integer", "minimum": 1, "maximum": 24 },
+        "selection_method": { "const": "canonical_row_sha256_ascending_then_row_identity" }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "registry_rows",
+        "registry_rows_preserved",
+        "selected_decisions",
+        "exact_pdf_and_text_recovered",
+        "unparseable_exact_bytes_preserved",
+        "source_unavailable_after_bounded_retry",
+        "decision_rows",
+        "compliance_rows",
+        "separate_public_compliance_receipts",
+        "lexical_order_markers",
+        "missing_or_unparseable_rows",
+        "case_level_implementation_joins",
+        "residual_classes_closed",
+        "reviewed_disposition_changes",
+        "external_contacts",
+        "external_reviews",
+        "graph_effects",
+        "publication_effects",
+        "adoption_effects"
+      ],
+      "properties": {
+        "registry_rows": { "type": "integer", "minimum": 1 },
+        "registry_rows_preserved": { "type": "integer", "minimum": 1 },
+        "selected_decisions": { "type": "integer", "minimum": 1, "maximum": 24 },
+        "exact_pdf_and_text_recovered": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "unparseable_exact_bytes_preserved": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "source_unavailable_after_bounded_retry": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "decision_rows": { "type": "integer", "minimum": 1, "maximum": 24 },
+        "compliance_rows": { "type": "integer", "minimum": 1, "maximum": 24 },
+        "separate_public_compliance_receipts": { "const": 0 },
+        "lexical_order_markers": { "type": "integer", "minimum": 0 },
+        "missing_or_unparseable_rows": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "case_level_implementation_joins": { "const": 0 },
+        "residual_classes_closed": { "const": 0 },
+        "reviewed_disposition_changes": { "const": 0 },
+        "external_contacts": { "const": 0 },
+        "external_reviews": { "const": 0 },
+        "graph_effects": { "const": 0 },
+        "publication_effects": { "const": 0 },
+        "adoption_effects": { "const": 0 }
+      }
+    },
+    "registry_distributions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["disposition", "responsible_agency", "language", "issue_code"],
+      "properties": {
+        "disposition": { "$ref": "#/$defs/countMap" },
+        "responsible_agency": { "$ref": "#/$defs/countMap" },
+        "language": { "$ref": "#/$defs/countMap" },
+        "issue_code": { "$ref": "#/$defs/countMap" }
+      }
+    },
+    "selected_distributions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["disposition", "implementation_state"],
+      "properties": {
+        "disposition": { "$ref": "#/$defs/countMap" },
+        "implementation_state": { "$ref": "#/$defs/countMap" }
+      }
+    },
+    "current_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "terminal_state",
+        "exact_registry_response_preserved",
+        "complete_returned_set_preserved",
+        "returned_set_is_all_calfresh_decisions",
+        "submitted_dates_prove_inclusive_month",
+        "pdf_sample_fixed_before_content",
+        "decision_orders_source_addressable",
+        "separate_compliance_join_supported",
+        "complete_restoration_supported",
+        "remedy_timeliness_supported",
+        "prevalence_supported",
+        "residual_class_closed",
+        "graph_effect",
+        "publication_effect",
+        "adoption_effect"
+      ],
+      "properties": {
+        "terminal_state": { "const": "bounded_registry_denominator_orders_without_compliance_join" },
+        "exact_registry_response_preserved": { "const": true },
+        "complete_returned_set_preserved": { "const": true },
+        "returned_set_is_all_calfresh_decisions": { "const": false },
+        "submitted_dates_prove_inclusive_month": { "const": false },
+        "pdf_sample_fixed_before_content": { "const": true },
+        "decision_orders_source_addressable": { "type": "boolean" },
+        "separate_compliance_join_supported": { "const": false },
+        "complete_restoration_supported": { "const": false },
+        "remedy_timeliness_supported": { "const": false },
+        "prevalence_supported": { "const": false },
+        "residual_class_closed": { "const": false },
+        "graph_effect": { "const": "none" },
+        "publication_effect": { "const": "none" },
+        "adoption_effect": { "const": "none" }
+      }
+    },
+    "next_handoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["acquisition_id", "status", "unit", "outside_human_dependency", "project_blocking"],
+      "properties": {
+        "acquisition_id": { "const": "SSC-RD04-SNAP-A07" },
+        "status": { "const": "authorized_nonblocking_public_compliance_receipt_acquisition" },
+        "unit": { "type": "string", "minLength": 1 },
+        "outside_human_dependency": { "const": false },
+        "project_blocking": { "const": false }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outside_human_dependency",
+        "external_contacts",
+        "external_reviews",
+        "residual_class_closures",
+        "reviewed_disposition_changes",
+        "prevalence_findings",
+        "racial_order_findings",
+        "coordination_findings",
+        "common_purpose_findings",
+        "graph_effect",
+        "publication_effect",
+        "adoption_effect"
+      ],
+      "properties": {
+        "outside_human_dependency": { "const": false },
+        "external_contacts": { "const": 0 },
+        "external_reviews": { "const": 0 },
+        "residual_class_closures": { "const": 0 },
+        "reviewed_disposition_changes": { "const": 0 },
+        "prevalence_findings": { "const": 0 },
+        "racial_order_findings": { "const": 0 },
+        "coordination_findings": { "const": 0 },
+        "common_purpose_findings": { "const": 0 },
+        "graph_effect": { "const": "none" },
+        "publication_effect": { "const": "none" },
+        "adoption_effect": { "const": "none" }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "returned_registry_set_is_complete_program_denominator",
+        "submitted_date_filters_prove_inclusive_month",
+        "registry_disposition_proves_case_facts",
+        "grant_or_partial_grant_proves_implementation",
+        "stipulation_proves_complete_durable_remedy",
+        "withdrawal_proves_favorable_resolution",
+        "order_to_restore_proves_restoration",
+        "lexical_marker_is_legal_interpretation",
+        "sample_distribution_is_population_prevalence",
+        "responsible_agency_count_is_agency_quality",
+        "public_decision_is_precedent",
+        "reversal_is_racial_hierarchy_or_common_purpose"
+      ],
+      "properties": {
+        "returned_registry_set_is_complete_program_denominator": { "const": false },
+        "submitted_date_filters_prove_inclusive_month": { "const": false },
+        "registry_disposition_proves_case_facts": { "const": false },
+        "grant_or_partial_grant_proves_implementation": { "const": false },
+        "stipulation_proves_complete_durable_remedy": { "const": false },
+        "withdrawal_proves_favorable_resolution": { "const": false },
+        "order_to_restore_proves_restoration": { "const": false },
+        "lexical_marker_is_legal_interpretation": { "const": false },
+        "sample_distribution_is_population_prevalence": { "const": false },
+        "responsible_agency_count_is_agency_quality": { "const": false },
+        "public_decision_is_precedent": { "const": false },
+        "reversal_is_racial_hierarchy_or_common_purpose": { "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "countMap": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 1 }
+    }
+  }
+}
