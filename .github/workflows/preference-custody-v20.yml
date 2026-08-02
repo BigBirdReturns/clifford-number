@@ -1,0 +1,54 @@
+name: Preference custody laboratory floor v20
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/performative-synthetic-constituencies/**'
+      - 'data/research/preference-custody/**'
+      - 'tools/lib/performative-synthetic-constituency.mjs'
+      - 'tools/lib/preference-*.mjs'
+      - 'tools/compile-preference-choice-architecture.mjs'
+      - 'tools/validate-preference-choice-architecture.mjs'
+      - 'tools/compile-preference-custody-manifest-v20.mjs'
+      - 'tools/validate-preference-custody-manifest-v20.mjs'
+      - 'test/preference-choice-architecture.test.js'
+      - 'test/preference-custody-manifest-v20.test.js'
+      - 'docs/preference-custody-choice-architecture.md'
+      - 'docs/preference-custody-laboratory-floor-v20.md'
+      - '.github/workflows/preference-choice-architecture.yml'
+      - '.github/workflows/preference-custody-v20.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  floor-v20:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Compile PC-22 and the compositional v20 floor
+        run: |
+          node tools/compile-preference-choice-architecture.mjs
+          node tools/compile-preference-custody-manifest-v20.mjs
+      - name: Validate choice-architecture and floor boundaries
+        run: |
+          node tools/validate-preference-choice-architecture.mjs
+          node tools/validate-preference-custody-manifest-v20.mjs
+      - name: Exercise standalone and integrated adversarial fixtures
+        run: |
+          node test/preference-choice-architecture.test.js
+          node test/preference-custody-manifest-v20.test.js
+      - name: Preserve deterministic v20 projections
+        uses: actions/upload-artifact@v4
+        with:
+          name: preference-custody-laboratory-floor-v20
+          path: |
+            build/research/preference-choice-architecture.json
+            build/research/preference-choice-architecture.md
+            build/research/preference-custody-laboratory-floor-v20.json
+            build/research/preference-custody-laboratory-floor-v20.md
+          if-no-files-found: error

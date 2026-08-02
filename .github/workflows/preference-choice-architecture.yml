@@ -1,0 +1,39 @@
+name: Preference custody choice-architecture control
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/choice-architecture.fixture.json'
+      - 'tools/lib/preference-choice-architecture.mjs'
+      - 'tools/compile-preference-choice-architecture.mjs'
+      - 'tools/validate-preference-choice-architecture.mjs'
+      - 'test/preference-choice-architecture.test.js'
+      - 'docs/preference-custody-choice-architecture.md'
+      - '.github/workflows/preference-choice-architecture.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  choice-architecture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Compile choice-architecture, authorship, assent, payment, and reversal worlds
+        run: node tools/compile-preference-choice-architecture.mjs
+      - name: Validate interface, intention, authorship, assent, payment, reversal, and authority boundaries
+        run: node tools/validate-preference-choice-architecture.mjs
+      - name: Exercise default, path-cost, urgency, confirmation, bundling, substitution, clawback, authority, and tamper fixtures
+        run: node test/preference-choice-architecture.test.js
+      - name: Preserve deterministic choice-architecture projections
+        uses: actions/upload-artifact@v4
+        with:
+          name: preference-choice-architecture-pc22
+          path: |
+            build/research/preference-choice-architecture.json
+            build/research/preference-choice-architecture.md
+          if-no-files-found: error
