@@ -1,0 +1,94 @@
+name: TEMP validate SSC RD-04 A07 exact-SHN semantics v2
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a07-shn-semantics-base-v2
+    paths:
+      - '.github/tmp/ssc-rd04-a07-shn-semantics-v2.trigger'
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: ssc-rd04-a07-shn-semantics-v2
+  cancel-in-progress: false
+
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a07-shn-semantics-base-v2
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - id: semantics
+        name: Run predeclared exact-SHN semantics pilot
+        continue-on-error: true
+        run: node .github/tmp/ssc-rd04-a07-shn-semantics-v2.mjs
+      - name: Upload complete pilot custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a07-shn-semantics-v2
+          path: a07-shn-semantics
+          if-no-files-found: error
+          retention-days: 30
+      - name: Record pilot result on issue 739
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOME: ${{ steps.semantics.outcome }}
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module <<'NODE' > /tmp/a07-shn-pilot-comment.md
+          import fs from 'node:fs';
+          let summary = null;
+          try { summary = JSON.parse(fs.readFileSync('a07-shn-semantics/summary.json', 'utf8')); } catch {}
+          const counts = summary?.counts ?? {};
+          const status = summary?.status ?? process.env.OUTCOME ?? 'unknown';
+          console.log('### A07 exact-SHN form semantics pilot v2');
+          console.log('');
+          console.log('```text');
+          console.log(`status:                         ${status}`);
+          console.log(`sampled SHNs:                   ${counts.sampled_shns ?? 0}`);
+          console.log(`query replays:                  ${counts.query_replays ?? 0}`);
+          console.log(`exact-SHN leakage rows:         ${counts.exact_shn_leakage_rows ?? 0}`);
+          console.log(`deterministic replay failures:  ${counts.deterministic_replay_failures ?? 0}`);
+          console.log(`missing known-A06 failures:     ${counts.missing_known_a06_failures ?? 0}`);
+          console.log(`capped sample queries:          ${counts.capped_sample_queries ?? 0}`);
+          console.log(`new rows in sample:             ${counts.new_registry_rows_observed_in_sample ?? 0}`);
+          console.log('external contacts:              0');
+          console.log('graph effect:                   none');
+          console.log('```');
+          console.log('');
+          console.log('The sample was chosen mechanically before any returned outcome was inspected. A matching SHN is only a public follow-up candidate; it is not claimant identity, implementation, restoration, payment, timeliness, or compliance. A missing public follow-up is not noncompliance.');
+          if (summary?.errors?.length) {
+            console.log('');
+            console.log('Fail-closed errors:');
+            for (const error of summary.errors.slice(0, 20)) console.log(`- ${error}`);
+          }
+          NODE
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/739/comments" -f body="$(cat /tmp/a07-shn-pilot-comment.md)"
+      - name: Publish pass-only disposable receipt branch
+        if: steps.semantics.outcome == 'success'
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -C agent/ssc-rd04-a07-shn-semantics-pass-v2
+          mkdir -p .github/tmp/ssc-rd04-a07-shn-semantics-pass-v2
+          cp a07-shn-semantics/summary.json .github/tmp/ssc-rd04-a07-shn-semantics-pass-v2/summary.json
+          cp a07-shn-semantics/sample-selection.json .github/tmp/ssc-rd04-a07-shn-semantics-pass-v2/sample-selection.json
+          git add .github/tmp/ssc-rd04-a07-shn-semantics-pass-v2
+          git commit -m 'Record passing SSC RD-04 A07 exact-SHN semantics pilot'
+          git push --force origin HEAD:refs/heads/agent/ssc-rd04-a07-shn-semantics-pass-v2
+      - name: Fail workflow when pilot failed
+        if: steps.semantics.outcome != 'success'
+        run: exit 1
