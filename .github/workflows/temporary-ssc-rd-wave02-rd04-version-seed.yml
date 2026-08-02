@@ -1,0 +1,52 @@
+name: TEMP capture SSC RD-04-C01 version-history seed
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd-wave02-rd04-version-seed.yml'
+      - 'data/intake/status-sovereignty-rd-wave02-rd04-version-history/seed-universe.json'
+      - 'schemas/status-sovereignty-rd-wave02-rd04-version-seed.schema.json'
+      - 'tools/acquisition/status-sovereignty-rd-wave02-rd04/validate-version-seed.mjs'
+      - 'tools/acquisition/status-sovereignty-rd-wave02-rd04/capture-version-seed.mjs'
+      - 'test/status-sovereignty-rd-wave02-rd04-version-seed.test.js'
+      - 'docs/milestones/ssc-rd-wave02-rd04-version-history-seed.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd-wave02-rd04-version-seed-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate frozen seed denominator and authority ceiling
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/acquisition/status-sovereignty-rd-wave02-rd04/validate-version-seed.mjs
+          node test/status-sovereignty-rd-wave02-rd04-version-seed.test.js
+          git diff --exit-code
+      - name: Capture all fourteen exact source receipts
+        run: |
+          set -Eeuo pipefail
+          node tools/acquisition/status-sovereignty-rd-wave02-rd04/capture-version-seed.mjs
+          test -f build/acquisition/status-sovereignty-rd-wave02-rd04-version-seed/summary.json
+          test -f build/acquisition/status-sovereignty-rd-wave02-rd04-version-seed/manifest.json
+      - name: Upload exact bounded acquisition custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-version-seed
+          path: build/acquisition/status-sovereignty-rd-wave02-rd04-version-seed
+          if-no-files-found: error
+          retention-days: 90
