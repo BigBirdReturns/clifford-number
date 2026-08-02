@@ -1,0 +1,44 @@
+name: Temporary PC-24 adversarial-test repair
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pc24-test-repair.yml'
+      - 'test/preference-instrument-validity.test.js'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/preference-instrument-validity-v1
+      - name: Isolate the leakage-repair adversarial mutation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('test/preference-instrument-validity.test.js')
+          source = path.read_text()
+          anchor = "leakageFixture.items.answer_key_compromised = false;\nleakageFixture.items.security_audit_state = 'independent_complete';\nleakageFixture.population.assisted_count = 0;\n"
+          replacement = "leakageFixture.items.answer_key_compromised = false;\nleakageFixture.items.high_exposure_participant_count = 0;\nleakageFixture.items.maximum_item_exposure_count = 25;\nleakageFixture.items.exposure_state = 'rotating_balanced';\nleakageFixture.items.reuse_state = 'bounded';\nleakageFixture.items.security_audit_state = 'independent_complete';\nleakageFixture.population.assisted_count = 0;\n"
+          if replacement in source:
+              raise SystemExit(0)
+          if anchor not in source:
+              raise SystemExit('leakage adversarial anchor not found')
+          path.write_text(source.replace(anchor, replacement, 1))
+          PY
+      - name: Commit bounded test repair
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add test/preference-instrument-validity.test.js
+          if git diff --cached --quiet; then
+            echo 'No test repair required.'
+          else
+            git commit -m 'Isolate PC-24 leakage-repair adversarial fixture'
+            git push origin HEAD:research/preference-instrument-validity-v1
+          fi
