@@ -1,0 +1,54 @@
+name: SSC RD-04 A06 CalFresh Decision Registry denominator
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/status-sovereignty-rd04-calfresh-decision-registry-a06.yml'
+      - 'data/intake/status-sovereignty-rd04-calfresh-decision-registry-a06/**'
+      - 'data/project/status-sovereignty-rd04-calfresh-decision-registry-a06-release-manifest.json'
+      - 'docs/milestones/ssc-rd04-calfresh-decision-registry-a06.md'
+      - 'schemas/status-sovereignty-rd04-calfresh-decision-registry-a06.schema.json'
+      - 'tools/acquire-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs'
+      - 'tools/build-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs'
+      - 'tools/validate-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs'
+      - 'test/status-sovereignty-rd04-calfresh-decision-registry-a06.test.js'
+      - 'build/core-thesis/status-sovereignty/rd04-calfresh-decision-registry-a06/**'
+      - 'reports/core-thesis/status-sovereignty/rd04-calfresh-decision-registry-a06/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd04-calfresh-decision-registry-a06.yml'
+      - 'data/intake/status-sovereignty-rd04-calfresh-decision-registry-a06/**'
+      - 'data/project/status-sovereignty-rd04-calfresh-decision-registry-a06-release-manifest.json'
+      - 'docs/milestones/ssc-rd04-calfresh-decision-registry-a06.md'
+      - 'schemas/status-sovereignty-rd04-calfresh-decision-registry-a06.schema.json'
+      - 'tools/acquire-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs'
+      - 'tools/build-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs'
+      - 'tools/validate-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs'
+      - 'test/status-sovereignty-rd04-calfresh-decision-registry-a06.test.js'
+      - 'build/core-thesis/status-sovereignty/rd04-calfresh-decision-registry-a06/**'
+      - 'reports/core-thesis/status-sovereignty/rd04-calfresh-decision-registry-a06/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build and validate A06 registry denominator
+        run: |
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/build-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs
+          node tools/validate-status-sovereignty-rd04-calfresh-decision-registry-a06.mjs
+          node test/status-sovereignty-rd04-calfresh-decision-registry-a06.test.js
+      - name: Refuse deterministic drift
+        run: git diff --exit-code
