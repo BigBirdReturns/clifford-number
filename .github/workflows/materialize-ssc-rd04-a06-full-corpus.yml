@@ -29,14 +29,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Materialize exact A06 source and completed-release recovery
+      - name: Materialize exact A06 source and install validated product-push recovery
         env:
           SOURCE_B64_SHA256: 01d31daa01fc288956b08b5f6058eb26a0bc6df57014a6563171d1ddcf35889b
           SOURCE_TGZ_SHA256: 9a9e6fb15016146fecbe6752642273371c8bfaa291076862c6dcbff0b1109a40
           OVERLAY_B64_SHA256: a913180696539c102874ae32caf6c01246f92499ca5b796040e88a0847db61cd
           OVERLAY_TGZ_SHA256: 92fde70c19421bf0b26b181add058c1410091968fb87dc3e237cee79e2fb1430
           RECOVERY_SCRIPT_SHA256: f41454aed6204ee91b5aaf651233ea18ae2dd29b260e57c6d38da1f0dc937464
-          PUBLISH_SCRIPT_SHA256: f37c4b9dfe2bca87832935fb25a69786ba241af47a3c6f52f9c0749c999641e8
+          PRODUCT_PUSH_SCRIPT_SHA256: 324dbbd07472df72786afe2bc2b99b32ed8f522328014f12434a1bf9306745e3
           MILESTONE_SHA256: 1a3ccd6fa3a689fada8236efadfc975e6e96d0e5a11e2c9451bf9ab5f3b10bc0
         run: |
           set -Eeuo pipefail
@@ -70,7 +70,8 @@ jobs:
 
           path = Path('tools/materialize-ssc-rd04-a06-full-corpus.sh')
           text = path.read_text()
-          old = '''rm -f .github/workflows/materialize-ssc-rd04-a06-full-corpus.yml
+
+          old_cleanup = '''rm -f .github/workflows/materialize-ssc-rd04-a06-full-corpus.yml
           rm -f tools/materialize-ssc-rd04-a06-full-corpus.sh
           rm -f .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part00
           rm -f .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part01
@@ -81,25 +82,50 @@ jobs:
           rm -f .github/tmp/ssc-rd04-a06-recovery-overlay.tgz.b64.part02
           rm -f .github/tmp/ssc-rd04-a06-recovery-overlay.tgz.b64.part03
           '''
-          new = '''rm -f .github/workflows/status-sovereignty-rd04-a06-full-corpus.yml
-          rm -f tools/materialize-ssc-rd04-a06-full-corpus.sh
+          new_cleanup = '''rm -f tools/materialize-ssc-rd04-a06-full-corpus.sh
           rm -f .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part00
           rm -f .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part01
           rm -f .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part02
           rm -f .github/tmp/ssc-rd04-a06-full-source.tgz.b64.part03
           '''
-          if text.count(old) != 1:
-              raise SystemExit(f'expected one workflow-publication cleanup block, observed {text.count(old)}')
-          path.write_text(text.replace(old, new))
+          if text.count(old_cleanup) != 1:
+              raise SystemExit(f'expected one recovery cleanup block, observed {text.count(old_cleanup)}')
+          text = text.replace(old_cleanup, new_cleanup)
+
+          old_push = '''git fetch --no-tags origin main "$TARGET_BRANCH"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$source_head"
+          test "$(git rev-parse origin/main)" = "$live_main"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$source_head" origin "HEAD:refs/heads/$TARGET_BRANCH"
+          '''
+          new_push = '''git fetch --no-tags origin main "$TARGET_BRANCH"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$source_head"
+          test "$(git rev-parse origin/main)" = "$live_main"
+
+          # The generated read-only workflow was present for every validator above. The
+          # Actions token cannot publish workflow-file changes, so remove only that exact
+          # path after validation and amend the already-validated product commit. The
+          # connector restores the same checksum-bound bytes in the final cleanup commit.
+          git rm .github/workflows/status-sovereignty-rd04-a06-full-corpus.yml
+          git commit --amend --no-edit
+          product_head="$(git rev-parse HEAD)"
+          test -z "$(git status --porcelain=v1)"
+          test -z "$(git diff --name-only "$source_head" HEAD -- .github/workflows)"
+
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$source_head" origin "HEAD:refs/heads/$TARGET_BRANCH"
+          '''
+          if text.count(old_push) != 1:
+              raise SystemExit(f'expected one recovery push block, observed {text.count(old_push)}')
+          path.write_text(text.replace(old_push, new_push))
           PY
 
-          printf '%s  %s\n' "$PUBLISH_SCRIPT_SHA256" tools/materialize-ssc-rd04-a06-full-corpus.sh | sha256sum --check --strict
+          printf '%s  %s\n' "$PRODUCT_PUSH_SCRIPT_SHA256" tools/materialize-ssc-rd04-a06-full-corpus.sh | sha256sum --check --strict
           node --check tools/ssc-rd04-a06-full-corpus.mjs
           bash -n tools/materialize-ssc-rd04-a06-full-corpus.sh
           ! grep -nE '[[:blank:]]+$' docs/milestones/ssc-rd04-a06-full-corpus.md
           grep -Fq 'release_assets_page3=' tools/materialize-ssc-rd04-a06-full-corpus.sh
           grep -Fq 'Reusing the exact completed 64-shard draft release; no source document is refetched' tools/materialize-ssc-rd04-a06-full-corpus.sh
-          grep -Fq 'rm -f .github/workflows/status-sovereignty-rd04-a06-full-corpus.yml' tools/materialize-ssc-rd04-a06-full-corpus.sh
+          grep -Fq 'git rm .github/workflows/status-sovereignty-rd04-a06-full-corpus.yml' tools/materialize-ssc-rd04-a06-full-corpus.sh
+          grep -Fq 'test -z "$(git diff --name-only "$source_head" HEAD -- .github/workflows)"' tools/materialize-ssc-rd04-a06-full-corpus.sh
           ! grep -Fq 'rm -f .github/workflows/materialize-ssc-rd04-a06-full-corpus.yml' tools/materialize-ssc-rd04-a06-full-corpus.sh
           ! grep -Fq 'rm -f .github/tmp/ssc-rd04-a06-recovery-overlay.tgz.b64.part03' tools/materialize-ssc-rd04-a06-full-corpus.sh
           grep -Fq 'rm -f tools/materialize-ssc-rd04-a06-full-corpus.sh' tools/materialize-ssc-rd04-a06-full-corpus.sh
@@ -110,7 +136,7 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y poppler-utils zstd
           fi
-      - name: Execute exact completed-release recovery transaction
+      - name: Execute validated completed-release product transaction
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash tools/materialize-ssc-rd04-a06-full-corpus.sh
