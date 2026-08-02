@@ -19,6 +19,7 @@ const walk = (root) => fs.readdirSync(root, { withFileTypes: true }).flatMap((en
   const target = path.join(root, entry.name);
   return entry.isDirectory() ? walk(target) : [target];
 });
+const retryable = (receipt) => receipt.curl_exit !== 0 || receipt.http_status !== 200;
 
 function captureAttempt(source, attempt, contract, sourceDir) {
   const attemptDir = path.join(sourceDir, `attempt-${attempt}`);
@@ -84,7 +85,7 @@ function terminalState(attempts) {
   if (last.resolved) return 'http_success';
   if (last.curl_exit !== 0) return 'transport_failure_after_bounded_retry';
   if (last.http_status !== 200) return 'http_non_200_after_bounded_retry';
-  return 'empty_body_after_bounded_retry';
+  return 'http_200_empty_body_terminal';
 }
 
 function verifyOutput(summary) {
@@ -95,6 +96,7 @@ function verifyOutput(summary) {
   if (ids.size !== 14) throw new Error('duplicate source receipt ID');
   for (const source of summary.sources) {
     if (source.attempts.length < 1 || source.attempts.length > 2) throw new Error(`${source.source_id}: invalid attempt count`);
+    if (source.attempts.length === 2 && !retryable(source.attempts[0])) throw new Error(`${source.source_id}: non-retryable first attempt received a retry`);
     if (!source.terminal_state) throw new Error(`${source.source_id}: terminal state missing`);
     for (const attempt of source.attempts) {
       const body = fs.readFileSync(path.join(OUTPUT, attempt.body_path));
@@ -121,7 +123,7 @@ export function capture() {
     for (let attempt = 1; attempt <= input.capture_contract.maximum_attempts_per_source; attempt += 1) {
       const receipt = captureAttempt(source, attempt, input.capture_contract, sourceDir);
       attempts.push(receipt);
-      if (receipt.resolved) break;
+      if (receipt.resolved || !retryable(receipt)) break;
     }
     receipts.push({
       ordinal: source.ordinal,
