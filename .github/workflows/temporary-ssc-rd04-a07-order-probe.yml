@@ -1,0 +1,40 @@
+name: TEMP probe SSC RD-04 A07 relief-order denominator
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a07-order-probe-base
+    paths:
+      - '.github/tmp/ssc-rd04-a07-order-probe.trigger'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd04-a07-order-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a07-order-probe-base
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Enforce no-magic-human contract
+        run: node tools/validate-no-magic-human-gate.mjs
+      - name: Compile the complete A07 D1 relief-order denominator
+        run: node .github/tmp/ssc-rd04-a07-order-probe.mjs
+      - name: Upload exact A07 D1 denominator receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a07-d1-order-denominator
+          path: a07-order-probe
+          if-no-files-found: error
+          retention-days: 30
