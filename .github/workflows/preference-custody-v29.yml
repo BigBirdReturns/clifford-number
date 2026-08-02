@@ -1,0 +1,54 @@
+name: Preference custody laboratory floor v29
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/performative-synthetic-constituencies/**'
+      - 'data/research/preference-custody/**'
+      - 'tools/lib/performative-synthetic-constituency.mjs'
+      - 'tools/lib/preference-*.mjs'
+      - 'tools/compile-preference-service-denominator-assurance.mjs'
+      - 'tools/validate-preference-service-denominator-assurance.mjs'
+      - 'tools/compile-preference-custody-manifest-v29.mjs'
+      - 'tools/validate-preference-custody-manifest-v29.mjs'
+      - 'test/preference-service-denominator-assurance.test.js'
+      - 'test/preference-custody-manifest-v29.test.js'
+      - 'docs/preference-custody-service-denominator-assurance.md'
+      - 'docs/preference-custody-laboratory-floor-v29.md'
+      - '.github/workflows/preference-service-denominator-assurance.yml'
+      - '.github/workflows/preference-custody-v29.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  floor-v29:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Compile PC-31 and the compositional v29 floor
+        run: |
+          node tools/compile-preference-service-denominator-assurance.mjs
+          node tools/compile-preference-custody-manifest-v29.mjs
+      - name: Validate service-denominator and floor boundaries
+        run: |
+          node tools/validate-preference-service-denominator-assurance.mjs
+          node tools/validate-preference-custody-manifest-v29.mjs
+      - name: Exercise standalone and integrated adversarial fixtures
+        run: |
+          node test/preference-service-denominator-assurance.test.js
+          node test/preference-custody-manifest-v29.test.js
+      - name: Preserve deterministic v29 projections
+        uses: actions/upload-artifact@v4
+        with:
+          name: preference-custody-laboratory-floor-v29
+          path: |
+            build/research/preference-service-denominator-assurance.json
+            build/research/preference-service-denominator-assurance.md
+            build/research/preference-custody-laboratory-floor-v29.json
+            build/research/preference-custody-laboratory-floor-v29.md
+          if-no-files-found: error
