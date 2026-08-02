@@ -1,0 +1,64 @@
+name: Temporary PC-24 source normalization repair
+
+on:
+  push:
+    branches:
+      - research/preference-instrument-validity-v1
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/preference-instrument-validity-v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Repair fixture and manifest invariants
+        run: |
+          python - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+
+          fixture_path = Path('data/research/preference-custody/instrument-validity.fixture.json')
+          fixture = json.loads(fixture_path.read_text())
+          positive = next(world for world in fixture['worlds'] if world['world_id'] == 'complete-construct-secure-independent-equated-validation')
+          positive['population']['assisted_count'] = 0
+          fixture_path.write_text(json.dumps(fixture, indent=2) + '\n')
+
+          manifest_path = Path('data/research/preference-custody/control-manifest-v22.json')
+          manifest = json.loads(manifest_path.read_text())
+          manifest['real_case_requirements_added'] = [
+              re.sub(r'_+', '_', re.sub(r'\s+', '_', item.strip()))
+              for item in manifest['real_case_requirements_added']
+          ]
+          manifest_path.write_text(json.dumps(manifest, indent=2) + '\n')
+
+          compiler_path = Path('tools/lib/preference-custody-manifest-v22.mjs')
+          source = compiler_path.read_text()
+          anchor = "  if (unique(manifest?.real_case_requirements_added).length < 55) errors.push('v22 instrument-validity real-case requirements are incomplete');\n"
+          addition = anchor + "  if (array(manifest?.real_case_requirements_added).some(item => !/^[a-z0-9_]+$/.test(text(item)))) errors.push('v22 instrument-validity real-case requirements must be lowercase underscore-delimited machine identifiers');\n"
+          if 'lowercase underscore-delimited machine identifiers' not in source:
+              if anchor not in source:
+                  raise SystemExit('v22 requirement validator anchor not found')
+              source = source.replace(anchor, addition, 1)
+              compiler_path.write_text(source)
+          PY
+      - name: Commit bounded repair
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add data/research/preference-custody/instrument-validity.fixture.json \
+                  data/research/preference-custody/control-manifest-v22.json \
+                  tools/lib/preference-custody-manifest-v22.mjs
+          if git diff --cached --quiet; then
+            echo 'No repair required.'
+          else
+            git commit -m 'Repair PC-24 assistance and machine-identifier invariants'
+            git push origin HEAD:research/preference-instrument-validity-v1
+          fi
