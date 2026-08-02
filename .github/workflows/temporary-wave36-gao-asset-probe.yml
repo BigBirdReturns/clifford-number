@@ -1,0 +1,49 @@
+name: Temporary Wave 36 GAO asset probe
+
+on:
+  pull_request:
+    branches:
+      - agent/lake-allocator-war-wave-21
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-wave36-gao-asset-probe.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-wave36-gao-asset-probe-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lake-allocator-war-public-acquisition-wave-36
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Probe exact official GAO PDF assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const targets = [
+            ['LAW36-C014','https://www.gao.gov/assets/880/876785.pdf'],
+            ['LAW36-C046','https://www.gao.gov/assets/830/827222.pdf'],
+            ['LAW36-C047','https://www.gao.gov/assets/830/827221.pdf']
+          ];
+          for (const [ref,url] of targets) {
+            const response = await fetch(url, { headers: { accept: 'application/pdf,*/*;q=0.8', 'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36' }, redirect: 'follow' });
+            const body = Buffer.from(await response.arrayBuffer());
+            const header = body.subarray(0,5).toString('utf8');
+            console.log(JSON.stringify({ref,url,status:response.status,ok:response.ok,content_type:response.headers.get('content-type'),bytes:body.length,header,final_url:response.url}));
+            if (!response.ok || header !== '%PDF-') process.exitCode = 1;
+          }
+          NODE
