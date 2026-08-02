@@ -174,6 +174,7 @@ assert.throws(() => compilePreferenceCollectiveDistributionFixture(expectedFlagL
 
 const falseNoticeRecovery = structuredClone(fixture);
 const falseNoticeWorld = falseNoticeRecovery.worlds.find(world => world.world_id === 'notice-failure-binds-unnotified-population');
+falseNoticeWorld.notice.sent_count = 100;
 falseNoticeWorld.notice.delivered_count = 100;
 falseNoticeWorld.notice.acknowledged_count = 100;
 falseNoticeWorld.notice.comprehended_count = 100;
