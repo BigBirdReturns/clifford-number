@@ -1,0 +1,58 @@
+name: Counter-Selector Wave 35 real-world handoff join audit
+
+on:
+  pull_request:
+    paths:
+      - 'data/project/counter-selector-wave-35-*.json'
+      - 'schemas/counter-selector-real-world-handoff-join.schema.json'
+      - 'docs/methods/counter-selector-real-world-handoff-join.md'
+      - 'docs/milestones/counter-selector-wave-35.md'
+      - 'tools/*counter-selector-wave-35*'
+      - 'test/counter-selector-wave-35.test.js'
+      - 'reports/core-thesis/counter-selector-wave-35/**'
+      - '.github/workflows/counter-selector-wave-35.yml'
+  push:
+    branches:
+      - 'agent/counter-selector-wave-35-real-world-handoff-join'
+    paths:
+      - 'data/project/counter-selector-wave-35-*.json'
+      - 'schemas/counter-selector-real-world-handoff-join.schema.json'
+      - 'docs/methods/counter-selector-real-world-handoff-join.md'
+      - 'docs/milestones/counter-selector-wave-35.md'
+      - 'tools/*counter-selector-wave-35*'
+      - 'test/counter-selector-wave-35.test.js'
+      - 'reports/core-thesis/counter-selector-wave-35/**'
+      - '.github/workflows/counter-selector-wave-35.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build Wave 35 products
+        run: node tools/build-counter-selector-wave-35.mjs
+      - name: Validate real-world join contract
+        run: node tools/validate-counter-selector-wave-35.mjs
+      - name: Run adversarial mutations
+        run: node test/counter-selector-wave-35.test.js
+      - name: Require exact committed Wave 35 products
+        run: git diff --exit-code -- data/project/counter-selector-wave-35-control-registry.json data/project/counter-selector-wave-35-release-manifest.json reports/core-thesis/counter-selector-wave-35/data.json reports/core-thesis/counter-selector-wave-35/index.html
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Reconstruct Wave 35 deterministically
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          node tools/build-counter-selector-wave-35.mjs
+          node tools/validate-counter-selector-wave-35.mjs
+          node test/counter-selector-wave-35.test.js
+          git diff --exit-code -- data/project/counter-selector-wave-35-control-registry.json data/project/counter-selector-wave-35-release-manifest.json reports/core-thesis/counter-selector-wave-35/data.json reports/core-thesis/counter-selector-wave-35/index.html
+          test -z "$(git status --porcelain)"
