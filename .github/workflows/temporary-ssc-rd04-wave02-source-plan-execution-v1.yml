@@ -1,0 +1,178 @@
+name: TEMP execute SSC RD-04 Wave 02 fixed authority-source plan v1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-wave02-source-plan-execution-base-v1
+    paths:
+      - '.github/tmp/ssc-rd04-wave02-source-plan-execution-v1.trigger'
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ssc-rd04-wave02-source-plan-execution-v1
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 71eeceb1006ba4f80dd5082867ae3902552f0481
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Download exact typed authority-unit artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-authority-units
+          path: /tmp/rd04-authority-units
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 30767299054
+      - name: Freeze and validate the exact public-source plan
+        env:
+          RD04_AUTHORITY_UNITS_ARTIFACT: /tmp/rd04-authority-units
+          RD04_SOURCE_PLAN_OUTPUT: /tmp/rd04-source-plan
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/acquisition/status-sovereignty-rd-wave02-rd04/build-source-plan.mjs
+          node test/status-sovereignty-rd-wave02-rd04-source-plan.test.js
+          PLAN_PATH=/tmp/rd04-source-plan/source-plan.json node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const plan = JSON.parse(fs.readFileSync(process.env.PLAN_PATH, 'utf8'));
+          const expected = {
+            authority_units: 93,
+            reused_seed_units: 13,
+            target_units: 80,
+            locator_candidates: 81,
+            routes: 68,
+            maximum_attempts: 136
+          };
+          for (const [key, value] of Object.entries(expected)) {
+            if (plan.counts?.[key] !== value) throw new Error(`${key}: ${plan.counts?.[key]}`);
+          }
+          if (plan.protocol?.fixed_before_fetch !== true || plan.protocol?.outcome_selected_retry !== false) {
+            throw new Error('source protocol drift');
+          }
+          if (plan.current_result?.class_closed !== false || plan.boundaries?.failed_route_is_noncompliance !== false) {
+            throw new Error('source-plan authority escalation');
+          }
+          console.log('RD-04 source plan verified: 93 units, 80 targets, 68 routes, 136-attempt ceiling');
+          NODE
+      - name: Execute the fixed bounded public-source protocol
+        env:
+          RD04_SOURCE_PLAN_PATH: /tmp/rd04-source-plan/source-plan.json
+          RD04_SOURCE_CAPTURE_OUTPUT: /tmp/rd04-source-capture
+        run: |
+          set -Eeuo pipefail
+          node tools/acquisition/status-sovereignty-rd-wave02-rd04/capture-source-plan.mjs
+      - name: Verify all route and target receipts
+        env:
+          PLAN_PATH: /tmp/rd04-source-plan/source-plan.json
+          SUMMARY_PATH: /tmp/rd04-source-capture/summary.json
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const plan = JSON.parse(fs.readFileSync(process.env.PLAN_PATH, 'utf8'));
+          const summary = JSON.parse(fs.readFileSync(process.env.SUMMARY_PATH, 'utf8'));
+          if (summary.counts?.route_receipts !== 68 || summary.counts?.terminal_route_receipts !== 68) {
+            throw new Error(`route denominator ${summary.counts?.route_receipts}/${summary.counts?.terminal_route_receipts}`);
+          }
+          if (summary.counts?.target_units !== 80 || summary.counts?.candidate_locators !== 81) {
+            throw new Error(`target denominator ${summary.counts?.target_units}/${summary.counts?.candidate_locators}`);
+          }
+          if (summary.counts?.total_attempts < 68 || summary.counts?.total_attempts > 136) {
+            throw new Error(`attempt denominator ${summary.counts?.total_attempts}`);
+          }
+          if (summary.counts?.external_contacts !== 0 || summary.counts?.external_reviews !== 0) {
+            throw new Error('outside activity introduced');
+          }
+          if (summary.current_result?.class_closed !== false || summary.current_result?.version_edges_adjudicated !== 0) {
+            throw new Error('source capture promoted into chronology');
+          }
+          if (summary.authority?.failed_route_is_noncompliance !== false || summary.authority?.outside_human_dependency !== false) {
+            throw new Error('source capture authority escalated');
+          }
+          if (plan.counts.routes !== summary.counts.route_receipts) throw new Error('plan/capture route mismatch');
+          console.log(`RD-04 source capture verified: ${summary.counts.resolved_routes} resolved routes, ${summary.counts.unresolved_routes} typed unresolved routes, ${summary.counts.total_attempts} attempts`);
+          NODE
+      - name: Emit exact execution receipt
+        env:
+          PLAN_PATH: /tmp/rd04-source-plan/source-plan.json
+          PLAN_MANIFEST_PATH: /tmp/rd04-source-plan/manifest.json
+          SUMMARY_PATH: /tmp/rd04-source-capture/summary.json
+          CAPTURE_MANIFEST_PATH: /tmp/rd04-source-capture/manifest.json
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          const read = (target) => fs.readFileSync(target);
+          const json = (target) => JSON.parse(read(target).toString('utf8'));
+          const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
+          const plan = json(process.env.PLAN_PATH);
+          const planManifest = json(process.env.PLAN_MANIFEST_PATH);
+          const summary = json(process.env.SUMMARY_PATH);
+          const captureManifest = json(process.env.CAPTURE_MANIFEST_PATH);
+          const receipt = {
+            schema_version: 'ssc-rd04-wave02-source-plan-execution-receipt@1',
+            issue: 789,
+            class_id: 'RD-04-C01',
+            execution_head: '71eeceb1006ba4f80dd5082867ae3902552f0481',
+            authority_unit_artifact: 8839448787,
+            source_plan: {
+              bytes: read(process.env.PLAN_PATH).length,
+              sha256: sha256(read(process.env.PLAN_PATH)),
+              manifest_entries: planManifest.entries.length,
+              manifest_sha256: planManifest.combined_sha256,
+              authority_units: plan.counts.authority_units,
+              reused_seed_units: plan.counts.reused_seed_units,
+              target_units: plan.counts.target_units,
+              locator_candidates: plan.counts.locator_candidates,
+              routes: plan.counts.routes,
+              maximum_attempts: plan.counts.maximum_attempts
+            },
+            source_capture: {
+              summary_bytes: read(process.env.SUMMARY_PATH).length,
+              summary_sha256: sha256(read(process.env.SUMMARY_PATH)),
+              manifest_entries: captureManifest.entries.length,
+              manifest_sha256: captureManifest.combined_sha256,
+              route_receipts: summary.counts.route_receipts,
+              resolved_routes: summary.counts.resolved_routes,
+              unresolved_routes: summary.counts.unresolved_routes,
+              total_attempts: summary.counts.total_attempts,
+              target_units: summary.counts.target_units,
+              resolved_target_units: summary.counts.resolved_target_units,
+              unresolved_target_units: summary.counts.unresolved_target_units
+            },
+            authority: {
+              version_edges_adjudicated: 0,
+              class_closed: false,
+              substantive_finding_created: false,
+              external_contacts: 0,
+              external_reviews: 0,
+              outside_human_dependency: false,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            }
+          };
+          fs.writeFileSync('/tmp/rd04-source-capture/execution-receipt.json', `${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+      - name: Upload exact source-plan execution custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-wave02-source-plan-execution-v1
+          path: |
+            /tmp/rd04-source-plan
+            /tmp/rd04-source-capture
+          if-no-files-found: error
+          retention-days: 90
