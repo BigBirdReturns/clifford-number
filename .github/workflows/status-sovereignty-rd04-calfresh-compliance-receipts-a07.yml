@@ -1,0 +1,45 @@
+name: SSC RD-04 A07 public compliance receipt census
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/status-sovereignty-rd04-calfresh-compliance-receipts-a07.yml'
+      - 'data/intake/status-sovereignty-rd04-calfresh-compliance-receipts-a07/**'
+      - 'docs/milestones/ssc-rd04-calfresh-compliance-receipts-a07.md'
+      - 'schemas/status-sovereignty-rd04-calfresh-compliance-receipts-a07.schema.json'
+      - 'tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs'
+      - 'test/status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd04-calfresh-compliance-receipts-a07.yml'
+      - 'data/intake/status-sovereignty-rd04-calfresh-compliance-receipts-a07/**'
+      - 'docs/milestones/ssc-rd04-calfresh-compliance-receipts-a07.md'
+      - 'schemas/status-sovereignty-rd04-calfresh-compliance-receipts-a07.schema.json'
+      - 'tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs'
+      - 'test/status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate frozen A07 constitution
+        run: |
+          node --check tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs
+          node --check test/status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/validate-status-sovereignty-rd04-calfresh-compliance-receipts-a07.mjs .
+          node test/status-sovereignty-rd04-calfresh-compliance-receipts-a07.test.js
+      - name: Refuse deterministic drift
+        run: git diff --exit-code
