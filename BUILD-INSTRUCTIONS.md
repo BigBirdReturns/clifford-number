@@ -510,3 +510,9 @@ A structural parse is addressability only. JSON array lengths, field names, HTML
 Run `node tools/build-lake-allocator-war-schema-joins-wave-34.mjs` only after the permanent Wave 33 parse ledger is present. The builder must adapt all nineteen parse objects exactly once, preserve source-specific structural limits and sensitive exclusions, and emit seven blocked lawful-join contracts covering all route classes.
 
 A schema adapter or candidate key is not institutional semantics or join authority. Every join remains blocked until its exact action, no-action, affected-party, comparator, correction, recovery, or lawful-access requirements are satisfied. Protected personnel rows may not be replaced with public aggregate workforce data.
+
+
+3.35 **Allocator-war lawful join requirement fan-out — Wave 35.**
+Run `node tools/build-lake-allocator-war-join-requirements-wave-35.mjs` only after the permanent Wave 34 lawful-join ledger is present. The builder must emit one estate-owned queue per join and one deterministic acquisition task per unsatisfied institutional requirement, preserving source receipts, schema adapters, candidate-key classes, access classes, completion tests, and refused substitutions.
+
+A requirement task is acquisition custody, not an acquisition result or join authorization. Public and lawful-case tasks remain separate from the three protected-personnel tasks that require authorized lawful access. Task admission creates no complete denominator, evidence adjudication, finding, graph effect, or publication clearance.

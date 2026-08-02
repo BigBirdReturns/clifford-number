@@ -1,21 +1,21 @@
 # Lake index gap summary
 
-Source fingerprint: `c398e180414c1f90a033be6fee7658c9188550434320519b5a0409c6778fc494`
+Source fingerprint: `a647e9ba8e1b1a5052261b2aa848b263dab188ab5e0749ad5d87bd9c70f94644`
 
 ## Finding
 
-The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1559 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
+The current Git tree is physically censused, but the evidence lake is not semantically indexed or known. Of 1571 evidence-bearing files, 0 (0.0%) are not reachable from any detected index, 0 (0.0%) have no inbound repository reference, and 0 (0.0%) have no detected program owner.
 
 ## By evidence role
 
 | Role | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
-| generated_artifact | 604 | 604 | 0 | 0 |
-| project_governance | 196 | 196 | 0 | 0 |
-| repository_root | 194 | 194 | 0 | 0 |
-| documentation | 153 | 153 | 0 | 0 |
+| generated_artifact | 605 | 605 | 0 | 0 |
+| repository_root | 201 | 201 | 0 | 0 |
+| project_governance | 197 | 197 | 0 | 0 |
+| documentation | 155 | 155 | 0 | 0 |
 | intake | 141 | 141 | 0 | 0 |
-| report_product | 119 | 119 | 0 | 0 |
+| report_product | 120 | 120 | 0 | 0 |
 | research_record | 48 | 48 | 0 | 0 |
 | case_source | 43 | 43 | 0 | 0 |
 | receipt_artifact | 32 | 32 | 0 | 0 |
@@ -28,17 +28,17 @@ The current Git tree is physically censused, but the evidence lake is not semant
 | Cluster | Files | Index-reachable | Exact orphans | No program owner |
 |---|---:|---:|---:|---:|
 | build/estate-game-trails | 313 | 313 | 0 | 0 |
-| data/project | 196 | 196 | 0 | 0 |
+| data/project | 197 | 197 | 0 | 0 |
 | build/core-thesis | 184 | 184 | 0 | 0 |
 | data/intake | 141 | 141 | 0 | 0 |
 | reports/core-thesis | 96 | 96 | 0 | 0 |
-| data/acquisition | 85 | 85 | 0 | 0 |
-| docs/milestones | 80 | 80 | 0 | 0 |
+| data/acquisition | 92 | 92 | 0 | 0 |
+| docs/milestones | 81 | 81 | 0 | 0 |
 | data/research-tracks | 52 | 52 | 0 | 0 |
 | data/research | 48 | 48 | 0 | 0 |
 | data/estates | 43 | 43 | 0 | 0 |
-| build/lake-actions | 38 | 38 | 0 | 0 |
-| docs/methods | 24 | 24 | 0 | 0 |
+| build/lake-actions | 39 | 39 | 0 | 0 |
+| docs/methods | 25 | 25 | 0 | 0 |
 | cases/arcadia-field-autopsy | 21 | 21 | 0 | 0 |
 | receipts/crawl | 19 | 19 | 0 | 0 |
 | build/estate-closures | 15 | 15 | 0 | 0 |

@@ -170,11 +170,24 @@ for (const relative of [
   'docs/methods/lake-allocator-war-schema-joins-wave-34.md',
   'docs/milestones/lake-allocator-war-schema-joins-wave-34.md',
   'build/lake-actions/allocator-war-schema-joins-wave-34.json',
-  'reports/lake-allocator-war-schema-joins-wave-34.md'
+  'reports/lake-allocator-war-schema-joins-wave-34.md',
+  'data/project/lake-allocator-war-join-requirements-wave-35-policy.json',
+  'data/acquisition/lake-allocator-war-wave-35/internal-authority-and-inventory.jsonl',
+  'data/acquisition/lake-allocator-war-wave-35/public-award-and-contract-denominators.jsonl',
+  'data/acquisition/lake-allocator-war-wave-35/published-enforcement-and-action-registers.jsonl',
+  'data/acquisition/lake-allocator-war-wave-35/correction-dockets-and-outcomes.jsonl',
+  'data/acquisition/lake-allocator-war-wave-35/protected-personnel-records.jsonl',
+  'data/acquisition/lake-allocator-war-wave-35/affected-comparator-and-distributional-joins.jsonl',
+  'data/acquisition/lake-allocator-war-wave-35/financial-recovery-and-continuity.jsonl',
+  'docs/methods/lake-allocator-war-join-requirements-wave-35.md',
+  'docs/milestones/lake-allocator-war-join-requirements-wave-35.md',
+  'build/lake-actions/allocator-war-join-requirements-wave-35.json',
+  'reports/lake-allocator-war-join-requirements-wave-35.md'
 ]) roots.add(relative);
 lakePolicy.authoritative_roots = [...roots].sort();
 lakePolicy.boundaries.allocator_war_routing_proves_finding = false;
 lakePolicy.boundaries.allocator_war_wave_02_intake_is_reviewed = false;
+lakePolicy.boundaries.allocator_war_wave_35_requirement_task_is_evidence = false;
 writeJson(lakePolicyPath, lakePolicy);
 
 const basinPath = 'data/project/lake-basin-registry.json';
@@ -197,6 +210,7 @@ for (const basin of policy.basin_contract) {
 basinRegistry.basins.sort((a, b) => a.basin_id.localeCompare(b.basin_id));
 basinRegistry.boundaries.allocator_war_basin_membership_proves_common_purpose = false;
 basinRegistry.boundaries.allocator_war_wave_34_schema_is_join_authority = false;
+basinRegistry.boundaries.allocator_war_wave_35_task_is_join_authority = false;
 writeJson(basinPath, basinRegistry);
 
 const packagePath = 'package.json';
@@ -242,6 +256,14 @@ if (!pkg.scripts.check.includes('npm run validate:lake-allocator-war-schema-join
   if (!pkg.scripts.check.includes(marker)) throw new Error('Wave 33 release-gate marker missing');
   pkg.scripts.check = pkg.scripts.check.replace(marker, `${marker} && npm run validate:lake-allocator-war-schema-joins-wave-34`);
 }
+pkg.scripts['build:lake-allocator-war-join-requirements-wave-35'] = 'node tools/build-lake-allocator-war-join-requirements-wave-35.mjs';
+pkg.scripts['validate:lake-allocator-war-join-requirements-wave-35'] = 'node tools/validate-lake-allocator-war-join-requirements-wave-35.mjs && node test/lake-allocator-war-join-requirements-wave-35.test.js';
+pkg.scripts['ci:lake-allocator-war-join-requirements-wave-35'] = 'npm run build:lake-allocator-war-join-requirements-wave-35 && npm run validate:lake-allocator-war-join-requirements-wave-35';
+if (!pkg.scripts.check.includes('npm run validate:lake-allocator-war-join-requirements-wave-35')) {
+  const marker = 'npm run validate:lake-allocator-war-schema-joins-wave-34';
+  if (!pkg.scripts.check.includes(marker)) throw new Error('Wave 34 release-gate marker missing');
+  pkg.scripts.check = pkg.scripts.check.replace(marker, `${marker} && npm run validate:lake-allocator-war-join-requirements-wave-35`);
+}
 writeJson(packagePath, pkg);
 
 const buildInstructionsPath = 'BUILD-INSTRUCTIONS.md';
@@ -268,6 +290,16 @@ const wave34BuildMarker = '3.34 **Allocator-war source schemas and lawful joins 
 if (!buildInstructions.includes(wave34BuildMarker)) {
   buildInstructions += `\n\n${wave34BuildMarker}\nRun \`node tools/build-lake-allocator-war-schema-joins-wave-34.mjs\` only after the permanent Wave 33 parse ledger is present. The builder must adapt all nineteen parse objects exactly once, preserve source-specific structural limits and sensitive exclusions, and emit seven blocked lawful-join contracts covering all route classes.\n\nA schema adapter or candidate key is not institutional semantics or join authority. Every join remains blocked until its exact action, no-action, affected-party, comparator, correction, recovery, or lawful-access requirements are satisfied. Protected personnel rows may not be replaced with public aggregate workforce data.\n`;
 }
+const wave35BuildMarker = '3.35 **Allocator-war lawful join requirement fan-out — Wave 35.**';
+if (!buildInstructions.includes(wave35BuildMarker)) {
+  buildInstructions += `
+
+${wave35BuildMarker}
+Run \`node tools/build-lake-allocator-war-join-requirements-wave-35.mjs\` only after the permanent Wave 34 lawful-join ledger is present. The builder must emit one estate-owned queue per join and one deterministic acquisition task per unsatisfied institutional requirement, preserving source receipts, schema adapters, candidate-key classes, access classes, completion tests, and refused substitutions.
+
+A requirement task is acquisition custody, not an acquisition result or join authorization. Public and lawful-case tasks remain separate from the three protected-personnel tasks that require authorized lawful access. Task admission creates no complete denominator, evidence adjudication, finding, graph effect, or publication clearance.
+`;
+}
 fs.writeFileSync(full(buildInstructionsPath), buildInstructions);
 
 const readmePath = 'README.md';
@@ -292,6 +324,15 @@ if (!readme.includes(wave33ReadmeMarker)) {
 const wave34ReadmeMarker = '## Allocator-war source schemas and lawful joins Wave 34';
 if (!readme.includes(wave34ReadmeMarker)) {
   readme += `\n\n${wave34ReadmeMarker}\n\nWave 34 maps all nineteen permanent Wave 33 parse objects through source-specific schema adapters and defines seven explicit lawful-join contracts. The thirty-one missing institutional requirements remain open, including three protected-personnel requirements that require lawful or privacy-safe access. Schema addressability creates no authorized join, complete denominator, evidence adjudication, finding, graph effect, or publication authority. See \`reports/lake-allocator-war-schema-joins-wave-34.md\`.\n`;
+}
+const wave35ReadmeMarker = '## Allocator-war lawful join requirement fan-out Wave 35';
+if (!readme.includes(wave35ReadmeMarker)) {
+  readme += `
+
+${wave35ReadmeMarker}
+
+Wave 35 converts all thirty-one unsatisfied Wave 34 institutional requirements into seven estate-owned acquisition queues. Twenty-eight tasks enter public, separately authorized, or lawful-case lanes; three protected-personnel tasks remain bounded to authorized lawful access. Task admission creates no acquisition result, join authorization, complete denominator, evidence adjudication, finding, graph effect, or publication authority. See \`reports/lake-allocator-war-join-requirements-wave-35.md\`.
+`;
 }
 fs.writeFileSync(full(readmePath), readme);
 
