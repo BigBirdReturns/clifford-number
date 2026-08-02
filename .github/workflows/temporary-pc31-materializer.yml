@@ -1,0 +1,173 @@
+name: TEMP materialize PC-31 and Preference Custody floor v29
+
+on:
+  push:
+    branches:
+      - research/preference-identity-boundary-assurance-v3
+    paths:
+      - '.pc31/materialize.trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc31-identity-boundary-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/preference-identity-boundary-assurance-v3
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify, rebind, qualify, and publish exact PC-31 source set
+        env:
+          TARGET_BRANCH: research/preference-identity-boundary-assurance-v3
+          FROZEN_BASE: 4ad546a53a39c603d23a57e996a76cf05c46da4f
+          EXPECTED_B64_BYTES: '33252'
+          EXPECTED_B64_SHA256: 3d0de63314dbc8fe37f4e0660bba2d412e7862bac9130c71de4a821e65ae05c8
+          EXPECTED_TGZ_SHA256: bb2bfc2a14325a5755bf5e39c567856378ecea0200101b55712ed628a13705ad
+          EXPECTED_PATH_DIGEST: 938fee5f793a49348720e62500f90b4fecca63f53c18b980589dad086b5accfc
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          git switch -C "$TARGET_BRANCH" "origin/$TARGET_BRANCH"
+
+          cat > /tmp/pc31-permanent-paths <<'PATHS'
+          .github/workflows/preference-custody-v29.yml
+          .github/workflows/preference-identity-boundary-assurance.yml
+          data/research/preference-custody/control-manifest-v29.json
+          data/research/preference-custody/identity-boundary-assurance.fixture.json
+          docs/preference-custody-identity-boundary-assurance.md
+          docs/preference-custody-laboratory-floor-v29.md
+          test/preference-custody-manifest-v29.test.js
+          test/preference-identity-boundary-assurance.test.js
+          tools/compile-preference-custody-manifest-v29.mjs
+          tools/compile-preference-identity-boundary-assurance.mjs
+          tools/lib/preference-custody-manifest-v29.mjs
+          tools/lib/preference-identity-boundary-assurance.mjs
+          tools/validate-preference-custody-manifest-v29.mjs
+          tools/validate-preference-identity-boundary-assurance.mjs
+          PATHS
+          sed -i 's/^          //' /tmp/pc31-permanent-paths
+
+          cat > /tmp/pc31-nonworkflow-paths <<'PATHS'
+          data/research/preference-custody/control-manifest-v29.json
+          data/research/preference-custody/identity-boundary-assurance.fixture.json
+          docs/preference-custody-identity-boundary-assurance.md
+          docs/preference-custody-laboratory-floor-v29.md
+          test/preference-custody-manifest-v29.test.js
+          test/preference-identity-boundary-assurance.test.js
+          tools/compile-preference-custody-manifest-v29.mjs
+          tools/compile-preference-identity-boundary-assurance.mjs
+          tools/lib/preference-custody-manifest-v29.mjs
+          tools/lib/preference-identity-boundary-assurance.mjs
+          tools/validate-preference-custody-manifest-v29.mjs
+          tools/validate-preference-identity-boundary-assurance.mjs
+          PATHS
+          sed -i 's/^          //' /tmp/pc31-nonworkflow-paths
+
+          test "$(wc -l < /tmp/pc31-permanent-paths | tr -d ' ')" = 14
+          test "$(wc -l < /tmp/pc31-nonworkflow-paths | tr -d ' ')" = 12
+
+          carrier=/tmp/pc31-product.tar.gz.b64
+          : > "$carrier"
+          mapfile -t parts < <(find .pc31 -maxdepth 1 -type f -name 'payload-*.b64' | sort)
+          test "${#parts[@]}" = 4
+          for part in "${parts[@]}"; do tr -d '\r\n\t ' < "$part" >> "$carrier"; done
+          test "$(stat -c '%s' "$carrier")" = "$EXPECTED_B64_BYTES"
+          printf '%s  %s\n' "$EXPECTED_B64_SHA256" "$carrier" | sha256sum --check --strict
+          base64 --decode "$carrier" > /tmp/pc31-product.tar.gz
+          printf '%s  %s\n' "$EXPECTED_TGZ_SHA256" /tmp/pc31-product.tar.gz | sha256sum --check --strict
+          tar -tzf /tmp/pc31-product.tar.gz | sed 's#^\./##' | sed '/\/$/d' > /tmp/pc31-observed-paths
+          diff -u /tmp/pc31-permanent-paths /tmp/pc31-observed-paths
+
+          qualify_product() {
+            node tools/compile-preference-identity-boundary-assurance.mjs
+            node tools/validate-preference-identity-boundary-assurance.mjs
+            node test/preference-identity-boundary-assurance.test.js
+            node tools/compile-preference-custody-manifest-v29.mjs
+            node tools/validate-preference-custody-manifest-v29.mjs
+            node test/preference-custody-manifest-v29.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            npm run release:check
+          }
+
+          stable_main=''
+          for attempt in 1 2 3; do
+            git fetch --no-tags origin main
+            candidate_main="$(git rev-parse origin/main)"
+            git merge-base --is-ancestor "$FROZEN_BASE" "$candidate_main"
+            git diff --name-only "$FROZEN_BASE" "$candidate_main" | sort > /tmp/pc31-main-drift
+            test -z "$(comm -12 <(sort /tmp/pc31-permanent-paths) /tmp/pc31-main-drift)"
+
+            if ! git merge-base --is-ancestor "$candidate_main" HEAD; then
+              git merge --no-ff "$candidate_main" -m "Rebind PC-31 permanent surface to current main attempt $attempt"
+            fi
+
+            tar -xzf /tmp/pc31-product.tar.gz
+            qualify_product
+
+            git restore --staged --worktree .
+            git clean -fdx
+            test -z "$(git status --porcelain=v1)"
+
+            git fetch --no-tags origin main
+            end_main="$(git rev-parse origin/main)"
+            if test "$end_main" = "$candidate_main"; then
+              stable_main="$candidate_main"
+              break
+            fi
+          done
+          test -n "$stable_main"
+
+          tar -xzf /tmp/pc31-product.tar.gz
+          while IFS= read -r path; do test -f "$path"; done < /tmp/pc31-permanent-paths
+          sha256sum $(cat /tmp/pc31-permanent-paths) | sort -k2 > /tmp/pc31-path-digests
+          printf '%s  %s\n' "$EXPECTED_PATH_DIGEST" /tmp/pc31-path-digests | sha256sum --check --strict
+
+          git add --pathspec-from-file=/tmp/pc31-nonworkflow-paths
+          git diff --cached --check
+          git diff --cached --name-only | sort > /tmp/pc31-staged-paths
+          diff -u <(sort /tmp/pc31-nonworkflow-paths) /tmp/pc31-staged-paths
+          git commit -m 'Implement PC-31 and compose Preference Custody floor v29'
+          product_head="$(git rev-parse HEAD)"
+
+          git fetch --no-tags origin main
+          final_main="$(git rev-parse origin/main)"
+          test "$final_main" = "$stable_main"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          PRODUCT_HEAD="$product_head" STABLE_MAIN="$stable_main" node --input-type=module <<'NODE' > pc31-materializer-receipt.json
+          const receipt = {
+            schema_version: 'pc31-materializer-receipt@1',
+            product_head: process.env.PRODUCT_HEAD,
+            qualified_main: process.env.STABLE_MAIN,
+            materialized_nonworkflow_paths: 12,
+            permanent_paths_expected: 14,
+            carrier_shards: 4,
+            base64_bytes: 33252,
+            base64_sha256: process.env.EXPECTED_B64_SHA256,
+            tar_sha256: process.env.EXPECTED_TGZ_SHA256,
+            path_digest_sha256: process.env.EXPECTED_PATH_DIGEST,
+            outside_human_dependency: false,
+            graph_effect: 'none'
+          };
+          process.stdout.write(`${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+      - name: Upload PC-31 materializer receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc31-materializer-receipt
+          path: pc31-materializer-receipt.json
+          if-no-files-found: error
+          retention-days: 90
