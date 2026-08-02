@@ -1,0 +1,83 @@
+name: TEMP derive SSC RD-04-C01 version cross-references
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd-wave02-rd04-cross-references.yml'
+      - 'data/intake/status-sovereignty-rd-wave02-rd04-version-history/seed-capture-receipt.json'
+      - 'tools/acquisition/status-sovereignty-rd-wave02-rd04/derive-version-cross-references.mjs'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ssc-rd-wave02-rd04-cross-references-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  derive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Download exact fourteen-source seed artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-version-seed
+          path: /tmp/rd04-version-seed
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30765064506
+      - name: Derive immutable cross-reference candidates
+        env:
+          RD04_REPOSITORY_ROOT: ${{ github.workspace }}
+          RD04_VERSION_ARTIFACT: /tmp/rd04-version-seed
+          RD04_CROSSREF_OUTPUT: /tmp/rd04-cross-references
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/acquisition/status-sovereignty-rd-wave02-rd04/derive-version-cross-references.mjs
+          test -f /tmp/rd04-cross-references/registry.json
+          test -f /tmp/rd04-cross-references/receipt.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const registry = JSON.parse(fs.readFileSync('/tmp/rd04-cross-references/registry.json', 'utf8'));
+          const expected = {
+            source_units: 14,
+            source_units_extracted: 13,
+            source_units_unresolved: 1,
+            reference_occurrences: 485,
+            unique_reference_ids: 103,
+            seed_alias_reference_ids: 13,
+            new_cross_reference_candidates: 90,
+            version_edges_adjudicated: 0,
+            class_closed: 0,
+            external_contacts: 0,
+            external_reviews: 0,
+            graph_effects: 0,
+            publication_effects: 0
+          };
+          for (const [key, value] of Object.entries(expected)) {
+            if (registry.counts?.[key] !== value) throw new Error(`${key}: ${registry.counts?.[key]} != ${value}`);
+          }
+          if (registry.current_result?.class_closed !== false) throw new Error('class closure escalated');
+          if (registry.current_result?.version_edge_adjudication_complete !== false) throw new Error('version-edge adjudication escalated');
+          if (registry.unresolved_seed_source?.alternative_locator_fetched !== false) throw new Error('alternative locator represented as fetched');
+          if (registry.boundaries?.reference_occurrence_is_version_edge !== false) throw new Error('reference occurrence promoted to version edge');
+          if (registry.boundaries?.unresolved_statute_page_is_missing_law !== false) throw new Error('HTTP 403 promoted to missing law');
+          console.log('cross-reference denominator and authority ceiling: PASS');
+          NODE
+      - name: Upload exact cross-reference registry
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-version-cross-references
+          path: /tmp/rd04-cross-references
+          if-no-files-found: error
+          retention-days: 90
