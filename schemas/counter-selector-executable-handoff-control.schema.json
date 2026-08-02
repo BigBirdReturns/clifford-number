@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/counter-selector-executable-handoff-control.schema.json",
+  "title": "Counter-Selector executable bounded-package handoff control",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "program_id",
+    "wave_id",
+    "parent_wave_ids",
+    "as_of",
+    "observed_at",
+    "title",
+    "status",
+    "purpose",
+    "counts",
+    "handoff_contract",
+    "control",
+    "boundaries",
+    "next_action",
+    "graph_effect"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "counter-selector-executable-handoff-control@1"
+    },
+    "program_id": {
+      "const": "counter-selector-v1"
+    },
+    "wave_id": {
+      "const": "CS-W34-EH-01"
+    },
+    "parent_wave_ids": {
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "const": "one_complete_bounded_package_handoff_zero_person_findings"
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "handoff_contract": {
+      "type": "object"
+    },
+    "control": {
+      "type": "object"
+    },
+    "boundaries": {
+      "type": "object"
+    },
+    "next_action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "graph_effect": {
+      "const": "none"
+    }
+  }
+}

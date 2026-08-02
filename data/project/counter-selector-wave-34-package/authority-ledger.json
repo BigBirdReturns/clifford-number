@@ -1,0 +1,45 @@
+{
+  "schema_version": "counter-selector-handoff-authority@1",
+  "package_id": "CS-W34-PACKAGE-01",
+  "outgoing_role": {
+    "id": "outgoing_package_builder",
+    "may": [
+      "assemble exact package",
+      "publish package artifact"
+    ],
+    "may_not": [
+      "certify recipient execution",
+      "modify successor output"
+    ]
+  },
+  "incoming_role": {
+    "id": "fresh_workspace_recipient",
+    "may": [
+      "verify package",
+      "safely decline invalid package",
+      "apply declared operation",
+      "emit acknowledgment"
+    ],
+    "may_not": [
+      "modify package",
+      "invent missing state",
+      "claim external review"
+    ]
+  },
+  "verifier_role": {
+    "id": "successor_verifier",
+    "may": [
+      "compare exact outputs to canonical contract"
+    ],
+    "may_not": [
+      "modify package",
+      "modify recipient outputs",
+      "promote a person"
+    ]
+  },
+  "required_credentials": [],
+  "required_access": [
+    "read package directory",
+    "write successor output directory"
+  ]
+}
