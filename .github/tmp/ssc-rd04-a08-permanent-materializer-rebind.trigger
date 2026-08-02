@@ -1,1 +1,1 @@
-ssc-rd04-a08-permanent-materializer-rebind-v1
+ssc-rd04-a08-permanent-materializer-rebind-v2
