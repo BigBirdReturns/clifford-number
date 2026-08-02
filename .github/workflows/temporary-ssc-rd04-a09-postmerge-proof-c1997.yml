@@ -1,0 +1,181 @@
+name: TEMP prove canonical SSC RD-04 A09 merge c1997
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a09-postmerge-proof-base-c1997
+    paths:
+      - '.github/tmp/ssc-rd04-a09-postmerge-proof-c1997.trigger'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd04-a09-postmerge-proof-c1997
+  cancel-in-progress: false
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a09-postmerge-proof-base-c1997
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prove merge topology, exact scope, and descendant-main safety
+        env:
+          MERGE: c1997a1bfea3e214e2769df31f64f6fad6a4295c
+          FIRST_PARENT: 77bf94dfded4e3f0463d3af0a38e6d3b83cf269e
+          PRODUCT_PARENT: 81009d0eeea33b6eb288829d68dece2bfeb744cf
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin main
+          current_main="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$MERGE" "$current_main"
+
+          read -r observed_merge observed_first_parent observed_product_parent extra < <(git rev-list --parents -n1 "$MERGE")
+          test "$observed_merge" = "$MERGE"
+          test "$observed_first_parent" = "$FIRST_PARENT"
+          test "$observed_product_parent" = "$PRODUCT_PARENT"
+          test -z "${extra:-}"
+
+          cat > /tmp/a09-expected-paths <<'PATHS'
+          .github/workflows/status-sovereignty-rd04-changed-input-gate-a09.yml
+          build/core-thesis/status-sovereignty/rd04-changed-input-gate-a09/data.json
+          build/core-thesis/status-sovereignty/rd04-changed-input-gate-a09/manifest.json
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/core.json
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/candidate-input-receipt.json
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/current-cycle/end-main.txt
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/current-cycle/response/body.bin
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/current-cycle/response/curl-exit.txt
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/current-cycle/response/curl-meta.txt
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/current-cycle/response/curl-stderr.txt
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/current-cycle/response/headers.txt
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/current-cycle/start-main.txt
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/current-cycle/summary.json
+          data/intake/status-sovereignty-rd04-changed-input-gate-a09/source-custody/source-ledger.json
+          data/project/status-sovereignty-rd04-changed-input-gate-a09-release-manifest.json
+          docs/milestones/ssc-rd04-changed-input-gate-a09.md
+          reports/core-thesis/status-sovereignty/rd04-changed-input-gate-a09/data.json
+          reports/core-thesis/status-sovereignty/rd04-changed-input-gate-a09/index.html
+          schemas/status-sovereignty-rd04-changed-input-gate-a09.schema.json
+          test/status-sovereignty-rd04-changed-input-gate-a09.test.js
+          tools/acquisition/status-sovereignty-rd04-a09/detect-changed-input.mjs
+          tools/build-status-sovereignty-rd04-changed-input-gate-a09.mjs
+          tools/validate-status-sovereignty-rd04-changed-input-gate-a09.mjs
+          PATHS
+          sed -i 's/^[[:space:]]*//' /tmp/a09-expected-paths
+          sort -o /tmp/a09-expected-paths /tmp/a09-expected-paths
+          test "$(wc -l < /tmp/a09-expected-paths | tr -d ' ')" = 23
+
+          git diff --name-only "$FIRST_PARENT" "$MERGE" | sort > /tmp/a09-observed-paths
+          diff -u /tmp/a09-expected-paths /tmp/a09-observed-paths
+          if grep -E '(^|/)(\.github/tmp|temporary-|materializer|trigger|carrier)(/|\.|$)' /tmp/a09-observed-paths; then
+            echo 'temporary transport leaked into canonical A09 merge' >&2
+            exit 1
+          fi
+
+          git diff --name-only "$MERGE...$current_main" | sort > /tmp/a09-later-main-paths
+          if grep -E '(^|/)(status-sovereignty-rd04-changed-input-gate-a09|rd04-changed-input-gate-a09|status-sovereignty-rd04-a09|ssc-rd04-changed-input-gate-a09)(/|\.|$)' /tmp/a09-later-main-paths; then
+            echo 'later main movement overlaps canonical A09 namespace' >&2
+            exit 1
+          fi
+
+          printf '%s\n' "$current_main" > /tmp/a09-proof-current-main.txt
+      - name: Reproduce and adversarially validate canonical A09
+        env:
+          MERGE: c1997a1bfea3e214e2769df31f64f6fad6a4295c
+          EXPECTED_RELEASE_SHA256: f494526c2b4bb0d8b710ce40925b9a7fe3a988ad0cc139fb7e7b1301e9bf3736
+        run: |
+          set -Eeuo pipefail
+          git switch --detach "$MERGE"
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/build-status-sovereignty-rd04-changed-input-gate-a09.mjs
+          node tools/validate-status-sovereignty-rd04-changed-input-gate-a09.mjs
+          node test/status-sovereignty-rd04-changed-input-gate-a09.test.js
+          git diff --exit-code
+
+          RELEASE_PATH='data/project/status-sovereignty-rd04-changed-input-gate-a09-release-manifest.json' \
+          EXPECTED_RELEASE_SHA256="$EXPECTED_RELEASE_SHA256" \
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const release = JSON.parse(fs.readFileSync(process.env.RELEASE_PATH, 'utf8'));
+          if (release.combined_sha256 !== process.env.EXPECTED_RELEASE_SHA256) {
+            throw new Error(`release digest drift: ${release.combined_sha256}`);
+          }
+          if (!Array.isArray(release.entries) || release.entries.length !== 22) {
+            throw new Error(`release entry denominator: ${release.entries?.length}`);
+          }
+          console.log(`A09 release verified: ${release.entries.length} exact-byte entries, ${release.combined_sha256}`);
+          NODE
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove semantic cleanliness after the complete gate
+        run: |
+          set -Eeuo pipefail
+          git restore --staged --worktree .
+          git clean -fd
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/build-status-sovereignty-rd04-changed-input-gate-a09.mjs
+          node tools/validate-status-sovereignty-rd04-changed-input-gate-a09.mjs
+          node test/status-sovereignty-rd04-changed-input-gate-a09.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1)"
+      - name: Emit exact A09 post-merge receipt
+        env:
+          MERGE: c1997a1bfea3e214e2769df31f64f6fad6a4295c
+          FIRST_PARENT: 77bf94dfded4e3f0463d3af0a38e6d3b83cf269e
+          PRODUCT_PARENT: 81009d0eeea33b6eb288829d68dece2bfeb744cf
+          EXPECTED_RELEASE_SHA256: f494526c2b4bb0d8b710ce40925b9a7fe3a988ad0cc139fb7e7b1301e9bf3736
+        run: |
+          set -Eeuo pipefail
+          export CURRENT_MAIN="$(cat /tmp/a09-proof-current-main.txt)"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const receipt = {
+            schema_version: 'ssc-rd04-a09-postmerge-proof@1',
+            canonical_merge: process.env.MERGE,
+            first_parent: process.env.FIRST_PARENT,
+            product_parent: process.env.PRODUCT_PARENT,
+            observed_current_main: process.env.CURRENT_MAIN,
+            permanent_paths: 23,
+            release_manifest_entries: 22,
+            release_sha256: process.env.EXPECTED_RELEASE_SHA256,
+            terminal_state: 'no_changed_input_observed',
+            gates: {
+              two_parent_topology: 'pass',
+              exact_first_parent_scope: 'pass',
+              zero_transport_paths: 'pass',
+              descendant_main: 'pass',
+              later_main_namespace_disjointness: 'pass',
+              no_magic_human: 'pass',
+              deterministic_builder: 'pass',
+              structural_validator: 'pass',
+              adversarial_and_classifier_controls: 45,
+              complete_repository_release_gate: 'pass',
+              semantic_cleanliness: 'pass'
+            },
+            authority: {
+              outside_human_dependency: false,
+              automatic_schedule_installed: false,
+              broader_crawl_authorized: false,
+              exact_source_adjudication_authorized: false,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            }
+          };
+          fs.writeFileSync('ssc-rd04-a09-postmerge-proof.json', `${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+      - name: Upload exact A09 post-merge proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a09-postmerge-proof-c1997
+          path: ssc-rd04-a09-postmerge-proof.json
+          if-no-files-found: error
+          retention-days: 90
