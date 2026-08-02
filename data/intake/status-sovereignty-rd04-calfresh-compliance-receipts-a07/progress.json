@@ -3,7 +3,7 @@
   "execution_id": "SSC-RD04-SNAP-A07",
   "issue": 741,
   "as_of": "2026-08-02",
-  "status": "initial_official_source_custody_and_content_neutral_pilot_complete",
+  "status": "initial_source_custody_pilot_and_county_agency_roots_complete",
   "constitution": {
     "path": "data/intake/status-sovereignty-rd04-calfresh-compliance-receipts-a07/core.json",
     "phase_zero_snapshot": true,
@@ -57,8 +57,17 @@
     "follow_up_authorized": false
   },
   "county_census": {
+    "agency_root_ledger_path": "data/intake/status-sovereignty-rd04-calfresh-compliance-receipts-a07/county-agency-roots.json",
+    "workflow_run": 30737524831,
+    "workflow_head": "e8a884e60053eff4503f5c99c0370160397370a0",
+    "product_head": "460350e060915175ba929c136ebc41e7c81b60ac",
+    "source_body_sha256": "748fe853b679bea0850056442f133e79018aebdfcaa006b346483b82bace8e9a",
     "expected_counties": 58,
-    "agency_roots_materialized": 0,
+    "agency_roots_materialized": 58,
+    "exact_public_agency_roots": 58,
+    "multiple_public_root_candidates": 0,
+    "public_sections_without_agency_root": 0,
+    "link_candidates": 68,
     "counties_censused": 0,
     "complete": false,
     "county_selection_authorized": false
@@ -90,8 +99,8 @@
     "adoption_effect": "none"
   },
   "next_transactions": [
-    "materialize_all_58_county_agency_roots_from_exact_cdss_county_office_custody",
     "resolve_exact_mpp_22_078_authority_from_the_confidentiality_fraud_civil_rights_and_state_hearings_manual",
-    "execute_all_64_content_neutral_parent_shards_before_any_case_follow_up"
+    "execute_all_64_content_neutral_parent_shards_before_any_case_follow_up",
+    "execute_complete_58_county_public_surface_census_in_frozen_alphabetical_order"
   ]
 }
