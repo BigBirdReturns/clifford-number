@@ -1,0 +1,15 @@
+{
+  "schema_version": "counter-selector-handoff-rollback@1",
+  "package_id": "CS-W34-PACKAGE-01",
+  "decline_conditions": [
+    "package manifest invalid",
+    "entry hash or byte count mismatch",
+    "unsupported runtime",
+    "pretransition object mismatch",
+    "undeclared dependency required",
+    "successor invariant failure"
+  ],
+  "safe_decline": "exit nonzero before successor or acknowledgment publication",
+  "rollback_state": "retain object-before.json unchanged and discard temporary outputs",
+  "external_side_effects": []
+}

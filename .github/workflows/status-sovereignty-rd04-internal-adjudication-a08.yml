@@ -1,0 +1,71 @@
+name: SSC RD-04 A08 internal adjudication and bounded public refresh
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/status-sovereignty-rd04-internal-adjudication-a08.yml'
+      - 'data/intake/status-sovereignty-rd04-internal-adjudication-a08/**'
+      - 'data/project/status-sovereignty-rd04-internal-adjudication-a08-release-manifest.json'
+      - 'docs/milestones/ssc-rd04-internal-adjudication-a08.md'
+      - 'schemas/status-sovereignty-rd04-internal-adjudication-a08.schema.json'
+      - 'tools/build-status-sovereignty-rd04-internal-adjudication-a08.mjs'
+      - 'tools/validate-status-sovereignty-rd04-internal-adjudication-a08.mjs'
+      - 'tools/acquisition/status-sovereignty-rd04-a08/**'
+      - 'test/status-sovereignty-rd04-internal-adjudication-a08.test.js'
+      - 'reports/core-thesis/status-sovereignty/rd04-internal-adjudication-a08/**'
+      - 'build/core-thesis/status-sovereignty/rd04-internal-adjudication-a08/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd04-internal-adjudication-a08.yml'
+      - 'data/intake/status-sovereignty-rd04-internal-adjudication-a08/**'
+      - 'data/project/status-sovereignty-rd04-internal-adjudication-a08-release-manifest.json'
+      - 'docs/milestones/ssc-rd04-internal-adjudication-a08.md'
+      - 'schemas/status-sovereignty-rd04-internal-adjudication-a08.schema.json'
+      - 'tools/build-status-sovereignty-rd04-internal-adjudication-a08.mjs'
+      - 'tools/validate-status-sovereignty-rd04-internal-adjudication-a08.mjs'
+      - 'tools/acquisition/status-sovereignty-rd04-a08/**'
+      - 'test/status-sovereignty-rd04-internal-adjudication-a08.test.js'
+      - 'reports/core-thesis/status-sovereignty/rd04-internal-adjudication-a08/**'
+      - 'build/core-thesis/status-sovereignty/rd04-internal-adjudication-a08/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd04-a08-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reproduce exact zero-candidate adjudication custody
+        run: |
+          set -Eeuo pipefail
+          scratch="$(mktemp -d)"
+          A08_OUTPUT="$scratch/internal-adjudication" \
+            node tools/acquisition/status-sovereignty-rd04-a08/reduce-zero-candidate-denominator.mjs
+          diff -ru \
+            data/intake/status-sovereignty-rd04-internal-adjudication-a08/source-custody/internal-adjudication \
+            "$scratch/internal-adjudication"
+          rm -rf "$scratch"
+      - name: Verify bounded public-source refresh custody
+        run: node tools/acquisition/status-sovereignty-rd04-a08/verify-bounded-public-refresh-v1.mjs
+      - name: Build and validate permanent A08 product
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/build-status-sovereignty-rd04-internal-adjudication-a08.mjs
+          node tools/validate-status-sovereignty-rd04-internal-adjudication-a08.mjs
+          node test/status-sovereignty-rd04-internal-adjudication-a08.test.js
+      - name: Refuse deterministic drift
+        run: git diff --exit-code
