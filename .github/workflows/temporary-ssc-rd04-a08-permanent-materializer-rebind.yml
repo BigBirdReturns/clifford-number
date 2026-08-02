@@ -1,0 +1,67 @@
+name: TEMP rebind and materialize SSC RD-04 A08 permanent product
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd04-a08-permanent-materializer-base
+    paths:
+      - '.github/tmp/ssc-rd04-a08-permanent-materializer-rebind.trigger'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd04-a08-permanent-materializer-rebind
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd04-a08-permanent-materializer-base
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Rebind disjoint main and execute checksum-bound materializer
+        env:
+          A07_PARENT: 281f2c5ef735d3e2a744f5977061c7c36b97a8a9
+          TARGET_BRANCH: agent/ssc-rd04-internal-adjudication-a08
+          EXPECTED_B64_SHA256: 0f220ffb9f55624cff981c9b696094df30a7fea2868f17cf9e6a9ee4f9b815c0
+          EXPECTED_TGZ_SHA256: 23a0703d37c5f9b6c3a7695491d441776afa829c78f5ddfe4f7daca62a857110
+          EXPECTED_RELEASE_SHA256: 0f53625ade42bf3278429040d50a74a6a52714d28e6f8e754b11f31acb710356
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin main
+          rebound_main="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$A07_PARENT" "$rebound_main"
+          git diff --name-only "$A07_PARENT" "$rebound_main" | sort > /tmp/a08-main-drift-paths
+          if grep -E '(^|/)(status-sovereignty-rd04-internal-adjudication-a08|rd04-internal-adjudication-a08|status-sovereignty-rd04-a08|ssc-rd04-internal-adjudication-a08)(/|\.|$)' /tmp/a08-main-drift-paths; then
+            echo 'current main overlaps the permanent A08 namespace' >&2
+            exit 1
+          fi
+          export EXPECTED_MAIN="$rebound_main"
+          ruby <<'RUBY'
+          require 'yaml'
+          source = '.github/workflows/temporary-ssc-rd04-a08-permanent-materializer.yml'
+          document = YAML.load_file(source)
+          steps = document.fetch('jobs').fetch('materialize').fetch('steps')
+          step = steps.find do |entry|
+            entry.is_a?(Hash) && entry['name'] == 'Reconstruct, gate, and publish transport-free A08'
+          end
+          abort 'embedded A08 materializer step not found' unless step && step['run']
+          File.write('/tmp/materialize-ssc-rd04-a08.sh', step.fetch('run'))
+          RUBY
+          chmod 700 /tmp/materialize-ssc-rd04-a08.sh
+          /tmp/materialize-ssc-rd04-a08.sh
+      - name: Upload exact rebound A08 materializer receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-a08-materializer-receipt-rebound
+          path: ssc-rd04-a08-materializer-receipt.json
+          if-no-files-found: error
+          retention-days: 90
