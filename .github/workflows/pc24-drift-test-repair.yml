@@ -1,0 +1,44 @@
+name: Temporary PC-24 form-drift test repair
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pc24-drift-test-repair.yml'
+      - 'test/preference-instrument-validity.test.js'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/preference-instrument-validity-v1
+      - name: Isolate the form-drift adversarial mutation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('test/preference-instrument-validity.test.js')
+          source = path.read_text()
+          anchor = "driftFixture.equating.form_comparable = true;\ndriftFixture.equating.secure_anchor_count = 4;\n"
+          replacement = "driftFixture.equating.form_comparable = true;\ndriftFixture.items.anchor_items_count = 4;\ndriftFixture.equating.secure_anchor_count = 4;\n"
+          if replacement in source:
+              raise SystemExit(0)
+          if anchor not in source:
+              raise SystemExit('form-drift adversarial anchor not found')
+          path.write_text(source.replace(anchor, replacement, 1))
+          PY
+      - name: Commit bounded test repair
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add test/preference-instrument-validity.test.js
+          if git diff --cached --quiet; then
+            echo 'No drift test repair required.'
+          else
+            git commit -m 'Isolate PC-24 form-drift adversarial fixture'
+            git push origin HEAD:research/preference-instrument-validity-v1
+          fi
