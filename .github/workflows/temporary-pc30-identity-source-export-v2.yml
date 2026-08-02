@@ -1,0 +1,60 @@
+name: TEMP export PC-30 identity-boundary source v2
+
+on:
+  push:
+    branches:
+      - agent/pc30-identity-source-export-v2
+    paths:
+      - '.github/workflows/temporary-pc30-identity-source-export-v2.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-pc30-identity-source-export-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bdaa43ead673bfe3d5ac62a665ef55d5b2480780
+          fetch-depth: 1
+      - name: Package exact fourteen-file identity-boundary source
+        run: |
+          set -Eeuo pipefail
+          cat > /tmp/pc30-identity-paths <<'PATHS'
+          .github/workflows/preference-custody-v27.yml
+          .github/workflows/preference-identity-boundary-assurance.yml
+          data/research/preference-custody/control-manifest-v27.json
+          data/research/preference-custody/identity-boundary-assurance.fixture.json
+          docs/preference-custody-identity-boundary-assurance.md
+          docs/preference-custody-laboratory-floor-v27.md
+          test/preference-custody-manifest-v27.test.js
+          test/preference-identity-boundary-assurance.test.js
+          tools/compile-preference-custody-manifest-v27.mjs
+          tools/compile-preference-identity-boundary-assurance.mjs
+          tools/lib/preference-custody-manifest-v27.mjs
+          tools/lib/preference-identity-boundary-assurance.mjs
+          tools/validate-preference-custody-manifest-v27.mjs
+          tools/validate-preference-identity-boundary-assurance.mjs
+          PATHS
+          sed -i 's/^          //' /tmp/pc30-identity-paths
+          test "$(wc -l < /tmp/pc30-identity-paths | tr -d ' ')" = 14
+          while IFS= read -r path; do test -f "$path"; done < /tmp/pc30-identity-paths
+          mkdir -p /tmp/pc30-export
+          tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
+            -czf /tmp/pc30-export/pc30-identity-source.tar.gz \
+            --files-from=/tmp/pc30-identity-paths
+          sha256sum /tmp/pc30-export/pc30-identity-source.tar.gz > /tmp/pc30-export/pc30-identity-source.sha256
+          printf '%s\n' 'bdaa43ead673bfe3d5ac62a665ef55d5b2480780' > /tmp/pc30-export/source-head.txt
+          cp /tmp/pc30-identity-paths /tmp/pc30-export/paths.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc30-identity-boundary-source
+          path: /tmp/pc30-export
+          if-no-files-found: error
+          retention-days: 7
