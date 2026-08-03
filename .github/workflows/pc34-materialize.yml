@@ -1,0 +1,184 @@
+name: Temporary PC-34 exact product materializer
+
+on:
+  pull_request:
+    paths:
+      - '.pc34/payload.part-*'
+      - '.github/workflows/pc34-materialize.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc34-exact-product-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/preference-source-population-rule-assurance-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify and extract the exact twelve-file PC-34 product
+        run: |
+          python - <<'PY2'
+          from pathlib import Path
+          import base64
+          import hashlib
+          import io
+          import json
+          import subprocess
+          import tarfile
+
+          expected_xz_sha256 = '43273014de15bd7b0dd7e38754ba7c8da76ed0784ea9f39fbc21a984ec8b5f94'
+          expected_base64_sha256 = 'fa4f36e29e19eeeba40cc6c1d61c633d38bcf4a12d1343fed1d6d82bb91b62b5'
+          expected = {
+              'data/research/preference-custody/source-population-rule-assurance.fixture.json': '92ae7338f9852e62fecfc8fcafca8ffdc5a38fe3e98fec65b8d39bf8bfa8aa69',
+              'tools/lib/preference-source-population-rule-assurance.mjs': '9f6677a6353b10fd4d12ddde889a94a5a719fbab3ad1a9cf3d0ef1655ac344a3',
+              'tools/compile-preference-source-population-rule-assurance.mjs': 'dc3fd576e2decc50a51aa3301af409e294254db91a80cd9dfed1bc21de3e2269',
+              'tools/validate-preference-source-population-rule-assurance.mjs': 'a636c3acd4d2c865029dca5c0a82758390074065d6108fe2075928ceb793bc60',
+              'test/preference-source-population-rule-assurance.test.js': 'ac8eca41ca2454f21cf6ad789e09e25867e3cc3bd5bd59c192d9f662f948b828',
+              'docs/preference-custody-source-population-rule-assurance.md': '1c26d1d7b69a25b8bb0cbffdd8976d608a6b8c058d8997bfed0d68c6161649fa',
+              'data/research/preference-custody/control-manifest-v32.json': '1fecf0c00268c53326fd7783b085ebc5623ae3df09d2b58ed49b55edf6bdd1de',
+              'tools/lib/preference-custody-manifest-v32.mjs': '9af001f739cc13d03291ff801e6daa5970f758548f0d88fe64d90285861a749f',
+              'tools/compile-preference-custody-manifest-v32.mjs': '0b4ba5cff662ff23d827d0d9d70534e5ce85ecdc790399e4220b2f9036a9009b',
+              'tools/validate-preference-custody-manifest-v32.mjs': '4d66ea66ecb0ce547d64447d19953e0678cb22c55890437da6a00c2a880a3170',
+              'test/preference-custody-manifest-v32.test.js': 'e76ac739e0e54bb4af508fab31419c4e7273f1e5b657ad9b38296352cf4a4a8c',
+              'docs/preference-custody-laboratory-floor-v32.md': 'ea05b5b0698101e60cbe72d7a4c6cb98c63d97bed5c0f3774b07e052125f7a53',
+          }
+
+          parts = sorted(Path('.pc34').glob('payload.part-*'))
+          required_parts = [f'payload.part-{index:02d}' for index in range(6)]
+          if [path.name for path in parts] != required_parts:
+              raise SystemExit(f'expected six ordered payload shards, found {[path.name for path in parts]}')
+          encoded = ''.join(''.join(path.read_text().split()) for path in parts)
+          actual_base64_sha256 = hashlib.sha256(encoded.encode()).hexdigest()
+          if actual_base64_sha256 != expected_base64_sha256:
+              raise SystemExit(f'payload base64 SHA-256 mismatch: {actual_base64_sha256}')
+          try:
+              xz_bytes = base64.b64decode(encoded, validate=True)
+          except Exception as error:
+              raise SystemExit(f'invalid payload base64: {error}')
+          actual_xz_sha256 = hashlib.sha256(xz_bytes).hexdigest()
+          if actual_xz_sha256 != expected_xz_sha256:
+              raise SystemExit(f'payload xz SHA-256 mismatch: {actual_xz_sha256}')
+
+          with tarfile.open(fileobj=io.BytesIO(xz_bytes), mode='r:xz') as archive:
+              members = archive.getmembers()
+              names = [member.name for member in members]
+              if names != list(expected):
+                  raise SystemExit(f'archive path/order mismatch: {names}')
+              for member in members:
+                  if not member.isfile() or member.issym() or member.islnk():
+                      raise SystemExit(f'archive member must be a regular file: {member.name}')
+                  if Path(member.name).is_absolute() or '..' in Path(member.name).parts:
+                      raise SystemExit(f'unsafe archive member: {member.name}')
+                  source = archive.extractfile(member)
+                  if source is None:
+                      raise SystemExit(f'archive member has no bytes: {member.name}')
+                  target = Path(member.name)
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(source.read())
+
+          observed = {}
+          for name, required_sha256 in expected.items():
+              raw = Path(name).read_bytes()
+              actual_sha256 = hashlib.sha256(raw).hexdigest()
+              if actual_sha256 != required_sha256:
+                  raise SystemExit(f'file SHA-256 mismatch for {name}: {actual_sha256}')
+              observed[name] = {'bytes': len(raw), 'sha256': actual_sha256}
+
+          receipt = {
+              'schema_version': 'pc34-materialization-receipt@1',
+              'source_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'payload_base64_sha256': actual_base64_sha256,
+              'payload_xz_sha256': actual_xz_sha256,
+              'permanent_nonworkflow_file_count': len(expected),
+              'files': observed,
+              'outside_human_dependency': False,
+          }
+          Path('/tmp/pc34-materialization-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY2
+      - name: Qualify standalone PC-34 and compositional floor v32
+        run: |
+          node tools/compile-preference-source-population-rule-assurance.mjs
+          node tools/validate-preference-source-population-rule-assurance.mjs
+          node test/preference-source-population-rule-assurance.test.js
+          node tools/compile-preference-custody-manifest-v32.mjs
+          node tools/validate-preference-custody-manifest-v32.mjs
+          node test/preference-custody-manifest-v32.test.js
+      - name: Regress historical Preference Custody floors and no-magic-human gate
+        run: |
+          set -euo pipefail
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+      - name: Commit only the exact product and retire all six payload shards
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -- \
+            data/research/preference-custody/source-population-rule-assurance.fixture.json \
+            tools/lib/preference-source-population-rule-assurance.mjs \
+            tools/compile-preference-source-population-rule-assurance.mjs \
+            tools/validate-preference-source-population-rule-assurance.mjs \
+            test/preference-source-population-rule-assurance.test.js \
+            docs/preference-custody-source-population-rule-assurance.md \
+            data/research/preference-custody/control-manifest-v32.json \
+            tools/lib/preference-custody-manifest-v32.mjs \
+            tools/compile-preference-custody-manifest-v32.mjs \
+            tools/validate-preference-custody-manifest-v32.mjs \
+            test/preference-custody-manifest-v32.test.js \
+            docs/preference-custody-laboratory-floor-v32.md
+          git rm -- \
+            .pc34/payload.part-00 \
+            .pc34/payload.part-01 \
+            .pc34/payload.part-02 \
+            .pc34/payload.part-03 \
+            .pc34/payload.part-04 \
+            .pc34/payload.part-05
+          python - <<'PY2'
+          import subprocess
+          expected = [
+              '.pc34/payload.part-00',
+              '.pc34/payload.part-01',
+              '.pc34/payload.part-02',
+              '.pc34/payload.part-03',
+              '.pc34/payload.part-04',
+              '.pc34/payload.part-05',
+              'data/research/preference-custody/control-manifest-v32.json',
+              'data/research/preference-custody/source-population-rule-assurance.fixture.json',
+              'docs/preference-custody-laboratory-floor-v32.md',
+              'docs/preference-custody-source-population-rule-assurance.md',
+              'test/preference-custody-manifest-v32.test.js',
+              'test/preference-source-population-rule-assurance.test.js',
+              'tools/compile-preference-custody-manifest-v32.mjs',
+              'tools/compile-preference-source-population-rule-assurance.mjs',
+              'tools/lib/preference-custody-manifest-v32.mjs',
+              'tools/lib/preference-source-population-rule-assurance.mjs',
+              'tools/validate-preference-custody-manifest-v32.mjs',
+              'tools/validate-preference-source-population-rule-assurance.mjs',
+          ]
+          observed = sorted(subprocess.check_output(['git', 'diff', '--cached', '--name-only'], text=True).splitlines())
+          if observed != expected:
+              raise SystemExit(f'staged path mismatch:\nexpected={expected}\nobserved={observed}')
+          print(f'exact staged path set verified: {len(observed)} paths')
+          PY2
+          git commit -m 'Materialize PC-34 and Preference Custody floor v32'
+          git push origin HEAD:research/preference-source-population-rule-assurance-v1
+      - name: Preserve the exact materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc34-exact-materialization-receipt
+          path: /tmp/pc34-materialization-receipt.json
+          if-no-files-found: error
