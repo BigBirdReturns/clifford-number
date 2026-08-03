@@ -1,0 +1,39 @@
+name: TEMP export canonical main history bundle for PC-38
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc38-main-history-bundle.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Create exact reachable canonical-main history bundle
+        run: |
+          set -Eeuo pipefail
+          out=/tmp/pc38-main-history
+          mkdir -p "$out"
+          git rev-parse HEAD > "$out/main-head.sha"
+          git rev-list --count HEAD > "$out/main-history-count.txt"
+          git bundle create "$out/clifford-number-main.bundle" HEAD
+          git bundle verify "$out/clifford-number-main.bundle" > "$out/bundle-verify.txt" 2>&1
+          sha256sum "$out/clifford-number-main.bundle" > "$out/bundle.sha256"
+          stat -c '%s' "$out/clifford-number-main.bundle" > "$out/bundle.bytes"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc38-canonical-main-history-bundle
+          path: /tmp/pc38-main-history
+          if-no-files-found: error
+          retention-days: 7
