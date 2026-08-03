@@ -1,0 +1,41 @@
+{
+  "schema_version": "ssc-rd01-wave02-failed-route-replay-protocol@1",
+  "wave_id": "SSC-RD-W02",
+  "class_id": "RD-01-C03",
+  "issue": 786,
+  "research_head": "72e657baa024e0e90cca5bfc532f8350fe6bca60",
+  "base_census": {
+    "artifact_id": 8866950187,
+    "artifact_zip_sha256": "e961aeed386e7ca1709369b096f39794003d88ec7bb03f0e34b68af690ffd09f",
+    "manifest_combined_sha256": "7884982c8f9be70fb1d3dd92f524cf2c45c4943364c63f39b66af03f5a128936",
+    "fixed_routes": 612,
+    "original_http_success": 498,
+    "original_transport_failures": 112,
+    "original_retryable_http_non_success": 2
+  },
+  "replay_contract": {
+    "route_membership_frozen_from_base_terminal_receipts_before_requests": true,
+    "replay_routes": 114,
+    "allowed_original_states": [
+      "transport_failure",
+      "terminal_http_non_success_with_429_or_5xx"
+    ],
+    "result_spawned_requests": 0,
+    "maximum_attempts_per_route": 2,
+    "timeout_ms": 45000,
+    "maximum_body_bytes": 5242880,
+    "concurrency": 2,
+    "delay_ms_after_each_terminal_route": 750,
+    "connection_header": "close",
+    "automatic_third_pass_authorized": false
+  },
+  "authority": {
+    "outside_human_dependency": false,
+    "external_contacts": 0,
+    "external_reviews": 0,
+    "denominator_widened": false,
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none"
+  }
+}

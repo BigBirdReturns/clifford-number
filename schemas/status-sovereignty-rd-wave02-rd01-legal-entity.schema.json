@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-rd-wave02-rd01-legal-entity.schema.json",
+  "title": "SSC RD-01 Wave 02 legal-entity class receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "wave_id",
+    "lane_id",
+    "class_id",
+    "issue",
+    "source_pr",
+    "class_label",
+    "terminal_state",
+    "class_closed",
+    "closure_basis",
+    "counts",
+    "source_custody",
+    "unresolved_limit",
+    "authority"
+  ],
+  "properties": {
+    "schema_version": { "const": "ssc-rd01-wave02-class-receipt@1" },
+    "wave_id": { "const": "SSC-RD-W02" },
+    "lane_id": { "const": "RD-01" },
+    "class_id": { "const": "RD-01-C03" },
+    "issue": { "const": 786 },
+    "source_pr": { "const": 801 },
+    "class_label": { "const": "legal-entity resolution for selected and matched control companies" },
+    "terminal_state": { "const": "bounded_source_unavailable" },
+    "class_closed": { "const": true },
+    "closure_basis": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "frozen_rows",
+        "terminal_rows",
+        "stage1_fixed_routes",
+        "stage2_fixed_routes",
+        "failed_route_replay_routes",
+        "final_http_success_routes",
+        "exact_legal_entity_resolved",
+        "bounded_brand_to_entity_resolution",
+        "legal_entities_resolved",
+        "identity_ambiguous",
+        "identity_source_unavailable",
+        "identity_source_restricted",
+        "changed_rows_after_replay"
+      ],
+      "properties": {
+        "frozen_rows": { "const": 102 },
+        "terminal_rows": { "const": 102 },
+        "stage1_fixed_routes": { "const": 205 },
+        "stage2_fixed_routes": { "const": 612 },
+        "failed_route_replay_routes": { "const": 114 },
+        "final_http_success_routes": { "const": 612 },
+        "exact_legal_entity_resolved": { "const": 45 },
+        "bounded_brand_to_entity_resolution": { "const": 3 },
+        "legal_entities_resolved": { "const": 48 },
+        "identity_ambiguous": { "const": 44 },
+        "identity_source_unavailable": { "const": 10 },
+        "identity_source_restricted": { "const": 0 },
+        "changed_rows_after_replay": { "const": 8 }
+      }
+    },
+    "source_custody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_index_path",
+        "stage1_artifact_id",
+        "stage1_archive_sha256",
+        "stage1_manifest_sha256",
+        "base_artifact_id",
+        "base_archive_sha256",
+        "base_manifest_sha256",
+        "replay_artifact_id",
+        "replay_archive_sha256",
+        "replay_manifest_sha256"
+      ],
+      "properties": {
+        "artifact_index_path": { "const": "data/intake/status-sovereignty-rd-wave02-rd01-legal-entity/source-custody/legal-entity-protocol-v1/artifact-index.json" },
+        "stage1_artifact_id": { "const": 8866039696 },
+        "stage1_archive_sha256": { "const": "ac81681b0f080715326bf7b4d8bc8225e7f69d52c0b2b4e73b9f57dc90c335aa" },
+        "stage1_manifest_sha256": { "const": "5061d7ddaa9060d952b468a4514f201151f57daebf0261f2d042c8d1b4360daa" },
+        "base_artifact_id": { "const": 8866950187 },
+        "base_archive_sha256": { "const": "e961aeed386e7ca1709369b096f39794003d88ec7bb03f0e34b68af690ffd09f" },
+        "base_manifest_sha256": { "const": "7884982c8f9be70fb1d3dd92f524cf2c45c4943364c63f39b66af03f5a128936" },
+        "replay_artifact_id": { "const": 8867425854 },
+        "replay_archive_sha256": { "const": "6dc7ac0c52fe28b1e46debf746c60dbffa408550c2b688c2607c2be24c84cec8" },
+        "replay_manifest_sha256": { "const": "051b96d4819fea3540f6637c5fe8d45e0d2c537905b7dfe2b0c33efc3fb2d913" }
+      }
+    },
+    "unresolved_limit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity_ambiguous_rows",
+        "identity_source_unavailable_rows",
+        "unresolved_rows_are_not_silently_removed",
+        "no_entity_absence_inferred",
+        "no_parent_or_common_control_inferred",
+        "automatic_third_pass_authorized"
+      ],
+      "properties": {
+        "identity_ambiguous_rows": { "const": 44 },
+        "identity_source_unavailable_rows": { "const": 10 },
+        "unresolved_rows_are_not_silently_removed": { "const": true },
+        "no_entity_absence_inferred": { "const": true },
+        "no_parent_or_common_control_inferred": { "const": true },
+        "automatic_third_pass_authorized": { "const": false }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outside_human_dependency",
+        "external_contacts",
+        "external_reviews",
+        "denominator_widened",
+        "reviewed_disposition_changed",
+        "selection_causation_finding",
+        "technical_superiority_finding",
+        "common_control_finding",
+        "coordination_finding",
+        "common_purpose_finding",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect"
+      ],
+      "properties": {
+        "outside_human_dependency": { "const": false },
+        "external_contacts": { "const": 0 },
+        "external_reviews": { "const": 0 },
+        "denominator_widened": { "const": false },
+        "reviewed_disposition_changed": { "const": false },
+        "selection_causation_finding": { "const": false },
+        "technical_superiority_finding": { "const": false },
+        "common_control_finding": { "const": false },
+        "coordination_finding": { "const": false },
+        "common_purpose_finding": { "const": false },
+        "publication_effect": { "const": "none" },
+        "adoption_effect": { "const": "none" },
+        "graph_effect": { "const": "none" }
+      }
+    }
+  }
+}
