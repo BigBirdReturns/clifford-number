@@ -1,0 +1,54 @@
+name: TEMP export canonical PC-39 source for PC-40
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc40-current-main-source-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Export exact canonical PC-39 source
+        run: |
+          set -Eeuo pipefail
+          expected=de0b6eede3c9561d9cd5728c198fc62263b67b6d
+          observed="$(git rev-parse HEAD)"
+          test "$observed" = "$expected"
+          out=/tmp/pc40-canonical-pc39-source
+          mkdir -p "$out"
+          printf '%s\n' "$observed" > "$out/source-head.sha"
+          find . -type f \
+            ! -path './.git/*' \
+            ! -path './node_modules/*' \
+            ! -path './dist/*' \
+            -printf '%P\n' | LC_ALL=C sort > "$out/source-paths.txt"
+          tar \
+            --sort=name \
+            --mtime='UTC 1970-01-01' \
+            --owner=0 \
+            --group=0 \
+            --numeric-owner \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='dist' \
+            -czf "$out/source.tar.gz" .
+          stat -c '%s' "$out/source.tar.gz" > "$out/source.bytes"
+          sha256sum "$out/source.tar.gz" > "$out/source.sha256"
+          test "$(wc -l < "$out/source-paths.txt" | tr -d ' ')" -gt 4000
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc40-canonical-pc39-source
+          path: /tmp/pc40-canonical-pc39-source
+          if-no-files-found: error
+          retention-days: 7
