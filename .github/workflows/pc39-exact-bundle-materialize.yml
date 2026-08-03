@@ -1,0 +1,181 @@
+name: Temporary PC-39 exact bundle materializer
+
+on:
+  pull_request:
+    paths:
+      - '.pc39-bundle/payload.part-*'
+      - '.github/workflows/pc39-exact-bundle-materialize.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc39-exact-bundle-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc39-exact-bundle-materializer
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify twelve shards and reconstruct the exact Git bundle
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64
+          import hashlib
+          import json
+
+          expected_parts = {
+              'payload.part-00': (3000, '67332c43f6220104d2778147627c57474d8ca2856bf1af181e468ce81b78e75f'),
+              'payload.part-01': (3000, 'c6e72bfaf0d1fc433d8c3de17c68670e6b47441996e57ffaf19d08b812dc10da'),
+              'payload.part-02': (3000, '85aab70424293955b93555c31beeb0a23caf15af7a7d1cd93e6cb8e426bd37b4'),
+              'payload.part-03': (3000, 'a83ab8d426ca036eb7ef56d3d95885d372d1eb9c599e2d79cd8abca9e34ae6a7'),
+              'payload.part-04': (3000, '8afeb3a4e8584a2e54283c35ad508461a3bc521c3aff0270115c7a317da257bd'),
+              'payload.part-05': (3000, '2f1c4012ae5288e627be248a03f160606ffe798a9a894f0926b80454f35cc829'),
+              'payload.part-06': (3000, '39745f120b7b581e7e9f4f5a5a30aee6d2c792826144a2d411deee6d09912f1a'),
+              'payload.part-07': (3000, '0e2d7768fa0dcc201e2647913711933a74cb7c1b5b6423c77d10f1ea7d50de65'),
+              'payload.part-08': (3000, 'e6c6d5194249723ffe1c6414b9296d098238ba176fe73814a686c9cd958ed583'),
+              'payload.part-09': (3000, '82d942b0137cddc825b10819aec128109bd7b260237425f3814171679b15a487'),
+              'payload.part-10': (3000, '691f3b5ea1ff8787af8cff74b049a809da3579cbdcaa192585e8de6cca67a4da'),
+              'payload.part-11': (2960, '727090de6a8c71c35c8b614af0b27265139e193486725d4d49025dcde1a9f2cc'),
+          }
+          root = Path('.pc39-bundle')
+          actual_names = [p.name for p in sorted(root.glob('payload.part-*'))]
+          if actual_names != list(expected_parts):
+              raise SystemExit(f'shard denominator mismatch: {actual_names}')
+          chunks = []
+          shard_receipts = {}
+          for name, (expected_chars, expected_sha) in expected_parts.items():
+              normalized = ''.join((root / name).read_text().split())
+              actual_sha = hashlib.sha256(normalized.encode()).hexdigest()
+              if len(normalized) != expected_chars or actual_sha != expected_sha:
+                  raise SystemExit(f'shard mismatch {name}: chars={len(normalized)} sha={actual_sha}')
+              chunks.append(normalized)
+              shard_receipts[name] = {'chars': len(normalized), 'sha256': actual_sha}
+          encoded = ''.join(chunks)
+          aggregate_sha = hashlib.sha256(encoded.encode()).hexdigest()
+          if len(encoded) != 35960 or aggregate_sha != 'd5c9a85f374f25ea3b8f6462c54572279ca6cd9f30548ef9dcad66daaecaf6a1':
+              raise SystemExit(f'aggregate base64 mismatch: chars={len(encoded)} sha={aggregate_sha}')
+          raw = base64.b64decode(encoded, validate=True)
+          bundle_sha = hashlib.sha256(raw).hexdigest()
+          if len(raw) != 26968 or bundle_sha != '43141c462b1f86e0c5c5493c5a45fc09a5ab5cc4256f168a4501682f81ae812d':
+              raise SystemExit(f'bundle mismatch: bytes={len(raw)} sha={bundle_sha}')
+          Path('/tmp/pc39-candidate.bundle').write_bytes(raw)
+          Path('/tmp/pc39-shard-receipt.json').write_text(json.dumps({
+              'schema_version': 'pc39-bundle-shard-receipt@1',
+              'aggregate_base64_chars': len(encoded),
+              'aggregate_base64_sha256': aggregate_sha,
+              'bundle_bytes': len(raw),
+              'bundle_sha256': bundle_sha,
+              'shards': shard_receipts,
+          }, indent=2) + '\n')
+          PY
+          git bundle verify /tmp/pc39-candidate.bundle
+      - name: Import and verify the exact candidate commit, tree, parent, paths, and file hashes
+        run: |
+          set -euo pipefail
+          PARENT=382578570bbce842bb246688a356d99743b904a1
+          CANDIDATE=c63344592e5fe4113909a2ec91a99cbe27cb2391
+          TREE=a2dc084c0764ab6f904bd60ef81f284eef634abe
+          CURRENT_MAIN=$(git ls-remote origin refs/heads/main | awk '{print $1}')
+          test "$CURRENT_MAIN" = "$PARENT"
+          test -z "$(git ls-remote origin refs/heads/research/preference-record-linkage-temporal-succession-assurance-v1)"
+          git fetch /tmp/pc39-candidate.bundle refs/heads/pc39-local-candidate:refs/remotes/pc39/candidate
+          test "$(git rev-parse refs/remotes/pc39/candidate)" = "$CANDIDATE"
+          test "$(git rev-parse "$CANDIDATE^")" = "$PARENT"
+          test "$(git rev-parse "$CANDIDATE^{tree}")" = "$TREE"
+          python - <<'PY'
+          import hashlib
+          import json
+          import subprocess
+
+          parent = '382578570bbce842bb246688a356d99743b904a1'
+          candidate = 'c63344592e5fe4113909a2ec91a99cbe27cb2391'
+          expected = {
+              '.github/workflows/preference-custody-v37.yml': '10b68b549dfd98b0b0ec77387b415ca6d7949f3916576c4a91a51618c665108b',
+              '.github/workflows/preference-record-linkage-temporal-succession-assurance.yml': '18c66e65887b6a6983bec1e0c9e0e249414fab89c4b62b245b9930fc22175b87',
+              'data/research/preference-custody/control-manifest-v37.json': '3943416248e179fe3d98d597beda92af42be1bb3343161e1239ce4d54eeeeef3',
+              'data/research/preference-custody/record-linkage-temporal-succession-assurance.fixture.json': '29a8244c7ebef2697586520235cebcdca531d6a222f8c6f9dae2c96115c52c76',
+              'docs/preference-custody-laboratory-floor-v37.md': '8e894ff9d6c1c58140dda82d9650d2d86897e6f8000edaf27faaea8cbbcde185',
+              'docs/preference-custody-record-linkage-temporal-succession-assurance.md': 'ebae8c868f266caec0d89b07f2d95e0565d4dea9bf648e7c55dda8bea93406ae',
+              'test/preference-custody-manifest-v37.test.js': '1f85fcc6853a530a574f839b64c88c43dedb8f0ba53246ac8267b67c35c00eb5',
+              'test/preference-record-linkage-temporal-succession-assurance.test.js': '385e990169b4043198f39222978a446efddad37d09860c2e5a056ae4dcd15de2',
+              'tools/compile-preference-custody-manifest-v37.mjs': '2bec85c11f20897737a22b5466323db0a402f5b2a97e15c21116aaddd2673503',
+              'tools/compile-preference-record-linkage-temporal-succession-assurance.mjs': 'd1e9660b558ce8162df8aa0f7bf4166aff34b099652a4bda4df6dce7ae640655',
+              'tools/lib/preference-custody-manifest-v37.mjs': 'f6086506b23aa2821044c7de6ffd27bcbf6a86e0e3b2d5a70a98f1f4293b2352',
+              'tools/lib/preference-record-linkage-temporal-succession-assurance.mjs': '21b19cc9dbd5d7f1784323af2cd8f83fb19fcf67a96009a5a50c6362bbe61c7d',
+              'tools/validate-preference-custody-manifest-v37.mjs': '13473c24f78b88ac85e2a2fa8ca62b60576fdec8c53376d869d92e3ed6094d5e',
+              'tools/validate-preference-record-linkage-temporal-succession-assurance.mjs': 'a62c8582580755bceac13cab7c12007f16425643c36c472ebf96646bd5b73e00',
+          }
+          observed = sorted(subprocess.check_output(['git', 'diff', '--name-only', parent, candidate], text=True).splitlines())
+          if observed != sorted(expected):
+              raise SystemExit(f'path denominator mismatch: {observed}')
+          statuses = subprocess.check_output(['git', 'diff', '--name-status', parent, candidate], text=True).splitlines()
+          if any(not line.startswith('A\t') for line in statuses):
+              raise SystemExit(f'non-additive path found: {statuses}')
+          files = {}
+          for path, required_sha in expected.items():
+              raw = subprocess.check_output(['git', 'show', f'{candidate}:{path}'])
+              actual_sha = hashlib.sha256(raw).hexdigest()
+              if actual_sha != required_sha:
+                  raise SystemExit(f'file SHA-256 mismatch {path}: {actual_sha}')
+              files[path] = {'bytes': len(raw), 'sha256': actual_sha}
+          receipt = {
+              'schema_version': 'pc39-exact-product-receipt@1',
+              'parent_sha': parent,
+              'candidate_sha': candidate,
+              'candidate_tree': subprocess.check_output(['git', 'rev-parse', f'{candidate}^{{tree}}'], text=True).strip(),
+              'permanent_path_count': len(expected),
+              'files': files,
+              'locally_qualified_package_sha256': '05b97dd01a687f9d099424d922800b5b969ca6579b9457ec5cfa3a5482cf2f25',
+              'outside_human_dependency': False,
+              'graph_effect': 'none',
+          }
+          open('/tmp/pc39-exact-product-receipt.json', 'w').write(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+      - name: Qualify standalone PC-39, floor v37, historical floors, and no-magic-human
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/pc39-worktree c63344592e5fe4113909a2ec91a99cbe27cb2391
+          cd /tmp/pc39-worktree
+          node tools/compile-preference-record-linkage-temporal-succession-assurance.mjs
+          node tools/validate-preference-record-linkage-temporal-succession-assurance.mjs
+          node test/preference-record-linkage-temporal-succession-assurance.test.js
+          node tools/compile-preference-custody-manifest-v37.mjs
+          node tools/validate-preference-custody-manifest-v37.mjs
+          node test/preference-custody-manifest-v37.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+      - name: Publish only the exact transport-free permanent branch
+        run: |
+          set -euo pipefail
+          PARENT=382578570bbce842bb246688a356d99743b904a1
+          CANDIDATE=c63344592e5fe4113909a2ec91a99cbe27cb2391
+          CURRENT_MAIN=$(git ls-remote origin refs/heads/main | awk '{print $1}')
+          test "$CURRENT_MAIN" = "$PARENT"
+          test -z "$(git ls-remote origin refs/heads/research/preference-record-linkage-temporal-succession-assurance-v1)"
+          git push origin "$CANDIDATE:refs/heads/research/preference-record-linkage-temporal-succession-assurance-v1"
+          PUBLISHED=$(git ls-remote origin refs/heads/research/preference-record-linkage-temporal-succession-assurance-v1 | awk '{print $1}')
+          test "$PUBLISHED" = "$CANDIDATE"
+      - name: Preserve exact materialization receipts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc39-exact-bundle-materialization-receipts
+          path: |
+            /tmp/pc39-shard-receipt.json
+            /tmp/pc39-exact-product-receipt.json
+          if-no-files-found: error
+          retention-days: 90
