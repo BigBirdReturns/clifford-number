@@ -1,0 +1,161 @@
+name: TEMP materialize Wave-02 four-closure ledger
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-wave02-ledger4-materializer-base-v1
+    paths:
+      - '.ssc-wave02-ledger4-materializer/TRIGGER'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-wave02-ledger4-materializer-v1
+  cancel-in-progress: false
+
+env:
+  TARGET_BRANCH: agent/ssc-wave02-current-ledger-four-closures
+  EXPECTED_TARGET: d7983e19c0783a048afb19adde0fb65ccf94c726
+  EXPECTED_MAIN: d7983e19c0783a048afb19adde0fb65ccf94c726
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-wave02-ledger4-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout checksum-bound controller
+        uses: actions/checkout@v4
+        with:
+          path: controller
+          fetch-depth: 1
+
+      - name: Checkout exact permanent ledger branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-current-ledger-four-closures
+          path: work
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Freeze exact target and main
+        run: |
+          set -Eeuo pipefail
+          test "$(git -C work rev-parse HEAD)" = "$EXPECTED_TARGET"
+          test "$(git -C work ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+          test "$(git -C work ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+
+      - name: Derive exact six-file four-closure ledger
+        run: |
+          set -Eeuo pipefail
+          cd work
+          python ../controller/.github/tmp/ssc-wave02-ledger4-transform.py
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --write
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+
+          cat > /tmp/ssc-wave02-ledger4-paths.txt <<'PATHS'
+          data/research/status-sovereignty-residual-denominator-wave-02-current.json
+          docs/milestones/ssc-residual-denominator-wave-02-current.md
+          schemas/status-sovereignty-residual-denominator-wave-02-current.schema.json
+          test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs
+          tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          PATHS
+          sed -i 's/^          //' /tmp/ssc-wave02-ledger4-paths.txt
+          sort /tmp/ssc-wave02-ledger4-paths.txt > /tmp/ssc-wave02-ledger4-expected.txt
+          git diff --name-only | sort > /tmp/ssc-wave02-ledger4-observed.txt
+          cmp /tmp/ssc-wave02-ledger4-expected.txt /tmp/ssc-wave02-ledger4-observed.txt
+
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add --pathspec-from-file=/tmp/ssc-wave02-ledger4-paths.txt
+          git diff --cached --name-only | sort > /tmp/ssc-wave02-ledger4-staged.txt
+          cmp /tmp/ssc-wave02-ledger4-expected.txt /tmp/ssc-wave02-ledger4-staged.txt
+
+      - name: Run complete repository qualification and deterministic replay
+        run: |
+          set -Eeuo pipefail
+          cd work
+          npm run release:check
+          git restore --worktree -- .
+          git clean -fdx
+          git diff --exit-code
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          git diff --cached --name-only | sort > /tmp/ssc-wave02-ledger4-staged-after-replay.txt
+          cmp /tmp/ssc-wave02-ledger4-expected.txt /tmp/ssc-wave02-ledger4-staged-after-replay.txt
+
+      - name: Commit and push under exact leases
+        run: |
+          set -Eeuo pipefail
+          cd work
+          git commit -m 'Promote RD-06 into current Wave-02 closure ledger'
+          product="$(git rev-parse HEAD)"
+          tree="$(git show -s --format=%T HEAD)"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_TARGET"
+          git diff --name-only "$EXPECTED_TARGET" "$product" | sort > /tmp/ssc-wave02-ledger4-product-paths.txt
+          cmp /tmp/ssc-wave02-ledger4-expected.txt /tmp/ssc-wave02-ledger4-product-paths.txt
+
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          git push origin "$product:refs/heads/$TARGET_BRANCH" \
+            --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$product"
+          echo "PRODUCT_HEAD=$product" >> "$GITHUB_ENV"
+          echo "PRODUCT_TREE=$tree" >> "$GITHUB_ENV"
+
+      - name: Preserve exact materialization receipt
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          current = json.loads(Path('work/data/research/status-sovereignty-residual-denominator-wave-02-current.json').read_text())
+          receipt = {
+              'schema_version': 'ssc-wave02-four-closure-ledger-materialization@1',
+              'base_main': os.environ['EXPECTED_MAIN'],
+              'product_head': os.environ['PRODUCT_HEAD'],
+              'product_tree': os.environ['PRODUCT_TREE'],
+              'target_branch': os.environ['TARGET_BRANCH'],
+              'non_workflow_paths': 6,
+              'standing_workflow_pending_connector_commit': True,
+              'transport_paths_in_product': 0,
+              'canonical_classes': current['counts']['canonical_residual_classes'],
+              'closed_classes': current['counts']['closed_residual_classes'],
+              'open_classes': current['counts']['open_residual_classes'],
+              'closed_class_ids': current['current_result']['closed_class_ids'],
+              'open_selected_class_ids': current['current_result']['open_selected_class_ids'],
+              'rd06_merge': 'd7983e19c0783a048afb19adde0fb65ccf94c726',
+              'rd06_manifest_sha256': '2a17904180dac7b250e2b0ffb82e8124354e89c39be267b0f4c4ebe65c6516c5',
+              'focused_validation': 'pass',
+              'release_gate': 'pass',
+              'deterministic_replay': 'pass',
+              'outside_human_dependency': False,
+              'external_contacts': 0,
+              'external_reviews': 0,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          Path('ssc-wave02-four-closure-ledger-materialization.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-four-closure-ledger-materialization
+          path: ssc-wave02-four-closure-ledger-materialization.json
+          if-no-files-found: error
+          retention-days: 90
