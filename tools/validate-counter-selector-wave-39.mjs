@@ -50,7 +50,7 @@ export const EXPECTED_COUNTS = {
   "person_rankings": 0,
   "public_identity_profiles": 0,
   "graph_effects": 0,
-  "adversarial_mutations": 187
+  "adversarial_mutations": 205
 };
 export const EXPECTED_BOUNDARIES = {
   "repo_digest_reference_is_public_fixed_digest_receipt": false,
@@ -180,6 +180,27 @@ export const EXPECTED_ADJUDICATIONS = [
     "complete_portable_operational_handoff": false,
     "person_support_added": false,
     "classification": "inspectable_checkpoint_archive_and_registry_push_route_without_downstream_operation_receipt"
+  }
+];
+
+export const EXPECTED_CONTROL_METADATA = [
+  {
+    "control_id": "CS-W39-DR-01",
+    "public_label": "repository-digest-selected checkpoint image restored into a new pod",
+    "control_type": "digest_selected_checkpoint_package_operation_positive_control",
+    "system_or_subject": "CRI-O repoDigest checkpoint-image restore"
+  },
+  {
+    "control_id": "CS-W39-DR-02",
+    "public_label": "new-pod archive restore with application output and explicit bind-mount replay",
+    "control_type": "application_continuation_without_content_addressed_selector_control",
+    "system_or_subject": "CRI-O checkpoint archive restore with bind mounts"
+  },
+  {
+    "control_id": "CS-W39-DR-03",
+    "public_label": "inspectable checkpoint archive converted to registry-pushable OCI image without downstream operation receipt",
+    "control_type": "inspection_and_registry_route_without_operation_control",
+    "system_or_subject": "checkpointctl show, inspect, and build"
   }
 ];
 
@@ -319,6 +340,12 @@ export function validateSource(source) {
   const sourceIds = source.controls.flatMap(control => control.source_records.map(record => record.source_id));
   assert.equal(sourceIds.length, 11);
   assert.equal(new Set(sourceIds).size, 11);
+  assert.deepEqual(source.controls.map(control => ({
+    control_id: control.control_id,
+    public_label: control.public_label,
+    control_type: control.control_type,
+    system_or_subject: control.system_or_subject,
+  })), EXPECTED_CONTROL_METADATA);
   assert.deepEqual(source.controls.map(control => control.source_records), EXPECTED_SOURCE_RECORDS);
   assert.deepEqual(source.controls.map(control => control.adjudication), EXPECTED_ADJUDICATIONS);
   assert.deepEqual(source.join_matrix, EXPECTED_JOIN_MATRIX);

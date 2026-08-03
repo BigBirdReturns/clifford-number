@@ -21,7 +21,7 @@ clean-destination operation surfaces                    0
 external independent reviews                           0
 complete portable operational handoffs                 0
 person supports / contacts / graph effects          0 / 0 / 0
-adversarial mutations                                187
+adversarial mutations                                205
 ```
 
 ## Positive control

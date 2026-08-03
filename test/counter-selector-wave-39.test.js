@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { validateSource, EXPECTED_ADJUDICATIONS, EXPECTED_BOUNDARIES, EXPECTED_COUNTS, EXPECTED_JOIN_MATRIX, EXPECTED_SOURCE_RECORDS } from '../tools/validate-counter-selector-wave-39.mjs';
+import { validateSource, EXPECTED_ADJUDICATIONS, EXPECTED_BOUNDARIES, EXPECTED_COUNTS, EXPECTED_JOIN_MATRIX, EXPECTED_SOURCE_RECORDS, EXPECTED_CONTROL_METADATA } from '../tools/validate-counter-selector-wave-39.mjs';
 
 const source = JSON.parse(fs.readFileSync('data/project/counter-selector-wave-39-digest-selected-restore.json', 'utf8'));
 const clone = value => structuredClone(value);
@@ -27,6 +27,21 @@ for (let row = 0; row < EXPECTED_ADJUDICATIONS.length; row += 1) {
       const current = value.controls[row].adjudication[key];
       value.controls[row].adjudication[key] = typeof current === 'boolean' ? !current : `${current}-mutated`;
     });
+  }
+}
+
+for (const field of ['public_label','control_type','system_or_subject']) {
+  for (const [left, right] of [[0,1],[1,2],[0,2]]) {
+    mutations.push(value => {
+      const held = value.controls[left][field];
+      value.controls[left][field] = value.controls[right][field];
+      value.controls[right][field] = held;
+    });
+  }
+}
+for (let row = 0; row < EXPECTED_CONTROL_METADATA.length; row += 1) {
+  for (const field of ['public_label','control_type','system_or_subject']) {
+    mutations.push(value => { value.controls[row][field] += ' mutated'; });
   }
 }
 
