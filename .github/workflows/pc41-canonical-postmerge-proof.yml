@@ -1,0 +1,134 @@
+name: Temporary PC-41 canonical post-merge proof
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pc41-canonical-postmerge-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pc41-canonical-postmerge-proof
+  cancel-in-progress: false
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc41-postmerge-proof-66e1ff
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prove exact canonical merge graph and fourteen-file scope
+        env:
+          CANONICAL_MERGE: 66e1ff01a381e39858e3e55717d74d40a15ca984
+          EXPECTED_FIRST_PARENT: ac352df00bc7c5bcffdb9ea84de95a8d79c3cc50
+          EXPECTED_PRODUCT_PARENT: 32414227819e369a8f32671b548ff77cc8c2d7db
+          EXPECTED_TREE: 9fa34d45b12b3a505f5632b880be171829af09b0
+        run: |
+          set -Eeuo pipefail
+          git cat-file -e "$CANONICAL_MERGE^{commit}"
+          test "$(git rev-parse "$CANONICAL_MERGE^1")" = "$EXPECTED_FIRST_PARENT"
+          test "$(git rev-parse "$CANONICAL_MERGE^2")" = "$EXPECTED_PRODUCT_PARENT"
+          test "$(git rev-parse "$CANONICAL_MERGE^{tree}")" = "$EXPECTED_TREE"
+
+          cat > /tmp/pc41-canonical-paths.expected <<'EOF'
+          .github/workflows/preference-candidate-pair-blocking-recall-assurance.yml
+          .github/workflows/preference-custody-v39.yml
+          data/research/preference-custody/candidate-pair-blocking-recall-assurance.fixture.json
+          data/research/preference-custody/control-manifest-v39.json
+          docs/preference-custody-candidate-pair-blocking-recall-assurance.md
+          docs/preference-custody-laboratory-floor-v39.md
+          test/preference-candidate-pair-blocking-recall-assurance.test.js
+          test/preference-custody-manifest-v39.test.js
+          tools/compile-preference-candidate-pair-blocking-recall-assurance.mjs
+          tools/compile-preference-custody-manifest-v39.mjs
+          tools/lib/preference-candidate-pair-blocking-recall-assurance.mjs
+          tools/lib/preference-custody-manifest-v39.mjs
+          tools/validate-preference-candidate-pair-blocking-recall-assurance.mjs
+          tools/validate-preference-custody-manifest-v39.mjs
+          EOF
+          sed -i 's/^          //' /tmp/pc41-canonical-paths.expected
+          sort /tmp/pc41-canonical-paths.expected -o /tmp/pc41-canonical-paths.expected
+          git diff --name-only "$CANONICAL_MERGE^1" "$CANONICAL_MERGE" | sort > /tmp/pc41-canonical-paths.observed
+          diff -u /tmp/pc41-canonical-paths.expected /tmp/pc41-canonical-paths.observed
+          test "$(wc -l < /tmp/pc41-canonical-paths.observed | tr -d ' ')" = "14"
+      - name: Reconstruct PC-41 and every compositional floor on canonical merge
+        env:
+          CANONICAL_MERGE: 66e1ff01a381e39858e3e55717d74d40a15ca984
+        run: |
+          set -Eeuo pipefail
+          git checkout --detach "$CANONICAL_MERGE"
+          node tools/compile-preference-candidate-pair-blocking-recall-assurance.mjs
+          node tools/validate-preference-candidate-pair-blocking-recall-assurance.mjs
+          node test/preference-candidate-pair-blocking-recall-assurance.test.js
+          node tools/compile-preference-custody-manifest-v39.mjs
+          node tools/validate-preference-custody-manifest-v39.mjs
+          node test/preference-custody-manifest-v39.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+      - name: Run complete release gate and restore exact merge tree
+        env:
+          CANONICAL_MERGE: 66e1ff01a381e39858e3e55717d74d40a15ca984
+        run: |
+          set -Eeuo pipefail
+          npm run release:check
+          git reset --hard "$CANONICAL_MERGE"
+          git clean -fdx
+          test "$(git rev-parse HEAD)" = "$CANONICAL_MERGE"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+      - name: Emit canonical post-merge receipt
+        env:
+          CANONICAL_MERGE: 66e1ff01a381e39858e3e55717d74d40a15ca984
+          EXPECTED_FIRST_PARENT: ac352df00bc7c5bcffdb9ea84de95a8d79c3cc50
+          EXPECTED_PRODUCT_PARENT: 32414227819e369a8f32671b548ff77cc8c2d7db
+          EXPECTED_TREE: 9fa34d45b12b3a505f5632b880be171829af09b0
+        run: |
+          set -Eeuo pipefail
+          export CANONICAL_MERGE EXPECTED_FIRST_PARENT EXPECTED_PRODUCT_PARENT EXPECTED_TREE
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os
+          paths = Path('/tmp/pc41-canonical-paths.expected').read_text().splitlines()
+          files = {}
+          for path in paths:
+              raw = Path(path).read_bytes()
+              files[path] = {'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()}
+          manifest = json.dumps(files, sort_keys=True, separators=(',', ':')).encode()
+          receipt = {
+              'schema_version': 'pc41-canonical-postmerge-proof@1',
+              'canonical_merge': os.environ['CANONICAL_MERGE'],
+              'first_parent': os.environ['EXPECTED_FIRST_PARENT'],
+              'product_parent': os.environ['EXPECTED_PRODUCT_PARENT'],
+              'canonical_tree': os.environ['EXPECTED_TREE'],
+              'first_parent_path_count': len(paths),
+              'files': files,
+              'file_manifest_sha256': hashlib.sha256(manifest).hexdigest(),
+              'focused_pc41': 'pass',
+              'floor_v39': 'pass',
+              'historical_preference_custody_floors': 'pass',
+              'base_preference_custody': 'pass',
+              'no_magic_human': 'pass',
+              'release_check': 'pass',
+              'clean_exact_merge_tree': True,
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          Path('/tmp/pc41-canonical-postmerge-proof.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc41-canonical-postmerge-proof
+          path: /tmp/pc41-canonical-postmerge-proof.json
+          if-no-files-found: error
