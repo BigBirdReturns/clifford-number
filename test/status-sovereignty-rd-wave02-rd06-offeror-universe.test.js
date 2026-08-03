@@ -79,7 +79,7 @@ const mutations = [
   ['receipt label', (b) => { b.receipt.class_label = 'partial universe'; }],
   ['receipt reopened', (b) => { b.receipt.class_closed = false; }],
   ['receipt terminal state', (b) => { b.receipt.terminal_state = 'still_open'; }],
-  ['receipt atlas open after', (b) => { b.receipt.residual_atlas_effect_if_promoted_after_rd04_and_rd05.open_after = 40; }],
+  ['receipt atlas open after', (b) => { b.receipt.residual_atlas_effect_if_promoted_after_rd04_rd05_and_rd01.open_after = 40; }],
   ['receipt contact', (b) => { b.receipt.authority.external_contacts = 1; }],
   ['receipt superiority', (b) => { b.receipt.authority.technical_superiority_finding = true; }],
   ['summary counts', (b) => { b.summary.counts.proposal_slots = 9; }],

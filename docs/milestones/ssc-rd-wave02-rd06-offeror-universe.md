@@ -69,10 +69,10 @@ terminal state:                    bounded_source_restricted
 class closed:                      true
 
 atlas before promotion:
-40 open / 2 closed
+39 open / 3 closed
 
 atlas after promotion:
-39 open / 3 closed
+38 open / 4 closed
 ```
 
 This closes only RD‑06‑C01’s acquisition obligation. It does not close the broader DCGS‑A support, performance, substitution, exit, data-rights, or counterfactual-foreclosure classes.

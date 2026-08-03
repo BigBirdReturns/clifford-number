@@ -399,12 +399,12 @@ export function deriveProduct(root = ROOT) {
       'the five unnamed slots terminate as identity_source_restricted rather than guessed offerors, silent rows, rejections, withdrawals, or nonresponses'
     ],
     counts: matrix.counts,
-    residual_atlas_effect_if_promoted_after_rd04_and_rd05: {
+    residual_atlas_effect_if_promoted_after_rd04_rd05_and_rd01: {
       canonical_classes: 42,
-      open_before: 40,
-      closed_before: 2,
-      open_after: 39,
-      closed_after: 3
+      open_before: 39,
+      closed_before: 3,
+      open_after: 38,
+      closed_after: 4
     },
     source_custody: {
       historical_field_matrix_path: MATRIX_PATH,
@@ -470,7 +470,7 @@ export function writeProduct(root = ROOT) {
     exact_label: CLASS_LABEL,
     terminal_state: TERMINAL_STATE,
     class_closed: true,
-    residual_atlas_effect_if_promoted_after_rd04_and_rd05: classReceipt.residual_atlas_effect_if_promoted_after_rd04_and_rd05,
+    residual_atlas_effect_if_promoted_after_rd04_rd05_and_rd01: classReceipt.residual_atlas_effect_if_promoted_after_rd04_rd05_and_rd01,
     product: {
       class_receipt_path: `${PRODUCT_ROOT}/class-receipt.json`,
       terminal_field_matrix_path: `${PRODUCT_ROOT}/terminal-field-matrix.json`,

@@ -198,7 +198,7 @@ export function validateProductShape(bundle, schema) {
   ok(receipt?.class_label === CLASS_LABEL && receipt?.terminal_state === TERMINAL_STATE && receipt?.class_closed === true, 'class receipt result changed');
   ok(Array.isArray(receipt?.closure_basis) && receipt.closure_basis.length === 5, 'closure basis changed');
   same(receipt.counts, terminal.counts, 'class receipt counts changed');
-  same(receipt.residual_atlas_effect_if_promoted_after_rd04_and_rd05, { canonical_classes: 42, open_before: 40, closed_before: 2, open_after: 39, closed_after: 3 }, 'class receipt atlas effect changed');
+  same(receipt.residual_atlas_effect_if_promoted_after_rd04_rd05_and_rd01, { canonical_classes: 42, open_before: 39, closed_before: 3, open_after: 38, closed_after: 4 }, 'class receipt atlas effect changed');
   allFalse(receipt.authority, ['outside_human_dependency','reviewed_disposition_changed','complete_compact_finding','technical_superiority_finding','favoritism_finding','foreclosure_finding','coordination_finding','common_purpose_finding'], 'class receipt authority');
   ok(receipt.authority.external_contacts === 0 && receipt.authority.external_reviews === 0, 'class receipt external activity changed');
   allNone(receipt.authority, ['graph_effect','publication_effect','adoption_effect'], 'class receipt authority');
@@ -226,7 +226,7 @@ export function validateProductShape(bundle, schema) {
   ok(closure?.wave_issue === 785 && closure?.child_issue === 791 && closure?.source_pr === 806, 'closure reference custody changed');
   ok(closure?.class_id === 'RD-06-C01' && closure?.lane_id === 'RD-06' && closure?.exact_label === CLASS_LABEL, 'closure reference identity changed');
   ok(closure?.terminal_state === TERMINAL_STATE && closure?.class_closed === true, 'closure reference result changed');
-  same(closure.residual_atlas_effect_if_promoted_after_rd04_and_rd05, receipt.residual_atlas_effect_if_promoted_after_rd04_and_rd05, 'closure atlas effect changed');
+  same(closure.residual_atlas_effect_if_promoted_after_rd04_rd05_and_rd01, receipt.residual_atlas_effect_if_promoted_after_rd04_rd05_and_rd01, 'closure atlas effect changed');
   ok(closure?.product?.manifest_combined_sha256 === manifest.combined_sha256, 'closure product manifest changed');
   ok(closure?.execution?.workflow_run === 30841600477 && closure?.execution?.artifact_id === 8866994583, 'closure execution custody changed');
   ok(closure?.execution?.artifact_zip_sha256 === CENSUS_ARTIFACT_SHA256 && closure?.execution?.census_manifest_combined_sha256 === CENSUS_MANIFEST_SHA256, 'closure census digest changed');
@@ -261,8 +261,8 @@ function validateGitCustody(root) {
 
   if (fs.existsSync(abs(root, CURRENT_LEDGER_PATH))) {
     const current = readJson(root, CURRENT_LEDGER_PATH);
-    ok(current?.counts?.canonical_residual_classes === 42 && current?.counts?.closed_residual_classes === 2 && current?.counts?.open_residual_classes === 40, 'current atlas pre-promotion state changed');
-    same(current?.current_result?.closed_class_ids, ['RD-04-C01','RD-05-C03'], 'prior closed-class custody changed');
+    ok(current?.counts?.canonical_residual_classes === 42 && current?.counts?.closed_residual_classes === 3 && current?.counts?.open_residual_classes === 39, 'current atlas pre-promotion state changed');
+    same(current?.current_result?.closed_class_ids, ['RD-04-C01','RD-05-C03','RD-01-C03'], 'prior closed-class custody changed');
     ok(current?.current_result?.open_selected_class_ids?.includes('RD-06-C01'), 'RD-06 missing from current open selected classes');
   }
 }
