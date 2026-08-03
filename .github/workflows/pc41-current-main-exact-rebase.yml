@@ -1,0 +1,151 @@
+name: Temporary PC-41 current-main exact rebase
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pc41-current-main-exact-rebase.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc41-current-main-exact-rebase
+  cancel-in-progress: false
+
+jobs:
+  rebase:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc41-current-main-rebase
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Construct, qualify, and publish exact current-main PC-41 product
+        env:
+          TARGET_BRANCH: research/preference-candidate-pair-blocking-recall-assurance-v1
+          EXPECTED_TARGET_HEAD: e098623ffc724f5915dec4a61b1e68b06d864dc3
+          QUALIFIED_BASE: 209c30585301a1069507d2e6b16db62ff4ffe1bd
+        run: |
+          set -Eeuo pipefail
+
+          git fetch origin main "$TARGET_BRANCH" agent/pc41-current-main-rebase --no-tags
+          source_head=$(git rev-parse HEAD)
+          test "$(git rev-parse origin/agent/pc41-current-main-rebase)" = "$source_head"
+          test "$(git rev-parse origin/$TARGET_BRANCH)" = "$EXPECTED_TARGET_HEAD"
+          publication_base=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$QUALIFIED_BASE" "$publication_base"
+
+          git checkout --detach "$EXPECTED_TARGET_HEAD"
+
+          paths=(
+            .github/workflows/preference-candidate-pair-blocking-recall-assurance.yml
+            .github/workflows/preference-custody-v39.yml
+            data/research/preference-custody/candidate-pair-blocking-recall-assurance.fixture.json
+            data/research/preference-custody/control-manifest-v39.json
+            docs/preference-custody-candidate-pair-blocking-recall-assurance.md
+            docs/preference-custody-laboratory-floor-v39.md
+            test/preference-candidate-pair-blocking-recall-assurance.test.js
+            test/preference-custody-manifest-v39.test.js
+            tools/compile-preference-candidate-pair-blocking-recall-assurance.mjs
+            tools/compile-preference-custody-manifest-v39.mjs
+            tools/lib/preference-candidate-pair-blocking-recall-assurance.mjs
+            tools/lib/preference-custody-manifest-v39.mjs
+            tools/validate-preference-candidate-pair-blocking-recall-assurance.mjs
+            tools/validate-preference-custody-manifest-v39.mjs
+          )
+          printf '%s\n' "${paths[@]}" | sort > /tmp/pc41-final-paths.expected
+          git diff --name-only "$QUALIFIED_BASE..$publication_base" | sort -u > /tmp/pc41-main-advance-paths.txt
+          comm -12 /tmp/pc41-final-paths.expected /tmp/pc41-main-advance-paths.txt > /tmp/pc41-overlap.txt
+          test ! -s /tmp/pc41-overlap.txt
+
+          export GIT_INDEX_FILE=/tmp/pc41-current-main-index
+          rm -f "$GIT_INDEX_FILE"
+          git read-tree "$publication_base"
+          git add -- "${paths[@]}"
+          product_tree=$(git write-tree)
+          export GIT_AUTHOR_NAME='github-actions[bot]'
+          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          product_commit=$(printf '%s\n' 'Preference Custody: rebase PC-41 exact product onto current main' | git commit-tree "$product_tree" -p "$publication_base")
+          unset GIT_INDEX_FILE
+
+          mapfile -t observed_paths < <(git diff-tree --no-commit-id --name-only -r "$product_commit" | sort)
+          mapfile -t expected_paths < <(printf '%s\n' "${paths[@]}" | sort)
+          test "$(printf '%s\n' "${observed_paths[@]}")" = "$(printf '%s\n' "${expected_paths[@]}")"
+          test "${#observed_paths[@]}" -eq 14
+          test "$(git rev-parse "$product_commit^")" = "$publication_base"
+
+          git reset --hard "$product_commit"
+          node tools/compile-preference-candidate-pair-blocking-recall-assurance.mjs
+          node tools/validate-preference-candidate-pair-blocking-recall-assurance.mjs
+          node test/preference-candidate-pair-blocking-recall-assurance.test.js
+          node tools/compile-preference-custody-manifest-v39.mjs
+          node tools/validate-preference-custody-manifest-v39.mjs
+          node test/preference-custody-manifest-v39.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+          git reset --hard "$product_commit"
+          git clean -fdx
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git fetch origin main "$TARGET_BRANCH" agent/pc41-current-main-rebase --no-tags
+          test "$(git rev-parse origin/main)" = "$publication_base"
+          test "$(git rev-parse origin/$TARGET_BRANCH)" = "$EXPECTED_TARGET_HEAD"
+          test "$(git rev-parse origin/agent/pc41-current-main-rebase)" = "$source_head"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET_HEAD" origin "$product_commit:refs/heads/$TARGET_BRANCH"
+
+          export SOURCE_HEAD="$source_head"
+          export PUBLICATION_BASE="$publication_base"
+          export PRIOR_TARGET_HEAD="$EXPECTED_TARGET_HEAD"
+          export PRODUCT_COMMIT="$product_commit"
+          export PRODUCT_TREE="$product_tree"
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os
+          paths = Path('/tmp/pc41-final-paths.expected').read_text().splitlines()
+          files = {}
+          for path in paths:
+              raw = Path(path).read_bytes()
+              files[path] = {'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()}
+          manifest = json.dumps(files, sort_keys=True, separators=(',', ':')).encode()
+          receipt = {
+              'schema_version': 'pc41-current-main-exact-rebase-receipt@1',
+              'source_head': os.environ['SOURCE_HEAD'],
+              'qualified_base': '209c30585301a1069507d2e6b16db62ff4ffe1bd',
+              'publication_parent': os.environ['PUBLICATION_BASE'],
+              'prior_target_head': os.environ['PRIOR_TARGET_HEAD'],
+              'product_commit': os.environ['PRODUCT_COMMIT'],
+              'product_tree': os.environ['PRODUCT_TREE'],
+              'permanent_path_count': len(paths),
+              'main_advance_paths': Path('/tmp/pc41-main-advance-paths.txt').read_text().splitlines(),
+              'overlap_paths': Path('/tmp/pc41-overlap.txt').read_text().splitlines(),
+              'files': files,
+              'file_manifest_sha256': hashlib.sha256(manifest).hexdigest(),
+              'focused_pc41': 'pass',
+              'floor_v39': 'pass',
+              'historical_preference_custody_floors': 'pass',
+              'no_magic_human': 'pass',
+              'release_check': 'pass',
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          Path('/tmp/pc41-current-main-exact-rebase-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc41-current-main-exact-rebase-receipt
+          path: /tmp/pc41-current-main-exact-rebase-receipt.json
+          if-no-files-found: error
