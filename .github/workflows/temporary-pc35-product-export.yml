@@ -1,0 +1,45 @@
+name: TEMP export exact PC-35 product
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc35-product-export.yml'
+      - '.pc35-product-export.trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/preference-identity-boundary-assurance-v6
+          fetch-depth: 1
+      - name: Verify and export exact PC-35 carrier
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/pc35-export
+          carrier=/tmp/pc35-product.tar.gz.b64
+          : > "$carrier"
+          mapfile -t parts < <(find .pc35 -maxdepth 1 -type f -name 'payload-*.b64' | sort)
+          test "${#parts[@]}" = 6
+          for part in "${parts[@]}"; do tr -d '\r\n\t ' < "$part" >> "$carrier"; done
+          test "$(stat -c '%s' "$carrier")" = 34084
+          printf '%s  %s\n' '8d33821eb72bd666e2845626dceb5348bfc2e9505b76c4f6135a246f5438abfc' "$carrier" | sha256sum --check --strict
+          base64 --decode "$carrier" > /tmp/pc35-export/pc35-product.tar.gz
+          printf '%s  %s\n' 'b6b11a5826a8899f52d1411ca1bf2c50b980458b2847515809b465064f541425' /tmp/pc35-export/pc35-product.tar.gz | sha256sum --check --strict
+          tar -tzf /tmp/pc35-export/pc35-product.tar.gz | sed 's#^\./##' | sed '/\/$/d' | sort > /tmp/pc35-export/paths.txt
+          test "$(wc -l < /tmp/pc35-export/paths.txt | tr -d ' ')" = 14
+          git rev-parse HEAD > /tmp/pc35-export/source-head.txt
+          sha256sum /tmp/pc35-export/pc35-product.tar.gz > /tmp/pc35-export/pc35-product.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc35-exact-product
+          path: /tmp/pc35-export
+          if-no-files-found: error
+          retention-days: 7
