@@ -1,0 +1,113 @@
+name: TEMP execute SSC RD-04-C01 predecessor source acquisition
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd-wave02-rd04-predecessor-source.yml'
+      - '.rd04-predecessor-source/**'
+      - 'data/intake/status-sovereignty-rd-wave02-rd04-version-history/predecessor-source-trigger.json'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ssc-rd-wave02-rd04-predecessor-source-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install exact PDF text extraction dependency
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends poppler-utils
+          pdftotext -v
+          curl --version | head -1
+      - name: Download immutable context adjudication
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-chronology-context-adjudication
+          path: /tmp/rd04-context-adjudication
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30787441695
+      - name: Download immutable corrected ninety-eight-unit source custody
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-supplemental-acls
+          path: /tmp/rd04-supplemental-acls
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30771516122
+      - name: Reconstruct and verify exact acquisition runtime
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/rd04-predecessor-source-runtime
+          echo 'd430b5d52c70662ff5356234f1321dfbaec1ce0ce9d7d364db6f756fb276f9b3  .rd04-predecessor-source/capture.part.00.b64' | sha256sum --check --strict
+          echo '65455fe165444484127d01ee673006048a261451285191f600abe391c6334c1b  .rd04-predecessor-source/capture.part.01.b64' | sha256sum --check --strict
+          echo '0edd85b152a68fc91df728084e0283deb29c8cb428333b1adc550fac35b2a613  .rd04-predecessor-source/test.js.gz.b64' | sha256sum --check --strict
+          cat .rd04-predecessor-source/capture.part.*.b64 | base64 --decode | gzip --decompress > /tmp/rd04-predecessor-source-runtime/capture-predecessor-sources.mjs
+          base64 --decode .rd04-predecessor-source/test.js.gz.b64 | gzip --decompress > /tmp/rd04-predecessor-source-runtime/predecessor-source.test.js
+          echo '99d22d06ed7d36123f8ec57389d013623eb92a2a7a637977321806a873a8f50b  /tmp/rd04-predecessor-source-runtime/capture-predecessor-sources.mjs' | sha256sum --check --strict
+          echo '35c1431491c47c4e5f61eb0b21537b79a71e1934003ca810b807f780319feda7  /tmp/rd04-predecessor-source-runtime/predecessor-source.test.js' | sha256sum --check --strict
+          node --check /tmp/rd04-predecessor-source-runtime/capture-predecessor-sources.mjs
+          cp /tmp/rd04-predecessor-source-runtime/capture-predecessor-sources.mjs /tmp/rd04-predecessor-source-runtime/capture-predecessor-sources-copy.mjs
+          sed -i "s|'./capture-predecessor-sources.mjs'|'./capture-predecessor-sources-copy.mjs'|" /tmp/rd04-predecessor-source-runtime/predecessor-source.test.js
+      - name: Run controls and execute fixed official route
+        env:
+          RD04_CONTEXT_ADJUDICATION: /tmp/rd04-context-adjudication
+          RD04_SUPPLEMENTAL_ACLS: /tmp/rd04-supplemental-acls
+          RD04_PREDECESSOR_SOURCE_OUTPUT: /tmp/rd04-predecessor-sources
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node /tmp/rd04-predecessor-source-runtime/predecessor-source.test.js
+          node /tmp/rd04-predecessor-source-runtime/capture-predecessor-sources.mjs
+          test -f /tmp/rd04-predecessor-sources/route-ledger.json
+          test -f /tmp/rd04-predecessor-sources/acquired-unit-ledger.json
+          test -f /tmp/rd04-predecessor-sources/combined-authority-unit-ledger.json
+          test -f /tmp/rd04-predecessor-sources/combined-unit-ledger.json
+          test -f /tmp/rd04-predecessor-sources/summary.json
+          test -f /tmp/rd04-predecessor-sources/manifest.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const root = '/tmp/rd04-predecessor-sources';
+          const summary = JSON.parse(fs.readFileSync(`${root}/summary.json`, 'utf8'));
+          const routes = JSON.parse(fs.readFileSync(`${root}/route-ledger.json`, 'utf8')).routes;
+          const units = JSON.parse(fs.readFileSync(`${root}/acquired-unit-ledger.json`, 'utf8')).execution_units;
+          const combined = JSON.parse(fs.readFileSync(`${root}/combined-unit-ledger.json`, 'utf8')).execution_units;
+          const authority = JSON.parse(fs.readFileSync(`${root}/combined-authority-unit-ledger.json`, 'utf8')).authority_units;
+          const c = summary.counts;
+          if (c.fixed_routes !== 1 || c.route_attempts < 1 || c.route_attempts > 2) throw new Error('bounded route accounting changed');
+          if (c.predecessor_acquisition_units !== 2 || c.predecessor_units_terminal !== 2) throw new Error('predecessor unit denominator changed');
+          if (c.exact_predecessor_source_identities + c.bounded_predecessor_identity_nonlinks + c.unavailable_predecessor_source_identities !== 2) throw new Error('predecessor terminal accounting changed');
+          if (c.prior_execution_units_preserved !== 98 || c.combined_execution_units !== 100) throw new Error('combined execution denominator changed');
+          if (c.prior_candidate_authority_units !== 84 || c.combined_candidate_authority_units !== 86) throw new Error('combined authority denominator changed');
+          if (routes.length !== 1 || routes[0].url !== 'https://www.cdss.ca.gov/lettersnotices/entres/getinfo/acl/2018/18-08.pdf') throw new Error('fixed official route changed');
+          if (units.length !== 2 || new Set(units.map((row) => row.execution_unit_id)).size !== 2) throw new Error('acquired unit ledger incomplete');
+          if (!units.every((row) => row.source_capture_terminal === true && row.source_identity_adjudicated === true && row.version_edges_adjudicated === 0)) throw new Error('predecessor unit not terminal');
+          if (combined.length !== 100 || new Set(combined.map((row) => row.execution_unit_id)).size !== 100) throw new Error('combined unit ledger incomplete');
+          if (authority.length !== 86 || new Set(authority.map((row) => row.authority_unit_id)).size !== 86) throw new Error('combined authority ledger incomplete');
+          if (c.version_edges_adjudicated !== 0 || c.operative_intervals_adjudicated !== 0 || c.class_closed !== 0) throw new Error('authority ceiling changed');
+          if (summary.current_result.source_acquisition_complete !== true || summary.current_result.version_edge_adjudication_complete !== false || summary.current_result.class_closed !== false) throw new Error('result boundary changed');
+          if (summary.current_result.graph_effect !== 'none' || summary.current_result.publication_effect !== 'none') throw new Error('effect authority changed');
+          console.log(`predecessor source acquisition: ${c.exact_predecessor_source_identities}/2 exact, ${c.bounded_predecessor_identity_nonlinks} nonlinks, ${c.unavailable_predecessor_source_identities} unavailable; authority ceiling PASS`);
+          NODE
+      - name: Upload exact predecessor source custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-predecessor-sources
+          path: /tmp/rd04-predecessor-sources
+          if-no-files-found: error
+          retention-days: 90
