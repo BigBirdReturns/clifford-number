@@ -1,0 +1,77 @@
+name: Status-for-sovereignty RD-03 OSC lifecycle
+
+on:
+  pull_request:
+    paths:
+      - 'data/intake/**osc**'
+      - 'data/research/**osc**'
+      - 'schemas/status-sovereignty-rd03-osc-lifecycle.schema.json'
+      - 'docs/milestones/**rd03**'
+      - 'docs/milestones/**osc**lifecycle**'
+      - 'tools/build-status-sovereignty-rd03-osc-lifecycle.mjs'
+      - 'tools/validate-status-sovereignty-rd03-osc-lifecycle.mjs'
+      - 'test/status-sovereignty-rd03-osc-lifecycle.test.js'
+      - '.github/workflows/status-sovereignty-rd03-osc-lifecycle.yml'
+      - 'data/project/status-sovereignty-rd03-osc-lifecycle-release-manifest.json'
+      - 'build/core-thesis/status-sovereignty/rd03-osc-lifecycle/**'
+      - 'reports/core-thesis/status-sovereignty/rd03-osc-lifecycle/**'
+  push:
+    branches: [main]
+    paths:
+      - 'data/intake/**osc**'
+      - 'data/research/**osc**'
+      - 'schemas/status-sovereignty-rd03-osc-lifecycle.schema.json'
+      - 'docs/milestones/**rd03**'
+      - 'docs/milestones/**osc**lifecycle**'
+      - 'tools/build-status-sovereignty-rd03-osc-lifecycle.mjs'
+      - 'tools/validate-status-sovereignty-rd03-osc-lifecycle.mjs'
+      - 'test/status-sovereignty-rd03-osc-lifecycle.test.js'
+      - '.github/workflows/status-sovereignty-rd03-osc-lifecycle.yml'
+      - 'data/project/status-sovereignty-rd03-osc-lifecycle-release-manifest.json'
+      - 'build/core-thesis/status-sovereignty/rd03-osc-lifecycle/**'
+      - 'reports/core-thesis/status-sovereignty/rd03-osc-lifecycle/**'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Build and validate the bounded OSC lifecycle
+        run: |
+          node tools/build-status-sovereignty-rd03-osc-lifecycle.mjs
+          node tools/validate-status-sovereignty-rd03-osc-lifecycle.mjs
+          node test/status-sovereignty-rd03-osc-lifecycle.test.js
+      - name: Require exact committed OSC lifecycle products
+        run: |
+          git diff --exit-code -- \
+            data/project/status-sovereignty-rd03-osc-lifecycle-release-manifest.json \
+            build/core-thesis/status-sovereignty/rd03-osc-lifecycle/manifest.json \
+            build/core-thesis/status-sovereignty/rd03-osc-lifecycle/data.json \
+            reports/core-thesis/status-sovereignty/rd03-osc-lifecycle/data.json \
+            reports/core-thesis/status-sovereignty/rd03-osc-lifecycle/index.html
+      - name: Prove publication exclusion
+        run: |
+          npm run build:pages
+          npm run build:standalone
+          npm run validate:pages
+          test ! -d dist/data/intake
+          test ! -e dist/build/core-thesis/status-sovereignty/rd03-osc-lifecycle
+          test ! -e dist/reports/core-thesis/status-sovereignty/rd03-osc-lifecycle
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic reconstruction
+        run: |
+          git restore --staged --worktree .
+          node tools/build-status-sovereignty-rd03-osc-lifecycle.mjs
+          node tools/validate-status-sovereignty-rd03-osc-lifecycle.mjs
+          node test/status-sovereignty-rd03-osc-lifecycle.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
