@@ -1,0 +1,726 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/counter-selector-portable-operational-checkpoint.schema.json",
+  "title": "Counter-Selector portable operational checkpoint audit",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "program_id",
+    "wave_id",
+    "parent_wave_ids",
+    "as_of",
+    "observed_at",
+    "title",
+    "status",
+    "purpose",
+    "counts",
+    "handoff_contract",
+    "controls",
+    "join_matrix",
+    "boundaries",
+    "next_action",
+    "graph_effect"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "counter-selector-portable-operational-checkpoint@1"
+    },
+    "program_id": {
+      "const": "counter-selector-v1"
+    },
+    "wave_id": {
+      "const": "CS-W38-PO-01"
+    },
+    "parent_wave_ids": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "prefixItems": [
+        {
+          "const": "CS-W36-PC-01"
+        },
+        {
+          "const": "CS-W37-LH-01"
+        }
+      ],
+      "items": false
+    },
+    "as_of": {
+      "const": "2026-08-03"
+    },
+    "observed_at": {
+      "const": "2026-08-03T01:06:08-07:00"
+    },
+    "title": {
+      "const": "Counter-Selector Wave 38: content-addressed checkpoint operation join and hidden predecessor remainder"
+    },
+    "status": {
+      "const": "one_content_addressed_checkpoint_image_operation_join_zero_inventory_acknowledgments_zero_complete_portable_operational_handoffs_zero_person_findings"
+    },
+    "purpose": {
+      "const": "Adjudicate the first public same-object checkpoint surface that joins a content-addressed portable package to observed successor operation, while preserving the absence of itemized internal inventory, recipient acknowledgment, complete authority and dependency custody, hidden-predecessor-state freedom, external independent review, and person-level support."
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "controls_audited",
+        "public_source_records",
+        "content_addressed_checkpoint_image_surfaces",
+        "content_addressed_package_successor_operation_joins",
+        "package_level_manifest_operation_joins",
+        "portable_package_successor_operation_surfaces",
+        "same_object_successor_operation_surfaces",
+        "source_container_removed_before_restore_surfaces",
+        "restored_successor_running_surfaces",
+        "cross_root_service_continuation_surfaces",
+        "post_restore_output_growth_receipts",
+        "volume_state_transfer_receipts",
+        "same_pid_live_handoff_surfaces",
+        "complete_same_package_portable_proof_chains",
+        "itemized_internal_package_manifests",
+        "package_inventory_recipient_acknowledgments",
+        "complete_authority_credential_ledgers",
+        "complete_dependency_access_inventories",
+        "hidden_predecessor_state_free_surfaces",
+        "base_image_pull_dependencies",
+        "silent_optional_entry_copy_paths",
+        "minimal_inventory_only_acceptance_checks",
+        "complete_portable_operational_handoffs",
+        "external_independent_reviews",
+        "complete_direct_person_handoffs",
+        "person_dimension_supports_added",
+        "valid_resource_normalized_comparators",
+        "complete_operator_findings",
+        "field_test_eligible_candidates",
+        "contacts_authorized",
+        "bounded_collaborations_authorized",
+        "promotions",
+        "person_rankings",
+        "public_identity_profiles",
+        "graph_effects",
+        "arsas_unresolved_safety_findings",
+        "adversarial_mutations"
+      ],
+      "properties": {
+        "controls_audited": {
+          "const": 4
+        },
+        "public_source_records": {
+          "const": 21
+        },
+        "content_addressed_checkpoint_image_surfaces": {
+          "const": 1
+        },
+        "content_addressed_package_successor_operation_joins": {
+          "const": 1
+        },
+        "package_level_manifest_operation_joins": {
+          "const": 1
+        },
+        "portable_package_successor_operation_surfaces": {
+          "const": 2
+        },
+        "same_object_successor_operation_surfaces": {
+          "const": 3
+        },
+        "source_container_removed_before_restore_surfaces": {
+          "const": 2
+        },
+        "restored_successor_running_surfaces": {
+          "const": 3
+        },
+        "cross_root_service_continuation_surfaces": {
+          "const": 1
+        },
+        "post_restore_output_growth_receipts": {
+          "const": 2
+        },
+        "volume_state_transfer_receipts": {
+          "const": 1
+        },
+        "same_pid_live_handoff_surfaces": {
+          "const": 1
+        },
+        "complete_same_package_portable_proof_chains": {
+          "const": 1
+        },
+        "itemized_internal_package_manifests": {
+          "const": 0
+        },
+        "package_inventory_recipient_acknowledgments": {
+          "const": 0
+        },
+        "complete_authority_credential_ledgers": {
+          "const": 0
+        },
+        "complete_dependency_access_inventories": {
+          "const": 0
+        },
+        "hidden_predecessor_state_free_surfaces": {
+          "const": 0
+        },
+        "base_image_pull_dependencies": {
+          "const": 2
+        },
+        "silent_optional_entry_copy_paths": {
+          "const": 1
+        },
+        "minimal_inventory_only_acceptance_checks": {
+          "const": 1
+        },
+        "complete_portable_operational_handoffs": {
+          "const": 0
+        },
+        "external_independent_reviews": {
+          "const": 0
+        },
+        "complete_direct_person_handoffs": {
+          "const": 0
+        },
+        "person_dimension_supports_added": {
+          "const": 0
+        },
+        "valid_resource_normalized_comparators": {
+          "const": 0
+        },
+        "complete_operator_findings": {
+          "const": 0
+        },
+        "field_test_eligible_candidates": {
+          "const": 0
+        },
+        "contacts_authorized": {
+          "const": 0
+        },
+        "bounded_collaborations_authorized": {
+          "const": 0
+        },
+        "promotions": {
+          "const": 0
+        },
+        "person_rankings": {
+          "const": 0
+        },
+        "public_identity_profiles": {
+          "const": 0
+        },
+        "graph_effects": {
+          "const": 0
+        },
+        "arsas_unresolved_safety_findings": {
+          "const": 7
+        },
+        "adversarial_mutations": {
+          "const": 162
+        }
+      }
+    },
+    "handoff_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component_order",
+        "complete_portable_operational_handoff_requires",
+        "proofs_may_be_assembled_across_controls",
+        "package_variants_may_be_combined_within_system",
+        "contact_required",
+        "control_is_candidate_promotion"
+      ],
+      "properties": {
+        "component_order": {
+          "type": "array",
+          "minItems": 12,
+          "maxItems": 12,
+          "uniqueItems": true,
+          "prefixItems": [
+            {
+              "const": "same_object_identity"
+            },
+            {
+              "const": "package_identity"
+            },
+            {
+              "const": "package_content_addressing"
+            },
+            {
+              "const": "internal_inventory_and_entry_integrity"
+            },
+            {
+              "const": "outgoing_and_incoming_roles"
+            },
+            {
+              "const": "authority_and_credentials"
+            },
+            {
+              "const": "dependencies_and_access"
+            },
+            {
+              "const": "open_decisions_and_deadlines"
+            },
+            {
+              "const": "rollback_safe_decline_and_failure_containment"
+            },
+            {
+              "const": "recipient_or_successor_acknowledgment"
+            },
+            {
+              "const": "successor_operation_from_package"
+            },
+            {
+              "const": "independent_verification"
+            }
+          ],
+          "items": false
+        },
+        "complete_portable_operational_handoff_requires": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "proofs_may_be_assembled_across_controls": {
+          "const": false
+        },
+        "package_variants_may_be_combined_within_system": {
+          "const": false
+        },
+        "contact_required": {
+          "const": false
+        },
+        "control_is_candidate_promotion": {
+          "const": false
+        }
+      }
+    },
+    "controls": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "$ref": "#/$defs/control"
+      }
+    },
+    "join_matrix": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "$ref": "#/$defs/joinRow"
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "oci_manifest_digest_is_itemized_internal_inventory",
+        "oci_layer_digest_is_per_entry_checkpoint_digest",
+        "checkpoint_image_is_self_contained_operational_package",
+        "source_container_removal_proves_hidden_state_absence",
+        "automatic_base_image_pull_is_dependency_carried",
+        "restore_runtime_acceptance_is_recipient_inventory_acknowledgment",
+        "running_status_is_application_specific_correctness",
+        "same_container_id_is_same_pid_continuity",
+        "cross_root_tar_continuation_may_be_borrowed_into_oci_image",
+        "cross_root_archive_is_content_addressed_manifest",
+        "fixed_import_copy_list_is_itemized_acknowledgment",
+        "inventory_img_exists_is_complete_package_validation",
+        "debug_logged_missing_entry_is_fail_closed_inventory",
+        "runtime_compatibility_annotations_are_authority_credential_ledger",
+        "checkpoint_config_is_complete_open_decision_inventory",
+        "same_system_testing_is_external_independent_review",
+        "e2b_live_handoff_plus_podman_package_plus_cargo_proof_is_one_handoff",
+        "complete_proof_chain_is_successor_operation",
+        "system_control_success_is_person_support",
+        "living_subject_is_contact_authorization",
+        "field_test_authorized",
+        "promotion_authorized",
+        "person_ranking_authorized",
+        "public_identity_profile_authorized",
+        "graph_effect"
+      ],
+      "properties": {
+        "oci_manifest_digest_is_itemized_internal_inventory": {
+          "const": false
+        },
+        "oci_layer_digest_is_per_entry_checkpoint_digest": {
+          "const": false
+        },
+        "checkpoint_image_is_self_contained_operational_package": {
+          "const": false
+        },
+        "source_container_removal_proves_hidden_state_absence": {
+          "const": false
+        },
+        "automatic_base_image_pull_is_dependency_carried": {
+          "const": false
+        },
+        "restore_runtime_acceptance_is_recipient_inventory_acknowledgment": {
+          "const": false
+        },
+        "running_status_is_application_specific_correctness": {
+          "const": false
+        },
+        "same_container_id_is_same_pid_continuity": {
+          "const": false
+        },
+        "cross_root_tar_continuation_may_be_borrowed_into_oci_image": {
+          "const": false
+        },
+        "cross_root_archive_is_content_addressed_manifest": {
+          "const": false
+        },
+        "fixed_import_copy_list_is_itemized_acknowledgment": {
+          "const": false
+        },
+        "inventory_img_exists_is_complete_package_validation": {
+          "const": false
+        },
+        "debug_logged_missing_entry_is_fail_closed_inventory": {
+          "const": false
+        },
+        "runtime_compatibility_annotations_are_authority_credential_ledger": {
+          "const": false
+        },
+        "checkpoint_config_is_complete_open_decision_inventory": {
+          "const": false
+        },
+        "same_system_testing_is_external_independent_review": {
+          "const": false
+        },
+        "e2b_live_handoff_plus_podman_package_plus_cargo_proof_is_one_handoff": {
+          "const": false
+        },
+        "complete_proof_chain_is_successor_operation": {
+          "const": false
+        },
+        "system_control_success_is_person_support": {
+          "const": false
+        },
+        "living_subject_is_contact_authorization": {
+          "const": false
+        },
+        "field_test_authorized": {
+          "const": false
+        },
+        "promotion_authorized": {
+          "const": false
+        },
+        "person_ranking_authorized": {
+          "const": false
+        },
+        "public_identity_profile_authorized": {
+          "const": false
+        },
+        "graph_effect": {
+          "const": "none"
+        }
+      }
+    },
+    "next_action": {
+      "const": "Seek one exact checkpoint package whose internal entries, base image or rootfs, runtime and kernel dependencies, credentials and authority, network and volume access, open decisions, and rollback state are itemized and integrity-bound; whose recipient acknowledges that inventory; whose destination begins clean without hidden predecessor state; whose application-specific continuation is observed; and whose whole chain is independently reproduced outside the originating project. Do not borrow Podman export/import service continuity into the OCI image case, combine E2B live continuity with Cargo proof, or convert a system control into person support."
+    },
+    "graph_effect": {
+      "const": "none"
+    }
+  },
+  "$defs": {
+    "sourceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "title",
+        "publisher",
+        "date",
+        "url",
+        "source_class",
+        "artifact_scope"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "pattern": "^CS-W38-S[0-9]{2}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "publisher": {
+          "type": "string",
+          "minLength": 1
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "source_class": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifact_scope": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "adjudication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "content_addressed_portable_package",
+        "package_level_manifest_binding",
+        "itemized_operational_inventory",
+        "package_inventory_recipient_acknowledgment",
+        "same_object_successor_operation",
+        "application_specific_continuation",
+        "hidden_predecessor_state_free",
+        "external_independent_review",
+        "complete_portable_operational_handoff",
+        "person_support_added",
+        "classification"
+      ],
+      "properties": {
+        "content_addressed_portable_package": {
+          "type": "boolean"
+        },
+        "package_level_manifest_binding": {
+          "type": "boolean"
+        },
+        "itemized_operational_inventory": {
+          "type": "boolean"
+        },
+        "package_inventory_recipient_acknowledgment": {
+          "type": "boolean"
+        },
+        "same_object_successor_operation": {
+          "type": "boolean"
+        },
+        "application_specific_continuation": {
+          "type": "boolean"
+        },
+        "hidden_predecessor_state_free": {
+          "type": "boolean"
+        },
+        "external_independent_review": {
+          "type": "boolean"
+        },
+        "complete_portable_operational_handoff": {
+          "type": "boolean"
+        },
+        "person_support_added": {
+          "type": "boolean"
+        },
+        "classification": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "control_id",
+        "public_label",
+        "control_type",
+        "system_or_subject",
+        "source_records",
+        "components",
+        "positive_findings",
+        "known_limits",
+        "adjudication",
+        "operator_finding",
+        "field_test_eligible",
+        "contact_authorized",
+        "graph_effect"
+      ],
+      "properties": {
+        "control_id": {
+          "type": "string",
+          "pattern": "^CS-W38-PO-0[1-4]$"
+        },
+        "public_label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "control_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "system_or_subject": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_records": {
+          "type": "array",
+          "minItems": 4,
+          "items": {
+            "$ref": "#/$defs/sourceRecord"
+          }
+        },
+        "components": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "same_object_identity",
+            "package_identity",
+            "package_content_addressing",
+            "internal_inventory_and_entry_integrity",
+            "outgoing_and_incoming_roles",
+            "authority_and_credentials",
+            "dependencies_and_access",
+            "open_decisions_and_deadlines",
+            "rollback_safe_decline_and_failure_containment",
+            "recipient_or_successor_acknowledgment",
+            "successor_operation_from_package",
+            "independent_verification"
+          ],
+          "properties": {
+            "same_object_identity": {
+              "type": "string",
+              "minLength": 1
+            },
+            "package_identity": {
+              "type": "string",
+              "minLength": 1
+            },
+            "package_content_addressing": {
+              "type": "string",
+              "minLength": 1
+            },
+            "internal_inventory_and_entry_integrity": {
+              "type": "string",
+              "minLength": 1
+            },
+            "outgoing_and_incoming_roles": {
+              "type": "string",
+              "minLength": 1
+            },
+            "authority_and_credentials": {
+              "type": "string",
+              "minLength": 1
+            },
+            "dependencies_and_access": {
+              "type": "string",
+              "minLength": 1
+            },
+            "open_decisions_and_deadlines": {
+              "type": "string",
+              "minLength": 1
+            },
+            "rollback_safe_decline_and_failure_containment": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recipient_or_successor_acknowledgment": {
+              "type": "string",
+              "minLength": 1
+            },
+            "successor_operation_from_package": {
+              "type": "string",
+              "minLength": 1
+            },
+            "independent_verification": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "positive_findings": {
+          "type": "array",
+          "minItems": 4,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "known_limits": {
+          "type": "array",
+          "minItems": 6,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "adjudication": {
+          "$ref": "#/$defs/adjudication"
+        },
+        "operator_finding": {
+          "const": false
+        },
+        "field_test_eligible": {
+          "const": false
+        },
+        "contact_authorized": {
+          "const": false
+        },
+        "graph_effect": {
+          "const": "none"
+        }
+      }
+    },
+    "joinRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "control_id",
+        "content_addressed_package",
+        "package_level_manifest",
+        "itemized_operational_inventory",
+        "package_inventory_recipient_acknowledgment",
+        "same_object_successor_operation",
+        "application_specific_continuation",
+        "hidden_predecessor_state_free",
+        "external_independent_review",
+        "complete_portable_operational_handoff",
+        "person_support"
+      ],
+      "properties": {
+        "control_id": {
+          "type": "string",
+          "pattern": "^CS-W38-PO-0[1-4]$"
+        },
+        "content_addressed_package": {
+          "type": "boolean"
+        },
+        "package_level_manifest": {
+          "type": "boolean"
+        },
+        "itemized_operational_inventory": {
+          "type": "boolean"
+        },
+        "package_inventory_recipient_acknowledgment": {
+          "type": "boolean"
+        },
+        "same_object_successor_operation": {
+          "type": "boolean"
+        },
+        "application_specific_continuation": {
+          "type": "boolean"
+        },
+        "hidden_predecessor_state_free": {
+          "type": "boolean"
+        },
+        "external_independent_review": {
+          "type": "boolean"
+        },
+        "complete_portable_operational_handoff": {
+          "type": "boolean"
+        },
+        "person_support": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
