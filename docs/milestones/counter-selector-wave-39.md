@@ -100,5 +100,3 @@ promotion, field-test eligibility, or graph effect?                 No.
 ## Next frontier
 
 One fixed-digest checkpoint image must be pushed and acquired by a demonstrably clean destination, carry an itemized integrity-bound inventory of every package entry and external obligation, receive explicit recipient acknowledgment, demonstrate application-specific continuation from that exact digest with rollback or safe decline, and be reproduced by an external independent party.
-
-<!-- exact metadata-custody qualification pulse; removed in next commit -->
