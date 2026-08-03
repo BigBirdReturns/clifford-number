@@ -1,0 +1,67 @@
+name: TEMP capture exact SSC RD-05 official-object candidates
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-exact-object-capture-base-v1
+    paths:
+      - '.github/tmp/ssc-rd05-exact-object-capture-v1.trigger'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd05-exact-object-capture-v1
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 1dd7b50bd785289d17dacd64077bef1c2de90af4
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct and execute checksum-bound capture program
+        env:
+          SCRIPT_B64_SHA256: 6519ec37237f85579bc7bbc4994bb4e000049438aa57546dba726fec6fdd3ff7
+          SCRIPT_GZ_SHA256: a5481255f1de228a9a8179fda8b1fef1ead4b0111bd75e2f28ccca318125da74
+          SCRIPT_SHA256: bac2573f4491fc473992a98e9731bd910fb4ef64a78b87d3952848239a621265
+          RD05_OBJECT_CAPTURE_OUTPUT: ${{ github.workspace }}/rd05-exact-object-capture
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = '1dd7b50bd785289d17dacd64077bef1c2de90af4'
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/acquisition/status-sovereignty-rd-wave02-rd05/build-official-object-universe.mjs
+          node tools/acquisition/status-sovereignty-rd-wave02-rd05/validate-official-object-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd05-official-object-universe.test.js
+          git diff --exit-code
+
+          printf '%s' 'H4sICM/eb2oCA3JkMDUtY2FwdHVyZS1leGFjdC1vYmplY3RzLm1qcwC1PG1z28jN3/MreG16JO8oyckl16tybuom7lxukjgTO+3TSVyaIlcWzxSpcpd2fJb+ewHsC3dJSnIy83zoxdrFAlgsgAWwYP/4zaTh9WSWlxNWXntllbEH+XJV1cJL69uVqLx5XS09HyemcsR/piHm3J6d83ZmlYiFPYe/29k7j6+Sm/L0tky9jUNgkRdZvKqrlHHE9iCtSi689ycnZ96hp8bH6U0WhM/U3Ku37z6cxe+Ozn4BCD9LRDLJS5FcsQkXiWj4iFfXrGb5ZSluR3U2ukmu2cFj+Ovg6ahmabVcshJW5VU5ynK+qniOf0+q+TxP86QYVbPfWCpGaVJmOcCxUVPmgJCz8W+8Kn3NxsmHM+ADmYSdjmvGq+KaBZpjEO34/cuDp/HJ3389fnEWvzh6d/bh/XGsVq3XctlvVV4GuNnI84lB9jkB2oaFlWhq5odm7y/f/zt+/+GtJZqkvrwe52VaNBnjgT8aZTXsuil9s+bN0f/FR2dnx2/enZ3Cwsd6/MXJ27fI2tmrN8cntJNHT/Xc2cnZ0Wtr5scDPXP0+vXJv45fxr+cnBK6kt14p0wEH3044ZSNSb41/HFZXfuwq5ubm/GcZaxOippd5lyw2p4q+Zx+nht23x+/Pv7n0dsXx4B8EgBKvk6y65xX9e0akedCMLYu6QDhtHiaszJlo1mV1Nn606zks0+z9ZIxkZeXa3Pe63SR1EB7vczLRrB1colKsBZ1UvK0zldivYIjZKBHiHfNm1lL66aqr0Yg76xJBWBEhV4nNWjuNVsDSsAoF6ltjvQ+12Ul8pSFk9zoNV8kj5/+CDsLrpOiYaF3+FdldeO0ZqBsvyR8EfgSzA/HzQo1UAGPs/yScRH4C/a5Pd6bOhfsV9BMxCpAHZiIvBb73QMPrHa8vMryGs0vIL2DH2WyZAo+jMBAQVRNzWFPU0/UDfM2QIGWEoF/5AWj5ZrCxcO7X09P3o65qEHQ+fxWMhl5ZVMUkfc43HwqLwDFRvNZs6LlkFhThlOA9MBypGVEngIY81WRC8ktZ6tQmoo/aTfOSg7GgTjhd0ZGHHlLsAk4W7l1L597wTdmNvTEoq5uSGWP67qqAw39zLPYTDJXmoSL9rpKwAsEIBIE6knEb8T8J8tWwYFUZZ4mxYeadl4nN5E3Sziy3JQZm+cly8wZyTUNgSKDH96/Dk5JtrgwBJKrAowhmHybLFfPJpdA71s/lAjppGDpeAHag07RNwMVF3jQSNL6ORbV6+qG1S9gcUCrUVIBgoCeiyqtgI1DQLQQYsWnvvftt7SefDlNPHnygx+iG9uyaGjNTwcgHWtM8VkzcHIljYtKbdlWnJukuCL5VZU8CzgA9hksjJP45fBzTx2LVnMcRrW+ycUCj+rsdsW4Ue3xHLTuTbIKAjD5+rZzCvJEtWsnxZPoCHiMEgwtzuVozl/mYEMC/FSA/CDbRoOm3kf55zlsjH7CHw/mTZmiYnpwvYAFvSpXjQhy/G9I3EgNlyPPxzxdsGUS41WEa0iknKfdK27/Pfa3R+h9CasnkXrgHctLlvm0LZvsOC0SzuM8k/TevxwBiRcHP9DxSoicc5ApTv/5LwcGcZ6BWHJxO4j6qK4TlBj9qwhJdnnYIlYj44KVlxBcIIWnP4HnkeMeEKjI91a19/DOWfJcrdlcDGyoakqEwJsllocSq2WSxKOWAw27TATIKYtBPURdFQ78n2HLPK1WzGFoh0AVTrrpFaZ4VmU5k/geoQxpEtSvBiF6MHm7F7m+h13RLVHFweeRgsO/agLOMwQPm//OjFT9rAGHm4KeeEq+r15+DQEw4/2owblJ3MqT024PO8c+zwu4RAfZh6u6KURHhipagkNargomJH20d4vSCm598C//P7TmSaF8sRIZLbHV99EB6pZiwp54gnqtkHp084FK28s3k4d37jql23PQh0BdXXC3VXOvY07oSIavF31czwhC8bz1DqAr31GhzRSyh3L0y9nZu1NEeOFiciJFvJqC7VdQOIgdYb2qERycCSYNv7PS0+7N40x0CH70LZtGF6fNFmJCbbr+eRssIzleNRCsxmTAw0zkJQQ24P8IRFLctL7/TipvZDQLrq2N5dlh0e1Rmf2THPwxgiLZSBkC3Bihde+kDRdo64ekf/OcFZlxFIrRokrRBcTg1OPZrQANlGssrVMjcGGIRGmmX804q6/BZaD+GQAVvBbGUgYFIK1T8yaRKg90YZkWhX/AugIc0+92Gp3YKe3BuVdl7kOwYwSJccrCuoArHe6sPSsVVHfxTAqzG7C1rPQJDYA7LNjmjXhsI7Z2gUfDUdYykifQsAsk5wZlbnv+Zc5JkZ27TOFVvNmotSz2Y9dbdgm0ojvrh0FGbTFfZQ1n2UgiQ3Mjeczy0u+L9UtRqWVj8Vn4Og/ZksK0nO5OY9ASB1QgsrY6COocf+RuyI4ClZ+V2h8vsbihNxbLjcXSkpGeHxF0AvnlciU4xoNyRJtkTHY2VZGARkBqI3EqDKrukMndyrE5IQBnO1UqYQYifRcIxCYgJAYKCpOxvimmao5Y23nS66lnab41KTVu6ui8nLbtU6J3xehCKSJaB2w6rnIbUtoMJJASlvKYeabFYAYkWFXnlyQYa+cdR9QBdLfRdz14NXTcv7zSj+Q5S9evDn3LHaBmYXSbtVwokNHDO/WXDgVsG2nxbLcKx0TfYQHPJmlj6Btk6yZ2LxxyClwArnr3OuC3GEnALtElE8k9FiNYdynkjeIeSxGsuxQMshYsOxIqgnqJhZkQwphXpydt1qqhISwDn4o57p/uMICC+CNjm0/ln+4Af8zmczhNOA4ase2RBjB6jrPqpiyqJIMRv8Uro1HAa+qpAbEMTvMjKas/GlGMANqHjnQ04uDIpFOFvxfVzYhh6UMZPYwB3hLzRJEvGcRaAKh206kPhoRhmXwmyBbMKRWGBi34qHqEVTYinRb5HESSjcpmOYOJ4UxV+s7Jo/FBy17WLFcjqX1+ZOsqsQMMr4hnrYg0ShWrkdyMPIhI5yaA9hwNgpVwIMD+VJVtIg929vcGzqWeej8+8b6DWP2x+cc2F3CmOV/cQxGo+OTWKiz2w7BfW3N2J5kZJwUcZ3AQbkOpNz6ErxXKELIeeGuWkdKzsRzCOo/vmwrX4GJtlPZSOIGBpTrWrYtjMDMQ4lvSiXHOX4EdXEIaZjBgOR9rKc6AN/UeP306yIQ2b4p6NAUsRA4wgAwDcV1j6zOtS5CTT/XzT+XkfnHlu8HwdXtU2YUHV3Eqd6nlQpL9eHCOTB24eqhLiwTxiCCUmltyls4Fy18a8vG53KDjVSiKoPBdnwtElJSu2jzB2OMDGrWD3796B71AyNxyym/GiZi2PjQyZkTjrU3pqOa/DeNCxjBqS5Ed1+jNq4CGfCowPTXsR8R2LDVmau0h6oQ/lnw0baxOAmPaAet4xD6OH9Rx7Alv6HSjPYHN/YKagfBMYd8WmO0LyqRtWzhb+w8jPavwKv+Bv14T9mDAQSi8KCALq3YMgBOPyJrR1hpGRgG3RlDvZHq9I3nWsTToMBZXVWWkYGYGH7iemR8/HzoPY+3E9wDmVk0geGI5rb9nOPfMCe7Hq4ajvAiJmkNHrkb002EWejPwEFe6wCBpFwlHwgZXIoLRI8sL6HzhVOb6BG8wguf0pRk0Kb2vEu2pBDJG431Dlg6w9BqG2h/Pk7zA+lYyBwIQION7RQaZh6hvHSSWkREadA6aaFmVMfzehUMCIhDu7lZG4kPw+/IsDS2zJeU+fHM4fDi5coQXWbmUI8VeUkWzbU7VcShSuNZQz34Jos0xHANu52igY8TtrMruB9yPPBdrqOd/HAhFpuuDHBg52LdN9hk0JhUnKo57nZdXXKs1RVyRqtqBp1aVSIpgupqP7sMMtlUgfeLSnJW+y3vM3NpyjS1ufXn3nrh616ZebY5y8ALdctm36YN+uOxvwCJbVNUVPwOBASrk0nqyX4hlId/SOhOCYQaCE5OfEWj9c/KJT/KxwEdg8vS8mSX0hHIQeW+QIVDnwLkDnhz85ccwbB/W2kdKdRYtY0DHvdQfH7hh8PCByD3Ryi4VOx0C+3Q9s4rCsPCEVWvEI99ZjooimATPp4uazde8TsNP/LtD+N/HP/jnwcf//MH/4/n3If6YXOah9tTgJNRfbq3bfoQNCD0ESpHRAuWOzfMAPvBmVom8sUBIXP2itlyzra4dknfIS1kKJUeCopB3gmaY3moj8yPLeUotLFmMnTKxKd1N3Sec7SuoVi2h7QJ3uwCbMRJQ07yMpYXG+nFwapmsLtqH7UK4t9l1UgJG8644bVs2pGpC7K2EglaAQtl4ZogzbJ3YXIQK5UbJdwNHhapw502+8/LLsqoZKEeB6RucCIPQKwMHj4fifTehC9KqwpNMXd8kn1RPKD8MeLNcJvjMa72qqjH1Hte+9pAR8/bxSj1Z6SBg3ztcB61bAHSw00OfnNcV2S9GTvcc4B/iHt+UfAPiDbya7iKx5fFVi6NgGWRqnprd9SDZRfh1T5J0jt2Xyf7bV4eY9g6KJaSmvbQbCwyWyc3ziHmYoyBrmXMOTq7z+GTjNjcAJkr2hHst7yKJELxL6ksvpCGWQgfX9vx0NzrnwcUVRPdVpMfF9reRHuiONwySgn6Ucl8wDCtuotUj4YRAFkPOo8rQgh1saYEOc7bp21nSiEVV5+J2DBcgq1Ej8cZIdHsBJds7gGt2nbMbBYv2KZ9LR4tmmZSeWbDT1lu0l3WyWqjypHw5hOuT+cM8rJoZmSe42/4SbGKQY4M82K56mYCW2amc7CA5NL1YQffVr20BtWMs+W5+ONBNYzUAFAm2dkm34HbUTHU7zZY2zBGupd4Z6niZynYX3R8ztZtj5H1JtFVU3nIcqfFOYr7d/vpbVvex0jvLo0/Jb7p3jmwtmUrpjO2egshz0iUD4/YZqKQ++Zwvm2WsE6p4BTla9/6ZOik1JUZYWo5VaTnmDHvxgE6ntKyys0qAPvdgnfoyZHRFAeFVFmO8he9m4/HYicnOIeKpRaBE1LOpKRqJspGYbATkhxtmZXo7lS0cMtGRAZ9quNUXiWm2HPCPPuqH7BEOI1I0y9VWBRsX1WVwgerl2eplbhdcMcVACdH0z3ajzhuSNQUzdM4bdfoGyD3ijWfOTPtKGUJJ7yRrqvWSNFDvq/d6REX1tPfA2r49bV2pgL9Cit1X2R3mEXkDWGVTjERr5yUm1rVamXd0ODnphGl3shCazjAnSSowMx5Kf/a37JiqkvNkZfal1vhRJ5R6Nli/6rU17e5qUiH683t0sSjQ6Z56nc0WCoWSrS8rI0gUJFGZRYEHkKjUlD44J8XamkN5doI0kDJ5Oj+yS9EKKWdgfuZVmavV7mDUT846C7bPazqrOq9qVdtS8p1+6VlqXEauSurovJXgYxLqVB2Mcv8P7CRtyHDdPg4ZKGnz1Uchq5ahcTKtArxJVsrysBu3G9UjBNoHMabtQpYt5FrKUPFvaYgaJRyCMMPoh2TdzgxszbBlJ8ZwPq3mdqXORGE7QDScPtOqgRkjdt3vjkWOQ7PHS2uPJu7FTuTtu5M2QYu2Au1EJQWxA41spLNRDG1svT7cumu3/l3ZTgE9qLJ2FAA1YPAgPJc+uu3kVlYPoDQmVX/nmQOo9v77ZBi6EcZWVdmLUkIadLhtzIDxR5BE3oy2kuDpjvFFv2AvwJQTzLCksrfXC9A56cjJkZtpb21F9I3kabuuuujfy3MSGn2X4gCFrae/PwQA7G1zgPT02qPsC9z7SzFi17EgOjzMVnJuR1ZxklGijZgoAFThdcctOiKVIECt5z27omkhB2Qh4R3pPpDuti2wYlh81D5uaZ8KetSkLMAkji5JEjr88L53clbzcqRjfvsN2Xr33dUJ3XupUsis1Esmh1+ZWX1JUqWWyHfjbe0X0T1zL4o17SGHhuwZTjCvQUBznekuOqzBTb1OhKFLcFPPraC19+9QQXB6L/nbj14y1d7aXxj2yG4pFX4t5eEXtz5ZqTF9qu7rmuc15XbYTi1y1FssU8eSCfxUL267Kh3b0cDbAx/Xabo7uY+pDyy5n813Fs7zz4w+iqUufBPCaclQEmveLfSc+2mrDYNdWCn2jfIVTDBnKqtWhJjqq/ZMzZDU4FSOJJf6W8kYHCjAAHEHc1pUfJDjwZS8O6eqWtaUXZnCcRmXbmmaTYpC32et2ONFcs1iA6uNXKtZrMoecVpX4HxqNoerGg9uXjP2O6OOe+t7YXM8xi8pOuYGNefm3Cpd7OzzKinRSQ6Du6c6yMAWOuRC5Sk4E6Yc17ou1R4wb0BqTKQLvB+3KZaDy/Ou2C3YXIZKIHJRsC9Yij0GGAtpiggMmJIZR8HsAYY0nMjkSR+2NXC00/td9mRJ8nvf2PqmFxfzZoXfBnOl69YRdDDsKSu12Vwlv/mCqO6KWhC73H+NffSLsVNTiSUrH5qwjUqPSsPSNbCdcZouCevgTD+z4cLB9zerERduVvriTX4nKVGG5g7qfiWMX7naHyxTs4kPYs7ncO0oBlQgLbMBC4NdTpG1/v5zh2j7+a1ve9peJfOhtG60wn9MTNVtssLJUArQbh0FFZvhR7/YvishVV8V5gOBEkk3mbl4eCdDaWRm8+lA/yQi1m+Jkb66Vt9K45HY7/07z7IjS0yav7A8rjFQNIdfIuvmHMmZjk6QbQDgrJjHqtfBOCitFpERlQnVjOxage6vqWI51Q0eNu0Tm3b8WCrVAcWmDS16S624Y2OFKwjoxBmmxsov7sOqiiWA2kAosTExCZLZEm9sMJ5Q80NhxaYtO7TX1P2Y02eK/Gn91Ei1CT+802dD3yFsHjygZgz1rPMMfIl82Q+o8TyEGU2UBvYcH8Fg5296hR0q8qf6bh/pmf8jDGxlCx4Rvf8BzH6QDuNEAAA=' > /tmp/rd05-capture.mjs.gz.b64
+          test "$(sha256sum /tmp/rd05-capture.mjs.gz.b64 | awk '{print $1}')" = "$SCRIPT_B64_SHA256"
+          base64 --decode /tmp/rd05-capture.mjs.gz.b64 > /tmp/rd05-capture.mjs.gz
+          test "$(sha256sum /tmp/rd05-capture.mjs.gz | awk '{print $1}')" = "$SCRIPT_GZ_SHA256"
+          gzip --decompress --stdout /tmp/rd05-capture.mjs.gz > /tmp/rd05-capture.mjs
+          test "$(sha256sum /tmp/rd05-capture.mjs | awk '{print $1}')" = "$SCRIPT_SHA256"
+          node --check /tmp/rd05-capture.mjs
+          node /tmp/rd05-capture.mjs
+
+          test "$(jq -r '.counts.object_receipts' rd05-exact-object-capture/summary.json)" = 58
+          test "$(jq -r '.counts.reused_parent_receipts' rd05-exact-object-capture/summary.json)" = 10
+          test "$(jq -r '.counts.requested_object_receipts' rd05-exact-object-capture/summary.json)" = 48
+          test "$(jq -r '.authority.external_contacts' rd05-exact-object-capture/summary.json)" = 0
+          test "$(jq -r '.authority.external_reviews' rd05-exact-object-capture/summary.json)" = 0
+          test "$(jq -r '.class_closed' rd05-exact-object-capture/summary.json)" = false
+          test -z "$(git status --porcelain=v1 --untracked-files=all | grep -v '^?? rd05-exact-object-capture/' || true)"
+      - name: Upload exact object-capture custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-exact-object-capture-v1
+          path: rd05-exact-object-capture
+          if-no-files-found: error
+          retention-days: 90
