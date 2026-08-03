@@ -1,1 +1,1 @@
-prove the exact ten post-release RD-05 regenerated diffs line by line before push
+publish the exact 327-path RD-05 capture product after timestamp-only release drift proof
