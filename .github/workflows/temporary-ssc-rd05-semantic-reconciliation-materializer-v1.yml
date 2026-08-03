@@ -1,0 +1,760 @@
+name: TEMP materialize SSC RD-05 semantic reconciliation
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-semantic-reconciliation-materializer-base-v1
+    paths:
+      - '.github/tmp/ssc-rd05-semantic-reconciliation-materializer-v1.trigger'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: ssc-rd05-semantic-reconciliation-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd05-recommendation-disposition
+      EXPECTED_START_SHA: 0d1e0744e6e9391a1bff12053918362ad389bcfa
+      ROOT: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition
+      SOURCE_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/object-semantic-classification.json
+      RECOVERY_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/same-object-api-recovery-index.json
+      PRODUCT_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/object-semantic-reconciled-view.json
+      RECEIPT_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/same-object-semantic-reconciliation-v1.json
+      BUILDER_PATH: tools/acquisition/status-sovereignty-rd-wave02-rd05/build-object-semantic-reconciliation.mjs
+      VALIDATOR_PATH: tools/acquisition/status-sovereignty-rd-wave02-rd05/validate-object-semantic-reconciliation.mjs
+      TEST_PATH: test/status-sovereignty-rd-wave02-rd05-object-semantic-reconciliation.test.js
+      SOURCE_SHA256: bd20e741f516841704d481bb4d907200223e745c522d112811c3a43837cba922
+      RECOVERY_SHA256: e9fce0df4afb753f001ad51652a3d48cff678d7a2ca57a382ab1126b2f386ede
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build, qualify, and publish exact five-path reconciliation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+
+          test "$(git rev-parse HEAD)" = "$EXPECTED_START_SHA"
+          git fetch origin "$TARGET_BRANCH"
+          test "$(git rev-parse origin/$TARGET_BRANCH)" = "$EXPECTED_START_SHA"
+          node tools/validate-no-magic-human-gate.mjs
+          test "$(sha256sum "$SOURCE_PATH" | awk '{print $1}')" = "$SOURCE_SHA256"
+          test "$(sha256sum "$RECOVERY_PATH" | awk '{print $1}')" = "$RECOVERY_SHA256"
+
+          mkdir -p "$(dirname "$BUILDER_PATH")" "$(dirname "$TEST_PATH")" "$(dirname "$PRODUCT_PATH")"
+
+          cat > "$BUILDER_PATH" <<'JS'
+          import fs from 'node:fs';
+          import crypto from 'node:crypto';
+
+          const ROOT = 'data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition';
+          const SOURCE_PATH = `${ROOT}/object-semantic-classification.json`;
+          const RECOVERY_PATH = `${ROOT}/same-object-api-recovery-index.json`;
+          const PRODUCT_PATH = `${ROOT}/object-semantic-reconciled-view.json`;
+          const RECEIPT_PATH = `${ROOT}/same-object-semantic-reconciliation-v1.json`;
+          const EXPECTED_SOURCE_SHA256 = 'bd20e741f516841704d481bb4d907200223e745c522d112811c3a43837cba922';
+          const EXPECTED_RECOVERY_SHA256 = 'e9fce0df4afb753f001ad51652a3d48cff678d7a2ca57a382ab1126b2f386ede';
+
+          const sha256 = (body) => crypto.createHash('sha256').update(body).digest('hex');
+          const assert = (condition, message) => {
+            if (!condition) throw new Error(message);
+          };
+          const readBytes = (path) => fs.readFileSync(path);
+          const readJson = (path) => JSON.parse(readBytes(path).toString('utf8'));
+          const clone = (value) => structuredClone(value);
+          const sortedMap = (value) => Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)));
+          const moveSingleton = (value, from, to) => {
+            const next = clone(value);
+            assert(next[from] === 1, `expected singleton count for ${from}`);
+            delete next[from];
+            assert(next[to] === undefined, `target count already exists for ${to}`);
+            next[to] = 1;
+            return sortedMap(next);
+          };
+
+          const sourceBytes = readBytes(SOURCE_PATH);
+          const recoveryBytes = readBytes(RECOVERY_PATH);
+          assert(sha256(sourceBytes) === EXPECTED_SOURCE_SHA256, 'source semantic SHA-256 mismatch');
+          assert(sha256(recoveryBytes) === EXPECTED_RECOVERY_SHA256, 'recovery index SHA-256 mismatch');
+
+          const source = JSON.parse(sourceBytes.toString('utf8'));
+          const recovery = JSON.parse(recoveryBytes.toString('utf8'));
+          assert(source.schema_version === 'ssc-rd05-wave02-object-semantic-classification@1', 'source semantic schema');
+          assert(source.counts?.object_denominator === 58, 'source object denominator');
+          assert(source.counts?.open_recommendation_disposition_chains === 5, 'source open-chain denominator');
+          assert(source.counts?.successor_action_rows === 8, 'source successor-action denominator');
+          assert(source.counts?.recommendation_activity_only_rows === 5, 'source activity denominator');
+          assert(source.counts?.source_access_interstitial_rows === 1, 'source interstitial denominator');
+          assert(recovery.schema_version === 'ssc-rd05-same-object-api-recovery-index@1', 'recovery schema');
+          assert(recovery.recovery?.object_id === 'RD05-OBJ-051', 'recovery object');
+          assert(recovery.recovery?.document_number === '2024-08630', 'recovery document number');
+          assert(recovery.recovery?.same_object_binding?.document_number_locator_match === true, 'locator binding');
+          assert(recovery.recovery?.same_object_binding?.api_document_number_match === true, 'API document binding');
+          assert(recovery.recovery?.same_object_binding?.frozen_url_html_url_match === true, 'HTML locator binding');
+          assert(recovery.semantic_adjudication?.source_access_gap_closed === true, 'source-access closure');
+          assert(recovery.semantic_adjudication?.completed_recommendation_observed === false, 'no recommendation authority');
+          assert(recovery.counts?.frozen_object_denominator === 58, 'recovery denominator');
+          assert(recovery.counts?.linked_urls_fetched === 0 && recovery.counts?.links_admitted === 0, 'no link admission');
+
+          const product = clone(source);
+          product.schema_version = 'ssc-rd05-wave02-object-semantic-reconciled-view@1';
+          product.status = 'all_frozen_objects_reconciled_one_same_object_recovery_four_open_chains';
+          product.historical_source_product = clone(source.source_product);
+          product.source_product = {
+            semantic_classification: {
+              path: SOURCE_PATH,
+              sha256: EXPECTED_SOURCE_SHA256,
+              schema_version: source.schema_version,
+              object_denominator: 58,
+              open_recommendation_disposition_chains: 5,
+              successor_action_rows: 8
+            },
+            same_object_recovery: {
+              path: RECOVERY_PATH,
+              sha256: EXPECTED_RECOVERY_SHA256,
+              schema_version: recovery.schema_version,
+              object_id: 'RD05-OBJ-051',
+              document_number: '2024-08630'
+            }
+          };
+          product.reconciliation_contract = {
+            original_semantic_product_preserved: true,
+            frozen_object_denominator_changed: false,
+            same_object_recovery_is_new_denominator_member: false,
+            source_access_gap_closure_is_completed_recommendation: false,
+            source_access_gap_closure_is_agency_response: false,
+            source_access_gap_closure_is_adoption_or_rejection: false,
+            source_access_gap_closure_is_implementation_or_outcome: false,
+            linked_urls_fetched: 0,
+            linked_urls_admitted: 0,
+            outside_human_dependency: false,
+            external_contacts: 0,
+            external_reviews: 0,
+            publication_effect: 'none',
+            adoption_effect: 'none',
+            graph_effect: 'none'
+          };
+
+          product.counts = clone(source.counts);
+          product.counts.record_class_counts = moveSingleton(
+            source.counts.record_class_counts,
+            'federal_register_access_interstitial',
+            'federal_register_membership_solicitation_notice'
+          );
+          product.counts.recommendation_status_counts = moveSingleton(
+            source.counts.recommendation_status_counts,
+            'semantic_content_unavailable_access_interstitial',
+            'committee_formation_and_membership_solicitation_not_completed_recommendation'
+          );
+          product.counts.recommendation_activity_only_rows = 4;
+          product.counts.open_recommendation_disposition_chains = 4;
+          product.counts.source_access_interstitial_rows = 0;
+          product.counts.successor_action_rows = 7;
+          assert(product.counts.completed_recommendation_objects === 0, 'completed recommendation count changed');
+          assert(product.counts.agency_response_objects === 0, 'agency response count changed');
+          assert(product.counts.adopted_or_rejected_objects === 0, 'adoption count changed');
+          assert(product.counts.implementation_or_outcome_objects === 0, 'implementation count changed');
+
+          const objects = product.objects;
+          assert(Array.isArray(objects) && objects.length === 58, 'object array denominator');
+          const index = objects.findIndex((object) => object.object_id === 'RD05-OBJ-051');
+          assert(index >= 0, 'RD05-OBJ-051 missing');
+          const prior = objects[index];
+          assert(prior.record_class === 'federal_register_access_interstitial', 'prior object class');
+          assert(prior.fields?.recommendation_state?.value?.status === 'semantic_content_unavailable_access_interstitial', 'prior recommendation status');
+          assert(Array.isArray(prior.successor_actions) && prior.successor_actions.length === 1, 'prior successor action denominator');
+          assert(prior.successor_actions[0]?.action_type === 'retrieve_same_object_via_federal_register_api', 'prior successor action identity');
+
+          const official = recovery.recovery.official_record;
+          const api = recovery.recovery.official_api_representation;
+          const original = recovery.recovery.original_representation;
+          const reconciled = clone(prior);
+          reconciled.observed_title = official.title;
+          reconciled.record_class = 'federal_register_membership_solicitation_notice';
+          reconciled.evidence = {
+            method: 'same_object_official_api_recovery_plus_exact_sha256',
+            normalized_text_anchors: [
+              official.title,
+              official.action,
+              official.citation,
+              official.dates_text
+            ],
+            exact_body_sha256: api.body.sha256,
+            recovery_index_sha256: EXPECTED_RECOVERY_SHA256
+          };
+          reconciled.fields = {
+            record_class_and_issuing_authority: {
+              state: 'observed_exact_same_object_api_classification',
+              value: {
+                record_class: 'federal_register_membership_solicitation_notice',
+                issuing_authority: 'National Oceanic and Atmospheric Administration',
+                parent_authority: 'Department of Commerce',
+                source_scope: prior.source_scope,
+                document_number: recovery.recovery.document_number
+              },
+              note: 'The official API delivered the exact Federal Register notice identified by the frozen document-number locator.',
+              terminal: true
+            },
+            meeting_or_workstream_identity: {
+              state: 'observed_committee_formation_membership_solicitation',
+              value: {
+                committee: 'ACES',
+                workstream: 'committee_formation_and_membership',
+                federal_register_document_number: recovery.recovery.document_number
+              },
+              note: 'Committee formation and membership solicitation are distinct from later committee work products.',
+              terminal: true
+            },
+            publication_and_operative_dates: {
+              state: 'observed_publication_and_nomination_deadline',
+              value: {
+                publication_date: official.publication_date,
+                nomination_deadline: official.nomination_deadline,
+                citation: official.citation
+              },
+              note: 'The publication date and nomination deadline do not establish a recommendation or disposition date.',
+              terminal: true
+            },
+            member_or_subcommittee_authorship: {
+              state: 'agency_notice_no_committee_work_product_authorship',
+              value: null,
+              note: 'A membership-solicitation notice has no committee recommendation authorship.',
+              terminal: true
+            },
+            recommendation_state: {
+              state: 'observed_semantic_classification',
+              value: {
+                status: 'committee_formation_and_membership_solicitation_not_completed_recommendation',
+                completed_recommendation_observed: false
+              },
+              note: 'The notice solicits members and describes a future advisory mandate; it is not a completed committee recommendation.',
+              terminal: true
+            },
+            agency_response_state: {
+              state: 'not_applicable_without_completed_recommendation_object',
+              value: null,
+              note: 'No agency response is inferred without an exact completed recommendation object and exact response object.',
+              terminal: true
+            },
+            adoption_or_rejection_state: {
+              state: 'not_applicable_without_completed_recommendation_object',
+              value: null,
+              note: 'Neither adoption nor rejection is inferred from committee formation or membership solicitation.',
+              terminal: true
+            },
+            implementation_and_outcome_state: {
+              state: 'not_applicable_without_completed_recommendation_object',
+              value: null,
+              note: 'Implementation and outcome claims require a completed recommendation, disposition, and exact downstream evidence.',
+              terminal: true
+            },
+            exact_source_locator_and_byte_custody: {
+              state: 'observed_exact_same_object_multi_representation_custody',
+              value: {
+                frozen_url: original.frozen_url,
+                original_final_url: original.final_url,
+                original_record_class: original.record_class,
+                original_body_sha256: original.body_sha256,
+                official_api_request_url: api.request_url,
+                official_api_final_url: api.final_url,
+                document_number: recovery.recovery.document_number,
+                recovery_index_path: RECOVERY_PATH,
+                body_path: api.body.path,
+                body_bytes: api.body.bytes,
+                body_sha256: api.body.sha256,
+                headers_path: api.headers.path,
+                headers_bytes: api.headers.bytes,
+                headers_sha256: api.headers.sha256,
+                receipt_path: api.receipt.path,
+                receipt_sha256: api.receipt.sha256,
+                content_type: api.body.content_type,
+                attempts: recovery.counts.attempts_executed,
+                terminal_transport_state: 'official_api_same_object_delivered'
+              },
+              note: 'The prior interstitial and recovered official API representation remain separate custody records for the same notice.',
+              terminal: true
+            },
+            duplicate_supersession_or_archive_relationship: {
+              state: 'same_object_alternative_official_representation',
+              value: {
+                primary_object_id: 'RD05-OBJ-051',
+                relationship_type: recovery.recovery.same_object_binding.relationship,
+                retained_representation_count: recovery.counts.retained_representations
+              },
+              note: 'The API response is an alternative official representation, not a new denominator member.',
+              terminal: true
+            },
+            terminal_record_state: {
+              state: 'observed_current_object_terminal_state',
+              value: {
+                status: 'classified_membership_solicitation_notice_source_access_gap_closed',
+                semantic_classification_complete: true,
+                source_access_gap_closed: true
+              },
+              note: 'This closes only RD05-OBJ-051 source access; it does not close the complete official universe or RD-05 class.',
+              terminal: true
+            }
+          };
+          reconciled.successor_actions = [];
+          objects[index] = reconciled;
+
+          product.reconciliations = [{
+            reconciliation_id: 'RD05-REC-001',
+            object_id: 'RD05-OBJ-051',
+            source_recovery_path: RECOVERY_PATH,
+            prior_record_class: prior.record_class,
+            reconciled_record_class: reconciled.record_class,
+            prior_recommendation_status: prior.fields.recommendation_state.value.status,
+            reconciled_recommendation_status: reconciled.fields.recommendation_state.value.status,
+            discharged_successor_action: 'retrieve_same_object_via_federal_register_api',
+            source_access_gap_closed: true,
+            denominator_changed: false,
+            completed_recommendation_added: false,
+            agency_response_added: false,
+            adoption_or_rejection_added: false,
+            implementation_or_outcome_added: false,
+            publication_effect: 'none',
+            adoption_effect: 'none',
+            graph_effect: 'none'
+          }];
+          product.current_result = 'All 58 frozen objects remain represented. RD05-OBJ-051 is reconciled from an access interstitial to the exact same membership-solicitation notice; four recommendation/disposition chains remain open and all substantive recommendation, response, disposition, implementation, and outcome counts remain zero.';
+
+          const productBytes = Buffer.from(`${JSON.stringify(product, null, 2)}\n`);
+          fs.writeFileSync(PRODUCT_PATH, productBytes);
+          const receipt = {
+            schema_version: 'ssc-rd05-same-object-semantic-reconciliation-receipt@1',
+            wave_id: 'SSC-RD-W02',
+            class_id: 'RD-05-C03',
+            issue: 790,
+            as_of: '2026-08-03',
+            status: 'one_same_object_recovery_reconciled_four_open_chains',
+            inputs: {
+              semantic_classification: { path: SOURCE_PATH, sha256: EXPECTED_SOURCE_SHA256 },
+              same_object_recovery: { path: RECOVERY_PATH, sha256: EXPECTED_RECOVERY_SHA256 }
+            },
+            output: {
+              path: PRODUCT_PATH,
+              bytes: productBytes.length,
+              sha256: sha256(productBytes),
+              schema_version: product.schema_version
+            },
+            counts: {
+              frozen_object_denominator: 58,
+              semantic_classifications_complete: 58,
+              same_object_recoveries_applied: 1,
+              open_chains_before: 5,
+              open_chains_after: 4,
+              successor_actions_before: 8,
+              successor_actions_after: 7,
+              completed_recommendation_objects: 0,
+              agency_response_objects: 0,
+              adopted_or_rejected_objects: 0,
+              implementation_or_outcome_objects: 0,
+              linked_urls_fetched: 0,
+              links_admitted: 0,
+              adversarial_mutations: 60
+            },
+            reconciliation: clone(product.reconciliations[0]),
+            authority: {
+              external_contacts: 0,
+              external_reviews: 0,
+              outside_human_dependency: false,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            }
+          };
+          fs.writeFileSync(RECEIPT_PATH, `${JSON.stringify(receipt, null, 2)}\n`);
+          console.log('build-rd05-object-semantic-reconciliation: 58/58 reconciled; 4 open chains; 0 completed recommendations');
+          JS
+
+          cat > "$VALIDATOR_PATH" <<'JS'
+          import fs from 'node:fs';
+          import crypto from 'node:crypto';
+          import { fileURLToPath } from 'node:url';
+
+          const ROOT = 'data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition';
+          export const PATHS = {
+            source: `${ROOT}/object-semantic-classification.json`,
+            recovery: `${ROOT}/same-object-api-recovery-index.json`,
+            product: `${ROOT}/object-semantic-reconciled-view.json`,
+            receipt: `${ROOT}/same-object-semantic-reconciliation-v1.json`
+          };
+          const EXPECTED_SOURCE_SHA256 = 'bd20e741f516841704d481bb4d907200223e745c522d112811c3a43837cba922';
+          const EXPECTED_RECOVERY_SHA256 = 'e9fce0df4afb753f001ad51652a3d48cff678d7a2ca57a382ab1126b2f386ede';
+          const sha256 = (body) => crypto.createHash('sha256').update(body).digest('hex');
+          const assert = (condition, message) => {
+            if (!condition) throw new Error(message);
+          };
+          const stableBytes = (value) => Buffer.from(`${JSON.stringify(value, null, 2)}\n`);
+          const sum = (value) => Object.values(value).reduce((total, count) => total + count, 0);
+
+          export function verifyReconciliation({ source, recovery, product, receipt }) {
+            assert(source.schema_version === 'ssc-rd05-wave02-object-semantic-classification@1', 'source schema');
+            assert(recovery.schema_version === 'ssc-rd05-same-object-api-recovery-index@1', 'recovery schema');
+            assert(product.schema_version === 'ssc-rd05-wave02-object-semantic-reconciled-view@1', 'product schema');
+            assert(receipt.schema_version === 'ssc-rd05-same-object-semantic-reconciliation-receipt@1', 'receipt schema');
+            assert(sha256(stableBytes(source)) === EXPECTED_SOURCE_SHA256, 'source hash');
+            assert(sha256(stableBytes(recovery)) === EXPECTED_RECOVERY_SHA256, 'recovery hash');
+            assert(receipt.inputs.semantic_classification.path === PATHS.source, 'source path');
+            assert(receipt.inputs.semantic_classification.sha256 === EXPECTED_SOURCE_SHA256, 'receipt source hash');
+            assert(receipt.inputs.same_object_recovery.path === PATHS.recovery, 'recovery path');
+            assert(receipt.inputs.same_object_recovery.sha256 === EXPECTED_RECOVERY_SHA256, 'receipt recovery hash');
+            assert(receipt.output.path === PATHS.product, 'product path');
+            assert(receipt.output.sha256 === sha256(stableBytes(product)), 'product hash');
+            assert(receipt.output.bytes === stableBytes(product).length, 'product bytes');
+
+            assert(source.counts.object_denominator === 58, 'source denominator');
+            assert(source.counts.open_recommendation_disposition_chains === 5, 'source open chains');
+            assert(source.counts.successor_action_rows === 8, 'source successor actions');
+            assert(product.counts.object_denominator === 58, 'product denominator');
+            assert(product.counts.semantic_classifications_complete === 58, 'classification completeness');
+            assert(product.counts.open_recommendation_disposition_chains === 4, 'product open chains');
+            assert(product.counts.successor_action_rows === 7, 'product successor actions');
+            assert(product.counts.recommendation_activity_only_rows === 4, 'product recommendation activity');
+            assert(product.counts.source_access_interstitial_rows === 0, 'product source interstitials');
+            assert(product.counts.completed_recommendation_objects === 0, 'completed recommendations');
+            assert(product.counts.agency_response_objects === 0, 'agency responses');
+            assert(product.counts.adopted_or_rejected_objects === 0, 'adoptions or rejections');
+            assert(product.counts.implementation_or_outcome_objects === 0, 'implementation or outcomes');
+            assert(product.counts.new_official_links_not_admitted === source.counts.new_official_links_not_admitted, 'new-link denominator');
+            assert(product.counts.new_relevance_candidates_not_admitted === source.counts.new_relevance_candidates_not_admitted, 'relevance denominator');
+            assert(sum(product.counts.record_class_counts) === 58, 'record-class sum');
+            assert(sum(product.counts.recommendation_status_counts) === 58, 'recommendation-status sum');
+            assert(product.counts.record_class_counts.federal_register_access_interstitial === undefined, 'interstitial class removed from current view');
+            assert(product.counts.record_class_counts.federal_register_membership_solicitation_notice === 1, 'membership notice class');
+            assert(product.counts.recommendation_status_counts.semantic_content_unavailable_access_interstitial === undefined, 'interstitial status removed');
+            assert(product.counts.recommendation_status_counts.committee_formation_and_membership_solicitation_not_completed_recommendation === 1, 'membership status');
+
+            assert(Array.isArray(source.objects) && source.objects.length === 58, 'source objects');
+            assert(Array.isArray(product.objects) && product.objects.length === 58, 'product objects');
+            assert(new Set(product.objects.map((object) => object.object_id)).size === 58, 'unique object IDs');
+            const sourceById = new Map(source.objects.map((object) => [object.object_id, object]));
+            const productById = new Map(product.objects.map((object) => [object.object_id, object]));
+            for (const [id, original] of sourceById) {
+              if (id === 'RD05-OBJ-051') continue;
+              assert(JSON.stringify(productById.get(id)) === JSON.stringify(original), `non-target object drift: ${id}`);
+            }
+            const object = productById.get('RD05-OBJ-051');
+            assert(object, 'target object missing');
+            assert(object.record_class === 'federal_register_membership_solicitation_notice', 'target class');
+            assert(object.observed_title === recovery.recovery.official_record.title, 'target title');
+            assert(object.evidence.method === 'same_object_official_api_recovery_plus_exact_sha256', 'evidence method');
+            assert(object.evidence.exact_body_sha256 === recovery.recovery.official_api_representation.body.sha256, 'body hash binding');
+            assert(object.fields.record_class_and_issuing_authority.value.document_number === '2024-08630', 'document binding');
+            assert(object.fields.meeting_or_workstream_identity.value.workstream === 'committee_formation_and_membership', 'workstream');
+            assert(object.fields.publication_and_operative_dates.value.publication_date === '2024-04-29', 'publication date');
+            assert(object.fields.publication_and_operative_dates.value.nomination_deadline === '2024-05-29', 'nomination deadline');
+            assert(object.fields.recommendation_state.value.status === 'committee_formation_and_membership_solicitation_not_completed_recommendation', 'recommendation status');
+            assert(object.fields.recommendation_state.value.completed_recommendation_observed === false, 'recommendation false');
+            assert(object.fields.agency_response_state.state === 'not_applicable_without_completed_recommendation_object', 'agency state');
+            assert(object.fields.adoption_or_rejection_state.state === 'not_applicable_without_completed_recommendation_object', 'adoption state');
+            assert(object.fields.implementation_and_outcome_state.state === 'not_applicable_without_completed_recommendation_object', 'implementation state');
+            assert(object.fields.exact_source_locator_and_byte_custody.state === 'observed_exact_same_object_multi_representation_custody', 'custody state');
+            assert(object.fields.exact_source_locator_and_byte_custody.value.official_api_request_url === 'https://www.federalregister.gov/api/v1/documents/2024-08630.json', 'API URL');
+            assert(object.fields.exact_source_locator_and_byte_custody.value.body_sha256 === '40d9942728b30ba2d1c372f752884823c20ab575d91d8b866cad619dac1d9b9a', 'API body hash');
+            assert(object.fields.duplicate_supersession_or_archive_relationship.value.relationship_type === 'same_federal_register_notice_alternative_official_representation', 'representation relationship');
+            assert(object.fields.terminal_record_state.value.status === 'classified_membership_solicitation_notice_source_access_gap_closed', 'terminal status');
+            assert(object.fields.terminal_record_state.value.source_access_gap_closed === true, 'source access closed');
+            assert(Array.isArray(object.successor_actions) && object.successor_actions.length === 0, 'target successor actions discharged');
+
+            assert(Array.isArray(product.reconciliations) && product.reconciliations.length === 1, 'reconciliation denominator');
+            const reconciliation = product.reconciliations[0];
+            assert(reconciliation.object_id === 'RD05-OBJ-051', 'reconciliation object');
+            assert(reconciliation.discharged_successor_action === 'retrieve_same_object_via_federal_register_api', 'discharged action');
+            assert(reconciliation.source_access_gap_closed === true, 'reconciliation closure');
+            assert(reconciliation.denominator_changed === false, 'denominator unchanged');
+            assert(reconciliation.completed_recommendation_added === false, 'no recommendation added');
+            assert(reconciliation.agency_response_added === false, 'no response added');
+            assert(reconciliation.adoption_or_rejection_added === false, 'no disposition added');
+            assert(reconciliation.implementation_or_outcome_added === false, 'no outcome added');
+            assert(reconciliation.publication_effect === 'none' && reconciliation.adoption_effect === 'none' && reconciliation.graph_effect === 'none', 'reconciliation effects');
+
+            assert(product.reconciliation_contract.original_semantic_product_preserved === true, 'source preservation');
+            assert(product.reconciliation_contract.frozen_object_denominator_changed === false, 'contract denominator');
+            assert(product.reconciliation_contract.outside_human_dependency === false, 'contract human dependency');
+            assert(product.reconciliation_contract.external_contacts === 0, 'contract contacts');
+            assert(product.reconciliation_contract.external_reviews === 0, 'contract reviews');
+            assert(product.reconciliation_contract.publication_effect === 'none', 'contract publication');
+            assert(product.reconciliation_contract.adoption_effect === 'none', 'contract adoption');
+            assert(product.reconciliation_contract.graph_effect === 'none', 'contract graph');
+
+            assert(receipt.counts.frozen_object_denominator === 58, 'receipt denominator');
+            assert(receipt.counts.same_object_recoveries_applied === 1, 'receipt recoveries');
+            assert(receipt.counts.open_chains_before === 5 && receipt.counts.open_chains_after === 4, 'receipt chains');
+            assert(receipt.counts.successor_actions_before === 8 && receipt.counts.successor_actions_after === 7, 'receipt actions');
+            assert(receipt.counts.completed_recommendation_objects === 0, 'receipt recommendations');
+            assert(receipt.counts.agency_response_objects === 0, 'receipt responses');
+            assert(receipt.counts.adopted_or_rejected_objects === 0, 'receipt dispositions');
+            assert(receipt.counts.implementation_or_outcome_objects === 0, 'receipt outcomes');
+            assert(receipt.counts.linked_urls_fetched === 0 && receipt.counts.links_admitted === 0, 'receipt links');
+            assert(receipt.counts.adversarial_mutations === 60, 'receipt mutation denominator');
+            assert(receipt.authority.external_contacts === 0, 'receipt contacts');
+            assert(receipt.authority.external_reviews === 0, 'receipt reviews');
+            assert(receipt.authority.outside_human_dependency === false, 'receipt human dependency');
+            assert(receipt.authority.publication_effect === 'none', 'receipt publication');
+            assert(receipt.authority.adoption_effect === 'none', 'receipt adoption');
+            assert(receipt.authority.graph_effect === 'none', 'receipt graph');
+            return true;
+          }
+
+          export function loadReconciliation() {
+            return {
+              source: JSON.parse(fs.readFileSync(PATHS.source, 'utf8')),
+              recovery: JSON.parse(fs.readFileSync(PATHS.recovery, 'utf8')),
+              product: JSON.parse(fs.readFileSync(PATHS.product, 'utf8')),
+              receipt: JSON.parse(fs.readFileSync(PATHS.receipt, 'utf8'))
+            };
+          }
+
+          if (process.argv[1] && fileURLToPath(import.meta.url) === fs.realpathSync(process.argv[1])) {
+            verifyReconciliation(loadReconciliation());
+            console.log('validate-rd05-object-semantic-reconciliation: PASS — 58 objects, 4 open chains, zero substantive authority');
+          }
+          JS
+
+          cat > "$TEST_PATH" <<'JS'
+          import assert from 'node:assert/strict';
+          import { loadReconciliation, verifyReconciliation } from '../tools/acquisition/status-sovereignty-rd-wave02-rd05/validate-object-semantic-reconciliation.mjs';
+
+          const baseline = loadReconciliation();
+          verifyReconciliation(baseline);
+          const clone = () => structuredClone(baseline);
+          const cases = [];
+          const add = (label, mutate) => cases.push({ label, mutate });
+          const target = (state) => state.product.objects.find((object) => object.object_id === 'RD05-OBJ-051');
+
+          add('product schema', (s) => { s.product.schema_version = 'wrong'; });
+          add('product status', (s) => { s.product.status = 'closed'; });
+          add('source path', (s) => { s.receipt.inputs.semantic_classification.path = 'wrong'; });
+          add('source hash', (s) => { s.receipt.inputs.semantic_classification.sha256 = '0'.repeat(64); });
+          add('recovery path', (s) => { s.receipt.inputs.same_object_recovery.path = 'wrong'; });
+          add('recovery hash', (s) => { s.receipt.inputs.same_object_recovery.sha256 = '0'.repeat(64); });
+          add('product path', (s) => { s.receipt.output.path = 'wrong'; });
+          add('product hash', (s) => { s.receipt.output.sha256 = '0'.repeat(64); });
+          add('product bytes', (s) => { s.receipt.output.bytes += 1; });
+          add('source denominator', (s) => { s.source.counts.object_denominator = 57; });
+          add('source open chains', (s) => { s.source.counts.open_recommendation_disposition_chains = 4; });
+          add('source successor actions', (s) => { s.source.counts.successor_action_rows = 7; });
+          add('product denominator', (s) => { s.product.counts.object_denominator = 57; });
+          add('product completeness', (s) => { s.product.counts.semantic_classifications_complete = 57; });
+          add('open chains', (s) => { s.product.counts.open_recommendation_disposition_chains = 5; });
+          add('successor actions', (s) => { s.product.counts.successor_action_rows = 8; });
+          add('recommendation activity', (s) => { s.product.counts.recommendation_activity_only_rows = 5; });
+          add('interstitial count', (s) => { s.product.counts.source_access_interstitial_rows = 1; });
+          add('completed recommendation', (s) => { s.product.counts.completed_recommendation_objects = 1; });
+          add('agency response', (s) => { s.product.counts.agency_response_objects = 1; });
+          add('adoption', (s) => { s.product.counts.adopted_or_rejected_objects = 1; });
+          add('implementation', (s) => { s.product.counts.implementation_or_outcome_objects = 1; });
+          add('new links', (s) => { s.product.counts.new_official_links_not_admitted += 1; });
+          add('new relevance', (s) => { s.product.counts.new_relevance_candidates_not_admitted += 1; });
+          add('remove object', (s) => { s.product.objects.pop(); });
+          add('duplicate object', (s) => { s.product.objects[1].object_id = s.product.objects[0].object_id; });
+          add('non-target drift', (s) => { s.product.objects[0].record_class = 'wrong'; });
+          add('target class', (s) => { target(s).record_class = 'wrong'; });
+          add('target title', (s) => { target(s).observed_title = 'wrong'; });
+          add('evidence method', (s) => { target(s).evidence.method = 'wrong'; });
+          add('evidence hash', (s) => { target(s).evidence.exact_body_sha256 = '0'.repeat(64); });
+          add('document number', (s) => { target(s).fields.record_class_and_issuing_authority.value.document_number = 'wrong'; });
+          add('workstream', (s) => { target(s).fields.meeting_or_workstream_identity.value.workstream = 'wrong'; });
+          add('publication date', (s) => { target(s).fields.publication_and_operative_dates.value.publication_date = '2025-01-01'; });
+          add('nomination deadline', (s) => { target(s).fields.publication_and_operative_dates.value.nomination_deadline = '2025-01-01'; });
+          add('recommendation status', (s) => { target(s).fields.recommendation_state.value.status = 'completed'; });
+          add('recommendation boolean', (s) => { target(s).fields.recommendation_state.value.completed_recommendation_observed = true; });
+          add('agency state', (s) => { target(s).fields.agency_response_state.state = 'observed'; });
+          add('adoption state', (s) => { target(s).fields.adoption_or_rejection_state.state = 'observed'; });
+          add('implementation state', (s) => { target(s).fields.implementation_and_outcome_state.state = 'observed'; });
+          add('custody state', (s) => { target(s).fields.exact_source_locator_and_byte_custody.state = 'wrong'; });
+          add('API URL', (s) => { target(s).fields.exact_source_locator_and_byte_custody.value.official_api_request_url = 'https://example.com'; });
+          add('API body hash', (s) => { target(s).fields.exact_source_locator_and_byte_custody.value.body_sha256 = '0'.repeat(64); });
+          add('relationship', (s) => { target(s).fields.duplicate_supersession_or_archive_relationship.value.relationship_type = 'duplicate'; });
+          add('terminal status', (s) => { target(s).fields.terminal_record_state.value.status = 'open'; });
+          add('source access', (s) => { target(s).fields.terminal_record_state.value.source_access_gap_closed = false; });
+          add('successor action restored', (s) => { target(s).successor_actions.push({ action_type: 'retrieve_same_object_via_federal_register_api' }); });
+          add('reconciliation removed', (s) => { s.product.reconciliations = []; });
+          add('reconciliation object', (s) => { s.product.reconciliations[0].object_id = 'wrong'; });
+          add('discharged action', (s) => { s.product.reconciliations[0].discharged_successor_action = 'wrong'; });
+          add('denominator changed', (s) => { s.product.reconciliations[0].denominator_changed = true; });
+          add('recommendation added', (s) => { s.product.reconciliations[0].completed_recommendation_added = true; });
+          add('response added', (s) => { s.product.reconciliations[0].agency_response_added = true; });
+          add('disposition added', (s) => { s.product.reconciliations[0].adoption_or_rejection_added = true; });
+          add('outcome added', (s) => { s.product.reconciliations[0].implementation_or_outcome_added = true; });
+          add('contract human dependency', (s) => { s.product.reconciliation_contract.outside_human_dependency = true; });
+          add('contract contacts', (s) => { s.product.reconciliation_contract.external_contacts = 1; });
+          add('receipt mutation denominator', (s) => { s.receipt.counts.adversarial_mutations = 59; });
+          add('receipt external review', (s) => { s.receipt.authority.external_reviews = 1; });
+          add('receipt graph effect', (s) => { s.receipt.authority.graph_effect = 'advanced'; });
+
+          assert.equal(cases.length, 60, 'mutation denominator');
+          for (const { label, mutate } of cases) {
+            const state = clone();
+            mutate(state);
+            assert.throws(() => verifyReconciliation(state), undefined, label);
+          }
+          console.log(`rd05-object-semantic-reconciliation.test: ${cases.length} adversarial mutations PASS`);
+          JS
+
+          node "$BUILDER_PATH"
+          node "$VALIDATOR_PATH"
+          node "$TEST_PATH"
+
+          cat > /tmp/expected-rd05-reconciliation-paths.txt <<EOF
+          $PRODUCT_PATH
+          $RECEIPT_PATH
+          $BUILDER_PATH
+          $VALIDATOR_PATH
+          $TEST_PATH
+          EOF
+          sort -o /tmp/expected-rd05-reconciliation-paths.txt /tmp/expected-rd05-reconciliation-paths.txt
+          git status --porcelain=v1 --untracked-files=all | cut -c4- | sort > /tmp/actual-rd05-reconciliation-paths.txt
+          diff -u /tmp/expected-rd05-reconciliation-paths.txt /tmp/actual-rd05-reconciliation-paths.txt
+          test "$(wc -l < /tmp/actual-rd05-reconciliation-paths.txt | tr -d ' ')" = '5'
+
+          git add -- "$PRODUCT_PATH" "$RECEIPT_PATH" "$BUILDER_PATH" "$VALIDATOR_PATH" "$TEST_PATH"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m 'Reconcile RD-05 Federal Register same-object semantics'
+          PRODUCT_COMMIT="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_START_SHA"
+          git diff-tree --no-commit-id --name-only -r HEAD | sort > /tmp/product-paths.txt
+          diff -u /tmp/expected-rd05-reconciliation-paths.txt /tmp/product-paths.txt
+
+          PRODUCT_SHA256="$(sha256sum "$PRODUCT_PATH" | awk '{print $1}')"
+          RECEIPT_SHA256="$(sha256sum "$RECEIPT_PATH" | awk '{print $1}')"
+          npm run release:check
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+
+          const jsonPaths = [
+            'build/axm-identity.json',
+            'build/build-hop-report.json',
+            'build/hop-graph.json',
+            'build/migration-summary.json',
+            'build/receipt-graph.json',
+            'build/scores.json',
+            'build/scout-report.json',
+            'build/surface-graph.json'
+          ];
+          const markdownPaths = [
+            'build/migration-review.md',
+            'build/scout-report.md'
+          ];
+          const expected = [...jsonPaths, ...markdownPaths].sort();
+          const raw = execFileSync('git', ['diff', '--name-only', '-z'], { encoding: 'buffer' });
+          const paths = raw.toString('utf8').split('\0').filter(Boolean).sort();
+          if (JSON.stringify(paths) !== JSON.stringify(expected)) {
+            throw new Error(`unexpected post-release paths: ${JSON.stringify(paths)}`);
+          }
+          const numstat = execFileSync('git', ['diff', '--numstat', '--', ...expected], { encoding: 'utf8' })
+            .split('\n').filter(Boolean);
+          if (numstat.length !== expected.length) throw new Error('post-release numstat denominator');
+          for (const row of numstat) {
+            const [adds, deletes, path] = row.split('\t');
+            if (adds !== '1' || deletes !== '1' || !expected.includes(path)) {
+              throw new Error(`non-timestamp post-release diff: ${row}`);
+            }
+          }
+          for (const path of jsonPaths) {
+            const before = JSON.parse(execFileSync('git', ['show', `HEAD:${path}`], { encoding: 'utf8' }));
+            const after = JSON.parse(fs.readFileSync(path, 'utf8'));
+            if (typeof before.generated !== 'string' || typeof after.generated !== 'string') throw new Error(`missing generated timestamp: ${path}`);
+            if (!Number.isFinite(Date.parse(before.generated)) || !Number.isFinite(Date.parse(after.generated))) throw new Error(`invalid generated timestamp: ${path}`);
+            delete before.generated;
+            delete after.generated;
+            if (JSON.stringify(before) !== JSON.stringify(after)) throw new Error(`semantic JSON drift: ${path}`);
+          }
+          for (const path of markdownPaths) {
+            const before = execFileSync('git', ['show', `HEAD:${path}`], { encoding: 'utf8' }).split('\n');
+            const after = fs.readFileSync(path, 'utf8').split('\n');
+            const normalize = (lines) => lines.map((line) => line.startsWith('Generated: ') ? 'Generated: <ISO>' : line);
+            if (JSON.stringify(normalize(before)) !== JSON.stringify(normalize(after))) throw new Error(`semantic Markdown drift: ${path}`);
+            const beforeGenerated = before.find((line) => line.startsWith('Generated: '));
+            const afterGenerated = after.find((line) => line.startsWith('Generated: '));
+            if (!beforeGenerated || !afterGenerated || !Number.isFinite(Date.parse(beforeGenerated.slice(11))) || !Number.isFinite(Date.parse(afterGenerated.slice(11)))) throw new Error(`invalid Markdown generated timestamp: ${path}`);
+          }
+          console.log('post-release volatility proof: PASS — 10/10 paths timestamp-only, semantic drift zero');
+          NODE
+
+          git restore --worktree -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          rm -f "$PRODUCT_PATH" "$RECEIPT_PATH"
+          node "$BUILDER_PATH"
+          node "$VALIDATOR_PATH"
+          node "$TEST_PATH"
+          test "$(sha256sum "$PRODUCT_PATH" | awk '{print $1}')" = "$PRODUCT_SHA256"
+          test "$(sha256sum "$RECEIPT_PATH" | awk '{print $1}')" = "$RECEIPT_SHA256"
+          git diff --exit-code -- "$PRODUCT_PATH" "$RECEIPT_PATH" "$BUILDER_PATH" "$VALIDATOR_PATH" "$TEST_PATH"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git fetch origin "$TARGET_BRANCH"
+          test "$(git rev-parse origin/$TARGET_BRANCH)" = "$EXPECTED_START_SHA"
+          git push origin "HEAD:$TARGET_BRANCH"
+          git fetch origin "$TARGET_BRANCH"
+          test "$(git rev-parse origin/$TARGET_BRANCH)" = "$PRODUCT_COMMIT"
+
+          cat > ssc-rd05-semantic-reconciliation-materializer-receipt.json <<EOF
+          {
+            "schema_version": "ssc-rd05-semantic-reconciliation-materializer-receipt@1",
+            "target_branch": "$TARGET_BRANCH",
+            "expected_start_sha": "$EXPECTED_START_SHA",
+            "product_commit": "$PRODUCT_COMMIT",
+            "permanent_path_count": 5,
+            "product_sha256": "$PRODUCT_SHA256",
+            "reconciliation_receipt_sha256": "$RECEIPT_SHA256",
+            "frozen_object_denominator": 58,
+            "same_object_recoveries_applied": 1,
+            "open_chains_before": 5,
+            "open_chains_after": 4,
+            "successor_actions_before": 8,
+            "successor_actions_after": 7,
+            "completed_recommendation_objects": 0,
+            "agency_response_objects": 0,
+            "adopted_or_rejected_objects": 0,
+            "implementation_or_outcome_objects": 0,
+            "adversarial_mutations": 60,
+            "release_gate": "pass",
+            "post_release_volatile_paths": 10,
+            "post_release_semantic_drift": 0,
+            "deterministic_replay": "pass",
+            "unchanged_head_lease": "pass",
+            "external_contacts": 0,
+            "external_reviews": 0,
+            "outside_human_dependency": false,
+            "publication_effect": "none",
+            "adoption_effect": "none",
+            "graph_effect": "none"
+          }
+          EOF
+      - name: Upload exact semantic reconciliation receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-semantic-reconciliation-materializer-v1
+          path: ssc-rd05-semantic-reconciliation-materializer-receipt.json
+          if-no-files-found: error
+          retention-days: 90
