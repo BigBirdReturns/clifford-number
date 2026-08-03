@@ -1,0 +1,98 @@
+name: TEMP adjudicate SSC RD-04-C01 chronology contexts
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd-wave02-rd04-context-adjudication.yml'
+      - '.rd04-context-adjudication/**'
+      - 'data/intake/status-sovereignty-rd-wave02-rd04-version-history/context-adjudication-trigger.json'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ssc-rd-wave02-rd04-context-adjudication-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  adjudicate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Download immutable chronology context denominator
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-chronology-contexts
+          path: /tmp/rd04-chronology-contexts
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30772839663
+      - name: Download immutable corrected ninety-eight-unit source custody
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-supplemental-acls
+          path: /tmp/rd04-supplemental-acls
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30771516122
+      - name: Reconstruct and verify exact adjudication runtime
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/rd04-context-adjudication-runtime
+          echo '61961f36cf76b2238325c821e5349a15eed4e662d1ed70c3cf2b122b6f919681  .rd04-context-adjudication/adjudicate.part.00.b64' | sha256sum --check --strict
+          echo '43faba0582cde2200a6697a3d59c4d7e0bd922cf71b76ccf52360c5d3e9c50fb  .rd04-context-adjudication/adjudicate.part.01.b64' | sha256sum --check --strict
+          echo '5b0eb35c80fc163f8d4ac3796d74acbcda12d0e506f034c356651d55f99c3185  .rd04-context-adjudication/adjudicate.part.02.b64' | sha256sum --check --strict
+          echo 'abb52ebc7117d5f84d6919014d0bb86304492fc655c6615fe44a19c3deabf4ba  .rd04-context-adjudication/test.js.gz.b64' | sha256sum --check --strict
+          cat .rd04-context-adjudication/adjudicate.part.*.b64 | base64 --decode | gzip --decompress > /tmp/rd04-context-adjudication-runtime/adjudicate-chronology-contexts.mjs
+          base64 --decode .rd04-context-adjudication/test.js.gz.b64 | gzip --decompress > /tmp/rd04-context-adjudication-runtime/chronology-context-adjudication.test.js
+          echo 'e764e7c02eb7d2eea046845b5fd8bd91d482abab00fd4b2997b4b072ddb95a10  /tmp/rd04-context-adjudication-runtime/adjudicate-chronology-contexts.mjs' | sha256sum --check --strict
+          echo '597e4ea48ddd052e42385ba39099691a01a9846cd52ad0d05a839b58ac324e82  /tmp/rd04-context-adjudication-runtime/chronology-context-adjudication.test.js' | sha256sum --check --strict
+          node --check /tmp/rd04-context-adjudication-runtime/adjudicate-chronology-contexts.mjs
+          cp /tmp/rd04-context-adjudication-runtime/adjudicate-chronology-contexts.mjs /tmp/rd04-context-adjudication-runtime/adjudicate-chronology-contexts-copy.mjs
+          sed -i "s|'./adjudicate-chronology-contexts.mjs'|'./adjudicate-chronology-contexts-copy.mjs'|" /tmp/rd04-context-adjudication-runtime/chronology-context-adjudication.test.js
+      - name: Run controls and adjudicate all candidates
+        env:
+          RD04_CHRONOLOGY_CONTEXTS: /tmp/rd04-chronology-contexts
+          RD04_SUPPLEMENTAL_ACLS: /tmp/rd04-supplemental-acls
+          RD04_CHRONOLOGY_ADJUDICATION_OUTPUT: /tmp/rd04-chronology-adjudication
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node /tmp/rd04-context-adjudication-runtime/chronology-context-adjudication.test.js
+          node /tmp/rd04-context-adjudication-runtime/adjudicate-chronology-contexts.mjs
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const root = '/tmp/rd04-chronology-adjudication';
+          const summary = JSON.parse(fs.readFileSync(`${root}/summary.json`, 'utf8'));
+          const acquisitions = JSON.parse(fs.readFileSync(`${root}/source-acquisition-plan.json`, 'utf8')).acquisition_units;
+          const events = JSON.parse(fs.readFileSync(`${root}/event-candidate-ledger.json`, 'utf8'));
+          const manifest = JSON.parse(fs.readFileSync(`${root}/manifest.json`, 'utf8'));
+          const c = summary.counts;
+          if (c.relationship_contexts !== 271 || c.relationship_contexts_adjudicated !== 271) throw new Error('relationship adjudication incomplete');
+          if (c.interval_contexts !== 318 || c.interval_contexts_adjudicated !== 318) throw new Error('interval adjudication incomplete');
+          if (c.second_order_reference_ids !== 94 || c.second_order_reference_ids_triaged !== 94) throw new Error('second-order triage incomplete');
+          if (c.candidate_records_total !== 683) throw new Error('candidate denominator changed');
+          if (c.relationship_event_groups !== 8 || c.interval_event_groups !== 6) throw new Error('event group denominator changed');
+          if (c.second_order_source_acquisitions_required !== 2 || c.unresolved_second_order_triage !== 0) throw new Error('acquisition denominator changed');
+          if (acquisitions.map((row) => row.reference_id).sort().join(',') !== 'CA-ABAWD-HANDBOOK-1.0,CA-ACL-18-08') throw new Error('acquisition identities changed');
+          if (events.relationship_events.length !== 8 || events.interval_events.length !== 6) throw new Error('event ledger incomplete');
+          if (c.version_edges_adjudicated !== 0 || c.operative_intervals_adjudicated !== 0 || c.class_closed !== 0) throw new Error('authority ceiling changed');
+          if (summary.current_result.context_triage_complete !== true || summary.current_result.source_acquisition_complete !== false || summary.current_result.class_closed !== false) throw new Error('result boundary changed');
+          if (manifest.entries.length !== 6) throw new Error('manifest denominator changed');
+          console.log(`context adjudication: ${c.candidate_records_total}/683 terminal; ${c.second_order_source_acquisitions_required} source acquisitions required; authority ceiling PASS`);
+          NODE
+      - name: Upload exact chronology context adjudication
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-chronology-context-adjudication
+          path: /tmp/rd04-chronology-adjudication
+          if-no-files-found: error
+          retention-days: 90
