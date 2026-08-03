@@ -1,0 +1,74 @@
+name: TEMP capture fixed RD-06 public-record census
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd06-public-record-census-v1.yml'
+      - '.rd06-public-record-census/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-ssc-rd06-public-record-census-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd06-public-record-census-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Validate fixed plan, denominator, and exact research lease
+        env:
+          RESEARCH_BRANCH: agent/ssc-rd-wave02-rd06-offeror-universe
+          RESEARCH_HEAD: 54854462decbf3b93ab9dd36a35fd4da00981081
+          FIELD_MATRIX_PATH: data/intake/status-sovereignty-rd-wave02-rd06-offeror-universe/field-matrix.json
+          FIELD_MATRIX_BLOB: 4f0b53fc121633b86ae4dcc85ae1ed0e1c62f390
+        run: |
+          set -Eeuo pipefail
+          observed="$(git ls-remote --heads origin "refs/heads/${RESEARCH_BRANCH}" | cut -f1)"
+          test "$observed" = "$RESEARCH_HEAD"
+          git merge-base --is-ancestor "$RESEARCH_HEAD" HEAD
+          test "$(git rev-parse "${RESEARCH_HEAD}:${FIELD_MATRIX_PATH}")" = "$FIELD_MATRIX_BLOB"
+          python .rd06-public-record-census/preflight.py
+
+      - name: Execute all fixed official routes with bounded retry custody
+        env:
+          CENSUS_ROOT: /tmp/rd06-public-record-census
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$CENSUS_ROOT"
+          mkdir -p "$CENSUS_ROOT"
+          cp .rd06-public-record-census/plan.json "$CENSUS_ROOT/plan.json"
+          python .rd06-public-record-census/capture.py
+
+      - name: Derive candidate and restriction ledgers without substantive adjudication
+        env:
+          CENSUS_ROOT: /tmp/rd06-public-record-census
+        run: |
+          set -Eeuo pipefail
+          python .rd06-public-record-census/derive.py
+
+      - name: Validate exact bounded census and clean repository state
+        env:
+          CENSUS_ROOT: /tmp/rd06-public-record-census
+        run: |
+          set -Eeuo pipefail
+          python .rd06-public-record-census/validate.py
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Preserve fixed RD-06 public-record census
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd06-wave02-public-record-census-v1
+          path: /tmp/rd06-public-record-census
+          if-no-files-found: error
+          retention-days: 90
