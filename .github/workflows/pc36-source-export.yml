@@ -1,0 +1,73 @@
+name: Temporary PC-36 Preference Custody source export
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pc36-source-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ba90a836186888ef2f4a7bc0532b1e5a117e8f50
+          fetch-depth: 1
+      - name: Export exact Preference Custody development surface
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import subprocess
+
+          tracked = subprocess.check_output(['git', 'ls-files'], text=True).splitlines()
+          selected = []
+          for path in tracked:
+              keep = (
+                  path.startswith('data/research/preference-custody/')
+                  or path.startswith('data/research/performative-synthetic-constituencies/')
+                  or path.startswith('tools/lib/preference-')
+                  or path == 'tools/lib/performative-synthetic-constituency.mjs'
+                  or path.startswith('tools/compile-preference-')
+                  or path.startswith('tools/validate-preference-')
+                  or path.startswith('test/preference-')
+                  or path.startswith('docs/preference-custody-')
+                  or path.startswith('.github/workflows/preference-')
+                  or 'no-magic-human' in path
+              )
+              if keep:
+                  selected.append(path)
+          if not selected:
+              raise SystemExit('empty Preference Custody export')
+          manifest = {
+              'schema_version': 'pc36-preference-source-export@1',
+              'head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'tracked_file_count': len(tracked),
+              'selected_file_count': len(selected),
+              'files': {},
+          }
+          for path in selected:
+              raw = Path(path).read_bytes()
+              manifest['files'][path] = {
+                  'bytes': len(raw),
+                  'sha256': hashlib.sha256(raw).hexdigest(),
+              }
+          Path('pc36-source-paths.txt').write_text('\n'.join(selected) + '\n')
+          Path('pc36-source-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+          print(json.dumps({k: manifest[k] for k in ('head', 'tracked_file_count', 'selected_file_count')}, indent=2))
+          PY
+          tar -czf pc36-preference-source.tgz -T pc36-source-paths.txt
+          sha256sum pc36-preference-source.tgz > pc36-preference-source.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc36-preference-source
+          path: |
+            pc36-preference-source.tgz
+            pc36-preference-source.sha256
+            pc36-source-manifest.json
+          if-no-files-found: error
