@@ -1,0 +1,72 @@
+name: TEMP SSC RD-01 legal-entity census v1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd01-legal-entity-census-base-v1
+    paths:
+      - '.github/tmp/ssc-rd01-legal-entity-census-v1.trigger'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd01-legal-entity-census-v1
+  cancel-in-progress: false
+
+jobs:
+  census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout controller
+        uses: actions/checkout@v4
+        with:
+          path: controller
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Checkout exact RD-01 research head
+        uses: actions/checkout@v4
+        with:
+          ref: 72e657baa024e0e90cca5bfc532f8350fe6bca60
+          path: research
+          fetch-depth: 1
+
+      - name: Execute fixed artifact-only census
+        run: |
+          set -Eeuo pipefail
+          test "$(git -C research rev-parse HEAD)" = '72e657baa024e0e90cca5bfc532f8350fe6bca60'
+          test "$(git -C controller hash-object .github/tmp/ssc-rd01-legal-entity-census-v1.mjs)" = '70b931d1ed24085c995e8f12d991cbde5f7aa905'
+          test -z "$(git -C research status --porcelain=v1 --untracked-files=all)"
+          cd research
+          node ../controller/.github/tmp/ssc-rd01-legal-entity-census-v1.mjs
+          test -f rd01-legal-entity-census-v1/summary.json
+          test -f rd01-legal-entity-census-v1/manifest.json
+          jq -e '
+            .rows == 102 and
+            .fixed_routes == 205 and
+            .sec_global_requests == 1 and
+            .usaspending_requests == 102 and
+            .gleif_requests == 102 and
+            .adjudication_performed == false and
+            .research_branch_mutated == false and
+            .external_contacts == 0 and
+            .external_reviews == 0 and
+            .outside_human_dependency == false and
+            .graph_effect == "none"
+          ' rd01-legal-entity-census-v1/summary.json >/dev/null
+          test "$(git rev-parse HEAD)" = '72e657baa024e0e90cca5bfc532f8350fe6bca60'
+          test -z "$(git status --porcelain=v1 --untracked-files=all | grep -v '^?? rd01-legal-entity-census-v1/' || true)"
+
+      - name: Upload checksum-bound census
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd01-legal-entity-census-v1
+          path: research/rd01-legal-entity-census-v1
+          if-no-files-found: error
+          retention-days: 90
