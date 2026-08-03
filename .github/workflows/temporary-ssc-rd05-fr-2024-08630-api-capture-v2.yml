@@ -1,0 +1,66 @@
+name: TEMP capture RD-05 Federal Register 2024-08630 API object v2
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-fr-2024-08630-api-capture-base-v2
+    paths:
+      - '.github/tmp/ssc-rd05-fr-2024-08630-api-capture-v2.trigger'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd05-fr-2024-08630-api-capture-v2
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd05-recommendation-disposition
+      EXPECTED_HEAD: 205537aa7d550741b2e95df0a43484f0879559bc
+      OBJECT_ID: RD05-OBJ-051
+      DOCUMENT_NUMBER: 2024-08630
+      FROZEN_URL: https://www.federalregister.gov/documents/2024/04/29/2024-08630/solicitation-of-membership-nominations-for-the-advisory-committee-on-excellence-in-space-aces/
+      TARGET_URL: https://www.federalregister.gov/api/v1/documents/2024-08630.json
+      PRIOR_FINAL_URL: https://unblock.federalregister.gov/
+      PRIOR_BODY_SHA256: 69fa13193e7b1b31f4a00667a85deadb464dd279c6d9323ca3efe5bcd6cad123
+      CAPTURE_ROOT: /tmp/rd05-fr-2024-08630-api-capture-v2
+      MAX_ATTEMPTS: '2'
+      RUNNER_BLOB: 3726d50dea4d90eccc4ea1caa8278290d86abde4
+      RUNNER_SHA256: ba5059c9ad3b40b784bc8261b59bbb2316955a36ac09c987e34ba122b249695b
+      RUNNER_BYTES: '10655'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct and execute bounded same-object API capture
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/$RUNNER_BLOB" \
+            | jq -r '.content' | tr -d '\n' | base64 --decode > /tmp/rd05-fr-api-capture-runner-v2.sh
+          test "$(git hash-object /tmp/rd05-fr-api-capture-runner-v2.sh)" = "$RUNNER_BLOB"
+          test "$(sha256sum /tmp/rd05-fr-api-capture-runner-v2.sh | awk '{print $1}')" = "$RUNNER_SHA256"
+          test "$(wc -c < /tmp/rd05-fr-api-capture-runner-v2.sh | tr -d ' ')" = "$RUNNER_BYTES"
+          chmod +x /tmp/rd05-fr-api-capture-runner-v2.sh
+          /tmp/rd05-fr-api-capture-runner-v2.sh
+      - name: Upload exact same-object API capture
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-fr-2024-08630-api-capture-v2
+          path: /tmp/rd05-fr-2024-08630-api-capture-v2
+          if-no-files-found: error
+          retention-days: 90
