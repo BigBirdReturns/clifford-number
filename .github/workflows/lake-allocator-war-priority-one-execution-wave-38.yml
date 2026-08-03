@@ -1,0 +1,75 @@
+name: Allocator-war priority-one source-system execution Wave 38
+
+on:
+  pull_request:
+    branches:
+      - agent/lake-allocator-war-wave-21
+    paths:
+      - 'data/project/lake-allocator-war-priority-one-execution-wave-38-*.json'
+      - 'data/acquisition/lake-allocator-war-wave-38/**'
+      - 'build/lake-actions/allocator-war-priority-one-execution-wave-38.json'
+      - 'reports/lake-allocator-war-priority-one-execution-wave-38.md'
+      - 'docs/methods/lake-allocator-war-priority-one-execution-wave-38.md'
+      - 'docs/milestones/lake-allocator-war-priority-one-execution-wave-38.md'
+      - 'tools/*lake-allocator-war-priority-one-execution-wave-38.mjs'
+      - 'test/lake-allocator-war-priority-one-execution-wave-38.test.js'
+      - 'data/project/lake-allocator-war-wave-21-policy.json'
+      - 'data/project/lake-index-policy.json'
+      - 'data/project/lake-basin-registry.json'
+      - 'tools/validate-lake-allocator-war-wave-21.mjs'
+      - 'BUILD-INSTRUCTIONS.md'
+      - 'README.md'
+      - 'package.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lake-allocator-war-priority-one-execution-wave-38-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 160
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Rebuild priority-one execution contracts
+        run: node tools/build-lake-allocator-war-priority-one-execution-wave-38.mjs
+
+      - name: Refuse generated Wave 38 drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- \
+            data/acquisition/lake-allocator-war-wave-38/priority-one-execution-ledger.jsonl \
+            build/lake-actions/allocator-war-priority-one-execution-wave-38.json \
+            reports/lake-allocator-war-priority-one-execution-wave-38.md
+
+      - name: Validate Wave 38 contracts and adversarial mutations
+        run: npm run validate:lake-allocator-war-priority-one-execution-wave-38
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Restore and prove the committed epoch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore --worktree .
+          git clean -fd
+          node tools/validate-lake-index-shards.mjs
+          node tools/validate-lake-basin-index.mjs
+          node tools/validate-lake-allocator-war-wave-21.mjs
+          node tools/validate-lake-allocator-war-public-acquisition-wave-36.mjs
+          node tools/validate-lake-allocator-war-residual-obligations-wave-37.mjs
+          node tools/validate-lake-allocator-war-priority-one-execution-wave-38.mjs
+          git diff --check
+          test -z "$(git status --porcelain)"
