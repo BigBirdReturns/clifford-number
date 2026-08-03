@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-rd-wave02-rd01-roster-scaffold.schema.json",
+  "title": "SSC RD-01 Wave 02 NatSec100 roster scaffold",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "wave_id",
+    "class_id",
+    "issue",
+    "as_of",
+    "title",
+    "status",
+    "parent",
+    "denominator_contract",
+    "required_fields",
+    "permitted_terminal_row_states",
+    "rows",
+    "counts",
+    "current_result",
+    "boundaries"
+  ],
+  "properties": {
+    "schema_version": { "const": "ssc-rd-wave02-rd01-roster-scaffold@1" },
+    "wave_id": { "const": "SSC-RD-W02" },
+    "class_id": { "const": "RD-01-C03" },
+    "issue": { "const": 786 },
+    "as_of": { "const": "2026-08-02" },
+    "title": { "type": "string", "minLength": 1 },
+    "status": { "const": "immutable_102_row_scaffold_pending_fixed_legal_entity_protocol" },
+    "parent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seed_path", "seed_input_manifest_sha256", "frozen_execution_base", "constitution_merge", "source_receipt_path", "source_body_sha256"],
+      "properties": {
+        "seed_path": { "const": "data/project/ssc-residual-wave02/seeds/RD-01-C03.json" },
+        "seed_input_manifest_sha256": { "const": "ad645fd1b8e882c12103dc5bcdfabbdba3a0607ccd3d68c28ad763bfbfdf4468" },
+        "frozen_execution_base": { "const": "c1997a1bfea3e214e2769df31f64f6fad6a4295c" },
+        "constitution_merge": { "const": "69c06a2cc552a09588b2657e247b301468ccae87" },
+        "source_receipt_path": { "const": "data/intake/status-sovereignty-rd-wave02-rd01-legal-entity/source-custody/natsec100-2026/source-receipt.json" },
+        "source_body_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "denominator_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selected_roster_rows", "explicit_assessed_nonselection_or_ineligibility_rows", "total_required_rows", "row_membership_frozen", "source_order_is_rank_order", "silent_row_removal_allowed", "source_count_is_unit_denominator", "complete_rejected_or_ineligible_universe_claimed"],
+      "properties": {
+        "selected_roster_rows": { "const": 100 },
+        "explicit_assessed_nonselection_or_ineligibility_rows": { "const": 2 },
+        "total_required_rows": { "const": 102 },
+        "row_membership_frozen": { "const": true },
+        "source_order_is_rank_order": { "const": true },
+        "silent_row_removal_allowed": { "const": false },
+        "source_count_is_unit_denominator": { "const": false },
+        "complete_rejected_or_ineligible_universe_claimed": { "const": false }
+      }
+    },
+    "required_fields": {
+      "const": [
+        "edition",
+        "published_rank_or_explicit_nonselection_class",
+        "published_display_name",
+        "resolved_legal_entity",
+        "entity_jurisdiction",
+        "entity_identifier_and_authoritative_source",
+        "parent_subsidiary_dba_or_brand_relationship",
+        "identity_confidence_state",
+        "source_locators_and_exact_retrieval_custody",
+        "unresolved_ambiguity_and_alternative_candidates",
+        "terminal_row_state"
+      ]
+    },
+    "permitted_terminal_row_states": {
+      "const": [
+        "exact_legal_entity_resolved",
+        "bounded_brand_to_entity_resolution",
+        "identity_source_restricted",
+        "identity_source_unavailable",
+        "identity_ambiguous",
+        "still_open"
+      ]
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 102,
+      "maxItems": 102,
+      "items": { "$ref": "#/$defs/row" }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selected_roster_rows", "explicit_control_rows", "total_rows", "exact_source_bodies", "fixed_protocol_completed_rows", "legal_entities_resolved", "closed_rows", "external_contacts", "external_reviews", "graph_effects"],
+      "properties": {
+        "selected_roster_rows": { "const": 100 },
+        "explicit_control_rows": { "const": 2 },
+        "total_rows": { "const": 102 },
+        "exact_source_bodies": { "const": 1 },
+        "fixed_protocol_completed_rows": { "const": 0 },
+        "legal_entities_resolved": { "const": 0 },
+        "closed_rows": { "const": 0 },
+        "external_contacts": { "const": 0 },
+        "external_reviews": { "const": 0 },
+        "graph_effects": { "const": 0 }
+      }
+    },
+    "current_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["terminal_state", "exact_102_row_denominator_bound", "fixed_protocol_complete", "class_closed", "reviewed_disposition_changed", "project_blocking", "outside_human_dependency", "publication_effect", "adoption_effect", "graph_effect"],
+      "properties": {
+        "terminal_state": { "const": "roster_scaffold_frozen_fixed_legal_entity_protocol_pending" },
+        "exact_102_row_denominator_bound": { "const": true },
+        "fixed_protocol_complete": { "const": false },
+        "class_closed": { "const": false },
+        "reviewed_disposition_changed": { "const": false },
+        "project_blocking": { "const": false },
+        "outside_human_dependency": { "const": false },
+        "publication_effect": { "const": "none" },
+        "adoption_effect": { "const": "none" },
+        "graph_effect": { "const": "none" }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["published_display_name_is_legal_entity", "brand_similarity_is_entity_identity", "shared_parent_is_coordination", "roster_inclusion_is_technical_superiority", "resolved_identity_is_selection_causation", "two_explicit_control_rows_are_complete_rejected_universe", "missing_public_record_is_entity_absence", "scaffold_completion_is_class_closure", "outside_human_dependency", "graph_effect"],
+      "properties": {
+        "published_display_name_is_legal_entity": { "const": false },
+        "brand_similarity_is_entity_identity": { "const": false },
+        "shared_parent_is_coordination": { "const": false },
+        "roster_inclusion_is_technical_superiority": { "const": false },
+        "resolved_identity_is_selection_causation": { "const": false },
+        "two_explicit_control_rows_are_complete_rejected_universe": { "const": false },
+        "missing_public_record_is_entity_absence": { "const": false },
+        "scaffold_completion_is_class_closure": { "const": false },
+        "outside_human_dependency": { "const": false },
+        "graph_effect": { "const": "none" }
+      }
+    }
+  },
+  "$defs": {
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "value", "source_ids", "note", "fixed_protocol_complete", "terminal_for_class_closure"],
+      "properties": {
+        "state": { "type": "string", "minLength": 1 },
+        "value": {},
+        "source_ids": { "type": "array", "items": { "type": "string" } },
+        "note": { "type": "string" },
+        "fixed_protocol_complete": { "type": "boolean" },
+        "terminal_for_class_closure": { "type": "boolean" }
+      }
+    },
+    "row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["row_id", "unit_class", "fields", "row_result"],
+      "properties": {
+        "row_id": { "type": "string", "minLength": 1 },
+        "unit_class": { "enum": ["published_selected_roster_row", "explicit_assessed_nonselection_or_ineligibility_example"] },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["edition", "published_rank_or_explicit_nonselection_class", "published_display_name", "resolved_legal_entity", "entity_jurisdiction", "entity_identifier_and_authoritative_source", "parent_subsidiary_dba_or_brand_relationship", "identity_confidence_state", "source_locators_and_exact_retrieval_custody", "unresolved_ambiguity_and_alternative_candidates", "terminal_row_state"],
+          "properties": {
+            "edition": { "$ref": "#/$defs/field" },
+            "published_rank_or_explicit_nonselection_class": { "$ref": "#/$defs/field" },
+            "published_display_name": { "$ref": "#/$defs/field" },
+            "resolved_legal_entity": { "$ref": "#/$defs/field" },
+            "entity_jurisdiction": { "$ref": "#/$defs/field" },
+            "entity_identifier_and_authoritative_source": { "$ref": "#/$defs/field" },
+            "parent_subsidiary_dba_or_brand_relationship": { "$ref": "#/$defs/field" },
+            "identity_confidence_state": { "$ref": "#/$defs/field" },
+            "source_locators_and_exact_retrieval_custody": { "$ref": "#/$defs/field" },
+            "unresolved_ambiguity_and_alternative_candidates": { "$ref": "#/$defs/field" },
+            "terminal_row_state": { "$ref": "#/$defs/field" }
+          }
+        },
+        "row_result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fixed_protocol_executed", "legal_entity_resolved", "row_closed", "terminal_state"],
+          "properties": {
+            "fixed_protocol_executed": { "const": false },
+            "legal_entity_resolved": { "const": false },
+            "row_closed": { "const": false },
+            "terminal_state": { "const": "still_open" }
+          }
+        }
+      }
+    }
+  }
+}
