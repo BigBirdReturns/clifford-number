@@ -1,0 +1,205 @@
+name: TEMP materialize exact PC-43 nonworkflow product
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc43-product-materializer.yml'
+      - '.pc43/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc43-permanent-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      QUALIFIED_ANCESTOR: 5782105034a6ef2dae9422e8b15eab2345b8980b
+      TARGET_BRANCH: research/preference-linkage-probability-calibration-assurance-v1
+      SOURCE_BRANCH: agent/pc43-exact-product-materializer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc43-exact-product-materializer
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify carrier and acquire live-main lease
+        run: |
+          set -Eeuo pipefail
+          sha256sum -c .pc43/carrier.sha256
+          test "$(stat -c '%s' .pc43/carrier.part-00)" = 6000
+          test "$(stat -c '%s' .pc43/carrier.part-01)" = 6000
+          test "$(stat -c '%s' .pc43/carrier.part-02)" = 6000
+          test "$(stat -c '%s' .pc43/carrier.part-03)" = 5152
+          cat .pc43/carrier.part-* > /tmp/pc43-product.b64
+          test "$(stat -c '%s' /tmp/pc43-product.b64)" = 23152
+          test "$(sha256sum /tmp/pc43-product.b64 | cut -d' ' -f1)" = 954b67cf4bea0a7ba97aaf0c3e3f7000efee471e3b0c173b259718725d1aae06
+          base64 --decode /tmp/pc43-product.b64 > /tmp/pc43-product.tar.xz
+          test "$(stat -c '%s' /tmp/pc43-product.tar.xz)" = 17364
+          test "$(sha256sum /tmp/pc43-product.tar.xz | cut -d' ' -f1)" = 516451779695fc5e998d720382251e71426284798a884bd68491867a1612c62a
+          xz --test /tmp/pc43-product.tar.xz
+          tar -tJf /tmp/pc43-product.tar.xz | LC_ALL=C sort > /tmp/pc43-archive-paths.txt
+          cut -f1 .pc43/nonworkflow-manifest.tsv | LC_ALL=C sort > /tmp/pc43-archive-paths.expected
+          diff -u /tmp/pc43-archive-paths.expected /tmp/pc43-archive-paths.txt
+          test "$(wc -l < /tmp/pc43-archive-paths.txt | tr -d ' ')" = 12
+          ! grep -Eq '(^/|(^|/)\.\.(/|$))' /tmp/pc43-archive-paths.txt
+
+          git fetch origin main "$SOURCE_BRANCH" --no-tags
+          source_head="$(git rev-parse HEAD)"
+          test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$source_head"
+          current_main="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$QUALIFIED_ANCESTOR" "$current_main"
+          LC_ALL=C sort .pc43/all-paths.txt > /tmp/pc43-all-paths.txt
+          test "$(wc -l < /tmp/pc43-all-paths.txt | tr -d ' ')" = 14
+          git diff --name-only "$QUALIFIED_ANCESTOR..$current_main" | LC_ALL=C sort -u > /tmp/pc43-main-advance-paths.txt
+          comm -12 /tmp/pc43-all-paths.txt /tmp/pc43-main-advance-paths.txt > /tmp/pc43-overlap-paths.txt
+          test ! -s /tmp/pc43-overlap-paths.txt
+          while IFS= read -r path; do
+            ! git cat-file -e "$current_main:$path" 2>/dev/null
+          done < /tmp/pc43-all-paths.txt
+          ! git ls-remote --exit-code --heads origin "$TARGET_BRANCH" >/dev/null 2>&1
+          printf '%s\n' "$source_head" > /tmp/pc43-source-head.sha
+          printf '%s\n' "$current_main" > /tmp/pc43-publication-parent.sha
+
+      - name: Construct exact twelve-file nonworkflow commit
+        run: |
+          set -Eeuo pipefail
+          current_main="$(cat /tmp/pc43-publication-parent.sha)"
+          git checkout --detach "$current_main"
+          tar -xJf /tmp/pc43-product.tar.xz
+          while IFS=$'\t' read -r path bytes sha blob; do
+            test "$(stat -c '%s' "$path")" = "$bytes"
+            test "$(sha256sum "$path" | cut -d' ' -f1)" = "$sha"
+            test "$(git hash-object "$path")" = "$blob"
+            git add -- "$path"
+          done < <(git show "origin/$SOURCE_BRANCH:.pc43/nonworkflow-manifest.tsv")
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/pc43-staged-paths.txt
+          diff -u /tmp/pc43-archive-paths.expected /tmp/pc43-staged-paths.txt
+          test "$(wc -l < /tmp/pc43-staged-paths.txt | tr -d ' ')" = 12
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Preference Custody: implement PC-43 probability-calibration assurance and floor v41'
+          test "$(git rev-parse HEAD^)" = "$current_main"
+          git rev-parse HEAD > /tmp/pc43-product-commit.sha
+          git rev-parse 'HEAD^{tree}' > /tmp/pc43-product-tree.sha
+
+      - name: Run focused and historical Preference Custody qualification
+        run: |
+          set -Eeuo pipefail
+          node tools/compile-preference-linkage-probability-calibration-assurance.mjs
+          node tools/validate-preference-linkage-probability-calibration-assurance.mjs
+          node test/preference-linkage-probability-calibration-assurance.test.js
+          node tools/compile-preference-custody-manifest-v41.mjs
+          node tools/validate-preference-custody-manifest-v41.mjs
+          node test/preference-custody-manifest-v41.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | LC_ALL=C sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          touch /tmp/pc43-focused.pass
+
+      - name: Run complete repository release gate
+        run: |
+          set -Eeuo pipefail
+          npm run release:check
+          touch /tmp/pc43-release.pass
+
+      - name: Restore volatile outputs and replay deterministically
+        run: |
+          set -Eeuo pipefail
+          product_commit="$(cat /tmp/pc43-product-commit.sha)"
+          while IFS=$'\t' read -r path _; do
+            git diff --exit-code -- "$path"
+          done < <(git show "origin/$SOURCE_BRANCH:.pc43/nonworkflow-manifest.tsv")
+          git reset --hard "$product_commit"
+          git clean -fdx
+          node tools/compile-preference-linkage-probability-calibration-assurance.mjs
+          node tools/validate-preference-linkage-probability-calibration-assurance.mjs
+          node test/preference-linkage-probability-calibration-assurance.test.js
+          node tools/compile-preference-custody-manifest-v41.mjs
+          node tools/validate-preference-custody-manifest-v41.mjs
+          node test/preference-custody-manifest-v41.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          git reset --hard "$product_commit"
+          git clean -fdx
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          touch /tmp/pc43-replay.pass
+
+      - name: Recheck leases and publish
+        run: |
+          set -Eeuo pipefail
+          source_head="$(cat /tmp/pc43-source-head.sha)"
+          current_main="$(cat /tmp/pc43-publication-parent.sha)"
+          product_commit="$(cat /tmp/pc43-product-commit.sha)"
+          git fetch origin main "$SOURCE_BRANCH" --no-tags
+          test "$(git rev-parse origin/main)" = "$current_main"
+          test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$source_head"
+          ! git ls-remote --exit-code --heads origin "$TARGET_BRANCH" >/dev/null 2>&1
+          git push origin "$product_commit:refs/heads/$TARGET_BRANCH"
+          touch /tmp/pc43-published.pass
+
+      - name: Emit receipt
+        if: always()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, os
+
+          def read(path):
+              p = Path(path)
+              return p.read_text().strip() if p.exists() else None
+
+          files = {}
+          source = Path('.pc43/nonworkflow-manifest.tsv')
+          if source.exists():
+              for line in source.read_text().splitlines():
+                  path, size, sha256, blob = line.split('\t')
+                  files[path] = {'bytes': int(size), 'sha256': sha256, 'git_blob_sha1': blob}
+          receipt = {
+              'schema_version': 'pc43-nonworkflow-materialization-receipt@1',
+              'workflow_run_id': os.environ.get('GITHUB_RUN_ID'),
+              'source_head': read('/tmp/pc43-source-head.sha'),
+              'qualified_ancestor': os.environ.get('QUALIFIED_ANCESTOR'),
+              'publication_parent': read('/tmp/pc43-publication-parent.sha'),
+              'product_commit': read('/tmp/pc43-product-commit.sha'),
+              'product_tree': read('/tmp/pc43-product-tree.sha'),
+              'target_branch': os.environ.get('TARGET_BRANCH'),
+              'base64_bytes': 23152,
+              'base64_sha256': '954b67cf4bea0a7ba97aaf0c3e3f7000efee471e3b0c173b259718725d1aae06',
+              'archive_bytes': 17364,
+              'archive_sha256': '516451779695fc5e998d720382251e71426284798a884bd68491867a1612c62a',
+              'nonworkflow_path_count': len(files),
+              'files': files,
+              'overlap_paths': Path('/tmp/pc43-overlap-paths.txt').read_text().splitlines() if Path('/tmp/pc43-overlap-paths.txt').exists() else None,
+              'focused_pc43': 'pass' if Path('/tmp/pc43-focused.pass').exists() else 'not_proved',
+              'historical_preference_custody_floors': 'pass' if Path('/tmp/pc43-focused.pass').exists() else 'not_proved',
+              'no_magic_human': 'pass' if Path('/tmp/pc43-focused.pass').exists() else 'not_proved',
+              'release_check': 'pass' if Path('/tmp/pc43-release.pass').exists() else 'not_proved',
+              'deterministic_replay': 'pass' if Path('/tmp/pc43-replay.pass').exists() else 'not_proved',
+              'target_published': Path('/tmp/pc43-published.pass').exists(),
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          Path('/tmp/pc43-materialization-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc43-nonworkflow-materialization-${{ github.run_id }}
+          path: /tmp/pc43-materialization-receipt.json
+          if-no-files-found: error
+          retention-days: 90
