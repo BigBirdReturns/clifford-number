@@ -1,0 +1,100 @@
+name: TEMP export SSC RD-05 terminal closure inputs
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-terminal-closure-export-base-v1
+    paths:
+      - '.github/tmp/ssc-rd05-terminal-closure-export-v1.trigger'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd05-terminal-closure-export-v1
+  cancel-in-progress: false
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RESEARCH_BRANCH: agent/ssc-rd-wave02-rd05-recommendation-disposition
+      EXPECTED_RESEARCH_HEAD: 03d0c627308b86ad75e8cdad6a90756c97e592ce
+      SEMANTIC_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/object-semantic-classification.json
+      WAVE1_PATH: data/research/status-sovereignty-residual-denominator-wave-01.json
+      CONSTITUTION_PATH: data/research/status-sovereignty-residual-denominator-wave-02-constitution.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify and export exact closure inputs
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_RESEARCH_HEAD"
+          git fetch origin "$RESEARCH_BRANCH" main
+          test "$(git rev-parse origin/$RESEARCH_BRANCH)" = "$EXPECTED_RESEARCH_HEAD"
+          node tools/validate-no-magic-human-gate.mjs
+
+          out=rd05-terminal-closure-inputs-v1
+          mkdir -p "$out/$(dirname "$SEMANTIC_PATH")" "$out/$(dirname "$WAVE1_PATH")" "$out/$(dirname "$CONSTITUTION_PATH")"
+          cp "$SEMANTIC_PATH" "$out/$SEMANTIC_PATH"
+          git show "origin/main:$WAVE1_PATH" > "$out/$WAVE1_PATH"
+          git show "origin/main:$CONSTITUTION_PATH" > "$out/$CONSTITUTION_PATH"
+
+          test "$(jq -r '.counts.open_recommendation_disposition_chains' "$out/$SEMANTIC_PATH")" = '4'
+          test "$(jq -r '.counts.successor_action_rows' "$out/$SEMANTIC_PATH")" = '7'
+          test "$(jq -r '.canonical_residual_atlas.residual_classes' "$out/$WAVE1_PATH")" = '42'
+          test "$(jq -r '.closure_contract.starting_open_classes' "$out/$CONSTITUTION_PATH")" = '42'
+
+          RESEARCH_HEAD="$(git rev-parse HEAD)"
+          MAIN_HEAD="$(git rev-parse origin/main)"
+          {
+            printf 'research_head=%s\n' "$RESEARCH_HEAD"
+            printf 'main_head=%s\n' "$MAIN_HEAD"
+            find "$out" -type f -print0 | sort -z | xargs -0 sha256sum
+          } > "$out/export-sha256.txt"
+
+          node --input-type=module "$out" "$RESEARCH_HEAD" "$MAIN_HEAD" <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import crypto from 'node:crypto';
+          const [root, researchHead, mainHead] = process.argv.slice(2);
+          const files = [];
+          const walk = (dir) => {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+              const full = path.join(dir, entry.name);
+              if (entry.isDirectory()) walk(full);
+              else if (entry.isFile() && entry.name !== 'manifest.json') files.push(full);
+            }
+          };
+          walk(root);
+          const entries = files.map((file) => {
+            const body = fs.readFileSync(file);
+            return {
+              path: path.relative(root, file).split(path.sep).join('/'),
+              bytes: body.length,
+              sha256: crypto.createHash('sha256').update(body).digest('hex')
+            };
+          });
+          fs.writeFileSync(path.join(root, 'manifest.json'), JSON.stringify({
+            schema_version: 'ssc-rd05-terminal-closure-input-export@1',
+            research_head: researchHead,
+            main_head: mainHead,
+            entries
+          }, null, 2) + '\n');
+          NODE
+
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+      - name: Upload exact closure inputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-terminal-closure-inputs-v1
+          path: rd05-terminal-closure-inputs-v1
+          if-no-files-found: error
+          retention-days: 90
