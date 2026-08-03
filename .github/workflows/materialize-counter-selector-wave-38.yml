@@ -6,6 +6,11 @@ on:
       - 'agent/counter-selector-wave-38-portable-operational-checkpoint'
     paths:
       - '.github/workflows/materialize-counter-selector-wave-38.yml'
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-38.yml'
+      - '.ci/carrier/counter-selector-wave-38.part-*'
   workflow_dispatch:
 
 permissions:
@@ -34,13 +39,14 @@ jobs:
         env:
           BRANCH_NAME: 'agent/counter-selector-wave-38-portable-operational-checkpoint'
           MAIN_PARENT: '382578570bbce842bb246688a356d99743b904a1'
+          CARRIER_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
           ARCHIVE_SHA256: '548f67777e669730a15a0f0f06e67d2e5e20671369371075931a471b43263cf5'
           MATERIALIZER_PATH: '.github/workflows/materialize-counter-selector-wave-38.yml'
         shell: bash
         run: |
           set -euo pipefail
 
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$CARRIER_HEAD"
           test "$(git rev-parse "$MAIN_PARENT")" = "$MAIN_PARENT"
 
           work="$(mktemp -d)"
@@ -128,7 +134,7 @@ jobs:
           diff -u "$work/expected-paths.txt" "$work/final-paths.txt"
 
           remote_head="$(git ls-remote origin "refs/heads/$BRANCH_NAME" | awk '{print $1}')"
-          test "$remote_head" = "$GITHUB_SHA"
+          test "$remote_head" = "$CARRIER_HEAD"
 
           git commit -m "Install Counter-Selector Wave 38 portable operational checkpoint"
           product_commit="$(git rev-parse HEAD)"
@@ -140,7 +146,7 @@ jobs:
           {
             echo "wave_id=CS-W38-PO-01"
             echo "main_parent=$MAIN_PARENT"
-            echo "carrier_head=$GITHUB_SHA"
+            echo "carrier_head=$CARRIER_HEAD"
             echo "product_commit=$product_commit"
             echo "archive_sha256=$ARCHIVE_SHA256"
             echo "permanent_paths=$(wc -l < "$work/expected-paths.txt" | tr -d ' ')"
@@ -149,9 +155,14 @@ jobs:
           } > "$work/receipt/materialization.txt"
           cp "$work/expected-paths.txt" "$work/receipt/permanent-paths.txt"
           cp "$work/file-sums.txt" "$work/receipt/source-file-sums.txt"
-          sha256sum "$work/receipt/"* > "$work/receipt/receipt-sums.txt"
 
-          git push --force-with-lease="refs/heads/$BRANCH_NAME:$GITHUB_SHA" origin "HEAD:refs/heads/$BRANCH_NAME"
+          set +e
+          git push --force-with-lease="refs/heads/$BRANCH_NAME:$CARRIER_HEAD" origin "HEAD:refs/heads/$BRANCH_NAME" > "$work/receipt/push.log" 2>&1
+          push_status=$?
+          set -e
+          echo "push_status=$push_status" >> "$work/receipt/materialization.txt"
+          cat "$work/receipt/push.log"
+          sha256sum "$work/receipt/"* > "$work/receipt/receipt-sums.txt"
 
           mkdir -p .ci/wave38-receipt
           cp "$work/receipt/"* .ci/wave38-receipt/
