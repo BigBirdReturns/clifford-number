@@ -1,4 +1,4 @@
-name: TEMP SSC RD-01 recipient identifier probe v1
+name: TEMP SSC RD-01 recipient identifier probe v2
 
 on:
   pull_request:
@@ -14,7 +14,7 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,24 +22,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Execute fixed identifier-bearing route probe
+      - name: Execute fixed homogeneous identifier-bearing route probe
         run: |
           set -Eeuo pipefail
-          test "$(git hash-object .github/tmp/ssc-rd01-recipient-id-probe-v1.mjs)" = 'd5206a0b7ca75f7c51d6fe39db1c0541f10ec901'
+          test "$(git hash-object .github/tmp/ssc-rd01-recipient-id-probe-v1.mjs)" = 'bcfa01538811140e988eeeb34ae77d7b4297bee5'
           node .github/tmp/ssc-rd01-recipient-id-probe-v1.mjs
           jq -e '
-            .routes == 5 and
-            .parsed_json_responses == 5 and
-            .distinct_validation_payloads == 1 and
+            .routes == 30 and
+            .http_successes == 30 and
+            .parsed_json_responses == 30 and
+            .distinct_validation_payloads == 0 and
+            .results_with_recipient_uei > 0 and
+            .results_with_recipient_id > 0 and
             .external_contacts == 0 and
             .external_reviews == 0 and
             .outside_human_dependency == false and
             .graph_effect == "none"
-          ' rd01-recipient-id-probe-v1/summary.json >/dev/null
+          ' rd01-recipient-id-probe-v2/summary.json >/dev/null
       - name: Upload exact probe responses
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd01-recipient-id-probe-v1
-          path: rd01-recipient-id-probe-v1
+          name: ssc-rd01-recipient-id-probe-v2
+          path: rd01-recipient-id-probe-v2
           if-no-files-found: error
           retention-days: 90
