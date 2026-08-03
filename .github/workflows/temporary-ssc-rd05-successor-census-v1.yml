@@ -1,0 +1,585 @@
+name: TEMP capture fixed RD-05 successor evidence census
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd05-successor-census-v1.yml'
+      - '.rd05-successor-census/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-ssc-rd05-successor-census-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd05-successor-census-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Validate fixed source-derived plan and exact research lease
+        env:
+          RESEARCH_BRANCH: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          RESEARCH_HEAD: 03d0c627308b86ad75e8cdad6a90756c97e592ce
+          CLASSIFICATION_SHA256: ed35fbd41027497742d5db4473d8675978d37eab52f95c35628616aa7fba6f13
+        run: |
+          set -Eeuo pipefail
+          observed="$(git ls-remote --heads origin "refs/heads/${RESEARCH_BRANCH}" | cut -f1)"
+          test "$observed" = "$RESEARCH_HEAD"
+          git merge-base --is-ancestor "$RESEARCH_HEAD" HEAD
+          echo "${CLASSIFICATION_SHA256}  data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/object-semantic-classification.json" | sha256sum --check --strict
+
+          python - <<'PY'
+          import json
+          import pathlib
+          import urllib.parse
+
+          plan_path = pathlib.Path('.rd05-successor-census/plan.json')
+          classification_path = pathlib.Path('data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/object-semantic-classification.json')
+          plan = json.loads(plan_path.read_text())
+          product = json.loads(classification_path.read_text())
+
+          assert plan['schema_version'] == 'ssc-rd05-wave02-successor-census-plan@1'
+          assert plan['research_head'] == '03d0c627308b86ad75e8cdad6a90756c97e592ce'
+          assert plan['frozen_object_denominator'] == 58
+          assert plan['open_chain_object_ids'] == ['RD05-OBJ-023', 'RD05-OBJ-024', 'RD05-OBJ-025', 'RD05-OBJ-029']
+          assert plan['protocol']['fixed_before_execution'] is True
+          assert plan['protocol']['result_spawned_requests_allowed'] is False
+          assert plan['protocol']['maximum_attempts_per_route'] == 2
+          assert plan['protocol']['external_contacts'] == 0
+          assert plan['protocol']['external_reviews'] == 0
+          assert plan['protocol']['outside_human_dependency'] is False
+          assert len(plan['routes']) == 49
+          assert len({row['route_id'] for row in plan['routes']}) == 49
+
+          allowed = set(plan['protocol']['allowed_hosts'])
+          for row in plan['routes']:
+              assert row['max_attempts'] == 2
+              assert urllib.parse.urlparse(row['url']).hostname in allowed
+              assert row['clusters']
+
+          counts = product['counts']
+          assert counts['object_denominator'] == 58
+          assert counts['semantic_classifications_complete'] == 58
+          assert counts['completed_recommendation_objects'] == 0
+          assert counts['agency_response_objects'] == 0
+          assert counts['adopted_or_rejected_objects'] == 0
+          assert counts['implementation_or_outcome_objects'] == 0
+          assert counts['open_recommendation_disposition_chains'] == 4
+          assert counts['source_access_interstitial_rows'] == 0
+          assert counts['same_object_recovered_notice_rows'] == 1
+
+          by_id = {row['object_id']: row for row in product['objects']}
+          expected_actions = {
+              'RD05-OBJ-023': 'acquire_subcommittee_work_products_or_terminal_absence_receipt',
+              'RD05-OBJ-024': 'acquire_subcommittee_work_products_or_terminal_absence_receipt',
+              'RD05-OBJ-025': 'acquire_subcommittee_work_products_or_terminal_absence_receipt',
+              'RD05-OBJ-029': 'acquire_first_meeting_minutes_major_actions_and_recommendation_outputs',
+          }
+          for object_id, action_type in expected_actions.items():
+              row = by_id[object_id]
+              assert row['fields']['recommendation_state']['terminal'] is False
+              assert row['fields']['agency_response_state']['terminal'] is False
+              assert row['fields']['adoption_or_rejection_state']['terminal'] is False
+              assert row['fields']['implementation_and_outcome_state']['terminal'] is False
+              assert any(action['action_type'] == action_type and action['blocking'] for action in row['successor_actions'])
+
+          print('fixed successor census: 49 routes; four exact open chains; research lease exact')
+          PY
+
+      - name: Execute all fixed official routes with bounded retry custody
+        env:
+          CENSUS_ROOT: /tmp/rd05-successor-census
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$CENSUS_ROOT"
+          mkdir -p "$CENSUS_ROOT"
+          cp .rd05-successor-census/plan.json "$CENSUS_ROOT/plan.json"
+
+          python - <<'PY'
+          import concurrent.futures
+          import datetime as dt
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import subprocess
+          import time
+
+          root = pathlib.Path(os.environ['CENSUS_ROOT'])
+          plan = json.loads((root / 'plan.json').read_text())
+          user_agent = 'clifford-number-rd05-successor-census/1.0 (+https://github.com/BigBirdReturns/clifford-number)'
+
+          def sha256(path):
+              h = hashlib.sha256()
+              with open(path, 'rb') as handle:
+                  for chunk in iter(lambda: handle.read(1024 * 1024), b''):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          def now():
+              return dt.datetime.now(dt.timezone.utc).isoformat().replace('+00:00', 'Z')
+
+          def capture(route):
+              route_dir = root / 'routes' / route['route_id']
+              route_dir.mkdir(parents=True, exist_ok=True)
+              attempts = []
+              selected = None
+              for attempt_number in range(1, route['max_attempts'] + 1):
+                  attempt_dir = route_dir / f'attempt-{attempt_number}'
+                  attempt_dir.mkdir(parents=True, exist_ok=True)
+                  headers = attempt_dir / 'headers.txt'
+                  body = attempt_dir / 'body.bin'
+                  stderr = attempt_dir / 'curl-stderr.txt'
+                  meta = attempt_dir / 'curl-meta.txt'
+                  request_url = attempt_dir / 'request-url.txt'
+                  started_at = attempt_dir / 'started-at.txt'
+                  finished_at = attempt_dir / 'finished-at.txt'
+                  request_url.write_text(route['url'] + '\n')
+                  started = now()
+                  started_at.write_text(started + '\n')
+                  command = [
+                      'curl', '--location', '--silent', '--show-error', '--compressed',
+                      '--connect-timeout', '15', '--max-time', '60', '--max-filesize', '26214400',
+                      '--user-agent', user_agent,
+                      '--dump-header', str(headers), '--output', str(body),
+                      '--write-out', '%{url_effective}\n%{http_code}\n%{content_type}\n%{size_download}\n%{time_total}\n',
+                      route['url'],
+                  ]
+                  with stderr.open('wb') as err:
+                      proc = subprocess.run(command, stdout=subprocess.PIPE, stderr=err, check=False)
+                  meta.write_bytes(proc.stdout)
+                  finished = now()
+                  finished_at.write_text(finished + '\n')
+                  lines = proc.stdout.decode('utf-8', errors='replace').splitlines()
+                  while len(lines) < 5:
+                      lines.append('')
+                  try:
+                      status = int(lines[1])
+                  except ValueError:
+                      status = 0
+                  attempt = {
+                      'attempt': attempt_number,
+                      'started_at': started,
+                      'finished_at': finished,
+                      'curl_exit': proc.returncode,
+                      'request_url': route['url'],
+                      'final_url': lines[0],
+                      'http_status': status,
+                      'content_type': lines[2],
+                      'reported_download_bytes': lines[3],
+                      'time_total_seconds': lines[4],
+                      'headers_path': str(headers.relative_to(root)),
+                      'headers_bytes': headers.stat().st_size if headers.exists() else 0,
+                      'headers_sha256': sha256(headers) if headers.exists() else None,
+                      'body_path': str(body.relative_to(root)),
+                      'body_bytes': body.stat().st_size if body.exists() else 0,
+                      'body_sha256': sha256(body) if body.exists() else None,
+                      'stderr_path': str(stderr.relative_to(root)),
+                      'stderr_bytes': stderr.stat().st_size,
+                      'stderr_sha256': sha256(stderr),
+                      'meta_path': str(meta.relative_to(root)),
+                      'meta_bytes': meta.stat().st_size,
+                      'meta_sha256': sha256(meta),
+                  }
+                  attempts.append(attempt)
+
+                  transient = proc.returncode != 0 or status == 429 or status >= 500 or status == 0
+                  if not transient:
+                      selected = attempt_number
+                      break
+                  if attempt_number < route['max_attempts']:
+                      time.sleep(2)
+
+              if selected is None:
+                  selected = attempts[-1]['attempt']
+              chosen = attempts[selected - 1]
+              if chosen['curl_exit'] == 0 and 200 <= chosen['http_status'] < 400:
+                  terminal_state = 'http_success'
+              elif chosen['curl_exit'] == 0 and 400 <= chosen['http_status'] < 500 and chosen['http_status'] != 429:
+                  terminal_state = 'http_terminal_non_success'
+              else:
+                  terminal_state = 'bounded_transport_exhausted'
+              receipt = {
+                  'route_id': route['route_id'],
+                  'url': route['url'],
+                  'purpose': route['purpose'],
+                  'clusters': route['clusters'],
+                  'route_kind': route['route_kind'],
+                  'maximum_attempts': route['max_attempts'],
+                  'attempts': attempts,
+                  'selected_attempt': selected,
+                  'terminal_transport_state': terminal_state,
+                  'transport_terminal': True,
+                  'result_spawned_requests': 0,
+                  'external_contacts': 0,
+                  'external_reviews': 0,
+              }
+              (route_dir / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+              return receipt
+
+          with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+              receipts = list(pool.map(capture, plan['routes']))
+          receipts.sort(key=lambda row: row['route_id'])
+          (root / 'route-results.json').write_text(json.dumps({
+              'schema_version': 'ssc-rd05-wave02-successor-route-results@1',
+              'research_head': plan['research_head'],
+              'route_count': len(receipts),
+              'routes': receipts,
+          }, indent=2) + '\n')
+          print(f'captured {len(receipts)} fixed routes')
+          PY
+
+      - name: Derive candidate-hit and terminal transport ledgers without adjudicating substance
+        env:
+          CENSUS_ROOT: /tmp/rd05-successor-census
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import datetime as dt
+          import hashlib
+          import html
+          import json
+          import os
+          import pathlib
+          import re
+          import subprocess
+          from html.parser import HTMLParser
+          from urllib.parse import urljoin
+
+          root = pathlib.Path(os.environ['CENSUS_ROOT'])
+          plan = json.loads((root / 'plan.json').read_text())
+          results = json.loads((root / 'route-results.json').read_text())
+
+          class TextAndLinkParser(HTMLParser):
+              def __init__(self, base):
+                  super().__init__(convert_charrefs=True)
+                  self.base = base
+                  self.text = []
+                  self.links = []
+                  self.suppressed = 0
+              def handle_starttag(self, tag, attrs):
+                  if tag.lower() in {'script', 'style', 'noscript'}:
+                      self.suppressed += 1
+                  for key, value in attrs:
+                      if key.lower() in {'href', 'src'} and value:
+                          self.links.append(urljoin(self.base, value))
+              def handle_endtag(self, tag):
+                  if tag.lower() in {'script', 'style', 'noscript'} and self.suppressed:
+                      self.suppressed -= 1
+              def handle_data(self, data):
+                  if not self.suppressed:
+                      self.text.append(data)
+
+          def normalize_space(value):
+              return re.sub(r'\s+', ' ', value).strip()
+
+          def flatten_json(value, out):
+              if isinstance(value, dict):
+                  for key, child in value.items():
+                      out.append(str(key))
+                      flatten_json(child, out)
+              elif isinstance(value, list):
+                  for child in value:
+                      flatten_json(child, out)
+              elif value is not None:
+                  out.append(str(value))
+
+          def body_text_and_links(route, receipt):
+              selected = receipt['attempts'][receipt['selected_attempt'] - 1]
+              body_path = root / selected['body_path']
+              if not body_path.exists() or body_path.stat().st_size == 0:
+                  return '', []
+              raw = body_path.read_bytes()
+              content_type = (selected.get('content_type') or '').lower()
+              decoded = raw.decode('utf-8', errors='replace')
+              if 'json' in content_type or decoded.lstrip().startswith(('{', '[')):
+                  try:
+                      parsed = json.loads(decoded)
+                      chunks = []
+                      flatten_json(parsed, chunks)
+                      text = normalize_space(' '.join(chunks))
+                      links = sorted(set(re.findall(r'https?://[^\s"<>]+', decoded)))
+                      return text, links
+                  except json.JSONDecodeError:
+                      pass
+              if 'pdf' in content_type or raw.startswith(b'%PDF'):
+                  pdf_text = body_path.with_suffix('.txt')
+                  proc = subprocess.run(['pdftotext', str(body_path), str(pdf_text)], check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                  if proc.returncode == 0 and pdf_text.exists():
+                      return normalize_space(pdf_text.read_text(errors='replace')), []
+              parser = TextAndLinkParser(route['url'])
+              try:
+                  parser.feed(decoded)
+                  text = normalize_space(html.unescape(' '.join(parser.text)))
+                  links = sorted(set(parser.links))
+                  return text, links
+              except Exception:
+                  return normalize_space(re.sub(r'<[^>]+>', ' ', decoded)), []
+
+          cluster_terms = {
+              'RD05-OBJ-023': [
+                  'commercial space mission authorization', 'subcommittee report', 'work product',
+                  'report to aces', 'final recommendation', 'recommendations to noaa', 'minutes', 'major actions'
+              ],
+              'RD05-OBJ-024': [
+                  'licensing of private remote sensing space systems', 'subcommittee report', 'work product',
+                  'report to aces', 'final recommendation', 'recommendations to noaa', 'minutes', 'major actions'
+              ],
+              'RD05-OBJ-025': [
+                  'space sustainability', 'space situational awareness', 'subcommittee report', 'work product',
+                  'report to aces', 'final recommendation', 'recommendations to noaa', 'minutes', 'major actions'
+              ],
+              'RD05-OBJ-029': [
+                  'first aces public meeting', 'october 3, 2024', 'october 3 2024', 'minutes', 'major actions',
+                  'finalize recommendations', 'finalized recommendations', 'final recommendation', 'recommendations to noaa'
+              ],
+              'ARCHIVE': ['terminated', 'termination', 'records', 'recordkeeping', 'transfer', 'archive', 'public inspection'],
+          }
+          output_markers = [
+              'subcommittee report', 'work product', 'report to aces', 'final recommendation',
+              'recommendations to noaa', 'minutes', 'major actions', 'finalized recommendations'
+          ]
+          link_markers = ('aces', 'subcommittee', 'recommend', 'minute', 'report', 'october', 'march', 'faca', 'archive')
+
+          candidates = []
+          route_text = []
+          by_route = {row['route_id']: row for row in results['routes']}
+          for route in plan['routes']:
+              receipt = by_route[route['route_id']]
+              text, links = body_text_and_links(route, receipt)
+              lower = text.lower()
+              relevant_links = [u for u in links if any(marker in u.lower() for marker in link_markers)]
+              route_text.append({
+                  'route_id': route['route_id'],
+                  'terminal_transport_state': receipt['terminal_transport_state'],
+                  'text_characters': len(text),
+                  'extracted_links': len(links),
+                  'relevant_links': relevant_links[:500],
+              })
+              for cluster in route['clusters']:
+                  terms = cluster_terms[cluster]
+                  matches = []
+                  for term in terms:
+                      start = 0
+                      while True:
+                          index = lower.find(term, start)
+                          if index < 0:
+                              break
+                          left = max(0, index - 180)
+                          right = min(len(text), index + len(term) + 260)
+                          matches.append({'term': term, 'snippet': text[left:right]})
+                          start = index + len(term)
+                          if len(matches) >= 30:
+                              break
+                      if len(matches) >= 30:
+                          break
+                  marker_count = sum(lower.count(marker) for marker in output_markers)
+                  if matches or relevant_links:
+                      candidates.append({
+                          'route_id': route['route_id'],
+                          'cluster': cluster,
+                          'purpose': route['purpose'],
+                          'transport_state': receipt['terminal_transport_state'],
+                          'matched_terms': sorted(set(row['term'] for row in matches)),
+                          'output_marker_occurrences': marker_count,
+                          'snippets': matches[:30],
+                          'relevant_links': relevant_links[:200],
+                          'substantive_adjudication': 'not_performed_by_acquisition_census',
+                      })
+
+          chain_rows = []
+          for object_id in plan['open_chain_object_ids']:
+              route_ids = [row['route_id'] for row in plan['routes'] if object_id in row['clusters']]
+              terminal = [by_route[route_id]['transport_terminal'] for route_id in route_ids]
+              chain_rows.append({
+                  'object_id': object_id,
+                  'fixed_route_ids': route_ids,
+                  'fixed_routes': len(route_ids),
+                  'terminal_transport_routes': sum(1 for value in terminal if value),
+                  'transport_protocol_terminal': all(terminal),
+                  'substantive_chain_state': 'adjudication_pending',
+                  'substantive_chain_terminal': False,
+                  'completed_recommendation_observed_by_this_census': False,
+                  'agency_response_observed_by_this_census': False,
+                  'adoption_or_rejection_observed_by_this_census': False,
+                  'implementation_or_outcome_observed_by_this_census': False,
+              })
+
+          (root / 'candidate-hits.json').write_text(json.dumps({
+              'schema_version': 'ssc-rd05-wave02-successor-candidate-hits@1',
+              'candidate_rows': len(candidates),
+              'routes_with_candidate_rows': len({row['route_id'] for row in candidates}),
+              'rows': candidates,
+              'authority': {
+                  'candidate_hit_is_admitted_work_product': False,
+                  'keyword_match_is_completed_recommendation': False,
+                  'link_is_denominator_admission': False,
+                  'result_spawned_requests': 0,
+              },
+          }, indent=2) + '\n')
+          (root / 'route-text-index.json').write_text(json.dumps({
+              'schema_version': 'ssc-rd05-wave02-successor-route-text-index@1',
+              'routes': route_text,
+          }, indent=2) + '\n')
+          (root / 'terminal-ledger.json').write_text(json.dumps({
+              'schema_version': 'ssc-rd05-wave02-successor-terminal-ledger@1',
+              'research_head': plan['research_head'],
+              'chains': chain_rows,
+              'transport_census_complete': all(row['transport_protocol_terminal'] for row in chain_rows),
+              'substantive_adjudication_complete': False,
+              'class_closed': False,
+              'outside_human_dependency': False,
+              'external_contacts': 0,
+              'external_reviews': 0,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }, indent=2) + '\n')
+
+          statuses = {}
+          attempts = 0
+          for receipt in results['routes']:
+              statuses[receipt['terminal_transport_state']] = statuses.get(receipt['terminal_transport_state'], 0) + 1
+              attempts += len(receipt['attempts'])
+          summary = {
+              'schema_version': 'ssc-rd05-wave02-successor-census-summary@1',
+              'as_of': dt.datetime.now(dt.timezone.utc).date().isoformat(),
+              'research_head': plan['research_head'],
+              'fixed_routes': len(plan['routes']),
+              'route_attempts': attempts,
+              'terminal_transport_states': statuses,
+              'candidate_hit_rows': len(candidates),
+              'routes_with_candidate_hits': len({row['route_id'] for row in candidates}),
+              'open_chains': 4,
+              'transport_census_complete': True,
+              'substantive_adjudication_complete': False,
+              'class_closed': False,
+              'result_spawned_requests': 0,
+              'denominator_widened': False,
+              'completed_recommendations': 0,
+              'agency_responses': 0,
+              'adopted_outputs': 0,
+              'rejected_outputs': 0,
+              'implementation_or_outcomes': 0,
+              'external_contacts': 0,
+              'external_reviews': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          (root / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
+
+          def sha256(path):
+              h = hashlib.sha256()
+              with open(path, 'rb') as handle:
+                  for chunk in iter(lambda: handle.read(1024 * 1024), b''):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          entries = []
+          for path in sorted(p for p in root.rglob('*') if p.is_file() and p.name != 'manifest.json'):
+              entries.append({
+                  'path': str(path.relative_to(root)),
+                  'bytes': path.stat().st_size,
+                  'sha256': sha256(path),
+              })
+          combined = hashlib.sha256('\n'.join(f"{row['sha256']}  {row['path']}" for row in entries).encode()).hexdigest()
+          (root / 'manifest.json').write_text(json.dumps({
+              'schema_version': 'ssc-rd05-wave02-successor-census-manifest@1',
+              'entries': entries,
+              'entry_count': len(entries),
+              'combined_sha256': combined,
+          }, indent=2) + '\n')
+          print(json.dumps(summary, indent=2))
+          PY
+
+      - name: Validate exact bounded census and clean repository state
+        env:
+          CENSUS_ROOT: /tmp/rd05-successor-census
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+
+          root = pathlib.Path(os.environ['CENSUS_ROOT'])
+          plan = json.loads((root / 'plan.json').read_text())
+          results = json.loads((root / 'route-results.json').read_text())
+          ledger = json.loads((root / 'terminal-ledger.json').read_text())
+          summary = json.loads((root / 'summary.json').read_text())
+          manifest = json.loads((root / 'manifest.json').read_text())
+
+          assert len(plan['routes']) == 49
+          assert results['route_count'] == 49
+          assert len(results['routes']) == 49
+          assert {row['route_id'] for row in results['routes']} == {row['route_id'] for row in plan['routes']}
+          for row in results['routes']:
+              assert row['transport_terminal'] is True
+              assert 1 <= len(row['attempts']) <= 2
+              assert row['result_spawned_requests'] == 0
+              assert row['external_contacts'] == 0
+              assert row['external_reviews'] == 0
+              selected = row['attempts'][row['selected_attempt'] - 1]
+              for key in ['headers_path', 'body_path', 'stderr_path', 'meta_path']:
+                  path = root / selected[key]
+                  assert path.exists()
+
+          assert len(ledger['chains']) == 4
+          assert ledger['transport_census_complete'] is True
+          assert ledger['substantive_adjudication_complete'] is False
+          assert ledger['class_closed'] is False
+          assert all(row['transport_protocol_terminal'] for row in ledger['chains'])
+          assert all(row['substantive_chain_terminal'] is False for row in ledger['chains'])
+          assert summary['fixed_routes'] == 49
+          assert summary['transport_census_complete'] is True
+          assert summary['substantive_adjudication_complete'] is False
+          assert summary['class_closed'] is False
+          assert summary['result_spawned_requests'] == 0
+          assert summary['denominator_widened'] is False
+          assert summary['completed_recommendations'] == 0
+          assert summary['agency_responses'] == 0
+          assert summary['adopted_outputs'] == 0
+          assert summary['rejected_outputs'] == 0
+          assert summary['implementation_or_outcomes'] == 0
+          assert summary['external_contacts'] == 0
+          assert summary['external_reviews'] == 0
+          assert summary['outside_human_dependency'] is False
+
+          def sha256(path):
+              h = hashlib.sha256()
+              with open(path, 'rb') as handle:
+                  for chunk in iter(lambda: handle.read(1024 * 1024), b''):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          for row in manifest['entries']:
+              path = root / row['path']
+              assert path.exists()
+              assert path.stat().st_size == row['bytes']
+              assert sha256(path) == row['sha256']
+          combined = hashlib.sha256('\n'.join(f"{row['sha256']}  {row['path']}" for row in manifest['entries']).encode()).hexdigest()
+          assert combined == manifest['combined_sha256']
+          print(f"validated fixed successor census: 49 routes, {manifest['entry_count']} exact files, manifest {combined}")
+          PY
+          git diff --exit-code
+          git status --short
+          test -z "$(git status --short)"
+
+      - name: Preserve fixed successor census
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-wave02-successor-census-v1
+          path: /tmp/rd05-successor-census
+          if-no-files-found: error
+          retention-days: 90
