@@ -66,6 +66,15 @@ jobs:
           base64 --decode /tmp/rd06-materialize.b64 > /tmp/rd06-materialize.sh
           test "$(wc -c < /tmp/rd06-materialize.sh | tr -d ' ')" = '11090'
           test "$(sha256sum /tmp/rd06-materialize.sh | awk '{print $1}')" = 'c8b084488e17c5e12847ba7f5064a4f49c28a18843caa81b3d272e122d923201'
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('/tmp/rd06-materialize.sh')
+          text = path.read_text()
+          needle = '${{ github.repository }}'
+          assert text.count(needle) == 1, text.count(needle)
+          path.write_text(text.replace(needle, 'BigBirdReturns/clifford-number'))
+          PY
+          ! grep -Fq '${{' /tmp/rd06-materialize.sh
           bash -n /tmp/rd06-materialize.sh
           bash -x /tmp/rd06-materialize.sh
 
