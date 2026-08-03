@@ -2,7 +2,7 @@
 
 ```text
 unindexed machine identifiers:           6661 -> 0
-source IDs without projection (raw):      5612 -> 5713
+source IDs without projection (raw):      5612 -> 5714
 source-only IDs unadjudicated:             5612 -> 0
 divergent identifier projections (raw):   3129 -> 3438
 divergent projections unadjudicated:      3129 -> 0
