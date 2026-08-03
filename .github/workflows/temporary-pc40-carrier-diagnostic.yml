@@ -1,0 +1,63 @@
+name: TEMP export exact PC-40 carrier state
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc40-carrier-diagnostic.yml'
+      - '.pc40/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc40-carrier-diagnostic
+          fetch-depth: 1
+      - name: Capture carrier bytes without interpreting them
+        run: |
+          set -Eeuo pipefail
+          out=/tmp/pc40-carrier-diagnostic
+          mkdir -p "$out/carrier" "$out/workflows"
+          cp -a .pc40/. "$out/carrier/"
+          cp .github/workflows/pc40-exact-product-materializer*.yml "$out/workflows/"
+          find .pc40 -maxdepth 1 -type f -printf '%P\n' | LC_ALL=C sort > "$out/carrier-paths.txt"
+          find .pc40 -maxdepth 1 -type f -print0 | LC_ALL=C sort -z | xargs -0 stat -c '%s %n' > "$out/carrier-bytes.txt"
+          find .pc40 -maxdepth 1 -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > "$out/carrier-sha256.txt"
+          printf '%s\n' "$(git rev-parse HEAD)" > "$out/branch-head.sha"
+          if test -f .pc40/payload.b64; then
+            tr -d '\r\n\t ' < .pc40/payload.b64 > "$out/payload-normalized.b64"
+            stat -c '%s' "$out/payload-normalized.b64" > "$out/payload-normalized.bytes"
+            sha256sum "$out/payload-normalized.b64" > "$out/payload-normalized.sha256"
+            if base64 --decode "$out/payload-normalized.b64" > "$out/payload.decoded" 2>"$out/payload-decode.stderr"; then
+              stat -c '%s' "$out/payload.decoded" > "$out/payload-decoded.bytes"
+              sha256sum "$out/payload.decoded" > "$out/payload-decoded.sha256"
+              file "$out/payload.decoded" > "$out/payload-decoded.file"
+            fi
+          fi
+          for pattern in '.pc40/payload.part-[0-9][0-9]' '.pc40/payload.part-02-[0-9][0-9]' ; do
+            mapfile -t parts < <(compgen -G "$pattern" | LC_ALL=C sort || true)
+            if test "${#parts[@]}" -gt 0; then
+              name="$(basename "${parts[0]}")"
+              name="${name%%-*}"
+              joined="$out/joined-${pattern//[^A-Za-z0-9]/_}.b64"
+              : > "$joined"
+              for part in "${parts[@]}"; do tr -d '\r\n\t ' < "$part" >> "$joined"; done
+              stat -c '%s' "$joined" > "$joined.bytes"
+              sha256sum "$joined" > "$joined.sha256"
+              base64 --decode "$joined" > "$joined.decoded" 2>"$joined.decode.stderr" || true
+              test ! -s "$joined.decoded" || sha256sum "$joined.decoded" > "$joined.decoded.sha256"
+            fi
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc40-carrier-diagnostic
+          path: /tmp/pc40-carrier-diagnostic
+          if-no-files-found: error
+          retention-days: 7
