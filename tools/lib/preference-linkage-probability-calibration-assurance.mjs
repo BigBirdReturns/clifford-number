@@ -16,7 +16,7 @@ const BASELINE = {
   "public_probability_status": "linkage_probabilities_validated",
   "approved_use": "longitudinal_exposure_estimation"
 };
-export const REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES = [
+const CANONICAL_LINKAGE_PROBABILITY_REFUSAL_RULES = Object.freeze([
   "one_bounded_score_is_not_a_probability_without_an_explicit_probabilistic_target_and_calibration_receipt",
   "monotonic_score_ordering_is_not_probability_calibration",
   "one_hundred_percent_calibrated_coverage_is_not_complete_when_excluded_or_unscored_pairs_are_omitted",
@@ -39,8 +39,9 @@ export const REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES = [
   "public_linkage_probabilities_validated_status_is_not_complete_current_independently_labeled_representative_prevalence_adjusted_subgroup_calibrated_uncertainty_covered_correctable_or_authorized_evidence",
   "probability_assurance_failure_is_not_proof_of_coercion_manipulation_discrimination_breach_misconduct_coordination_common_purpose_or_intent",
   "binding_public_authority_requires_separate_current_public_authorization_receipts"
-];
-const REQUIRED_REFUSAL_RULES = REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES;
+]);
+export const REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES = Object.freeze([...CANONICAL_LINKAGE_PROBABILITY_REFUSAL_RULES]);
+const REQUIRED_REFUSAL_RULES = CANONICAL_LINKAGE_PROBABILITY_REFUSAL_RULES;
 const FALSE_CLASSIFICATIONS = [
   "one_score_identifies_calibrated_probability",
   "monotonic_ordering_identifies_probability_calibration",

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { compilePreferenceLinkageProbabilityCalibrationAssuranceFixture, validatePreferenceLinkageProbabilityCalibrationAssuranceFixture, validatePreferenceLinkageProbabilityCalibrationAssuranceBuild } from '../tools/lib/preference-linkage-probability-calibration-assurance.mjs';
+import { REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES, compilePreferenceLinkageProbabilityCalibrationAssuranceFixture, validatePreferenceLinkageProbabilityCalibrationAssuranceFixture, validatePreferenceLinkageProbabilityCalibrationAssuranceBuild } from '../tools/lib/preference-linkage-probability-calibration-assurance.mjs';
 execFileSync(process.execPath, ['tools/compile-preference-linkage-probability-calibration-assurance.mjs'], { stdio: 'pipe' });
 const fixture = JSON.parse(readFileSync('data/research/preference-custody/linkage-probability-calibration-assurance.fixture.json', 'utf8'));
 const build = JSON.parse(readFileSync('build/research/preference-linkage-probability-calibration-assurance.json', 'utf8'));
@@ -35,6 +35,11 @@ assert.equal(build.classification.complete_linkage_probability_assurance_support
 assert.match(markdown, /Linkage-probability calibration/);
 assert.ok(validatePreferenceLinkageProbabilityCalibrationAssuranceBuild(build).length > 0, 'fixture source required');
 const clone = value => structuredClone(value);
+assert.equal(Object.isFrozen(REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES), true, 'exported canonical ledger must be frozen');
+const frozenRefusalLedger = [...REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES];
+assert.throws(() => { REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES[0] = 'arbitrary_unique_refusal_rule'; }, TypeError);
+assert.deepEqual(REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES, frozenRefusalLedger);
+assert.deepEqual(validatePreferenceLinkageProbabilityCalibrationAssuranceFixture(fixture), []);
 const revisedFixture = clone(fixture); revisedFixture.captured_at = '2026-08-04';
 const revisedBuild = compilePreferenceLinkageProbabilityCalibrationAssuranceFixture(revisedFixture);
 assert.deepEqual(validatePreferenceLinkageProbabilityCalibrationAssuranceBuild(revisedBuild, revisedFixture), []);
@@ -53,6 +58,7 @@ const fixtureMutations = [
   ["linked pairs", value => { value.baseline.published_linked_pairs = 99; }],
   ["public status", value => { value.baseline.public_probability_status = 'invalid'; }],
   ["refusal rule", value => { value.required_refusal_rules.pop(); }],
+  ["refusal substitution", value => { value.required_refusal_rules[0] = 'arbitrary_unique_refusal_rule'; }],
   ["classification true", value => { value.expected_classification.complete_linkage_probability_assurance_supported_in_at_least_one_world = false; }],
   ["classification false", value => { value.expected_classification.mean_probability_identifies_correctness = true; }],
   ["world count", value => { value.worlds.pop(); }],
@@ -81,7 +87,7 @@ const fixtureMutations = [
   ["authority leak", value => { value.worlds[7].governance.binding_public_authority = true; }],
   ["expected flag leak", value => { value.worlds[7].expected_flags.binding_public_authority_supported = true; }],
 ];
-assert.equal(fixtureMutations.length, 40);
+assert.equal(fixtureMutations.length, 41);
 for (const [label, mutate] of fixtureMutations) { const value = clone(fixture); mutate(value); assert.ok(validatePreferenceLinkageProbabilityCalibrationAssuranceFixture(value).length > 0, label); }
 const buildMutations = [
   ['schema', value => { value.schema_version = 'invalid'; }],
@@ -95,4 +101,4 @@ const buildMutations = [
 ];
 assert.equal(buildMutations.length, 8);
 for (const [label, mutate] of buildMutations) { const value = clone(build); mutate(value); assert.ok(validatePreferenceLinkageProbabilityCalibrationAssuranceBuild(value, fixture).length > 0, label); }
-console.log('Preference linkage-probability calibration assurance adversarial tests: PASS (40 fixture mutations plus source binding and 8 build tamper checks)');
+console.log('Preference linkage-probability calibration assurance adversarial tests: PASS (41 fixture mutations plus frozen-ledger, source-binding, and 8 build-tamper checks)');
