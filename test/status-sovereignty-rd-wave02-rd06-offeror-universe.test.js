@@ -12,7 +12,8 @@ import {
   SCHEMA_PATH,
   readBundle,
   validateProduct,
-  validateProductShape
+  validateProductShape,
+  validateCurrentAtlasCustody
 } from '../tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs';
 
 const read = (rel) => JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8'));
@@ -21,6 +22,62 @@ const clone = (value) => structuredClone(value);
 validateProduct(ROOT);
 const bundle = readBundle(ROOT);
 const schema = read(SCHEMA_PATH);
+
+const currentLedger = read('data/research/status-sovereignty-residual-denominator-wave-02-current.json');
+assert.equal(validateCurrentAtlasCustody(currentLedger), 'post_promotion');
+
+const prePromotionLedger = clone(currentLedger);
+prePromotionLedger.authority = 'three_terminal_class_receipts_promoted_without_cross_lane_empirical_authority';
+prePromotionLedger.promoted_class_receipts = prePromotionLedger.promoted_class_receipts.slice(0, 3);
+prePromotionLedger.selected_classes_open.push({
+  lane_id: 'RD-06',
+  class_id: 'RD-06-C01',
+  issue: 791,
+  constitutional_exact_label: 'complete bidder, offeror, architecture, subcontractor, withdrawal, and nonresponsive universe',
+  state: 'open',
+  class_closed: false
+});
+prePromotionLedger.counts.terminal_class_receipts = 3;
+prePromotionLedger.counts.classes_closed_this_wave = 3;
+prePromotionLedger.counts.closed_residual_classes = 3;
+prePromotionLedger.counts.open_residual_classes = 39;
+prePromotionLedger.current_result.terminal_state = 'three_of_forty_two_residual_classes_closed_three_selected_attempts_open';
+prePromotionLedger.current_result.classes_closed = 3;
+prePromotionLedger.current_result.classes_open = 39;
+prePromotionLedger.current_result.closed_class_ids = ['RD-04-C01','RD-05-C03','RD-01-C03'];
+prePromotionLedger.current_result.open_selected_class_ids = ['RD-02-C04','RD-03-C04','RD-06-C01'];
+assert.equal(validateCurrentAtlasCustody(prePromotionLedger), 'pre_promotion');
+
+const custodyMutations = [
+  ['post-promotion closed count', (v) => { v.counts.closed_residual_classes = 3; }],
+  ['post-promotion open count', (v) => { v.counts.open_residual_classes = 39; }],
+  ['post-promotion RD-06 merge', (v) => { v.promoted_class_receipts[3].merge_commit = '0'.repeat(40); }],
+  ['post-promotion RD-06 manifest', (v) => { v.promoted_class_receipts[3].manifest_combined_sha256 = '0'.repeat(64); }],
+  ['post-promotion RD-06 terminal state', (v) => { v.promoted_class_receipts[3].terminal_state = 'evidence_complete'; }],
+  ['post-promotion RD-06 reopened', (v) => { v.selected_classes_open.push({ lane_id: 'RD-06', class_id: 'RD-06-C01', issue: 791, constitutional_exact_label: v.promoted_class_receipts[3].constitutional_exact_label, state: 'open', class_closed: false }); }],
+  ['post-promotion closed order', (v) => { v.promoted_class_receipts.reverse(); }],
+  ['post-promotion graph effect', (v) => { v.current_result.graph_effect = 'graph_changed'; }]
+];
+
+for (const [name, mutate] of custodyMutations) {
+  const candidate = clone(currentLedger);
+  mutate(candidate);
+  assert.throws(() => validateCurrentAtlasCustody(candidate), undefined, name);
+}
+
+const preCustodyMutations = [
+  ['pre-promotion RD-06 missing from open set', (v) => { v.selected_classes_open.pop(); }],
+  ['pre-promotion RD-06 silently promoted', (v) => { v.promoted_class_receipts.push(clone(currentLedger.promoted_class_receipts[3])); }],
+  ['pre-promotion receipt count', (v) => { v.counts.terminal_class_receipts = 4; }],
+  ['pre-promotion external review', (v) => { v.counts.external_reviews = 1; }]
+];
+
+for (const [name, mutate] of preCustodyMutations) {
+  const candidate = clone(prePromotionLedger);
+  mutate(candidate);
+  assert.throws(() => validateCurrentAtlasCustody(candidate), undefined, name);
+}
+
 
 const mutations = [
   ['terminal schema', (b) => { b.terminal.schema_version = 'bad'; }],
@@ -127,4 +184,4 @@ for (const [name, mutate] of schemaMutations) {
   assert.throws(() => validateProductShape(bundle, candidate), undefined, name);
 }
 
-console.log(`RD-06 terminal adversarial suite: ${mutations.length + schemaMutations.length} mutations refused`);
+console.log(`RD-06 terminal adversarial suite: ${mutations.length + schemaMutations.length + custodyMutations.length + preCustodyMutations.length} mutations refused`);
