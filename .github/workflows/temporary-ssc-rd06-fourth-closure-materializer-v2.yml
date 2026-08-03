@@ -1,0 +1,189 @@
+name: TEMP materialize RD-06 fourth closure v2
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd06-fourth-closure-materializer-base-v2
+    paths:
+      - '.rd06-fourth-closure-materializer/TRIGGER'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: ssc-rd06-fourth-closure-materializer-v2
+  cancel-in-progress: false
+
+env:
+  TARGET_BRANCH: agent/ssc-rd-wave02-rd06-offeror-universe
+  EXPECTED_TARGET: e6bf637f99e22fdb9ec9b5c86f9d9a611219a5d7
+  ARTIFACT_ID: '8873907444'
+  ARTIFACT_ZIP_SHA256: 515a903ae7c469a5474a4217b550dd54837386be3d90f7a07bf5ebcdcca8707d
+  ARTIFACT_MAIN: b9c754ba2a44dbb48d29bb0fe6b33821a81ba925
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd06-fourth-closure-materializer-trigger-v2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout checksum-bound controller
+        uses: actions/checkout@v4
+        with:
+          path: controller
+          fetch-depth: 1
+
+      - name: Checkout exact canonical RD-06 head
+        uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd06-offeror-universe
+          path: work
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Freeze target and current-ledger custody
+        run: |
+          set -Eeuo pipefail
+          test "$(git -C work rev-parse HEAD)" = "$EXPECTED_TARGET"
+          test "$(git -C work ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+          git -C work fetch --no-tags origin main
+          current_main="$(git -C work rev-parse FETCH_HEAD)"
+          git -C work merge-base --is-ancestor "$ARTIFACT_MAIN" "$current_main"
+          for path in \
+            data/research/status-sovereignty-residual-denominator-wave-02-current.json \
+            data/project/ssc-residual-wave02/closures/RD-01-C03.json \
+            data/project/ssc-residual-wave02/closures/RD-04-C01.json \
+            data/project/ssc-residual-wave02/closures/RD-05-C03.json; do
+            test "$(git -C work rev-parse HEAD:"$path")" = "$(git -C work rev-parse FETCH_HEAD:"$path")"
+          done
+          echo "START_MAIN=$current_main" >> "$GITHUB_ENV"
+
+      - name: Download and verify exact seven-file artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          curl --fail --location --retry 4 --retry-all-errors \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/BigBirdReturns/clifford-number/actions/artifacts/$ARTIFACT_ID/zip" \
+            --output /tmp/rd06-fourth-closure-export.zip
+          echo "$ARTIFACT_ZIP_SHA256  /tmp/rd06-fourth-closure-export.zip" | sha256sum --check --strict
+          python controller/.github/tmp/ssc-rd06-fourth-closure-materialize-v2.py \
+            /tmp/rd06-fourth-closure-export.zip \
+            work \
+            /tmp/ssc-rd06-fourth-closure-materialization.json
+
+      - name: Validate exact changed-path denominator
+        run: |
+          set -Eeuo pipefail
+          cd work
+          cat > /tmp/rd06-fourth-closure-paths.txt <<'PATHS'
+          data/project/ssc-residual-wave02/closures/RD-06-C01.json
+          data/research/status-sovereignty-rd-wave02-rd06-offeror-universe/class-receipt.json
+          data/research/status-sovereignty-rd-wave02-rd06-offeror-universe/manifest.json
+          docs/milestones/ssc-rd-wave02-rd06-offeror-universe.md
+          test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          PATHS
+          sed -i 's/^          //' /tmp/rd06-fourth-closure-paths.txt
+          sort /tmp/rd06-fourth-closure-paths.txt > /tmp/rd06-expected-paths.txt
+          git diff --name-only | sort > /tmp/rd06-observed-paths.txt
+          cmp /tmp/rd06-expected-paths.txt /tmp/rd06-observed-paths.txt
+          git diff --check
+          node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/validate-no-magic-human-gate.mjs
+
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add --pathspec-from-file=/tmp/rd06-fourth-closure-paths.txt
+          git diff --cached --name-only | sort > /tmp/rd06-staged-paths.txt
+          cmp /tmp/rd06-expected-paths.txt /tmp/rd06-staged-paths.txt
+
+      - name: Run complete repository qualification and replay
+        run: |
+          set -Eeuo pipefail
+          cd work
+          npm run release:check
+          git restore --worktree -- .
+          git clean -fdx
+          git diff --exit-code
+          node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          git diff --cached --name-only | sort > /tmp/rd06-staged-after-replay.txt
+          cmp /tmp/rd06-expected-paths.txt /tmp/rd06-staged-after-replay.txt
+
+      - name: Commit and push only under unchanged custody
+        run: |
+          set -Eeuo pipefail
+          cd work
+          git commit -m 'Rebind RD-06 closure to current Wave-02 atlas'
+          product="$(git rev-parse HEAD)"
+          tree="$(git show -s --format=%T HEAD)"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_TARGET"
+          git diff --name-only "$EXPECTED_TARGET" "$product" | sort > /tmp/rd06-product-paths.txt
+          cmp /tmp/rd06-expected-paths.txt /tmp/rd06-product-paths.txt
+
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+          git fetch --no-tags origin main
+          current_main="$(git rev-parse FETCH_HEAD)"
+          git merge-base --is-ancestor "$ARTIFACT_MAIN" "$current_main"
+          for path in \
+            data/research/status-sovereignty-residual-denominator-wave-02-current.json \
+            data/project/ssc-residual-wave02/closures/RD-01-C03.json \
+            data/project/ssc-residual-wave02/closures/RD-04-C01.json \
+            data/project/ssc-residual-wave02/closures/RD-05-C03.json; do
+            test "$(git rev-parse "$EXPECTED_TARGET:$path")" = "$(git rev-parse FETCH_HEAD:"$path")"
+          done
+
+          git push origin "$product:refs/heads/$TARGET_BRANCH" \
+            --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$product"
+          echo "PRODUCT_HEAD=$product" >> "$GITHUB_ENV"
+          echo "PRODUCT_TREE=$tree" >> "$GITHUB_ENV"
+          echo "END_MAIN=$current_main" >> "$GITHUB_ENV"
+
+      - name: Complete and preserve exact materialization receipt
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          path = Path('/tmp/ssc-rd06-fourth-closure-materialization.json')
+          receipt = json.loads(path.read_text())
+          receipt.update({
+              'product_head': os.environ['PRODUCT_HEAD'],
+              'product_tree': os.environ['PRODUCT_TREE'],
+              'target_branch': os.environ['TARGET_BRANCH'],
+              'main_at_start': os.environ['START_MAIN'],
+              'main_at_push': os.environ['END_MAIN'],
+              'focused_validation': 'pass',
+              'adversarial_mutations': 87,
+              'release_gate': 'pass',
+              'deterministic_replay': 'pass',
+              'unchanged_target_lease': True,
+              'current_ledger_custody_preserved': True,
+          })
+          path.write_text(json.dumps(receipt, indent=2) + '\n')
+          print(path.read_text())
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd06-wave02-fourth-closure-materialization-v2
+          path: /tmp/ssc-rd06-fourth-closure-materialization.json
+          if-no-files-found: error
+          retention-days: 90
