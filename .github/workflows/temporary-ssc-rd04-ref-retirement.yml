@@ -1,0 +1,153 @@
+name: TEMP retire completed SSC RD-04 branch refs
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd04-ref-retirement.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd04-ref-retirement-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  retire:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd04-wave02-ref-retirement'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Retire exact completed RD-04 refs except this cleanup ref
+        env:
+          REQUIRED_MERGE: 7b21d1f2b0606a5550b9c26fadc0cb465ba88b7e
+        run: |
+          set -Eeuo pipefail
+          git fetch --force origin refs/heads/main:refs/remotes/origin/main
+          git merge-base --is-ancestor "$REQUIRED_MERGE" refs/remotes/origin/main
+
+          cat > /tmp/rd04-retire-refs.txt <<'REFS'
+          agent/ssc-rd04-a02-materializer-base
+          agent/ssc-rd04-a02-modular-materializer-base
+          agent/ssc-rd04-a04-materializer-base
+          agent/ssc-rd04-a04-rebind-base
+          agent/ssc-rd04-a04-rebind-trigger
+          agent/ssc-rd04-a05-materializer-base
+          agent/ssc-rd04-a05-materializer-base-v2
+          agent/ssc-rd04-a05-materializer-trigger-v2
+          agent/ssc-rd04-a06-full-decision-corpus
+          agent/ssc-rd04-a06-registry-probe-base
+          agent/ssc-rd04-a06-registry-probe-trigger
+          agent/ssc-rd04-a06-registry-probe-trigger-v2
+          agent/ssc-rd04-a06-registry-probe-trigger-v3
+          agent/ssc-rd04-a06-registry-probe-trigger-v4
+          agent/ssc-rd04-a06-run-monitor
+          agent/ssc-rd04-a07-candidate-receipts-base-v3
+          agent/ssc-rd04-a07-candidate-receipts-pass-v3
+          agent/ssc-rd04-a07-candidate-receipts-trigger-v3
+          agent/ssc-rd04-a07-full-shn-registry-base
+          agent/ssc-rd04-a07-full-shn-registry-trigger
+          agent/ssc-rd04-a07-official-crawl-base-v1
+          agent/ssc-rd04-a07-official-crawl-pass-v1
+          agent/ssc-rd04-a07-official-crawl-trigger-v1
+          agent/ssc-rd04-a07-official-sitemap-probe-base
+          agent/ssc-rd04-a07-official-sitemap-probe-pass
+          agent/ssc-rd04-a07-official-sitemap-probe-trigger
+          agent/ssc-rd04-a07-order-probe-base
+          agent/ssc-rd04-a07-order-probe-trigger
+          agent/ssc-rd04-a07-permanent-materializer-base-v1
+          agent/ssc-rd04-a07-permanent-materializer-trigger-v1
+          agent/ssc-rd04-a07-postfy-registry-probe-base
+          agent/ssc-rd04-a07-postfy-registry-probe-trigger
+          agent/ssc-rd04-a07-postmerge-custodian-base-v1
+          agent/ssc-rd04-a07-postmerge-custodian-trigger-v1
+          agent/ssc-rd04-a07-postmerge-proof-281f2
+          agent/ssc-rd04-a07-postmerge-proof-base-v2
+          agent/ssc-rd04-a07-postmerge-proof-trigger-v2
+          agent/ssc-rd04-a07-public-compliance-receipts
+          agent/ssc-rd04-a07-registry-release-base
+          agent/ssc-rd04-a07-shn-full-pass-v2
+          agent/ssc-rd04-a07-shn-full-trigger-v2
+          agent/ssc-rd04-a07-shn-pilot-base
+          agent/ssc-rd04-a07-shn-pilot-trigger
+          agent/ssc-rd04-a07-shn-semantics-base-v2
+          agent/ssc-rd04-a07-shn-semantics-pass-v2
+          agent/ssc-rd04-a07-shn-semantics-trigger-v2
+          agent/ssc-rd04-a07-status-probe-candidate-pass
+          agent/ssc-rd04-a07-status-probe-shn-pass
+          agent/ssc-rd04-a07-status-probe-sitemap-pass
+          agent/ssc-rd04-a07-transport-supervisor-base-v1
+          agent/ssc-rd04-a07-transport-supervisor-trigger-v1
+          agent/ssc-rd04-calfresh-decision-registry-a06
+          agent/ssc-rd04-california-remedy-chain-a05
+          agent/ssc-rd04-california-remedy-outcomes-a05
+          agent/ssc-rd04-public-implementation-receipts-a07
+          agent/ssc-rd04-snap-content-adjudication-a04
+          agent/ssc-rd04-snap-route-adjudication-a04
+          agent/ssc-rd04-snap-search-replay-a03
+          agent/ssc-rd04-snap-state-remedy
+          agent/ssc-rd04-snap-state-source-availability-a02
+          agent/ssc-rd04-source-plan-alias-repair-execute-base-v1
+          agent/ssc-rd04-wave02-authority-unit-freeze-base-v1
+          agent/ssc-rd04-wave02-authority-unit-freeze-trigger-v1
+          agent/ssc-rd04-wave02-chronology-context-base-v1
+          agent/ssc-rd04-wave02-chronology-context-trigger-v1
+          agent/ssc-rd04-wave02-context-adjudication-base-v1
+          agent/ssc-rd04-wave02-context-adjudication-trigger-v1
+          agent/ssc-rd04-wave02-permanent-materializer-v1
+          agent/ssc-rd04-wave02-pr-base-refresh-382578
+          agent/ssc-rd04-wave02-predecessor-source-base-v1
+          agent/ssc-rd04-wave02-predecessor-source-trigger-v1
+          agent/ssc-rd04-wave02-source-plan-execution-base-v1
+          agent/ssc-rd04-wave02-source-plan-execution-trigger-v1
+          agent/ssc-rd04-wave02-terminal-chronology-base-v1
+          agent/ssc-rd04-wave02-terminal-chronology-trigger-v1
+          agent/ssc-rd04-wave02-version-capture-base-v1
+          agent/ssc-rd04-wave02-version-capture-trigger-v1
+          agent/ssc-rd-wave02-rd04-version-history
+          REFS
+
+          sed -i 's/^          //' /tmp/rd04-retire-refs.txt
+          test "$(wc -l < /tmp/rd04-retire-refs.txt)" -eq 78
+          test "$(sort -u /tmp/rd04-retire-refs.txt | wc -l)" -eq 78
+          if grep -Ev '^agent/ssc-rd04|^agent/ssc-rd-wave02-rd04-version-history$' /tmp/rd04-retire-refs.txt; then
+            echo 'unexpected branch outside the bounded RD-04 namespace' >&2
+            exit 1
+          fi
+
+          : > /tmp/rd04-retired.tsv
+          while IFS= read -r branch; do
+            if git ls-remote --exit-code --heads origin "refs/heads/$branch" >/dev/null 2>&1; then
+              before="$(git ls-remote --heads origin "refs/heads/$branch" | cut -f1)"
+              git push origin --delete "$branch"
+              printf '%s\t%s\tdeleted\n' "$branch" "$before" >> /tmp/rd04-retired.tsv
+            else
+              printf '%s\t%s\talready_absent\n' "$branch" '-' >> /tmp/rd04-retired.tsv
+            fi
+          done < /tmp/rd04-retire-refs.txt
+
+          test "$(wc -l < /tmp/rd04-retired.tsv)" -eq 78
+          if git ls-remote --heads origin | grep -E 'refs/heads/(agent/ssc-rd04|agent/ssc-rd-wave02-rd04-version-history$)'; then
+            echo 'bounded RD-04 branch refs remain after retirement' >&2
+            exit 1
+          fi
+
+          sha256sum /tmp/rd04-retired.tsv > /tmp/SHA256SUMS
+
+      - name: Preserve retirement receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-completed-ref-retirement
+          path: |
+            /tmp/rd04-retired.tsv
+            /tmp/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Delete this cleanup ref last
+        run: git push origin --delete agent/ssc-rd04-wave02-ref-retirement
