@@ -1,0 +1,76 @@
+name: TEMP export SSC RD-05 semantic reconciliation inputs
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-semantic-reconciliation-export-base-v1
+    paths:
+      - '.github/tmp/ssc-rd05-semantic-reconciliation-export-v1.trigger'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd05-semantic-reconciliation-export-v1
+  cancel-in-progress: false
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd05-recommendation-disposition
+      EXPECTED_HEAD: 0d1e0744e6e9391a1bff12053918362ad389bcfa
+      ROOT: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify and stage exact reconciliation inputs
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git fetch origin "$TARGET_BRANCH"
+          test "$(git rev-parse origin/$TARGET_BRANCH)" = "$EXPECTED_HEAD"
+          node tools/validate-no-magic-human-gate.mjs
+
+          paths=(
+            "$ROOT/exact-object-capture-index.json"
+            "$ROOT/object-semantic-classification.json"
+            "$ROOT/object-semantic-rules.json"
+            "$ROOT/same-object-api-recovery-index.json"
+            "tools/acquisition/status-sovereignty-rd-wave02-rd05/build-object-semantic-classification.mjs"
+            "tools/acquisition/status-sovereignty-rd-wave02-rd05/validate-object-semantic-classification.mjs"
+            "test/status-sovereignty-rd-wave02-rd05-object-semantic-classification.test.js"
+          )
+          for path in "${paths[@]}"; do test -f "$path"; done
+          test -d "$ROOT/source-custody/same-object-api-recovery-v1/RD05-OBJ-051"
+
+          rm -rf /tmp/rd05-semantic-reconciliation-export
+          mkdir -p /tmp/rd05-semantic-reconciliation-export
+          for path in "${paths[@]}"; do
+            mkdir -p "/tmp/rd05-semantic-reconciliation-export/$(dirname "$path")"
+            cp -- "$path" "/tmp/rd05-semantic-reconciliation-export/$path"
+          done
+          mkdir -p "/tmp/rd05-semantic-reconciliation-export/$ROOT/source-custody/same-object-api-recovery-v1"
+          cp -a "$ROOT/source-custody/same-object-api-recovery-v1/RD05-OBJ-051" "/tmp/rd05-semantic-reconciliation-export/$ROOT/source-custody/same-object-api-recovery-v1/"
+
+          (
+            cd /tmp/rd05-semantic-reconciliation-export
+            find . -type f -print0 | sort -z | xargs -0 sha256sum > export-sha256.txt
+            printf '%s\n' "$EXPECTED_HEAD" > exact-head.txt
+            printf '%s\n' 'external_contacts=0' 'external_reviews=0' 'outside_human_dependency=false' > authority.txt
+          )
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+      - name: Upload exact reconciliation inputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-semantic-reconciliation-inputs-v1
+          path: /tmp/rd05-semantic-reconciliation-export
+          if-no-files-found: error
+          retention-days: 90
