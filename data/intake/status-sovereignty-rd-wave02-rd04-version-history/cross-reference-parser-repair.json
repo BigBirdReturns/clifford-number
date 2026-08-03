@@ -1,0 +1,106 @@
+{
+  "schema_version": "ssc-rd-wave02-rd04-cross-reference-parser-repair@1",
+  "wave_id": "SSC-RD-W02",
+  "lane_id": "RD-04",
+  "class_id": "RD-04-C01",
+  "issue": 789,
+  "as_of": "2026-08-02",
+  "status": "complete_v1_underinclusive_denominator_superseded",
+  "source_seed": {
+    "artifact_id": 8838664098,
+    "artifact_zip_sha256": "f99ef3ea3c06a0120ca46b84f0c71f110a5a5bb3600ff980c1d4182804796515",
+    "manifest_sha256": "b4f1eb8b79d5b564e5479b73df898e8ddb874b492171b84b401350eff4c26b92",
+    "source_units": 14,
+    "resolved_source_units": 13,
+    "unresolved_source_units": 1
+  },
+  "superseded_execution": {
+    "grammar": "rd04-version-cross-reference-grammar@1",
+    "workflow_run": 30765689103,
+    "artifact_id": 8838855765,
+    "artifact_zip_sha256": "04d93768ef7af0f626f30b9fc22e62b66593d8eb3b1b979cab1e637f9f33b95c",
+    "registry_sha256": "1f820604ad6f2a8fa383ce30eebe7bd1326ec433fc2153e9737cc846233260f7",
+    "reference_occurrences": 485,
+    "unique_reference_ids": 103,
+    "status": "historical_reproducible_but_underinclusive"
+  },
+  "repaired_execution": {
+    "grammar": "rd04-version-cross-reference-grammar@2",
+    "workflow_run": 30767610459,
+    "workflow_head": "c5f016710dfe1c5767d9158993d58bd27f8042a5",
+    "artifact_id": 8839456800,
+    "artifact_zip_sha256": "ea30dc14f7faeabbba39f9921250c540ac2685352f647a9b6b7fb053888660f2",
+    "registry_bytes": 612641,
+    "registry_sha256": "77f4038e4663caf5ee639f58bb39f0ca120d88a93ae0d0b7a3ab98bd9319ba19",
+    "delta_bytes": 5021,
+    "delta_sha256": "f05043d6480cef9ba9b4b574dcf4026a79a9480ec50b7c7bfde8bfd9e6d312b0",
+    "reference_occurrences": 660,
+    "unique_reference_ids": 154,
+    "seed_alias_reference_ids": 14,
+    "new_cross_reference_candidates": 140
+  },
+  "repair_law": {
+    "scan_scope_before": "individual_normalized_line",
+    "scan_scope_after": "normalized_page_with_original_line_locator",
+    "page_boundaries_preserved": true,
+    "cross_page_joining": false,
+    "outcome_selected_patterns": false,
+    "title_specific_federal_code_restriction_removed": true,
+    "exact_subsection_identity_preserved": true,
+    "manual_and_named_authority_classes_added": true
+  },
+  "delta": {
+    "v1_reference_ids": 103,
+    "v1_reference_ids_preserved": 101,
+    "v1_reference_ids_typed_superseded": 2,
+    "v2_reference_ids_added": 53,
+    "typed_supersessions": [
+      {
+        "reference_id": "7-CFR-273.24(b)",
+        "reason": "line-scoped parser truncated the wrapped citation 7 CFR 273.24(b)(2)",
+        "replacement_reference_ids": [
+          "7-CFR-273.24(b)(2)"
+        ]
+      },
+      {
+        "reference_id": "CA-WIC-11403",
+        "reason": "v1 grammar discarded the cited subsection identity",
+        "replacement_reference_ids": [
+          "CA-WIC-11403(b)",
+          "CA-WIC-11403(b)(4)",
+          "CA-WIC-11403(b)(5)"
+        ]
+      }
+    ]
+  },
+  "required_repaired_classes": [
+    "page-wrapped ACL and ACIN identifiers",
+    "all explicitly titled CFR and USC authorities",
+    "exact WIC and HSC subsections",
+    "California MPP sections",
+    "California Assembly and Senate bills",
+    "named federal acts and source-addressable statutory sections",
+    "named FNS memoranda"
+  ],
+  "current_result": {
+    "corrected_cross_reference_denominator_frozen": true,
+    "authority_unit_denominator_frozen": false,
+    "version_edge_adjudication_complete": false,
+    "class_closed": false,
+    "reviewed_disposition_changed": false,
+    "outside_human_dependency": false,
+    "project_blocking": false,
+    "graph_effect": "none",
+    "publication_effect": "none",
+    "adoption_effect": "none"
+  },
+  "boundaries": {
+    "parser_repair_is_source_correction": false,
+    "added_reference_is_controlling_authority": false,
+    "reference_occurrence_is_version_edge": false,
+    "source_title_is_supersession": false,
+    "source_failure_is_record_absence": false,
+    "source_failure_is_noncompliance": false,
+    "graph_effect": "none"
+  }
+}
