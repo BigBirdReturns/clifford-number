@@ -1,0 +1,40 @@
+name: TEMP export qualified PC-37 parent for PC-38
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc38-parent-source-export.yml'
+      - '.pc38-parent-source-export.trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 4268bb300a19e459c8158fe208f3e83dd639643d
+          fetch-depth: 1
+      - name: Package exact qualified PC-37 parent source
+        run: |
+          set -Eeuo pipefail
+          out=/tmp/pc38-parent-source
+          mkdir -p "$out"
+          git rev-parse HEAD > "$out/parent-head.sha"
+          tar --exclude='./.git' --exclude='./node_modules' --exclude='./dist' \
+            --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
+            -czf "$out/parent-source.tar.gz" .
+          sha256sum "$out/parent-source.tar.gz" > "$out/parent-source.sha256"
+          find . -type f -not -path './.git/*' -not -path './node_modules/*' -not -path './dist/*' | sort > "$out/parent-paths.txt"
+          wc -c "$out/parent-source.tar.gz" > "$out/parent-source.bytes"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc38-qualified-parent-source
+          path: /tmp/pc38-parent-source
+          if-no-files-found: error
+          retention-days: 7
