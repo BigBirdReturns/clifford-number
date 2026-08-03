@@ -1,0 +1,195 @@
+name: Temporary PC-37 exact product materializer
+
+on:
+  pull_request:
+    paths:
+      - '.pc37/payload.part-*'
+      - '.github/workflows/pc37-materialize.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc37-exact-product-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/preference-hard-to-enumerate-missingness-assurance-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify and extract the exact twelve-file PC-37 product
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64
+          import hashlib
+          import io
+          import json
+          import subprocess
+          import tarfile
+
+          expected_base64_sha256 = 'da871588d7c59b61dcbcd460fc086a4b486442bf71d91a916b895d190c8907ac'
+          expected_xz_sha256 = '980fd51b7d33eb54c51e3492af57301d14fd46e32b80f875470647d31657c57a'
+          expected_shards = {
+              'payload.part-00': '0c0320c2e56c844863ea9e52c89d5e5b989265336471e9e501bdc225b4909579',
+              'payload.part-01': '7b442601371fcb1600a1448f4c5a4f1252a195d5068fa2e9591bc1aba0d31403',
+              'payload.part-02': '8cfced2e92937b4dd31f969e59fd2b3569f48d66f9d1f88104d38a30d5e4eb1a',
+              'payload.part-03': 'f27af2fd39aea01568c7010acb1ee906ecdd0c927a9c87b0488fdea9c5ddef14',
+              'payload.part-04': '23534518a2d8b2e90f9762437c34b901444885502fb0669ed45d1fcd6688bda7',
+              'payload.part-05': 'cdcb9d20a2d33f4bcc1b13a71d82f469c51a655af0318f939ab3b618841875ce',
+          }
+          expected = {
+              'data/research/preference-custody/hard-to-enumerate-missingness-assurance.fixture.json': {'bytes': 27396, 'sha256': '2abac634d1786f8807d158070644790a1748c8178884a267683602e1c0bc1975'},
+              'tools/lib/preference-hard-to-enumerate-missingness-assurance.mjs': {'bytes': 30342, 'sha256': '7f4c60f219be1d94637cf116e2e2a80d15b986957611ad05a95cd2dcba5f0571'},
+              'tools/compile-preference-hard-to-enumerate-missingness-assurance.mjs': {'bytes': 1118, 'sha256': '6b6e6cfd34e6e107fd59929e6d1f3c80e7b3a4b75aba168738190caba039a8b0'},
+              'tools/validate-preference-hard-to-enumerate-missingness-assurance.mjs': {'bytes': 557, 'sha256': '4f9b6e48807863b6dfd346a3d6c937bfd4cde483e5797970471899b3f37d8d5b'},
+              'test/preference-hard-to-enumerate-missingness-assurance.test.js': {'bytes': 4654, 'sha256': 'cb9098fe25f9b647593e27f8d404157c8403433d7935970674828468c59b9d79'},
+              'docs/preference-custody-hard-to-enumerate-missingness-assurance.md': {'bytes': 674, 'sha256': 'bef684462b7ff634e91626bb47b65a79eca2eae10f3640d4be2099c257727190'},
+              'data/research/preference-custody/control-manifest-v35.json': {'bytes': 10969, 'sha256': '63ade16d0cd977e2dda9580e745662b4380d8d3f0218e4001b7230edfe381a8f'},
+              'tools/lib/preference-custody-manifest-v35.mjs': {'bytes': 14602, 'sha256': 'b9a10c91e9615ea3551da0d1a7389403e41003b16c5a39c321aeb6305ca9bd86'},
+              'tools/compile-preference-custody-manifest-v35.mjs': {'bytes': 1879, 'sha256': '1d3526fff6f51731080da5b1b51cbfc1080b97ba20d3cd2fc80c24398c9b47b0'},
+              'tools/validate-preference-custody-manifest-v35.mjs': {'bytes': 451, 'sha256': '6a0fa03ac2d71eb8d032288b0581bc1fb34c1fe3309b0be2324217497eac6e8d'},
+              'test/preference-custody-manifest-v35.test.js': {'bytes': 6951, 'sha256': 'fde8fa15f1de13633c0a69d57f10dbb12e6030177397a7b57c1ebabc39e3bbbb'},
+              'docs/preference-custody-laboratory-floor-v35.md': {'bytes': 374, 'sha256': '1770bc2b71fda27818db55757f711ac50ae7c3e5d989f3904f93158960e9640b'},
+          }
+
+          parts = sorted(Path('.pc37').glob('payload.part-*'))
+          required = [f'payload.part-{index:02d}' for index in range(6)]
+          if [path.name for path in parts] != required:
+              raise SystemExit(f'expected six ordered payload shards, found {[path.name for path in parts]}')
+          normalized = {path.name: ''.join(path.read_text().split()) for path in parts}
+          for name, required_sha256 in expected_shards.items():
+              actual_sha256 = hashlib.sha256(normalized[name].encode()).hexdigest()
+              if actual_sha256 != required_sha256:
+                  raise SystemExit(f'shard SHA-256 mismatch for {name}: {actual_sha256}')
+          encoded = ''.join(normalized[name] for name in required)
+          actual_base64_sha256 = hashlib.sha256(encoded.encode()).hexdigest()
+          if actual_base64_sha256 != expected_base64_sha256:
+              raise SystemExit(f'base64 SHA-256 mismatch: {actual_base64_sha256}')
+          xz_bytes = base64.b64decode(encoded, validate=True)
+          actual_xz_sha256 = hashlib.sha256(xz_bytes).hexdigest()
+          if actual_xz_sha256 != expected_xz_sha256:
+              raise SystemExit(f'xz SHA-256 mismatch: {actual_xz_sha256}')
+
+          with tarfile.open(fileobj=io.BytesIO(xz_bytes), mode='r:xz') as archive:
+              members = archive.getmembers()
+              names = [member.name for member in members]
+              if names != list(expected):
+                  raise SystemExit(f'archive path/order mismatch: {names}')
+              for member in members:
+                  if not member.isfile() or member.issym() or member.islnk():
+                      raise SystemExit(f'archive member must be regular: {member.name}')
+                  target = Path(member.name)
+                  if target.is_absolute() or '..' in target.parts:
+                      raise SystemExit(f'unsafe archive path: {member.name}')
+                  source = archive.extractfile(member)
+                  if source is None:
+                      raise SystemExit(f'archive member missing bytes: {member.name}')
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(source.read())
+
+          observed = {}
+          for name, record in expected.items():
+              raw = Path(name).read_bytes()
+              actual_sha256 = hashlib.sha256(raw).hexdigest()
+              if len(raw) != record['bytes'] or actual_sha256 != record['sha256']:
+                  raise SystemExit(f'file custody mismatch for {name}: {len(raw)} {actual_sha256}')
+              observed[name] = {'bytes': len(raw), 'sha256': actual_sha256}
+
+          receipt = {
+              'schema_version': 'pc37-materialization-receipt@1',
+              'source_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'payload_base64_sha256': actual_base64_sha256,
+              'payload_xz_sha256': actual_xz_sha256,
+              'permanent_nonworkflow_file_count': len(expected),
+              'files': observed,
+              'outside_human_dependency': False,
+          }
+          Path('/tmp/pc37-materialization-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+      - name: Qualify standalone PC-37 and compositional floor v35
+        run: |
+          node tools/compile-preference-hard-to-enumerate-missingness-assurance.mjs
+          node tools/validate-preference-hard-to-enumerate-missingness-assurance.mjs
+          node test/preference-hard-to-enumerate-missingness-assurance.test.js
+          node tools/compile-preference-custody-manifest-v35.mjs
+          node tools/validate-preference-custody-manifest-v35.mjs
+          node test/preference-custody-manifest-v35.test.js
+      - name: Regress historical Preference Custody floors and no-magic-human gate
+        run: |
+          set -euo pipefail
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+      - name: Commit only the exact product and retire all transport files
+        run: |
+          set -euo pipefail
+          source_head="$(git rev-parse HEAD)"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -- \
+            data/research/preference-custody/hard-to-enumerate-missingness-assurance.fixture.json \
+            tools/lib/preference-hard-to-enumerate-missingness-assurance.mjs \
+            tools/compile-preference-hard-to-enumerate-missingness-assurance.mjs \
+            tools/validate-preference-hard-to-enumerate-missingness-assurance.mjs \
+            test/preference-hard-to-enumerate-missingness-assurance.test.js \
+            docs/preference-custody-hard-to-enumerate-missingness-assurance.md \
+            data/research/preference-custody/control-manifest-v35.json \
+            tools/lib/preference-custody-manifest-v35.mjs \
+            tools/compile-preference-custody-manifest-v35.mjs \
+            tools/validate-preference-custody-manifest-v35.mjs \
+            test/preference-custody-manifest-v35.test.js \
+            docs/preference-custody-laboratory-floor-v35.md
+          git rm -- \
+            .github/workflows/pc37-materialize.yml \
+            .pc37/payload.part-00 \
+            .pc37/payload.part-01 \
+            .pc37/payload.part-02 \
+            .pc37/payload.part-03 \
+            .pc37/payload.part-04 \
+            .pc37/payload.part-05
+          python - <<'PY'
+          import subprocess
+          expected = sorted([
+              '.github/workflows/pc37-materialize.yml',
+              '.pc37/payload.part-00', '.pc37/payload.part-01', '.pc37/payload.part-02',
+              '.pc37/payload.part-03', '.pc37/payload.part-04', '.pc37/payload.part-05',
+              'data/research/preference-custody/hard-to-enumerate-missingness-assurance.fixture.json',
+              'tools/lib/preference-hard-to-enumerate-missingness-assurance.mjs',
+              'tools/compile-preference-hard-to-enumerate-missingness-assurance.mjs',
+              'tools/validate-preference-hard-to-enumerate-missingness-assurance.mjs',
+              'test/preference-hard-to-enumerate-missingness-assurance.test.js',
+              'docs/preference-custody-hard-to-enumerate-missingness-assurance.md',
+              'data/research/preference-custody/control-manifest-v35.json',
+              'tools/lib/preference-custody-manifest-v35.mjs',
+              'tools/compile-preference-custody-manifest-v35.mjs',
+              'tools/validate-preference-custody-manifest-v35.mjs',
+              'test/preference-custody-manifest-v35.test.js',
+              'docs/preference-custody-laboratory-floor-v35.md',
+          ])
+          observed = sorted(subprocess.check_output(['git', 'diff', '--cached', '--name-only'], text=True).splitlines())
+          if observed != expected:
+              raise SystemExit(f'staged path mismatch:\nexpected={expected}\nobserved={observed}')
+          print(f'exact staged path set verified: {len(observed)} paths')
+          PY
+          git commit -m 'Materialize PC-37 and Preference Custody floor v35'
+          git push --force-with-lease=refs/heads/research/preference-hard-to-enumerate-missingness-assurance-v1:"$source_head" origin HEAD:refs/heads/research/preference-hard-to-enumerate-missingness-assurance-v1
+      - name: Preserve exact materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc37-exact-materialization-receipt
+          path: /tmp/pc37-materialization-receipt.json
+          if-no-files-found: error
