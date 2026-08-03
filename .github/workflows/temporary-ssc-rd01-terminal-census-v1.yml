@@ -1,0 +1,95 @@
+name: TEMP SSC RD-01 terminal legal-entity census v1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd01-terminal-census-base-v1
+    paths:
+      - '.github/tmp/ssc-rd01-terminal-census-v1.trigger'
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ssc-rd01-terminal-census-v1
+  cancel-in-progress: false
+
+jobs:
+  census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout controller
+        uses: actions/checkout@v4
+        with:
+          path: controller
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Checkout exact RD-01 research head
+        uses: actions/checkout@v4
+        with:
+          ref: 72e657baa024e0e90cca5bfc532f8350fe6bca60
+          path: research
+          fetch-depth: 1
+
+      - name: Recover exact Stage-1 census artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          curl --fail --location --retry 3 --retry-all-errors \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            'https://api.github.com/repos/BigBirdReturns/clifford-number/actions/artifacts/8866039696/zip' \
+            --output stage1.zip
+          echo 'ac81681b0f080715326bf7b4d8bc8225e7f69d52c0b2b4e73b9f57dc90c335aa  stage1.zip' | sha256sum --check --strict
+          mkdir stage1
+          unzip -q stage1.zip -d stage1
+          test "$(jq -r '.combined_sha256' stage1/manifest.json)" = '5061d7ddaa9060d952b468a4514f201151f57daebf0261f2d042c8d1b4360daa'
+          test "$(jq -r '.research_head' stage1/input-receipt.json)" = '72e657baa024e0e90cca5bfc532f8350fe6bca60'
+          test "$(jq -r '.rows' stage1/input-receipt.json)" = '102'
+
+      - name: Execute fixed 612-route terminal census
+        run: |
+          set -Eeuo pipefail
+          test "$(git -C research rev-parse HEAD)" = '72e657baa024e0e90cca5bfc532f8350fe6bca60'
+          test "$(git -C controller hash-object .github/tmp/ssc-rd01-terminal-census-v1.mjs)" = '3cc5a6ba877d3569c1fc419ab2e8964e081d9c83'
+          test -z "$(git -C research status --porcelain=v1 --untracked-files=all)"
+          cd research
+          STAGE1_ROOT="$GITHUB_WORKSPACE/stage1" node ../controller/.github/tmp/ssc-rd01-terminal-census-v1.mjs
+          jq -e '
+            .class_id == "RD-01-C03" and
+            .class_closed == true and
+            .counts.frozen_rows == 102 and
+            .counts.terminal_rows == 102 and
+            .counts.fixed_stage2_routes == 612 and
+            ([.counts.route_state_counts[]] | add) == 612 and
+            .counts.external_contacts == 0 and
+            .counts.external_reviews == 0 and
+            .authority.outside_human_dependency == false and
+            .authority.denominator_widened == false and
+            .authority.selection_causation_finding == false and
+            .authority.common_control_finding == false and
+            .authority.publication_effect == "none" and
+            .authority.adoption_effect == "none" and
+            .authority.graph_effect == "none"
+          ' rd01-legal-entity-terminal-census-v1/summary.json >/dev/null
+          test "$(jq -r '.rows | length' rd01-legal-entity-terminal-census-v1/terminal-classification.json)" = '102'
+          test "$(jq -r '.routes' rd01-legal-entity-terminal-census-v1/route-universe.json)" = '612'
+          test "$(git rev-parse HEAD)" = '72e657baa024e0e90cca5bfc532f8350fe6bca60'
+          test -z "$(git status --porcelain=v1 --untracked-files=all | grep -v '^?? rd01-legal-entity-terminal-census-v1/' || true)"
+
+      - name: Upload checksum-bound terminal census
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd01-terminal-legal-entity-census-v1
+          path: research/rd01-legal-entity-terminal-census-v1
+          if-no-files-found: error
+          retention-days: 90
