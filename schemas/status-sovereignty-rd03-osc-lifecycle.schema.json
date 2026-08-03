@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-rd03-osc-lifecycle.schema.json",
+  "title": "SSC RD-03 Office of Strategic Capital lifecycle execution",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "execution_id",
+    "hypothesis_id",
+    "issue",
+    "parent_issue",
+    "lane_id",
+    "authority",
+    "source_ledger_path",
+    "counts",
+    "instrument_states",
+    "current_result",
+    "boundaries"
+  ],
+  "properties": {
+    "schema_version": { "const": "status-sovereignty-rd03-osc-lifecycle@1" },
+    "execution_id": { "const": "SSC-RD03-OSC-LIFECYCLE-01" },
+    "hypothesis_id": { "const": "SSC-H01" },
+    "issue": { "const": 619 },
+    "parent_issue": { "const": 615 },
+    "lane_id": { "const": "SSC-F10" },
+    "authority": { "const": "source_acquisition_only_not_review_or_adjudication" },
+    "source_ledger_path": { "type": "string", "minLength": 1 },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_records",
+        "named_instruments",
+        "executed_loans",
+        "cash_disbursements_observed",
+        "conditional_preclose_commitments",
+        "milestone_records_observed",
+        "repayments_observed",
+        "public_recoveries_observed",
+        "reviewed_disposition_changes",
+        "complete_compact_findings",
+        "graph_effects",
+        "publication_effects"
+      ],
+      "properties": {
+        "source_records": { "const": 9 },
+        "named_instruments": { "const": 5 },
+        "executed_loans": { "const": 1 },
+        "cash_disbursements_observed": { "const": 1 },
+        "conditional_preclose_commitments": { "const": 4 },
+        "milestone_records_observed": { "const": 0 },
+        "repayments_observed": { "const": 0 },
+        "public_recoveries_observed": { "const": 0 },
+        "reviewed_disposition_changes": { "const": 0 },
+        "complete_compact_findings": { "const": 0 },
+        "graph_effects": { "const": 0 },
+        "publication_effects": { "const": 0 }
+      }
+    },
+    "instrument_states": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "announced_usd", "legal_state", "cash_disbursement_observed", "repayment_observed", "public_recovery_observed"],
+        "properties": {
+          "name": { "enum": ["MP Materials", "Vulcan Elements", "ReElement Technologies", "Phoenix Tailings", "Energy Fuels"] },
+          "announced_usd": { "type": "integer", "minimum": 1 },
+          "legal_state": { "enum": ["executed_direct_loan", "conditional_preclose_commitment"] },
+          "cash_disbursement_observed": { "type": "boolean" },
+          "repayment_observed": { "const": false },
+          "public_recovery_observed": { "const": false }
+        }
+      }
+    },
+    "current_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "terminal_state",
+        "reviewed_disposition_changed",
+        "complete_underwriting_to_recovery_chain",
+        "favoritism_finding",
+        "extraction_finding",
+        "complete_compact_finding",
+        "graph_effect",
+        "publication_effect"
+      ],
+      "properties": {
+        "terminal_state": { "const": "partial_lifecycle_one_disbursed_four_preclose_recovery_open" },
+        "reviewed_disposition_changed": { "const": false },
+        "complete_underwriting_to_recovery_chain": { "const": false },
+        "favoritism_finding": { "const": false },
+        "extraction_finding": { "const": false },
+        "complete_compact_finding": { "const": false },
+        "graph_effect": { "const": "none" },
+        "publication_effect": { "const": "none" }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "conditional_commitment_is_executed_loan",
+        "executed_loan_is_full_disbursement",
+        "announced_warrant_is_issued_public_right",
+        "repayment_terms_are_observed_repayment",
+        "named_subset_is_complete_cohort",
+        "private_capacity_proves_extraction",
+        "strategic_financing_proves_favoritism",
+        "graph_effect"
+      ],
+      "properties": {
+        "conditional_commitment_is_executed_loan": { "const": false },
+        "executed_loan_is_full_disbursement": { "const": false },
+        "announced_warrant_is_issued_public_right": { "const": false },
+        "repayment_terms_are_observed_repayment": { "const": false },
+        "named_subset_is_complete_cohort": { "const": false },
+        "private_capacity_proves_extraction": { "const": false },
+        "strategic_financing_proves_favoritism": { "const": false },
+        "graph_effect": { "const": "none" }
+      }
+    }
+  }
+}
