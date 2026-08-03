@@ -85,23 +85,20 @@ jobs:
           assert text.count(marker) == 1, text.count(marker)
           repair = r'''python - <<'INNER_PY'
           from pathlib import Path
+          import re
 
           builder = Path('/tmp/rd06-authored/tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs')
           source = builder.read_text()
-          lines = source.splitlines()
-          matches = [
-              index for index, line in enumerate(lines)
-              if 'seed closure target changed' in line
-          ]
-          assert len(matches) == 1, matches
-          index = matches[0]
-          original = lines[index]
-          assert 'seed.closure_target' in original
-          assert original.lstrip().startswith('ok(')
-          indent = original[:len(original) - len(original.lstrip())]
-          lines[index] = indent + "ok(seed.closure_target === 'bidder, offeror, architecture, subcontractor, withdrawal, and nonresponsive public universe', 'seed closure target changed');"
-          repaired = '\n'.join(lines) + ('\n' if source.endswith('\n') else '')
+          pattern = re.compile(
+              r"ok\(\s*seed\.closure_target\s*===\s*[^,]+,\s*['\"]seed closure target changed['\"]\s*\);",
+              re.MULTILINE | re.DOTALL,
+          )
+          matches = list(pattern.finditer(source))
+          assert len(matches) == 1, len(matches)
+          replacement = "ok(seed.closure_target === 'bidder, offeror, architecture, subcontractor, withdrawal, and nonresponsive public universe', 'seed closure target changed');"
+          repaired = pattern.sub(replacement, source, count=1)
           assert repaired.count('seed closure target changed') == 1
+          assert repaired.count('bidder, offeror, architecture, subcontractor, withdrawal, and nonresponsive public universe') >= 1
           assert 'complete bidder, offeror, architecture, subcontractor, withdrawal, and nonresponsive universe' in repaired
           builder.write_text(repaired)
           INNER_PY
