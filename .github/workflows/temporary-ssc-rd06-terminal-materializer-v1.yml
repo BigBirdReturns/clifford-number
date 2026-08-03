@@ -70,11 +70,11 @@ jobs:
           from pathlib import Path
           path = Path('/tmp/rd06-materialize.sh')
           text = path.read_text()
-          needle = '${{ github.repository }}'
+          needle = '$' + '{{ github.repository }}'
           assert text.count(needle) == 1, text.count(needle)
           path.write_text(text.replace(needle, 'BigBirdReturns/clifford-number'))
+          assert needle not in path.read_text()
           PY
-          ! grep -Fq '${{' /tmp/rd06-materialize.sh
           bash -n /tmp/rd06-materialize.sh
           bash -x /tmp/rd06-materialize.sh
 
