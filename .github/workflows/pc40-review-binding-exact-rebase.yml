@@ -234,6 +234,11 @@ jobs:
           node tools/validate-no-magic-human-gate.mjs
           node test/no-magic-human-gate.test.js
           npm run release:check
+          git diff --exit-code -- "${paths[@]}"
+          git status --porcelain > /tmp/pc40-post-release-status.txt
+          cat /tmp/pc40-post-release-status.txt
+          git reset --hard "$product_commit"
+          git clean -fdx
           test -z "$(git status --porcelain)"
 
           git fetch origin main "$TARGET_BRANCH" agent/pc40-review-binding-rebase --no-tags
@@ -296,5 +301,6 @@ jobs:
             /tmp/pc40-final-paths.expected
             /tmp/pc40-main-advance-paths.txt
             /tmp/pc40-overlap.txt
+            /tmp/pc40-post-release-status.txt
           if-no-files-found: error
           retention-days: 90
