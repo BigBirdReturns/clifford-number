@@ -1,0 +1,114 @@
+name: TEMP repair PC-42 materialization receipt
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc42-materialization-receipt-repair.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      SOURCE_BRANCH: agent/pc42-exact-product-materializer
+      TARGET_BRANCH: research/preference-linkage-score-calibration-assurance-v1
+      PUBLICATION_PARENT: 66e1ff01a381e39858e3e55717d74d40a15ca984
+      PRODUCT_COMMIT: a9b6d6d10aaabf6c7fdbdd4be93358d72aa34f9e
+      PRODUCT_TREE: 25534a47177b77c0c976671d8d9cb203f95b33ec
+      ORIGINAL_RUN: 30843408595
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc42-exact-product-materializer
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Bind exact product commit to the twelve-file source manifest
+        run: |
+          set -Eeuo pipefail
+          cp .pc42/nonworkflow-manifest.tsv /tmp/pc42-nonworkflow-manifest.tsv
+          cut -f1 /tmp/pc42-nonworkflow-manifest.tsv | LC_ALL=C sort > /tmp/pc42-paths.expected
+          test "$(wc -l < /tmp/pc42-paths.expected | tr -d ' ')" = 12
+          git fetch origin main "$TARGET_BRANCH" "$SOURCE_BRANCH" --no-tags
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$PRODUCT_COMMIT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^")" = "$PUBLICATION_PARENT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^{tree}")" = "$PRODUCT_TREE"
+          git diff-tree --no-commit-id --name-only -r "$PRODUCT_COMMIT" | LC_ALL=C sort > /tmp/pc42-paths.observed
+          diff -u /tmp/pc42-paths.expected /tmp/pc42-paths.observed
+          git checkout --detach "$PRODUCT_COMMIT"
+          while IFS=$'\t' read -r path bytes sha blob; do
+            test "$(stat -c '%s' "$path")" = "$bytes"
+            test "$(sha256sum "$path" | cut -d' ' -f1)" = "$sha"
+            test "$(git rev-parse "$PRODUCT_COMMIT:$path")" = "$blob"
+          done < /tmp/pc42-nonworkflow-manifest.tsv
+      - name: Re-run exact product qualification
+        run: |
+          set -Eeuo pipefail
+          node tools/compile-preference-linkage-score-calibration-assurance.mjs
+          node tools/validate-preference-linkage-score-calibration-assurance.mjs
+          node test/preference-linkage-score-calibration-assurance.test.js
+          node tools/compile-preference-custody-manifest-v40.mjs
+          node tools/validate-preference-custody-manifest-v40.mjs
+          node test/preference-custody-manifest-v40.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | LC_ALL=C sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          while IFS=$'\t' read -r path _; do git diff --exit-code -- "$path"; done < /tmp/pc42-nonworkflow-manifest.tsv
+          touch /tmp/pc42-receipt-repair.pass
+      - name: Emit corrected receipt
+        if: always()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os
+          files = {}
+          manifest_path = Path('/tmp/pc42-nonworkflow-manifest.tsv')
+          if manifest_path.exists():
+              for line in manifest_path.read_text().splitlines():
+                  path, size, sha256, blob = line.split('\t')
+                  files[path] = {'bytes': int(size), 'sha256': sha256, 'git_blob_sha1': blob}
+          canonical_manifest = json.dumps(files, sort_keys=True, separators=(',', ':')).encode()
+          receipt = {
+              'schema_version': 'pc42-nonworkflow-materialization-receipt@2',
+              'original_workflow_run_id': os.environ['ORIGINAL_RUN'],
+              'proof_workflow_run_id': os.environ.get('GITHUB_RUN_ID'),
+              'source_head': 'e3aafeb6950f2025f50ed3c71675f9231cbbefa1',
+              'publication_parent': os.environ['PUBLICATION_PARENT'],
+              'product_commit': os.environ['PRODUCT_COMMIT'],
+              'product_tree': os.environ['PRODUCT_TREE'],
+              'target_branch': os.environ['TARGET_BRANCH'],
+              'base64_bytes': 22736,
+              'base64_sha256': 'dfbe68d870ea6463be834f56e6b2a4eb00515bcba477cf9c19df3ac91c474bb2',
+              'archive_bytes': 17052,
+              'archive_sha256': '04a117e541a42d98dbf3c4cf391b22ee6df0837ccfad67f724d52be3e3897073',
+              'nonworkflow_path_count': len(files),
+              'files': files,
+              'file_manifest_sha256': hashlib.sha256(canonical_manifest).hexdigest(),
+              'focused_pc42': 'pass' if Path('/tmp/pc42-receipt-repair.pass').exists() else 'not_proved',
+              'historical_preference_custody_floors': 'pass' if Path('/tmp/pc42-receipt-repair.pass').exists() else 'not_proved',
+              'no_magic_human': 'pass' if Path('/tmp/pc42-receipt-repair.pass').exists() else 'not_proved',
+              'release_check': 'pass' if Path('/tmp/pc42-receipt-repair.pass').exists() else 'not_proved',
+              'target_published': True,
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          Path('/tmp/pc42-materialization-receipt-v2.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc42-materialization-receipt-v2-${{ github.run_id }}
+          path: /tmp/pc42-materialization-receipt-v2.json
+          if-no-files-found: error
+          retention-days: 90
