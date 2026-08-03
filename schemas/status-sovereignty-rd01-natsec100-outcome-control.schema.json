@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-rd01-natsec100-outcome-control.schema.json",
+  "title": "SSC RD-01 NatSec100 matched outcome and nonselection control",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "execution_id", "hypothesis_id", "issue", "parent_issue", "lane_id", "as_of", "authority", "parent_receipts", "selection_contract", "sample", "identification_limits", "open_denominators", "current_result", "boundaries"],
+  "properties": {
+    "schema_version": { "const": "status-sovereignty-rd01-natsec100-outcome-control@1" },
+    "execution_id": { "const": "SSC-RD01-NATSEC100-OUTCOME-01" },
+    "hypothesis_id": { "const": "SSC-H01" },
+    "issue": { "const": 617 },
+    "parent_issue": { "const": 615 },
+    "lane_id": { "const": "SSC-F09" },
+    "as_of": { "type": "string", "format": "date" },
+    "authority": { "const": "source_acquisition_only_not_review_or_adjudication" },
+    "parent_receipts": { "type": "array", "minItems": 2, "maxItems": 2 },
+    "selection_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["edition", "selected_sample_rule", "selected_rank_positions", "all_explicit_assessed_nonselection_examples_included", "selected_because_expected_result", "post_publication_window_declared_sufficient_for_causal_inference"],
+      "properties": {
+        "edition": { "const": "2026" },
+        "selected_sample_rule": { "const": "fixed_rank_positions_top_middle_bottom" },
+        "selected_rank_positions": { "const": [1, 50, 100] },
+        "all_explicit_assessed_nonselection_examples_included": { "const": true },
+        "selected_because_expected_result": { "const": false },
+        "post_publication_window_declared_sufficient_for_causal_inference": { "const": false }
+      }
+    },
+    "sample": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sample_id", "selection_state", "rank", "published_name", "legal_entity_state", "prepublication_contracting_or_capital_is_scoring_input", "postpublication_capital_join", "postpublication_award_nonaward_join", "deployment_failure_exit_join", "causal_effect_of_rank_identified"],
+        "properties": {
+          "sample_id": { "type": "string", "pattern": "^NS100-2026-[RN][0-9]{3}$" },
+          "selection_state": { "enum": ["selected", "explicit_assessed_nonselection_or_ineligibility_example"] },
+          "rank": { "type": ["integer", "null"] },
+          "published_name": { "enum": ["Anduril", "Divergent", "Harmonic", "SpaceX", "Anthropic"] },
+          "legal_entity_state": { "enum": ["partially_resolved_existing_corpus", "unresolved", "requires_exact_edition_entity_resolution"] },
+          "prepublication_contracting_or_capital_is_scoring_input": { "type": ["boolean", "null"] },
+          "postpublication_capital_join": { "const": "not_acquired" },
+          "postpublication_award_nonaward_join": { "const": "not_acquired" },
+          "deployment_failure_exit_join": { "const": "not_acquired" },
+          "causal_effect_of_rank_identified": { "const": false }
+        }
+      }
+    },
+    "identification_limits": { "type": "array", "minItems": 5, "maxItems": 5, "items": { "type": "string", "minLength": 1 } },
+    "open_denominators": { "type": "array", "minItems": 6, "maxItems": 6, "items": { "type": "string", "minLength": 1 } },
+    "current_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["terminal_state", "sample_denominator_frozen", "matched_outcome_control_complete", "selection_causation_supported", "technical_superiority_finding", "procurement_causation_finding", "coordination_finding", "common_purpose_finding", "reviewed_disposition_changed", "complete_compact_finding", "graph_effect", "publication_effect"],
+      "properties": {
+        "terminal_state": { "const": "requires_additional_acquisition" },
+        "sample_denominator_frozen": { "const": true },
+        "matched_outcome_control_complete": { "const": false },
+        "selection_causation_supported": { "const": false },
+        "technical_superiority_finding": { "const": false },
+        "procurement_causation_finding": { "const": false },
+        "coordination_finding": { "const": false },
+        "common_purpose_finding": { "const": false },
+        "reviewed_disposition_changed": { "const": false },
+        "complete_compact_finding": { "const": false },
+        "graph_effect": { "const": "none" },
+        "publication_effect": { "const": "none" }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rank_proves_technical_superiority", "rank_proves_investment_or_procurement_causation", "later_success_proves_selector_accuracy", "no_joined_public_record_proves_no_event", "co_listing_proves_coordination", "graph_effect"],
+      "properties": {
+        "rank_proves_technical_superiority": { "const": false },
+        "rank_proves_investment_or_procurement_causation": { "const": false },
+        "later_success_proves_selector_accuracy": { "const": false },
+        "no_joined_public_record_proves_no_event": { "const": false },
+        "co_listing_proves_coordination": { "const": false },
+        "graph_effect": { "const": "none" }
+      }
+    }
+  }
+}
