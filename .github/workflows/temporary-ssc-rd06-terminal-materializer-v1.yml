@@ -89,15 +89,19 @@ jobs:
 
           builder = Path('/tmp/rd06-authored/tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs')
           source = builder.read_text()
-          pattern = re.compile(
-              r"ok\(\s*seed\.closure_target\s*===\s*[^,]+,\s*['\"]seed closure target changed['\"]\s*\);",
-              re.MULTILINE | re.DOTALL,
-          )
-          matches = list(pattern.finditer(source))
-          assert len(matches) == 1, len(matches)
+          message = 'seed closure target changed'
+          assert source.count(message) == 1, source.count(message)
+          message_index = source.index(message)
+          starts = list(re.finditer(r'\bok\s*\(', source[:message_index]))
+          assert starts, 'no enclosing ok(...) call before seed message'
+          start = starts[-1].start()
+          end = source.find(');', message_index)
+          assert end >= 0, 'no end of enclosing seed predicate'
+          original = source[start:end + 2]
+          assert 'seed' in original and 'closure_target' in original and message in original, original
           replacement = "ok(seed.closure_target === 'bidder, offeror, architecture, subcontractor, withdrawal, and nonresponsive public universe', 'seed closure target changed');"
-          repaired = pattern.sub(replacement, source, count=1)
-          assert repaired.count('seed closure target changed') == 1
+          repaired = source[:start] + replacement + source[end + 2:]
+          assert repaired.count(message) == 1
           assert repaired.count('bidder, offeror, architecture, subcontractor, withdrawal, and nonresponsive public universe') >= 1
           assert 'complete bidder, offeror, architecture, subcontractor, withdrawal, and nonresponsive universe' in repaired
           builder.write_text(repaired)
