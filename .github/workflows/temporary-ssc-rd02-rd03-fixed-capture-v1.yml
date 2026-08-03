@@ -1,0 +1,77 @@
+name: TEMP capture RD-02 and RD-03 fixed source sets
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd02-rd03-fixed-capture-base-v1
+    paths:
+      - '.ssc-rd02-rd03-fixed-capture/TRIGGER'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd02-rd03-fixed-capture-v1
+  cancel-in-progress: false
+
+jobs:
+  rd02:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd02-rd03-fixed-capture-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout checksum-bound controller
+        uses: actions/checkout@v4
+        with:
+          path: controller
+          fetch-depth: 1
+      - name: Checkout exact RD-02 matrix head
+        uses: actions/checkout@v4
+        with:
+          ref: c78d243ee3d5c5c9b6c09e4b620bd3192b5e25a1
+          path: lane
+          fetch-depth: 1
+      - name: Execute immutable five-route protocol
+        run: |
+          set -Eeuo pipefail
+          test "$(git -C lane rev-parse HEAD)" = 'c78d243ee3d5c5c9b6c09e4b620bd3192b5e25a1'
+          python controller/.github/tmp/ssc-rd02-rd03-fixed-capture.py \
+            rd02 lane /tmp/ssc-rd02-fixed-source-capture
+      - name: Upload exact RD-02 capture
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave02-fixed-source-capture-v1
+          path: /tmp/ssc-rd02-fixed-source-capture
+          if-no-files-found: error
+          retention-days: 90
+
+  rd03:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd02-rd03-fixed-capture-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout checksum-bound controller
+        uses: actions/checkout@v4
+        with:
+          path: controller
+          fetch-depth: 1
+      - name: Checkout exact RD-03 matrix head
+        uses: actions/checkout@v4
+        with:
+          ref: e70aec0f6809c77e198e0c4ee80f6bcadb6bbdc4
+          path: lane
+          fetch-depth: 1
+      - name: Execute immutable nine-route protocol
+        run: |
+          set -Eeuo pipefail
+          test "$(git -C lane rev-parse HEAD)" = 'e70aec0f6809c77e198e0c4ee80f6bcadb6bbdc4'
+          python controller/.github/tmp/ssc-rd02-rd03-fixed-capture.py \
+            rd03 lane /tmp/ssc-rd03-fixed-source-capture
+      - name: Upload exact RD-03 capture
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-wave02-fixed-source-capture-v1
+          path: /tmp/ssc-rd03-fixed-source-capture
+          if-no-files-found: error
+          retention-days: 90
