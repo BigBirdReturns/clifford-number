@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,6 +13,10 @@ const REGISTRY_PATH = 'data/project/counter-selector-wave-39-control-registry.js
 const MANIFEST_PATH = 'data/project/counter-selector-wave-39-release-manifest.json';
 const REPORT_PATH = 'reports/core-thesis/counter-selector-wave-39/data.json';
 const HTML_PATH = 'reports/core-thesis/counter-selector-wave-39/index.html';
+const EXPECTED_SOURCE_SHA256 = '8b3f3104531d8ccdb6b8b9326786ab098aa61110c919f93080886ec95226346f';
+const EXPECTED_SCHEMA_SHA256 = 'b386f453f4bf2b9096a5349b9a46884020b9f5f269c03d3349e13bf8fbffcfdb';
+
+function sha256(buffer) { return crypto.createHash('sha256').update(buffer).digest('hex'); }
 
 export const EXPECTED_COUNTS = {
   "controls_audited": 3,
@@ -316,6 +321,7 @@ function readJson(relativePath) { return JSON.parse(fs.readFileSync(path.join(RO
 function exact(relativePath, expected) { assert.equal(fs.readFileSync(path.join(ROOT, relativePath), 'utf8'), expected, `${relativePath} drift`); }
 
 export function validateSource(source) {
+  assert.equal(sha256(Buffer.from(stableJson(source), 'utf8')), EXPECTED_SOURCE_SHA256, 'source exact-contract drift');
   assert.equal(source.schema_version, 'counter-selector-digest-selected-restore@1');
   assert.equal(source.program_id, 'counter-selector-v1');
   assert.equal(source.wave_id, 'CS-W39-DR-01');
@@ -399,6 +405,7 @@ export function validateSource(source) {
 }
 
 export function validateSchemaAgainstSource(schema, source) {
+  assert.equal(sha256(Buffer.from(stableJson(schema), 'utf8')), EXPECTED_SCHEMA_SHA256, 'schema exact-contract drift');
   assert.equal(schema.additionalProperties, false);
   assert.equal(schema.properties.counts.additionalProperties, false);
   assert.equal(schema.properties.boundaries.additionalProperties, false);

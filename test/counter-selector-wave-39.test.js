@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { validateSource, EXPECTED_ADJUDICATIONS, EXPECTED_BOUNDARIES, EXPECTED_COUNTS, EXPECTED_JOIN_MATRIX, EXPECTED_SOURCE_RECORDS, EXPECTED_CONTROL_METADATA } from '../tools/validate-counter-selector-wave-39.mjs';
+import { validateSource, validateSchemaAgainstSource, EXPECTED_ADJUDICATIONS, EXPECTED_BOUNDARIES, EXPECTED_COUNTS, EXPECTED_JOIN_MATRIX, EXPECTED_SOURCE_RECORDS, EXPECTED_CONTROL_METADATA } from '../tools/validate-counter-selector-wave-39.mjs';
 
 const source = JSON.parse(fs.readFileSync('data/project/counter-selector-wave-39-digest-selected-restore.json', 'utf8'));
+const schema = JSON.parse(fs.readFileSync('schemas/counter-selector-digest-selected-restore.schema.json', 'utf8'));
 const clone = value => structuredClone(value);
 const mutations = [];
 
@@ -78,4 +79,29 @@ for (const [index, mutate] of mutations.entries()) {
   mutate(candidate);
   assert.throws(() => validateSource(candidate), undefined, `mutation ${index + 1} should fail`);
 }
-console.log(`counter-selector-wave-39.test: ${mutations.length} adversarial mutations PASS`);
+
+const sourceContractTamperCases = [
+  value => { value.controls[0].components.independent_verification += ' mutated'; },
+  value => { value.controls[1].positive_findings.push('mutated complete handoff claim'); },
+  value => { value.controls[2].known_limits[0] += ' mutated'; },
+];
+for (const [index, mutate] of sourceContractTamperCases.entries()) {
+  const candidate = clone(source);
+  mutate(candidate);
+  assert.throws(() => validateSource(candidate), undefined, `source contract tamper ${index + 1} should fail`);
+}
+
+const schemaContractTamperCases = [
+  value => { value.required = []; },
+  value => { value.$defs.control.properties.public_label.type = 'number'; },
+  value => { value.$defs.control.required = []; },
+];
+for (const [index, mutate] of schemaContractTamperCases.entries()) {
+  const candidate = clone(schema);
+  mutate(candidate);
+  assert.throws(() => validateSchemaAgainstSource(candidate, source), undefined, `schema contract tamper ${index + 1} should fail`);
+}
+
+const exactContractTamperCases = sourceContractTamperCases.length + schemaContractTamperCases.length;
+assert.equal(exactContractTamperCases, 6);
+console.log(`counter-selector-wave-39.test: ${mutations.length} adversarial mutations + ${exactContractTamperCases} exact-contract tamper cases PASS`);
