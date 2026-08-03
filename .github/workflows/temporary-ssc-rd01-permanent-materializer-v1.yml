@@ -91,33 +91,32 @@ jobs:
               for i in range(5)
           ]
           sizes = [4096, 4096, 4096, 4096, 1012]
-          checks = []
+          block_lines = [
+              '      - name: Reconstruct exact permanent package',
+              '        run: |',
+              '          set -Eeuo pipefail',
+              '          : > /tmp/rd01-permanent-package.b64',
+          ]
           for path, digest, size in zip(paths, hashes, sizes):
-              checks.extend([
+              block_lines.extend([
                   f"          test \"$(wc -c < '{path}' | tr -d ' ')\" = '{size}'",
                   f"          echo '{digest}  {path}' | sha256sum --check --strict",
                   f"          cat '{path}' >> /tmp/rd01-permanent-package.b64",
               ])
-          checks_text = '\n'.join(checks)
-          block = f'''      - name: Reconstruct exact permanent package
-        run: |
-          set -Eeuo pipefail
-          : > /tmp/rd01-permanent-package.b64
-{checks_text}
-          test "$(wc -c < /tmp/rd01-permanent-package.b64 | tr -d ' ')" = '17396'
-          echo "$PACKAGE_B64_SHA256  /tmp/rd01-permanent-package.b64" | sha256sum --check --strict
-          base64 --decode /tmp/rd01-permanent-package.b64 > /tmp/rd01-permanent-package.tar.gz
-          echo "$PACKAGE_TGZ_SHA256  /tmp/rd01-permanent-package.tar.gz" | sha256sum --check --strict
-          tar -xzf /tmp/rd01-permanent-package.tar.gz -C work
-          test "$(find work/.github/workflows work/docs/milestones work/schemas work/test work/tools -type f \\
-            \\( -name 'status-sovereignty-rd01-wave02-terminal-closure.yml' \\
-            -o -name 'ssc-rd-wave02-rd01-legal-entity.md' \\
-            -o -name 'status-sovereignty-rd-wave02-rd01-legal-entity.schema.json' \\
-            -o -name 'status-sovereignty-rd-wave02-rd01-legal-entity.test.js' \\
-            -o -name 'build-status-sovereignty-rd-wave02-rd01-legal-entity.mjs' \\
-            -o -name 'validate-status-sovereignty-rd-wave02-rd01-legal-entity.mjs' \\) | wc -l | tr -d ' ')" = '6'
-
-'''
+          block_lines.extend([
+              "          test \"$(wc -c < /tmp/rd01-permanent-package.b64 | tr -d ' ')\" = '17396'",
+              '          echo "$PACKAGE_B64_SHA256  /tmp/rd01-permanent-package.b64" | sha256sum --check --strict',
+              '          base64 --decode /tmp/rd01-permanent-package.b64 > /tmp/rd01-permanent-package.tar.gz',
+              '          echo "$PACKAGE_TGZ_SHA256  /tmp/rd01-permanent-package.tar.gz" | sha256sum --check --strict',
+              '          tar -xzf /tmp/rd01-permanent-package.tar.gz -C work',
+              '          test -f work/.github/workflows/status-sovereignty-rd01-wave02-terminal-closure.yml',
+              '          test -f work/docs/milestones/ssc-rd-wave02-rd01-legal-entity.md',
+              '          test -f work/schemas/status-sovereignty-rd-wave02-rd01-legal-entity.schema.json',
+              '          test -f work/test/status-sovereignty-rd-wave02-rd01-legal-entity.test.js',
+              '          test -f work/tools/build-status-sovereignty-rd-wave02-rd01-legal-entity.mjs',
+              '          test -f work/tools/validate-status-sovereignty-rd-wave02-rd01-legal-entity.mjs',
+          ])
+          block = '\n'.join(block_lines) + '\n\n'
           workflow.write_text(text[:start] + block + text[end:])
           PY
 
