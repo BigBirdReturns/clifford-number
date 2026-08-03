@@ -1,0 +1,105 @@
+name: TEMP replay fixed RD-05 successor evidence census
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd05-successor-census-v2.yml'
+      - '.rd05-successor-census/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-ssc-rd05-successor-census-v2-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd05-successor-census-trigger-v2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Extract exact v1 transaction and repair only the invalid blocking predicate
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('.github/workflows/temporary-ssc-rd05-successor-census-v1.yml')
+          lines = source.read_text().splitlines()
+          blocks = []
+          i = 0
+          while i < len(lines):
+              stripped = lines[i].lstrip()
+              if stripped != 'run: |':
+                  i += 1
+                  continue
+              indent = len(lines[i]) - len(stripped)
+              i += 1
+              block = []
+              while i < len(lines):
+                  line = lines[i]
+                  if not line.strip():
+                      block.append('')
+                      i += 1
+                      continue
+                  current = len(line) - len(line.lstrip())
+                  if current <= indent:
+                      break
+                  block.append(line[indent + 2:])
+                  i += 1
+              blocks.append('\n'.join(block) + '\n')
+
+          if len(blocks) != 4:
+              raise SystemExit(f'expected four exact run blocks, observed {len(blocks)}')
+
+          old = "assert any(action['action_type'] == action_type and action['blocking'] for action in row['successor_actions'])"
+          new = "assert any(action['action_type'] == action_type for action in row['successor_actions'])"
+          if blocks[0].count(old) != 1:
+              raise SystemExit('invalid-predicate seam changed')
+          blocks[0] = blocks[0].replace(old, new)
+          if any(old in block for block in blocks):
+              raise SystemExit('invalid blocking predicate remained')
+
+          for number, block in enumerate(blocks, start=1):
+              path = Path(f'/tmp/rd05-successor-step-{number}.sh')
+              path.write_text(block)
+              path.chmod(0o700)
+
+          print('exact v1 scripts extracted: 4; one invalid blocking predicate repaired')
+          PY
+
+      - name: Validate fixed source-derived plan and exact research lease
+        env:
+          RESEARCH_BRANCH: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          RESEARCH_HEAD: 03d0c627308b86ad75e8cdad6a90756c97e592ce
+          CLASSIFICATION_SHA256: ed35fbd41027497742d5db4473d8675978d37eab52f95c35628616aa7fba6f13
+        run: /tmp/rd05-successor-step-1.sh
+
+      - name: Execute all fixed official routes with bounded retry custody
+        env:
+          CENSUS_ROOT: /tmp/rd05-successor-census
+        run: /tmp/rd05-successor-step-2.sh
+
+      - name: Derive candidate-hit and terminal transport ledgers without adjudicating substance
+        env:
+          CENSUS_ROOT: /tmp/rd05-successor-census
+        run: /tmp/rd05-successor-step-3.sh
+
+      - name: Validate exact bounded census and clean repository state
+        env:
+          CENSUS_ROOT: /tmp/rd05-successor-census
+        run: /tmp/rd05-successor-step-4.sh
+
+      - name: Preserve fixed successor census
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-wave02-successor-census-v1
+          path: /tmp/rd05-successor-census
+          if-no-files-found: error
+          retention-days: 90
