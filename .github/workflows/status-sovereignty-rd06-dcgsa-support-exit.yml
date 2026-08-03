@@ -1,0 +1,77 @@
+name: Status-for-sovereignty RD-06 DCGS-A support and exit
+
+on:
+  pull_request:
+    paths:
+      - 'data/intake/**dcgs**'
+      - 'data/research/**dcgs**'
+      - 'schemas/status-sovereignty-rd06-dcgsa-support-exit.schema.json'
+      - 'docs/milestones/**rd06**'
+      - 'docs/milestones/**dcgs**'
+      - 'tools/build-status-sovereignty-rd06-dcgsa-support-exit.mjs'
+      - 'tools/validate-status-sovereignty-rd06-dcgsa-support-exit.mjs'
+      - 'test/status-sovereignty-rd06-dcgsa-support-exit.test.js'
+      - '.github/workflows/status-sovereignty-rd06-dcgsa-support-exit.yml'
+      - 'data/project/status-sovereignty-rd06-dcgsa-support-exit-release-manifest.json'
+      - 'build/core-thesis/status-sovereignty/rd06-dcgsa-support-exit/**'
+      - 'reports/core-thesis/status-sovereignty/rd06-dcgsa-support-exit/**'
+  push:
+    branches: [main]
+    paths:
+      - 'data/intake/**dcgs**'
+      - 'data/research/**dcgs**'
+      - 'schemas/status-sovereignty-rd06-dcgsa-support-exit.schema.json'
+      - 'docs/milestones/**rd06**'
+      - 'docs/milestones/**dcgs**'
+      - 'tools/build-status-sovereignty-rd06-dcgsa-support-exit.mjs'
+      - 'tools/validate-status-sovereignty-rd06-dcgsa-support-exit.mjs'
+      - 'test/status-sovereignty-rd06-dcgsa-support-exit.test.js'
+      - '.github/workflows/status-sovereignty-rd06-dcgsa-support-exit.yml'
+      - 'data/project/status-sovereignty-rd06-dcgsa-support-exit-release-manifest.json'
+      - 'build/core-thesis/status-sovereignty/rd06-dcgsa-support-exit/**'
+      - 'reports/core-thesis/status-sovereignty/rd06-dcgsa-support-exit/**'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Build and validate the bounded DCGS-A support and exit execution
+        run: |
+          node tools/build-status-sovereignty-rd06-dcgsa-support-exit.mjs
+          node tools/validate-status-sovereignty-rd06-dcgsa-support-exit.mjs
+          node test/status-sovereignty-rd06-dcgsa-support-exit.test.js
+      - name: Require exact committed DCGS-A products
+        run: |
+          git diff --exit-code -- \
+            data/project/status-sovereignty-rd06-dcgsa-support-exit-release-manifest.json \
+            build/core-thesis/status-sovereignty/rd06-dcgsa-support-exit/manifest.json \
+            build/core-thesis/status-sovereignty/rd06-dcgsa-support-exit/data.json \
+            reports/core-thesis/status-sovereignty/rd06-dcgsa-support-exit/data.json \
+            reports/core-thesis/status-sovereignty/rd06-dcgsa-support-exit/index.html
+      - name: Prove publication exclusion
+        run: |
+          npm run build:pages
+          npm run build:standalone
+          npm run validate:pages
+          test ! -d dist/data/intake
+          test ! -e dist/build/core-thesis/status-sovereignty/rd06-dcgsa-support-exit
+          test ! -e dist/reports/core-thesis/status-sovereignty/rd06-dcgsa-support-exit
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic reconstruction
+        run: |
+          git restore --staged --worktree .
+          node tools/build-status-sovereignty-rd06-dcgsa-support-exit.mjs
+          node tools/validate-status-sovereignty-rd06-dcgsa-support-exit.mjs
+          node test/status-sovereignty-rd06-dcgsa-support-exit.test.js
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
