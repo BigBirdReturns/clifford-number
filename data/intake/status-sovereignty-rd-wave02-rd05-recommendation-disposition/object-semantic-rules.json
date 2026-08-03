@@ -5,12 +5,18 @@
   "issue": 790,
   "as_of": "2026-08-03",
   "source_product": {
-    "research_head": "74dc76adee359b7f4c6b58fa898d2ecf3c2c0222",
+    "research_head": "0d1e0744e6e9391a1bff12053918362ad389bcfa",
+    "exact_capture_product_head": "74dc76adee359b7f4c6b58fa898d2ecf3c2c0222",
+    "semantic_parent_head": "205537aa7d550741b2e95df0a43484f0879559bc",
     "capture_index_path": "data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/exact-object-capture-index.json",
     "capture_index_sha256": "01c4ca54b5bd82777d71984054b1a27418ce89bb484478c13456a05d1f2ba508",
     "object_denominator": 58,
     "capture_manifest_entries": 322,
-    "capture_manifest_sha256": "5b0900d85b55fb449b90defa1ea26435b0737d300f1e05cce9cc9c4546392f53"
+    "capture_manifest_sha256": "5b0900d85b55fb449b90defa1ea26435b0737d300f1e05cce9cc9c4546392f53",
+    "same_object_recovery_index_path": "data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/same-object-api-recovery-index.json",
+    "same_object_recovery_index_sha256": "e9fce0df4afb753f001ad51652a3d48cff678d7a2ca57a382ab1126b2f386ede",
+    "same_object_recovery_product_head": "0d1e0744e6e9391a1bff12053918362ad389bcfa",
+    "same_object_recoveries_applied": 1
   },
   "classification_contract": {
     "all_frozen_objects_retained": true,
@@ -23,7 +29,11 @@
     "successful_http_request_is_not_semantic_target_delivery": true,
     "matched_control_is_not_target_evidence": true,
     "missing_public_output_is_not_no_influence": true,
-    "outside_human_dependency": false
+    "outside_human_dependency": false,
+    "same_object_recovery_requires_exact_document_binding": true,
+    "source_access_recovery_does_not_expand_denominator": true,
+    "recovered_membership_solicitation_is_not_completed_recommendation": true,
+    "linked_representations_remain_nonadmitted": true
   },
   "required_fields": [
     "record_class_and_issuing_authority",
@@ -2827,62 +2837,80 @@
       "id": "RD05-OBJ-051",
       "scope": "aces_target",
       "url": "https://www.federalregister.gov/documents/2024/04/29/2024-08630/solicitation-of-membership-nominations-for-the-advisory-committee-on-excellence-in-space-aces/",
-      "sha": "69fa13193e7b1b31f4a00667a85deadb464dd279c6d9323ca3efe5bcd6cad123",
-      "bytes": 10596,
-      "ctype": "text/html; charset=utf-8",
-      "title": "Federal Register :: Request Access",
-      "class": "federal_register_access_interstitial",
-      "authority": "FederalRegister.gov access-control surface; target notice body not delivered",
+      "sha": "40d9942728b30ba2d1c372f752884823c20ab575d91d8b866cad619dac1d9b9a",
+      "bytes": 3322,
+      "ctype": "application/json; charset=utf-8",
+      "title": "Solicitation of Membership Nominations for the Advisory Committee on Excellence in Space (ACES)",
+      "class": "federal_register_membership_solicitation_notice",
+      "authority": "Department of Commerce and NOAA official Federal Register notice",
       "identity": {
-        "state": "observed_target_locator_identity",
+        "state": "observed_same_object_federal_register_notice_identity",
         "value": {
           "committee": "ACES",
-          "target_document_number": "2024-08630",
-          "target_subject": "membership nominations"
+          "document_number": "2024-08630",
+          "notice_type": "Notice",
+          "action": "Solicitation of membership nominations.",
+          "same_object_recovery": true
         }
       },
       "dates": {
-        "state": "locator_date_only_target_body_unavailable",
+        "state": "observed_publication_and_nomination_deadline",
         "value": {
-          "locator_date": "2024-04-29",
-          "capture_final_url": "https://unblock.federalregister.gov/"
+          "publication_date": "2024-04-29",
+          "nomination_deadline": "2024-05-29",
+          "citation": "89 FR 33332"
         }
       },
       "authorship": {
-        "state": "target_authorship_not_adjudicated_access_interstitial",
-        "value": null
+        "state": "observed_agency_notice_issuing_authority_no_committee_work_product_authorship",
+        "value": {
+          "issuing_agencies": [
+            "Commerce Department",
+            "National Oceanic and Atmospheric Administration"
+          ],
+          "committee_work_product_authorship_observed": false
+        }
       },
       "recommendation": {
-        "status": "semantic_content_unavailable_access_interstitial",
-        "note": "The exact request resolved to an anti-automation access interstitial, not the Federal Register notice body. Target semantics are not inferred from the locator alone.",
-        "terminal": false
+        "status": "committee_formation_and_membership_solicitation_not_completed_recommendation",
+        "note": "The recovered Federal Register notice solicits committee membership and describes a future advisory mandate. It is not a completed committee recommendation, agency response, disposition, implementation, or outcome.",
+        "terminal": true
       },
       "chain": {
-        "state": "open_pending_same_object_official_api_retrieval",
-        "terminal": false
+        "state": "not_applicable_without_completed_recommendation_object",
+        "terminal": true
       },
       "relation": {
-        "state": "cross_publication_same_solicitation_unverified_target_body",
+        "state": "same_federal_register_notice_alternative_official_representation",
         "value": {
-          "primary_object_id": "RD05-OBJ-051",
-          "relationship_type": "federal_register_notice_locator_cross_referenced_by_web_announcement",
+          "canonical_frozen_object_id": "RD05-OBJ-051",
+          "relationship_type": "same_federal_register_notice_alternative_official_representation",
+          "original_representation": {
+            "final_url": "https://unblock.federalregister.gov/",
+            "record_class": "federal_register_access_interstitial",
+            "body_sha256": "69fa13193e7b1b31f4a00667a85deadb464dd279c6d9323ca3efe5bcd6cad123",
+            "semantic_target_delivered": false
+          },
+          "recovered_representation": {
+            "request_url": "https://www.federalregister.gov/api/v1/documents/2024-08630.json",
+            "final_url": "https://www.federalregister.gov/api/v1/documents/2024-08630.json",
+            "body_sha256": "40d9942728b30ba2d1c372f752884823c20ab575d91d8b866cad619dac1d9b9a",
+            "document_number": "2024-08630",
+            "semantic_target_delivered": true
+          },
           "related_object_ids": [
             "RD05-OBJ-034"
           ]
         }
       },
-      "terminal_state": "classified_access_interstitial_same_object_route_open",
+      "terminal_state": "classified_membership_solicitation_notice_same_object_recovery_complete",
       "anchors": [
-        "Your request has been flagged as potentially automated.",
-        "FederalRegister.gov API documentation"
+        "Solicitation of Membership Nominations for the Advisory Committee on Excellence in Space (ACES)",
+        "Solicitation of membership nominations.",
+        "NOAA is seeking up to 25 individuals",
+        "Submit nominations no later than May 29, 2024."
       ],
-      "actions": [
-        {
-          "action_type": "retrieve_same_object_via_federal_register_api",
-          "cluster_id": "FR-2024-08630",
-          "blocking": false
-        }
-      ]
+      "actions": []
     },
     {
       "id": "RD05-OBJ-052",

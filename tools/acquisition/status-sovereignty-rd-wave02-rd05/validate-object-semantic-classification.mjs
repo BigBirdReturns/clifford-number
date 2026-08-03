@@ -33,7 +33,7 @@ const EXPECTED_RECORD_CLASS_COUNTS = {
   committee_membership_directory: 1,
   committee_membership_solicitation_announcement: 1,
   committee_subcommittee_scope_page: 3,
-  federal_register_access_interstitial: 1,
+  federal_register_membership_solicitation_notice: 1,
   image_asset: 1,
   matched_control_board_landing_page: 1,
   matched_control_closed_meeting_event_page: 1,
@@ -54,7 +54,7 @@ const EMBED_PRIMARY = {
   'RD05-OBJ-050': 'RD05-OBJ-033'
 };
 
-const OPEN_CHAIN_IDS = ['RD05-OBJ-023', 'RD05-OBJ-024', 'RD05-OBJ-025', 'RD05-OBJ-029', 'RD05-OBJ-051'];
+const OPEN_CHAIN_IDS = ['RD05-OBJ-023', 'RD05-OBJ-024', 'RD05-OBJ-025', 'RD05-OBJ-029'];
 const ACTIVITY_ONLY_IDS = ['RD05-OBJ-004', 'RD05-OBJ-023', 'RD05-OBJ-024', 'RD05-OBJ-025', 'RD05-OBJ-029'];
 const CONTROL_IDS = Array.from({ length: 7 }, (_, i) => `RD05-OBJ-${String(52 + i).padStart(3, '0')}`);
 
@@ -66,8 +66,13 @@ export function validateSemanticClassification(value) {
   assert.equal(value.wave_id, 'SSC-RD-W02');
   assert.equal(value.class_id, 'RD-05-C03');
   assert.equal(value.issue, 790);
-  assert.equal(value.status, 'all_frozen_objects_semantically_classified_successor_protocols_open');
-  assert.equal(value.source_product.research_head, '74dc76adee359b7f4c6b58fa898d2ecf3c2c0222');
+  assert.equal(value.status, 'all_frozen_objects_semantically_classified_one_same_object_recovery_applied_successor_protocols_open');
+  assert.equal(value.source_product.research_head, '0d1e0744e6e9391a1bff12053918362ad389bcfa');
+  assert.equal(value.source_product.exact_capture_product_head, '74dc76adee359b7f4c6b58fa898d2ecf3c2c0222');
+  assert.equal(value.source_product.semantic_parent_head, '205537aa7d550741b2e95df0a43484f0879559bc');
+  assert.equal(value.source_product.same_object_recovery_product_head, '0d1e0744e6e9391a1bff12053918362ad389bcfa');
+  assert.equal(value.source_product.same_object_recovery_index_sha256, 'e9fce0df4afb753f001ad51652a3d48cff678d7a2ca57a382ab1126b2f386ede');
+  assert.equal(value.source_product.same_object_recoveries_applied, 1);
   assert.equal(value.source_product.capture_index_sha256, '01c4ca54b5bd82777d71984054b1a27418ce89bb484478c13456a05d1f2ba508');
 
   const contract = value.classification_contract;
@@ -79,6 +84,10 @@ export function validateSemanticClassification(value) {
   assert.equal(contract.agency_material_is_not_committee_recommendation, true);
   assert.equal(contract.committee_termination_is_not_rejection_or_suppression, true);
   assert.equal(contract.successful_http_request_is_not_semantic_target_delivery, true);
+  assert.equal(contract.same_object_recovery_requires_exact_document_binding, true);
+  assert.equal(contract.source_access_recovery_does_not_expand_denominator, true);
+  assert.equal(contract.recovered_membership_solicitation_is_not_completed_recommendation, true);
+  assert.equal(contract.linked_representations_remain_nonadmitted, true);
   assert.equal(contract.matched_control_is_not_target_evidence, true);
   assert.equal(contract.missing_public_output_is_not_no_influence, true);
   assert.equal(contract.outside_human_dependency, false);
@@ -96,9 +105,10 @@ export function validateSemanticClassification(value) {
   assert.equal(counts.agency_response_objects, 0);
   assert.equal(counts.adopted_or_rejected_objects, 0);
   assert.equal(counts.implementation_or_outcome_objects, 0);
-  assert.equal(counts.open_recommendation_disposition_chains, 5);
-  assert.equal(counts.source_access_interstitial_rows, 1);
-  assert.equal(counts.successor_action_rows, 8);
+  assert.equal(counts.open_recommendation_disposition_chains, 4);
+  assert.equal(counts.source_access_interstitial_rows, 0);
+  assert.equal(counts.same_object_recovered_notice_rows, 1);
+  assert.equal(counts.successor_action_rows, 7);
   assert.equal(counts.new_official_links_not_admitted, 495);
   assert.equal(counts.new_relevance_candidates_not_admitted, 76);
 
@@ -120,6 +130,11 @@ export function validateSemanticClassification(value) {
     assert.equal(object.fields.recommendation_state.value.completed_recommendation_observed, false);
     assert.equal(object.fields.exact_source_locator_and_byte_custody.value.body_sha256, object.evidence.exact_body_sha256);
     assert.equal(object.fields.exact_source_locator_and_byte_custody.value.frozen_url, object.frozen_url);
+    assert.equal(typeof object.fields.exact_source_locator_and_byte_custody.value.source_access_recovered, 'boolean');
+    assert.equal(object.evidence.source_representation,
+      object.fields.exact_source_locator_and_byte_custody.value.source_access_recovered
+        ? 'same_object_official_api_recovery'
+        : 'frozen_exact_capture');
   }
 
   const openIds = value.objects.filter((o) =>
@@ -159,17 +174,30 @@ export function validateSemanticClassification(value) {
   assert.equal(firstMeeting.fields.recommendation_state.value.status, 'agenda_activity_only_no_recommendation_text');
   assert.equal(firstMeeting.fields.recommendation_state.terminal, false);
 
-  const interstitial = value.objects.find((o) => o.object_id === 'RD05-OBJ-051');
-  assert.equal(interstitial.record_class, 'federal_register_access_interstitial');
-  assert.equal(interstitial.fields.exact_source_locator_and_byte_custody.value.final_url, 'https://unblock.federalregister.gov/');
-  assert.equal(interstitial.fields.recommendation_state.terminal, false);
-  assert.equal(interstitial.successor_actions[0].action_type, 'retrieve_same_object_via_federal_register_api');
+  const recoveredNotice = value.objects.find((o) => o.object_id === 'RD05-OBJ-051');
+  assert.equal(recoveredNotice.record_class, 'federal_register_membership_solicitation_notice');
+  assert.equal(recoveredNotice.observed_title, 'Solicitation of Membership Nominations for the Advisory Committee on Excellence in Space (ACES)');
+  assert.equal(recoveredNotice.evidence.exact_body_sha256, '40d9942728b30ba2d1c372f752884823c20ab575d91d8b866cad619dac1d9b9a');
+  assert.equal(recoveredNotice.evidence.source_representation, 'same_object_official_api_recovery');
+  const recoveryCustody = recoveredNotice.fields.exact_source_locator_and_byte_custody.value;
+  assert.equal(recoveryCustody.final_url, 'https://www.federalregister.gov/api/v1/documents/2024-08630.json');
+  assert.equal(recoveryCustody.source_access_recovered, true);
+  assert.equal(recoveryCustody.original_representation.final_url, 'https://unblock.federalregister.gov/');
+  assert.equal(recoveryCustody.original_representation.body_sha256, '69fa13193e7b1b31f4a00667a85deadb464dd279c6d9323ca3efe5bcd6cad123');
+  assert.equal(recoveryCustody.original_representation.semantic_target_delivered, false);
+  assert.equal(recoveryCustody.same_object_binding.document_number_locator_match, true);
+  assert.equal(recoveryCustody.same_object_binding.api_document_number_match, true);
+  assert.equal(recoveryCustody.same_object_binding.frozen_url_html_url_match, true);
+  assert.equal(recoveredNotice.fields.recommendation_state.value.status, 'committee_formation_and_membership_solicitation_not_completed_recommendation');
+  assert.equal(recoveredNotice.fields.recommendation_state.terminal, true);
+  assert.equal(recoveredNotice.fields.agency_response_state.terminal, true);
+  assert.deepEqual(recoveredNotice.successor_actions, []);
 
   const queue = value.successor_work_queues;
-  assert.equal(queue.object_actions.length, 8);
+  assert.equal(queue.object_actions.length, 7);
   assert.deepEqual(
     queue.object_actions.map((a) => a.object_id),
-    ['RD05-OBJ-001', 'RD05-OBJ-002', 'RD05-OBJ-023', 'RD05-OBJ-024', 'RD05-OBJ-025', 'RD05-OBJ-029', 'RD05-OBJ-040', 'RD05-OBJ-051']
+    ['RD05-OBJ-001', 'RD05-OBJ-002', 'RD05-OBJ-023', 'RD05-OBJ-024', 'RD05-OBJ-025', 'RD05-OBJ-029', 'RD05-OBJ-040']
   );
   assert.equal(queue.object_actions.every((a) => a.blocking === false), true);
   assert.equal(queue.nonadmitted_link_frontier.extraction_is_denominator_admission, false);
@@ -177,6 +205,8 @@ export function validateSemanticClassification(value) {
   assert.equal(queue.nonadmitted_link_frontier.new_relevance_candidates, 76);
 
   assert.equal(value.current_result.all_frozen_objects_semantically_classified, true);
+  assert.equal(value.current_result.same_object_source_recoveries_applied, 1);
+  assert.equal(value.current_result.source_access_successor_actions_open, 0);
   assert.equal(value.current_result.recommendation_disposition_protocol_complete, false);
   assert.equal(value.current_result.complete_official_object_universe_frozen, false);
   assert.equal(value.current_result.class_closed, false);
@@ -185,6 +215,7 @@ export function validateSemanticClassification(value) {
   const authority = value.authority;
   assert.equal(authority.exact_byte_custody_complete, true);
   assert.equal(authority.semantic_classification_complete_for_frozen_objects, true);
+  assert.equal(authority.same_object_source_recoveries_applied, 1);
   assert.equal(authority.completed_recommendations_observed, 0);
   assert.equal(authority.agency_responses_observed, 0);
   assert.equal(authority.adoptions_or_rejections_observed, 0);
@@ -202,5 +233,5 @@ const self = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(
 if (self) {
   const value = JSON.parse(fs.readFileSync(OUTPUT_PATH, 'utf8'));
   validateSemanticClassification(value);
-  console.log('validate-rd05-object-semantics: PASS — 58 classified objects, 5 open chains, zero completed recommendations');
+  console.log('validate-rd05-object-semantics: PASS — 58 classified objects, 1 same-object recovery, 4 open chains, zero completed recommendations');
 }
