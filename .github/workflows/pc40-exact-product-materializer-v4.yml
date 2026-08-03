@@ -1,0 +1,119 @@
+name: Temporary PC-40 exact product materializer v4
+
+on:
+  pull_request:
+    paths:
+      - '.pc40/materialize-v4.py'
+      - '.github/workflows/pc40-exact-product-materializer-v4.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc40-exact-product-materializer-v4
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc40-exact-product-materializer
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify transport and extract exact PC-40 nonworkflow product
+        run: python .pc40/materialize-v4.py
+      - name: Qualify PC-40, floor v38, historical floors, and no-magic-human
+        run: |
+          set -euo pipefail
+          node tools/compile-preference-linkage-confidence-adjudication-assurance.mjs
+          node tools/validate-preference-linkage-confidence-adjudication-assurance.mjs
+          node test/preference-linkage-confidence-adjudication-assurance.test.js
+          node tools/compile-preference-custody-manifest-v38.mjs
+          node tools/validate-preference-custody-manifest-v38.mjs
+          node test/preference-custody-manifest-v38.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+      - name: Rebind to exact current main and publish only twelve transport-free files
+        run: |
+          set -euo pipefail
+          source_head=$(git rev-parse HEAD)
+          qualified_base=de0b6eede3c9561d9cd5728c198fc62263b67b6d
+          target=research/preference-linkage-confidence-adjudication-assurance-v1
+          paths=(
+            data/research/preference-custody/control-manifest-v38.json
+            data/research/preference-custody/linkage-confidence-adjudication-assurance.fixture.json
+            docs/preference-custody-laboratory-floor-v38.md
+            docs/preference-custody-linkage-confidence-adjudication-assurance.md
+            test/preference-custody-manifest-v38.test.js
+            test/preference-linkage-confidence-adjudication-assurance.test.js
+            tools/compile-preference-custody-manifest-v38.mjs
+            tools/compile-preference-linkage-confidence-adjudication-assurance.mjs
+            tools/lib/preference-custody-manifest-v38.mjs
+            tools/lib/preference-linkage-confidence-adjudication-assurance.mjs
+            tools/validate-preference-custody-manifest-v38.mjs
+            tools/validate-preference-linkage-confidence-adjudication-assurance.mjs
+          )
+
+          git fetch origin main agent/pc40-exact-product-materializer --no-tags
+          test "$(git rev-parse origin/agent/pc40-exact-product-materializer)" = "$source_head"
+          publication_base=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$qualified_base" "$publication_base"
+          ! git ls-remote --exit-code --heads origin "$target" >/dev/null 2>&1
+
+          printf '%s\n' "${paths[@]}" | sort > /tmp/pc40-product-paths.expected
+          git diff --name-only "$qualified_base..$publication_base" | sort -u > /tmp/pc40-main-advance-paths.txt
+          comm -12 /tmp/pc40-product-paths.expected /tmp/pc40-main-advance-paths.txt > /tmp/pc40-overlap.txt
+          if test -s /tmp/pc40-overlap.txt; then
+            echo 'canonical-main overlap with PC-40 product:' >&2
+            cat /tmp/pc40-overlap.txt >&2
+            exit 1
+          fi
+
+          export GIT_INDEX_FILE=/tmp/pc40-index
+          rm -f "$GIT_INDEX_FILE"
+          git read-tree "$publication_base"
+          git add -- "${paths[@]}"
+          product_tree=$(git write-tree)
+          product_commit=$(printf '%s\n' 'Materialize PC-40 nonworkflow product for Preference Custody floor v38' | git commit-tree "$product_tree" -p "$publication_base")
+          mapfile -t observed < <(git diff-tree --no-commit-id --name-only -r "$product_commit" | sort)
+          mapfile -t expected < <(printf '%s\n' "${paths[@]}" | sort)
+          test "$(printf '%s\n' "${observed[@]}")" = "$(printf '%s\n' "${expected[@]}")"
+          test "${#observed[@]}" -eq 12
+          test "$(git rev-parse "$product_commit^")" = "$publication_base"
+          unset GIT_INDEX_FILE
+
+          git fetch origin main agent/pc40-exact-product-materializer --no-tags
+          test "$(git rev-parse origin/main)" = "$publication_base"
+          test "$(git rev-parse origin/agent/pc40-exact-product-materializer)" = "$source_head"
+          ! git ls-remote --exit-code --heads origin "$target" >/dev/null 2>&1
+
+          git push origin "$product_commit:refs/heads/$target"
+          printf '%s\n' "$qualified_base" > /tmp/pc40-qualified-parent.txt
+          printf '%s\n' "$publication_base" > /tmp/pc40-publication-parent.txt
+          printf '%s\n' "$product_commit" > /tmp/pc40-product-commit.txt
+          printf '%s\n' "$product_tree" > /tmp/pc40-product-tree.txt
+          printf '%s\n' "${observed[@]}" > /tmp/pc40-product-paths.txt
+      - name: Preserve exact dynamic-parent materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc40-exact-materialization-receipt-v4
+          path: |
+            /tmp/pc40-materialization-receipt.json
+            /tmp/pc40-qualified-parent.txt
+            /tmp/pc40-publication-parent.txt
+            /tmp/pc40-product-commit.txt
+            /tmp/pc40-product-tree.txt
+            /tmp/pc40-product-paths.txt
+            /tmp/pc40-main-advance-paths.txt
+            /tmp/pc40-overlap.txt
+          if-no-files-found: error
+          retention-days: 90
