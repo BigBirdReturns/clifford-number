@@ -61,7 +61,8 @@ for (const name of names) {
     result_count: Array.isArray(parsed?.results) ? parsed.results.length : null,
     sample_results: Array.isArray(parsed?.results) ? parsed.results.slice(0, 5) : null,
     page_metadata: parsed?.page_metadata ?? null,
-    messages: parsed?.messages ?? null
+    messages: parsed?.messages ?? null,
+    validation_payload: Array.isArray(parsed?.results) ? null : parsed
   };
   fs.writeFileSync(path.join(dir, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n');
   receipts.push(receipt);
@@ -74,10 +75,12 @@ const summary = {
   award_type_codes: awardTypeCodes,
   requested_fields: fields,
   http_successes: receipts.filter((x) => x.http_status >= 200 && x.http_status < 300).length,
+  http_422_responses: receipts.filter((x) => x.http_status === 422).length,
   parsed_json_responses: receipts.filter((x) => x.parsed_json).length,
   responses_with_results: receipts.filter((x) => (x.result_count ?? 0) > 0).length,
   results_with_recipient_uei: receipts.reduce((n, x) => n + (x.sample_results ?? []).filter((r) => r['Recipient UEI']).length, 0),
   results_with_recipient_id: receipts.reduce((n, x) => n + (x.sample_results ?? []).filter((r) => r.recipient_id).length, 0),
+  distinct_validation_payloads: [...new Set(receipts.map((x) => JSON.stringify(x.validation_payload)).filter((x) => x !== 'null'))].length,
   external_contacts: 0,
   external_reviews: 0,
   outside_human_dependency: false,
