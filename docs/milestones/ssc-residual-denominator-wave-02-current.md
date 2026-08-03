@@ -75,5 +75,3 @@ graph/publication/adoption:     none / none / none
 ```
 
 The RD‑05 `bounded_non_link` does not establish that private advice, informal influence, or unpublished action did not occur. RD‑04 and RD‑01 source gaps do not establish record absence or noncompliance. RD‑06 source restrictions do not establish nonexistence, unfairness, or nonparticipation. Four class closures do not close any broader lane or Wave 02.
-
-<!-- temporary exact-head trigger; restored in the next commit -->
