@@ -1,0 +1,101 @@
+name: TEMP replay exact RD-05 terminal closure v3
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd05-terminal-closure-wrapper-v3.yml'
+      - '.rd05-closure/**'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd05-terminal-closure-v3-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd05-terminal-closure-materializer-trigger-v3'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      SOURCE_WORKFLOW_REF: agent/ssc-rd05-terminal-closure-materializer-base-v2
+      SOURCE_WORKFLOW_PATH: .github/workflows/temporary-ssc-rd05-terminal-closure-materializer-v2.yml
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Extract exact v2 transaction and repair only redundant carrier fetch
+        run: |
+          set -Eeuo pipefail
+          git rev-parse --verify "refs/remotes/origin/${SOURCE_WORKFLOW_REF}"
+          git show "origin/${SOURCE_WORKFLOW_REF}:${SOURCE_WORKFLOW_PATH}" > /tmp/rd05-v2-workflow.yml
+          test "$(sha256sum /tmp/rd05-v2-workflow.yml | awk '{print $1}')" = '27bb1b4abf8f2aa87dd809d8c8617b0c14d3455f7b6695b5a654999e52852226'
+
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('/tmp/rd05-v2-workflow.yml').read_text().splitlines()
+          scripts = []
+          index = 0
+          while index < len(source):
+              if source[index] == '        run: |':
+                  index += 1
+                  body = []
+                  while index < len(source):
+                      line = source[index]
+                      if line.startswith('          ') or line == '':
+                          body.append(line[10:] if line.startswith('          ') else '')
+                          index += 1
+                          continue
+                      break
+                  scripts.append('\n'.join(body).rstrip() + '\n')
+                  continue
+              index += 1
+
+          assert len(scripts) == 6, len(scripts)
+          old = 'git fetch origin "refs/heads/${CARRIER_BRANCH}:refs/remotes/origin/${CARRIER_BRANCH}"'
+          new = 'git rev-parse --verify "refs/remotes/origin/${CARRIER_BRANCH}"'
+          assert scripts[0].count(old) == 1
+          scripts[0] = scripts[0].replace(old, new)
+          scripts[-1] = scripts[-1].replace(
+              "ssc-rd05-wave02-terminal-closure-materializer-receipt@2",
+              "ssc-rd05-wave02-terminal-closure-materializer-receipt@3",
+          )
+          for ordinal, script in enumerate(scripts, 1):
+              path = Path(f'/tmp/rd05-v3-step-{ordinal:02d}.sh')
+              path.write_text('#!/usr/bin/env bash\n' + script)
+              path.chmod(0o755)
+          print('extracted six exact run steps; repaired one redundant fetch; receipt schema advanced to v3')
+          PY
+
+      - name: Execute exact terminal-closure transaction
+        run: |
+          set -Eeuo pipefail
+          for script in /tmp/rd05-v3-step-*.sh; do
+            echo "executing ${script}"
+            "$script"
+            if test -s "$GITHUB_ENV"; then
+              set -a
+              # shellcheck disable=SC1090
+              source "$GITHUB_ENV"
+              set +a
+            fi
+          done
+
+      - name: Upload exact RD-05 terminal closure receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-terminal-closure-materializer-v3
+          path: ssc-rd05-terminal-closure-materializer-receipt.json
+          if-no-files-found: error
+          retention-days: 90
