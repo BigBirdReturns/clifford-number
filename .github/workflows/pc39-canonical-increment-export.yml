@@ -1,0 +1,55 @@
+name: Temporary PC-39 canonical increment export
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pc39-canonical-increment-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 382578570bbce842bb246688a356d99743b904a1
+          fetch-depth: 0
+      - name: Export exact canonical increment
+        run: |
+          set -euo pipefail
+          BASE=8cf3248aba2486589b6a48cc430ba290244873f3
+          HEAD=382578570bbce842bb246688a356d99743b904a1
+          test "$(git rev-parse HEAD)" = "$HEAD"
+          git cat-file -e "$BASE^{commit}"
+          git update-ref refs/heads/pc39-canonical-main "$HEAD"
+          git bundle create /tmp/pc39-canonical-increment.bundle refs/heads/pc39-canonical-main ^"$BASE"
+          git bundle verify /tmp/pc39-canonical-increment.bundle
+          BUNDLE_SHA=$(sha256sum /tmp/pc39-canonical-increment.bundle | awk '{print $1}')
+          PATHS_SHA=$(git diff --name-only "$BASE" "$HEAD" | LC_ALL=C sort | sha256sum | awk '{print $1}')
+          python - <<PY
+          import json
+          from pathlib import Path
+          receipt = {
+              'schema_version': 'pc39-canonical-increment-export@1',
+              'base_sha': '$BASE',
+              'head_sha': '$HEAD',
+              'bundle_sha256': '$BUNDLE_SHA',
+              'changed_path_count': len('''$(git diff --name-only "$BASE" "$HEAD")'''.splitlines()),
+              'changed_paths_sha256': '$PATHS_SHA',
+              'outside_human_dependency': False,
+              'graph_effect': 'none',
+          }
+          Path('/tmp/pc39-canonical-increment-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc39-canonical-increment
+          path: |
+            /tmp/pc39-canonical-increment.bundle
+            /tmp/pc39-canonical-increment-receipt.json
+          if-no-files-found: error
+          retention-days: 7
