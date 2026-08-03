@@ -1,0 +1,91 @@
+name: TEMP SSC RD-01 exact failed-route replay v1
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd01-failed-route-replay-base-v1
+    paths:
+      - '.github/tmp/ssc-rd01-failed-route-replay-v1.trigger'
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ssc-rd01-failed-route-replay-v1
+  cancel-in-progress: false
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct exact replay controller
+        run: |
+          set -Eeuo pipefail
+          echo '29675b278205034cfd0aa93a7a542b18c4ced29e7535e479f2dfd75709a573e2  .github/tmp/ssc-rd01-failed-route-replay-v1.mjs.gz.b64' | sha256sum --check --strict
+          base64 --decode .github/tmp/ssc-rd01-failed-route-replay-v1.mjs.gz.b64 | gzip --decompress > /tmp/ssc-rd01-failed-route-replay-v1.mjs
+          echo '511e9a15b1c4294c5cd033949c8902018317868aefc76d15f6f39c6ae6260274  /tmp/ssc-rd01-failed-route-replay-v1.mjs' | sha256sum --check --strict
+          node --check /tmp/ssc-rd01-failed-route-replay-v1.mjs
+
+      - name: Recover exact base terminal census
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          curl --fail --location --retry 3 --retry-all-errors \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            'https://api.github.com/repos/BigBirdReturns/clifford-number/actions/artifacts/8866950187/zip' \
+            --output base-census.zip
+          echo 'e961aeed386e7ca1709369b096f39794003d88ec7bb03f0e34b68af690ffd09f  base-census.zip' | sha256sum --check --strict
+          mkdir base-census
+          unzip -q base-census.zip -d base-census
+          test "$(jq -r '.combined_sha256' base-census/manifest.json)" = '7884982c8f9be70fb1d3dd92f524cf2c45c4943364c63f39b66af03f5a128936'
+          test "$(jq -r '.counts.fixed_stage2_routes' base-census/summary.json)" = '612'
+          test "$(jq -r '.counts.route_state_counts.transport_failure' base-census/summary.json)" = '112'
+          test "$(jq -r '.counts.route_state_counts.terminal_http_non_success' base-census/summary.json)" = '2'
+
+      - name: Replay only the exact 114 failed routes
+        run: |
+          set -Eeuo pipefail
+          BASE_CENSUS_ROOT="$GITHUB_WORKSPACE/base-census" node /tmp/ssc-rd01-failed-route-replay-v1.mjs
+          jq -e '
+            .class_id == "RD-01-C03" and
+            .class_closed == true and
+            .counts.frozen_rows == 102 and
+            .counts.terminal_rows == 102 and
+            .counts.fixed_stage2_routes == 612 and
+            .counts.fixed_replay_routes == 114 and
+            ([.counts.final_route_state_counts[]] | add) == 612 and
+            .counts.external_contacts == 0 and
+            .counts.external_reviews == 0 and
+            .authority.outside_human_dependency == false and
+            .authority.denominator_widened == false and
+            .authority.automatic_third_pass_authorized == false and
+            .authority.common_control_finding == false and
+            .authority.publication_effect == "none" and
+            .authority.adoption_effect == "none" and
+            .authority.graph_effect == "none"
+          ' rd01-failed-route-replay-v1/summary.json >/dev/null
+          test "$(jq -r '.routes' rd01-failed-route-replay-v1/failed-route-universe.json)" = '114'
+          test "$(jq -r '.rows | length' rd01-failed-route-replay-v1/terminal-classification.json)" = '102'
+          test "$(jq -r '.fixed_routes' rd01-failed-route-replay-v1/final-route-state-index.json)" = '612'
+
+      - name: Upload checksum-bound replay and final classification
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd01-failed-route-replay-v1
+          path: rd01-failed-route-replay-v1
+          if-no-files-found: error
+          retention-days: 90
