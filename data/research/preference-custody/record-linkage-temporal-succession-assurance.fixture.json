@@ -1,0 +1,501 @@
+{
+  "schema_version": "preference-record-linkage-temporal-succession-assurance-fixture@1",
+  "fixture_id": "same-linkage-verified-status-different-provenance-v1",
+  "issue": 870,
+  "parent_program_issue": 594,
+  "captured_at": "2026-08-03",
+  "status": "synthetic_control",
+  "graph_effect": "none",
+  "counts_toward_thesis_evidence": false,
+  "baseline": {
+    "operative_release_id": "RELEASE-INCIDENT-V1",
+    "operative_release_version": 1,
+    "source_records": 100,
+    "linked_records": 100,
+    "published_linkage_coverage_pct": 100,
+    "published_unmatched_records": 0,
+    "published_ambiguous_links": 0,
+    "public_linkage_status": "linkage_verified",
+    "namespace_status": "current",
+    "temporal_continuity": "complete",
+    "succession_continuity": "complete",
+    "approved_use": "longitudinal_exposure_estimation"
+  },
+  "required_refusal_rules": [
+    "one_hundred_linked_records_is_not_one_hundred_valid_same_entity_links",
+    "one_hundred_percent_linkage_coverage_is_not_absence_of_false_positive_false_negative_or_ambiguous_links",
+    "zero_published_unmatched_records_is_not_zero_hidden_unmatched_records",
+    "zero_published_ambiguous_links_is_not_complete_ambiguity_adjudication",
+    "current_namespace_status_is_not_namespace_separation_or_collision_free_custody",
+    "shared_identifier_is_not_same_entity_across_namespaces",
+    "alias_difference_is_not_different_entity",
+    "complete_temporal_continuity_is_not_nonoverlapping_validity_or_temporal_consistency",
+    "current_identifier_is_not_persistent_entity_after_retirement_or_recycling",
+    "successor_entity_is_not_persistent_predecessor_identity",
+    "complete_succession_continuity_is_not_source_complete_predecessor_successor_custody",
+    "silently_bridged_gap_is_not_observed_continuity",
+    "retroactive_relink_is_not_append_preserving_correction",
+    "historical_linkage_assurance_is_not_current_after_source_namespace_alias_entity_temporal_succession_or_version_change",
+    "public_linkage_verified_status_is_not_complete_current_correctable_or_authorized_evidence",
+    "linkage_or_succession_failure_is_not_proof_of_coercion_manipulation_discrimination_breach_misconduct_coordination_common_purpose_or_intent",
+    "binding_public_authority_requires_separate_current_public_authorization_receipts"
+  ],
+  "expected_classification": {
+    "one_hundred_linked_records_identifies_one_hundred_valid_same_entity_links": false,
+    "one_hundred_percent_linkage_coverage_identifies_absence_of_false_positive_false_negative_or_ambiguous_links": false,
+    "zero_published_unmatched_records_identifies_zero_hidden_unmatched_records": false,
+    "zero_published_ambiguous_links_identifies_complete_ambiguity_adjudication": false,
+    "current_namespace_status_identifies_namespace_separation_and_collision_free_custody": false,
+    "shared_identifier_identifies_same_entity_across_namespaces": false,
+    "alias_difference_identifies_different_entity": false,
+    "complete_temporal_continuity_identifies_nonoverlapping_validity_and_temporal_consistency": false,
+    "current_identifier_identifies_persistent_entity_after_retirement_or_recycling": false,
+    "successor_entity_identifies_persistent_predecessor_identity": false,
+    "complete_succession_continuity_identifies_source_complete_predecessor_successor_custody": false,
+    "silently_bridged_gap_identifies_observed_continuity": false,
+    "retroactive_relink_identifies_append_preserving_correction": false,
+    "historical_linkage_assurance_identifies_current_assurance_after_succession": false,
+    "public_linkage_verified_status_identifies_complete_current_correctable_authorized_evidence": false,
+    "linkage_or_succession_failure_identifies_coercion_manipulation_discrimination_breach_misconduct_coordination_common_purpose_or_intent": false,
+    "binding_public_authority_supported": false,
+    "manipulative_intent_inferable": false,
+    "real_world_effect_claimed": false,
+    "graph_effect_present": false,
+    "preference_change_present": false,
+    "complete_record_linkage_assurance_supported_in_at_least_one_world": true
+  },
+  "worlds": [
+    {
+      "world_id": "complete-cross-source-linkage-namespace-temporal-succession-and-version-custody",
+      "description": "Complete cross-source linkage, namespace, temporal identity, succession, append-only versioning, correction, and current lineage.",
+      "linkage": {
+        "false_positive_cross_namespace_links": 0,
+        "false_negative_alias_links": 0,
+        "hidden_unmatched_records": 0,
+        "ambiguous_link_records": 0
+      },
+      "namespace": {
+        "namespace_collision_count": 0,
+        "alias_fragmentation_count": 0,
+        "shared_identifier_without_namespace_count": 0,
+        "namespace_crosswalk_complete": true
+      },
+      "temporal_identity": {
+        "overlapping_validity_interval_records": 0,
+        "temporal_contradiction_records": 0,
+        "recycled_identifier_count": 0,
+        "validity_interval_custody_complete": true
+      },
+      "succession": {
+        "successor_conflation_count": 0,
+        "predecessor_successor_gap_count": 0,
+        "silently_bridged_gap_count": 0,
+        "succession_source_custody_complete": true
+      },
+      "versioning": {
+        "retroactive_relinked_records": 0,
+        "overwritten_version_records": 0,
+        "unaudited_backfill_records": 0,
+        "append_only_history_complete": true
+      },
+      "governance": {
+        "current_lineage_complete": true,
+        "correction_path_complete": true,
+        "ambiguity_adjudication_complete": true,
+        "binding_public_authority": false,
+        "unsupported_decisions": 0,
+        "stale_decisions": 0
+      },
+      "expected_flags": {
+        "linkage_confidence_complete": true,
+        "namespace_complete": true,
+        "alias_complete": true,
+        "temporal_identity_complete": true,
+        "identifier_lifecycle_complete": true,
+        "succession_complete": true,
+        "version_lineage_complete": true,
+        "ambiguity_adjudication_complete": true,
+        "current_lineage_complete": true,
+        "complete_record_linkage_assurance": true
+      }
+    },
+    {
+      "world_id": "namespace-collision-and-cross-namespace-false-linkage",
+      "description": "Namespace collision and shared identifier reuse create cross-namespace false links while the public status remains linkage_verified.",
+      "linkage": {
+        "false_positive_cross_namespace_links": 30,
+        "false_negative_alias_links": 0,
+        "hidden_unmatched_records": 0,
+        "ambiguous_link_records": 20
+      },
+      "namespace": {
+        "namespace_collision_count": 20,
+        "alias_fragmentation_count": 0,
+        "shared_identifier_without_namespace_count": 25,
+        "namespace_crosswalk_complete": false
+      },
+      "temporal_identity": {
+        "overlapping_validity_interval_records": 0,
+        "temporal_contradiction_records": 0,
+        "recycled_identifier_count": 0,
+        "validity_interval_custody_complete": true
+      },
+      "succession": {
+        "successor_conflation_count": 0,
+        "predecessor_successor_gap_count": 0,
+        "silently_bridged_gap_count": 0,
+        "succession_source_custody_complete": true
+      },
+      "versioning": {
+        "retroactive_relinked_records": 0,
+        "overwritten_version_records": 0,
+        "unaudited_backfill_records": 0,
+        "append_only_history_complete": true
+      },
+      "governance": {
+        "current_lineage_complete": true,
+        "correction_path_complete": true,
+        "ambiguity_adjudication_complete": false,
+        "binding_public_authority": false,
+        "unsupported_decisions": 100,
+        "stale_decisions": 0
+      },
+      "expected_flags": {
+        "linkage_confidence_complete": false,
+        "namespace_complete": false,
+        "alias_complete": true,
+        "temporal_identity_complete": true,
+        "identifier_lifecycle_complete": true,
+        "succession_complete": true,
+        "version_lineage_complete": true,
+        "ambiguity_adjudication_complete": false,
+        "current_lineage_complete": true,
+        "complete_record_linkage_assurance": false
+      }
+    },
+    {
+      "world_id": "alias-fragmentation-and-same-entity-false-split",
+      "description": "Aliases fragment one entity across source systems and hide false-negative links and unmatched records.",
+      "linkage": {
+        "false_positive_cross_namespace_links": 0,
+        "false_negative_alias_links": 25,
+        "hidden_unmatched_records": 25,
+        "ambiguous_link_records": 0
+      },
+      "namespace": {
+        "namespace_collision_count": 0,
+        "alias_fragmentation_count": 20,
+        "shared_identifier_without_namespace_count": 0,
+        "namespace_crosswalk_complete": true
+      },
+      "temporal_identity": {
+        "overlapping_validity_interval_records": 0,
+        "temporal_contradiction_records": 0,
+        "recycled_identifier_count": 0,
+        "validity_interval_custody_complete": true
+      },
+      "succession": {
+        "successor_conflation_count": 0,
+        "predecessor_successor_gap_count": 0,
+        "silently_bridged_gap_count": 0,
+        "succession_source_custody_complete": true
+      },
+      "versioning": {
+        "retroactive_relinked_records": 0,
+        "overwritten_version_records": 0,
+        "unaudited_backfill_records": 0,
+        "append_only_history_complete": true
+      },
+      "governance": {
+        "current_lineage_complete": true,
+        "correction_path_complete": true,
+        "ambiguity_adjudication_complete": true,
+        "binding_public_authority": false,
+        "unsupported_decisions": 100,
+        "stale_decisions": 0
+      },
+      "expected_flags": {
+        "linkage_confidence_complete": false,
+        "namespace_complete": true,
+        "alias_complete": false,
+        "temporal_identity_complete": true,
+        "identifier_lifecycle_complete": true,
+        "succession_complete": true,
+        "version_lineage_complete": true,
+        "ambiguity_adjudication_complete": true,
+        "current_lineage_complete": true,
+        "complete_record_linkage_assurance": false
+      }
+    },
+    {
+      "world_id": "overlapping-validity-intervals-and-temporal-contradiction",
+      "description": "Overlapping validity intervals and incompatible event time establish temporal contradiction under complete-looking continuity.",
+      "linkage": {
+        "false_positive_cross_namespace_links": 0,
+        "false_negative_alias_links": 0,
+        "hidden_unmatched_records": 0,
+        "ambiguous_link_records": 0
+      },
+      "namespace": {
+        "namespace_collision_count": 0,
+        "alias_fragmentation_count": 0,
+        "shared_identifier_without_namespace_count": 0,
+        "namespace_crosswalk_complete": true
+      },
+      "temporal_identity": {
+        "overlapping_validity_interval_records": 40,
+        "temporal_contradiction_records": 30,
+        "recycled_identifier_count": 0,
+        "validity_interval_custody_complete": false
+      },
+      "succession": {
+        "successor_conflation_count": 0,
+        "predecessor_successor_gap_count": 0,
+        "silently_bridged_gap_count": 0,
+        "succession_source_custody_complete": true
+      },
+      "versioning": {
+        "retroactive_relinked_records": 0,
+        "overwritten_version_records": 0,
+        "unaudited_backfill_records": 0,
+        "append_only_history_complete": true
+      },
+      "governance": {
+        "current_lineage_complete": true,
+        "correction_path_complete": true,
+        "ambiguity_adjudication_complete": true,
+        "binding_public_authority": false,
+        "unsupported_decisions": 100,
+        "stale_decisions": 0
+      },
+      "expected_flags": {
+        "linkage_confidence_complete": true,
+        "namespace_complete": true,
+        "alias_complete": true,
+        "temporal_identity_complete": false,
+        "identifier_lifecycle_complete": true,
+        "succession_complete": true,
+        "version_lineage_complete": true,
+        "ambiguity_adjudication_complete": true,
+        "current_lineage_complete": true,
+        "complete_record_linkage_assurance": false
+      }
+    },
+    {
+      "world_id": "identifier-recycling-after-retirement",
+      "description": "Retired identifiers are reassigned to new entities and treated as persistent longitudinal identity.",
+      "linkage": {
+        "false_positive_cross_namespace_links": 0,
+        "false_negative_alias_links": 0,
+        "hidden_unmatched_records": 0,
+        "ambiguous_link_records": 0
+      },
+      "namespace": {
+        "namespace_collision_count": 0,
+        "alias_fragmentation_count": 0,
+        "shared_identifier_without_namespace_count": 0,
+        "namespace_crosswalk_complete": true
+      },
+      "temporal_identity": {
+        "overlapping_validity_interval_records": 0,
+        "temporal_contradiction_records": 0,
+        "recycled_identifier_count": 15,
+        "validity_interval_custody_complete": true
+      },
+      "succession": {
+        "successor_conflation_count": 0,
+        "predecessor_successor_gap_count": 0,
+        "silently_bridged_gap_count": 0,
+        "succession_source_custody_complete": true
+      },
+      "versioning": {
+        "retroactive_relinked_records": 0,
+        "overwritten_version_records": 0,
+        "unaudited_backfill_records": 0,
+        "append_only_history_complete": true
+      },
+      "governance": {
+        "current_lineage_complete": true,
+        "correction_path_complete": true,
+        "ambiguity_adjudication_complete": true,
+        "binding_public_authority": false,
+        "unsupported_decisions": 100,
+        "stale_decisions": 0
+      },
+      "expected_flags": {
+        "linkage_confidence_complete": true,
+        "namespace_complete": true,
+        "alias_complete": true,
+        "temporal_identity_complete": true,
+        "identifier_lifecycle_complete": false,
+        "succession_complete": true,
+        "version_lineage_complete": true,
+        "ambiguity_adjudication_complete": true,
+        "current_lineage_complete": true,
+        "complete_record_linkage_assurance": false
+      }
+    },
+    {
+      "world_id": "successor-replacement-conflated-with-persistent-entity",
+      "description": "Successor replacement is conflated with uninterrupted predecessor identity and continuity.",
+      "linkage": {
+        "false_positive_cross_namespace_links": 0,
+        "false_negative_alias_links": 0,
+        "hidden_unmatched_records": 0,
+        "ambiguous_link_records": 0
+      },
+      "namespace": {
+        "namespace_collision_count": 0,
+        "alias_fragmentation_count": 0,
+        "shared_identifier_without_namespace_count": 0,
+        "namespace_crosswalk_complete": true
+      },
+      "temporal_identity": {
+        "overlapping_validity_interval_records": 0,
+        "temporal_contradiction_records": 0,
+        "recycled_identifier_count": 0,
+        "validity_interval_custody_complete": true
+      },
+      "succession": {
+        "successor_conflation_count": 20,
+        "predecessor_successor_gap_count": 0,
+        "silently_bridged_gap_count": 0,
+        "succession_source_custody_complete": true
+      },
+      "versioning": {
+        "retroactive_relinked_records": 0,
+        "overwritten_version_records": 0,
+        "unaudited_backfill_records": 0,
+        "append_only_history_complete": true
+      },
+      "governance": {
+        "current_lineage_complete": true,
+        "correction_path_complete": true,
+        "ambiguity_adjudication_complete": true,
+        "binding_public_authority": false,
+        "unsupported_decisions": 100,
+        "stale_decisions": 0
+      },
+      "expected_flags": {
+        "linkage_confidence_complete": true,
+        "namespace_complete": true,
+        "alias_complete": true,
+        "temporal_identity_complete": true,
+        "identifier_lifecycle_complete": true,
+        "succession_complete": false,
+        "version_lineage_complete": true,
+        "ambiguity_adjudication_complete": true,
+        "current_lineage_complete": true,
+        "complete_record_linkage_assurance": false
+      }
+    },
+    {
+      "world_id": "predecessor-successor-gap-silently-bridged-without-source-custody",
+      "description": "Predecessor-successor gaps are silently bridged without source custody or independently supported transition evidence.",
+      "linkage": {
+        "false_positive_cross_namespace_links": 0,
+        "false_negative_alias_links": 0,
+        "hidden_unmatched_records": 0,
+        "ambiguous_link_records": 0
+      },
+      "namespace": {
+        "namespace_collision_count": 0,
+        "alias_fragmentation_count": 0,
+        "shared_identifier_without_namespace_count": 0,
+        "namespace_crosswalk_complete": true
+      },
+      "temporal_identity": {
+        "overlapping_validity_interval_records": 0,
+        "temporal_contradiction_records": 0,
+        "recycled_identifier_count": 0,
+        "validity_interval_custody_complete": true
+      },
+      "succession": {
+        "successor_conflation_count": 0,
+        "predecessor_successor_gap_count": 25,
+        "silently_bridged_gap_count": 20,
+        "succession_source_custody_complete": false
+      },
+      "versioning": {
+        "retroactive_relinked_records": 0,
+        "overwritten_version_records": 0,
+        "unaudited_backfill_records": 0,
+        "append_only_history_complete": true
+      },
+      "governance": {
+        "current_lineage_complete": true,
+        "correction_path_complete": true,
+        "ambiguity_adjudication_complete": true,
+        "binding_public_authority": false,
+        "unsupported_decisions": 100,
+        "stale_decisions": 0
+      },
+      "expected_flags": {
+        "linkage_confidence_complete": true,
+        "namespace_complete": true,
+        "alias_complete": true,
+        "temporal_identity_complete": true,
+        "identifier_lifecycle_complete": true,
+        "succession_complete": false,
+        "version_lineage_complete": true,
+        "ambiguity_adjudication_complete": true,
+        "current_lineage_complete": true,
+        "complete_record_linkage_assurance": false
+      }
+    },
+    {
+      "world_id": "retroactive-relink-and-backfill-without-append-preserving-version-lineage",
+      "description": "Retroactive relinking and backfill overwrite prior states without append-preserving correction or current lineage.",
+      "linkage": {
+        "false_positive_cross_namespace_links": 0,
+        "false_negative_alias_links": 0,
+        "hidden_unmatched_records": 0,
+        "ambiguous_link_records": 0
+      },
+      "namespace": {
+        "namespace_collision_count": 0,
+        "alias_fragmentation_count": 0,
+        "shared_identifier_without_namespace_count": 0,
+        "namespace_crosswalk_complete": true
+      },
+      "temporal_identity": {
+        "overlapping_validity_interval_records": 0,
+        "temporal_contradiction_records": 0,
+        "recycled_identifier_count": 0,
+        "validity_interval_custody_complete": true
+      },
+      "succession": {
+        "successor_conflation_count": 0,
+        "predecessor_successor_gap_count": 0,
+        "silently_bridged_gap_count": 0,
+        "succession_source_custody_complete": true
+      },
+      "versioning": {
+        "retroactive_relinked_records": 40,
+        "overwritten_version_records": 30,
+        "unaudited_backfill_records": 25,
+        "append_only_history_complete": false
+      },
+      "governance": {
+        "current_lineage_complete": false,
+        "correction_path_complete": false,
+        "ambiguity_adjudication_complete": true,
+        "binding_public_authority": false,
+        "unsupported_decisions": 100,
+        "stale_decisions": 100
+      },
+      "expected_flags": {
+        "linkage_confidence_complete": true,
+        "namespace_complete": true,
+        "alias_complete": true,
+        "temporal_identity_complete": true,
+        "identifier_lifecycle_complete": true,
+        "succession_complete": true,
+        "version_lineage_complete": false,
+        "ambiguity_adjudication_complete": true,
+        "current_lineage_complete": false,
+        "complete_record_linkage_assurance": false
+      }
+    }
+  ]
+}
