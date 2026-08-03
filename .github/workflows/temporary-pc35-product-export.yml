@@ -20,26 +20,43 @@ jobs:
         with:
           ref: research/preference-identity-boundary-assurance-v6
           fetch-depth: 1
-      - name: Verify and export exact PC-35 carrier
+      - name: Export exact carrier with diagnostics
         run: |
           set -Eeuo pipefail
-          mkdir -p /tmp/pc35-export
-          carrier=/tmp/pc35-product.tar.gz.b64
-          : > "$carrier"
+          out=/tmp/pc35-export
+          mkdir -p "$out/shards"
           mapfile -t parts < <(find .pc35 -maxdepth 1 -type f -name 'payload-*.b64' | sort)
-          test "${#parts[@]}" = 6
+          printf '%s\n' "${parts[@]}" > "$out/shard-paths.txt"
+          cp "${parts[@]}" "$out/shards/"
+          wc -c "${parts[@]}" > "$out/shard-sizes.txt"
+          sha256sum "${parts[@]}" > "$out/shard-sha256.txt"
+          carrier="$out/pc35-product.tar.gz.b64"
+          : > "$carrier"
           for part in "${parts[@]}"; do tr -d '\r\n\t ' < "$part" >> "$carrier"; done
-          test "$(stat -c '%s' "$carrier")" = 34084
-          printf '%s  %s\n' '8d33821eb72bd666e2845626dceb5348bfc2e9505b76c4f6135a246f5438abfc' "$carrier" | sha256sum --check --strict
-          base64 --decode "$carrier" > /tmp/pc35-export/pc35-product.tar.gz
-          printf '%s  %s\n' 'b6b11a5826a8899f52d1411ca1bf2c50b980458b2847515809b465064f541425' /tmp/pc35-export/pc35-product.tar.gz | sha256sum --check --strict
-          tar -tzf /tmp/pc35-export/pc35-product.tar.gz | sed 's#^\./##' | sed '/\/$/d' | sort > /tmp/pc35-export/paths.txt
-          test "$(wc -l < /tmp/pc35-export/paths.txt | tr -d ' ')" = 14
-          git rev-parse HEAD > /tmp/pc35-export/source-head.txt
-          sha256sum /tmp/pc35-export/pc35-product.tar.gz > /tmp/pc35-export/pc35-product.sha256
+          stat -c '%s' "$carrier" > "$out/carrier-bytes.txt"
+          sha256sum "$carrier" > "$out/carrier-sha256.txt"
+          git rev-parse HEAD > "$out/source-head.txt"
+          set +e
+          base64 --decode "$carrier" > "$out/pc35-product.tar.gz" 2> "$out/base64-decode.stderr"
+          decode_status=$?
+          printf '%s\n' "$decode_status" > "$out/base64-decode.status"
+          if test "$decode_status" = 0; then
+            sha256sum "$out/pc35-product.tar.gz" > "$out/pc35-product.sha256"
+            tar -tzf "$out/pc35-product.tar.gz" > "$out/tar-list.raw" 2> "$out/tar-list.stderr"
+            tar_status=$?
+            printf '%s\n' "$tar_status" > "$out/tar-list.status"
+            if test "$tar_status" = 0; then
+              sed 's#^\./##' "$out/tar-list.raw" | sed '/\/$/d' | sort > "$out/paths.txt"
+            fi
+          fi
+          set -e
+          cat "$out/shard-sizes.txt"
+          cat "$out/carrier-bytes.txt"
+          cat "$out/carrier-sha256.txt"
+          test "${#parts[@]}" = 6
       - uses: actions/upload-artifact@v4
         with:
-          name: pc35-exact-product
+          name: pc35-carrier-diagnostic
           path: /tmp/pc35-export
           if-no-files-found: error
           retention-days: 7
