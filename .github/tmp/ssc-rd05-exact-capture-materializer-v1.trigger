@@ -1,1 +1,1 @@
-diagnose exact post-release path drift after validated RD-05 327-path local commit
+prove the exact ten post-release RD-05 regenerated diffs line by line before push
