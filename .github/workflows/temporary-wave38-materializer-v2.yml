@@ -1,0 +1,90 @@
+name: Temporary Wave 38 product materializer v2
+
+on:
+  pull_request:
+    branches:
+      - agent/lake-allocator-war-wave-21
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-wave38-materializer-v2.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: temporary-wave38-materializer-v2-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Await temporary workflow deletion
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          path='.github/workflows/temporary-wave38-materializer-v2.yml'
+          encoded_ref='agent%2Flake-allocator-war-priority-one-execution-wave-38'
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/${path}?ref=${encoded_ref}"
+          for attempt in $(seq 1 180); do
+            status="$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer ${GITHUB_TOKEN}" -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' "$api")"
+            [[ "$status" == '404' ]] && exit 0
+            [[ "$status" == '200' ]] || { echo "unexpected GitHub contents status: $status" >&2; exit 1; }
+            sleep 2
+          done
+          echo 'temporary Wave 38 workflow was not deleted before checkout' >&2
+          exit 1
+
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lake-allocator-war-priority-one-execution-wave-38
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Execute checksum-bound Wave 38 materializer
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e .github/workflows/temporary-wave38-materializer-v2.yml
+          test -f .github/tmp/wave38-materializer-v2.sh.b64
+          echo 'fca880e4a7478d035c128445ddbe311b77e23fce46c327f17a35f7441ce27f4d  .github/tmp/wave38-materializer-v2.sh.b64' | sha256sum -c -
+          base64 -d .github/tmp/wave38-materializer-v2.sh.b64 > /tmp/wave38-materializer-v2.sh
+          echo '8431cbecb40ea446476ca1ce6fc6bc90d77d05cbc4ce203d5a0f770439ceb3a7  /tmp/wave38-materializer-v2.sh' | sha256sum -c -
+          chmod +x /tmp/wave38-materializer-v2.sh
+          /tmp/wave38-materializer-v2.sh
+
+      - name: Preserve Wave 38 failure diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          {
+            echo 'HEAD:'
+            git rev-parse HEAD || true
+            echo 'STATUS:'
+            git status --short || true
+            echo 'DIFF STAT:'
+            git diff --stat || true
+            echo 'CACHED DIFF STAT:'
+            git diff --cached --stat || true
+            echo 'CACHED NAMES:'
+            git diff --cached --name-status || true
+            echo 'ACTUAL SELF-REFERENCE PATHS:'
+            cat /tmp/wave38-actual-self-reference-paths.txt 2>/dev/null || true
+          } > /tmp/wave38-materializer-v2-diagnostics.txt
+          cat /tmp/wave38-materializer-v2-diagnostics.txt
+
+      - name: Upload Wave 38 failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wave38-materializer-v2-diagnostics
+          path: /tmp/wave38-materializer-v2-diagnostics.txt
+          if-no-files-found: warn
+          retention-days: 1
