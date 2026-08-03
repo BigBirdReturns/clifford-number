@@ -60,6 +60,10 @@ admitted identity candidates:          0
 
 The five unnamed proposal slots remain anonymous. Source restriction is not offeror absence, withdrawal, nonresponsiveness, unfairness, technical inferiority, or evidence that a proposal never existed. Named award, rejection, and protest records are not complete proposal-team, architecture, performance, or source-selection files.
 
+## Pre/post-promotion validation custody
+
+The RD‑06 validator accepts exactly two cumulative-ledger states: the three-closure state in which RD‑06 remains the exact open selected class, and this four-closure state in which the exact merged RD‑06 receipt replaces that open row. It binds promotion order, merge commit, manifest digest, terminal state, authority zeros, and effect ceilings in both states. Twelve dedicated custody mutations reject count drift, reordered receipts, stale or substituted merge and manifest identifiers, silent reopening, missing open custody, external-review inflation, and graph-effect escalation.
+
 ## Authority ceiling
 
 ```text
