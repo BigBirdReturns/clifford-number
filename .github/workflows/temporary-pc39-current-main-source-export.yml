@@ -1,0 +1,43 @@
+name: TEMP export canonical PC-38 source for PC-39
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc39-current-main-source-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 382578570bbce842bb246688a356d99743b904a1
+          fetch-depth: 1
+      - name: Package exact canonical PC-38 source
+        run: |
+          set -Eeuo pipefail
+          out=/tmp/pc39-current-main-source
+          mkdir -p "$out"
+          observed="$(git rev-parse HEAD)"
+          test "$observed" = 382578570bbce842bb246688a356d99743b904a1
+          printf '%s\n' "$observed" > "$out/source-head.sha"
+          git ls-files -z | sort -z > /tmp/pc39-source-paths.z
+          tr '\0' '\n' < /tmp/pc39-source-paths.z > "$out/source-paths.txt"
+          tar --null --files-from=/tmp/pc39-source-paths.z \
+            --sort=name --mtime='UTC 1970-01-01' \
+            --owner=0 --group=0 --numeric-owner \
+            -czf "$out/source.tar.gz"
+          stat -c '%s source.tar.gz' "$out/source.tar.gz" > "$out/source.bytes"
+          sha256sum "$out/source.tar.gz" > "$out/source.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc39-canonical-pc38-source
+          path: /tmp/pc39-current-main-source
+          if-no-files-found: error
+          retention-days: 7
