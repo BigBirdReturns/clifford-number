@@ -1,0 +1,172 @@
+name: TEMP materialize PC-36 v2 permanent product
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc36-v2-materializer.yml'
+      - '.pc36v2/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc36-v2-permanent-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      FROZEN_BASE: ba90a836186888ef2f4a7bc0532b1e5a117e8f50
+      PERMANENT_BRANCH: research/preference-identity-boundary-assurance-v7
+      EXPECTED_B64_BYTES: '32932'
+      EXPECTED_B64_SHA256: db69a4612ddf8b7957e9bd655df04886b9679faea391d300c19cd5f9707b1205
+      EXPECTED_TGZ_SHA256: 603fcf186af572be28043a226994059b5a829c6f59e328bcea008359fae5d126
+      EXPECTED_PATH_DIGEST: 3ffc311d21e4ec05dc9492d9163d4060196b557e7180228d0b07f1b2e70f7eb2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc36-permanent-materializer
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify exact twelve-shard carrier and archive denominator
+        run: |
+          set -Eeuo pipefail
+          cat > /tmp/pc36-permanent-paths <<'PATHS'
+          .github/workflows/preference-custody-v34.yml
+          .github/workflows/preference-identity-boundary-assurance.yml
+          data/research/preference-custody/control-manifest-v34.json
+          data/research/preference-custody/identity-boundary-assurance.fixture.json
+          docs/preference-custody-identity-boundary-assurance.md
+          docs/preference-custody-laboratory-floor-v34.md
+          test/preference-custody-manifest-v34.test.js
+          test/preference-identity-boundary-assurance.test.js
+          tools/compile-preference-custody-manifest-v34.mjs
+          tools/compile-preference-identity-boundary-assurance.mjs
+          tools/lib/preference-custody-manifest-v34.mjs
+          tools/lib/preference-identity-boundary-assurance.mjs
+          tools/validate-preference-custody-manifest-v34.mjs
+          tools/validate-preference-identity-boundary-assurance.mjs
+          PATHS
+          sed -i 's/^          //' /tmp/pc36-permanent-paths
+          sort -o /tmp/pc36-permanent-paths /tmp/pc36-permanent-paths
+          grep -v '^\.github/workflows/' /tmp/pc36-permanent-paths > /tmp/pc36-nonworkflow-paths
+          test "$(wc -l < /tmp/pc36-permanent-paths | tr -d ' ')" = 14
+          test "$(wc -l < /tmp/pc36-nonworkflow-paths | tr -d ' ')" = 12
+
+          carrier=/tmp/pc36-product.tar.gz.b64
+          : > "$carrier"
+          mapfile -t parts < <(find .pc36v2 -maxdepth 1 -type f -name 'payload-*.b64' | sort)
+          printf 'carrier shard count: %s\n' "${#parts[@]}"
+          wc -c "${parts[@]}"
+          sha256sum "${parts[@]}"
+          test "${#parts[@]}" = 12
+          for part in "${parts[@]}"; do tr -d '\r\n\t ' < "$part" >> "$carrier"; done
+          observed_bytes="$(stat -c '%s' "$carrier")"
+          observed_b64_sha="$(sha256sum "$carrier" | awk '{print $1}')"
+          printf 'carrier bytes: expected=%s observed=%s\n' "$EXPECTED_B64_BYTES" "$observed_bytes"
+          printf 'carrier sha256: expected=%s observed=%s\n' "$EXPECTED_B64_SHA256" "$observed_b64_sha"
+          test "$observed_bytes" = "$EXPECTED_B64_BYTES"
+          test "$observed_b64_sha" = "$EXPECTED_B64_SHA256"
+          base64 --decode "$carrier" > /tmp/pc36-product.tar.gz
+          observed_tgz_sha="$(sha256sum /tmp/pc36-product.tar.gz | awk '{print $1}')"
+          printf 'tar sha256: expected=%s observed=%s\n' "$EXPECTED_TGZ_SHA256" "$observed_tgz_sha"
+          test "$observed_tgz_sha" = "$EXPECTED_TGZ_SHA256"
+          tar -tzf /tmp/pc36-product.tar.gz | sed 's#^\./##' | sed '/\/$/d' | sort > /tmp/pc36-observed-paths
+          diff -u /tmp/pc36-permanent-paths /tmp/pc36-observed-paths
+
+      - name: Prove stable non-overlapping main and empty permanent branch
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin main "$PERMANENT_BRANCH"
+          candidate_main="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$FROZEN_BASE" "$candidate_main"
+          git diff --name-only "$FROZEN_BASE" "$candidate_main" | sort > /tmp/pc36-main-drift
+          test -z "$(comm -12 /tmp/pc36-permanent-paths /tmp/pc36-main-drift)"
+          permanent_head="$(git rev-parse origin/$PERMANENT_BRANCH)"
+          git merge-base --is-ancestor "$FROZEN_BASE" "$permanent_head"
+          test -z "$(git diff --name-only "$FROZEN_BASE" "$permanent_head")"
+          printf 'PC36_STABLE_MAIN=%s\n' "$candidate_main" >> "$GITHUB_ENV"
+
+      - name: Qualify exact product in clean full-history worktree
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/pc36-qualify
+          git worktree add --detach /tmp/pc36-qualify "$PC36_STABLE_MAIN"
+          tar -xzf /tmp/pc36-product.tar.gz -C /tmp/pc36-qualify
+          cd /tmp/pc36-qualify
+          node tools/compile-preference-identity-boundary-assurance.mjs
+          node tools/validate-preference-identity-boundary-assurance.mjs
+          node test/preference-identity-boundary-assurance.test.js
+          node tools/compile-preference-custody-manifest-v34.mjs
+          node tools/validate-preference-custody-manifest-v34.mjs
+          node test/preference-custody-manifest-v34.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+          git restore --staged --worktree .
+          git clean -fdx
+          test -z "$(git status --porcelain=v1)"
+          cd "$GITHUB_WORKSPACE"
+          git worktree remove --force /tmp/pc36-qualify
+
+      - name: Materialize twelve non-workflow paths on permanent branch
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags origin main "$PERMANENT_BRANCH"
+          test "$(git rev-parse origin/main)" = "$PC36_STABLE_MAIN"
+          rm -rf /tmp/pc36-permanent
+          git worktree add -B "$PERMANENT_BRANCH" /tmp/pc36-permanent "$PC36_STABLE_MAIN"
+          tar -xzf /tmp/pc36-product.tar.gz -C /tmp/pc36-permanent
+          cd /tmp/pc36-permanent
+          sha256sum $(cat /tmp/pc36-permanent-paths) | sort -k2 > /tmp/pc36-path-digests
+          path_digest="$(sha256sum /tmp/pc36-path-digests | awk '{print $1}')"
+          printf 'path digest: expected=%s observed=%s\n' "$EXPECTED_PATH_DIGEST" "$path_digest"
+          test "$path_digest" = "$EXPECTED_PATH_DIGEST"
+          git add --pathspec-from-file=/tmp/pc36-nonworkflow-paths
+          git diff --cached --check
+          git diff --cached --name-only | sort > /tmp/pc36-staged-paths
+          diff -u /tmp/pc36-nonworkflow-paths /tmp/pc36-staged-paths
+          git commit -m 'Implement PC-36 and compose Preference Custody floor v34'
+          product_head="$(git rev-parse HEAD)"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$PC36_STABLE_MAIN"
+          git push origin "HEAD:refs/heads/$PERMANENT_BRANCH"
+          printf 'PC36_PRODUCT_HEAD=%s\n' "$product_head" >> "$GITHUB_ENV"
+          cd "$GITHUB_WORKSPACE"
+          git worktree remove --force /tmp/pc36-permanent
+
+      - name: Write materializer receipt
+        run: |
+          node --input-type=module <<'NODE' > pc36-v2-materializer-receipt.json
+          const receipt = {
+            schema_version: 'pc36-v2-materializer-receipt@1',
+            qualified_main: process.env.PC36_STABLE_MAIN,
+            product_head: process.env.PC36_PRODUCT_HEAD,
+            permanent_branch: process.env.PERMANENT_BRANCH,
+            permanent_paths_expected: 14,
+            materialized_nonworkflow_paths: 12,
+            permanent_workflows_pending_connector_custody: 2,
+            carrier_shards: 12,
+            base64_bytes: Number(process.env.EXPECTED_B64_BYTES),
+            base64_sha256: process.env.EXPECTED_B64_SHA256,
+            tar_sha256: process.env.EXPECTED_TGZ_SHA256,
+            path_digest_sha256: process.env.EXPECTED_PATH_DIGEST,
+            outside_human_dependency: false,
+            graph_effect: 'none'
+          };
+          process.stdout.write(`${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc36-v2-materializer-receipt
+          path: pc36-v2-materializer-receipt.json
+          if-no-files-found: error
+          retention-days: 90
