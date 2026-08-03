@@ -1,0 +1,267 @@
+name: TEMP materialize SSC RD-05 semantic reconciliation
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-semantic-reconciliation-materializer-base-v1
+    paths:
+      - '.github/tmp/ssc-rd05-semantic-reconciliation-materializer-v1.trigger'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: ssc-rd05-semantic-reconciliation-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd05-recommendation-disposition
+      EXPECTED_START_SHA: 0d1e0744e6e9391a1bff12053918362ad389bcfa
+      SCRIPT_BYTES: '23769'
+      SCRIPT_SHA256: 71ab9aee8a75513aa6f2c177a6632c14bc3e2bda4c7ea3b11e1a699aa81b990f
+      SCRIPT_BLOB_01: 3267470ed2d07d26ea2daf7b51166e5a6c72267d
+      SCRIPT_BLOB_02: 2e69c4bb18f451cdfe1cc0dc5d0f1b3ccd3b72d3
+      SCRIPT_BLOB_03: c4979bb34de1525520aa4304e6911d2e16f8c753
+      SCRIPT_BLOB_04: 907c8692ca41deb00ee8da8ffa0ddaef54c5890e
+      SCRIPT_BLOB_05: 4ef268e7ddb36c2c773c38cc7bd00524da1e6fc5
+      SCRIPT_BLOB_06: 778827d6281a2ea78420aa4313d5675f7b68d7dd
+      SCRIPT_BLOB_07: e109ba607b75e982873d2668019b315e5dc0d04d
+      SCRIPT_BLOB_08: 1fa627755e029a7c1c9c14eee0c8e38d682218f2
+      SCRIPT_BLOB_09: bb00cb0fc9e3b4c42d75c833febf7ac76fd04f09
+      SCRIPT_BLOB_10: 96090981bbe8342eb3e758c2415bfd59686ec495
+      SCRIPT_BLOB_11: dd0b4bd797980e9f8a67b8d0913c1c4fdf2410fe
+      SCRIPT_BLOB_12: a1969608829ba51320b8c345f59f725c65832468
+      SCRIPT_BLOB_13: 868a3413f4bf5203f997bbde250552e5efae3d7a
+      SCRIPT_BLOB_14: 121cd81487d1e68dbf7ccaeaa43ad6ce51937d5a
+      SCRIPT_BLOB_15: 2ab77611b47d7b00a58e8a1310e144070ca5c85e
+      SCRIPT_BLOB_16: dd37d1f36b49de6b0359c3048a0cc4389deace5b
+      RULES_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/object-semantic-rules.json
+      OUTPUT_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/object-semantic-classification.json
+      BUILDER_PATH: tools/acquisition/status-sovereignty-rd-wave02-rd05/build-object-semantic-classification.mjs
+      VALIDATOR_PATH: tools/acquisition/status-sovereignty-rd-wave02-rd05/validate-object-semantic-classification.mjs
+      TEST_PATH: test/status-sovereignty-rd-wave02-rd05-object-semantic-classification.test.js
+      RULES_SHA256: 63142548480a6d21b966677ed89d9ab85f95427a6b95477de1c9d6f4ce2094fe
+      OUTPUT_SHA256: ed35fbd41027497742d5db4473d8675978d37eab52f95c35628616aa7fba6f13
+      BUILDER_SHA256: 5939037fe8d201fb9859f37ab56efc43ab365a685ef03374d54e929fbbc7b732
+      VALIDATOR_SHA256: 54ab59f17e5dc2d76222da48f0a36a591344b472eb3c5bf0126ca470ece7be50
+      TEST_SHA256: d294a278b488eec36b0128f78afada448fa600ee9e98f87eb548074bcc86b84d
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct, validate, qualify, and publish exact five-path reconciliation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+
+          test "$(git rev-parse HEAD)" = "$EXPECTED_START_SHA"
+          git fetch origin "$TARGET_BRANCH"
+          test "$(git rev-parse origin/$TARGET_BRANCH)" = "$EXPECTED_START_SHA"
+          node tools/validate-no-magic-human-gate.mjs
+
+          rm -f /tmp/rd05-semantic-reconciliation-materializer.mjs
+          : > /tmp/rd05-semantic-reconciliation-materializer.mjs
+          for blob in "$SCRIPT_BLOB_01" "$SCRIPT_BLOB_02" "$SCRIPT_BLOB_03" "$SCRIPT_BLOB_04" "$SCRIPT_BLOB_05" "$SCRIPT_BLOB_06" "$SCRIPT_BLOB_07" "$SCRIPT_BLOB_08" "$SCRIPT_BLOB_09" "$SCRIPT_BLOB_10" "$SCRIPT_BLOB_11" "$SCRIPT_BLOB_12" "$SCRIPT_BLOB_13" "$SCRIPT_BLOB_14" "$SCRIPT_BLOB_15" "$SCRIPT_BLOB_16"; do
+            curl --fail --silent --show-error \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/${blob}" \
+              | jq -r '.content' | tr -d '\n' | base64 --decode > "/tmp/${blob}.chunk"
+            test "$(git hash-object "/tmp/${blob}.chunk")" = "$blob"
+            cat "/tmp/${blob}.chunk" >> /tmp/rd05-semantic-reconciliation-materializer.mjs
+          done
+          test "$(wc -c < /tmp/rd05-semantic-reconciliation-materializer.mjs | tr -d ' ')" = "$SCRIPT_BYTES"
+          test "$(sha256sum /tmp/rd05-semantic-reconciliation-materializer.mjs | awk '{print $1}')" = "$SCRIPT_SHA256"
+          test "$(git hash-object /tmp/rd05-semantic-reconciliation-materializer.mjs)" = '27076059f38e9613606f69282735744f59e63dc0'
+          node --check /tmp/rd05-semantic-reconciliation-materializer.mjs
+          node /tmp/rd05-semantic-reconciliation-materializer.mjs
+
+          node "$BUILDER_PATH"
+          node "$VALIDATOR_PATH"
+          node "$TEST_PATH"
+          node tools/validate-no-magic-human-gate.mjs
+          test "$(sha256sum "$RULES_PATH" | awk '{print $1}')" = "$RULES_SHA256"
+          test "$(sha256sum "$OUTPUT_PATH" | awk '{print $1}')" = "$OUTPUT_SHA256"
+          test "$(sha256sum "$BUILDER_PATH" | awk '{print $1}')" = "$BUILDER_SHA256"
+          test "$(sha256sum "$VALIDATOR_PATH" | awk '{print $1}')" = "$VALIDATOR_SHA256"
+          test "$(sha256sum "$TEST_PATH" | awk '{print $1}')" = "$TEST_SHA256"
+
+          cat > /tmp/expected-rd05-reconciliation-paths.txt <<EOF
+          $RULES_PATH
+          $OUTPUT_PATH
+          $BUILDER_PATH
+          $VALIDATOR_PATH
+          $TEST_PATH
+          EOF
+          LC_ALL=C sort -o /tmp/expected-rd05-reconciliation-paths.txt /tmp/expected-rd05-reconciliation-paths.txt
+          git status --porcelain=v1 --untracked-files=all | cut -c4- | LC_ALL=C sort > /tmp/actual-rd05-reconciliation-paths.txt
+          diff -u /tmp/expected-rd05-reconciliation-paths.txt /tmp/actual-rd05-reconciliation-paths.txt
+          test "$(wc -l < /tmp/actual-rd05-reconciliation-paths.txt | tr -d ' ')" = '5'
+
+          git add -- "$RULES_PATH" "$OUTPUT_PATH" "$BUILDER_PATH" "$VALIDATOR_PATH" "$TEST_PATH"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m 'Reconcile RD-05 same-object semantic recovery'
+          PRODUCT_SHA="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_START_SHA"
+          git diff-tree --no-commit-id --name-only -r HEAD | LC_ALL=C sort > /tmp/product-paths.txt
+          diff -u /tmp/expected-rd05-reconciliation-paths.txt /tmp/product-paths.txt
+
+          npm run release:check
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+
+          const jsonPaths = [
+            'build/axm-identity.json',
+            'build/build-hop-report.json',
+            'build/hop-graph.json',
+            'build/migration-summary.json',
+            'build/receipt-graph.json',
+            'build/scores.json',
+            'build/scout-report.json',
+            'build/surface-graph.json'
+          ];
+          const markdownPaths = [
+            'build/migration-review.md',
+            'build/scout-report.md'
+          ];
+          const expected = [...jsonPaths, ...markdownPaths].sort();
+          const raw = execFileSync('git', ['status', '--porcelain=v1', '--untracked-files=all'], { encoding: 'utf8' });
+          const status = raw.split('\n').filter(Boolean);
+          const paths = status.map((line) => line.slice(3)).sort();
+          if (JSON.stringify(paths) !== JSON.stringify(expected)) {
+            throw new Error(`unexpected post-release paths: ${JSON.stringify(paths)}`);
+          }
+          const numstat = execFileSync('git', ['diff', '--numstat', '--', ...expected], { encoding: 'utf8' })
+            .split('\n').filter(Boolean);
+          if (numstat.length !== expected.length) throw new Error('post-release numstat denominator');
+          for (const row of numstat) {
+            const [adds, deletes, path] = row.split('\t');
+            if (adds !== '1' || deletes !== '1' || !expected.includes(path)) {
+              throw new Error(`non-timestamp post-release diff: ${row}`);
+            }
+          }
+          for (const path of jsonPaths) {
+            const before = JSON.parse(execFileSync('git', ['show', `HEAD:${path}`], { encoding: 'utf8' }));
+            const after = JSON.parse(fs.readFileSync(path, 'utf8'));
+            if (typeof before.generated !== 'string' || typeof after.generated !== 'string') {
+              throw new Error(`missing generated timestamp: ${path}`);
+            }
+            if (!Number.isFinite(Date.parse(before.generated)) || !Number.isFinite(Date.parse(after.generated))) {
+              throw new Error(`invalid generated timestamp: ${path}`);
+            }
+            delete before.generated;
+            delete after.generated;
+            if (JSON.stringify(before) !== JSON.stringify(after)) {
+              throw new Error(`semantic JSON drift: ${path}`);
+            }
+          }
+          for (const path of markdownPaths) {
+            const before = execFileSync('git', ['show', `HEAD:${path}`], { encoding: 'utf8' }).split('\n');
+            const after = fs.readFileSync(path, 'utf8').split('\n');
+            const normalize = (lines) => lines.map((line) => line.startsWith('Generated: ') ? 'Generated: <ISO>' : line);
+            if (JSON.stringify(normalize(before)) !== JSON.stringify(normalize(after))) {
+              throw new Error(`semantic Markdown drift: ${path}`);
+            }
+            const beforeGenerated = before.find((line) => line.startsWith('Generated: '));
+            const afterGenerated = after.find((line) => line.startsWith('Generated: '));
+            if (!beforeGenerated || !afterGenerated ||
+                !Number.isFinite(Date.parse(beforeGenerated.slice(11))) ||
+                !Number.isFinite(Date.parse(afterGenerated.slice(11)))) {
+              throw new Error(`invalid Markdown generated timestamp: ${path}`);
+            }
+          }
+          console.log('post-release volatility proof: PASS — 10/10 paths timestamp-only, semantic drift zero');
+          NODE
+
+          git restore --worktree -- \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          node "$BUILDER_PATH"
+          node "$VALIDATOR_PATH"
+          node "$TEST_PATH"
+          node tools/validate-no-magic-human-gate.mjs
+          test "$(sha256sum "$RULES_PATH" | awk '{print $1}')" = "$RULES_SHA256"
+          test "$(sha256sum "$OUTPUT_PATH" | awk '{print $1}')" = "$OUTPUT_SHA256"
+          test "$(sha256sum "$BUILDER_PATH" | awk '{print $1}')" = "$BUILDER_SHA256"
+          test "$(sha256sum "$VALIDATOR_PATH" | awk '{print $1}')" = "$VALIDATOR_SHA256"
+          test "$(sha256sum "$TEST_PATH" | awk '{print $1}')" = "$TEST_SHA256"
+          git diff --exit-code -- "$RULES_PATH" "$OUTPUT_PATH" "$BUILDER_PATH" "$VALIDATOR_PATH" "$TEST_PATH"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git fetch origin "$TARGET_BRANCH"
+          test "$(git rev-parse origin/$TARGET_BRANCH)" = "$EXPECTED_START_SHA"
+          git push origin "HEAD:$TARGET_BRANCH"
+          git fetch origin "$TARGET_BRANCH"
+          test "$(git rev-parse origin/$TARGET_BRANCH)" = "$PRODUCT_SHA"
+
+          cat > ssc-rd05-semantic-reconciliation-materializer-receipt.json <<EOF
+          {
+            "schema_version": "ssc-rd05-semantic-reconciliation-materializer-receipt@1",
+            "target_branch": "$TARGET_BRANCH",
+            "expected_start_sha": "$EXPECTED_START_SHA",
+            "product_sha": "$PRODUCT_SHA",
+            "permanent_path_count": 5,
+            "materializer_bytes": $SCRIPT_BYTES,
+            "materializer_sha256": "$SCRIPT_SHA256",
+            "rules_sha256": "$RULES_SHA256",
+            "classification_sha256": "$OUTPUT_SHA256",
+            "builder_sha256": "$BUILDER_SHA256",
+            "validator_sha256": "$VALIDATOR_SHA256",
+            "test_sha256": "$TEST_SHA256",
+            "frozen_object_denominator": 58,
+            "same_object_recoveries_applied": 1,
+            "semantic_classifications_complete": 58,
+            "completed_recommendation_objects": 0,
+            "agency_response_objects": 0,
+            "adopted_or_rejected_objects": 0,
+            "implementation_or_outcome_objects": 0,
+            "open_recommendation_disposition_chains": 4,
+            "source_access_interstitial_rows": 0,
+            "recovered_membership_solicitation_rows": 1,
+            "successor_action_rows": 7,
+            "adversarial_mutations": 60,
+            "release_gate": "pass",
+            "post_release_volatile_paths": 10,
+            "post_release_semantic_drift": 0,
+            "deterministic_replay": "pass",
+            "unchanged_head_lease": "pass",
+            "external_contacts": 0,
+            "external_reviews": 0,
+            "outside_human_dependency": false,
+            "publication_effect": "none",
+            "adoption_effect": "none",
+            "graph_effect": "none"
+          }
+          EOF
+      - name: Upload exact RD-05 semantic reconciliation receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-semantic-reconciliation-materializer-v1
+          path: ssc-rd05-semantic-reconciliation-materializer-receipt.json
+          if-no-files-found: error
+          retention-days: 90
