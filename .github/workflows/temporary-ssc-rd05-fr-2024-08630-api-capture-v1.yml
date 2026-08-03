@@ -1,0 +1,309 @@
+name: TEMP capture RD-05 Federal Register 2024-08630 API object
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-fr-2024-08630-api-capture-base-v1
+    paths:
+      - '.github/tmp/ssc-rd05-fr-2024-08630-api-capture-v1.trigger'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd05-fr-2024-08630-api-capture-v1
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd05-recommendation-disposition
+      EXPECTED_HEAD: 205537aa7d550741b2e95df0a43484f0879559bc
+      OBJECT_ID: RD05-OBJ-051
+      DOCUMENT_NUMBER: 2024-08630
+      FROZEN_URL: https://www.federalregister.gov/documents/2024/04/29/2024-08630/solicitation-of-membership-nominations-for-the-advisory-committee-on-excellence-in-space-aces/
+      TARGET_URL: https://www.federalregister.gov/api/v1/documents/2024-08630.json
+      PRIOR_FINAL_URL: https://unblock.federalregister.gov/
+      PRIOR_BODY_SHA256: 69fa13193e7b1b31f4a00667a85deadb464dd279c6d9323ca3efe5bcd6cad123
+      CAPTURE_ROOT: rd05-fr-2024-08630-api-capture-v1
+      MAX_ATTEMPTS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Execute bounded same-object API capture
+        run: |
+          set -Eeuo pipefail
+
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git fetch origin "$TARGET_BRANCH"
+          test "$(git rev-parse origin/$TARGET_BRANCH)" = "$EXPECTED_HEAD"
+          node tools/validate-no-magic-human-gate.mjs
+
+          test "$TARGET_URL" = "https://www.federalregister.gov/api/v1/documents/$DOCUMENT_NUMBER.json"
+          test "$FROZEN_URL" = "https://www.federalregister.gov/documents/2024/04/29/$DOCUMENT_NUMBER/solicitation-of-membership-nominations-for-the-advisory-committee-on-excellence-in-space-aces/"
+          test "$MAX_ATTEMPTS" = '2'
+
+          rm -rf "$CAPTURE_ROOT"
+          mkdir -p "$CAPTURE_ROOT/attempts"
+
+          cat > "$CAPTURE_ROOT/request-contract.json" <<EOF
+          {
+            "schema_version": "ssc-rd05-same-object-api-request-contract@1",
+            "object_id": "$OBJECT_ID",
+            "document_number": "$DOCUMENT_NUMBER",
+            "research_head": "$EXPECTED_HEAD",
+            "frozen_url": "$FROZEN_URL",
+            "single_authorized_target_url": "$TARGET_URL",
+            "authorized_hosts": ["www.federalregister.gov"],
+            "maximum_attempts": $MAX_ATTEMPTS,
+            "follow_redirects": true,
+            "crawl_authorized": false,
+            "linked_object_fetch_authorized": false,
+            "new_link_admission_authorized": false,
+            "prior_capture": {
+              "final_url": "$PRIOR_FINAL_URL",
+              "body_sha256": "$PRIOR_BODY_SHA256",
+              "classification": "federal_register_access_interstitial"
+            },
+            "external_contacts": 0,
+            "external_reviews": 0,
+            "outside_human_dependency": false,
+            "publication_effect": "none",
+            "adoption_effect": "none",
+            "graph_effect": "none"
+          }
+          EOF
+
+          selected=''
+          for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
+            dir="$CAPTURE_ROOT/attempts/attempt-$attempt"
+            mkdir -p "$dir"
+            printf '%s\n' "$TARGET_URL" > "$dir/request-url.txt"
+            set +e
+            curl \
+              --location \
+              --silent \
+              --show-error \
+              --connect-timeout 20 \
+              --max-time 90 \
+              --retry 0 \
+              --user-agent 'clifford-number-rd05-exact-custody/1.0' \
+              --header 'Accept: application/json' \
+              --dump-header "$dir/headers.txt" \
+              --output "$dir/body.bin" \
+              --write-out '%{url_effective}\n%{http_code}\n%{content_type}\n%{size_download}\n%{num_redirects}\n' \
+              "$TARGET_URL" \
+              > "$dir/curl-meta.txt" \
+              2> "$dir/curl-stderr.txt"
+            rc=$?
+            set -e
+            printf '%s\n' "$rc" > "$dir/curl-exit.txt"
+
+            node --input-type=module "$dir" "$OBJECT_ID" "$DOCUMENT_NUMBER" "$TARGET_URL" <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import crypto from 'node:crypto';
+
+          const [dir, objectId, documentNumber, targetUrl] = process.argv.slice(2);
+          const read = (name) => fs.readFileSync(path.join(dir, name));
+          const text = (name) => read(name).toString('utf8');
+          const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
+          const meta = text('curl-meta.txt').split(/\r?\n/);
+          const curlExit = Number(text('curl-exit.txt').trim());
+          const finalUrl = meta[0] || null;
+          const httpStatus = Number(meta[1] || 0);
+          const contentType = meta[2] || null;
+          const sizeDownload = Number(meta[3] || 0);
+          const redirects = Number(meta[4] || 0);
+          const body = read('body.bin');
+          const headers = read('headers.txt');
+          let parsed = null;
+          let parseError = null;
+          try {
+            parsed = JSON.parse(body.toString('utf8'));
+          } catch (error) {
+            parseError = error.message;
+          }
+          const documentMatch = parsed?.document_number === documentNumber;
+          const targetDelivered = curlExit === 0 && httpStatus === 200 && documentMatch;
+          const receipt = {
+            schema_version: 'ssc-rd05-same-object-api-attempt-receipt@1',
+            object_id: objectId,
+            document_number: documentNumber,
+            request_url: targetUrl,
+            final_url: finalUrl,
+            curl_exit: curlExit,
+            http_status: httpStatus,
+            content_type: contentType,
+            reported_download_bytes: sizeDownload,
+            observed_body_bytes: body.length,
+            observed_body_sha256: sha256(body),
+            observed_headers_bytes: headers.length,
+            observed_headers_sha256: sha256(headers),
+            redirects,
+            json_parse_success: parsed !== null,
+            json_parse_error: parseError,
+            returned_document_number: parsed?.document_number ?? null,
+            returned_title: parsed?.title ?? null,
+            same_object_document_match: documentMatch,
+            target_delivered: targetDelivered,
+            linked_urls_fetched: 0,
+            links_admitted: 0,
+            recommendation_or_disposition_inferred: false
+          };
+          fs.writeFileSync(path.join(dir, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n');
+          if (targetDelivered) {
+            const discovered = [
+              ['html_url', parsed.html_url],
+              ['pdf_url', parsed.pdf_url],
+              ['public_inspection_pdf_url', parsed.public_inspection_pdf_url],
+              ['raw_text_url', parsed.raw_text_url],
+              ['full_text_xml_url', parsed.full_text_xml_url],
+              ['body_html_url', parsed.body_html_url],
+              ['json_url', parsed.json_url]
+            ].filter(([, value]) => typeof value === 'string' && value.length > 0)
+              .map(([field, url]) => ({ field, url, fetched: false, admitted: false }));
+            const record = {
+              schema_version: 'ssc-rd05-federal-register-document-record@1',
+              object_id: objectId,
+              same_object_document_number: parsed.document_number,
+              title: parsed.title ?? null,
+              type: parsed.type ?? null,
+              subtype: parsed.subtype ?? null,
+              abstract: parsed.abstract ?? null,
+              publication_date: parsed.publication_date ?? null,
+              citation: parsed.citation ?? null,
+              agencies: Array.isArray(parsed.agencies)
+                ? parsed.agencies.map((agency) => ({
+                    id: agency.id ?? null,
+                    name: agency.name ?? null,
+                    raw_name: agency.raw_name ?? null,
+                    url: agency.url ?? null,
+                    json_url: agency.json_url ?? null
+                  }))
+                : [],
+              exact_api_body_sha256: receipt.observed_body_sha256,
+              exact_api_body_bytes: receipt.observed_body_bytes,
+              linked_urls: discovered,
+              linked_urls_fetched: 0,
+              links_admitted: 0,
+              semantic_authority: 'same_object_source_recovery_only',
+              recommendation_status_changed: false,
+              disposition_status_changed: false,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            };
+            fs.writeFileSync(path.join(dir, 'document-record.json'), JSON.stringify(record, null, 2) + '\n');
+          }
+          NODE
+
+            if jq -e '.target_delivered == true' "$dir/receipt.json" >/dev/null; then
+              selected="$attempt"
+              break
+            fi
+          done
+
+          if test -n "$selected"; then
+            printf '%s\n' "$selected" > "$CAPTURE_ROOT/selected-attempt.txt"
+          else
+            : > "$CAPTURE_ROOT/selected-attempt.txt"
+          fi
+
+          node --input-type=module "$CAPTURE_ROOT" "$OBJECT_ID" "$DOCUMENT_NUMBER" "$FROZEN_URL" "$TARGET_URL" "$EXPECTED_HEAD" "$MAX_ATTEMPTS" <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import crypto from 'node:crypto';
+
+          const [root, objectId, documentNumber, frozenUrl, targetUrl, researchHead, maxAttemptsText] = process.argv.slice(2);
+          const maxAttempts = Number(maxAttemptsText);
+          const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
+          const attemptDirs = fs.readdirSync(path.join(root, 'attempts'))
+            .filter((name) => /^attempt-\d+$/.test(name))
+            .sort((a, b) => Number(a.split('-')[1]) - Number(b.split('-')[1]));
+          const attempts = attemptDirs.map((name) => {
+            const receiptPath = path.join(root, 'attempts', name, 'receipt.json');
+            return JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
+          });
+          const delivered = attempts.find((attempt) => attempt.target_delivered) ?? null;
+          const selectedAttempt = delivered ? attempts.indexOf(delivered) + 1 : null;
+          const summary = {
+            schema_version: 'ssc-rd05-same-object-api-capture-summary@1',
+            object_id: objectId,
+            document_number: documentNumber,
+            research_head: researchHead,
+            frozen_url: frozenUrl,
+            target_url: targetUrl,
+            maximum_attempts: maxAttempts,
+            attempts_executed: attempts.length,
+            selected_attempt: selectedAttempt,
+            same_object_target_delivered: delivered !== null,
+            terminal_transport_state: delivered ? 'official_api_same_object_delivered' : 'bounded_attempts_exhausted_without_same_object_delivery',
+            exact_body_sha256: delivered?.observed_body_sha256 ?? null,
+            exact_body_bytes: delivered?.observed_body_bytes ?? null,
+            returned_title: delivered?.returned_title ?? null,
+            linked_urls_fetched: 0,
+            links_admitted: 0,
+            frozen_denominator_changed: false,
+            recommendation_status_changed: false,
+            agency_response_status_changed: false,
+            adoption_or_rejection_status_changed: false,
+            implementation_or_outcome_status_changed: false,
+            external_contacts: 0,
+            external_reviews: 0,
+            outside_human_dependency: false,
+            publication_effect: 'none',
+            adoption_effect: 'none',
+            graph_effect: 'none'
+          };
+          fs.writeFileSync(path.join(root, 'summary.json'), JSON.stringify(summary, null, 2) + '\n');
+
+          const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+            const full = path.join(dir, entry.name);
+            return entry.isDirectory() ? walk(full) : [full];
+          });
+          const files = walk(root)
+            .filter((file) => path.basename(file) !== 'manifest.json')
+            .sort();
+          const manifest = {
+            schema_version: 'ssc-rd05-same-object-api-capture-manifest@1',
+            object_id: objectId,
+            document_number: documentNumber,
+            entries: files.map((file) => {
+              const body = fs.readFileSync(file);
+              return {
+                path: path.relative(root, file).split(path.sep).join('/'),
+                bytes: body.length,
+                sha256: sha256(body)
+              };
+            })
+          };
+          fs.writeFileSync(path.join(root, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+          NODE
+
+          jq -e \
+            --arg object "$OBJECT_ID" \
+            --arg document "$DOCUMENT_NUMBER" \
+            --arg head "$EXPECTED_HEAD" \
+            '.object_id == $object and .document_number == $document and .research_head == $head and .frozen_denominator_changed == false and .linked_urls_fetched == 0 and .links_admitted == 0 and .outside_human_dependency == false and .graph_effect == "none"' \
+            "$CAPTURE_ROOT/summary.json" >/dev/null
+          jq -e '.entries | length >= 8' "$CAPTURE_ROOT/manifest.json" >/dev/null
+          test "$(find "$CAPTURE_ROOT/attempts" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')" -le "$MAX_ATTEMPTS"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          cat "$CAPTURE_ROOT/summary.json"
+      - name: Upload exact same-object API capture
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-fr-2024-08630-api-capture-v1
+          path: rd05-fr-2024-08630-api-capture-v1
+          if-no-files-found: error
+          retention-days: 90
