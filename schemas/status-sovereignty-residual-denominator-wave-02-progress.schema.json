@@ -1,0 +1,350 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-residual-denominator-wave-02-progress.schema.json",
+  "title": "SSC residual-denominator Wave 02 promotion progress",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "wave_id",
+    "hypothesis_id",
+    "issue",
+    "as_of",
+    "authority",
+    "parent_custody",
+    "promoted_class_receipts",
+    "selected_classes_not_adjudicated_by_this_receipt",
+    "counts",
+    "current_result",
+    "boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "status-sovereignty-residual-denominator-wave-02-progress@1"
+    },
+    "wave_id": {
+      "const": "SSC-RD-W02"
+    },
+    "hypothesis_id": {
+      "const": "SSC-H01"
+    },
+    "issue": {
+      "const": 785
+    },
+    "as_of": {
+      "const": "2026-08-02"
+    },
+    "authority": {
+      "const": "one_terminal_class_receipt_promoted_without_cross_lane_empirical_authority"
+    },
+    "parent_custody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "constitution_path",
+        "constitution_issue",
+        "wave_01_registry_path",
+        "canonical_residual_classes",
+        "open_before",
+        "closed_before"
+      ],
+      "properties": {
+        "constitution_path": {
+          "const": "data/research/status-sovereignty-residual-denominator-wave-02-constitution.json"
+        },
+        "constitution_issue": {
+          "const": 785
+        },
+        "wave_01_registry_path": {
+          "const": "data/research/status-sovereignty-residual-denominator-wave-01.json"
+        },
+        "canonical_residual_classes": {
+          "const": 42
+        },
+        "open_before": {
+          "const": 42
+        },
+        "closed_before": {
+          "const": 0
+        }
+      }
+    },
+    "promoted_class_receipts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "lane_id",
+          "class_id",
+          "issue",
+          "source_pr",
+          "exact_label",
+          "terminal_state",
+          "class_closed",
+          "closure_reference_path",
+          "class_receipt_path",
+          "manifest_combined_sha256"
+        ],
+        "properties": {
+          "lane_id": {
+            "const": "RD-04"
+          },
+          "class_id": {
+            "const": "RD-04-C01"
+          },
+          "issue": {
+            "const": 789
+          },
+          "source_pr": {
+            "const": 804
+          },
+          "exact_label": {
+            "const": "current statutory, regulatory, and guidance version history after the 2025 law"
+          },
+          "terminal_state": {
+            "const": "bounded_source_unavailable"
+          },
+          "class_closed": {
+            "const": true
+          },
+          "closure_reference_path": {
+            "const": "data/project/ssc-residual-wave02/closures/RD-04-C01.json"
+          },
+          "class_receipt_path": {
+            "const": "data/research/status-sovereignty-rd-wave02-rd04-version-history/class-receipt.json"
+          },
+          "manifest_combined_sha256": {
+            "const": "b023737f4367bf1f54a1b792faf70d12f3ca5cf89f92a5c0d16169665806b79b"
+          }
+        }
+      }
+    },
+    "selected_classes_not_adjudicated_by_this_receipt": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "lane_id",
+          "class_id",
+          "issue",
+          "exact_label",
+          "state_in_this_progress_object",
+          "class_closed_by_this_progress_object"
+        ],
+        "properties": {
+          "lane_id": {
+            "type": "string",
+            "pattern": "^RD-0[1-6]$"
+          },
+          "class_id": {
+            "type": "string",
+            "pattern": "^RD-0[1-6]-C[0-9]{2}$"
+          },
+          "issue": {
+            "type": "integer"
+          },
+          "exact_label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state_in_this_progress_object": {
+            "const": "not_adjudicated_by_rd04_receipt"
+          },
+          "class_closed_by_this_progress_object": {
+            "const": false
+          }
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "execution_lanes",
+        "selected_class_attempts",
+        "promoted_terminal_class_receipts",
+        "classes_closed_this_wave",
+        "closed_residual_classes",
+        "open_residual_classes",
+        "outside_human_dependencies",
+        "external_contacts",
+        "external_reviews",
+        "reviewed_disposition_changes",
+        "complete_compact_findings",
+        "racial_order_findings",
+        "prevalence_findings",
+        "coordination_findings",
+        "common_purpose_findings",
+        "graph_effects",
+        "publication_effects",
+        "adoption_effects"
+      ],
+      "properties": {
+        "execution_lanes": {
+          "const": 6
+        },
+        "selected_class_attempts": {
+          "const": 6
+        },
+        "promoted_terminal_class_receipts": {
+          "const": 1
+        },
+        "classes_closed_this_wave": {
+          "const": 1
+        },
+        "closed_residual_classes": {
+          "const": 1
+        },
+        "open_residual_classes": {
+          "const": 41
+        },
+        "outside_human_dependencies": {
+          "const": 0
+        },
+        "external_contacts": {
+          "const": 0
+        },
+        "external_reviews": {
+          "const": 0
+        },
+        "reviewed_disposition_changes": {
+          "const": 0
+        },
+        "complete_compact_findings": {
+          "const": 0
+        },
+        "racial_order_findings": {
+          "const": 0
+        },
+        "prevalence_findings": {
+          "const": 0
+        },
+        "coordination_findings": {
+          "const": 0
+        },
+        "common_purpose_findings": {
+          "const": 0
+        },
+        "graph_effects": {
+          "const": 0
+        },
+        "publication_effects": {
+          "const": 0
+        },
+        "adoption_effects": {
+          "const": 0
+        }
+      }
+    },
+    "current_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "terminal_state",
+        "classes_closed",
+        "classes_open",
+        "rd04_class_closed",
+        "all_six_selected_classes_closed",
+        "wave_complete",
+        "outside_human_dependency",
+        "project_blocking",
+        "graph_effect",
+        "publication_effect",
+        "adoption_effect"
+      ],
+      "properties": {
+        "terminal_state": {
+          "const": "one_of_forty_two_residual_classes_closed_five_selected_attempts_unadjudicated_here"
+        },
+        "classes_closed": {
+          "const": 1
+        },
+        "classes_open": {
+          "const": 41
+        },
+        "rd04_class_closed": {
+          "const": true
+        },
+        "all_six_selected_classes_closed": {
+          "const": false
+        },
+        "wave_complete": {
+          "const": false
+        },
+        "outside_human_dependency": {
+          "const": false
+        },
+        "project_blocking": {
+          "const": false
+        },
+        "graph_effect": {
+          "const": "none"
+        },
+        "publication_effect": {
+          "const": "none"
+        },
+        "adoption_effect": {
+          "const": "none"
+        }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "one_class_closure_closes_lane",
+        "one_class_closure_closes_wave",
+        "source_unavailability_is_event_absence",
+        "source_unavailability_is_noncompliance",
+        "publication_is_observed_implementation",
+        "california_chronology_is_national_prevalence",
+        "class_closure_is_complete_compact",
+        "functional_convergence_is_coordination_or_common_purpose",
+        "graph_effect",
+        "publication_effect",
+        "adoption_effect"
+      ],
+      "properties": {
+        "one_class_closure_closes_lane": {
+          "const": false
+        },
+        "one_class_closure_closes_wave": {
+          "const": false
+        },
+        "source_unavailability_is_event_absence": {
+          "const": false
+        },
+        "source_unavailability_is_noncompliance": {
+          "const": false
+        },
+        "publication_is_observed_implementation": {
+          "const": false
+        },
+        "california_chronology_is_national_prevalence": {
+          "const": false
+        },
+        "class_closure_is_complete_compact": {
+          "const": false
+        },
+        "functional_convergence_is_coordination_or_common_purpose": {
+          "const": false
+        },
+        "graph_effect": {
+          "const": "none"
+        },
+        "publication_effect": {
+          "const": "none"
+        },
+        "adoption_effect": {
+          "const": "none"
+        }
+      }
+    }
+  }
+}
