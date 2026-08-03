@@ -1,1 +1,1 @@
-materialize the exact 58-object capture custody into the RD-05 research branch — checksum-bound runner retry
+materialize the exact 58-object capture custody into the RD-05 research branch — corrected retained schema
