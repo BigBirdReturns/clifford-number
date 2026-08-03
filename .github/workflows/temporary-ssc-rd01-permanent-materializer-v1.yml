@@ -19,7 +19,6 @@ concurrency:
 env:
   EXPECTED_RESEARCH: 72e657baa024e0e90cca5bfc532f8350fe6bca60
   TARGET_BRANCH: agent/ssc-rd-wave02-rd01-legal-entity
-  PACKAGE_B64_SHA256: bd37425b3f936369196d10307bc32b33d9765e835738563c887082028d2c19bb
   PACKAGE_TGZ_SHA256: 7affdafb780f90fab813b93480f346ecd65391d560eaad94499346b9769e004c
   PRODUCT_MANIFEST_SHA256: 7d5cc33a8fb8fc759dd2794076ffcd7ca4e1ad9c463f49593459edfca793a798
   STAGE1_ARTIFACT_ID: '8866039696'
@@ -78,8 +77,8 @@ jobs:
         run: |
           set -Eeuo pipefail
           carrier='controller/.github/tmp/ssc-rd01-permanent-package-v1.tar.gz.b64'
-          echo "$PACKAGE_B64_SHA256  $carrier" | sha256sum --check --strict
-          base64 --decode "$carrier" > /tmp/rd01-permanent-package.tar.gz
+          tr -d '\r\n\t ' < "$carrier" > /tmp/rd01-permanent-package.b64
+          base64 --decode /tmp/rd01-permanent-package.b64 > /tmp/rd01-permanent-package.tar.gz
           echo "$PACKAGE_TGZ_SHA256  /tmp/rd01-permanent-package.tar.gz" | sha256sum --check --strict
           tar -xzf /tmp/rd01-permanent-package.tar.gz -C work
           test "$(find work/.github/workflows work/docs/milestones work/schemas work/test work/tools -type f \
