@@ -52,15 +52,13 @@ jobs:
           test "$(jq -r '.canonical_residual_atlas.residual_classes' "$out/$WAVE1_PATH")" = '42'
           test "$(jq -r '.closure_contract.starting_open_classes' "$out/$CONSTITUTION_PATH")" = '42'
 
-          RESEARCH_HEAD="$(git rev-parse HEAD)"
-          MAIN_HEAD="$(git rev-parse origin/main)"
           {
-            printf 'research_head=%s\n' "$RESEARCH_HEAD"
-            printf 'main_head=%s\n' "$MAIN_HEAD"
+            printf 'research_head=%s\n' "$(git rev-parse HEAD)"
+            printf 'main_head=%s\n' "$(git rev-parse origin/main)"
             find "$out" -type f -print0 | sort -z | xargs -0 sha256sum
           } > "$out/export-sha256.txt"
 
-          node --input-type=module "$out" "$RESEARCH_HEAD" "$MAIN_HEAD" <<'NODE'
+          node --input-type=module - "$out" "$(git rev-parse HEAD)" "$(git rev-parse origin/main)" <<'NODE'
           import fs from 'node:fs';
           import path from 'node:path';
           import crypto from 'node:crypto';
@@ -90,7 +88,7 @@ jobs:
           }, null, 2) + '\n');
           NODE
 
-          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(find "$out" -type f | wc -l | tr -d ' ')" = '5'
       - name: Upload exact closure inputs
         uses: actions/upload-artifact@v4
         with:
