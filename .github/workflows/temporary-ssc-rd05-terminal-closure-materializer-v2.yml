@@ -1,0 +1,154 @@
+name: TEMP replay exact RD-05 terminal closure
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd05-terminal-closure-materializer-v2.yml'
+      - '.rd05-closure/trigger-v2.txt'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd05-terminal-closure-materializer-v2-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd05-terminal-closure-materializer-trigger-v2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd05-recommendation-disposition
+      EXPECTED_START_SHA: 03d0c627308b86ad75e8cdad6a90756c97e592ce
+      CARRIER_BRANCH: agent/ssc-rd05-terminal-closure-materializer-base-v1
+      CARRIER_COMMIT: b0bd93f2af276d2644b44cd2f0e7d24841da313b
+      CLASSIFICATION_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/object-semantic-classification.json
+      CLASSIFICATION_SHA256: ed35fbd41027497742d5db4473d8675978d37eab52f95c35628616aa7fba6f13
+      CENSUS_ARTIFACT_ID: '8852846428'
+      CENSUS_ARTIFACT_SHA256: 9a7524164ad5594ac720ec914a84812005aef8e79d0a82ebb561b268089c08fb
+      CENSUS_MANIFEST_SHA256: 0fb07dd92ff7e8c27a7e4b3e6b3db18842538516b1badd05afe194fd07446c32
+      CENSUS_DEST: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/source-custody/successor-census-v1
+      EXECUTION_RECEIPT_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/successor-census-execution-receipt.json
+      PRODUCT_ROOT: data/research/status-sovereignty-rd-wave02-rd05-recommendation-disposition
+      CLOSURE_REFERENCE_PATH: data/project/ssc-residual-wave02/closures/RD-05-C03.json
+      SOURCE_ZIP_SHA256: df1d69e7d8ad669b47ffcdb24ddb8a11d7801edceb54da3809032fd153447be7
+      SOURCE_BASE64_SHA256: 934c7550b4056e47cdeecbd6d026587eb722047728c7b0006bb685787257f1c9
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Extract the exact v1 transaction
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_START_SHA"
+          observed="$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | cut -f1)"
+          test "$observed" = "$EXPECTED_START_SHA"
+          git fetch origin "$CARRIER_COMMIT"
+
+          mapfile -t workflow_paths < <(
+            git ls-tree -r --name-only "$CARRIER_COMMIT" \
+              | grep -E '^\.github/workflows/temporary-ssc-rd05-terminal-closure-materializer-v1\.ya?ml$'
+          )
+          test "${#workflow_paths[@]}" = '1'
+          git show "${CARRIER_COMMIT}:${workflow_paths[0]}" > /tmp/rd05-materializer-v1.yml
+
+          ruby -ryaml - <<'RUBY'
+          document = YAML.load_file('/tmp/rd05-materializer-v1.yml')
+          steps = document.fetch('jobs').fetch('materialize').fetch('steps')
+          scripts = steps.filter_map { |step| step['run'] }
+          raise "expected six v1 run scripts, found #{scripts.length}" unless scripts.length == 6
+          scripts.each_with_index do |script, index|
+            File.write(format('/tmp/rd05-v1-run-%02d.sh', index), script + "\n")
+          end
+          RUBY
+
+          for script in /tmp/rd05-v1-run-*.sh; do
+            bash -n "$script"
+          done
+          printf '%s\n' "$(sha256sum /tmp/rd05-materializer-v1.yml | awk '{print $1}')" > /tmp/rd05-v1-workflow-sha256.txt
+
+      - name: Reconstruct and verify the unchanged authored source package
+        run: bash -Eeuo pipefail /tmp/rd05-v1-run-00.sh
+
+      - name: Repair only the seed-label assertion
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          builder = Path('/tmp/rd05-authored/tools/build-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs')
+          hashes = Path('/tmp/rd05-authored-sha256.txt')
+          source = builder.read_text()
+          needle = "seed?.closure_target === CLASS_LABEL"
+          replacement = "seed?.closure_target === 'recommendation, agency response, adoption, rejection, implementation, and outcome ledger'"
+          assert source.count(needle) == 1, f'unexpected seed assertion count: {source.count(needle)}'
+          assert source.count("'seed closure target changed'") == 1
+          repaired = source.replace(needle, replacement)
+          builder.write_text(repaired)
+
+          repaired_digest = hashlib.sha256(builder.read_bytes()).hexdigest()
+          rows = hashes.read_text().splitlines()
+          target = 'tools/build-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs'
+          matches = [index for index, row in enumerate(rows) if row.endswith('  ' + target)]
+          assert len(matches) == 1
+          rows[matches[0]] = f'{repaired_digest}  {target}'
+          hashes.write_text('\n'.join(rows) + '\n')
+
+          receipt = {
+            'schema_version': 'ssc-rd05-terminal-closure-materializer-repair@1',
+            'failed_run': 30830085934,
+            'failed_job': 91741580980,
+            'failed_stage': 'precommit_builder_input_validation',
+            'research_branch_unchanged': True,
+            'research_head': '03d0c627308b86ad75e8cdad6a90756c97e592ce',
+            'original_builder_sha256': 'f0883140637f34ba5dc14f671d1194fa691beb015940eaa3ad2ebf849584d090',
+            'repaired_builder_sha256': repaired_digest,
+            'replacement_count': 1,
+            'semantic_change': 'bind seed.closure_target to the exact seed label while preserving the constitution exact_label separately',
+            'seed_closure_target': 'recommendation, agency response, adoption, rejection, implementation, and outcome ledger',
+            'constitution_exact_label': 'complete recommendation, agency response, adoption, rejection, implementation, and outcome ledger',
+            'path_denominator_changed': False,
+            'authority_changed': False,
+          }
+          Path('/tmp/rd05-terminal-closure-patch-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(f'repaired builder SHA-256: {repaired_digest}')
+          PY
+
+          (cd /tmp/rd05-authored && sha256sum --check --strict /tmp/rd05-authored-sha256.txt)
+
+      - name: Download and verify the unchanged successor census
+        run: bash -Eeuo pipefail /tmp/rd05-v1-run-01.sh
+
+      - name: Install and qualify the exact 412-path closure product
+        run: bash -Eeuo pipefail /tmp/rd05-v1-run-02.sh
+
+      - name: Prove the exact path denominator and commit
+        run: bash -Eeuo pipefail /tmp/rd05-v1-run-03.sh
+
+      - name: Run the complete release gate and volatility proof
+        run: bash -Eeuo pipefail /tmp/rd05-v1-run-04.sh
+
+      - name: Replay deterministically and publish under the unchanged-head lease
+        run: bash -Eeuo pipefail /tmp/rd05-v1-run-05.sh
+
+      - name: Preserve the materialization and repair receipts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-terminal-closure-materializer-v2
+          path: |
+            /tmp/rd05-terminal-closure-patch-receipt.json
+            *rd05*closure*receipt*.json
+          if-no-files-found: error
+          retention-days: 90
