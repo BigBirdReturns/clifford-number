@@ -1,0 +1,227 @@
+name: TEMP retire proved RD-06 execution refs
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd06-cleanup.yml'
+      - '.rd06-cleanup/**'
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+  issues: read
+
+concurrency:
+  group: temp-ssc-rd06-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd06-cleanup-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PROOF_BRANCH: agent/ssc-rd06-descendant-proof-trigger-v1
+      PROOF_WORKFLOW_NAME: TEMP prove descendant-main RD-06 closure
+      PROOF_ARTIFACT_NAME: ssc-rd06-wave02-descendant-postmerge-proof-v1
+      PRODUCT_BRANCH: agent/ssc-rd06-wave02-terminal-promotion
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Verify descendant-safe canonical proof
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/rd06-cleanup
+          mkdir -p /tmp/rd06-cleanup/proof /tmp/rd06-cleanup/receipt
+
+          gh api --paginate \
+            -H 'Accept: application/vnd.github+json' \
+            "/repos/${GITHUB_REPOSITORY}/actions/runs?branch=${PROOF_BRANCH}&status=completed&per_page=100" \
+            > /tmp/rd06-cleanup/runs.json
+
+          python - <<'PY'
+          import json,os,pathlib
+          data=json.loads(pathlib.Path('/tmp/rd06-cleanup/runs.json').read_text())
+          pages=data if isinstance(data,list) else [data]
+          rows=[]
+          for page in pages: rows.extend(page.get('workflow_runs',[]))
+          matches=[r for r in rows if r.get('name')==os.environ['PROOF_WORKFLOW_NAME'] and r.get('head_branch')==os.environ['PROOF_BRANCH']]
+          matches.sort(key=lambda r:r.get('created_at',''),reverse=True)
+          if not matches:
+              pathlib.Path('/tmp/rd06-cleanup/receipt/BLOCKED.txt').write_text('no_completed_descendant_proof\n')
+          else:
+              run=matches[0]
+              pathlib.Path('/tmp/rd06-cleanup/proof-run.json').write_text(json.dumps(run,indent=2)+'\n')
+              pathlib.Path('/tmp/rd06-cleanup/proof-run-id.txt').write_text(str(run['id'])+'\n')
+              if run.get('conclusion')!='success':
+                  pathlib.Path('/tmp/rd06-cleanup/receipt/BLOCKED.txt').write_text(f"descendant_proof_{run.get('conclusion')}\n")
+          PY
+          if [ -f /tmp/rd06-cleanup/receipt/BLOCKED.txt ]; then exit 0; fi
+
+          run_id="$(cat /tmp/rd06-cleanup/proof-run-id.txt)"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts" > /tmp/rd06-cleanup/artifacts.json
+          python - <<'PY'
+          import json,os,pathlib
+          data=json.loads(pathlib.Path('/tmp/rd06-cleanup/artifacts.json').read_text())
+          arts=[a for a in data.get('artifacts',[]) if a.get('name')==os.environ['PROOF_ARTIFACT_NAME'] and not a.get('expired')]
+          if len(arts)!=1:
+              pathlib.Path('/tmp/rd06-cleanup/receipt/BLOCKED.txt').write_text(f'exact_descendant_artifact_count_{len(arts)}\n')
+          else:
+              art=arts[0]
+              pathlib.Path('/tmp/rd06-cleanup/proof-artifact.json').write_text(json.dumps(art,indent=2)+'\n')
+              pathlib.Path('/tmp/rd06-cleanup/proof-artifact-id.txt').write_text(str(art['id'])+'\n')
+          PY
+          if [ -f /tmp/rd06-cleanup/receipt/BLOCKED.txt ]; then exit 0; fi
+
+          artifact_id="$(cat /tmp/rd06-cleanup/proof-artifact-id.txt)"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > /tmp/rd06-cleanup/proof.zip
+          expected_digest="$(python - <<'PY'
+          import json
+          print(json.load(open('/tmp/rd06-cleanup/proof-artifact.json'))['digest'].split(':',1)[1])
+          PY
+          )"
+          test "$(sha256sum /tmp/rd06-cleanup/proof.zip | awk '{print $1}')" = "$expected_digest"
+          unzip -q /tmp/rd06-cleanup/proof.zip -d /tmp/rd06-cleanup/proof
+          proof_file="$(find /tmp/rd06-cleanup/proof -type f -name proof.json -print -quit)"
+          manifest_file="$(find /tmp/rd06-cleanup/proof -type f -name manifest.json -print -quit)"
+          test -n "$proof_file"
+          test -n "$manifest_file"
+          cp "$proof_file" /tmp/rd06-cleanup/receipt/descendant-proof.json
+          cp "$manifest_file" /tmp/rd06-cleanup/receipt/descendant-proof-manifest.json
+
+          python - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path('/tmp/rd06-cleanup/proof')
+          proof=json.load(open('/tmp/rd06-cleanup/receipt/descendant-proof.json'))
+          manifest=json.load(open('/tmp/rd06-cleanup/receipt/descendant-proof-manifest.json'))
+          assert proof['schema_version']=='ssc-rd06-wave02-descendant-postmerge-proof@1'
+          assert proof['wave_id']=='SSC-RD-W02' and proof['lane_id']=='RD-06' and proof['class_id']=='RD-06-C01' and proof['issue']==791
+          assert proof['merge_tree_identical_to_product'] is True
+          assert proof['merge_is_ancestor_of_current_main'] is True
+          assert proof['later_main_disjoint'] is True and proof['overlap_path_count']==0
+          assert proof['atlas']=={'open':39,'closed':3}
+          assert proof['focused_checks_passed'] is True and proof['complete_release_gate_passed'] is True and proof['no_magic_human_gate_passed'] is True
+          assert proof['authority']['outside_human_dependency'] is False
+          assert proof['authority']['external_contacts']==0 and proof['authority']['external_reviews']==0
+          assert proof['authority']['publication_effect']=='none' and proof['authority']['adoption_effect']=='none' and proof['authority']['graph_effect']=='none'
+          for row in manifest['entries']:
+              p=root/row['path']; data=p.read_bytes()
+              assert len(data)==row['bytes'] and hashlib.sha256(data).hexdigest()==row['sha256']
+          combined=hashlib.sha256('\n'.join(f"{r['sha256']}  {r['path']}" for r in manifest['entries']).encode()).hexdigest()
+          assert combined==manifest['combined_sha256']
+          PY
+
+          current_main="$(gh api "/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
+          merge_commit="$(python - <<'PY'
+          import json
+          print(json.load(open('/tmp/rd06-cleanup/receipt/descendant-proof.json'))['merge_commit'])
+          PY
+          )"
+          git fetch origin main
+          git merge-base --is-ancestor "$merge_commit" origin/main
+          issue_state="$(gh api "/repos/${GITHUB_REPOSITORY}/issues/791" --jq '.state')"
+          issue_reason="$(gh api "/repos/${GITHUB_REPOSITORY}/issues/791" --jq '.state_reason')"
+          test "$issue_state" = closed
+          test "$issue_reason" = completed
+          printf '%s\n' "$current_main" > /tmp/rd06-cleanup/receipt/main-at-cleanup.txt
+
+      - name: Retire execution-only PRs and exact temporary refs
+        if: ${{ success() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          if [ -f /tmp/rd06-cleanup/receipt/BLOCKED.txt ]; then exit 0; fi
+
+          cat > /tmp/rd06-cleanup/branches.txt <<'EOF'
+          agent/ssc-rd06-terminal-audit-base-v1
+          agent/ssc-rd06-terminal-audit-trigger-v1
+          agent/ssc-rd06-current-main-reconcile-base-v1
+          agent/ssc-rd06-current-main-reconcile-trigger-v1
+          agent/ssc-rd06-promotion-proof-base-v1
+          agent/ssc-rd06-promotion-proof-trigger-v1
+          agent/ssc-rd06-exact-merge-base-v1
+          agent/ssc-rd06-exact-merge-trigger-v1
+          agent/ssc-rd06-postmerge-proof-base-v1
+          agent/ssc-rd06-postmerge-proof-trigger-v1
+          agent/ssc-rd06-descendant-proof-base-v1
+          agent/ssc-rd06-descendant-proof-trigger-v1
+          agent/ssc-rd-wave02-rd06-offeror-universe
+          agent/ssc-rd06-wave02-terminal-promotion
+          EOF
+
+          python - <<'PY'
+          import json,pathlib,subprocess,os
+          repo=os.environ['GITHUB_REPOSITORY']
+          branches=[x.strip() for x in pathlib.Path('/tmp/rd06-cleanup/branches.txt').read_text().splitlines() if x.strip()]
+          closed=[]
+          for branch in branches:
+              proc=subprocess.run(['gh','pr','list','--repo',repo,'--state','open','--head',branch,'--json','number'],text=True,stdout=subprocess.PIPE,check=True)
+              for row in json.loads(proc.stdout):
+                  number=row['number']
+                  subprocess.run(['gh','pr','close',str(number),'--repo',repo,'--comment','Execution-only RD-06 surface retired after checksum-bound descendant-main proof. Closed without merge.'],check=True)
+                  closed.append(number)
+          pathlib.Path('/tmp/rd06-cleanup/receipt/closed-prs.json').write_text(json.dumps(sorted(set(closed)),indent=2)+'\n')
+          PY
+
+          : > /tmp/rd06-cleanup/receipt/deleted-branches.txt
+          : > /tmp/rd06-cleanup/receipt/missing-branches.txt
+          while IFS= read -r branch; do
+            [ -n "$branch" ] || continue
+            ref="$(gh api "/repos/${GITHUB_REPOSITORY}/git/ref/heads/${branch}" --silent 2>/dev/null && echo exists || true)"
+            if [ "$ref" = exists ]; then
+              gh api -X DELETE "/repos/${GITHUB_REPOSITORY}/git/refs/heads/${branch}"
+              echo "$branch" >> /tmp/rd06-cleanup/receipt/deleted-branches.txt
+            else
+              echo "$branch" >> /tmp/rd06-cleanup/receipt/missing-branches.txt
+            fi
+          done < /tmp/rd06-cleanup/branches.txt
+
+          python - <<'PY'
+          import json,pathlib
+          deleted=pathlib.Path('/tmp/rd06-cleanup/receipt/deleted-branches.txt').read_text().splitlines()
+          missing=pathlib.Path('/tmp/rd06-cleanup/receipt/missing-branches.txt').read_text().splitlines()
+          proof=json.load(open('/tmp/rd06-cleanup/receipt/descendant-proof.json'))
+          result={
+            'schema_version':'ssc-rd06-wave02-cleanup-receipt@1',
+            'wave_id':'SSC-RD-W02','lane_id':'RD-06','class_id':'RD-06-C01','issue':791,
+            'canonical_merge_commit':proof['merge_commit'],'current_main_at_cleanup':pathlib.Path('/tmp/rd06-cleanup/receipt/main-at-cleanup.txt').read_text().strip(),
+            'branches_declared':14,'branches_deleted':len(deleted),'branches_already_missing':len(missing),
+            'deleted_branches':deleted,'already_missing_branches':missing,
+            'execution_only_prs_closed':json.load(open('/tmp/rd06-cleanup/receipt/closed-prs.json')),
+            'canonical_state':{'atlas_open':39,'atlas_closed':3,'issue_closed_completed':True},
+            'authority':proof['authority'],
+          }
+          pathlib.Path('/tmp/rd06-cleanup/receipt/result.json').write_text(json.dumps(result,indent=2)+'\n')
+          PY
+
+      - name: Seal cleanup or blocker receipt
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path('/tmp/rd06-cleanup/receipt')
+          root.mkdir(parents=True,exist_ok=True)
+          rows=[]
+          for p in sorted(x for x in root.rglob('*') if x.is_file() and x.name!='manifest.json'):
+              b=p.read_bytes(); rows.append({'path':str(p.relative_to(root)),'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest()})
+          combined=hashlib.sha256('\n'.join(f"{r['sha256']}  {r['path']}" for r in rows).encode()).hexdigest()
+          (root/'manifest.json').write_text(json.dumps({'schema_version':'ssc-rd06-wave02-cleanup-manifest@1','entry_count':len(rows),'entries':rows,'combined_sha256':combined},indent=2)+'\n')
+          print(f'RD-06 cleanup receipt sealed: {len(rows)} entries; {combined}')
+          PY
+
+      - name: Preserve cleanup or blocker receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd06-wave02-cleanup-v1
+          path: /tmp/rd06-cleanup/receipt
+          if-no-files-found: error
+          retention-days: 90
