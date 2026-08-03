@@ -1,0 +1,111 @@
+name: RD-06 main hygiene cleanup transaction
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd06-main-hygiene-cleanup
+    paths:
+      - '.github/workflows/rd06-main-hygiene-cleanup-run.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rd06-main-hygiene-cleanup
+  cancel-in-progress: false
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd06-main-hygiene-cleanup
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Delete only leaked RD-06 execution controls
+        run: |
+          set -Eeuo pipefail
+          cat > /tmp/rd06-leaked-paths.txt <<'EOF'
+          .github/workflows/temporary-ssc-rd06-cleanup.yml
+          .github/workflows/temporary-ssc-rd06-current-main-reconcile-v2.yml
+          .github/workflows/temporary-ssc-rd06-current-main-reconcile.yml
+          .github/workflows/temporary-ssc-rd06-descendant-proof.yml
+          .github/workflows/temporary-ssc-rd06-exact-merge.yml
+          .github/workflows/temporary-ssc-rd06-final-cleanup.yml
+          .github/workflows/temporary-ssc-rd06-postmerge-proof.yml
+          .github/workflows/temporary-ssc-rd06-promotion-proof.yml
+          .github/workflows/temporary-ssc-rd06-promotion-v2-proof.yml
+          .github/workflows/temporary-ssc-rd06-self-cleanup.yml
+          .github/workflows/temporary-ssc-rd06-terminality-audit.yml
+          .github/workflows/temporary-ssc-rd06-v2-descendant-proof.yml
+          .github/workflows/temporary-ssc-rd06-v2-exact-merge.yml
+          .rd06-cleanup/trigger.txt
+          .rd06-current-main-reconcile-v2/trigger.txt
+          .rd06-current-main-reconcile/trigger.txt
+          .rd06-descendant-proof/trigger.txt
+          .rd06-exact-merge/trigger.txt
+          .rd06-final-cleanup/trigger.txt
+          .rd06-postmerge-proof/trigger.txt
+          .rd06-promotion-proof/trigger.txt
+          .rd06-promotion-v2-proof/trigger.txt
+          .rd06-self-cleanup/trigger.txt
+          .rd06-terminality-audit/trigger.txt
+          .rd06-v2-descendant-proof/trigger.txt
+          .rd06-v2-exact-merge/trigger.txt
+          EOF
+          test "$(wc -l < /tmp/rd06-leaked-paths.txt | tr -d ' ')" = 26
+          while IFS= read -r path; do rm -f -- "$path"; done < /tmp/rd06-leaked-paths.txt
+          rm -f .github/workflows/rd06-main-hygiene-cleanup-run.yml
+          git add -A
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+          git restore --worktree -- .
+          git clean -fdx
+          git diff --exit-code
+
+      - name: Commit and prove exact cleanup diff
+        run: |
+          set -Eeuo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m 'Remove leaked RD-06 temporary execution controls'
+          git fetch origin main
+          git diff --name-only origin/main...HEAD | sort > /tmp/observed.txt
+          cat > /tmp/expected.txt <<'EOF'
+          .github/workflows/temporary-ssc-rd06-cleanup.yml
+          .github/workflows/temporary-ssc-rd06-current-main-reconcile-v2.yml
+          .github/workflows/temporary-ssc-rd06-current-main-reconcile.yml
+          .github/workflows/temporary-ssc-rd06-descendant-proof.yml
+          .github/workflows/temporary-ssc-rd06-exact-merge.yml
+          .github/workflows/temporary-ssc-rd06-final-cleanup.yml
+          .github/workflows/temporary-ssc-rd06-postmerge-proof.yml
+          .github/workflows/temporary-ssc-rd06-promotion-proof.yml
+          .github/workflows/temporary-ssc-rd06-promotion-v2-proof.yml
+          .github/workflows/temporary-ssc-rd06-self-cleanup.yml
+          .github/workflows/temporary-ssc-rd06-terminality-audit.yml
+          .github/workflows/temporary-ssc-rd06-v2-descendant-proof.yml
+          .github/workflows/temporary-ssc-rd06-v2-exact-merge.yml
+          .rd06-cleanup/trigger.txt
+          .rd06-current-main-reconcile-v2/trigger.txt
+          .rd06-current-main-reconcile/trigger.txt
+          .rd06-descendant-proof/trigger.txt
+          .rd06-exact-merge/trigger.txt
+          .rd06-final-cleanup/trigger.txt
+          .rd06-postmerge-proof/trigger.txt
+          .rd06-promotion-proof/trigger.txt
+          .rd06-promotion-v2-proof/trigger.txt
+          .rd06-self-cleanup/trigger.txt
+          .rd06-terminality-audit/trigger.txt
+          .rd06-v2-descendant-proof/trigger.txt
+          .rd06-v2-exact-merge/trigger.txt
+          EOF
+          sort -o /tmp/expected.txt /tmp/expected.txt
+          diff -u /tmp/expected.txt /tmp/observed.txt
+          test "$(git diff --diff-filter=D --name-only origin/main...HEAD | wc -l | tr -d ' ')" = 26
+          test -z "$(git diff --diff-filter=ACMRTUXB --name-only origin/main...HEAD)"
+          git push origin HEAD:refs/heads/agent/ssc-rd06-main-hygiene-cleanup
