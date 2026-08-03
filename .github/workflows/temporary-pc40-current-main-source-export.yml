@@ -1,4 +1,4 @@
-name: TEMP export canonical PC-39 source for PC-40
+name: TEMP export current canonical main for PC-40 composition
 
 on:
   pull_request:
@@ -19,13 +19,13 @@ jobs:
         with:
           ref: main
           fetch-depth: 1
-      - name: Export exact canonical PC-39 source
+      - name: Export exact current canonical main
         run: |
           set -Eeuo pipefail
-          expected=de0b6eede3c9561d9cd5728c198fc62263b67b6d
+          expected=8a2aa74ea43827447ee8557c41fdc059d2f76a3c
           observed="$(git rev-parse HEAD)"
           test "$observed" = "$expected"
-          out=/tmp/pc40-canonical-pc39-source
+          out=/tmp/pc40-current-main-source
           mkdir -p "$out"
           printf '%s\n' "$observed" > "$out/source-head.sha"
           find . -type f \
@@ -48,7 +48,7 @@ jobs:
           test "$(wc -l < "$out/source-paths.txt" | tr -d ' ')" -gt 4000
       - uses: actions/upload-artifact@v4
         with:
-          name: pc40-canonical-pc39-source
-          path: /tmp/pc40-canonical-pc39-source
+          name: pc40-current-main-source
+          path: /tmp/pc40-current-main-source
           if-no-files-found: error
           retention-days: 7
