@@ -1,0 +1,172 @@
+name: TEMP materialize exact PC-40 product v8
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/pc40-exact-product-materializer-v8.yml'
+      - '.pc40/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc40-permanent-materializer-v1
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      FROZEN_MAIN: 8a2aa74ea43827447ee8557c41fdc059d2f76a3c
+      PERMANENT_BRANCH: research/preference-linkage-confidence-adjudication-assurance-v1
+      EXPECTED_B64_BYTES: '23452'
+      EXPECTED_B64_SHA256: 2b7a01984e8350938b4b61148715a1fe4be8b7c8d2c2540b831e9866fb7b5d41
+      EXPECTED_XZ_SHA256: dfd61fd0c16666ae8df4caf9cf5ae49d688cc855fe70d26dd0e515901ad4e010
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc40-exact-materializer-v7
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify exact repaired carrier
+        run: |
+          set -Eeuo pipefail
+          out=/tmp/pc40-v8-receipt
+          mkdir -p "$out"
+          cat > /tmp/pc40-paths <<'PATHS'
+          data/research/preference-custody/control-manifest-v38.json
+          data/research/preference-custody/linkage-confidence-assurance.fixture.json
+          docs/preference-custody-laboratory-floor-v38.md
+          docs/preference-custody-linkage-confidence-assurance.md
+          test/preference-custody-manifest-v38.test.js
+          test/preference-linkage-confidence-assurance.test.js
+          tools/compile-preference-custody-manifest-v38.mjs
+          tools/compile-preference-linkage-confidence-assurance.mjs
+          tools/lib/preference-custody-manifest-v38.mjs
+          tools/lib/preference-linkage-confidence-assurance.mjs
+          tools/validate-preference-custody-manifest-v38.mjs
+          tools/validate-preference-linkage-confidence-assurance.mjs
+          PATHS
+          sed -i 's/^          //' /tmp/pc40-paths
+          sort -o /tmp/pc40-paths /tmp/pc40-paths
+          test "$(wc -l < /tmp/pc40-paths | tr -d ' ')" = 12
+          carrier=/tmp/pc40-product.tar.xz.b64
+          : > "$carrier"
+          mapfile -t parts < <(find .pc40 -maxdepth 1 -type f -name 'payload.part-[0-9][0-9]' | sort)
+          test "${#parts[@]}" = 8
+          for part in "${parts[@]}" .pc40/payload.tail; do tr -d '\r\n\t ' < "$part" >> "$carrier"; done
+          test "$(stat -c '%s' "$carrier")" = "$EXPECTED_B64_BYTES"
+          test "$(sha256sum "$carrier" | awk '{print $1}')" = "$EXPECTED_B64_SHA256"
+          base64 --decode "$carrier" > /tmp/pc40-product.tar.xz
+          test "$(sha256sum /tmp/pc40-product.tar.xz | awk '{print $1}')" = "$EXPECTED_XZ_SHA256"
+          xz -t /tmp/pc40-product.tar.xz
+          tar -tJf /tmp/pc40-product.tar.xz | sed 's#^\./##' | sed '/\/$/d' | sort > /tmp/pc40-archive-paths
+          diff -u /tmp/pc40-paths /tmp/pc40-archive-paths
+          printf '%s\n' "$EXPECTED_B64_SHA256" > "$out/base64.sha256"
+          printf '%s\n' "$EXPECTED_XZ_SHA256" > "$out/xz.sha256"
+
+      - name: Prove lease and create exact twelve-file commit
+        run: |
+          set -Eeuo pipefail
+          out=/tmp/pc40-v8-receipt
+          git fetch --force --tags origin '+refs/heads/*:refs/remotes/origin/*'
+          test "$(git rev-parse origin/main)" = "$FROZEN_MAIN"
+          if git ls-remote --exit-code --heads origin "refs/heads/$PERMANENT_BRANCH" >/dev/null 2>&1; then echo 'permanent branch already exists' >&2; exit 1; fi
+          while IFS= read -r path; do ! git cat-file -e "origin/main:$path" 2>/dev/null || { echo "occupied path: $path" >&2; exit 1; }; done < /tmp/pc40-paths
+          rm -rf /tmp/pc40-work
+          git worktree add --detach /tmp/pc40-work origin/main
+          cd /tmp/pc40-work
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$PERMANENT_BRANCH"
+          tar -xJf /tmp/pc40-product.tar.xz -C .
+          git diff --check
+          git add --pathspec-from-file=/tmp/pc40-paths
+          git diff --cached --name-only | sort > /tmp/pc40-staged-paths
+          diff -u /tmp/pc40-paths /tmp/pc40-staged-paths
+          git diff --cached --check
+          git commit -m 'Add PC-40 linkage-confidence assurance and floor v38'
+          git rev-parse HEAD > "$out/product-commit.sha"
+          git rev-parse HEAD^{tree} > "$out/product-tree.sha"
+
+      - name: Run PC-40, floor-v38, compatibility, and no-magic gates
+        run: |
+          set -Eeuo pipefail
+          cd /tmp/pc40-work
+          out=/tmp/pc40-v8-receipt
+          {
+            node tools/compile-preference-linkage-confidence-assurance.mjs
+            node tools/validate-preference-linkage-confidence-assurance.mjs
+            node test/preference-linkage-confidence-assurance.test.js
+            node tools/compile-preference-custody-manifest-v38.mjs
+            node tools/validate-preference-custody-manifest-v38.mjs
+            node test/preference-custody-manifest-v38.test.js
+            node tools/check-no-magic-human-dependency.mjs
+          } | tee "$out/focused.log"
+          : > "$out/preference-matrix.log"
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-*.test.js' | sort); do
+            echo "===== $test_file =====" >> "$out/preference-matrix.log"
+            node "$test_file" >> "$out/preference-matrix.log" 2>&1
+          done
+
+      - name: Run complete repository release gate
+        run: |
+          set -Eeuo pipefail
+          cd /tmp/pc40-work
+          out=/tmp/pc40-v8-receipt
+          timeout 75m npm run release:check > "$out/release-check.log" 2>&1
+          git diff --name-only | sort > "$out/post-release-tracked-drift.txt"
+          python - <<'PY'
+          import re, subprocess
+          from pathlib import Path
+          paths=[p for p in Path('/tmp/pc40-v8-receipt/post-release-tracked-drift.txt').read_text().splitlines() if p]
+          product=set(Path('/tmp/pc40-paths').read_text().splitlines())
+          if product.intersection(paths): raise SystemExit(f'product drift: {sorted(product.intersection(paths))}')
+          if len(paths)>10: raise SystemExit(f'unexpected drift denominator: {len(paths)}')
+          iso=re.compile(rb'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})')
+          rows=[]
+          for path in paths:
+              old=subprocess.check_output(['git','show',f'HEAD:{path}']); new=Path(path).read_bytes()
+              if not iso.findall(old) or not iso.findall(new) or iso.sub(b'<TIMESTAMP>',old)!=iso.sub(b'<TIMESTAMP>',new): raise SystemExit(f'non-timestamp drift: {path}')
+              rows.append(path)
+          Path('/tmp/pc40-v8-receipt/normalized-timestamp-paths.txt').write_text('\n'.join(rows)+('\n' if rows else ''))
+          PY
+          git restore --source=HEAD --staged --worktree -- .
+          git clean -fd
+          test -z "$(git status --porcelain)"
+
+      - name: Replay, recheck lease, and publish
+        run: |
+          set -Eeuo pipefail
+          cd /tmp/pc40-work
+          out=/tmp/pc40-v8-receipt
+          {
+            node tools/compile-preference-linkage-confidence-assurance.mjs
+            node tools/compile-preference-custody-manifest-v38.mjs
+            node tools/validate-preference-linkage-confidence-assurance.mjs
+            node tools/validate-preference-custody-manifest-v38.mjs
+            node test/preference-linkage-confidence-assurance.test.js
+            node test/preference-custody-manifest-v38.test.js
+          } | tee "$out/replay.log"
+          git diff --exit-code --pathspec-from-file=/tmp/pc40-paths
+          test -z "$(git status --porcelain --untracked-files=no)"
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$FROZEN_MAIN"
+          if git ls-remote --exit-code --heads origin "refs/heads/$PERMANENT_BRANCH" >/dev/null 2>&1; then echo 'permanent branch appeared during qualification' >&2; exit 1; fi
+          git push origin "HEAD:refs/heads/$PERMANENT_BRANCH"
+          printf '%s\n' pc40_twelve_nonworkflow_paths_qualified_and_published > "$out/terminal-state.txt"
+
+      - name: Upload receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc40-exact-materializer-v8-receipt
+          path: /tmp/pc40-v8-receipt
+          if-no-files-found: warn
+          retention-days: 7
