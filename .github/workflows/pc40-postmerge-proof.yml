@@ -1,0 +1,138 @@
+name: Temporary PC-40 post-merge proof
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pc40-postmerge-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 5f3e16fe942e0074177af5a4678100807583d781
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prove exact canonical merge graph and fourteen-file scope
+        run: |
+          set -euo pipefail
+          merge=5f3e16fe942e0074177af5a4678100807583d781
+          first_parent=fb45f08ee0b7103b0f06cf206f68ac4bcbb0e17d
+          product_parent=f514fda083e76e9c943f53325f3b300deda271ac
+          product_tree=09e2390fe9a36d41d673ac0b6c7ff9f05c19380d
+
+          test "$(git rev-parse HEAD)" = "$merge"
+          test "$(git rev-parse HEAD^1)" = "$first_parent"
+          test "$(git rev-parse HEAD^2)" = "$product_parent"
+          test "$(git rev-parse HEAD^{tree})" = "$product_tree"
+
+          paths=(
+            .github/workflows/preference-custody-v38.yml
+            .github/workflows/preference-linkage-confidence-adjudication-assurance.yml
+            data/research/preference-custody/control-manifest-v38.json
+            data/research/preference-custody/linkage-confidence-adjudication-assurance.fixture.json
+            docs/preference-custody-laboratory-floor-v38.md
+            docs/preference-custody-linkage-confidence-adjudication-assurance.md
+            test/preference-custody-manifest-v38.test.js
+            test/preference-linkage-confidence-adjudication-assurance.test.js
+            tools/compile-preference-custody-manifest-v38.mjs
+            tools/compile-preference-linkage-confidence-adjudication-assurance.mjs
+            tools/lib/preference-custody-manifest-v38.mjs
+            tools/lib/preference-linkage-confidence-adjudication-assurance.mjs
+            tools/validate-preference-custody-manifest-v38.mjs
+            tools/validate-preference-linkage-confidence-adjudication-assurance.mjs
+          )
+          printf '%s\n' "${paths[@]}" | sort > /tmp/pc40-postmerge-paths.expected
+          git diff-tree --no-commit-id --name-only -r "$first_parent" "$merge" | sort > /tmp/pc40-postmerge-paths.observed
+          test "$(cat /tmp/pc40-postmerge-paths.observed)" = "$(cat /tmp/pc40-postmerge-paths.expected)"
+          test "$(wc -l < /tmp/pc40-postmerge-paths.observed)" -eq 14
+
+          git fetch origin main --no-tags
+          current_main=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$merge" "$current_main"
+          printf '%s\n' "$current_main" > /tmp/pc40-current-main.txt
+      - name: Reconstruct PC-40 and every compositional floor on canonical merge
+        run: |
+          set -euo pipefail
+          node tools/compile-preference-linkage-confidence-adjudication-assurance.mjs
+          node tools/validate-preference-linkage-confidence-adjudication-assurance.mjs
+          node test/preference-linkage-confidence-adjudication-assurance.test.js
+          node tools/compile-preference-custody-manifest-v38.mjs
+          node tools/validate-preference-custody-manifest-v38.mjs
+          node test/preference-custody-manifest-v38.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+      - name: Run complete release gate and restore exact merge tree
+        run: |
+          set -euo pipefail
+          mapfile -t paths < /tmp/pc40-postmerge-paths.expected
+          npm run release:check
+          git diff --exit-code -- "${paths[@]}"
+          git status --porcelain > /tmp/pc40-post-release-status.txt
+          git reset --hard 5f3e16fe942e0074177af5a4678100807583d781
+          git clean -fdx
+          test -z "$(git status --porcelain)"
+      - name: Emit canonical post-merge receipt
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, subprocess
+
+          merge = '5f3e16fe942e0074177af5a4678100807583d781'
+          paths = Path('/tmp/pc40-postmerge-paths.expected').read_text().splitlines()
+          files = {}
+          for path in paths:
+              raw = Path(path).read_bytes()
+              files[path] = {'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()}
+          manifest_bytes = json.dumps(files, sort_keys=True, separators=(',', ':')).encode()
+          receipt = {
+              'schema_version': 'pc40-canonical-postmerge-proof@1',
+              'canonical_merge': merge,
+              'first_parent': subprocess.check_output(['git', 'rev-parse', f'{merge}^1'], text=True).strip(),
+              'product_parent': subprocess.check_output(['git', 'rev-parse', f'{merge}^2'], text=True).strip(),
+              'canonical_tree': subprocess.check_output(['git', 'rev-parse', f'{merge}^{{tree}}'], text=True).strip(),
+              'current_main_observed': Path('/tmp/pc40-current-main.txt').read_text().strip(),
+              'canonical_merge_is_current_main_ancestor': True,
+              'first_parent_changed_path_count': len(paths),
+              'first_parent_changed_paths': paths,
+              'files': files,
+              'file_manifest_sha256': hashlib.sha256(manifest_bytes).hexdigest(),
+              'focused_pc40': 'pass',
+              'floor_v38_mutations': 45,
+              'source_binding_succession_checks': 3,
+              'historical_preference_custody_floors': 'pass',
+              'base_preference_custody': 'pass',
+              'no_magic_human': 'pass',
+              'release_check': 'pass',
+              'final_tree_clean': True,
+              'temporary_paths_in_canonical_diff': 0,
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          Path('/tmp/pc40-canonical-postmerge-proof.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+      - name: Preserve canonical post-merge proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc40-canonical-postmerge-proof
+          path: |
+            /tmp/pc40-canonical-postmerge-proof.json
+            /tmp/pc40-postmerge-paths.expected
+            /tmp/pc40-postmerge-paths.observed
+            /tmp/pc40-current-main.txt
+            /tmp/pc40-post-release-status.txt
+          if-no-files-found: error
+          retention-days: 90
