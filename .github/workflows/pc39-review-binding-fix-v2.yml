@@ -1,0 +1,69 @@
+name: Temporary PC-39 review-binding fixer v2
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc39-review-binding-fix-v2
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out temporary controller
+        uses: actions/checkout@v4
+        with:
+          ref: agent/pc39-review-binding-fix
+          path: controller
+      - name: Check out exact permanent branch
+        uses: actions/checkout@v4
+        with:
+          ref: research/preference-record-linkage-temporal-succession-assurance-v1
+          fetch-depth: 0
+          path: product
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify exact reviewed head and apply bounded patch
+        run: |
+          set -euo pipefail
+          test "$(git -C product rev-parse HEAD)" = "c63344592e5fe4113909a2ec91a99cbe27cb2391"
+          python controller/tools/pc39-review-binding-fix.py product
+      - name: Run focused qualification
+        working-directory: product
+        run: |
+          set -euo pipefail
+          node --check tools/lib/preference-record-linkage-temporal-succession-assurance.mjs
+          node --check tools/lib/preference-custody-manifest-v37.mjs
+          node tools/compile-preference-record-linkage-temporal-succession-assurance.mjs
+          node tools/validate-preference-record-linkage-temporal-succession-assurance.mjs
+          node test/preference-record-linkage-temporal-succession-assurance.test.js
+          node tools/compile-preference-custody-manifest-v37.mjs
+          node tools/validate-preference-custody-manifest-v37.mjs
+          node test/preference-custody-manifest-v37.test.js
+      - name: Commit exactly six permanent review-fix paths
+        working-directory: product
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          paths=(
+            tools/lib/preference-record-linkage-temporal-succession-assurance.mjs
+            tools/validate-preference-record-linkage-temporal-succession-assurance.mjs
+            test/preference-record-linkage-temporal-succession-assurance.test.js
+            tools/lib/preference-custody-manifest-v37.mjs
+            tools/compile-preference-custody-manifest-v37.mjs
+            test/preference-custody-manifest-v37.test.js
+          )
+          git add -- "${paths[@]}"
+          mapfile -t observed < <(git diff --cached --name-only | sort)
+          mapfile -t expected < <(printf '%s\n' "${paths[@]}" | sort)
+          test "$(printf '%s\n' "${observed[@]}")" = "$(printf '%s\n' "${expected[@]}")"
+          git commit -m 'Bind PC-39 source and preserved-base checksums'
+          test "$(git rev-parse HEAD^)" = "c63344592e5fe4113909a2ec91a99cbe27cb2391"
+          git push origin HEAD:research/preference-record-linkage-temporal-succession-assurance-v1
