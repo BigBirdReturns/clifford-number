@@ -1,0 +1,253 @@
+name: TEMP reconcile terminal RD-06 onto current main
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd06-current-main-reconcile.yml'
+      - '.rd06-current-main-reconcile/**'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd06-current-main-reconcile-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd06-current-main-reconcile-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      AUDIT_BRANCH: agent/ssc-rd06-terminal-audit-trigger-v1
+      AUDIT_WORKFLOW_NAME: TEMP audit RD-06 Wave 02 terminality
+      RESEARCH_BRANCH: agent/ssc-rd-wave02-rd06-offeror-universe
+      PROMOTION_BRANCH: agent/ssc-rd06-wave02-terminal-promotion
+      CLOSURE_PATH: data/project/ssc-residual-wave02/closures/RD-06-C01.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Resolve and verify exact terminality artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/rd06-reconcile
+          mkdir -p /tmp/rd06-reconcile/audit /tmp/rd06-reconcile/receipt
+
+          gh api --paginate \
+            -H 'Accept: application/vnd.github+json' \
+            "/repos/${GITHUB_REPOSITORY}/actions/runs?branch=${AUDIT_BRANCH}&status=completed&per_page=100" \
+            > /tmp/rd06-reconcile/runs.json
+
+          python - <<'PY'
+          import json, os, pathlib
+          rows=[]
+          data=json.loads(pathlib.Path('/tmp/rd06-reconcile/runs.json').read_text())
+          pages=data if isinstance(data,list) else [data]
+          for page in pages:
+              rows.extend(page.get('workflow_runs',[]))
+          matches=[r for r in rows if r.get('name')==os.environ['AUDIT_WORKFLOW_NAME'] and r.get('head_branch')==os.environ['AUDIT_BRANCH']]
+          matches.sort(key=lambda r:r.get('created_at',''), reverse=True)
+          assert matches, 'no completed exact RD-06 audit run'
+          run=matches[0]
+          assert run.get('conclusion')=='success', f"audit conclusion is {run.get('conclusion')}"
+          pathlib.Path('/tmp/rd06-reconcile/audit-run.json').write_text(json.dumps(run,indent=2)+'\n')
+          pathlib.Path('/tmp/rd06-reconcile/audit-run-id.txt').write_text(str(run['id'])+'\n')
+          PY
+
+          run_id="$(cat /tmp/rd06-reconcile/audit-run-id.txt)"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts" > /tmp/rd06-reconcile/artifacts.json
+          python - <<'PY'
+          import json, pathlib
+          data=json.loads(pathlib.Path('/tmp/rd06-reconcile/artifacts.json').read_text())
+          arts=[a for a in data.get('artifacts',[]) if a.get('name')=='ssc-rd06-wave02-terminality-audit-v1' and not a.get('expired')]
+          assert len(arts)==1, f'exactly one live audit artifact required, found {len(arts)}'
+          art=arts[0]
+          pathlib.Path('/tmp/rd06-reconcile/artifact.json').write_text(json.dumps(art,indent=2)+'\n')
+          pathlib.Path('/tmp/rd06-reconcile/artifact-id.txt').write_text(str(art['id'])+'\n')
+          PY
+
+          artifact_id="$(cat /tmp/rd06-reconcile/artifact-id.txt)"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > /tmp/rd06-reconcile/audit.zip
+          expected_digest="$(python - <<'PY'
+          import json
+          print(json.load(open('/tmp/rd06-reconcile/artifact.json'))['digest'].split(':',1)[1])
+          PY
+          )"
+          test "$(sha256sum /tmp/rd06-reconcile/audit.zip | awk '{print $1}')" = "$expected_digest"
+          unzip -q /tmp/rd06-reconcile/audit.zip -d /tmp/rd06-reconcile/audit
+
+          audit_file="$(find /tmp/rd06-reconcile/audit -type f -name terminality-audit.json -print -quit)"
+          manifest_file="$(find /tmp/rd06-reconcile/audit -type f -name manifest.json -print -quit)"
+          test -n "$audit_file"
+          test -n "$manifest_file"
+          cp "$audit_file" /tmp/rd06-reconcile/receipt/terminality-audit.json
+          cp "$manifest_file" /tmp/rd06-reconcile/receipt/terminality-audit-manifest.json
+
+          python - <<'PY'
+          import hashlib, json, pathlib
+          audit=json.load(open('/tmp/rd06-reconcile/receipt/terminality-audit.json'))
+          manifest=json.load(open('/tmp/rd06-reconcile/receipt/terminality-audit-manifest.json'))
+          assert audit['schema_version']=='ssc-rd06-wave02-terminality-audit@1'
+          assert audit['wave_id']=='SSC-RD-W02' and audit['lane_id']=='RD-06' and audit['class_id']=='RD-06-C01' and audit['issue']==791
+          assert manifest['schema_version']=='ssc-rd06-wave02-terminality-audit-manifest@1'
+          root=pathlib.Path('/tmp/rd06-reconcile/audit')
+          for row in manifest['entries']:
+              path=root/row['path']
+              assert path.is_file()
+              data=path.read_bytes()
+              assert len(data)==row['bytes']
+              assert hashlib.sha256(data).hexdigest()==row['sha256']
+          combined=hashlib.sha256('\n'.join(f"{r['sha256']}  {r['path']}" for r in manifest['entries']).encode()).hexdigest()
+          assert combined==manifest['combined_sha256']
+          readiness=audit['readiness']
+          decision={
+            'schema_version':'ssc-rd06-wave02-current-main-reconciliation-decision@1',
+            'audit_run':json.load(open('/tmp/rd06-reconcile/audit-run.json'))['id'],
+            'audit_artifact':json.load(open('/tmp/rd06-reconcile/artifact.json'))['id'],
+            'audit_artifact_digest':json.load(open('/tmp/rd06-reconcile/artifact.json'))['digest'],
+            'readiness':readiness,
+            'promotion_attempted':False,
+            'promotion_branch_created':False,
+          }
+          pathlib.Path('/tmp/rd06-reconcile/receipt/decision.json').write_text(json.dumps(decision,indent=2)+'\n')
+          if not readiness.get('ready_for_current_main_reconciliation'):
+              blockers=[k for k,v in readiness.items() if v is not True]
+              pathlib.Path('/tmp/rd06-reconcile/receipt/BLOCKED.txt').write_text('\n'.join(blockers)+'\n')
+          PY
+
+      - name: Stop cleanly on an unready audit receipt
+        if: ${{ hashFiles('/tmp/rd06-reconcile/receipt/BLOCKED.txt') != '' }}
+        run: |
+          set -Eeuo pipefail
+          echo 'RD-06 promotion refused by the exact terminality receipt:'
+          cat /tmp/rd06-reconcile/receipt/BLOCKED.txt
+
+      - name: Reconcile terminal research object onto current main
+        if: ${{ hashFiles('/tmp/rd06-reconcile/receipt/BLOCKED.txt') == '' }}
+        run: |
+          set -Eeuo pipefail
+          git fetch origin main "$RESEARCH_BRANCH"
+          main_head="$(git rev-parse origin/main)"
+          research_head="$(git rev-parse "origin/${RESEARCH_BRANCH}")"
+          audit_research_head="$(python - <<'PY'
+          import json
+          print(json.load(open('/tmp/rd06-reconcile/receipt/terminality-audit.json'))['research_head'])
+          PY
+          )"
+          test "$research_head" = "$audit_research_head"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch --detach "$main_head"
+          git switch -c rd06-current-main-integration
+
+          set +e
+          git merge --no-ff --no-commit "$research_head" > /tmp/rd06-reconcile/receipt/merge.stdout 2> /tmp/rd06-reconcile/receipt/merge.stderr
+          merge_status=$?
+          set -e
+          if [ "$merge_status" -ne 0 ]; then
+            git diff --name-only --diff-filter=U > /tmp/rd06-reconcile/receipt/merge-conflicts.txt || true
+            git merge --abort || true
+            echo merge_conflict_or_failure > /tmp/rd06-reconcile/receipt/BLOCKED.txt
+            exit 0
+          fi
+
+          test -f "$CLOSURE_PATH"
+          git diff --cached --name-only | sort > /tmp/rd06-reconcile/receipt/integration-paths.txt
+          python - <<'PY'
+          import pathlib,re
+          paths=pathlib.Path('/tmp/rd06-reconcile/receipt/integration-paths.txt').read_text().splitlines()
+          bad=[p for p in paths if re.search(r'(^|/)(temporary|carrier|materializer|trigger|\.rd06)',p,re.I) or p.startswith('.github/workflows/temporary')]
+          pathlib.Path('/tmp/rd06-reconcile/receipt/transport-paths.txt').write_text('\n'.join(bad)+('\n' if bad else ''))
+          assert not bad, f'temporary or transport paths retained: {bad}'
+          PY
+
+          git commit -m 'Close RD-06 Wave 02 offeror-universe class'
+          product_head="$(git rev-parse HEAD)"
+          printf '%s\n' "$main_head" > /tmp/rd06-reconcile/receipt/main-parent.txt
+          printf '%s\n' "$research_head" > /tmp/rd06-reconcile/receipt/research-parent.txt
+          printf '%s\n' "$product_head" > /tmp/rd06-reconcile/receipt/product-head.txt
+
+      - name: Run focused and complete qualification
+        if: ${{ hashFiles('/tmp/rd06-reconcile/receipt/BLOCKED.txt') == '' }}
+        run: |
+          set -Eeuo pipefail
+          : > /tmp/rd06-reconcile/receipt/focused-checks.txt
+          mapfile -t files < <(find tools test -type f \( -iname '*rd06*' -o -iname '*offeror*' -o -iname '*dcgsa*' \) | sort)
+          test "${#files[@]}" -gt 0
+          for file in "${files[@]}"; do
+            case "$file" in
+              test/*.js|test/*.mjs|tools/validate-*.mjs|tools/acquisition/*/validate-*.mjs)
+                echo "RUN $file" | tee -a /tmp/rd06-reconcile/receipt/focused-checks.txt
+                node "$file" 2>&1 | tee -a /tmp/rd06-reconcile/receipt/focused-checks.txt
+                ;;
+            esac
+          done
+          node tools/validate-no-magic-human-gate.mjs | tee /tmp/rd06-reconcile/receipt/no-magic-human.txt
+          npm run release:check | tee /tmp/rd06-reconcile/receipt/release-check.txt
+          if [ -n "$(git status --short)" ]; then
+            git status --short > /tmp/rd06-reconcile/receipt/post-gate-dirty-tree.txt
+            echo post_gate_tree_not_clean > /tmp/rd06-reconcile/receipt/BLOCKED.txt
+            exit 0
+          fi
+
+      - name: Publish exact promotion branch under lease
+        if: ${{ hashFiles('/tmp/rd06-reconcile/receipt/BLOCKED.txt') == '' }}
+        run: |
+          set -Eeuo pipefail
+          remote="$(git ls-remote --heads origin "refs/heads/${PROMOTION_BRANCH}" | cut -f1)"
+          product_head="$(git rev-parse HEAD)"
+          if [ -n "$remote" ] && [ "$remote" != "$product_head" ]; then
+            echo remote_promotion_branch_already_differs > /tmp/rd06-reconcile/receipt/BLOCKED.txt
+            exit 0
+          fi
+          if [ -z "$remote" ]; then
+            git push origin "HEAD:refs/heads/${PROMOTION_BRANCH}"
+          fi
+          python - <<'PY'
+          import json,pathlib
+          path=pathlib.Path('/tmp/rd06-reconcile/receipt/decision.json')
+          data=json.loads(path.read_text())
+          data['promotion_attempted']=True
+          data['promotion_branch_created']=True
+          data['promotion_branch']='agent/ssc-rd06-wave02-terminal-promotion'
+          data['main_parent']=pathlib.Path('/tmp/rd06-reconcile/receipt/main-parent.txt').read_text().strip()
+          data['research_parent']=pathlib.Path('/tmp/rd06-reconcile/receipt/research-parent.txt').read_text().strip()
+          data['product_head']=pathlib.Path('/tmp/rd06-reconcile/receipt/product-head.txt').read_text().strip()
+          path.write_text(json.dumps(data,indent=2)+'\n')
+          PY
+
+      - name: Seal current-main reconciliation receipt
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path('/tmp/rd06-reconcile/receipt')
+          rows=[]
+          for path in sorted(p for p in root.rglob('*') if p.is_file() and p.name!='manifest.json'):
+              data=path.read_bytes()
+              rows.append({'path':str(path.relative_to(root)),'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()})
+          combined=hashlib.sha256('\n'.join(f"{r['sha256']}  {r['path']}" for r in rows).encode()).hexdigest()
+          (root/'manifest.json').write_text(json.dumps({'schema_version':'ssc-rd06-wave02-current-main-reconciliation-manifest@1','entry_count':len(rows),'entries':rows,'combined_sha256':combined},indent=2)+'\n')
+          print(f'RD-06 current-main receipt sealed: {len(rows)} entries; {combined}')
+          PY
+
+      - name: Preserve exact current-main reconciliation receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd06-wave02-current-main-reconciliation-v1
+          path: /tmp/rd06-reconcile/receipt
+          if-no-files-found: error
+          retention-days: 90
