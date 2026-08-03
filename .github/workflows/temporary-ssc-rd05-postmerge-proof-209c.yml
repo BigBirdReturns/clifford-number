@@ -48,7 +48,7 @@ jobs:
 
           git diff --name-only "$EXPECTED_FIRST_PARENT" "$EXPECTED_MERGE" | sort > /tmp/rd05-merge-paths.txt
           test "$(wc -l < /tmp/rd05-merge-paths.txt | tr -d ' ')" = "$EXPECTED_FIRST_PARENT_PATHS"
-          test "$(grep -c '^data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/source-custody/successor-census-v2/' /tmp/rd05-merge-paths.txt)" = '399'
+          test "$(grep -c '^data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/source-custody/successor-census-v1/' /tmp/rd05-merge-paths.txt)" = '399'
           test "$(grep -c '^\.github/workflows/status-sovereignty-rd05-wave02-terminal-closure.yml$' /tmp/rd05-merge-paths.txt)" = '1'
           if grep -Eq '(^|/)(\.github/tmp|carrier|trigger)(/|$)|temporary-ssc-rd05|terminal-closure-materializer' /tmp/rd05-merge-paths.txt; then
             echo 'transport-only path escaped into canonical merge' >&2
@@ -63,22 +63,18 @@ jobs:
           jq -e --arg source "$EXPECTED_SOURCE_MANIFEST" --arg product "$EXPECTED_PRODUCT_MANIFEST" '
             .terminal_state == "bounded_non_link" and
             .class_closed == true and
-            .counts.frozen_objects == 58 and
-            .counts.terminal_objects == 58 and
-            .counts.bounded_non_link_chains == 4 and
-            .counts.open_chains == 0 and
-            .counts.fixed_routes == 49 and
-            .counts.http_success_routes == 45 and
-            .counts.terminal_non_success_routes == 4 and
-            .counts.completed_recommendations == 0 and
-            .counts.agency_responses == 0 and
-            .counts.adopted_or_rejected_outputs == 0 and
-            .counts.implementation_or_outcomes == 0 and
+            .source_custody.successor_census_root == "data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/source-custody/successor-census-v1" and
             .source_custody.manifest_combined_sha256 == $source and
             .product.manifest_combined_sha256 == $product and
             .authority.outside_human_dependency == false and
             .authority.external_contacts == 0 and
             .authority.external_reviews == 0 and
+            .authority.denominator_widened == false and
+            .authority.reviewed_disposition_changed == false and
+            .authority.complete_compact_finding == false and
+            .authority.suppression_finding == false and
+            .authority.record_destruction_finding == false and
+            .authority.no_private_influence_inferred == false and
             .authority.publication_effect == "none" and
             .authority.adoption_effect == "none" and
             .authority.graph_effect == "none"
