@@ -1,0 +1,207 @@
+name: TEMP materialize SSC RD-05 semantic classification v2
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-semantic-materializer-base-v2
+    paths:
+      - '.github/tmp/ssc-rd05-semantic-materializer-v2.trigger'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: ssc-rd05-semantic-materializer-v2
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd05-recommendation-disposition
+      EXPECTED_START_SHA: 74dc76adee359b7f4c6b58fa898d2ecf3c2c0222
+      SOURCE_TAR_SHA256: 7369fca74fb9548b7ba06eaa256e51a81a8106869c6e26523d4ec85b806fe5f5
+      SOURCE_TAR_BYTES: '22652'
+      SOURCE_BLOB_01: 1b7804fe70ac6888be38c8f8c52317fb39cdd74d
+      SOURCE_BLOB_02: 989bbe0c80b4ec73f277601423426446f28123f5
+      SOURCE_BLOB_03: 4e568a9423332fd450a5a26d2fe15af24fc2f21f
+      SOURCE_BLOB_04: 9f460ea3ea72abad14e81ac8fa32767cf6113f20
+      BUILDER_PATH: tools/acquisition/status-sovereignty-rd-wave02-rd05/build-object-semantic-classification.mjs
+      VALIDATOR_PATH: tools/acquisition/status-sovereignty-rd-wave02-rd05/validate-object-semantic-classification.mjs
+      TEST_PATH: test/status-sovereignty-rd-wave02-rd05-object-semantic-classification.test.js
+      RULES_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/object-semantic-rules.json
+      OUTPUT_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/object-semantic-classification.json
+      BUILDER_SHA256: eac69f9fdca9e89075f1a0abde625de4e073061f284360353d2a17c69b6b64d3
+      VALIDATOR_SHA256: 36630ba1a90d9af8d8db94c6617fdaae9414d1268425811f822b6d7a3056dc5d
+      TEST_SHA256: 0f5725127d858595462d90b30330d57d1a1b6bbfc86e3cefdc25eeb6d676184d
+      RULES_SHA256: 2430933e1f616dfdc3d754285fac3be9768f1576619246437d5ec0f3a98845bd
+      OUTPUT_SHA256: bd20e741f516841704d481bb4d907200223e745c522d112811c3a43837cba922
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct and publish exact five-path semantic product
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+
+          test "$(git rev-parse HEAD)" = "$EXPECTED_START_SHA"
+          git fetch origin "$TARGET_BRANCH"
+          test "$(git rev-parse origin/$TARGET_BRANCH)" = "$EXPECTED_START_SHA"
+          node tools/validate-no-magic-human-gate.mjs
+
+          mkdir -p /tmp/rd05-semantic-source
+          : > /tmp/rd05-semantic-source.tar.gz
+          for blob in "$SOURCE_BLOB_01" "$SOURCE_BLOB_02" "$SOURCE_BLOB_03" "$SOURCE_BLOB_04"; do
+            curl --fail --silent --show-error \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/${blob}" \
+              | jq -r '.content' | tr -d '\n' | base64 --decode > "/tmp/${blob}.chunk"
+            test "$(git hash-object "/tmp/${blob}.chunk")" = "$blob"
+            cat "/tmp/${blob}.chunk" >> /tmp/rd05-semantic-source.tar.gz
+          done
+          test "$(wc -c < /tmp/rd05-semantic-source.tar.gz | tr -d ' ')" = "$SOURCE_TAR_BYTES"
+          test "$(sha256sum /tmp/rd05-semantic-source.tar.gz | awk '{print $1}')" = "$SOURCE_TAR_SHA256"
+          tar -xzf /tmp/rd05-semantic-source.tar.gz -C /tmp/rd05-semantic-source
+
+          for spec in \
+            "$BUILDER_PATH:$BUILDER_SHA256" \
+            "$VALIDATOR_PATH:$VALIDATOR_SHA256" \
+            "$TEST_PATH:$TEST_SHA256"; do
+            path="${spec%%:*}"
+            digest="${spec##*:}"
+            test "$(sha256sum "/tmp/rd05-semantic-source/$path" | awk '{print $1}')" = "$digest"
+            mkdir -p "$(dirname "$path")"
+            cp "/tmp/rd05-semantic-source/$path" "$path"
+          done
+
+          node "$BUILDER_PATH"
+          test "$(sha256sum "$RULES_PATH" | awk '{print $1}')" = "$RULES_SHA256"
+          test "$(sha256sum "$OUTPUT_PATH" | awk '{print $1}')" = "$OUTPUT_SHA256"
+          node "$VALIDATOR_PATH"
+          node "$TEST_PATH"
+
+          printf '%s\n' \
+            "$OUTPUT_PATH" "$RULES_PATH" "$TEST_PATH" "$BUILDER_PATH" "$VALIDATOR_PATH" \
+            | LC_ALL=C sort > /tmp/expected-product-paths.txt
+          git status --porcelain=v1 --untracked-files=all | cut -c4- | LC_ALL=C sort > /tmp/actual-product-paths.txt
+          diff -u /tmp/expected-product-paths.txt /tmp/actual-product-paths.txt
+          test "$(wc -l < /tmp/actual-product-paths.txt | tr -d ' ')" = '5'
+
+          git add -- "$RULES_PATH" "$OUTPUT_PATH" "$BUILDER_PATH" "$VALIDATOR_PATH" "$TEST_PATH"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m 'Classify RD-05 frozen official objects semantically'
+          PRODUCT_SHA="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_START_SHA"
+          git diff-tree --no-commit-id --name-only -r HEAD | LC_ALL=C sort > /tmp/committed-product-paths.txt
+          diff -u /tmp/expected-product-paths.txt /tmp/committed-product-paths.txt
+
+          npm run release:check
+
+          printf '%s\n' \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json \
+            | LC_ALL=C sort > /tmp/expected-volatile-paths.txt
+          git status --porcelain=v1 --untracked-files=all | cut -c4- | LC_ALL=C sort > /tmp/actual-volatile-paths.txt
+          diff -u /tmp/expected-volatile-paths.txt /tmp/actual-volatile-paths.txt
+          test "$(wc -l < /tmp/actual-volatile-paths.txt | tr -d ' ')" = '10'
+          git diff --numstat -- $(cat /tmp/expected-volatile-paths.txt) > /tmp/volatile-numstat.txt
+          test "$(wc -l < /tmp/volatile-numstat.txt | tr -d ' ')" = '10'
+          awk -F '\t' '$1 != 1 || $2 != 1 { exit 1 }' /tmp/volatile-numstat.txt
+
+          for path in \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/surface-graph.json; do
+            git show "HEAD:$path" | jq 'del(.generated)' > /tmp/before.json
+            jq 'del(.generated)' "$path" > /tmp/after.json
+            diff -u /tmp/before.json /tmp/after.json
+            before_ts="$(git show "HEAD:$path" | jq -r '.generated')"
+            after_ts="$(jq -r '.generated' "$path")"
+            node -e "for (const v of process.argv.slice(1)) if (!Number.isFinite(Date.parse(v))) process.exit(1)" "$before_ts" "$after_ts"
+          done
+          for path in build/migration-review.md build/scout-report.md; do
+            git show "HEAD:$path" | sed -E 's/^Generated: .*/Generated: <ISO>/' > /tmp/before.md
+            sed -E 's/^Generated: .*/Generated: <ISO>/' "$path" > /tmp/after.md
+            diff -u /tmp/before.md /tmp/after.md
+            test "$(grep -c '^Generated: ' "$path")" = '1'
+          done
+          echo 'post-release volatility proof: PASS — 10/10 paths timestamp-only, semantic drift zero'
+
+          git restore --worktree -- $(cat /tmp/expected-volatile-paths.txt)
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          node "$BUILDER_PATH"
+          node "$VALIDATOR_PATH"
+          node "$TEST_PATH"
+          test "$(sha256sum "$RULES_PATH" | awk '{print $1}')" = "$RULES_SHA256"
+          test "$(sha256sum "$OUTPUT_PATH" | awk '{print $1}')" = "$OUTPUT_SHA256"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git fetch origin "$TARGET_BRANCH"
+          test "$(git rev-parse origin/$TARGET_BRANCH)" = "$EXPECTED_START_SHA"
+          git push origin "HEAD:$TARGET_BRANCH"
+          git fetch origin "$TARGET_BRANCH"
+          test "$(git rev-parse origin/$TARGET_BRANCH)" = "$PRODUCT_SHA"
+
+          cat > ssc-rd05-semantic-materializer-v2-receipt.json <<EOF
+          {
+            "schema_version": "ssc-rd05-semantic-materializer-receipt@1",
+            "target_branch": "$TARGET_BRANCH",
+            "expected_start_sha": "$EXPECTED_START_SHA",
+            "product_sha": "$PRODUCT_SHA",
+            "permanent_path_count": 5,
+            "source_tar_sha256": "$SOURCE_TAR_SHA256",
+            "source_tar_bytes": $SOURCE_TAR_BYTES,
+            "rules_sha256": "$RULES_SHA256",
+            "classification_sha256": "$OUTPUT_SHA256",
+            "frozen_object_denominator": 58,
+            "semantic_classifications_complete": 58,
+            "completed_recommendation_objects": 0,
+            "open_recommendation_disposition_chains": 5,
+            "successor_action_rows": 8,
+            "adversarial_mutations": 42,
+            "release_gate": "pass",
+            "post_release_volatile_paths": 10,
+            "post_release_semantic_drift": 0,
+            "deterministic_replay": "pass",
+            "unchanged_head_lease": "pass",
+            "external_contacts": 0,
+            "external_reviews": 0,
+            "outside_human_dependency": false,
+            "publication_effect": "none",
+            "adoption_effect": "none",
+            "graph_effect": "none"
+          }
+          EOF
+      - name: Upload exact RD-05 semantic materializer receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-semantic-materializer-v2
+          path: ssc-rd05-semantic-materializer-v2-receipt.json
+          if-no-files-found: error
+          retention-days: 90
