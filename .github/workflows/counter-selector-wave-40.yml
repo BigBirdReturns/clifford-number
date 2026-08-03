@@ -1,0 +1,48 @@
+name: Counter-Selector Wave 40 cross-host registry migration
+
+on:
+  pull_request:
+    paths:
+      - 'data/project/counter-selector-wave-40-*.json'
+      - 'schemas/counter-selector-cross-host-registry.schema.json'
+      - 'docs/methods/counter-selector-cross-host-registry.md'
+      - 'docs/milestones/counter-selector-wave-40.md'
+      - 'tools/*counter-selector-wave-40*'
+      - 'test/counter-selector-wave-40.test.js'
+      - 'reports/core-thesis/counter-selector-wave-40/**'
+      - '.github/workflows/counter-selector-wave-40.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build Wave 40 products
+        run: node tools/build-counter-selector-wave-40.mjs
+      - name: Validate cross-host registry contract
+        run: node tools/validate-counter-selector-wave-40.mjs
+      - name: Run adversarial mutations
+        run: node test/counter-selector-wave-40.test.js
+      - name: Require exact committed Wave 40 products
+        run: git diff --exit-code -- data/project/counter-selector-wave-40-control-registry.json data/project/counter-selector-wave-40-release-manifest.json docs/methods/counter-selector-cross-host-registry.md docs/milestones/counter-selector-wave-40.md reports/core-thesis/counter-selector-wave-40/data.json reports/core-thesis/counter-selector-wave-40/index.html
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Reconstruct Wave 40 deterministically
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          node tools/build-counter-selector-wave-40.mjs
+          node tools/validate-counter-selector-wave-40.mjs
+          node test/counter-selector-wave-40.test.js
+          git diff --exit-code -- data/project/counter-selector-wave-40-control-registry.json data/project/counter-selector-wave-40-release-manifest.json docs/methods/counter-selector-cross-host-registry.md docs/milestones/counter-selector-wave-40.md reports/core-thesis/counter-selector-wave-40/data.json reports/core-thesis/counter-selector-wave-40/index.html
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
