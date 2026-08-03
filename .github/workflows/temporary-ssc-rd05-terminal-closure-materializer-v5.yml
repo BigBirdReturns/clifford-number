@@ -1,0 +1,174 @@
+name: TEMP materialize exact RD-05 terminal closure v5
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd05-terminal-closure-materializer-v5.yml'
+      - '.rd05-closure/**'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd05-terminal-closure-v5-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd05-terminal-closure-materializer-trigger-v5'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      SOURCE_WORKFLOW_REF: agent/ssc-rd05-terminal-closure-materializer-base-v2
+      SOURCE_WORKFLOW_PATH: .github/workflows/temporary-ssc-rd05-terminal-closure-materializer-v2.yml
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd05-recommendation-disposition
+      EXPECTED_START_SHA: 03d0c627308b86ad75e8cdad6a90756c97e592ce
+      CLASSIFICATION_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/object-semantic-classification.json
+      CLASSIFICATION_SHA256: ed35fbd41027497742d5db4473d8675978d37eab52f95c35628616aa7fba6f13
+      CENSUS_ARTIFACT_ID: '8852846428'
+      CENSUS_ARTIFACT_SHA256: 9a7524164ad5594ac720ec914a84812005aef8e79d0a82ebb561b268089c08fb
+      CENSUS_MANIFEST_SHA256: 0fb07dd92ff7e8c27a7e4b3e6b3db18842538516b1badd05afe194fd07446c32
+      CENSUS_DEST: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/source-custody/successor-census-v1
+      EXECUTION_RECEIPT_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/successor-census-execution-receipt.json
+      PRODUCT_ROOT: data/research/status-sovereignty-rd-wave02-rd05-recommendation-disposition
+      CLOSURE_REFERENCE_PATH: data/project/ssc-residual-wave02/closures/RD-05-C03.json
+      SOURCE_ZIP_SHA256: c981742e18fd69f30235ae234c89f3d48f1b73447c55237d2da4960d07b37360
+      SOURCE_BASE64_SHA256: 635c6db190fb11f1bd5e8cb74925845e71553408c0ee46782c52dc02ccf92be7
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Extract exact v2 transaction and replace branch carrier with verified Git blobs
+        run: |
+          set -Eeuo pipefail
+          git rev-parse --verify "refs/remotes/origin/${SOURCE_WORKFLOW_REF}"
+          git show "origin/${SOURCE_WORKFLOW_REF}:${SOURCE_WORKFLOW_PATH}" > /tmp/rd05-v2-workflow.yml
+          test "$(sha256sum /tmp/rd05-v2-workflow.yml | awk '{print $1}')" = '27bb1b4abf8f2aa87dd809d8c8617b0c14d3455f7b6695b5a654999e52852226'
+
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('/tmp/rd05-v2-workflow.yml').read_text().splitlines()
+          scripts = []
+          index = 0
+          while index < len(source):
+              if source[index] == '        run: |':
+                  index += 1
+                  body = []
+                  while index < len(source):
+                      line = source[index]
+                      if line.startswith('          ') or line == '':
+                          body.append(line[10:] if line.startswith('          ') else '')
+                          index += 1
+                          continue
+                      break
+                  scripts.append('\n'.join(body).rstrip() + '\n')
+                  continue
+              index += 1
+
+          assert len(scripts) == 6, len(scripts)
+          start_marker = 'git fetch origin "refs/heads/${CARRIER_BRANCH}:refs/remotes/origin/${CARRIER_BRANCH}"'
+          end_marker = "cat > /tmp/rd05-authored-sha256.txt <<'EOF'"
+          assert scripts[0].count(start_marker) == 1
+          assert scripts[0].count(end_marker) == 1
+          start = scripts[0].index(start_marker)
+          end = scripts[0].index(end_marker)
+          scripts[0] = scripts[0][:start] + '/tmp/rd05-v5-reconstruct.sh\n\n' + scripts[0][end:]
+
+          old_schema = 'ssc-rd05-wave02-terminal-closure-materializer-receipt@2'
+          new_schema = 'ssc-rd05-wave02-terminal-closure-materializer-receipt@5'
+          assert scripts[-1].count(old_schema) == 1
+          scripts[-1] = scripts[-1].replace(old_schema, new_schema)
+
+          blobs = [
+              'b5159355c6f58f951b212f4ff4dc126e3ba25cbf',
+              'c30a647ca03bd830df34df3004383bf67f6e0e9b',
+              'c97cbab4755b3ed939c788cba39c2dca9cd48ba0',
+              'b5ab49368ec0321eb3f4f39007dd167eacd8d711',
+              '04caaf033b77eb3aad067f650fbd68f623252930',
+              '91848dc9114fe3393f0ee2ed431d0f939a14b769',
+              'b7cec4ab4d75ca5c1bb2a6f33b271ba95d675dbc',
+              '9af1a5baa31e28a41f991d7ec06362f92b16c7d0',
+              '9e0a5a3eead0343620b5ed9fadd9dd081cb6cd32',
+              '6ace5c4d798fa2e23f3d518021302ee1aace8894',
+              '7f9885893aa389137461f39a1186aa51c900dc4b',
+              '9c007479eca6f81639bf1488bcebdbc345ba684f',
+              '96baaa0a4402005991b054e78ed912889edc9fbb',
+              'eac935680682b5b88490bf9516b63108a6b3cc8c',
+          ]
+          sizes = [1500] * 13 + [892]
+          reconstruct = [
+              '#!/usr/bin/env bash',
+              'set -Eeuo pipefail',
+              'rm -rf /tmp/rd05-authored /tmp/rd05-source.b64 /tmp/rd05-source.zip /tmp/rd05-blob-*.chunk',
+              'mkdir -p /tmp/rd05-authored',
+              ': > /tmp/rd05-source.b64',
+              'blobs=(',
+          ]
+          reconstruct.extend(f'  {blob}' for blob in blobs)
+          reconstruct.extend([')', 'sizes=('])
+          reconstruct.extend(f'  {size}' for size in sizes)
+          reconstruct.extend([
+              ')',
+              'for index in "${!blobs[@]}"; do',
+              '  blob="${blobs[$index]}"',
+              '  chunk="/tmp/rd05-blob-${blob}.chunk"',
+              '  curl --fail --silent --show-error \\',
+              '    -H "Authorization: Bearer ${GH_TOKEN}" \\',
+              "    -H 'Accept: application/vnd.github+json' \\",
+              "    -H 'X-GitHub-Api-Version: 2022-11-28' \\",
+              '    "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/${blob}" \\',
+              "    | jq -e -r '.content' | tr -d '\\n' | base64 --decode > \"${chunk}\"",
+              '  test "$(wc -c < "${chunk}" | tr -d \' \')" = "${sizes[$index]}"',
+              '  test "$(git hash-object "${chunk}")" = "${blob}"',
+              '  cat "${chunk}" >> /tmp/rd05-source.b64',
+              'done',
+              'test "$(wc -c < /tmp/rd05-source.b64 | tr -d \' \')" = \'20392\'',
+              'test "$(sha256sum /tmp/rd05-source.b64 | awk \'{print $1}\')" = "$SOURCE_BASE64_SHA256"',
+              'base64 --decode /tmp/rd05-source.b64 > /tmp/rd05-source.zip',
+              'test "$(wc -c < /tmp/rd05-source.zip | tr -d \' \')" = \'15292\'',
+              'test "$(sha256sum /tmp/rd05-source.zip | awk \'{print $1}\')" = "$SOURCE_ZIP_SHA256"',
+              'unzip -q /tmp/rd05-source.zip -d /tmp/rd05-authored',
+              "printf '%s\\n' 'RD-05 authored source reconstructed from 14 exact Git blobs'",
+          ])
+          reconstruct_path = Path('/tmp/rd05-v5-reconstruct.sh')
+          reconstruct_path.write_text('\n'.join(reconstruct) + '\n')
+          reconstruct_path.chmod(0o755)
+
+          for ordinal, script in enumerate(scripts, 1):
+              path = Path(f'/tmp/rd05-v5-step-{ordinal:02d}.sh')
+              path.write_text('#!/usr/bin/env bash\n' + script)
+              path.chmod(0o755)
+          print('extracted six exact run steps; replaced drifted carrier with fourteen exact Git blobs; receipt schema advanced to v5')
+          PY
+
+      - name: Execute exact terminal-closure transaction
+        run: |
+          set -Eeuo pipefail
+          for script in /tmp/rd05-v5-step-*.sh; do
+            echo "executing ${script}"
+            "$script"
+            if test -s "$GITHUB_ENV"; then
+              set -a
+              # shellcheck disable=SC1090
+              source "$GITHUB_ENV"
+              set +a
+            fi
+          done
+
+      - name: Upload exact RD-05 terminal closure receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-terminal-closure-materializer-v5
+          path: ssc-rd05-terminal-closure-materializer-receipt.json
+          if-no-files-found: error
+          retention-days: 90
