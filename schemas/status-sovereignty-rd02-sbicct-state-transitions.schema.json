@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-rd02-sbicct-state-transitions.schema.json",
+  "title": "SSC RD-02 SBIC Critical Technologies state-transition denominator",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "execution_id", "hypothesis_id", "issue", "parent_issue", "lane_id", "as_of", "authority", "parent_receipts", "cohort_contract", "cohort_slots", "aggregate_states", "open_denominators", "current_result", "boundaries"],
+  "properties": {
+    "schema_version": { "const": "status-sovereignty-rd02-sbicct-state-transitions@1" },
+    "execution_id": { "const": "SSC-RD02-SBICCT-TRANSITIONS-01" },
+    "hypothesis_id": { "const": "SSC-H01" },
+    "issue": { "const": 618 },
+    "parent_issue": { "const": 615 },
+    "lane_id": { "const": "SSC-F10" },
+    "as_of": { "type": "string", "format": "date" },
+    "authority": { "const": "source_acquisition_only_not_review_or_adjudication" },
+    "parent_receipts": { "type": "array", "minItems": 2, "maxItems": 2 },
+    "cohort_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["published_first_cohort", "publicly_named_rows", "withheld_rows", "fully_licensed_rows_at_2025_01_17", "all_eighteen_slots_preserved", "withheld_row_dropped", "fund_specific_license_mapping_recovered", "selected_because_expected_result"],
+      "properties": {
+        "published_first_cohort": { "const": 18 },
+        "publicly_named_rows": { "const": 17 },
+        "withheld_rows": { "const": 1 },
+        "fully_licensed_rows_at_2025_01_17": { "const": 7 },
+        "all_eighteen_slots_preserved": { "const": true },
+        "withheld_row_dropped": { "const": false },
+        "fund_specific_license_mapping_recovered": { "const": false },
+        "selected_because_expected_result": { "const": false }
+      }
+    },
+    "cohort_slots": {
+      "type": "array",
+      "minItems": 18,
+      "maxItems": 18,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["slot", "identity_state", "fund_specific_license_state", "leverage_commitment", "leverage_draw", "portfolio_investment", "realized_performance", "repayment_or_loss", "public_recovery"],
+        "properties": {
+          "slot": { "type": "integer", "minimum": 1, "maximum": 18 },
+          "identity_state": { "enum": ["published_identity_requires_source_transcription", "withheld_under_sba_policy"] },
+          "fund_specific_license_state": { "const": "unresolved" },
+          "leverage_commitment": { "const": "unresolved" },
+          "leverage_draw": { "const": "unresolved" },
+          "portfolio_investment": { "const": "unresolved" },
+          "realized_performance": { "const": "unresolved" },
+          "repayment_or_loss": { "const": "unresolved" },
+          "public_recovery": { "const": "unresolved" }
+        }
+      }
+    },
+    "aggregate_states": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expressions_of_interest_minimum", "formal_applications_as_of_2024_10_22", "approved_as_of_2024_10_22", "published_first_cohort", "fully_licensed_as_of_2025_01_17", "fund_specific_leverage_commitments_recovered", "fund_specific_leverage_draws_recovered", "portfolio_investment_ledgers_recovered", "realized_performance_ledgers_recovered", "repayment_or_loss_ledgers_recovered", "public_recovery_ledgers_recovered"],
+      "properties": {
+        "expressions_of_interest_minimum": { "const": 100 },
+        "formal_applications_as_of_2024_10_22": { "const": 22 },
+        "approved_as_of_2024_10_22": { "const": 13 },
+        "published_first_cohort": { "const": 18 },
+        "fully_licensed_as_of_2025_01_17": { "const": 7 },
+        "fund_specific_leverage_commitments_recovered": { "const": 0 },
+        "fund_specific_leverage_draws_recovered": { "const": 0 },
+        "portfolio_investment_ledgers_recovered": { "const": 0 },
+        "realized_performance_ledgers_recovered": { "const": 0 },
+        "repayment_or_loss_ledgers_recovered": { "const": 0 },
+        "public_recovery_ledgers_recovered": { "const": 0 }
+      }
+    },
+    "open_denominators": { "type": "array", "minItems": 7, "maxItems": 7, "items": { "type": "string", "minLength": 1 } },
+    "current_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["terminal_state", "all_eighteen_slots_preserved", "fund_specific_transition_chain_complete", "lawful_industrial_policy_control_complete", "capital_conversion_finding", "favoritism_finding", "extraction_finding", "reviewed_disposition_changed", "complete_compact_finding", "graph_effect", "publication_effect"],
+      "properties": {
+        "terminal_state": { "const": "source_restricted_fund_specific_transition_mapping_unavailable" },
+        "all_eighteen_slots_preserved": { "const": true },
+        "fund_specific_transition_chain_complete": { "const": false },
+        "lawful_industrial_policy_control_complete": { "const": false },
+        "capital_conversion_finding": { "const": false },
+        "favoritism_finding": { "const": false },
+        "extraction_finding": { "const": false },
+        "reviewed_disposition_changed": { "const": false },
+        "complete_compact_finding": { "const": false },
+        "graph_effect": { "const": "none" },
+        "publication_effect": { "const": "none" }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approval_is_license", "license_is_leverage_draw", "fund_draw_is_portfolio_investment", "portfolio_investment_is_realized_performance", "private_return_is_public_recovery", "missing_disclosure_is_successful_outcome", "program_membership_proves_favoritism_or_coordination", "graph_effect"],
+      "properties": {
+        "approval_is_license": { "const": false },
+        "license_is_leverage_draw": { "const": false },
+        "fund_draw_is_portfolio_investment": { "const": false },
+        "portfolio_investment_is_realized_performance": { "const": false },
+        "private_return_is_public_recovery": { "const": false },
+        "missing_disclosure_is_successful_outcome": { "const": false },
+        "program_membership_proves_favoritism_or_coordination": { "const": false },
+        "graph_effect": { "const": "none" }
+      }
+    }
+  }
+}
