@@ -113,23 +113,23 @@ jobs:
 
           git diff --check
 
-          git diff --name-only "$MAIN_PARENT" | LC_ALL=C sort > "$work/final-paths.txt"
-          diff -u "$work/expected-paths.txt" "$work/final-paths.txt"
-
           while IFS= read -r path; do
             test -f "$path"
           done < "$work/expected-paths.txt"
           test ! -e "$MATERIALIZER_PATH"
           for path in ".ci/carrier/counter-selector-wave-38.part-00" ".ci/carrier/counter-selector-wave-38.part-01" ".ci/carrier/counter-selector-wave-38.part-02" ".ci/carrier/counter-selector-wave-38.part-03"; do test ! -e "$path"; done
 
-          remote_head="$(git ls-remote origin "refs/heads/$BRANCH_NAME" | awk '{print $1}')"
-          test "$remote_head" = "$GITHUB_SHA"
-
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add --pathspec-from-file="$work/expected-paths.txt"
           git add -u -- "$MATERIALIZER_PATH" ".ci/carrier/counter-selector-wave-38.part-00" ".ci/carrier/counter-selector-wave-38.part-01" ".ci/carrier/counter-selector-wave-38.part-02" ".ci/carrier/counter-selector-wave-38.part-03"
           git diff --cached --check
+          git diff --cached --name-only "$MAIN_PARENT" | LC_ALL=C sort > "$work/final-paths.txt"
+          diff -u "$work/expected-paths.txt" "$work/final-paths.txt"
+
+          remote_head="$(git ls-remote origin "refs/heads/$BRANCH_NAME" | awk '{print $1}')"
+          test "$remote_head" = "$GITHUB_SHA"
+
           git commit -m "Install Counter-Selector Wave 38 portable operational checkpoint"
           product_commit="$(git rev-parse HEAD)"
 
