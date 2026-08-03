@@ -1,0 +1,164 @@
+name: Materialize Counter-Selector Wave 38
+
+on:
+  push:
+    branches:
+      - 'agent/counter-selector-wave-38-portable-operational-checkpoint'
+    paths:
+      - '.github/workflows/materialize-counter-selector-wave-38.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: materialize-counter-selector-wave-38
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 'agent/counter-selector-wave-38-portable-operational-checkpoint'
+          fetch-depth: 0
+          token: ${{ github.token }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct exact Wave 38 product and qualify transport-free tree
+        env:
+          BRANCH_NAME: 'agent/counter-selector-wave-38-portable-operational-checkpoint'
+          MAIN_PARENT: '382578570bbce842bb246688a356d99743b904a1'
+          ARCHIVE_SHA256: '548f67777e669730a15a0f0f06e67d2e5e20671369371075931a471b43263cf5'
+          MATERIALIZER_PATH: '.github/workflows/materialize-counter-selector-wave-38.yml'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse "$MAIN_PARENT")" = "$MAIN_PARENT"
+
+          work="$(mktemp -d)"
+          trap 'rm -rf "$work"' EXIT
+          mkdir -p "$work/product" "$work/receipt"
+
+          echo "32c487d744cfc6922ba82696b9e869b27a801e196435dc9512d08f8f8f2da3bb  .ci/carrier/counter-selector-wave-38.part-00" | sha256sum -c -
+          echo "094c3b924821b0363cde40ee264932fe5f384d9c2b3b39e8a3a221b10ab728d1  .ci/carrier/counter-selector-wave-38.part-01" | sha256sum -c -
+          echo "1f0d80080c890a8ee28669006bcd9704518254bb5caf0c9674abb2dee2c7f735  .ci/carrier/counter-selector-wave-38.part-02" | sha256sum -c -
+          echo "9759a957644e57980c17ab1dbc3347a0a623090493fdc77e06161fd21adb1dcd  .ci/carrier/counter-selector-wave-38.part-03" | sha256sum -c -
+          cat .ci/carrier/counter-selector-wave-38.part-00 .ci/carrier/counter-selector-wave-38.part-01 .ci/carrier/counter-selector-wave-38.part-02 .ci/carrier/counter-selector-wave-38.part-03 > "$work/wave38.tar.xz.b64"
+          base64 -d "$work/wave38.tar.xz.b64" > "$work/wave38.tar.xz"
+          echo "$ARCHIVE_SHA256  $work/wave38.tar.xz" | sha256sum -c -
+
+          tar -tJf "$work/wave38.tar.xz" | sed 's#^\./##' | LC_ALL=C sort > "$work/archive-paths.txt"
+          cat > "$work/expected-paths.txt" <<'PATHS'
+          .github/workflows/counter-selector-wave-38.yml
+          data/project/counter-selector-wave-38-control-registry.json
+          data/project/counter-selector-wave-38-portable-operational-checkpoint.json
+          data/project/counter-selector-wave-38-release-manifest.json
+          docs/methods/counter-selector-portable-operational-checkpoint.md
+          docs/milestones/counter-selector-wave-38.md
+          reports/core-thesis/counter-selector-wave-38/data.json
+          reports/core-thesis/counter-selector-wave-38/index.html
+          schemas/counter-selector-portable-operational-checkpoint.schema.json
+          test/counter-selector-wave-38.test.js
+          tools/build-counter-selector-wave-38.mjs
+          tools/validate-counter-selector-wave-38.mjs
+          PATHS
+          LC_ALL=C sort -o "$work/expected-paths.txt" "$work/expected-paths.txt"
+          diff -u "$work/expected-paths.txt" "$work/archive-paths.txt"
+
+          tar -xJf "$work/wave38.tar.xz" -C "$work/product"
+          cat > "$work/file-sums.txt" <<'SUMS'
+          8958dcae89974799a07d4c67056f455c3e9ab09d1baf771cd3b16d05fece7751  ./.github/workflows/counter-selector-wave-38.yml
+          a19772c1b41a3034d159908a15a45325adf9fc5c72314ef0f73f0cb80d02d989  ./data/project/counter-selector-wave-38-control-registry.json
+          0fcaab14e913d3b403501b2d3c45326722fb4eb078ef77799def13231a9a65be  ./data/project/counter-selector-wave-38-portable-operational-checkpoint.json
+          04802ce719ab178ae93dc958430c99fc1234025a9c45ebbb990fb26692123aa6  ./data/project/counter-selector-wave-38-release-manifest.json
+          db0dcce9c1dbd3a0c220bb7dda19eaad1174cbee2d20bf33a5172fa1da37fc5e  ./docs/methods/counter-selector-portable-operational-checkpoint.md
+          4f0438fbc7ea0a2c33c2c49d299cf60f9b6c6ae3a6f60ada77b6cfdfef66ad3f  ./docs/milestones/counter-selector-wave-38.md
+          655a114cd598b418a06e59da7c30db3897d702b999035425e4a69617eb2912de  ./reports/core-thesis/counter-selector-wave-38/data.json
+          63032059fe0250112750dab05172c6454fd5bdc7aada8b9b57e68b67ee0297eb  ./reports/core-thesis/counter-selector-wave-38/index.html
+          f9a43ccca3cbe2507d05c2f0006c49179a292da1e449183294ef7076aa276de1  ./schemas/counter-selector-portable-operational-checkpoint.schema.json
+          f252554a3442391ab5ee7c6a19b9c60e5aed0a771c237551e435ddc774ce341b  ./test/counter-selector-wave-38.test.js
+          aad1fd3a766276053b186bb9ac612263759aa665198fe627616fc71b3b94023a  ./tools/build-counter-selector-wave-38.mjs
+          91e457c4edd1b2568862acf232da68d46352f311ac53e4a32943058d5b01a06f  ./tools/validate-counter-selector-wave-38.mjs
+          SUMS
+          (
+            cd "$work/product"
+            sed 's#  \./#  #' "$work/file-sums.txt" | sha256sum -c -
+          )
+
+          while IFS= read -r path; do
+            mkdir -p "$(dirname "$path")"
+            cp "$work/product/$path" "$path"
+          done < "$work/expected-paths.txt"
+
+          rm -f "$MATERIALIZER_PATH" ".ci/carrier/counter-selector-wave-38.part-00" ".ci/carrier/counter-selector-wave-38.part-01" ".ci/carrier/counter-selector-wave-38.part-02" ".ci/carrier/counter-selector-wave-38.part-03"
+
+          node tools/build-counter-selector-wave-38.mjs | tee "$work/receipt/build.log"
+          node tools/validate-counter-selector-wave-38.mjs | tee "$work/receipt/validate.log"
+          node test/counter-selector-wave-38.test.js | tee "$work/receipt/mutations.log"
+
+          git diff --check
+          npm run release:check 2>&1 | tee "$work/receipt/release-check.log"
+
+          node tools/build-counter-selector-wave-38.mjs | tee "$work/receipt/rebuild.log"
+          node tools/validate-counter-selector-wave-38.mjs | tee "$work/receipt/revalidate.log"
+          node test/counter-selector-wave-38.test.js | tee "$work/receipt/remutations.log"
+
+          git diff --check
+
+          git diff --name-only "$MAIN_PARENT" | LC_ALL=C sort > "$work/final-paths.txt"
+          diff -u "$work/expected-paths.txt" "$work/final-paths.txt"
+
+          while IFS= read -r path; do
+            test -f "$path"
+          done < "$work/expected-paths.txt"
+          test ! -e "$MATERIALIZER_PATH"
+          for path in ".ci/carrier/counter-selector-wave-38.part-00" ".ci/carrier/counter-selector-wave-38.part-01" ".ci/carrier/counter-selector-wave-38.part-02" ".ci/carrier/counter-selector-wave-38.part-03"; do test ! -e "$path"; done
+
+          remote_head="$(git ls-remote origin "refs/heads/$BRANCH_NAME" | awk '{print $1}')"
+          test "$remote_head" = "$GITHUB_SHA"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --pathspec-from-file="$work/expected-paths.txt"
+          git add -u -- "$MATERIALIZER_PATH" ".ci/carrier/counter-selector-wave-38.part-00" ".ci/carrier/counter-selector-wave-38.part-01" ".ci/carrier/counter-selector-wave-38.part-02" ".ci/carrier/counter-selector-wave-38.part-03"
+          git diff --cached --check
+          git commit -m "Install Counter-Selector Wave 38 portable operational checkpoint"
+          product_commit="$(git rev-parse HEAD)"
+
+          git diff --name-only "$MAIN_PARENT..$product_commit" | LC_ALL=C sort > "$work/committed-paths.txt"
+          diff -u "$work/expected-paths.txt" "$work/committed-paths.txt"
+          test -z "$(git status --porcelain)"
+
+          {
+            echo "wave_id=CS-W38-PO-01"
+            echo "main_parent=$MAIN_PARENT"
+            echo "carrier_head=$GITHUB_SHA"
+            echo "product_commit=$product_commit"
+            echo "archive_sha256=$ARCHIVE_SHA256"
+            echo "permanent_paths=$(wc -l < "$work/expected-paths.txt" | tr -d ' ')"
+            echo "carrier_paths_retired=5"
+            echo "owner_physical_action_required=false"
+          } > "$work/receipt/materialization.txt"
+          cp "$work/expected-paths.txt" "$work/receipt/permanent-paths.txt"
+          cp "$work/file-sums.txt" "$work/receipt/source-file-sums.txt"
+          sha256sum "$work/receipt/"* > "$work/receipt/receipt-sums.txt"
+
+          git push --force-with-lease="refs/heads/$BRANCH_NAME:$GITHUB_SHA" origin "HEAD:refs/heads/$BRANCH_NAME"
+
+          mkdir -p .ci/wave38-receipt
+          cp "$work/receipt/"* .ci/wave38-receipt/
+
+      - name: Preserve materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: counter-selector-wave-38-materialization-${{ github.run_id }}
+          path: .ci/wave38-receipt
+          if-no-files-found: error
