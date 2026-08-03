@@ -82,7 +82,8 @@ jobs:
           text = text.replace(repository_expression, 'BigBirdReturns/clifford-number')
 
           workflow_path = '.github/workflows/status-sovereignty-rd-wave02-rd06-offeror-universe.yml'
-          stage_start = text.index('git add \\\n  "$CENSUS_DEST"')
+          stage_marker = 'git add \\\n  "$CENSUS_DEST"'
+          stage_start = text.index(stage_marker)
           stage_end = text.index('\ngit diff --cached --name-only', stage_start)
           stage_block = text[stage_start:stage_end]
           workflow_stage_line = f'  {workflow_path} \\\n'
@@ -101,8 +102,11 @@ jobs:
           text = text.replace(receipt_342, receipt_341)
 
           path.write_text(text)
-          assert repository_expression not in path.read_text()
-          assert workflow_path not in path.read_text()[stage_start:stage_end]
+          repaired_text = path.read_text()
+          assert repository_expression not in repaired_text
+          repaired_stage_start = repaired_text.index(stage_marker)
+          repaired_stage_end = repaired_text.index('\ngit diff --cached --name-only', repaired_stage_start)
+          assert workflow_path not in repaired_text[repaired_stage_start:repaired_stage_end]
           PY
           bash -n /tmp/rd06-materialize.sh
           bash -x /tmp/rd06-materialize.sh
