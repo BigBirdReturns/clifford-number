@@ -1,0 +1,51 @@
+name: Preference custody laboratory floor v30
+on:
+  pull_request:
+    paths:
+      - 'data/research/performative-synthetic-constituencies/**'
+      - 'data/research/preference-custody/**'
+      - 'tools/lib/performative-synthetic-constituency.mjs'
+      - 'tools/lib/preference-*.mjs'
+      - 'tools/compile-preference-pre-intake-assurance.mjs'
+      - 'tools/validate-preference-pre-intake-assurance.mjs'
+      - 'tools/compile-preference-custody-manifest-v30.mjs'
+      - 'tools/validate-preference-custody-manifest-v30.mjs'
+      - 'test/preference-pre-intake-assurance.test.js'
+      - 'test/preference-custody-manifest-v30.test.js'
+      - 'docs/preference-custody-pre-intake-assurance.md'
+      - 'docs/preference-custody-laboratory-floor-v30.md'
+      - '.github/workflows/preference-pre-intake-assurance.yml'
+      - '.github/workflows/preference-custody-v30.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  floor-v30:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Compile PC-32 and the compositional v30 floor
+        run: |
+          node tools/compile-preference-pre-intake-assurance.mjs
+          node tools/compile-preference-custody-manifest-v30.mjs
+      - name: Validate pre-intake and floor boundaries
+        run: |
+          node tools/validate-preference-pre-intake-assurance.mjs
+          node tools/validate-preference-custody-manifest-v30.mjs
+      - name: Exercise standalone and integrated adversarial fixtures
+        run: |
+          node test/preference-pre-intake-assurance.test.js
+          node test/preference-custody-manifest-v30.test.js
+      - name: Preserve deterministic v30 projections
+        uses: actions/upload-artifact@v4
+        with:
+          name: preference-custody-laboratory-floor-v30
+          path: |
+            build/research/preference-pre-intake-assurance.json
+            build/research/preference-pre-intake-assurance.md
+            build/research/preference-custody-laboratory-floor-v30.json
+            build/research/preference-custody-laboratory-floor-v30.md
+          if-no-files-found: error

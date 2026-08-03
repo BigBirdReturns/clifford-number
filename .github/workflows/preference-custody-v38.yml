@@ -1,0 +1,50 @@
+name: Preference custody laboratory floor v38
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/performative-synthetic-constituencies/**'
+      - 'data/research/preference-custody/**'
+      - 'tools/lib/performative-synthetic-constituency.mjs'
+      - 'tools/lib/preference-*.mjs'
+      - 'tools/compile-preference-linkage-confidence-adjudication-assurance.mjs'
+      - 'tools/validate-preference-linkage-confidence-adjudication-assurance.mjs'
+      - 'tools/compile-preference-custody-manifest-v38.mjs'
+      - 'tools/validate-preference-custody-manifest-v38.mjs'
+      - 'test/preference-linkage-confidence-adjudication-assurance.test.js'
+      - 'test/preference-custody-manifest-v38.test.js'
+      - 'docs/preference-custody-linkage-confidence-adjudication-assurance.md'
+      - 'docs/preference-custody-laboratory-floor-v38.md'
+      - '.github/workflows/preference-linkage-confidence-adjudication-assurance.yml'
+      - '.github/workflows/preference-custody-v38.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  floor-v38:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: |
+          node tools/compile-preference-linkage-confidence-adjudication-assurance.mjs
+          node tools/compile-preference-custody-manifest-v38.mjs
+      - run: |
+          node tools/validate-preference-linkage-confidence-adjudication-assurance.mjs
+          node tools/validate-preference-custody-manifest-v38.mjs
+      - run: |
+          node test/preference-linkage-confidence-adjudication-assurance.test.js
+          node test/preference-custody-manifest-v38.test.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preference-custody-laboratory-floor-v38
+          path: |
+            build/research/preference-linkage-confidence-adjudication-assurance.json
+            build/research/preference-linkage-confidence-adjudication-assurance.md
+            build/research/preference-custody-laboratory-floor-v38.json
+            build/research/preference-custody-laboratory-floor-v38.md
+          if-no-files-found: error

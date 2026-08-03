@@ -1,0 +1,35 @@
+name: Preference custody candidate-pair blocking-recall assurance control
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/candidate-pair-blocking-recall-assurance.fixture.json'
+      - 'tools/lib/preference-candidate-pair-blocking-recall-assurance.mjs'
+      - 'tools/compile-preference-candidate-pair-blocking-recall-assurance.mjs'
+      - 'tools/validate-preference-candidate-pair-blocking-recall-assurance.mjs'
+      - 'test/preference-candidate-pair-blocking-recall-assurance.test.js'
+      - 'docs/preference-custody-candidate-pair-blocking-recall-assurance.md'
+      - '.github/workflows/preference-candidate-pair-blocking-recall-assurance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  candidate-pair-blocking-recall-assurance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node tools/compile-preference-candidate-pair-blocking-recall-assurance.mjs
+      - run: node tools/validate-preference-candidate-pair-blocking-recall-assurance.mjs
+      - run: node test/preference-candidate-pair-blocking-recall-assurance.test.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preference-candidate-pair-blocking-recall-assurance-pc41
+          path: |
+            build/research/preference-candidate-pair-blocking-recall-assurance.json
+            build/research/preference-candidate-pair-blocking-recall-assurance.md
+          if-no-files-found: error

@@ -1,0 +1,139 @@
+name: TEMP prove exact RD-06 promotion head
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd06-promotion-proof.yml'
+      - '.rd06-promotion-proof/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-ssc-rd06-promotion-proof-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  prove:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd06-promotion-proof-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      PRODUCT_BRANCH: agent/ssc-rd06-wave02-terminal-promotion
+      CLOSURE_PATH: data/project/ssc-residual-wave02/closures/RD-06-C01.json
+      PROGRESS_PATH: data/research/status-sovereignty-residual-denominator-wave-02-progress.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Bind exact promotion head and changed-path denominator
+        run: |
+          set -Eeuo pipefail
+          git fetch origin main "$PRODUCT_BRANCH"
+          product_head="$(git rev-parse "origin/${PRODUCT_BRANCH}")"
+          merge_base="$(git merge-base "origin/${PRODUCT_BRANCH}" HEAD)"
+          test "$product_head" = "$merge_base"
+          test "$(git rev-list --count "origin/${PRODUCT_BRANCH}"..HEAD)" = 2
+          printf '%s\n' "$product_head" > /tmp/rd06-product-head.txt
+          printf '%s\n' "$(git rev-parse origin/main)" > /tmp/rd06-main-head.txt
+          git diff --name-only "origin/main...origin/${PRODUCT_BRANCH}" | sort > /tmp/rd06-changed-paths.txt
+          test -s /tmp/rd06-changed-paths.txt
+          test -f "$CLOSURE_PATH"
+          test -f "$PROGRESS_PATH"
+          python - <<'PY'
+          import json,pathlib,re
+          paths=pathlib.Path('/tmp/rd06-changed-paths.txt').read_text().splitlines()
+          bad=[p for p in paths if re.search(r'(^|/)(temporary|carrier|materializer|trigger|\.rd06)',p,re.I) or p.startswith('.github/workflows/temporary')]
+          assert not bad, f'transport paths in product: {bad}'
+          closure=json.load(open('data/project/ssc-residual-wave02/closures/RD-06-C01.json'))
+          assert closure.get('class_id')=='RD-06-C01'
+          assert closure.get('class_closed') is True
+          progress=json.load(open('data/research/status-sovereignty-residual-denominator-wave-02-progress.json'))
+          promoted=progress.get('promoted_class_receipts',[])
+          ids=[r.get('class_id') for r in promoted]
+          assert ids.count('RD-04-C01')==1
+          assert ids.count('RD-05-C03')==1
+          assert ids.count('RD-06-C01')==1
+          assert progress['counts']['closed_residual_classes']==3
+          assert progress['counts']['open_residual_classes']==39
+          for key in ['outside_human_dependencies','external_contacts','external_reviews','reviewed_disposition_changes','complete_compact_findings','racial_order_findings','prevalence_findings','coordination_findings','common_purpose_findings','graph_effects','publication_effects','adoption_effects']:
+              assert progress['counts'][key]==0
+          pathlib.Path('/tmp/rd06-transport-paths.txt').write_text('')
+          PY
+          node tools/validate-no-magic-human-gate.mjs
+
+      - name: Run every retained RD-06 focused check
+        run: |
+          set -Eeuo pipefail
+          : > /tmp/rd06-focused-checks.txt
+          mapfile -t files < <(find tools test -type f \( -iname '*rd06*' -o -iname '*offeror*' -o -iname '*dcgsa*' \) | sort)
+          test "${#files[@]}" -gt 0
+          for file in "${files[@]}"; do
+            case "$file" in
+              test/*.js|test/*.mjs|tools/validate-*.mjs|tools/acquisition/*/validate-*.mjs)
+                echo "RUN $file" | tee -a /tmp/rd06-focused-checks.txt
+                node "$file" 2>&1 | tee -a /tmp/rd06-focused-checks.txt
+                ;;
+            esac
+          done
+
+      - name: Run complete repository release gate
+        run: |
+          set -Eeuo pipefail
+          npm run release:check | tee /tmp/rd06-release-check.txt
+          if [ -n "$(git status --short)" ]; then
+            git status --short | tee /tmp/rd06-post-gate-dirty.txt
+            exit 1
+          fi
+
+      - name: Seal exact promotion proof
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/rd06-promotion-proof
+          mkdir -p /tmp/rd06-promotion-proof
+          cp /tmp/rd06-product-head.txt /tmp/rd06-promotion-proof/product-head.txt
+          cp /tmp/rd06-main-head.txt /tmp/rd06-promotion-proof/main-head.txt
+          cp /tmp/rd06-changed-paths.txt /tmp/rd06-promotion-proof/changed-paths.txt
+          cp /tmp/rd06-focused-checks.txt /tmp/rd06-promotion-proof/focused-checks.txt
+          cp /tmp/rd06-release-check.txt /tmp/rd06-promotion-proof/release-check.txt
+          cp "$CLOSURE_PATH" /tmp/rd06-promotion-proof/closure-reference.json
+          cp "$PROGRESS_PATH" /tmp/rd06-promotion-proof/wave02-progress.json
+          python - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path('/tmp/rd06-promotion-proof')
+          product=(root/'product-head.txt').read_text().strip()
+          main=(root/'main-head.txt').read_text().strip()
+          paths=(root/'changed-paths.txt').read_text().splitlines()
+          receipt={
+            'schema_version':'ssc-rd06-wave02-promotion-proof@1',
+            'wave_id':'SSC-RD-W02','lane_id':'RD-06','class_id':'RD-06-C01','issue':791,
+            'product_head':product,'main_head_at_proof':main,
+            'changed_path_count':len(paths),'temporary_or_transport_paths':0,
+            'focused_checks_passed':True,'complete_release_gate_passed':True,'no_magic_human_gate_passed':True,
+            'atlas_after_promotion':{'open':39,'closed':3},
+            'authority':{'outside_human_dependency':False,'external_contacts':0,'external_reviews':0,'reviewed_disposition_changed':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none'}
+          }
+          (root/'proof.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          rows=[]
+          for p in sorted(x for x in root.rglob('*') if x.is_file() and x.name!='manifest.json'):
+            b=p.read_bytes(); rows.append({'path':str(p.relative_to(root)),'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest()})
+          combined=hashlib.sha256('\n'.join(f"{r['sha256']}  {r['path']}" for r in rows).encode()).hexdigest()
+          (root/'manifest.json').write_text(json.dumps({'schema_version':'ssc-rd06-wave02-promotion-proof-manifest@1','entry_count':len(rows),'entries':rows,'combined_sha256':combined},indent=2)+'\n')
+          print(f'RD-06 promotion proof sealed: {len(paths)} product paths; {combined}')
+          PY
+          git diff --exit-code
+          test -z "$(git status --short)"
+
+      - name: Preserve exact promotion proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd06-wave02-promotion-proof-v1
+          path: /tmp/rd06-promotion-proof
+          if-no-files-found: error
+          retention-days: 90

@@ -1,0 +1,409 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/counter-selector-portable-proof-closure.schema.json",
+  "title": "Counter-Selector portable proof closure",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "program_id",
+    "wave_id",
+    "parent_wave_ids",
+    "as_of",
+    "observed_at",
+    "title",
+    "status",
+    "purpose",
+    "counts",
+    "join_contract",
+    "controls",
+    "join_matrix",
+    "boundaries",
+    "next_action",
+    "graph_effect"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "counter-selector-portable-proof-closure@1"
+    },
+    "program_id": {
+      "const": "counter-selector-v1"
+    },
+    "wave_id": {
+      "const": "CS-W36-PC-01"
+    },
+    "parent_wave_ids": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "minLength": 1
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "join_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component_order",
+        "complete_portable_proof_chain_requires",
+        "complete_operational_handoff_requires",
+        "proofs_may_be_assembled_across_controls",
+        "contact_required",
+        "control_is_candidate_promotion"
+      ],
+      "properties": {
+        "component_order": {
+          "type": "array",
+          "minItems": 10,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "complete_portable_proof_chain_requires": {
+          "type": "array",
+          "minItems": 4,
+          "items": {
+            "type": "string"
+          }
+        },
+        "complete_operational_handoff_requires": {
+          "type": "array",
+          "minItems": 4,
+          "items": {
+            "type": "string"
+          }
+        },
+        "proofs_may_be_assembled_across_controls": {
+          "const": false
+        },
+        "contact_required": {
+          "const": false
+        },
+        "control_is_candidate_promotion": {
+          "const": false
+        }
+      }
+    },
+    "controls": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "control_id",
+          "public_label",
+          "control_type",
+          "system_or_subject",
+          "source_records",
+          "components",
+          "positive_findings",
+          "known_limits",
+          "adjudication",
+          "operator_finding",
+          "field_test_eligible",
+          "contact_authorized",
+          "graph_effect"
+        ],
+        "properties": {
+          "control_id": {
+            "type": "string"
+          },
+          "public_label": {
+            "type": "string"
+          },
+          "control_type": {
+            "type": "string"
+          },
+          "system_or_subject": {
+            "type": "string"
+          },
+          "source_records": {
+            "type": "array",
+            "minItems": 3,
+            "items": {
+              "$ref": "#/$defs/sourceRecord"
+            }
+          },
+          "components": {
+            "type": "object",
+            "minProperties": 10,
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "positive_findings": {
+            "type": "array",
+            "minItems": 4,
+            "items": {
+              "type": "string"
+            }
+          },
+          "known_limits": {
+            "type": "array",
+            "minItems": 5,
+            "items": {
+              "type": "string"
+            }
+          },
+          "adjudication": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "complete_portable_proof_chain",
+              "package_inventory_recipient_acknowledgment",
+              "same_package_independent_recalculation",
+              "field_successor_operation",
+              "complete_operational_handoff",
+              "person_support_added",
+              "classification"
+            ],
+            "properties": {
+              "complete_portable_proof_chain": {
+                "type": "boolean"
+              },
+              "package_inventory_recipient_acknowledgment": {
+                "const": false
+              },
+              "same_package_independent_recalculation": {
+                "type": "boolean"
+              },
+              "field_successor_operation": {
+                "type": "boolean"
+              },
+              "complete_operational_handoff": {
+                "const": false
+              },
+              "person_support_added": {
+                "const": false
+              },
+              "classification": {
+                "type": "string"
+              }
+            }
+          },
+          "operator_finding": {
+            "const": false
+          },
+          "field_test_eligible": {
+            "const": false
+          },
+          "contact_authorized": {
+            "const": false
+          },
+          "graph_effect": {
+            "const": "none"
+          }
+        }
+      }
+    },
+    "join_matrix": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "control_id",
+          "complete_portable_proof",
+          "incoming_proof_acceptance",
+          "package_inventory_receipt",
+          "same_package_independent_recalculation",
+          "field_successor_operation",
+          "complete_operational_handoff"
+        ],
+        "properties": {
+          "control_id": {
+            "type": "string"
+          },
+          "complete_portable_proof": {
+            "type": "boolean"
+          },
+          "incoming_proof_acceptance": {
+            "type": "boolean"
+          },
+          "package_inventory_receipt": {
+            "const": false
+          },
+          "same_package_independent_recalculation": {
+            "type": "boolean"
+          },
+          "field_successor_operation": {
+            "type": "boolean"
+          },
+          "complete_operational_handoff": {
+            "const": false
+          }
+        }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "complete_portable_proof_is_complete_operational_handoff",
+        "incoming_signature_is_package_inventory_receipt",
+        "same_system_recalculation_is_external_independent_review",
+        "verified_transfer_event_is_successor_operation",
+        "physical_actuation_out_of_scope_is_observed_operation",
+        "automated_round_trip_is_field_operation",
+        "native_reports_resolve_package_safety",
+        "report_hashes_resolve_state_collision",
+        "per_entry_limits_are_aggregate_archive_budget",
+        "legacy_compatibility_allows_modern_manifest_omission",
+        "end_user_operation_is_package_receipt",
+        "written_guidance_is_versioned_state_package",
+        "recipient_satisfaction_is_authority_transfer",
+        "proof_components_across_controls_may_be_combined",
+        "complete_proof_chain_is_person_support",
+        "living_subject_is_contact_authorization",
+        "field_test_authorized",
+        "promotion_authorized",
+        "person_ranking_authorized",
+        "public_identity_profile_authorized",
+        "graph_effect"
+      ],
+      "properties": {
+        "complete_portable_proof_is_complete_operational_handoff": {
+          "const": false
+        },
+        "incoming_signature_is_package_inventory_receipt": {
+          "const": false
+        },
+        "same_system_recalculation_is_external_independent_review": {
+          "const": false
+        },
+        "verified_transfer_event_is_successor_operation": {
+          "const": false
+        },
+        "physical_actuation_out_of_scope_is_observed_operation": {
+          "const": false
+        },
+        "automated_round_trip_is_field_operation": {
+          "const": false
+        },
+        "native_reports_resolve_package_safety": {
+          "const": false
+        },
+        "report_hashes_resolve_state_collision": {
+          "const": false
+        },
+        "per_entry_limits_are_aggregate_archive_budget": {
+          "const": false
+        },
+        "legacy_compatibility_allows_modern_manifest_omission": {
+          "const": false
+        },
+        "end_user_operation_is_package_receipt": {
+          "const": false
+        },
+        "written_guidance_is_versioned_state_package": {
+          "const": false
+        },
+        "recipient_satisfaction_is_authority_transfer": {
+          "const": false
+        },
+        "proof_components_across_controls_may_be_combined": {
+          "const": false
+        },
+        "complete_proof_chain_is_person_support": {
+          "const": false
+        },
+        "living_subject_is_contact_authorization": {
+          "const": false
+        },
+        "field_test_authorized": {
+          "const": false
+        },
+        "promotion_authorized": {
+          "const": false
+        },
+        "person_ranking_authorized": {
+          "const": false
+        },
+        "public_identity_profile_authorized": {
+          "const": false
+        },
+        "graph_effect": {
+          "const": "none"
+        }
+      }
+    },
+    "next_action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "graph_effect": {
+      "const": "none"
+    }
+  },
+  "$defs": {
+    "sourceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "title",
+        "publisher",
+        "date",
+        "url",
+        "source_class",
+        "artifact_scope"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "publisher": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "source_class": {
+          "type": "string"
+        },
+        "artifact_scope": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

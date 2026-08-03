@@ -1,0 +1,36 @@
+name: Preference custody pre-intake assurance control
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/pre-intake-assurance.fixture.json'
+      - 'tools/lib/preference-pre-intake-assurance.mjs'
+      - 'tools/compile-preference-pre-intake-assurance.mjs'
+      - 'tools/validate-preference-pre-intake-assurance.mjs'
+      - 'test/preference-pre-intake-assurance.test.js'
+      - 'docs/preference-custody-pre-intake-assurance.md'
+      - '.github/workflows/preference-pre-intake-assurance.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pre-intake-assurance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Compile eligibility, awareness, delivery, reachability, need, request-intake, and lineage worlds
+        run: node tools/compile-preference-pre-intake-assurance.mjs
+      - name: Validate pre-intake reconciliation, correction, and authority boundaries
+        run: node tools/validate-preference-pre-intake-assurance.mjs
+      - name: Exercise eligibility, awareness, delivery, access, need, intake, lineage, authority, and tamper fixtures
+        run: node test/preference-pre-intake-assurance.test.js
+      - name: Preserve deterministic pre-intake projections
+        uses: actions/upload-artifact@v4
+        with:
+          name: preference-pre-intake-assurance-pc32
+          path: |
+            build/research/preference-pre-intake-assurance.json
+            build/research/preference-pre-intake-assurance.md
+          if-no-files-found: error

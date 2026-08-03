@@ -1,0 +1,46 @@
+name: Counter-Selector Wave 38 portable operational checkpoint
+
+on:
+  pull_request:
+    paths:
+      - 'data/project/counter-selector-wave-38-*.json'
+      - 'schemas/counter-selector-portable-operational-checkpoint.schema.json'
+      - 'docs/methods/counter-selector-portable-operational-checkpoint.md'
+      - 'docs/milestones/counter-selector-wave-38.md'
+      - 'tools/*counter-selector-wave-38*'
+      - 'test/counter-selector-wave-38.test.js'
+      - 'reports/core-thesis/counter-selector-wave-38/**'
+      - '.github/workflows/counter-selector-wave-38.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build Wave 38 products
+        run: node tools/build-counter-selector-wave-38.mjs
+      - name: Validate portable operational checkpoint contract
+        run: node tools/validate-counter-selector-wave-38.mjs
+      - name: Run adversarial mutations
+        run: node test/counter-selector-wave-38.test.js
+      - name: Require exact committed Wave 38 products
+        run: git diff --exit-code -- data/project/counter-selector-wave-38-control-registry.json data/project/counter-selector-wave-38-release-manifest.json reports/core-thesis/counter-selector-wave-38/data.json reports/core-thesis/counter-selector-wave-38/index.html
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Reconstruct Wave 38 deterministically
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          node tools/build-counter-selector-wave-38.mjs
+          node tools/validate-counter-selector-wave-38.mjs
+          node test/counter-selector-wave-38.test.js
+          git diff --exit-code -- data/project/counter-selector-wave-38-control-registry.json data/project/counter-selector-wave-38-release-manifest.json reports/core-thesis/counter-selector-wave-38/data.json reports/core-thesis/counter-selector-wave-38/index.html
+          test -z "$(git status --porcelain)"

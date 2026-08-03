@@ -1,0 +1,403 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/counter-selector-real-world-handoff-join.schema.json",
+  "title": "Counter-Selector real-world handoff proof-component join audit",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "program_id",
+    "wave_id",
+    "parent_wave_ids",
+    "as_of",
+    "observed_at",
+    "title",
+    "status",
+    "purpose",
+    "counts",
+    "join_contract",
+    "controls",
+    "join_matrix",
+    "boundaries",
+    "next_action",
+    "graph_effect"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "counter-selector-real-world-handoff-join@1"
+    },
+    "program_id": {
+      "const": "counter-selector-v1"
+    },
+    "wave_id": {
+      "const": "CS-W35-RJ-01"
+    },
+    "parent_wave_ids": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "minLength": 1
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "join_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component_order",
+        "complete_real_world_handoff_requires",
+        "proofs_may_be_assembled_across_controls",
+        "contact_required",
+        "control_is_candidate_promotion"
+      ],
+      "properties": {
+        "component_order": {
+          "type": "array",
+          "minItems": 10,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "complete_real_world_handoff_requires": {
+          "type": "array",
+          "minItems": 8,
+          "items": {
+            "type": "string"
+          }
+        },
+        "proofs_may_be_assembled_across_controls": {
+          "const": false
+        },
+        "contact_required": {
+          "const": false
+        },
+        "control_is_candidate_promotion": {
+          "const": false
+        }
+      }
+    },
+    "controls": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "control_id",
+          "public_label",
+          "control_type",
+          "system_or_subject",
+          "source_records",
+          "components",
+          "positive_findings",
+          "known_review_findings",
+          "adjudication",
+          "falsifiers",
+          "operator_finding",
+          "field_test_eligible",
+          "contact_authorized",
+          "graph_effect"
+        ],
+        "properties": {
+          "control_id": {
+            "type": "string"
+          },
+          "public_label": {
+            "type": "string"
+          },
+          "control_type": {
+            "type": "string"
+          },
+          "system_or_subject": {
+            "type": "string"
+          },
+          "source_records": {
+            "type": "array",
+            "minItems": 3,
+            "items": {
+              "$ref": "#/$defs/sourceRecord"
+            }
+          },
+          "components": {
+            "type": "object",
+            "minProperties": 10,
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "positive_findings": {
+            "type": "array",
+            "minItems": 4,
+            "items": {
+              "type": "string"
+            }
+          },
+          "known_review_findings": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "adjudication": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "bounded_executable_round_trip",
+              "package_integrity",
+              "safe_conflict_handling",
+              "package_level_recipient_acknowledgment",
+              "field_successor_operation",
+              "complete_bounded_executable_handoff",
+              "person_support_added",
+              "classification"
+            ],
+            "properties": {
+              "bounded_executable_round_trip": {
+                "type": "string"
+              },
+              "package_integrity": {
+                "type": "string"
+              },
+              "safe_conflict_handling": {
+                "type": "string"
+              },
+              "package_level_recipient_acknowledgment": {
+                "type": "string"
+              },
+              "field_successor_operation": {
+                "type": "string"
+              },
+              "complete_bounded_executable_handoff": {
+                "const": false
+              },
+              "person_support_added": {
+                "const": false
+              },
+              "classification": {
+                "type": "string"
+              }
+            }
+          },
+          "falsifiers": {
+            "type": "array",
+            "minItems": 5,
+            "items": {
+              "type": "string"
+            }
+          },
+          "operator_finding": {
+            "const": false
+          },
+          "field_test_eligible": {
+            "const": false
+          },
+          "contact_authorized": {
+            "const": false
+          },
+          "graph_effect": {
+            "const": "none"
+          }
+        }
+      }
+    },
+    "join_matrix": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "control_id",
+          "versioned_package",
+          "integrity",
+          "package_recipient_acknowledgment",
+          "successor_operation",
+          "safe_conflict_handling",
+          "complete_join"
+        ],
+        "properties": {
+          "control_id": {
+            "type": "string"
+          },
+          "versioned_package": {},
+          "integrity": {},
+          "package_recipient_acknowledgment": {},
+          "successor_operation": {},
+          "safe_conflict_handling": {},
+          "complete_join": {
+            "const": false
+          }
+        }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "automated_round_trip_is_field_recipient_operation",
+        "cross_workspace_test_is_independent_human_operation",
+        "tamper_rejection_is_complete_conflict_handling",
+        "per_entry_size_limit_is_aggregate_archive_budget",
+        "import_success_is_safe_stale_state_resolution",
+        "unresolved_review_thread_is_resolved_defect",
+        "two_party_signature_is_complete_package_verification",
+        "binding_root_acceptance_is_knowledge_transfer",
+        "customer_product_use_is_package_receipt",
+        "end_user_operation_is_operational_ownership_transfer",
+        "written_guidance_is_versioned_state_package",
+        "proof_components_from_different_controls_may_be_combined",
+        "bounded_package_positive_is_person_support",
+        "control_is_candidate_promotion",
+        "same_system_adjudication_is_external_independent_review",
+        "living_person_is_contact_authorization",
+        "field_test_authorized",
+        "promotion_authorized",
+        "person_ranking_authorized",
+        "public_identity_profile_authorized",
+        "graph_effect"
+      ],
+      "properties": {
+        "automated_round_trip_is_field_recipient_operation": {
+          "const": false
+        },
+        "cross_workspace_test_is_independent_human_operation": {
+          "const": false
+        },
+        "tamper_rejection_is_complete_conflict_handling": {
+          "const": false
+        },
+        "per_entry_size_limit_is_aggregate_archive_budget": {
+          "const": false
+        },
+        "import_success_is_safe_stale_state_resolution": {
+          "const": false
+        },
+        "unresolved_review_thread_is_resolved_defect": {
+          "const": false
+        },
+        "two_party_signature_is_complete_package_verification": {
+          "const": false
+        },
+        "binding_root_acceptance_is_knowledge_transfer": {
+          "const": false
+        },
+        "customer_product_use_is_package_receipt": {
+          "const": false
+        },
+        "end_user_operation_is_operational_ownership_transfer": {
+          "const": false
+        },
+        "written_guidance_is_versioned_state_package": {
+          "const": false
+        },
+        "proof_components_from_different_controls_may_be_combined": {
+          "const": false
+        },
+        "bounded_package_positive_is_person_support": {
+          "const": false
+        },
+        "control_is_candidate_promotion": {
+          "const": false
+        },
+        "same_system_adjudication_is_external_independent_review": {
+          "const": false
+        },
+        "living_person_is_contact_authorization": {
+          "const": false
+        },
+        "field_test_authorized": {
+          "const": false
+        },
+        "promotion_authorized": {
+          "const": false
+        },
+        "person_ranking_authorized": {
+          "const": false
+        },
+        "public_identity_profile_authorized": {
+          "const": false
+        },
+        "graph_effect": {
+          "const": "none"
+        }
+      }
+    },
+    "next_action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "graph_effect": {
+      "const": "none"
+    }
+  },
+  "$defs": {
+    "sourceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "title",
+        "publisher",
+        "date",
+        "url",
+        "source_class",
+        "artifact_scope"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "publisher": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "source_class": {
+          "type": "string"
+        },
+        "artifact_scope": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

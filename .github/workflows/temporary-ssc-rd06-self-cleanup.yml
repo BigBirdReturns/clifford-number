@@ -1,0 +1,146 @@
+name: TEMP retire final RD-06 cleanup carrier
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd06-self-cleanup.yml'
+      - '.rd06-self-cleanup/**'
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+  issues: read
+
+concurrency:
+  group: temp-ssc-rd06-self-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd06-self-cleanup-trigger'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SOURCE_BRANCH: agent/ssc-rd06-final-cleanup-trigger
+      SOURCE_WORKFLOW: TEMP retire all proved RD-06 execution refs
+      SOURCE_ARTIFACT: ssc-rd06-wave02-final-cleanup-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Verify successful final cleanup receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/rd06-self-cleanup
+          mkdir -p /tmp/rd06-self-cleanup/source /tmp/rd06-self-cleanup/receipt
+          gh api --paginate "/repos/${GITHUB_REPOSITORY}/actions/runs?branch=${SOURCE_BRANCH}&status=completed&per_page=100" > /tmp/rd06-self-cleanup/runs.json
+          python - <<'PY'
+          import json,os,pathlib
+          data=json.loads(pathlib.Path('/tmp/rd06-self-cleanup/runs.json').read_text()); pages=data if isinstance(data,list) else [data]; rows=[]
+          for page in pages: rows.extend(page.get('workflow_runs',[]))
+          matches=[r for r in rows if r.get('name')==os.environ['SOURCE_WORKFLOW'] and r.get('head_branch')==os.environ['SOURCE_BRANCH']]
+          matches.sort(key=lambda r:r.get('created_at',''),reverse=True)
+          assert matches, 'no completed final cleanup run'
+          run=matches[0]; assert run.get('conclusion')=='success', f"final cleanup conclusion {run.get('conclusion')}"
+          pathlib.Path('/tmp/rd06-self-cleanup/run.json').write_text(json.dumps(run,indent=2)+'\n'); pathlib.Path('/tmp/rd06-self-cleanup/run-id.txt').write_text(str(run['id'])+'\n')
+          PY
+          run_id="$(cat /tmp/rd06-self-cleanup/run-id.txt)"; gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts" > /tmp/rd06-self-cleanup/artifacts.json
+          python - <<'PY'
+          import json,os,pathlib
+          data=json.loads(pathlib.Path('/tmp/rd06-self-cleanup/artifacts.json').read_text()); arts=[a for a in data.get('artifacts',[]) if a.get('name')==os.environ['SOURCE_ARTIFACT'] and not a.get('expired')]; assert len(arts)==1, len(arts); art=arts[0]; pathlib.Path('/tmp/rd06-self-cleanup/artifact.json').write_text(json.dumps(art,indent=2)+'\n'); pathlib.Path('/tmp/rd06-self-cleanup/artifact-id.txt').write_text(str(art['id'])+'\n')
+          PY
+          artifact="$(cat /tmp/rd06-self-cleanup/artifact-id.txt)"; gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact}/zip" > /tmp/rd06-self-cleanup/source.zip
+          expected="$(python - <<'PY'
+          import json
+          print(json.load(open('/tmp/rd06-self-cleanup/artifact.json'))['digest'].split(':',1)[1])
+          PY
+          )"; test "$(sha256sum /tmp/rd06-self-cleanup/source.zip | awk '{print $1}')" = "$expected"
+          unzip -q /tmp/rd06-self-cleanup/source.zip -d /tmp/rd06-self-cleanup/source
+          test -z "$(find /tmp/rd06-self-cleanup/source -type f -name BLOCKED.txt -print -quit)"
+          result="$(find /tmp/rd06-self-cleanup/source -type f -name result.json -print -quit)"; manifest="$(find /tmp/rd06-self-cleanup/source -type f -name manifest.json -print -quit)"; test -n "$result"; test -n "$manifest"
+          cp "$result" /tmp/rd06-self-cleanup/receipt/final-cleanup-result.json; cp "$manifest" /tmp/rd06-self-cleanup/receipt/final-cleanup-manifest.json
+          python - <<'PY'
+          import json
+          result=json.load(open('/tmp/rd06-self-cleanup/receipt/final-cleanup-result.json'))
+          assert result['schema_version']=='ssc-rd06-wave02-final-cleanup@1'
+          assert result['wave_id']=='SSC-RD-W02' and result['lane_id']=='RD-06' and result['class_id']=='RD-06-C01' and result['issue']==791
+          assert result['canonical_state']=={'atlas_open':39,'atlas_closed':3,'issue_closed_completed':True}
+          assert result['authority']['outside_human_dependency'] is False and result['authority']['external_contacts']==0 and result['authority']['external_reviews']==0
+          assert result['authority']['publication_effect']=='none' and result['authority']['adoption_effect']=='none' and result['authority']['graph_effect']=='none'
+          PY
+          test "$(gh api "/repos/${GITHUB_REPOSITORY}/issues/791" --jq '.state')" = closed
+          test "$(gh api "/repos/${GITHUB_REPOSITORY}/issues/791" --jq '.state_reason')" = completed
+          gh api "/repos/${GITHUB_REPOSITORY}/contents/data/project/ssc-residual-wave02/closures/RD-06-C01.json?ref=main" > /tmp/rd06-self-cleanup/receipt/main-closure.json
+          gh api "/repos/${GITHUB_REPOSITORY}/contents/data/research/status-sovereignty-residual-denominator-wave-02-progress.json?ref=main" > /tmp/rd06-self-cleanup/receipt/main-progress.json
+          gh api "/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha' > /tmp/rd06-self-cleanup/receipt/main-head.txt
+
+      - name: Close every remaining RD-06 execution PR and delete every RD-06 working ref
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 1000 --json number,headRefName,title > /tmp/rd06-self-cleanup/open-prs.json
+          python - <<'PY'
+          import json,pathlib,re,subprocess,os
+          repo=os.environ['GITHUB_REPOSITORY']; rows=json.load(open('/tmp/rd06-self-cleanup/open-prs.json')); closed=[]
+          for row in rows:
+              head=row.get('headRefName',''); title=row.get('title','')
+              if head.startswith('agent/ssc-rd06') or head=='agent/ssc-rd-wave02-rd06-offeror-universe' or ('TEMP' in title and 'RD-06' in title):
+                  subprocess.run(['gh','pr','close',str(row['number']),'--repo',repo,'--comment','Execution-only RD-06 surface retired after canonical v2 descendant proof and final cleanup receipt. Closed without merge.'],check=True)
+                  closed.append(row['number'])
+          pathlib.Path('/tmp/rd06-self-cleanup/receipt/closed-prs.json').write_text(json.dumps(sorted(set(closed)),indent=2)+'\n')
+          PY
+
+          gh api --paginate "/repos/${GITHUB_REPOSITORY}/git/matching-refs/heads/agent/ssc-rd06" > /tmp/rd06-self-cleanup/refs.json
+          python - <<'PY'
+          import json,pathlib
+          data=json.loads(pathlib.Path('/tmp/rd06-self-cleanup/refs.json').read_text()); pages=data if isinstance(data,list) and data and isinstance(data[0],list) else [data]; refs=[]
+          for page in pages:
+              if isinstance(page,list): refs.extend(row['ref'] for row in page)
+          refs=sorted(set(refs))
+          pathlib.Path('/tmp/rd06-self-cleanup/refs.txt').write_text('\n'.join(refs)+('\n' if refs else ''))
+          PY
+          : > /tmp/rd06-self-cleanup/receipt/deleted-refs.txt
+          while IFS= read -r ref; do
+            [ -n "$ref" ] || continue
+            short="${ref#refs/heads/}"
+            gh api -X DELETE "/repos/${GITHUB_REPOSITORY}/git/refs/heads/${short}"
+            echo "$ref" >> /tmp/rd06-self-cleanup/receipt/deleted-refs.txt
+          done < /tmp/rd06-self-cleanup/refs.txt
+
+          if gh api "/repos/${GITHUB_REPOSITORY}/git/ref/heads/agent/ssc-rd-wave02-rd06-offeror-universe" --silent >/dev/null 2>&1; then
+            gh api -X DELETE "/repos/${GITHUB_REPOSITORY}/git/refs/heads/agent/ssc-rd-wave02-rd06-offeror-universe"
+            echo 'refs/heads/agent/ssc-rd-wave02-rd06-offeror-universe' >> /tmp/rd06-self-cleanup/receipt/deleted-refs.txt
+          fi
+          python - <<'PY'
+          import json,pathlib
+          result=json.load(open('/tmp/rd06-self-cleanup/receipt/final-cleanup-result.json')); deleted=pathlib.Path('/tmp/rd06-self-cleanup/receipt/deleted-refs.txt').read_text().splitlines(); closed=json.load(open('/tmp/rd06-self-cleanup/receipt/closed-prs.json'))
+          receipt={'schema_version':'ssc-rd06-wave02-self-cleanup@1','wave_id':'SSC-RD-W02','lane_id':'RD-06','class_id':'RD-06-C01','issue':791,'canonical_merge_commit':result['canonical_merge_commit'],'main_head_at_self_cleanup':pathlib.Path('/tmp/rd06-self-cleanup/receipt/main-head.txt').read_text().strip(),'refs_deleted':len(deleted),'deleted_refs':deleted,'execution_only_prs_closed':closed,'canonical_state':result['canonical_state'],'authority':result['authority']}
+          pathlib.Path('/tmp/rd06-self-cleanup/receipt/result.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          PY
+
+      - name: Seal self-cleanup receipt
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path('/tmp/rd06-self-cleanup/receipt'); root.mkdir(parents=True,exist_ok=True); rows=[]
+          for p in sorted(x for x in root.rglob('*') if x.is_file() and x.name!='manifest.json'):
+            b=p.read_bytes(); rows.append({'path':str(p.relative_to(root)),'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest()})
+          combined=hashlib.sha256('\n'.join(f"{r['sha256']}  {r['path']}" for r in rows).encode()).hexdigest(); (root/'manifest.json').write_text(json.dumps({'schema_version':'ssc-rd06-wave02-self-cleanup-manifest@1','entry_count':len(rows),'entries':rows,'combined_sha256':combined},indent=2)+'\n'); print(f'RD-06 self-cleanup sealed: {combined}')
+          PY
+
+      - name: Preserve self-cleanup receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd06-wave02-self-cleanup-v1
+          path: /tmp/rd06-self-cleanup/receipt
+          if-no-files-found: error
+          retention-days: 90
