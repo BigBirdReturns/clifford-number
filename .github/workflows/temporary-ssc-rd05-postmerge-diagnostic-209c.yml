@@ -1,0 +1,47 @@
+name: TEMP diagnose SSC RD-05 merge 209c
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-postmerge-proof-base-209c
+    paths:
+      - '.github/tmp/ssc-rd05-postmerge-proof-209c.trigger'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 209c30585301a1069507d2e6b16db62ff4ffe1bd
+          fetch-depth: 2
+      - name: Print exact topology and closure preflight
+        run: |
+          set -Eeuo pipefail
+          echo "HEAD=$(git rev-parse HEAD)"
+          echo "PARENTS=$(git rev-list --parents -n 1 HEAD)"
+          echo "TREE=$(git show -s --format=%T HEAD)"
+          git diff --name-only 50148d653574cd89e4bb01004caba06a8c517631 209c30585301a1069507d2e6b16db62ff4ffe1bd | sort > /tmp/paths.txt
+          echo "PATH_COUNT=$(wc -l < /tmp/paths.txt | tr -d ' ')"
+          echo "CENSUS_COUNT=$(grep -c '^data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/source-custody/successor-census-v2/' /tmp/paths.txt || true)"
+          echo "WORKFLOW_COUNT=$(grep -c '^\.github/workflows/status-sovereignty-rd05-wave02-terminal-closure.yml$' /tmp/paths.txt || true)"
+          echo 'TRANSPORT_MATCHES_BEGIN'
+          grep -En '(^|/)(\.github/tmp|carrier|trigger)(/|$)|temporary-ssc-rd05|terminal-closure-materializer' /tmp/paths.txt || true
+          echo 'TRANSPORT_MATCHES_END'
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const receipt = JSON.parse(fs.readFileSync('data/project/ssc-residual-wave02/closures/RD-05-C03.json', 'utf8'));
+          console.log(JSON.stringify({
+            terminal_state: receipt.terminal_state,
+            class_closed: receipt.class_closed,
+            counts: receipt.counts,
+            source_custody: receipt.source_custody,
+            product: receipt.product,
+            authority: receipt.authority
+          }, null, 2));
+          NODE
