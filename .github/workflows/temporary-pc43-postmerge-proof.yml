@@ -18,7 +18,6 @@ jobs:
       CANONICAL_MERGE: eba618a72a71ebc52e3c3462e2f00cfa1010b7d6
       FIRST_PARENT: cbae23b0903fde6e02fc73ccbb32501f5859bf4c
       PRODUCT_PARENT: f8334c9d148ef3f94eeb773317c6a4e1bb2e161c
-      CANONICAL_TREE: d9644338d9c3fe1214d64a9b3b2aaa7238f70fca
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,10 +32,20 @@ jobs:
           set -Eeuo pipefail
           git fetch origin main --no-tags
           git cat-file -e "$CANONICAL_MERGE^{commit}"
-          test "$(git rev-list --parents -n 1 "$CANONICAL_MERGE")" = "$CANONICAL_MERGE $FIRST_PARENT $PRODUCT_PARENT"
-          test "$(git rev-parse "$CANONICAL_MERGE^{tree}")" = "$CANONICAL_TREE"
+
+          actual_first_parent="$(git rev-parse "$CANONICAL_MERGE^1")"
+          actual_product_parent="$(git rev-parse "$CANONICAL_MERGE^2")"
+          actual_tree="$(git rev-parse "$CANONICAL_MERGE^{tree}")"
+          product_tree="$(git rev-parse "$PRODUCT_PARENT^{tree}")"
+          printf 'canonical merge: %s\nfirst parent: %s\nproduct parent: %s\ncanonical tree: %s\nproduct tree: %s\n' \
+            "$CANONICAL_MERGE" "$actual_first_parent" "$actual_product_parent" "$actual_tree" "$product_tree"
+          test "$actual_first_parent" = "$FIRST_PARENT"
+          test "$actual_product_parent" = "$PRODUCT_PARENT"
+          test "$actual_tree" = "$product_tree"
+          printf '%s\n' "$actual_tree" > /tmp/pc43-canonical-tree.sha
+
           git merge-base --is-ancestor "$CANONICAL_MERGE" origin/main
-          git diff --name-only "$FIRST_PARENT..$CANONICAL_MERGE" | LC_ALL=C sort > /tmp/pc43-canonical-paths.txt
+          git diff --name-only "$FIRST_PARENT" "$CANONICAL_MERGE" | LC_ALL=C sort > /tmp/pc43-canonical-paths.txt
           cat > /tmp/pc43-expected-paths.txt <<'EOF'
           .github/workflows/preference-custody-v41.yml
           .github/workflows/preference-linkage-probability-calibration-assurance.yml
@@ -55,10 +64,22 @@ jobs:
           EOF
           sed -i 's/^          //' /tmp/pc43-expected-paths.txt
           LC_ALL=C sort -o /tmp/pc43-expected-paths.txt /tmp/pc43-expected-paths.txt
+          printf '%s\n' 'Observed canonical paths:'
+          cat /tmp/pc43-canonical-paths.txt
           diff -u /tmp/pc43-expected-paths.txt /tmp/pc43-canonical-paths.txt
           test "$(wc -l < /tmp/pc43-canonical-paths.txt | tr -d ' ')" = 14
-          test -z "$(git diff --name-only "$PRODUCT_PARENT..$CANONICAL_MERGE")"
-          ! grep -Eq '(^|/)(\.pc43|temporary|materializer|carrier|retrigger|postmerge)(/|$)' /tmp/pc43-canonical-paths.txt
+
+          git diff --name-only "$PRODUCT_PARENT" "$CANONICAL_MERGE" > /tmp/pc43-product-to-merge-paths.txt
+          if test -s /tmp/pc43-product-to-merge-paths.txt; then
+            echo 'Canonical merge differs from product parent:' >&2
+            cat /tmp/pc43-product-to-merge-paths.txt >&2
+            exit 1
+          fi
+          if grep -Eq '(^|/)(\.pc43|temporary|materializer|carrier|retrigger|postmerge)(/|$)' /tmp/pc43-canonical-paths.txt; then
+            echo 'Temporary path survived canonical merge:' >&2
+            grep -En '(^|/)(\.pc43|temporary|materializer|carrier|retrigger|postmerge)(/|$)' /tmp/pc43-canonical-paths.txt >&2
+            exit 1
+          fi
           git rev-parse origin/main > /tmp/pc43-current-main.sha
 
       - name: Reconstruct PC-43 and every Preference Custody floor on canonical merge
@@ -88,6 +109,7 @@ jobs:
       - name: Restore exact merge tree and replay deterministically
         run: |
           set -Eeuo pipefail
+          canonical_tree="$(cat /tmp/pc43-canonical-tree.sha)"
           while IFS= read -r path; do
             git diff --exit-code "$CANONICAL_MERGE" -- "$path"
           done < /tmp/pc43-expected-paths.txt
@@ -102,7 +124,7 @@ jobs:
           git diff --exit-code
           git reset --hard "$CANONICAL_MERGE"
           git clean -fdx
-          test "$(git rev-parse 'HEAD^{tree}')" = "$CANONICAL_TREE"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$canonical_tree"
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
           touch /tmp/pc43-postmerge-replay.pass
 
@@ -131,7 +153,7 @@ jobs:
               'canonical_merge': os.environ['CANONICAL_MERGE'],
               'first_parent': os.environ['FIRST_PARENT'],
               'product_parent': os.environ['PRODUCT_PARENT'],
-              'canonical_tree': os.environ['CANONICAL_TREE'],
+              'canonical_tree': Path('/tmp/pc43-canonical-tree.sha').read_text().strip(),
               'current_main_observed': Path('/tmp/pc43-current-main.sha').read_text().strip(),
               'canonical_path_count': len(paths),
               'path_list_sha256': hashlib.sha256(path_bytes).hexdigest(),
