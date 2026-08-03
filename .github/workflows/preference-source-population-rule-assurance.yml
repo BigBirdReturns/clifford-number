@@ -1,0 +1,31 @@
+name: Preference custody source-population-rule assurance control
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/source-population-rule-assurance.fixture.json'
+      - 'tools/lib/preference-source-population-rule-assurance.mjs'
+      - 'tools/compile-preference-source-population-rule-assurance.mjs'
+      - 'tools/validate-preference-source-population-rule-assurance.mjs'
+      - 'test/preference-source-population-rule-assurance.test.js'
+      - 'docs/preference-custody-source-population-rule-assurance.md'
+      - '.github/workflows/preference-source-population-rule-assurance.yml'
+  workflow_dispatch:
+permissions: { contents: read }
+jobs:
+  source-population-rule-assurance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: node tools/compile-preference-source-population-rule-assurance.mjs
+      - run: node tools/validate-preference-source-population-rule-assurance.mjs
+      - run: node test/preference-source-population-rule-assurance.test.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preference-source-population-rule-assurance-pc34
+          path: |
+            build/research/preference-source-population-rule-assurance.json
+            build/research/preference-source-population-rule-assurance.md
+          if-no-files-found: error
