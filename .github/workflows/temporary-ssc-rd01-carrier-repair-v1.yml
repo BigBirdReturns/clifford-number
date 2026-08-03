@@ -83,27 +83,24 @@ jobs:
           start = text.index(start_marker)
           end = text.index(end_marker, start)
           hashes = [os.environ[f'SHA0{i}'] for i in range(5)]
-          hash_lines = '\n'.join(f'            {value}' for value in hashes)
+          paths = [
+              f'controller/.github/tmp/ssc-rd01-permanent-package-v1.part-0{i}.b64'
+              for i in range(5)
+          ]
+          sizes = [4096, 4096, 4096, 4096, 1012]
+          checks = []
+          for path, digest, size in zip(paths, hashes, sizes):
+              checks.extend([
+                  f"          test \"$(wc -c < '{path}' | tr -d ' ')\" = '{size}'",
+                  f"          echo '{digest}  {path}' | sha256sum --check --strict",
+                  f"          cat '{path}' >> /tmp/rd01-permanent-package.b64",
+              ])
+          checks_text = '\n'.join(checks)
           block = f'''      - name: Reconstruct exact permanent package
         run: |
           set -Eeuo pipefail
-          parts=(
-            controller/.github/tmp/ssc-rd01-permanent-package-v1.part-00.b64
-            controller/.github/tmp/ssc-rd01-permanent-package-v1.part-01.b64
-            controller/.github/tmp/ssc-rd01-permanent-package-v1.part-02.b64
-            controller/.github/tmp/ssc-rd01-permanent-package-v1.part-03.b64
-            controller/.github/tmp/ssc-rd01-permanent-package-v1.part-04.b64
-          )
-          hashes=(
-{hash_lines}
-          )
-          sizes=(4096 4096 4096 4096 1012)
           : > /tmp/rd01-permanent-package.b64
-          for i in "${{!parts[@]}}"; do
-            test "$(wc -c < "${{parts[$i]}}" | tr -d ' ')" = "${{sizes[$i]}}"
-            echo "${{hashes[$i]}}  ${{parts[$i]}}" | sha256sum --check --strict
-            cat "${{parts[$i]}}" >> /tmp/rd01-permanent-package.b64
-          done
+{checks_text}
           test "$(wc -c < /tmp/rd01-permanent-package.b64 | tr -d ' ')" = '17396'
           echo "$PACKAGE_B64_SHA256  /tmp/rd01-permanent-package.b64" | sha256sum --check --strict
           base64 --decode /tmp/rd01-permanent-package.b64 > /tmp/rd01-permanent-package.tar.gz
