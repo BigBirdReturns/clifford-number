@@ -25,12 +25,12 @@ jobs:
       - name: Execute fixed identifier-bearing route probe
         run: |
           set -Eeuo pipefail
-          test "$(git hash-object .github/tmp/ssc-rd01-recipient-id-probe-v1.mjs)" = '9405f2ba2c1858b1aec059b0e8989d0981d04e90'
+          test "$(git hash-object .github/tmp/ssc-rd01-recipient-id-probe-v1.mjs)" = 'd5206a0b7ca75f7c51d6fe39db1c0541f10ec901'
           node .github/tmp/ssc-rd01-recipient-id-probe-v1.mjs
           jq -e '
             .routes == 5 and
-            .http_successes == 5 and
             .parsed_json_responses == 5 and
+            .distinct_validation_payloads == 1 and
             .external_contacts == 0 and
             .external_reviews == 0 and
             .outside_human_dependency == false and
