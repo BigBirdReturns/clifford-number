@@ -1,0 +1,165 @@
+name: TEMP materialize SSC RD-04-C01 permanent closure product
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd-wave02-rd04-permanent-materializer.yml'
+      - '.rd04-permanent-materializer/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd04-permanent-materializer-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd04-wave02-permanent-materializer-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct and verify exact permanent package
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/rd04-materialization
+          cat .rd04-permanent-materializer/package.part.* | tr -d '\n' > /tmp/rd04-materialization/package.b64
+          echo '73f5727a7216277a1b4ece8b3ed741a4d5f69fe8566ddee55e934f9f320d0701  /tmp/rd04-materialization/package.b64' | sha256sum --check --strict
+          base64 --decode /tmp/rd04-materialization/package.b64 > /tmp/rd04-materialization/package.tgz
+          echo '164443cbaedf75b72826b4ca3a963dfd57d64b320b5c51d9464ec2d13a8dd6ca  /tmp/rd04-materialization/package.tgz' | sha256sum --check --strict
+          python - <<'PY'
+          import pathlib, tarfile
+          archive = pathlib.Path('/tmp/rd04-materialization/package.tgz')
+          with tarfile.open(archive, 'r:gz') as tf:
+              members = [m for m in tf.getmembers() if m.isfile()]
+              if len(members) != 17:
+                  raise SystemExit(f'permanent package file count changed: {len(members)}')
+              for member in members:
+                  p = pathlib.PurePosixPath(member.name)
+                  if p.is_absolute() or '..' in p.parts:
+                      raise SystemExit(f'unsafe archive path: {member.name}')
+          print('permanent package: 17 safe files')
+          PY
+
+      - name: Materialize exact current-main product with evidence ancestry
+        id: materialize
+        env:
+          EVIDENCE: 0cedf1b5163c1aec71b3e4f08e000467b3810fe9
+          CANONICAL_BRANCH: agent/ssc-rd-wave02-rd04-version-history
+        run: |
+          set -Eeuo pipefail
+          git fetch --force origin \
+            'refs/heads/main:refs/remotes/origin/main' \
+            "refs/heads/${CANONICAL_BRANCH}:refs/remotes/origin/${CANONICAL_BRANCH}"
+          MAIN="$(git rev-parse refs/remotes/origin/main)"
+          OBSERVED_EVIDENCE="$(git rev-parse refs/remotes/origin/${CANONICAL_BRANCH})"
+          test "$OBSERVED_EVIDENCE" = "$EVIDENCE"
+
+          git reset --hard "$MAIN"
+          git clean -fdx
+          tar -xzf /tmp/rd04-materialization/package.tgz -C "$GITHUB_WORKSPACE"
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { execFileSync } from 'node:child_process';
+
+          const evidence = process.env.EVIDENCE;
+          const indexPath = 'data/intake/status-sovereignty-rd-wave02-rd04-version-history/provenance-index.json';
+          const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
+          const rows = [...index.receipts, index.seed];
+          if (rows.length !== 19) throw new Error(`custody path count changed: ${rows.length}`);
+
+          for (const row of rows) {
+            const bytes = execFileSync('git', ['show', `${evidence}:${row.path}`], { encoding: null });
+            fs.mkdirSync(path.dirname(row.path), { recursive: true });
+            fs.writeFileSync(row.path, bytes);
+            const observed = execFileSync('git', ['hash-object', row.path], { encoding: 'utf8' }).trim();
+            if (observed !== row.git_blob_sha) {
+              throw new Error(`${row.path}: expected blob ${row.git_blob_sha}, observed ${observed}`);
+            }
+          }
+          console.log('immutable evidence custody: 19/19 exact Git blobs restored');
+          NODE
+
+          node tools/build-status-sovereignty-rd-wave02-rd04-version-history.mjs
+
+          tar -tzf /tmp/rd04-materialization/package.tgz | grep -v '/$' | sort > /tmp/rd04-materialization/package-paths.txt
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const index = JSON.parse(fs.readFileSync('data/intake/status-sovereignty-rd-wave02-rd04-version-history/provenance-index.json', 'utf8'));
+          const paths = [...index.receipts.map((row) => row.path), index.seed.path].sort();
+          fs.writeFileSync('/tmp/rd04-materialization/custody-paths.txt', `${paths.join('\n')}\n`);
+          NODE
+          cat /tmp/rd04-materialization/package-paths.txt /tmp/rd04-materialization/custody-paths.txt | sort -u > /tmp/rd04-materialization/permanent-paths.txt
+          test "$(wc -l < /tmp/rd04-materialization/permanent-paths.txt)" -eq 36
+
+          while IFS= read -r permanent_path; do
+            test -f "$permanent_path"
+            git add -- "$permanent_path"
+          done < /tmp/rd04-materialization/permanent-paths.txt
+
+          git diff --cached --name-only "$MAIN" | sort > /tmp/rd04-materialization/changed-paths.txt
+          diff -u /tmp/rd04-materialization/permanent-paths.txt /tmp/rd04-materialization/changed-paths.txt
+          test "$(wc -l < /tmp/rd04-materialization/changed-paths.txt)" -eq 36
+          if grep -Eq '(^|/)(\.rd04-|temporary-ssc-rd-wave02-rd04|tools/acquisition/status-sovereignty-rd-wave02-rd04|test/status-sovereignty-rd-wave02-rd04-(authority|cross-reference|ecfr|source|supplemental|version-seed))' /tmp/rd04-materialization/changed-paths.txt; then
+            echo 'temporary or superseded transport path entered permanent product' >&2
+            exit 1
+          fi
+          git diff --cached --check
+
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/validate-status-sovereignty-residual-denominator-wave-01.mjs
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-constitution.mjs
+          node tools/validate-status-sovereignty-rd-wave02-rd04-version-history.mjs
+          node test/status-sovereignty-rd-wave02-rd04-version-history.test.js
+          npm run release:check
+          git diff --exit-code
+
+          git config user.name 'BigBirdReturns'
+          git config user.email '219768509+BigBirdReturns@users.noreply.github.com'
+          TREE="$(git write-tree)"
+          COMMIT="$(printf '%s\n' 'Materialize transport-free RD-04-C01 terminal chronology closure' | git commit-tree "$TREE" -p "$MAIN" -p "$EVIDENCE")"
+          git push --force-with-lease="refs/heads/${CANONICAL_BRANCH}:${EVIDENCE}" origin "$COMMIT:refs/heads/${CANONICAL_BRANCH}"
+
+          node --input-type=module <<NODE
+          import fs from 'node:fs';
+          const receipt = {
+            schema_version: 'ssc-rd-wave02-rd04-permanent-materialization-receipt@1',
+            main_parent: '$MAIN',
+            evidence_parent: '$EVIDENCE',
+            product_commit: '$COMMIT',
+            tree: '$TREE',
+            permanent_paths: 36,
+            temporary_paths: 0,
+            terminal_state: 'bounded_source_unavailable',
+            class_closed: 1,
+            residual_atlas_after_promotion: { open: 41, closed: 1 },
+            reviewed_disposition_changes: 0,
+            graph_effect: 'none',
+            publication_effect: 'none',
+            adoption_effect: 'none'
+          };
+          fs.writeFileSync('/tmp/rd04-materialization/receipt.json', `${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+          echo "commit=$COMMIT" >> "$GITHUB_OUTPUT"
+
+      - name: Upload permanent materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-permanent-materialization
+          path: |
+            /tmp/rd04-materialization/receipt.json
+            /tmp/rd04-materialization/permanent-paths.txt
+            /tmp/rd04-materialization/changed-paths.txt
+          if-no-files-found: error
+          retention-days: 90
