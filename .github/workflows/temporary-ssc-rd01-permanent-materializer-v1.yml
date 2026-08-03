@@ -9,285 +9,126 @@ on:
       - '.github/tmp/ssc-rd01-permanent-materializer-v1.trigger'
 
 permissions:
-  actions: read
   contents: write
 
 concurrency:
   group: ssc-rd01-permanent-materializer-v1
   cancel-in-progress: false
 
-env:
-  EXPECTED_RESEARCH: 72e657baa024e0e90cca5bfc532f8350fe6bca60
-  TARGET_BRANCH: agent/ssc-rd-wave02-rd01-legal-entity
-  PACKAGE_TGZ_SHA256: 7affdafb780f90fab813b93480f346ecd65391d560eaad94499346b9769e004c
-  PRODUCT_MANIFEST_SHA256: 7d5cc33a8fb8fc759dd2794076ffcd7ca4e1ad9c463f49593459edfca793a798
-  STAGE1_ARTIFACT_ID: '8866039696'
-  STAGE1_ZIP_SHA256: ac81681b0f080715326bf7b4d8bc8225e7f69d52c0b2b4e73b9f57dc90c335aa
-  BASE_ARTIFACT_ID: '8866950187'
-  BASE_ZIP_SHA256: e961aeed386e7ca1709369b096f39794003d88ec7bb03f0e34b68af690ffd09f
-  REPLAY_ARTIFACT_ID: '8867425854'
-  REPLAY_ZIP_SHA256: 6dc7ac0c52fe28b1e46debf746c60dbffa408550c2b688c2607c2be24c84cec8
-
 jobs:
-  materialize:
+  repair-carrier:
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 20
     steps:
-      - name: Checkout checksum-bound controller
+      - name: Checkout exact carrier base
         uses: actions/checkout@v4
         with:
-          path: controller
-          fetch-depth: 1
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-
-      - name: Checkout exact current main
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          path: work
+          ref: agent/ssc-rd01-permanent-materializer-base-v1
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Freeze live refs and create two-parent integration
+      - name: Recover final carrier part and restore patched materializer
+        env:
+          TARGET_BRANCH: agent/ssc-rd01-permanent-materializer-base-v1
+          ORIGINAL_WORKFLOW_COMMIT: 6805633f230b70780acaee1448813debc798ce09
+          PACKAGE_B64_SHA256: bd37425b3f936369196d10307bc32b33d9765e835738563c887082028d2c19bb
+          PACKAGE_TGZ_SHA256: 7affdafb780f90fab813b93480f346ecd65391d560eaad94499346b9769e004c
+          PART04_SHA256: 01d3b3555ae7165a5701e8cd857cef69e220ee45413a5ab972da0a6653a4e7e1
         run: |
           set -Eeuo pipefail
-          start_main="$(git -C work rev-parse HEAD)"
-          test "$(git -C work ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$start_main"
-          echo "START_MAIN=$start_main" >> "$GITHUB_ENV"
-          test "$(git -C work ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$EXPECTED_RESEARCH"
-          git -C work fetch --no-tags origin "$EXPECTED_RESEARCH"
-          git -C work cat-file -e "$EXPECTED_RESEARCH^{commit}"
-          git -C work config user.name github-actions[bot]
-          git -C work config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git -C work checkout -b rd01-permanent-materialization "$start_main"
-          git -C work merge --no-ff --no-edit "$EXPECTED_RESEARCH"
-          integration="$(git -C work rev-parse HEAD)"
-          read -r commit first second extra < <(git -C work rev-list --parents -n 1 HEAD)
-          test "$commit" = "$integration"
-          test "$first" = "$start_main"
-          test "$second" = "$EXPECTED_RESEARCH"
-          test -z "${extra:-}"
-          echo "INTEGRATION_COMMIT=$integration" >> "$GITHUB_ENV"
-          echo "INTEGRATION_TREE=$(git -C work show -s --format=%T HEAD)" >> "$GITHUB_ENV"
+          start="$(git rev-parse HEAD)"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$start"
 
-      - name: Reconstruct exact permanent package
+          full='.github/tmp/ssc-rd01-permanent-package-v1.tar.gz.b64'
+          prefix='.github/tmp/ssc-rd01-permanent-package-v1'
+          workflow='.github/workflows/temporary-ssc-rd01-permanent-materializer-v1.yml'
+          test -f "$full"
+          for part in 00 01 02 03; do test -f "$prefix.part-$part.b64"; done
+
+          tr -d '\r\n\t ' < "$full" > /tmp/rd01-full-normalized.b64
+          test "$(wc -c < /tmp/rd01-full-normalized.b64 | tr -d ' ')" = '17396'
+          tail -c 1012 /tmp/rd01-full-normalized.b64 > "$prefix.part-04.b64"
+          test "$(wc -c < "$prefix.part-04.b64" | tr -d ' ')" = '1012'
+          echo "$PART04_SHA256  $prefix.part-04.b64" | sha256sum --check --strict
+
+          cat "$prefix.part-00.b64" "$prefix.part-01.b64" "$prefix.part-02.b64" "$prefix.part-03.b64" "$prefix.part-04.b64" > /tmp/rd01-reassembled.b64
+          test "$(wc -c < /tmp/rd01-reassembled.b64 | tr -d ' ')" = '17396'
+          echo "$PACKAGE_B64_SHA256  /tmp/rd01-reassembled.b64" | sha256sum --check --strict
+          base64 --decode /tmp/rd01-reassembled.b64 > /tmp/rd01-permanent-package.tar.gz
+          echo "$PACKAGE_TGZ_SHA256  /tmp/rd01-permanent-package.tar.gz" | sha256sum --check --strict
+          tar -tzf /tmp/rd01-permanent-package.tar.gz > /tmp/rd01-package-members.txt
+          test "$(wc -l < /tmp/rd01-package-members.txt | tr -d ' ')" = '6'
+
+          export SHA00="$(sha256sum "$prefix.part-00.b64" | awk '{print $1}')"
+          export SHA01="$(sha256sum "$prefix.part-01.b64" | awk '{print $1}')"
+          export SHA02="$(sha256sum "$prefix.part-02.b64" | awk '{print $1}')"
+          export SHA03="$(sha256sum "$prefix.part-03.b64" | awk '{print $1}')"
+          export SHA04="$(sha256sum "$prefix.part-04.b64" | awk '{print $1}')"
+
+          git show "$ORIGINAL_WORKFLOW_COMMIT:$workflow" > /tmp/rd01-original-materializer.yml
+          cp /tmp/rd01-original-materializer.yml "$workflow"
+
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/temporary-ssc-rd01-permanent-materializer-v1.yml')
+          text = workflow.read_text()
+          if '  PACKAGE_B64_SHA256:' not in text:
+              text = text.replace(
+                  '  PACKAGE_TGZ_SHA256: 7affdafb780f90fab813b93480f346ecd65391d560eaad94499346b9769e004c\n',
+                  '  PACKAGE_B64_SHA256: bd37425b3f936369196d10307bc32b33d9765e835738563c887082028d2c19bb\n'
+                  '  PACKAGE_TGZ_SHA256: 7affdafb780f90fab813b93480f346ecd65391d560eaad94499346b9769e004c\n'
+              )
+
+          start_marker = '      - name: Reconstruct exact permanent package\n'
+          end_marker = '      - name: Recover three exact source artifacts into permanent custody\n'
+          start = text.index(start_marker)
+          end = text.index(end_marker, start)
+          hashes = [os.environ[f'SHA0{i}'] for i in range(5)]
+          paths = [
+              f'controller/.github/tmp/ssc-rd01-permanent-package-v1.part-0{i}.b64'
+              for i in range(5)
+          ]
+          sizes = [4096, 4096, 4096, 4096, 1012]
+          checks = []
+          for path, digest, size in zip(paths, hashes, sizes):
+              checks.extend([
+                  f"          test \"$(wc -c < '{path}' | tr -d ' ')\" = '{size}'",
+                  f"          echo '{digest}  {path}' | sha256sum --check --strict",
+                  f"          cat '{path}' >> /tmp/rd01-permanent-package.b64",
+              ])
+          checks_text = '\n'.join(checks)
+          block = f'''      - name: Reconstruct exact permanent package
         run: |
           set -Eeuo pipefail
-          carrier='controller/.github/tmp/ssc-rd01-permanent-package-v1.tar.gz.b64'
-          tr -d '\r\n\t ' < "$carrier" > /tmp/rd01-permanent-package.b64
+          : > /tmp/rd01-permanent-package.b64
+{checks_text}
+          test "$(wc -c < /tmp/rd01-permanent-package.b64 | tr -d ' ')" = '17396'
+          echo "$PACKAGE_B64_SHA256  /tmp/rd01-permanent-package.b64" | sha256sum --check --strict
           base64 --decode /tmp/rd01-permanent-package.b64 > /tmp/rd01-permanent-package.tar.gz
           echo "$PACKAGE_TGZ_SHA256  /tmp/rd01-permanent-package.tar.gz" | sha256sum --check --strict
           tar -xzf /tmp/rd01-permanent-package.tar.gz -C work
-          test "$(find work/.github/workflows work/docs/milestones work/schemas work/test work/tools -type f \
-            \( -name 'status-sovereignty-rd01-wave02-terminal-closure.yml' \
-            -o -name 'ssc-rd-wave02-rd01-legal-entity.md' \
-            -o -name 'status-sovereignty-rd-wave02-rd01-legal-entity.schema.json' \
-            -o -name 'status-sovereignty-rd-wave02-rd01-legal-entity.test.js' \
-            -o -name 'build-status-sovereignty-rd-wave02-rd01-legal-entity.mjs' \
-            -o -name 'validate-status-sovereignty-rd-wave02-rd01-legal-entity.mjs' \) | wc -l | tr -d ' ')" = '6'
+          test "$(find work/.github/workflows work/docs/milestones work/schemas work/test work/tools -type f \\
+            \\( -name 'status-sovereignty-rd01-wave02-terminal-closure.yml' \\
+            -o -name 'ssc-rd-wave02-rd01-legal-entity.md' \\
+            -o -name 'status-sovereignty-rd-wave02-rd01-legal-entity.schema.json' \\
+            -o -name 'status-sovereignty-rd-wave02-rd01-legal-entity.test.js' \\
+            -o -name 'build-status-sovereignty-rd-wave02-rd01-legal-entity.mjs' \\
+            -o -name 'validate-status-sovereignty-rd-wave02-rd01-legal-entity.mjs' \\) | wc -l | tr -d ' ')" = '6'
 
-      - name: Recover three exact source artifacts into permanent custody
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -Eeuo pipefail
-          source_root='work/data/intake/status-sovereignty-rd-wave02-rd01-legal-entity/source-custody/legal-entity-protocol-v1'
-          mkdir -p "$source_root"
-          download() {
-            id="$1"
-            sha="$2"
-            destination="$3"
-            curl --fail --location --retry 4 --retry-all-errors \
-              -H "Authorization: Bearer $GH_TOKEN" \
-              -H 'Accept: application/vnd.github+json' \
-              -H 'X-GitHub-Api-Version: 2022-11-28' \
-              "https://api.github.com/repos/BigBirdReturns/clifford-number/actions/artifacts/$id/zip" \
-              --output "$destination"
-            echo "$sha  $destination" | sha256sum --check --strict
-          }
-          download "$STAGE1_ARTIFACT_ID" "$STAGE1_ZIP_SHA256" "$source_root/stage1-candidate-census-v1.zip"
-          download "$BASE_ARTIFACT_ID" "$BASE_ZIP_SHA256" "$source_root/terminal-census-v1.zip"
-          download "$REPLAY_ARTIFACT_ID" "$REPLAY_ZIP_SHA256" "$source_root/failed-route-replay-v1.zip"
+'''
+          workflow.write_text(text[:start] + block + text[end:])
+          PY
 
-      - name: Build, validate, and stage exact permanent increment
-        run: |
-          set -Eeuo pipefail
-          cd work
-          node tools/validate-no-magic-human-gate.mjs
-          node tools/build-status-sovereignty-rd-wave02-rd01-legal-entity.mjs
-          node tools/validate-status-sovereignty-rd-wave02-rd01-legal-entity.mjs
-          node test/status-sovereignty-rd-wave02-rd01-legal-entity.test.js
-          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
-          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
-          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
-          test "$(jq -r '.combined_sha256' data/research/status-sovereignty-rd-wave02-rd01-legal-entity/manifest.json)" = "$PRODUCT_MANIFEST_SHA256"
-
-          cat > /tmp/rd01-permanent-paths.txt <<'PATHS'
-          .github/workflows/status-sovereignty-rd01-wave02-terminal-closure.yml
-          data/intake/status-sovereignty-rd-wave02-rd01-legal-entity/source-custody/legal-entity-protocol-v1/artifact-index.json
-          data/intake/status-sovereignty-rd-wave02-rd01-legal-entity/source-custody/legal-entity-protocol-v1/failed-route-replay-v1.zip
-          data/intake/status-sovereignty-rd-wave02-rd01-legal-entity/source-custody/legal-entity-protocol-v1/stage1-candidate-census-v1.zip
-          data/intake/status-sovereignty-rd-wave02-rd01-legal-entity/source-custody/legal-entity-protocol-v1/terminal-census-v1.zip
-          data/project/ssc-residual-wave02/closures/RD-01-C03.json
-          data/research/status-sovereignty-rd-wave02-rd01-legal-entity/candidate-index.json
-          data/research/status-sovereignty-rd-wave02-rd01-legal-entity/class-receipt.json
-          data/research/status-sovereignty-rd-wave02-rd01-legal-entity/comparison.json
-          data/research/status-sovereignty-rd-wave02-rd01-legal-entity/failed-route-universe.json
-          data/research/status-sovereignty-rd-wave02-rd01-legal-entity/final-route-state-index.json
-          data/research/status-sovereignty-rd-wave02-rd01-legal-entity/manifest.json
-          data/research/status-sovereignty-rd-wave02-rd01-legal-entity/protocol.json
-          data/research/status-sovereignty-rd-wave02-rd01-legal-entity/summary.json
-          data/research/status-sovereignty-rd-wave02-rd01-legal-entity/terminal-classification.json
-          docs/milestones/ssc-rd-wave02-rd01-legal-entity.md
-          schemas/status-sovereignty-rd-wave02-rd01-legal-entity.schema.json
-          test/status-sovereignty-rd-wave02-rd01-legal-entity.test.js
-          tools/build-status-sovereignty-rd-wave02-rd01-legal-entity.mjs
-          tools/validate-status-sovereignty-rd-wave02-rd01-legal-entity.mjs
-          PATHS
-          sed -i 's/^          //' /tmp/rd01-permanent-paths.txt
-          test "$(wc -l < /tmp/rd01-permanent-paths.txt | tr -d ' ')" = '20'
-          while IFS= read -r path; do test -f "$path"; done < /tmp/rd01-permanent-paths.txt
-
-          git add --pathspec-from-file=/tmp/rd01-permanent-paths.txt
-          git diff --cached --name-only | sort > /tmp/rd01-staged-paths.txt
-          sort /tmp/rd01-permanent-paths.txt > /tmp/rd01-expected-paths.txt
-          cmp /tmp/rd01-expected-paths.txt /tmp/rd01-staged-paths.txt
-          test -z "$(git status --porcelain=v1 --untracked-files=all | grep '^?? ' | sed 's/^?? //' | grep -v -F -f /tmp/rd01-expected-paths.txt || true)"
-
-          git commit -m 'Close RD-01 legal-entity resolution class'
+          grep -q 'part-04.b64' "$workflow"
+          grep -q "$PACKAGE_B64_SHA256" "$workflow"
+          git diff --check
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add "$prefix.part-04.b64" "$workflow"
+          git commit -m 'Repair exact RD-01 permanent carrier reassembly'
           product="$(git rev-parse HEAD)"
-          test "$(git rev-parse HEAD^)" = "$INTEGRATION_COMMIT"
-          git diff --name-only "$INTEGRATION_COMMIT" "$product" | sort > /tmp/rd01-product-paths.txt
-          cmp /tmp/rd01-expected-paths.txt /tmp/rd01-product-paths.txt
-          echo "PRODUCT_COMMIT=$product" >> "$GITHUB_ENV"
-          echo "PRODUCT_TREE=$(git show -s --format=%T HEAD)" >> "$GITHUB_ENV"
-
-      - name: Run complete repository qualification and prove volatility
-        run: |
-          set -Eeuo pipefail
-          cd work
-          npm run release:check
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs';
-          import { execFileSync } from 'node:child_process';
-          const jsonPaths = [
-            'build/axm-identity.json',
-            'build/build-hop-report.json',
-            'build/hop-graph.json',
-            'build/migration-summary.json',
-            'build/receipt-graph.json',
-            'build/scores.json',
-            'build/scout-report.json',
-            'build/surface-graph.json'
-          ];
-          const markdownPaths = ['build/migration-review.md','build/scout-report.md'];
-          const expected = [...jsonPaths, ...markdownPaths].sort();
-          const status = execFileSync('git', ['status','--porcelain=v1','--untracked-files=all'], { encoding: 'utf8' })
-            .split('\n').filter(Boolean);
-          const paths = status.map((line) => line.slice(3)).sort();
-          if (paths.length === 0) {
-            fs.writeFileSync('/tmp/rd01-volatile-count.txt', '0\n');
-            console.log('post-release volatility proof: PASS — no generated drift');
-          } else {
-            if (JSON.stringify(paths) !== JSON.stringify(expected)) throw new Error(`unexpected post-release paths: ${JSON.stringify(paths)}`);
-            const numstat = execFileSync('git', ['diff','--numstat','--',...expected], { encoding: 'utf8' }).trim().split('\n').filter(Boolean);
-            if (numstat.length !== expected.length) throw new Error('post-release numstat denominator');
-            for (const row of numstat) {
-              const [adds, deletes, path] = row.split('\t');
-              if (adds !== '1' || deletes !== '1' || !expected.includes(path)) throw new Error(`non-timestamp post-release diff: ${row}`);
-            }
-            for (const path of jsonPaths) {
-              const before = JSON.parse(execFileSync('git', ['show', `HEAD:${path}`], { encoding: 'utf8' }));
-              const after = JSON.parse(fs.readFileSync(path, 'utf8'));
-              if (typeof before.generated !== 'string' || typeof after.generated !== 'string') throw new Error(`missing generated timestamp: ${path}`);
-              delete before.generated;
-              delete after.generated;
-              if (JSON.stringify(before) !== JSON.stringify(after)) throw new Error(`semantic JSON drift: ${path}`);
-            }
-            for (const path of markdownPaths) {
-              const normalize = (text) => text.split('\n').map((line) => line.startsWith('Generated: ') ? 'Generated: <ISO>' : line);
-              const before = normalize(execFileSync('git', ['show', `HEAD:${path}`], { encoding: 'utf8' }));
-              const after = normalize(fs.readFileSync(path, 'utf8'));
-              if (JSON.stringify(before) !== JSON.stringify(after)) throw new Error(`semantic Markdown drift: ${path}`);
-            }
-            fs.writeFileSync('/tmp/rd01-volatile-count.txt', `${expected.length}\n`);
-            console.log('post-release volatility proof: PASS — 10/10 paths timestamp-only, semantic drift zero');
-          }
-          NODE
-          git restore --staged --worktree .
-          node tools/build-status-sovereignty-rd-wave02-rd01-legal-entity.mjs
-          node tools/validate-status-sovereignty-rd-wave02-rd01-legal-entity.mjs
-          node test/status-sovereignty-rd-wave02-rd01-legal-entity.test.js
-          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
-          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
-          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
-          node tools/validate-no-magic-human-gate.mjs
-          test "$(jq -r '.combined_sha256' data/research/status-sovereignty-rd-wave02-rd01-legal-entity/manifest.json)" = "$PRODUCT_MANIFEST_SHA256"
-          test -z "$(git status --porcelain=v1 --untracked-files=all)"
-
-      - name: Push only under unchanged main and research leases
-        run: |
-          set -Eeuo pipefail
-          test "$(git -C work ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$START_MAIN"
-          test "$(git -C work ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$EXPECTED_RESEARCH"
-          git -C work push origin "$PRODUCT_COMMIT:refs/heads/$TARGET_BRANCH" \
-            --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_RESEARCH"
-          test "$(git -C work ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$PRODUCT_COMMIT"
-
-      - name: Preserve exact materialization receipt
-        run: |
-          set -Eeuo pipefail
-          volatile="$(cat /tmp/rd01-volatile-count.txt)"
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs';
-          const work = 'work';
-          const receipt = JSON.parse(fs.readFileSync(`${work}/data/research/status-sovereignty-rd-wave02-rd01-legal-entity/class-receipt.json`, 'utf8'));
-          const closure = JSON.parse(fs.readFileSync(`${work}/data/project/ssc-residual-wave02/closures/RD-01-C03.json`, 'utf8'));
-          const materialization = {
-            schema_version: 'ssc-rd01-wave02-permanent-materialization@1',
-            live_main: process.env.START_MAIN,
-            research_parent: process.env.EXPECTED_RESEARCH,
-            integration_commit: process.env.INTEGRATION_COMMIT,
-            integration_tree: process.env.INTEGRATION_TREE,
-            product_commit: process.env.PRODUCT_COMMIT,
-            product_tree: process.env.PRODUCT_TREE,
-            target_branch: process.env.TARGET_BRANCH,
-            permanent_increment_paths: 20,
-            transport_paths_in_product: 0,
-            product_manifest_sha256: closure.product.manifest_combined_sha256,
-            terminal_state: receipt.terminal_state,
-            class_closed: receipt.class_closed,
-            frozen_rows: receipt.counts.frozen_rows,
-            terminal_rows: receipt.counts.terminal_rows,
-            final_http_success_routes: receipt.counts.final_http_success_routes,
-            legal_entities_resolved: receipt.counts.legal_entities_resolved,
-            identity_ambiguous: receipt.counts.identity_ambiguous,
-            identity_source_unavailable: receipt.counts.identity_source_unavailable,
-            changed_rows_after_replay: receipt.counts.changed_rows_after_replay,
-            focused_adversarial_mutations: 77,
-            release_gate: 'pass',
-            post_release_volatile_paths: Number(fs.readFileSync('/tmp/rd01-volatile-count.txt', 'utf8').trim()),
-            post_release_semantic_drift: 0,
-            deterministic_replay: 'pass',
-            unchanged_main_lease: true,
-            unchanged_research_lease: true,
-            outside_human_dependency: false,
-            external_contacts: 0,
-            external_reviews: 0,
-            publication_effect: 'none',
-            adoption_effect: 'none',
-            graph_effect: 'none'
-          };
-          fs.writeFileSync('ssc-rd01-wave02-permanent-materialization.json', JSON.stringify(materialization, null, 2) + '\n');
-          NODE
-          cat ssc-rd01-wave02-permanent-materialization.json
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ssc-rd01-wave02-permanent-materialization
-          path: ssc-rd01-wave02-permanent-materialization.json
-          if-no-files-found: error
-          retention-days: 90
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$start"
+          git push origin "$product:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$start"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$product"
