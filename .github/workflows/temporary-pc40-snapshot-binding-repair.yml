@@ -1,0 +1,122 @@
+name: TEMP repair PC-40 snapshot source binding
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.pc40-review/snapshot-binding.patch.b64'
+      - '.github/workflows/temporary-pc40-snapshot-binding-repair.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc40-snapshot-binding-repair
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc40-snapshot-binding-repair
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify checksum-bound patch and exact target lease
+        run: |
+          set -Eeuo pipefail
+          target_branch=research/preference-linkage-confidence-adjudication-assurance-v1
+          expected_target=af682044dd73e83d51c2161cf04eee071e649ec0
+          encoded=/tmp/pc40-snapshot-binding.patch.b64
+          patch=/tmp/pc40-snapshot-binding.patch
+          tr -d '[:space:]' < .pc40-review/snapshot-binding.patch.b64 > "$encoded"
+          test "$(stat -c '%s' "$encoded")" = 17272
+          test "$(sha256sum "$encoded" | cut -d' ' -f1)" = b8a391de4f047de95367a0ac963225c5db7b68076cc620efb9abd722144e880a
+          base64 --decode "$encoded" > "$patch"
+          test "$(stat -c '%s' "$patch")" = 12952
+          test "$(sha256sum "$patch" | cut -d' ' -f1)" = 26a87c75603f4d97fbf77c68a2fc35d7424180b201776c28210e3e18195250f8
+          git fetch origin "$target_branch"
+          observed_target="$(git rev-parse "origin/$target_branch")"
+          test "$observed_target" = "$expected_target"
+          git checkout -B pc40-snapshot-binding-repair "$observed_target"
+          git apply --check "$patch"
+          git apply "$patch"
+
+      - name: Verify exact three-file repair surface
+        run: |
+          set -Eeuo pipefail
+          cat > /tmp/expected-paths <<'EOF'
+          test/preference-custody-manifest-v38.test.js
+          tools/lib/preference-custody-manifest-v38.mjs
+          tools/validate-preference-custody-manifest-v38.mjs
+          EOF
+          git diff --name-only | LC_ALL=C sort > /tmp/actual-paths
+          diff -u /tmp/expected-paths /tmp/actual-paths
+          test "$(stat -c '%s' tools/lib/preference-custody-manifest-v38.mjs)" = 23690
+          test "$(sha256sum tools/lib/preference-custody-manifest-v38.mjs | cut -d' ' -f1)" = 5c1105908c89b799b6c54e65af1fbf18a60f236c1d94647ccd095a2a609c39ab
+          test "$(stat -c '%s' tools/validate-preference-custody-manifest-v38.mjs)" = 1405
+          test "$(sha256sum tools/validate-preference-custody-manifest-v38.mjs | cut -d' ' -f1)" = c137f5bce91ea145f0eb1da76ae37a76bae6e93753be7d1d2adcba8ccf2313ae
+          test "$(stat -c '%s' test/preference-custody-manifest-v38.test.js)" = 10175
+          test "$(sha256sum test/preference-custody-manifest-v38.test.js | cut -d' ' -f1)" = 9a6d8f57a59dd0264d6a02f5d31e1f3be93141d135112f6128f815cf3ec253d7
+
+      - name: Run focused source-binding and no-magic-human qualification
+        run: |
+          set -Eeuo pipefail
+          node tools/compile-preference-linkage-confidence-adjudication-assurance.mjs
+          node tools/validate-preference-linkage-confidence-adjudication-assurance.mjs
+          node test/preference-linkage-confidence-adjudication-assurance.test.js
+          node tools/compile-preference-custody-manifest-v38.mjs
+          node tools/validate-preference-custody-manifest-v38.mjs
+          node test/preference-custody-manifest-v38.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          git diff --name-only | LC_ALL=C sort > /tmp/actual-paths-after-tests
+          diff -u /tmp/expected-paths /tmp/actual-paths-after-tests
+
+      - name: Commit and publish under an unchanged-head lease
+        run: |
+          set -Eeuo pipefail
+          target_branch=research/preference-linkage-confidence-adjudication-assurance-v1
+          expected_target=af682044dd73e83d51c2161cf04eee071e649ec0
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            test/preference-custody-manifest-v38.test.js \
+            tools/lib/preference-custody-manifest-v38.mjs \
+            tools/validate-preference-custody-manifest-v38.mjs
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/staged-paths
+          diff -u /tmp/expected-paths /tmp/staged-paths
+          git commit -m 'Bind PC-40 floor snapshots to supplied source artifacts'
+          new_head="$(git rev-parse HEAD)"
+          git fetch origin "$target_branch"
+          observed_target="$(git rev-parse "origin/$target_branch")"
+          test "$observed_target" = "$expected_target"
+          git diff --name-only "$expected_target".."$new_head" | LC_ALL=C sort > /tmp/final-paths
+          diff -u /tmp/expected-paths /tmp/final-paths
+          git push origin "$new_head:refs/heads/$target_branch"
+          cat > /tmp/pc40-snapshot-binding-repair-receipt.json <<EOF
+          {
+            "schema_version": "pc40-snapshot-binding-repair-receipt@1",
+            "previous_head": "$expected_target",
+            "new_head": "$new_head",
+            "changed_paths": 3,
+            "patch_sha256": "26a87c75603f4d97fbf77c68a2fc35d7424180b201776c28210e3e18195250f8",
+            "base_snapshot_recomputed": true,
+            "extension_snapshot_recomputed": true,
+            "valid_alternate_source_substitutions_rejected": 2,
+            "outside_human_dependency": false,
+            "graph_effect": "none"
+          }
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc40-snapshot-binding-repair-${{ github.run_id }}
+          path: /tmp/pc40-snapshot-binding-repair-receipt.json
+          if-no-files-found: warn
+          retention-days: 30
