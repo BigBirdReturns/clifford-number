@@ -1,10 +1,9 @@
 name: TEMP RD-06 fourth-closure export control
 
 on:
-  push:
-    branches: [main]
+  pull_request:
     paths:
-      - '.github/workflows/temporary-ssc-rd06-fourth-closure-export-control.yml'
+      - '.rd06-fourth-closure-control/TRIGGER'
   workflow_dispatch:
 
 permissions:
