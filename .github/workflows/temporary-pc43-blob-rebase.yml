@@ -1,0 +1,193 @@
+name: TEMP materialize checksum-proven PC-43 review repair
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc43-blob-rebase.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc43-checksum-proven-review-rebase
+  cancel-in-progress: true
+
+jobs:
+  rebase:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      SOURCE_BRANCH: agent/pc43-review-repair
+      TARGET_BRANCH: research/preference-linkage-probability-calibration-assurance-v1
+      EXPECTED_TARGET_HEAD: 23c8ccc03bbfb72326186b8958e5ae402fb0ce50
+      QUALIFIED_PC42_ANCESTOR: 5782105034a6ef2dae9422e8b15eab2345b8980b
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc43-review-repair
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Materialize exact blobs, qualify, and publish under moving-main lease
+        run: |
+          set -Eeuo pipefail
+          status=failed
+          source_head="$(git rev-parse HEAD)"
+          publication_base=
+          product_commit=
+          product_tree=
+          attempt=0
+          published=false
+
+          paths=(
+            .github/workflows/preference-custody-v41.yml
+            .github/workflows/preference-linkage-probability-calibration-assurance.yml
+            data/research/preference-custody/control-manifest-v41.json
+            data/research/preference-custody/linkage-probability-calibration-assurance.fixture.json
+            docs/preference-custody-laboratory-floor-v41.md
+            docs/preference-custody-linkage-probability-calibration-assurance.md
+            test/preference-custody-manifest-v41.test.js
+            test/preference-linkage-probability-calibration-assurance.test.js
+            tools/compile-preference-custody-manifest-v41.mjs
+            tools/compile-preference-linkage-probability-calibration-assurance.mjs
+            tools/lib/preference-custody-manifest-v41.mjs
+            tools/lib/preference-linkage-probability-calibration-assurance.mjs
+            tools/validate-preference-custody-manifest-v41.mjs
+            tools/validate-preference-linkage-probability-calibration-assurance.mjs
+          )
+          printf '%s\n' "${paths[@]}" | LC_ALL=C sort > /tmp/pc43-paths.txt
+
+          emit_receipt() {
+            code=$?
+            trap - EXIT
+            path_digest="$(sha256sum /tmp/pc43-paths.txt | cut -d' ' -f1)"
+            overlap_json='[]'
+            if test -f /tmp/pc43-overlap.txt; then overlap_json="$(jq -Rsc 'split("\n") | map(select(length>0))' /tmp/pc43-overlap.txt)"; fi
+            jq -n \
+              --arg status "$status" \
+              --arg run_id "$GITHUB_RUN_ID" \
+              --arg source_head "$source_head" \
+              --arg pc42 "$QUALIFIED_PC42_ANCESTOR" \
+              --arg prior_target "$EXPECTED_TARGET_HEAD" \
+              --arg publication_parent "$publication_base" \
+              --arg product_head "$product_commit" \
+              --arg product_tree "$product_tree" \
+              --arg path_digest "$path_digest" \
+              --argjson attempt "$attempt" \
+              --argjson overlap "$overlap_json" \
+              --argjson published "$published" \
+              '{schema_version:"pc43-checksum-proven-review-rebase-receipt@1",status:$status,workflow_run_id:$run_id,source_head:$source_head,qualified_pc42_ancestor:$pc42,prior_target_head:$prior_target,publication_parent:($publication_parent|select(length>0)),product_head:($product_head|select(length>0)),product_tree:($product_tree|select(length>0)),attempt:$attempt,permanent_path_count:14,path_list_sha256:$path_digest,overlap_paths:$overlap,repair_blobs:{"test/preference-custody-manifest-v41.test.js":{bytes:11422,sha256:"f4471a5106af9f1a0e51ccecdbce31e911941663a13606d5f4cafc064cc1edc2",git_blob_sha1:"bec66fc525ed3200f816e0aeb141fbe1dac92f17"},"tools/lib/preference-custody-manifest-v41.mjs":{bytes:22289,sha256:"e8e7f491ccf1f91ea09cf6f771ce9e460b00d8fabb1ee55b01f206100847d3cf",git_blob_sha1:"f92894aca10e78f9dbff1c27c230e471480deaef"},"tools/lib/preference-linkage-probability-calibration-assurance.mjs":{bytes:55435,sha256:"2f77cfcc1e361772be925a3f7de30acfea1b12f5d5bde4543a4484a20d700feb",git_blob_sha1:"fb9c53af7128dc0d437dd309b2dde667ff7fc3e1"}},complete_manifest_snapshot_binding:true,exact_refusal_rule_ledger_binding:true,floor_v41_adversarial_mutations:47,focused_and_historical_gates:(if $published then "pass" else "not_proved" end),release_check:(if $published then "pass" else "not_proved" end),deterministic_replay:(if $published then "pass" else "not_proved" end),target_published:$published,outside_human_dependency:false,graph_effect:"none"}' \
+              > /tmp/pc43-checksum-proven-review-rebase-receipt.json
+            cat /tmp/pc43-checksum-proven-review-rebase-receipt.json
+            exit "$code"
+          }
+          trap emit_receipt EXIT
+
+          fetch_blob() {
+            path="$1"; blob="$2"; bytes="$3"; digest="$4"
+            mkdir -p "$(dirname "$path")"
+            curl -fsSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/blobs/$blob" \
+              | jq -r '.content' | tr -d '\n' | base64 --decode > "$path"
+            test "$(stat -c '%s' "$path")" = "$bytes"
+            test "$(sha256sum "$path" | cut -d' ' -f1)" = "$digest"
+            test "$(git hash-object "$path")" = "$blob"
+          }
+
+          for attempt in 1 2 3 4; do
+            git fetch origin main "$SOURCE_BRANCH" "$TARGET_BRANCH" --no-tags
+            test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$source_head"
+            test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_TARGET_HEAD"
+            publication_base="$(git rev-parse origin/main)"
+            git merge-base --is-ancestor "$QUALIFIED_PC42_ANCESTOR" "$publication_base"
+
+            git reset --hard "$EXPECTED_TARGET_HEAD"
+            git clean -fdx
+            fetch_blob test/preference-custody-manifest-v41.test.js bec66fc525ed3200f816e0aeb141fbe1dac92f17 11422 f4471a5106af9f1a0e51ccecdbce31e911941663a13606d5f4cafc064cc1edc2
+            fetch_blob tools/lib/preference-custody-manifest-v41.mjs f92894aca10e78f9dbff1c27c230e471480deaef 22289 e8e7f491ccf1f91ea09cf6f771ce9e460b00d8fabb1ee55b01f206100847d3cf
+            fetch_blob tools/lib/preference-linkage-probability-calibration-assurance.mjs fb9c53af7128dc0d437dd309b2dde667ff7fc3e1 55435 2f77cfcc1e361772be925a3f7de30acfea1b12f5d5bde4543a4484a20d700feb
+
+            printf '%s\n' \
+              test/preference-custody-manifest-v41.test.js \
+              tools/lib/preference-custody-manifest-v41.mjs \
+              tools/lib/preference-linkage-probability-calibration-assurance.mjs \
+              | LC_ALL=C sort > /tmp/pc43-repair-paths.expected
+            git diff --name-only | LC_ALL=C sort > /tmp/pc43-repair-paths.observed
+            diff -u /tmp/pc43-repair-paths.expected /tmp/pc43-repair-paths.observed
+
+            git diff --name-only "$QUALIFIED_PC42_ANCESTOR..$publication_base" | LC_ALL=C sort -u > /tmp/pc43-main-advance.txt
+            comm -12 /tmp/pc43-paths.txt /tmp/pc43-main-advance.txt > /tmp/pc43-overlap.txt
+            test ! -s /tmp/pc43-overlap.txt
+
+            export GIT_INDEX_FILE="/tmp/pc43-index-$attempt"
+            rm -f "$GIT_INDEX_FILE"
+            git read-tree "$publication_base"
+            git add -- "${paths[@]}"
+            product_tree="$(git write-tree)"
+            export GIT_AUTHOR_NAME='github-actions[bot]'
+            export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+            export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+            export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+            product_commit="$(printf '%s\n' 'Preference Custody: bind PC-43 complete manifest and exact refusal ledger' | git commit-tree "$product_tree" -p "$publication_base")"
+            unset GIT_INDEX_FILE
+
+            mapfile -t observed < <(git diff-tree --no-commit-id --name-only -r "$product_commit" | LC_ALL=C sort)
+            mapfile -t expected < <(printf '%s\n' "${paths[@]}" | LC_ALL=C sort)
+            test "$(printf '%s\n' "${observed[@]}")" = "$(printf '%s\n' "${expected[@]}")"
+            test "${#observed[@]}" -eq 14
+            test "$(git rev-parse "$product_commit^")" = "$publication_base"
+
+            git reset --hard "$product_commit"
+            node tools/compile-preference-linkage-probability-calibration-assurance.mjs
+            node tools/validate-preference-linkage-probability-calibration-assurance.mjs
+            node test/preference-linkage-probability-calibration-assurance.test.js
+            node tools/compile-preference-custody-manifest-v41.mjs
+            node tools/validate-preference-custody-manifest-v41.mjs
+            node test/preference-custody-manifest-v41.test.js
+            for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do node "$test_file"; done
+            node test/preference-custody-manifest.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+            npm run release:check
+            git diff --exit-code -- "${paths[@]}"
+
+            git reset --hard "$product_commit"
+            git clean -fdx
+            node tools/compile-preference-linkage-probability-calibration-assurance.mjs
+            node tools/validate-preference-linkage-probability-calibration-assurance.mjs
+            node test/preference-linkage-probability-calibration-assurance.test.js
+            node tools/compile-preference-custody-manifest-v41.mjs
+            node tools/validate-preference-custody-manifest-v41.mjs
+            node test/preference-custody-manifest-v41.test.js
+            git reset --hard "$product_commit"
+            git clean -fdx
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+            git fetch origin main "$SOURCE_BRANCH" "$TARGET_BRANCH" --no-tags
+            test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$source_head"
+            test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_TARGET_HEAD"
+            if test "$(git rev-parse origin/main)" != "$publication_base"; then
+              continue
+            fi
+
+            git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET_HEAD" origin "$product_commit:refs/heads/$TARGET_BRANCH"
+            published=true
+            status=success
+            break
+          done
+
+          test "$published" = true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc43-checksum-proven-review-rebase-${{ github.run_id }}
+          path: /tmp/pc43-checksum-proven-review-rebase-receipt.json
+          if-no-files-found: error
+          retention-days: 90
