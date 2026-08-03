@@ -1,0 +1,91 @@
+name: TEMP export bounded historical Git objects for PC-38
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc38-historical-object-pack.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Acquire and pack exact Stable Ground historical commits
+        run: |
+          set -Eeuo pipefail
+          out=/tmp/pc38-historical-objects
+          mkdir -p "$out/objects/pack"
+          cat > /tmp/pc38-required-commits <<'COMMITS'
+          04649fafcc517c0d7eef6279818dd309366eb49b
+          0d0999b89196294ec6d8058b7f18e44360d2b6e6
+          0d701692fa83a405bd0ba86e7b45c525022589f7
+          17775a008efbe33c57a59af489db691716e9bae1
+          2a441e71921b81c997c350683f3c7f6c032ef0fd
+          2ba0637d9d97c239e02b4a1a42d8098d4f2c3e1d
+          4a921326d99e248fb7dc3f1883e4460b8c6ce0e0
+          4c8ec34686d7005b06a94dc75bb8828610be60a1
+          52a363704857a2da5035c24898f9dfdc38b56754
+          6b54d531885b5de72be547933ad4f7828a34d529
+          8615cb335d4b4ea6651f3ea381793f011da7d081
+          8c5e592034effe30d644319e085f97e045060269
+          8ccbff46d2ee83a3d0f1d39b91b38765f7a3f3c1
+          9370b4d27c756ec7b11d5f88d92eecf3a1ffe13f
+          974b7a70cdc46828805f38bb4abe46aacd94380c
+          a228e24a6d45516cb507919e5b8999a62e4bc702
+          a9cb4c707a1cc6afb51d0fd20b0375e0cf2373b7
+          af26b797ded7e11fc102f0935f71a9282e976090
+          b305eb935864b8adef320e8db5ff471d2a778403
+          b30edd96c2b93b6700b99f219420204b148230fa
+          b3a34a66d37a93b907361b1e9a73dd7bda8d2fa1
+          b952da00932012be409c63554d6c81f8367723cb
+          c7507a8705b086371a79bb52e92b344be17685e0
+          c810cc741b23062b7eb3d026a46404e138e93eda
+          c8415a769d03add67a92a3019794268bf5d1cb84
+          cada5ce40087305196a53a9ecc32a707cff28e52
+          d0cb21a537dd20cbd1d14693f8f3ea26cbca4293
+          dd4dc58fc594418d8bd588332c9874fde4f14d36
+          e8fa1b4d188d128e856fb9900b0a4da8053042a5
+          e9b85b31281db02ce3f9a9a84dd7aea34b714849
+          f167fbebec2d129fd9034eee177f984574094f07
+          f3fb90778ce12e262cd24824c385594d7c7daec2
+          fdc13faf46e9a4ea273d7dce3d656b8e36d21844
+          COMMITS
+          sed -i 's/^          //' /tmp/pc38-required-commits
+          sort -u -o /tmp/pc38-required-commits /tmp/pc38-required-commits
+          : > "$out/acquired-commits.txt"
+          : > "$out/unavailable-objects.txt"
+          while IFS= read -r sha; do
+            if ! git cat-file -e "$sha^{commit}" 2>/dev/null; then
+              git fetch --no-tags --depth=128 origin "$sha" || true
+            fi
+            if git cat-file -e "$sha^{commit}" 2>/dev/null; then
+              git update-ref "refs/pc38/history/$sha" "$sha"
+              printf '%s\n' "$sha" >> "$out/acquired-commits.txt"
+            else
+              printf '%s\n' "$sha" >> "$out/unavailable-objects.txt"
+            fi
+          done < /tmp/pc38-required-commits
+          test ! -s "$out/unavailable-objects.txt"
+          test "$(wc -l < "$out/acquired-commits.txt" | tr -d ' ')" = 33
+          git repack -a -d
+          cp .git/objects/pack/* "$out/objects/pack/"
+          cp /tmp/pc38-required-commits "$out/required-commits.txt"
+          git rev-parse HEAD > "$out/main-head.sha"
+          sha256sum "$out"/objects/pack/* > "$out/pack-files.sha256"
+          stat -c '%s %n' "$out"/objects/pack/* > "$out/pack-files.bytes"
+          git fsck --full --no-reflogs --unreachable > "$out/fsck.txt" 2>&1 || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc38-stable-ground-historical-object-pack
+          path: /tmp/pc38-historical-objects
+          if-no-files-found: error
+          retention-days: 7
