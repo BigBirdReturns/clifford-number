@@ -17,7 +17,6 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  EXPECTED_MAIN: 66e1ff01a381e39858e3e55717d74d40a15ca984
   EXPECTED_RESEARCH: 72e657baa024e0e90cca5bfc532f8350fe6bca60
   TARGET_BRANCH: agent/ssc-rd-wave02-rd01-legal-entity
   PACKAGE_B64_SHA256: bd37425b3f936369196d10307bc32b33d9765e835738563c887082028d2c19bb
@@ -48,7 +47,7 @@ jobs:
       - name: Checkout exact current main
         uses: actions/checkout@v4
         with:
-          ref: 66e1ff01a381e39858e3e55717d74d40a15ca984
+          ref: main
           path: work
           fetch-depth: 0
           persist-credentials: true
@@ -56,19 +55,20 @@ jobs:
       - name: Freeze live refs and create two-parent integration
         run: |
           set -Eeuo pipefail
-          test "$(git -C work rev-parse HEAD)" = "$EXPECTED_MAIN"
-          test "$(git -C work ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$EXPECTED_MAIN"
+          start_main="$(git -C work rev-parse HEAD)"
+          test "$(git -C work ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$start_main"
+          echo "START_MAIN=$start_main" >> "$GITHUB_ENV"
           test "$(git -C work ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$EXPECTED_RESEARCH"
           git -C work fetch --no-tags origin "$EXPECTED_RESEARCH"
           git -C work cat-file -e "$EXPECTED_RESEARCH^{commit}"
           git -C work config user.name github-actions[bot]
           git -C work config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git -C work checkout -b rd01-permanent-materialization "$EXPECTED_MAIN"
+          git -C work checkout -b rd01-permanent-materialization "$start_main"
           git -C work merge --no-ff --no-edit "$EXPECTED_RESEARCH"
           integration="$(git -C work rev-parse HEAD)"
           read -r commit first second extra < <(git -C work rev-list --parents -n 1 HEAD)
           test "$commit" = "$integration"
-          test "$first" = "$EXPECTED_MAIN"
+          test "$first" = "$start_main"
           test "$second" = "$EXPECTED_RESEARCH"
           test -z "${extra:-}"
           echo "INTEGRATION_COMMIT=$integration" >> "$GITHUB_ENV"
@@ -232,7 +232,7 @@ jobs:
       - name: Push only under unchanged main and research leases
         run: |
           set -Eeuo pipefail
-          test "$(git -C work ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$EXPECTED_MAIN"
+          test "$(git -C work ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$START_MAIN"
           test "$(git -C work ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$EXPECTED_RESEARCH"
           git -C work push origin "$PRODUCT_COMMIT:refs/heads/$TARGET_BRANCH" \
             --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_RESEARCH"
@@ -241,6 +241,7 @@ jobs:
       - name: Preserve exact materialization receipt
         run: |
           set -Eeuo pipefail
+          volatile="$(cat /tmp/rd01-volatile-count.txt)"
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           const work = 'work';
@@ -248,7 +249,7 @@ jobs:
           const closure = JSON.parse(fs.readFileSync(`${work}/data/project/ssc-residual-wave02/closures/RD-01-C03.json`, 'utf8'));
           const materialization = {
             schema_version: 'ssc-rd01-wave02-permanent-materialization@1',
-            live_main: process.env.EXPECTED_MAIN,
+            live_main: process.env.START_MAIN,
             research_parent: process.env.EXPECTED_RESEARCH,
             integration_commit: process.env.INTEGRATION_COMMIT,
             integration_tree: process.env.INTEGRATION_TREE,
