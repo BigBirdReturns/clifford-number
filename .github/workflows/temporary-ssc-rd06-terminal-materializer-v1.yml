@@ -76,19 +76,43 @@ jobs:
 
           path = Path('/tmp/rd06-materialize.sh')
           text = path.read_text()
+
           repository_expression = '$' + '{{ github.repository }}'
           assert text.count(repository_expression) == 1, text.count(repository_expression)
           text = text.replace(repository_expression, 'BigBirdReturns/clifford-number')
+
+          workflow_path = '.github/workflows/status-sovereignty-rd-wave02-rd06-offeror-universe.yml'
+          stage_start = text.index('git add \\\n  "$CENSUS_DEST"')
+          stage_end = text.index('\ngit diff --cached --name-only', stage_start)
+          stage_block = text[stage_start:stage_end]
+          workflow_stage_line = f'  {workflow_path} \\\n'
+          assert stage_block.count(workflow_stage_line) == 1, stage_block
+          stage_block = stage_block.replace(workflow_stage_line, '')
+          text = text[:stage_start] + f'rm -f {workflow_path}\n' + stage_block + text[stage_end:]
+
+          count_342 = 'test "$(wc -l < /tmp/rd06-product-paths.txt | tr -d \' \')" = \'342\''
+          count_341 = 'test "$(wc -l < /tmp/rd06-product-paths.txt | tr -d \' \')" = \'341\''
+          assert text.count(count_342) == 1, text.count(count_342)
+          text = text.replace(count_342, count_341)
+
+          receipt_342 = '"permanent_paths": 342'
+          receipt_341 = '"permanent_paths": 341'
+          assert text.count(receipt_342) == 1, text.count(receipt_342)
+          text = text.replace(receipt_342, receipt_341)
+
           path.write_text(text)
           assert repository_expression not in path.read_text()
+          assert workflow_path not in path.read_text()[stage_start:stage_end]
           PY
           bash -n /tmp/rd06-materialize.sh
           bash -x /tmp/rd06-materialize.sh
 
-      - name: Preserve terminal materialization receipt
+      - name: Preserve terminal materialization receipt and exact permanent workflow source
         uses: actions/upload-artifact@v4
         with:
           name: ssc-rd06-wave02-terminal-materialization
-          path: /tmp/rd06-terminal-receipt
+          path: |
+            /tmp/rd06-terminal-receipt
+            /tmp/rd06-authored/.github/workflows/status-sovereignty-rd-wave02-rd06-offeror-universe.yml
           if-no-files-found: error
           retention-days: 90
