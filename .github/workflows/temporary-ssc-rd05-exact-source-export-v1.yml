@@ -1,0 +1,63 @@
+name: TEMP export exact SSC RD-05 object-universe source
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-exact-source-export-base-v1
+    paths:
+      - '.github/tmp/ssc-rd05-exact-source-export-v1.trigger'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 1dd7b50bd785289d17dacd64077bef1c2de90af4
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify and package exact RD-05 source surface
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = '1dd7b50bd785289d17dacd64077bef1c2de90af4'
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/acquisition/status-sovereignty-rd-wave02-rd05/build-official-object-universe.mjs
+          node tools/acquisition/status-sovereignty-rd-wave02-rd05/validate-official-object-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd05-official-object-universe.test.js
+          git diff --exit-code
+
+          root='rd05-exact-source'
+          mkdir -p "$root/data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition" \
+                   "$root/data/project/ssc-residual-wave02/seeds" \
+                   "$root/tools/acquisition/status-sovereignty-rd-wave02-rd05" \
+                   "$root/test"
+          cp data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/official-object-candidate-universe.json \
+             "$root/data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/"
+          cp -a data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/source-custody \
+             "$root/data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/"
+          cp data/project/ssc-residual-wave02/seeds/RD-05-C03.json "$root/data/project/ssc-residual-wave02/seeds/"
+          cp tools/acquisition/status-sovereignty-rd-wave02-rd05/build-official-object-universe.mjs \
+             tools/acquisition/status-sovereignty-rd-wave02-rd05/validate-official-object-universe.mjs \
+             "$root/tools/acquisition/status-sovereignty-rd-wave02-rd05/"
+          cp test/status-sovereignty-rd-wave02-rd05-official-object-universe.test.js "$root/test/"
+          find "$root" -type f -printf '%P\n' | sort > "$root/paths.txt"
+          while IFS= read -r target; do
+            bytes="$(stat -c '%s' "$root/$target")"
+            digest="$(sha256sum "$root/$target" | awk '{print $1}')"
+            printf '%s\0%s\0%s\n' "$target" "$bytes" "$digest"
+          done < "$root/paths.txt" > "$root/manifest.tsv"
+          sha256sum "$root/manifest.tsv" > "$root/manifest.sha256"
+          printf '%s\n' '1dd7b50bd785289d17dacd64077bef1c2de90af4' > "$root/head.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-exact-source-1dd7b
+          path: rd05-exact-source
+          if-no-files-found: error
+          retention-days: 30
