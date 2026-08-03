@@ -123,6 +123,8 @@ jobs:
           node tools/validate-status-sovereignty-rd-wave02-rd04-version-history.mjs
           node test/status-sovereignty-rd-wave02-rd04-version-history.test.js
           npm run release:check
+          git restore --worktree -- .
+          git clean -fdx
           git diff --exit-code
 
           git config user.name 'BigBirdReturns'
