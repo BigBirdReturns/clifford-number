@@ -1,0 +1,150 @@
+name: TEMP diagnose SSC RD-05 post-commit release boundary
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-postcommit-diagnostic-base-v2
+    paths:
+      - '.github/tmp/ssc-rd05-postcommit-diagnostic-v2.trigger'
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ssc-rd05-postcommit-diagnostic-v2
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd05-recommendation-disposition
+      EXPECTED_START_SHA: 2b3a73448759bac1210988a25e3d3b8c745a58b7
+      CAPTURE_RUN: '30767628840'
+      CAPTURE_MANIFEST_SHA256: adf851d4a570baaed0a4308c72552f9da8dfe5655c6517a9b613259e5274d76f
+      BUILDER_BLOB: 1ebe1dc4f0830c441f4196aea3275f43ae4bf6a4
+      VALIDATOR_BLOB: 644e626f2bf1c1d3763e9997ec6ef6fcb0508bb9
+      TEST_BLOB: 29917b837bcbc5ff8896a5ce85626fc79cd9e2c4
+      BUILDER_PATH: tools/acquisition/status-sovereignty-rd-wave02-rd05/build-official-object-universe.mjs
+      VALIDATOR_PATH: tools/acquisition/status-sovereignty-rd-wave02-rd05/validate-official-object-universe.mjs
+      TEST_PATH: test/status-sovereignty-rd-wave02-rd05-official-object-universe.test.js
+      SOURCE_ROOT: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/source-custody/initial-surface-capture
+      OUTPUT_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/official-object-candidate-universe.json
+      EXPECTED_OUTPUT_SHA256: 42a1ea373378f8061dd0877bf1951231fa94cf05a1a5db6308091f42ca2ff083
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd05-wave02-official-record-surface-capture
+          path: /tmp/rd05-capture
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: BigBirdReturns/clifford-number
+          run-id: 30767628840
+      - name: Execute checkpointed local-commit and release diagnostic
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p rd05-postcommit-diagnostic
+          exec > >(tee rd05-postcommit-diagnostic/trace.log) 2>&1
+          stage='initialize'
+          finish() {
+            rc="$?"
+            trap - EXIT
+            git status --porcelain=v1 --untracked-files=all > rd05-postcommit-diagnostic/git-status.txt || true
+            git diff --name-only > rd05-postcommit-diagnostic/worktree-diff-paths.txt || true
+            git diff --stat > rd05-postcommit-diagnostic/worktree-diff-stat.txt || true
+            git diff > rd05-postcommit-diagnostic/worktree.patch || true
+            git diff --cached --name-only > rd05-postcommit-diagnostic/index-diff-paths.txt || true
+            jq -n --arg stage "$stage" --argjson exit_code "$rc" \
+              --arg head "$(git rev-parse HEAD 2>/dev/null || true)" \
+              --arg status_lines "$(git status --porcelain=v1 --untracked-files=all 2>/dev/null | wc -l | tr -d ' ' || true)" \
+              --arg output_sha "$(sha256sum "$OUTPUT_PATH" 2>/dev/null | awk '{print $1}' || true)" \
+              '{schema_version:"ssc-rd05-postcommit-diagnostic@2",stage:$stage,observed_exit_code:$exit_code,local_head:$head,git_status_lines:($status_lines|tonumber? // -1),output_sha256:$output_sha,child_mutated:false}' \
+              > rd05-postcommit-diagnostic/diagnostic.json
+            exit 0
+          }
+          trap finish EXIT
+
+          stage='verify-child-and-capture'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_START_SHA"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_START_SHA"
+          node tools/validate-no-magic-human-gate.mjs
+          test "$(find /tmp/rd05-capture -type f | wc -l | tr -d ' ')" = 42
+          test "$(jq -r '.combined_sha256' /tmp/rd05-capture/manifest.json)" = "$CAPTURE_MANIFEST_SHA256"
+
+          stage='install-build-and-validate'
+          install_blob() {
+            local blob_sha="$1" target="$2"
+            mkdir -p "$(dirname "$target")"
+            curl --fail --silent --show-error \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/$blob_sha" \
+              | jq -r '.content' | tr -d '\n' | base64 --decode > "$target"
+            test "$(git hash-object "$target")" = "$blob_sha"
+          }
+          install_blob "$BUILDER_BLOB" "$BUILDER_PATH"
+          install_blob "$VALIDATOR_BLOB" "$VALIDATOR_PATH"
+          install_blob "$TEST_BLOB" "$TEST_PATH"
+          mkdir -p "$SOURCE_ROOT"
+          cp -a /tmp/rd05-capture/. "$SOURCE_ROOT/"
+          node "$BUILDER_PATH"
+          node "$VALIDATOR_PATH"
+          node "$TEST_PATH"
+          test "$(sha256sum "$OUTPUT_PATH" | awk '{print $1}')" = "$EXPECTED_OUTPUT_SHA256"
+
+          stage='stage-and-authored-lint'
+          {
+            printf '%s\n' "$BUILDER_PATH" "$VALIDATOR_PATH" "$TEST_PATH" "$OUTPUT_PATH"
+            find /tmp/rd05-capture -type f -printf "$SOURCE_ROOT/%P\n"
+          } | sort -u > rd05-postcommit-diagnostic/expected-paths.txt
+          test "$(wc -l < rd05-postcommit-diagnostic/expected-paths.txt | tr -d ' ')" = 46
+          git status --porcelain=v1 --untracked-files=all | sed -E 's/^.. //' | grep -v '^rd05-postcommit-diagnostic/' | sort -u > rd05-postcommit-diagnostic/observed-paths.txt
+          diff -u rd05-postcommit-diagnostic/expected-paths.txt rd05-postcommit-diagnostic/observed-paths.txt
+          git add --pathspec-from-file=rd05-postcommit-diagnostic/expected-paths.txt
+          git diff --cached --check -- "$BUILDER_PATH" "$VALIDATOR_PATH" "$TEST_PATH" "$OUTPUT_PATH"
+
+          stage='local-commit'
+          git commit -m 'DIAGNOSTIC ONLY: freeze RD-05 ACES object universe'
+          local_product="$(git rev-parse HEAD)"
+          git diff --name-only "$EXPECTED_START_SHA...$local_product" | sort -u > rd05-postcommit-diagnostic/local-commit-paths.txt
+          diff -u rd05-postcommit-diagnostic/expected-paths.txt rd05-postcommit-diagnostic/local-commit-paths.txt
+          test -z "$(git status --porcelain=v1 --untracked-files=all | grep -v '^?? rd05-postcommit-diagnostic/' || true)"
+
+          stage='complete-repository-release-gate'
+          npm run release:check
+
+          stage='post-release-cleanliness'
+          git status --porcelain=v1 --untracked-files=all | grep -v '^?? rd05-postcommit-diagnostic/' > rd05-postcommit-diagnostic/post-release-status.txt || true
+          test ! -s rd05-postcommit-diagnostic/post-release-status.txt
+
+          stage='deterministic-replay'
+          node "$BUILDER_PATH"
+          node "$VALIDATOR_PATH"
+          node "$TEST_PATH"
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all | grep -v '^?? rd05-postcommit-diagnostic/' || true)"
+
+          stage='complete'
+      - name: Upload exact post-commit diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-postcommit-diagnostic-v2
+          path: rd05-postcommit-diagnostic
+          if-no-files-found: error
+          retention-days: 30
