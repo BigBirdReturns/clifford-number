@@ -1,0 +1,335 @@
+name: TEMP materialize exact RD-05 terminal closure v3
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-terminal-closure-materializer-base-v3
+    paths:
+      - '.github/tmp/ssc-rd05-terminal-closure-materializer-v3.trigger'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: ssc-rd05-terminal-closure-materializer-v3
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd05-terminal-closure-materializer-trigger-v3'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd05-recommendation-disposition
+      EXPECTED_START_SHA: 03d0c627308b86ad75e8cdad6a90756c97e592ce
+      CARRIER_BRANCH: agent/ssc-rd05-terminal-closure-materializer-base-v1
+      CLASSIFICATION_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/object-semantic-classification.json
+      CLASSIFICATION_SHA256: ed35fbd41027497742d5db4473d8675978d37eab52f95c35628616aa7fba6f13
+      CENSUS_ARTIFACT_ID: '8852846428'
+      CENSUS_ARTIFACT_SHA256: 9a7524164ad5594ac720ec914a84812005aef8e79d0a82ebb561b268089c08fb
+      CENSUS_MANIFEST_SHA256: 0fb07dd92ff7e8c27a7e4b3e6b3db18842538516b1badd05afe194fd07446c32
+      CENSUS_DEST: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/source-custody/successor-census-v1
+      EXECUTION_RECEIPT_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/successor-census-execution-receipt.json
+      PRODUCT_ROOT: data/research/status-sovereignty-rd-wave02-rd05-recommendation-disposition
+      CLOSURE_REFERENCE_PATH: data/project/ssc-residual-wave02/closures/RD-05-C03.json
+      SOURCE_ZIP_SHA256: df1d69e7d8ad669b47ffcdb24ddb8a11d7801edceb54da3809032fd153447be7
+      SOURCE_BASE64_SHA256: 934c7550b4056e47cdeecbd6d026587eb722047728c7b0006bb685787257f1c9
+      PATCHED_BUILDER_SHA256: f57a4e0e1dfba3f984621fcd2f0136d55290b7d6161a27bcb61733f175ed3888
+      PATCHED_SCHEMA_SHA256: e48cf63a0c1cc65fed43f294e8224b4362672c2af198965fcaa14466fe06ae28
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify lease, reconstruct source, and apply exact label repair
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_START_SHA"
+          test "$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | cut -f1)" = "$EXPECTED_START_SHA"
+          echo "${CLASSIFICATION_SHA256}  ${CLASSIFICATION_PATH}" | sha256sum --check --strict
+          node tools/validate-no-magic-human-gate.mjs
+
+          git fetch origin "refs/heads/${CARRIER_BRANCH}:refs/remotes/origin/${CARRIER_BRANCH}"
+          rm -rf /tmp/rd05-authored /tmp/rd05-source.b64 /tmp/rd05-source.zip
+          mkdir -p /tmp/rd05-authored
+          : > /tmp/rd05-source.b64
+          declare -a expected_chunk_sha=(
+            f4ffc3c629d23814711ab2d03ea70a16246bc33073c501b93fd2c0c7a421a14c
+            4bbc1fcb94aa87d91158ee86d8cae009931e05ed8971d1c8048233371c222f83
+            b00ef93b03e0ae285eade55c431a3ba50a54525253422fb98ecc3214c5a1d0c3
+            0cb6a01d46537a1d57e8328ae470b303f03c242eda5bf20b8ca862d51b327eda
+          )
+          declare -a expected_chunk_bytes=(6000 6000 6000 3632)
+          for index in 0 1 2 3; do
+            part="$(printf '%02d' "$index")"
+            git show "origin/${CARRIER_BRANCH}:.rd05-closure/payload/part-${part}.b64" > "/tmp/rd05-part-${part}.b64"
+            test "$(wc -c < "/tmp/rd05-part-${part}.b64" | tr -d ' ')" = "${expected_chunk_bytes[$index]}"
+            test "$(sha256sum "/tmp/rd05-part-${part}.b64" | awk '{print $1}')" = "${expected_chunk_sha[$index]}"
+            cat "/tmp/rd05-part-${part}.b64" >> /tmp/rd05-source.b64
+          done
+          test "$(wc -c < /tmp/rd05-source.b64 | tr -d ' ')" = '21632'
+          test "$(sha256sum /tmp/rd05-source.b64 | awk '{print $1}')" = "$SOURCE_BASE64_SHA256"
+          base64 --decode /tmp/rd05-source.b64 > /tmp/rd05-source.zip
+          test "$(wc -c < /tmp/rd05-source.zip | tr -d ' ')" = '16223'
+          test "$(sha256sum /tmp/rd05-source.zip | awk '{print $1}')" = "$SOURCE_ZIP_SHA256"
+          unzip -q /tmp/rd05-source.zip -d /tmp/rd05-authored
+
+          cat > /tmp/rd05-original-sha256.txt <<'EOF'
+          1fbccf1b711931747be9257e0ce9dd6ab0ede332df8fbf738e3351c4d1726c3f  docs/milestones/ssc-rd-wave02-rd05-recommendation-disposition.md
+          45930aae6025a37e27296a76b97826a7ddc40e175478ca189f987fb8f037162d  schemas/status-sovereignty-rd-wave02-rd05-recommendation-disposition.schema.json
+          6d0a94c72453e37cf4f0c2ed24de805ce698e214f26dfef56ff4c1e9301a5dfc  test/status-sovereignty-rd-wave02-rd05-recommendation-disposition.test.js
+          f0883140637f34ba5dc14f671d1194fa691beb015940eaa3ad2ebf849584d090  tools/build-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs
+          15af0ff50764f29ceb316290b06d66ca851c1468a643661dab0c823e2a8a5287  tools/validate-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs
+          EOF
+          (cd /tmp/rd05-authored && sha256sum --check --strict /tmp/rd05-original-sha256.txt)
+
+          python - <<'PY'
+          from pathlib import Path
+          root = Path('/tmp/rd05-authored')
+          builder = root / 'tools/build-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs'
+          old = "export const CLASS_LABEL = 'complete recommendation, agency response, adoption, rejection, implementation, and outcome ledger';"
+          new = "export const CLASS_LABEL = 'recommendation, agency response, adoption, rejection, implementation, and outcome ledger';"
+          text = builder.read_text()
+          assert text.count(old) == 1 and new not in text
+          builder.write_text(text.replace(old, new))
+
+          schema = root / 'schemas/status-sovereignty-rd-wave02-rd05-recommendation-disposition.schema.json'
+          old_label = 'complete recommendation, agency response, adoption, rejection, implementation, and outcome ledger'
+          new_label = 'recommendation, agency response, adoption, rejection, implementation, and outcome ledger'
+          text = schema.read_text()
+          assert text.count(old_label) == 1
+          schema.write_text(text.replace(old_label, new_label))
+          PY
+
+          test "$(sha256sum /tmp/rd05-authored/tools/build-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs | awk '{print $1}')" = "$PATCHED_BUILDER_SHA256"
+          test "$(sha256sum /tmp/rd05-authored/schemas/status-sovereignty-rd-wave02-rd05-recommendation-disposition.schema.json | awk '{print $1}')" = "$PATCHED_SCHEMA_SHA256"
+
+          cat > /tmp/rd05-authored-sha256.txt <<EOF
+          1fbccf1b711931747be9257e0ce9dd6ab0ede332df8fbf738e3351c4d1726c3f  docs/milestones/ssc-rd-wave02-rd05-recommendation-disposition.md
+          $PATCHED_SCHEMA_SHA256  schemas/status-sovereignty-rd-wave02-rd05-recommendation-disposition.schema.json
+          6d0a94c72453e37cf4f0c2ed24de805ce698e214f26dfef56ff4c1e9301a5dfc  test/status-sovereignty-rd-wave02-rd05-recommendation-disposition.test.js
+          $PATCHED_BUILDER_SHA256  tools/build-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs
+          15af0ff50764f29ceb316290b06d66ca851c1468a643661dab0c823e2a8a5287  tools/validate-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs
+          EOF
+          (cd /tmp/rd05-authored && sha256sum --check --strict /tmp/rd05-authored-sha256.txt)
+
+      - name: Download and verify checksum-bound successor census
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/rd05-census /tmp/rd05-census.zip
+          mkdir -p /tmp/rd05-census
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${CENSUS_ARTIFACT_ID}/zip" \
+            --output /tmp/rd05-census.zip
+          test "$(sha256sum /tmp/rd05-census.zip | awk '{print $1}')" = "$CENSUS_ARTIFACT_SHA256"
+          unzip -q /tmp/rd05-census.zip -d /tmp/rd05-census
+
+          python - <<'PY'
+          import hashlib, json, pathlib
+          root = pathlib.Path('/tmp/rd05-census')
+          manifest = json.loads((root / 'manifest.json').read_text())
+          assert manifest['schema_version'] == 'ssc-rd05-wave02-successor-census-manifest@1'
+          assert manifest['entry_count'] == 398 and len(manifest['entries']) == 398
+          assert len({row['path'] for row in manifest['entries']}) == 398
+          for row in manifest['entries']:
+              rel = pathlib.PurePosixPath(row['path'])
+              assert not rel.is_absolute() and '..' not in rel.parts
+              data = (root / rel).read_bytes()
+              assert len(data) == row['bytes']
+              assert hashlib.sha256(data).hexdigest() == row['sha256']
+          combined = hashlib.sha256('\n'.join(f"{row['sha256']}  {row['path']}" for row in manifest['entries']).encode()).hexdigest()
+          assert combined == manifest['combined_sha256'] == '0fb07dd92ff7e8c27a7e4b3e6b3db18842538516b1badd05afe194fd07446c32'
+          assert len([p for p in root.rglob('*') if p.is_file()]) == 399
+          PY
+
+      - name: Install, build, validate, and commit exact 412-path product
+        run: |
+          set -Eeuo pipefail
+          test ! -e "$CENSUS_DEST"
+          mkdir -p "$CENSUS_DEST"
+          cp -a /tmp/rd05-census/. "$CENSUS_DEST/"
+          while read -r digest source_path; do
+            install -D -m 0644 "/tmp/rd05-authored/${source_path}" "${source_path}"
+          done < /tmp/rd05-authored-sha256.txt
+
+          mkdir -p "$(dirname "$EXECUTION_RECEIPT_PATH")"
+          cat > "$EXECUTION_RECEIPT_PATH" <<'JSON'
+          {
+            "schema_version": "ssc-rd05-wave02-successor-census-execution-receipt@1",
+            "wave_id": "SSC-RD-W02",
+            "class_id": "RD-05-C03",
+            "issue": 790,
+            "research_head": "03d0c627308b86ad75e8cdad6a90756c97e592ce",
+            "workflow_run": 30806151404,
+            "job_id": 91661876762,
+            "artifact_id": 8852846428,
+            "artifact_name": "ssc-rd05-wave02-successor-census-v1",
+            "artifact_zip_sha256": "9a7524164ad5594ac720ec914a84812005aef8e79d0a82ebb561b268089c08fb",
+            "manifest_entry_count": 398,
+            "manifest_combined_sha256": "0fb07dd92ff7e8c27a7e4b3e6b3db18842538516b1badd05afe194fd07446c32",
+            "first_attempt": {
+              "workflow_run": 30805582373,
+              "job_id": 91660057710,
+              "state": "failed_closed_preflight_invalid_blocking_predicate",
+              "source_requests_executed": 0,
+              "partial_custody_files": 0
+            },
+            "counts": {
+              "fixed_routes": 49,
+              "route_attempts": 49,
+              "http_success": 45,
+              "terminal_non_success": 4,
+              "result_spawned_requests": 0
+            },
+            "authority": {
+              "outside_human_dependency": false,
+              "external_contacts": 0,
+              "external_reviews": 0,
+              "denominator_widened": false,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none"
+            }
+          }
+          JSON
+
+          node tools/build-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs
+          node tools/validate-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs
+          node test/status-sovereignty-rd-wave02-rd05-recommendation-disposition.test.js
+          node tools/validate-no-magic-human-gate.mjs
+
+          find "$CENSUS_DEST" -type f | LC_ALL=C sort > /tmp/expected-rd05-paths.txt
+          cat >> /tmp/expected-rd05-paths.txt <<EOF
+          $EXECUTION_RECEIPT_PATH
+          $PRODUCT_ROOT/candidate-exclusion-ledger.json
+          $PRODUCT_ROOT/chain-terminal-ledger.json
+          $PRODUCT_ROOT/class-receipt.json
+          $PRODUCT_ROOT/manifest.json
+          $PRODUCT_ROOT/summary.json
+          $PRODUCT_ROOT/terminal-classification.json
+          $CLOSURE_REFERENCE_PATH
+          docs/milestones/ssc-rd-wave02-rd05-recommendation-disposition.md
+          schemas/status-sovereignty-rd-wave02-rd05-recommendation-disposition.schema.json
+          test/status-sovereignty-rd-wave02-rd05-recommendation-disposition.test.js
+          tools/build-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs
+          tools/validate-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs
+          EOF
+          LC_ALL=C sort -o /tmp/expected-rd05-paths.txt /tmp/expected-rd05-paths.txt
+          test "$(wc -l < /tmp/expected-rd05-paths.txt | tr -d ' ')" = '412'
+          git status --porcelain=v1 --untracked-files=all | cut -c4- | LC_ALL=C sort > /tmp/actual-rd05-paths.txt
+          diff -u /tmp/expected-rd05-paths.txt /tmp/actual-rd05-paths.txt
+
+          git add -- "$CENSUS_DEST" "$EXECUTION_RECEIPT_PATH" "$PRODUCT_ROOT" "$CLOSURE_REFERENCE_PATH" \
+            docs/milestones/ssc-rd-wave02-rd05-recommendation-disposition.md \
+            schemas/status-sovereignty-rd-wave02-rd05-recommendation-disposition.schema.json \
+            test/status-sovereignty-rd-wave02-rd05-recommendation-disposition.test.js \
+            tools/build-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs \
+            tools/validate-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m 'Close RD-05 recommendation-disposition class'
+          PRODUCT_SHA="$(git rev-parse HEAD)"
+          echo "PRODUCT_SHA=$PRODUCT_SHA" >> "$GITHUB_ENV"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_START_SHA"
+          git diff-tree --no-commit-id --name-only -r HEAD | LC_ALL=C sort > /tmp/committed-rd05-paths.txt
+          diff -u /tmp/expected-rd05-paths.txt /tmp/committed-rd05-paths.txt
+
+      - name: Run full release gate and prove timestamp-only volatility
+        run: |
+          set -Eeuo pipefail
+          npm run release:check
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const jsonPaths = [
+            'build/axm-identity.json', 'build/build-hop-report.json', 'build/hop-graph.json',
+            'build/migration-summary.json', 'build/receipt-graph.json', 'build/scores.json',
+            'build/scout-report.json', 'build/surface-graph.json'
+          ];
+          const markdownPaths = ['build/migration-review.md', 'build/scout-report.md'];
+          const expected = [...jsonPaths, ...markdownPaths].sort();
+          const changed = execFileSync('git', ['diff', '--name-only'], { encoding: 'utf8' }).split(/\r?\n/).filter(Boolean).sort();
+          if (JSON.stringify(changed) !== JSON.stringify(expected)) throw new Error(`unexpected release drift: ${JSON.stringify(changed)}`);
+          for (const file of jsonPaths) {
+            const before = JSON.parse(execFileSync('git', ['show', `HEAD:${file}`], { encoding: 'utf8' }));
+            const after = JSON.parse(fs.readFileSync(file, 'utf8'));
+            if (typeof before.generated !== 'string' || typeof after.generated !== 'string') throw new Error(`missing generated field: ${file}`);
+            delete before.generated;
+            delete after.generated;
+            if (JSON.stringify(before) !== JSON.stringify(after)) throw new Error(`semantic JSON drift: ${file}`);
+          }
+          for (const file of markdownPaths) {
+            const normalize = (value) => value.split(/\r?\n/).map((line) => line.startsWith('Generated: ') ? 'Generated: <ISO>' : line).join('\n');
+            const before = execFileSync('git', ['show', `HEAD:${file}`], { encoding: 'utf8' });
+            const after = fs.readFileSync(file, 'utf8');
+            if (normalize(before) !== normalize(after)) throw new Error(`semantic Markdown drift: ${file}`);
+          }
+          NODE
+          git restore --worktree -- \
+            build/axm-identity.json build/build-hop-report.json build/hop-graph.json \
+            build/migration-review.md build/migration-summary.json build/receipt-graph.json \
+            build/scores.json build/scout-report.json build/scout-report.md build/surface-graph.json
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Replay deterministically and publish under unchanged-head lease
+        run: |
+          set -Eeuo pipefail
+          node tools/build-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs
+          node tools/validate-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs
+          node test/status-sovereignty-rd-wave02-rd05-recommendation-disposition.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | cut -f1)" = "$EXPECTED_START_SHA"
+          git push origin "HEAD:refs/heads/${TARGET_BRANCH}"
+          test "$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | cut -f1)" = "$PRODUCT_SHA"
+
+          cat > /tmp/ssc-rd05-terminal-closure-materializer-v3.json <<EOF
+          {
+            "schema_version": "ssc-rd05-terminal-closure-materializer-receipt@3",
+            "target_branch": "$TARGET_BRANCH",
+            "expected_start_sha": "$EXPECTED_START_SHA",
+            "product_sha": "$PRODUCT_SHA",
+            "product_parent_sha": "$(git rev-parse HEAD^)",
+            "permanent_paths": 412,
+            "frozen_objects": 58,
+            "terminal_objects": 58,
+            "bounded_non_link_chains": 4,
+            "open_chains": 0,
+            "fixed_routes": 49,
+            "http_success_routes": 45,
+            "terminal_non_success_routes": 4,
+            "adversarial_mutations": 123,
+            "patched_builder_sha256": "$PATCHED_BUILDER_SHA256",
+            "patched_schema_sha256": "$PATCHED_SCHEMA_SHA256",
+            "release_gate": "pass",
+            "deterministic_replay": "pass",
+            "unchanged_head_lease": "pass",
+            "external_contacts": 0,
+            "external_reviews": 0,
+            "outside_human_dependency": false,
+            "publication_effect": "none",
+            "adoption_effect": "none",
+            "graph_effect": "none"
+          }
+          EOF
+
+      - name: Upload exact RD-05 closure receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-terminal-closure-materializer-v3
+          path: /tmp/ssc-rd05-terminal-closure-materializer-v3.json
+          if-no-files-found: error
+          retention-days: 90
