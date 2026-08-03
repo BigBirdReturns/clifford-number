@@ -1,0 +1,55 @@
+name: TEMP repair exact PC-36 shard
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc36-shard-repair.yml'
+      - '.pc36v2/shard-repair.trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc36-shard-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc36-permanent-materializer
+          fetch-depth: 0
+      - name: Replace the five corrupted characters and verify complete custody
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          path=.pc36v2/payload-01.b64
+          test "$(sha256sum "$path" | awk '{print $1}')" = f4a5a44a596bfcb290ff783823d1d25e5f1a0959ccad9f1bdbf63ea17075dec2
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.pc36v2/payload-01.b64')
+          text = path.read_text()
+          old = 'QMQSrIV1jE'
+          new = 'QMUSooW1jU'
+          assert text.count(old) == 1
+          path.write_text(text.replace(old, new))
+          PY
+          test "$(stat -c '%s' "$path")" = 2746
+          test "$(sha256sum "$path" | awk '{print $1}')" = d258dec6b6a55efc1522d2e726ddeb77f258cf2882bbff363632042072bedf58
+          carrier=/tmp/pc36-product.tar.gz.b64
+          : > "$carrier"
+          for part in $(find .pc36v2 -maxdepth 1 -type f -name 'payload-*.b64' | sort); do tr -d '\r\n\t ' < "$part" >> "$carrier"; done
+          test "$(stat -c '%s' "$carrier")" = 32932
+          test "$(sha256sum "$carrier" | awk '{print $1}')" = db69a4612ddf8b7957e9bd655df04886b9679faea391d300c19cd5f9707b1205
+          base64 --decode "$carrier" > /tmp/pc36-product.tar.gz
+          test "$(sha256sum /tmp/pc36-product.tar.gz | awk '{print $1}')" = 603fcf186af572be28043a226994059b5a829c6f59e328bcea008359fae5d126
+          git add "$path"
+          git diff --cached --check
+          git commit -m 'Repair exact PC-36 carrier shard'
+          git push origin HEAD:refs/heads/agent/pc36-permanent-materializer
