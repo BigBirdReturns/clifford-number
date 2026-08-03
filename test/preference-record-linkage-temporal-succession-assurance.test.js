@@ -16,7 +16,7 @@ const build = JSON.parse(readFileSync(buildPath, 'utf8'));
 const markdown = readFileSync('build/research/preference-record-linkage-temporal-succession-assurance.md', 'utf8');
 
 assert.deepEqual(validatePreferenceRecordLinkageTemporalSuccessionAssuranceFixture(fixture), []);
-assert.deepEqual(validatePreferenceRecordLinkageTemporalSuccessionAssuranceBuild(build), []);
+assert.deepEqual(validatePreferenceRecordLinkageTemporalSuccessionAssuranceBuild(build, fixture), []);
 assert.deepEqual(build.metrics, EXPECTED_RECORD_LINKAGE_METRICS);
 assert.equal(build.classification.complete_record_linkage_assurance_supported_in_at_least_one_world, true);
 for (const [key, value] of Object.entries(build.classification)) {
@@ -102,6 +102,16 @@ for (const [label, mutate] of mutations) {
   assert.ok(validatePreferenceRecordLinkageTemporalSuccessionAssuranceFixture(value).length > 0, label);
 }
 
+const validFixtureRevision = clone(fixture);
+validFixtureRevision.worlds[0].description = `${validFixtureRevision.worlds[0].description} Revised without rebuilding.`;
+assert.deepEqual(validatePreferenceRecordLinkageTemporalSuccessionAssuranceFixture(validFixtureRevision), []);
+assert.ok(
+  validatePreferenceRecordLinkageTemporalSuccessionAssuranceBuild(build, validFixtureRevision).some(error =>
+    error.includes('fixture hash') || error.includes('deterministically reconstruct')
+  ),
+  'stale build must not validate against a different valid fixture revision'
+);
+
 const buildTamperCases = [
   ['metric tamper', value => { value.metrics.total_false_positive_cross_namespace_links = 29; }],
   ['classification tamper', value => { value.classification.binding_public_authority_supported = true; }],
@@ -115,9 +125,9 @@ const buildTamperCases = [
 for (const [label, mutate] of buildTamperCases) {
   const value = clone(build);
   mutate(value);
-  assert.ok(validatePreferenceRecordLinkageTemporalSuccessionAssuranceBuild(value).length > 0, label);
+  assert.ok(validatePreferenceRecordLinkageTemporalSuccessionAssuranceBuild(value, fixture).length > 0, label);
 }
 
 const recompiled = compilePreferenceRecordLinkageTemporalSuccessionAssuranceFixture(fixture);
 assert.deepEqual(recompiled, build);
-console.log('Preference record-linkage temporal-succession assurance adversarial tests: PASS (40 fixture mutations plus build tamper checks)');
+console.log('Preference record-linkage temporal-succession assurance adversarial tests: PASS (40 fixture mutations plus source-binding and build tamper checks)');

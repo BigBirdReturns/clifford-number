@@ -10,7 +10,8 @@ const markdownPath = process.argv[4] ?? 'build/research/preference-custody-labor
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 const baseBuild = JSON.parse(readFileSync('build/research/preference-custody-laboratory-floor-v36.json', 'utf8'));
 const linkageBuild = JSON.parse(readFileSync('build/research/preference-record-linkage-temporal-succession-assurance.json', 'utf8'));
-const compiled = compilePreferenceCustodyManifestV37(manifest, baseBuild, linkageBuild);
+const linkageFixture = JSON.parse(readFileSync(manifest.extension_control.source_fixture_path, 'utf8'));
+const compiled = compilePreferenceCustodyManifestV37(manifest, baseBuild, linkageBuild, linkageFixture);
 mkdirSync(dirname(jsonPath), { recursive: true });
 mkdirSync(dirname(markdownPath), { recursive: true });
 writeFileSync(jsonPath, JSON.stringify(compiled, null, 2) + '\n');

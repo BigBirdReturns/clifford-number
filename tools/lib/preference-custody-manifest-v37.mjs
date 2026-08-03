@@ -80,12 +80,12 @@ export function validatePreferenceCustodyManifestV37(manifest) {
   return errors;
 }
 
-export function compilePreferenceCustodyManifestV37(manifest, baseBuild, linkageBuild) {
+export function compilePreferenceCustodyManifestV37(manifest, baseBuild, linkageBuild, linkageFixture) {
   const errors = validatePreferenceCustodyManifestV37(manifest);
   if (errors.length) throw new Error(`invalid v37 manifest:\n- ${errors.join('\n- ')}`);
   const baseErrors = validatePreferenceCustodyManifestV36Build(baseBuild);
   if (baseErrors.length) throw new Error(`invalid v36 base:\n- ${baseErrors.join('\n- ')}`);
-  const linkageErrors = validatePreferenceRecordLinkageTemporalSuccessionAssuranceBuild(linkageBuild);
+  const linkageErrors = validatePreferenceRecordLinkageTemporalSuccessionAssuranceBuild(linkageBuild, linkageFixture);
   if (linkageErrors.length) throw new Error(`invalid PC-39 build:\n- ${linkageErrors.join('\n- ')}`);
   if (baseBuild.control_count !== 38 || baseBuild.manifest_id !== 'preference-custody-laboratory-floor-v36') throw new Error('v37 base identity mismatch');
   const baseOpen = unique(baseBuild.open_frontiers);
@@ -196,6 +196,10 @@ export function validatePreferenceCustodyManifestV37Build(compiled) {
   if (composition.base_manifest_id !== 'preference-custody-laboratory-floor-v36' || composition.base_schema_version !== 'preference-custody-control-manifest-v36-build@1' || composition.base_control_count !== 38 || composition.extension_control_id !== 'PC-39') errors.push('compiled v37 composition identity mismatch');
   if (composition.base_promotion_requirement_count !== 1389 || composition.added_promotion_requirement_count !== 48 || composition.final_promotion_requirement_count !== 1437) errors.push('compiled v37 promotion counts mismatch');
   for (const key of ['base_floor_snapshot_sha256', 'extension_snapshot_sha256', 'base_controls_sha256', 'base_promotion_requirements_sha256']) if (!/^[0-9a-f]{64}$/.test(text(composition[key]))) errors.push(`compiled v37 invalid hash: ${key}`);
+  const compiledBaseControls = array(compiled?.controls).slice(0, 38);
+  if (composition.base_controls_sha256 !== sha256(compiledBaseControls)) errors.push('compiled v37 base controls hash mismatch');
+  const compiledBaseRequirements = unique(array(compiled?.promotion_boundary?.real_case_requires).slice(0, 1389));
+  if (composition.base_promotion_requirements_sha256 !== sha256(compiledBaseRequirements)) errors.push('compiled v37 base promotion requirements hash mismatch');
   const expectedOpen = unique([...array(composition.base_open_frontiers).filter(frontier => frontier !== RESOLVED_FRONTIER), ...REQUIRED_SUCCESSORS]);
   if (!sameMembers(compiled?.open_frontiers, expectedOpen)) errors.push('compiled v37 open-frontier preservation mismatch');
   if (array(compiled?.open_frontiers).includes(RESOLVED_FRONTIER)) errors.push('compiled v37 retained resolved record-linkage frontier');

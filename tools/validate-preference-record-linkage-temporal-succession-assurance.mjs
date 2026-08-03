@@ -10,7 +10,7 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8'));
 const build = JSON.parse(readFileSync(buildPath, 'utf8'));
 const errors = [
   ...validatePreferenceRecordLinkageTemporalSuccessionAssuranceFixture(fixture),
-  ...validatePreferenceRecordLinkageTemporalSuccessionAssuranceBuild(build)
+  ...validatePreferenceRecordLinkageTemporalSuccessionAssuranceBuild(build, fixture)
 ];
 if (errors.length) {
   console.error(errors.map(error => `- ${error}`).join('\n'));

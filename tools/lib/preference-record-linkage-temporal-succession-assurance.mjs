@@ -426,7 +426,7 @@ function validateChain(world, errors) {
   if (previous !== world?.custody_chain_head_sha256) errors.push(`${world?.world_id} custody head mismatch`);
 }
 
-export function validatePreferenceRecordLinkageTemporalSuccessionAssuranceBuild(build) {
+export function validatePreferenceRecordLinkageTemporalSuccessionAssuranceBuild(build, fixture) {
   const errors = [];
   if (build?.schema_version !== PREFERENCE_RECORD_LINKAGE_TEMPORAL_SUCCESSION_ASSURANCE_BUILD_SCHEMA_VERSION) errors.push('build schema mismatch');
   if (build?.fixture_id !== 'same-linkage-verified-status-different-provenance-v1' || build?.issue !== 870 || build?.parent_program_issue !== 594) errors.push('build identity or issue lineage mismatch');
@@ -436,6 +436,16 @@ export function validatePreferenceRecordLinkageTemporalSuccessionAssuranceBuild(
   if (stable(build?.baseline) !== stable(BASELINE)) errors.push('build public surface mismatch');
   if (!sameMembers(build?.required_refusal_rules, REQUIRED_REFUSAL_RULES) || array(build?.required_refusal_rules).length !== REQUIRED_REFUSAL_RULES.length) errors.push('build refusal-rule ledger mismatch');
   if (!/^[0-9a-f]{64}$/.test(text(build?.fixture_sha256))) errors.push('build fixture hash invalid');
+  if (!fixture) errors.push('build fixture source is required');
+  else {
+    const fixtureErrors = validatePreferenceRecordLinkageTemporalSuccessionAssuranceFixture(fixture);
+    if (fixtureErrors.length) errors.push(...fixtureErrors.map(error => `build fixture source invalid: ${error}`));
+    else {
+      if (build?.fixture_sha256 !== sha256(fixture)) errors.push('build fixture hash does not match supplied fixture');
+      const expectedBuild = compilePreferenceRecordLinkageTemporalSuccessionAssuranceFixture(fixture);
+      if (stable(build) !== stable(expectedBuild)) errors.push('build does not deterministically reconstruct from supplied fixture');
+    }
+  }
   const worlds = array(build?.worlds);
   if (worlds.length !== 8 || !sameMembers(worlds.map(world => world?.world_id), EXPECTED_WORLD_IDS)) errors.push('build world denominator mismatch');
   for (const world of worlds) {

@@ -92,6 +92,7 @@ const buildMutations = [
   ['build conclusion', value => { value.conclusion_generated = true; }],
   ['build control count', value => { value.control_count = 38; }],
   ['build controls', value => { value.controls.pop(); }],
+  ['preserved base-control body', value => { value.controls[0].failure_class = 'tampered'; }],
   ['composition base id', value => { value.composition.base_manifest_id = 'invalid'; }],
   ['composition base count', value => { value.composition.base_control_count = 37; }],
   ['composition extension id', value => { value.composition.extension_control_id = 'PC-38'; }],
@@ -104,7 +105,7 @@ const buildMutations = [
   ['promotion boundary', value => { value.promotion_boundary.real_case_requires.pop(); }],
   ['custody tamper', value => { value.custody_chain[2].payload.transition.resolved_base_frontier = 'tampered'; }]
 ];
-assert.equal(manifestMutations.length + buildMutations.length, 41);
+assert.equal(manifestMutations.length + buildMutations.length, 42);
 for (const [label, mutate] of manifestMutations) {
   const value = clone(manifest); mutate(value);
   assert.ok(validatePreferenceCustodyManifestV37(value).length > 0, label);
@@ -113,4 +114,4 @@ for (const [label, mutate] of buildMutations) {
   const value = clone(build); mutate(value);
   assert.ok(validatePreferenceCustodyManifestV37Build(value).length > 0, label);
 }
-console.log('Preference custody floor v37 adversarial tests: PASS (41 mutations)');
+console.log('Preference custody floor v37 adversarial tests: PASS (42 mutations)');
