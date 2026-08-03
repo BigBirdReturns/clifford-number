@@ -1,0 +1,116 @@
+name: TEMP execute exact RD-05 terminal closure v5
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-terminal-closure-materializer-base-v3
+    paths:
+      - '.github/tmp/ssc-rd05-terminal-closure-materializer-v5.trigger'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: ssc-rd05-terminal-closure-materializer-v5
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd05-terminal-closure-materializer-trigger-v5'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      SOURCE_WORKFLOW_REF: agent/ssc-rd05-terminal-closure-materializer-base-v3
+      SOURCE_WORKFLOW_PATH: .github/workflows/temporary-ssc-rd05-terminal-closure-materializer-v4.yml
+      SOURCE_WORKFLOW_BLOB: 0f3c7d7786147be5c6d6f54a0b77cc00c9278ebf
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd05-recommendation-disposition
+      EXPECTED_START_SHA: 03d0c627308b86ad75e8cdad6a90756c97e592ce
+      CARRIER_BRANCH: agent/ssc-rd05-terminal-closure-materializer-base-v1
+      CLASSIFICATION_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/object-semantic-classification.json
+      CLASSIFICATION_SHA256: ed35fbd41027497742d5db4473d8675978d37eab52f95c35628616aa7fba6f13
+      CENSUS_ARTIFACT_ID: '8852846428'
+      CENSUS_ARTIFACT_SHA256: 9a7524164ad5594ac720ec914a84812005aef8e79d0a82ebb561b268089c08fb
+      CENSUS_MANIFEST_SHA256: 0fb07dd92ff7e8c27a7e4b3e6b3db18842538516b1badd05afe194fd07446c32
+      CENSUS_DEST: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/source-custody/successor-census-v1
+      EXECUTION_RECEIPT_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/successor-census-execution-receipt.json
+      PRODUCT_ROOT: data/research/status-sovereignty-rd-wave02-rd05-recommendation-disposition
+      CLOSURE_REFERENCE_PATH: data/project/ssc-residual-wave02/closures/RD-05-C03.json
+      SOURCE_ZIP_SHA256: df1d69e7d8ad669b47ffcdb24ddb8a11d7801edceb54da3809032fd153447be7
+      SOURCE_BASE64_SHA256: 934c7550b4056e47cdeecbd6d026587eb722047728c7b0006bb685787257f1c9
+      PATCHED_BUILDER_SHA256: f57a4e0e1dfba3f984621fcd2f0136d55290b7d6161a27bcb61733f175ed3888
+      PATCHED_SCHEMA_SHA256: e48cf63a0c1cc65fed43f294e8224b4362672c2af198965fcaa14466fe06ae28
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Extract and verify exact self-contained transaction
+        run: |
+          set -Eeuo pipefail
+          git rev-parse --verify "refs/remotes/origin/${SOURCE_WORKFLOW_REF}"
+          git show "origin/${SOURCE_WORKFLOW_REF}:${SOURCE_WORKFLOW_PATH}" > /tmp/rd05-v4-workflow.yml
+          test "$(git hash-object /tmp/rd05-v4-workflow.yml)" = "$SOURCE_WORKFLOW_BLOB"
+
+          python - <<'PY'
+          from pathlib import Path
+          source = Path('/tmp/rd05-v4-workflow.yml').read_text().splitlines()
+          scripts = []
+          index = 0
+          while index < len(source):
+              if source[index] == '        run: |':
+                  index += 1
+                  body = []
+                  while index < len(source):
+                      line = source[index]
+                      if line.startswith('          ') or line == '':
+                          body.append(line[10:] if line.startswith('          ') else '')
+                          index += 1
+                          continue
+                      break
+                  scripts.append('\n'.join(body).rstrip() + '\n')
+                  continue
+              index += 1
+          assert len(scripts) == 5, len(scripts)
+          scripts[-1] = scripts[-1].replace(
+              'ssc-rd05-terminal-closure-materializer-receipt@4',
+              'ssc-rd05-terminal-closure-materializer-receipt@5'
+          ).replace(
+              'ssc-rd05-terminal-closure-materializer-v4.json',
+              'ssc-rd05-terminal-closure-materializer-v5.json'
+          )
+          for ordinal, script in enumerate(scripts, 1):
+              path = Path(f'/tmp/rd05-v5-step-{ordinal:02d}.sh')
+              path.write_text('#!/usr/bin/env bash\n' + script)
+              path.chmod(0o755)
+          print('verified immutable v4 workflow and extracted five exact transaction scripts')
+          PY
+
+      - name: Execute exact terminal-closure transaction
+        run: |
+          set -Eeuo pipefail
+          for script in /tmp/rd05-v5-step-*.sh; do
+            echo "executing ${script}"
+            "$script"
+            if test -s "$GITHUB_ENV"; then
+              set -a
+              source "$GITHUB_ENV"
+              set +a
+            fi
+          done
+
+      - name: Upload exact RD-05 terminal closure receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-terminal-closure-materializer-v5
+          path: ssc-rd05-terminal-closure-materializer-v5.json
+          if-no-files-found: error
+          retention-days: 90
