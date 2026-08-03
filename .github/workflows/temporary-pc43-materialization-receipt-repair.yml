@@ -1,0 +1,190 @@
+name: TEMP repair PC-43 materialization receipt
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc43-materialization-receipt-repair.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      SOURCE_BRANCH: agent/pc43-exact-product-materializer
+      TARGET_BRANCH: research/preference-linkage-probability-calibration-assurance-v1
+      PUBLICATION_PARENT: dcc64cb395368070c8fa0ca3834afda26e2c0caf
+      PRODUCT_COMMIT: 0d3ee46b650a7612369eb9b8216b3a590b967c07
+      EXPECTED_TARGET_HEAD: 23c8ccc03bbfb72326186b8958e5ae402fb0ce50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc43-exact-product-materializer
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Freeze source manifests and verify immutable commit graph
+        run: |
+          set -Eeuo pipefail
+          cp .pc43/nonworkflow-manifest.tsv /tmp/pc43-nonworkflow-manifest.tsv
+          cp .pc43/all-paths.txt /tmp/pc43-all-paths.txt
+          LC_ALL=C sort -o /tmp/pc43-all-paths.txt /tmp/pc43-all-paths.txt
+          test "$(wc -l < /tmp/pc43-all-paths.txt | tr -d ' ')" = 14
+          git fetch origin main "$SOURCE_BRANCH" "$TARGET_BRANCH" --no-tags
+          source_head="$(git rev-parse HEAD)"
+          test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$source_head"
+          target_head="$(git rev-parse "origin/$TARGET_BRANCH")"
+          test "$target_head" = "$EXPECTED_TARGET_HEAD"
+          test "$(git rev-parse "$PRODUCT_COMMIT^")" = "$PUBLICATION_PARENT"
+          git merge-base --is-ancestor "$PRODUCT_COMMIT" "$target_head"
+          git diff --name-only "$PUBLICATION_PARENT..$PRODUCT_COMMIT" | LC_ALL=C sort > /tmp/pc43-product-paths.observed
+          cut -f1 /tmp/pc43-nonworkflow-manifest.tsv | LC_ALL=C sort > /tmp/pc43-product-paths.expected
+          diff -u /tmp/pc43-product-paths.expected /tmp/pc43-product-paths.observed
+          test "$(wc -l < /tmp/pc43-product-paths.observed | tr -d ' ')" = 12
+          git diff --name-only "$PRODUCT_COMMIT..$target_head" | LC_ALL=C sort > /tmp/pc43-workflow-paths.observed
+          cat > /tmp/pc43-workflow-paths.expected <<'EOF'
+          .github/workflows/preference-custody-v41.yml
+          .github/workflows/preference-linkage-probability-calibration-assurance.yml
+          EOF
+          sed -i 's/^          //' /tmp/pc43-workflow-paths.expected
+          diff -u /tmp/pc43-workflow-paths.expected /tmp/pc43-workflow-paths.observed
+          git diff --name-only "$PUBLICATION_PARENT..$target_head" | LC_ALL=C sort > /tmp/pc43-all-paths.observed
+          diff -u /tmp/pc43-all-paths.txt /tmp/pc43-all-paths.observed
+          test "$(wc -l < /tmp/pc43-all-paths.observed | tr -d ' ')" = 14
+          printf '%s\n' "$source_head" > /tmp/pc43-repair-source-head.sha
+          printf '%s\n' "$target_head" > /tmp/pc43-target-head.sha
+          git rev-parse "$PRODUCT_COMMIT^{tree}" > /tmp/pc43-product-tree.sha
+          git rev-parse "$target_head^{tree}" > /tmp/pc43-target-tree.sha
+
+      - name: Rebind every product byte and Git blob
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/pc43-verified
+          while IFS=$'\t' read -r path bytes sha blob; do
+            out="/tmp/pc43-verified/${path//\//__}"
+            git show "$PRODUCT_COMMIT:$path" > "$out"
+            test "$(stat -c '%s' "$out")" = "$bytes"
+            test "$(sha256sum "$out" | cut -d' ' -f1)" = "$sha"
+            test "$(git hash-object "$out")" = "$blob"
+            test "$(git rev-parse "$PRODUCT_COMMIT:$path")" = "$blob"
+            test "$(git rev-parse "$EXPECTED_TARGET_HEAD:$path")" = "$blob"
+          done < /tmp/pc43-nonworkflow-manifest.tsv
+
+          test "$(git rev-parse "$EXPECTED_TARGET_HEAD:.github/workflows/preference-custody-v41.yml")" = dc41e1e90ac699f0f76e64493edf5d81e9e224f9
+          test "$(git rev-parse "$EXPECTED_TARGET_HEAD:.github/workflows/preference-linkage-probability-calibration-assurance.yml")" = b164669abd32669ecdc9ab681c1f6a6d014719d7
+          git show "$EXPECTED_TARGET_HEAD:.github/workflows/preference-custody-v41.yml" > /tmp/pc43-verified/floor-v41.yml
+          git show "$EXPECTED_TARGET_HEAD:.github/workflows/preference-linkage-probability-calibration-assurance.yml" > /tmp/pc43-verified/focused.yml
+          test "$(stat -c '%s' /tmp/pc43-verified/floor-v41.yml)" = 2637
+          test "$(sha256sum /tmp/pc43-verified/floor-v41.yml | cut -d' ' -f1)" = 23b8aefbd0c3a02226577477c17f2032812ef4317ce3aff51fe447c126d59295
+          test "$(stat -c '%s' /tmp/pc43-verified/focused.yml)" = 1553
+          test "$(sha256sum /tmp/pc43-verified/focused.yml | cut -d' ' -f1)" = 07fe8b637a24c4baa51e8a9aaa5eb220eb773a33579917c5544ca4b450858b1a
+
+      - name: Requalify exact final head
+        run: |
+          set -Eeuo pipefail
+          git checkout --detach "$EXPECTED_TARGET_HEAD"
+          node tools/compile-preference-linkage-probability-calibration-assurance.mjs
+          node tools/validate-preference-linkage-probability-calibration-assurance.mjs
+          node test/preference-linkage-probability-calibration-assurance.test.js
+          node tools/compile-preference-custody-manifest-v41.mjs
+          node tools/validate-preference-custody-manifest-v41.mjs
+          node test/preference-custody-manifest-v41.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | LC_ALL=C sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          touch /tmp/pc43-repair-gates.pass
+
+      - name: Restore and deterministically replay
+        run: |
+          set -Eeuo pipefail
+          git reset --hard "$EXPECTED_TARGET_HEAD"
+          git clean -fdx
+          node tools/compile-preference-linkage-probability-calibration-assurance.mjs
+          node tools/validate-preference-linkage-probability-calibration-assurance.mjs
+          node test/preference-linkage-probability-calibration-assurance.test.js
+          node tools/compile-preference-custody-manifest-v41.mjs
+          node tools/validate-preference-custody-manifest-v41.mjs
+          node test/preference-custody-manifest-v41.test.js
+          git diff --exit-code
+          git reset --hard "$EXPECTED_TARGET_HEAD"
+          git clean -fdx
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          touch /tmp/pc43-repair-replay.pass
+
+      - name: Emit complete corrected receipt
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os
+
+          files = {}
+          for line in Path('/tmp/pc43-nonworkflow-manifest.tsv').read_text().splitlines():
+              path, size, sha256, blob = line.split('\t')
+              files[path] = {
+                  'bytes': int(size),
+                  'sha256': sha256,
+                  'git_blob_sha1': blob,
+                  'source_commit': os.environ['PRODUCT_COMMIT'],
+                  'final_head': os.environ['EXPECTED_TARGET_HEAD']
+              }
+          files['.github/workflows/preference-custody-v41.yml'] = {
+              'bytes': 2637,
+              'sha256': '23b8aefbd0c3a02226577477c17f2032812ef4317ce3aff51fe447c126d59295',
+              'git_blob_sha1': 'dc41e1e90ac699f0f76e64493edf5d81e9e224f9',
+              'final_head': os.environ['EXPECTED_TARGET_HEAD']
+          }
+          files['.github/workflows/preference-linkage-probability-calibration-assurance.yml'] = {
+              'bytes': 1553,
+              'sha256': '07fe8b637a24c4baa51e8a9aaa5eb220eb773a33579917c5544ca4b450858b1a',
+              'git_blob_sha1': 'b164669abd32669ecdc9ab681c1f6a6d014719d7',
+              'final_head': os.environ['EXPECTED_TARGET_HEAD']
+          }
+          ordered = {key: files[key] for key in sorted(files)}
+          manifest_bytes = json.dumps(ordered, sort_keys=True, separators=(',', ':')).encode()
+          paths = Path('/tmp/pc43-all-paths.txt').read_text().splitlines()
+          receipt = {
+              'schema_version': 'pc43-materialization-receipt-repair@1',
+              'workflow_run_id': os.environ.get('GITHUB_RUN_ID'),
+              'repair_source_head': Path('/tmp/pc43-repair-source-head.sha').read_text().strip(),
+              'qualified_ancestor': '5782105034a6ef2dae9422e8b15eab2345b8980b',
+              'publication_parent': os.environ['PUBLICATION_PARENT'],
+              'product_commit': os.environ['PRODUCT_COMMIT'],
+              'product_tree': Path('/tmp/pc43-product-tree.sha').read_text().strip(),
+              'final_head': os.environ['EXPECTED_TARGET_HEAD'],
+              'final_tree': Path('/tmp/pc43-target-tree.sha').read_text().strip(),
+              'target_branch': os.environ['TARGET_BRANCH'],
+              'nonworkflow_path_count': 12,
+              'permanent_path_count': 14,
+              'path_list_sha256': hashlib.sha256(('\n'.join(paths) + '\n').encode()).hexdigest(),
+              'file_manifest_sha256': hashlib.sha256(manifest_bytes).hexdigest(),
+              'files': ordered,
+              'focused_pc43': 'pass',
+              'floor_v41': 'pass',
+              'historical_preference_custody_floors': 'pass',
+              'no_magic_human': 'pass',
+              'release_check': 'pass',
+              'deterministic_replay': 'pass',
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          raw = json.dumps(receipt, indent=2) + '\n'
+          Path('/tmp/pc43-materialization-receipt-repair.json').write_text(raw)
+          print(raw)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc43-materialization-receipt-repair-${{ github.run_id }}
+          path: /tmp/pc43-materialization-receipt-repair.json
+          if-no-files-found: error
+          retention-days: 90
