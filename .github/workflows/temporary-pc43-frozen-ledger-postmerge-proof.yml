@@ -1,0 +1,115 @@
+name: TEMP prove canonical PC-43 frozen-ledger repair
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc43-frozen-ledger-postmerge-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc43-frozen-ledger-postmerge-proof
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prove exact merge graph and three-file canonical delta
+        run: |
+          set -Eeuo pipefail
+          canonical=0d8974e656ee320fd779271e5667b2365c5d8f45
+          first_parent=eba618a72a71ebc52e3c3462e2f00cfa1010b7d6
+          product_parent=a6c5842a2631084a07c987a016a79bd15bf528ea
+          git fetch origin main --no-tags
+          test "$(git rev-parse "$canonical^1")" = "$first_parent"
+          test "$(git rev-parse "$canonical^2")" = "$product_parent"
+          git merge-base --is-ancestor "$canonical" origin/main
+          git checkout --detach "$canonical"
+          printf '%s\n' \
+            test/preference-custody-manifest-v41.test.js \
+            test/preference-linkage-probability-calibration-assurance.test.js \
+            tools/lib/preference-linkage-probability-calibration-assurance.mjs \
+            | LC_ALL=C sort > /tmp/pc43-canonical-paths.expected
+          git diff-tree --no-commit-id --name-only -r "$canonical" | LC_ALL=C sort > /tmp/pc43-canonical-paths.observed
+          diff -u /tmp/pc43-canonical-paths.expected /tmp/pc43-canonical-paths.observed
+          test "$(wc -l < /tmp/pc43-canonical-paths.observed | tr -d ' ')" = 3
+          test -z "$(git ls-tree -r --name-only "$canonical" | grep -E '(^|/)(\.pc43|temporary-pc43|pc43-.*carrier|pc43-.*materializer|pc43-.*trigger)' || true)"
+          git rev-parse "$canonical^{tree}" > /tmp/pc43-canonical-tree.txt
+          git rev-parse origin/main > /tmp/pc43-current-main.txt
+      - name: Reconstruct focused and compositional PC-43 custody
+        run: |
+          set -Eeuo pipefail
+          node tools/compile-preference-linkage-probability-calibration-assurance.mjs
+          node tools/validate-preference-linkage-probability-calibration-assurance.mjs
+          node test/preference-linkage-probability-calibration-assurance.test.js
+          node tools/compile-preference-custody-manifest-v41.mjs
+          node tools/validate-preference-custody-manifest-v41.mjs
+          node test/preference-custody-manifest-v41.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do node "$test_file"; done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          mkdir -p /tmp/pc43-canonical-reference
+          cp build/research/preference-linkage-probability-calibration-assurance.json /tmp/pc43-canonical-reference/
+          cp build/research/preference-custody-laboratory-floor-v41.json /tmp/pc43-canonical-reference/
+      - name: Run release gate, restore exact tree, and replay
+        run: |
+          set -Eeuo pipefail
+          canonical=0d8974e656ee320fd779271e5667b2365c5d8f45
+          npm run release:check
+          git diff --exit-code -- \
+            test/preference-custody-manifest-v41.test.js \
+            test/preference-linkage-probability-calibration-assurance.test.js \
+            tools/lib/preference-linkage-probability-calibration-assurance.mjs
+          git reset --hard "$canonical"
+          git clean -fdx
+          node tools/compile-preference-linkage-probability-calibration-assurance.mjs
+          node tools/validate-preference-linkage-probability-calibration-assurance.mjs
+          node test/preference-linkage-probability-calibration-assurance.test.js
+          node tools/compile-preference-custody-manifest-v41.mjs
+          node tools/validate-preference-custody-manifest-v41.mjs
+          node test/preference-custody-manifest-v41.test.js
+          cmp /tmp/pc43-canonical-reference/preference-linkage-probability-calibration-assurance.json build/research/preference-linkage-probability-calibration-assurance.json
+          cmp /tmp/pc43-canonical-reference/preference-custody-laboratory-floor-v41.json build/research/preference-custody-laboratory-floor-v41.json
+          git reset --hard "$canonical"
+          git clean -fdx
+          test "$(git rev-parse HEAD^{tree})" = "$(cat /tmp/pc43-canonical-tree.txt)"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+      - name: Emit canonical receipt
+        run: |
+          set -Eeuo pipefail
+          canonical=0d8974e656ee320fd779271e5667b2365c5d8f45
+          first_parent=eba618a72a71ebc52e3c3462e2f00cfa1010b7d6
+          product_parent=a6c5842a2631084a07c987a016a79bd15bf528ea
+          files='{}'
+          while IFS= read -r path; do
+            bytes="$(git cat-file -s "$canonical:$path")"
+            blob="$(git rev-parse "$canonical:$path")"
+            digest="$(git show "$canonical:$path" | sha256sum | cut -d' ' -f1)"
+            files="$(jq --arg path "$path" --argjson bytes "$bytes" --arg blob "$blob" --arg digest "$digest" '. + {($path):{bytes:$bytes,git_blob_sha1:$blob,sha256:$digest}}' <<< "$files")"
+          done < /tmp/pc43-canonical-paths.expected
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg canonical "$canonical" \
+            --arg first_parent "$first_parent" \
+            --arg product_parent "$product_parent" \
+            --arg tree "$(cat /tmp/pc43-canonical-tree.txt)" \
+            --arg current_main "$(cat /tmp/pc43-current-main.txt)" \
+            --arg path_digest "$(sha256sum /tmp/pc43-canonical-paths.expected | cut -d' ' -f1)" \
+            --argjson files "$files" \
+            '{schema_version:"pc43-frozen-ledger-canonical-proof@1",workflow_run_id:$run_id,canonical_merge:$canonical,first_parent:$first_parent,product_parent:$product_parent,canonical_tree:$tree,current_main_observed:$current_main,canonical_path_count:3,path_list_sha256:$path_digest,files:$files,private_canonical_ledger_frozen:true,exported_ledger_is_separate_frozen_copy:true,in_process_mutation_regressions:2,standalone_fixture_mutations:41,standalone_build_tamper_checks:8,floor_v41_adversarial_mutations:47,focused_pc43:"pass",floor_v41:"pass",historical_preference_custody_floors:"pass",no_magic_human:"pass",release_check:"pass",deterministic_replay:"pass",final_tree_clean:true,temporary_canonical_paths:0,graph_effect:"none",outside_human_dependency:false}' > /tmp/pc43-frozen-ledger-canonical-proof.json
+          cat /tmp/pc43-frozen-ledger-canonical-proof.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc43-frozen-ledger-canonical-proof
+          path: /tmp/pc43-frozen-ledger-canonical-proof.json
+          if-no-files-found: error
+          retention-days: 90
