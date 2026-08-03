@@ -1,0 +1,56 @@
+name: TEMP export exact current main for PC-44
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc44-current-main-source-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ef74c7dba6278912534bc3eb8c6fa4191b9ff2d8
+          fetch-depth: 1
+      - name: Export exact current canonical main
+        run: |
+          set -Eeuo pipefail
+          expected=ef74c7dba6278912534bc3eb8c6fa4191b9ff2d8
+          observed="$(git rev-parse HEAD)"
+          test "$observed" = "$expected"
+          out=/tmp/pc44-current-main-source
+          mkdir -p "$out"
+          printf '%s\n' "$observed" > "$out/source-head.sha"
+          git rev-parse 'HEAD^{tree}' > "$out/source-tree.sha"
+          find . -type f \
+            ! -path './.git/*' \
+            ! -path './node_modules/*' \
+            ! -path './dist/*' \
+            -printf '%P\n' | LC_ALL=C sort > "$out/source-paths.txt"
+          tar \
+            --sort=name \
+            --mtime='UTC 1970-01-01' \
+            --owner=0 \
+            --group=0 \
+            --numeric-owner \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='dist' \
+            -czf "$out/source.tar.gz" .
+          stat -c '%s' "$out/source.tar.gz" > "$out/source.bytes"
+          sha256sum "$out/source.tar.gz" > "$out/source.sha256"
+          wc -l < "$out/source-paths.txt" | tr -d ' ' > "$out/source-path-count.txt"
+          test "$(cat "$out/source-path-count.txt")" -gt 5000
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc44-current-main-source
+          path: /tmp/pc44-current-main-source
+          if-no-files-found: error
+          retention-days: 7
