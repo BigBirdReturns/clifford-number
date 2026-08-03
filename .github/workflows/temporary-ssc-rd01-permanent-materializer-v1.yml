@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  repair-carrier:
+  publish-carrier-part:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -27,10 +27,9 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Recover final carrier part and restore patched materializer
+      - name: Verify and publish final exact carrier part
         env:
           TARGET_BRANCH: agent/ssc-rd01-permanent-materializer-base-v1
-          ORIGINAL_WORKFLOW_COMMIT: 6805633f230b70780acaee1448813debc798ce09
           PACKAGE_B64_SHA256: bd37425b3f936369196d10307bc32b33d9765e835738563c887082028d2c19bb
           PACKAGE_TGZ_SHA256: 7affdafb780f90fab813b93480f346ecd65391d560eaad94499346b9769e004c
           PART04_SHA256: 01d3b3555ae7165a5701e8cd857cef69e220ee45413a5ab972da0a6653a4e7e1
@@ -41,10 +40,6 @@ jobs:
 
           full='.github/tmp/ssc-rd01-permanent-package-v1.tar.gz.b64'
           prefix='.github/tmp/ssc-rd01-permanent-package-v1'
-          workflow='.github/workflows/temporary-ssc-rd01-permanent-materializer-v1.yml'
-          test -f "$full"
-          for part in 00 01 02 03; do test -f "$prefix.part-$part.b64"; done
-
           tr -d '\r\n\t ' < "$full" > /tmp/rd01-full-normalized.b64
           test "$(wc -c < /tmp/rd01-full-normalized.b64 | tr -d ' ')" = '17396'
           tail -c 1012 /tmp/rd01-full-normalized.b64 > "$prefix.part-04.b64"
@@ -56,77 +51,12 @@ jobs:
           echo "$PACKAGE_B64_SHA256  /tmp/rd01-reassembled.b64" | sha256sum --check --strict
           base64 --decode /tmp/rd01-reassembled.b64 > /tmp/rd01-permanent-package.tar.gz
           echo "$PACKAGE_TGZ_SHA256  /tmp/rd01-permanent-package.tar.gz" | sha256sum --check --strict
-          tar -tzf /tmp/rd01-permanent-package.tar.gz > /tmp/rd01-package-members.txt
-          test "$(wc -l < /tmp/rd01-package-members.txt | tr -d ' ')" = '6'
+          test "$(tar -tzf /tmp/rd01-permanent-package.tar.gz | wc -l | tr -d ' ')" = '6'
 
-          export SHA00="$(sha256sum "$prefix.part-00.b64" | awk '{print $1}')"
-          export SHA01="$(sha256sum "$prefix.part-01.b64" | awk '{print $1}')"
-          export SHA02="$(sha256sum "$prefix.part-02.b64" | awk '{print $1}')"
-          export SHA03="$(sha256sum "$prefix.part-03.b64" | awk '{print $1}')"
-          export SHA04="$(sha256sum "$prefix.part-04.b64" | awk '{print $1}')"
-
-          git show "$ORIGINAL_WORKFLOW_COMMIT:$workflow" > /tmp/rd01-original-materializer.yml
-          cp /tmp/rd01-original-materializer.yml "$workflow"
-
-          python - <<'PY'
-          import os
-          from pathlib import Path
-
-          workflow = Path('.github/workflows/temporary-ssc-rd01-permanent-materializer-v1.yml')
-          text = workflow.read_text()
-          if '  PACKAGE_B64_SHA256:' not in text:
-              text = text.replace(
-                  '  PACKAGE_TGZ_SHA256: 7affdafb780f90fab813b93480f346ecd65391d560eaad94499346b9769e004c\n',
-                  '  PACKAGE_B64_SHA256: bd37425b3f936369196d10307bc32b33d9765e835738563c887082028d2c19bb\n'
-                  '  PACKAGE_TGZ_SHA256: 7affdafb780f90fab813b93480f346ecd65391d560eaad94499346b9769e004c\n'
-              )
-
-          start_marker = '      - name: Reconstruct exact permanent package\n'
-          end_marker = '      - name: Recover three exact source artifacts into permanent custody\n'
-          start = text.index(start_marker)
-          end = text.index(end_marker, start)
-          hashes = [os.environ[f'SHA0{i}'] for i in range(5)]
-          paths = [
-              f'controller/.github/tmp/ssc-rd01-permanent-package-v1.part-0{i}.b64'
-              for i in range(5)
-          ]
-          sizes = [4096, 4096, 4096, 4096, 1012]
-          block_lines = [
-              '      - name: Reconstruct exact permanent package',
-              '        run: |',
-              '          set -Eeuo pipefail',
-              '          : > /tmp/rd01-permanent-package.b64',
-          ]
-          for path, digest, size in zip(paths, hashes, sizes):
-              block_lines.extend([
-                  f"          test \"$(wc -c < '{path}' | tr -d ' ')\" = '{size}'",
-                  f"          echo '{digest}  {path}' | sha256sum --check --strict",
-                  f"          cat '{path}' >> /tmp/rd01-permanent-package.b64",
-              ])
-          block_lines.extend([
-              "          test \"$(wc -c < /tmp/rd01-permanent-package.b64 | tr -d ' ')\" = '17396'",
-              '          echo "$PACKAGE_B64_SHA256  /tmp/rd01-permanent-package.b64" | sha256sum --check --strict',
-              '          base64 --decode /tmp/rd01-permanent-package.b64 > /tmp/rd01-permanent-package.tar.gz',
-              '          echo "$PACKAGE_TGZ_SHA256  /tmp/rd01-permanent-package.tar.gz" | sha256sum --check --strict',
-              '          tar -xzf /tmp/rd01-permanent-package.tar.gz -C work',
-              '          test -f work/.github/workflows/status-sovereignty-rd01-wave02-terminal-closure.yml',
-              '          test -f work/docs/milestones/ssc-rd-wave02-rd01-legal-entity.md',
-              '          test -f work/schemas/status-sovereignty-rd-wave02-rd01-legal-entity.schema.json',
-              '          test -f work/test/status-sovereignty-rd-wave02-rd01-legal-entity.test.js',
-              '          test -f work/tools/build-status-sovereignty-rd-wave02-rd01-legal-entity.mjs',
-              '          test -f work/tools/validate-status-sovereignty-rd-wave02-rd01-legal-entity.mjs',
-          ])
-          block = '\n'.join(block_lines) + '\n\n'
-          workflow.write_text(text[:start] + block + text[end:])
-          PY
-
-          grep -q 'part-04.b64' "$workflow"
-          grep -q "$PACKAGE_B64_SHA256" "$workflow"
-          git diff --check
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add "$prefix.part-04.b64" "$workflow"
-          git commit -m 'Repair exact RD-01 permanent carrier reassembly'
+          git add "$prefix.part-04.b64"
+          git commit -m 'Add exact RD-01 permanent carrier part 04'
           product="$(git rev-parse HEAD)"
           test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$start"
           git push origin "$product:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$start"
