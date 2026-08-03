@@ -1,0 +1,264 @@
+name: TEMP repair PC-43 review findings
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc43-review-repair.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc43-review-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      SOURCE_BRANCH: agent/pc43-review-repair
+      TARGET_BRANCH: research/preference-linkage-probability-calibration-assurance-v1
+      EXPECTED_TARGET_HEAD: 23c8ccc03bbfb72326186b8958e5ae402fb0ce50
+      EXPECTED_MAIN: dcc64cb395368070c8fa0ca3834afda26e2c0caf
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc43-review-repair
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify exact leases and apply bounded review repair
+        run: |
+          set -Eeuo pipefail
+          git fetch origin main "$SOURCE_BRANCH" "$TARGET_BRANCH" --no-tags
+          source_head="$(git rev-parse HEAD)"
+          test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$source_head"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_TARGET_HEAD"
+          git checkout --detach "$EXPECTED_TARGET_HEAD"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              target = Path(path)
+              text = target.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one replacement target, found {count}')
+              target.write_text(text.replace(old, new))
+
+          standalone = 'tools/lib/preference-linkage-probability-calibration-assurance.mjs'
+          replace_once(
+              standalone,
+              'const REQUIRED_REFUSAL_RULES = [',
+              'export const REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES = ['
+          )
+          replace_once(
+              standalone,
+              '];\nconst FALSE_CLASSIFICATIONS = [',
+              '];\nconst REQUIRED_REFUSAL_RULES = REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES;\nconst FALSE_CLASSIFICATIONS = ['
+          )
+
+          floor = 'tools/lib/preference-custody-manifest-v41.mjs'
+          replace_once(
+              floor,
+              "import { EXPECTED_LINKAGE_PROBABILITY_METRICS, validatePreferenceLinkageProbabilityCalibrationAssuranceBuild } from './preference-linkage-probability-calibration-assurance.mjs';",
+              "import { EXPECTED_LINKAGE_PROBABILITY_METRICS, REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES, validatePreferenceLinkageProbabilityCalibrationAssuranceBuild } from './preference-linkage-probability-calibration-assurance.mjs';"
+          )
+          replace_once(
+              floor,
+              "  if (unique(extension.required_refusal_rules).length !== 22) errors.push('v41 refusal-rule contract must contain twenty-two unique rules');",
+              "  if (!sameMembers(extension.required_refusal_rules, REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES) || array(extension.required_refusal_rules).length !== REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES.length) errors.push('v41 refusal-rule contract must match the exact PC-43 ledger');"
+          )
+          replace_once(
+              floor,
+              "composition:{base_manifest_id:baseBuild.manifest_id,base_schema_version:baseBuild.schema_version,base_control_count:baseBuild.control_count,extension_control_id:'PC-43',base_floor_snapshot_sha256:sha256(baseBuild),extension_snapshot_sha256:sha256(probabilityBuild),base_controls_sha256:sha256(baseBuild.controls),base_promotion_requirements_sha256:sha256(baseRequirements),base_promotion_requirement_count:baseRequirements.length,added_promotion_requirement_count:requirements.length-baseRequirements.length,final_promotion_requirement_count:requirements.length,base_open_frontiers:[...baseOpen]},",
+              "composition:{base_manifest_id:baseBuild.manifest_id,base_schema_version:baseBuild.schema_version,base_control_count:baseBuild.control_count,extension_control_id:'PC-43',manifest_snapshot_sha256:sha256(manifest),base_floor_snapshot_sha256:sha256(baseBuild),extension_snapshot_sha256:sha256(probabilityBuild),base_controls_sha256:sha256(baseBuild.controls),base_promotion_requirements_sha256:sha256(baseRequirements),base_promotion_requirement_count:baseRequirements.length,added_promotion_requirement_count:requirements.length-baseRequirements.length,final_promotion_requirement_count:requirements.length,base_open_frontiers:[...baseOpen]},"
+          )
+          replace_once(
+              floor,
+              "for(const key of ['base_floor_snapshot_sha256','extension_snapshot_sha256','base_controls_sha256','base_promotion_requirements_sha256'])",
+              "for(const key of ['manifest_snapshot_sha256','base_floor_snapshot_sha256','extension_snapshot_sha256','base_controls_sha256','base_promotion_requirements_sha256'])"
+          )
+          replace_once(
+              floor,
+              "if(composition.base_floor_snapshot_sha256!==sha256(baseBuild)) errors.push('compiled v41 base floor snapshot hash mismatch');",
+              "if(composition.manifest_snapshot_sha256!==sha256(manifest)) errors.push('compiled v41 manifest snapshot hash mismatch'); if(composition.base_floor_snapshot_sha256!==sha256(baseBuild)) errors.push('compiled v41 base floor snapshot hash mismatch');"
+          )
+
+          test_file = 'test/preference-custody-manifest-v41.test.js'
+          replace_once(
+              test_file,
+              "import { validatePreferenceCustodyManifestV41, validatePreferenceCustodyManifestV41Build } from '../tools/lib/preference-custody-manifest-v41.mjs';",
+              "import { compilePreferenceCustodyManifestV41, validatePreferenceCustodyManifestV41, validatePreferenceCustodyManifestV41Build } from '../tools/lib/preference-custody-manifest-v41.mjs';"
+          )
+          replace_once(
+              test_file,
+              'assert.equal(build.composition.base_floor_snapshot_sha256.length,64);',
+              'assert.equal(build.composition.manifest_snapshot_sha256.length,64); assert.equal(build.composition.base_floor_snapshot_sha256.length,64);'
+          )
+          replace_once(
+              test_file,
+              "const clone=value=>structuredClone(value); assert.ok(validatePreferenceCustodyManifestV41Build(build).length>0,'source artifacts required'); const revisedFixture=clone(probabilityFixture); revisedFixture.captured_at='2026-08-04'; const revisedProbabilityBuild=compilePreferenceLinkageProbabilityCalibrationAssuranceFixture(revisedFixture); assert.ok(validatePreferenceCustodyManifestV41Build(build,manifest,base,revisedProbabilityBuild,revisedFixture,baseSources).length>0,'valid revised PC-43 source paired with stale floor'); const revisedBase=clone(base); revisedBase.interpretation_contract.copy_ready_caveat+=' Revised source snapshot.'; assert.ok(validatePreferenceCustodyManifestV41Build(build,manifest,revisedBase,probabilityBuild,probabilityFixture,baseSources).length>0,'revised base paired with stale floor');",
+              "const clone=value=>structuredClone(value); assert.ok(validatePreferenceCustodyManifestV41Build(build).length>0,'source artifacts required'); const revisedFixture=clone(probabilityFixture); revisedFixture.captured_at='2026-08-04'; const revisedProbabilityBuild=compilePreferenceLinkageProbabilityCalibrationAssuranceFixture(revisedFixture); assert.ok(validatePreferenceCustodyManifestV41Build(build,manifest,base,revisedProbabilityBuild,revisedFixture,baseSources).length>0,'valid revised PC-43 source paired with stale floor'); const revisedBase=clone(base); revisedBase.interpretation_contract.copy_ready_caveat+=' Revised source snapshot.'; assert.ok(validatePreferenceCustodyManifestV41Build(build,manifest,revisedBase,probabilityBuild,probabilityFixture,baseSources).length>0,'revised base paired with stale floor'); const revisedManifest=clone(manifest); revisedManifest.source_revision_receipt='SOURCE-REVISION-RECEIPT-V2'; assert.deepEqual(validatePreferenceCustodyManifestV41(revisedManifest),[]); const revisedManifestBuild=compilePreferenceCustodyManifestV41(revisedManifest,base,probabilityBuild,probabilityFixture,baseSources); assert.deepEqual(validatePreferenceCustodyManifestV41Build(revisedManifestBuild,revisedManifest,base,probabilityBuild,probabilityFixture,baseSources),[]); assert.ok(validatePreferenceCustodyManifestV41Build(build,revisedManifest,base,probabilityBuild,probabilityFixture,baseSources).length>0,'validator-permitted manifest revision paired with stale floor'); const substitutedRulesManifest=clone(manifest); substitutedRulesManifest.extension_control.required_refusal_rules[0]='arbitrary_unique_refusal_rule'; assert.ok(validatePreferenceCustodyManifestV41(substitutedRulesManifest).length>0,'substituted refusal rule rejected'); assert.throws(()=>compilePreferenceCustodyManifestV41(substitutedRulesManifest,base,probabilityBuild,probabilityFixture,baseSources),/exact PC-43 ledger/);"
+          )
+          replace_once(
+              test_file,
+              "['refusal rule',v=>{v.extension_control.required_refusal_rules.pop();}],",
+              "['refusal rule',v=>{v.extension_control.required_refusal_rules.pop();}],['refusal substitution',v=>{v.extension_control.required_refusal_rules[0]='arbitrary_unique_refusal_rule';}],"
+          )
+          replace_once(
+              test_file,
+              "['composition extension id',v=>{v.composition.extension_control_id='PC-42';}],",
+              "['composition extension id',v=>{v.composition.extension_control_id='PC-42';}],['manifest snapshot hash',v=>{v.composition.manifest_snapshot_sha256='a'.repeat(64);}],"
+          )
+          replace_once(
+              test_file,
+              'assert.equal(manifestMutations.length+buildMutations.length,45);',
+              'assert.equal(manifestMutations.length+buildMutations.length,47);'
+          )
+          replace_once(
+              test_file,
+              'Preference custody floor v41 adversarial tests: PASS (45 mutations plus source-binding succession checks)',
+              'Preference custody floor v41 adversarial tests: PASS (47 mutations plus complete-manifest and source-binding succession checks)'
+          )
+          PY
+
+          repair_paths=(
+            test/preference-custody-manifest-v41.test.js
+            tools/lib/preference-custody-manifest-v41.mjs
+            tools/lib/preference-linkage-probability-calibration-assurance.mjs
+          )
+          printf '%s\n' "${repair_paths[@]}" | LC_ALL=C sort > /tmp/pc43-review-paths.expected
+          git diff --name-only | LC_ALL=C sort > /tmp/pc43-review-paths.observed
+          diff -u /tmp/pc43-review-paths.expected /tmp/pc43-review-paths.observed
+          test "$(wc -l < /tmp/pc43-review-paths.observed | tr -d ' ')" = 3
+
+          while IFS=$'\t' read -r path bytes sha blob; do
+            test "$(stat -c '%s' "$path")" = "$bytes"
+            test "$(sha256sum "$path" | cut -d' ' -f1)" = "$sha"
+            test "$(git hash-object "$path")" = "$blob"
+          done <<'EOF'
+          test/preference-custody-manifest-v41.test.js	11422	f4471a5106af9f1a0e51ccecdbce31e911941663a13606d5f4cafc064cc1edc2	bec66fc525ed3200f816e0aeb141fbe1dac92f17
+          tools/lib/preference-custody-manifest-v41.mjs	22289	e8e7f491ccf1f91ea09cf6f771ce9e460b00d8fabb1ee55b01f206100847d3cf	f92894aca10e78f9dbff1c27c230e471480deaef
+          tools/lib/preference-linkage-probability-calibration-assurance.mjs	55435	2f77cfcc1e361772be925a3f7de30acfea1b12f5d5bde4543a4484a20d700feb	fb9c53af7128dc0d437dd309b2dde667ff7fc3e1
+          EOF
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "${repair_paths[@]}"
+          git commit -m 'Preference Custody: bind PC-43 manifest and exact refusal ledger'
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_TARGET_HEAD"
+          git rev-parse HEAD > /tmp/pc43-review-head.sha
+          git rev-parse 'HEAD^{tree}' > /tmp/pc43-review-tree.sha
+          printf '%s\n' "$source_head" > /tmp/pc43-review-source-head.sha
+
+      - name: Run focused and historical qualification
+        run: |
+          set -Eeuo pipefail
+          node tools/compile-preference-linkage-probability-calibration-assurance.mjs
+          node tools/validate-preference-linkage-probability-calibration-assurance.mjs
+          node test/preference-linkage-probability-calibration-assurance.test.js
+          node tools/compile-preference-custody-manifest-v41.mjs
+          node tools/validate-preference-custody-manifest-v41.mjs
+          node test/preference-custody-manifest-v41.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | LC_ALL=C sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          touch /tmp/pc43-review-focused.pass
+
+      - name: Run complete repository release gate
+        run: |
+          set -Eeuo pipefail
+          npm run release:check
+          touch /tmp/pc43-review-release.pass
+
+      - name: Restore volatility and replay deterministically
+        run: |
+          set -Eeuo pipefail
+          review_head="$(cat /tmp/pc43-review-head.sha)"
+          for path in test/preference-custody-manifest-v41.test.js tools/lib/preference-custody-manifest-v41.mjs tools/lib/preference-linkage-probability-calibration-assurance.mjs; do
+            git diff --exit-code "$review_head" -- "$path"
+          done
+          git reset --hard "$review_head"
+          git clean -fdx
+          node tools/compile-preference-linkage-probability-calibration-assurance.mjs
+          node tools/validate-preference-linkage-probability-calibration-assurance.mjs
+          node test/preference-linkage-probability-calibration-assurance.test.js
+          node tools/compile-preference-custody-manifest-v41.mjs
+          node tools/validate-preference-custody-manifest-v41.mjs
+          node test/preference-custody-manifest-v41.test.js
+          git diff --exit-code
+          git reset --hard "$review_head"
+          git clean -fdx
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          touch /tmp/pc43-review-replay.pass
+
+      - name: Recheck leases and publish exact repair
+        run: |
+          set -Eeuo pipefail
+          source_head="$(cat /tmp/pc43-review-source-head.sha)"
+          review_head="$(cat /tmp/pc43-review-head.sha)"
+          git fetch origin main "$SOURCE_BRANCH" "$TARGET_BRANCH" --no-tags
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$source_head"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_TARGET_HEAD"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET_HEAD" origin "$review_head:refs/heads/$TARGET_BRANCH"
+          touch /tmp/pc43-review-published.pass
+
+      - name: Emit review-repair receipt
+        if: always()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os
+
+          files = {
+              'test/preference-custody-manifest-v41.test.js': {'bytes': 11422, 'sha256': 'f4471a5106af9f1a0e51ccecdbce31e911941663a13606d5f4cafc064cc1edc2', 'git_blob_sha1': 'bec66fc525ed3200f816e0aeb141fbe1dac92f17'},
+              'tools/lib/preference-custody-manifest-v41.mjs': {'bytes': 22289, 'sha256': 'e8e7f491ccf1f91ea09cf6f771ce9e460b00d8fabb1ee55b01f206100847d3cf', 'git_blob_sha1': 'f92894aca10e78f9dbff1c27c230e471480deaef'},
+              'tools/lib/preference-linkage-probability-calibration-assurance.mjs': {'bytes': 55435, 'sha256': '2f77cfcc1e361772be925a3f7de30acfea1b12f5d5bde4543a4484a20d700feb', 'git_blob_sha1': 'fb9c53af7128dc0d437dd309b2dde667ff7fc3e1'}
+          }
+          manifest_bytes = json.dumps(files, sort_keys=True, separators=(',', ':')).encode()
+          receipt = {
+              'schema_version': 'pc43-review-repair-receipt@1',
+              'workflow_run_id': os.environ.get('GITHUB_RUN_ID'),
+              'source_head': Path('/tmp/pc43-review-source-head.sha').read_text().strip() if Path('/tmp/pc43-review-source-head.sha').exists() else None,
+              'prior_target_head': os.environ['EXPECTED_TARGET_HEAD'],
+              'publication_main': os.environ['EXPECTED_MAIN'],
+              'repair_head': Path('/tmp/pc43-review-head.sha').read_text().strip() if Path('/tmp/pc43-review-head.sha').exists() else None,
+              'repair_tree': Path('/tmp/pc43-review-tree.sha').read_text().strip() if Path('/tmp/pc43-review-tree.sha').exists() else None,
+              'repair_path_count': 3,
+              'file_manifest_sha256': hashlib.sha256(manifest_bytes).hexdigest(),
+              'files': files,
+              'complete_manifest_snapshot_binding': True,
+              'exact_refusal_rule_ledger_binding': True,
+              'floor_v41_adversarial_mutations': 47,
+              'focused_pc43': 'pass' if Path('/tmp/pc43-review-focused.pass').exists() else 'not_proved',
+              'historical_preference_custody_floors': 'pass' if Path('/tmp/pc43-review-focused.pass').exists() else 'not_proved',
+              'no_magic_human': 'pass' if Path('/tmp/pc43-review-focused.pass').exists() else 'not_proved',
+              'release_check': 'pass' if Path('/tmp/pc43-review-release.pass').exists() else 'not_proved',
+              'deterministic_replay': 'pass' if Path('/tmp/pc43-review-replay.pass').exists() else 'not_proved',
+              'target_published': Path('/tmp/pc43-review-published.pass').exists(),
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          Path('/tmp/pc43-review-repair-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc43-review-repair-${{ github.run_id }}
+          path: /tmp/pc43-review-repair-receipt.json
+          if-no-files-found: error
+          retention-days: 90
