@@ -1,4 +1,4 @@
-name: TEMP export current canonical main for PC-40 composition
+name: TEMP export exact PC-40 review head source
 
 on:
   pull_request:
@@ -17,15 +17,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: af682044dd73e83d51c2161cf04eee071e649ec0
           fetch-depth: 1
-      - name: Export exact current canonical main
+      - name: Export exact PC-40 review head
         run: |
           set -Eeuo pipefail
-          expected=8a2aa74ea43827447ee8557c41fdc059d2f76a3c
+          expected=af682044dd73e83d51c2161cf04eee071e649ec0
           observed="$(git rev-parse HEAD)"
           test "$observed" = "$expected"
-          out=/tmp/pc40-current-main-source
+          out=/tmp/pc40-review-head-source
           mkdir -p "$out"
           printf '%s\n' "$observed" > "$out/source-head.sha"
           find . -type f \
@@ -48,7 +48,7 @@ jobs:
           test "$(wc -l < "$out/source-paths.txt" | tr -d ' ')" -gt 4000
       - uses: actions/upload-artifact@v4
         with:
-          name: pc40-current-main-source
-          path: /tmp/pc40-current-main-source
+          name: pc40-review-head-source
+          path: /tmp/pc40-review-head-source
           if-no-files-found: error
           retention-days: 7
