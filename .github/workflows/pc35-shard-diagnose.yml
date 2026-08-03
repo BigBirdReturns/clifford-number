@@ -1,28 +1,140 @@
-name: Temporary PC-35 shard diagnostic
+name: Temporary PC-35 exact shard repair
 
 on:
   pull_request:
     paths:
-      - '.pc35/payload.part-*'
       - '.github/workflows/pc35-shard-diagnose.yml'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: pc35-exact-shard-repair
+  cancel-in-progress: false
 
 jobs:
-  diagnose:
+  repair:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           ref: research/preference-population-frame-assurance-v1
-      - name: Print normalized shard hashes
+          fetch-depth: 0
+      - name: Recover the single corrupted base64 symbol from frozen digests
         run: |
           python - <<'PY'
           from pathlib import Path
+          import base64
           import hashlib
-          for path in sorted(Path('.pc35').glob('payload.part-*')):
-              normalized = ''.join(path.read_text().split())
-              print(path.name, len(normalized), hashlib.sha256(normalized.encode()).hexdigest())
+          import io
+          import json
+          import tarfile
+
+          expected_aggregate_sha256 = 'b705a26883d1252673c147fd04c354035c10605d862cc7b28744fa63ef7b489a'
+          expected_target_sha256 = 'ddd533429c4ac5835fc3bb36d1e2f08ff0a6e18225884fb93d2378246724d6db'
+          expected_xz_sha256 = '26181de23aaa7c0cc144414a09ab0560db532e0b336e59418bb2e8db7adcb313'
+          expected_paths = [
+              'data/research/preference-custody/population-frame-assurance.fixture.json',
+              'tools/lib/preference-population-frame-assurance.mjs',
+              'tools/compile-preference-population-frame-assurance.mjs',
+              'tools/validate-preference-population-frame-assurance.mjs',
+              'test/preference-population-frame-assurance.test.js',
+              'docs/preference-custody-population-frame-assurance.md',
+              'data/research/preference-custody/control-manifest-v33.json',
+              'tools/lib/preference-custody-manifest-v33.mjs',
+              'tools/compile-preference-custody-manifest-v33.mjs',
+              'tools/validate-preference-custody-manifest-v33.mjs',
+              'test/preference-custody-manifest-v33.test.js',
+              'docs/preference-custody-laboratory-floor-v33.md',
+          ]
+          alphabet = b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+          paths = [Path(f'.pc35/payload.part-{index:02d}') for index in range(6)]
+          if not all(path.is_file() for path in paths):
+              raise SystemExit('PC-35 shard denominator is incomplete')
+          shards = [''.join(path.read_text().split()) for path in paths]
+          if [len(shard) for shard in shards] != [3128] * 6:
+              raise SystemExit(f'unexpected shard lengths: {[len(shard) for shard in shards]}')
+
+          combined = ''.join(shards)
+          current_hash = hashlib.sha256(combined.encode()).hexdigest()
+          if current_hash == expected_aggregate_sha256:
+              raise SystemExit('aggregate already matches; refusing an unnecessary repair')
+
+          target_index = 3
+          target_start = sum(len(shard) for shard in shards[:target_index])
+          target_end = target_start + len(shards[target_index])
+          candidate = bytearray(combined.encode())
+          solutions = []
+          for absolute_position in range(target_start, target_end):
+              original = candidate[absolute_position]
+              for replacement in alphabet:
+                  if replacement == original:
+                      continue
+                  candidate[absolute_position] = replacement
+                  if hashlib.sha256(candidate).hexdigest() == expected_aggregate_sha256:
+                      solutions.append((absolute_position - target_start, original, replacement))
+              candidate[absolute_position] = original
+
+          if len(solutions) != 1:
+              raise SystemExit(f'expected exactly one digest-bound single-symbol repair, found {solutions}')
+
+          relative_position, original, replacement = solutions[0]
+          corrected_target = bytearray(shards[target_index].encode())
+          corrected_target[relative_position] = replacement
+          corrected_text = corrected_target.decode()
+          corrected_target_hash = hashlib.sha256(corrected_text.encode()).hexdigest()
+          if corrected_target_hash != expected_target_sha256:
+              raise SystemExit(f'corrected target hash mismatch: {corrected_target_hash}')
+
+          shards[target_index] = corrected_text
+          corrected_combined = ''.join(shards)
+          corrected_aggregate_hash = hashlib.sha256(corrected_combined.encode()).hexdigest()
+          if corrected_aggregate_hash != expected_aggregate_sha256:
+              raise SystemExit(f'corrected aggregate hash mismatch: {corrected_aggregate_hash}')
+
+          xz_bytes = base64.b64decode(corrected_combined, validate=True)
+          xz_hash = hashlib.sha256(xz_bytes).hexdigest()
+          if xz_hash != expected_xz_sha256:
+              raise SystemExit(f'corrected xz hash mismatch: {xz_hash}')
+          with tarfile.open(fileobj=io.BytesIO(xz_bytes), mode='r:xz') as archive:
+              names = [member.name for member in archive.getmembers()]
+          if names != expected_paths:
+              raise SystemExit(f'corrected archive path/order mismatch: {names}')
+
+          paths[target_index].write_text(corrected_text + '\n')
+          receipt = {
+              'schema_version': 'pc35-exact-shard-repair-receipt@1',
+              'target': str(paths[target_index]),
+              'relative_position': relative_position,
+              'original_symbol': chr(original),
+              'replacement_symbol': chr(replacement),
+              'target_sha256': corrected_target_hash,
+              'aggregate_base64_sha256': corrected_aggregate_hash,
+              'xz_sha256': xz_hash,
+              'archive_paths': names,
+              'outside_human_dependency': False,
+          }
+          Path('/tmp/pc35-shard-repair-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
           PY
+      - name: Commit only the repaired shard and retire this repair workflow
+        run: |
+          set -euo pipefail
+          source_head="$(git rev-parse HEAD)"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -- .pc35/payload.part-03
+          git rm -- .github/workflows/pc35-shard-diagnose.yml
+          observed="$(git diff --cached --name-only | sort)"
+          expected="$(printf '%s\n' .github/workflows/pc35-shard-diagnose.yml .pc35/payload.part-03 | sort)"
+          test "$observed" = "$expected"
+          git commit -m 'Repair exact PC-35 carrier shard'
+          git push --force-with-lease=refs/heads/research/preference-population-frame-assurance-v1:"$source_head" origin HEAD:refs/heads/research/preference-population-frame-assurance-v1
+      - name: Preserve exact repair receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc35-exact-shard-repair-receipt
+          path: /tmp/pc35-shard-repair-receipt.json
+          if-no-files-found: error
