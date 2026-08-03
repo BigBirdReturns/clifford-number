@@ -1,0 +1,499 @@
+{
+  "schema_version": "preference-population-coverage-turnover-assurance-fixture@1",
+  "fixture_id": "same-population-coverage-verified-status-different-operational-states-v1",
+  "issue": 850,
+  "parent_program_issue": 594,
+  "captured_at": "2026-08-02",
+  "status": "synthetic_control",
+  "graph_effect": "none",
+  "counts_toward_thesis_evidence": false,
+  "baseline": {
+    "operative_release_id": "RELEASE-INCIDENT-V1",
+    "operative_release_version": 1,
+    "declared_population_units": 100,
+    "public_population_coverage_status": "population_coverage_verified",
+    "published_enumeration_coverage": 1,
+    "published_hard_to_enumerate_coverage": 1,
+    "published_missingness_rate": 0,
+    "published_entrant_coverage": 1,
+    "published_exit_coverage": 1,
+    "published_snapshot_alignment": "current",
+    "approved_use": "systemwide_release_policy",
+    "reference_frame_version": "POPULATION-COVERAGE-FRAME-V1",
+    "reference_boundary_version": "POPULATION-COVERAGE-BOUNDARY-V1",
+    "reference_turnover_version": "POPULATION-TURNOVER-V2",
+    "reference_snapshot_version": "POPULATION-SNAPSHOT-V1",
+    "binding_public_authority": false
+  },
+  "expected_classification": {
+    "declared_population_identifies_operational_population_universe": false,
+    "published_enumeration_coverage_identifies_complete_hard_to_enumerate_missingness_and_uncertainty_custody": false,
+    "published_hard_to_enumerate_coverage_identifies_independently_validated_enumeration": false,
+    "absence_of_record_identifies_absence_when_nonresponse_or_unknown_missingness_possible": false,
+    "zero_published_missingness_identifies_zero_true_missingness": false,
+    "proxy_enumeration_identifies_observed_independently_validated_enumeration": false,
+    "analytic_boundary_identifies_operational_population_boundary": false,
+    "current_records_identify_current_turnover_complete_denominator": false,
+    "population_event_identifies_propagated_denominator_correction": false,
+    "current_snapshot_identifies_decision_period_alignment": false,
+    "historical_population_coverage_assurance_identifies_current_assurance": false,
+    "public_population_coverage_verified_status_identifies_complete_current_correctable_authorized_evidence": false,
+    "population_coverage_assurance_failure_identifies_coercion_manipulation_discrimination_breach_misconduct_coordination_common_purpose_or_intent": false,
+    "binding_public_authority_supported": false,
+    "manipulative_intent_inferable": false,
+    "real_world_effect_claimed": false,
+    "complete_population_coverage_assurance_supported_in_at_least_one_world": true
+  },
+  "required_refusal_rules": [
+    "declared_population_units_are_not_the_operational_population_universe",
+    "published_enumeration_coverage_is_not_complete_hard_to_enumerate_transient_external_linked_missingness_or_uncertainty_custody",
+    "published_hard_to_enumerate_coverage_is_not_independently_validated_enumeration",
+    "no_recorded_unit_is_not_an_absent_unit_when_nonresponse_inaccessible_sources_suppression_or_unknown_missingness_remain_possible",
+    "zero_published_missingness_is_not_zero_true_missingness",
+    "proxy_enumeration_is_not_observed_or_independently_validated_enumeration",
+    "analytic_geography_or_service_area_is_not_the_operational_population_boundary",
+    "current_records_are_not_a_current_denominator_when_entrant_and_exit_propagation_is_incomplete",
+    "population_turnover_event_is_not_denominator_correction_until_propagated_to_every_consequential_system",
+    "current_looking_snapshot_is_not_decision_period_alignment",
+    "historical_population_coverage_assurance_is_not_current_after_source_boundary_population_turnover_workflow_policy_or_release_succession",
+    "public_population_coverage_verified_status_is_not_complete_current_hard_to_enumerate_complete_missingness_classified_boundary_complete_turnover_current_snapshot_aligned_correctable_or_authorized_evidence",
+    "population_coverage_assurance_failure_is_not_proof_of_coercion_manipulation_discrimination_breach_misconduct_coordination_common_purpose_or_intent",
+    "population_coverage_claim_requires_frame_hard_to_enumerate_missingness_boundary_turnover_snapshot_lineage_correction_and_authority_custody",
+    "binding_public_authority_requires_separate_current_public_authorization_receipts",
+    "synthetic_population_counts_are_not_real_world_prevalence_coverage_or_effect_estimates"
+  ],
+  "prohibited_inferences": [
+    "Do not treat PC-36 as evidence that any named population, service, institution, frame, registry, or policy has complete or failed population-coverage assurance.",
+    "Do not infer the operational population universe from a declared denominator or aggregate coverage publication.",
+    "Do not infer complete hard-to-enumerate, transient, external, or linked-population coverage from a one-hundred-percent publication.",
+    "Do not infer absence from a missing record when nonresponse, inaccessible sources, suppression, or unknown missingness remain possible.",
+    "Do not infer zero true missingness from a zero published missingness rate.",
+    "Do not treat proxy enumeration as observed or independently validated enumeration.",
+    "Do not infer the operational population boundary from an analytic geography or service area.",
+    "Do not infer a current denominator when entrant or exit events remain unpropagated.",
+    "Do not treat migration, merger, split, death, closure, reactivation, seasonal, or churn events as corrected until every consequential denominator is updated.",
+    "Do not infer decision-period alignment from a current-looking snapshot label.",
+    "Do not infer current assurance from historical evidence after source, boundary, population, turnover, workflow, policy, or release succession.",
+    "Do not infer coercion, manipulation, discrimination, breach, misconduct, coordination, common purpose, or intent from population-coverage assurance failure.",
+    "Do not infer public authorization from frame, missingness, boundary, turnover, monitoring, correction, or lineage completeness.",
+    "Do not treat synthetic counts as real-world prevalence, omission, access, welfare, or effect estimates."
+  ],
+  "interpretation_contract": {
+    "contract_id": "preference-population-coverage-turnover-assurance@1",
+    "what_this_is": "A synthetic eight-world control separating one complete-looking population-coverage publication from hard-to-enumerate, missingness, boundary, turnover, snapshot, lineage, correction, and authority state.",
+    "what_this_is_not": "A real population census, missingness estimate, coverage finding, exclusion finding, discrimination finding, named-actor allegation, public-authority verdict, or effect estimate.",
+    "copy_ready_caveat": "PC-36 shows that one population_coverage_verified publication can coexist with complete assurance, hard-to-enumerate undercoverage, missingness laundering, boundary truncation, entrant or exit propagation failure, structural turnover and snapshot failure, or stale lineage. It creates no real-world finding."
+  },
+  "world_defaults": {
+    "public_claim": {
+      "operative_release_id": "RELEASE-INCIDENT-V1",
+      "operative_release_version": 1,
+      "declared_population_units": 100,
+      "public_population_coverage_status": "population_coverage_verified",
+      "published_enumeration_coverage": 1,
+      "published_hard_to_enumerate_coverage": 1,
+      "published_missingness_rate": 0,
+      "published_entrant_coverage": 1,
+      "published_exit_coverage": 1,
+      "published_snapshot_alignment": "current",
+      "approved_use": "systemwide_release_policy"
+    },
+    "frame_coverage": {
+      "ledger_id": "POPULATION-COVERAGE-FRAME-V1",
+      "declared_population_count": 100,
+      "operational_population_count": 100,
+      "enumerated_count": 100,
+      "omitted_population_unit_count": 0,
+      "hard_to_enumerate_omitted_count": 0,
+      "transient_omitted_count": 0,
+      "external_linked_omitted_count": 0,
+      "enumeration_complete": true,
+      "hard_to_enumerate_complete": true,
+      "transient_population_complete": true,
+      "external_linked_population_complete": true,
+      "uncertainty_complete": true,
+      "state": "complete"
+    },
+    "missingness": {
+      "ledger_id": "POPULATION-MISSINGNESS-V1",
+      "nonresponse_unit_count": 0,
+      "inaccessible_source_unit_count": 0,
+      "unknown_missingness_unit_count": 0,
+      "proxy_enumerated_unit_count": 0,
+      "missingness_mechanism_classified": true,
+      "proxy_independent_validation_complete": true,
+      "absent_state_validation_complete": true,
+      "falsification_complete": true,
+      "sensitivity_complete": true,
+      "state": "complete"
+    },
+    "boundary_coverage": {
+      "ledger_id": "POPULATION-COVERAGE-BOUNDARY-V1",
+      "boundary_truncated_unit_count": 0,
+      "geography_complete": true,
+      "service_area_complete": true,
+      "institutional_boundary_complete": true,
+      "external_boundary_complete": true,
+      "linked_population_boundary_complete": true,
+      "state": "complete"
+    },
+    "turnover": {
+      "ledger_id": "POPULATION-TURNOVER-V2",
+      "missing_entrant_count": 0,
+      "delayed_entrant_propagation_count": 0,
+      "retained_exit_count": 0,
+      "unpropagated_death_closure_count": 0,
+      "migration_merger_split_misclassification_count": 0,
+      "reactivation_seasonal_churn_misclassification_count": 0,
+      "entrant_propagation_complete": true,
+      "exit_propagation_complete": true,
+      "structural_turnover_complete": true,
+      "denominator_propagation_complete": true,
+      "state": "complete"
+    },
+    "snapshot_lineage": {
+      "ledger_id": "POPULATION-SNAPSHOT-V1",
+      "approved_frame_version": "POPULATION-COVERAGE-FRAME-V1",
+      "executed_frame_version": "POPULATION-COVERAGE-FRAME-V1",
+      "approved_boundary_version": "POPULATION-COVERAGE-BOUNDARY-V1",
+      "executed_boundary_version": "POPULATION-COVERAGE-BOUNDARY-V1",
+      "approved_turnover_version": "POPULATION-TURNOVER-V2",
+      "executed_turnover_version": "POPULATION-TURNOVER-V2",
+      "approved_snapshot_version": "POPULATION-SNAPSHOT-V1",
+      "executed_snapshot_version": "POPULATION-SNAPSHOT-V1",
+      "snapshot_period": "2026-Q3",
+      "decision_period": "2026-Q3",
+      "snapshot_misaligned_unit_count": 0,
+      "stale_frame_unit_count": 0,
+      "stale_population_coverage_decision_count": 0,
+      "snapshot_alignment_complete": true,
+      "current_population_coverage_lineage": true,
+      "state": "current"
+    },
+    "monitoring_correction": {
+      "ledger_id": "POPULATION-COVERAGE-MONITORING-V1",
+      "monitoring_complete": true,
+      "frame_refresh_complete": true,
+      "missingness_drift_complete": true,
+      "boundary_drift_complete": true,
+      "turnover_trigger_complete": true,
+      "snapshot_realignment_complete": true,
+      "rollback_complete": true,
+      "correction_complete": true,
+      "appeal_complete": true,
+      "certificate_withdrawal_complete": true,
+      "durability_complete": true,
+      "state": "complete"
+    },
+    "governance": {
+      "ledger_id": "POPULATION-COVERAGE-GOVERNANCE-V1",
+      "unsupported_population_coverage_decision_count": 0,
+      "binding_public_authority": false,
+      "conclusion_generated": false,
+      "real_world_effect_claimed": false,
+      "manipulative_intent_inferable": false,
+      "state": "complete"
+    }
+  },
+  "worlds": [
+    {
+      "world_id": "complete-population-coverage-missingness-boundary-turnover-snapshot-and-current-lineage",
+      "label": "Complete population-coverage assurance",
+      "mechanism": "Complete enumeration, hard-to-enumerate, missingness, boundary, turnover, snapshot, correction, and current-lineage assurance.",
+      "overrides": {},
+      "expected_flags": {
+        "complete_population_coverage_assurance": true,
+        "hard_to_enumerate_omission_present": false,
+        "missingness_failure_present": false,
+        "boundary_truncation_present": false,
+        "entrant_propagation_failure_present": false,
+        "exit_propagation_failure_present": false,
+        "structural_turnover_snapshot_failure_present": false,
+        "stale_population_coverage_lineage_present": false,
+        "frame_coverage_complete": true,
+        "missingness_classification_complete": true,
+        "boundary_coverage_complete": true,
+        "entrant_exit_propagation_complete": true,
+        "structural_turnover_complete": true,
+        "snapshot_alignment_complete": true,
+        "current_lineage_complete": true,
+        "monitoring_correction_complete": true
+      }
+    },
+    {
+      "world_id": "hard-to-enumerate-and-transient-populations-omitted",
+      "label": "Hard-to-enumerate undercoverage",
+      "mechanism": "Thirty hard-to-enumerate and twenty transient units are omitted while one-hundred-percent coverage is published.",
+      "overrides": {
+        "frame_coverage": {
+          "operational_population_count": 140,
+          "enumerated_count": 100,
+          "omitted_population_unit_count": 40,
+          "hard_to_enumerate_omitted_count": 30,
+          "transient_omitted_count": 20,
+          "external_linked_omitted_count": 20,
+          "enumeration_complete": false,
+          "hard_to_enumerate_complete": false,
+          "transient_population_complete": false,
+          "external_linked_population_complete": false,
+          "uncertainty_complete": false,
+          "state": "undercovered"
+        },
+        "governance": {
+          "unsupported_population_coverage_decision_count": 100,
+          "state": "unsupported"
+        }
+      },
+      "expected_flags": {
+        "complete_population_coverage_assurance": false,
+        "hard_to_enumerate_omission_present": true,
+        "missingness_failure_present": false,
+        "boundary_truncation_present": false,
+        "entrant_propagation_failure_present": false,
+        "exit_propagation_failure_present": false,
+        "structural_turnover_snapshot_failure_present": false,
+        "stale_population_coverage_lineage_present": false,
+        "frame_coverage_complete": false,
+        "missingness_classification_complete": true,
+        "boundary_coverage_complete": true,
+        "entrant_exit_propagation_complete": true,
+        "structural_turnover_complete": true,
+        "snapshot_alignment_complete": true,
+        "current_lineage_complete": true,
+        "monitoring_correction_complete": true
+      }
+    },
+    {
+      "world_id": "nonresponse-unknown-missingness-and-unvalidated-proxy-enumeration",
+      "label": "Missingness laundering",
+      "mechanism": "Nonresponse and unknown missingness are converted to absence while proxy enumeration lacks independent validation.",
+      "overrides": {
+        "missingness": {
+          "nonresponse_unit_count": 40,
+          "inaccessible_source_unit_count": 20,
+          "unknown_missingness_unit_count": 40,
+          "proxy_enumerated_unit_count": 30,
+          "missingness_mechanism_classified": false,
+          "proxy_independent_validation_complete": false,
+          "absent_state_validation_complete": false,
+          "falsification_complete": false,
+          "sensitivity_complete": false,
+          "state": "unclassified"
+        },
+        "governance": {
+          "unsupported_population_coverage_decision_count": 100,
+          "state": "unsupported"
+        }
+      },
+      "expected_flags": {
+        "complete_population_coverage_assurance": false,
+        "hard_to_enumerate_omission_present": false,
+        "missingness_failure_present": true,
+        "boundary_truncation_present": false,
+        "entrant_propagation_failure_present": false,
+        "exit_propagation_failure_present": false,
+        "structural_turnover_snapshot_failure_present": false,
+        "stale_population_coverage_lineage_present": false,
+        "frame_coverage_complete": true,
+        "missingness_classification_complete": false,
+        "boundary_coverage_complete": true,
+        "entrant_exit_propagation_complete": true,
+        "structural_turnover_complete": true,
+        "snapshot_alignment_complete": true,
+        "current_lineage_complete": true,
+        "monitoring_correction_complete": true
+      }
+    },
+    {
+      "world_id": "geographic-service-institutional-external-and-linked-boundary-truncation",
+      "label": "Boundary truncation",
+      "mechanism": "Forty operational units are omitted through geographic, service-area, institutional, external, or linked-population boundary truncation.",
+      "overrides": {
+        "boundary_coverage": {
+          "boundary_truncated_unit_count": 40,
+          "geography_complete": false,
+          "service_area_complete": false,
+          "institutional_boundary_complete": false,
+          "external_boundary_complete": false,
+          "linked_population_boundary_complete": false,
+          "state": "truncated"
+        },
+        "governance": {
+          "unsupported_population_coverage_decision_count": 100,
+          "state": "unsupported"
+        }
+      },
+      "expected_flags": {
+        "complete_population_coverage_assurance": false,
+        "hard_to_enumerate_omission_present": false,
+        "missingness_failure_present": false,
+        "boundary_truncation_present": true,
+        "entrant_propagation_failure_present": false,
+        "exit_propagation_failure_present": false,
+        "structural_turnover_snapshot_failure_present": false,
+        "stale_population_coverage_lineage_present": false,
+        "frame_coverage_complete": true,
+        "missingness_classification_complete": true,
+        "boundary_coverage_complete": false,
+        "entrant_exit_propagation_complete": true,
+        "structural_turnover_complete": true,
+        "snapshot_alignment_complete": true,
+        "current_lineage_complete": true,
+        "monitoring_correction_complete": true
+      }
+    },
+    {
+      "world_id": "entrants-births-and-activations-missing-or-delayed",
+      "label": "Entrant propagation failure",
+      "mechanism": "Thirty entrants are missing and twenty incoming population events are delayed or unpropagated.",
+      "overrides": {
+        "turnover": {
+          "missing_entrant_count": 30,
+          "delayed_entrant_propagation_count": 20,
+          "entrant_propagation_complete": false,
+          "denominator_propagation_complete": false,
+          "state": "entrant-failure"
+        },
+        "governance": {
+          "unsupported_population_coverage_decision_count": 100,
+          "state": "unsupported"
+        }
+      },
+      "expected_flags": {
+        "complete_population_coverage_assurance": false,
+        "hard_to_enumerate_omission_present": false,
+        "missingness_failure_present": false,
+        "boundary_truncation_present": false,
+        "entrant_propagation_failure_present": true,
+        "exit_propagation_failure_present": false,
+        "structural_turnover_snapshot_failure_present": false,
+        "stale_population_coverage_lineage_present": false,
+        "frame_coverage_complete": true,
+        "missingness_classification_complete": true,
+        "boundary_coverage_complete": true,
+        "entrant_exit_propagation_complete": false,
+        "structural_turnover_complete": true,
+        "snapshot_alignment_complete": true,
+        "current_lineage_complete": true,
+        "monitoring_correction_complete": true
+      }
+    },
+    {
+      "world_id": "exits-deaths-and-closures-retained-or-unpropagated",
+      "label": "Exit propagation failure",
+      "mechanism": "Twenty exits are retained and fifteen deaths or closures are not propagated to consequential denominators.",
+      "overrides": {
+        "turnover": {
+          "retained_exit_count": 20,
+          "unpropagated_death_closure_count": 15,
+          "exit_propagation_complete": false,
+          "denominator_propagation_complete": false,
+          "state": "exit-failure"
+        },
+        "governance": {
+          "unsupported_population_coverage_decision_count": 100,
+          "state": "unsupported"
+        }
+      },
+      "expected_flags": {
+        "complete_population_coverage_assurance": false,
+        "hard_to_enumerate_omission_present": false,
+        "missingness_failure_present": false,
+        "boundary_truncation_present": false,
+        "entrant_propagation_failure_present": false,
+        "exit_propagation_failure_present": true,
+        "structural_turnover_snapshot_failure_present": false,
+        "stale_population_coverage_lineage_present": false,
+        "frame_coverage_complete": true,
+        "missingness_classification_complete": true,
+        "boundary_coverage_complete": true,
+        "entrant_exit_propagation_complete": false,
+        "structural_turnover_complete": true,
+        "snapshot_alignment_complete": true,
+        "current_lineage_complete": true,
+        "monitoring_correction_complete": true
+      }
+    },
+    {
+      "world_id": "structural-turnover-and-snapshot-period-misalignment",
+      "label": "Structural turnover and snapshot failure",
+      "mechanism": "Migration, merger, split, reactivation, seasonal, and churn state are misclassified while forty units use a nonconcurrent snapshot.",
+      "overrides": {
+        "turnover": {
+          "migration_merger_split_misclassification_count": 20,
+          "reactivation_seasonal_churn_misclassification_count": 15,
+          "structural_turnover_complete": false,
+          "state": "structural-failure"
+        },
+        "snapshot_lineage": {
+          "snapshot_period": "2026-Q1",
+          "decision_period": "2026-Q3",
+          "snapshot_misaligned_unit_count": 40,
+          "stale_frame_unit_count": 60,
+          "snapshot_alignment_complete": false,
+          "state": "misaligned"
+        },
+        "governance": {
+          "unsupported_population_coverage_decision_count": 100,
+          "state": "unsupported"
+        }
+      },
+      "expected_flags": {
+        "complete_population_coverage_assurance": false,
+        "hard_to_enumerate_omission_present": false,
+        "missingness_failure_present": false,
+        "boundary_truncation_present": false,
+        "entrant_propagation_failure_present": false,
+        "exit_propagation_failure_present": false,
+        "structural_turnover_snapshot_failure_present": true,
+        "stale_population_coverage_lineage_present": false,
+        "frame_coverage_complete": true,
+        "missingness_classification_complete": true,
+        "boundary_coverage_complete": true,
+        "entrant_exit_propagation_complete": true,
+        "structural_turnover_complete": false,
+        "snapshot_alignment_complete": false,
+        "current_lineage_complete": true,
+        "monitoring_correction_complete": true
+      }
+    },
+    {
+      "world_id": "historical-population-coverage-assurance-inherited-after-succession",
+      "label": "Stale population-coverage lineage",
+      "mechanism": "Historical assurance is inherited after source, boundary, population, turnover, workflow, policy, and release succession.",
+      "overrides": {
+        "snapshot_lineage": {
+          "executed_frame_version": "POPULATION-COVERAGE-FRAME-V2",
+          "executed_boundary_version": "POPULATION-COVERAGE-BOUNDARY-V2",
+          "executed_turnover_version": "POPULATION-TURNOVER-V3",
+          "executed_snapshot_version": "POPULATION-SNAPSHOT-V2",
+          "stale_population_coverage_decision_count": 100,
+          "current_population_coverage_lineage": false,
+          "state": "stale"
+        },
+        "governance": {
+          "unsupported_population_coverage_decision_count": 100,
+          "state": "unsupported"
+        }
+      },
+      "expected_flags": {
+        "complete_population_coverage_assurance": false,
+        "hard_to_enumerate_omission_present": false,
+        "missingness_failure_present": false,
+        "boundary_truncation_present": false,
+        "entrant_propagation_failure_present": false,
+        "exit_propagation_failure_present": false,
+        "structural_turnover_snapshot_failure_present": false,
+        "stale_population_coverage_lineage_present": true,
+        "frame_coverage_complete": true,
+        "missingness_classification_complete": true,
+        "boundary_coverage_complete": true,
+        "entrant_exit_propagation_complete": true,
+        "structural_turnover_complete": true,
+        "snapshot_alignment_complete": true,
+        "current_lineage_complete": false,
+        "monitoring_correction_complete": true
+      }
+    }
+  ]
+}
