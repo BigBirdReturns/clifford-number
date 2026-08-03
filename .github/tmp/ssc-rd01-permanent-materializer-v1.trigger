@@ -1,1 +1,1 @@
-execute exact five-part RD-01 permanent materialization against current main
+execute pinned-main nineteen-path RD-01 product materialization; standing workflow follows by connector
