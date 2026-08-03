@@ -81,9 +81,13 @@ export function validateCurrentShape(current, schema) {
   const rd04 = current.promoted_class_receipts[0];
   const rd05 = current.promoted_class_receipts[1];
   ok(rd04.lane_id === 'RD-04' && rd04.issue === 789 && rd04.source_pr === 804, 'RD-04 custody changed');
+  ok(rd04.merge_commit === '7b21d1f2b0606a5550b9c26fadc0cb465ba88b7e', 'RD-04 merge custody changed');
+  ok(rd04.manifest_combined_sha256 === 'b023737f4367bf1f54a1b792faf70d12f3ca5cf89f92a5c0d16169665806b79b', 'RD-04 manifest custody changed');
   ok(rd04.terminal_state === 'bounded_source_unavailable', 'RD-04 terminal state changed');
   ok(rd04.labels_exact_match === true && rd04.label_reconciliation === 'none', 'RD-04 label state changed');
   ok(rd05.lane_id === 'RD-05' && rd05.issue === 790 && rd05.source_pr === 805, 'RD-05 custody changed');
+  ok(rd05.merge_commit === '209c30585301a1069507d2e6b16db62ff4ffe1bd', 'RD-05 merge custody changed');
+  ok(rd05.manifest_combined_sha256 === 'd9fcb123ad57bf86b355920702aa961e32c95a6a3b3237eb8ece91e863baca11', 'RD-05 manifest custody changed');
   ok(rd05.terminal_state === 'bounded_non_link', 'RD-05 terminal state changed');
   ok(rd05.labels_exact_match === false, 'RD-05 exact-label mismatch must remain explicit');
   ok(rd05.label_reconciliation === 'receipt_and_seed_label_omit_the_constitutional_qualifier_complete; class identity remains bound by RD-05-C03 and issue 790', 'RD-05 label reconciliation changed');
