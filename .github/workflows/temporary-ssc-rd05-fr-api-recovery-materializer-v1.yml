@@ -1,0 +1,94 @@
+name: TEMP materialize RD-05 Federal Register same-object recovery
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-fr-api-recovery-materializer-base-v1
+    paths:
+      - '.github/tmp/ssc-rd05-fr-api-recovery-materializer-v1.trigger'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: ssc-rd05-fr-api-recovery-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd05-recommendation-disposition
+      EXPECTED_START_SHA: 205537aa7d550741b2e95df0a43484f0879559bc
+      CAPTURE_DOWNLOAD_ROOT: /tmp/rd05-api-capture-download
+      PERMANENT_CAPTURE_ROOT: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/source-custody/same-object-api-recovery-v1/RD05-OBJ-051
+      OUTPUT_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/same-object-api-recovery-index.json
+      BUILDER_PATH: tools/acquisition/status-sovereignty-rd-wave02-rd05/build-same-object-api-recovery-index.mjs
+      VALIDATOR_PATH: tools/acquisition/status-sovereignty-rd-wave02-rd05/validate-same-object-api-recovery.mjs
+      TEST_PATH: test/status-sovereignty-rd-wave02-rd05-same-object-api-recovery.test.js
+      SOURCE_RUN: '30793626437'
+      SOURCE_ARTIFACT: '8848010209'
+      SOURCE_ARTIFACT_NAME: ssc-rd05-fr-2024-08630-api-capture-v2
+      SOURCE_ARTIFACT_SHA256: 8673716f594e02848f8b943085e2215073b8a32ccb80276b9345e6883671e8a0
+      SOURCE_TAR_BLOB: 3afd922842750c4473c17bcef77a1cdcfa9c1b3a
+      SOURCE_TAR: /tmp/rd05-fr-api-recovery-source-v1.tar.gz
+      SOURCE_TAR_SHA256: c6bb5b8b44ec2180940b7f83b9431c997a61623b132a6742cb8de8be797c2a41
+      SOURCE_TAR_BYTES: '8225'
+      RUNNER_BLOB: 079b4414b1a306f10bca3ede636b84aca8cfbe41
+      RUNNER_SHA256: fc5c17fe15dc21abf3e6e0392a03372b6f2d83436085607fd682d797e42f60e8
+      RUNNER_BYTES: '9546'
+      CAPTURE_MANIFEST_SHA256: 01de6fd300809a4199f79183257bae74291bb4af6562e041ae4b6fdde305fd54
+      CAPTURE_SUMMARY_SHA256: 3c3aa961dfb5cdeb95583e98d89a9514cdb2335d6a4bbc74efe2917bb012930f
+      CAPTURE_BODY_SHA256: 40d9942728b30ba2d1c372f752884823c20ab575d91d8b866cad619dac1d9b9a
+      BUILDER_SHA256: 9c69941671dc3bda518f39e7d6b4fd957558f20352a71833a68a30e9cd978758
+      VALIDATOR_SHA256: 17b230cd4149bea77cf622bba89999019ba17acb19874af333c997983b2d6d7e
+      TEST_SHA256: 2216c36cdc4a0e2808503bd0e92a76ff226377f9bec7c0b4de38496175f5810d
+      OUTPUT_SHA256: e9fce0df4afb753f001ad51652a3d48cff678d7a2ca57a382ab1126b2f386ede
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Download retained exact same-object capture
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd05-fr-2024-08630-api-capture-v2
+          path: /tmp/rd05-api-capture-download
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: BigBirdReturns/clifford-number
+          run-id: 30793626437
+      - name: Reconstruct checksum-bound materializer and source package
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          fetch_blob() {
+            local blob="$1"
+            local target="$2"
+            curl --fail --silent --show-error \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/${blob}" \
+              | jq -r '.content' | tr -d '\n' | base64 --decode > "$target"
+            test "$(git hash-object "$target")" = "$blob"
+          }
+          fetch_blob "$SOURCE_TAR_BLOB" "$SOURCE_TAR"
+          fetch_blob "$RUNNER_BLOB" /tmp/rd05-fr-api-recovery-materializer-v1.sh
+          test "$(sha256sum /tmp/rd05-fr-api-recovery-materializer-v1.sh | awk '{print $1}')" = "$RUNNER_SHA256"
+          test "$(wc -c < /tmp/rd05-fr-api-recovery-materializer-v1.sh | tr -d ' ')" = "$RUNNER_BYTES"
+          chmod +x /tmp/rd05-fr-api-recovery-materializer-v1.sh
+          /tmp/rd05-fr-api-recovery-materializer-v1.sh
+      - name: Upload exact recovery materializer receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-fr-api-recovery-materializer-v1
+          path: ssc-rd05-fr-api-recovery-materializer-v1-receipt.json
+          if-no-files-found: error
+          retention-days: 90
