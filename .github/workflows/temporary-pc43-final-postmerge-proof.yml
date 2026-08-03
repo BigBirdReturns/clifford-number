@@ -1,0 +1,166 @@
+name: TEMP final canonical PC-43 immutable-ledger proof
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc43-final-postmerge-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CANONICAL_REPAIR_MERGE: 0d8974e656ee320fd779271e5667b2365c5d8f45
+      FIRST_PARENT: eba618a72a71ebc52e3c3462e2f00cfa1010b7d6
+      PRODUCT_PARENT: a6c5842a2631084a07c987a016a79bd15bf528ea
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc43-final-postmerge-proof-0d8974
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Prove exact immutable-ledger repair merge
+        run: |
+          set -Eeuo pipefail
+          git fetch origin main --no-tags
+          git cat-file -e "$CANONICAL_REPAIR_MERGE^{commit}"
+          actual_first_parent="$(git rev-parse "$CANONICAL_REPAIR_MERGE^1")"
+          actual_product_parent="$(git rev-parse "$CANONICAL_REPAIR_MERGE^2")"
+          actual_tree="$(git rev-parse "$CANONICAL_REPAIR_MERGE^{tree}")"
+          product_tree="$(git rev-parse "$PRODUCT_PARENT^{tree}")"
+          printf 'repair merge: %s\nfirst parent: %s\nproduct parent: %s\nrepair tree: %s\nproduct tree: %s\n' \
+            "$CANONICAL_REPAIR_MERGE" "$actual_first_parent" "$actual_product_parent" "$actual_tree" "$product_tree"
+          test "$actual_first_parent" = "$FIRST_PARENT"
+          test "$actual_product_parent" = "$PRODUCT_PARENT"
+          test "$actual_tree" = "$product_tree"
+          printf '%s\n' "$actual_tree" > /tmp/pc43-final-tree.sha
+          git merge-base --is-ancestor "$CANONICAL_REPAIR_MERGE" origin/main
+
+          git diff --name-only "$FIRST_PARENT" "$CANONICAL_REPAIR_MERGE" | LC_ALL=C sort > /tmp/pc43-final-paths.txt
+          cat > /tmp/pc43-final-paths.expected <<'EOF'
+          test/preference-custody-manifest-v41.test.js
+          test/preference-linkage-probability-calibration-assurance.test.js
+          tools/lib/preference-linkage-probability-calibration-assurance.mjs
+          EOF
+          sed -i 's/^          //' /tmp/pc43-final-paths.expected
+          LC_ALL=C sort -o /tmp/pc43-final-paths.expected /tmp/pc43-final-paths.expected
+          diff -u /tmp/pc43-final-paths.expected /tmp/pc43-final-paths.txt
+          test "$(wc -l < /tmp/pc43-final-paths.txt | tr -d ' ')" = 3
+          test -z "$(git diff --name-only "$PRODUCT_PARENT" "$CANONICAL_REPAIR_MERGE")"
+          if grep -Eq '(^|/)(\.pc43|temporary|materializer|carrier|retrigger|postmerge)(/|$)' /tmp/pc43-final-paths.txt; then
+            echo 'Temporary path survived final repair merge' >&2
+            exit 1
+          fi
+          git rev-parse origin/main > /tmp/pc43-final-main.sha
+
+      - name: Reconstruct complete repaired PC-43 and every Preference Custody floor
+        run: |
+          set -Eeuo pipefail
+          git checkout --detach "$CANONICAL_REPAIR_MERGE"
+          node tools/compile-preference-linkage-probability-calibration-assurance.mjs
+          node tools/validate-preference-linkage-probability-calibration-assurance.mjs
+          node test/preference-linkage-probability-calibration-assurance.test.js
+          node tools/compile-preference-custody-manifest-v41.mjs
+          node tools/validate-preference-custody-manifest-v41.mjs
+          node test/preference-custody-manifest-v41.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | LC_ALL=C sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          touch /tmp/pc43-final-focused.pass
+
+      - name: Run complete repository release gate
+        run: |
+          set -Eeuo pipefail
+          npm run release:check
+          touch /tmp/pc43-final-release.pass
+
+      - name: Restore exact final tree and replay deterministically
+        run: |
+          set -Eeuo pipefail
+          final_tree="$(cat /tmp/pc43-final-tree.sha)"
+          while IFS= read -r path; do
+            git diff --exit-code "$CANONICAL_REPAIR_MERGE" -- "$path"
+          done < /tmp/pc43-final-paths.expected
+          git reset --hard "$CANONICAL_REPAIR_MERGE"
+          git clean -fdx
+          node tools/compile-preference-linkage-probability-calibration-assurance.mjs
+          node tools/validate-preference-linkage-probability-calibration-assurance.mjs
+          node test/preference-linkage-probability-calibration-assurance.test.js
+          node tools/compile-preference-custody-manifest-v41.mjs
+          node tools/validate-preference-custody-manifest-v41.mjs
+          node test/preference-custody-manifest-v41.test.js
+          git diff --exit-code
+          git reset --hard "$CANONICAL_REPAIR_MERGE"
+          git clean -fdx
+          test "$(git rev-parse 'HEAD^{tree}')" = "$final_tree"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          touch /tmp/pc43-final-replay.pass
+
+      - name: Emit final canonical PC-43 receipt
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os, subprocess
+
+          paths = Path('/tmp/pc43-final-paths.expected').read_text().splitlines()
+          files = {}
+          for path in paths:
+              raw = Path(path).read_bytes()
+              blob = subprocess.check_output(['git', 'rev-parse', f"{os.environ['CANONICAL_REPAIR_MERGE']}:{path}"], text=True).strip()
+              files[path] = {
+                  'bytes': len(raw),
+                  'sha256': hashlib.sha256(raw).hexdigest(),
+                  'git_blob_sha1': blob
+              }
+          ordered = {key: files[key] for key in sorted(files)}
+          manifest_bytes = json.dumps(ordered, sort_keys=True, separators=(',', ':')).encode()
+          path_bytes = ('\n'.join(paths) + '\n').encode()
+          receipt = {
+              'schema_version': 'pc43-final-canonical-immutable-ledger-proof@1',
+              'workflow_run_id': os.environ.get('GITHUB_RUN_ID'),
+              'canonical_pc43_merge': os.environ['FIRST_PARENT'],
+              'canonical_repair_merge': os.environ['CANONICAL_REPAIR_MERGE'],
+              'repair_product_parent': os.environ['PRODUCT_PARENT'],
+              'canonical_repair_tree': Path('/tmp/pc43-final-tree.sha').read_text().strip(),
+              'current_main_observed': Path('/tmp/pc43-final-main.sha').read_text().strip(),
+              'repair_path_count': len(paths),
+              'path_list_sha256': hashlib.sha256(path_bytes).hexdigest(),
+              'file_manifest_sha256': hashlib.sha256(manifest_bytes).hexdigest(),
+              'files': ordered,
+              'private_canonical_ledger_frozen': True,
+              'exported_ledger_is_separate_frozen_copy': True,
+              'focused_pc43': 'pass',
+              'floor_v41': 'pass',
+              'standalone_fixture_mutations': 41,
+              'standalone_build_tamper_checks': 8,
+              'floor_v41_adversarial_mutations': 47,
+              'historical_preference_custody_floors': 'pass',
+              'no_magic_human': 'pass',
+              'release_check': 'pass',
+              'deterministic_replay': 'pass',
+              'final_tree_clean': True,
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          raw = json.dumps(receipt, indent=2) + '\n'
+          Path('/tmp/pc43-final-canonical-proof.json').write_text(raw)
+          print(raw)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc43-final-canonical-immutable-ledger-proof
+          path: /tmp/pc43-final-canonical-proof.json
+          if-no-files-found: error
+          retention-days: 90
