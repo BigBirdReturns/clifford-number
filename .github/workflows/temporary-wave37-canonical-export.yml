@@ -1,0 +1,36 @@
+name: Temporary Wave 37 canonical export
+
+on:
+  push:
+    branches:
+      - agent/lake-allocator-war-residual-obligations-wave-37
+    paths:
+      - '.github/workflows/temporary-wave37-canonical-export.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 3a7f0a620691f156c932f37069e7a69442ec95df
+          fetch-depth: 1
+      - name: Verify and archive canonical Wave 37 tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = '3a7f0a620691f156c932f37069e7a69442ec95df'
+          git archive --format=zip --output=/tmp/wave37-canonical-tree.zip HEAD
+          sha256sum /tmp/wave37-canonical-tree.zip | tee /tmp/wave37-canonical-tree.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wave37-canonical-tree
+          path: |
+            /tmp/wave37-canonical-tree.zip
+            /tmp/wave37-canonical-tree.sha256
+          if-no-files-found: error
+          retention-days: 1
