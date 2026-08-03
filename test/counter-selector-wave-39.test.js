@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { validateSource, validateSchemaAgainstSource, EXPECTED_ADJUDICATIONS, EXPECTED_BOUNDARIES, EXPECTED_COUNTS, EXPECTED_JOIN_MATRIX, EXPECTED_SOURCE_RECORDS, EXPECTED_CONTROL_METADATA } from '../tools/validate-counter-selector-wave-39.mjs';
+import { validateSource, validateSchemaAgainstSource, validateStandaloneNarratives, EXPECTED_ADJUDICATIONS, EXPECTED_BOUNDARIES, EXPECTED_COUNTS, EXPECTED_JOIN_MATRIX, EXPECTED_SOURCE_RECORDS, EXPECTED_CONTROL_METADATA } from '../tools/validate-counter-selector-wave-39.mjs';
 
 const source = JSON.parse(fs.readFileSync('data/project/counter-selector-wave-39-digest-selected-restore.json', 'utf8'));
 const schema = JSON.parse(fs.readFileSync('schemas/counter-selector-digest-selected-restore.schema.json', 'utf8'));
+const methodNarrative = fs.readFileSync('docs/methods/counter-selector-digest-selected-restore.md');
+const milestoneNarrative = fs.readFileSync('docs/milestones/counter-selector-wave-39.md');
 const clone = value => structuredClone(value);
 const mutations = [];
 
@@ -102,6 +104,23 @@ for (const [index, mutate] of schemaContractTamperCases.entries()) {
   assert.throws(() => validateSchemaAgainstSource(candidate, source), undefined, `schema contract tamper ${index + 1} should fail`);
 }
 
-const exactContractTamperCases = sourceContractTamperCases.length + schemaContractTamperCases.length;
-assert.equal(exactContractTamperCases, 6);
+const narrativeContractTamperCases = [
+  [Buffer.concat([methodNarrative, Buffer.from('\nmutated narrative\n')]), milestoneNarrative],
+  [methodNarrative, Buffer.from(milestoneNarrative.toString('utf8').replace(
+    'one bounded observed public checkpoint control',
+    'first public checkpoint control',
+  ), 'utf8')],
+];
+for (const [index, [methodCandidate, milestoneCandidate]] of narrativeContractTamperCases.entries()) {
+  assert.throws(
+    () => validateStandaloneNarratives(methodCandidate, milestoneCandidate),
+    undefined,
+    `narrative contract tamper ${index + 1} should fail`,
+  );
+}
+
+const exactContractTamperCases = sourceContractTamperCases.length
+  + schemaContractTamperCases.length
+  + narrativeContractTamperCases.length;
+assert.equal(exactContractTamperCases, 8);
 console.log(`counter-selector-wave-39.test: ${mutations.length} adversarial mutations + ${exactContractTamperCases} exact-contract tamper cases PASS`);

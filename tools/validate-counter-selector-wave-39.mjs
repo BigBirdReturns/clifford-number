@@ -13,10 +13,22 @@ const REGISTRY_PATH = 'data/project/counter-selector-wave-39-control-registry.js
 const MANIFEST_PATH = 'data/project/counter-selector-wave-39-release-manifest.json';
 const REPORT_PATH = 'reports/core-thesis/counter-selector-wave-39/data.json';
 const HTML_PATH = 'reports/core-thesis/counter-selector-wave-39/index.html';
+const METHOD_PATH = 'docs/methods/counter-selector-digest-selected-restore.md';
+const MILESTONE_PATH = 'docs/milestones/counter-selector-wave-39.md';
+const EXPECTED_METHOD_SHA256 = '452e1018186cf5aee08b1d6fd49fba1fb26c46b8016fe6f38c759e684f53cdc6';
+const EXPECTED_MILESTONE_SHA256 = 'ce46ddce7c819eb096b7beb00cbd645cbfa7f38a7e41856867ddeab6b6621483';
 const EXPECTED_SOURCE_SHA256 = '8b3f3104531d8ccdb6b8b9326786ab098aa61110c919f93080886ec95226346f';
 const EXPECTED_SCHEMA_SHA256 = 'b386f453f4bf2b9096a5349b9a46884020b9f5f269c03d3349e13bf8fbffcfdb';
 
 function sha256(buffer) { return crypto.createHash('sha256').update(buffer).digest('hex'); }
+
+export function validateStandaloneNarratives(
+  methodBytes = fs.readFileSync(path.join(ROOT, METHOD_PATH)),
+  milestoneBytes = fs.readFileSync(path.join(ROOT, MILESTONE_PATH)),
+) {
+  assert.equal(sha256(methodBytes), EXPECTED_METHOD_SHA256, 'method narrative exact-contract drift');
+  assert.equal(sha256(milestoneBytes), EXPECTED_MILESTONE_SHA256, 'milestone narrative exact-contract drift');
+}
 
 export const EXPECTED_COUNTS = {
   "controls_audited": 3,
@@ -429,6 +441,7 @@ export function validateAll() {
   const schema = readJson(SCHEMA_PATH);
   validateSource(source);
   validateSchemaAgainstSource(schema, source);
+  validateStandaloneNarratives();
   const expectedRegistry = deriveRegistry(source);
   const expectedManifest = deriveManifest(source);
   const expectedReport = deriveReport(source, expectedManifest);
