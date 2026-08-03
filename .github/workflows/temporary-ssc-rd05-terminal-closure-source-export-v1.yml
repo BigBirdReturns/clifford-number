@@ -1,0 +1,53 @@
+name: TEMP export SSC RD-05 terminal closure source package
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-terminal-closure-source-export-base-v1
+    paths:
+      - '.github/tmp/ssc-rd05-terminal-closure-source-export-v1.trigger'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd05-terminal-closure-source-export-base-v1
+          fetch-depth: 1
+      - name: Reconstruct exact authored source package
+        run: |
+          set -Eeuo pipefail
+          : > /tmp/rd05-source.b64
+          declare -a expected_sha=(
+            f4ffc3c629d23814711ab2d03ea70a16246bc33073c501b93fd2c0c7a421a14c
+            4bbc1fcb94aa87d91158ee86d8cae009931e05ed8971d1c8048233371c222f83
+            b00ef93b03e0ae285eade55c431a3ba50a54525253422fb98ecc3214c5a1d0c3
+            0cb6a01d46537a1d57e8328ae470b303f03c242eda5bf20b8ca862d51b327eda
+          )
+          declare -a expected_bytes=(6000 6000 6000 3632)
+          for index in 0 1 2 3; do
+            part="$(printf '%02d' "$index")"
+            path=".rd05-closure/payload/part-${part}.b64"
+            test "$(wc -c < "$path" | tr -d ' ')" = "${expected_bytes[$index]}"
+            test "$(sha256sum "$path" | awk '{print $1}')" = "${expected_sha[$index]}"
+            cat "$path" >> /tmp/rd05-source.b64
+          done
+          test "$(wc -c < /tmp/rd05-source.b64 | tr -d ' ')" = '21632'
+          test "$(sha256sum /tmp/rd05-source.b64 | awk '{print $1}')" = '934c7550b4056e47cdeecbd6d026587eb722047728c7b0006bb685787257f1c9'
+          base64 --decode /tmp/rd05-source.b64 > rd05-terminal-closure-source-v1.zip
+          test "$(wc -c < rd05-terminal-closure-source-v1.zip | tr -d ' ')" = '16223'
+          test "$(sha256sum rd05-terminal-closure-source-v1.zip | awk '{print $1}')" = 'df1d69e7d8ad669b47ffcdb24ddb8a11d7801edceb54da3809032fd153447be7'
+          unzip -l rd05-terminal-closure-source-v1.zip
+      - name: Upload exact authored source package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-terminal-closure-source-v1
+          path: rd05-terminal-closure-source-v1.zip
+          if-no-files-found: error
+          retention-days: 90
