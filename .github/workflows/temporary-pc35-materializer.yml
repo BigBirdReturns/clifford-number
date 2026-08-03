@@ -1,0 +1,155 @@
+name: TEMP materialize PC-35 and Preference Custody floor v33
+
+on:
+  push:
+    branches:
+      - research/preference-identity-boundary-assurance-v6
+    paths:
+      - '.pc35/materialize.trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc35-identity-boundary-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/preference-identity-boundary-assurance-v6
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify, qualify, and publish exact PC-35 source set
+        env:
+          TARGET_BRANCH: research/preference-identity-boundary-assurance-v6
+          FROZEN_BASE: 415582607b71ba42c0311d84e73ce7967c2b072b
+          EXPECTED_B64_BYTES: '34084'
+          EXPECTED_B64_SHA256: 8d33821eb72bd666e2845626dceb5348bfc2e9505b76c4f6135a246f5438abfc
+          EXPECTED_TGZ_SHA256: b6b11a5826a8899f52d1411ca1bf2c50b980458b2847515809b465064f541425
+          EXPECTED_PATH_DIGEST: afc857f7be5c2ca4cdb0a0bcb7dd8257f50f1d278cb4ddde4aa64fbc364a3dcc
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          git switch -C "$TARGET_BRANCH" "origin/$TARGET_BRANCH"
+
+          cat > /tmp/pc35-permanent-paths <<'PATHS'
+          .github/workflows/preference-custody-v33.yml
+          .github/workflows/preference-identity-boundary-assurance.yml
+          data/research/preference-custody/control-manifest-v33.json
+          data/research/preference-custody/identity-boundary-assurance.fixture.json
+          docs/preference-custody-identity-boundary-assurance.md
+          docs/preference-custody-laboratory-floor-v33.md
+          test/preference-custody-manifest-v33.test.js
+          test/preference-identity-boundary-assurance.test.js
+          tools/compile-preference-custody-manifest-v33.mjs
+          tools/compile-preference-identity-boundary-assurance.mjs
+          tools/lib/preference-custody-manifest-v33.mjs
+          tools/lib/preference-identity-boundary-assurance.mjs
+          tools/validate-preference-custody-manifest-v33.mjs
+          tools/validate-preference-identity-boundary-assurance.mjs
+          PATHS
+          sed -i 's/^          //' /tmp/pc35-permanent-paths
+          sort -o /tmp/pc35-permanent-paths /tmp/pc35-permanent-paths
+          grep -v '^\.github/workflows/' /tmp/pc35-permanent-paths > /tmp/pc35-nonworkflow-paths
+          test "$(wc -l < /tmp/pc35-permanent-paths | tr -d ' ')" = 14
+          test "$(wc -l < /tmp/pc35-nonworkflow-paths | tr -d ' ')" = 12
+
+          carrier=/tmp/pc35-product.tar.gz.b64
+          : > "$carrier"
+          mapfile -t parts < <(find .pc35 -maxdepth 1 -type f -name 'payload-*.b64' | sort)
+          test "${#parts[@]}" = 6
+          for part in "${parts[@]}"; do tr -d '\r\n\t ' < "$part" >> "$carrier"; done
+          test "$(stat -c '%s' "$carrier")" = "$EXPECTED_B64_BYTES"
+          printf '%s  %s\n' "$EXPECTED_B64_SHA256" "$carrier" | sha256sum --check --strict
+          base64 --decode "$carrier" > /tmp/pc35-product.tar.gz
+          printf '%s  %s\n' "$EXPECTED_TGZ_SHA256" /tmp/pc35-product.tar.gz | sha256sum --check --strict
+          tar -tzf /tmp/pc35-product.tar.gz | sed 's#^\./##' | sed '/\/$/d' | sort > /tmp/pc35-observed-paths
+          diff -u /tmp/pc35-permanent-paths /tmp/pc35-observed-paths
+
+          stable_main=''
+          for attempt in 1 2 3; do
+            git fetch --no-tags origin main
+            candidate_main="$(git rev-parse origin/main)"
+            git merge-base --is-ancestor "$FROZEN_BASE" "$candidate_main"
+            git diff --name-only "$FROZEN_BASE" "$candidate_main" | sort > /tmp/pc35-main-drift
+            test -z "$(comm -12 /tmp/pc35-permanent-paths /tmp/pc35-main-drift)"
+
+            rm -rf /tmp/pc35-qualify
+            git worktree add --detach /tmp/pc35-qualify "$candidate_main"
+            tar -xzf /tmp/pc35-product.tar.gz -C /tmp/pc35-qualify
+            (
+              cd /tmp/pc35-qualify
+              node tools/compile-preference-identity-boundary-assurance.mjs
+              node tools/validate-preference-identity-boundary-assurance.mjs
+              node test/preference-identity-boundary-assurance.test.js
+              node tools/compile-preference-custody-manifest-v33.mjs
+              node tools/validate-preference-custody-manifest-v33.mjs
+              node test/preference-custody-manifest-v33.test.js
+              node tools/validate-no-magic-human-gate.mjs
+              npm run release:check
+              git restore --staged --worktree .
+              git clean -fdx
+              test -z "$(git status --porcelain=v1)"
+            )
+            git worktree remove --force /tmp/pc35-qualify
+
+            git fetch --no-tags origin main
+            end_main="$(git rev-parse origin/main)"
+            if test "$end_main" = "$candidate_main"; then
+              stable_main="$candidate_main"
+              break
+            fi
+          done
+          test -n "$stable_main"
+
+          if ! git merge-base --is-ancestor "$stable_main" HEAD; then
+            git merge --no-ff "$stable_main" -m 'Rebind PC-35 permanent surface to qualified current main'
+          fi
+          tar -xzf /tmp/pc35-product.tar.gz
+          while IFS= read -r path; do test -f "$path"; done < /tmp/pc35-permanent-paths
+          sha256sum $(cat /tmp/pc35-permanent-paths) | sort -k2 > /tmp/pc35-path-digests
+          printf '%s  %s\n' "$EXPECTED_PATH_DIGEST" /tmp/pc35-path-digests | sha256sum --check --strict
+          git add --pathspec-from-file=/tmp/pc35-nonworkflow-paths
+          git diff --cached --check
+          git diff --cached --name-only | sort > /tmp/pc35-staged-paths
+          diff -u /tmp/pc35-nonworkflow-paths /tmp/pc35-staged-paths
+          git commit -m 'Implement PC-35 and compose Preference Custody floor v33'
+          product_head="$(git rev-parse HEAD)"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$stable_main"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          PRODUCT_HEAD="$product_head" STABLE_MAIN="$stable_main" node --input-type=module <<'NODE' > pc35-materializer-receipt.json
+          const receipt = {
+            schema_version: 'pc35-materializer-receipt@1',
+            product_head: process.env.PRODUCT_HEAD,
+            qualified_main: process.env.STABLE_MAIN,
+            materialized_nonworkflow_paths: 12,
+            permanent_paths_expected: 14,
+            carrier_shards: 6,
+            base64_bytes: 34084,
+            base64_sha256: process.env.EXPECTED_B64_SHA256,
+            tar_sha256: process.env.EXPECTED_TGZ_SHA256,
+            path_digest_sha256: process.env.EXPECTED_PATH_DIGEST,
+            outside_human_dependency: false,
+            graph_effect: 'none'
+          };
+          process.stdout.write(`${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+      - name: Upload PC-35 materializer receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc35-materializer-receipt
+          path: pc35-materializer-receipt.json
+          if-no-files-found: error
+          retention-days: 90
