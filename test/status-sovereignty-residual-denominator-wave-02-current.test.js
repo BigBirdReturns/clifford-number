@@ -20,8 +20,8 @@ const schema = read(SCHEMA_PATH);
 validateCurrent(ROOT);
 
 const mutations = [
-  ['close count', (v) => { v.counts.closed_residual_classes = 4; }],
-  ['open count', (v) => { v.counts.open_residual_classes = 38; }],
+  ['close count', (v) => { v.counts.closed_residual_classes = 5; }],
+  ['open count', (v) => { v.counts.open_residual_classes = 37; }],
   ['terminal receipt count', (v) => { v.counts.terminal_class_receipts = 1; }],
   ['selected attempts', (v) => { v.counts.selected_class_attempts = 5; }],
   ['label reconciliation count', (v) => { v.counts.label_reconciliations = 0; }],
@@ -36,6 +36,8 @@ const mutations = [
   ['RD-05 label reconciliation changed', (v) => { v.promoted_class_receipts[1].label_reconciliation = 'none'; }],
   ['RD-01 state changed', (v) => { v.promoted_class_receipts[2].terminal_state = 'evidence_complete'; }],
   ['RD-01 merge custody changed', (v) => { v.promoted_class_receipts[2].merge_commit = '0'.repeat(40); }],
+  ['RD-06 state changed', (v) => { v.promoted_class_receipts[3].terminal_state = 'evidence_complete'; }],
+  ['RD-06 merge custody changed', (v) => { v.promoted_class_receipts[3].merge_commit = '0'.repeat(40); }],
   ['manifest changed', (v) => { v.promoted_class_receipts[1].manifest_combined_sha256 = '0'.repeat(64); }],
   ['merge commit malformed', (v) => { v.promoted_class_receipts[1].merge_commit = 'bad'; }],
   ['outside human dependency added', (v) => { v.counts.outside_human_dependencies = 1; }],
@@ -62,7 +64,7 @@ for (const [name, mutate] of mutations) {
 
 const schemaMutations = [
   ['schema open root', (s) => { s.additionalProperties = true; }],
-  ['schema receipt denominator', (s) => { s.properties.promoted_class_receipts.maxItems = 4; }],
+  ['schema receipt denominator', (s) => { s.properties.promoted_class_receipts.maxItems = 5; }],
   ['schema open denominator', (s) => { s.properties.selected_classes_open.minItems = 4; }],
   ['schema closed count', (s) => { s.properties.counts.properties.closed_residual_classes.const = 1; }],
   ['schema open count', (s) => { s.properties.counts.properties.open_residual_classes.const = 41; }]
