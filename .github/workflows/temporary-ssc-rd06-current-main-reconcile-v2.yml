@@ -1,0 +1,248 @@
+name: TEMP reconcile terminal RD-06 onto current main v2
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd06-current-main-reconcile-v2.yml'
+      - '.rd06-current-main-reconcile-v2/**'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd06-current-main-reconcile-v2
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd06-current-main-reconcile-v2-trigger'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      AUDIT_BRANCH: agent/ssc-rd06-terminal-audit-trigger-v1
+      AUDIT_WORKFLOW_NAME: TEMP audit RD-06 Wave 02 terminality
+      AUDIT_ARTIFACT_NAME: ssc-rd06-wave02-terminality-audit-v1
+      RESEARCH_BRANCH: agent/ssc-rd-wave02-rd06-offeror-universe
+      PROMOTION_BRANCH: agent/ssc-rd06-wave02-terminal-promotion-v2
+      CLOSURE_PATH: data/project/ssc-residual-wave02/closures/RD-06-C01.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Resolve and verify exact terminality artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/rd06-v2
+          mkdir -p /tmp/rd06-v2/audit /tmp/rd06-v2/receipt
+
+          gh api --paginate "/repos/${GITHUB_REPOSITORY}/actions/runs?branch=${AUDIT_BRANCH}&status=completed&per_page=100" > /tmp/rd06-v2/runs.json
+          python - <<'PY'
+          import json,os,pathlib
+          data=json.loads(pathlib.Path('/tmp/rd06-v2/runs.json').read_text())
+          pages=data if isinstance(data,list) else [data]
+          rows=[]
+          for page in pages: rows.extend(page.get('workflow_runs',[]))
+          matches=[r for r in rows if r.get('name')==os.environ['AUDIT_WORKFLOW_NAME'] and r.get('head_branch')==os.environ['AUDIT_BRANCH']]
+          matches.sort(key=lambda r:r.get('created_at',''),reverse=True)
+          assert matches, 'no completed terminality audit'
+          run=matches[0]
+          assert run.get('conclusion')=='success', f"audit conclusion {run.get('conclusion')}"
+          pathlib.Path('/tmp/rd06-v2/audit-run.json').write_text(json.dumps(run,indent=2)+'\n')
+          pathlib.Path('/tmp/rd06-v2/audit-run-id.txt').write_text(str(run['id'])+'\n')
+          PY
+          run_id="$(cat /tmp/rd06-v2/audit-run-id.txt)"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts" > /tmp/rd06-v2/artifacts.json
+          python - <<'PY'
+          import json,os,pathlib
+          data=json.loads(pathlib.Path('/tmp/rd06-v2/artifacts.json').read_text())
+          arts=[a for a in data.get('artifacts',[]) if a.get('name')==os.environ['AUDIT_ARTIFACT_NAME'] and not a.get('expired')]
+          assert len(arts)==1, f'exact audit artifact count {len(arts)}'
+          art=arts[0]
+          pathlib.Path('/tmp/rd06-v2/artifact.json').write_text(json.dumps(art,indent=2)+'\n')
+          pathlib.Path('/tmp/rd06-v2/artifact-id.txt').write_text(str(art['id'])+'\n')
+          PY
+          artifact_id="$(cat /tmp/rd06-v2/artifact-id.txt)"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > /tmp/rd06-v2/audit.zip
+          expected="$(python - <<'PY'
+          import json
+          print(json.load(open('/tmp/rd06-v2/artifact.json'))['digest'].split(':',1)[1])
+          PY
+          )"
+          test "$(sha256sum /tmp/rd06-v2/audit.zip | awk '{print $1}')" = "$expected"
+          unzip -q /tmp/rd06-v2/audit.zip -d /tmp/rd06-v2/audit
+          audit="$(find /tmp/rd06-v2/audit -type f -name terminality-audit.json -print -quit)"
+          manifest="$(find /tmp/rd06-v2/audit -type f -name manifest.json -print -quit)"
+          test -n "$audit"; test -n "$manifest"
+          cp "$audit" /tmp/rd06-v2/receipt/terminality-audit.json
+          cp "$manifest" /tmp/rd06-v2/receipt/terminality-manifest.json
+          python - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path('/tmp/rd06-v2/audit')
+          audit=json.load(open('/tmp/rd06-v2/receipt/terminality-audit.json'))
+          manifest=json.load(open('/tmp/rd06-v2/receipt/terminality-manifest.json'))
+          assert audit['schema_version']=='ssc-rd06-wave02-terminality-audit@1'
+          assert audit['wave_id']=='SSC-RD-W02' and audit['lane_id']=='RD-06' and audit['class_id']=='RD-06-C01' and audit['issue']==791
+          assert audit['readiness']['ready_for_current_main_reconciliation'] is True
+          for row in manifest['entries']:
+              p=root/row['path']; b=p.read_bytes()
+              assert len(b)==row['bytes'] and hashlib.sha256(b).hexdigest()==row['sha256']
+          combined=hashlib.sha256('\n'.join(f"{r['sha256']}  {r['path']}" for r in manifest['entries']).encode()).hexdigest()
+          assert combined==manifest['combined_sha256']
+          PY
+
+      - name: Create exact current-main integration product
+        run: |
+          set -Eeuo pipefail
+          git fetch origin main "$RESEARCH_BRANCH"
+          main_head="$(git rev-parse origin/main)"
+          research_head="$(git rev-parse "origin/${RESEARCH_BRANCH}")"
+          audit_head="$(python - <<'PY'
+          import json
+          print(json.load(open('/tmp/rd06-v2/receipt/terminality-audit.json'))['research_head'])
+          PY
+          )"
+          test "$research_head" = "$audit_head"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch --detach "$main_head"
+          git switch -c rd06-v2-integration
+          git merge --no-ff --no-commit "$research_head"
+          test -f "$CLOSURE_PATH"
+          git diff --cached --name-only | sort > /tmp/rd06-v2/receipt/product-paths.txt
+          test -s /tmp/rd06-v2/receipt/product-paths.txt
+          python - <<'PY'
+          import pathlib,re
+          paths=pathlib.Path('/tmp/rd06-v2/receipt/product-paths.txt').read_text().splitlines()
+          bad=[p for p in paths if re.search(r'(^|/)(temporary|carrier|materializer|trigger|\.rd06)',p,re.I) or p.startswith('.github/workflows/temporary')]
+          assert not bad, f'transport paths retained: {bad}'
+          PY
+          git commit -m 'Close RD-06 Wave 02 offeror-universe class'
+          printf '%s\n' "$main_head" > /tmp/rd06-v2/receipt/main-parent.txt
+          printf '%s\n' "$research_head" > /tmp/rd06-v2/receipt/research-parent.txt
+          git rev-parse HEAD > /tmp/rd06-v2/receipt/product-head.txt
+
+      - name: Run focused checks and no-magic-human gate
+        run: |
+          set -Eeuo pipefail
+          : > /tmp/rd06-v2/receipt/focused-checks.txt
+          mapfile -t files < <(find tools test -type f \( -iname '*rd06*' -o -iname '*offeror*' -o -iname '*dcgsa*' \) | sort)
+          test "${#files[@]}" -gt 0
+          for file in "${files[@]}"; do
+            case "$file" in
+              test/*.js|test/*.mjs|tools/validate-*.mjs|tools/acquisition/*/validate-*.mjs)
+                echo "RUN $file" | tee -a /tmp/rd06-v2/receipt/focused-checks.txt
+                node "$file" 2>&1 | tee -a /tmp/rd06-v2/receipt/focused-checks.txt
+                ;;
+            esac
+          done
+          node tools/validate-no-magic-human-gate.mjs | tee /tmp/rd06-v2/receipt/no-magic-human.txt
+          test -z "$(git status --short)"
+
+      - name: Run complete release gate and prove timestamp-only volatility
+        run: |
+          set -Eeuo pipefail
+          npm run release:check | tee /tmp/rd06-v2/receipt/release-check.txt
+          git status --porcelain=v1 > /tmp/rd06-v2/receipt/post-release-status.txt
+          python - <<'PY'
+          import json,pathlib,subprocess,re,datetime
+          status=pathlib.Path('/tmp/rd06-v2/receipt/post-release-status.txt').read_text().splitlines()
+          untracked=[line[3:] for line in status if line.startswith('?? ')]
+          assert not untracked, f'untracked release outputs are not authorized: {untracked}'
+          changed=subprocess.run(['git','diff','--name-only'],check=True,text=True,stdout=subprocess.PIPE).stdout.splitlines()
+          proof=[]
+          iso=re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$')
+          for rel in changed:
+              path=pathlib.Path(rel)
+              before=subprocess.run(['git','show',f'HEAD:{rel}'],check=True,stdout=subprocess.PIPE).stdout
+              after=path.read_bytes()
+              if rel.endswith('.json'):
+                  a=json.loads(before); b=json.loads(after)
+                  assert isinstance(a,dict) and isinstance(b,dict)
+                  ga=a.pop('generated',None); gb=b.pop('generated',None)
+                  assert isinstance(ga,str) and isinstance(gb,str) and iso.match(ga) and iso.match(gb)
+                  assert a==b, f'semantic JSON drift in {rel}'
+                  proof.append({'path':rel,'type':'top_level_generated_timestamp_only','before':ga,'after':gb})
+              elif rel.endswith('.md'):
+                  al=before.decode().splitlines(); bl=after.decode().splitlines()
+                  ai=[i for i,x in enumerate(al) if x.startswith('Generated:')]
+                  bi=[i for i,x in enumerate(bl) if x.startswith('Generated:')]
+                  assert len(ai)==1 and len(bi)==1
+                  av=al.pop(ai[0]); bv=bl.pop(bi[0])
+                  assert al==bl, f'semantic Markdown drift in {rel}'
+                  proof.append({'path':rel,'type':'generated_line_only','before':av,'after':bv})
+              else:
+                  raise AssertionError(f'unauthorized generated drift: {rel}')
+          pathlib.Path('/tmp/rd06-v2/receipt/volatile-output-proof.json').write_text(json.dumps({'changed_files':len(changed),'semantic_drift_files':0,'files':proof},indent=2)+'\n')
+          PY
+          git restore --worktree --staged .
+          git clean -fdx
+          test -z "$(git status --short)"
+          node tools/validate-no-magic-human-gate.mjs > /dev/null
+
+      - name: Deterministic replay after cleanup
+        run: |
+          set -Eeuo pipefail
+          mapfile -t builders < <(find tools -type f \( -iname '*rd06*' -o -iname '*offeror*' -o -iname '*dcgsa*' \) -name 'build-*.mjs' | sort)
+          for file in "${builders[@]}"; do node "$file" --check 2>/dev/null || node "$file"; done
+          if [ -n "$(git status --short)" ]; then
+            git status --short | tee /tmp/rd06-v2/receipt/replay-drift.txt
+            exit 1
+          fi
+
+      - name: Publish exact v2 promotion branch under lease
+        run: |
+          set -Eeuo pipefail
+          product_head="$(cat /tmp/rd06-v2/receipt/product-head.txt)"
+          remote="$(git ls-remote --heads origin "refs/heads/${PROMOTION_BRANCH}" | cut -f1)"
+          if [ -n "$remote" ] && [ "$remote" != "$product_head" ]; then
+            echo "$remote" > /tmp/rd06-v2/receipt/conflicting-promotion-head.txt
+            exit 1
+          fi
+          if [ -z "$remote" ]; then git push origin "HEAD:refs/heads/${PROMOTION_BRANCH}"; fi
+          python - <<'PY'
+          import json,pathlib
+          receipt={
+            'schema_version':'ssc-rd06-wave02-current-main-reconciliation-v2@1','wave_id':'SSC-RD-W02','lane_id':'RD-06','class_id':'RD-06-C01','issue':791,
+            'main_parent':pathlib.Path('/tmp/rd06-v2/receipt/main-parent.txt').read_text().strip(),
+            'research_parent':pathlib.Path('/tmp/rd06-v2/receipt/research-parent.txt').read_text().strip(),
+            'product_head':pathlib.Path('/tmp/rd06-v2/receipt/product-head.txt').read_text().strip(),
+            'promotion_branch':'agent/ssc-rd06-wave02-terminal-promotion-v2',
+            'product_path_count':len(pathlib.Path('/tmp/rd06-v2/receipt/product-paths.txt').read_text().splitlines()),
+            'focused_checks_passed':True,'complete_release_gate_passed':True,'timestamp_only_volatility_proved':True,'deterministic_replay_passed':True,
+            'authority':{'outside_human_dependency':False,'external_contacts':0,'external_reviews':0,'reviewed_disposition_changed':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none'}
+          }
+          pathlib.Path('/tmp/rd06-v2/receipt/result.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          PY
+
+      - name: Seal reconciliation receipt
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path('/tmp/rd06-v2/receipt'); root.mkdir(parents=True,exist_ok=True)
+          rows=[]
+          for p in sorted(x for x in root.rglob('*') if x.is_file() and x.name!='manifest.json'):
+            b=p.read_bytes(); rows.append({'path':str(p.relative_to(root)),'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest()})
+          combined=hashlib.sha256('\n'.join(f"{r['sha256']}  {r['path']}" for r in rows).encode()).hexdigest()
+          (root/'manifest.json').write_text(json.dumps({'schema_version':'ssc-rd06-wave02-current-main-reconciliation-v2-manifest@1','entry_count':len(rows),'entries':rows,'combined_sha256':combined},indent=2)+'\n')
+          print(f'RD-06 v2 reconciliation sealed: {combined}')
+          PY
+
+      - name: Preserve reconciliation receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd06-wave02-current-main-reconciliation-v2
+          path: /tmp/rd06-v2/receipt
+          if-no-files-found: error
+          retention-days: 90
