@@ -2,7 +2,7 @@
 
 ## Result
 
-Wave 39 records the first bounded checkpoint control in which the destination request selects the checkpoint image by repository digest, after the source container and pod have been removed, and starts a restored successor in a new pod.
+Wave 39 records one bounded observed public checkpoint control in which the destination request selects the checkpoint image by repository digest, after the source container and pod have been removed, and starts a restored successor in a new pod.
 
 ```text
 repoDigest-selected checkpoint restore surfaces       1
@@ -21,7 +21,7 @@ clean-destination operation surfaces                    0
 external independent reviews                           0
 complete portable operational handoffs                 0
 person supports / contacts / graph effects          0 / 0 / 0
-adversarial mutations                                162
+adversarial mutations                                187
 ```
 
 ## Positive control

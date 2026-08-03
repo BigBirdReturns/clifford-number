@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { validateSource, EXPECTED_ADJUDICATIONS, EXPECTED_BOUNDARIES, EXPECTED_COUNTS, EXPECTED_JOIN_MATRIX } from '../tools/validate-counter-selector-wave-39.mjs';
+import { validateSource, EXPECTED_ADJUDICATIONS, EXPECTED_BOUNDARIES, EXPECTED_COUNTS, EXPECTED_JOIN_MATRIX, EXPECTED_SOURCE_RECORDS } from '../tools/validate-counter-selector-wave-39.mjs';
 
 const source = JSON.parse(fs.readFileSync('data/project/counter-selector-wave-39-digest-selected-restore.json', 'utf8'));
 const clone = value => structuredClone(value);
@@ -27,6 +27,20 @@ for (let row = 0; row < EXPECTED_ADJUDICATIONS.length; row += 1) {
       const current = value.controls[row].adjudication[key];
       value.controls[row].adjudication[key] = typeof current === 'boolean' ? !current : `${current}-mutated`;
     });
+  }
+}
+
+for (const [left, right] of [[0,1],[1,2],[0,2]]) {
+  mutations.push(value => {
+    const held = value.controls[left].source_records;
+    value.controls[left].source_records = value.controls[right].source_records;
+    value.controls[right].source_records = held;
+  });
+}
+for (let row = 0; row < EXPECTED_SOURCE_RECORDS.length; row += 1) {
+  for (let item = 0; item < EXPECTED_SOURCE_RECORDS[row].length; item += 1) {
+    mutations.push(value => { value.controls[row].source_records[item].url += '?mutated=1'; });
+    mutations.push(value => { value.controls[row].source_records[item].artifact_scope += ' mutated'; });
   }
 }
 mutations.push(value => { value.schema_version = 'mutated'; });

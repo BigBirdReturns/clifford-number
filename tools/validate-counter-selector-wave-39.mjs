@@ -50,7 +50,7 @@ export const EXPECTED_COUNTS = {
   "person_rankings": 0,
   "public_identity_profiles": 0,
   "graph_effects": 0,
-  "adversarial_mutations": 162
+  "adversarial_mutations": 187
 };
 export const EXPECTED_BOUNDARIES = {
   "repo_digest_reference_is_public_fixed_digest_receipt": false,
@@ -183,6 +183,114 @@ export const EXPECTED_ADJUDICATIONS = [
   }
 ];
 
+export const EXPECTED_SOURCE_RECORDS = [
+  [
+    {
+      "source_id": "CS-W39-S01",
+      "title": "Checkpoint OCI image restore using repoDigest",
+      "publisher": "cri-o/cri-o",
+      "date": "2026-08-03",
+      "url": "https://github.com/cri-o/cri-o/blob/c7904b59b1e474a7b15f5d11569c465f51a292c1/test/checkpoint.bats",
+      "source_class": "same_digest_selected_new_pod_operation_receipt",
+      "artifact_scope": "Checkpoints a running container, removes the source container and pod, builds an OCI checkpoint image, resolves its repoDigest, creates a new pod using that digest as the requested image, creates the restored container, and starts it."
+    },
+    {
+      "source_id": "CS-W39-S02",
+      "title": "CRI-O checkpoint image recognition and restore implementation",
+      "publisher": "cri-o/cri-o",
+      "date": "2026-08-03",
+      "url": "https://github.com/cri-o/cri-o/blob/c7904b59b1e474a7b15f5d11569c465f51a292c1/server/container_restore.go",
+      "source_class": "checkpoint_image_selector_dependency_and_restore_path",
+      "artifact_scope": "Resolves the requested image, recognizes the checkpoint annotation, mounts the exact storage image, rejects unsupported namespaced signature-policy restore, pins RootfsImageRef when present, requires declared bind mounts, and constructs the successor in the destination sandbox."
+    },
+    {
+      "source_id": "CS-W39-S03",
+      "title": "CRI-O checkpoint image annotation contract",
+      "publisher": "cri-o/cri-o",
+      "date": "2026-08-03",
+      "url": "https://github.com/cri-o/cri-o/blob/c7904b59b1e474a7b15f5d11569c465f51a292c1/internal/annotations/checkpoint.go",
+      "source_class": "checkpoint_image_type_and_compatibility_metadata",
+      "artifact_scope": "Defines checkpoint image annotations for original container name, raw and resolved rootfs image identity, CRI-O version, and CRIU version."
+    },
+    {
+      "source_id": "CS-W39-S04",
+      "title": "OCI content descriptor contract",
+      "publisher": "opencontainers/image-spec",
+      "date": "2026-08-03",
+      "url": "https://github.com/opencontainers/image-spec/blob/af26a05fba5ee648512f4ea3c9fda1fcc1b6d6dc/descriptor.md",
+      "source_class": "content_digest_and_size_binding_contract",
+      "artifact_scope": "Defines digest-and-size content descriptors, content addressability, and independent digest verification for referenced bytes."
+    },
+    {
+      "source_id": "CS-W39-S05",
+      "title": "OCI image manifest contract",
+      "publisher": "opencontainers/image-spec",
+      "date": "2026-08-03",
+      "url": "https://github.com/opencontainers/image-spec/blob/af26a05fba5ee648512f4ea3c9fda1fcc1b6d6dc/manifest.md",
+      "source_class": "content_addressed_image_manifest_contract",
+      "artifact_scope": "Defines one image manifest with content-addressed configuration and ordered layer descriptors."
+    }
+  ],
+  [
+    {
+      "source_id": "CS-W39-S06",
+      "title": "Checkpoint archive restore with log growth and mount re-declaration",
+      "publisher": "cri-o/cri-o",
+      "date": "2026-08-03",
+      "url": "https://github.com/cri-o/cri-o/blob/c7904b59b1e474a7b15f5d11569c465f51a292c1/test/checkpoint.bats",
+      "source_class": "new_pod_application_and_dependency_replay_receipt",
+      "artifact_scope": "Records pre-checkpoint log content, removes source container and pod, proves create fails when required bind mounts are omitted, re-declares the mounts, starts the restored container in a new pod, verifies restored status, preserved prior output, and subsequent log-line growth."
+    },
+    {
+      "source_id": "CS-W39-S07",
+      "title": "CRI-O restore dependency reconstruction and refusal rules",
+      "publisher": "cri-o/cri-o",
+      "date": "2026-08-03",
+      "url": "https://github.com/cri-o/cri-o/blob/c7904b59b1e474a7b15f5d11569c465f51a292c1/server/container_restore.go",
+      "source_class": "rootfs_mount_security_context_and_sandbox_reconstruction",
+      "artifact_scope": "Reconstructs destination container configuration, pins RootfsImageRef when available, ignores platform-generated mounts, requires every other bind mount in the create request, and refuses stopped sandboxes or unresolved dependencies."
+    },
+    {
+      "source_id": "CS-W39-S08",
+      "title": "CRI-O archive and OCI restore failure fixtures",
+      "publisher": "cri-o/cri-o",
+      "date": "2026-08-03",
+      "url": "https://github.com/cri-o/cri-o/blob/c7904b59b1e474a7b15f5d11569c465f51a292c1/internal/lib/restore_test.go",
+      "source_class": "restore_failure_and_inventory_minimum_fixtures",
+      "artifact_scope": "Exercises invalid identity, running-container refusal, invalid config, archive restore failure, OCI-image mount paths, and the minimal CRIU inventory requirement."
+    }
+  ],
+  [
+    {
+      "source_id": "CS-W39-S09",
+      "title": "checkpointctl checkpoint inspection and OCI build route",
+      "publisher": "checkpoint-restore/checkpointctl",
+      "date": "2026-08-03",
+      "url": "https://github.com/checkpoint-restore/checkpointctl/blob/3aaf5f1d21c9a74f56befff9ba3f873112a4b2e9/README.md",
+      "source_class": "package_inspection_and_registry_route_documentation",
+      "artifact_scope": "Shows high-level and tree inspection of checkpoint archives and documents conversion to an OCI image followed by buildah push to a registry."
+    },
+    {
+      "source_id": "CS-W39-S10",
+      "title": "checkpointctl build command",
+      "publisher": "checkpoint-restore/checkpointctl",
+      "date": "2026-08-03",
+      "url": "https://github.com/checkpoint-restore/checkpointctl/blob/3aaf5f1d21c9a74f56befff9ba3f873112a4b2e9/cmd/build.go",
+      "source_class": "checkpoint_archive_to_oci_command",
+      "artifact_scope": "Defines the command that converts one checkpoint archive into an OCI-compatible image and presents buildah push as the next transport step."
+    },
+    {
+      "source_id": "CS-W39-S11",
+      "title": "checkpointctl OCI image builder implementation",
+      "publisher": "checkpoint-restore/checkpointctl",
+      "date": "2026-08-03",
+      "url": "https://github.com/checkpoint-restore/checkpointctl/blob/3aaf5f1d21c9a74f56befff9ba3f873112a4b2e9/internal/oci_image_build.go",
+      "source_class": "checkpoint_layer_and_annotation_builder",
+      "artifact_scope": "Creates a scratch image, adds the checkpoint archive, extracts spec and config metadata for annotations, and commits the image."
+    }
+  ]
+];
+
 function readJson(relativePath) { return JSON.parse(fs.readFileSync(path.join(ROOT, relativePath), 'utf8')); }
 function exact(relativePath, expected) { assert.equal(fs.readFileSync(path.join(ROOT, relativePath), 'utf8'), expected, `${relativePath} drift`); }
 
@@ -211,6 +319,7 @@ export function validateSource(source) {
   const sourceIds = source.controls.flatMap(control => control.source_records.map(record => record.source_id));
   assert.equal(sourceIds.length, 11);
   assert.equal(new Set(sourceIds).size, 11);
+  assert.deepEqual(source.controls.map(control => control.source_records), EXPECTED_SOURCE_RECORDS);
   assert.deepEqual(source.controls.map(control => control.adjudication), EXPECTED_ADJUDICATIONS);
   assert.deepEqual(source.join_matrix, EXPECTED_JOIN_MATRIX);
 
