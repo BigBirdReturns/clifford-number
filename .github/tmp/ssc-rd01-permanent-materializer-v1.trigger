@@ -1,1 +1,1 @@
-repair and reassemble exact RD-01 permanent carrier v1
+repair exact RD-01 carrier with syntax-correct helper v1
