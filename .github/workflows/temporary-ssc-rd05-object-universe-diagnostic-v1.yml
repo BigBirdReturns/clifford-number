@@ -1,0 +1,170 @@
+name: TEMP diagnose SSC RD-05 object-universe materializer
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-object-universe-diagnostic-base-v1
+    paths:
+      - '.github/tmp/ssc-rd05-object-universe-diagnostic-v1.trigger'
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ssc-rd05-object-universe-diagnostic-v1
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd05-recommendation-disposition
+      EXPECTED_START_SHA: 2b3a73448759bac1210988a25e3d3b8c745a58b7
+      CAPTURE_RUN: '30767628840'
+      CAPTURE_ARTIFACT: '8839459127'
+      CAPTURE_NAME: ssc-rd05-wave02-official-record-surface-capture
+      CAPTURE_ZIP_SHA256: 3ce25b7e94d677a7210dbf1475b631078baa55bf779631340fe861c636478e48
+      CAPTURE_MANIFEST_SHA256: adf851d4a570baaed0a4308c72552f9da8dfe5655c6517a9b613259e5274d76f
+      BUILDER_BLOB: 1ebe1dc4f0830c441f4196aea3275f43ae4bf6a4
+      VALIDATOR_BLOB: 644e626f2bf1c1d3763e9997ec6ef6fcb0508bb9
+      TEST_BLOB: 29917b837bcbc5ff8896a5ce85626fc79cd9e2c4
+      BUILDER_PATH: tools/acquisition/status-sovereignty-rd-wave02-rd05/build-official-object-universe.mjs
+      VALIDATOR_PATH: tools/acquisition/status-sovereignty-rd-wave02-rd05/validate-official-object-universe.mjs
+      TEST_PATH: test/status-sovereignty-rd-wave02-rd05-official-object-universe.test.js
+      SOURCE_ROOT: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/source-custody/initial-surface-capture
+      OUTPUT_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/official-object-candidate-universe.json
+      EXPECTED_OUTPUT_SHA256: 42a1ea373378f8061dd0877bf1951231fa94cf05a1a5db6308091f42ca2ff083
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Execute checkpointed no-push diagnostic
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p rd05-diagnostic
+          exec > >(tee rd05-diagnostic/trace.log) 2>&1
+          stage='initialize'
+          finish() {
+            rc="$?"
+            trap - EXIT
+            child_head="$(git rev-parse HEAD 2>/dev/null || true)"
+            capture_files="$(find /tmp/rd05-capture -type f 2>/dev/null | wc -l | tr -d ' ' || true)"
+            manifest_schema="$(jq -r '.schema_version // empty' /tmp/rd05-capture/manifest.json 2>/dev/null || true)"
+            manifest_digest="$(jq -r '.combined_sha256 // empty' /tmp/rd05-capture/manifest.json 2>/dev/null || true)"
+            manifest_entries="$(jq -r '.entries | length' /tmp/rd05-capture/manifest.json 2>/dev/null || true)"
+            summary_schema="$(jq -r '.schema_version // empty' /tmp/rd05-capture/summary.json 2>/dev/null || true)"
+            summary_sources="$(jq -r '.sources | length' /tmp/rd05-capture/summary.json 2>/dev/null || true)"
+            summary_candidates="$(jq -r '.candidate_official_objects | length' /tmp/rd05-capture/summary.json 2>/dev/null || true)"
+            resolved_sources="$(jq -r '[.sources[] | select(.resolved == true and .terminal_state == "http_success")] | length' /tmp/rd05-capture/summary.json 2>/dev/null || true)"
+            output_sha="$(sha256sum "$OUTPUT_PATH" 2>/dev/null | awk '{print $1}' || true)"
+            status_lines="$(git status --porcelain=v1 --untracked-files=all 2>/dev/null | wc -l | tr -d ' ' || true)"
+            jq -n \
+              --arg stage "$stage" --argjson exit_code "$rc" --arg child_head "$child_head" \
+              --arg capture_files "$capture_files" --arg manifest_schema "$manifest_schema" \
+              --arg manifest_digest "$manifest_digest" --arg manifest_entries "$manifest_entries" \
+              --arg summary_schema "$summary_schema" --arg summary_sources "$summary_sources" \
+              --arg summary_candidates "$summary_candidates" --arg resolved_sources "$resolved_sources" \
+              --arg output_sha "$output_sha" --arg status_lines "$status_lines" \
+              --arg builder_hash "$(git hash-object "$BUILDER_PATH" 2>/dev/null || true)" \
+              --arg validator_hash "$(git hash-object "$VALIDATOR_PATH" 2>/dev/null || true)" \
+              --arg test_hash "$(git hash-object "$TEST_PATH" 2>/dev/null || true)" \
+              '{schema_version:"ssc-rd05-object-universe-diagnostic@1",stage:$stage,observed_exit_code:$exit_code,child_head:$child_head,capture:{files:($capture_files|tonumber? // -1),manifest_schema:$manifest_schema,manifest_digest:$manifest_digest,manifest_entries:($manifest_entries|tonumber? // -1),summary_schema:$summary_schema,sources:($summary_sources|tonumber? // -1),linked_candidates:($summary_candidates|tonumber? // -1),resolved_sources:($resolved_sources|tonumber? // -1)},program_blobs:{builder:$builder_hash,validator:$validator_hash,test:$test_hash},output_sha256:$output_sha,git_status_lines:($status_lines|tonumber? // -1),child_mutated:false}' \
+              > rd05-diagnostic/diagnostic.json
+            git status --porcelain=v1 --untracked-files=all > rd05-diagnostic/git-status.txt || true
+            find /tmp/rd05-capture -type f -printf '%P\n' 2>/dev/null | sort > rd05-diagnostic/capture-files.txt || true
+            exit 0
+          }
+          trap finish EXIT
+
+          stage='verify-child-lease'
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_START_SHA"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_START_SHA"
+          node tools/validate-no-magic-human-gate.mjs
+
+          stage='verify-artifact-metadata'
+          artifact_json="$(curl --fail --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/$CAPTURE_ARTIFACT")"
+          printf '%s\n' "$artifact_json" > rd05-diagnostic/artifact-metadata.json
+          test "$(jq -r '.name' <<<"$artifact_json")" = "$CAPTURE_NAME"
+          test "$(jq -r '.workflow_run.id' <<<"$artifact_json")" = "$CAPTURE_RUN"
+          test "$(jq -r '.digest' <<<"$artifact_json")" = "sha256:$CAPTURE_ZIP_SHA256"
+          test "$(jq -r '.expired' <<<"$artifact_json")" = 'false'
+
+          stage='download-artifact-zip'
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/$CAPTURE_ARTIFACT/zip" \
+            --output /tmp/rd05-capture.zip
+          test "$(sha256sum /tmp/rd05-capture.zip | awk '{print $1}')" = "$CAPTURE_ZIP_SHA256"
+          mkdir -p /tmp/rd05-capture
+          unzip -q /tmp/rd05-capture.zip -d /tmp/rd05-capture
+
+          stage='install-program-blobs'
+          install_blob() {
+            local blob_sha="$1" target="$2"
+            mkdir -p "$(dirname "$target")"
+            curl --fail --silent --show-error \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/$blob_sha" \
+              | jq -r '.content' | tr -d '\n' | base64 --decode > "$target"
+            test "$(git hash-object "$target")" = "$blob_sha"
+          }
+          install_blob "$BUILDER_BLOB" "$BUILDER_PATH"
+          install_blob "$VALIDATOR_BLOB" "$VALIDATOR_PATH"
+          install_blob "$TEST_BLOB" "$TEST_PATH"
+
+          stage='verify-capture-layout'
+          test "$(find /tmp/rd05-capture -type f | wc -l | tr -d ' ')" = 42
+          test "$(jq -r '.schema_version' /tmp/rd05-capture/manifest.json)" = 'ssc-rd05-wave02-official-record-surface-manifest@1'
+          test "$(jq -r '.combined_sha256' /tmp/rd05-capture/manifest.json)" = "$CAPTURE_MANIFEST_SHA256"
+          test "$(jq -r '.entries | length' /tmp/rd05-capture/manifest.json)" = 41
+          test "$(jq -r '.schema_version' /tmp/rd05-capture/summary.json)" = 'ssc-rd05-wave02-official-record-surface-capture@1'
+          test "$(jq -r '.sources | length' /tmp/rd05-capture/summary.json)" = 10
+          test "$(jq -r '.candidate_official_objects | length' /tmp/rd05-capture/summary.json)" = 55
+          test "$(jq -r '[.sources[] | select(.resolved == true and .terminal_state == "http_success")] | length' /tmp/rd05-capture/summary.json)" = 10
+
+          stage='copy-capture-and-build'
+          mkdir -p "$SOURCE_ROOT"
+          cp -a /tmp/rd05-capture/. "$SOURCE_ROOT/"
+          node "$BUILDER_PATH"
+
+          stage='validate-product'
+          node "$VALIDATOR_PATH"
+          node "$TEST_PATH"
+          test "$(sha256sum "$OUTPUT_PATH" | awk '{print $1}')" = "$EXPECTED_OUTPUT_SHA256"
+
+          stage='census-product-paths'
+          {
+            printf '%s\n' "$BUILDER_PATH" "$VALIDATOR_PATH" "$TEST_PATH" "$OUTPUT_PATH"
+            find /tmp/rd05-capture -type f -printf "$SOURCE_ROOT/%P\n"
+          } | sort -u > rd05-diagnostic/expected-paths.txt
+          test "$(wc -l < rd05-diagnostic/expected-paths.txt | tr -d ' ')" = 46
+          git status --porcelain=v1 --untracked-files=all | sed -E 's/^.. //' | grep -v '^rd05-diagnostic/' | sort -u > rd05-diagnostic/observed-product-paths.txt
+          diff -u rd05-diagnostic/expected-paths.txt rd05-diagnostic/observed-product-paths.txt
+
+          stage='complete'
+      - name: Upload exact diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-object-universe-diagnostic-v1
+          path: rd05-diagnostic
+          if-no-files-found: error
+          retention-days: 30
