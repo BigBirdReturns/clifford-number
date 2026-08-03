@@ -1,0 +1,125 @@
+name: TEMP retire PC-40 post-merge refs
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc40-postmerge-ref-cleanup.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc40-postmerge-ref-cleanup
+  cancel-in-progress: false
+
+jobs:
+  retire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc40-postmerge-ref-cleanup
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Verify canonical and preservation boundaries
+        run: |
+          set -Eeuo pipefail
+          canonical_merge=5f3e16fe942e0074177af5a4678100807583d781
+          permanent_branch=research/preference-linkage-confidence-adjudication-assurance-v1
+          cleanup_branch=agent/pc40-postmerge-ref-cleanup
+          git fetch origin main "$permanent_branch" "$cleanup_branch" --no-tags
+          git merge-base --is-ancestor "$canonical_merge" origin/main
+          test "$(git rev-parse "origin/$permanent_branch")" = f514fda083e76e9c943f53325f3b300deda271ac
+          test "$(git rev-parse "origin/$cleanup_branch")" = "$(git rev-parse HEAD)"
+
+      - name: Delete only the authorized temporary refs and self-retire
+        run: |
+          set -Eeuo pipefail
+          permanent_branch=research/preference-linkage-confidence-adjudication-assurance-v1
+          cleanup_branch=agent/pc40-postmerge-ref-cleanup
+          targets=(
+            agent/pc40-canonical-increment-export
+            agent/pc40-carrier-diagnostic
+            agent/pc40-current-main-source-export
+            agent/pc40-exact-materializer-v6
+            agent/pc40-exact-materializer-v7
+            agent/pc40-exact-product-materializer
+            agent/pc40-postmerge-proof-5f3e16
+            agent/pc40-review-binding-rebase
+            agent/pc40-snapshot-binding-repair
+          )
+
+          printf '%s\n' "${targets[@]}" | LC_ALL=C sort -u > /tmp/pc40-targets.txt
+          test "$(wc -l < /tmp/pc40-targets.txt | tr -d ' ')" = 9
+          ! grep -Fxq main /tmp/pc40-targets.txt
+          ! grep -Fxq "$permanent_branch" /tmp/pc40-targets.txt
+          ! grep -Fxq "$cleanup_branch" /tmp/pc40-targets.txt
+
+          : > /tmp/pc40-ref-results.tsv
+          for branch in "${targets[@]}"; do
+            before="$(git ls-remote --heads origin "refs/heads/$branch" | awk '{print $1}')"
+            if [ -z "$before" ]; then
+              printf '%s\t%s\t%s\n' "$branch" already_absent '' >> /tmp/pc40-ref-results.tsv
+              continue
+            fi
+            git push origin --delete "$branch"
+            after="$(git ls-remote --heads origin "refs/heads/$branch" | awk '{print $1}')"
+            test -z "$after"
+            printf '%s\t%s\t%s\n' "$branch" deleted "$before" >> /tmp/pc40-ref-results.tsv
+          done
+
+          permanent_sha="$(git ls-remote --heads origin "refs/heads/$permanent_branch" | awk '{print $1}')"
+          test "$permanent_sha" = f514fda083e76e9c943f53325f3b300deda271ac
+          main_sha="$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')"
+          git merge-base --is-ancestor 5f3e16fe942e0074177af5a4678100807583d781 "$main_sha"
+
+          self_before="$(git ls-remote --heads origin "refs/heads/$cleanup_branch" | awk '{print $1}')"
+          test -n "$self_before"
+          git push origin --delete "$cleanup_branch"
+          self_after="$(git ls-remote --heads origin "refs/heads/$cleanup_branch" | awk '{print $1}')"
+          test -z "$self_after"
+          printf '%s\t%s\t%s\n' "$cleanup_branch" deleted "$self_before" >> /tmp/pc40-ref-results.tsv
+
+          export MAIN_SHA="$main_sha"
+          export PERMANENT_SHA="$permanent_sha"
+          python - <<'PY'
+          from pathlib import Path
+          import json, os
+
+          rows = []
+          for line in Path('/tmp/pc40-ref-results.tsv').read_text().splitlines():
+              branch, state, prior_sha = line.split('\t')
+              rows.append({'branch': branch, 'state': state, 'prior_sha': prior_sha or None})
+          receipt = {
+              'schema_version': 'pc40-postmerge-ref-retirement-receipt@1',
+              'canonical_merge': '5f3e16fe942e0074177af5a4678100807583d781',
+              'current_main_observed': os.environ['MAIN_SHA'],
+              'permanent_branch': 'research/preference-linkage-confidence-adjudication-assurance-v1',
+              'permanent_branch_sha': os.environ['PERMANENT_SHA'],
+              'authorized_temporary_refs': 10,
+              'deleted_refs': sum(row['state'] == 'deleted' for row in rows),
+              'already_absent_refs': sum(row['state'] == 'already_absent' for row in rows),
+              'results': rows,
+              'main_preserved': True,
+              'permanent_branch_preserved': True,
+              'cleanup_branch_self_retired': any(row['branch'] == 'agent/pc40-postmerge-ref-cleanup' and row['state'] == 'deleted' for row in rows),
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          Path('/tmp/pc40-postmerge-ref-retirement-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc40-postmerge-ref-retirement-${{ github.run_id }}
+          path: |
+            /tmp/pc40-postmerge-ref-retirement-receipt.json
+            /tmp/pc40-ref-results.tsv
+          if-no-files-found: warn
+          retention-days: 90
