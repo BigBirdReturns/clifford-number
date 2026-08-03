@@ -48,6 +48,13 @@ jobs:
           cp .rd06-public-record-census/plan.json "$CENSUS_ROOT/plan.json"
           python .rd06-public-record-census/capture.py
 
+      - name: Install deterministic PDF text dependency
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends poppler-utils
+          pdftotext -v
+
       - name: Derive candidate and restriction ledgers without substantive adjudication
         env:
           CENSUS_ROOT: /tmp/rd06-public-record-census
