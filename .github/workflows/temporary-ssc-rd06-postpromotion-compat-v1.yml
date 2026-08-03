@@ -1,0 +1,159 @@
+name: TEMP repair RD-06 post-promotion compatibility
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd06-postpromotion-compat-base-v1
+    paths:
+      - '.ssc-rd06-postpromotion-compat/TRIGGER'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd06-postpromotion-compat-v1
+  cancel-in-progress: false
+
+env:
+  TARGET_BRANCH: agent/ssc-wave02-current-ledger-four-closures
+  EXPECTED_TARGET: a5f580fbc75c7c9f32c2ca6495e6ccd2b3c61869
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd06-postpromotion-compat-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout checksum-bound controller
+        uses: actions/checkout@v4
+        with:
+          path: controller
+          fetch-depth: 1
+
+      - name: Checkout exact permanent ledger branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-current-ledger-four-closures
+          path: work
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Freeze exact target
+        run: |
+          set -Eeuo pipefail
+          test "$(git -C work rev-parse HEAD)" = "$EXPECTED_TARGET"
+          test "$(git -C work ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+
+      - name: Install exact promotion-aware custody contract
+        run: |
+          set -Eeuo pipefail
+          cd work
+          python ../controller/.github/tmp/ssc-rd06-postpromotion-compat-transform.py
+
+          node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+
+          cat > /tmp/rd06-postpromotion-compat-paths.txt <<'PATHS'
+          test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          PATHS
+          sed -i 's/^          //' /tmp/rd06-postpromotion-compat-paths.txt
+          sort /tmp/rd06-postpromotion-compat-paths.txt > /tmp/rd06-postpromotion-compat-expected.txt
+          git diff --name-only | sort > /tmp/rd06-postpromotion-compat-observed.txt
+          cmp /tmp/rd06-postpromotion-compat-expected.txt /tmp/rd06-postpromotion-compat-observed.txt
+
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add --pathspec-from-file=/tmp/rd06-postpromotion-compat-paths.txt
+          git diff --cached --name-only | sort > /tmp/rd06-postpromotion-compat-staged.txt
+          cmp /tmp/rd06-postpromotion-compat-expected.txt /tmp/rd06-postpromotion-compat-staged.txt
+
+      - name: Run complete repository qualification and deterministic replay
+        run: |
+          set -Eeuo pipefail
+          cd work
+          npm run release:check
+          git restore --worktree -- .
+          git clean -fdx
+          git diff --exit-code
+          node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          git diff --cached --name-only | sort > /tmp/rd06-postpromotion-compat-staged-after-replay.txt
+          cmp /tmp/rd06-postpromotion-compat-expected.txt /tmp/rd06-postpromotion-compat-staged-after-replay.txt
+
+      - name: Commit and push under exact target lease
+        run: |
+          set -Eeuo pipefail
+          cd work
+          git commit -m 'Make RD-06 custody validation promotion-aware'
+          product="$(git rev-parse HEAD)"
+          tree="$(git show -s --format=%T HEAD)"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_TARGET"
+          git diff --name-only "$EXPECTED_TARGET" "$product" | sort > /tmp/rd06-postpromotion-compat-product.txt
+          cmp /tmp/rd06-postpromotion-compat-expected.txt /tmp/rd06-postpromotion-compat-product.txt
+
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+          git push origin "$product:refs/heads/$TARGET_BRANCH" \
+            --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$product"
+          echo "PRODUCT_HEAD=$product" >> "$GITHUB_ENV"
+          echo "PRODUCT_TREE=$tree" >> "$GITHUB_ENV"
+
+      - name: Preserve exact compatibility receipt
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          receipt = {
+              'schema_version': 'ssc-rd06-postpromotion-compatibility@1',
+              'prior_head': os.environ['EXPECTED_TARGET'],
+              'product_head': os.environ['PRODUCT_HEAD'],
+              'product_tree': os.environ['PRODUCT_TREE'],
+              'changed_paths': [
+                  'test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js',
+                  'tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs'
+              ],
+              'empirical_product_manifest_unchanged': '2a17904180dac7b250e2b0ffb82e8124354e89c39be267b0f4c4ebe65c6516c5',
+              'accepted_states': [
+                  '39_open_3_closed_rd06_open',
+                  '38_open_4_closed_rd06_exactly_promoted'
+              ],
+              'mixed_states_accepted': 0,
+              'new_custody_mutations_refused': 12,
+              'release_gate': 'pass',
+              'deterministic_replay': 'pass',
+              'outside_human_dependency': False,
+              'external_contacts': 0,
+              'external_reviews': 0,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none'
+          }
+          Path('ssc-rd06-postpromotion-compatibility.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd06-postpromotion-compatibility
+          path: ssc-rd06-postpromotion-compatibility.json
+          if-no-files-found: error
+          retention-days: 90
