@@ -1,0 +1,160 @@
+name: TEMP exact canonical PC-43 post-merge proof
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc43-postmerge-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CANONICAL_MERGE: eba618a72a71ebc52e3c3462e2f00cfa1010b7d6
+      FIRST_PARENT: cbae23b0903fde6e02fc73ccbb32501f5859bf4c
+      PRODUCT_PARENT: f8334c9d148ef3f94eeb773317c6a4e1bb2e161c
+      CANONICAL_TREE: d9644338d9c3fe1214d64a9b3b2aaa7238f70fca
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc43-postmerge-proof-eba618
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Prove exact canonical merge graph and fourteen-file surface
+        run: |
+          set -Eeuo pipefail
+          git fetch origin main --no-tags
+          git cat-file -e "$CANONICAL_MERGE^{commit}"
+          test "$(git rev-list --parents -n 1 "$CANONICAL_MERGE")" = "$CANONICAL_MERGE $FIRST_PARENT $PRODUCT_PARENT"
+          test "$(git rev-parse "$CANONICAL_MERGE^{tree}")" = "$CANONICAL_TREE"
+          git merge-base --is-ancestor "$CANONICAL_MERGE" origin/main
+          git diff --name-only "$FIRST_PARENT..$CANONICAL_MERGE" | LC_ALL=C sort > /tmp/pc43-canonical-paths.txt
+          cat > /tmp/pc43-expected-paths.txt <<'EOF'
+          .github/workflows/preference-custody-v41.yml
+          .github/workflows/preference-linkage-probability-calibration-assurance.yml
+          data/research/preference-custody/control-manifest-v41.json
+          data/research/preference-custody/linkage-probability-calibration-assurance.fixture.json
+          docs/preference-custody-laboratory-floor-v41.md
+          docs/preference-custody-linkage-probability-calibration-assurance.md
+          test/preference-custody-manifest-v41.test.js
+          test/preference-linkage-probability-calibration-assurance.test.js
+          tools/compile-preference-custody-manifest-v41.mjs
+          tools/compile-preference-linkage-probability-calibration-assurance.mjs
+          tools/lib/preference-custody-manifest-v41.mjs
+          tools/lib/preference-linkage-probability-calibration-assurance.mjs
+          tools/validate-preference-custody-manifest-v41.mjs
+          tools/validate-preference-linkage-probability-calibration-assurance.mjs
+          EOF
+          sed -i 's/^          //' /tmp/pc43-expected-paths.txt
+          LC_ALL=C sort -o /tmp/pc43-expected-paths.txt /tmp/pc43-expected-paths.txt
+          diff -u /tmp/pc43-expected-paths.txt /tmp/pc43-canonical-paths.txt
+          test "$(wc -l < /tmp/pc43-canonical-paths.txt | tr -d ' ')" = 14
+          test -z "$(git diff --name-only "$PRODUCT_PARENT..$CANONICAL_MERGE")"
+          ! grep -Eq '(^|/)(\.pc43|temporary|materializer|carrier|retrigger|postmerge)(/|$)' /tmp/pc43-canonical-paths.txt
+          git rev-parse origin/main > /tmp/pc43-current-main.sha
+
+      - name: Reconstruct PC-43 and every Preference Custody floor on canonical merge
+        run: |
+          set -Eeuo pipefail
+          git checkout --detach "$CANONICAL_MERGE"
+          node tools/compile-preference-linkage-probability-calibration-assurance.mjs
+          node tools/validate-preference-linkage-probability-calibration-assurance.mjs
+          node test/preference-linkage-probability-calibration-assurance.test.js
+          node tools/compile-preference-custody-manifest-v41.mjs
+          node tools/validate-preference-custody-manifest-v41.mjs
+          node test/preference-custody-manifest-v41.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | LC_ALL=C sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          touch /tmp/pc43-postmerge-focused.pass
+
+      - name: Run complete repository release gate
+        run: |
+          set -Eeuo pipefail
+          npm run release:check
+          touch /tmp/pc43-postmerge-release.pass
+
+      - name: Restore exact merge tree and replay deterministically
+        run: |
+          set -Eeuo pipefail
+          while IFS= read -r path; do
+            git diff --exit-code "$CANONICAL_MERGE" -- "$path"
+          done < /tmp/pc43-expected-paths.txt
+          git reset --hard "$CANONICAL_MERGE"
+          git clean -fdx
+          node tools/compile-preference-linkage-probability-calibration-assurance.mjs
+          node tools/validate-preference-linkage-probability-calibration-assurance.mjs
+          node test/preference-linkage-probability-calibration-assurance.test.js
+          node tools/compile-preference-custody-manifest-v41.mjs
+          node tools/validate-preference-custody-manifest-v41.mjs
+          node test/preference-custody-manifest-v41.test.js
+          git diff --exit-code
+          git reset --hard "$CANONICAL_MERGE"
+          git clean -fdx
+          test "$(git rev-parse 'HEAD^{tree}')" = "$CANONICAL_TREE"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          touch /tmp/pc43-postmerge-replay.pass
+
+      - name: Emit canonical post-merge receipt
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os, subprocess
+
+          paths = Path('/tmp/pc43-expected-paths.txt').read_text().splitlines()
+          files = {}
+          for path in paths:
+              raw = Path(path).read_bytes()
+              blob = subprocess.check_output(['git', 'rev-parse', f"{os.environ['CANONICAL_MERGE']}:{path}"], text=True).strip()
+              files[path] = {
+                  'bytes': len(raw),
+                  'sha256': hashlib.sha256(raw).hexdigest(),
+                  'git_blob_sha1': blob
+              }
+          ordered = {key: files[key] for key in sorted(files)}
+          manifest_bytes = json.dumps(ordered, sort_keys=True, separators=(',', ':')).encode()
+          path_bytes = ('\n'.join(paths) + '\n').encode()
+          receipt = {
+              'schema_version': 'pc43-canonical-postmerge-proof@1',
+              'workflow_run_id': os.environ.get('GITHUB_RUN_ID'),
+              'canonical_merge': os.environ['CANONICAL_MERGE'],
+              'first_parent': os.environ['FIRST_PARENT'],
+              'product_parent': os.environ['PRODUCT_PARENT'],
+              'canonical_tree': os.environ['CANONICAL_TREE'],
+              'current_main_observed': Path('/tmp/pc43-current-main.sha').read_text().strip(),
+              'canonical_path_count': len(paths),
+              'path_list_sha256': hashlib.sha256(path_bytes).hexdigest(),
+              'file_manifest_sha256': hashlib.sha256(manifest_bytes).hexdigest(),
+              'files': ordered,
+              'focused_pc43': 'pass',
+              'floor_v41': 'pass',
+              'historical_preference_custody_floors': 'pass',
+              'no_magic_human': 'pass',
+              'release_check': 'pass',
+              'deterministic_replay': 'pass',
+              'final_tree_clean': True,
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          raw = json.dumps(receipt, indent=2) + '\n'
+          Path('/tmp/pc43-canonical-postmerge-proof.json').write_text(raw)
+          print(raw)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc43-canonical-postmerge-proof
+          path: /tmp/pc43-canonical-postmerge-proof.json
+          if-no-files-found: error
+          retention-days: 90
