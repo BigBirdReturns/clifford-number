@@ -1,0 +1,204 @@
+name: TEMP prove SSC RD-05 merge 209c
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-postmerge-proof-base-209c
+    paths:
+      - '.github/tmp/ssc-rd05-postmerge-proof-209c.trigger'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd05-postmerge-proof-209c
+  cancel-in-progress: false
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      EXPECTED_MERGE: 209c30585301a1069507d2e6b16db62ff4ffe1bd
+      EXPECTED_FIRST_PARENT: 50148d653574cd89e4bb01004caba06a8c517631
+      EXPECTED_SECOND_PARENT: 9eb65eadcbe179cd32489127d513afb68d4a1703
+      EXPECTED_FIRST_PARENT_PATHS: '810'
+      EXPECTED_SOURCE_MANIFEST: 0fb07dd92ff7e8c27a7e4b3e6b3db18842538516b1badd05afe194fd07446c32
+      EXPECTED_PRODUCT_MANIFEST: d9fcb123ad57bf86b355920702aa961e32c95a6a3b3237eb8ece91e863baca11
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 209c30585301a1069507d2e6b16db62ff4ffe1bd
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Prove actual merge topology and exact RD-05 product
+        run: |
+          set -Eeuo pipefail
+
+          test "$(git rev-parse HEAD)" = "$EXPECTED_MERGE"
+          read -r commit first second extra < <(git rev-list --parents -n 1 HEAD)
+          test "$commit" = "$EXPECTED_MERGE"
+          test "$first" = "$EXPECTED_FIRST_PARENT"
+          test "$second" = "$EXPECTED_SECOND_PARENT"
+          test -z "${extra:-}"
+
+          git diff --name-only "$EXPECTED_FIRST_PARENT" "$EXPECTED_MERGE" | sort > /tmp/rd05-merge-paths.txt
+          test "$(wc -l < /tmp/rd05-merge-paths.txt | tr -d ' ')" = "$EXPECTED_FIRST_PARENT_PATHS"
+          test "$(grep -c '^data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/source-custody/successor-census-v2/' /tmp/rd05-merge-paths.txt)" = '399'
+          test "$(grep -c '^\.github/workflows/status-sovereignty-rd05-wave02-terminal-closure.yml$' /tmp/rd05-merge-paths.txt)" = '1'
+          if grep -Eq '(^|/)(\.github/tmp|carrier|trigger)(/|$)|temporary-ssc-rd05|terminal-closure-materializer' /tmp/rd05-merge-paths.txt; then
+            echo 'transport-only path escaped into canonical merge' >&2
+            exit 1
+          fi
+
+          node tools/validate-no-magic-human-gate.mjs
+          node tools/build-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs
+          node tools/validate-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs
+          node test/status-sovereignty-rd-wave02-rd05-recommendation-disposition.test.js
+
+          jq -e --arg source "$EXPECTED_SOURCE_MANIFEST" --arg product "$EXPECTED_PRODUCT_MANIFEST" '
+            .terminal_state == "bounded_non_link" and
+            .class_closed == true and
+            .counts.frozen_objects == 58 and
+            .counts.terminal_objects == 58 and
+            .counts.bounded_non_link_chains == 4 and
+            .counts.open_chains == 0 and
+            .counts.fixed_routes == 49 and
+            .counts.http_success_routes == 45 and
+            .counts.terminal_non_success_routes == 4 and
+            .counts.completed_recommendations == 0 and
+            .counts.agency_responses == 0 and
+            .counts.adopted_or_rejected_outputs == 0 and
+            .counts.implementation_or_outcomes == 0 and
+            .source_custody.manifest_combined_sha256 == $source and
+            .product.manifest_combined_sha256 == $product and
+            .authority.outside_human_dependency == false and
+            .authority.external_contacts == 0 and
+            .authority.external_reviews == 0 and
+            .authority.publication_effect == "none" and
+            .authority.adoption_effect == "none" and
+            .authority.graph_effect == "none"
+          ' data/project/ssc-residual-wave02/closures/RD-05-C03.json >/dev/null
+
+          npm run release:check
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+
+          const jsonPaths = [
+            'build/axm-identity.json',
+            'build/build-hop-report.json',
+            'build/hop-graph.json',
+            'build/migration-summary.json',
+            'build/receipt-graph.json',
+            'build/scores.json',
+            'build/scout-report.json',
+            'build/surface-graph.json'
+          ];
+          const markdownPaths = [
+            'build/migration-review.md',
+            'build/scout-report.md'
+          ];
+          const expected = [...jsonPaths, ...markdownPaths].sort();
+          const status = execFileSync('git', ['status', '--porcelain=v1', '--untracked-files=all'], { encoding: 'utf8' })
+            .split('\n').filter(Boolean);
+          const paths = status.map((line) => line.slice(3)).sort();
+          if (JSON.stringify(paths) !== JSON.stringify(expected)) {
+            throw new Error(`unexpected post-release paths: ${JSON.stringify(paths)}`);
+          }
+          const numstat = execFileSync('git', ['diff', '--numstat', '--', ...expected], { encoding: 'utf8' })
+            .trim().split('\n').filter(Boolean);
+          if (numstat.length !== expected.length) throw new Error('post-release numstat denominator');
+          for (const row of numstat) {
+            const [adds, deletes, path] = row.split('\t');
+            if (adds !== '1' || deletes !== '1' || !expected.includes(path)) {
+              throw new Error(`non-timestamp post-release diff: ${row}`);
+            }
+          }
+          for (const path of jsonPaths) {
+            const before = JSON.parse(execFileSync('git', ['show', `HEAD:${path}`], { encoding: 'utf8' }));
+            const after = JSON.parse(fs.readFileSync(path, 'utf8'));
+            if (typeof before.generated !== 'string' || typeof after.generated !== 'string') {
+              throw new Error(`missing generated timestamp: ${path}`);
+            }
+            delete before.generated;
+            delete after.generated;
+            if (JSON.stringify(before) !== JSON.stringify(after)) {
+              throw new Error(`semantic JSON drift: ${path}`);
+            }
+          }
+          for (const path of markdownPaths) {
+            const normalize = (text) => text.split('\n').map((line) => line.startsWith('Generated: ') ? 'Generated: <ISO>' : line);
+            const before = normalize(execFileSync('git', ['show', `HEAD:${path}`], { encoding: 'utf8' }));
+            const after = normalize(fs.readFileSync(path, 'utf8'));
+            if (JSON.stringify(before) !== JSON.stringify(after)) {
+              throw new Error(`semantic Markdown drift: ${path}`);
+            }
+          }
+          console.log('post-release volatility proof: PASS — 10/10 paths timestamp-only, semantic drift zero');
+          NODE
+
+          git restore --staged --worktree .
+          node tools/build-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs
+          node tools/validate-status-sovereignty-rd-wave02-rd05-recommendation-disposition.mjs
+          node test/status-sovereignty-rd-wave02-rd05-recommendation-disposition.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code -- \
+            data/project/ssc-residual-wave02/closures/RD-05-C03.json \
+            data/research/status-sovereignty-rd-wave02-rd05-recommendation-disposition/candidate-exclusion-ledger.json \
+            data/research/status-sovereignty-rd-wave02-rd05-recommendation-disposition/chain-terminal-ledger.json \
+            data/research/status-sovereignty-rd-wave02-rd05-recommendation-disposition/class-receipt.json \
+            data/research/status-sovereignty-rd-wave02-rd05-recommendation-disposition/manifest.json \
+            data/research/status-sovereignty-rd-wave02-rd05-recommendation-disposition/summary.json \
+            data/research/status-sovereignty-rd-wave02-rd05-recommendation-disposition/terminal-classification.json
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          tree="$(git show -s --format=%T HEAD)"
+          cat > rd05-postmerge-proof.json <<EOF
+          {
+            "schema_version": "ssc-rd05-wave02-postmerge-proof@1",
+            "merge_commit": "$EXPECTED_MERGE",
+            "merge_tree": "$tree",
+            "first_parent": "$EXPECTED_FIRST_PARENT",
+            "second_parent": "$EXPECTED_SECOND_PARENT",
+            "first_parent_changed_paths": $EXPECTED_FIRST_PARENT_PATHS,
+            "successor_census_paths": 399,
+            "frozen_objects": 58,
+            "terminal_objects": 58,
+            "bounded_non_link_chains": 4,
+            "open_chains": 0,
+            "fixed_routes": 49,
+            "http_success_routes": 45,
+            "terminal_non_success_routes": 4,
+            "completed_recommendations": 0,
+            "agency_responses": 0,
+            "adopted_or_rejected_outputs": 0,
+            "implementation_or_outcomes": 0,
+            "focused_adversarial_mutations": 123,
+            "source_manifest_sha256": "$EXPECTED_SOURCE_MANIFEST",
+            "product_manifest_sha256": "$EXPECTED_PRODUCT_MANIFEST",
+            "release_gate": "pass",
+            "post_release_volatile_paths": 10,
+            "post_release_semantic_drift": 0,
+            "deterministic_replay": "pass",
+            "outside_human_dependency": false,
+            "external_contacts": 0,
+            "external_reviews": 0,
+            "publication_effect": "none",
+            "adoption_effect": "none",
+            "graph_effect": "none"
+          }
+          EOF
+
+      - name: Upload exact post-merge proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-wave02-postmerge-proof-209c
+          path: rd05-postmerge-proof.json
+          if-no-files-found: error
+          retention-days: 90
