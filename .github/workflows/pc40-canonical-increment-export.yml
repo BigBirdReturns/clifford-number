@@ -1,0 +1,52 @@
+name: Temporary PC-40 canonical increment export
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pc40-canonical-increment-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: de0b6eede3c9561d9cd5728c198fc62263b67b6d
+          fetch-depth: 0
+      - name: Export exact canonical increment
+        run: |
+          set -euo pipefail
+          base=382578570bbce842bb246688a356d99743b904a1
+          head=de0b6eede3c9561d9cd5728c198fc62263b67b6d
+          test "$(git rev-parse HEAD)" = "$head"
+          git merge-base --is-ancestor "$base" "$head"
+          git branch pc40-canonical-main "$head"
+          git bundle create /tmp/pc40-canonical-increment.bundle refs/heads/pc40-canonical-main ^"$base"
+          git bundle verify /tmp/pc40-canonical-increment.bundle
+          bundle_sha256=$(sha256sum /tmp/pc40-canonical-increment.bundle | awk '{print $1}')
+          bundle_bytes=$(wc -c < /tmp/pc40-canonical-increment.bundle)
+          cat > /tmp/pc40-canonical-increment-receipt.json <<EOF
+          {
+            "schema_version": "pc40-canonical-increment-export@1",
+            "base": "$base",
+            "head": "$head",
+            "bundle_bytes": $bundle_bytes,
+            "bundle_sha256": "$bundle_sha256",
+            "outside_human_dependency": false,
+            "graph_effect": "none"
+          }
+          EOF
+          git bundle list-heads /tmp/pc40-canonical-increment.bundle
+          cat /tmp/pc40-canonical-increment-receipt.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc40-canonical-increment
+          path: |
+            /tmp/pc40-canonical-increment.bundle
+            /tmp/pc40-canonical-increment-receipt.json
+          if-no-files-found: error
+          retention-days: 7
