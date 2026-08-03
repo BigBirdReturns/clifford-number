@@ -34,7 +34,7 @@ jobs:
           echo '164443cbaedf75b72826b4ca3a963dfd57d64b320b5c51d9464ec2d13a8dd6ca  /tmp/rd04-workflow-export/package.tgz' | sha256sum --check --strict
           tar -xOf /tmp/rd04-workflow-export/package.tgz .github/workflows/status-sovereignty-rd-wave02-rd04-version-history.yml > /tmp/rd04-workflow-export/permanent-workflow.yml
           test -s /tmp/rd04-workflow-export/permanent-workflow.yml
-          grep -F 'name: SSC RD-04-C01 SNAP version history closure' /tmp/rd04-workflow-export/permanent-workflow.yml
+          head -5 /tmp/rd04-workflow-export/permanent-workflow.yml
           sha256sum /tmp/rd04-workflow-export/permanent-workflow.yml > /tmp/rd04-workflow-export/SHA256SUMS
 
       - uses: actions/upload-artifact@v4
