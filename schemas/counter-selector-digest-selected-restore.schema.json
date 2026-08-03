@@ -1,0 +1,770 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/counter-selector-digest-selected-restore.schema.json",
+  "title": "Counter-Selector digest-selected checkpoint restore audit",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "program_id",
+    "wave_id",
+    "parent_wave_ids",
+    "as_of",
+    "observed_at",
+    "title",
+    "status",
+    "purpose",
+    "counts",
+    "handoff_contract",
+    "controls",
+    "join_matrix",
+    "boundaries",
+    "next_action",
+    "graph_effect"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "counter-selector-digest-selected-restore@1"
+    },
+    "program_id": {
+      "const": "counter-selector-v1"
+    },
+    "wave_id": {
+      "const": "CS-W39-DR-01"
+    },
+    "parent_wave_ids": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "prefixItems": [
+        {
+          "const": "CS-W38-PO-01"
+        }
+      ],
+      "items": false
+    },
+    "as_of": {
+      "const": "2026-08-03"
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "const": "one_repo_digest_selected_checkpoint_operation_join_zero_public_fixed_digest_receipts_zero_inventory_acknowledgments_zero_complete_portable_operational_handoffs_zero_person_findings"
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 37,
+      "maxProperties": 37,
+      "required": [
+        "controls_audited",
+        "public_source_records",
+        "repo_digest_selected_checkpoint_restore_surfaces",
+        "repo_digest_selected_successor_operation_joins",
+        "dynamic_repo_digest_values_consumed",
+        "public_fixed_checkpoint_digest_receipts",
+        "new_pod_successor_operation_surfaces",
+        "source_container_and_pod_removed_before_restore_surfaces",
+        "rootfs_digest_dependency_binding_surfaces",
+        "explicit_external_dependency_replay_surfaces",
+        "bind_mount_missing_dependency_refusals",
+        "application_specific_continuation_surfaces",
+        "checkpoint_package_inspection_surfaces",
+        "registry_push_routes",
+        "registry_round_trip_restore_receipts",
+        "itemized_internal_package_manifests",
+        "package_inventory_recipient_acknowledgments",
+        "complete_authority_credential_ledgers",
+        "complete_dependency_access_inventories",
+        "hidden_predecessor_state_free_surfaces",
+        "namespaced_signature_policy_restore_support_surfaces",
+        "namespaced_signature_policy_restore_refusals",
+        "clean_destination_operation_surfaces",
+        "external_independent_reviews",
+        "complete_portable_operational_handoffs",
+        "complete_direct_person_handoffs",
+        "person_dimension_supports_added",
+        "valid_resource_normalized_comparators",
+        "complete_operator_findings",
+        "field_test_eligible_candidates",
+        "contacts_authorized",
+        "bounded_collaborations_authorized",
+        "promotions",
+        "person_rankings",
+        "public_identity_profiles",
+        "graph_effects",
+        "adversarial_mutations"
+      ],
+      "properties": {
+        "controls_audited": {
+          "const": 3
+        },
+        "public_source_records": {
+          "const": 11
+        },
+        "repo_digest_selected_checkpoint_restore_surfaces": {
+          "const": 1
+        },
+        "repo_digest_selected_successor_operation_joins": {
+          "const": 1
+        },
+        "dynamic_repo_digest_values_consumed": {
+          "const": 1
+        },
+        "public_fixed_checkpoint_digest_receipts": {
+          "const": 0
+        },
+        "new_pod_successor_operation_surfaces": {
+          "const": 2
+        },
+        "source_container_and_pod_removed_before_restore_surfaces": {
+          "const": 2
+        },
+        "rootfs_digest_dependency_binding_surfaces": {
+          "const": 2
+        },
+        "explicit_external_dependency_replay_surfaces": {
+          "const": 1
+        },
+        "bind_mount_missing_dependency_refusals": {
+          "const": 1
+        },
+        "application_specific_continuation_surfaces": {
+          "const": 1
+        },
+        "checkpoint_package_inspection_surfaces": {
+          "const": 1
+        },
+        "registry_push_routes": {
+          "const": 1
+        },
+        "registry_round_trip_restore_receipts": {
+          "const": 0
+        },
+        "itemized_internal_package_manifests": {
+          "const": 0
+        },
+        "package_inventory_recipient_acknowledgments": {
+          "const": 0
+        },
+        "complete_authority_credential_ledgers": {
+          "const": 0
+        },
+        "complete_dependency_access_inventories": {
+          "const": 0
+        },
+        "hidden_predecessor_state_free_surfaces": {
+          "const": 0
+        },
+        "namespaced_signature_policy_restore_support_surfaces": {
+          "const": 0
+        },
+        "namespaced_signature_policy_restore_refusals": {
+          "const": 1
+        },
+        "clean_destination_operation_surfaces": {
+          "const": 0
+        },
+        "external_independent_reviews": {
+          "const": 0
+        },
+        "complete_portable_operational_handoffs": {
+          "const": 0
+        },
+        "complete_direct_person_handoffs": {
+          "const": 0
+        },
+        "person_dimension_supports_added": {
+          "const": 0
+        },
+        "valid_resource_normalized_comparators": {
+          "const": 0
+        },
+        "complete_operator_findings": {
+          "const": 0
+        },
+        "field_test_eligible_candidates": {
+          "const": 0
+        },
+        "contacts_authorized": {
+          "const": 0
+        },
+        "bounded_collaborations_authorized": {
+          "const": 0
+        },
+        "promotions": {
+          "const": 0
+        },
+        "person_rankings": {
+          "const": 0
+        },
+        "public_identity_profiles": {
+          "const": 0
+        },
+        "graph_effects": {
+          "const": 0
+        },
+        "adversarial_mutations": {
+          "const": 205
+        }
+      }
+    },
+    "handoff_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component_order",
+        "complete_portable_operational_handoff_requires",
+        "proofs_may_be_assembled_across_controls",
+        "package_variants_may_be_combined_within_system",
+        "contact_required",
+        "control_is_candidate_promotion"
+      ],
+      "properties": {
+        "component_order": {
+          "type": "array",
+          "minItems": 14,
+          "maxItems": 14,
+          "uniqueItems": true,
+          "prefixItems": [
+            {
+              "const": "same_object_identity"
+            },
+            {
+              "const": "checkpoint_package_identity"
+            },
+            {
+              "const": "exact_package_selector"
+            },
+            {
+              "const": "package_content_addressing"
+            },
+            {
+              "const": "internal_inventory_and_entry_integrity"
+            },
+            {
+              "const": "outgoing_and_incoming_roles"
+            },
+            {
+              "const": "destination_boundary"
+            },
+            {
+              "const": "authority_and_credentials"
+            },
+            {
+              "const": "dependencies_and_access"
+            },
+            {
+              "const": "open_decisions_and_deadlines"
+            },
+            {
+              "const": "rollback_safe_decline_and_failure_containment"
+            },
+            {
+              "const": "recipient_or_successor_acknowledgment"
+            },
+            {
+              "const": "successor_operation_from_package"
+            },
+            {
+              "const": "independent_verification"
+            }
+          ],
+          "items": false
+        },
+        "complete_portable_operational_handoff_requires": {
+          "type": "array",
+          "minItems": 9,
+          "maxItems": 9,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "proofs_may_be_assembled_across_controls": {
+          "const": false
+        },
+        "package_variants_may_be_combined_within_system": {
+          "const": false
+        },
+        "contact_required": {
+          "const": false
+        },
+        "control_is_candidate_promotion": {
+          "const": false
+        }
+      }
+    },
+    "controls": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "$ref": "#/$defs/control"
+      }
+    },
+    "join_matrix": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "$ref": "#/$defs/joinRow"
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 25,
+      "maxProperties": 25,
+      "required": [
+        "repo_digest_reference_is_public_fixed_digest_receipt",
+        "repo_digest_selected_restore_is_registry_round_trip",
+        "new_pod_is_clean_destination",
+        "new_pod_is_new_host",
+        "image_digest_is_internal_entry_manifest",
+        "checkpoint_annotation_is_inventory_acknowledgment",
+        "rootfs_image_ref_binding_is_self_containment",
+        "redeclared_bind_mounts_are_package_contents",
+        "explicit_dependency_failure_is_complete_dependency_inventory",
+        "running_successor_is_application_continuation",
+        "archive_application_continuation_may_be_borrowed_into_digest_control",
+        "checkpointctl_inspection_is_recipient_acknowledgment",
+        "registry_push_route_is_registry_restore_receipt",
+        "same_project_integration_is_external_independent_review",
+        "digest_selected_system_control_is_person_support",
+        "proof_components_across_controls_may_be_combined",
+        "package_variants_may_be_combined_within_system",
+        "public_fixed_checkpoint_digest_receipt",
+        "clean_destination_operation_proven",
+        "contact_authorized",
+        "field_test_authorized",
+        "promotion_authorized",
+        "person_ranking_authorized",
+        "public_identity_profile_authorized",
+        "graph_effect"
+      ],
+      "properties": {
+        "repo_digest_reference_is_public_fixed_digest_receipt": {
+          "const": false
+        },
+        "repo_digest_selected_restore_is_registry_round_trip": {
+          "const": false
+        },
+        "new_pod_is_clean_destination": {
+          "const": false
+        },
+        "new_pod_is_new_host": {
+          "const": false
+        },
+        "image_digest_is_internal_entry_manifest": {
+          "const": false
+        },
+        "checkpoint_annotation_is_inventory_acknowledgment": {
+          "const": false
+        },
+        "rootfs_image_ref_binding_is_self_containment": {
+          "const": false
+        },
+        "redeclared_bind_mounts_are_package_contents": {
+          "const": false
+        },
+        "explicit_dependency_failure_is_complete_dependency_inventory": {
+          "const": false
+        },
+        "running_successor_is_application_continuation": {
+          "const": false
+        },
+        "archive_application_continuation_may_be_borrowed_into_digest_control": {
+          "const": false
+        },
+        "checkpointctl_inspection_is_recipient_acknowledgment": {
+          "const": false
+        },
+        "registry_push_route_is_registry_restore_receipt": {
+          "const": false
+        },
+        "same_project_integration_is_external_independent_review": {
+          "const": false
+        },
+        "digest_selected_system_control_is_person_support": {
+          "const": false
+        },
+        "proof_components_across_controls_may_be_combined": {
+          "const": false
+        },
+        "package_variants_may_be_combined_within_system": {
+          "const": false
+        },
+        "public_fixed_checkpoint_digest_receipt": {
+          "const": false
+        },
+        "clean_destination_operation_proven": {
+          "const": false
+        },
+        "contact_authorized": {
+          "const": false
+        },
+        "field_test_authorized": {
+          "const": false
+        },
+        "promotion_authorized": {
+          "const": false
+        },
+        "person_ranking_authorized": {
+          "const": false
+        },
+        "public_identity_profile_authorized": {
+          "const": false
+        },
+        "graph_effect": {
+          "const": "none"
+        }
+      }
+    },
+    "next_action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "graph_effect": {
+      "const": "none"
+    }
+  },
+  "$defs": {
+    "sourceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "title",
+        "publisher",
+        "date",
+        "url",
+        "source_class",
+        "artifact_scope"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "pattern": "^CS-W39-S[0-9]{2}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "publisher": {
+          "type": "string",
+          "minLength": 1
+        },
+        "date": {
+          "const": "2026-08-03"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://github\\.com/"
+        },
+        "source_class": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifact_scope": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "control_id",
+        "public_label",
+        "control_type",
+        "system_or_subject",
+        "source_records",
+        "components",
+        "positive_findings",
+        "known_limits",
+        "adjudication",
+        "operator_finding",
+        "field_test_eligible",
+        "contact_authorized",
+        "graph_effect"
+      ],
+      "properties": {
+        "control_id": {
+          "type": "string",
+          "pattern": "^CS-W39-DR-0[1-3]$"
+        },
+        "public_label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "control_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "system_or_subject": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_records": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "$ref": "#/$defs/sourceRecord"
+          }
+        },
+        "components": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "same_object_identity",
+            "checkpoint_package_identity",
+            "exact_package_selector",
+            "package_content_addressing",
+            "internal_inventory_and_entry_integrity",
+            "outgoing_and_incoming_roles",
+            "destination_boundary",
+            "authority_and_credentials",
+            "dependencies_and_access",
+            "open_decisions_and_deadlines",
+            "rollback_safe_decline_and_failure_containment",
+            "recipient_or_successor_acknowledgment",
+            "successor_operation_from_package",
+            "independent_verification"
+          ],
+          "properties": {
+            "same_object_identity": {
+              "type": "string",
+              "minLength": 1
+            },
+            "checkpoint_package_identity": {
+              "type": "string",
+              "minLength": 1
+            },
+            "exact_package_selector": {
+              "type": "string",
+              "minLength": 1
+            },
+            "package_content_addressing": {
+              "type": "string",
+              "minLength": 1
+            },
+            "internal_inventory_and_entry_integrity": {
+              "type": "string",
+              "minLength": 1
+            },
+            "outgoing_and_incoming_roles": {
+              "type": "string",
+              "minLength": 1
+            },
+            "destination_boundary": {
+              "type": "string",
+              "minLength": 1
+            },
+            "authority_and_credentials": {
+              "type": "string",
+              "minLength": 1
+            },
+            "dependencies_and_access": {
+              "type": "string",
+              "minLength": 1
+            },
+            "open_decisions_and_deadlines": {
+              "type": "string",
+              "minLength": 1
+            },
+            "rollback_safe_decline_and_failure_containment": {
+              "type": "string",
+              "minLength": 1
+            },
+            "recipient_or_successor_acknowledgment": {
+              "type": "string",
+              "minLength": 1
+            },
+            "successor_operation_from_package": {
+              "type": "string",
+              "minLength": 1
+            },
+            "independent_verification": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "positive_findings": {
+          "type": "array",
+          "minItems": 4,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "known_limits": {
+          "type": "array",
+          "minItems": 7,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "adjudication": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "repo_digest_selected_checkpoint_package",
+            "public_fixed_checkpoint_digest_receipt",
+            "new_pod_successor_operation",
+            "source_container_and_pod_removed_before_restore",
+            "rootfs_digest_dependency_binding",
+            "explicit_external_dependency_replay",
+            "application_specific_continuation",
+            "checkpoint_package_inspection",
+            "registry_push_route",
+            "registry_round_trip_restore",
+            "hidden_predecessor_state_free",
+            "package_inventory_recipient_acknowledgment",
+            "external_independent_review",
+            "complete_portable_operational_handoff",
+            "person_support_added",
+            "classification"
+          ],
+          "properties": {
+            "repo_digest_selected_checkpoint_package": {
+              "type": "boolean"
+            },
+            "public_fixed_checkpoint_digest_receipt": {
+              "type": "boolean"
+            },
+            "new_pod_successor_operation": {
+              "type": "boolean"
+            },
+            "source_container_and_pod_removed_before_restore": {
+              "type": "boolean"
+            },
+            "rootfs_digest_dependency_binding": {
+              "type": "boolean"
+            },
+            "explicit_external_dependency_replay": {
+              "type": "boolean"
+            },
+            "application_specific_continuation": {
+              "type": "boolean"
+            },
+            "checkpoint_package_inspection": {
+              "type": "boolean"
+            },
+            "registry_push_route": {
+              "type": "boolean"
+            },
+            "registry_round_trip_restore": {
+              "type": "boolean"
+            },
+            "hidden_predecessor_state_free": {
+              "type": "boolean"
+            },
+            "package_inventory_recipient_acknowledgment": {
+              "type": "boolean"
+            },
+            "external_independent_review": {
+              "type": "boolean"
+            },
+            "complete_portable_operational_handoff": {
+              "type": "boolean"
+            },
+            "person_support_added": {
+              "type": "boolean"
+            },
+            "classification": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "operator_finding": {
+          "const": false
+        },
+        "field_test_eligible": {
+          "const": false
+        },
+        "contact_authorized": {
+          "const": false
+        },
+        "graph_effect": {
+          "const": "none"
+        }
+      }
+    },
+    "joinRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "control_id",
+        "repo_digest_selector",
+        "new_pod_operation",
+        "application_continuation",
+        "explicit_dependency_replay",
+        "package_inspection",
+        "registry_push_route",
+        "public_fixed_digest",
+        "inventory_acknowledgment",
+        "hidden_predecessor_state_free",
+        "external_independent_review",
+        "complete_portable_operational_handoff",
+        "person_support"
+      ],
+      "properties": {
+        "control_id": {
+          "type": "string",
+          "pattern": "^CS-W39-DR-0[1-3]$"
+        },
+        "repo_digest_selector": {
+          "type": "boolean"
+        },
+        "new_pod_operation": {
+          "type": "boolean"
+        },
+        "application_continuation": {
+          "type": "boolean"
+        },
+        "explicit_dependency_replay": {
+          "type": "boolean"
+        },
+        "package_inspection": {
+          "type": "boolean"
+        },
+        "registry_push_route": {
+          "type": "boolean"
+        },
+        "public_fixed_digest": {
+          "type": "boolean"
+        },
+        "inventory_acknowledgment": {
+          "type": "boolean"
+        },
+        "hidden_predecessor_state_free": {
+          "type": "boolean"
+        },
+        "external_independent_review": {
+          "type": "boolean"
+        },
+        "complete_portable_operational_handoff": {
+          "type": "boolean"
+        },
+        "person_support": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
