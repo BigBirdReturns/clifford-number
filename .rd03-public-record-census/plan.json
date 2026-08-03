@@ -1,0 +1,571 @@
+{
+  "schema_version": "ssc-rd03-wave02-public-record-census-plan@1",
+  "wave_id": "SSC-RD-W02",
+  "class_id": "RD-03-C04",
+  "issue": 788,
+  "as_of": "2026-08-03",
+  "research_branch": "agent/ssc-rd-wave02-rd03-negotiated-terms",
+  "research_head": "e70aec0f6809c77e198e0c4ee80f6bcadb6bbdc4",
+  "field_matrix_path": "data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/field-matrix.json",
+  "field_matrix_sha256": "0d7924097f22816757891e70546d67c2bdfe685468e977b6d95406c108ddfa4a",
+  "field_matrix_blob_sha": "1ee428a1fc43365fd6987c5dbfe362a6338ec1e4",
+  "parent_path": "data/intake/status-sovereignty-rd03-osc-instrument-lifecycle.json",
+  "parent_sha256": "3bd111cc56eb5046ed5ba2aa8a8dfdecaec9d37bbb273e6c75b695e6ae1e05a0",
+  "seed_path": "data/project/ssc-residual-wave02/seeds/RD-03-C04.json",
+  "seed_input_manifest_sha256": "12da3be1a750276357c93530f7390b6925d4f556184e9654dc87339346f46a59",
+  "frozen_object_denominator": {
+    "instruments": 5,
+    "instrument_ids": [
+      "OSC-MP-MATERIALS-150M",
+      "OSC-VULCAN-620M",
+      "OSC-REELEMENT-80M",
+      "OSC-PHOENIX-500M",
+      "OSC-ENERGY-FUELS-725M"
+    ],
+    "executed_and_disbursed": 1,
+    "conditional_pre_close": 4
+  },
+  "protocol": {
+    "fixed_before_execution": true,
+    "maximum_attempts_per_route": 2,
+    "result_depth_per_bing_query": 10,
+    "result_spawned_requests_allowed": false,
+    "official_candidate_hosts": [
+      "sec.gov",
+      "www.sec.gov",
+      "data.sec.gov",
+      "defense.gov",
+      "www.defense.gov",
+      "war.gov",
+      "www.war.gov",
+      "osc.mil",
+      "www.osc.mil",
+      "osd.mil",
+      "www.osd.mil"
+    ],
+    "first_party_candidate_hosts": [
+      "mpmaterials.com",
+      "www.mpmaterials.com",
+      "americanresourcescorp.com",
+      "www.americanresourcescorp.com",
+      "reelementtech.com",
+      "www.reelementtech.com",
+      "vulcanelements.com",
+      "www.vulcanelements.com",
+      "phoenixtailings.com",
+      "www.phoenixtailings.com",
+      "energyfuels.com",
+      "www.energyfuels.com"
+    ],
+    "external_contacts": 0,
+    "external_reviews": 0,
+    "outside_human_dependency": false,
+    "denominator_widening_authorized": false,
+    "substantive_adjudication_authorized": false
+  },
+  "routes": [
+    {
+      "route_id": "RD03-CENSUS-R001",
+      "url": "https://www.defense.gov/News/Releases/Release/Article/4270722/office-of-strategic-capital-announces-first-loan-through-dod-agreement-with-mp/",
+      "purpose": "Official MP Materials executed-loan announcement",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "clusters": [
+        "STATE",
+        "PRINCIPAL"
+      ],
+      "route_kind": "exact_get",
+      "source_id": "SSC-RD03-S001",
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R002",
+      "url": "https://www.sec.gov/Archives/edgar/data/1801368/000180136826000008/mp-20251231.htm",
+      "purpose": "MP Materials 2025 Form 10-K with note terms and cash-receipt state",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "clusters": [
+        "STATE",
+        "PRINCIPAL",
+        "PRICING",
+        "MATURITY",
+        "SECURITY"
+      ],
+      "route_kind": "exact_get",
+      "source_id": "SSC-RD03-S002",
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R003",
+      "url": "https://www.sec.gov/Archives/edgar/data/1801368/000180136826000029/mp-20260331.htm",
+      "purpose": "MP Materials March 2026 filing with current outstanding state",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "clusters": [
+        "STATE",
+        "PRINCIPAL",
+        "PRICING",
+        "MATURITY"
+      ],
+      "route_kind": "exact_get",
+      "source_id": "SSC-RD03-S003",
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R004",
+      "url": "https://www.sec.gov/Archives/edgar/data/1801368/000119312525157310/d43796dex101.htm",
+      "purpose": "MP Materials transaction agreement and companion public-right package",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "clusters": [
+        "WARRANT_RIGHTS",
+        "CONDITIONS",
+        "COVENANTS"
+      ],
+      "route_kind": "exact_get",
+      "source_id": "SSC-RD03-S004",
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R005",
+      "url": "https://www.sec.gov/Archives/edgar/data/1801368/000119312525157310/0001193125-25-157310-index.html",
+      "purpose": "SEC accession index for MP Materials transaction exhibits",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "clusters": [
+        "SOURCE_INDEX",
+        "WARRANT_RIGHTS",
+        "CONDITIONS"
+      ],
+      "route_kind": "exact_get",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R006",
+      "url": "https://www.war.gov/News/Releases/Release/Article/4339788/office-of-strategic-capital-agrees-to-joint-700m-conditional-loan-commitment-wi/",
+      "purpose": "Official Vulcan and ReElement conditional commitments and no-disbursement boundary",
+      "instrument_ids": [
+        "OSC-VULCAN-620M",
+        "OSC-REELEMENT-80M"
+      ],
+      "clusters": [
+        "STATE",
+        "PRINCIPAL",
+        "CONDITIONS",
+        "WARRANT_RIGHTS"
+      ],
+      "route_kind": "exact_get",
+      "source_id": "SSC-RD03-S005",
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R007",
+      "url": "https://www.sec.gov/Archives/edgar/data/1590715/000165495425012526/arec_8k.htm",
+      "purpose": "American Resources filing corroborating ReElement conditional commitment",
+      "instrument_ids": [
+        "OSC-REELEMENT-80M",
+        "OSC-VULCAN-620M"
+      ],
+      "clusters": [
+        "STATE",
+        "PRINCIPAL",
+        "WARRANT_RIGHTS"
+      ],
+      "route_kind": "exact_get",
+      "source_id": "SSC-RD03-S006",
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R008",
+      "url": "https://www.sec.gov/Archives/edgar/data/1590715/000165495425012526/0001654954-25-012526-index.html",
+      "purpose": "SEC accession index for American Resources OSC filing",
+      "instrument_ids": [
+        "OSC-REELEMENT-80M",
+        "OSC-VULCAN-620M"
+      ],
+      "clusters": [
+        "SOURCE_INDEX",
+        "WARRANT_RIGHTS",
+        "CONDITIONS"
+      ],
+      "route_kind": "exact_get",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R009",
+      "url": "https://www.war.gov/News/Releases/Release/Article/4517853/office-of-strategic-capital-signs-500-million-conditional-loan-commitment-with/",
+      "purpose": "Official Phoenix Tailings conditional commitment",
+      "instrument_ids": [
+        "OSC-PHOENIX-500M"
+      ],
+      "clusters": [
+        "STATE",
+        "PRINCIPAL",
+        "CONDITIONS"
+      ],
+      "route_kind": "exact_get",
+      "source_id": "SSC-RD03-S007",
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R010",
+      "url": "https://www.war.gov/News/Releases/Release/Article/4520819/the-department-of-wars-office-of-strategic-capital-signs-725-million-conditiona/",
+      "purpose": "Official Energy Fuels conditional commitment",
+      "instrument_ids": [
+        "OSC-ENERGY-FUELS-725M"
+      ],
+      "clusters": [
+        "STATE",
+        "PRINCIPAL",
+        "CONDITIONS"
+      ],
+      "route_kind": "exact_get",
+      "source_id": "SSC-RD03-S008",
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R011",
+      "url": "https://www.sec.gov/Archives/edgar/data/1385849/000106299326003385/form8k.htm",
+      "purpose": "Energy Fuels filing with proposed tenor and closing boundary",
+      "instrument_ids": [
+        "OSC-ENERGY-FUELS-725M"
+      ],
+      "clusters": [
+        "STATE",
+        "PRINCIPAL",
+        "MATURITY",
+        "CONDITIONS"
+      ],
+      "route_kind": "exact_get",
+      "source_id": "SSC-RD03-S009",
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R012",
+      "url": "https://www.sec.gov/Archives/edgar/data/1385849/000106299326003385/0001062993-26-003385-index.html",
+      "purpose": "SEC accession index for Energy Fuels OSC filing",
+      "instrument_ids": [
+        "OSC-ENERGY-FUELS-725M"
+      ],
+      "clusters": [
+        "SOURCE_INDEX",
+        "MATURITY",
+        "CONDITIONS"
+      ],
+      "route_kind": "exact_get",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R013",
+      "url": "https://data.sec.gov/submissions/CIK0001801368.json",
+      "purpose": "SEC submission index for MP Materials",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "clusters": [
+        "SOURCE_INDEX"
+      ],
+      "route_kind": "exact_get",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R014",
+      "url": "https://data.sec.gov/submissions/CIK0001590715.json",
+      "purpose": "SEC submission index for American Resources and ReElement custody",
+      "instrument_ids": [
+        "OSC-REELEMENT-80M",
+        "OSC-VULCAN-620M"
+      ],
+      "clusters": [
+        "SOURCE_INDEX"
+      ],
+      "route_kind": "exact_get",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R015",
+      "url": "https://data.sec.gov/submissions/CIK0001385849.json",
+      "purpose": "SEC submission index for Energy Fuels custody",
+      "instrument_ids": [
+        "OSC-ENERGY-FUELS-725M"
+      ],
+      "clusters": [
+        "SOURCE_INDEX"
+      ],
+      "route_kind": "exact_get",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R016",
+      "url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22MP%20Materials%22%20%22loan%20agreement%22",
+      "purpose": "Fixed discovery query for exact MP loan agreement",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "clusters": [
+        "SOURCE_DISCOVERY",
+        "COVENANTS",
+        "SECURITY",
+        "SENIORITY"
+      ],
+      "route_kind": "bing_rss",
+      "query": "\"Office of Strategic Capital\" \"MP Materials\" \"loan agreement\"",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R017",
+      "url": "https://www.bing.com/search?format=rss&q=site%3Asec.gov%20%22MP%20Materials%22%20%22Samarium%20Project%20Loan%22",
+      "purpose": "Fixed SEC-host query for MP loan terms",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "clusters": [
+        "SOURCE_DISCOVERY",
+        "PRICING",
+        "MATURITY",
+        "ENFORCEMENT"
+      ],
+      "route_kind": "bing_rss",
+      "query": "site:sec.gov \"MP Materials\" \"Samarium Project Loan\"",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R018",
+      "url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22Vulcan%20Elements%22%20warrant",
+      "purpose": "Fixed discovery query for Vulcan warrant and commitment terms",
+      "instrument_ids": [
+        "OSC-VULCAN-620M"
+      ],
+      "clusters": [
+        "SOURCE_DISCOVERY",
+        "WARRANT_RIGHTS",
+        "PRICING"
+      ],
+      "route_kind": "bing_rss",
+      "query": "\"Office of Strategic Capital\" \"Vulcan Elements\" warrant",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R019",
+      "url": "https://www.bing.com/search?format=rss&q=site%3Asec.gov%20%22Vulcan%20Elements%22%20%22Office%20of%20Strategic%20Capital%22",
+      "purpose": "Fixed SEC-host query for Vulcan filings",
+      "instrument_ids": [
+        "OSC-VULCAN-620M"
+      ],
+      "clusters": [
+        "SOURCE_DISCOVERY",
+        "CONDITIONS",
+        "COVENANTS"
+      ],
+      "route_kind": "bing_rss",
+      "query": "site:sec.gov \"Vulcan Elements\" \"Office of Strategic Capital\"",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R020",
+      "url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22ReElement%20Technologies%22%20warrant",
+      "purpose": "Fixed discovery query for ReElement warrant and commitment terms",
+      "instrument_ids": [
+        "OSC-REELEMENT-80M"
+      ],
+      "clusters": [
+        "SOURCE_DISCOVERY",
+        "WARRANT_RIGHTS",
+        "PRICING"
+      ],
+      "route_kind": "bing_rss",
+      "query": "\"Office of Strategic Capital\" \"ReElement Technologies\" warrant",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R021",
+      "url": "https://www.bing.com/search?format=rss&q=site%3Asec.gov%20%22ReElement%20Technologies%22%20%22Office%20of%20Strategic%20Capital%22",
+      "purpose": "Fixed SEC-host query for ReElement filings",
+      "instrument_ids": [
+        "OSC-REELEMENT-80M"
+      ],
+      "clusters": [
+        "SOURCE_DISCOVERY",
+        "CONDITIONS",
+        "COVENANTS"
+      ],
+      "route_kind": "bing_rss",
+      "query": "site:sec.gov \"ReElement Technologies\" \"Office of Strategic Capital\"",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R022",
+      "url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22Phoenix%20Tailings%22%20%22loan%20agreement%22",
+      "purpose": "Fixed discovery query for Phoenix negotiated terms",
+      "instrument_ids": [
+        "OSC-PHOENIX-500M"
+      ],
+      "clusters": [
+        "SOURCE_DISCOVERY",
+        "PRICING",
+        "SECURITY",
+        "COVENANTS"
+      ],
+      "route_kind": "bing_rss",
+      "query": "\"Office of Strategic Capital\" \"Phoenix Tailings\" \"loan agreement\"",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R023",
+      "url": "https://www.bing.com/search?format=rss&q=site%3Asec.gov%20%22Phoenix%20Tailings%22%20%22Office%20of%20Strategic%20Capital%22",
+      "purpose": "Fixed SEC-host query for Phoenix filings",
+      "instrument_ids": [
+        "OSC-PHOENIX-500M"
+      ],
+      "clusters": [
+        "SOURCE_DISCOVERY",
+        "CONDITIONS",
+        "ENFORCEMENT"
+      ],
+      "route_kind": "bing_rss",
+      "query": "site:sec.gov \"Phoenix Tailings\" \"Office of Strategic Capital\"",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R024",
+      "url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22Energy%20Fuels%22%20%22loan%20agreement%22",
+      "purpose": "Fixed discovery query for Energy Fuels negotiated terms",
+      "instrument_ids": [
+        "OSC-ENERGY-FUELS-725M"
+      ],
+      "clusters": [
+        "SOURCE_DISCOVERY",
+        "PRICING",
+        "SECURITY",
+        "COVENANTS"
+      ],
+      "route_kind": "bing_rss",
+      "query": "\"Office of Strategic Capital\" \"Energy Fuels\" \"loan agreement\"",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R025",
+      "url": "https://www.bing.com/search?format=rss&q=site%3Asec.gov%20%22Energy%20Fuels%22%20%22Office%20of%20Strategic%20Capital%22",
+      "purpose": "Fixed SEC-host query for Energy Fuels filings",
+      "instrument_ids": [
+        "OSC-ENERGY-FUELS-725M"
+      ],
+      "clusters": [
+        "SOURCE_DISCOVERY",
+        "CONDITIONS",
+        "ENFORCEMENT"
+      ],
+      "route_kind": "bing_rss",
+      "query": "site:sec.gov \"Energy Fuels\" \"Office of Strategic Capital\"",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R026",
+      "url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20covenant%20milestone%20collateral%20seniority",
+      "purpose": "Fixed cross-instrument term-stack discovery query",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M",
+        "OSC-VULCAN-620M",
+        "OSC-REELEMENT-80M",
+        "OSC-PHOENIX-500M",
+        "OSC-ENERGY-FUELS-725M"
+      ],
+      "clusters": [
+        "SOURCE_DISCOVERY",
+        "COVENANTS",
+        "MILESTONES",
+        "SECURITY",
+        "SENIORITY"
+      ],
+      "route_kind": "bing_rss",
+      "query": "\"Office of Strategic Capital\" covenant milestone collateral seniority",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R027",
+      "url": "https://www.bing.com/search?format=rss&q=site%3Adefense.gov%20%22Office%20of%20Strategic%20Capital%22%20%22MP%20Materials%22",
+      "purpose": "Fixed Defense-host query for MP source custody",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "clusters": [
+        "SOURCE_DISCOVERY",
+        "STATE"
+      ],
+      "route_kind": "bing_rss",
+      "query": "site:defense.gov \"Office of Strategic Capital\" \"MP Materials\"",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R028",
+      "url": "https://www.bing.com/search?format=rss&q=site%3Awar.gov%20%22Office%20of%20Strategic%20Capital%22%20%22Vulcan%20Elements%22",
+      "purpose": "Fixed War-host query for Vulcan source custody",
+      "instrument_ids": [
+        "OSC-VULCAN-620M"
+      ],
+      "clusters": [
+        "SOURCE_DISCOVERY",
+        "STATE"
+      ],
+      "route_kind": "bing_rss",
+      "query": "site:war.gov \"Office of Strategic Capital\" \"Vulcan Elements\"",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R029",
+      "url": "https://www.bing.com/search?format=rss&q=site%3Awar.gov%20%22Office%20of%20Strategic%20Capital%22%20%22Phoenix%20Tailings%22",
+      "purpose": "Fixed War-host query for Phoenix source custody",
+      "instrument_ids": [
+        "OSC-PHOENIX-500M"
+      ],
+      "clusters": [
+        "SOURCE_DISCOVERY",
+        "STATE"
+      ],
+      "route_kind": "bing_rss",
+      "query": "site:war.gov \"Office of Strategic Capital\" \"Phoenix Tailings\"",
+      "source_id": null,
+      "max_attempts": 2
+    },
+    {
+      "route_id": "RD03-CENSUS-R030",
+      "url": "https://www.bing.com/search?format=rss&q=site%3Awar.gov%20%22Office%20of%20Strategic%20Capital%22%20%22Energy%20Fuels%22",
+      "purpose": "Fixed War-host query for Energy Fuels source custody",
+      "instrument_ids": [
+        "OSC-ENERGY-FUELS-725M"
+      ],
+      "clusters": [
+        "SOURCE_DISCOVERY",
+        "STATE"
+      ],
+      "route_kind": "bing_rss",
+      "query": "site:war.gov \"Office of Strategic Capital\" \"Energy Fuels\"",
+      "source_id": null,
+      "max_attempts": 2
+    }
+  ]
+}
