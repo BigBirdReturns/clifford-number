@@ -39,10 +39,25 @@ const CLOSED = Object.freeze([
     closure_reference_path: 'data/project/ssc-residual-wave02/closures/RD-05-C03.json',
     class_receipt_path: 'data/research/status-sovereignty-rd-wave02-rd05-recommendation-disposition/class-receipt.json',
     manifest_combined_sha256: 'd9fcb123ad57bf86b355920702aa961e32c95a6a3b3237eb8ece91e863baca11'
+  },
+  {
+    lane_id: 'RD-01',
+    class_id: 'RD-01-C03',
+    issue: 786,
+    source_pr: 801,
+    merge_commit: '64af19ce7f860a7024a37ba5b6eef796b57c87b1',
+    constitutional_exact_label: 'legal-entity resolution for selected and matched control companies',
+    receipt_class_label: 'legal-entity resolution for selected and matched control companies',
+    labels_exact_match: true,
+    label_reconciliation: 'none',
+    terminal_state: 'bounded_source_unavailable',
+    closure_reference_path: 'data/project/ssc-residual-wave02/closures/RD-01-C03.json',
+    class_receipt_path: 'data/research/status-sovereignty-rd-wave02-rd01-legal-entity/class-receipt.json',
+    manifest_combined_sha256: '7d5cc33a8fb8fc759dd2794076ffcd7ca4e1ad9c463f49593459edfca793a798'
   }
 ]);
 
-const OPEN_IDS = Object.freeze(['RD-01-C03', 'RD-02-C04', 'RD-03-C04', 'RD-06-C01']);
+const OPEN_IDS = Object.freeze(['RD-02-C04', 'RD-03-C04', 'RD-06-C01']);
 const abs = (root, rel) => path.join(root, rel);
 const read = (root, rel) => JSON.parse(fs.readFileSync(abs(root, rel), 'utf8'));
 const write = (root, rel, value) => {
@@ -89,7 +104,7 @@ function validateClosure(root, expected, constitutionalAttempt) {
       open_after: 41,
       closed_after: 1
     }, 'RD-04 atlas effect changed');
-  } else {
+  } else if (expected.class_id === 'RD-05-C03') {
     same(closure?.residual_atlas_effect_if_promoted_after_rd04, {
       canonical_classes: 42,
       open_before: 41,
@@ -97,6 +112,14 @@ function validateClosure(root, expected, constitutionalAttempt) {
       open_after: 40,
       closed_after: 2
     }, 'RD-05 atlas effect changed');
+  } else {
+    same(closure?.residual_atlas_effect_if_promoted_after_rd04_rd05, {
+      canonical_classes: 42,
+      open_before: 40,
+      closed_before: 2,
+      open_after: 39,
+      closed_after: 3
+    }, 'RD-01 atlas effect changed');
   }
 
   validateAuthorityZeros(closure.authority, `${expected.class_id}.closure.authority`);
@@ -145,7 +168,7 @@ export function deriveCurrent(root = ROOT) {
     hypothesis_id: 'SSC-H01',
     issue: 785,
     as_of: '2026-08-03',
-    authority: 'two_terminal_class_receipts_promoted_without_cross_lane_empirical_authority',
+    authority: 'three_terminal_class_receipts_promoted_without_cross_lane_empirical_authority',
     source_snapshots: {
       constitution_path: CONSTITUTION_PATH,
       wave_01_registry_path: WAVE01_PATH,
@@ -157,10 +180,10 @@ export function deriveCurrent(root = ROOT) {
     counts: {
       canonical_residual_classes: 42,
       selected_class_attempts: 6,
-      terminal_class_receipts: 2,
-      classes_closed_this_wave: 2,
-      closed_residual_classes: 2,
-      open_residual_classes: 40,
+      terminal_class_receipts: 3,
+      classes_closed_this_wave: 3,
+      closed_residual_classes: 3,
+      open_residual_classes: 39,
       label_reconciliations: 1,
       outside_human_dependencies: 0,
       external_contacts: 0,
@@ -176,9 +199,9 @@ export function deriveCurrent(root = ROOT) {
       adoption_effects: 0
     },
     current_result: {
-      terminal_state: 'two_of_forty_two_residual_classes_closed_four_selected_attempts_open',
-      classes_closed: 2,
-      classes_open: 40,
+      terminal_state: 'three_of_forty_two_residual_classes_closed_three_selected_attempts_open',
+      classes_closed: 3,
+      classes_open: 39,
       closed_class_ids: CLOSED.map((row) => row.class_id),
       open_selected_class_ids: [...OPEN_IDS],
       all_six_selected_classes_closed: false,
@@ -219,7 +242,7 @@ if (mode === '--write') {
   console.log(`wrote ${CURRENT_PATH}`);
 } else if (mode === '--check') {
   checkCurrent(ROOT);
-  console.log('Wave-02 current ledger: 40 open / 2 closed; receipts RD-04 and RD-05');
+  console.log('Wave-02 current ledger: 39 open / 3 closed; receipts RD-04, RD-05, and RD-01');
 } else {
   throw new Error(`unknown mode: ${mode}`);
 }
