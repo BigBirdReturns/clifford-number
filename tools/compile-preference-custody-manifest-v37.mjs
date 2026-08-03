@@ -1,0 +1,18 @@
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { compilePreferenceCustodyManifestV37, renderPreferenceCustodyManifestV37Markdown } from './lib/preference-custody-manifest-v37.mjs';
+execFileSync(process.execPath, ['tools/compile-preference-custody-manifest-v36.mjs'], { stdio: 'inherit' });
+execFileSync(process.execPath, ['tools/compile-preference-record-linkage-temporal-succession-assurance.mjs'], { stdio: 'inherit' });
+const manifestPath = process.argv[2] ?? 'data/research/preference-custody/control-manifest-v37.json';
+const jsonPath = process.argv[3] ?? 'build/research/preference-custody-laboratory-floor-v37.json';
+const markdownPath = process.argv[4] ?? 'build/research/preference-custody-laboratory-floor-v37.md';
+const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+const baseBuild = JSON.parse(readFileSync('build/research/preference-custody-laboratory-floor-v36.json', 'utf8'));
+const linkageBuild = JSON.parse(readFileSync('build/research/preference-record-linkage-temporal-succession-assurance.json', 'utf8'));
+const compiled = compilePreferenceCustodyManifestV37(manifest, baseBuild, linkageBuild);
+mkdirSync(dirname(jsonPath), { recursive: true });
+mkdirSync(dirname(markdownPath), { recursive: true });
+writeFileSync(jsonPath, JSON.stringify(compiled, null, 2) + '\n');
+writeFileSync(markdownPath, renderPreferenceCustodyManifestV37Markdown(compiled));
+console.log(`compiled ${compiled.manifest_id} -> ${jsonPath}, ${markdownPath}`);
