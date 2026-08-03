@@ -25,21 +25,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Repair snapshot binding and construct the exact current-main product
+      - name: Repair, qualify, and exact-rebase PC-40
         env:
           TARGET_BRANCH: research/preference-linkage-confidence-adjudication-assurance-v1
           EXPECTED_TARGET_HEAD: af682044dd73e83d51c2161cf04eee071e649ec0
           QUALIFIED_PARENT: 8a2aa74ea43827447ee8557c41fdc059d2f76a3c
         run: |
           set -euo pipefail
-
           git fetch origin main "$TARGET_BRANCH" agent/pc40-review-binding-rebase --no-tags
           source_head=$(git rev-parse HEAD)
           test "$(git rev-parse origin/agent/pc40-review-binding-rebase)" = "$source_head"
           test "$(git rev-parse origin/$TARGET_BRANCH)" = "$EXPECTED_TARGET_HEAD"
           publication_base=$(git rev-parse origin/main)
           git merge-base --is-ancestor "$QUALIFIED_PARENT" "$publication_base"
-
           git checkout --detach "$EXPECTED_TARGET_HEAD"
 
           python - <<'PY'
@@ -59,138 +57,119 @@ jobs:
               'export function validatePreferenceCustodyManifestV38Build(compiled) {\n',
               'export function validatePreferenceCustodyManifestV38Build(compiled, manifest, baseBuild, confidenceBuild, confidenceFixture) {\n'
           )
-          replace_once(
-              library,
-              """  for (const key of ['base_floor_snapshot_sha256', 'extension_snapshot_sha256', 'base_controls_sha256', 'base_promotion_requirements_sha256']) if (!/^[0-9a-f]{64}$/.test(text(composition[key]))) errors.push(`compiled v38 invalid hash: ${key}`);
-          const compiledBaseControls = array(compiled?.controls).slice(0, 39);
-          """,
-              """  for (const key of ['base_floor_snapshot_sha256', 'extension_snapshot_sha256', 'base_controls_sha256', 'base_promotion_requirements_sha256']) if (!/^[0-9a-f]{64}$/.test(text(composition[key]))) errors.push(`compiled v38 invalid hash: ${key}`);
-          if (!manifest) errors.push('compiled v38 manifest source is required');
-          if (!baseBuild) errors.push('compiled v38 base source is required');
-          if (!confidenceBuild) errors.push('compiled v38 PC-40 source is required');
-          if (!confidenceFixture) errors.push('compiled v38 PC-40 fixture source is required');
-          if (manifest && baseBuild && confidenceBuild && confidenceFixture) {
-            try {
-              const expectedBuild = compilePreferenceCustodyManifestV38(manifest, baseBuild, confidenceBuild, confidenceFixture);
-              if (composition.base_floor_snapshot_sha256 !== sha256(baseBuild)) errors.push('compiled v38 base floor snapshot hash mismatch');
-              if (composition.extension_snapshot_sha256 !== sha256(confidenceBuild)) errors.push('compiled v38 extension snapshot hash mismatch');
-              if (stable(compiled) !== stable(expectedBuild)) errors.push('compiled v38 build does not deterministically reconstruct from supplied sources');
-            } catch (error) {
-              errors.push(`compiled v38 source reconstruction failed: ${error instanceof Error ? error.message : String(error)}`);
-            }
-          }
-          const compiledBaseControls = array(compiled?.controls).slice(0, 39);
-          """
+          marker = "  const compiledBaseControls = array(compiled?.controls).slice(0, 39);\n"
+          binding = (
+              "  if (!manifest) errors.push('compiled v38 manifest source is required');\n"
+              "  if (!baseBuild) errors.push('compiled v38 base source is required');\n"
+              "  if (!confidenceBuild) errors.push('compiled v38 PC-40 source is required');\n"
+              "  if (!confidenceFixture) errors.push('compiled v38 PC-40 fixture source is required');\n"
+              "  if (manifest && baseBuild && confidenceBuild && confidenceFixture) {\n"
+              "    try {\n"
+              "      const expectedBuild = compilePreferenceCustodyManifestV38(manifest, baseBuild, confidenceBuild, confidenceFixture);\n"
+              "      if (composition.base_floor_snapshot_sha256 !== sha256(baseBuild)) errors.push('compiled v38 base floor snapshot hash mismatch');\n"
+              "      if (composition.extension_snapshot_sha256 !== sha256(confidenceBuild)) errors.push('compiled v38 extension snapshot hash mismatch');\n"
+              "      if (stable(compiled) !== stable(expectedBuild)) errors.push('compiled v38 build does not deterministically reconstruct from supplied sources');\n"
+              "    } catch (error) {\n"
+              "      errors.push(`compiled v38 source reconstruction failed: ${error instanceof Error ? error.message : String(error)}`);\n"
+              "    }\n"
+              "  }\n"
+              + marker
           )
+          replace_once(library, marker, binding)
 
-          validator = 'tools/validate-preference-custody-manifest-v38.mjs'
-          replace_once(
-              validator,
-              """const manifestPath = process.argv[2] ?? 'data/research/preference-custody/control-manifest-v38.json';
-          const buildPath = process.argv[3] ?? 'build/research/preference-custody-laboratory-floor-v38.json';
-          const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-          const build = JSON.parse(readFileSync(buildPath, 'utf8'));
-          const errors = [...validatePreferenceCustodyManifestV38(manifest), ...validatePreferenceCustodyManifestV38Build(build)];
-          """,
-              """const manifestPath = process.argv[2] ?? 'data/research/preference-custody/control-manifest-v38.json';
-          const buildPath = process.argv[3] ?? 'build/research/preference-custody-laboratory-floor-v38.json';
-          const baseBuildPath = process.argv[4] ?? 'build/research/preference-custody-laboratory-floor-v37.json';
-          const confidenceBuildPath = process.argv[5] ?? 'build/research/preference-linkage-confidence-adjudication-assurance.json';
-          const confidenceFixturePath = process.argv[6] ?? 'data/research/preference-custody/linkage-confidence-adjudication-assurance.fixture.json';
-          const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-          const build = JSON.parse(readFileSync(buildPath, 'utf8'));
-          const baseBuild = JSON.parse(readFileSync(baseBuildPath, 'utf8'));
-          const confidenceBuild = JSON.parse(readFileSync(confidenceBuildPath, 'utf8'));
-          const confidenceFixture = JSON.parse(readFileSync(confidenceFixturePath, 'utf8'));
-          const errors = [
-            ...validatePreferenceCustodyManifestV38(manifest),
-            ...validatePreferenceCustodyManifestV38Build(build, manifest, baseBuild, confidenceBuild, confidenceFixture)
-          ];
-          """
+          Path('tools/validate-preference-custody-manifest-v38.mjs').write_text(
+              "import { readFileSync } from 'node:fs';\n"
+              "import { validatePreferenceCustodyManifestV38, validatePreferenceCustodyManifestV38Build } from './lib/preference-custody-manifest-v38.mjs';\n"
+              "const manifestPath = process.argv[2] ?? 'data/research/preference-custody/control-manifest-v38.json';\n"
+              "const buildPath = process.argv[3] ?? 'build/research/preference-custody-laboratory-floor-v38.json';\n"
+              "const baseBuildPath = process.argv[4] ?? 'build/research/preference-custody-laboratory-floor-v37.json';\n"
+              "const confidenceBuildPath = process.argv[5] ?? 'build/research/preference-linkage-confidence-adjudication-assurance.json';\n"
+              "const confidenceFixturePath = process.argv[6] ?? 'data/research/preference-custody/linkage-confidence-adjudication-assurance.fixture.json';\n"
+              "const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));\n"
+              "const build = JSON.parse(readFileSync(buildPath, 'utf8'));\n"
+              "const baseBuild = JSON.parse(readFileSync(baseBuildPath, 'utf8'));\n"
+              "const confidenceBuild = JSON.parse(readFileSync(confidenceBuildPath, 'utf8'));\n"
+              "const confidenceFixture = JSON.parse(readFileSync(confidenceFixturePath, 'utf8'));\n"
+              "const errors = [\n"
+              "  ...validatePreferenceCustodyManifestV38(manifest),\n"
+              "  ...validatePreferenceCustodyManifestV38Build(build, manifest, baseBuild, confidenceBuild, confidenceFixture)\n"
+              "];\n"
+              "if (errors.length) {\n"
+              "  console.error(errors.map(error => `- ${error}`).join('\\n'));\n"
+              "  process.exit(1);\n"
+              "}\n"
+              "console.log('validated Preference Custody laboratory floor v38');\n"
           )
 
           test_file = 'test/preference-custody-manifest-v38.test.js'
           replace_once(
               test_file,
-              """} from '../tools/lib/preference-custody-manifest-v38.mjs';
-
-          execFileSync""",
-              """} from '../tools/lib/preference-custody-manifest-v38.mjs';
-          import { compilePreferenceLinkageConfidenceAdjudicationAssuranceFixture } from '../tools/lib/preference-linkage-confidence-adjudication-assurance.mjs';
-
-          execFileSync"""
+              "} from '../tools/lib/preference-custody-manifest-v38.mjs';\n",
+              "} from '../tools/lib/preference-custody-manifest-v38.mjs';\n"
+              "import { compilePreferenceLinkageConfidenceAdjudicationAssuranceFixture } from '../tools/lib/preference-linkage-confidence-adjudication-assurance.mjs';\n"
+          )
+          build_line = "const build = JSON.parse(readFileSync('build/research/preference-custody-laboratory-floor-v38.json', 'utf8'));\n"
+          replace_once(
+              test_file,
+              build_line,
+              "const confidenceBuild = JSON.parse(readFileSync('build/research/preference-linkage-confidence-adjudication-assurance.json', 'utf8'));\n"
+              "const confidenceFixture = JSON.parse(readFileSync('data/research/preference-custody/linkage-confidence-adjudication-assurance.fixture.json', 'utf8'));\n"
+              + build_line
           )
           replace_once(
               test_file,
-              """const base = JSON.parse(readFileSync('build/research/preference-custody-laboratory-floor-v37.json', 'utf8'));
-          const build = JSON.parse(readFileSync('build/research/preference-custody-laboratory-floor-v38.json', 'utf8'));
-          """,
-              """const base = JSON.parse(readFileSync('build/research/preference-custody-laboratory-floor-v37.json', 'utf8'));
-          const confidenceBuild = JSON.parse(readFileSync('build/research/preference-linkage-confidence-adjudication-assurance.json', 'utf8'));
-          const confidenceFixture = JSON.parse(readFileSync('data/research/preference-custody/linkage-confidence-adjudication-assurance.fixture.json', 'utf8'));
-          const build = JSON.parse(readFileSync('build/research/preference-custody-laboratory-floor-v38.json', 'utf8'));
-          """
+              'assert.deepEqual(validatePreferenceCustodyManifestV38Build(build), []);\n',
+              'assert.deepEqual(validatePreferenceCustodyManifestV38Build(build, manifest, base, confidenceBuild, confidenceFixture), []);\n'
+          )
+          controls_hash_line = 'assert.equal(build.composition.base_controls_sha256.length, 64);\n'
+          replace_once(
+              test_file,
+              controls_hash_line,
+              'assert.equal(build.composition.base_floor_snapshot_sha256.length, 64);\n'
+              'assert.equal(build.composition.extension_snapshot_sha256.length, 64);\n'
+              + controls_hash_line
+          )
+          mutations_marker = 'const manifestMutations = [\n'
+          source_tests = (
+              "assert.ok(validatePreferenceCustodyManifestV38Build(build).length > 0, 'source artifacts are required');\n"
+              "const revisedBase = clone(base);\n"
+              "revisedBase.interpretation_contract.copy_ready_caveat += ' Revised source snapshot.';\n"
+              "assert.ok(\n"
+              "  validatePreferenceCustodyManifestV38Build(build, manifest, revisedBase, confidenceBuild, confidenceFixture).length > 0,\n"
+              "  'valid revised base source paired with stale floor build'\n"
+              ");\n"
+              "const revisedConfidenceFixture = clone(confidenceFixture);\n"
+              "revisedConfidenceFixture.captured_at = '2026-08-04';\n"
+              "const revisedConfidenceBuild = compilePreferenceLinkageConfidenceAdjudicationAssuranceFixture(revisedConfidenceFixture);\n"
+              "assert.ok(\n"
+              "  validatePreferenceCustodyManifestV38Build(build, manifest, base, revisedConfidenceBuild, revisedConfidenceFixture).length > 0,\n"
+              "  'valid revised PC-40 source paired with stale floor build'\n"
+              ");\n"
+              + mutations_marker
+          )
+          replace_once(test_file, mutations_marker, source_tests)
+          extension_line = "  ['composition extension id', value => { value.composition.extension_control_id = 'PC-39'; }],\n"
+          replace_once(
+              test_file,
+              extension_line,
+              extension_line
+              + "  ['base snapshot hash binding', value => { value.composition.base_floor_snapshot_sha256 = '0'.repeat(64); }],\n"
+              + "  ['extension snapshot hash binding', value => { value.composition.extension_snapshot_sha256 = 'f'.repeat(64); }],\n"
           )
           replace_once(
               test_file,
-              'assert.deepEqual(validatePreferenceCustodyManifestV38Build(build), []);',
-              'assert.deepEqual(validatePreferenceCustodyManifestV38Build(build, manifest, base, confidenceBuild, confidenceFixture), []);'
+              'assert.equal(manifestMutations.length + buildMutations.length, 43);\n',
+              'assert.equal(manifestMutations.length + buildMutations.length, 45);\n'
           )
           replace_once(
               test_file,
-              """assert.equal(build.composition.base_controls_sha256.length, 64);
-          assert.equal(build.composition.base_promotion_requirements_sha256.length, 64);
-          """,
-              """assert.equal(build.composition.base_floor_snapshot_sha256.length, 64);
-          assert.equal(build.composition.extension_snapshot_sha256.length, 64);
-          assert.equal(build.composition.base_controls_sha256.length, 64);
-          assert.equal(build.composition.base_promotion_requirements_sha256.length, 64);
-          """
+              '  assert.ok(validatePreferenceCustodyManifestV38Build(value).length > 0, label);\n',
+              '  assert.ok(validatePreferenceCustodyManifestV38Build(value, manifest, base, confidenceBuild, confidenceFixture).length > 0, label);\n'
           )
           replace_once(
               test_file,
-              """const clone = value => structuredClone(value);
-          const manifestMutations = [
-          """,
-              """const clone = value => structuredClone(value);
-          assert.ok(validatePreferenceCustodyManifestV38Build(build).length > 0, 'source artifacts are required');
-          const revisedBase = clone(base);
-          revisedBase.interpretation_contract.copy_ready_caveat += ' Revised source snapshot.';
-          assert.ok(
-            validatePreferenceCustodyManifestV38Build(build, manifest, revisedBase, confidenceBuild, confidenceFixture).length > 0,
-            'valid revised base source paired with stale floor build'
-          );
-          const revisedConfidenceFixture = clone(confidenceFixture);
-          revisedConfidenceFixture.captured_at = '2026-08-04';
-          const revisedConfidenceBuild = compilePreferenceLinkageConfidenceAdjudicationAssuranceFixture(revisedConfidenceFixture);
-          assert.ok(
-            validatePreferenceCustodyManifestV38Build(build, manifest, base, revisedConfidenceBuild, revisedConfidenceFixture).length > 0,
-            'valid revised PC-40 source paired with stale floor build'
-          );
-          const manifestMutations = [
-          """
-          )
-          replace_once(
-              test_file,
-              """  ['composition extension id', value => { value.composition.extension_control_id = 'PC-39'; }],
-            ['base requirement count', value => { value.composition.base_promotion_requirement_count = 1436; }],
-          """,
-              """  ['composition extension id', value => { value.composition.extension_control_id = 'PC-39'; }],
-            ['base snapshot hash binding', value => { value.composition.base_floor_snapshot_sha256 = '0'.repeat(64); }],
-            ['extension snapshot hash binding', value => { value.composition.extension_snapshot_sha256 = 'f'.repeat(64); }],
-            ['base requirement count', value => { value.composition.base_promotion_requirement_count = 1436; }],
-          """
-          )
-          replace_once(test_file, 'assert.equal(manifestMutations.length + buildMutations.length, 43);', 'assert.equal(manifestMutations.length + buildMutations.length, 45);')
-          replace_once(
-              test_file,
-              '  assert.ok(validatePreferenceCustodyManifestV38Build(value).length > 0, label);',
-              '  assert.ok(validatePreferenceCustodyManifestV38Build(value, manifest, base, confidenceBuild, confidenceFixture).length > 0, label);'
-          )
-          replace_once(
-              test_file,
-              "console.log('Preference custody floor v38 adversarial tests: PASS (43 mutations)');",
-              "console.log('Preference custody floor v38 adversarial tests: PASS (45 mutations plus source-binding succession checks)');"
+              "console.log('Preference custody floor v38 adversarial tests: PASS (43 mutations)');\n",
+              "console.log('Preference custody floor v38 adversarial tests: PASS (45 mutations plus source-binding succession checks)');\n"
           )
           PY
 
@@ -219,7 +198,6 @@ jobs:
             tools/validate-preference-custody-manifest-v38.mjs
             tools/validate-preference-linkage-confidence-adjudication-assurance.mjs
           )
-
           printf '%s\n' "${paths[@]}" | sort > /tmp/pc40-final-paths.expected
           git diff --name-only "$QUALIFIED_PARENT..$publication_base" | sort -u > /tmp/pc40-main-advance-paths.txt
           comm -12 /tmp/pc40-final-paths.expected /tmp/pc40-main-advance-paths.txt > /tmp/pc40-overlap.txt
@@ -236,7 +214,6 @@ jobs:
           export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
           product_commit=$(printf '%s\n' 'Preference Custody: bind PC-40 floor snapshots to supplied sources' | git commit-tree "$product_tree" -p "$publication_base")
           unset GIT_INDEX_FILE
-
           mapfile -t observed_paths < <(git diff-tree --no-commit-id --name-only -r "$product_commit" | sort)
           mapfile -t expected_paths < <(printf '%s\n' "${paths[@]}" | sort)
           test "$(printf '%s\n' "${observed_paths[@]}")" = "$(printf '%s\n' "${expected_paths[@]}")"
@@ -244,7 +221,6 @@ jobs:
           test "$(git rev-parse "$product_commit^")" = "$publication_base"
 
           git reset --hard "$product_commit"
-
           node tools/compile-preference-linkage-confidence-adjudication-assurance.mjs
           node tools/validate-preference-linkage-confidence-adjudication-assurance.mjs
           node test/preference-linkage-confidence-adjudication-assurance.test.js
@@ -264,7 +240,6 @@ jobs:
           test "$(git rev-parse origin/main)" = "$publication_base"
           test "$(git rev-parse origin/$TARGET_BRANCH)" = "$EXPECTED_TARGET_HEAD"
           test "$(git rev-parse origin/agent/pc40-review-binding-rebase)" = "$source_head"
-
           git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET_HEAD" origin "$product_commit:refs/heads/$TARGET_BRANCH"
 
           export SOURCE_HEAD="$source_head"
@@ -281,9 +256,9 @@ jobs:
           for path in paths:
               raw = Path(path).read_bytes()
               files[path] = {'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()}
-          canonical = json.dumps(files, sort_keys=True, separators=(',', ':')).encode()
+          manifest = json.dumps(files, sort_keys=True, separators=(',', ':')).encode()
           receipt = {
-              'schema_version': 'pc40-review-binding-exact-rebase-receipt@1',
+              'schema_version': 'pc40-review-binding-exact-rebase-receipt@2',
               'source_head': os.environ['SOURCE_HEAD'],
               'qualified_parent': '8a2aa74ea43827447ee8557c41fdc059d2f76a3c',
               'publication_parent': os.environ['PUBLICATION_BASE'],
@@ -299,9 +274,10 @@ jobs:
               'main_advance_paths': Path('/tmp/pc40-main-advance-paths.txt').read_text().splitlines(),
               'overlap_paths': Path('/tmp/pc40-overlap.txt').read_text().splitlines(),
               'files': files,
-              'file_manifest_sha256': hashlib.sha256(canonical).hexdigest(),
-              'focused_pc40': 'pass',
+              'file_manifest_sha256': hashlib.sha256(manifest).hexdigest(),
               'floor_v38_mutations': 45,
+              'source_binding_succession_checks': 3,
+              'focused_pc40': 'pass',
               'historical_preference_custody_floors': 'pass',
               'no_magic_human': 'pass',
               'release_check': 'pass',
@@ -311,7 +287,7 @@ jobs:
           Path('/tmp/pc40-review-binding-exact-rebase-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
           print(json.dumps(receipt, indent=2))
           PY
-      - name: Preserve exact repair and rebase receipt
+      - name: Preserve exact repair receipt
         uses: actions/upload-artifact@v4
         with:
           name: pc40-review-binding-exact-rebase-receipt
