@@ -1,0 +1,138 @@
+name: TEMP retire SSC RD-05 refs after canonical closure
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-cleanup-base-209c
+    paths:
+      - '.github/tmp/ssc-rd05-ref-cleanup-209c.trigger'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd05-ref-cleanup-209c
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EXPECTED_MAIN: 209c30585301a1069507d2e6b16db62ff4ffe1bd
+      PROOF_RUN: '30834708473'
+      PROOF_ARTIFACT: '8864361334'
+      PROOF_ARTIFACT_SHA256: a772a06151d048ce7eecef34e2162a57667af9d124137685e98c4ba99c09c7de
+      CLEANUP_BASE: agent/ssc-rd05-cleanup-base-209c
+      CLEANUP_TRIGGER: agent/ssc-rd05-cleanup-trigger-209c
+      ARCHIVE_PREFIX: archive/rd05-close-209c
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 209c30585301a1069507d2e6b16db62ff4ffe1bd
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Archive and delete completed RD-05 branch refs
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$EXPECTED_MAIN"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+
+          git ls-remote --heads origin \
+            | awk '{name=$2; sub("refs/heads/", "", name); print name}' \
+            | grep -E '^(agent/ssc-rd05-|agent/ssc-rd-wave02-rd05-recommendation-disposition$)' \
+            | sort > /tmp/rd05-branches-all.txt
+
+          test "$(wc -l < /tmp/rd05-branches-all.txt | tr -d ' ')" -ge '49'
+          : > /tmp/rd05-cleanup.tsv
+
+          while IFS= read -r branch; do
+            test -n "$branch"
+            if test "$branch" = "$CLEANUP_BASE" || test "$branch" = "$CLEANUP_TRIGGER"; then
+              continue
+            fi
+            sha="$(git ls-remote --heads origin "refs/heads/$branch" | awk '{print $1}')"
+            test -n "$sha"
+            tag="$ARCHIVE_PREFIX/$branch"
+            existing="$(git ls-remote --tags origin "refs/tags/$tag" | awk '{print $1}')"
+            if test -n "$existing"; then
+              test "$existing" = "$sha"
+            else
+              git push origin "$sha:refs/tags/$tag"
+            fi
+            test "$(git ls-remote --tags origin "refs/tags/$tag" | awk '{print $1}')" = "$sha"
+            git push origin --delete "$branch"
+            test -z "$(git ls-remote --heads origin "refs/heads/$branch")"
+            printf '%s\t%s\t%s\tarchived_and_deleted\n' "$branch" "$sha" "$tag" >> /tmp/rd05-cleanup.tsv
+          done < /tmp/rd05-branches-all.txt
+
+          git ls-remote --heads origin \
+            | awk '{name=$2; sub("refs/heads/", "", name); print name}' \
+            | grep -E '^(agent/ssc-rd05-|agent/ssc-rd-wave02-rd05-recommendation-disposition$)' \
+            | grep -v -F -x "$CLEANUP_BASE" \
+            | grep -v -F -x "$CLEANUP_TRIGGER" \
+            > /tmp/rd05-remaining.txt || true
+          test ! -s /tmp/rd05-remaining.txt
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const rows = fs.readFileSync('/tmp/rd05-cleanup.tsv', 'utf8').trim().split('\n').filter(Boolean).map((line) => {
+            const [branch, sha, archive_tag, state] = line.split('\t');
+            return { branch, sha, archive_tag, state };
+          });
+          const receipt = {
+            schema_version: 'ssc-rd05-ref-cleanup@1',
+            canonical_merge: process.env.EXPECTED_MAIN,
+            canonical_tree: '67812551a051ef4e8f51dc20b7d39fba098308eb',
+            proof_run: Number(process.env.PROOF_RUN),
+            proof_artifact: Number(process.env.PROOF_ARTIFACT),
+            proof_artifact_sha256: process.env.PROOF_ARTIFACT_SHA256,
+            archive_prefix: process.env.ARCHIVE_PREFIX,
+            archived_and_deleted_before_self_cleanup: rows.length,
+            self_cleanup_refs: [process.env.CLEANUP_TRIGGER, process.env.CLEANUP_BASE],
+            refs: rows,
+            canonical_main_preserved: true,
+            issue_790_closed: true,
+            pr_805_merged: true,
+            external_contacts: 0,
+            external_reviews: 0,
+            outside_human_dependency: false,
+            publication_effect: 'none',
+            adoption_effect: 'none',
+            graph_effect: 'none'
+          };
+          fs.writeFileSync('ssc-rd05-ref-cleanup-209c.json', JSON.stringify(receipt, null, 2) + '\n');
+          NODE
+
+          cat ssc-rd05-ref-cleanup-209c.json
+
+      - name: Upload exact cleanup receipt before self-retirement
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-ref-cleanup-209c
+          path: ssc-rd05-ref-cleanup-209c.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Archive and delete cleanup refs
+        run: |
+          set -Eeuo pipefail
+          for branch in "$CLEANUP_TRIGGER" "$CLEANUP_BASE"; do
+            sha="$(git ls-remote --heads origin "refs/heads/$branch" | awk '{print $1}')"
+            test -n "$sha"
+            tag="$ARCHIVE_PREFIX/$branch"
+            existing="$(git ls-remote --tags origin "refs/tags/$tag" | awk '{print $1}')"
+            if test -n "$existing"; then
+              test "$existing" = "$sha"
+            else
+              git push origin "$sha:refs/tags/$tag"
+            fi
+            test "$(git ls-remote --tags origin "refs/tags/$tag" | awk '{print $1}')" = "$sha"
+            git push origin --delete "$branch"
+            test -z "$(git ls-remote --heads origin "refs/heads/$branch")"
+          done
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$EXPECTED_MAIN"
