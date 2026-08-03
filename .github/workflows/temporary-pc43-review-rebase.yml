@@ -1,0 +1,53 @@
+name: TEMP rebase repaired PC-43 to current main
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc43-review-rebase.yml'
+      - '.pc43-review/rebase.part-*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc43-review-rebase-current-main
+  cancel-in-progress: false
+
+jobs:
+  rebase:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc43-review-repair
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify and reconstruct exact controller
+        run: |
+          set -Eeuo pipefail
+          test "$(sha256sum .pc43-review/rebase.part-00 | cut -d' ' -f1)" = 5eb5a91be726dd9f573686b14d99351caa271372eb0955d7eb04b7b9711d9230
+          test "$(sha256sum .pc43-review/rebase.part-01 | cut -d' ' -f1)" = 7f272e2d41b591510fe9a5255798c02eac6f6bd005455a66e779a1f5fcbbd8b8
+          test "$(sha256sum .pc43-review/rebase.part-02 | cut -d' ' -f1)" = e4ef5291a9e4988cd4e7fc5306251e1150c4930dadf05006d1b706219f59feeb
+          test "$(sha256sum .pc43-review/rebase.part-03 | cut -d' ' -f1)" = 26212979f97aa22aa1af877a73a8b02e7307fdbc4a87269cd138838ee363bb80
+          cat .pc43-review/rebase.part-* > /tmp/pc43-review-rebase.sh.b64
+          test "$(stat -c '%s' /tmp/pc43-review-rebase.sh.b64)" = 11916
+          test "$(sha256sum /tmp/pc43-review-rebase.sh.b64 | cut -d' ' -f1)" = 1f402172eb058693a2f6fe84c27924872117e210ea21e51dd3cc6ed49cf10c6a
+          base64 --decode /tmp/pc43-review-rebase.sh.b64 > /tmp/pc43-review-rebase.sh
+          test "$(stat -c '%s' /tmp/pc43-review-rebase.sh)" = 8937
+          test "$(sha256sum /tmp/pc43-review-rebase.sh | cut -d' ' -f1)" = 8902816ac82ba54153921d04c536bd9dc5ba06742b85167251dc8a2b084a8c39
+          bash -n /tmp/pc43-review-rebase.sh
+          chmod +x /tmp/pc43-review-rebase.sh
+      - name: Execute exact current-main review repair
+        run: /tmp/pc43-review-rebase.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc43-review-current-main-rebase-${{ github.run_id }}
+          path: /tmp/pc43-review-current-main-rebase-receipt.json
+          if-no-files-found: error
+          retention-days: 90
