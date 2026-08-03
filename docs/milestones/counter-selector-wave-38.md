@@ -73,5 +73,3 @@ profile, promotion, or graph effect?                          No.
 ## Next frontier
 
 One exact checkpoint package must carry or integrity-bind every operational entry and dependency, receive an exact inventory acknowledgment, restore from a clean destination without hidden predecessor state, demonstrate application-specific continuation and rollback or safe decline, and be reproduced by an external independent verifier.
-
-<!-- current-main integration qualification pulse; removed in the next commit -->
