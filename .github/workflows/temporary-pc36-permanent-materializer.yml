@@ -69,13 +69,24 @@ jobs:
           carrier=/tmp/pc36-product.tar.gz.b64
           : > "$carrier"
           mapfile -t parts < <(find .pc36 -maxdepth 1 -type f -name 'payload-*.b64' | sort)
+          printf 'carrier shard count: %s\n' "${#parts[@]}"
+          wc -c "${parts[@]}"
+          sha256sum "${parts[@]}"
           test "${#parts[@]}" = 6
           for part in "${parts[@]}"; do tr -d '\r\n\t ' < "$part" >> "$carrier"; done
-          test "$(stat -c '%s' "$carrier")" = "$EXPECTED_B64_BYTES"
-          printf '%s  %s\n' "$EXPECTED_B64_SHA256" "$carrier" | sha256sum --check --strict
+          observed_bytes="$(stat -c '%s' "$carrier")"
+          observed_b64_sha="$(sha256sum "$carrier" | awk '{print $1}')"
+          printf 'carrier bytes: expected=%s observed=%s\n' "$EXPECTED_B64_BYTES" "$observed_bytes"
+          printf 'carrier sha256: expected=%s observed=%s\n' "$EXPECTED_B64_SHA256" "$observed_b64_sha"
+          test "$observed_bytes" = "$EXPECTED_B64_BYTES"
+          test "$observed_b64_sha" = "$EXPECTED_B64_SHA256"
           base64 --decode "$carrier" > /tmp/pc36-product.tar.gz
-          printf '%s  %s\n' "$EXPECTED_TGZ_SHA256" /tmp/pc36-product.tar.gz | sha256sum --check --strict
+          observed_tgz_sha="$(sha256sum /tmp/pc36-product.tar.gz | awk '{print $1}')"
+          printf 'tar sha256: expected=%s observed=%s\n' "$EXPECTED_TGZ_SHA256" "$observed_tgz_sha"
+          test "$observed_tgz_sha" = "$EXPECTED_TGZ_SHA256"
           tar -tzf /tmp/pc36-product.tar.gz | sed 's#^\./##' | sed '/\/$/d' | sort > /tmp/pc36-observed-paths
+          printf '%s\n' 'observed archive paths:'
+          cat /tmp/pc36-observed-paths
           diff -u /tmp/pc36-permanent-paths /tmp/pc36-observed-paths
 
       - name: Prove stable non-overlapping main lease
