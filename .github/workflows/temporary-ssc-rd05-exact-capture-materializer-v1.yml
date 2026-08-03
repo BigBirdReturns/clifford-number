@@ -1,0 +1,226 @@
+name: TEMP materialize SSC RD-05 exact-object capture custody
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - agent/ssc-rd05-exact-capture-materializer-base-v1
+    paths:
+      - '.github/tmp/ssc-rd05-exact-capture-materializer-v1.trigger'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: ssc-rd05-exact-capture-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd05-recommendation-disposition
+      EXPECTED_START_SHA: 1dd7b50bd785289d17dacd64077bef1c2de90af4
+      CAPTURE_RUN: '30774380817'
+      CAPTURE_ARTIFACT: '8841523906'
+      CAPTURE_NAME: ssc-rd05-exact-object-capture-v1
+      CAPTURE_ZIP_SHA256: ec92f2ac48ec01588169a9aa96d5a02f1de41ba7474ce8aa8656cd390868d7ed
+      CAPTURE_MANIFEST_SHA256: 5b0900d85b55fb449b90defa1ea26435b0737d300f1e05cce9cc9c4546392f53
+      BUILDER_BLOB: f891d7ed41268202589e0c1444534d4f669db606
+      VALIDATOR_BLOB: 0c1c67bcd92b9718cc9817e7128b07fa00b1f1eb
+      TEST_BLOB: 3a949dce1c7055f6cf197f97af82585d78d9b27c
+      BUILDER_PATH: tools/acquisition/status-sovereignty-rd-wave02-rd05/build-exact-object-capture-index.mjs
+      VALIDATOR_PATH: tools/acquisition/status-sovereignty-rd-wave02-rd05/validate-exact-object-capture.mjs
+      TEST_PATH: test/status-sovereignty-rd-wave02-rd05-exact-object-capture.test.js
+      CAPTURE_ROOT: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/source-custody/exact-object-capture-v1
+      OUTPUT_PATH: data/intake/status-sovereignty-rd-wave02-rd05-recommendation-disposition/exact-object-capture-index.json
+      EXPECTED_OUTPUT_SHA256: 01c4ca54b5bd82777d71984054b1a27418ce89bb484478c13456a05d1f2ba508
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd05-recommendation-disposition
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Download exact retained 58-object capture
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd05-exact-object-capture-v1
+          path: /tmp/rd05-exact-capture
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: BigBirdReturns/clifford-number
+          run-id: 30774380817
+      - name: Install exact programs and materialize permanent capture custody
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          start_sha="$(git rev-parse "origin/$TARGET_BRANCH")"
+          test "$start_sha" = "$EXPECTED_START_SHA"
+          test "$(git rev-parse HEAD)" = "$start_sha"
+          node tools/validate-no-magic-human-gate.mjs
+
+          artifact_json="$(curl --fail --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/$CAPTURE_ARTIFACT")"
+          test "$(jq -r '.name' <<<"$artifact_json")" = "$CAPTURE_NAME"
+          test "$(jq -r '.workflow_run.id' <<<"$artifact_json")" = "$CAPTURE_RUN"
+          test "$(jq -r '.digest' <<<"$artifact_json")" = "sha256:$CAPTURE_ZIP_SHA256"
+          test "$(jq -r '.expired' <<<"$artifact_json")" = 'false'
+
+          install_blob() {
+            local blob_sha="$1" target="$2"
+            mkdir -p "$(dirname "$target")"
+            curl --fail --silent --show-error \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/$blob_sha" \
+              | jq -r '.content' | tr -d '\n' | base64 --decode > "$target"
+            test "$(git hash-object "$target")" = "$blob_sha"
+          }
+          install_blob "$BUILDER_BLOB" "$BUILDER_PATH"
+          install_blob "$VALIDATOR_BLOB" "$VALIDATOR_PATH"
+          install_blob "$TEST_BLOB" "$TEST_PATH"
+
+          test "$(find /tmp/rd05-exact-capture -type f | wc -l | tr -d ' ')" = 323
+          test "$(jq -r '.schema_version' /tmp/rd05-exact-capture/input.json)" = 'ssc-rd-wave02-rd05-official-object-candidate-universe@1'
+          test "$(jq -r '.objects | length' /tmp/rd05-exact-capture/input.json)" = 58
+          test "$(jq -r '[.objects[] | select(.source_scope == "aces_target")] | length' /tmp/rd05-exact-capture/input.json)" = 51
+          test "$(jq -r '[.objects[] | select(.source_scope == "matched_nsb_control")] | length' /tmp/rd05-exact-capture/input.json)" = 7
+          test "$(jq -r '.schema_version' /tmp/rd05-exact-capture/manifest.json)" = 'ssc-rd05-exact-object-capture-manifest@1'
+          test "$(jq -r '.entries | length' /tmp/rd05-exact-capture/manifest.json)" = 322
+          test "$(jq -r '.combined_sha256' /tmp/rd05-exact-capture/manifest.json)" = "$CAPTURE_MANIFEST_SHA256"
+          mapfile -d '' receipts < <(find /tmp/rd05-exact-capture/objects -name receipt.json -print0 | sort -z)
+          test "${#receipts[@]}" = 58
+          test "$(jq -s '[.[] | select(.receipt.resolved != true)] | length' "${receipts[@]}")" = 0
+          test "$(jq -s '[.[] | select(.receipt.terminal_state == "http_success")] | length' "${receipts[@]}")" = 48
+          test "$(jq -s '[.[] | select(.receipt.terminal_state == "exact_parent_body_reused")] | length' "${receipts[@]}")" = 10
+          test "$(jq -s '[.[].receipt.attempts | length] | add' "${receipts[@]}")" = 48
+          test "$(jq -r '.schema_version' /tmp/rd05-exact-capture/new-official-links.json)" = 'ssc-rd05-new-official-link-frontier@1'
+          test "$(jq -r '.extraction_is_denominator_admission' /tmp/rd05-exact-capture/new-official-links.json)" = false
+          test "$(jq -r '.new_official_links | length' /tmp/rd05-exact-capture/new-official-links.json)" = 495
+          test "$(jq -r '.new_relevance_candidates | length' /tmp/rd05-exact-capture/new-official-links.json)" = 76
+
+          mkdir -p "$CAPTURE_ROOT"
+          cp -a /tmp/rd05-exact-capture/. "$CAPTURE_ROOT/"
+          export RD05_CAPTURE_ROOT="$CAPTURE_ROOT" RD05_CAPTURE_INDEX="$OUTPUT_PATH"
+          node "$BUILDER_PATH"
+          node "$VALIDATOR_PATH"
+          node "$TEST_PATH"
+          test "$(sha256sum "$OUTPUT_PATH" | awk '{print $1}')" = "$EXPECTED_OUTPUT_SHA256"
+
+          {
+            printf '%s\n' "$BUILDER_PATH" "$VALIDATOR_PATH" "$TEST_PATH" "$OUTPUT_PATH"
+            find /tmp/rd05-exact-capture -type f -printf "$CAPTURE_ROOT/%P\n"
+          } | sort -u > /tmp/expected-paths
+          test "$(wc -l < /tmp/expected-paths | tr -d ' ')" = 327
+          git status --porcelain=v1 --untracked-files=all | sed -E 's/^.. //' | sort -u > /tmp/observed-paths
+          diff -u /tmp/expected-paths /tmp/observed-paths
+
+          git add --pathspec-from-file=/tmp/expected-paths
+          git diff --cached --name-only | sort -u > /tmp/staged-paths
+          diff -u /tmp/expected-paths /tmp/staged-paths
+          git diff --cached --check -- "$BUILDER_PATH" "$VALIDATOR_PATH" "$TEST_PATH" "$OUTPUT_PATH"
+          git commit -m 'Freeze RD-05 exact official-object capture custody'
+          product_sha="$(git rev-parse HEAD)"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          npm run release:check
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          node "$BUILDER_PATH"
+          node "$VALIDATOR_PATH"
+          node "$TEST_PATH"
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          end_sha="$(git rev-parse "origin/$TARGET_BRANCH")"
+          test "$end_sha" = "$start_sha"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          printf '%s\n' "$start_sha" > /tmp/rd05-capture-start-sha.txt
+          printf '%s\n' "$product_sha" > /tmp/rd05-capture-product-sha.txt
+      - name: Emit exact capture materialization receipt
+        run: |
+          set -Eeuo pipefail
+          export CAPTURE_ROOT OUTPUT_PATH EXPECTED_OUTPUT_SHA256 CAPTURE_RUN CAPTURE_ARTIFACT CAPTURE_NAME CAPTURE_ZIP_SHA256 CAPTURE_MANIFEST_SHA256 BUILDER_BLOB VALIDATOR_BLOB TEST_BLOB
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const value = JSON.parse(fs.readFileSync(process.env.OUTPUT_PATH, 'utf8'));
+          const receipt = {
+            schema_version: 'ssc-rd05-wave02-exact-capture-materializer-receipt@1',
+            issue: 790,
+            class_id: 'RD-05-C03',
+            start_sha: fs.readFileSync('/tmp/rd05-capture-start-sha.txt', 'utf8').trim(),
+            product_sha: fs.readFileSync('/tmp/rd05-capture-product-sha.txt', 'utf8').trim(),
+            product_paths: 327,
+            source_artifact: {
+              workflow_run: Number(process.env.CAPTURE_RUN),
+              artifact_id: Number(process.env.CAPTURE_ARTIFACT),
+              artifact_name: process.env.CAPTURE_NAME,
+              artifact_zip_sha256: process.env.CAPTURE_ZIP_SHA256,
+              manifest_entries: 322,
+              manifest_sha256: process.env.CAPTURE_MANIFEST_SHA256,
+              capture_files: 323
+            },
+            program_blobs: {
+              builder: process.env.BUILDER_BLOB,
+              validator: process.env.VALIDATOR_BLOB,
+              adversarial_suite: process.env.TEST_BLOB
+            },
+            capture_index: {
+              path: process.env.OUTPUT_PATH,
+              sha256: process.env.EXPECTED_OUTPUT_SHA256,
+              object_denominator: value.counts.object_denominator,
+              aces_target_objects: value.counts.aces_target_objects,
+              matched_nsb_controls: value.counts.matched_nsb_controls,
+              exact_parent_bodies_reused: value.counts.exact_parent_bodies_reused,
+              bounded_requested_objects: value.counts.bounded_requested_objects,
+              resolved_objects: value.counts.resolved_objects,
+              total_request_attempts: value.counts.total_request_attempts,
+              new_official_links_not_admitted: value.counts.new_official_links_not_admitted,
+              new_relevance_candidates_not_admitted: value.counts.new_relevance_candidates_not_admitted
+            },
+            gates: {
+              no_magic_human: 'pass',
+              exact_artifact_identity: 'pass',
+              exact_manifest_and_byte_custody: 'pass',
+              deterministic_builder: 'pass',
+              structural_validator: 'pass',
+              adversarial_mutations: 32,
+              exact_path_denominator: 'pass',
+              complete_repository_release_gate: 'pass',
+              deterministic_replay: 'pass',
+              child_branch_lease: 'pass'
+            },
+            authority: {
+              exact_byte_custody_complete: true,
+              recommendation_disposition_protocol_complete: false,
+              complete_official_object_universe_frozen: false,
+              class_closed: false,
+              external_contacts: 0,
+              external_reviews: 0,
+              outside_human_dependency: false,
+              publication_effect: 'none',
+              adoption_effect: 'none',
+              graph_effect: 'none'
+            }
+          };
+          fs.writeFileSync('ssc-rd05-exact-capture-materializer-receipt.json', `${JSON.stringify(receipt, null, 2)}\n`);
+          NODE
+      - name: Upload exact RD-05 capture receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-exact-capture-materializer-v1
+          path: ssc-rd05-exact-capture-materializer-receipt.json
+          if-no-files-found: error
+          retention-days: 90
