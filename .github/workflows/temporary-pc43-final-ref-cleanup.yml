@@ -1,0 +1,107 @@
+name: TEMP retire final PC-43 execution refs
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc43-final-ref-cleanup.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc43-final-ref-cleanup
+  cancel-in-progress: false
+
+jobs:
+  retire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc43-final-ref-cleanup
+          fetch-depth: 0
+      - name: Verify canonical and permanent preservation boundaries
+        run: |
+          set -Eeuo pipefail
+          canonical=0d8974e656ee320fd779271e5667b2365c5d8f45
+          original_branch=research/preference-linkage-probability-calibration-assurance-v1
+          original_head=f8334c9d148ef3f94eeb773317c6a4e1bb2e161c
+          repair_branch=research/preference-pc43-refusal-ledger-freeze-v1
+          repair_head=a6c5842a2631084a07c987a016a79bd15bf528ea
+          git fetch origin main "$original_branch" "$repair_branch" --no-tags
+          git merge-base --is-ancestor "$canonical" origin/main
+          test "$(git rev-parse "origin/$original_branch")" = "$original_head"
+          test "$(git rev-parse "origin/$repair_branch")" = "$repair_head"
+          git rev-parse origin/main > /tmp/pc43-main-before.txt
+      - name: Delete only enumerated temporary refs and self-retire
+        run: |
+          set -Eeuo pipefail
+          canonical=0d8974e656ee320fd779271e5667b2365c5d8f45
+          original_branch=research/preference-linkage-probability-calibration-assurance-v1
+          original_head=f8334c9d148ef3f94eeb773317c6a4e1bb2e161c
+          repair_branch=research/preference-pc43-refusal-ledger-freeze-v1
+          repair_head=a6c5842a2631084a07c987a016a79bd15bf528ea
+          self=agent/pc43-final-ref-cleanup
+          refs=(
+            agent/pc43-canonical-source-export
+            agent/pc43-exact-product-materializer
+            agent/pc43-final-postmerge-proof-0d8974
+            agent/pc43-freeze-refusal-ledger-repair
+            agent/pc43-frozen-ledger-postmerge-proof
+            agent/pc43-postmerge-proof-eba618
+            agent/pc43-review-repair
+          )
+          printf '%s\n' "${refs[@]}" "$self" > /tmp/pc43-authorized-refs.txt
+          test "$(wc -l < /tmp/pc43-authorized-refs.txt | tr -d ' ')" = 8
+          test -z "$(grep -Fx 'main' /tmp/pc43-authorized-refs.txt || true)"
+          test -z "$(grep -Fx "$original_branch" /tmp/pc43-authorized-refs.txt || true)"
+          test -z "$(grep -Fx "$repair_branch" /tmp/pc43-authorized-refs.txt || true)"
+          : > /tmp/pc43-deleted-refs.txt
+          : > /tmp/pc43-already-absent-refs.txt
+          for ref in "${refs[@]}"; do
+            if git ls-remote --exit-code --heads origin "$ref" >/dev/null 2>&1; then
+              git push origin --delete "$ref"
+              printf '%s\n' "$ref" >> /tmp/pc43-deleted-refs.txt
+            else
+              printf '%s\n' "$ref" >> /tmp/pc43-already-absent-refs.txt
+            fi
+          done
+          for ref in "${refs[@]}"; do
+            test -z "$(git ls-remote --heads origin "$ref")"
+          done
+          git fetch origin main "$original_branch" "$repair_branch" --prune --no-tags
+          git merge-base --is-ancestor "$canonical" origin/main
+          test "$(git rev-parse "origin/$original_branch")" = "$original_head"
+          test "$(git rev-parse "origin/$repair_branch")" = "$repair_head"
+          git rev-parse origin/main > /tmp/pc43-main-after.txt
+          if git ls-remote --exit-code --heads origin "$self" >/dev/null 2>&1; then
+            git push origin --delete "$self"
+            printf '%s\n' "$self" >> /tmp/pc43-deleted-refs.txt
+          else
+            printf '%s\n' "$self" >> /tmp/pc43-already-absent-refs.txt
+          fi
+          test -z "$(git ls-remote --heads origin "$self")"
+          deleted_json="$(jq -Rsc 'split("\n") | map(select(length>0))' /tmp/pc43-deleted-refs.txt)"
+          absent_json="$(jq -Rsc 'split("\n") | map(select(length>0))' /tmp/pc43-already-absent-refs.txt)"
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg canonical "$canonical" \
+            --arg main_before "$(cat /tmp/pc43-main-before.txt)" \
+            --arg main_after "$(cat /tmp/pc43-main-after.txt)" \
+            --arg original_branch "$original_branch" \
+            --arg original_head "$original_head" \
+            --arg repair_branch "$repair_branch" \
+            --arg repair_head "$repair_head" \
+            --argjson deleted "$deleted_json" \
+            --argjson absent "$absent_json" \
+            '{schema_version:"pc43-final-ref-retirement-receipt@1",workflow_run_id:$run_id,canonical_repair_merge:$canonical,main_before:$main_before,main_after:$main_after,authorized_ref_count:8,deleted_ref_count:($deleted|length),already_absent_ref_count:($absent|length),deleted_refs:$deleted,already_absent_refs:$absent,cleanup_branch_self_retired:true,original_permanent_branch:$original_branch,original_permanent_head:$original_head,repair_permanent_branch:$repair_branch,repair_permanent_head:$repair_head,main_preserved:true,permanent_branches_preserved:true,temporary_pc43_refs_remaining:0,outside_human_dependency:false,graph_effect:"none"}' > /tmp/pc43-final-ref-retirement-receipt.json
+          cat /tmp/pc43-final-ref-retirement-receipt.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc43-final-ref-retirement-${{ github.run_id }}
+          path: /tmp/pc43-final-ref-retirement-receipt.json
+          if-no-files-found: error
+          retention-days: 90
