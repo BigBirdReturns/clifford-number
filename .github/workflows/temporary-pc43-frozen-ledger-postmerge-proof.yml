@@ -38,7 +38,7 @@ jobs:
             test/preference-linkage-probability-calibration-assurance.test.js \
             tools/lib/preference-linkage-probability-calibration-assurance.mjs \
             | LC_ALL=C sort > /tmp/pc43-canonical-paths.expected
-          git diff-tree --no-commit-id --name-only -r "$canonical" | LC_ALL=C sort > /tmp/pc43-canonical-paths.observed
+          git diff --name-only "$first_parent" "$canonical" | LC_ALL=C sort > /tmp/pc43-canonical-paths.observed
           diff -u /tmp/pc43-canonical-paths.expected /tmp/pc43-canonical-paths.observed
           test "$(wc -l < /tmp/pc43-canonical-paths.observed | tr -d ' ')" = 3
           test -z "$(git ls-tree -r --name-only "$canonical" | grep -E '(^|/)(\.pc43|temporary-pc43|pc43-.*carrier|pc43-.*materializer|pc43-.*trigger)' || true)"
@@ -93,7 +93,7 @@ jobs:
           while IFS= read -r path; do
             bytes="$(git cat-file -s "$canonical:$path")"
             blob="$(git rev-parse "$canonical:$path")"
-            digest="$(git show "$canonical:$path" | sha256sum | cut -d' ' -f1)"
+            digest="$(git cat-file blob "$canonical:$path" | sha256sum | cut -d' ' -f1)"
             files="$(jq --arg path "$path" --argjson bytes "$bytes" --arg blob "$blob" --arg digest "$digest" '. + {($path):{bytes:$bytes,git_blob_sha1:$blob,sha256:$digest}}' <<< "$files")"
           done < /tmp/pc43-canonical-paths.expected
           jq -n \
