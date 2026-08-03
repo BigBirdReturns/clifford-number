@@ -1,19 +1,18 @@
-name: TEMP rebase repaired PC-43 to current main
+name: TEMP rebase repaired PC-43 to live main v2
 
 on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths:
       - '.github/workflows/temporary-pc43-review-rebase.yml'
-      - '.pc43-review/rebase.part-*'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: pc43-review-rebase-current-main
-  cancel-in-progress: false
+  group: pc43-review-rebase-live-main-v2
+  cancel-in-progress: true
 
 jobs:
   rebase:
@@ -27,31 +26,242 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Verify and reconstruct exact controller
+      - name: Apply review repair, qualify, and publish over exact live main
+        env:
+          SOURCE_BRANCH: agent/pc43-review-repair
+          TARGET_BRANCH: research/preference-linkage-probability-calibration-assurance-v1
+          EXPECTED_TARGET_HEAD: 23c8ccc03bbfb72326186b8958e5ae402fb0ce50
+          EXPECTED_MAIN: cbae23b0903fde6e02fc73ccbb32501f5859bf4c
+          PRIOR_PUBLICATION_PARENT: dcc64cb395368070c8fa0ca3834afda26e2c0caf
+          QUALIFIED_PC42_ANCESTOR: 5782105034a6ef2dae9422e8b15eab2345b8980b
         run: |
           set -Eeuo pipefail
-          test "$(stat -c '%s' .pc43-review/rebase.part-00)" = 3500
-          test "$(stat -c '%s' .pc43-review/rebase.part-01)" = 3500
-          test "$(stat -c '%s' .pc43-review/rebase.part-02)" = 3500
-          test "$(stat -c '%s' .pc43-review/rebase.part-03)" = 1424
-          test "$(sha256sum .pc43-review/rebase.part-00 | cut -d' ' -f1)" = bdd83229f537b1f2b8b3851797e9a9cae8bb6b3da0a953a6b4636f1a8282a23d
-          test "$(sha256sum .pc43-review/rebase.part-01 | cut -d' ' -f1)" = 6c8d00f0bee76771a84fbd0313a8f659ba457abc729e3fb132ffe6168ffc0c5a
-          test "$(sha256sum .pc43-review/rebase.part-02 | cut -d' ' -f1)" = 484e16cc56001ccb2b175ddc39e8c770386423b358613ff41ed2529e4961fb30
-          test "$(sha256sum .pc43-review/rebase.part-03 | cut -d' ' -f1)" = 12231c84c54e0356266390fca941a4e013fca9d5e61f17090ecec75cbdaf9adb
-          cat .pc43-review/rebase.part-* > /tmp/pc43-review-rebase.sh.b64
-          test "$(stat -c '%s' /tmp/pc43-review-rebase.sh.b64)" = 11924
-          test "$(sha256sum /tmp/pc43-review-rebase.sh.b64 | cut -d' ' -f1)" = 12eb1235d9eaba0236fb486ecac65d45d2634b6d7f07aa90e26c472e326d43fd
-          base64 --decode /tmp/pc43-review-rebase.sh.b64 > /tmp/pc43-review-rebase.sh
-          test "$(stat -c '%s' /tmp/pc43-review-rebase.sh)" = 8942
-          test "$(sha256sum /tmp/pc43-review-rebase.sh | cut -d' ' -f1)" = b45ca6d400330cedb110a9568d3bc241383f1ecf7e136e9932a3f24c0b5e0201
-          bash -n /tmp/pc43-review-rebase.sh
-          chmod +x /tmp/pc43-review-rebase.sh
-      - name: Execute exact current-main review repair
-        run: /tmp/pc43-review-rebase.sh
+          status=failed
+          source_head=
+          publication_base=
+          product_commit=
+          product_tree=
+          pass_gates=false
+          pass_release=false
+          pass_replay=false
+          published=false
+
+          emit_receipt() {
+            code=$?
+            trap - EXIT
+            export RECEIPT_STATUS="$status" SOURCE_HEAD="$source_head" PUBLICATION_BASE="$publication_base"
+            export PRODUCT_COMMIT="$product_commit" PRODUCT_TREE="$product_tree"
+            export PASS_GATES="$pass_gates" PASS_RELEASE="$pass_release" PASS_REPLAY="$pass_replay" PUBLISHED="$published"
+            python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os
+
+          paths = Path('/tmp/pc43-paths.txt').read_text().splitlines() if Path('/tmp/pc43-paths.txt').exists() else []
+          files = {
+            'test/preference-custody-manifest-v41.test.js': {
+              'bytes': 11422,
+              'sha256': 'f4471a5106af9f1a0e51ccecdbce31e911941663a13606d5f4cafc064cc1edc2',
+              'git_blob_sha1': 'bec66fc525ed3200f816e0aeb141fbe1dac92f17'
+            },
+            'tools/lib/preference-custody-manifest-v41.mjs': {
+              'bytes': 22289,
+              'sha256': 'e8e7f491ccf1f91ea09cf6f771ce9e460b00d8fabb1ee55b01f206100847d3cf',
+              'git_blob_sha1': 'f92894aca10e78f9dbff1c27c230e471480deaef'
+            },
+            'tools/lib/preference-linkage-probability-calibration-assurance.mjs': {
+              'bytes': 55435,
+              'sha256': '2f77cfcc1e361772be925a3f7de30acfea1b12f5d5bde4543a4484a20d700feb',
+              'git_blob_sha1': 'fb9c53af7128dc0d437dd309b2dde667ff7fc3e1'
+            }
+          }
+          manifest = json.dumps(files, sort_keys=True, separators=(',', ':')).encode()
+          receipt = {
+            'schema_version': 'pc43-review-live-main-rebase-receipt@4',
+            'workflow_run_id': os.environ.get('GITHUB_RUN_ID'),
+            'status': os.environ.get('RECEIPT_STATUS'),
+            'source_head': os.environ.get('SOURCE_HEAD') or None,
+            'qualified_pc42_ancestor': os.environ['QUALIFIED_PC42_ANCESTOR'],
+            'prior_publication_parent': os.environ['PRIOR_PUBLICATION_PARENT'],
+            'prior_target_head': os.environ['EXPECTED_TARGET_HEAD'],
+            'publication_parent': os.environ.get('PUBLICATION_BASE') or None,
+            'product_head': os.environ.get('PRODUCT_COMMIT') or None,
+            'product_tree': os.environ.get('PRODUCT_TREE') or None,
+            'permanent_path_count': len(paths),
+            'path_list_sha256': hashlib.sha256(('\n'.join(paths) + '\n').encode()).hexdigest() if paths else None,
+            'review_repair_files': files,
+            'review_repair_file_manifest_sha256': hashlib.sha256(manifest).hexdigest(),
+            'main_advance_paths': Path('/tmp/pc43-main-advance.txt').read_text().splitlines() if Path('/tmp/pc43-main-advance.txt').exists() else None,
+            'overlap_paths': Path('/tmp/pc43-overlap.txt').read_text().splitlines() if Path('/tmp/pc43-overlap.txt').exists() else None,
+            'complete_manifest_snapshot_binding': True,
+            'exact_refusal_rule_ledger_binding': True,
+            'floor_v41_adversarial_mutations': 47,
+            'focused_and_historical_gates': 'pass' if os.environ.get('PASS_GATES') == 'true' else 'not_proved',
+            'release_check': 'pass' if os.environ.get('PASS_RELEASE') == 'true' else 'not_proved',
+            'deterministic_replay': 'pass' if os.environ.get('PASS_REPLAY') == 'true' else 'not_proved',
+            'target_published': os.environ.get('PUBLISHED') == 'true',
+            'outside_human_dependency': False,
+            'graph_effect': 'none'
+          }
+          Path('/tmp/pc43-review-live-main-rebase-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+            exit "$code"
+          }
+          trap emit_receipt EXIT
+
+          git fetch origin main "$SOURCE_BRANCH" "$TARGET_BRANCH" --no-tags
+          source_head="$(git rev-parse HEAD)"
+          test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$source_head"
+          publication_base="$(git rev-parse origin/main)"
+          test "$publication_base" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_TARGET_HEAD"
+          git merge-base --is-ancestor "$QUALIFIED_PC42_ANCESTOR" "$publication_base"
+          git checkout --detach "$EXPECTED_TARGET_HEAD"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              target = Path(path)
+              text = target.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one replacement target, found {count}')
+              target.write_text(text.replace(old, new))
+
+          standalone = 'tools/lib/preference-linkage-probability-calibration-assurance.mjs'
+          replace_once(standalone, 'const REQUIRED_REFUSAL_RULES = [', 'export const REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES = [')
+          replace_once(standalone, '];\nconst FALSE_CLASSIFICATIONS = [', '];\nconst REQUIRED_REFUSAL_RULES = REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES;\nconst FALSE_CLASSIFICATIONS = [')
+
+          floor = 'tools/lib/preference-custody-manifest-v41.mjs'
+          replace_once(floor, "import { EXPECTED_LINKAGE_PROBABILITY_METRICS, validatePreferenceLinkageProbabilityCalibrationAssuranceBuild } from './preference-linkage-probability-calibration-assurance.mjs';", "import { EXPECTED_LINKAGE_PROBABILITY_METRICS, REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES, validatePreferenceLinkageProbabilityCalibrationAssuranceBuild } from './preference-linkage-probability-calibration-assurance.mjs';")
+          replace_once(floor, "  if (unique(extension.required_refusal_rules).length !== 22) errors.push('v41 refusal-rule contract must contain twenty-two unique rules');", "  if (!sameMembers(extension.required_refusal_rules, REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES) || array(extension.required_refusal_rules).length !== REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES.length) errors.push('v41 refusal-rule contract must match the exact PC-43 ledger');")
+          replace_once(floor, "composition:{base_manifest_id:baseBuild.manifest_id,base_schema_version:baseBuild.schema_version,base_control_count:baseBuild.control_count,extension_control_id:'PC-43',base_floor_snapshot_sha256:sha256(baseBuild),extension_snapshot_sha256:sha256(probabilityBuild),base_controls_sha256:sha256(baseBuild.controls),base_promotion_requirements_sha256:sha256(baseRequirements),base_promotion_requirement_count:baseRequirements.length,added_promotion_requirement_count:requirements.length-baseRequirements.length,final_promotion_requirement_count:requirements.length,base_open_frontiers:[...baseOpen]},", "composition:{base_manifest_id:baseBuild.manifest_id,base_schema_version:baseBuild.schema_version,base_control_count:baseBuild.control_count,extension_control_id:'PC-43',manifest_snapshot_sha256:sha256(manifest),base_floor_snapshot_sha256:sha256(baseBuild),extension_snapshot_sha256:sha256(probabilityBuild),base_controls_sha256:sha256(baseBuild.controls),base_promotion_requirements_sha256:sha256(baseRequirements),base_promotion_requirement_count:baseRequirements.length,added_promotion_requirement_count:requirements.length-baseRequirements.length,final_promotion_requirement_count:requirements.length,base_open_frontiers:[...baseOpen]},")
+          replace_once(floor, "for(const key of ['base_floor_snapshot_sha256','extension_snapshot_sha256','base_controls_sha256','base_promotion_requirements_sha256'])", "for(const key of ['manifest_snapshot_sha256','base_floor_snapshot_sha256','extension_snapshot_sha256','base_controls_sha256','base_promotion_requirements_sha256'])")
+          replace_once(floor, "if(composition.base_floor_snapshot_sha256!==sha256(baseBuild)) errors.push('compiled v41 base floor snapshot hash mismatch');", "if(composition.manifest_snapshot_sha256!==sha256(manifest)) errors.push('compiled v41 manifest snapshot hash mismatch'); if(composition.base_floor_snapshot_sha256!==sha256(baseBuild)) errors.push('compiled v41 base floor snapshot hash mismatch');")
+
+          test_file = 'test/preference-custody-manifest-v41.test.js'
+          replace_once(test_file, "import { validatePreferenceCustodyManifestV41, validatePreferenceCustodyManifestV41Build } from '../tools/lib/preference-custody-manifest-v41.mjs';", "import { compilePreferenceCustodyManifestV41, validatePreferenceCustodyManifestV41, validatePreferenceCustodyManifestV41Build } from '../tools/lib/preference-custody-manifest-v41.mjs';")
+          replace_once(test_file, 'assert.equal(build.composition.base_floor_snapshot_sha256.length,64);', 'assert.equal(build.composition.manifest_snapshot_sha256.length,64); assert.equal(build.composition.base_floor_snapshot_sha256.length,64);')
+          replace_once(test_file, "const clone=value=>structuredClone(value); assert.ok(validatePreferenceCustodyManifestV41Build(build).length>0,'source artifacts required'); const revisedFixture=clone(probabilityFixture); revisedFixture.captured_at='2026-08-04'; const revisedProbabilityBuild=compilePreferenceLinkageProbabilityCalibrationAssuranceFixture(revisedFixture); assert.ok(validatePreferenceCustodyManifestV41Build(build,manifest,base,revisedProbabilityBuild,revisedFixture,baseSources).length>0,'valid revised PC-43 source paired with stale floor'); const revisedBase=clone(base); revisedBase.interpretation_contract.copy_ready_caveat+=' Revised source snapshot.'; assert.ok(validatePreferenceCustodyManifestV41Build(build,manifest,revisedBase,probabilityBuild,probabilityFixture,baseSources).length>0,'revised base paired with stale floor');", "const clone=value=>structuredClone(value); assert.ok(validatePreferenceCustodyManifestV41Build(build).length>0,'source artifacts required'); const revisedFixture=clone(probabilityFixture); revisedFixture.captured_at='2026-08-04'; const revisedProbabilityBuild=compilePreferenceLinkageProbabilityCalibrationAssuranceFixture(revisedFixture); assert.ok(validatePreferenceCustodyManifestV41Build(build,manifest,base,revisedProbabilityBuild,revisedFixture,baseSources).length>0,'valid revised PC-43 source paired with stale floor'); const revisedBase=clone(base); revisedBase.interpretation_contract.copy_ready_caveat+=' Revised source snapshot.'; assert.ok(validatePreferenceCustodyManifestV41Build(build,manifest,revisedBase,probabilityBuild,probabilityFixture,baseSources).length>0,'revised base paired with stale floor'); const revisedManifest=clone(manifest); revisedManifest.source_revision_receipt='SOURCE-REVISION-RECEIPT-V2'; assert.deepEqual(validatePreferenceCustodyManifestV41(revisedManifest),[]); const revisedManifestBuild=compilePreferenceCustodyManifestV41(revisedManifest,base,probabilityBuild,probabilityFixture,baseSources); assert.deepEqual(validatePreferenceCustodyManifestV41Build(revisedManifestBuild,revisedManifest,base,probabilityBuild,probabilityFixture,baseSources),[]); assert.ok(validatePreferenceCustodyManifestV41Build(build,revisedManifest,base,probabilityBuild,probabilityFixture,baseSources).length>0,'validator-permitted manifest revision paired with stale floor'); const substitutedRulesManifest=clone(manifest); substitutedRulesManifest.extension_control.required_refusal_rules[0]='arbitrary_unique_refusal_rule'; assert.ok(validatePreferenceCustodyManifestV41(substitutedRulesManifest).length>0,'substituted refusal rule rejected'); assert.throws(()=>compilePreferenceCustodyManifestV41(substitutedRulesManifest,base,probabilityBuild,probabilityFixture,baseSources),/exact PC-43 ledger/);")
+          replace_once(test_file, "['refusal rule',v=>{v.extension_control.required_refusal_rules.pop();}],", "['refusal rule',v=>{v.extension_control.required_refusal_rules.pop();}],['refusal substitution',v=>{v.extension_control.required_refusal_rules[0]='arbitrary_unique_refusal_rule';}],")
+          replace_once(test_file, "['composition extension id',v=>{v.composition.extension_control_id='PC-42';}],", "['composition extension id',v=>{v.composition.extension_control_id='PC-42';}],['manifest snapshot hash',v=>{v.composition.manifest_snapshot_sha256='a'.repeat(64);}],")
+          replace_once(test_file, 'assert.equal(manifestMutations.length+buildMutations.length,45);', 'assert.equal(manifestMutations.length+buildMutations.length,47);')
+          replace_once(test_file, 'Preference custody floor v41 adversarial tests: PASS (45 mutations plus source-binding succession checks)', 'Preference custody floor v41 adversarial tests: PASS (47 mutations plus complete-manifest and source-binding succession checks)')
+          PY
+
+          repair_paths=(
+            test/preference-custody-manifest-v41.test.js
+            tools/lib/preference-custody-manifest-v41.mjs
+            tools/lib/preference-linkage-probability-calibration-assurance.mjs
+          )
+          printf '%s\n' "${repair_paths[@]}" | LC_ALL=C sort > /tmp/pc43-repair-paths.expected
+          git diff --name-only | LC_ALL=C sort > /tmp/pc43-repair-paths.observed
+          diff -u /tmp/pc43-repair-paths.expected /tmp/pc43-repair-paths.observed
+
+          while IFS=$'\t' read -r path bytes sha blob; do
+            test "$(stat -c '%s' "$path")" = "$bytes"
+            test "$(sha256sum "$path" | cut -d' ' -f1)" = "$sha"
+            test "$(git hash-object "$path")" = "$blob"
+          done <<'EOF'
+          test/preference-custody-manifest-v41.test.js	11422	f4471a5106af9f1a0e51ccecdbce31e911941663a13606d5f4cafc064cc1edc2	bec66fc525ed3200f816e0aeb141fbe1dac92f17
+          tools/lib/preference-custody-manifest-v41.mjs	22289	e8e7f491ccf1f91ea09cf6f771ce9e460b00d8fabb1ee55b01f206100847d3cf	f92894aca10e78f9dbff1c27c230e471480deaef
+          tools/lib/preference-linkage-probability-calibration-assurance.mjs	55435	2f77cfcc1e361772be925a3f7de30acfea1b12f5d5bde4543a4484a20d700feb	fb9c53af7128dc0d437dd309b2dde667ff7fc3e1
+          EOF
+
+          paths=(
+            .github/workflows/preference-custody-v41.yml
+            .github/workflows/preference-linkage-probability-calibration-assurance.yml
+            data/research/preference-custody/control-manifest-v41.json
+            data/research/preference-custody/linkage-probability-calibration-assurance.fixture.json
+            docs/preference-custody-laboratory-floor-v41.md
+            docs/preference-custody-linkage-probability-calibration-assurance.md
+            test/preference-custody-manifest-v41.test.js
+            test/preference-linkage-probability-calibration-assurance.test.js
+            tools/compile-preference-custody-manifest-v41.mjs
+            tools/compile-preference-linkage-probability-calibration-assurance.mjs
+            tools/lib/preference-custody-manifest-v41.mjs
+            tools/lib/preference-linkage-probability-calibration-assurance.mjs
+            tools/validate-preference-custody-manifest-v41.mjs
+            tools/validate-preference-linkage-probability-calibration-assurance.mjs
+          )
+          printf '%s\n' "${paths[@]}" | LC_ALL=C sort > /tmp/pc43-paths.txt
+          git diff --name-only "$PRIOR_PUBLICATION_PARENT..$publication_base" | LC_ALL=C sort -u > /tmp/pc43-main-advance.txt
+          comm -12 /tmp/pc43-paths.txt /tmp/pc43-main-advance.txt > /tmp/pc43-overlap.txt
+          test ! -s /tmp/pc43-overlap.txt
+
+          export GIT_INDEX_FILE=/tmp/pc43-review-live-main-index
+          rm -f "$GIT_INDEX_FILE"
+          git read-tree "$publication_base"
+          git add -- "${paths[@]}"
+          product_tree="$(git write-tree)"
+          export GIT_AUTHOR_NAME='github-actions[bot]'
+          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          product_commit="$(printf '%s\n' 'Preference Custody: bind PC-43 complete manifest and exact refusal ledger' | git commit-tree "$product_tree" -p "$publication_base")"
+          unset GIT_INDEX_FILE
+
+          mapfile -t observed_paths < <(git diff-tree --no-commit-id --name-only -r "$product_commit" | LC_ALL=C sort)
+          mapfile -t expected_paths < <(printf '%s\n' "${paths[@]}" | LC_ALL=C sort)
+          test "$(printf '%s\n' "${observed_paths[@]}")" = "$(printf '%s\n' "${expected_paths[@]}")"
+          test "${#observed_paths[@]}" -eq 14
+          test "$(git rev-parse "$product_commit^")" = "$publication_base"
+
+          git reset --hard "$product_commit"
+          node tools/compile-preference-linkage-probability-calibration-assurance.mjs
+          node tools/validate-preference-linkage-probability-calibration-assurance.mjs
+          node test/preference-linkage-probability-calibration-assurance.test.js
+          node tools/compile-preference-custody-manifest-v41.mjs
+          node tools/validate-preference-custody-manifest-v41.mjs
+          node test/preference-custody-manifest-v41.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          pass_gates=true
+
+          mkdir -p /tmp/pc43-build-reference
+          cp build/research/preference-linkage-probability-calibration-assurance.json /tmp/pc43-build-reference/
+          cp build/research/preference-linkage-probability-calibration-assurance.md /tmp/pc43-build-reference/
+          cp build/research/preference-custody-laboratory-floor-v41.json /tmp/pc43-build-reference/
+          cp build/research/preference-custody-laboratory-floor-v41.md /tmp/pc43-build-reference/
+
+          npm run release:check
+          git diff --exit-code -- "${paths[@]}"
+          pass_release=true
+
+          git reset --hard "$product_commit"
+          git clean -fdx
+          node tools/compile-preference-linkage-probability-calibration-assurance.mjs
+          node tools/validate-preference-linkage-probability-calibration-assurance.mjs
+          node test/preference-linkage-probability-calibration-assurance.test.js
+          node tools/compile-preference-custody-manifest-v41.mjs
+          node tools/validate-preference-custody-manifest-v41.mjs
+          node test/preference-custody-manifest-v41.test.js
+          cmp /tmp/pc43-build-reference/preference-linkage-probability-calibration-assurance.json build/research/preference-linkage-probability-calibration-assurance.json
+          cmp /tmp/pc43-build-reference/preference-linkage-probability-calibration-assurance.md build/research/preference-linkage-probability-calibration-assurance.md
+          cmp /tmp/pc43-build-reference/preference-custody-laboratory-floor-v41.json build/research/preference-custody-laboratory-floor-v41.json
+          cmp /tmp/pc43-build-reference/preference-custody-laboratory-floor-v41.md build/research/preference-custody-laboratory-floor-v41.md
+          pass_replay=true
+
+          git reset --hard "$product_commit"
+          git clean -fdx
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git fetch origin main "$SOURCE_BRANCH" "$TARGET_BRANCH" --no-tags
+          test "$(git rev-parse origin/main)" = "$publication_base"
+          test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$source_head"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_TARGET_HEAD"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET_HEAD" origin "$product_commit:refs/heads/$TARGET_BRANCH"
+          published=true
+          status=success
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pc43-review-current-main-rebase-${{ github.run_id }}
-          path: /tmp/pc43-review-current-main-rebase-receipt.json
+          name: pc43-review-live-main-rebase-${{ github.run_id }}
+          path: /tmp/pc43-review-live-main-rebase-receipt.json
           if-no-files-found: error
           retention-days: 90
