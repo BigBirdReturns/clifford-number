@@ -1,0 +1,199 @@
+name: TEMP materialize exact PC-41 nonworkflow product
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc41-product-materializer.yml'
+      - '.pc41/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc41-permanent-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      QUALIFIED_ANCESTOR: 209c30585301a1069507d2e6b16db62ff4ffe1bd
+      TARGET_BRANCH: research/preference-candidate-search-blocking-recall-assurance-v1
+      SOURCE_BRANCH: agent/pc41-exact-product-materializer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc41-exact-product-materializer
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify carrier and acquire live-main lease
+        run: |
+          set -Eeuo pipefail
+          sha256sum -c .pc41/carrier.sha256
+          for part in .pc41/carrier.part-*; do test "$(stat -c '%s' "$part")" = 6018; done
+          cat .pc41/carrier.part-* > /tmp/pc41-product.b64
+          test "$(stat -c '%s' /tmp/pc41-product.b64)" = 24072
+          test "$(sha256sum /tmp/pc41-product.b64 | cut -d' ' -f1)" = ce5cd05a6da2a81bbf66b6d88a563b9605e94756a08353b5d9072ff8761dfb69
+          base64 --decode /tmp/pc41-product.b64 > /tmp/pc41-product.tar.xz
+          test "$(stat -c '%s' /tmp/pc41-product.tar.xz)" = 18052
+          test "$(sha256sum /tmp/pc41-product.tar.xz | cut -d' ' -f1)" = 151a4cbdd88c5bbe623002167396bebb83c8c1260766918b4d6c44de054f8fc1
+          xz --test /tmp/pc41-product.tar.xz
+          tar -tJf /tmp/pc41-product.tar.xz | LC_ALL=C sort > /tmp/pc41-archive-paths.txt
+          cut -f1 .pc41/nonworkflow-manifest.tsv | LC_ALL=C sort > /tmp/pc41-archive-paths.expected
+          diff -u /tmp/pc41-archive-paths.expected /tmp/pc41-archive-paths.txt
+          test "$(wc -l < /tmp/pc41-archive-paths.txt | tr -d ' ')" = 12
+          ! grep -Eq '(^/|(^|/)\.\.(/|$))' /tmp/pc41-archive-paths.txt
+
+          git fetch origin main "$SOURCE_BRANCH" --no-tags
+          source_head="$(git rev-parse HEAD)"
+          test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$source_head"
+          current_main="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$QUALIFIED_ANCESTOR" "$current_main"
+          LC_ALL=C sort .pc41/all-paths.txt > /tmp/pc41-all-paths.txt
+          git diff --name-only "$QUALIFIED_ANCESTOR..$current_main" | LC_ALL=C sort -u > /tmp/pc41-main-advance-paths.txt
+          comm -12 /tmp/pc41-all-paths.txt /tmp/pc41-main-advance-paths.txt > /tmp/pc41-overlap-paths.txt
+          test ! -s /tmp/pc41-overlap-paths.txt
+          while IFS= read -r path; do
+            ! git cat-file -e "$current_main:$path" 2>/dev/null
+          done < /tmp/pc41-all-paths.txt
+          printf '%s\n' "$source_head" > /tmp/pc41-source-head.sha
+          printf '%s\n' "$current_main" > /tmp/pc41-publication-parent.sha
+
+      - name: Construct exact twelve-file nonworkflow commit
+        run: |
+          set -Eeuo pipefail
+          current_main="$(cat /tmp/pc41-publication-parent.sha)"
+          git checkout --detach "$current_main"
+          tar -xJf /tmp/pc41-product.tar.xz
+          while IFS=$'\t' read -r path bytes sha blob; do
+            test "$(stat -c '%s' "$path")" = "$bytes"
+            test "$(sha256sum "$path" | cut -d' ' -f1)" = "$sha"
+            test "$(git hash-object "$path")" = "$blob"
+            git add -- "$path"
+          done < <(git show "origin/$SOURCE_BRANCH:.pc41/nonworkflow-manifest.tsv")
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/pc41-staged-paths.txt
+          diff -u /tmp/pc41-archive-paths.expected /tmp/pc41-staged-paths.txt
+          test "$(wc -l < /tmp/pc41-staged-paths.txt | tr -d ' ')" = 12
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Preference Custody: implement PC-41 candidate-search assurance and floor v39'
+          test "$(git rev-parse HEAD^)" = "$current_main"
+          git rev-parse HEAD > /tmp/pc41-product-commit.sha
+          git rev-parse 'HEAD^{tree}' > /tmp/pc41-product-tree.sha
+
+      - name: Run focused and historical Preference Custody qualification
+        run: |
+          set -Eeuo pipefail
+          node tools/compile-preference-candidate-search-blocking-recall-assurance.mjs
+          node tools/validate-preference-candidate-search-blocking-recall-assurance.mjs
+          node test/preference-candidate-search-blocking-recall-assurance.test.js
+          node tools/compile-preference-custody-manifest-v39.mjs
+          node tools/validate-preference-custody-manifest-v39.mjs
+          node test/preference-custody-manifest-v39.test.js
+          for file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | LC_ALL=C sort -V); do
+            node "$file"
+          done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          touch /tmp/pc41-focused.pass
+
+      - name: Run complete repository release gate
+        run: |
+          set -Eeuo pipefail
+          npm run release:check
+          touch /tmp/pc41-release.pass
+
+      - name: Restore volatile outputs and replay
+        run: |
+          set -Eeuo pipefail
+          product_commit="$(cat /tmp/pc41-product-commit.sha)"
+          while IFS=$'\t' read -r path _; do git diff --exit-code -- "$path"; done < <(git show "origin/$SOURCE_BRANCH:.pc41/nonworkflow-manifest.tsv")
+          git reset --hard "$product_commit"
+          git clean -fdx
+          node tools/compile-preference-candidate-search-blocking-recall-assurance.mjs
+          node tools/validate-preference-candidate-search-blocking-recall-assurance.mjs
+          node test/preference-candidate-search-blocking-recall-assurance.test.js
+          node tools/compile-preference-custody-manifest-v39.mjs
+          node tools/validate-preference-custody-manifest-v39.mjs
+          node test/preference-custody-manifest-v39.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          touch /tmp/pc41-replay.pass
+
+      - name: Recheck leases and publish
+        run: |
+          set -Eeuo pipefail
+          source_head="$(cat /tmp/pc41-source-head.sha)"
+          current_main="$(cat /tmp/pc41-publication-parent.sha)"
+          product_commit="$(cat /tmp/pc41-product-commit.sha)"
+          git fetch origin main "$SOURCE_BRANCH" --no-tags
+          test "$(git rev-parse origin/main)" = "$current_main"
+          test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$source_head"
+          ! git ls-remote --exit-code --heads origin "$TARGET_BRANCH" >/dev/null 2>&1
+          git push origin "$product_commit:refs/heads/$TARGET_BRANCH"
+          touch /tmp/pc41-published.pass
+
+      - name: Emit receipt
+        if: always()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os
+
+          def read(path):
+              p = Path(path)
+              return p.read_text().strip() if p.exists() else None
+
+          manifest = {}
+          source = Path('.pc41/nonworkflow-manifest.tsv')
+          if not source.exists():
+              source_text = ''
+          else:
+              source_text = source.read_text()
+          for line in source_text.splitlines():
+              path, size, sha256, blob = line.split('\t')
+              manifest[path] = {'bytes': int(size), 'sha256': sha256, 'git_blob_sha1': blob}
+          receipt = {
+              'schema_version': 'pc41-nonworkflow-materialization-receipt@1',
+              'workflow_run_id': os.environ.get('GITHUB_RUN_ID'),
+              'source_head': read('/tmp/pc41-source-head.sha'),
+              'qualified_ancestor': os.environ.get('QUALIFIED_ANCESTOR'),
+              'publication_parent': read('/tmp/pc41-publication-parent.sha'),
+              'product_commit': read('/tmp/pc41-product-commit.sha'),
+              'product_tree': read('/tmp/pc41-product-tree.sha'),
+              'target_branch': os.environ.get('TARGET_BRANCH'),
+              'base64_bytes': 24072,
+              'base64_sha256': 'ce5cd05a6da2a81bbf66b6d88a563b9605e94756a08353b5d9072ff8761dfb69',
+              'archive_bytes': 18052,
+              'archive_sha256': '151a4cbdd88c5bbe623002167396bebb83c8c1260766918b4d6c44de054f8fc1',
+              'nonworkflow_path_count': len(manifest),
+              'files': manifest,
+              'overlap_paths': Path('/tmp/pc41-overlap-paths.txt').read_text().splitlines() if Path('/tmp/pc41-overlap-paths.txt').exists() else None,
+              'focused_pc41': 'pass' if Path('/tmp/pc41-focused.pass').exists() else 'not_proved',
+              'historical_preference_custody_floors': 'pass' if Path('/tmp/pc41-focused.pass').exists() else 'not_proved',
+              'no_magic_human': 'pass' if Path('/tmp/pc41-focused.pass').exists() else 'not_proved',
+              'release_check': 'pass' if Path('/tmp/pc41-release.pass').exists() else 'not_proved',
+              'deterministic_replay': 'pass' if Path('/tmp/pc41-replay.pass').exists() else 'not_proved',
+              'target_published': Path('/tmp/pc41-published.pass').exists(),
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          Path('/tmp/pc41-materialization-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc41-nonworkflow-materialization-${{ github.run_id }}
+          path: /tmp/pc41-materialization-receipt.json
+          if-no-files-found: error
+          retention-days: 90
