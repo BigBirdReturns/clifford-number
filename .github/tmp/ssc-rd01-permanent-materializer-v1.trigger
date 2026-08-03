@@ -1,1 +1,1 @@
-publish exact RD-01 carrier part 04 after full digest proof
+execute exact five-part RD-01 permanent materialization against current main
