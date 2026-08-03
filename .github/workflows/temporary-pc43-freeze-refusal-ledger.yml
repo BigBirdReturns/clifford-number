@@ -1,0 +1,211 @@
+name: TEMP freeze canonical PC-43 refusal ledger
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc43-freeze-refusal-ledger.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc43-freeze-canonical-refusal-ledger
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      SOURCE_BRANCH: agent/pc43-freeze-refusal-ledger-repair
+      TARGET_BRANCH: research/preference-pc43-refusal-ledger-freeze-v1
+      CANONICAL_PC43_MERGE: eba618a72a71ebc52e3c3462e2f00cfa1010b7d6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc43-freeze-refusal-ledger-repair
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Patch, qualify, and publish exact three-file repair
+        run: |
+          set -Eeuo pipefail
+          source_head="$(git rev-parse HEAD)"
+          status=failed
+          attempt=0
+          publication_parent=
+          product_head=
+          product_tree=
+          published=false
+
+          repair_paths=(
+            test/preference-custody-manifest-v41.test.js
+            test/preference-linkage-probability-calibration-assurance.test.js
+            tools/lib/preference-linkage-probability-calibration-assurance.mjs
+          )
+          printf '%s\n' "${repair_paths[@]}" | LC_ALL=C sort > /tmp/pc43-freeze-paths.txt
+
+          emit_receipt() {
+            code=$?
+            trap - EXIT
+            jq -n \
+              --arg status "$status" \
+              --arg run_id "$GITHUB_RUN_ID" \
+              --arg source_head "$source_head" \
+              --arg canonical_merge "$CANONICAL_PC43_MERGE" \
+              --arg publication_parent "$publication_parent" \
+              --arg product_head "$product_head" \
+              --arg product_tree "$product_tree" \
+              --arg path_digest "$(sha256sum /tmp/pc43-freeze-paths.txt | cut -d' ' -f1)" \
+              --argjson attempt "$attempt" \
+              --argjson published "$published" \
+              '{schema_version:"pc43-frozen-refusal-ledger-repair-receipt@1",status:$status,workflow_run_id:$run_id,source_head:$source_head,canonical_pc43_merge:$canonical_merge,publication_parent:($publication_parent|select(length>0)),product_head:($product_head|select(length>0)),product_tree:($product_tree|select(length>0)),attempt:$attempt,changed_path_count:3,path_list_sha256:$path_digest,private_canonical_ledger_frozen:true,exported_ledger_is_separate_frozen_copy:true,in_process_mutation_regressions:2,focused_pc43:(if $published then "pass" else "not_proved" end),floor_v41:(if $published then "pass" else "not_proved" end),historical_preference_custody_floors:(if $published then "pass" else "not_proved" end),no_magic_human:(if $published then "pass" else "not_proved" end),release_check:(if $published then "pass" else "not_proved" end),deterministic_replay:(if $published then "pass" else "not_proved" end),target_published:$published,graph_effect:"none",outside_human_dependency:false}' > /tmp/pc43-frozen-refusal-ledger-repair-receipt.json
+            cat /tmp/pc43-frozen-refusal-ledger-repair-receipt.json
+            exit "$code"
+          }
+          trap emit_receipt EXIT
+
+          for attempt in 1 2 3; do
+            git fetch origin main "$SOURCE_BRANCH" --no-tags
+            test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$source_head"
+            if git ls-remote --exit-code --heads origin "$TARGET_BRANCH" >/dev/null 2>&1; then
+              echo "target branch already exists" >&2
+              exit 1
+            fi
+            publication_parent="$(git rev-parse origin/main)"
+            git merge-base --is-ancestor "$CANONICAL_PC43_MERGE" "$publication_parent"
+            git diff --name-only "$CANONICAL_PC43_MERGE..$publication_parent" | LC_ALL=C sort -u > /tmp/pc43-main-advance.txt
+            comm -12 /tmp/pc43-freeze-paths.txt /tmp/pc43-main-advance.txt > /tmp/pc43-overlap.txt
+            test ! -s /tmp/pc43-overlap.txt
+
+            git checkout --detach "$publication_parent"
+            git clean -fdx
+
+            python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              target = Path(path)
+              text = target.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one replacement target, found {count}')
+              target.write_text(text.replace(old, new))
+
+          library = 'tools/lib/preference-linkage-probability-calibration-assurance.mjs'
+          replace_once(
+              library,
+              'export const REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES = [',
+              'const CANONICAL_LINKAGE_PROBABILITY_REFUSAL_RULES = Object.freeze(['
+          )
+          replace_once(
+              library,
+              '];\nconst REQUIRED_REFUSAL_RULES = REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES;\nconst FALSE_CLASSIFICATIONS = [',
+              ']);\nexport const REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES = Object.freeze([...CANONICAL_LINKAGE_PROBABILITY_REFUSAL_RULES]);\nconst REQUIRED_REFUSAL_RULES = CANONICAL_LINKAGE_PROBABILITY_REFUSAL_RULES;\nconst FALSE_CLASSIFICATIONS = ['
+          )
+
+          standalone_test = 'test/preference-linkage-probability-calibration-assurance.test.js'
+          replace_once(
+              standalone_test,
+              "import { compilePreferenceLinkageProbabilityCalibrationAssuranceFixture, validatePreferenceLinkageProbabilityCalibrationAssuranceFixture, validatePreferenceLinkageProbabilityCalibrationAssuranceBuild } from '../tools/lib/preference-linkage-probability-calibration-assurance.mjs';",
+              "import { REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES, compilePreferenceLinkageProbabilityCalibrationAssuranceFixture, validatePreferenceLinkageProbabilityCalibrationAssuranceFixture, validatePreferenceLinkageProbabilityCalibrationAssuranceBuild } from '../tools/lib/preference-linkage-probability-calibration-assurance.mjs';"
+          )
+          replace_once(
+              standalone_test,
+              'const clone = value => structuredClone(value);\n',
+              "const clone = value => structuredClone(value);\nassert.equal(Object.isFrozen(REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES), true, 'exported canonical ledger must be frozen');\nconst frozenRefusalLedger = [...REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES];\nassert.throws(() => { REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES[0] = 'arbitrary_unique_refusal_rule'; }, TypeError);\nassert.deepEqual(REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES, frozenRefusalLedger);\nassert.deepEqual(validatePreferenceLinkageProbabilityCalibrationAssuranceFixture(fixture), []);\n"
+          )
+          replace_once(
+              standalone_test,
+              '  ["refusal rule", value => { value.required_refusal_rules.pop(); }],\n',
+              "  [\"refusal rule\", value => { value.required_refusal_rules.pop(); }],\n  [\"refusal substitution\", value => { value.required_refusal_rules[0] = 'arbitrary_unique_refusal_rule'; }],\n"
+          )
+          replace_once(standalone_test, 'assert.equal(fixtureMutations.length, 40);', 'assert.equal(fixtureMutations.length, 41);')
+          replace_once(standalone_test, 'PASS (40 fixture mutations plus source binding and 8 build tamper checks)', 'PASS (41 fixture mutations plus frozen-ledger, source-binding, and 8 build-tamper checks)')
+
+          floor_test = 'test/preference-custody-manifest-v41.test.js'
+          replace_once(
+              floor_test,
+              "import { compilePreferenceLinkageProbabilityCalibrationAssuranceFixture } from '../tools/lib/preference-linkage-probability-calibration-assurance.mjs';",
+              "import { REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES, compilePreferenceLinkageProbabilityCalibrationAssuranceFixture } from '../tools/lib/preference-linkage-probability-calibration-assurance.mjs';"
+          )
+          replace_once(
+              floor_test,
+              'assert.deepEqual(validatePreferenceCustodyManifestV41(manifest),[]); assert.deepEqual(validatePreferenceCustodyManifestV41Build(build,manifest,base,probabilityBuild,probabilityFixture,baseSources),[]);',
+              "assert.deepEqual(validatePreferenceCustodyManifestV41(manifest),[]); assert.deepEqual(validatePreferenceCustodyManifestV41Build(build,manifest,base,probabilityBuild,probabilityFixture,baseSources),[]); assert.equal(Object.isFrozen(REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES),true,'floor must consume a frozen canonical ledger'); const frozenFloorLedger=[...REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES]; assert.throws(()=>{REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES[0]='arbitrary_unique_refusal_rule';},TypeError); assert.deepEqual(REQUIRED_LINKAGE_PROBABILITY_REFUSAL_RULES,frozenFloorLedger); assert.deepEqual(validatePreferenceCustodyManifestV41(manifest),[]);"
+          )
+          PY
+
+            git diff --name-only | LC_ALL=C sort > /tmp/pc43-freeze-observed.txt
+            diff -u /tmp/pc43-freeze-paths.txt /tmp/pc43-freeze-observed.txt
+
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add -- "${repair_paths[@]}"
+            git commit -m 'Preference Custody: freeze canonical PC-43 refusal ledger'
+            product_head="$(git rev-parse HEAD)"
+            product_tree="$(git rev-parse HEAD^{tree})"
+            test "$(git rev-parse HEAD^)" = "$publication_parent"
+            test "$(git diff-tree --no-commit-id --name-only -r HEAD | wc -l | tr -d ' ')" = 3
+            git diff-tree --no-commit-id --name-only -r HEAD | LC_ALL=C sort > /tmp/pc43-freeze-committed.txt
+            diff -u /tmp/pc43-freeze-paths.txt /tmp/pc43-freeze-committed.txt
+
+            node tools/compile-preference-linkage-probability-calibration-assurance.mjs
+            node tools/validate-preference-linkage-probability-calibration-assurance.mjs
+            node test/preference-linkage-probability-calibration-assurance.test.js
+            node tools/compile-preference-custody-manifest-v41.mjs
+            node tools/validate-preference-custody-manifest-v41.mjs
+            node test/preference-custody-manifest-v41.test.js
+            for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do node "$test_file"; done
+            node test/preference-custody-manifest.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+
+            mkdir -p /tmp/pc43-freeze-reference
+            cp build/research/preference-linkage-probability-calibration-assurance.json /tmp/pc43-freeze-reference/
+            cp build/research/preference-custody-laboratory-floor-v41.json /tmp/pc43-freeze-reference/
+
+            npm run release:check
+            git diff --exit-code -- "${repair_paths[@]}"
+
+            git reset --hard "$product_head"
+            git clean -fdx
+            node tools/compile-preference-linkage-probability-calibration-assurance.mjs
+            node tools/validate-preference-linkage-probability-calibration-assurance.mjs
+            node test/preference-linkage-probability-calibration-assurance.test.js
+            node tools/compile-preference-custody-manifest-v41.mjs
+            node tools/validate-preference-custody-manifest-v41.mjs
+            node test/preference-custody-manifest-v41.test.js
+            cmp /tmp/pc43-freeze-reference/preference-linkage-probability-calibration-assurance.json build/research/preference-linkage-probability-calibration-assurance.json
+            cmp /tmp/pc43-freeze-reference/preference-custody-laboratory-floor-v41.json build/research/preference-custody-laboratory-floor-v41.json
+            git reset --hard "$product_head"
+            git clean -fdx
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+            git fetch origin main "$SOURCE_BRANCH" --no-tags
+            test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$source_head"
+            if test "$(git rev-parse origin/main)" != "$publication_parent"; then
+              continue
+            fi
+            if git ls-remote --exit-code --heads origin "$TARGET_BRANCH" >/dev/null 2>&1; then
+              echo "target branch appeared during qualification" >&2
+              exit 1
+            fi
+
+            git push origin "$product_head:refs/heads/$TARGET_BRANCH"
+            published=true
+            status=success
+            break
+          done
+
+          test "$published" = true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc43-frozen-refusal-ledger-repair-${{ github.run_id }}
+          path: /tmp/pc43-frozen-refusal-ledger-repair-receipt.json
+          if-no-files-found: error
+          retention-days: 90
