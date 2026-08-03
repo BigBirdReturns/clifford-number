@@ -55,12 +55,6 @@ jobs:
           assert builder.count(old_key) == 3, builder.count(old_key)
           builder = builder.replace(old_key, new_key)
           old_block = '''      canonical_classes: 42,
-                open_before: 40,
-                closed_before: 2,
-                open_after: 39,
-                closed_after: 3'''.replace('        ', '')
-          # The authored block uses six spaces inside the receipt object.
-          old_block = '''      canonical_classes: 42,
       open_before: 40,
       closed_before: 2,
       open_after: 39,
