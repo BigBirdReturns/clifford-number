@@ -1,0 +1,125 @@
+name: TEMP finalize SSC RD-04-C01 terminal chronology
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd-wave02-rd04-terminal-chronology.yml'
+      - '.rd04-terminal-chronology/**'
+      - 'data/intake/status-sovereignty-rd-wave02-rd04-version-history/terminal-chronology-trigger.json'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ssc-rd-wave02-rd04-terminal-chronology-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Download immutable chronology context denominator
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-chronology-contexts
+          path: /tmp/rd04-chronology-contexts
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30772839663
+      - name: Download immutable chronology context adjudication
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-chronology-context-adjudication
+          path: /tmp/rd04-context-adjudication
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30787441695
+      - name: Download bounded predecessor source custody
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-predecessor-sources
+          path: /tmp/rd04-predecessor-sources
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30788134229
+      - name: Download exact version seed custody
+        uses: actions/download-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-version-seed
+          path: /tmp/rd04-version-seed
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 30765064506
+      - name: Reconstruct and verify exact terminal runtime
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/rd04-terminal-runtime
+          echo '3ecbaa1f1611931b95c232b9f7247be02f1f8c40dd28be784ffd953d3e458e51  .rd04-terminal-chronology/finalize.part.00.b64' | sha256sum --check --strict
+          echo '1e45742646af34c74ab50be6a2796147dd0f06ec1ee2f3be5c37890592bd25c2  .rd04-terminal-chronology/finalize.part.01.b64' | sha256sum --check --strict
+          echo '466235fd90d96dadaa71f5c0cd973d70f8efb9113ce1dc99b72243084e1a7815  .rd04-terminal-chronology/finalize.part.02.b64' | sha256sum --check --strict
+          echo '3acfe53512d92fcfc76cdf54bf2eda252993bb3dc0489edfd43ede3d0b6cda46  .rd04-terminal-chronology/test.js.gz.b64' | sha256sum --check --strict
+          cat .rd04-terminal-chronology/finalize.part.*.b64 | base64 --decode | gzip --decompress > /tmp/rd04-terminal-runtime/finalize-rd04-chronology.mjs
+          base64 --decode .rd04-terminal-chronology/test.js.gz.b64 | gzip --decompress > /tmp/rd04-terminal-runtime/finalize-rd04-chronology.test.mjs
+          echo '53f704ba141f0953483896742a189bca3702dccb52ef3042f7e8a7cd35c118da  /tmp/rd04-terminal-runtime/finalize-rd04-chronology.mjs' | sha256sum --check --strict
+          echo 'e31243e9ca61323b1263def45f2920a4b4df299fc14bea71ea02c8274b7a2213  /tmp/rd04-terminal-runtime/finalize-rd04-chronology.test.mjs' | sha256sum --check --strict
+          node --check /tmp/rd04-terminal-runtime/finalize-rd04-chronology.mjs
+          node --check /tmp/rd04-terminal-runtime/finalize-rd04-chronology.test.mjs
+      - name: Run exact-byte controls and terminal adjudication
+        env:
+          RD04_CHRONOLOGY_CONTEXTS: /tmp/rd04-chronology-contexts
+          RD04_CONTEXT_ADJUDICATION: /tmp/rd04-context-adjudication
+          RD04_PREDECESSOR_SOURCES: /tmp/rd04-predecessor-sources
+          RD04_VERSION_SEED: /tmp/rd04-version-seed
+          RD04_FINAL_CHRONOLOGY_OUTPUT: /tmp/rd04-final-chronology
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node /tmp/rd04-terminal-runtime/finalize-rd04-chronology.test.mjs /tmp/rd04-terminal-runtime/finalize-rd04-chronology.mjs
+          node /tmp/rd04-terminal-runtime/finalize-rd04-chronology.mjs
+          test -f /tmp/rd04-final-chronology/relationship-edge-ledger.json
+          test -f /tmp/rd04-final-chronology/operative-interval-ledger.json
+          test -f /tmp/rd04-final-chronology/source-gap-ledger.json
+          test -f /tmp/rd04-final-chronology/instrument-date-ledger.json
+          test -f /tmp/rd04-final-chronology/class-receipt.json
+          test -f /tmp/rd04-final-chronology/summary.json
+          test -f /tmp/rd04-final-chronology/manifest.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const root = '/tmp/rd04-final-chronology';
+          const summary = JSON.parse(fs.readFileSync(`${root}/summary.json`, 'utf8'));
+          const receipt = JSON.parse(fs.readFileSync(`${root}/class-receipt.json`, 'utf8'));
+          const relations = JSON.parse(fs.readFileSync(`${root}/relationship-edge-ledger.json`, 'utf8')).events;
+          const intervals = JSON.parse(fs.readFileSync(`${root}/operative-interval-ledger.json`, 'utf8')).events;
+          const gaps = JSON.parse(fs.readFileSync(`${root}/source-gap-ledger.json`, 'utf8')).source_gaps;
+          const manifest = JSON.parse(fs.readFileSync(`${root}/manifest.json`, 'utf8'));
+          const c = summary.counts;
+          if (c.candidate_records_terminal !== 683 || c.relationship_event_groups_terminal !== 8 || c.operative_interval_event_groups_terminal !== 6) throw new Error('terminal denominator changed');
+          if (c.version_edge_event_groups !== 7 || c.non_edge_temporal_state_groups !== 1 || c.operative_interval_records !== 7) throw new Error('edge or interval accounting changed');
+          if (c.execution_units !== 100 || c.exact_source_identities !== 97 || c.bounded_source_identity_nonlinks !== 1 || c.bounded_source_unavailable_identities !== 2) throw new Error('source-state accounting changed');
+          if (c.unresolved_instruments_or_edges !== 0 || c.class_closed !== 1) throw new Error('class terminality changed');
+          if (relations.length !== 8 || !relations.every((row) => row.relationship_adjudicated && row.edge_direction_adjudicated && row.version_edge_adjudicated)) throw new Error('relationship ledger incomplete');
+          if (intervals.length !== 6 || !intervals.every((row) => row.operative_interval_adjudicated && row.version_edge_adjudicated)) throw new Error('interval ledger incomplete');
+          if (gaps.length !== 2 || !gaps.every((row) => row.http_statuses.join(',') === '404,404' && row.record_absence_inferred === false && row.noncompliance_inferred === false)) throw new Error('bounded gap custody changed');
+          if (summary.current_result.terminal_state !== 'bounded_source_unavailable' || summary.current_result.class_closed !== true) throw new Error('terminal receipt changed');
+          if (receipt.residual_atlas_effect_if_promoted.open_after !== 41 || receipt.residual_atlas_effect_if_promoted.closed_after !== 1) throw new Error('atlas accounting changed');
+          if (receipt.authority.reviewed_disposition_changed || receipt.authority.complete_compact_finding || receipt.authority.prevalence_finding || receipt.authority.racial_order_finding || receipt.authority.coordination_finding || receipt.authority.common_purpose_finding) throw new Error('authority escalated');
+          if (receipt.authority.graph_effect !== 'none' || receipt.authority.publication_effect !== 'none' || receipt.authority.adoption_effect !== 'none') throw new Error('effect authority changed');
+          if (manifest.entries.length !== 6 || manifest.combined_sha256 !== 'b023737f4367bf1f54a1b792faf70d12f3ca5cf89f92a5c0d16169665806b79b') throw new Error('release manifest changed');
+          console.log('RD-04-C01 terminal chronology: bounded_source_unavailable, one class closure, authority ceiling PASS');
+          NODE
+      - name: Upload exact terminal chronology custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave02-rd04-terminal-chronology
+          path: /tmp/rd04-final-chronology
+          if-no-files-found: error
+          retention-days: 90
