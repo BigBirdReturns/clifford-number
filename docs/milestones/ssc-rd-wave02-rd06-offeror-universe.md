@@ -94,5 +94,3 @@ graph/publication/adoption:        none / none / none
 ```
 
 A public competition is not equal support. An award is not intrinsic superiority. A denied protest is not complete source-selection fairness. A protective order or redaction is not a missing proposal. Palantir’s presence is not coordination or common purpose.
-
-<!-- temporary exact-head trigger; removed by the next commit -->
