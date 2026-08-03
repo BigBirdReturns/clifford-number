@@ -55,6 +55,7 @@ jobs:
         env:
           EVIDENCE: 0cedf1b5163c1aec71b3e4f08e000467b3810fe9
           CANONICAL_BRANCH: agent/ssc-rd-wave02-rd04-version-history
+          WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave02-rd04-version-history.yml
         run: |
           set -Eeuo pipefail
           git fetch --force origin \
@@ -102,6 +103,7 @@ jobs:
           NODE
           cat /tmp/rd04-materialization/package-paths.txt /tmp/rd04-materialization/custody-paths.txt | sort -u > /tmp/rd04-materialization/permanent-paths.txt
           test "$(wc -l < /tmp/rd04-materialization/permanent-paths.txt)" -eq 36
+          grep -Fx "$WORKFLOW_PATH" /tmp/rd04-materialization/permanent-paths.txt
 
           while IFS= read -r permanent_path; do
             test -f "$permanent_path"
@@ -127,6 +129,15 @@ jobs:
           git clean -fdx
           git diff --exit-code
 
+          cp "$WORKFLOW_PATH" /tmp/rd04-materialization/permanent-workflow.yml
+          git rm --cached -- "$WORKFLOW_PATH"
+          git diff --cached --name-only "$MAIN" | sort > /tmp/rd04-materialization/pushed-paths.txt
+          test "$(wc -l < /tmp/rd04-materialization/pushed-paths.txt)" -eq 35
+          if grep -Fx "$WORKFLOW_PATH" /tmp/rd04-materialization/pushed-paths.txt; then
+            echo 'deferred workflow remained in Actions-authored tree' >&2
+            exit 1
+          fi
+
           git config user.name 'BigBirdReturns'
           git config user.email '219768509+BigBirdReturns@users.noreply.github.com'
           TREE="$(git write-tree)"
@@ -136,12 +147,14 @@ jobs:
           node --input-type=module <<NODE
           import fs from 'node:fs';
           const receipt = {
-            schema_version: 'ssc-rd-wave02-rd04-permanent-materialization-receipt@1',
+            schema_version: 'ssc-rd-wave02-rd04-permanent-materialization-receipt@2',
             main_parent: '$MAIN',
             evidence_parent: '$EVIDENCE',
             product_commit: '$COMMIT',
             tree: '$TREE',
-            permanent_paths: 36,
+            action_authored_paths: 35,
+            deferred_connector_workflow: '$WORKFLOW_PATH',
+            final_expected_paths: 36,
             temporary_paths: 0,
             terminal_state: 'bounded_source_unavailable',
             class_closed: 1,
@@ -163,5 +176,7 @@ jobs:
             /tmp/rd04-materialization/receipt.json
             /tmp/rd04-materialization/permanent-paths.txt
             /tmp/rd04-materialization/changed-paths.txt
+            /tmp/rd04-materialization/pushed-paths.txt
+            /tmp/rd04-materialization/permanent-workflow.yml
           if-no-files-found: error
           retention-days: 90
