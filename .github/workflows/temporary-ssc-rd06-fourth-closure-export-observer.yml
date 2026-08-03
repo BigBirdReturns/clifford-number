@@ -2,7 +2,9 @@ name: TEMP observe RD-06 fourth-closure export
 
 on:
   workflow_run:
-    workflows: ['TEMP RD-06 fourth-closure export control']
+    workflows:
+      - 'TEMP RD-06 fourth-closure export control'
+      - 'TEMP RD-06 fourth-closure export v2'
     types: [completed]
 
 permissions:
@@ -19,20 +21,24 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_NAME: ${{ github.event.workflow_run.name }}
           RUN_HEAD: ${{ github.event.workflow_run.head_sha }}
           RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
         run: |
           set -Eeuo pipefail
           artifacts="$(gh api "repos/BigBirdReturns/clifford-number/actions/runs/$RUN_ID/artifacts")"
-          artifact_id="$(jq -r '[.artifacts[] | select(.name == "ssc-rd06-wave02-fourth-closure-export")][0].id // "none"' <<<"$artifacts")"
-          artifact_digest="$(jq -r '[.artifacts[] | select(.name == "ssc-rd06-wave02-fourth-closure-export")][0].digest // "none"' <<<"$artifacts")"
-          artifact_size="$(jq -r '[.artifacts[] | select(.name == "ssc-rd06-wave02-fourth-closure-export")][0].size_in_bytes // 0' <<<"$artifacts")"
+          artifact_id="$(jq -r '[.artifacts[] | select(.name == "ssc-rd06-wave02-fourth-closure-export" or .name == "ssc-rd06-wave02-fourth-closure-export-v2")][0].id // "none"' <<<"$artifacts")"
+          artifact_name="$(jq -r '[.artifacts[] | select(.name == "ssc-rd06-wave02-fourth-closure-export" or .name == "ssc-rd06-wave02-fourth-closure-export-v2")][0].name // "none"' <<<"$artifacts")"
+          artifact_digest="$(jq -r '[.artifacts[] | select(.name == "ssc-rd06-wave02-fourth-closure-export" or .name == "ssc-rd06-wave02-fourth-closure-export-v2")][0].digest // "none"' <<<"$artifacts")"
+          artifact_size="$(jq -r '[.artifacts[] | select(.name == "ssc-rd06-wave02-fourth-closure-export" or .name == "ssc-rd06-wave02-fourth-closure-export-v2")][0].size_in_bytes // 0' <<<"$artifacts")"
           gh issue comment 791 --repo BigBirdReturns/clifford-number --body "RD-06 fourth-closure export observer receipt
 
 \`\`\`text
+workflow:      $RUN_NAME
 run id:        $RUN_ID
 run head:      $RUN_HEAD
 conclusion:    $RUN_CONCLUSION
+artifact name: $artifact_name
 artifact id:   $artifact_id
 artifact size: $artifact_size
 artifact digest:
