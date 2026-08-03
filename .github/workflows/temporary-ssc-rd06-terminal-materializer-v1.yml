@@ -21,7 +21,6 @@ jobs:
     timeout-minutes: 180
     env:
       TARGET_BRANCH: agent/ssc-rd-wave02-rd06-offeror-universe
-      EXPECTED_START_SHA: a6f7b7c76665d5cdb2eb5367f0f0aa73c6349348
       CARRIER_BRANCH: agent/ssc-rd06-terminal-materializer-base-v1
       CENSUS_ARTIFACT_ID: 8866994583
       CENSUS_ARTIFACT_SHA256: ecc0825cee7baa3eab942e670b11b898b2aa991c738a117a5900ff65289f111f
@@ -46,6 +45,12 @@ jobs:
       - name: Reconstruct and execute checksum-bound materializer
         run: |
           set -Eeuo pipefail
+          export EXPECTED_START_SHA="$(git rev-parse HEAD)"
+          observed_target="$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | cut -f1)"
+          test -n "$EXPECTED_START_SHA"
+          test "$observed_target" = "$EXPECTED_START_SHA"
+          echo "execution-time exact lease: ${EXPECTED_START_SHA}"
+
           git fetch origin "refs/heads/${CARRIER_BRANCH}:refs/remotes/origin/${CARRIER_BRANCH}"
           : > /tmp/rd06-materialize.b64
           expected_bytes=(6000 6000 2788)
