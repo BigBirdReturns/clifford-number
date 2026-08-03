@@ -1,0 +1,150 @@
+name: TEMP retire PC-43 post-merge refs
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc43-postmerge-ref-cleanup.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc43-postmerge-ref-cleanup
+  cancel-in-progress: false
+
+jobs:
+  retire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CANONICAL_PC43_MERGE: eba618a72a71ebc52e3c3462e2f00cfa1010b7d6
+      CANONICAL_REPAIR_MERGE: 0d8974e656ee320fd779271e5667b2365c5d8f45
+      PERMANENT_PRODUCT_BRANCH: research/preference-linkage-probability-calibration-assurance-v1
+      PERMANENT_PRODUCT_HEAD: f8334c9d148ef3f94eeb773317c6a4e1bb2e161c
+      PERMANENT_REPAIR_BRANCH: research/preference-pc43-refusal-ledger-freeze-v1
+      PERMANENT_REPAIR_HEAD: a6c5842a2631084a07c987a016a79bd15bf528ea
+      CLEANUP_BRANCH: agent/pc43-postmerge-ref-cleanup
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc43-postmerge-ref-cleanup
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify canonical and preservation boundaries
+        run: |
+          set -Eeuo pipefail
+          git fetch origin main "$PERMANENT_PRODUCT_BRANCH" "$PERMANENT_REPAIR_BRANCH" "$CLEANUP_BRANCH" --no-tags
+          cleanup_head="$(git rev-parse HEAD)"
+          test "$(git rev-parse "origin/$CLEANUP_BRANCH")" = "$cleanup_head"
+          current_main="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$CANONICAL_PC43_MERGE" "$current_main"
+          git merge-base --is-ancestor "$CANONICAL_REPAIR_MERGE" "$current_main"
+          test "$(git rev-parse "origin/$PERMANENT_PRODUCT_BRANCH")" = "$PERMANENT_PRODUCT_HEAD"
+          test "$(git rev-parse "origin/$PERMANENT_REPAIR_BRANCH")" = "$PERMANENT_REPAIR_HEAD"
+          printf '%s\n' "$cleanup_head" > /tmp/pc43-cleanup-head.sha
+          printf '%s\n' "$current_main" > /tmp/pc43-cleanup-main.sha
+
+      - name: Delete only authorized temporary refs and self-retire
+        run: |
+          set -Eeuo pipefail
+          : > /tmp/pc43-ref-retirement.tsv
+          refs=(
+            agent/pc43-canonical-source-export
+            agent/pc43-exact-product-materializer
+            agent/pc43-final-postmerge-proof-0d8974
+            agent/pc43-freeze-refusal-ledger-repair
+            agent/pc43-frozen-ledger-postmerge-proof
+            agent/pc43-postmerge-proof-eba618
+            agent/pc43-review-repair
+          )
+          test "${#refs[@]}" -eq 7
+          for ref in "${refs[@]}"; do
+            case "$ref" in
+              agent/pc43-*) ;;
+              *) echo "unauthorized ref: $ref" >&2; exit 1 ;;
+            esac
+            test "$ref" != main
+            test "$ref" != "$PERMANENT_PRODUCT_BRANCH"
+            test "$ref" != "$PERMANENT_REPAIR_BRANCH"
+            old_sha="$(git ls-remote --heads origin "$ref" | awk '{print $1}')"
+            if test -n "$old_sha"; then
+              git push origin ":refs/heads/$ref"
+              state=deleted
+            else
+              state=already_absent
+            fi
+            if git ls-remote --exit-code --heads origin "$ref" >/dev/null 2>&1; then
+              echo "ref survived deletion: $ref" >&2
+              exit 1
+            fi
+            printf '%s\t%s\t%s\n' "$ref" "$old_sha" "$state" >> /tmp/pc43-ref-retirement.tsv
+          done
+
+          git fetch origin main "$PERMANENT_PRODUCT_BRANCH" "$PERMANENT_REPAIR_BRANCH" --no-tags
+          test "$(git rev-parse origin/main)" = "$(cat /tmp/pc43-cleanup-main.sha)"
+          test "$(git rev-parse "origin/$PERMANENT_PRODUCT_BRANCH")" = "$PERMANENT_PRODUCT_HEAD"
+          test "$(git rev-parse "origin/$PERMANENT_REPAIR_BRANCH")" = "$PERMANENT_REPAIR_HEAD"
+
+          cleanup_head="$(cat /tmp/pc43-cleanup-head.sha)"
+          old_cleanup_sha="$(git ls-remote --heads origin "$CLEANUP_BRANCH" | awk '{print $1}')"
+          test "$old_cleanup_sha" = "$cleanup_head"
+          git push origin ":refs/heads/$CLEANUP_BRANCH"
+          if git ls-remote --exit-code --heads origin "$CLEANUP_BRANCH" >/dev/null 2>&1; then
+            echo 'cleanup branch survived self-retirement' >&2
+            exit 1
+          fi
+          printf '%s\t%s\t%s\n' "$CLEANUP_BRANCH" "$old_cleanup_sha" deleted >> /tmp/pc43-ref-retirement.tsv
+          test "$(wc -l < /tmp/pc43-ref-retirement.tsv | tr -d ' ')" = 8
+
+          git fetch origin main "$PERMANENT_PRODUCT_BRANCH" "$PERMANENT_REPAIR_BRANCH" --no-tags
+          test "$(git rev-parse origin/main)" = "$(cat /tmp/pc43-cleanup-main.sha)"
+          test "$(git rev-parse "origin/$PERMANENT_PRODUCT_BRANCH")" = "$PERMANENT_PRODUCT_HEAD"
+          test "$(git rev-parse "origin/$PERMANENT_REPAIR_BRANCH")" = "$PERMANENT_REPAIR_HEAD"
+
+      - name: Emit checksum-bound retirement receipt
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os
+
+          rows = []
+          for line in Path('/tmp/pc43-ref-retirement.tsv').read_text().splitlines():
+              ref, old_sha, state = line.split('\t')
+              rows.append({'ref': ref, 'old_sha': old_sha or None, 'state': state})
+          ledger_bytes = Path('/tmp/pc43-ref-retirement.tsv').read_bytes()
+          receipt = {
+              'schema_version': 'pc43-postmerge-ref-retirement-receipt@1',
+              'workflow_run_id': os.environ.get('GITHUB_RUN_ID'),
+              'canonical_pc43_merge': os.environ['CANONICAL_PC43_MERGE'],
+              'canonical_repair_merge': os.environ['CANONICAL_REPAIR_MERGE'],
+              'current_main_observed': Path('/tmp/pc43-cleanup-main.sha').read_text().strip(),
+              'permanent_refs': {
+                  os.environ['PERMANENT_PRODUCT_BRANCH']: os.environ['PERMANENT_PRODUCT_HEAD'],
+                  os.environ['PERMANENT_REPAIR_BRANCH']: os.environ['PERMANENT_REPAIR_HEAD']
+              },
+              'authorized_temporary_ref_count': len(rows),
+              'deleted_ref_count': sum(row['state'] == 'deleted' for row in rows),
+              'already_absent_ref_count': sum(row['state'] == 'already_absent' for row in rows),
+              'cleanup_branch_self_retired': any(row['ref'] == os.environ['CLEANUP_BRANCH'] and row['state'] == 'deleted' for row in rows),
+              'main_preserved': True,
+              'permanent_refs_preserved': True,
+              'retired_refs': rows,
+              'result_ledger_sha256': hashlib.sha256(ledger_bytes).hexdigest(),
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          raw = json.dumps(receipt, indent=2) + '\n'
+          Path('/tmp/pc43-postmerge-ref-retirement-receipt.json').write_text(raw)
+          print(raw)
+          PY
+          sha256sum /tmp/pc43-postmerge-ref-retirement-receipt.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc43-postmerge-ref-retirement-${{ github.run_id }}
+          path: /tmp/pc43-postmerge-ref-retirement-receipt.json
+          if-no-files-found: error
+          retention-days: 90
