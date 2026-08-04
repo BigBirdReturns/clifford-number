@@ -1,0 +1,35 @@
+name: Preference linkage target, construction, and exchangeability assurance
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/linkage-target-construction-exchangeability-assurance.fixture.json'
+      - 'tools/lib/preference-linkage-target-construction-exchangeability-assurance.mjs'
+      - 'tools/compile-preference-linkage-target-construction-exchangeability-assurance.mjs'
+      - 'tools/validate-preference-linkage-target-construction-exchangeability-assurance.mjs'
+      - 'test/preference-linkage-target-construction-exchangeability-assurance.test.js'
+      - 'docs/preference-custody-linkage-target-construction-exchangeability-assurance.md'
+      - '.github/workflows/preference-linkage-target-construction-exchangeability-assurance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  target-construction-exchangeability:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node tools/compile-preference-linkage-target-construction-exchangeability-assurance.mjs
+      - run: node tools/validate-preference-linkage-target-construction-exchangeability-assurance.mjs
+      - run: node test/preference-linkage-target-construction-exchangeability-assurance.test.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preference-linkage-target-construction-exchangeability-pc46
+          path: |
+            build/research/preference-linkage-target-construction-exchangeability-assurance.json
+            build/research/preference-linkage-target-construction-exchangeability-assurance.md
+          if-no-files-found: error
