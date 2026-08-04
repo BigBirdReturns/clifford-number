@@ -1,0 +1,162 @@
+name: TEMP repair RD-06 five-closure compatibility
+
+on:
+  pull_request:
+    paths:
+      - '.rd06-fiveclosure-compat/TRIGGER'
+      - '.github/workflows/temporary-ssc-rd06-fiveclosure-compat.yml'
+      - '.github/tmp/materialize-ssc-rd06-fiveclosure-compat.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd06-fiveclosure-compat-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd06-fiveclosure-compat-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Check out exact five-closure product
+        uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-current-ledger-five-closures
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Patch, qualify, and publish exact two-file compatibility repair
+        env:
+          TARGET_BRANCH: agent/ssc-wave02-current-ledger-five-closures
+          EXPECTED_HEAD: f0d71a46ba2b098b054d6246d7ff00250af1961e
+          CONTROL_BRANCH: agent/ssc-rd06-fiveclosure-compat-base-v1
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/ssc-rd06-fiveclosure-compat-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          mkdir -p "$out"
+          echo "RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          exec > >(tee "$out/trace.log") 2>&1
+          step=initialize
+          new_head=''
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$out/exit-code.txt"
+            printf '%s\n' "$step" > "$out/final-step.txt"
+            printf '%s\n' "$EXPECTED_HEAD" > "$out/expected-head.txt"
+            printf '%s\n' "$new_head" > "$out/new-head.txt"
+            git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
+            git diff --name-status "$EXPECTED_HEAD" HEAD > "$out/name-status.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1 || true
+            OUT="$out" RC="$rc" STEP="$step" NEW_HEAD="$new_head" python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          out=Path(os.environ['OUT'])
+          receipt={
+            'schema_version':'ssc-rd06-fiveclosure-compatibility@1',
+            'run':int(os.environ['GITHUB_RUN_ID']),
+            'exit_code':int(os.environ['RC']),
+            'final_step':os.environ['STEP'],
+            'prior_head':'f0d71a46ba2b098b054d6246d7ff00250af1961e',
+            'new_head':os.environ['NEW_HEAD'],
+            'permanent_paths':[
+              'test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js',
+              'tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs'
+            ],
+            'five_closure_ledger':{'closed':5,'open':37,'sole_open_selected':'RD-02-C04'},
+            'rd06_empirical_product_changed':False,
+            'outside_human_dependency':False,
+            'external_contacts':0,
+            'external_reviews':0,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none'
+          }
+          (out/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          for path in sorted(out.iterdir()):
+            if path.is_file() and not path.name.endswith('.sha256'):
+              (out/(path.name+'.sha256')).write_text(hashlib.sha256(path.read_bytes()).hexdigest()+'  '+path.name+'\n')
+          PY
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          step=freeze-exact-target
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_HEAD"
+
+          step=apply-checksum-bound-source-repair
+          git fetch --no-tags origin "refs/heads/$CONTROL_BRANCH:refs/remotes/origin/$CONTROL_BRANCH"
+          git show "refs/remotes/origin/$CONTROL_BRANCH:.github/tmp/materialize-ssc-rd06-fiveclosure-compat.py" > /tmp/materialize-rd06-fiveclosure-compat.py
+          python /tmp/materialize-rd06-fiveclosure-compat.py
+
+          cat > "$out/expected-paths.txt" <<'PATHS'
+          test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          PATHS
+          sort -o "$out/expected-paths.txt" "$out/expected-paths.txt"
+          git diff --name-only | sort > "$out/observed-paths.txt"
+          cmp "$out/expected-paths.txt" "$out/observed-paths.txt"
+          git diff --check
+
+          step=focused-precommit-qualification
+          node --check tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node --check test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+
+          step=commit-exact-two-file-repair
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- $(cat "$out/expected-paths.txt")
+          git diff --cached --name-only | sort > "$out/staged-paths.txt"
+          cmp "$out/expected-paths.txt" "$out/staged-paths.txt"
+          git commit -m 'Make RD-06 custody compositional through RD-03 promotion'
+          new_head="$(git rev-parse HEAD)"
+
+          step=complete-repository-release-gate
+          npm run release:check
+
+          step=deterministic-clean-replay
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          step=publish-under-exact-target-lease
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_HEAD"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_HEAD" origin "HEAD:refs/heads/$TARGET_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$new_head"
+
+          step=compatibility-repair-complete
+          finish
+      - name: Preserve exact compatibility receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd06-fiveclosure-compatibility
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
