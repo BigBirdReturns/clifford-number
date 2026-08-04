@@ -1,0 +1,60 @@
+name: TEMP export repaired PC-44 overlay
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc44-repaired-overlay-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 32bd5f1554ed980a40bb613a1f017df97479ceee
+          fetch-depth: 0
+      - name: Export exact fourteen-file repaired overlay
+        run: |
+          set -Eeuo pipefail
+          paths=(
+            .github/workflows/preference-custody-v42.yml
+            .github/workflows/preference-linkage-uncertainty-monitoring-assurance.yml
+            data/research/preference-custody/control-manifest-v42.json
+            data/research/preference-custody/linkage-uncertainty-monitoring-assurance.fixture.json
+            docs/preference-custody-laboratory-floor-v42.md
+            docs/preference-custody-linkage-uncertainty-monitoring-assurance.md
+            test/preference-custody-manifest-v42.test.js
+            test/preference-linkage-uncertainty-monitoring-assurance.test.js
+            tools/compile-preference-custody-manifest-v42.mjs
+            tools/compile-preference-linkage-uncertainty-monitoring-assurance.mjs
+            tools/lib/preference-custody-manifest-v42.mjs
+            tools/lib/preference-linkage-uncertainty-monitoring-assurance.mjs
+            tools/validate-preference-custody-manifest-v42.mjs
+            tools/validate-preference-linkage-uncertainty-monitoring-assurance.mjs
+          )
+          printf '%s\n' "${paths[@]}" | LC_ALL=C sort > /tmp/pc44-overlay-paths.txt
+          tar -czf /tmp/pc44-repaired-overlay.tar.gz "${paths[@]}"
+          git rev-parse HEAD > /tmp/pc44-overlay-head.sha
+          git rev-parse HEAD^{tree} > /tmp/pc44-overlay-tree.sha
+          sha256sum /tmp/pc44-repaired-overlay.tar.gz > /tmp/pc44-overlay.sha256
+          while IFS= read -r path; do
+            printf '%s\t%s\t%s\t%s\n' "$path" "$(stat -c '%s' "$path")" "$(sha256sum "$path" | cut -d' ' -f1)" "$(git rev-parse "HEAD:$path")"
+          done < /tmp/pc44-overlay-paths.txt > /tmp/pc44-overlay-files.tsv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc44-repaired-overlay-32bd5f
+          path: |
+            /tmp/pc44-repaired-overlay.tar.gz
+            /tmp/pc44-overlay-head.sha
+            /tmp/pc44-overlay-tree.sha
+            /tmp/pc44-overlay-paths.txt
+            /tmp/pc44-overlay-files.tsv
+            /tmp/pc44-overlay.sha256
+          if-no-files-found: error
+          retention-days: 90
