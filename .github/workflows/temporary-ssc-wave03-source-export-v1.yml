@@ -1,0 +1,89 @@
+name: TEMP export SSC Wave 03 exact source worktree v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-wave03-source-export-v1.yml'
+      - '.ssc-wave03-source-export-v1/EXPORT'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: temp-ssc-wave03-source-export-v1-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  export:
+    if: github.event.pull_request.head.ref == 'agent/ssc-wave03-source-export-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      MAIN_HEAD: dc47681a9ad43e1c64c86e3d823dbb7c203a18c2
+      RD01_HEAD: 23e602f7ef49b78f1045df750df2e7a564e50b04
+      RD02_HEAD: b22dcfff266948bd6b23e2b6d6bd2d745cbd14dc
+      RD03_HEAD: 22496a211b23604f74642cb2269fc2846cfe9b3e
+      RD04_HEAD: 7409c14f3d2b53c27dfd750af6447ac41894511a
+      RD05_HEAD: c01ead6f6e87d13124854730b76d1473bd6f593a
+      RD06_HEAD: 6601bab516993399c8e91275050b42882e65252f
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dc47681a9ad43e1c64c86e3d823dbb7c203a18c2
+          fetch-depth: 0
+      - name: Export exact canonical tree and six lane seeds
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$MAIN_HEAD"
+
+          export_dir="$RUNNER_TEMP/ssc-wave03-source-export-v1"
+          rm -rf "$export_dir"
+          mkdir -p "$export_dir/seeds"
+
+          git archive --format=tar HEAD | gzip -n > "$export_dir/main.tar.gz"
+
+          git fetch --no-tags origin \
+            "+refs/heads/agent/ssc-rd-wave03-rd01-methodology-correction:refs/remotes/export/rd01" \
+            "+refs/heads/agent/ssc-rd-wave03-rd02-portfolio-lifecycle:refs/remotes/export/rd02" \
+            "+refs/heads/agent/ssc-rd-wave03-rd03-lifecycle-recovery:refs/remotes/export/rd03" \
+            "+refs/heads/agent/ssc-rd-wave03-rd04-state-implementation:refs/remotes/export/rd04" \
+            "+refs/heads/agent/ssc-rd-wave03-rd05-member-participation:refs/remotes/export/rd05" \
+            "+refs/heads/agent/ssc-rd-wave03-rd06-evaluation-custody:refs/remotes/export/rd06"
+
+          test "$(git rev-parse refs/remotes/export/rd01)" = "$RD01_HEAD"
+          test "$(git rev-parse refs/remotes/export/rd02)" = "$RD02_HEAD"
+          test "$(git rev-parse refs/remotes/export/rd03)" = "$RD03_HEAD"
+          test "$(git rev-parse refs/remotes/export/rd04)" = "$RD04_HEAD"
+          test "$(git rev-parse refs/remotes/export/rd05)" = "$RD05_HEAD"
+          test "$(git rev-parse refs/remotes/export/rd06)" = "$RD06_HEAD"
+
+          git show refs/remotes/export/rd01:data/project/ssc-residual-wave03/seeds/RD-01-C06.json > "$export_dir/seeds/RD-01-C06.json"
+          git show refs/remotes/export/rd02:data/project/ssc-residual-wave03/seeds/RD-02-C05.json > "$export_dir/seeds/RD-02-C05.json"
+          git show refs/remotes/export/rd03:data/project/ssc-residual-wave03/seeds/RD-03-C05.json > "$export_dir/seeds/RD-03-C05.json"
+          git show refs/remotes/export/rd04:data/project/ssc-residual-wave03/seeds/RD-04-C02.json > "$export_dir/seeds/RD-04-C02.json"
+          git show refs/remotes/export/rd05:data/project/ssc-residual-wave03/seeds/RD-05-C02.json > "$export_dir/seeds/RD-05-C02.json"
+          git show refs/remotes/export/rd06:data/project/ssc-residual-wave03/seeds/RD-06-C04.json > "$export_dir/seeds/RD-06-C04.json"
+
+          cat > "$export_dir/heads.txt" <<HEADS
+          main $MAIN_HEAD
+          rd01 $RD01_HEAD
+          rd02 $RD02_HEAD
+          rd03 $RD03_HEAD
+          rd04 $RD04_HEAD
+          rd05 $RD05_HEAD
+          rd06 $RD06_HEAD
+          HEADS
+          sed -i 's/^          //' "$export_dir/heads.txt"
+
+          (cd "$export_dir" && sha256sum main.tar.gz seeds/*.json heads.txt > SHA256SUMS)
+          printf '%s\n' "$export_dir" > "$RUNNER_TEMP/export-dir.txt"
+          echo "EXPORT_DIR=$export_dir" >> "$GITHUB_ENV"
+      - name: Preserve exact source export
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave03-exact-source-worktree-v1
+          path: ${{ env.EXPORT_DIR }}
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
