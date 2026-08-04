@@ -1,0 +1,71 @@
+name: TEMP verify final SSC RD-01 Wave-03 cleanup
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-ssc-rd01-wave03-cleanup-verifier.yml'
+      - '.ssc-rd01-wave03-cleanup-verifier/TRIGGER'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  verify-cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Close surviving temporary lanes and publish cleanup marker
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CURRENT_PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          FINAL_TAG='ssc-rd01-wave03-cumulative-postmerge-proved'
+          CLEAN_TAG='ssc-rd01-wave03-cleanup-complete'
+          OUT='/tmp/ssc-rd01-wave03-cleanup-verifier'
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          FINAL_SHA=$(gh api "repos/$REPO/git/ref/tags/$FINAL_TAG" --jq .object.sha)
+          test "${#FINAL_SHA}" -eq 40
+          PR_NUMBER=$(gh pr list --repo "$REPO" --state merged --head 'agent/ssc-rd01-wave03-cumulative-promotion-v1' --json number --jq 'sort_by(.number) | last | .number // empty')
+          test -n "$PR_NUMBER"
+          test "$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq .merge_commit_sha)" = "$FINAL_SHA"
+
+          gh pr list --repo "$REPO" --state open --limit 300 --json number,headRefName,title --jq '.[] | select(.headRefName|startswith("agent/ssc-rd01-wave03-")) | [.number,.headRefName,.title] | @tsv' > "$OUT/open-before.tsv"
+          while IFS=$'\t' read -r number head title; do
+            [[ -z "$number" ]] && continue
+            [[ "$number" = "$CURRENT_PR" ]] && continue
+            gh pr close "$number" --repo "$REPO" --comment "Retired unmerged after canonical RD-01-C06 terminal closure and Wave-03 7/35 cumulative promotion at $FINAL_SHA."
+          done < "$OUT/open-before.tsv"
+
+          gh pr list --repo "$REPO" --state open --limit 300 --json number,headRefName,title --jq '.[] | select(.headRefName|startswith("agent/ssc-rd01-wave03-")) | [.number,.headRefName,.title] | @tsv' > "$OUT/open-after-before-self.tsv"
+          OTHER_COUNT=$(awk -F'\t' -v current="$CURRENT_PR" '$1 != current {n++} END {print n+0}' "$OUT/open-after-before-self.tsv")
+          test "$OTHER_COUNT" -eq 0
+
+          EXISTING=$(gh api "repos/$REPO/git/ref/tags/$CLEAN_TAG" --jq .object.sha 2>/dev/null || true)
+          if [[ -z "$EXISTING" ]]; then
+            gh api --method POST "repos/$REPO/git/refs" -f ref="refs/tags/$CLEAN_TAG" -f sha="$FINAL_SHA" > "$OUT/tag-create.json"
+          elif [[ "$EXISTING" != "$FINAL_SHA" ]]; then
+            gh api --method PATCH "repos/$REPO/git/refs/tags/$CLEAN_TAG" -f sha="$FINAL_SHA" -F force=true > "$OUT/tag-update.json"
+          fi
+          test "$(gh api "repos/$REPO/git/ref/tags/$CLEAN_TAG" --jq .object.sha)" = "$FINAL_SHA"
+
+          printf 'status=cleanup_complete\ncanonical_marker=%s\ncleanup_marker=%s\npermanent_promotion_pr=%s\ncurrent_cleanup_pr=%s\nother_open_temp_prs=0\n' "$FINAL_SHA" "$CLEAN_TAG" "$PR_NUMBER" "$CURRENT_PR" > "$OUT/receipt.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd01-wave03-cleanup-verifier
+          path: /tmp/ssc-rd01-wave03-cleanup-verifier
+          if-no-files-found: error
+          retention-days: 90
+      - name: Close this verifier unmerged
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CURRENT_PR: ${{ github.event.pull_request.number }}
+        run: gh pr close "$CURRENT_PR" --repo "$GITHUB_REPOSITORY" --comment 'Cleanup verified and marker published; this never-merge carrier is retired.'
