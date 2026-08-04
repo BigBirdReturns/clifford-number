@@ -1,0 +1,338 @@
+name: TEMP repair RD-03 cumulative label semantics
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-flattened-label-semantics-v1.yml'
+      - '.rd03-ledger5-materializer/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd03-flattened-label-semantics-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-ledger5-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPECTED_MAIN: f1e1851d2fa22a3d9972cbd20498cb73f6c0177d
+      TARGET_BRANCH: agent/ssc-wave02-current-ledger-five-closures
+      EXPECTED_TARGET: 0132a239e56d01d83ea206e07611524017405b55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-current-ledger-five-closures
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Patch, qualify, and publish flattened label semantics
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/ssc-rd03-label-semantics-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$out"
+          mkdir -p "$out"
+          echo "RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          exec > >(tee "$out/trace.log") 2>&1
+          step=initialize
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$out/exit-code.txt"
+            printf '%s\n' "$step" > "$out/final-step.txt"
+            git rev-parse HEAD > "$out/head.txt" 2>&1 || true
+            git rev-parse 'HEAD^{tree}' > "$out/tree.txt" 2>&1 || true
+            git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
+            git diff --name-status "$EXPECTED_TARGET" HEAD > "$out/name-status.txt" 2>&1 || true
+            git diff --name-only "$EXPECTED_TARGET" HEAD | sort > "$out/paths.txt" 2>&1 || true
+            git ls-remote --heads origin refs/heads/main > "$out/remote-main.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1 || true
+            OUT="$out" RC="$rc" STEP="$step" python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          out=Path(os.environ['OUT'])
+          receipt={
+            'schema_version':'ssc-rd03-cumulative-flattened-label-semantics@1',
+            'run':int(os.environ['GITHUB_RUN_ID']),
+            'exit_code':int(os.environ['RC']),
+            'final_step':os.environ['STEP'],
+            'main_parent':os.environ['EXPECTED_MAIN'],
+            'prior_target':os.environ['EXPECTED_TARGET'],
+            'target_branch':os.environ['TARGET_BRANCH'],
+            'permanent_patch_paths':10,
+            'permanent_pr_paths_after_patch':11,
+            'row_level_label_reconciliations':1,
+            'rd03_row_labels_exact_match':True,
+            'rd03_row_label_reconciliation':'none',
+            'rd03_seed_label_mismatch_retained':True,
+            'current_ledger_mutations':44,
+            'rd03_terminal_mutations':95,
+            'rd06_terminal_mutations':107,
+            'outside_human_dependency':False,
+            'external_contacts':0,
+            'external_reviews':0,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+          }
+          (out/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          for path in sorted(out.iterdir()):
+            if path.is_file() and not path.name.endswith('.sha256'):
+              digest=hashlib.sha256(path.read_bytes()).hexdigest()
+              (out/(path.name+'.sha256')).write_text(f'{digest}  {path.name}\n')
+          PY
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          step=verify-exact-leases
+          test "$(git rev-parse HEAD)" = "$EXPECTED_TARGET"
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+
+          step=apply-exact-label-semantics-patch
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          SEED_LABEL = 'loan, warrant, security, covenant, milestone, pricing, and seniority terms'
+          RECONCILIATION = 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact'
+
+          def replace_once(value, old, new, label):
+              count = value.count(old)
+              if count != 1:
+                  raise RuntimeError(f'{label}: expected one match, found {count}')
+              return value.replace(old, new, 1)
+
+          builder = Path('tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs')
+          value = builder.read_text()
+          value = replace_once(
+              value,
+              """    receipt_class_label: 'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms',
+              labels_exact_match: false,
+              label_reconciliation: 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact',""",
+              """    receipt_class_label: 'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms',
+              labels_exact_match: true,
+              label_reconciliation: 'none',""",
+              'RD-03 flattened receipt row'
+          )
+          value = replace_once(
+              value,
+              """  const labelsMatch = expected.class_id === 'RD-03-C04'
+              ? closure?.label_custody?.labels_exact_match
+              : receipt.class_label === constitutionalAttempt.exact_label;
+            ok(labelsMatch === expected.labels_exact_match, `${expected.class_id}: label-reconciliation state changed`);""",
+              """  const labelsMatch = receipt.class_label === constitutionalAttempt.exact_label;
+            ok(labelsMatch === expected.labels_exact_match, `${expected.class_id}: label-reconciliation state changed`);
+
+            if (expected.class_id === 'RD-03-C04') {
+              ok(closure?.label_custody?.constitutional_class_label === expected.constitutional_exact_label, 'RD-03 closure constitutional label changed');
+              ok(closure?.label_custody?.seed_closure_target === 'loan, warrant, security, covenant, milestone, pricing, and seniority terms', 'RD-03 closure seed label changed');
+              ok(closure?.label_custody?.labels_exact_match === false, 'RD-03 constitution-versus-seed mismatch erased');
+              ok(closure?.label_custody?.reconciliation === 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact', 'RD-03 seed-label reconciliation changed');
+            }""",
+              'row versus seed label custody separation'
+          )
+          value = replace_once(value, '      label_reconciliations: 2,', '      label_reconciliations: 1,', 'cumulative label reconciliation count')
+          builder.write_text(value)
+
+          validator = Path('tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs')
+          value = validator.read_text()
+          value = replace_once(value, "promoted_class_receipts.length === 5, 'four promoted class receipts required'", "promoted_class_receipts.length === 5, 'five promoted class receipts required'", 'promoted receipt message')
+          value = replace_once(value, "selected_classes_open.length === 1, 'two selected classes must remain open'", "selected_classes_open.length === 1, 'one selected class must remain open'", 'open selected message')
+          value = replace_once(
+              value,
+              """  ok(rd03.labels_exact_match === false, 'RD-03 label mismatch must remain explicit');
+            ok(rd03.label_reconciliation === 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact', 'RD-03 label reconciliation changed');""",
+              """  ok(rd03.labels_exact_match === true, 'RD-03 exposed receipt and constitutional labels must match');
+            ok(rd03.label_reconciliation === 'none', 'RD-03 flattened row must not inherit seed-label reconciliation');""",
+              'RD-03 cumulative row validator'
+          )
+          value = replace_once(
+              value,
+              "  ok(schema?.properties?.counts?.properties?.open_residual_classes?.const === 37, 'schema open count changed');",
+              """  ok(schema?.properties?.counts?.properties?.open_residual_classes?.const === 37, 'schema open count changed');
+            ok(schema?.properties?.counts?.properties?.label_reconciliations?.const === 1, 'schema label-reconciliation count changed');""",
+              'schema label count validation'
+          )
+          validator.write_text(value)
+
+          current_test = Path('test/status-sovereignty-residual-denominator-wave-02-current.test.js')
+          value = current_test.read_text()
+          value = replace_once(
+              value,
+              "  ['RD-03 label reconciliation erased', (v) => { v.promoted_class_receipts[4].labels_exact_match = true; }],",
+              """  ['RD-03 flattened exact-match flag changed', (v) => { v.promoted_class_receipts[4].labels_exact_match = false; }],
+            ['RD-03 flattened reconciliation changed', (v) => { v.promoted_class_receipts[4].label_reconciliation = 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact'; }],""",
+              'RD-03 cumulative row adversarial mutations'
+          )
+          value = replace_once(
+              value,
+              "  ['schema open count', (s) => { s.properties.counts.properties.open_residual_classes.const = 41; }]",
+              """  ['schema open count', (s) => { s.properties.counts.properties.open_residual_classes.const = 41; }],
+            ['schema label reconciliation count', (s) => { s.properties.counts.properties.label_reconciliations.const = 2; }]""",
+              'schema label-count mutation'
+          )
+          current_test.write_text(value)
+
+          rd03_validator = Path('tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs')
+          value = rd03_validator.read_text()
+          value = replace_once(
+              value,
+              "current.counts.open_residual_classes===38&&current.current_result.terminal_state",
+              "current.counts.open_residual_classes===38&&current.counts.label_reconciliations===1&&current.current_result.terminal_state",
+              'RD-03 pre-promotion row-level label count'
+          )
+          value = replace_once(
+              value,
+              "current.counts.open_residual_classes===37&&current.current_result.terminal_state",
+              "current.counts.open_residual_classes===37&&current.counts.label_reconciliations===1&&current.current_result.terminal_state",
+              'RD-03 post-promotion row-level label count'
+          )
+          value = replace_once(
+              value,
+              "rd03?.labels_exact_match===false&&rd03?.label_reconciliation===LABEL_RECONCILIATION",
+              "rd03?.labels_exact_match===true&&rd03?.label_reconciliation==='none'",
+              'RD-03 post-promotion flattened row semantics'
+          )
+          rd03_validator.write_text(value)
+
+          rd03_test = Path('test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js')
+          value = rd03_test.read_text()
+          value = replace_once(value, "['post reconciliation',v=>{v.promoted_class_receipts[4].label_reconciliation='none';}]", "['post reconciliation',v=>{v.promoted_class_receipts[4].label_reconciliation=LABEL_RECONCILIATION;} ]", 'RD-03 post reconciliation mutation')
+          value = replace_once(value, "['post exact label flag',v=>{v.promoted_class_receipts[4].labels_exact_match=true;}]", "['post exact label flag',v=>{v.promoted_class_receipts[4].labels_exact_match=false;}]", 'RD-03 post exact-match mutation')
+          value = replace_once(
+              value,
+              "['post reopened',v=>{v.selected_classes_open.push({lane_id:'RD-03',class_id:'RD-03-C04'});}]",
+              "['post reconciliation count',v=>{v.counts.label_reconciliations=2;}],['post reopened',v=>{v.selected_classes_open.push({lane_id:'RD-03',class_id:'RD-03-C04'});}]",
+              'RD-03 post label-count mutation'
+          )
+          rd03_test.write_text(value)
+
+          rd06_validator = Path('tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs')
+          value = rd06_validator.read_text()
+          value = replace_once(value, 'current.counts.label_reconciliations===2', 'current.counts.label_reconciliations===1', 'RD-06 successor row-level label count')
+          value = replace_once(
+              value,
+              """      labels_exact_match: false,
+                    label_reconciliation: 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact',""",
+              """      labels_exact_match: true,
+                    label_reconciliation: 'none',""",
+              'RD-06 successor expected RD-03 flattened row'
+          )
+          rd06_validator.write_text(value)
+
+          rd06_test = Path('test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js')
+          value = rd06_test.read_text()
+          value = replace_once(value, "['successor reconciliation count', (v) => { v.counts.label_reconciliations = 1; }]", "['successor reconciliation count', (v) => { v.counts.label_reconciliations = 2; }]", 'RD-06 successor label-count mutation')
+          value = replace_once(value, "['successor RD-03 label flag', (v) => { v.promoted_class_receipts[4].labels_exact_match = true; }]", "['successor RD-03 label flag', (v) => { v.promoted_class_receipts[4].labels_exact_match = false; }]", 'RD-06 successor RD-03 flag mutation')
+          value = replace_once(value, "['successor RD-03 reconciliation', (v) => { v.promoted_class_receipts[4].label_reconciliation = 'none'; }]", "['successor RD-03 reconciliation', (v) => { v.promoted_class_receipts[4].label_reconciliation = 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact'; }]", 'RD-06 successor RD-03 reconciliation mutation')
+          rd06_test.write_text(value)
+
+          schema_path = Path('schemas/status-sovereignty-residual-denominator-wave-02-current.schema.json')
+          schema = json.loads(schema_path.read_text())
+          current = schema['properties']['counts']['properties']['label_reconciliations']['const']
+          if current != 2:
+              raise RuntimeError(f'schema label-reconciliation constant changed: {current}')
+          schema['properties']['counts']['properties']['label_reconciliations']['const'] = 1
+          schema_path.write_text(json.dumps(schema, separators=(',', ':')) + '\n')
+
+          docs = Path('docs/milestones/ssc-residual-denominator-wave-02-current.md')
+          value = docs.read_text()
+          value = replace_once(
+              value,
+              "RD‑05 retains its explicit omission of the constitutional qualifier `complete`. RD‑03 retains the constitution’s `complete negotiated` label and the seed’s shorter label as separate historical objects; the reconciliation `constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact` does not silently rewrite either object. Two label reconciliations are therefore explicit in the cumulative ledger.",
+              "RD‑05 retains the cumulative ledger’s sole row-level mismatch: its receipt label omits the constitutional qualifier `complete`. RD‑03’s exposed `constitutional_exact_label` and `receipt_class_label` are identical, so its cumulative row records `labels_exact_match: true` and `label_reconciliation: none`. The separate constitution-versus-seed mismatch remains bound inside RD‑03’s closure receipt as `constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact`; neither historical object is rewritten. The cumulative ledger therefore reports one row-level label reconciliation.",
+              'cumulative label custody documentation'
+          )
+          docs.write_text(value)
+          PY
+
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --write
+
+          step=focused-label-semantics-qualification
+          node --check tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node --check tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node --check tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node --check tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node --check test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node --check test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node --check test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+
+          step=commit-exact-ten-path-repair
+          cat > "$out/expected-paths.txt" <<'PATHS'
+          data/research/status-sovereignty-residual-denominator-wave-02-current.json
+          docs/milestones/ssc-residual-denominator-wave-02-current.md
+          schemas/status-sovereignty-residual-denominator-wave-02-current.schema.json
+          test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs
+          tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          PATHS
+          sed -i 's/^          //' "$out/expected-paths.txt"
+          git diff --name-only | sort > "$out/actual-paths.txt"
+          cmp "$out/expected-paths.txt" "$out/actual-paths.txt"
+          test -z "$(git diff --name-status | awk '$1 != "M" {print}')"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- $(cat "$out/expected-paths.txt")
+          git commit -m 'Align cumulative label-match semantics with exposed labels'
+          product_commit="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$product_commit" > "$out/product-commit.txt"
+          printf '%s\n' "$product_tree" > "$out/product-tree.txt"
+
+          step=complete-repository-release-gate
+          npm run release:check
+
+          step=deterministic-clean-replay
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          step=final-lease-check
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+
+          step=publish-label-semantics-repair
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$product_commit"
+
+          step=label-semantics-repair-complete
+          finish
+      - name: Preserve exact label-semantics repair receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-cumulative-label-semantics-v1
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
