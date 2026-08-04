@@ -1,0 +1,78 @@
+name: TEMP export SSC Wave 02 six-closure source
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-wave02-six-closure-source-export-v1.yml'
+      - '.ssc-wave02-six-closure-source-export-v1/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-ssc-wave02-six-closure-source-export-v1-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  export:
+    if: github.event.pull_request.head.ref == 'agent/ssc-wave02-six-closure-source-export-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Export exact Wave-02 promotion source
+        run: |
+          set -Eeuo pipefail
+          receipt="$RUNNER_TEMP/ssc-wave02-six-closure-source-export"
+          rm -rf "$receipt"
+          mkdir -p "$receipt"
+
+          test "$(git rev-parse HEAD)" = '72abc35c408d172d9be33b619b630a96ac317193'
+
+          git ls-files -- \
+            'package.json' \
+            'package-lock.json' \
+            '.github/workflows/status-sovereignty-residual-denominator-wave-02-current.yml' \
+            '.github/workflows/status-sovereignty-rd01-wave02-terminal-closure.yml' \
+            '.github/workflows/status-sovereignty-rd-wave02-rd02-license-leverage.yml' \
+            '.github/workflows/*rd03*' \
+            '.github/workflows/*rd06*' \
+            'data/project/ssc-residual-wave02/**' \
+            'data/research/status-sovereignty-residual-denominator-wave-01.json' \
+            'data/research/status-sovereignty-residual-denominator-wave-02-constitution.json' \
+            'data/research/status-sovereignty-residual-denominator-wave-02-progress.json' \
+            'data/research/status-sovereignty-residual-denominator-wave-02-current.json' \
+            'data/research/status-sovereignty-rd-wave02-*/**' \
+            'data/intake/status-sovereignty-rd-wave02-rd02-license-leverage/**' \
+            'schemas/status-sovereignty-residual-denominator-wave-02-current.schema.json' \
+            'schemas/status-sovereignty-rd-wave02-*.schema.json' \
+            'tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs' \
+            'tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs' \
+            'tools/*status-sovereignty-rd-wave02*' \
+            'tools/acquisition/status-sovereignty-rd-wave02-rd02/**' \
+            'test/status-sovereignty-residual-denominator-wave-02-current.test.js' \
+            'test/status-sovereignty-rd-wave02-*.test.js' \
+            'docs/milestones/ssc-residual-denominator-wave-02-current.md' \
+            'docs/milestones/ssc-rd-wave02-*.md' \
+            | LC_ALL=C sort -u > "$receipt/source-files.txt"
+
+          test -s "$receipt/source-files.txt"
+          test "$(grep -c '^data/project/ssc-residual-wave02/closures/RD-02-C04.json$' "$receipt/source-files.txt")" = 1
+          test "$(grep -c '^data/research/status-sovereignty-rd-wave02-rd02-license-leverage/class-receipt.json$' "$receipt/source-files.txt")" = 1
+          test "$(grep -c '^tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs$' "$receipt/source-files.txt")" = 1
+          test "$(grep -c '^tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs$' "$receipt/source-files.txt")" = 1
+
+          tar -czf "$receipt/wave02-six-closure-source.tgz" -T "$receipt/source-files.txt"
+          sha256sum "$receipt/source-files.txt" "$receipt/wave02-six-closure-source.tgz" > "$receipt/SHA256SUMS"
+          printf '%s\n' '72abc35c408d172d9be33b619b630a96ac317193' > "$receipt/main-head.txt"
+          printf '%s\n' "$(wc -l < "$receipt/source-files.txt")" > "$receipt/source-file-count.txt"
+      - name: Preserve exact source export
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-six-closure-source-export-v1
+          path: ${{ runner.temp }}/ssc-wave02-six-closure-source-export
+          if-no-files-found: error
+          retention-days: 30
