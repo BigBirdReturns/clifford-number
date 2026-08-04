@@ -1,0 +1,211 @@
+name: TEMP materialize SSC Wave 02 six-closure ledger v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-wave02-six-closure-materializer-v1.yml'
+      - '.ssc-wave02-six-closure-source-export-v1/package.tgz.b64.part-*'
+      - '.ssc-wave02-six-closure-source-export-v1/package.tgz.part-*'
+      - '.ssc-wave02-six-closure-source-export-v1/MATERIALIZE'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-wave02-six-closure-materializer-v1-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-wave02-six-closure-source-export-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPECTED_MAIN: 72abc35c408d172d9be33b619b630a96ac317193
+      CONTROLLER_BRANCH: agent/ssc-wave02-six-closure-source-export-v1
+      TARGET_BRANCH: agent/ssc-wave02-current-ledger-six-closures
+      PACKAGE_B64_SHA256: 5e96f693219ae055177e245b5587fd744620c8bf7f28045ae0e5fbe7d6b07473
+      PACKAGE_TGZ_SHA256: c8288e0629303e720ac88a600480f28a002f7591876e439d7313c58a939956c9
+      PACKAGE_PATHS_SHA256: c82b72dd49f26a34f43e62aa09d1aa940feb05bcdd5bb8c8792b1e3d15ec9943
+      NONWORKFLOW_PATHS_SHA256: 0d659c3822434d57a00d9d3236f3ccb42079789fb7e2460e181c58b193f8e390
+      STANDING_WORKFLOW_SHA256: 02f907c466ce6445a12fb5c21ae1a7d89d77fe27438e288c1dabf3755a2dc3aa
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Qualify and publish exact non-workflow product
+        run: |
+          set -Eeuo pipefail
+          receipt="$RUNNER_TEMP/ssc-wave02-six-closure-materialization-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$receipt"
+          mkdir -p "$receipt"
+          echo "RECEIPT_DIR=$receipt" >> "$GITHUB_ENV"
+          exec > >(tee "$receipt/execution.log") 2>&1
+          printf '%s\n' qualify > "$receipt/final-step.txt"
+          printf '%s\n' 1 > "$receipt/exit-code.txt"
+
+          test "$(git rev-parse HEAD)" = "$EXPECTED_MAIN"
+          printf '%s\n' "$EXPECTED_MAIN" > "$receipt/main-head.txt"
+          if git ls-remote --exit-code --heads origin "refs/heads/$TARGET_BRANCH" > "$receipt/target-before.txt"; then
+            echo "target branch already exists" >&2
+            exit 1
+          fi
+          printf '%s\n' absent > "$receipt/target-before.txt"
+
+          git fetch --no-tags origin "+refs/heads/${CONTROLLER_BRANCH}:refs/remotes/origin/six-closure-controller"
+          controller="origin/six-closure-controller"
+          package_dir="$RUNNER_TEMP/ssc-wave02-six-closure-package"
+          rm -rf "$package_dir"
+          mkdir -p "$package_dir"
+
+          for index in 00 01 02; do
+            path=".ssc-wave02-six-closure-source-export-v1/package.tgz.b64.part-${index}"
+            git show "$controller:$path" > "$package_dir/package.tgz.b64.part-${index}"
+          done
+          printf '%s  %s\n' 50685249f508907a942255b66e043b27ad9b50040cc679bcb3f32d72ac07aa22 "$package_dir/package.tgz.b64.part-00" | sha256sum -c -
+          printf '%s  %s\n' 0f0a2bd460e5ba672d8849daedf617286a698a2cd04abdc18b9f4e75cc7d754a "$package_dir/package.tgz.b64.part-01" | sha256sum -c -
+          printf '%s  %s\n' 87c0b859af8374bc4ddcada9b5c95828f046a901c15f8bd344ca1cc08194dc3f "$package_dir/package.tgz.b64.part-02" | sha256sum -c -
+          for index in 00 01 02; do
+            base64 --decode "$package_dir/package.tgz.b64.part-${index}" > "$package_dir/package.tgz.part-${index}"
+          done
+          printf '%s  %s\n' 0e66fd426d291ebbe7a57264c6fbb61283813f7eea0b2388a413ae9408fe0c5b "$package_dir/package.tgz.part-00" | sha256sum -c -
+          printf '%s  %s\n' 767b87c9b695297d2ef38fd2c0c6d73546e70f6b657f4957346c4db1625550a2 "$package_dir/package.tgz.part-01" | sha256sum -c -
+          printf '%s  %s\n' e3302b2f2443bcd8aa882919719688e07de891daf070fda0292c414f2f6e5198 "$package_dir/package.tgz.part-02" | sha256sum -c -
+
+          for index in 03 04 05 06 07; do
+            path=".ssc-wave02-six-closure-source-export-v1/package.tgz.part-${index}"
+            git show "$controller:$path" > "$package_dir/package.tgz.part-${index}"
+          done
+          printf '%s  %s\n' 185c5463530a3e35f267499d878dc5bf21ac6f8bfcecf52c7417cf98ddec3262 "$package_dir/package.tgz.part-03" | sha256sum -c -
+          printf '%s  %s\n' 43ccf17d7a9d7ee23ee40373a97ea60125f4c9de5b94f9dd9e6a52da971be738 "$package_dir/package.tgz.part-04" | sha256sum -c -
+          printf '%s  %s\n' 8f78c82d10c2bb4b3fbecfd507bffa49801730335e8b1c1ff0af584420f30520 "$package_dir/package.tgz.part-05" | sha256sum -c -
+          printf '%s  %s\n' 830b79f5e10e3c97a1af7762986afc7c0ba25d459919c757dcc8261a84e21f8d "$package_dir/package.tgz.part-06" | sha256sum -c -
+          printf '%s  %s\n' ca35eb91be6633ef55ed573faa93c76e1c93f397fac1b0471707b2d4463dd1cb "$package_dir/package.tgz.part-07" | sha256sum -c -
+
+          cat "$package_dir"/package.tgz.part-* > "$package_dir/package.tgz"
+          printf '%s  %s\n' "$PACKAGE_TGZ_SHA256" "$package_dir/package.tgz" | sha256sum -c -
+          base64 -w0 "$package_dir/package.tgz" > "$package_dir/package.tgz.b64"
+          printf '\n' >> "$package_dir/package.tgz.b64"
+          printf '%s  %s\n' "$PACKAGE_B64_SHA256" "$package_dir/package.tgz.b64" | sha256sum -c -
+
+          cat > "$receipt/expected-paths.txt" <<'PATHS'
+          .github/workflows/status-sovereignty-residual-denominator-wave-02-current.yml
+          data/research/status-sovereignty-residual-denominator-wave-02-current.json
+          docs/milestones/ssc-residual-denominator-wave-02-current.md
+          schemas/status-sovereignty-residual-denominator-wave-02-current.schema.json
+          test/status-sovereignty-rd-wave02-rd02-license-leverage.test.js
+          test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs
+          tools/validate-status-sovereignty-rd-wave02-rd02-license-leverage.mjs
+          tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          PATHS
+          sed -i 's/^          //' "$receipt/expected-paths.txt"
+          printf '%s  %s\n' "$PACKAGE_PATHS_SHA256" "$receipt/expected-paths.txt" | sha256sum -c -
+
+          apply_package() {
+            tar -xzf "$package_dir/package.tgz" -C "$GITHUB_WORKSPACE"
+          }
+          assert_paths() {
+            git diff --name-only -- . | LC_ALL=C sort > "$receipt/actual-paths.txt"
+            cmp "$receipt/expected-paths.txt" "$receipt/actual-paths.txt"
+            test "$(wc -l < "$receipt/actual-paths.txt")" = 13
+            printf '%s  %s\n' "$PACKAGE_PATHS_SHA256" "$receipt/actual-paths.txt" | sha256sum -c -
+            git diff --name-status -- . > "$receipt/name-status.txt"
+            test "$(wc -l < "$receipt/name-status.txt")" = 13
+            awk '$1 != "M" { exit 1 }' "$receipt/name-status.txt"
+            git diff --check
+          }
+          run_checks() {
+            while IFS= read -r path; do
+              case "$path" in
+                *.js|*.mjs) node --check "$path" ;;
+              esac
+            done < "$receipt/expected-paths.txt"
+            node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+            node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+            node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+            node tools/build-status-sovereignty-rd-wave02-rd02-license-leverage.mjs --check
+            node tools/validate-status-sovereignty-rd-wave02-rd02-license-leverage.mjs
+            node test/status-sovereignty-rd-wave02-rd02-license-leverage.test.js
+            node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --check
+            node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+            node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+            node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+            node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+            node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            npm run release:check
+          }
+          hash_product() {
+            while IFS= read -r path; do sha256sum "$path"; done < "$receipt/expected-paths.txt"
+          }
+
+          apply_package
+          assert_paths
+          run_checks
+          assert_paths
+          hash_product > "$receipt/product-pass-1.sha256"
+
+          git restore --staged --worktree .
+          git clean -fdx
+          apply_package
+          assert_paths
+          run_checks
+          assert_paths
+          hash_product > "$receipt/product-pass-2.sha256"
+          cmp "$receipt/product-pass-1.sha256" "$receipt/product-pass-2.sha256"
+
+          workflow_path='.github/workflows/status-sovereignty-residual-denominator-wave-02-current.yml'
+          cp "$workflow_path" "$receipt/standing-workflow.yml"
+          printf '%s  %s\n' "$STANDING_WORKFLOW_SHA256" "$receipt/standing-workflow.yml" | sha256sum -c -
+          grep -v "^${workflow_path}$" "$receipt/expected-paths.txt" > "$receipt/nonworkflow-paths.txt"
+          test "$(wc -l < "$receipt/nonworkflow-paths.txt")" = 12
+          printf '%s  %s\n' "$NONWORKFLOW_PATHS_SHA256" "$receipt/nonworkflow-paths.txt" | sha256sum -c -
+
+          git restore --source=HEAD --worktree -- "$workflow_path"
+          git diff --name-only -- . | LC_ALL=C sort > "$receipt/nonworkflow-actual-paths.txt"
+          cmp "$receipt/nonworkflow-paths.txt" "$receipt/nonworkflow-actual-paths.txt"
+          test -z "$(git status --porcelain=v1 --untracked-files=all | grep -v '^ M ' || true)"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          while IFS= read -r path; do git add -- "$path"; done < "$receipt/nonworkflow-paths.txt"
+          git diff --cached --name-only | LC_ALL=C sort > "$receipt/staged-paths.txt"
+          cmp "$receipt/nonworkflow-paths.txt" "$receipt/staged-paths.txt"
+          git commit -m 'Promote Wave-02 cumulative ledger to six terminal classes'
+
+          product_commit="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          git diff-tree --no-commit-id --name-only -r HEAD | LC_ALL=C sort > "$receipt/committed-paths.txt"
+          cmp "$receipt/nonworkflow-paths.txt" "$receipt/committed-paths.txt"
+          printf '%s\n' "$product_commit" > "$receipt/product-commit.txt"
+          printf '%s\n' "$product_tree" > "$receipt/product-tree.txt"
+          git status --porcelain=v1 --untracked-files=all > "$receipt/final-status.txt"
+          test ! -s "$receipt/final-status.txt"
+
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          remote_head="$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')"
+          test "$remote_head" = "$product_commit"
+          printf '%s\n' "$remote_head" > "$receipt/target-after.txt"
+          printf '%s\n' 0 > "$receipt/exit-code.txt"
+          printf '%s\n' published-nonworkflow-product > "$receipt/final-step.txt"
+          sha256sum "$receipt"/* > "$receipt/receipt-files.sha256"
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-six-closure-materialization-v1
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
