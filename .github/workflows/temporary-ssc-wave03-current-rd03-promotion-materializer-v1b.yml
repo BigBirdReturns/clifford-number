@@ -115,7 +115,7 @@ jobs:
           test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$TARGET_BASE"
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
           git show "$TARGET_HEAD:$LEDGER_PATH" > "$ledger_snapshot"
-          test "$(sha256sum "$ledger_snapshot" | awk '{print $1}')" = '2d4cd4fd1ce3d9809efac3e482821df8b451506f388bfac29a61d096216518ff'
+          test "$(sha256sum "$ledger_snapshot" | awk '{print $1}')" = 'c84531960018f60379cb8bb9a53040644c93ceb2567910b379369615ade0eed2'
           git fetch origin "+refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
 
           step=reconstruct-checksum-bound-package
