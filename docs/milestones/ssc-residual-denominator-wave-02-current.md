@@ -34,6 +34,8 @@ RD‑05 retains its explicit omission of the constitutional qualifier `complete`
 
 The permanent RD‑03 validator accepts exactly the four-closure pre-promotion atlas or this five-closure post-promotion atlas. In the latter, RD‑03 must be the fifth promoted receipt with exact PR, merge, manifest, label, terminal-state, closure, receipt, authority-zero, and effect-ceiling custody. RD‑02 remains the sole open selected class; Wave 02 is not complete.
 
+The standing RD‑06 validator separately preserves three exact custody worlds: the three-closure pre-RD‑06 atlas, the four-closure immediate post-RD‑06 atlas, and this five-closure successor after RD‑03 promotion. Its adversarial suite replays post-promotion mutations against both the four- and five-closure states. This compatibility extension changes no RD‑06 evidence, terminal product, closure receipt, or empirical manifest byte.
+
 ## Authority ceiling
 
 ```text
