@@ -1,0 +1,165 @@
+name: TEMP materialize RD-01 Wave 03 terminal closure v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd01-wave03-terminal-materializer-v1.yml'
+      - '.ssc-rd01-wave03-terminal-materializer-v1/**'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-rd01-wave03-terminal-materializer-v1-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd01-wave03-terminal-materializer-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd01-methodology-correction
+      EXPECTED_TARGET_HEAD: c491c99b2deb79b069a6dd7bc92f68e764228151
+      B64_BYTES: '21960'
+      B64_SHA256: 5bac9b1818a005b3fb92ec1c130cc2f4f967b12a43fd1dfdacc2ecfbdba76051
+      XZ_BYTES: '16468'
+      XZ_SHA256: dd7c881b545401f80aa8acdf65de161ad0f2b62c77d5b90881d5454f8e18c9b9
+      PATH_LIST_SHA256: 4bfa6c57384db4bcc890a3770434bfc0b22f91f2fee56bca5dfa43bda9f5366b
+      FILE_MANIFEST_SHA256: e2a230b364610c1e8ee47f91a9f82d9bdf8ad61f1dcd06f52443bcee0ab8ad23
+      PRODUCT_MANIFEST_SHA256: 9b59871cf7ce40e68d0a2a89b41148a6c92b7201702d91a7724d1310ddbcc461
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct and verify exact terminal package
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          carrier='.ssc-rd01-wave03-terminal-materializer-v1'
+          cat "$carrier"/payload-*.b64 > "$RUNNER_TEMP/package.b64"
+          test "$(wc -c < "$RUNNER_TEMP/package.b64")" = "$B64_BYTES"
+          test "$(sha256sum "$RUNNER_TEMP/package.b64" | cut -d' ' -f1)" = "$B64_SHA256"
+          base64 -d "$RUNNER_TEMP/package.b64" > "$RUNNER_TEMP/package.tar.xz"
+          test "$(wc -c < "$RUNNER_TEMP/package.tar.xz")" = "$XZ_BYTES"
+          test "$(sha256sum "$RUNNER_TEMP/package.tar.xz" | cut -d' ' -f1)" = "$XZ_SHA256"
+          test "$(sha256sum "$carrier/paths.txt" | cut -d' ' -f1)" = "$PATH_LIST_SHA256"
+          test "$(sha256sum "$carrier/files.txt" | cut -d' ' -f1)" = "$FILE_MANIFEST_SHA256"
+          mkdir -p "$RUNNER_TEMP/package"
+          tar -xJf "$RUNNER_TEMP/package.tar.xz" -C "$RUNNER_TEMP/package"
+          (cd "$RUNNER_TEMP/package" && find . -type f -printf '%P\n' | sort) > "$RUNNER_TEMP/actual-paths.txt"
+          diff -u "$carrier/paths.txt" "$RUNNER_TEMP/actual-paths.txt"
+          while read -r expected_sha expected_bytes rel; do
+            test -f "$RUNNER_TEMP/package/$rel"
+            test "$(wc -c < "$RUNNER_TEMP/package/$rel")" = "$expected_bytes"
+            test "$(sha256sum "$RUNNER_TEMP/package/$rel" | cut -d' ' -f1)" = "$expected_sha"
+          done < "$carrier/files.txt"
+
+      - name: Qualify complete twelve-path product and publish eleven non-workflow paths
+        run: |
+          set -Eeuo pipefail
+          remote_head="$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | cut -f1)"
+          test "$remote_head" = "$EXPECTED_TARGET_HEAD"
+
+          full="$RUNNER_TEMP/full"
+          git worktree add --detach "$full" "$EXPECTED_TARGET_HEAD"
+          git -C "$full" config user.name github-actions[bot]
+          git -C "$full" config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          while read -r rel; do
+            mkdir -p "$full/$(dirname "$rel")"
+            cp "$RUNNER_TEMP/package/$rel" "$full/$rel"
+          done < .ssc-rd01-wave03-terminal-materializer-v1/paths.txt
+
+          cd "$full"
+          node tools/build-status-sovereignty-rd-wave03-rd01-methodology-correction.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd01-methodology-correction.mjs
+          node test/status-sovereignty-rd-wave03-rd01-methodology-correction.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git add --pathspec-from-file="$GITHUB_WORKSPACE/.ssc-rd01-wave03-terminal-materializer-v1/paths.txt"
+          git diff --cached --name-only | sort > "$RUNNER_TEMP/full-paths.txt"
+          diff -u "$GITHUB_WORKSPACE/.ssc-rd01-wave03-terminal-materializer-v1/paths.txt" "$RUNNER_TEMP/full-paths.txt"
+          git commit -m 'Qualify RD-01 Wave-03 methodology-correction terminal closure'
+          full_commit="$(git rev-parse HEAD)"
+          full_tree="$(git rev-parse HEAD^{tree})"
+          npm run release:check
+          git reset --hard HEAD
+          node tools/build-status-sovereignty-rd-wave03-rd01-methodology-correction.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd01-methodology-correction.mjs
+          node test/status-sovereignty-rd-wave03-rd01-methodology-correction.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          pub="$RUNNER_TEMP/pub"
+          git worktree add --detach "$pub" "$EXPECTED_TARGET_HEAD"
+          git -C "$pub" config user.name github-actions[bot]
+          git -C "$pub" config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          grep -v '^\.github/workflows/status-sovereignty-rd-wave03-rd01-methodology-correction.yml$' "$GITHUB_WORKSPACE/.ssc-rd01-wave03-terminal-materializer-v1/paths.txt" > "$RUNNER_TEMP/nonworkflow-paths.txt"
+          while read -r rel; do
+            mkdir -p "$pub/$(dirname "$rel")"
+            cp "$RUNNER_TEMP/package/$rel" "$pub/$rel"
+          done < "$RUNNER_TEMP/nonworkflow-paths.txt"
+          cd "$pub"
+          node tools/build-status-sovereignty-rd-wave03-rd01-methodology-correction.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd01-methodology-correction.mjs
+          node test/status-sovereignty-rd-wave03-rd01-methodology-correction.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git add --pathspec-from-file="$RUNNER_TEMP/nonworkflow-paths.txt"
+          git diff --cached --name-only | sort > "$RUNNER_TEMP/pub-paths.txt"
+          diff -u "$RUNNER_TEMP/nonworkflow-paths.txt" "$RUNNER_TEMP/pub-paths.txt"
+          git commit -m 'Materialize RD-01 Wave-03 terminal product without standing workflow'
+          pub_commit="$(git rev-parse HEAD)"
+          pub_tree="$(git rev-parse HEAD^{tree})"
+          test "$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET_HEAD"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET_HEAD" origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          mkdir -p "$RUNNER_TEMP/receipt"
+          cp "$RUNNER_TEMP/package/.github/workflows/status-sovereignty-rd-wave03-rd01-methodology-correction.yml" "$RUNNER_TEMP/receipt/desired-standing-workflow.yml"
+          cp "$GITHUB_WORKSPACE/.ssc-rd01-wave03-terminal-materializer-v1/paths.txt" "$RUNNER_TEMP/receipt/full-paths.txt"
+          cp "$RUNNER_TEMP/nonworkflow-paths.txt" "$RUNNER_TEMP/receipt/nonworkflow-paths.txt"
+          python - "$RUNNER_TEMP/receipt/receipt.json" "$full_commit" "$full_tree" "$pub_commit" "$pub_tree" <<'PY'
+          import json, os, sys
+          out, full_commit, full_tree, pub_commit, pub_tree = sys.argv[1:]
+          value = {
+            'schema_version':'ssc-rd01-wave03-terminal-materialization-receipt@1',
+            'target_branch':os.environ['TARGET_BRANCH'],
+            'expected_target_head':os.environ['EXPECTED_TARGET_HEAD'],
+            'qualified_full_commit':full_commit,
+            'qualified_full_tree':full_tree,
+            'published_nonworkflow_commit':pub_commit,
+            'published_nonworkflow_tree':pub_tree,
+            'full_paths':12,
+            'published_nonworkflow_paths':11,
+            'standing_workflow_paths':1,
+            'package_xz_sha256':os.environ['XZ_SHA256'],
+            'package_base64_sha256':os.environ['B64_SHA256'],
+            'path_list_sha256':os.environ['PATH_LIST_SHA256'],
+            'file_manifest_sha256':os.environ['FILE_MANIFEST_SHA256'],
+            'product_manifest_sha256':os.environ['PRODUCT_MANIFEST_SHA256'],
+            'terminal_fields':24,
+            'observed_fields':16,
+            'not_publicly_recovered_fields':8,
+            'terminal_state':'bounded_source_unavailable',
+            'class_closed':True,
+            'outside_human_dependency':False,
+            'external_contacts':0,
+            'external_reviews':0,
+            'publication_effect':'none','adoption_effect':'none','graph_effect':'none'
+          }
+          open(out,'w').write(json.dumps(value,indent=2)+'\n')
+          PY
+          sha256sum "$RUNNER_TEMP/receipt"/* > "$RUNNER_TEMP/receipt/SHA256SUMS"
+          echo "RECEIPT_DIR=$RUNNER_TEMP/receipt" >> "$GITHUB_ENV"
+
+      - name: Preserve exact terminal materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd01-wave03-terminal-materialization-v1
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
