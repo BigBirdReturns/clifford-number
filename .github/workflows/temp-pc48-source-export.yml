@@ -22,18 +22,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 44d4544b23dc24db24a4a7c61939396ada0b5fd5
+          ref: 4c7388b3dbd5e3c19b42f027f1b32cd578e93c1b
           fetch-depth: 0
       - name: Create exact source archive
         run: |
           set -euo pipefail
-          git rev-parse HEAD | grep -Fx 44d4544b23dc24db24a4a7c61939396ada0b5fd5
-          tar --exclude=.git --exclude=node_modules --exclude=build -czf /tmp/clifford-number-44d4544.tar.gz .
-          sha256sum /tmp/clifford-number-44d4544.tar.gz | tee /tmp/clifford-number-44d4544.sha256
+          git rev-parse HEAD | grep -Fx 4c7388b3dbd5e3c19b42f027f1b32cd578e93c1b
+          tar --exclude=.git --exclude=node_modules --exclude=build -czf /tmp/clifford-number-4c7388b.tar.gz .
+          sha256sum /tmp/clifford-number-4c7388b.tar.gz | tee /tmp/clifford-number-4c7388b.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: clifford-number-source-44d4544
+          name: clifford-number-source-4c7388b
           path: |
-            /tmp/clifford-number-44d4544.tar.gz
-            /tmp/clifford-number-44d4544.sha256
+            /tmp/clifford-number-4c7388b.tar.gz
+            /tmp/clifford-number-4c7388b.sha256
           if-no-files-found: error
