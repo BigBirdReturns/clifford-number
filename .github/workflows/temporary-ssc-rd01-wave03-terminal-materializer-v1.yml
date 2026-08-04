@@ -1,0 +1,114 @@
+name: TEMP materialize SSC RD-01 Wave-03 terminal product v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd01-wave03-terminal-materializer-v1.yml'
+      - '.ssc-rd01-wave03-terminal-materializer-v1/**'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-rd01-wave03-terminal-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd01-wave03-terminal-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd01-methodology-correction
+      TARGET_HEAD: c491c99b2deb79b069a6dd7bc92f68e764228151
+      BASE_BRANCH: agent/ssc-rd01-wave03-terminal-materializer-base-v1
+      ARTIFACT_ID: '8894359001'
+      ARTIFACT_SHA256: c247a5f9a3d8cd2bc6feb5c30dd643af0bbd3878a8712f7e4fadfdf24ad91291
+      PAYLOAD_B64_SHA256: 743929447dcf7896d2bc81b8496204f86106f5912364f4eb431015572b73c7d7
+      PAYLOAD_XZ_SHA256: 2221ea40e0d3eeface4756817a6a9dfc8d39987bc32733d88b06906946e529ff
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave03-rd01-methodology-correction
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Materialize, qualify, and publish exact terminal product
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/rd01-terminal-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          mkdir -p "$out"; echo "RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          step=init
+          finish(){ rc=$?; set +e; trap - EXIT; printf '%s\n' "$rc" > "$out/exit-code.txt"; printf '%s\n' "$step" > "$out/final-step.txt"; git rev-parse HEAD > "$out/head.txt" 2>&1; git rev-parse 'HEAD^{tree}' > "$out/tree.txt" 2>&1; git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1; git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1; exit "$rc"; }
+          trap finish EXIT
+
+          step=leases
+          test "$(git rev-parse HEAD)" = "$TARGET_HEAD"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$TARGET_HEAD"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git fetch origin "+refs/heads/$BASE_BRANCH:refs/remotes/origin/$BASE_BRANCH"
+
+          step=reconstruct-payload
+          rm -rf /tmp/rd01-terminal-payload /tmp/rd01-terminal-artifact
+          mkdir -p /tmp/rd01-terminal-payload /tmp/rd01-terminal-artifact
+          : > /tmp/payload.b64
+          for f in $(git ls-tree -r --name-only "origin/$BASE_BRANCH" '.ssc-rd01-wave03-terminal-materializer-v1/payload.b64.part-*' | sort); do git show "origin/$BASE_BRANCH:$f" >> /tmp/payload.b64; done
+          test "$(sha256sum /tmp/payload.b64 | cut -d' ' -f1)" = "$PAYLOAD_B64_SHA256"
+          base64 -d /tmp/payload.b64 > /tmp/payload.tar.xz
+          test "$(sha256sum /tmp/payload.tar.xz | cut -d' ' -f1)" = "$PAYLOAD_XZ_SHA256"
+          tar -xJf /tmp/payload.tar.xz -C /tmp/rd01-terminal-payload
+
+          step=download-capture
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" -o /tmp/capture.zip
+          test "$(sha256sum /tmp/capture.zip | cut -d' ' -f1)" = "$ARTIFACT_SHA256"
+          unzip -q /tmp/capture.zip -d /tmp/rd01-terminal-artifact
+          test -d /tmp/rd01-terminal-artifact/capture
+
+          step=materialize
+          python /tmp/rd01-terminal-payload/materialize.py --repo . --capture /tmp/rd01-terminal-artifact/capture --payload-files /tmp/rd01-terminal-payload/files --expected-paths "$out/expected-paths.txt"
+          git ls-files --others --exclude-standard | sort > "$out/untracked-paths.txt"
+          cmp "$out/expected-paths.txt" "$out/untracked-paths.txt"
+          test -z "$(git diff --name-only)"
+          git diff --check -- $(cat "$out/expected-paths.txt")
+
+          step=commit
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --pathspec-from-file="$out/expected-paths.txt"
+          git diff --cached --name-only | sort > "$out/staged-paths.txt"
+          cmp "$out/expected-paths.txt" "$out/staged-paths.txt"
+          git commit -m 'Close RD-01 Wave-03 methodology-correction class'
+          product="$(git rev-parse HEAD)"; printf '%s\n' "$product" > "$out/product-commit.txt"
+          git diff --name-only "$TARGET_HEAD" HEAD | sort > "$out/committed-paths.txt"
+          cmp "$out/expected-paths.txt" "$out/committed-paths.txt"
+          test "$(git diff --name-only --diff-filter=A "$TARGET_HEAD" HEAD | wc -l)" = '200'
+
+          step=complete-release-gate
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+
+          step=clean-replay
+          git reset --hard HEAD; git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd01-methodology-correction-terminal.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd01-methodology-correction-terminal.mjs
+          node test/status-sovereignty-rd-wave03-rd01-methodology-correction-terminal.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          step=publish
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$TARGET_HEAD"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_HEAD" origin "HEAD:refs/heads/$TARGET_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$product"
+          step=complete
+      - name: Preserve terminal materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd01-wave03-terminal-materialization-v1
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
