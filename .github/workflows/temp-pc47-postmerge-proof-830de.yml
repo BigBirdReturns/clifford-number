@@ -1,0 +1,119 @@
+name: TEMP prove PC-47 on canonical merge 830de
+
+on:
+  push:
+    branches:
+      - agent/pc47-postmerge-proof-830de
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    if: github.event_name == 'push' || github.head_ref == 'agent/pc47-postmerge-proof-830de'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 830de50e3f14c5ef9787d2740847d1a80899663b
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prove exact merge topology, permanent surface, and full qualification
+        env:
+          MERGE_SHA: 830de50e3f14c5ef9787d2740847d1a80899663b
+          PRODUCT_SHA: 6a82bd12c7897851bcf69380a8381de7b0fd9033
+          PRODUCT_TREE: 860d6daad0a5250679c8df69cbc68aaefdfee483
+          QUALIFIED_PARENT: 06231ab6a962b7422f343b87c238eb3084eef354
+          PATH_LIST_SHA256: 3a5c4ab27c673c5d3baee5416b16bd7cdf18e2a9abdcf04ce59722e570b6d26b
+        run: |
+          set -euo pipefail
+
+          test "$(git rev-parse HEAD)" = "${MERGE_SHA}"
+          test "$(git rev-parse HEAD^2)" = "${PRODUCT_SHA}"
+          test "$(git rev-parse "${PRODUCT_SHA}^{tree}")" = "${PRODUCT_TREE}"
+          test "$(git rev-list --parents -n 1 HEAD | wc -w)" -eq 3
+          git merge-base --is-ancestor "${QUALIFIED_PARENT}" HEAD^1
+          git merge-base --is-ancestor "${PRODUCT_SHA}" HEAD
+
+          mapfile -t expected_paths <<'EOF'
+          .github/workflows/preference-custody-v45.yml
+          .github/workflows/preference-linkage-event-estimand-scope-interpretation-assurance.yml
+          data/research/preference-custody/control-manifest-v45.json
+          data/research/preference-custody/linkage-event-estimand-scope-interpretation-assurance.fixture.json
+          docs/preference-custody-laboratory-floor-v45.md
+          docs/preference-custody-linkage-event-estimand-scope-interpretation-assurance.md
+          test/preference-custody-manifest-v45.test.js
+          test/preference-linkage-event-estimand-scope-interpretation-assurance.test.js
+          tools/compile-preference-custody-manifest-v45.mjs
+          tools/compile-preference-linkage-event-estimand-scope-interpretation-assurance.mjs
+          tools/lib/preference-custody-manifest-v45.mjs
+          tools/lib/preference-linkage-event-estimand-scope-interpretation-assurance.mjs
+          tools/validate-preference-custody-manifest-v45.mjs
+          tools/validate-preference-linkage-event-estimand-scope-interpretation-assurance.mjs
+          EOF
+
+          test "${#expected_paths[@]}" -eq 14
+          for path in "${expected_paths[@]}"; do test -f "$path"; done
+          printf '%s\n' "${expected_paths[@]}" | sort > /tmp/pc47-expected-paths.txt
+          sha256sum /tmp/pc47-expected-paths.txt | grep -F "${PATH_LIST_SHA256}"
+
+          git diff --name-only HEAD^1..HEAD | sort > /tmp/pc47-actual-merge-paths.txt
+          diff -u /tmp/pc47-expected-paths.txt /tmp/pc47-actual-merge-paths.txt
+          test "$(git diff --name-only HEAD^1..HEAD | wc -l)" -eq 14
+          test "$(git diff --name-status HEAD^1..HEAD | awk '$1 != "A" {count++} END {print count+0}')" -eq 0
+
+          git diff --name-only "${PRODUCT_SHA}"..HEAD | sort > /tmp/main-after-product-paths.txt
+          test -z "$(comm -12 /tmp/pc47-expected-paths.txt /tmp/main-after-product-paths.txt)"
+          test -z "$(git ls-tree -r --name-only HEAD | grep -E '(^\.pc47/|temp-pc47|pc47-postmerge-proof)' || true)"
+          test -z "$(grep -R --line-number --fixed-strings 'contents: write' .github/workflows/preference-custody-v45.yml .github/workflows/preference-linkage-event-estimand-scope-interpretation-assurance.yml || true)"
+
+          node tools/compile-preference-linkage-event-estimand-scope-interpretation-assurance.mjs
+          node tools/validate-preference-linkage-event-estimand-scope-interpretation-assurance.mjs
+          node test/preference-linkage-event-estimand-scope-interpretation-assurance.test.js
+          node tools/compile-preference-custody-manifest-v45.mjs
+          node tools/validate-preference-custody-manifest-v45.mjs
+          node test/preference-custody-manifest-v45.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+          merge_tree="$(git rev-parse HEAD^{tree})"
+          first_parent="$(git rev-parse HEAD^1)"
+          second_parent="$(git rev-parse HEAD^2)"
+          actual_path_sha="$(sha256sum /tmp/pc47-actual-merge-paths.txt | awk '{print $1}')"
+          cat > /tmp/pc47-postmerge-proof.txt <<EOF
+          merge_commit=${MERGE_SHA}
+          merge_tree=${merge_tree}
+          first_parent=${first_parent}
+          second_parent=${second_parent}
+          product_tree=${PRODUCT_TREE}
+          permanent_paths=14
+          path_list_sha256=${actual_path_sha}
+          product_path_overlap_with_new_main=0
+          focused_pc47=pass
+          floor_v45=pass
+          all_historical_preference_floors=pass
+          no_magic_human=pass
+          release_check=pass
+          outside_human_dependency=false
+          EOF
+          cat /tmp/pc47-postmerge-proof.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc47-postmerge-proof-830de
+          path: /tmp/pc47-postmerge-proof.txt
+          if-no-files-found: error
