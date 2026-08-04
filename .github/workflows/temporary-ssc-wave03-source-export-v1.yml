@@ -21,12 +21,12 @@ jobs:
     timeout-minutes: 45
     env:
       MAIN_HEAD: dc47681a9ad43e1c64c86e3d823dbb7c203a18c2
-      RD01_HEAD: 23e602f7ef49b78f1045df750df2e7a564e50b04
-      RD02_HEAD: b22dcfff266948bd6b23e2b6d6bd2d745cbd14dc
-      RD03_HEAD: 22496a211b23604f74642cb2269fc2846cfe9b3e
-      RD04_HEAD: 7409c14f3d2b53c27dfd750af6447ac41894511a
-      RD05_HEAD: c01ead6f6e87d13124854730b76d1473bd6f593a
-      RD06_HEAD: 6601bab516993399c8e91275050b42882e65252f
+      RD01_HEAD: 956f2454813fed7a9666597b5953cc57b54e4666
+      RD02_HEAD: a457581d624fc416a470e0d99a23025dfcdf4c04
+      RD03_HEAD: fc85c94daaf747cc368be8e08609deb03da58f16
+      RD04_HEAD: 8b392e004c0cb9e85c864f8c910aa7102cabedb4
+      RD05_HEAD: aa72bd3706f2a5c2ee0e36a3ee0c1cd544c24017
+      RD06_HEAD: 38082e5e9843aa6d09a42581593f77622f81b821
     steps:
       - uses: actions/checkout@v4
         with:
@@ -77,7 +77,6 @@ jobs:
           sed -i 's/^          //' "$export_dir/heads.txt"
 
           (cd "$export_dir" && sha256sum main.tar.gz seeds/*.json heads.txt > SHA256SUMS)
-          printf '%s\n' "$export_dir" > "$RUNNER_TEMP/export-dir.txt"
           echo "EXPORT_DIR=$export_dir" >> "$GITHUB_ENV"
       - name: Preserve exact source export
         uses: actions/upload-artifact@v4
