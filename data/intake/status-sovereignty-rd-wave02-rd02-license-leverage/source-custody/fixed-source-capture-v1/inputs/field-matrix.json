@@ -1,0 +1,2491 @@
+{
+  "schema_version": "ssc-rd-wave02-rd02-license-leverage-field-matrix@1",
+  "wave_id": "SSC-RD-W02",
+  "class_id": "RD-02-C04",
+  "issue": 787,
+  "as_of": "2026-08-02",
+  "status": "immutable_eighteen_row_field_matrix_pending_fixed_protocol",
+  "parent": {
+    "execution_id": "SSC-RD02-SBICCT-01",
+    "path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+    "sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+    "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+    "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+    "constitution_merge": "69c06a2cc552a09588b2657e247b301468ccae87",
+    "frozen_execution_base": "c1997a1bfea3e214e2769df31f64f6fad6a4295c"
+  },
+  "denominator_contract": {
+    "rows": 18,
+    "publicly_named_rows": 17,
+    "withheld_rows": 1,
+    "row_membership_frozen": true,
+    "silent_row_removal_allowed": false,
+    "outcome_based_selection_allowed": false
+  },
+  "required_fields": [
+    "legal_vehicle_or_withheld_state_label",
+    "initial_state_and_date",
+    "later_license_state_and_date",
+    "leveraged_or_non_leveraged_license_state",
+    "public_leverage_commitment_amount_and_date",
+    "actual_sba_guaranteed_leverage_draw_amount_and_date",
+    "fee_and_pricing_terms",
+    "covenants_and_remedies",
+    "amendments_waivers_suspension_surrender_or_termination",
+    "source_identities_and_exact_custody"
+  ],
+  "permitted_field_states": [
+    "observed",
+    "not_applicable_by_instrument_state",
+    "source_restricted",
+    "source_unavailable_after_fixed_protocol",
+    "not_publicly_recovered",
+    "identity_withheld_under_policy"
+  ],
+  "rows": [
+    {
+      "row": 1,
+      "legal_vehicle": "Moonshots Capital Fund 3 SBIC, LP",
+      "identity_state": "publicly_named",
+      "parent_state": {
+        "row": 1,
+        "legal_vehicle": "Moonshots Capital Fund 3 SBIC, LP",
+        "initial_state_as_of_2025_01_17": "green_light",
+        "later_license_state": "unrecovered",
+        "directory_vintage_year": null,
+        "public_leverage_commitment": "unrecovered",
+        "actual_leverage_draw": "unrecovered",
+        "specific_portfolio_investment": "unrecovered",
+        "realized_performance": "unrecovered",
+        "repayment_or_loss": "unrecovered",
+        "public_recovery": "unrecovered"
+      },
+      "fields": {
+        "legal_vehicle_or_withheld_state_label": {
+          "state": "observed",
+          "value": "Moonshots Capital Fund 3 SBIC, LP",
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Exact legal-vehicle label retained from the frozen eighteen-row cohort.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "initial_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "green_light",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Initial cohort state reproduced from the canonical parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "later_license_state_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No exact later-license disposition is admitted before the fixed protocol is executed.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "leveraged_or_non_leveraged_license_state": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Requires exact license and leverage-authority records.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "public_leverage_commitment_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Projected aggregate program capital is not a row-level commitment.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "actual_sba_guaranteed_leverage_draw_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "License or commitment is not an actual draw.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "fee_and_pricing_terms": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No zero or generic program term is substituted for row-specific pricing.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "covenants_and_remedies": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Row-specific covenants and remedies require exact custody.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "amendments_waivers_suspension_surrender_or_termination": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No absence is inferred from an unrecovered public record.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+            "parent_sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+            "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+            "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+            "parent_source_ids": [
+              "SSC-RD02-S002",
+              "SSC-RD02-S003",
+              "SSC-RD02-S005"
+            ]
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003",
+            "SSC-RD02-S005"
+          ],
+          "note": "Custody identifies the parent cohort and later directory source; it does not prove unobserved leverage terms.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "row_result": {
+        "fixed_protocol_executed": false,
+        "terminal_fields": 3,
+        "required_fields": 10,
+        "row_closed": false,
+        "terminal_state": "still_open"
+      }
+    },
+    {
+      "row": 2,
+      "legal_vehicle": "Acequia Capital Origin SBIC, LP",
+      "identity_state": "publicly_named",
+      "parent_state": {
+        "row": 2,
+        "legal_vehicle": "Acequia Capital Origin SBIC, LP",
+        "initial_state_as_of_2025_01_17": "green_light",
+        "later_license_state": "unrecovered",
+        "directory_vintage_year": null,
+        "public_leverage_commitment": "unrecovered",
+        "actual_leverage_draw": "unrecovered",
+        "specific_portfolio_investment": "unrecovered",
+        "realized_performance": "unrecovered",
+        "repayment_or_loss": "unrecovered",
+        "public_recovery": "unrecovered"
+      },
+      "fields": {
+        "legal_vehicle_or_withheld_state_label": {
+          "state": "observed",
+          "value": "Acequia Capital Origin SBIC, LP",
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Exact legal-vehicle label retained from the frozen eighteen-row cohort.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "initial_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "green_light",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Initial cohort state reproduced from the canonical parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "later_license_state_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No exact later-license disposition is admitted before the fixed protocol is executed.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "leveraged_or_non_leveraged_license_state": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Requires exact license and leverage-authority records.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "public_leverage_commitment_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Projected aggregate program capital is not a row-level commitment.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "actual_sba_guaranteed_leverage_draw_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "License or commitment is not an actual draw.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "fee_and_pricing_terms": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No zero or generic program term is substituted for row-specific pricing.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "covenants_and_remedies": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Row-specific covenants and remedies require exact custody.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "amendments_waivers_suspension_surrender_or_termination": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No absence is inferred from an unrecovered public record.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+            "parent_sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+            "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+            "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+            "parent_source_ids": [
+              "SSC-RD02-S002",
+              "SSC-RD02-S003",
+              "SSC-RD02-S005"
+            ]
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003",
+            "SSC-RD02-S005"
+          ],
+          "note": "Custody identifies the parent cohort and later directory source; it does not prove unobserved leverage terms.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "row_result": {
+        "fixed_protocol_executed": false,
+        "terminal_fields": 3,
+        "required_fields": 10,
+        "row_closed": false,
+        "terminal_state": "still_open"
+      }
+    },
+    {
+      "row": 3,
+      "legal_vehicle": "First Spark Seed II, LP",
+      "identity_state": "publicly_named",
+      "parent_state": {
+        "row": 3,
+        "legal_vehicle": "First Spark Seed II, LP",
+        "initial_state_as_of_2025_01_17": "green_light",
+        "later_license_state": "unrecovered",
+        "directory_vintage_year": null,
+        "public_leverage_commitment": "unrecovered",
+        "actual_leverage_draw": "unrecovered",
+        "specific_portfolio_investment": "unrecovered",
+        "realized_performance": "unrecovered",
+        "repayment_or_loss": "unrecovered",
+        "public_recovery": "unrecovered"
+      },
+      "fields": {
+        "legal_vehicle_or_withheld_state_label": {
+          "state": "observed",
+          "value": "First Spark Seed II, LP",
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Exact legal-vehicle label retained from the frozen eighteen-row cohort.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "initial_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "green_light",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Initial cohort state reproduced from the canonical parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "later_license_state_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No exact later-license disposition is admitted before the fixed protocol is executed.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "leveraged_or_non_leveraged_license_state": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Requires exact license and leverage-authority records.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "public_leverage_commitment_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Projected aggregate program capital is not a row-level commitment.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "actual_sba_guaranteed_leverage_draw_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "License or commitment is not an actual draw.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "fee_and_pricing_terms": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No zero or generic program term is substituted for row-specific pricing.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "covenants_and_remedies": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Row-specific covenants and remedies require exact custody.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "amendments_waivers_suspension_surrender_or_termination": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No absence is inferred from an unrecovered public record.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+            "parent_sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+            "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+            "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+            "parent_source_ids": [
+              "SSC-RD02-S002",
+              "SSC-RD02-S003",
+              "SSC-RD02-S005"
+            ]
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003",
+            "SSC-RD02-S005"
+          ],
+          "note": "Custody identifies the parent cohort and later directory source; it does not prove unobserved leverage terms.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "row_result": {
+        "fixed_protocol_executed": false,
+        "terminal_fields": 3,
+        "required_fields": 10,
+        "row_closed": false,
+        "terminal_state": "still_open"
+      }
+    },
+    {
+      "row": 4,
+      "legal_vehicle": "New North Ventures Fund II SBIC, LP",
+      "identity_state": "publicly_named",
+      "parent_state": {
+        "row": 4,
+        "legal_vehicle": "New North Ventures Fund II SBIC, LP",
+        "initial_state_as_of_2025_01_17": "green_light",
+        "later_license_state": "licensed_directory_observed",
+        "directory_vintage_year": 2025,
+        "public_leverage_commitment": "unrecovered",
+        "actual_leverage_draw": "unrecovered",
+        "specific_portfolio_investment": "unrecovered",
+        "realized_performance": "unrecovered",
+        "repayment_or_loss": "unrecovered",
+        "public_recovery": "unrecovered"
+      },
+      "fields": {
+        "legal_vehicle_or_withheld_state_label": {
+          "state": "observed",
+          "value": "New North Ventures Fund II SBIC, LP",
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Exact legal-vehicle label retained from the frozen eighteen-row cohort.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "initial_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "green_light",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Initial cohort state reproduced from the canonical parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "later_license_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_directory_observed",
+            "directory_vintage_year": 2025
+          },
+          "source_ids": [
+            "SSC-RD02-S005"
+          ],
+          "note": "Later exact directory state retained from the parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "leveraged_or_non_leveraged_license_state": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Requires exact license and leverage-authority records.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "public_leverage_commitment_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Projected aggregate program capital is not a row-level commitment.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "actual_sba_guaranteed_leverage_draw_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "License or commitment is not an actual draw.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "fee_and_pricing_terms": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No zero or generic program term is substituted for row-specific pricing.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "covenants_and_remedies": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Row-specific covenants and remedies require exact custody.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "amendments_waivers_suspension_surrender_or_termination": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No absence is inferred from an unrecovered public record.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+            "parent_sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+            "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+            "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+            "parent_source_ids": [
+              "SSC-RD02-S002",
+              "SSC-RD02-S003",
+              "SSC-RD02-S005"
+            ]
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003",
+            "SSC-RD02-S005"
+          ],
+          "note": "Custody identifies the parent cohort and later directory source; it does not prove unobserved leverage terms.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "row_result": {
+        "fixed_protocol_executed": false,
+        "terminal_fields": 4,
+        "required_fields": 10,
+        "row_closed": false,
+        "terminal_state": "still_open"
+      }
+    },
+    {
+      "row": 5,
+      "legal_vehicle": "BY Capital 3 (US), LP",
+      "identity_state": "publicly_named",
+      "parent_state": {
+        "row": 5,
+        "legal_vehicle": "BY Capital 3 (US), LP",
+        "initial_state_as_of_2025_01_17": "green_light",
+        "later_license_state": "licensed_directory_observed",
+        "directory_vintage_year": 2026,
+        "public_leverage_commitment": "unrecovered",
+        "actual_leverage_draw": "unrecovered",
+        "specific_portfolio_investment": "unrecovered",
+        "realized_performance": "unrecovered",
+        "repayment_or_loss": "unrecovered",
+        "public_recovery": "unrecovered"
+      },
+      "fields": {
+        "legal_vehicle_or_withheld_state_label": {
+          "state": "observed",
+          "value": "BY Capital 3 (US), LP",
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Exact legal-vehicle label retained from the frozen eighteen-row cohort.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "initial_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "green_light",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Initial cohort state reproduced from the canonical parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "later_license_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_directory_observed",
+            "directory_vintage_year": 2026
+          },
+          "source_ids": [
+            "SSC-RD02-S005"
+          ],
+          "note": "Later exact directory state retained from the parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "leveraged_or_non_leveraged_license_state": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Requires exact license and leverage-authority records.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "public_leverage_commitment_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Projected aggregate program capital is not a row-level commitment.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "actual_sba_guaranteed_leverage_draw_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "License or commitment is not an actual draw.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "fee_and_pricing_terms": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No zero or generic program term is substituted for row-specific pricing.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "covenants_and_remedies": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Row-specific covenants and remedies require exact custody.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "amendments_waivers_suspension_surrender_or_termination": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No absence is inferred from an unrecovered public record.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+            "parent_sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+            "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+            "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+            "parent_source_ids": [
+              "SSC-RD02-S002",
+              "SSC-RD02-S003",
+              "SSC-RD02-S005"
+            ]
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003",
+            "SSC-RD02-S005"
+          ],
+          "note": "Custody identifies the parent cohort and later directory source; it does not prove unobserved leverage terms.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "row_result": {
+        "fixed_protocol_executed": false,
+        "terminal_fields": 4,
+        "required_fields": 10,
+        "row_closed": false,
+        "terminal_state": "still_open"
+      }
+    },
+    {
+      "row": 6,
+      "legal_vehicle": "AE Ventures Fund III, LP",
+      "identity_state": "publicly_named",
+      "parent_state": {
+        "row": 6,
+        "legal_vehicle": "AE Ventures Fund III, LP",
+        "initial_state_as_of_2025_01_17": "green_light",
+        "later_license_state": "licensed_directory_observed",
+        "directory_vintage_year": 2025,
+        "public_leverage_commitment": "unrecovered",
+        "actual_leverage_draw": "unrecovered",
+        "specific_portfolio_investment": "unrecovered",
+        "realized_performance": "unrecovered",
+        "repayment_or_loss": "unrecovered",
+        "public_recovery": "unrecovered"
+      },
+      "fields": {
+        "legal_vehicle_or_withheld_state_label": {
+          "state": "observed",
+          "value": "AE Ventures Fund III, LP",
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Exact legal-vehicle label retained from the frozen eighteen-row cohort.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "initial_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "green_light",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Initial cohort state reproduced from the canonical parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "later_license_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_directory_observed",
+            "directory_vintage_year": 2025
+          },
+          "source_ids": [
+            "SSC-RD02-S005"
+          ],
+          "note": "Later exact directory state retained from the parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "leveraged_or_non_leveraged_license_state": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Requires exact license and leverage-authority records.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "public_leverage_commitment_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Projected aggregate program capital is not a row-level commitment.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "actual_sba_guaranteed_leverage_draw_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "License or commitment is not an actual draw.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "fee_and_pricing_terms": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No zero or generic program term is substituted for row-specific pricing.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "covenants_and_remedies": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Row-specific covenants and remedies require exact custody.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "amendments_waivers_suspension_surrender_or_termination": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No absence is inferred from an unrecovered public record.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+            "parent_sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+            "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+            "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+            "parent_source_ids": [
+              "SSC-RD02-S002",
+              "SSC-RD02-S003",
+              "SSC-RD02-S005"
+            ]
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003",
+            "SSC-RD02-S005"
+          ],
+          "note": "Custody identifies the parent cohort and later directory source; it does not prove unobserved leverage terms.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "row_result": {
+        "fixed_protocol_executed": false,
+        "terminal_fields": 4,
+        "required_fields": 10,
+        "row_closed": false,
+        "terminal_state": "still_open"
+      }
+    },
+    {
+      "row": 7,
+      "legal_vehicle": "Michigan Capital Network Venture Fund V, LP",
+      "identity_state": "publicly_named",
+      "parent_state": {
+        "row": 7,
+        "legal_vehicle": "Michigan Capital Network Venture Fund V, LP",
+        "initial_state_as_of_2025_01_17": "green_light",
+        "later_license_state": "licensed_directory_observed",
+        "directory_vintage_year": 2025,
+        "public_leverage_commitment": "unrecovered",
+        "actual_leverage_draw": "unrecovered",
+        "specific_portfolio_investment": "unrecovered",
+        "realized_performance": "unrecovered",
+        "repayment_or_loss": "unrecovered",
+        "public_recovery": "unrecovered"
+      },
+      "fields": {
+        "legal_vehicle_or_withheld_state_label": {
+          "state": "observed",
+          "value": "Michigan Capital Network Venture Fund V, LP",
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Exact legal-vehicle label retained from the frozen eighteen-row cohort.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "initial_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "green_light",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Initial cohort state reproduced from the canonical parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "later_license_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_directory_observed",
+            "directory_vintage_year": 2025
+          },
+          "source_ids": [
+            "SSC-RD02-S005"
+          ],
+          "note": "Later exact directory state retained from the parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "leveraged_or_non_leveraged_license_state": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Requires exact license and leverage-authority records.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "public_leverage_commitment_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Projected aggregate program capital is not a row-level commitment.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "actual_sba_guaranteed_leverage_draw_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "License or commitment is not an actual draw.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "fee_and_pricing_terms": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No zero or generic program term is substituted for row-specific pricing.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "covenants_and_remedies": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Row-specific covenants and remedies require exact custody.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "amendments_waivers_suspension_surrender_or_termination": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No absence is inferred from an unrecovered public record.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+            "parent_sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+            "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+            "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+            "parent_source_ids": [
+              "SSC-RD02-S002",
+              "SSC-RD02-S003",
+              "SSC-RD02-S005"
+            ]
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003",
+            "SSC-RD02-S005"
+          ],
+          "note": "Custody identifies the parent cohort and later directory source; it does not prove unobserved leverage terms.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "row_result": {
+        "fixed_protocol_executed": false,
+        "terminal_fields": 4,
+        "required_fields": 10,
+        "row_closed": false,
+        "terminal_state": "still_open"
+      }
+    },
+    {
+      "row": 8,
+      "legal_vehicle": "Dauntless Ventures SBIC-A, LP",
+      "identity_state": "publicly_named",
+      "parent_state": {
+        "row": 8,
+        "legal_vehicle": "Dauntless Ventures SBIC-A, LP",
+        "initial_state_as_of_2025_01_17": "green_light",
+        "later_license_state": "licensed_directory_observed",
+        "directory_vintage_year": 2025,
+        "public_leverage_commitment": "unrecovered",
+        "actual_leverage_draw": "unrecovered",
+        "specific_portfolio_investment": "unrecovered",
+        "realized_performance": "unrecovered",
+        "repayment_or_loss": "unrecovered",
+        "public_recovery": "unrecovered"
+      },
+      "fields": {
+        "legal_vehicle_or_withheld_state_label": {
+          "state": "observed",
+          "value": "Dauntless Ventures SBIC-A, LP",
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Exact legal-vehicle label retained from the frozen eighteen-row cohort.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "initial_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "green_light",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Initial cohort state reproduced from the canonical parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "later_license_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_directory_observed",
+            "directory_vintage_year": 2025
+          },
+          "source_ids": [
+            "SSC-RD02-S005"
+          ],
+          "note": "Later exact directory state retained from the parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "leveraged_or_non_leveraged_license_state": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Requires exact license and leverage-authority records.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "public_leverage_commitment_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Projected aggregate program capital is not a row-level commitment.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "actual_sba_guaranteed_leverage_draw_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "License or commitment is not an actual draw.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "fee_and_pricing_terms": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No zero or generic program term is substituted for row-specific pricing.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "covenants_and_remedies": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Row-specific covenants and remedies require exact custody.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "amendments_waivers_suspension_surrender_or_termination": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No absence is inferred from an unrecovered public record.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+            "parent_sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+            "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+            "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+            "parent_source_ids": [
+              "SSC-RD02-S002",
+              "SSC-RD02-S003",
+              "SSC-RD02-S005"
+            ]
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003",
+            "SSC-RD02-S005"
+          ],
+          "note": "Custody identifies the parent cohort and later directory source; it does not prove unobserved leverage terms.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "row_result": {
+        "fixed_protocol_executed": false,
+        "terminal_fields": 4,
+        "required_fields": 10,
+        "row_closed": false,
+        "terminal_state": "still_open"
+      }
+    },
+    {
+      "row": 9,
+      "legal_vehicle": "Dauntless Ventures SBIC-B, LP",
+      "identity_state": "publicly_named",
+      "parent_state": {
+        "row": 9,
+        "legal_vehicle": "Dauntless Ventures SBIC-B, LP",
+        "initial_state_as_of_2025_01_17": "green_light",
+        "later_license_state": "licensed_directory_observed",
+        "directory_vintage_year": 2025,
+        "public_leverage_commitment": "unrecovered",
+        "actual_leverage_draw": "unrecovered",
+        "specific_portfolio_investment": "unrecovered",
+        "realized_performance": "unrecovered",
+        "repayment_or_loss": "unrecovered",
+        "public_recovery": "unrecovered"
+      },
+      "fields": {
+        "legal_vehicle_or_withheld_state_label": {
+          "state": "observed",
+          "value": "Dauntless Ventures SBIC-B, LP",
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Exact legal-vehicle label retained from the frozen eighteen-row cohort.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "initial_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "green_light",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Initial cohort state reproduced from the canonical parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "later_license_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_directory_observed",
+            "directory_vintage_year": 2025
+          },
+          "source_ids": [
+            "SSC-RD02-S005"
+          ],
+          "note": "Later exact directory state retained from the parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "leveraged_or_non_leveraged_license_state": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Requires exact license and leverage-authority records.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "public_leverage_commitment_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Projected aggregate program capital is not a row-level commitment.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "actual_sba_guaranteed_leverage_draw_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "License or commitment is not an actual draw.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "fee_and_pricing_terms": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No zero or generic program term is substituted for row-specific pricing.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "covenants_and_remedies": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Row-specific covenants and remedies require exact custody.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "amendments_waivers_suspension_surrender_or_termination": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No absence is inferred from an unrecovered public record.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+            "parent_sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+            "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+            "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+            "parent_source_ids": [
+              "SSC-RD02-S002",
+              "SSC-RD02-S003",
+              "SSC-RD02-S005"
+            ]
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003",
+            "SSC-RD02-S005"
+          ],
+          "note": "Custody identifies the parent cohort and later directory source; it does not prove unobserved leverage terms.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "row_result": {
+        "fixed_protocol_executed": false,
+        "terminal_fields": 4,
+        "required_fields": 10,
+        "row_closed": false,
+        "terminal_state": "still_open"
+      }
+    },
+    {
+      "row": 10,
+      "legal_vehicle": "Snowpoint Ventures II - S&T, LP",
+      "identity_state": "publicly_named",
+      "parent_state": {
+        "row": 10,
+        "legal_vehicle": "Snowpoint Ventures II - S&T, LP",
+        "initial_state_as_of_2025_01_17": "green_light",
+        "later_license_state": "licensed_directory_observed",
+        "directory_vintage_year": 2025,
+        "public_leverage_commitment": "unrecovered",
+        "actual_leverage_draw": "unrecovered",
+        "specific_portfolio_investment": "unrecovered",
+        "realized_performance": "unrecovered",
+        "repayment_or_loss": "unrecovered",
+        "public_recovery": "unrecovered"
+      },
+      "fields": {
+        "legal_vehicle_or_withheld_state_label": {
+          "state": "observed",
+          "value": "Snowpoint Ventures II - S&T, LP",
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Exact legal-vehicle label retained from the frozen eighteen-row cohort.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "initial_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "green_light",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Initial cohort state reproduced from the canonical parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "later_license_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_directory_observed",
+            "directory_vintage_year": 2025
+          },
+          "source_ids": [
+            "SSC-RD02-S005"
+          ],
+          "note": "Later exact directory state retained from the parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "leveraged_or_non_leveraged_license_state": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Requires exact license and leverage-authority records.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "public_leverage_commitment_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Projected aggregate program capital is not a row-level commitment.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "actual_sba_guaranteed_leverage_draw_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "License or commitment is not an actual draw.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "fee_and_pricing_terms": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No zero or generic program term is substituted for row-specific pricing.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "covenants_and_remedies": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Row-specific covenants and remedies require exact custody.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "amendments_waivers_suspension_surrender_or_termination": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No absence is inferred from an unrecovered public record.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+            "parent_sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+            "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+            "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+            "parent_source_ids": [
+              "SSC-RD02-S002",
+              "SSC-RD02-S003",
+              "SSC-RD02-S005"
+            ]
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003",
+            "SSC-RD02-S005"
+          ],
+          "note": "Custody identifies the parent cohort and later directory source; it does not prove unobserved leverage terms.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "row_result": {
+        "fixed_protocol_executed": false,
+        "terminal_fields": 4,
+        "required_fields": 10,
+        "row_closed": false,
+        "terminal_state": "still_open"
+      }
+    },
+    {
+      "row": 11,
+      "legal_vehicle": "Ridgeline Ventures Fund II-S, LP",
+      "identity_state": "publicly_named",
+      "parent_state": {
+        "row": 11,
+        "legal_vehicle": "Ridgeline Ventures Fund II-S, LP",
+        "initial_state_as_of_2025_01_17": "licensed_in_first_cohort",
+        "later_license_state": "licensed_in_first_cohort",
+        "directory_vintage_year": null,
+        "public_leverage_commitment": "unrecovered",
+        "actual_leverage_draw": "unrecovered",
+        "specific_portfolio_investment": "unrecovered",
+        "realized_performance": "unrecovered",
+        "repayment_or_loss": "unrecovered",
+        "public_recovery": "unrecovered"
+      },
+      "fields": {
+        "legal_vehicle_or_withheld_state_label": {
+          "state": "observed",
+          "value": "Ridgeline Ventures Fund II-S, LP",
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Exact legal-vehicle label retained from the frozen eighteen-row cohort.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "initial_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_in_first_cohort",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Initial cohort state reproduced from the canonical parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "later_license_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_in_first_cohort",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S005"
+          ],
+          "note": "Later exact directory state retained from the parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "leveraged_or_non_leveraged_license_state": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Requires exact license and leverage-authority records.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "public_leverage_commitment_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Projected aggregate program capital is not a row-level commitment.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "actual_sba_guaranteed_leverage_draw_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "License or commitment is not an actual draw.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "fee_and_pricing_terms": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No zero or generic program term is substituted for row-specific pricing.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "covenants_and_remedies": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Row-specific covenants and remedies require exact custody.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "amendments_waivers_suspension_surrender_or_termination": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No absence is inferred from an unrecovered public record.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+            "parent_sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+            "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+            "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+            "parent_source_ids": [
+              "SSC-RD02-S002",
+              "SSC-RD02-S003",
+              "SSC-RD02-S005"
+            ]
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003",
+            "SSC-RD02-S005"
+          ],
+          "note": "Custody identifies the parent cohort and later directory source; it does not prove unobserved leverage terms.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "row_result": {
+        "fixed_protocol_executed": false,
+        "terminal_fields": 4,
+        "required_fields": 10,
+        "row_closed": false,
+        "terminal_state": "still_open"
+      }
+    },
+    {
+      "row": 12,
+      "legal_vehicle": "Frontier Fund I Alpha, LP",
+      "identity_state": "publicly_named",
+      "parent_state": {
+        "row": 12,
+        "legal_vehicle": "Frontier Fund I Alpha, LP",
+        "initial_state_as_of_2025_01_17": "licensed_in_first_cohort",
+        "later_license_state": "licensed_in_first_cohort",
+        "directory_vintage_year": null,
+        "public_leverage_commitment": "unrecovered",
+        "actual_leverage_draw": "unrecovered",
+        "specific_portfolio_investment": "unrecovered",
+        "realized_performance": "unrecovered",
+        "repayment_or_loss": "unrecovered",
+        "public_recovery": "unrecovered"
+      },
+      "fields": {
+        "legal_vehicle_or_withheld_state_label": {
+          "state": "observed",
+          "value": "Frontier Fund I Alpha, LP",
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Exact legal-vehicle label retained from the frozen eighteen-row cohort.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "initial_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_in_first_cohort",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Initial cohort state reproduced from the canonical parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "later_license_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_in_first_cohort",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S005"
+          ],
+          "note": "Later exact directory state retained from the parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "leveraged_or_non_leveraged_license_state": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Requires exact license and leverage-authority records.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "public_leverage_commitment_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Projected aggregate program capital is not a row-level commitment.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "actual_sba_guaranteed_leverage_draw_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "License or commitment is not an actual draw.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "fee_and_pricing_terms": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No zero or generic program term is substituted for row-specific pricing.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "covenants_and_remedies": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Row-specific covenants and remedies require exact custody.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "amendments_waivers_suspension_surrender_or_termination": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No absence is inferred from an unrecovered public record.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+            "parent_sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+            "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+            "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+            "parent_source_ids": [
+              "SSC-RD02-S002",
+              "SSC-RD02-S003",
+              "SSC-RD02-S005"
+            ]
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003",
+            "SSC-RD02-S005"
+          ],
+          "note": "Custody identifies the parent cohort and later directory source; it does not prove unobserved leverage terms.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "row_result": {
+        "fixed_protocol_executed": false,
+        "terminal_fields": 4,
+        "required_fields": 10,
+        "row_closed": false,
+        "terminal_state": "still_open"
+      }
+    },
+    {
+      "row": 13,
+      "legal_vehicle": "BIP III SBIC, LP",
+      "identity_state": "publicly_named",
+      "parent_state": {
+        "row": 13,
+        "legal_vehicle": "BIP III SBIC, LP",
+        "initial_state_as_of_2025_01_17": "licensed_in_first_cohort",
+        "later_license_state": "licensed_in_first_cohort",
+        "directory_vintage_year": null,
+        "public_leverage_commitment": "unrecovered",
+        "actual_leverage_draw": "unrecovered",
+        "specific_portfolio_investment": "unrecovered",
+        "realized_performance": "unrecovered",
+        "repayment_or_loss": "unrecovered",
+        "public_recovery": "unrecovered"
+      },
+      "fields": {
+        "legal_vehicle_or_withheld_state_label": {
+          "state": "observed",
+          "value": "BIP III SBIC, LP",
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Exact legal-vehicle label retained from the frozen eighteen-row cohort.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "initial_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_in_first_cohort",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Initial cohort state reproduced from the canonical parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "later_license_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_in_first_cohort",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S005"
+          ],
+          "note": "Later exact directory state retained from the parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "leveraged_or_non_leveraged_license_state": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Requires exact license and leverage-authority records.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "public_leverage_commitment_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Projected aggregate program capital is not a row-level commitment.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "actual_sba_guaranteed_leverage_draw_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "License or commitment is not an actual draw.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "fee_and_pricing_terms": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No zero or generic program term is substituted for row-specific pricing.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "covenants_and_remedies": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Row-specific covenants and remedies require exact custody.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "amendments_waivers_suspension_surrender_or_termination": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No absence is inferred from an unrecovered public record.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+            "parent_sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+            "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+            "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+            "parent_source_ids": [
+              "SSC-RD02-S002",
+              "SSC-RD02-S003",
+              "SSC-RD02-S005"
+            ]
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003",
+            "SSC-RD02-S005"
+          ],
+          "note": "Custody identifies the parent cohort and later directory source; it does not prove unobserved leverage terms.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "row_result": {
+        "fixed_protocol_executed": false,
+        "terminal_fields": 4,
+        "required_fields": 10,
+        "row_closed": false,
+        "terminal_state": "still_open"
+      }
+    },
+    {
+      "row": 14,
+      "legal_vehicle": "One Bow River National Defense Fund, LP",
+      "identity_state": "publicly_named",
+      "parent_state": {
+        "row": 14,
+        "legal_vehicle": "One Bow River National Defense Fund, LP",
+        "initial_state_as_of_2025_01_17": "licensed_in_first_cohort",
+        "later_license_state": "licensed_in_first_cohort",
+        "directory_vintage_year": null,
+        "public_leverage_commitment": "unrecovered",
+        "actual_leverage_draw": "unrecovered",
+        "specific_portfolio_investment": "unrecovered",
+        "realized_performance": "unrecovered",
+        "repayment_or_loss": "unrecovered",
+        "public_recovery": "unrecovered"
+      },
+      "fields": {
+        "legal_vehicle_or_withheld_state_label": {
+          "state": "observed",
+          "value": "One Bow River National Defense Fund, LP",
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Exact legal-vehicle label retained from the frozen eighteen-row cohort.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "initial_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_in_first_cohort",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Initial cohort state reproduced from the canonical parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "later_license_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_in_first_cohort",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S005"
+          ],
+          "note": "Later exact directory state retained from the parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "leveraged_or_non_leveraged_license_state": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Requires exact license and leverage-authority records.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "public_leverage_commitment_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Projected aggregate program capital is not a row-level commitment.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "actual_sba_guaranteed_leverage_draw_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "License or commitment is not an actual draw.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "fee_and_pricing_terms": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No zero or generic program term is substituted for row-specific pricing.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "covenants_and_remedies": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Row-specific covenants and remedies require exact custody.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "amendments_waivers_suspension_surrender_or_termination": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No absence is inferred from an unrecovered public record.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+            "parent_sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+            "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+            "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+            "parent_source_ids": [
+              "SSC-RD02-S002",
+              "SSC-RD02-S003",
+              "SSC-RD02-S005"
+            ]
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003",
+            "SSC-RD02-S005"
+          ],
+          "note": "Custody identifies the parent cohort and later directory source; it does not prove unobserved leverage terms.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "row_result": {
+        "fixed_protocol_executed": false,
+        "terminal_fields": 4,
+        "required_fields": 10,
+        "row_closed": false,
+        "terminal_state": "still_open"
+      }
+    },
+    {
+      "row": 15,
+      "legal_vehicle": "Stifel North Atlantic AM-Forward, LP",
+      "identity_state": "publicly_named",
+      "parent_state": {
+        "row": 15,
+        "legal_vehicle": "Stifel North Atlantic AM-Forward, LP",
+        "initial_state_as_of_2025_01_17": "licensed_in_first_cohort",
+        "later_license_state": "licensed_in_first_cohort",
+        "directory_vintage_year": null,
+        "public_leverage_commitment": "unrecovered",
+        "actual_leverage_draw": "unrecovered",
+        "specific_portfolio_investment": "unrecovered",
+        "realized_performance": "unrecovered",
+        "repayment_or_loss": "unrecovered",
+        "public_recovery": "unrecovered"
+      },
+      "fields": {
+        "legal_vehicle_or_withheld_state_label": {
+          "state": "observed",
+          "value": "Stifel North Atlantic AM-Forward, LP",
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Exact legal-vehicle label retained from the frozen eighteen-row cohort.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "initial_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_in_first_cohort",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Initial cohort state reproduced from the canonical parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "later_license_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_in_first_cohort",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S005"
+          ],
+          "note": "Later exact directory state retained from the parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "leveraged_or_non_leveraged_license_state": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Requires exact license and leverage-authority records.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "public_leverage_commitment_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Projected aggregate program capital is not a row-level commitment.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "actual_sba_guaranteed_leverage_draw_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "License or commitment is not an actual draw.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "fee_and_pricing_terms": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No zero or generic program term is substituted for row-specific pricing.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "covenants_and_remedies": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Row-specific covenants and remedies require exact custody.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "amendments_waivers_suspension_surrender_or_termination": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No absence is inferred from an unrecovered public record.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+            "parent_sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+            "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+            "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+            "parent_source_ids": [
+              "SSC-RD02-S002",
+              "SSC-RD02-S003",
+              "SSC-RD02-S005"
+            ]
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003",
+            "SSC-RD02-S005"
+          ],
+          "note": "Custody identifies the parent cohort and later directory source; it does not prove unobserved leverage terms.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "row_result": {
+        "fixed_protocol_executed": false,
+        "terminal_fields": 4,
+        "required_fields": 10,
+        "row_closed": false,
+        "terminal_state": "still_open"
+      }
+    },
+    {
+      "row": 16,
+      "legal_vehicle": "Rochefort Ventures, LP",
+      "identity_state": "publicly_named",
+      "parent_state": {
+        "row": 16,
+        "legal_vehicle": "Rochefort Ventures, LP",
+        "initial_state_as_of_2025_01_17": "licensed_in_first_cohort",
+        "later_license_state": "licensed_in_first_cohort",
+        "directory_vintage_year": null,
+        "public_leverage_commitment": "unrecovered",
+        "actual_leverage_draw": "unrecovered",
+        "specific_portfolio_investment": "unrecovered",
+        "realized_performance": "unrecovered",
+        "repayment_or_loss": "unrecovered",
+        "public_recovery": "unrecovered"
+      },
+      "fields": {
+        "legal_vehicle_or_withheld_state_label": {
+          "state": "observed",
+          "value": "Rochefort Ventures, LP",
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Exact legal-vehicle label retained from the frozen eighteen-row cohort.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "initial_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_in_first_cohort",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Initial cohort state reproduced from the canonical parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "later_license_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_in_first_cohort",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S005"
+          ],
+          "note": "Later exact directory state retained from the parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "leveraged_or_non_leveraged_license_state": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Requires exact license and leverage-authority records.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "public_leverage_commitment_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Projected aggregate program capital is not a row-level commitment.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "actual_sba_guaranteed_leverage_draw_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "License or commitment is not an actual draw.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "fee_and_pricing_terms": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No zero or generic program term is substituted for row-specific pricing.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "covenants_and_remedies": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Row-specific covenants and remedies require exact custody.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "amendments_waivers_suspension_surrender_or_termination": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No absence is inferred from an unrecovered public record.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+            "parent_sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+            "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+            "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+            "parent_source_ids": [
+              "SSC-RD02-S002",
+              "SSC-RD02-S003",
+              "SSC-RD02-S005"
+            ]
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003",
+            "SSC-RD02-S005"
+          ],
+          "note": "Custody identifies the parent cohort and later directory source; it does not prove unobserved leverage terms.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "row_result": {
+        "fixed_protocol_executed": false,
+        "terminal_fields": 4,
+        "required_fields": 10,
+        "row_closed": false,
+        "terminal_state": "still_open"
+      }
+    },
+    {
+      "row": 17,
+      "legal_vehicle": "BBK Ventures Fund I, LP",
+      "identity_state": "publicly_named",
+      "parent_state": {
+        "row": 17,
+        "legal_vehicle": "BBK Ventures Fund I, LP",
+        "initial_state_as_of_2025_01_17": "licensed_in_first_cohort",
+        "later_license_state": "licensed_in_first_cohort",
+        "directory_vintage_year": null,
+        "public_leverage_commitment": "unrecovered",
+        "actual_leverage_draw": "unrecovered",
+        "specific_portfolio_investment": "unrecovered",
+        "realized_performance": "unrecovered",
+        "repayment_or_loss": "unrecovered",
+        "public_recovery": "unrecovered"
+      },
+      "fields": {
+        "legal_vehicle_or_withheld_state_label": {
+          "state": "observed",
+          "value": "BBK Ventures Fund I, LP",
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Exact legal-vehicle label retained from the frozen eighteen-row cohort.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "initial_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_in_first_cohort",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Initial cohort state reproduced from the canonical parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "later_license_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "licensed_in_first_cohort",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S005"
+          ],
+          "note": "Later exact directory state retained from the parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "leveraged_or_non_leveraged_license_state": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Requires exact license and leverage-authority records.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "public_leverage_commitment_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Projected aggregate program capital is not a row-level commitment.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "actual_sba_guaranteed_leverage_draw_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "License or commitment is not an actual draw.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "fee_and_pricing_terms": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No zero or generic program term is substituted for row-specific pricing.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "covenants_and_remedies": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Row-specific covenants and remedies require exact custody.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "amendments_waivers_suspension_surrender_or_termination": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No absence is inferred from an unrecovered public record.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+            "parent_sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+            "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+            "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+            "parent_source_ids": [
+              "SSC-RD02-S002",
+              "SSC-RD02-S003",
+              "SSC-RD02-S005"
+            ]
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003",
+            "SSC-RD02-S005"
+          ],
+          "note": "Custody identifies the parent cohort and later directory source; it does not prove unobserved leverage terms.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "row_result": {
+        "fixed_protocol_executed": false,
+        "terminal_fields": 4,
+        "required_fields": 10,
+        "row_closed": false,
+        "terminal_state": "still_open"
+      }
+    },
+    {
+      "row": 18,
+      "legal_vehicle": "withheld under SBA policy",
+      "identity_state": "identity_withheld_under_policy",
+      "parent_state": {
+        "row": 18,
+        "legal_vehicle": "withheld under SBA policy",
+        "initial_state_as_of_2025_01_17": "green_light_withheld",
+        "later_license_state": "unrecovered",
+        "directory_vintage_year": null,
+        "public_leverage_commitment": "unrecovered",
+        "actual_leverage_draw": "unrecovered",
+        "specific_portfolio_investment": "unrecovered",
+        "realized_performance": "unrecovered",
+        "repayment_or_loss": "unrecovered",
+        "public_recovery": "unrecovered"
+      },
+      "fields": {
+        "legal_vehicle_or_withheld_state_label": {
+          "state": "identity_withheld_under_policy",
+          "value": "withheld under SBA policy",
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "The eighteenth identity is deliberately retained under the SBA withholding state.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "initial_state_and_date": {
+          "state": "observed",
+          "value": {
+            "state": "green_light_withheld",
+            "as_of": "2025-01-17"
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003"
+          ],
+          "note": "Initial cohort state reproduced from the canonical parent execution.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "later_license_state_and_date": {
+          "state": "identity_withheld_under_policy",
+          "value": null,
+          "source_ids": [],
+          "note": "No exact later-license disposition is admitted before the fixed protocol is executed.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "leveraged_or_non_leveraged_license_state": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Requires exact license and leverage-authority records.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "public_leverage_commitment_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Projected aggregate program capital is not a row-level commitment.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "actual_sba_guaranteed_leverage_draw_amount_and_date": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "License or commitment is not an actual draw.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "fee_and_pricing_terms": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No zero or generic program term is substituted for row-specific pricing.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "covenants_and_remedies": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "Row-specific covenants and remedies require exact custody.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "amendments_waivers_suspension_surrender_or_termination": {
+          "state": "not_publicly_recovered",
+          "value": null,
+          "source_ids": [],
+          "note": "No absence is inferred from an unrecovered public record.",
+          "fixed_protocol_complete": false,
+          "terminal_for_class_closure": false
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_path": "data/intake/status-sovereignty-rd02-sbicct-state-transitions.json",
+            "parent_sha256": "c856caa5406ae49e150b2151848273b01e400edd14019eda468d9b0fd7a2c446",
+            "seed_path": "data/project/ssc-residual-wave02/seeds/RD-02-C04.json",
+            "seed_input_manifest_sha256": "657fdf875e175150daaa8d213ea7fd1f4baa5eaa82f03aad4d070bd1e0331b7c",
+            "parent_source_ids": [
+              "SSC-RD02-S002",
+              "SSC-RD02-S003",
+              "SSC-RD02-S005"
+            ]
+          },
+          "source_ids": [
+            "SSC-RD02-S002",
+            "SSC-RD02-S003",
+            "SSC-RD02-S005"
+          ],
+          "note": "Custody identifies the parent cohort and later directory source; it does not prove unobserved leverage terms.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "row_result": {
+        "fixed_protocol_executed": false,
+        "terminal_fields": 3,
+        "required_fields": 10,
+        "row_closed": false,
+        "terminal_state": "still_open"
+      }
+    }
+  ],
+  "counts": {
+    "rows": 18,
+    "publicly_named_rows": 17,
+    "withheld_rows": 1,
+    "initial_states_observed": 18,
+    "later_license_states_observed": 14,
+    "fixed_protocol_completed_rows": 0,
+    "closed_rows": 0,
+    "external_contacts": 0,
+    "external_reviews": 0,
+    "graph_effects": 0
+  },
+  "current_result": {
+    "terminal_state": "field_matrix_frozen_fixed_protocol_pending",
+    "exact_eighteen_row_denominator_bound": true,
+    "fixed_protocol_complete": false,
+    "class_closed": false,
+    "reviewed_disposition_changed": false,
+    "project_blocking": false,
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none"
+  },
+  "boundaries": {
+    "green_light_is_license": false,
+    "license_is_leverage_commitment_or_draw": false,
+    "directory_presence_is_successful_investment": false,
+    "unrecovered_amount_is_zero": false,
+    "unrecovered_record_is_nonoccurrence": false,
+    "withheld_identity_may_be_silently_removed": false,
+    "matrix_completion_is_evidentiary_closure": false,
+    "outside_human_dependency": false,
+    "graph_effect": "none"
+  }
+}

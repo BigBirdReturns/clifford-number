@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-rd-wave02-rd02-license-leverage.schema.json",
+  "title": "SSC RD-02 Wave-02 terminal license and leverage chronology",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "wave_id",
+    "lane_id",
+    "class_id",
+    "issue",
+    "class_label",
+    "status",
+    "as_of",
+    "source_product",
+    "required_fields",
+    "rows",
+    "counts",
+    "current_result",
+    "boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "ssc-rd-wave02-rd02-license-leverage-terminal-matrix@1"
+    },
+    "wave_id": {
+      "const": "SSC-RD-W02"
+    },
+    "lane_id": {
+      "const": "RD-02"
+    },
+    "class_id": {
+      "const": "RD-02-C04"
+    },
+    "issue": {
+      "const": 787
+    },
+    "class_label": {
+      "const": "fund-level Green Light, license, leverage commitment, draw, fee, covenant, and amendment chronology"
+    },
+    "status": {
+      "const": "eighteen_row_license_and_leverage_chronology_terminal_bounded_source_unavailable"
+    },
+    "as_of": {
+      "const": "2026-08-03"
+    },
+    "source_product": {
+      "type": "object"
+    },
+    "required_fields": {
+      "const": [
+        "legal_vehicle_or_withheld_state_label",
+        "initial_state_and_date",
+        "later_license_state_and_date",
+        "leveraged_or_non_leveraged_license_state",
+        "public_leverage_commitment_amount_and_date",
+        "actual_sba_guaranteed_leverage_draw_amount_and_date",
+        "fee_and_pricing_terms",
+        "covenants_and_remedies",
+        "amendments_waivers_suspension_surrender_or_termination",
+        "source_identities_and_exact_custody"
+      ]
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 18,
+      "maxItems": 18,
+      "items": {
+        "type": "object"
+      }
+    },
+    "counts": {
+      "type": "object",
+      "required": [
+        "cohort_rows",
+        "required_fields",
+        "terminal_fields",
+        "observed_fields",
+        "identity_withheld_under_policy_fields",
+        "source_unavailable_after_fixed_protocol_fields"
+      ],
+      "properties": {
+        "cohort_rows": {
+          "const": 18
+        },
+        "required_fields": {
+          "const": 180
+        },
+        "terminal_fields": {
+          "const": 180
+        },
+        "observed_fields": {
+          "const": 67
+        },
+        "identity_withheld_under_policy_fields": {
+          "const": 2
+        },
+        "source_unavailable_after_fixed_protocol_fields": {
+          "const": 111
+        }
+      }
+    },
+    "current_result": {
+      "type": "object",
+      "properties": {
+        "terminal_state": {
+          "const": "bounded_source_unavailable"
+        },
+        "fixed_protocol_complete": {
+          "const": true
+        },
+        "class_closed": {
+          "const": true
+        }
+      }
+    },
+    "boundaries": {
+      "type": "object"
+    }
+  }
+}
