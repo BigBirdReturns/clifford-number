@@ -1,0 +1,57 @@
+name: TEMP execute exact PC-44 semantic-ledger repair
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc44-semantic-ledger-repair-pr.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc44-exact-product-materializer
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Extract and execute the frozen repair transaction
+        env:
+          TARGET_BRANCH: research/preference-linkage-uncertainty-monitoring-assurance-v1
+          EXPECTED_TARGET_HEAD: c1ffb26f53c0b83f94a231ccd3235e48aa7f357a
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          source = Path('.github/workflows/temporary-pc44-semantic-ledger-repair.yml').read_text().splitlines()
+          start = source.index('      - name: Patch, qualify, replay, and publish exact semantic-ledger repair')
+          run_line = next(index for index in range(start + 1, len(source)) if source[index] == '        run: |')
+          body = []
+          for line in source[run_line + 1:]:
+              if line.startswith('      - ') and not line.startswith('          '):
+                  break
+              if line.startswith('          '):
+                  body.append(line[10:])
+              elif not line.strip():
+                  body.append('')
+              else:
+                  raise SystemExit(f'unexpected controller indentation: {line!r}')
+          if not body or body[0] != 'set -Eeuo pipefail' or 'git push --force-with-lease=' not in '\n'.join(body):
+              raise SystemExit('frozen controller extraction contract failed')
+          Path('/tmp/pc44-semantic-ledger-repair.sh').write_text('\n'.join(body) + '\n')
+          PY
+          bash /tmp/pc44-semantic-ledger-repair.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc44-semantic-ledger-repair-pr-${{ github.run_id }}
+          path: /tmp/pc44-semantic-ledger-repair-receipt.json
+          if-no-files-found: error
+          retention-days: 90
