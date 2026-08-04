@@ -1,0 +1,39 @@
+name: TEMP publish qualified RD-03 terminal closure v3
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-qualified-publication-v3.yml'
+      - '.github/tmp/publish-rd03-qualified-v3.sh'
+      - '.rd03-qualified-publication-v3/**'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd03-qualified-publication-v3-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-qualified-publication-trigger-v3'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Execute exact qualified publication transaction
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash .github/tmp/publish-rd03-qualified-v3.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-qualified-publication-v3
+          path: ${{ env.PUBLICATION_RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
