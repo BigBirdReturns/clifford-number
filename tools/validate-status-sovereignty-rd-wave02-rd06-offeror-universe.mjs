@@ -253,148 +253,18 @@ export function validateCurrentAtlasCustody(current) {
   ok(current?.counts?.canonical_residual_classes === 42, 'current atlas canonical denominator changed');
   ok(Array.isArray(current?.promoted_class_receipts), 'current atlas promoted receipts missing');
   ok(Array.isArray(current?.selected_classes_open), 'current atlas open selected classes missing');
-
-  const promotedIds = current.promoted_class_receipts.map((row) => row.class_id);
-  const openIds = current.selected_classes_open.map((row) => row.class_id);
-  const rd06Promoted = current.promoted_class_receipts.find((row) => row.class_id === 'RD-06-C01');
-  const rd06Open = current.selected_classes_open.find((row) => row.class_id === 'RD-06-C01');
-  const rd03Promoted = current.promoted_class_receipts.find((row) => row.class_id === 'RD-03-C04');
-  const rd03Open = current.selected_classes_open.find((row) => row.class_id === 'RD-03-C04');
-
-  for (const key of [
-    'outside_human_dependencies',
-    'external_contacts',
-    'external_reviews',
-    'reviewed_disposition_changes',
-    'complete_compact_findings',
-    'racial_order_findings',
-    'prevalence_findings',
-    'coordination_findings',
-    'common_purpose_findings',
-    'graph_effects',
-    'publication_effects',
-    'adoption_effects'
-  ]) ok(current.counts[key] === 0, `current atlas ${key} changed`);
-  ok(current?.current_result?.outside_human_dependency === false, 'current atlas outside-human dependency changed');
-  ok(current?.current_result?.project_blocking === false, 'current atlas project-blocking state changed');
-  for (const key of ['graph_effect','publication_effect','adoption_effect']) {
-    ok(current.current_result[key] === 'none', `current atlas ${key} changed`);
-  }
-
-  const prePromotion =
-    current.authority === 'three_terminal_class_receipts_promoted_without_cross_lane_empirical_authority' &&
-    current.counts.terminal_class_receipts === 3 &&
-    current.counts.classes_closed_this_wave === 3 &&
-    current.counts.closed_residual_classes === 3 &&
-    current.counts.open_residual_classes === 39 &&
-    current.counts.label_reconciliations === 1 &&
-    current.current_result.terminal_state === 'three_of_forty_two_residual_classes_closed_three_selected_attempts_open' &&
-    current.current_result.classes_closed === 3 &&
-    current.current_result.classes_open === 39 &&
-    equal(promotedIds, ['RD-04-C01','RD-05-C03','RD-01-C03']) &&
-    equal(openIds, ['RD-02-C04','RD-03-C04','RD-06-C01']) &&
-    equal(current.current_result.closed_class_ids, ['RD-04-C01','RD-05-C03','RD-01-C03']) &&
-    equal(current.current_result.open_selected_class_ids, ['RD-02-C04','RD-03-C04','RD-06-C01']) &&
-    rd06Promoted === undefined &&
-    equal(rd06Open, {
-      lane_id: 'RD-06',
-      class_id: 'RD-06-C01',
-      issue: 791,
-      constitutional_exact_label: CLASS_LABEL,
-      state: 'open',
-      class_closed: false
-    });
-
-  const postPromotion =
-    current.authority === 'four_terminal_class_receipts_promoted_without_cross_lane_empirical_authority' &&
-    current.counts.terminal_class_receipts === 4 &&
-    current.counts.classes_closed_this_wave === 4 &&
-    current.counts.closed_residual_classes === 4 &&
-    current.counts.open_residual_classes === 38 &&
-    current.counts.label_reconciliations === 1 &&
-    current.current_result.terminal_state === 'four_of_forty_two_residual_classes_closed_two_selected_attempts_open' &&
-    current.current_result.classes_closed === 4 &&
-    current.current_result.classes_open === 38 &&
-    equal(promotedIds, ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01']) &&
-    equal(openIds, ['RD-02-C04','RD-03-C04']) &&
-    equal(current.current_result.closed_class_ids, ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01']) &&
-    equal(current.current_result.open_selected_class_ids, ['RD-02-C04','RD-03-C04']) &&
-    rd06Open === undefined &&
-    equal(rd06Promoted, {
-      lane_id: 'RD-06',
-      class_id: 'RD-06-C01',
-      issue: 791,
-      source_pr: 806,
-      merge_commit: 'd7983e19c0783a048afb19adde0fb65ccf94c726',
-      constitutional_exact_label: CLASS_LABEL,
-      receipt_class_label: CLASS_LABEL,
-      labels_exact_match: true,
-      label_reconciliation: 'none',
-      terminal_state: TERMINAL_STATE,
-      closure_reference_path: CLOSURE_REFERENCE_PATH,
-      class_receipt_path: `${PRODUCT_ROOT}/class-receipt.json`,
-      manifest_combined_sha256: '2a17904180dac7b250e2b0ffb82e8124354e89c39be267b0f4c4ebe65c6516c5',
-      class_closed: true
-    });
-
-  const postRd03Promotion =
-    current.authority === 'five_terminal_class_receipts_promoted_without_cross_lane_empirical_authority' &&
-    current.counts.terminal_class_receipts === 5 &&
-    current.counts.classes_closed_this_wave === 5 &&
-    current.counts.closed_residual_classes === 5 &&
-    current.counts.open_residual_classes === 37 &&
-    current.counts.label_reconciliations === 1 &&
-    current.current_result.terminal_state === 'five_of_forty_two_residual_classes_closed_one_selected_attempt_open' &&
-    current.current_result.classes_closed === 5 &&
-    current.current_result.classes_open === 37 &&
-    current.current_result.all_six_selected_classes_closed === false &&
-    current.current_result.wave_complete === false &&
-    equal(promotedIds, ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04']) &&
-    equal(openIds, ['RD-02-C04']) &&
-    equal(current.current_result.closed_class_ids, ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04']) &&
-    equal(current.current_result.open_selected_class_ids, ['RD-02-C04']) &&
-    rd06Open === undefined &&
-    rd03Open === undefined &&
-    equal(rd06Promoted, {
-      lane_id: 'RD-06',
-      class_id: 'RD-06-C01',
-      issue: 791,
-      source_pr: 806,
-      merge_commit: 'd7983e19c0783a048afb19adde0fb65ccf94c726',
-      constitutional_exact_label: CLASS_LABEL,
-      receipt_class_label: CLASS_LABEL,
-      labels_exact_match: true,
-      label_reconciliation: 'none',
-      terminal_state: TERMINAL_STATE,
-      closure_reference_path: CLOSURE_REFERENCE_PATH,
-      class_receipt_path: `${PRODUCT_ROOT}/class-receipt.json`,
-      manifest_combined_sha256: '2a17904180dac7b250e2b0ffb82e8124354e89c39be267b0f4c4ebe65c6516c5',
-      class_closed: true
-    }) &&
-    equal(rd03Promoted, {
-      lane_id: 'RD-03',
-      class_id: 'RD-03-C04',
-      issue: 788,
-      source_pr: 803,
-      merge_commit: '580d9c998f747330d190bed5011c7a1a517a1c0d',
-      constitutional_exact_label: 'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms',
-      receipt_class_label: 'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms',
-      labels_exact_match: true,
-      label_reconciliation: 'none',
-      terminal_state: 'bounded_source_unavailable',
-      closure_reference_path: 'data/project/ssc-residual-wave02/closures/RD-03-C04.json',
-      class_receipt_path: 'data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms/class-receipt.json',
-      manifest_combined_sha256: '1323477ae4b4bda480eb9bf1484cde7db9783920c834a69996ca0428c57fb16e',
-      class_closed: true
-    });
-
-  ok(
-    prePromotion || postPromotion || postRd03Promotion,
-    'current atlas is neither exact pre-promotion, post-promotion, nor post-RD-03-promotion RD-06 custody'
-  );
-  if (prePromotion) return 'pre_promotion';
-  if (postPromotion) return 'post_promotion';
-  return 'post_rd03_promotion';
+  const promotedIds=current.promoted_class_receipts.map((row)=>row.class_id),openIds=current.selected_classes_open.map((row)=>row.class_id);
+  const rd06=current.promoted_class_receipts.find((row)=>row.class_id==='RD-06-C01'),rd03=current.promoted_class_receipts.find((row)=>row.class_id==='RD-03-C04'),rd02=current.promoted_class_receipts.find((row)=>row.class_id==='RD-02-C04');
+  for(const key of ['outside_human_dependencies','external_contacts','external_reviews','reviewed_disposition_changes','complete_compact_findings','racial_order_findings','prevalence_findings','coordination_findings','common_purpose_findings','graph_effects','publication_effects','adoption_effects'])ok(current.counts[key]===0,`current atlas ${key} changed`);
+  ok(current.current_result.outside_human_dependency===false&&current.current_result.project_blocking===false,'current atlas dependency changed');for(const key of ['graph_effect','publication_effect','adoption_effect'])ok(current.current_result[key]==='none',`current atlas ${key} changed`);
+  const exactRd06=equal(rd06,{lane_id:'RD-06',class_id:'RD-06-C01',issue:791,source_pr:806,merge_commit:'d7983e19c0783a048afb19adde0fb65ccf94c726',constitutional_exact_label:CLASS_LABEL,receipt_class_label:CLASS_LABEL,labels_exact_match:true,label_reconciliation:'none',terminal_state:TERMINAL_STATE,closure_reference_path:CLOSURE_REFERENCE_PATH,class_receipt_path:`${PRODUCT_ROOT}/class-receipt.json`,manifest_combined_sha256:'2a17904180dac7b250e2b0ffb82e8124354e89c39be267b0f4c4ebe65c6516c5',class_closed:true});
+  const exactRd03=equal(rd03,{lane_id:'RD-03',class_id:'RD-03-C04',issue:788,source_pr:803,merge_commit:'580d9c998f747330d190bed5011c7a1a517a1c0d',constitutional_exact_label:'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms',receipt_class_label:'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms',labels_exact_match:true,label_reconciliation:'none',terminal_state:'bounded_source_unavailable',closure_reference_path:'data/project/ssc-residual-wave02/closures/RD-03-C04.json',class_receipt_path:'data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms/class-receipt.json',manifest_combined_sha256:'1323477ae4b4bda480eb9bf1484cde7db9783920c834a69996ca0428c57fb16e',class_closed:true});
+  const exactRd02=equal(rd02,{lane_id:'RD-02',class_id:'RD-02-C04',issue:787,source_pr:802,merge_commit:'72abc35c408d172d9be33b619b630a96ac317193',constitutional_exact_label:'fund-level Green Light, license, leverage commitment, draw, fee, covenant, and amendment chronology',receipt_class_label:'fund-level Green Light, license, leverage commitment, draw, fee, covenant, and amendment chronology',labels_exact_match:true,label_reconciliation:'none',terminal_state:'bounded_source_unavailable',closure_reference_path:'data/project/ssc-residual-wave02/closures/RD-02-C04.json',class_receipt_path:'data/research/status-sovereignty-rd-wave02-rd02-license-leverage/class-receipt.json',manifest_combined_sha256:'0ca72d32840bf079975448fa9e9de3f75cdad68555c085f7f0749d007c1dc427',class_closed:true});
+  const pre=current.authority==='three_terminal_class_receipts_promoted_without_cross_lane_empirical_authority'&&current.counts.terminal_class_receipts===3&&current.counts.classes_closed_this_wave===3&&current.counts.closed_residual_classes===3&&current.counts.open_residual_classes===39&&current.counts.label_reconciliations===1&&current.current_result.terminal_state==='three_of_forty_two_residual_classes_closed_three_selected_attempts_open'&&equal(promotedIds,['RD-04-C01','RD-05-C03','RD-01-C03'])&&equal(openIds,['RD-02-C04','RD-03-C04','RD-06-C01'])&&!rd06&&!rd03&&!rd02;
+  const post=current.authority==='four_terminal_class_receipts_promoted_without_cross_lane_empirical_authority'&&current.counts.terminal_class_receipts===4&&current.counts.classes_closed_this_wave===4&&current.counts.closed_residual_classes===4&&current.counts.open_residual_classes===38&&current.counts.label_reconciliations===1&&current.current_result.terminal_state==='four_of_forty_two_residual_classes_closed_two_selected_attempts_open'&&equal(promotedIds,['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01'])&&equal(openIds,['RD-02-C04','RD-03-C04'])&&exactRd06&&!rd03&&!rd02;
+  const postRd03=current.authority==='five_terminal_class_receipts_promoted_without_cross_lane_empirical_authority'&&current.counts.terminal_class_receipts===5&&current.counts.classes_closed_this_wave===5&&current.counts.closed_residual_classes===5&&current.counts.open_residual_classes===37&&current.counts.label_reconciliations===1&&current.current_result.terminal_state==='five_of_forty_two_residual_classes_closed_one_selected_attempt_open'&&equal(promotedIds,['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04'])&&equal(openIds,['RD-02-C04'])&&exactRd06&&exactRd03&&!rd02;
+  const postRd02=current.authority==='six_terminal_class_receipts_promoted_without_cross_lane_empirical_authority'&&current.counts.terminal_class_receipts===6&&current.counts.classes_closed_this_wave===6&&current.counts.closed_residual_classes===6&&current.counts.open_residual_classes===36&&current.counts.label_reconciliations===1&&current.current_result.terminal_state==='six_of_forty_two_residual_classes_closed_all_selected_attempts_terminal'&&current.current_result.all_six_selected_classes_closed===true&&current.current_result.wave_complete===false&&equal(promotedIds,['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04','RD-02-C04'])&&openIds.length===0&&exactRd06&&exactRd03&&exactRd02;
+  ok(pre||post||postRd03||postRd02,'current atlas is not an exact RD-06 historical or successor custody world');if(pre)return'pre_promotion';if(post)return'post_promotion';if(postRd03)return'post_rd03_promotion';return'post_rd02_promotion';
 }
 
 function validateGitCustody(root) {

@@ -24,91 +24,61 @@ const bundle = readBundle(ROOT);
 const schema = read(SCHEMA_PATH);
 
 const currentLedger = read('data/research/status-sovereignty-residual-denominator-wave-02-current.json');
-assert.equal(validateCurrentAtlasCustody(currentLedger), 'post_rd03_promotion');
+assert.equal(validateCurrentAtlasCustody(currentLedger), 'post_rd02_promotion');
 
-const postPromotionLedger = clone(currentLedger);
+const postRd03PromotionLedger = clone(currentLedger);
+postRd03PromotionLedger.authority = 'five_terminal_class_receipts_promoted_without_cross_lane_empirical_authority';
+postRd03PromotionLedger.promoted_class_receipts = postRd03PromotionLedger.promoted_class_receipts.slice(0, 5);
+postRd03PromotionLedger.selected_classes_open = [{lane_id:'RD-02',class_id:'RD-02-C04',issue:787,constitutional_exact_label:'fund-level Green Light, license, leverage commitment, draw, fee, covenant, and amendment chronology',state:'open',class_closed:false}];
+postRd03PromotionLedger.counts.terminal_class_receipts=5;postRd03PromotionLedger.counts.classes_closed_this_wave=5;postRd03PromotionLedger.counts.closed_residual_classes=5;postRd03PromotionLedger.counts.open_residual_classes=37;postRd03PromotionLedger.counts.label_reconciliations=1;
+postRd03PromotionLedger.current_result.terminal_state='five_of_forty_two_residual_classes_closed_one_selected_attempt_open';postRd03PromotionLedger.current_result.classes_closed=5;postRd03PromotionLedger.current_result.classes_open=37;postRd03PromotionLedger.current_result.closed_class_ids=['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04'];postRd03PromotionLedger.current_result.open_selected_class_ids=['RD-02-C04'];postRd03PromotionLedger.current_result.all_six_selected_classes_closed=false;postRd03PromotionLedger.current_result.wave_complete=false;
+assert.equal(validateCurrentAtlasCustody(postRd03PromotionLedger), 'post_rd03_promotion');
+
+const postPromotionLedger = clone(postRd03PromotionLedger);
 postPromotionLedger.authority = 'four_terminal_class_receipts_promoted_without_cross_lane_empirical_authority';
 postPromotionLedger.promoted_class_receipts = postPromotionLedger.promoted_class_receipts.slice(0, 4);
-postPromotionLedger.selected_classes_open.push({
-  lane_id: 'RD-03',
-  class_id: 'RD-03-C04',
-  issue: 788,
-  constitutional_exact_label: 'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms',
-  state: 'open',
-  class_closed: false
-});
-postPromotionLedger.counts.terminal_class_receipts = 4;
-postPromotionLedger.counts.classes_closed_this_wave = 4;
-postPromotionLedger.counts.closed_residual_classes = 4;
-postPromotionLedger.counts.open_residual_classes = 38;
-postPromotionLedger.counts.label_reconciliations = 1;
-postPromotionLedger.current_result.terminal_state = 'four_of_forty_two_residual_classes_closed_two_selected_attempts_open';
-postPromotionLedger.current_result.classes_closed = 4;
-postPromotionLedger.current_result.classes_open = 38;
-postPromotionLedger.current_result.closed_class_ids = ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01'];
-postPromotionLedger.current_result.open_selected_class_ids = ['RD-02-C04','RD-03-C04'];
+postPromotionLedger.selected_classes_open.push({lane_id:'RD-03',class_id:'RD-03-C04',issue:788,constitutional_exact_label:'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms',state:'open',class_closed:false});
+postPromotionLedger.counts.terminal_class_receipts=4;postPromotionLedger.counts.classes_closed_this_wave=4;postPromotionLedger.counts.closed_residual_classes=4;postPromotionLedger.counts.open_residual_classes=38;postPromotionLedger.counts.label_reconciliations=1;
+postPromotionLedger.current_result.terminal_state='four_of_forty_two_residual_classes_closed_two_selected_attempts_open';postPromotionLedger.current_result.classes_closed=4;postPromotionLedger.current_result.classes_open=38;postPromotionLedger.current_result.closed_class_ids=['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01'];postPromotionLedger.current_result.open_selected_class_ids=['RD-02-C04','RD-03-C04'];postPromotionLedger.current_result.all_six_selected_classes_closed=false;postPromotionLedger.current_result.wave_complete=false;
 assert.equal(validateCurrentAtlasCustody(postPromotionLedger), 'post_promotion');
 
 const prePromotionLedger = clone(postPromotionLedger);
 prePromotionLedger.authority = 'three_terminal_class_receipts_promoted_without_cross_lane_empirical_authority';
 prePromotionLedger.promoted_class_receipts = prePromotionLedger.promoted_class_receipts.slice(0, 3);
-prePromotionLedger.selected_classes_open.push({
-  lane_id: 'RD-06',
-  class_id: 'RD-06-C01',
-  issue: 791,
-  constitutional_exact_label: 'complete bidder, offeror, architecture, subcontractor, withdrawal, and nonresponsive universe',
-  state: 'open',
-  class_closed: false
-});
-prePromotionLedger.counts.terminal_class_receipts = 3;
-prePromotionLedger.counts.classes_closed_this_wave = 3;
-prePromotionLedger.counts.closed_residual_classes = 3;
-prePromotionLedger.counts.open_residual_classes = 39;
-prePromotionLedger.counts.label_reconciliations = 1;
-prePromotionLedger.current_result.terminal_state = 'three_of_forty_two_residual_classes_closed_three_selected_attempts_open';
-prePromotionLedger.current_result.classes_closed = 3;
-prePromotionLedger.current_result.classes_open = 39;
-prePromotionLedger.current_result.closed_class_ids = ['RD-04-C01','RD-05-C03','RD-01-C03'];
-prePromotionLedger.current_result.open_selected_class_ids = ['RD-02-C04','RD-03-C04','RD-06-C01'];
+prePromotionLedger.selected_classes_open.push({lane_id:'RD-06',class_id:'RD-06-C01',issue:791,constitutional_exact_label:'complete bidder, offeror, architecture, subcontractor, withdrawal, and nonresponsive universe',state:'open',class_closed:false});
+prePromotionLedger.counts.terminal_class_receipts=3;prePromotionLedger.counts.classes_closed_this_wave=3;prePromotionLedger.counts.closed_residual_classes=3;prePromotionLedger.counts.open_residual_classes=39;prePromotionLedger.counts.label_reconciliations=1;
+prePromotionLedger.current_result.terminal_state='three_of_forty_two_residual_classes_closed_three_selected_attempts_open';prePromotionLedger.current_result.classes_closed=3;prePromotionLedger.current_result.classes_open=39;prePromotionLedger.current_result.closed_class_ids=['RD-04-C01','RD-05-C03','RD-01-C03'];prePromotionLedger.current_result.open_selected_class_ids=['RD-02-C04','RD-03-C04','RD-06-C01'];prePromotionLedger.current_result.all_six_selected_classes_closed=false;prePromotionLedger.current_result.wave_complete=false;
 assert.equal(validateCurrentAtlasCustody(prePromotionLedger), 'pre_promotion');
 
 const custodyMutations = [
-  ['post-promotion closed count', (v) => { v.counts.closed_residual_classes = 3; }],
-  ['post-promotion open count', (v) => { v.counts.open_residual_classes = 39; }],
-  ['post-promotion RD-06 merge', (v) => { v.promoted_class_receipts[3].merge_commit = '0'.repeat(40); }],
-  ['post-promotion RD-06 manifest', (v) => { v.promoted_class_receipts[3].manifest_combined_sha256 = '0'.repeat(64); }],
-  ['post-promotion RD-06 terminal state', (v) => { v.promoted_class_receipts[3].terminal_state = 'evidence_complete'; }],
-  ['post-promotion RD-06 reopened', (v) => { v.selected_classes_open.push({ lane_id: 'RD-06', class_id: 'RD-06-C01', issue: 791, constitutional_exact_label: v.promoted_class_receipts[3].constitutional_exact_label, state: 'open', class_closed: false }); }],
-  ['post-promotion closed order', (v) => { v.promoted_class_receipts.reverse(); }],
-  ['post-promotion graph effect', (v) => { v.current_result.graph_effect = 'graph_changed'; }]
+  ['RD-06 closed count', (v) => { v.counts.closed_residual_classes = 2; }],
+  ['RD-06 merge', (v) => { v.promoted_class_receipts[3].merge_commit = '0'.repeat(40); }],
+  ['RD-06 manifest', (v) => { v.promoted_class_receipts[3].manifest_combined_sha256 = '0'.repeat(64); }],
+  ['RD-06 reopened', (v) => { v.selected_classes_open.push({ lane_id: 'RD-06', class_id: 'RD-06-C01' }); }],
+  ['closed order', (v) => { v.promoted_class_receipts.reverse(); }],
+  ['graph effect', (v) => { v.current_result.graph_effect = 'graph_changed'; }]
 ];
-
 for (const [name, mutate] of custodyMutations) {
-  for (const [state, source] of [
-    ['post_rd03_promotion', currentLedger],
-    ['post_promotion', postPromotionLedger]
-  ]) {
-    const candidate = clone(source);
-    mutate(candidate);
-    assert.throws(
-      () => validateCurrentAtlasCustody(candidate),
-      undefined,
-      `${name} (${state})`
-    );
+  for (const [state, source] of [['post_rd02_promotion',currentLedger],['post_rd03_promotion',postRd03PromotionLedger],['post_promotion',postPromotionLedger]]) {
+    const candidate=clone(source);mutate(candidate);assert.throws(()=>validateCurrentAtlasCustody(candidate),undefined,`${name} (${state})`);
   }
 }
 
 const postRd03LabelMutations = [
-  ['post-RD-03 reconciliation count', (v) => { v.counts.label_reconciliations = 2; }],
-  ['post-RD-03 RD-03 label flag', (v) => { v.promoted_class_receipts[4].labels_exact_match = false; }],
-  ['post-RD-03 RD-03 reconciliation', (v) => { v.promoted_class_receipts[4].label_reconciliation = 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact'; }]
+  ['RD-03 reconciliation count', (v) => { v.counts.label_reconciliations = 2; }],
+  ['RD-03 label flag', (v) => { v.promoted_class_receipts[4].labels_exact_match = false; }],
+  ['RD-03 reconciliation', (v) => { v.promoted_class_receipts[4].label_reconciliation = 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact'; }]
 ];
+for(const[name,mutate]of postRd03LabelMutations){for(const source of [currentLedger,postRd03PromotionLedger]){const candidate=clone(source);mutate(candidate);assert.throws(()=>validateCurrentAtlasCustody(candidate),undefined,name);}}
 
-for (const [name, mutate] of postRd03LabelMutations) {
-  const candidate = clone(currentLedger);
-  mutate(candidate);
-  assert.throws(() => validateCurrentAtlasCustody(candidate), undefined, name);
-}
+const postRd02Mutations = [
+  ['RD-02 merge', (v) => { v.promoted_class_receipts[5].merge_commit = '0'.repeat(40); }],
+  ['RD-02 manifest', (v) => { v.promoted_class_receipts[5].manifest_combined_sha256 = '0'.repeat(64); }],
+  ['RD-02 label flag', (v) => { v.promoted_class_receipts[5].labels_exact_match = false; }],
+  ['RD-02 reopened', (v) => { v.selected_classes_open.push({lane_id:'RD-02',class_id:'RD-02-C04'}); }],
+  ['selected completion', (v) => { v.current_result.all_six_selected_classes_closed = false; }]
+];
+for(const[name,mutate]of postRd02Mutations){const candidate=clone(currentLedger);mutate(candidate);assert.throws(()=>validateCurrentAtlasCustody(candidate),undefined,name);}
 
 const preCustodyMutations = [
   ['pre-promotion RD-06 missing from open set', (v) => { v.selected_classes_open.pop(); }],
@@ -116,13 +86,7 @@ const preCustodyMutations = [
   ['pre-promotion receipt count', (v) => { v.counts.terminal_class_receipts = 4; }],
   ['pre-promotion external review', (v) => { v.counts.external_reviews = 1; }]
 ];
-
-for (const [name, mutate] of preCustodyMutations) {
-  const candidate = clone(prePromotionLedger);
-  mutate(candidate);
-  assert.throws(() => validateCurrentAtlasCustody(candidate), undefined, name);
-}
-
+for(const[name,mutate]of preCustodyMutations){const candidate=clone(prePromotionLedger);mutate(candidate);assert.throws(()=>validateCurrentAtlasCustody(candidate),undefined,name);}
 
 const mutations = [
   ['terminal schema', (b) => { b.terminal.schema_version = 'bad'; }],
