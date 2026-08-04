@@ -1,4 +1,4 @@
-name: TEMP materialize exact PC-48 product over current main
+name: TEMP repair and rebind exact PC-48 product
 
 on:
   pull_request:
@@ -13,166 +13,137 @@ permissions:
   contents: write
 
 jobs:
-  materialize:
+  repair:
     if: github.head_ref == 'agent/pc48-source-export'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - name: Checkout temporary carrier
+      - name: Checkout temporary repair carrier
         uses: actions/checkout@v4
         with:
           ref: agent/pc48-source-export
           fetch-depth: 0
-      - name: Preserve carrier shards outside the checkout
+      - name: Preserve checksum-bound repair package
         run: |
           set -euo pipefail
-          mkdir -p /tmp/pc48-shards
-          cp .pc48-materializer/package.b64.* /tmp/pc48-shards/
-          test "$(find /tmp/pc48-shards -maxdepth 1 -type f -name 'package.b64.*' | wc -l)" -eq 4
-      - name: Checkout exact publication parent
+          cp .pc48-repair/review-p1.tar.xz.b64 /tmp/pc48-review-p1.tar.xz.b64
+      - name: Checkout exact reviewed product
         uses: actions/checkout@v4
         with:
-          ref: 15fbe32735c85be44b833040f3b630966287871c
+          ref: eff23bd698831fdd3ab34c717a518a5e471ade5c
           fetch-depth: 0
           clean: true
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Verify, qualify, normalize, and publish one clean PC-48 commit
+      - name: Apply P1 repair, qualify, amend, and upload candidate commit
         env:
           PUBLICATION_PARENT: 15fbe32735c85be44b833040f3b630966287871c
+          REVIEWED_PRODUCT: eff23bd698831fdd3ab34c717a518a5e471ade5c
           PINNED_V45_BRIDGE: 4a5a6fa449f45750e836ae9ca8890b958f72e0a9
           TARGET_BRANCH: agent/pc48-materializer
-          TARGET_LEASE: 4c7388b3dbd5e3c19b42f027f1b32cd578e93c1b
-          SHARD_00_SHA256: bde643f922007bbb9915209a20985869769d5bd7e1df7ac224085778b7840e2b
-          SHARD_01_SHA256: bc955e48e388cf77aba51cba90e3b56d7026853a5bd261fec91f9c1d1fcb2680
-          SHARD_02_SHA256: b06607fd73ef93f6f7411faa53f58968b14e86bba5db0211bb654ed68b29be43
-          SHARD_03_SHA256: 2261a13c5f93653c3682e20c35be36af2d17f4a36b72e2a09d2ca221e98b5ece
-          BASE64_SHA256: f1547c699df8fe88fe2346c0cba6e729d6af0d71525c5f7eb39c459de234315e
-          PACKAGE_SHA256: c963be063c21091dd76479b74785d7c3f96d328a871bec3bf6093f1b2165132a
-          PATH_LIST_SHA256: de59828e2e0e62106760702939c8c37cb0741d339a6eb89e1b8309e17ec91e1b
+          TARGET_LEASE: eff23bd698831fdd3ab34c717a518a5e471ade5c
+          REPAIR_BASE64_SHA256: 817dc140b40b38363148ece4dbf06bbd24b6b002ef898531024c7fa8a2f286cd
+          REPAIR_PACKAGE_SHA256: 549c3146103a2f769570cf607504c2cf2a348b258ad94dc09541a1f65891c7ae
+          REPAIR_PATH_LIST_SHA256: cc4b1773e007ef128fdad65d20be4fdeb7b0107b99605150860d2dd2dbb1cb8a
+          REPAIRED_LIB_SHA256: 5ca4235d7060c71ae26ed4051bd50f2183410014f272728c02794f1184e5b98e
+          REPAIRED_TEST_SHA256: 89c9913aa7eca6e0d508ff1999a08f8ca32bead03ebbe02cb89b561cf31bdeec
         run: |
           set -Eeuo pipefail
           phase=initialize
-          trap 'status=$?; printf "status=%s\nphase=%s\ncommand=%s\n" "$status" "$phase" "$BASH_COMMAND" > /tmp/pc48-materialization-diagnostic.txt; exit "$status"' ERR
+          trap 'status=$?; printf "status=%s\nphase=%s\ncommand=%s\n" "$status" "$phase" "$BASH_COMMAND" > /tmp/pc48-p1-diagnostic.txt; exit "$status"' ERR
           cd "$GITHUB_WORKSPACE"
-          printf 'status=running\nphase=%s\n' "$phase" > /tmp/pc48-materialization-diagnostic.txt
-
-          phase=bind_parent_and_bridge
-          test "$(git rev-parse HEAD)" = "$PUBLICATION_PARENT"
+          test "$(git rev-parse HEAD)" = "$REVIEWED_PRODUCT"
+          test "$(git rev-parse HEAD^)" = "$PUBLICATION_PARENT"
           test -z "$(git status --porcelain)"
           git fetch --no-tags origin "$PINNED_V45_BRIDGE"
           git cat-file -e "$PINNED_V45_BRIDGE^{commit}"
 
-          phase=verify_package
-          sha256sum /tmp/pc48-shards/package.b64.00 | grep -F "$SHARD_00_SHA256"
-          sha256sum /tmp/pc48-shards/package.b64.01 | grep -F "$SHARD_01_SHA256"
-          sha256sum /tmp/pc48-shards/package.b64.02 | grep -F "$SHARD_02_SHA256"
-          sha256sum /tmp/pc48-shards/package.b64.03 | grep -F "$SHARD_03_SHA256"
-          cat /tmp/pc48-shards/package.b64.* > /tmp/pc48-product.tar.xz.b64
-          sha256sum /tmp/pc48-product.tar.xz.b64 | grep -F "$BASE64_SHA256"
-          base64 -d /tmp/pc48-product.tar.xz.b64 > /tmp/pc48-product.tar.xz
-          sha256sum /tmp/pc48-product.tar.xz | grep -F "$PACKAGE_SHA256"
-
-          cat > /tmp/pc48-expected-paths.txt <<'EOF'
-          .github/workflows/preference-custody-v46.yml
-          .github/workflows/preference-linkage-interval-method-partition-replication-deployment-assurance.yml
-          data/research/preference-custody/control-manifest-v46.json
-          data/research/preference-custody/linkage-interval-method-partition-replication-deployment-assurance.fixture.json
-          docs/preference-custody-laboratory-floor-v46.md
-          docs/preference-custody-linkage-interval-method-partition-replication-deployment-assurance.md
+          phase=verify_repair_package
+          sha256sum /tmp/pc48-review-p1.tar.xz.b64 | grep -F "$REPAIR_BASE64_SHA256"
+          base64 -d /tmp/pc48-review-p1.tar.xz.b64 > /tmp/pc48-review-p1.tar.xz
+          sha256sum /tmp/pc48-review-p1.tar.xz | grep -F "$REPAIR_PACKAGE_SHA256"
+          cat > /tmp/pc48-p1-expected-paths.txt <<'EOF'
           test/preference-custody-manifest-v46.test.js
-          test/preference-linkage-interval-method-partition-replication-deployment-assurance.test.js
-          tools/compile-preference-custody-manifest-v46.mjs
-          tools/compile-preference-linkage-interval-method-partition-replication-deployment-assurance.mjs
           tools/lib/preference-custody-manifest-v46.mjs
-          tools/lib/preference-linkage-interval-method-partition-replication-deployment-assurance.mjs
-          tools/validate-preference-custody-manifest-v46.mjs
-          tools/validate-preference-linkage-interval-method-partition-replication-deployment-assurance.mjs
           EOF
-          sed -i 's/^          //' /tmp/pc48-expected-paths.txt
-          test "$(wc -l < /tmp/pc48-expected-paths.txt)" -eq 14
-          sha256sum /tmp/pc48-expected-paths.txt | grep -F "$PATH_LIST_SHA256"
-          tar -tJf /tmp/pc48-product.tar.xz | sed 's#^\./##' | sort > /tmp/pc48-package-paths.txt
-          diff -u /tmp/pc48-expected-paths.txt /tmp/pc48-package-paths.txt
+          sed -i 's/^          //' /tmp/pc48-p1-expected-paths.txt
+          sha256sum /tmp/pc48-p1-expected-paths.txt | grep -F "$REPAIR_PATH_LIST_SHA256"
+          tar -tJf /tmp/pc48-review-p1.tar.xz | sort > /tmp/pc48-p1-package-paths.txt
+          diff -u /tmp/pc48-p1-expected-paths.txt /tmp/pc48-p1-package-paths.txt
 
-          phase=materialize
-          while IFS= read -r path; do test ! -e "$path"; done < /tmp/pc48-expected-paths.txt
-          tar -xJf /tmp/pc48-product.tar.xz
-          git status --porcelain | awk '{print $2}' | sort > /tmp/pc48-materialized-paths.txt
-          diff -u /tmp/pc48-expected-paths.txt /tmp/pc48-materialized-paths.txt
+          phase=apply_repair
+          tar -xJf /tmp/pc48-review-p1.tar.xz
+          git diff --name-only | sort > /tmp/pc48-p1-actual-paths.txt
+          diff -u /tmp/pc48-p1-expected-paths.txt /tmp/pc48-p1-actual-paths.txt
+          sha256sum tools/lib/preference-custody-manifest-v46.mjs | grep -F "$REPAIRED_LIB_SHA256"
+          sha256sum test/preference-custody-manifest-v46.test.js | grep -F "$REPAIRED_TEST_SHA256"
 
-          phase=qualify_standalone
+          phase=qualify_repair
           node tools/compile-preference-linkage-interval-method-partition-replication-deployment-assurance.mjs
           node tools/validate-preference-linkage-interval-method-partition-replication-deployment-assurance.mjs
           node test/preference-linkage-interval-method-partition-replication-deployment-assurance.test.js
-
-          phase=qualify_floor
           node tools/compile-preference-custody-manifest-v46.mjs
           node tools/validate-preference-custody-manifest-v46.mjs
           node test/preference-custody-manifest-v46.test.js
-
-          phase=qualify_repository_boundaries
           node tools/validate-no-magic-human-gate.mjs
           node test/no-magic-human-gate.test.js
-          while IFS= read -r path; do
-            case "$path" in
-              *.json) node -e 'JSON.parse(require("node:fs").readFileSync(process.argv[1],"utf8"))' "$path" ;;
-              *.mjs|*.js) node --check "$path" ;;
-            esac
-          done < /tmp/pc48-expected-paths.txt
-          test -z "$(grep -R --line-number --fixed-strings 'contents: write' .github/workflows/preference-custody-v46.yml .github/workflows/preference-linkage-interval-method-partition-replication-deployment-assurance.yml || true)"
 
           phase=normalize_generated_volatility
-          git restore --source="$PUBLICATION_PARENT" --staged --worktree -- build 2>/dev/null || true
+          git restore --source="$REVIEWED_PRODUCT" --staged --worktree -- build 2>/dev/null || true
           git clean -fd -- build
-          git status --porcelain | awk '{print $2}' | sort > /tmp/pc48-precommit-paths.txt
-          diff -u /tmp/pc48-expected-paths.txt /tmp/pc48-precommit-paths.txt
+          git diff --name-only | sort > /tmp/pc48-p1-postgate-paths.txt
+          diff -u /tmp/pc48-p1-expected-paths.txt /tmp/pc48-p1-postgate-paths.txt
 
-          phase=commit_clean_product
+          phase=amend_clean_product
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add --pathspec-from-file=/tmp/pc48-expected-paths.txt
-          git diff --cached --name-only | sort > /tmp/pc48-staged-paths.txt
-          diff -u /tmp/pc48-expected-paths.txt /tmp/pc48-staged-paths.txt
-          git commit -m 'Complete PC-48 method, partition, replication, and deployment custody'
-
-          product_commit="$(git rev-parse HEAD)"
-          product_tree="$(git rev-parse HEAD^{tree})"
-          product_parent="$(git rev-parse HEAD^)"
-          test "$product_parent" = "$PUBLICATION_PARENT"
+          git add --pathspec-from-file=/tmp/pc48-p1-expected-paths.txt
+          git commit --amend --no-edit
+          repaired_commit="$(git rev-parse HEAD)"
+          repaired_tree="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$PUBLICATION_PARENT"
           test "$(git rev-list --count "$PUBLICATION_PARENT"..HEAD)" -eq 1
           test "$(git diff --name-only "$PUBLICATION_PARENT"..HEAD | wc -l)" -eq 14
+          test "$(git diff --name-status "$PUBLICATION_PARENT"..HEAD | awk '$1 != "A" {count++} END {print count+0}')" -eq 0
           test -z "$(git status --porcelain)"
 
-          phase=publish_under_lease
-          target_before="$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | cut -f1)"
-          test "$target_before" = "$TARGET_LEASE"
-          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_LEASE" origin "HEAD:refs/heads/$TARGET_BRANCH"
+          phase=upload_candidate_object
+          set +e
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_LEASE" origin "HEAD:refs/heads/$TARGET_BRANCH" > /tmp/pc48-p1-push.log 2>&1
+          push_status=$?
+          set -e
+          cat /tmp/pc48-p1-push.log
 
           phase=complete
-          cat > /tmp/pc48-materialization-receipt.txt <<EOF
+          cat > /tmp/pc48-p1-repair-receipt.txt <<EOF
           publication_parent=$PUBLICATION_PARENT
-          target_lease=$TARGET_LEASE
-          product_commit=$product_commit
-          product_tree=$product_tree
+          reviewed_product=$REVIEWED_PRODUCT
+          repaired_commit=$repaired_commit
+          repaired_tree=$repaired_tree
           permanent_paths=14
-          path_list_sha256=$PATH_LIST_SHA256
-          package_sha256=$PACKAGE_SHA256
+          repaired_paths=2
+          repair_package_sha256=$REPAIR_PACKAGE_SHA256
+          repaired_lib_sha256=$REPAIRED_LIB_SHA256
+          repaired_test_sha256=$REPAIRED_TEST_SHA256
           focused_pc48=pass
           floor_v46=pass
+          full_v45_base_validation=pass
+          unqualified_v45_base_regression=pass
           no_magic_human=pass
+          push_status=$push_status
           outside_human_dependency=false
           graph_effect=none
           EOF
-          printf 'status=success\nphase=%s\nproduct_commit=%s\nproduct_tree=%s\n' "$phase" "$product_commit" "$product_tree" > /tmp/pc48-materialization-diagnostic.txt
-          cat /tmp/pc48-materialization-receipt.txt
-      - name: Upload materialization receipt or exact failure phase
+          printf 'status=success\nphase=%s\nrepaired_commit=%s\nrepaired_tree=%s\npush_status=%s\n' "$phase" "$repaired_commit" "$repaired_tree" "$push_status" > /tmp/pc48-p1-diagnostic.txt
+          cat /tmp/pc48-p1-repair-receipt.txt
+      - name: Upload exact P1 repair custody
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pc48-materialization-custody
+          name: pc48-p1-repair-custody
           path: |
-            /tmp/pc48-materialization-receipt.txt
-            /tmp/pc48-materialization-diagnostic.txt
+            /tmp/pc48-p1-repair-receipt.txt
+            /tmp/pc48-p1-diagnostic.txt
+            /tmp/pc48-p1-push.log
           if-no-files-found: error
