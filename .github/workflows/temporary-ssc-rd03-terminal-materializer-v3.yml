@@ -86,11 +86,12 @@ jobs:
           assert script.count(old_parent) == 1, script.count(old_parent)
           script = script.replace(old_parent, new_parent)
 
-          old_repo_expression = '${{ github.repository }}'
+          dollar = '$'
+          old_repo_expression = dollar + '{{ github.repository }}'
           assert script.count(old_repo_expression) == 1, script.count(old_repo_expression)
           script = script.replace(old_repo_expression, '${GITHUB_REPOSITORY}')
 
-          assert '${{' not in script
+          assert (dollar + '{{') not in script
           assert script.count('git rev-list --parents -n1') == 1
           assert script.count('${INTEGRATION_SHA}^1') == 1
           assert script.count('${INTEGRATION_SHA}^2') == 1
