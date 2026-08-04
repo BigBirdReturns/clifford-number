@@ -42,9 +42,7 @@ jobs:
               raise SystemExit('rebuild program not found')
           lines = []
           for line in source[start:]:
-              if line.strip() and not line.startswith('          '):
-                  break
-              lines.append(line[10:] if line.startswith('          ') else '')
+              lines.append(line[10:] if line.startswith('          ') else line)
           program = '\n'.join(lines).rstrip() + '\n'
           Path('/tmp/pc46-v2-rebuild.sh').write_text('#!/usr/bin/env bash\n' + program)
           PY
