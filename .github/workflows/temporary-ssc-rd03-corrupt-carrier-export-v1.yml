@@ -38,13 +38,13 @@ jobs:
           import hashlib, json, pathlib
           p=pathlib.Path('/tmp/rd03-corrupt-carrier/part-00.b64')
           raw=p.read_bytes()
-          marker=b'[... ELLIPSIZATION ...]'
+          marker=b'[...ELLIPSIZATION...]'
           assert raw.count(marker)==1
           index=raw.index(marker)
           assert index==9999
           prefix=raw[:index]
           suffix=raw[index+len(marker):]
-          assert len(prefix)==9999 and len(suffix)==9999
+          assert len(prefix)==9999 and len(suffix)==10000
           (p.parent/'prefix.b64').write_bytes(prefix)
           (p.parent/'suffix.b64').write_bytes(suffix)
           report={
@@ -59,7 +59,7 @@ jobs:
             'suffix_bytes':len(suffix),
             'suffix_sha256':hashlib.sha256(suffix).hexdigest(),
             'expected_complete_base64_bytes':25720,
-            'missing_base64_bytes':5722,
+            'missing_base64_bytes':5721,
             'authority':{'outside_human_dependency':False,'external_contacts':0,'external_reviews':0,'publication_effect':'none','adoption_effect':'none','graph_effect':'none'}
           }
           (p.parent/'report.json').write_text(json.dumps(report,indent=2)+'\n')
