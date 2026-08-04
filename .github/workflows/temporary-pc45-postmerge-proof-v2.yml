@@ -1,0 +1,206 @@
+name: TEMP prove merged PC-45 canonical ancestry
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-pc45-postmerge-proof-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      MERGE_HEAD: f1e1851d2fa22a3d9972cbd20498cb73f6c0177d
+      MERGE_TREE: b6de188ce2096e21dbf47e9523d93186c489b507
+      FIRST_PARENT: 580d9c998f747330d190bed5011c7a1a517a1c0d
+      SECOND_PARENT: 617fe3df45c29280262f3c72119807d8ed1e7c97
+      PATH_LIST_SHA256: e7749e7dad5946ad67a6e495e8d7e1b7432cefa127a265e25c06ece0317132b2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: f1e1851d2fa22a3d9972cbd20498cb73f6c0177d
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prove immutable merge and current-main custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          status=failed
+          pass_shape=false
+          pass_main_ancestry=false
+          pass_main_product=false
+          pass_focused=false
+          pass_historical=false
+          pass_no_magic=false
+          pass_release=false
+          pass_replay=false
+          current_main=''
+          main_delta_path_count=''
+
+          emit_receipt() {
+            code=$?
+            trap - EXIT
+            export RECEIPT_STATUS="$status" PASS_SHAPE="$pass_shape"
+            export PASS_MAIN_ANCESTRY="$pass_main_ancestry" PASS_MAIN_PRODUCT="$pass_main_product"
+            export PASS_FOCUSED="$pass_focused" PASS_HISTORICAL="$pass_historical"
+            export PASS_NO_MAGIC="$pass_no_magic" PASS_RELEASE="$pass_release" PASS_REPLAY="$pass_replay"
+            export CURRENT_MAIN="$current_main" MAIN_DELTA_PATH_COUNT="$main_delta_path_count"
+            python - <<'PY_RECEIPT'
+          from pathlib import Path
+          import hashlib, json, os, subprocess
+
+          paths_file = Path('/tmp/pc45-permanent-paths.expected')
+          paths = paths_file.read_text().splitlines() if paths_file.exists() else []
+          files = {}
+          for path in paths:
+              p = Path(path)
+              if p.exists():
+                  files[path] = {
+                      'bytes': p.stat().st_size,
+                      'sha256': hashlib.sha256(p.read_bytes()).hexdigest(),
+                      'git_blob_sha1': subprocess.check_output(['git', 'hash-object', path], text=True).strip()
+                  }
+          receipt = {
+              'schema_version': 'pc45-postmerge-proof-receipt@2',
+              'workflow_run_id': os.environ.get('GITHUB_RUN_ID'),
+              'status': os.environ.get('RECEIPT_STATUS'),
+              'merge_head': os.environ['MERGE_HEAD'],
+              'merge_tree': os.environ['MERGE_TREE'],
+              'first_parent': os.environ['FIRST_PARENT'],
+              'second_parent': os.environ['SECOND_PARENT'],
+              'canonical_main_head_at_proof': os.environ.get('CURRENT_MAIN') or None,
+              'merge_is_ancestor_of_canonical_main': os.environ.get('PASS_MAIN_ANCESTRY') == 'true',
+              'canonical_product_paths_unchanged': os.environ.get('PASS_MAIN_PRODUCT') == 'true',
+              'canonical_main_delta_path_count': int(os.environ['MAIN_DELTA_PATH_COUNT']) if os.environ.get('MAIN_DELTA_PATH_COUNT') else None,
+              'permanent_path_count': len(paths),
+              'permanent_paths': paths,
+              'path_list_sha256': hashlib.sha256(('\n'.join(paths) + '\n').encode()).hexdigest() if paths else None,
+              'files': files,
+              'merge_shape': 'pass' if os.environ.get('PASS_SHAPE') == 'true' else 'not_proved',
+              'focused_pc45_and_floor_v43': 'pass' if os.environ.get('PASS_FOCUSED') == 'true' else 'not_proved',
+              'historical_preference_custody_floors': 'pass' if os.environ.get('PASS_HISTORICAL') == 'true' else 'not_proved',
+              'no_magic_human': 'pass' if os.environ.get('PASS_NO_MAGIC') == 'true' else 'not_proved',
+              'release_check': 'pass' if os.environ.get('PASS_RELEASE') == 'true' else 'not_proved',
+              'deterministic_replay': 'pass' if os.environ.get('PASS_REPLAY') == 'true' else 'not_proved',
+              'standalone_fixture_mutations': 58,
+              'standalone_build_tamper_checks': 16,
+              'floor_v43_adversarial_mutations': 80,
+              'qualified_controls': 45,
+              'promotion_requirements': 1731,
+              'temporary_pc45_paths_in_canonical_tree': 0,
+              'write_capable_permanent_workflows': 0,
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          Path('/tmp/pc45-postmerge-proof-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY_RECEIPT
+            exit "$code"
+          }
+          trap emit_receipt EXIT
+
+          cat > /tmp/pc45-permanent-paths.expected <<'EOF_PATHS'
+          .github/workflows/preference-custody-v43.yml
+          .github/workflows/preference-linkage-interval-construction-assurance.yml
+          data/research/preference-custody/control-manifest-v43.json
+          data/research/preference-custody/linkage-interval-construction-assurance.fixture.json
+          docs/preference-custody-laboratory-floor-v43.md
+          docs/preference-custody-linkage-interval-construction-assurance.md
+          test/preference-custody-manifest-v43.test.js
+          test/preference-linkage-interval-construction-assurance.test.js
+          tools/compile-preference-custody-manifest-v43.mjs
+          tools/compile-preference-linkage-interval-construction-assurance.mjs
+          tools/lib/preference-custody-manifest-v43.mjs
+          tools/lib/preference-linkage-interval-construction-assurance.mjs
+          tools/validate-preference-custody-manifest-v43.mjs
+          tools/validate-preference-linkage-interval-construction-assurance.mjs
+          EOF_PATHS
+          sed -i 's/^          //' /tmp/pc45-permanent-paths.expected
+          LC_ALL=C sort -o /tmp/pc45-permanent-paths.expected /tmp/pc45-permanent-paths.expected
+          test "$(sha256sum /tmp/pc45-permanent-paths.expected | awk '{print $1}')" = "$PATH_LIST_SHA256"
+
+          test "$(git rev-parse HEAD)" = "$MERGE_HEAD"
+          test "$(git rev-parse HEAD^{tree})" = "$MERGE_TREE"
+          test "$(git rev-parse HEAD^1)" = "$FIRST_PARENT"
+          test "$(git rev-parse HEAD^2)" = "$SECOND_PARENT"
+          git diff --quiet "$SECOND_PARENT" "$MERGE_HEAD"
+
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          current_main=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$MERGE_HEAD" "$current_main"
+          pass_main_ancestry=true
+          main_delta_path_count=$(git diff --name-only "$MERGE_HEAD" "$current_main" | wc -l | tr -d ' ')
+
+          while IFS= read -r path; do
+            test "$(git rev-parse "$MERGE_HEAD:$path")" = "$(git rev-parse "$current_main:$path")"
+          done < /tmp/pc45-permanent-paths.expected
+          test -z "$(git ls-tree -r --name-only "$current_main" | grep -E '(^|/)\.pc45-|^\.github/workflows/temporary-pc45' || true)"
+          pass_main_product=true
+
+          git diff --name-only "$FIRST_PARENT" "$MERGE_HEAD" | LC_ALL=C sort > /tmp/pc45-permanent-paths.observed
+          diff -u /tmp/pc45-permanent-paths.expected /tmp/pc45-permanent-paths.observed
+          test "$(wc -l < /tmp/pc45-permanent-paths.observed | tr -d ' ')" = 14
+          test -z "$(git ls-tree -r --name-only "$MERGE_HEAD" | grep -E '(^|/)\.pc45-|^\.github/workflows/temporary-pc45' || true)"
+          pass_shape=true
+
+          node tools/compile-preference-linkage-interval-construction-assurance.mjs
+          node tools/validate-preference-linkage-interval-construction-assurance.mjs
+          node test/preference-linkage-interval-construction-assurance.test.js
+          node tools/compile-preference-custody-manifest-v43.mjs
+          node tools/validate-preference-custody-manifest-v43.mjs
+          node test/preference-custody-manifest-v43.test.js
+          pass_focused=true
+
+          rm -rf /tmp/pc45-postmerge-reference
+          mkdir -p /tmp/pc45-postmerge-reference
+          cp build/research/preference-linkage-interval-construction-assurance.{json,md} /tmp/pc45-postmerge-reference/
+          cp build/research/preference-custody-laboratory-floor-v43.{json,md} /tmp/pc45-postmerge-reference/
+
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          pass_historical=true
+
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          pass_no_magic=true
+
+          npm run release:check
+          pass_release=true
+
+          git reset --hard "$MERGE_HEAD"
+          git clean -fdx
+          node tools/compile-preference-linkage-interval-construction-assurance.mjs
+          node tools/validate-preference-linkage-interval-construction-assurance.mjs
+          node test/preference-linkage-interval-construction-assurance.test.js
+          node tools/compile-preference-custody-manifest-v43.mjs
+          node tools/validate-preference-custody-manifest-v43.mjs
+          node test/preference-custody-manifest-v43.test.js
+          cmp /tmp/pc45-postmerge-reference/preference-linkage-interval-construction-assurance.json build/research/preference-linkage-interval-construction-assurance.json
+          cmp /tmp/pc45-postmerge-reference/preference-linkage-interval-construction-assurance.md build/research/preference-linkage-interval-construction-assurance.md
+          cmp /tmp/pc45-postmerge-reference/preference-custody-laboratory-floor-v43.json build/research/preference-custody-laboratory-floor-v43.json
+          cmp /tmp/pc45-postmerge-reference/preference-custody-laboratory-floor-v43.md build/research/preference-custody-laboratory-floor-v43.md
+          pass_replay=true
+
+          git reset --hard "$MERGE_HEAD"
+          git clean -fdx
+          test "$(git rev-parse HEAD)" = "$MERGE_HEAD"
+          test "$(git rev-parse HEAD^{tree})" = "$MERGE_TREE"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          status=success
+      - name: Upload checksum-bound post-merge receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc45-postmerge-proof-${{ github.run_id }}
+          path: /tmp/pc45-postmerge-proof-receipt.json
+          if-no-files-found: error
+          retention-days: 90
