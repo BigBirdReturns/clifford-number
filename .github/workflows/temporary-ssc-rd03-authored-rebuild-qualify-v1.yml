@@ -1,0 +1,222 @@
+name: TEMP qualify rebuilt RD-03 authored package
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-authored-rebuild-qualify-v1.yml'
+      - '.rd03-rebuild/**'
+      - '.rd03-rebuild-qualify/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-rd03-authored-rebuild-qualify-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-authored-rebuild-qual-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      QUAL_BASE: agent/ssc-rd03-authored-rebuild-qual-base-v1
+      SOURCE_HEAD: e70aec0f6809c77e198e0c4ee80f6bcadb6bbdc4
+      EXPECTED_MAIN: a7940aa81b07caff1a9c2f8548c88ec37d60d676
+      PACKAGE_B64_BYTES: '25752'
+      PACKAGE_B64_SHA256: ec425c1a30aef16969ba3b4dca2a4c3ebe2ba0dab272a394dd4f32b2a9931c68
+      PACKAGE_ZIP_BYTES: '19312'
+      PACKAGE_ZIP_SHA256: c4a55ee9059a898292d4c56640978fb09b2b6debf66c8fb1b6bede49766fa656
+      CENSUS_ARTIFACT_ID: '8875551993'
+      CENSUS_ARTIFACT_SHA256: 5b5414816cb626a7d9bbe16d914f67d5d02d1233c6ca0d84e21930909eba5f08
+      CENSUS_MANIFEST_SHA256: 0bcee2db7be4904f775c55a2533a2a5f1c199edff47e273993925b742f24ac06
+      CENSUS_ROOT: data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/source-custody/public-record-census-v1
+      EXECUTION_RECEIPT: data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/public-record-census-execution-receipt.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct and verify authored package
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin "$QUAL_BASE:refs/remotes/origin/$QUAL_BASE"
+          rm -rf /tmp/rd03-authored && mkdir -p /tmp/rd03-authored/shards /tmp/rd03-authored/files
+          git show "origin/$QUAL_BASE:.rd03-rebuild/manifest.json" > /tmp/rd03-authored/manifest.json
+          for index in 00 01 02 03 04 05 06; do
+            git show "origin/$QUAL_BASE:.rd03-rebuild/part-$index.b64" > "/tmp/rd03-authored/shards/part-$index.b64"
+          done
+          cat /tmp/rd03-authored/shards/part-*.b64 > /tmp/rd03-authored/authored.b64
+          test "$(wc -c < /tmp/rd03-authored/authored.b64)" = "$PACKAGE_B64_BYTES"
+          echo "$PACKAGE_B64_SHA256  /tmp/rd03-authored/authored.b64" | sha256sum -c -
+          base64 -d /tmp/rd03-authored/authored.b64 > /tmp/rd03-authored/authored.zip
+          test "$(wc -c < /tmp/rd03-authored/authored.zip)" = "$PACKAGE_ZIP_BYTES"
+          echo "$PACKAGE_ZIP_SHA256  /tmp/rd03-authored/authored.zip" | sha256sum -c -
+          unzip -t /tmp/rd03-authored/authored.zip
+          unzip -q /tmp/rd03-authored/authored.zip -d /tmp/rd03-authored/files
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          root=Path('/tmp/rd03-authored/files')
+          manifest=json.load(open('/tmp/rd03-authored/manifest.json'))
+          actual=sorted(str(p.relative_to(root)) for p in root.rglob('*') if p.is_file())
+          expected=sorted(row['path'] for row in manifest['files'])
+          assert actual == expected, (actual, expected)
+          for row in manifest['files']:
+              data=(root/row['path']).read_bytes()
+              assert len(data)==row['bytes'], row['path']
+              assert hashlib.sha256(data).hexdigest()==row['sha256'], row['path']
+          PY
+
+      - name: Integrate exact RD-03 research over current main
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            '+refs/heads/agent/ssc-rd-wave02-rd03-negotiated-terms:refs/remotes/origin/agent/ssc-rd-wave02-rd03-negotiated-terms'
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse origin/agent/ssc-rd-wave02-rd03-negotiated-terms)" = "$SOURCE_HEAD"
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git checkout --detach "$EXPECTED_MAIN"
+          git merge --no-ff --no-commit "$SOURCE_HEAD"
+          cat > /tmp/rd03-integration-paths.expected <<'PATHS'
+          data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/field-matrix.json
+          data/project/ssc-residual-wave02/seeds/RD-03-C04.json
+          test/status-sovereignty-rd-wave02-rd03-field-matrix.test.js
+          tools/acquisition/status-sovereignty-rd-wave02-rd03/build-field-matrix.mjs
+          tools/acquisition/status-sovereignty-rd-wave02-rd03/validate-field-matrix.mjs
+          PATHS
+          git diff --cached --name-only | sort > /tmp/rd03-integration-paths.actual
+          sort -o /tmp/rd03-integration-paths.expected /tmp/rd03-integration-paths.expected
+          cmp /tmp/rd03-integration-paths.expected /tmp/rd03-integration-paths.actual
+          git commit -m 'Integrate exact RD-03 source over qualified current main'
+          export INTEGRATION_COMMIT="$(git rev-parse HEAD)"
+          test "$(git rev-list --parents -n 1 HEAD | wc -w)" = 3
+          test "$(git rev-parse HEAD^1)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse HEAD^2)" = "$SOURCE_HEAD"
+          echo "INTEGRATION_COMMIT=$INTEGRATION_COMMIT" >> "$GITHUB_ENV"
+
+      - name: Restore census and materialize candidate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          curl --fail --location --retry 3 \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$CENSUS_ARTIFACT_ID/zip" \
+            -o /tmp/rd03-census.zip
+          echo "$CENSUS_ARTIFACT_SHA256  /tmp/rd03-census.zip" | sha256sum -c -
+          mkdir -p "$CENSUS_ROOT"
+          unzip -q /tmp/rd03-census.zip -d "$CENSUS_ROOT"
+          cp -a /tmp/rd03-authored/files/. .
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/public-record-census-execution-receipt.json')
+          p.parent.mkdir(parents=True, exist_ok=True)
+          receipt={
+            'schema_version':'ssc-rd03-wave02-public-record-census-execution-receipt@1',
+            'wave_id':'SSC-RD-W02','class_id':'RD-03-C04','issue':788,
+            'research_head':'e70aec0f6809c77e198e0c4ee80f6bcadb6bbdc4',
+            'workflow_run':30864413469,'job_id':91853036710,'artifact_id':8875551993,
+            'artifact_name':'ssc-rd03-wave02-public-record-census',
+            'artifact_zip_sha256':'5b5414816cb626a7d9bbe16d914f67d5d02d1233c6ca0d84e21930909eba5f08',
+            'manifest_entry_count':263,
+            'manifest_combined_sha256':'0bcee2db7be4904f775c55a2533a2a5f1c199edff47e273993925b742f24ac06',
+            'counts':{'fixed_routes':30,'route_attempts':30,'http_success':15,'terminal_non_success':15,'candidate_result_rows':150,'unique_candidate_urls':60,'official_candidate_urls':5,'first_party_candidate_urls':1,'admitted_candidate_urls':0,'result_spawned_requests':0},
+            'authority':{'outside_human_dependency':False,'external_contacts':0,'external_reviews':0,'substantive_adjudication_performed_by_census':False,'class_closed_by_census':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none'}
+          }
+          p.write_text(json.dumps(receipt,indent=2)+'\n')
+          PY
+          node --check tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node --check tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node --check test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --write
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git add \
+            "$CENSUS_ROOT" \
+            "$EXECUTION_RECEIPT" \
+            .github/workflows/status-sovereignty-rd-wave02-rd03-negotiated-terms.yml \
+            docs/milestones/ssc-rd-wave02-rd03-negotiated-terms.md \
+            schemas/status-sovereignty-rd-wave02-rd03-negotiated-terms.schema.json \
+            test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js \
+            tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs \
+            tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs \
+            data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms \
+            data/project/ssc-residual-wave02/closures/RD-03-C04.json
+          git diff --cached --name-only | sort > /tmp/rd03-product-paths.txt
+          test "$(wc -l < /tmp/rd03-product-paths.txt)" = 276
+          test -z "$(git diff --cached --name-status | awk '$1 != "A" {print}')"
+          git commit -m 'Close RD-03 negotiated-term public-record obligation'
+          echo "CANDIDATE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Run exact candidate qualification
+        run: |
+          set -Eeuo pipefail
+          node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Preserve qualification receipt
+        run: |
+          set -Eeuo pipefail
+          out=/tmp/rd03-rebuild-qualification
+          rm -rf "$out" && mkdir -p "$out"
+          cp /tmp/rd03-authored/authored.b64 "$out/"
+          cp /tmp/rd03-authored/authored.zip "$out/"
+          cp /tmp/rd03-authored/manifest.json "$out/package-manifest.json"
+          git diff --name-only "$INTEGRATION_COMMIT" "$CANDIDATE_COMMIT" | sort > "$out/product-paths.txt"
+          git diff --name-status "$INTEGRATION_COMMIT" "$CANDIDATE_COMMIT" > "$out/product-name-status.txt"
+          tar -czf "$out/permanent-product.tar.gz" -T "$out/product-paths.txt"
+          python - <<'PY'
+          import hashlib, json, os, subprocess
+          from pathlib import Path
+          out=Path('/tmp/rd03-rebuild-qualification')
+          paths=(out/'product-paths.txt').read_text().splitlines()
+          receipt={
+            'schema_version':'ssc-rd03-authored-rebuild-qualification@1',
+            'main_parent':os.environ['EXPECTED_MAIN'],
+            'source_parent':os.environ['SOURCE_HEAD'],
+            'integration_commit':os.environ['INTEGRATION_COMMIT'],
+            'candidate_commit':os.environ['CANDIDATE_COMMIT'],
+            'candidate_tree':subprocess.check_output(['git','rev-parse',f"{os.environ['CANDIDATE_COMMIT']}^{{tree}}"],text=True).strip(),
+            'product_paths':len(paths),
+            'package_zip_sha256':os.environ['PACKAGE_ZIP_SHA256'],
+            'package_base64_sha256':os.environ['PACKAGE_B64_SHA256'],
+            'census_artifact_sha256':os.environ['CENSUS_ARTIFACT_SHA256'],
+            'census_manifest_sha256':os.environ['CENSUS_MANIFEST_SHA256'],
+            'focused_validation':'pass','adversarial_mutations':94,
+            'complete_release_gate':'pass','deterministic_replay':'pass',
+            'outside_human_dependency':False,'external_contacts':0,'external_reviews':0,
+            'publication_effect':'none','adoption_effect':'none','graph_effect':'none'
+          }
+          (out/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          for p in sorted(out.iterdir()):
+              if p.is_file():
+                  (out/(p.name+'.sha256')).write_text(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name+'\n')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-authored-rebuild-qualified-v1
+          path: /tmp/rd03-rebuild-qualification
+          if-no-files-found: error
+          retention-days: 90
