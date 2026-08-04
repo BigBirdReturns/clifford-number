@@ -1,0 +1,210 @@
+name: TEMP repair exact RD-02 authored carrier directory
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd02-carrier-repair-v1.yml'
+      - '.rd02-terminal-v1/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-ssc-rd02-carrier-repair-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd02-terminal-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd02-terminal-materializer-base-v1
+          fetch-depth: 1
+
+      - name: Reconstruct local records and generate deterministic ZIP directory
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/rd02-carrier-repair"
+          rm -rf "$out"
+          mkdir -p "$out/extracted"
+
+          cat > "$out/shards.txt" <<'SHARDS'
+          part-00.b64 12000 1d4701eeb3aa2bd9f146e00b88e0bb33e8887777989ce86a0d77377dba24c9c9
+          part-01.b64 12000 33ef6cd1cda09ccc42d5e1e2b0617a673803c4a2325abef05127a906e8eba5e4
+          p2-00.b64 2000 47697656a83f26fc0555e3df18aa6ae3fa71a457f60cb24d4806a822715ad0b4
+          p2-01.b64 2000 c950c7d74e1ec23e3f644d731604936900f3d3a65a134b1ddbf7e38b3b7c5e28
+          p2-02.b64 2000 0041ceeaaa648c7d10a709bdefe30402afa76177240ea3b1b4f7f81a745d5dca
+          p2-03.b64 2000 76b9e5b125f837d517f5fc2b64caa4c3e23a32f2fafb1e5292da11bf51e3df3b
+          p2-04.b64 2000 8517e88ae8c257fddea548e3cc182122978b0825f532bf220619aa3c91bb2b81
+          p2-05.b64 1017 7e28719aadf2015243bd98aaf46ee6521f3642f31c55630eae057c7f1efaa6b1
+          SHARDS
+          sed -i 's/^          //' "$out/shards.txt"
+          : > "$out/prefix.b64"
+          while read -r shard expected_bytes expected_sha; do
+            path=".rd02-terminal-v1/carrier/$shard"
+            test "$(wc -c < "$path" | tr -d ' ')" = "$expected_bytes"
+            test "$(sha256sum "$path" | awk '{print $1}')" = "$expected_sha"
+            cat "$path" >> "$out/prefix.b64"
+          done < "$out/shards.txt"
+          test "$(wc -c < "$out/prefix.b64" | tr -d ' ')" = '35017'
+          head -c 35016 "$out/prefix.b64" > "$out/prefix-trimmed.b64"
+          base64 --decode "$out/prefix-trimmed.b64" > "$out/prefix.bin"
+
+          OUT="$out" python - <<'PY'
+          import json
+          import os
+          import struct
+          from pathlib import Path
+
+          out = Path(os.environ['OUT'])
+          data = (out / 'prefix.bin').read_bytes()
+          LOCAL = b'PK\x03\x04'
+          CENTRAL = b'PK\x01\x02'
+          EOCD = b'PK\x05\x06'
+
+          entries = []
+          pos = 0
+          while pos + 30 <= len(data) and data[pos:pos + 4] == LOCAL:
+              start = pos
+              (
+                  version_needed,
+                  flags,
+                  compression,
+                  mod_time,
+                  mod_date,
+                  crc32,
+                  compressed_size,
+                  uncompressed_size,
+                  name_length,
+                  extra_length,
+              ) = struct.unpack_from('<HHHHHIIIHH', data, pos + 4)
+              if flags & 0x0008:
+                  raise SystemExit(f'data-descriptor entry unsupported at {start}')
+              name_start = pos + 30
+              name_end = name_start + name_length
+              extra_end = name_end + extra_length
+              data_end = extra_end + compressed_size
+              if data_end > len(data):
+                  raise SystemExit(f'truncated local record at {start}')
+              name = data[name_start:name_end]
+              extra = data[name_end:extra_end]
+              entries.append({
+                  'offset': start,
+                  'version_needed': version_needed,
+                  'flags': flags,
+                  'compression': compression,
+                  'mod_time': mod_time,
+                  'mod_date': mod_date,
+                  'crc32': crc32,
+                  'compressed_size': compressed_size,
+                  'uncompressed_size': uncompressed_size,
+                  'name': name,
+                  'extra': extra,
+                  'data_end': data_end,
+              })
+              pos = data_end
+
+          expected_names = [
+              'authored/.github/workflows/status-sovereignty-rd-wave02-rd02-license-leverage.yml',
+              'authored/docs/milestones/ssc-rd-wave02-rd02-license-leverage.md',
+              'authored/schemas/status-sovereignty-rd-wave02-rd02-license-leverage.schema.json',
+              'authored/test/status-sovereignty-rd-wave02-rd02-license-leverage.test.js',
+              'authored/tools/build-status-sovereignty-rd-wave02-rd02-license-leverage.mjs',
+              'authored/tools/validate-status-sovereignty-rd-wave02-rd02-license-leverage.mjs',
+              'authored-sha256.txt',
+              'expected-nonworkflow-paths.txt',
+              'expected-paths.txt',
+              'materialize.sh',
+              'source-paths.txt',
+          ]
+          names = [entry['name'].decode('utf-8') for entry in entries]
+          if names != expected_names:
+              raise SystemExit(f'local-record names changed: {names}')
+          if pos > len(data):
+              raise SystemExit('local-record boundary exceeds prefix')
+
+          local_bytes = data[:pos]
+          central = bytearray()
+          for entry in entries:
+              name = entry['name']
+              extra = entry['extra']
+              central += CENTRAL
+              central += struct.pack(
+                  '<HHHHHHIIIHHHHHII',
+                  0x0314,
+                  entry['version_needed'],
+                  entry['flags'],
+                  entry['compression'],
+                  entry['mod_time'],
+                  entry['mod_date'],
+                  entry['crc32'],
+                  entry['compressed_size'],
+                  entry['uncompressed_size'],
+                  len(name),
+                  len(extra),
+                  0,
+                  0,
+                  0,
+                  0o100644 << 16,
+                  entry['offset'],
+              )
+              central += name
+              central += extra
+
+          central_offset = len(local_bytes)
+          archive = bytearray(local_bytes)
+          archive += central
+          archive += EOCD
+          archive += struct.pack(
+              '<HHHHIIH',
+              0,
+              0,
+              len(entries),
+              len(entries),
+              len(central),
+              central_offset,
+              0,
+          )
+          (out / 'repaired-carrier.zip').write_bytes(archive)
+          manifest = {
+              'schema_version': 'ssc-rd02-terminal-carrier-directory-repair@1',
+              'local_record_count': len(entries),
+              'local_records_end': pos,
+              'prefix_bytes_available': len(data),
+              'central_directory_offset': central_offset,
+              'central_directory_bytes': len(central),
+              'archive_bytes': len(archive),
+              'entry_names': names,
+              'outside_human_dependency': False,
+              'external_contacts': 0,
+              'external_reviews': 0,
+          }
+          (out / 'repair-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+          PY
+
+          unzip -t "$out/repaired-carrier.zip" > "$out/unzip-test.txt"
+          unzip -q "$out/repaired-carrier.zip" -d "$out/extracted"
+          (cd "$out/extracted/authored" && sha256sum --check --strict ../authored-sha256.txt) \
+            > "$out/authored-sha256-check.txt"
+          test "$(find "$out/extracted" -type f | wc -l | tr -d ' ')" = '11'
+          sha256sum "$out/repaired-carrier.zip" > "$out/repaired-carrier.zip.sha256"
+          base64 -w 0 "$out/repaired-carrier.zip" > "$out/repaired-carrier.zip.b64"
+          sha256sum "$out/repaired-carrier.zip.b64" > "$out/repaired-carrier.zip.b64.sha256"
+          wc -c "$out/repaired-carrier.zip" "$out/repaired-carrier.zip.b64" \
+            > "$out/repaired-carrier-byte-counts.txt"
+          find "$out/extracted" -type f -printf '%P\n' | sort > "$out/extracted-paths.txt"
+          cat "$out/repair-manifest.json"
+          cat "$out/repaired-carrier-byte-counts.txt"
+          cat "$out/repaired-carrier.zip.sha256"
+          cat "$out/repaired-carrier.zip.b64.sha256"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ssc-rd02-authored-carrier-directory-repair-v1
+          path: ${{ runner.temp }}/rd02-carrier-repair
+          if-no-files-found: error
+          retention-days: 90
