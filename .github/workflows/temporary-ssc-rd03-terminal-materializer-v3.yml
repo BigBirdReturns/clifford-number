@@ -51,10 +51,12 @@ jobs:
           set -Eeuo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_RESEARCH_HEAD"
           test "$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | cut -f1)" = "$EXPECTED_RESEARCH_HEAD"
-          test "$(git ls-remote --heads origin "refs/heads/${SOURCE_WORKFLOW_BRANCH}" | cut -f1)" = "$EXPECTED_SOURCE_WORKFLOW_HEAD"
           node tools/validate-no-magic-human-gate.mjs
 
           git fetch origin "refs/heads/${SOURCE_WORKFLOW_BRANCH}:refs/remotes/origin/${SOURCE_WORKFLOW_BRANCH}"
+          git merge-base --is-ancestor "$EXPECTED_SOURCE_WORKFLOW_HEAD" "origin/${SOURCE_WORKFLOW_BRANCH}"
+          git diff --name-only "$EXPECTED_SOURCE_WORKFLOW_HEAD..origin/${SOURCE_WORKFLOW_BRANCH}" | sort > /tmp/rd03-source-drift.txt
+          printf '.rd03-terminal/TEST\n' | diff -u - /tmp/rd03-source-drift.txt
           git show "origin/${SOURCE_WORKFLOW_BRANCH}:${SOURCE_WORKFLOW_PATH}" > /tmp/rd03-source-workflow.yml
           test "$(git hash-object /tmp/rd03-source-workflow.yml)" = "$EXPECTED_SOURCE_WORKFLOW_BLOB"
 
@@ -103,7 +105,7 @@ jobs:
           grep -F '${INTEGRATION_SHA}^1' /tmp/rd03-materialize.sh
           grep -F '${INTEGRATION_SHA}^2' /tmp/rd03-materialize.sh
           grep -F '${GITHUB_REPOSITORY}' /tmp/rd03-materialize.sh
-          bash -x /tmp/rd03-materialize.sh
+          bash /tmp/rd03-materialize.sh
 
       - name: Preserve terminal materialization receipt
         uses: actions/upload-artifact@v4
