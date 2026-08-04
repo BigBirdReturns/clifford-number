@@ -1,4 +1,4 @@
-name: TEMP materialize exact RD-03 terminal closure
+name: TEMP materialize exact RD-03 terminal closure v2
 
 on:
   pull_request:
@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: temp-ssc-rd03-terminal-materializer-${{ github.event.pull_request.number }}
+  group: temp-ssc-rd03-terminal-materializer-v2-${{ github.event.pull_request.number }}
   cancel-in-progress: false
 
 jobs:
@@ -23,6 +23,7 @@ jobs:
       TARGET_BRANCH: agent/ssc-rd-wave02-rd03-negotiated-terms
       CARRIER_BRANCH: agent/ssc-rd03-terminal-materializer-base-v1
       EXPECTED_RESEARCH_HEAD: e70aec0f6809c77e198e0c4ee80f6bcadb6bbdc4
+      EXPECTED_MAIN_HEAD: 61d8baabee70a40d13fc08c1f446313c3416a6e0
       CENSUS_ARTIFACT_ID: '8875551993'
       CENSUS_ARTIFACT_SHA256: 5b5414816cb626a7d9bbe16d914f67d5d02d1233c6ca0d84e21930909eba5f08
       CENSUS_MANIFEST_SHA256: 0bcee2db7be4904f775c55a2533a2a5f1c199edff47e273993925b742f24ac06
@@ -41,111 +42,57 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Reconstruct, prove, and publish exact permanent product
+      - name: Integrate, reconstruct, prove, and publish exact permanent product
         run: |
           set -Eeuo pipefail
-          export EXPECTED_START_SHA="$(git rev-parse HEAD)"
-          test "$EXPECTED_START_SHA" = "$EXPECTED_RESEARCH_HEAD"
-          observed="$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | cut -f1)"
-          test "$observed" = "$EXPECTED_START_SHA"
+          export RESEARCH_START_SHA="$(git rev-parse HEAD)"
+          test "$RESEARCH_START_SHA" = "$EXPECTED_RESEARCH_HEAD"
+          test "$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | cut -f1)" = "$EXPECTED_RESEARCH_HEAD"
+          git fetch --no-tags origin main
+          export MAIN_START_SHA="$(git rev-parse FETCH_HEAD)"
+          test "$MAIN_START_SHA" = "$EXPECTED_MAIN_HEAD"
           node tools/validate-no-magic-human-gate.mjs
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -B rd03-permanent-integration "$MAIN_START_SHA"
+          git merge --no-ff --no-commit "$RESEARCH_START_SHA"
+          git diff --cached --name-only | sort > /tmp/rd03-integration-paths.txt
+          cat > /tmp/rd03-expected-integration-paths.txt <<'EOF'
+          data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/field-matrix.json
+          data/project/ssc-residual-wave02/seeds/RD-03-C04.json
+          test/status-sovereignty-rd-wave02-rd03-field-matrix.test.js
+          tools/acquisition/status-sovereignty-rd-wave02-rd03/build-field-matrix.mjs
+          tools/acquisition/status-sovereignty-rd-wave02-rd03/validate-field-matrix.mjs
+          EOF
+          sed -i 's/^          //' /tmp/rd03-expected-integration-paths.txt
+          diff -u /tmp/rd03-expected-integration-paths.txt /tmp/rd03-integration-paths.txt
+          git diff --cached --check
+          git commit -m 'Integrate current main with RD-03 acquisition lineage'
+          export INTEGRATION_SHA="$(git rev-parse HEAD)"
+          test "$(git show -s --format=%P "$INTEGRATION_SHA")" = "$MAIN_START_SHA $RESEARCH_START_SHA"
 
           git fetch origin "refs/heads/${CARRIER_BRANCH}:refs/remotes/origin/${CARRIER_BRANCH}"
           rm -rf /tmp/rd03-authored /tmp/rd03-authored.b64 /tmp/rd03-authored.zip
           mkdir -p /tmp/rd03-authored
-          : > /tmp/rd03-authored.b64
-          expected_bytes=(4096 4096 4096 4096 4096 4096 4096 4096 3692)
-          expected_sha=(
-            5f1a974574c85ad6d94c488d8342513bb396a98702b51336e69ce564cd4dbe5b
-            81c7b20a4998adb6a484dcfdabb5f5bee95e471922c6ee96a03a95c6ecaf8376
-            3e10e7b1c2a253d52cc6c33be877c58bdcbc091c5fe8da2247c921b3990d88d2
-            50c84a87a9e01f0393efe3582b85df0d8fc5ce35ebae06cc5c39caf294f6a94d
-            e6a993b239ff2288c6861e7599e6331e72e7269d6abfba8026f0341dbed5af61
-            3fc6233bc29d418fce3f1da5e67beb3ceb3ff9c317e43f6f78fb82e316749011
-            f9e2a1782edb9d9e57cfbad2ee2c00154adb1994b85adb94ee859ee715ad5b54
-            521b239e4abb4450150ec50a39af578155f4680567ed292ae857f32febb0a2f0
-            639a302c44bc80fc4922aa383771b318fb2ab8215a01986bab64ac317e127dcf
-          )
-          for index in 0 1 2 3 4 5 6 7 8; do
-            part="$(printf '%02d' "$index")"
-            git show "origin/${CARRIER_BRANCH}:.rd03-terminal/authored/part-${part}.b64" > "/tmp/rd03-authored-part-${part}.b64"
-            test "$(wc -c < "/tmp/rd03-authored-part-${part}.b64" | tr -d ' ')" = "${expected_bytes[$index]}"
-            test "$(sha256sum "/tmp/rd03-authored-part-${part}.b64" | awk '{print $1}')" = "${expected_sha[$index]}"
-            cat "/tmp/rd03-authored-part-${part}.b64" >> /tmp/rd03-authored.b64
-          done
-          test "$(wc -c < /tmp/rd03-authored.b64 | tr -d ' ')" = '36460'
-          test "$(sha256sum /tmp/rd03-authored.b64 | awk '{print $1}')" = 'ddf31bf46217127e22ab7181366b3cb84842a76c19dcfec7aeaaa57a6e4f0138'
+          git show "origin/${CARRIER_BRANCH}:.rd03-terminal/authored/part-00.b64" > /tmp/rd03-authored.b64
+          test "$(wc -c < /tmp/rd03-authored.b64 | tr -d ' ')" = '25720'
+          test "$(sha256sum /tmp/rd03-authored.b64 | awk '{print $1}')" = 'd741e8229ddfe7f544dd29ef4c1d50b60140351a47477c47321b16eb63c509fd'
           base64 --decode /tmp/rd03-authored.b64 > /tmp/rd03-authored.zip
-          test "$(wc -c < /tmp/rd03-authored.zip | tr -d ' ')" = '27344'
-          test "$(sha256sum /tmp/rd03-authored.zip | awk '{print $1}')" = '8169c177f709021bb0565f7debbb6a42fe3dd7a807d1b51db3016eef5325e77b'
+          test "$(wc -c < /tmp/rd03-authored.zip | tr -d ' ')" = '19288'
+          test "$(sha256sum /tmp/rd03-authored.zip | awk '{print $1}')" = '279556dcfa7d3332d115282ca835fafe2a3dec16ad3b4a78baa11a0ac646d328'
           unzip -q /tmp/rd03-authored.zip -d /tmp/rd03-authored
-
           cat > /tmp/rd03-authored-sha256.txt <<'HASHES'
-          9be66bc9028ec74a982a830e639556d33eef3ad1227d4cb21eb7087e60c9e55a  ./.github/workflows/status-sovereignty-rd-wave02-rd03-negotiated-terms.yml
-          bd1c883a6af8c18b87e2637d9da335451b36b38174d3da62f62458395d70bc12  ./docs/milestones/ssc-rd-wave02-rd03-negotiated-terms.md
-          c49b0701301760486fb77e22bda601ba05b71fc7b5896d5e31ad7a51e30d5765  ./schemas/status-sovereignty-rd-wave02-rd03-negotiated-terms.schema.json
-          17f7c3658ccb75e4ce40806b6219b3254ecf2157d86d9e70f1608c09174623de  ./test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
-          59d922475e163ff105593075f0009b5814a60621f8effc7eca79b2e32eb986ab  ./tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
-          f662453fe44a59cc1f098a8e433ca91016388e102b8204057533f5b65b63c98c  ./tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          27fd04bde88341499b2ae8494a0b6a8126358f0f550315213ec0469fccaa7364  ./.github/workflows/status-sovereignty-rd-wave02-rd03-negotiated-terms.yml
+          5f90199a597cc92050ecc91b20076849de9f453cc369675fce97c67ea9c67a57  ./docs/milestones/ssc-rd-wave02-rd03-negotiated-terms.md
+          dfeea84c64828a8719e9fcf35ce6ffd5cd1f5be39a31fcc056b66d414399c4d5  ./schemas/status-sovereignty-rd-wave02-rd03-negotiated-terms.schema.json
+          22c47846a7aab3e86bad0958c41d9f2793480286c57336acda00988949dd4cbc  ./test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          b241f98cdc80208cc800503f70c8983c48de3e8da93a8d214cb5461a07c2f2ed  ./tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          299c63cf44f6b52aab31fb5ccac7353c2ae878eeeb79ff933d24af6ee8cef035  ./tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
           HASHES
           sed -i 's/^          //' /tmp/rd03-authored-sha256.txt
           (cd /tmp/rd03-authored && sha256sum --check --strict /tmp/rd03-authored-sha256.txt)
           test "$(find /tmp/rd03-authored -type f | wc -l | tr -d ' ')" = '6'
-
-          # Repair the exact raw-byte custody seam without changing any semantic product rule.
-          python - <<'PY'
-          from pathlib import Path
-          root = Path('/tmp/rd03-authored')
-
-          builder = root / 'tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs'
-          text = builder.read_text()
-          old = """function readInputs(root) {\n  return {\n    matrix: readJson(root, MATRIX_PATH),\n    parent: readJson(root, PARENT_PATH),\n"""
-          new = """function readInputs(root) {\n  return {\n    matrix: readJson(root, MATRIX_PATH),\n    matrixSha256: sha256(readBytes(root, MATRIX_PATH)),\n    parent: readJson(root, PARENT_PATH),\n    parentSha256: sha256(readBytes(root, PARENT_PATH)),\n"""
-          assert text.count(old) == 1, text.count(old)
-          text = text.replace(old, new)
-          old = """    matrix, parent, seed, execution, censusSummary, censusManifest, routeResults,\n    candidateIndex, candidateUrls, evidenceIndex, protocolLedger\n"""
-          new = """    matrix, matrixSha256, parent, parentSha256, seed, execution, censusSummary, censusManifest, routeResults,\n    candidateIndex, candidateUrls, evidenceIndex, protocolLedger\n"""
-          assert text.count(old) == 1, text.count(old)
-          text = text.replace(old, new)
-          old = "ok(sha256(Buffer.from(`${JSON.stringify(matrix, null, 2)}\\n`, 'utf8')) === MATRIX_SHA256, 'field matrix exact bytes changed');"
-          new = "ok(matrixSha256 === MATRIX_SHA256, 'field matrix exact bytes changed');"
-          assert text.count(old) == 1, text.count(old)
-          text = text.replace(old, new)
-          old = "ok(sha256(Buffer.from(`${JSON.stringify(parent, null, 2)}\\n`, 'utf8')) === PARENT_SHA256, 'parent lifecycle exact bytes changed');"
-          new = "ok(parentSha256 === PARENT_SHA256, 'parent lifecycle exact bytes changed');"
-          assert text.count(old) == 1, text.count(old)
-          builder.write_text(text.replace(old, new))
-
-          validator = root / 'tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs'
-          text = validator.read_text()
-          old = """    parentMatrix: readJson(root, MATRIX_PATH),\n    parent: readJson(root, PARENT_PATH),\n    seed: readJson(root, SEED_PATH)\n"""
-          new = """    parentMatrix: readJson(root, MATRIX_PATH),\n    parentMatrixSha256: sha256(readBytes(root, MATRIX_PATH)),\n    parent: readJson(root, PARENT_PATH),\n    parentSha256: sha256(readBytes(root, PARENT_PATH)),\n    seed: readJson(root, SEED_PATH)\n"""
-          assert text.count(old) == 1, text.count(old)
-          text = text.replace(old, new)
-          old = """    candidateIndex, candidateUrls, evidenceIndex, protocolLedger, parentMatrix, parent, seed\n"""
-          new = """    candidateIndex, candidateUrls, evidenceIndex, protocolLedger, parentMatrix, parentMatrixSha256, parent, parentSha256, seed\n"""
-          assert text.count(old) == 1, text.count(old)
-          text = text.replace(old, new)
-          old = "ok(sha256(Buffer.from(`${JSON.stringify(parentMatrix, null, 2)}\\n`, 'utf8')) === MATRIX_SHA256, 'parent matrix exact bytes changed');"
-          new = "ok(parentMatrixSha256 === MATRIX_SHA256, 'parent matrix exact bytes changed');"
-          assert text.count(old) == 1, text.count(old)
-          text = text.replace(old, new)
-          old = "ok(sha256(Buffer.from(`${JSON.stringify(parent, null, 2)}\\n`, 'utf8')) === PARENT_SHA256, 'parent lifecycle exact bytes changed');"
-          new = "ok(parentSha256 === PARENT_SHA256, 'parent lifecycle exact bytes changed');"
-          assert text.count(old) == 1, text.count(old)
-          validator.write_text(text.replace(old, new))
-          PY
-
-          cat > /tmp/rd03-authored-sha256.txt <<'HASHES'
-          9be66bc9028ec74a982a830e639556d33eef3ad1227d4cb21eb7087e60c9e55a  ./.github/workflows/status-sovereignty-rd-wave02-rd03-negotiated-terms.yml
-          bd1c883a6af8c18b87e2637d9da335451b36b38174d3da62f62458395d70bc12  ./docs/milestones/ssc-rd-wave02-rd03-negotiated-terms.md
-          c49b0701301760486fb77e22bda601ba05b71fc7b5896d5e31ad7a51e30d5765  ./schemas/status-sovereignty-rd-wave02-rd03-negotiated-terms.schema.json
-          17f7c3658ccb75e4ce40806b6219b3254ecf2157d86d9e70f1608c09174623de  ./test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
-          26246aa274e555dc31906427d33b7a8e9c5fe1330d6d5c90717016b491ad9c72  ./tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
-          3e0915f24a5ff6cd421ea9e0ba3eaa2f27f39869d0c6b204ba6331b4108a5aea  ./tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
-          HASHES
-          sed -i 's/^          //' /tmp/rd03-authored-sha256.txt
-          (cd /tmp/rd03-authored && sha256sum --check --strict /tmp/rd03-authored-sha256.txt)
 
           rm -rf /tmp/rd03-census /tmp/rd03-census.zip
           mkdir -p /tmp/rd03-census
@@ -157,41 +104,27 @@ jobs:
             --output /tmp/rd03-census.zip
           test "$(sha256sum /tmp/rd03-census.zip | awk '{print $1}')" = "$CENSUS_ARTIFACT_SHA256"
           unzip -q /tmp/rd03-census.zip -d /tmp/rd03-census
-
           python - <<'PY'
-          import hashlib
-          import json
-          import pathlib
-          root = pathlib.Path('/tmp/rd03-census')
-          manifest = json.loads((root / 'manifest.json').read_text())
-          assert manifest['schema_version'] == 'ssc-rd03-wave02-public-record-census-manifest@1'
-          assert manifest['entry_count'] == 263
-          assert len(manifest['entries']) == 263
-          assert len({row['path'] for row in manifest['entries']}) == 263
+          import hashlib, json, pathlib
+          root=pathlib.Path('/tmp/rd03-census')
+          manifest=json.loads((root/'manifest.json').read_text())
+          assert manifest['schema_version']=='ssc-rd03-wave02-public-record-census-manifest@1'
+          assert manifest['entry_count']==263 and len(manifest['entries'])==263
+          assert len({row['path'] for row in manifest['entries']})==263
           for row in manifest['entries']:
-              rel = pathlib.PurePosixPath(row['path'])
-              assert not rel.is_absolute() and '..' not in rel.parts
-              path = root / rel
-              data = path.read_bytes()
-              assert len(data) == row['bytes']
-              assert hashlib.sha256(data).hexdigest() == row['sha256']
-          combined = hashlib.sha256('\n'.join(f"{row['sha256']}  {row['path']}" for row in manifest['entries']).encode()).hexdigest()
-          assert combined == manifest['combined_sha256']
-          assert combined == '0bcee2db7be4904f775c55a2533a2a5f1c199edff47e273993925b742f24ac06'
-          summary = json.loads((root / 'summary.json').read_text())
-          assert summary['fixed_routes'] == 30
-          assert summary['route_attempts'] == 30
-          assert summary['terminal_transport_states'] == {'http_terminal_non_success': 15, 'http_success': 15}
-          assert summary['candidate_rows'] == 150
-          assert summary['unique_candidate_urls'] == 60
-          assert summary['official_candidate_urls'] == 5
-          assert summary['first_party_candidate_urls'] == 1
-          assert summary['result_spawned_requests'] == 0
-          assert summary['transport_census_complete'] is True
-          assert summary['substantive_adjudication_complete'] is False
-          assert summary['class_closed'] is False
-          assert sum(1 for path in root.rglob('*') if path.is_file()) == 264
-          print(f"RD-03 census artifact verified: {manifest['entry_count']} entries plus manifest; {combined}")
+              rel=pathlib.PurePosixPath(row['path']); assert not rel.is_absolute() and '..' not in rel.parts
+              data=(root/rel).read_bytes(); assert len(data)==row['bytes']; assert hashlib.sha256(data).hexdigest()==row['sha256']
+          combined=hashlib.sha256('\n'.join(f"{row['sha256']}  {row['path']}" for row in manifest['entries']).encode()).hexdigest()
+          assert combined==manifest['combined_sha256']=='0bcee2db7be4904f775c55a2533a2a5f1c199edff47e273993925b742f24ac06'
+          summary=json.loads((root/'summary.json').read_text())
+          assert summary['fixed_routes']==30 and summary['route_attempts']==30
+          assert summary['terminal_transport_states']=={'http_terminal_non_success':15,'http_success':15}
+          assert summary['candidate_rows']==150 and summary['unique_candidate_urls']==60
+          assert summary['official_candidate_urls']==5 and summary['first_party_candidate_urls']==1
+          assert summary['result_spawned_requests']==0 and summary['transport_census_complete'] is True
+          assert summary['substantive_adjudication_complete'] is False and summary['class_closed'] is False
+          assert sum(1 for path in root.rglob('*') if path.is_file())==264
+          print(f"RD-03 census verified: 263 entries plus manifest; {combined}")
           PY
 
           test ! -e "$CENSUS_DEST"
@@ -217,28 +150,8 @@ jobs:
             "artifact_zip_sha256": "5b5414816cb626a7d9bbe16d914f67d5d02d1233c6ca0d84e21930909eba5f08",
             "manifest_entry_count": 263,
             "manifest_combined_sha256": "0bcee2db7be4904f775c55a2533a2a5f1c199edff47e273993925b742f24ac06",
-            "counts": {
-              "fixed_routes": 30,
-              "route_attempts": 30,
-              "http_success": 15,
-              "terminal_non_success": 15,
-              "candidate_result_rows": 150,
-              "unique_candidate_urls": 60,
-              "official_candidate_urls": 5,
-              "first_party_candidate_urls": 1,
-              "admitted_candidate_urls": 0,
-              "result_spawned_requests": 0
-            },
-            "authority": {
-              "outside_human_dependency": false,
-              "external_contacts": 0,
-              "external_reviews": 0,
-              "substantive_adjudication_performed_by_census": false,
-              "class_closed_by_census": false,
-              "publication_effect": "none",
-              "adoption_effect": "none",
-              "graph_effect": "none"
-            }
+            "counts": {"fixed_routes":30,"route_attempts":30,"http_success":15,"terminal_non_success":15,"candidate_result_rows":150,"unique_candidate_urls":60,"official_candidate_urls":5,"first_party_candidate_urls":1,"admitted_candidate_urls":0,"result_spawned_requests":0},
+            "authority": {"outside_human_dependency":false,"external_contacts":0,"external_reviews":0,"substantive_adjudication_performed_by_census":false,"class_closed_by_census":false,"publication_effect":"none","adoption_effect":"none","graph_effect":"none"}
           }
           JSON
           sed -i 's/^          //' "$EXECUTION_RECEIPT_PATH"
@@ -248,30 +161,23 @@ jobs:
           node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
           node tools/validate-no-magic-human-gate.mjs
 
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add \
-            "$CENSUS_DEST" \
-            "$EXECUTION_RECEIPT_PATH" \
-            "$PRODUCT_ROOT" \
-            "$CLOSURE_REFERENCE_PATH" \
+            "$CENSUS_DEST" "$EXECUTION_RECEIPT_PATH" "$PRODUCT_ROOT" "$CLOSURE_REFERENCE_PATH" \
             .github/workflows/status-sovereignty-rd-wave02-rd03-negotiated-terms.yml \
             docs/milestones/ssc-rd-wave02-rd03-negotiated-terms.md \
             schemas/status-sovereignty-rd-wave02-rd03-negotiated-terms.schema.json \
             test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js \
             tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs \
             tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
-
-          git diff --cached --name-only "$EXPECTED_START_SHA" | sort > /tmp/rd03-product-paths.txt
+          git diff --cached --name-only | sort > /tmp/rd03-product-paths.txt
           test "$(wc -l < /tmp/rd03-product-paths.txt | tr -d ' ')" = '276'
-          test -z "$(git diff --cached --name-status "$EXPECTED_START_SHA" | awk '$1 != "A" {print}')"
+          test -z "$(git diff --cached --name-status | awk '$1 != "A" {print}')"
           test -z "$(grep -E '(^|/)\.rd03-|temporary-ssc-rd03' /tmp/rd03-product-paths.txt || true)"
           test "$(grep -c '^data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/source-custody/public-record-census-v1/' /tmp/rd03-product-paths.txt)" = '264'
           git diff --cached --check
-
           git commit -m 'Close RD-03 negotiated terms as source unavailable'
           export PRODUCT_SHA="$(git rev-parse HEAD)"
-          test "$(git rev-parse HEAD^)" = "$EXPECTED_START_SHA"
+          test "$(git rev-parse HEAD^)" = "$INTEGRATION_SHA"
 
           npm run release:check
           git restore --worktree -- .
@@ -283,31 +189,34 @@ jobs:
           git diff --exit-code HEAD
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
 
-          observed="$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | cut -f1)"
-          test "$observed" = "$EXPECTED_START_SHA"
-          git push origin "HEAD:refs/heads/${TARGET_BRANCH}" \
-            --force-with-lease="refs/heads/${TARGET_BRANCH}:${EXPECTED_START_SHA}"
+          test "$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | cut -f1)" = "$RESEARCH_START_SHA"
+          git fetch --no-tags origin main
+          test "$(git rev-parse FETCH_HEAD)" = "$MAIN_START_SHA"
+          git push origin "HEAD:refs/heads/${TARGET_BRANCH}" --force-with-lease="refs/heads/${TARGET_BRANCH}:${RESEARCH_START_SHA}"
           test "$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | cut -f1)" = "$PRODUCT_SHA"
 
           rm -rf /tmp/rd03-terminal-receipt
           mkdir -p /tmp/rd03-terminal-receipt
-          cp /tmp/rd03-product-paths.txt /tmp/rd03-terminal-receipt/permanent-paths.txt
+          cp /tmp/rd03-integration-paths.txt /tmp/rd03-terminal-receipt/integration-paths.txt
+          cp /tmp/rd03-product-paths.txt /tmp/rd03-terminal-receipt/product-paths.txt
           cp "$EXECUTION_RECEIPT_PATH" /tmp/rd03-terminal-receipt/
-          cp "$PRODUCT_ROOT/class-receipt.json" /tmp/rd03-terminal-receipt/
-          cp "$PRODUCT_ROOT/manifest.json" /tmp/rd03-terminal-receipt/
-          cp "$PRODUCT_ROOT/summary.json" /tmp/rd03-terminal-receipt/
+          cp "$PRODUCT_ROOT/class-receipt.json" "$PRODUCT_ROOT/manifest.json" "$PRODUCT_ROOT/summary.json" /tmp/rd03-terminal-receipt/
           cp "$CLOSURE_REFERENCE_PATH" /tmp/rd03-terminal-receipt/closure-reference.json
           cat > /tmp/rd03-terminal-receipt/materialization.json <<JSON
           {
-            "schema_version": "ssc-rd03-wave02-terminal-materialization-receipt@1",
-            "research_start_head": "$EXPECTED_START_SHA",
+            "schema_version": "ssc-rd03-wave02-terminal-materialization-receipt@2",
+            "main_first_parent": "$MAIN_START_SHA",
+            "research_second_parent": "$RESEARCH_START_SHA",
+            "integration_commit": "$INTEGRATION_SHA",
             "product_head": "$PRODUCT_SHA",
-            "parent_count": 1,
-            "permanent_paths": 276,
+            "integration_paths": 5,
+            "product_paths": 276,
+            "total_permanent_increment_paths": 281,
             "temporary_paths": 0,
             "terminal_state": "bounded_source_unavailable",
             "instruments": 5,
             "terminal_fields": 70,
+            "adversarial_mutations_refused": 94,
             "outside_human_dependency": false,
             "external_contacts": 0,
             "external_reviews": 0,
@@ -321,7 +230,7 @@ jobs:
       - name: Preserve terminal materialization receipt
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd03-wave02-terminal-materialization
+          name: ssc-rd03-wave02-terminal-materialization-v2
           path: /tmp/rd03-terminal-receipt
           if-no-files-found: error
           retention-days: 90
