@@ -62,7 +62,7 @@ export function validateCurrentShape(current, schema) {
   ok(current.source_snapshots.first_promotion_snapshot_path === FIRST_PROGRESS_PATH, 'first progress path changed');
   ok(current.source_snapshots.first_promotion_snapshot_is_historical === true, 'first promotion snapshot must be historical');
 
-  ok(Array.isArray(current.promoted_class_receipts) && current.promoted_class_receipts.length === 5, 'four promoted class receipts required');
+  ok(Array.isArray(current.promoted_class_receipts) && current.promoted_class_receipts.length === 5, 'five promoted class receipts required');
   unique(current.promoted_class_receipts.map((row) => row.class_id), 'duplicate promoted class id');
   unique(current.promoted_class_receipts.map((row) => row.lane_id), 'duplicate promoted lane id');
   same(current.promoted_class_receipts.map((row) => row.class_id), ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04'], 'promoted class order changed');
@@ -108,10 +108,10 @@ export function validateCurrentShape(current, schema) {
   ok(rd03.merge_commit === '580d9c998f747330d190bed5011c7a1a517a1c0d', 'RD-03 merge custody changed');
   ok(rd03.manifest_combined_sha256 === '1323477ae4b4bda480eb9bf1484cde7db9783920c834a69996ca0428c57fb16e', 'RD-03 manifest custody changed');
   ok(rd03.terminal_state === 'bounded_source_unavailable', 'RD-03 terminal state changed');
-  ok(rd03.labels_exact_match === false, 'RD-03 label mismatch must remain explicit');
-  ok(rd03.label_reconciliation === 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact', 'RD-03 label reconciliation changed');
+  ok(rd03.labels_exact_match === true, 'RD-03 exposed receipt and constitutional labels must match');
+  ok(rd03.label_reconciliation === 'none', 'RD-03 flattened row must not inherit seed-label reconciliation');
 
-  ok(Array.isArray(current.selected_classes_open) && current.selected_classes_open.length === 1, 'two selected classes must remain open');
+  ok(Array.isArray(current.selected_classes_open) && current.selected_classes_open.length === 1, 'one selected class must remain open');
   unique(current.selected_classes_open.map((row) => row.class_id), 'duplicate open selected class');
   same(current.selected_classes_open.map((row) => row.class_id), ['RD-02-C04'], 'open selected class order changed');
   for (const row of current.selected_classes_open) {
@@ -177,6 +177,7 @@ export function validateCurrentShape(current, schema) {
   ok(schema?.properties?.selected_classes_open?.minItems === 1 && schema?.properties?.selected_classes_open?.maxItems === 1, 'schema open-class denominator changed');
   ok(schema?.properties?.counts?.properties?.closed_residual_classes?.const === 5, 'schema closed count changed');
   ok(schema?.properties?.counts?.properties?.open_residual_classes?.const === 37, 'schema open count changed');
+  ok(schema?.properties?.counts?.properties?.label_reconciliations?.const === 1, 'schema label-reconciliation count changed');
   return current;
 }
 

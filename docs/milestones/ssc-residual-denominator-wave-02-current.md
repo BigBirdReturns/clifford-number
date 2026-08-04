@@ -28,7 +28,7 @@ RD‑03 is bound to merged PR #803, merge `580d9c998f747330d190bed5011c7a1a517a1
 
 ## Label custody
 
-RD‑05 retains its explicit omission of the constitutional qualifier `complete`. RD‑03 retains the constitution’s `complete negotiated` label and the seed’s shorter label as separate historical objects; the reconciliation `constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact` does not silently rewrite either object. Two label reconciliations are therefore explicit in the cumulative ledger.
+RD‑05 retains the cumulative ledger’s sole row-level mismatch: its receipt label omits the constitutional qualifier `complete`. RD‑03’s exposed `constitutional_exact_label` and `receipt_class_label` are identical, so its cumulative row records `labels_exact_match: true` and `label_reconciliation: none`. The separate constitution-versus-seed mismatch remains bound inside RD‑03’s closure receipt as `constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact`; neither historical object is rewritten. The cumulative ledger therefore reports one row-level label reconciliation.
 
 ## Pre/post-promotion custody
 

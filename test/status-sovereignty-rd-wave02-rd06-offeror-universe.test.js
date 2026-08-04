@@ -98,6 +98,18 @@ for (const [name, mutate] of custodyMutations) {
   }
 }
 
+const postRd03LabelMutations = [
+  ['post-RD-03 reconciliation count', (v) => { v.counts.label_reconciliations = 2; }],
+  ['post-RD-03 RD-03 label flag', (v) => { v.promoted_class_receipts[4].labels_exact_match = false; }],
+  ['post-RD-03 RD-03 reconciliation', (v) => { v.promoted_class_receipts[4].label_reconciliation = 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact'; }]
+];
+
+for (const [name, mutate] of postRd03LabelMutations) {
+  const candidate = clone(currentLedger);
+  mutate(candidate);
+  assert.throws(() => validateCurrentAtlasCustody(candidate), undefined, name);
+}
+
 const preCustodyMutations = [
   ['pre-promotion RD-06 missing from open set', (v) => { v.selected_classes_open.pop(); }],
   ['pre-promotion RD-06 silently promoted', (v) => { v.promoted_class_receipts.push(clone(currentLedger.promoted_class_receipts[3])); }],
@@ -217,4 +229,4 @@ for (const [name, mutate] of schemaMutations) {
   assert.throws(() => validateProductShape(bundle, candidate), undefined, name);
 }
 
-console.log(`RD-06 terminal adversarial suite: ${mutations.length + schemaMutations.length + (custodyMutations.length * 2) + preCustodyMutations.length} mutations refused`);
+console.log(`RD-06 terminal adversarial suite: ${mutations.length + schemaMutations.length + (custodyMutations.length * 2) + postRd03LabelMutations.length + preCustodyMutations.length} mutations refused`);

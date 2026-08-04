@@ -78,8 +78,8 @@ const CLOSED = Object.freeze([
     merge_commit: '580d9c998f747330d190bed5011c7a1a517a1c0d',
     constitutional_exact_label: 'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms',
     receipt_class_label: 'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms',
-    labels_exact_match: false,
-    label_reconciliation: 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact',
+    labels_exact_match: true,
+    label_reconciliation: 'none',
     terminal_state: 'bounded_source_unavailable',
     closure_reference_path: 'data/project/ssc-residual-wave02/closures/RD-03-C04.json',
     class_receipt_path: 'data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms/class-receipt.json',
@@ -123,10 +123,15 @@ function validateClosure(root, expected, constitutionalAttempt) {
   ok(constitutionalAttempt?.issue === expected.issue && constitutionalAttempt?.lane_id === expected.lane_id, `${expected.class_id}: constitution binding changed`);
   ok(constitutionalAttempt?.exact_label === expected.constitutional_exact_label, `${expected.class_id}: constitutional label changed`);
 
-  const labelsMatch = expected.class_id === 'RD-03-C04'
-    ? closure?.label_custody?.labels_exact_match
-    : receipt.class_label === constitutionalAttempt.exact_label;
+  const labelsMatch = receipt.class_label === constitutionalAttempt.exact_label;
   ok(labelsMatch === expected.labels_exact_match, `${expected.class_id}: label-reconciliation state changed`);
+
+  if (expected.class_id === 'RD-03-C04') {
+    ok(closure?.label_custody?.constitutional_class_label === expected.constitutional_exact_label, 'RD-03 closure constitutional label changed');
+    ok(closure?.label_custody?.seed_closure_target === 'loan, warrant, security, covenant, milestone, pricing, and seniority terms', 'RD-03 closure seed label changed');
+    ok(closure?.label_custody?.labels_exact_match === false, 'RD-03 constitution-versus-seed mismatch erased');
+    ok(closure?.label_custody?.reconciliation === 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact', 'RD-03 seed-label reconciliation changed');
+  }
 
   if (expected.class_id === 'RD-04-C01') {
     same(closure?.residual_atlas_effect, {
@@ -232,7 +237,7 @@ export function deriveCurrent(root = ROOT) {
       classes_closed_this_wave: 5,
       closed_residual_classes: 5,
       open_residual_classes: 37,
-      label_reconciliations: 2,
+      label_reconciliations: 1,
       outside_human_dependencies: 0,
       external_contacts: 0,
       external_reviews: 0,

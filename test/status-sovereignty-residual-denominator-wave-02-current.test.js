@@ -40,7 +40,8 @@ const mutations = [
   ['RD-06 merge custody changed', (v) => { v.promoted_class_receipts[3].merge_commit = '0'.repeat(40); }],
   ['RD-03 state changed', (v) => { v.promoted_class_receipts[4].terminal_state = 'evidence_complete'; }],
   ['RD-03 merge custody changed', (v) => { v.promoted_class_receipts[4].merge_commit = '0'.repeat(40); }],
-  ['RD-03 label reconciliation erased', (v) => { v.promoted_class_receipts[4].labels_exact_match = true; }],
+  ['RD-03 flattened exact-match flag changed', (v) => { v.promoted_class_receipts[4].labels_exact_match = false; }],
+  ['RD-03 flattened reconciliation changed', (v) => { v.promoted_class_receipts[4].label_reconciliation = 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact'; }],
   ['manifest changed', (v) => { v.promoted_class_receipts[1].manifest_combined_sha256 = '0'.repeat(64); }],
   ['merge commit malformed', (v) => { v.promoted_class_receipts[1].merge_commit = 'bad'; }],
   ['outside human dependency added', (v) => { v.counts.outside_human_dependencies = 1; }],
@@ -70,7 +71,8 @@ const schemaMutations = [
   ['schema receipt denominator', (s) => { s.properties.promoted_class_receipts.maxItems = 4; }],
   ['schema open denominator', (s) => { s.properties.selected_classes_open.minItems = 4; }],
   ['schema closed count', (s) => { s.properties.counts.properties.closed_residual_classes.const = 1; }],
-  ['schema open count', (s) => { s.properties.counts.properties.open_residual_classes.const = 41; }]
+  ['schema open count', (s) => { s.properties.counts.properties.open_residual_classes.const = 41; }],
+  ['schema label reconciliation count', (s) => { s.properties.counts.properties.label_reconciliations.const = 2; }]
 ];
 
 for (const [name, mutate] of schemaMutations) {
