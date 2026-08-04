@@ -47,9 +47,9 @@ jobs:
               raise SystemExit('frozen controller extraction contract failed')
           Path('/tmp/pc44-semantic-ledger-repair.sh').write_text('\n'.join(body) + '\n')
           PY
-          git fetch --no-tags origin "+refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
           test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_TARGET_HEAD"
-          git checkout --detach "$EXPECTED_TARGET_HEAD"
+          git checkout --detach "origin/$TARGET_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_TARGET_HEAD"
           bash /tmp/pc44-semantic-ledger-repair.sh
       - uses: actions/upload-artifact@v4
         if: always()
