@@ -1,0 +1,944 @@
+{
+  "schema_version": "ssc-rd-wave03-rd03-lifecycle-recovery-fixed-protocol@1",
+  "wave_id": "SSC-RD-W03",
+  "lane_id": "RD-03",
+  "class_id": "RD-03-C05",
+  "issue": 1016,
+  "as_of": "2026-08-04",
+  "class_label": "commitment, closing, draw, disbursement, amendment, waiver, default, cure, repayment, and recovery chronology",
+  "status": "five_instrument_fifty_five_cell_denominator_frozen_protocol_not_executed",
+  "authority": "fixed_protocol_design_only_not_acquisition_or_class_receipt",
+  "source_custody": {
+    "constitution_path": "data/research/status-sovereignty-residual-denominator-wave-03-constitution.json",
+    "constitution_merge": "dc47681a9ad43e1c64c86e3d823dbb7c203a18c2",
+    "frozen_execution_base": "a69bffa4c7c6934432b2b93816f5b2b6a466a85b",
+    "parent_promotion_merge": "2af6bb7819a37e51c7198fb48da894445a29e494",
+    "seed_path": "data/project/ssc-residual-wave03/seeds/RD-03-C05.json",
+    "field_matrix_contract_path": "data/intake/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/field-matrix-contract.json",
+    "parent_lifecycle_path": "data/intake/status-sovereignty-rd03-osc-instrument-lifecycle.json",
+    "parent_terminal_matrix_path": "data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms/terminal-field-matrix.json",
+    "parent_class_receipt_path": "data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms/class-receipt.json",
+    "parent_closure_reference_path": "data/project/ssc-residual-wave02/closures/RD-03-C04.json",
+    "source_sha256": {
+      "parent": "3bd111cc56eb5046ed5ba2aa8a8dfdecaec9d37bbb273e6c75b695e6ae1e05a0",
+      "parent_matrix": "37ae1ffafc3a1f89ffb7210d7601890d71263c2edb2a363732726f77df676cb9",
+      "parent_receipt": "0fdefe05d54a5eaf9a6cdf6e5db0f45439ba9a5679f23d83843ea90d3227bc99",
+      "parent_closure": "0b34d7d113406786d0f94f73462017576785957ee19fe7f069393d81cff9a35a",
+      "constitution": "25cc75ce1026e5b397d00f2da310d2bcdaf12507858c573b936345ebd51c8c5b"
+    },
+    "parent_receipt_reopened_or_double_counted": false
+  },
+  "denominator": {
+    "unit_type": "named OSC instrument",
+    "instrument_count": 5,
+    "executed_and_cash_disbursed_parent_units": 1,
+    "conditional_pre_close_parent_units": 4,
+    "required_fields_per_instrument": 11,
+    "required_field_slots": 55,
+    "immutable_before_source_execution": true,
+    "source_count_is_unit_denominator": false,
+    "later_announcement_may_substitute_instrument": false,
+    "five_instruments_are_complete_osc_cohort": false
+  },
+  "required_fields": [
+    {
+      "field_id": "canonical_instrument_identity",
+      "question": "What exact named OSC instrument and borrower identity govern this row?",
+      "permitted_terminal_states": [
+        "observed",
+        "inherited_observed",
+        "not_applicable_by_instrument_state",
+        "source_restricted",
+        "source_unavailable_after_fixed_protocol",
+        "not_publicly_recovered"
+      ]
+    },
+    {
+      "field_id": "commitment_state_and_governing_date",
+      "question": "What public commitment state and governing date are recoverable for this instrument?",
+      "permitted_terminal_states": [
+        "observed",
+        "inherited_observed",
+        "not_applicable_by_instrument_state",
+        "source_restricted",
+        "source_unavailable_after_fixed_protocol",
+        "not_publicly_recovered"
+      ]
+    },
+    {
+      "field_id": "financial_close_and_executed_agreement_state_and_date",
+      "question": "What public record establishes financial close or an executed agreement and its date?",
+      "permitted_terminal_states": [
+        "observed",
+        "inherited_observed",
+        "not_applicable_by_instrument_state",
+        "source_restricted",
+        "source_unavailable_after_fixed_protocol",
+        "not_publicly_recovered"
+      ]
+    },
+    {
+      "field_id": "draw_or_cash_disbursement_state_and_date",
+      "question": "What public record establishes an actual draw or cash disbursement and its date?",
+      "permitted_terminal_states": [
+        "observed",
+        "inherited_observed",
+        "not_applicable_by_instrument_state",
+        "source_restricted",
+        "source_unavailable_after_fixed_protocol",
+        "not_publicly_recovered"
+      ]
+    },
+    {
+      "field_id": "amendment_and_waiver_chronology",
+      "question": "What public amendment, waiver, modification, or supersession chronology is recoverable?",
+      "permitted_terminal_states": [
+        "observed",
+        "inherited_observed",
+        "not_applicable_by_instrument_state",
+        "source_restricted",
+        "source_unavailable_after_fixed_protocol",
+        "not_publicly_recovered"
+      ]
+    },
+    {
+      "field_id": "default_cure_acceleration_or_enforcement_chronology",
+      "question": "What public default, cure, acceleration, enforcement, or comparable adverse-event chronology is recoverable?",
+      "permitted_terminal_states": [
+        "observed",
+        "inherited_observed",
+        "not_applicable_by_instrument_state",
+        "source_restricted",
+        "source_unavailable_after_fixed_protocol",
+        "not_publicly_recovered"
+      ]
+    },
+    {
+      "field_id": "interest_payment_chronology",
+      "question": "What public record establishes actual interest payments rather than scheduled interest?",
+      "permitted_terminal_states": [
+        "observed",
+        "inherited_observed",
+        "not_applicable_by_instrument_state",
+        "source_restricted",
+        "source_unavailable_after_fixed_protocol",
+        "not_publicly_recovered"
+      ]
+    },
+    {
+      "field_id": "principal_repayment_chronology",
+      "question": "What public record establishes actual principal repayment rather than maturity or scheduled payment?",
+      "permitted_terminal_states": [
+        "observed",
+        "inherited_observed",
+        "not_applicable_by_instrument_state",
+        "source_restricted",
+        "source_unavailable_after_fixed_protocol",
+        "not_publicly_recovered"
+      ]
+    },
+    {
+      "field_id": "public_recovery_or_unresolved_exposure_state",
+      "question": "What public record establishes recovery, retained value, or unresolved exposure without combining companion instruments?",
+      "permitted_terminal_states": [
+        "observed",
+        "inherited_observed",
+        "not_applicable_by_instrument_state",
+        "source_restricted",
+        "source_unavailable_after_fixed_protocol",
+        "not_publicly_recovered"
+      ]
+    },
+    {
+      "field_id": "source_identities_and_exact_custody",
+      "question": "What exact source locators and capture receipts support every classified lifecycle field?",
+      "permitted_terminal_states": [
+        "observed",
+        "inherited_observed",
+        "not_applicable_by_instrument_state",
+        "source_restricted",
+        "source_unavailable_after_fixed_protocol",
+        "not_publicly_recovered"
+      ]
+    },
+    {
+      "field_id": "field_and_instrument_terminal_state",
+      "question": "What permitted terminal state applies after the exact fixed protocol is exhausted?",
+      "permitted_terminal_states": [
+        "observed",
+        "inherited_observed",
+        "not_applicable_by_instrument_state",
+        "source_restricted",
+        "source_unavailable_after_fixed_protocol",
+        "not_publicly_recovered"
+      ]
+    }
+  ],
+  "instruments": [
+    {
+      "unit_ordinal": 1,
+      "unit_id": "OSC-MP-MATERIALS-150M",
+      "borrower": "MP Materials Corp.",
+      "search_name": "MP Materials",
+      "inherited_parent_state": "executed_and_cash_disbursed_terms_recovered_performance_and_recovery_open",
+      "parent_source_ids": [
+        "SSC-RD03-S001",
+        "SSC-RD03-S002",
+        "SSC-RD03-S003",
+        "SSC-RD03-S004"
+      ],
+      "required_field_ids": [
+        "canonical_instrument_identity",
+        "commitment_state_and_governing_date",
+        "financial_close_and_executed_agreement_state_and_date",
+        "draw_or_cash_disbursement_state_and_date",
+        "amendment_and_waiver_chronology",
+        "default_cure_acceleration_or_enforcement_chronology",
+        "interest_payment_chronology",
+        "principal_repayment_chronology",
+        "public_recovery_or_unresolved_exposure_state",
+        "source_identities_and_exact_custody",
+        "field_and_instrument_terminal_state"
+      ],
+      "protocol_state": "not_executed",
+      "terminal_fields": 0,
+      "required_fields": 11,
+      "row_closed": false
+    },
+    {
+      "unit_ordinal": 2,
+      "unit_id": "OSC-VULCAN-620M",
+      "borrower": "Vulcan Elements",
+      "search_name": "Vulcan Elements",
+      "inherited_parent_state": "conditional_pre_close",
+      "parent_source_ids": [
+        "SSC-RD03-S005"
+      ],
+      "required_field_ids": [
+        "canonical_instrument_identity",
+        "commitment_state_and_governing_date",
+        "financial_close_and_executed_agreement_state_and_date",
+        "draw_or_cash_disbursement_state_and_date",
+        "amendment_and_waiver_chronology",
+        "default_cure_acceleration_or_enforcement_chronology",
+        "interest_payment_chronology",
+        "principal_repayment_chronology",
+        "public_recovery_or_unresolved_exposure_state",
+        "source_identities_and_exact_custody",
+        "field_and_instrument_terminal_state"
+      ],
+      "protocol_state": "not_executed",
+      "terminal_fields": 0,
+      "required_fields": 11,
+      "row_closed": false
+    },
+    {
+      "unit_ordinal": 3,
+      "unit_id": "OSC-REELEMENT-80M",
+      "borrower": "ReElement Technologies",
+      "search_name": "ReElement Technologies",
+      "inherited_parent_state": "conditional_pre_close",
+      "parent_source_ids": [
+        "SSC-RD03-S005",
+        "SSC-RD03-S006"
+      ],
+      "required_field_ids": [
+        "canonical_instrument_identity",
+        "commitment_state_and_governing_date",
+        "financial_close_and_executed_agreement_state_and_date",
+        "draw_or_cash_disbursement_state_and_date",
+        "amendment_and_waiver_chronology",
+        "default_cure_acceleration_or_enforcement_chronology",
+        "interest_payment_chronology",
+        "principal_repayment_chronology",
+        "public_recovery_or_unresolved_exposure_state",
+        "source_identities_and_exact_custody",
+        "field_and_instrument_terminal_state"
+      ],
+      "protocol_state": "not_executed",
+      "terminal_fields": 0,
+      "required_fields": 11,
+      "row_closed": false
+    },
+    {
+      "unit_ordinal": 4,
+      "unit_id": "OSC-PHOENIX-500M",
+      "borrower": "Phoenix Tailings",
+      "search_name": "Phoenix Tailings",
+      "inherited_parent_state": "conditional_pre_close",
+      "parent_source_ids": [
+        "SSC-RD03-S007"
+      ],
+      "required_field_ids": [
+        "canonical_instrument_identity",
+        "commitment_state_and_governing_date",
+        "financial_close_and_executed_agreement_state_and_date",
+        "draw_or_cash_disbursement_state_and_date",
+        "amendment_and_waiver_chronology",
+        "default_cure_acceleration_or_enforcement_chronology",
+        "interest_payment_chronology",
+        "principal_repayment_chronology",
+        "public_recovery_or_unresolved_exposure_state",
+        "source_identities_and_exact_custody",
+        "field_and_instrument_terminal_state"
+      ],
+      "protocol_state": "not_executed",
+      "terminal_fields": 0,
+      "required_fields": 11,
+      "row_closed": false
+    },
+    {
+      "unit_ordinal": 5,
+      "unit_id": "OSC-ENERGY-FUELS-725M",
+      "borrower": "Energy Fuels",
+      "search_name": "Energy Fuels",
+      "inherited_parent_state": "conditional_pre_close",
+      "parent_source_ids": [
+        "SSC-RD03-S008",
+        "SSC-RD03-S009"
+      ],
+      "required_field_ids": [
+        "canonical_instrument_identity",
+        "commitment_state_and_governing_date",
+        "financial_close_and_executed_agreement_state_and_date",
+        "draw_or_cash_disbursement_state_and_date",
+        "amendment_and_waiver_chronology",
+        "default_cure_acceleration_or_enforcement_chronology",
+        "interest_payment_chronology",
+        "principal_repayment_chronology",
+        "public_recovery_or_unresolved_exposure_state",
+        "source_identities_and_exact_custody",
+        "field_and_instrument_terminal_state"
+      ],
+      "protocol_state": "not_executed",
+      "terminal_fields": 0,
+      "required_fields": 11,
+      "row_closed": false
+    }
+  ],
+  "routes": [
+    {
+      "route_id": "RD03-W03-R001",
+      "route_type": "exact_predeclared_get",
+      "request_url": "https://www.defense.gov/News/Releases/Release/Article/4270722/office-of-strategic-capital-announces-first-loan-through-dod-agreement-with-mp/",
+      "purpose": "official MP Materials executed-loan announcement",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "admission_state": "predeclared_official_or_regulatory_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R002",
+      "route_type": "exact_predeclared_get",
+      "request_url": "https://www.sec.gov/Archives/edgar/data/1801368/000180136826000008/mp-20251231.htm",
+      "purpose": "MP Materials 2025 Form 10-K",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "admission_state": "predeclared_official_or_regulatory_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R003",
+      "route_type": "exact_predeclared_get",
+      "request_url": "https://www.sec.gov/Archives/edgar/data/1801368/000180136826000029/mp-20260331.htm",
+      "purpose": "MP Materials March 2026 filing",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "admission_state": "predeclared_official_or_regulatory_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R004",
+      "route_type": "exact_predeclared_get",
+      "request_url": "https://www.sec.gov/Archives/edgar/data/1801368/000119312525157310/d43796dex101.htm",
+      "purpose": "MP Materials transaction agreement",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "admission_state": "predeclared_official_or_regulatory_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R005",
+      "route_type": "exact_predeclared_get",
+      "request_url": "https://www.sec.gov/Archives/edgar/data/1801368/000119312525157310/0001193125-25-157310-index.html",
+      "purpose": "MP Materials accession index",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "admission_state": "predeclared_official_or_regulatory_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R006",
+      "route_type": "exact_predeclared_get",
+      "request_url": "https://www.war.gov/News/Releases/Release/Article/4339788/office-of-strategic-capital-agrees-to-joint-700m-conditional-loan-commitment-wi/",
+      "purpose": "Vulcan and ReElement conditional commitments",
+      "instrument_ids": [
+        "OSC-VULCAN-620M",
+        "OSC-REELEMENT-80M"
+      ],
+      "admission_state": "predeclared_official_or_regulatory_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R007",
+      "route_type": "exact_predeclared_get",
+      "request_url": "https://www.sec.gov/Archives/edgar/data/1590715/000165495425012526/arec_8k.htm",
+      "purpose": "American Resources ReElement filing",
+      "instrument_ids": [
+        "OSC-VULCAN-620M",
+        "OSC-REELEMENT-80M"
+      ],
+      "admission_state": "predeclared_official_or_regulatory_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R008",
+      "route_type": "exact_predeclared_get",
+      "request_url": "https://www.sec.gov/Archives/edgar/data/1590715/000165495425012526/0001654954-25-012526-index.html",
+      "purpose": "American Resources accession index",
+      "instrument_ids": [
+        "OSC-VULCAN-620M",
+        "OSC-REELEMENT-80M"
+      ],
+      "admission_state": "predeclared_official_or_regulatory_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R009",
+      "route_type": "exact_predeclared_get",
+      "request_url": "https://www.war.gov/News/Releases/Release/Article/4517853/office-of-strategic-capital-signs-500-million-conditional-loan-commitment-with/",
+      "purpose": "Phoenix Tailings conditional commitment",
+      "instrument_ids": [
+        "OSC-PHOENIX-500M"
+      ],
+      "admission_state": "predeclared_official_or_regulatory_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R010",
+      "route_type": "exact_predeclared_get",
+      "request_url": "https://www.war.gov/News/Releases/Release/Article/4520819/the-department-of-wars-office-of-strategic-capital-signs-725-million-conditiona/",
+      "purpose": "Energy Fuels conditional commitment",
+      "instrument_ids": [
+        "OSC-ENERGY-FUELS-725M"
+      ],
+      "admission_state": "predeclared_official_or_regulatory_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R011",
+      "route_type": "exact_predeclared_get",
+      "request_url": "https://www.sec.gov/Archives/edgar/data/1385849/000106299326003385/form8k.htm",
+      "purpose": "Energy Fuels OSC filing",
+      "instrument_ids": [
+        "OSC-ENERGY-FUELS-725M"
+      ],
+      "admission_state": "predeclared_official_or_regulatory_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R012",
+      "route_type": "exact_predeclared_get",
+      "request_url": "https://www.sec.gov/Archives/edgar/data/1385849/000106299326003385/0001062993-26-003385-index.html",
+      "purpose": "Energy Fuels accession index",
+      "instrument_ids": [
+        "OSC-ENERGY-FUELS-725M"
+      ],
+      "admission_state": "predeclared_official_or_regulatory_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R013",
+      "route_type": "exact_predeclared_get",
+      "request_url": "https://data.sec.gov/submissions/CIK0001801368.json",
+      "purpose": "MP Materials SEC submissions index",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "admission_state": "predeclared_official_or_regulatory_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R014",
+      "route_type": "exact_predeclared_get",
+      "request_url": "https://data.sec.gov/submissions/CIK0001590715.json",
+      "purpose": "American Resources SEC submissions index",
+      "instrument_ids": [
+        "OSC-VULCAN-620M",
+        "OSC-REELEMENT-80M"
+      ],
+      "admission_state": "predeclared_official_or_regulatory_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R015",
+      "route_type": "exact_predeclared_get",
+      "request_url": "https://data.sec.gov/submissions/CIK0001385849.json",
+      "purpose": "Energy Fuels SEC submissions index",
+      "instrument_ids": [
+        "OSC-ENERGY-FUELS-725M"
+      ],
+      "admission_state": "predeclared_official_or_regulatory_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R016",
+      "route_type": "exact_predeclared_get",
+      "request_url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001801368.json",
+      "purpose": "MP Materials SEC company facts",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "admission_state": "predeclared_official_or_regulatory_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R017",
+      "route_type": "exact_predeclared_get",
+      "request_url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001590715.json",
+      "purpose": "American Resources SEC company facts",
+      "instrument_ids": [
+        "OSC-VULCAN-620M",
+        "OSC-REELEMENT-80M"
+      ],
+      "admission_state": "predeclared_official_or_regulatory_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R018",
+      "route_type": "exact_predeclared_get",
+      "request_url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001385849.json",
+      "purpose": "Energy Fuels SEC company facts",
+      "instrument_ids": [
+        "OSC-ENERGY-FUELS-725M"
+      ],
+      "admission_state": "predeclared_official_or_regulatory_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R019",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22MP%20Materials%22%20%22financial%20close%22",
+      "purpose": "candidate census for MP Materials: financial close",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "search_term": "financial close",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R020",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22MP%20Materials%22%20%22disbursement%22",
+      "purpose": "candidate census for MP Materials: disbursement",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "search_term": "disbursement",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R021",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22MP%20Materials%22%20%22amendment%20waiver%22",
+      "purpose": "candidate census for MP Materials: amendment waiver",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "search_term": "amendment waiver",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R022",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22MP%20Materials%22%20%22default%20cure%22",
+      "purpose": "candidate census for MP Materials: default cure",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "search_term": "default cure",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R023",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22MP%20Materials%22%20%22repayment%20recovery%22",
+      "purpose": "candidate census for MP Materials: repayment recovery",
+      "instrument_ids": [
+        "OSC-MP-MATERIALS-150M"
+      ],
+      "search_term": "repayment recovery",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R024",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22Vulcan%20Elements%22%20%22financial%20close%22",
+      "purpose": "candidate census for Vulcan Elements: financial close",
+      "instrument_ids": [
+        "OSC-VULCAN-620M"
+      ],
+      "search_term": "financial close",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R025",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22Vulcan%20Elements%22%20%22disbursement%22",
+      "purpose": "candidate census for Vulcan Elements: disbursement",
+      "instrument_ids": [
+        "OSC-VULCAN-620M"
+      ],
+      "search_term": "disbursement",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R026",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22Vulcan%20Elements%22%20%22amendment%20waiver%22",
+      "purpose": "candidate census for Vulcan Elements: amendment waiver",
+      "instrument_ids": [
+        "OSC-VULCAN-620M"
+      ],
+      "search_term": "amendment waiver",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R027",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22Vulcan%20Elements%22%20%22default%20cure%22",
+      "purpose": "candidate census for Vulcan Elements: default cure",
+      "instrument_ids": [
+        "OSC-VULCAN-620M"
+      ],
+      "search_term": "default cure",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R028",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22Vulcan%20Elements%22%20%22repayment%20recovery%22",
+      "purpose": "candidate census for Vulcan Elements: repayment recovery",
+      "instrument_ids": [
+        "OSC-VULCAN-620M"
+      ],
+      "search_term": "repayment recovery",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R029",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22ReElement%20Technologies%22%20%22financial%20close%22",
+      "purpose": "candidate census for ReElement Technologies: financial close",
+      "instrument_ids": [
+        "OSC-REELEMENT-80M"
+      ],
+      "search_term": "financial close",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R030",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22ReElement%20Technologies%22%20%22disbursement%22",
+      "purpose": "candidate census for ReElement Technologies: disbursement",
+      "instrument_ids": [
+        "OSC-REELEMENT-80M"
+      ],
+      "search_term": "disbursement",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R031",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22ReElement%20Technologies%22%20%22amendment%20waiver%22",
+      "purpose": "candidate census for ReElement Technologies: amendment waiver",
+      "instrument_ids": [
+        "OSC-REELEMENT-80M"
+      ],
+      "search_term": "amendment waiver",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R032",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22ReElement%20Technologies%22%20%22default%20cure%22",
+      "purpose": "candidate census for ReElement Technologies: default cure",
+      "instrument_ids": [
+        "OSC-REELEMENT-80M"
+      ],
+      "search_term": "default cure",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R033",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22ReElement%20Technologies%22%20%22repayment%20recovery%22",
+      "purpose": "candidate census for ReElement Technologies: repayment recovery",
+      "instrument_ids": [
+        "OSC-REELEMENT-80M"
+      ],
+      "search_term": "repayment recovery",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R034",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22Phoenix%20Tailings%22%20%22financial%20close%22",
+      "purpose": "candidate census for Phoenix Tailings: financial close",
+      "instrument_ids": [
+        "OSC-PHOENIX-500M"
+      ],
+      "search_term": "financial close",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R035",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22Phoenix%20Tailings%22%20%22disbursement%22",
+      "purpose": "candidate census for Phoenix Tailings: disbursement",
+      "instrument_ids": [
+        "OSC-PHOENIX-500M"
+      ],
+      "search_term": "disbursement",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R036",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22Phoenix%20Tailings%22%20%22amendment%20waiver%22",
+      "purpose": "candidate census for Phoenix Tailings: amendment waiver",
+      "instrument_ids": [
+        "OSC-PHOENIX-500M"
+      ],
+      "search_term": "amendment waiver",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R037",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22Phoenix%20Tailings%22%20%22default%20cure%22",
+      "purpose": "candidate census for Phoenix Tailings: default cure",
+      "instrument_ids": [
+        "OSC-PHOENIX-500M"
+      ],
+      "search_term": "default cure",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R038",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22Phoenix%20Tailings%22%20%22repayment%20recovery%22",
+      "purpose": "candidate census for Phoenix Tailings: repayment recovery",
+      "instrument_ids": [
+        "OSC-PHOENIX-500M"
+      ],
+      "search_term": "repayment recovery",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R039",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22Energy%20Fuels%22%20%22financial%20close%22",
+      "purpose": "candidate census for Energy Fuels: financial close",
+      "instrument_ids": [
+        "OSC-ENERGY-FUELS-725M"
+      ],
+      "search_term": "financial close",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R040",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22Energy%20Fuels%22%20%22disbursement%22",
+      "purpose": "candidate census for Energy Fuels: disbursement",
+      "instrument_ids": [
+        "OSC-ENERGY-FUELS-725M"
+      ],
+      "search_term": "disbursement",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R041",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22Energy%20Fuels%22%20%22amendment%20waiver%22",
+      "purpose": "candidate census for Energy Fuels: amendment waiver",
+      "instrument_ids": [
+        "OSC-ENERGY-FUELS-725M"
+      ],
+      "search_term": "amendment waiver",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R042",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22Energy%20Fuels%22%20%22default%20cure%22",
+      "purpose": "candidate census for Energy Fuels: default cure",
+      "instrument_ids": [
+        "OSC-ENERGY-FUELS-725M"
+      ],
+      "search_term": "default cure",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    },
+    {
+      "route_id": "RD03-W03-R043",
+      "route_type": "fixed_candidate_query_bing_rss",
+      "request_url": "https://www.bing.com/search?format=rss&q=%22Office%20of%20Strategic%20Capital%22%20%22Energy%20Fuels%22%20%22repayment%20recovery%22",
+      "purpose": "candidate census for Energy Fuels: repayment recovery",
+      "instrument_ids": [
+        "OSC-ENERGY-FUELS-725M"
+      ],
+      "search_term": "repayment recovery",
+      "admission_state": "candidate_census_only_not_admitted_source",
+      "maximum_attempts": 1,
+      "automatic_result_followups": 0
+    }
+  ],
+  "transport_contract": {
+    "maximum_attempts_per_route": 1,
+    "timeout_ms": 30000,
+    "maximum_body_bytes": 10485760,
+    "concurrency": 4,
+    "bing_result_depth": 10,
+    "result_spawned_requests": 0,
+    "automatic_second_pass_authorized": false,
+    "external_contacts": 0,
+    "external_reviews": 0,
+    "outside_human_dependency": false
+  },
+  "admission_rules": [
+    "exact predeclared routes retain their declared official or regulatory source identity only",
+    "Bing RSS results are candidate census rows and are not admitted sources",
+    "no result-spawned URL may be fetched or promoted by this protocol",
+    "transport success does not establish field truth without explicit content classification",
+    "HTTP or transport failure is typed source custody and is not event absence"
+  ],
+  "terminal_rules": [
+    "all five instrument rows and all fifty-five field cells must be materialized",
+    "conditional commitment remains distinct from financial close, execution, draw, and disbursement",
+    "scheduled interest remains distinct from observed payment",
+    "outstanding obligation remains distinct from default, acceleration, or enforcement",
+    "maturity remains distinct from principal repayment",
+    "companion equity, warrant, price support, or offtake remains distinct from loan recovery",
+    "a record not publicly recovered after the fixed protocol is not event absence",
+    "one terminal class receipt does not close RD-03, Wave 03, or the residual denominator"
+  ],
+  "counts": {
+    "instruments": 5,
+    "required_fields_per_instrument": 11,
+    "required_field_slots": 55,
+    "fixed_routes": 43,
+    "exact_predeclared_routes": 18,
+    "candidate_census_routes": 25,
+    "acquisition_attempts": 0,
+    "terminal_fields": 0,
+    "terminal_instruments": 0,
+    "admitted_candidate_sources": 0,
+    "external_contacts": 0,
+    "external_reviews": 0
+  },
+  "current_result": {
+    "terminal_state": "protocol_frozen_acquisition_not_executed",
+    "fixed_protocol_executed": false,
+    "class_closed": false,
+    "complete_lifecycle_chronology_observed": false,
+    "public_recovery_observed": false,
+    "favoritism_finding": false,
+    "extraction_finding": false,
+    "coordination_finding": false,
+    "common_purpose_finding": false,
+    "reviewed_disposition_changed": false,
+    "outside_human_dependency": false,
+    "project_blocking": false,
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none"
+  },
+  "boundaries": {
+    "conditional_commitment_is_financial_close": false,
+    "financial_close_is_cash_disbursement": false,
+    "executed_loan_is_full_draw": false,
+    "scheduled_interest_is_observed_payment": false,
+    "outstanding_obligation_is_default": false,
+    "maturity_term_is_repayment": false,
+    "companion_public_right_is_loan_recovery": false,
+    "candidate_query_result_is_admitted_source": false,
+    "no_public_record_is_event_absence": false,
+    "five_named_instruments_are_complete_osc_cohort": false,
+    "intake_protocol_is_class_closure": false,
+    "outside_human_dependency": false,
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none"
+  }
+}
