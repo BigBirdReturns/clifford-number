@@ -1,0 +1,112 @@
+name: TEMP materialize exact RD-03 terminal closure v3
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-terminal-materializer-v3.yml'
+      - '.rd03-terminal-v3/**'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd03-terminal-materializer-v3-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-terminal-materializer-trigger-v3'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd03-negotiated-terms
+      CARRIER_BRANCH: agent/ssc-rd03-terminal-materializer-base-v1
+      SOURCE_WORKFLOW_BRANCH: agent/ssc-rd03-terminal-materializer-base-v1
+      SOURCE_WORKFLOW_PATH: .github/workflows/temporary-ssc-rd03-terminal-materializer-v1.yml
+      EXPECTED_SOURCE_WORKFLOW_HEAD: 7ba5b96cd87e72151c4bbfdc348d06c33f8455e0
+      EXPECTED_RESEARCH_HEAD: e70aec0f6809c77e198e0c4ee80f6bcadb6bbdc4
+      EXPECTED_MAIN_HEAD: 69b153b6c358783ed016621fc2057e8c37605760
+      CENSUS_ARTIFACT_ID: '8875551993'
+      CENSUS_ARTIFACT_SHA256: 5b5414816cb626a7d9bbe16d914f67d5d02d1233c6ca0d84e21930909eba5f08
+      CENSUS_MANIFEST_SHA256: 0bcee2db7be4904f775c55a2533a2a5f1c199edff47e273993925b742f24ac06
+      CENSUS_DEST: data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/source-custody/public-record-census-v1
+      EXECUTION_RECEIPT_PATH: data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/public-record-census-execution-receipt.json
+      PRODUCT_ROOT: data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms
+      CLOSURE_REFERENCE_PATH: data/project/ssc-residual-wave02/closures/RD-03-C04.json
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd03-negotiated-terms
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Extract corrected retained materializer and execute
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_RESEARCH_HEAD"
+          test "$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | cut -f1)" = "$EXPECTED_RESEARCH_HEAD"
+          test "$(git ls-remote --heads origin "refs/heads/${SOURCE_WORKFLOW_BRANCH}" | cut -f1)" = "$EXPECTED_SOURCE_WORKFLOW_HEAD"
+          node tools/validate-no-magic-human-gate.mjs
+
+          git fetch origin "refs/heads/${SOURCE_WORKFLOW_BRANCH}:refs/remotes/origin/${SOURCE_WORKFLOW_BRANCH}"
+          git show "origin/${SOURCE_WORKFLOW_BRANCH}:${SOURCE_WORKFLOW_PATH}" > /tmp/rd03-source-workflow.yml
+          test "$(sha256sum /tmp/rd03-source-workflow.yml | awk '{print $1}')" = '5e8f1d4f70de1357b3757cd1a9fd9bd8550994a967b3225e37865b4858e5bfa3'
+
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('/tmp/rd03-source-workflow.yml').read_text().splitlines()
+          marker = '        run: |'
+          positions = [index for index, line in enumerate(source) if line == marker]
+          assert positions == [52], positions
+
+          script_lines = []
+          for line in source[positions[0] + 1:]:
+              if line.startswith('      - '):
+                  break
+              if line == '':
+                  script_lines.append('')
+                  continue
+              assert line.startswith('          '), repr(line)
+              script_lines.append(line[10:])
+
+          script = '\n'.join(script_lines) + '\n'
+          old_parent = 'test "$(git show -s --format=%P "$INTEGRATION_SHA")" = "$MAIN_START_SHA $RESEARCH_START_SHA"'
+          new_parent = '\n'.join([
+              'test "$(git rev-list --parents -n1 "$INTEGRATION_SHA" | awk \'{print NF-1}\')" = \'2\'',
+              'test "$(git rev-parse "${INTEGRATION_SHA}^1")" = "$MAIN_START_SHA"',
+              'test "$(git rev-parse "${INTEGRATION_SHA}^2")" = "$RESEARCH_START_SHA"',
+          ])
+          assert script.count(old_parent) == 1, script.count(old_parent)
+          script = script.replace(old_parent, new_parent)
+
+          old_repo_expression = '${{ github.repository }}'
+          assert script.count(old_repo_expression) == 1, script.count(old_repo_expression)
+          script = script.replace(old_repo_expression, '${GITHUB_REPOSITORY}')
+
+          assert '${{' not in script
+          assert script.count('git rev-list --parents -n1') == 1
+          assert script.count('${INTEGRATION_SHA}^1') == 1
+          assert script.count('${INTEGRATION_SHA}^2') == 1
+          Path('/tmp/rd03-materialize.sh').write_text(script)
+          PY
+
+          bash -n /tmp/rd03-materialize.sh
+          grep -F 'git rev-list --parents -n1' /tmp/rd03-materialize.sh
+          grep -F '${INTEGRATION_SHA}^1' /tmp/rd03-materialize.sh
+          grep -F '${INTEGRATION_SHA}^2' /tmp/rd03-materialize.sh
+          grep -F '${GITHUB_REPOSITORY}' /tmp/rd03-materialize.sh
+          bash /tmp/rd03-materialize.sh
+
+      - name: Preserve terminal materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-wave02-terminal-materialization-v3
+          path: /tmp/rd03-terminal-receipt
+          if-no-files-found: error
+          retention-days: 90
