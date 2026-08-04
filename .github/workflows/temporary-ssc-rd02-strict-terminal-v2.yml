@@ -53,11 +53,13 @@ jobs:
           git show "origin/rd02-controller-v2:.github/workflows/temporary-ssc-rd02-strict-terminal-v1.yml" > "$RUNNER_TEMP/rd02-strict-v1.yml"
           python - <<'PY'
           import hashlib
+          import json
           import os
           import textwrap
           from pathlib import Path
 
           runner_temp = Path(os.environ['RUNNER_TEMP'])
+          bootstrap = Path(os.environ['RECEIPT_DIR'])
           lines = (runner_temp / 'rd02-strict-v1.yml').read_text().splitlines()
           start = lines.index('        run: |') + 1
           end = next(
@@ -66,24 +68,40 @@ jobs:
           )
           script = textwrap.dedent('\n'.join(lines[start:end])) + '\n'
 
-          old = """.github/workflows/status-sovereignty-rd-wave02-rd02-license-leverage-field-matrix.yml
-          data/intake/status-sovereignty-rd-wave02-rd02-license-leverage/field-matrix.json
-          data/project/ssc-residual-wave02/seeds/RD-02-C04.json
-          test/status-sovereignty-rd-wave02-rd02-field-matrix.test.js
-          tools/validate-status-sovereignty-rd-wave02-rd02-license-leverage-field-matrix.mjs"""
-          new = """data/intake/status-sovereignty-rd-wave02-rd02-license-leverage/field-matrix.json
+          replacements = [
+              (
+                  '.github/workflows/status-sovereignty-rd-wave02-rd02-license-leverage-field-matrix.yml',
+                  'tools/acquisition/status-sovereignty-rd-wave02-rd02/build-field-matrix.mjs',
+              ),
+              (
+                  'tools/validate-status-sovereignty-rd-wave02-rd02-field-matrix.mjs',
+                  'tools/acquisition/status-sovereignty-rd-wave02-rd02/validate-field-matrix.mjs',
+              ),
+          ]
+          repair = []
+          for old, new in replacements:
+              old_count = script.count(old)
+              new_count_before = script.count(new)
+              if old_count != 1 or new_count_before != 0:
+                  raise RuntimeError(
+                      f'path repair anchor changed: {old!r} old={old_count} new_before={new_count_before}'
+                  )
+              script = script.replace(old, new, 1)
+              if script.count(old) != 0 or script.count(new) != 1:
+                  raise RuntimeError(f'path repair postcondition failed: {old!r} -> {new!r}')
+              repair.append({'old': old, 'new': new, 'old_occurrences': old_count})
+
+          expected_manifest = """data/intake/status-sovereignty-rd-wave02-rd02-license-leverage/field-matrix.json
           data/project/ssc-residual-wave02/seeds/RD-02-C04.json
           test/status-sovereignty-rd-wave02-rd02-field-matrix.test.js
           tools/acquisition/status-sovereignty-rd-wave02-rd02/build-field-matrix.mjs
           tools/acquisition/status-sovereignty-rd-wave02-rd02/validate-field-matrix.mjs"""
-          count = script.count(old)
-          if count != 1:
-              raise RuntimeError(f'integration path manifest: expected one match, found {count}')
-          script = script.replace(old, new, 1)
+          if script.count(expected_manifest) != 1:
+              raise RuntimeError('corrected five-path manifest is not exact')
 
           old = "'schema_version':'ssc-rd02-strict-terminal-materialization@1',"
           new = "'schema_version':'ssc-rd02-strict-terminal-materialization@2',"
-          if script.count(old) != 1:
+          if script.count(old) != 1 or script.count(new) != 0:
               raise RuntimeError('receipt schema anchor changed')
           script = script.replace(old, new, 1)
 
@@ -92,6 +110,18 @@ jobs:
           digest = hashlib.sha256(script.encode()).hexdigest()
           (runner_temp / 'derived-v2-script.sha256').write_text(
               f'{digest}  ssc-rd02-strict-terminal-v2.sh\n'
+          )
+          (bootstrap / 'path-repair.json').write_text(
+              json.dumps(
+                  {
+                      'schema_version': 'ssc-rd02-strict-path-repair@1',
+                      'replacement_count': len(repair),
+                      'replacements': repair,
+                      'corrected_manifest': expected_manifest.splitlines(),
+                      'derived_script_sha256': digest,
+                  },
+                  indent=2,
+              ) + '\n'
           )
           PY
           bash -n /tmp/ssc-rd02-strict-terminal-v2.sh
