@@ -62,7 +62,7 @@ jobs:
             'final_step':os.environ['STEP'],
             'main_parent':os.environ['EXPECTED_MAIN'],
             'target_branch':os.environ['TARGET_BRANCH'],
-            'permanent_paths':7,
+            'permanent_paths':8,
             'closed_residual_classes':5,
             'open_residual_classes':37,
             'open_selected_class_ids':['RD-02-C04'],
@@ -123,12 +123,47 @@ jobs:
           print('rebound duplicate validator arrays to unique full statements')
           PY
           python /tmp/materialize-ledger5.py
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js')
+          value = path.read_text()
+          old = """assert.equal(validateCurrentAtlasCustody(bundle.current,bundle.manifest.combined_sha256),'pre_promotion');
+          const post=clone(bundle.current);
+          post.authority='five_terminal_class_receipts_promoted_without_cross_lane_empirical_authority';
+          post.promoted_class_receipts.push({lane_id:'RD-03',class_id:'RD-03-C04',issue:788,source_pr:803,merge_commit:'1'.repeat(40),constitutional_exact_label:CLASS_LABEL,receipt_class_label:CLASS_LABEL,labels_exact_match:false,label_reconciliation:LABEL_RECONCILIATION,terminal_state:TERMINAL_STATE,closure_reference_path:CLOSURE_REFERENCE_PATH,class_receipt_path:`${PRODUCT_ROOT}/class-receipt.json`,manifest_combined_sha256:bundle.manifest.combined_sha256,class_closed:true});
+          post.selected_classes_open=post.selected_classes_open.filter((row)=>row.class_id!=='RD-03-C04');
+          post.counts.terminal_class_receipts=5;post.counts.classes_closed_this_wave=5;post.counts.closed_residual_classes=5;post.counts.open_residual_classes=37;
+          post.current_result.terminal_state='five_of_forty_two_residual_classes_closed_one_selected_attempt_open';post.current_result.classes_closed=5;post.current_result.classes_open=37;post.current_result.closed_class_ids=[...post.current_result.closed_class_ids,'RD-03-C04'];post.current_result.open_selected_class_ids=['RD-02-C04'];
+          assert.equal(validateCurrentAtlasCustody(post,bundle.manifest.combined_sha256),'post_promotion');"""
+          new = """assert.equal(validateCurrentAtlasCustody(bundle.current,bundle.manifest.combined_sha256),'post_promotion');
+          const post=clone(bundle.current);
+          const pre=clone(bundle.current);
+          pre.authority='four_terminal_class_receipts_promoted_without_cross_lane_empirical_authority';
+          pre.promoted_class_receipts=pre.promoted_class_receipts.filter((row)=>row.class_id!=='RD-03-C04');
+          pre.selected_classes_open.push({lane_id:'RD-03',class_id:'RD-03-C04',issue:788,constitutional_exact_label:CLASS_LABEL,state:'open',class_closed:false});
+          pre.counts.terminal_class_receipts=4;pre.counts.classes_closed_this_wave=4;pre.counts.closed_residual_classes=4;pre.counts.open_residual_classes=38;pre.counts.label_reconciliations=1;
+          pre.current_result.terminal_state='four_of_forty_two_residual_classes_closed_two_selected_attempts_open';pre.current_result.classes_closed=4;pre.current_result.classes_open=38;pre.current_result.closed_class_ids=pre.current_result.closed_class_ids.filter((id)=>id!=='RD-03-C04');pre.current_result.open_selected_class_ids=['RD-02-C04','RD-03-C04'];
+          assert.equal(validateCurrentAtlasCustody(pre,bundle.manifest.combined_sha256),'pre_promotion');"""
+          count = value.count(old)
+          if count != 1:
+            raise RuntimeError(f'RD-03 pre/post fixture: expected one block, found {count}')
+          value = value.replace(old, new, 1)
+          old = "const candidate=clone(name.startsWith('post')?post:bundle.current);"
+          new = "const candidate=clone(name.startsWith('post')?post:pre);"
+          count = value.count(old)
+          if count != 1:
+            raise RuntimeError(f'RD-03 custody mutation source: expected one line, found {count}')
+          path.write_text(value.replace(old, new, 1))
+          print('rebound RD-03 standing test to canonical post-promotion with synthetic pre-state')
+          PY
           node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --write
 
           step=focused-five-closure-qualification
           node --check tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs
           node --check tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
           node --check test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node --check test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
           node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
           node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
           node test/status-sovereignty-residual-denominator-wave-02-current.test.js
@@ -136,12 +171,13 @@ jobs:
           node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
           node tools/validate-no-magic-human-gate.mjs
 
-          step=commit-exact-seven-path-product
+          step=commit-exact-eight-path-product
           cat > "$out/expected-paths.txt" <<'PATHS'
           .github/workflows/status-sovereignty-residual-denominator-wave-02-current.yml
           data/research/status-sovereignty-residual-denominator-wave-02-current.json
           docs/milestones/ssc-residual-denominator-wave-02-current.md
           schemas/status-sovereignty-residual-denominator-wave-02-current.schema.json
+          test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
           test/status-sovereignty-residual-denominator-wave-02-current.test.js
           tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs
           tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
