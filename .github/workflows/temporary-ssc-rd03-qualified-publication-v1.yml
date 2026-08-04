@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/temporary-ssc-rd03-qualified-publication-v1.yml'
-      - '.rd03-qualified-publication/**'
+      - '.rd03-qualified-publication-v2/**'
 
 permissions:
   actions: read
@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   publish:
-    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-qualified-publication-trigger-v1'
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-qualified-publication-trigger-v2'
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
@@ -29,6 +29,7 @@ jobs:
       QUALIFICATION_RECEIPT_SHA256: f2a14aafb4a2404b7d1b153c79eb021c137307334ff0b1b06907d2bbb95a68a9
       PRODUCT_ARCHIVE_SHA256: 5bec4818703a0495281278095356f57cd748ca580f2791e164a0e548b792961e
       PRODUCT_PATHS_SHA256: 49b59803c72ccdb0964b8b4bbdb88cac39b2b9ce21625704d013bd300e1983d4
+      PACKAGE_MANIFEST_SHA256: acd3829636e65b30084ae6cebab95806d6bf6f5ea38f25b2dd16d93f1cbdaa8f
       EXPECTED_CANDIDATE_TREE: aef4ca876130c49084a62ef51232c9d28b6ed267
       EXPECTED_QUALIFICATION_INTEGRATION: f654dd5555649d9d795942de160b6b37b3b08a97
       EXPECTED_QUALIFICATION_CANDIDATE: 3506de15302b1e42f743c42063315c4205890de1
@@ -44,31 +45,36 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Acquire and verify exact qualification product
+      - name: Verify qualification, integrate, and materialize in one transaction
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
-          rm -rf /tmp/rd03-qualified
-          mkdir -p /tmp/rd03-qualified
+          qualified="$RUNNER_TEMP/rd03-qualified-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          archive="$RUNNER_TEMP/rd03-qualified-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.zip"
+          rm -rf "$qualified" "$archive"
+          mkdir -p "$qualified"
+
           curl --fail --location --retry 3 \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H 'Accept: application/vnd.github+json' \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
             "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$QUALIFICATION_ARTIFACT_ID/zip" \
-            -o /tmp/rd03-qualified.zip
-          echo "$QUALIFICATION_ARTIFACT_SHA256  /tmp/rd03-qualified.zip" | sha256sum -c -
-          unzip -q /tmp/rd03-qualified.zip -d /tmp/rd03-qualified
-          echo "$QUALIFICATION_RECEIPT_SHA256  /tmp/rd03-qualified/receipt.json" | sha256sum -c -
-          echo "$PRODUCT_ARCHIVE_SHA256  /tmp/rd03-qualified/permanent-product.tar.gz" | sha256sum -c -
-          echo "$PRODUCT_PATHS_SHA256  /tmp/rd03-qualified/product-paths.txt" | sha256sum -c -
-          echo "$PACKAGE_ZIP_SHA256  /tmp/rd03-qualified/authored.zip" | sha256sum -c -
-          echo "$PACKAGE_BASE64_SHA256  /tmp/rd03-qualified/authored.b64" | sha256sum -c -
-          (cd /tmp/rd03-qualified && for receipt in *.sha256; do sha256sum -c "$receipt"; done)
-          python - <<'PY'
+            -o "$archive"
+          echo "$QUALIFICATION_ARTIFACT_SHA256  $archive" | sha256sum -c -
+          unzip -q "$archive" -d "$qualified"
+          echo "$QUALIFICATION_RECEIPT_SHA256  $qualified/receipt.json" | sha256sum -c -
+          echo "$PRODUCT_ARCHIVE_SHA256  $qualified/permanent-product.tar.gz" | sha256sum -c -
+          echo "$PRODUCT_PATHS_SHA256  $qualified/product-paths.txt" | sha256sum -c -
+          echo "$PACKAGE_MANIFEST_SHA256  $qualified/package-manifest.json" | sha256sum -c -
+          echo "$PACKAGE_ZIP_SHA256  $qualified/authored.zip" | sha256sum -c -
+          echo "$PACKAGE_BASE64_SHA256  $qualified/authored.b64" | sha256sum -c -
+
+          QUALIFIED_DIR="$qualified" python - <<'PY'
           import json, os
           from pathlib import Path
-          receipt=json.loads(Path('/tmp/rd03-qualified/receipt.json').read_text())
+          root=Path(os.environ['QUALIFIED_DIR'])
+          receipt=json.loads((root/'receipt.json').read_text())
           expected={
             'schema_version':'ssc-rd03-authored-rebuild-qualification@1',
             'main_parent':os.environ['EXPECTED_MAIN_HEAD'],
@@ -93,15 +99,12 @@ jobs:
             'graph_effect':'none',
           }
           assert receipt == expected, (receipt, expected)
-          paths=Path('/tmp/rd03-qualified/product-paths.txt').read_text().splitlines()
+          paths=(root/'product-paths.txt').read_text().splitlines()
           assert len(paths)==276
           assert paths==sorted(paths)
           assert len(paths)==len(set(paths))
           PY
 
-      - name: Create exact two-parent integration over live main
-        run: |
-          set -Eeuo pipefail
           git fetch --no-tags origin \
             "+refs/heads/main:refs/remotes/origin/main" \
             "+refs/heads/${TARGET_BRANCH}:refs/remotes/origin/${TARGET_BRANCH}"
@@ -109,46 +112,46 @@ jobs:
           test "$(git rev-parse origin/${TARGET_BRANCH})" = "$EXPECTED_TARGET_HEAD"
           test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN_HEAD"
           test "$(git ls-remote --heads origin refs/heads/${TARGET_BRANCH} | cut -f1)" = "$EXPECTED_TARGET_HEAD"
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout -B rd03-qualified-publication "$EXPECTED_MAIN_HEAD"
           git merge --no-ff --no-commit "$EXPECTED_TARGET_HEAD"
-          cat > /tmp/rd03-integration-paths.expected <<'PATHS'
-          data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/field-matrix.json
-          data/project/ssc-residual-wave02/seeds/RD-03-C04.json
-          test/status-sovereignty-rd-wave02-rd03-field-matrix.test.js
-          tools/acquisition/status-sovereignty-rd-wave02-rd03/build-field-matrix.mjs
-          tools/acquisition/status-sovereignty-rd-wave02-rd03/validate-field-matrix.mjs
-          PATHS
-          sed -i 's/^          //' /tmp/rd03-integration-paths.expected
-          git diff --cached --name-only | sort > /tmp/rd03-integration-paths.actual
-          cmp /tmp/rd03-integration-paths.expected /tmp/rd03-integration-paths.actual
+          printf '%s\n' \
+            'data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/field-matrix.json' \
+            'data/project/ssc-residual-wave02/seeds/RD-03-C04.json' \
+            'test/status-sovereignty-rd-wave02-rd03-field-matrix.test.js' \
+            'tools/acquisition/status-sovereignty-rd-wave02-rd03/build-field-matrix.mjs' \
+            'tools/acquisition/status-sovereignty-rd-wave02-rd03/validate-field-matrix.mjs' \
+            > "$RUNNER_TEMP/rd03-integration-paths.expected"
+          git diff --cached --name-only | sort > "$RUNNER_TEMP/rd03-integration-paths.actual"
+          cmp "$RUNNER_TEMP/rd03-integration-paths.expected" "$RUNNER_TEMP/rd03-integration-paths.actual"
           test -z "$(git diff --cached --name-status | awk '$1 != "A" {print}')"
           git diff --cached --check
           git commit -m 'Integrate qualified current main with RD-03 acquisition lineage'
-          export INTEGRATION_COMMIT="$(git rev-parse HEAD)"
-          test "$(git rev-list --parents -n 1 "$INTEGRATION_COMMIT" | wc -w)" = 3
-          test "$(git rev-parse "$INTEGRATION_COMMIT^1")" = "$EXPECTED_MAIN_HEAD"
-          test "$(git rev-parse "$INTEGRATION_COMMIT^2")" = "$EXPECTED_TARGET_HEAD"
-          echo "INTEGRATION_COMMIT=$INTEGRATION_COMMIT" >> "$GITHUB_ENV"
-
-      - name: Materialize exact 276-path permanent product
-        run: |
-          set -Eeuo pipefail
+          integration_commit="$(git rev-parse HEAD)"
+          test "$(git rev-list --parents -n 1 "$integration_commit" | wc -w)" = 3
+          test "$(git rev-parse "$integration_commit^1")" = "$EXPECTED_MAIN_HEAD"
+          test "$(git rev-parse "$integration_commit^2")" = "$EXPECTED_TARGET_HEAD"
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
-          tar -xzf /tmp/rd03-qualified/permanent-product.tar.gz -C .
+
+          test -f "$qualified/permanent-product.tar.gz"
+          test -f "$qualified/product-paths.txt"
+          tar -xzf "$qualified/permanent-product.tar.gz" -C .
           git add -A
-          git diff --cached --name-only | sort > /tmp/rd03-product-paths.actual
-          cmp /tmp/rd03-qualified/product-paths.txt /tmp/rd03-product-paths.actual
-          test "$(wc -l < /tmp/rd03-product-paths.actual)" = 276
+          git diff --cached --name-only | sort > "$RUNNER_TEMP/rd03-product-paths.actual"
+          cmp "$qualified/product-paths.txt" "$RUNNER_TEMP/rd03-product-paths.actual"
+          test "$(wc -l < "$RUNNER_TEMP/rd03-product-paths.actual")" = 276
           test -z "$(git diff --cached --name-status | awk '$1 != "A" {print}')"
           git diff --cached --check
           git commit -m 'Close RD-03 negotiated-term public-record obligation'
-          export PRODUCT_COMMIT="$(git rev-parse HEAD)"
-          export PRODUCT_TREE="$(git rev-parse HEAD^{tree})"
-          test "$PRODUCT_TREE" = "$EXPECTED_CANDIDATE_TREE"
-          echo "PRODUCT_COMMIT=$PRODUCT_COMMIT" >> "$GITHUB_ENV"
-          echo "PRODUCT_TREE=$PRODUCT_TREE" >> "$GITHUB_ENV"
+          product_commit="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse HEAD^{tree})"
+          test "$product_tree" = "$EXPECTED_CANDIDATE_TREE"
+
+          echo "INTEGRATION_COMMIT=$integration_commit" >> "$GITHUB_ENV"
+          echo "PRODUCT_COMMIT=$product_commit" >> "$GITHUB_ENV"
+          echo "PRODUCT_TREE=$product_tree" >> "$GITHUB_ENV"
 
       - name: Qualify exact permanent head
         run: |
@@ -172,23 +175,41 @@ jobs:
           set -Eeuo pipefail
           test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN_HEAD"
           test "$(git ls-remote --heads origin refs/heads/${TARGET_BRANCH} | cut -f1)" = "$EXPECTED_TARGET_HEAD"
+          test "$(git rev-parse HEAD)" = "$PRODUCT_COMMIT"
+          test "$(git rev-parse HEAD^{tree})" = "$PRODUCT_TREE"
           git push origin \
             "$PRODUCT_COMMIT:refs/heads/${TARGET_BRANCH}" \
             --force-with-lease="refs/heads/${TARGET_BRANCH}:${EXPECTED_TARGET_HEAD}"
           test "$(git ls-remote --heads origin refs/heads/${TARGET_BRANCH} | cut -f1)" = "$PRODUCT_COMMIT"
 
       - name: Preserve publication receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
-          out=/tmp/rd03-qualified-publication
-          rm -rf "$out" && mkdir -p "$out"
-          cp /tmp/rd03-qualified/receipt.json "$out/qualification-receipt.json"
-          cp /tmp/rd03-qualified/product-paths.txt "$out/product-paths.txt"
-          cp /tmp/rd03-qualified/package-manifest.json "$out/package-manifest.json"
-          python - <<'PY'
+          qualified="$RUNNER_TEMP/rd03-receipt-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          archive="$RUNNER_TEMP/rd03-receipt-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.zip"
+          out="$RUNNER_TEMP/rd03-qualified-publication-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$qualified" "$archive" "$out"
+          mkdir -p "$qualified" "$out"
+          curl --fail --location --retry 3 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$QUALIFICATION_ARTIFACT_ID/zip" \
+            -o "$archive"
+          echo "$QUALIFICATION_ARTIFACT_SHA256  $archive" | sha256sum -c -
+          unzip -q "$archive" -d "$qualified"
+          echo "$QUALIFICATION_RECEIPT_SHA256  $qualified/receipt.json" | sha256sum -c -
+          echo "$PRODUCT_PATHS_SHA256  $qualified/product-paths.txt" | sha256sum -c -
+          echo "$PACKAGE_MANIFEST_SHA256  $qualified/package-manifest.json" | sha256sum -c -
+          cp "$qualified/receipt.json" "$out/qualification-receipt.json"
+          cp "$qualified/product-paths.txt" "$out/product-paths.txt"
+          cp "$qualified/package-manifest.json" "$out/package-manifest.json"
+          OUT="$out" python - <<'PY'
           import hashlib, json, os
           from pathlib import Path
-          out=Path('/tmp/rd03-qualified-publication')
+          out=Path(os.environ['OUT'])
           receipt={
             'schema_version':'ssc-rd03-qualified-publication@1',
             'qualification_run':int(os.environ['QUALIFICATION_RUN_ID']),
@@ -219,10 +240,11 @@ jobs:
               if path.is_file():
                   (out/(path.name+'.sha256')).write_text(hashlib.sha256(path.read_bytes()).hexdigest()+'  '+path.name+'\n')
           PY
+          echo "PUBLICATION_RECEIPT_DIR=$out" >> "$GITHUB_ENV"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd03-qualified-publication-v1
-          path: /tmp/rd03-qualified-publication
+          name: ssc-rd03-qualified-publication-v2
+          path: ${{ env.PUBLICATION_RECEIPT_DIR }}
           if-no-files-found: error
           retention-days: 90
