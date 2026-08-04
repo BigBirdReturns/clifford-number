@@ -1,0 +1,67 @@
+name: TEMP publish SSC Wave-02 five-closure ledger split v3
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-ledger5-split-publication-v3.yml'
+      - '.rd03-ledger5-materializer/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd03-ledger5-split-v3-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish-seven:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-ledger5-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPECTED_MAIN: f1e1851d2fa22a3d9972cbd20498cb73f6c0177d
+      TARGET_BRANCH: agent/ssc-wave02-current-ledger-five-closures
+      MATERIALIZER_BASE: agent/ssc-rd03-ledger5-materializer-base-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Derive split publisher from qualified v2 controller
+        run: |
+          set -Eeuo pipefail
+          git show "origin/${MATERIALIZER_BASE}:.github/workflows/temporary-ssc-rd03-ledger5-split-publication-v2.yml" > "$RUNNER_TEMP/split-v2.yml"
+          python - <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          source=Path('/home/runner/work/_temp/split-v2.yml').read_text().splitlines()
+          start=source.index('        run: |')+1
+          end=next(i for i in range(start,len(source)) if source[i].startswith('      - name: Preserve split-publication receipt'))
+          script=textwrap.dedent('\n'.join(source[start:end]))+'\n'
+          old="            'expected_qualified_tree':os.environ['EXPECTED_QUALIFIED_TREE'],\n"
+          new="            'qualification_tree_source':'runtime_write_tree_after_full_validation',\n"
+          if script.count(old) != 1:
+            raise RuntimeError('expected qualified-tree receipt binding missing')
+          script=script.replace(old,new,1)
+          old='          test "$qualified_tree" = "$EXPECTED_QUALIFIED_TREE"\n'
+          new='          test "$(git cat-file -t "$qualified_tree")" = tree\n'
+          if script.count(old) != 1:
+            raise RuntimeError('expected qualified-tree assertion missing')
+          script=script.replace(old,new,1)
+          Path('/tmp/ssc-rd03-ledger5-split-v3.sh').write_text(script)
+          PY
+          bash -n /tmp/ssc-rd03-ledger5-split-v3.sh
+      - name: Qualify current-main eight-path tree and publish seven ordinary paths
+        run: bash /tmp/ssc-rd03-ledger5-split-v3.sh
+      - name: Preserve split-publication receipt and workflow bytes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-wave02-ledger5-split-publication-v3
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
