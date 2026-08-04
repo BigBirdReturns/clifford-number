@@ -24,9 +24,32 @@ const bundle = readBundle(ROOT);
 const schema = read(SCHEMA_PATH);
 
 const currentLedger = read('data/research/status-sovereignty-residual-denominator-wave-02-current.json');
-assert.equal(validateCurrentAtlasCustody(currentLedger), 'post_promotion');
+assert.equal(validateCurrentAtlasCustody(currentLedger), 'post_rd03_promotion');
 
-const prePromotionLedger = clone(currentLedger);
+const postPromotionLedger = clone(currentLedger);
+postPromotionLedger.authority = 'four_terminal_class_receipts_promoted_without_cross_lane_empirical_authority';
+postPromotionLedger.promoted_class_receipts = postPromotionLedger.promoted_class_receipts.slice(0, 4);
+postPromotionLedger.selected_classes_open.push({
+  lane_id: 'RD-03',
+  class_id: 'RD-03-C04',
+  issue: 788,
+  constitutional_exact_label: 'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms',
+  state: 'open',
+  class_closed: false
+});
+postPromotionLedger.counts.terminal_class_receipts = 4;
+postPromotionLedger.counts.classes_closed_this_wave = 4;
+postPromotionLedger.counts.closed_residual_classes = 4;
+postPromotionLedger.counts.open_residual_classes = 38;
+postPromotionLedger.counts.label_reconciliations = 1;
+postPromotionLedger.current_result.terminal_state = 'four_of_forty_two_residual_classes_closed_two_selected_attempts_open';
+postPromotionLedger.current_result.classes_closed = 4;
+postPromotionLedger.current_result.classes_open = 38;
+postPromotionLedger.current_result.closed_class_ids = ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01'];
+postPromotionLedger.current_result.open_selected_class_ids = ['RD-02-C04','RD-03-C04'];
+assert.equal(validateCurrentAtlasCustody(postPromotionLedger), 'post_promotion');
+
+const prePromotionLedger = clone(postPromotionLedger);
 prePromotionLedger.authority = 'three_terminal_class_receipts_promoted_without_cross_lane_empirical_authority';
 prePromotionLedger.promoted_class_receipts = prePromotionLedger.promoted_class_receipts.slice(0, 3);
 prePromotionLedger.selected_classes_open.push({
@@ -41,6 +64,7 @@ prePromotionLedger.counts.terminal_class_receipts = 3;
 prePromotionLedger.counts.classes_closed_this_wave = 3;
 prePromotionLedger.counts.closed_residual_classes = 3;
 prePromotionLedger.counts.open_residual_classes = 39;
+prePromotionLedger.counts.label_reconciliations = 1;
 prePromotionLedger.current_result.terminal_state = 'three_of_forty_two_residual_classes_closed_three_selected_attempts_open';
 prePromotionLedger.current_result.classes_closed = 3;
 prePromotionLedger.current_result.classes_open = 39;
@@ -60,9 +84,18 @@ const custodyMutations = [
 ];
 
 for (const [name, mutate] of custodyMutations) {
-  const candidate = clone(currentLedger);
-  mutate(candidate);
-  assert.throws(() => validateCurrentAtlasCustody(candidate), undefined, name);
+  for (const [state, source] of [
+    ['post_rd03_promotion', currentLedger],
+    ['post_promotion', postPromotionLedger]
+  ]) {
+    const candidate = clone(source);
+    mutate(candidate);
+    assert.throws(
+      () => validateCurrentAtlasCustody(candidate),
+      undefined,
+      `${name} (${state})`
+    );
+  }
 }
 
 const preCustodyMutations = [
@@ -184,4 +217,4 @@ for (const [name, mutate] of schemaMutations) {
   assert.throws(() => validateProductShape(bundle, candidate), undefined, name);
 }
 
-console.log(`RD-06 terminal adversarial suite: ${mutations.length + schemaMutations.length + custodyMutations.length + preCustodyMutations.length} mutations refused`);
+console.log(`RD-06 terminal adversarial suite: ${mutations.length + schemaMutations.length + (custodyMutations.length * 2) + preCustodyMutations.length} mutations refused`);

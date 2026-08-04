@@ -52,7 +52,7 @@ export function validateCurrentShape(current, schema) {
   ok(current.schema_version === 'status-sovereignty-residual-denominator-wave-02-current@1', 'current schema version changed');
   ok(current.wave_id === 'SSC-RD-W02' && current.hypothesis_id === 'SSC-H01' && current.issue === 785, 'current identity changed');
   ok(current.as_of === '2026-08-03', 'current cutoff changed');
-  ok(current.authority === 'four_terminal_class_receipts_promoted_without_cross_lane_empirical_authority', 'current authority changed');
+  ok(current.authority === 'five_terminal_class_receipts_promoted_without_cross_lane_empirical_authority', 'current authority changed');
 
   exactKeys(current.source_snapshots, [
     'constitution_path','wave_01_registry_path','first_promotion_snapshot_path','first_promotion_snapshot_is_historical'
@@ -62,10 +62,10 @@ export function validateCurrentShape(current, schema) {
   ok(current.source_snapshots.first_promotion_snapshot_path === FIRST_PROGRESS_PATH, 'first progress path changed');
   ok(current.source_snapshots.first_promotion_snapshot_is_historical === true, 'first promotion snapshot must be historical');
 
-  ok(Array.isArray(current.promoted_class_receipts) && current.promoted_class_receipts.length === 4, 'four promoted class receipts required');
+  ok(Array.isArray(current.promoted_class_receipts) && current.promoted_class_receipts.length === 5, 'four promoted class receipts required');
   unique(current.promoted_class_receipts.map((row) => row.class_id), 'duplicate promoted class id');
   unique(current.promoted_class_receipts.map((row) => row.lane_id), 'duplicate promoted lane id');
-  same(current.promoted_class_receipts.map((row) => row.class_id), ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01'], 'promoted class order changed');
+  same(current.promoted_class_receipts.map((row) => row.class_id), ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04'], 'promoted class order changed');
 
   const promotedKeys = [
     'lane_id','class_id','issue','source_pr','merge_commit','constitutional_exact_label',
@@ -82,6 +82,7 @@ export function validateCurrentShape(current, schema) {
   const rd05 = current.promoted_class_receipts[1];
   const rd01 = current.promoted_class_receipts[2];
   const rd06 = current.promoted_class_receipts[3];
+  const rd03 = current.promoted_class_receipts[4];
   ok(rd04.lane_id === 'RD-04' && rd04.issue === 789 && rd04.source_pr === 804, 'RD-04 custody changed');
   ok(rd04.merge_commit === '7b21d1f2b0606a5550b9c26fadc0cb465ba88b7e', 'RD-04 merge custody changed');
   ok(rd04.manifest_combined_sha256 === 'b023737f4367bf1f54a1b792faf70d12f3ca5cf89f92a5c0d16169665806b79b', 'RD-04 manifest custody changed');
@@ -103,10 +104,16 @@ export function validateCurrentShape(current, schema) {
   ok(rd06.manifest_combined_sha256 === '2a17904180dac7b250e2b0ffb82e8124354e89c39be267b0f4c4ebe65c6516c5', 'RD-06 manifest custody changed');
   ok(rd06.terminal_state === 'bounded_source_restricted', 'RD-06 terminal state changed');
   ok(rd06.labels_exact_match === true && rd06.label_reconciliation === 'none', 'RD-06 label state changed');
+  ok(rd03.lane_id === 'RD-03' && rd03.issue === 788 && rd03.source_pr === 803, 'RD-03 custody changed');
+  ok(rd03.merge_commit === '580d9c998f747330d190bed5011c7a1a517a1c0d', 'RD-03 merge custody changed');
+  ok(rd03.manifest_combined_sha256 === '1323477ae4b4bda480eb9bf1484cde7db9783920c834a69996ca0428c57fb16e', 'RD-03 manifest custody changed');
+  ok(rd03.terminal_state === 'bounded_source_unavailable', 'RD-03 terminal state changed');
+  ok(rd03.labels_exact_match === false, 'RD-03 label mismatch must remain explicit');
+  ok(rd03.label_reconciliation === 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact', 'RD-03 label reconciliation changed');
 
-  ok(Array.isArray(current.selected_classes_open) && current.selected_classes_open.length === 2, 'two selected classes must remain open');
+  ok(Array.isArray(current.selected_classes_open) && current.selected_classes_open.length === 1, 'two selected classes must remain open');
   unique(current.selected_classes_open.map((row) => row.class_id), 'duplicate open selected class');
-  same(current.selected_classes_open.map((row) => row.class_id), ['RD-02-C04','RD-03-C04'], 'open selected class order changed');
+  same(current.selected_classes_open.map((row) => row.class_id), ['RD-02-C04'], 'open selected class order changed');
   for (const row of current.selected_classes_open) {
     exactKeys(row, ['lane_id','class_id','issue','constitutional_exact_label','state','class_closed'], `${row.class_id} open class`);
     ok(row.state === 'open' && row.class_closed === false, `${row.class_id} overclosed`);
@@ -129,9 +136,9 @@ export function validateCurrentShape(current, schema) {
   ], 'counts');
   ok(current.counts.canonical_residual_classes === 42, 'canonical denominator changed');
   ok(current.counts.selected_class_attempts === 6, 'selected attempt count changed');
-  ok(current.counts.terminal_class_receipts === 4, 'terminal receipt count changed');
-  ok(current.counts.classes_closed_this_wave === 4 && current.counts.closed_residual_classes === 4, 'closed class accounting changed');
-  ok(current.counts.open_residual_classes === 38, 'open class accounting changed');
+  ok(current.counts.terminal_class_receipts === 5, 'terminal receipt count changed');
+  ok(current.counts.classes_closed_this_wave === 5 && current.counts.closed_residual_classes === 5, 'closed class accounting changed');
+  ok(current.counts.open_residual_classes === 37, 'open class accounting changed');
   ok(current.counts.closed_residual_classes + current.counts.open_residual_classes === 42, 'atlas arithmetic changed');
   ok(current.counts.label_reconciliations === current.promoted_class_receipts.filter((row) => !row.labels_exact_match).length, 'label reconciliation count changed');
   zeroCounts(current.counts);
@@ -141,10 +148,10 @@ export function validateCurrentShape(current, schema) {
     'open_selected_class_ids','all_six_selected_classes_closed','wave_complete',
     'outside_human_dependency','project_blocking','graph_effect','publication_effect','adoption_effect'
   ], 'current result');
-  ok(current.current_result.terminal_state === 'four_of_forty_two_residual_classes_closed_two_selected_attempts_open', 'current terminal state changed');
-  ok(current.current_result.classes_closed === 4 && current.current_result.classes_open === 38, 'current result arithmetic changed');
-  same(current.current_result.closed_class_ids, ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01'], 'closed class ids changed');
-  same(current.current_result.open_selected_class_ids, ['RD-02-C04','RD-03-C04'], 'open selected ids changed');
+  ok(current.current_result.terminal_state === 'five_of_forty_two_residual_classes_closed_one_selected_attempt_open', 'current terminal state changed');
+  ok(current.current_result.classes_closed === 5 && current.current_result.classes_open === 37, 'current result arithmetic changed');
+  same(current.current_result.closed_class_ids, ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04'], 'closed class ids changed');
+  same(current.current_result.open_selected_class_ids, ['RD-02-C04'], 'open selected ids changed');
   ok(current.current_result.all_six_selected_classes_closed === false && current.current_result.wave_complete === false, 'Wave 02 overclosed');
   ok(current.current_result.outside_human_dependency === false && current.current_result.project_blocking === false, 'human or project dependency introduced');
   for (const key of ['graph_effect','publication_effect','adoption_effect']) ok(current.current_result[key] === 'none', `${key} changed`);
@@ -166,10 +173,10 @@ export function validateCurrentShape(current, schema) {
   ok(schema?.$id === 'https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-residual-denominator-wave-02-current.schema.json', 'schema id changed');
   ok(schema?.type === 'object' && schema?.additionalProperties === false, 'schema root is not closed');
   ok(schema?.properties?.schema_version?.const === current.schema_version, 'schema version binding changed');
-  ok(schema?.properties?.promoted_class_receipts?.minItems === 4 && schema?.properties?.promoted_class_receipts?.maxItems === 4, 'schema receipt denominator changed');
-  ok(schema?.properties?.selected_classes_open?.minItems === 2 && schema?.properties?.selected_classes_open?.maxItems === 2, 'schema open-class denominator changed');
-  ok(schema?.properties?.counts?.properties?.closed_residual_classes?.const === 4, 'schema closed count changed');
-  ok(schema?.properties?.counts?.properties?.open_residual_classes?.const === 38, 'schema open count changed');
+  ok(schema?.properties?.promoted_class_receipts?.minItems === 5 && schema?.properties?.promoted_class_receipts?.maxItems === 5, 'schema receipt denominator changed');
+  ok(schema?.properties?.selected_classes_open?.minItems === 1 && schema?.properties?.selected_classes_open?.maxItems === 1, 'schema open-class denominator changed');
+  ok(schema?.properties?.counts?.properties?.closed_residual_classes?.const === 5, 'schema closed count changed');
+  ok(schema?.properties?.counts?.properties?.open_residual_classes?.const === 37, 'schema open count changed');
   return current;
 }
 
