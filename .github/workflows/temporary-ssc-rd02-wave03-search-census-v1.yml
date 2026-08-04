@@ -5,12 +5,6 @@ on:
     paths:
       - '.github/workflows/temporary-ssc-rd02-wave03-search-census-v1.yml'
       - '.ssc-rd02-wave03-search-census-v1/**'
-  push:
-    branches:
-      - agent/ssc-rd02-wave03-search-census-v1
-    paths:
-      - '.github/workflows/temporary-ssc-rd02-wave03-search-census-v1.yml'
-      - '.ssc-rd02-wave03-search-census-v1/**'
 
 permissions:
   contents: read
@@ -23,7 +17,7 @@ concurrency:
 
 jobs:
   execute:
-    if: github.event_name == 'push' || github.event.pull_request.head.ref == 'agent/ssc-rd02-wave03-search-census-v1'
+    if: github.event.pull_request.base.ref == 'agent/ssc-rd02-wave03-search-census-v1'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
