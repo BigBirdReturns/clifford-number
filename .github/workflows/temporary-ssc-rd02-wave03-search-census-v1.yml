@@ -1,0 +1,60 @@
+name: TEMP execute RD-02 Wave 03 lifecycle search census v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd02-wave03-search-census-v1.yml'
+      - '.ssc-rd02-wave03-search-census-v1/**'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: temp-ssc-rd02-wave03-search-census-v1-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd02-wave03-search-census-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      TARGET_HEAD: 431f94963c369f982d262e96ed378806862539aa
+      OUTPUT_DIR: ${{ runner.temp }}/ssc-rd02-wave03-search-census-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Execute exact frozen 51-route search census
+        run: |
+          set -Eeuo pipefail
+          target="$RUNNER_TEMP/target"
+          rm -rf "$target" "$OUTPUT_DIR"
+          git worktree add --detach "$target" "$TARGET_HEAD"
+          test "$(git -C "$target" rev-parse HEAD)" = "$TARGET_HEAD"
+          node "$target/tools/validate-no-magic-human-gate.mjs"
+          python "$GITHUB_WORKSPACE/.ssc-rd02-wave03-search-census-v1/capture.py" "$target" "$OUTPUT_DIR" | tee "$RUNNER_TEMP/execution-summary.json"
+          cp "$RUNNER_TEMP/execution-summary.json" "$OUTPUT_DIR/execution-summary.json"
+          test -f "$OUTPUT_DIR/manifest.json"
+          test -f "$OUTPUT_DIR/summary.json"
+          test -f "$OUTPUT_DIR/candidate-index.json"
+          test "$(find "$OUTPUT_DIR/routes" -name receipt.json -type f | wc -l)" = '51'
+          test -z "$(git -C "$target" status --porcelain=v1 --untracked-files=all)"
+
+      - name: Preserve exact search-census artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave03-search-census-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
