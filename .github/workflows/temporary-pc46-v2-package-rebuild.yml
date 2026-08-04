@@ -1,0 +1,171 @@
+name: TEMP rebuild exact corrected PC-46 package v2
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-pc46-v2-package-rebuild.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc46-v2-package-rebuild
+  cancel-in-progress: true
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc46-exact-product-materializer
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Rebuild corrected exact package and v2 materializer script
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          branch=agent/pc46-exact-product-materializer
+          lease=$(git rev-parse HEAD)
+          old_package_sha=241e1997e5f0ac8d2119c8d535b82c68c69ce88803249a944025503eb1c85f4c
+          new_package_sha=f5f85ef205efebe1bc20407b49b650213dcb204a1c04d3d1ea673beacb0c9ed1
+          path_list_sha=2b9b64b305a2fd601e86f3b3b3d3cef8bd4b58bf25179cf01ec2812b9453eda8
+          old_test_sha=3cdb7c7a1eb2b5acb664ce94273d8a0e1ec5215af6d48f9f94009466764264d2
+          new_test_sha=f350513db99d3bd1af0ee1d0bd43eedfe1062eba74650dd2cff83f54e4e85cf9
+          script_sha=78348e32f76c40b0ef4f881cd6663ef4097685d4e79f1c1aa6fa5b7683cc1eb0
+
+          cat > /tmp/old-shards.sha256 <<'EOF_SHARDS'
+          d8e810b2bb0aec8fabb70970d3bd3b96da73ec1961da8f38efa3dc5de61b162d  transport/pc46/product.b64.part-00
+          4a9b3c2cc1b85f8d20632e67be5f68877cd05a1459e8af089bb9fcf2b95cde9c  transport/pc46/product.b64.part-01
+          3cc294583d28dc6f1eee23f4c8c9be831f4abf1920caf0d88555d7939479dd20  transport/pc46/product.b64.part-02
+          EOF_SHARDS
+          sed -i 's/^          //' /tmp/old-shards.sha256
+          sha256sum -c /tmp/old-shards.sha256
+          cat transport/pc46/product.b64.part-* > /tmp/pc46-old.tar.gz.b64
+          base64 --decode /tmp/pc46-old.tar.gz.b64 > /tmp/pc46-old.tar.gz
+          test "$(sha256sum /tmp/pc46-old.tar.gz | awk '{print $1}')" = "$old_package_sha"
+
+          rm -rf /tmp/pc46-v2-tree /tmp/pc46-v2-out
+          mkdir -p /tmp/pc46-v2-tree /tmp/pc46-v2-out
+          tar -xzf /tmp/pc46-old.tar.gz -C /tmp/pc46-v2-tree
+          test "$(sha256sum /tmp/pc46-v2-tree/test/preference-custody-manifest-v44.test.js | awk '{print $1}')" = "$old_test_sha"
+          test "$(sed -n '11p' /tmp/pc46-v2-tree/test/preference-custody-manifest-v44.test.js)" = "const load = path => JSON.parse(readFileSync(path, 'utf8'));"
+          sed -i '11d' /tmp/pc46-v2-tree/test/preference-custody-manifest-v44.test.js
+          test "$(sha256sum /tmp/pc46-v2-tree/test/preference-custody-manifest-v44.test.js | awk '{print $1}')" = "$new_test_sha"
+          node --check /tmp/pc46-v2-tree/test/preference-custody-manifest-v44.test.js
+
+          cat > /tmp/pc46-paths.expected <<'EOF_PATHS'
+          .github/workflows/preference-custody-v44.yml
+          .github/workflows/preference-linkage-target-construction-exchangeability-assurance.yml
+          data/research/preference-custody/control-manifest-v44.json
+          data/research/preference-custody/linkage-target-construction-exchangeability-assurance.fixture.json
+          docs/preference-custody-laboratory-floor-v44.md
+          docs/preference-custody-linkage-target-construction-exchangeability-assurance.md
+          test/preference-custody-manifest-v44.test.js
+          test/preference-linkage-target-construction-exchangeability-assurance.test.js
+          tools/compile-preference-custody-manifest-v44.mjs
+          tools/compile-preference-linkage-target-construction-exchangeability-assurance.mjs
+          tools/lib/preference-custody-manifest-v44.mjs
+          tools/lib/preference-linkage-target-construction-exchangeability-assurance.mjs
+          tools/validate-preference-custody-manifest-v44.mjs
+          tools/validate-preference-linkage-target-construction-exchangeability-assurance.mjs
+          EOF_PATHS
+          sed -i 's/^          //' /tmp/pc46-paths.expected
+          LC_ALL=C sort -o /tmp/pc46-paths.expected /tmp/pc46-paths.expected
+          test "$(sha256sum /tmp/pc46-paths.expected | awk '{print $1}')" = "$path_list_sha"
+          find /tmp/pc46-v2-tree -type f -printf '%P\n' | LC_ALL=C sort > /tmp/pc46-paths.observed
+          diff -u /tmp/pc46-paths.expected /tmp/pc46-paths.observed
+
+          (
+            cd /tmp/pc46-v2-tree
+            LC_ALL=C tar --sort=name --format=gnu --mtime='UTC 2026-08-04 00:00:00' --owner=0 --group=0 --numeric-owner -cf /tmp/pc46-v2.tar -T /tmp/pc46-paths.expected
+          )
+          gzip -n -c /tmp/pc46-v2.tar > /tmp/pc46-v2.tar.gz
+          test "$(sha256sum /tmp/pc46-v2.tar.gz | awk '{print $1}')" = "$new_package_sha"
+          base64 -w0 /tmp/pc46-v2.tar.gz > /tmp/pc46-v2.tar.gz.b64
+          split -b 5000 -d -a 2 /tmp/pc46-v2.tar.gz.b64 /tmp/pc46-v2-out/raw-
+
+          mkdir -p transport/pc46-v2
+          rm -f transport/pc46-v2/product.b64.part-* transport/pc46-v2/materialize-v2.sh
+          for raw in /tmp/pc46-v2-out/raw-*; do
+            suffix=${raw##*-}
+            cp "$raw" "transport/pc46-v2/product.b64.part-$suffix"
+          done
+          cat > /tmp/v2-shards.sha256 <<'EOF_V2_SHARDS'
+          352e79661d97d4f10d8e91bacc7f74454721a13086c2b726af89b911ef34adb8  transport/pc46-v2/product.b64.part-00
+          a5a680491b6a7be94ac65ed066c2d9447344d2ff00fb056b4063091476448408  transport/pc46-v2/product.b64.part-01
+          df1a02104e75ef46658bf7df495dacdf8008fb821e2a9be6aa8ae30352c9c805  transport/pc46-v2/product.b64.part-02
+          a6f5da1e936b3051ee6f14c11960cae5292acd2a3f4247417cc591408370ff42  transport/pc46-v2/product.b64.part-03
+          60ab2f76b8b4aedaddbd9a7ca3f102df51c12cf4bcccde76877d423c94898d96  transport/pc46-v2/product.b64.part-04
+          6324083c0ca71187f580f22697c5db168a4839da0aef46a4f1029f852ca4d2ca  transport/pc46-v2/product.b64.part-05
+          d5edbdafce0f8848ef79081cb2c7e35eca11f913115410abe37d48b4c3851479  transport/pc46-v2/product.b64.part-06
+          EOF_V2_SHARDS
+          sed -i 's/^          //' /tmp/v2-shards.sha256
+          sha256sum -c /tmp/v2-shards.sha256
+
+          python - <<'PY_SCRIPT'
+          from pathlib import Path
+          source = Path('.github/workflows/temporary-pc46-materializer.yml').read_text().splitlines()
+          start = None
+          for index, line in enumerate(source):
+              if line.strip() == 'run: |' and index >= 2 and 'Qualify and create exact server-side product commit' in source[index - 2]:
+                  start = index + 1
+                  break
+          if start is None:
+              raise SystemExit('materializer run block not found')
+          lines = []
+          for line in source[start:]:
+              if line.startswith('      - name: Upload checksum-bound materialization receipt'):
+                  break
+              if line.strip() and not line.startswith('          '):
+                  raise SystemExit(f'unexpected materializer indentation: {line!r}')
+              lines.append(line[10:] if line.startswith('          ') else '')
+          text = '\n'.join(lines).rstrip() + '\n'
+          text = text.replace("'schema_version': 'pc46-exact-product-materializer-receipt@1'", "'schema_version': 'pc46-exact-product-materializer-receipt@2'")
+          text = text.replace('transport/pc46/product.b64.part-*', 'transport/pc46-v2/product.b64.part-*')
+          old = """cat > /tmp/pc46-shards.sha256 <<'EOF_SHARDS'
+d8e810b2bb0aec8fabb70970d3bd3b96da73ec1961da8f38efa3dc5de61b162d  transport/pc46/product.b64.part-00
+4a9b3c2cc1b85f8d20632e67be5f68877cd05a1459e8af089bb9fcf2b95cde9c  transport/pc46/product.b64.part-01
+3cc294583d28dc6f1eee23f4c8c9be831f4abf1920caf0d88555d7939479dd20  transport/pc46/product.b64.part-02
+EOF_SHARDS"""
+          new = """cat > /tmp/pc46-shards.sha256 <<'EOF_SHARDS'
+352e79661d97d4f10d8e91bacc7f74454721a13086c2b726af89b911ef34adb8  transport/pc46-v2/product.b64.part-00
+a5a680491b6a7be94ac65ed066c2d9447344d2ff00fb056b4063091476448408  transport/pc46-v2/product.b64.part-01
+df1a02104e75ef46658bf7df495dacdf8008fb821e2a9be6aa8ae30352c9c805  transport/pc46-v2/product.b64.part-02
+a6f5da1e936b3051ee6f14c11960cae5292acd2a3f4247417cc591408370ff42  transport/pc46-v2/product.b64.part-03
+60ab2f76b8b4aedaddbd9a7ca3f102df51c12cf4bcccde76877d423c94898d96  transport/pc46-v2/product.b64.part-04
+6324083c0ca71187f580f22697c5db168a4839da0aef46a4f1029f852ca4d2ca  transport/pc46-v2/product.b64.part-05
+d5edbdafce0f8848ef79081cb2c7e35eca11f913115410abe37d48b4c3851479  transport/pc46-v2/product.b64.part-06
+EOF_SHARDS"""
+          if old not in text:
+              raise SystemExit('original shard block not found')
+          text = text.replace(old, new)
+          needle = """diff -u /tmp/pc46-paths.expected /tmp/pc46-paths.archive
+pass_package=true"""
+          replacement = """diff -u /tmp/pc46-paths.expected /tmp/pc46-paths.archive
+rm -rf /tmp/pc46-package-inspection
+mkdir -p /tmp/pc46-package-inspection
+tar -xzf /tmp/pc46-product.tar.gz -C /tmp/pc46-package-inspection test/preference-custody-manifest-v44.test.js
+test \"$(sha256sum /tmp/pc46-package-inspection/test/preference-custody-manifest-v44.test.js | awk '{print $1}')\" = \"f350513db99d3bd1af0ee1d0bd43eedfe1062eba74650dd2cff83f54e4e85cf9\"
+node --check /tmp/pc46-package-inspection/test/preference-custody-manifest-v44.test.js
+pass_package=true"""
+          if needle not in text:
+              raise SystemExit('package guard insertion point not found')
+          text = text.replace(needle, replacement)
+          Path('transport/pc46-v2/materialize-v2.sh').write_text('#!/usr/bin/env bash\n' + text)
+          PY_SCRIPT
+          chmod +x transport/pc46-v2/materialize-v2.sh
+          bash -n transport/pc46-v2/materialize-v2.sh
+          test "$(sha256sum transport/pc46-v2/materialize-v2.sh | awk '{print $1}')" = "$script_sha"
+
+          git config user.name 'BigBirdReturns'
+          git config user.email '219768509+BigBirdReturns@users.noreply.github.com'
+          git add transport/pc46-v2
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = 8
+          git diff --cached --check
+          git commit -m 'TEMP: stage exact corrected PC-46 package v2'
+          git push origin "HEAD:refs/heads/$branch" --force-with-lease="refs/heads/$branch:$lease"
