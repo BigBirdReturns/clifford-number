@@ -1,0 +1,189 @@
+name: TEMP materialize RD-02 Wave 03 link adjudication v2
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd02-wave03-link-adjudication-materializer-v2.yml'
+      - '.ssc-rd02-wave03-link-adjudication-materializer-v2/**'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-rd02-wave03-link-adjudication-materializer-v2-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd02-wave03-link-adjudication-materializer-v2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      BASE_HEAD: 4c7388b3dbd5e3c19b42f027f1b32cd578e93c1b
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd02-link-adjudication-v1
+      B64_BYTES: '23789'
+      B64_SHA256: 99c64360dd6755685d6d4861766926e334d0edb4817496633371e929f597afa8
+      XZ_BYTES: '17840'
+      XZ_SHA256: bcee1b0039e3ec6a43ab3eb3e7b9055ce50c1a08092f893216c26be33fea4c4f
+      PATH_LIST_BYTES: '706'
+      PATH_LIST_SHA256: d3a87509aaf0c33a659dc4c4bf28df2473bda452c9f60d1417329766a08c09c8
+      FILE_MANIFEST_BYTES: '1358'
+      FILE_MANIFEST_SHA256: b267d6d4e135fff38e547d595423657cc50afe0ab34802b4f26cb5f7e5f07b72
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct and verify exact nine-path package
+        run: |
+          set -Eeuo pipefail
+          carrier='.ssc-rd02-wave03-link-adjudication-materializer-v2'
+          cat "$carrier"/payload-*.b64 > "$RUNNER_TEMP/package.b64"
+          test "$(wc -c < "$RUNNER_TEMP/package.b64")" = "$B64_BYTES"
+          test "$(sha256sum "$RUNNER_TEMP/package.b64" | cut -d' ' -f1)" = "$B64_SHA256"
+          base64 -d "$RUNNER_TEMP/package.b64" > "$RUNNER_TEMP/package.tar.xz"
+          test "$(wc -c < "$RUNNER_TEMP/package.tar.xz")" = "$XZ_BYTES"
+          test "$(sha256sum "$RUNNER_TEMP/package.tar.xz" | cut -d' ' -f1)" = "$XZ_SHA256"
+          test "$(wc -c < "$carrier/paths.txt")" = "$PATH_LIST_BYTES"
+          test "$(sha256sum "$carrier/paths.txt" | cut -d' ' -f1)" = "$PATH_LIST_SHA256"
+          test "$(wc -c < "$carrier/files.txt")" = "$FILE_MANIFEST_BYTES"
+          test "$(sha256sum "$carrier/files.txt" | cut -d' ' -f1)" = "$FILE_MANIFEST_SHA256"
+          mkdir -p "$RUNNER_TEMP/package"
+          tar -xJf "$RUNNER_TEMP/package.tar.xz" -C "$RUNNER_TEMP/package"
+          (cd "$RUNNER_TEMP/package" && find . -type f -printf '%P\n' | LC_ALL=C sort) > "$RUNNER_TEMP/actual-paths.txt"
+          diff -u "$carrier/paths.txt" "$RUNNER_TEMP/actual-paths.txt"
+          while read -r expected_sha expected_bytes rel; do
+            test -f "$RUNNER_TEMP/package/$rel"
+            test "$(wc -c < "$RUNNER_TEMP/package/$rel")" = "$expected_bytes"
+            test "$(sha256sum "$RUNNER_TEMP/package/$rel" | cut -d' ' -f1)" = "$expected_sha"
+          done < "$carrier/files.txt"
+          cd "$RUNNER_TEMP/package"
+          node tools/validate-status-sovereignty-rd-wave03-rd02-link-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd02-link-adjudication.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd02/run-fund3-page.py
+
+      - name: Qualify full product and publish eight non-workflow paths
+        run: |
+          set -Eeuo pipefail
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$BASE_HEAD"
+          test -z "$(git ls-remote origin "refs/heads/$TARGET_BRANCH")"
+          carrier="$GITHUB_WORKSPACE/.ssc-rd02-wave03-link-adjudication-materializer-v2"
+
+          full="$RUNNER_TEMP/full"
+          git worktree add --detach "$full" "$BASE_HEAD"
+          git -C "$full" config user.name github-actions[bot]
+          git -C "$full" config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          while read -r rel; do
+            mkdir -p "$full/$(dirname "$rel")"
+            cp "$RUNNER_TEMP/package/$rel" "$full/$rel"
+          done < "$carrier/paths.txt"
+          cd "$full"
+          node tools/validate-status-sovereignty-rd-wave03-rd02-link-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd02-link-adjudication.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd02/run-fund3-page.py
+          node tools/validate-no-magic-human-gate.mjs
+          git add --pathspec-from-file="$carrier/paths.txt"
+          git diff --cached --name-only | LC_ALL=C sort > "$RUNNER_TEMP/full-paths.txt"
+          diff -u "$carrier/paths.txt" "$RUNNER_TEMP/full-paths.txt"
+          git commit -m 'Qualify RD-02 Wave-03 link adjudication and Fund 3 protocol'
+          full_commit="$(git rev-parse HEAD)"
+          full_tree="$(git rev-parse HEAD^{tree})"
+          npm run release:check
+          git reset --hard HEAD
+          node tools/validate-status-sovereignty-rd-wave03-rd02-link-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd02-link-adjudication.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd02/run-fund3-page.py
+          node tools/validate-no-magic-human-gate.mjs
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          grep -v '^.github/workflows/status-sovereignty-rd-wave03-rd02-link-adjudication.yml$' "$carrier/paths.txt" > "$RUNNER_TEMP/nonworkflow-paths.txt"
+          test "$(wc -l < "$RUNNER_TEMP/nonworkflow-paths.txt")" = '8'
+          pub="$RUNNER_TEMP/pub"
+          git worktree add --detach "$pub" "$BASE_HEAD"
+          git -C "$pub" config user.name github-actions[bot]
+          git -C "$pub" config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          while read -r rel; do
+            mkdir -p "$pub/$(dirname "$rel")"
+            cp "$RUNNER_TEMP/package/$rel" "$pub/$rel"
+          done < "$RUNNER_TEMP/nonworkflow-paths.txt"
+          cd "$pub"
+          node tools/validate-status-sovereignty-rd-wave03-rd02-link-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd02-link-adjudication.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd02/run-fund3-page.py
+          node tools/validate-no-magic-human-gate.mjs
+          git add --pathspec-from-file="$RUNNER_TEMP/nonworkflow-paths.txt"
+          git diff --cached --name-only | LC_ALL=C sort > "$RUNNER_TEMP/pub-paths.txt"
+          diff -u "$RUNNER_TEMP/nonworkflow-paths.txt" "$RUNNER_TEMP/pub-paths.txt"
+          git commit -m 'Materialize RD-02 Wave-03 link adjudication without standing workflow'
+          pub_commit="$(git rev-parse HEAD)"
+          pub_tree="$(git rev-parse HEAD^{tree})"
+          npm run release:check
+          git reset --hard HEAD
+          node tools/validate-status-sovereignty-rd-wave03-rd02-link-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd02-link-adjudication.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd02/run-fund3-page.py
+          node tools/validate-no-magic-human-gate.mjs
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$BASE_HEAD"
+          test -z "$(git ls-remote origin "refs/heads/$TARGET_BRANCH")"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          receipt="$RUNNER_TEMP/receipt"
+          mkdir -p "$receipt"
+          cp "$RUNNER_TEMP/package/.github/workflows/status-sovereignty-rd-wave03-rd02-link-adjudication.yml" "$receipt/desired-standing-workflow.yml"
+          cp "$carrier/paths.txt" "$receipt/full-paths.txt"
+          cp "$RUNNER_TEMP/nonworkflow-paths.txt" "$receipt/nonworkflow-paths.txt"
+          cp "$carrier/files.txt" "$receipt/files.txt"
+          python - "$receipt/receipt.json" "$full_commit" "$full_tree" "$pub_commit" "$pub_tree" <<'PY'
+          import json, os, sys
+          out, full_commit, full_tree, pub_commit, pub_tree = sys.argv[1:]
+          value = {
+            'schema_version':'ssc-rd02-wave03-link-adjudication-materialization@2',
+            'base_head':os.environ['BASE_HEAD'],
+            'target_branch':os.environ['TARGET_BRANCH'],
+            'qualified_full_commit':full_commit,
+            'qualified_full_tree':full_tree,
+            'published_nonworkflow_commit':pub_commit,
+            'published_nonworkflow_tree':pub_tree,
+            'full_paths':9,
+            'published_nonworkflow_paths':8,
+            'standing_workflow_paths':1,
+            'package_xz_sha256':os.environ['XZ_SHA256'],
+            'package_base64_sha256':os.environ['B64_SHA256'],
+            'path_list_sha256':os.environ['PATH_LIST_SHA256'],
+            'file_manifest_sha256':os.environ['FILE_MANIFEST_SHA256'],
+            'candidate_followup_routes':10,
+            'same_host_candidate_urls':22,
+            'terminal_same_host_urls':22,
+            'selected_exact_page_routes':1,
+            'admitted_sources':0,
+            'lifecycle_events_observed':0,
+            'class_state':'still_open',
+            'class_closed':False,
+            'outside_human_dependency':False,
+            'external_contacts':0,
+            'external_reviews':0,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none'
+          }
+          open(out,'w').write(json.dumps(value,indent=2)+'\n')
+          PY
+          (cd "$receipt" && sha256sum * > SHA256SUMS)
+          echo "RECEIPT_DIR=$receipt" >> "$GITHUB_ENV"
+
+      - name: Preserve exact materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave03-link-adjudication-materialization-v2
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
