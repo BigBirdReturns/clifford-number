@@ -63,8 +63,42 @@ jobs:
           test "$(git hash-object /tmp/rd03-source-workflow.yml)" = "$EXPECTED_SOURCE_WORKFLOW_BLOB"
           test "$(git rev-parse "origin/${SOURCE_WORKFLOW_BRANCH}:.rd03-terminal/authored/part-00.b64")" = "$EXPECTED_AUTHORED_PART_00_BLOB"
           test "$(git rev-parse "origin/${SOURCE_WORKFLOW_BRANCH}:.rd03-terminal/authored/part-01.b64")" = "$EXPECTED_AUTHORED_PART_01_BLOB"
+
           git ls-tree --name-only "origin/${SOURCE_WORKFLOW_BRANCH}:.rd03-terminal/authored" | sort > /tmp/rd03-authored-parts.txt
-          printf 'part-00.b64\npart-01.b64\n' | diff -u - /tmp/rd03-authored-parts.txt
+          cat > /tmp/rd03-expected-authored-parts.txt <<'EOF'
+          part-00.b64
+          part-01.b64
+          part-02.b64
+          part-03.b64
+          part-04.b64
+          part-05.b64
+          part-06.b64
+          part-07.b64
+          part-08.b64
+          EOF
+          sed -i 's/^          //' /tmp/rd03-expected-authored-parts.txt
+          diff -u /tmp/rd03-expected-authored-parts.txt /tmp/rd03-authored-parts.txt
+
+          cat > /tmp/rd03-inactive-shards.tsv <<'EOF'
+          part-02.b64	4096	3e10e7b1c2a253d52cc6c33be877c58bdcbc091c5fe8da2247c921b3990d88d2
+          part-03.b64	4096	50c84a87a9e01f0393efe3582b85df0d8fc5ce35ebae06cc5c39caf294f6a94d
+          part-04.b64	4096	e6a993b239ff2288c6861e7599e6331e72e7269d6abfba8026f0341dbed5af61
+          part-05.b64	4096	3fc6233bc29d418fce3f1da5e67beb3ceb3ff9c317e43f6f78fb82e316749011
+          part-06.b64	4096	f9e2a1782edb9d9e57cfbad2ee2c00154adb1994b85adb94ee859ee715ad5b54
+          part-07.b64	4096	521b239e4abb4450150ec50a39af578155f4680567ed292ae857f32febb0a2f0
+          part-08.b64	3692	639a302c44bc80fc4922aa383771b318fb2ab8215a01986bab64ac317e127dcf
+          EOF
+          sed -i 's/^          //' /tmp/rd03-inactive-shards.tsv
+          while IFS=$'\t' read -r shard expected_bytes expected_sha; do
+            git show "origin/${SOURCE_WORKFLOW_BRANCH}:.rd03-terminal/authored/${shard}" > "/tmp/${shard}"
+            observed_bytes="$(wc -c < "/tmp/${shard}" | tr -d ' ')"
+            observed_sha="$(sha256sum "/tmp/${shard}" | awk '{print $1}')"
+            printf 'RD-03 inactive residual %s: bytes=%s/%s sha=%s/%s\n' \
+              "$shard" "$observed_bytes" "$expected_bytes" "$observed_sha" "$expected_sha"
+            test "$observed_bytes" = "$expected_bytes"
+            test "$observed_sha" = "$expected_sha"
+          done < /tmp/rd03-inactive-shards.tsv
+          printf 'RD-03 inactive v1 residual shard proof: 7 / 7 PASS\n'
 
           python - <<'PY'
           from pathlib import Path
@@ -120,7 +154,7 @@ jobs:
               'for authored_part in part-00.b64 part-01.b64; do',
               '  git show "origin/${CARRIER_BRANCH}:.rd03-terminal/authored/${authored_part}" >> /tmp/rd03-authored.b64',
               'done',
-              'printf \'RD-03 authored shard reconstruction: 2 / 2\\n\'',
+              'printf \'RD-03 active authored shard reconstruction: 2 / 2\\n\'',
           ])
           assert script.count(old_single_part) == 1, script.count(old_single_part)
           script = script.replace(old_single_part, new_two_parts)
@@ -165,7 +199,7 @@ jobs:
           assert (dollar + '{{') not in script
           assert script.count('integration parent proof: PASS') == 1
           assert script.count('carrier fetch reuse: PASS') == 1
-          assert script.count('authored shard reconstruction: 2 / 2') == 1
+          assert script.count('active authored shard reconstruction: 2 / 2') == 1
           assert script.count('authored base64 proof: PASS') == 1
           assert script.count('authored ZIP proof: PASS') == 1
           assert script.count('${INTEGRATION_SHA}^1') == 1
@@ -176,7 +210,7 @@ jobs:
           bash -n /tmp/rd03-materialize.sh
           grep -F 'integration parent proof: PASS' /tmp/rd03-materialize.sh
           grep -F 'carrier fetch reuse: PASS' /tmp/rd03-materialize.sh
-          grep -F 'authored shard reconstruction: 2 / 2' /tmp/rd03-materialize.sh
+          grep -F 'active authored shard reconstruction: 2 / 2' /tmp/rd03-materialize.sh
           grep -F 'authored base64 proof: PASS' /tmp/rd03-materialize.sh
           grep -F 'authored ZIP proof: PASS' /tmp/rd03-materialize.sh
           grep -F '${GITHUB_REPOSITORY}' /tmp/rd03-materialize.sh
