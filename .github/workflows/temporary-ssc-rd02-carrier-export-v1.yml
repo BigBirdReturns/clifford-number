@@ -1,0 +1,45 @@
+name: TEMP export exact RD-02 authored carrier
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd02-carrier-export-v1.yml'
+      - '.rd02-terminal-v1/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-ssc-rd02-carrier-export-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  export:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd02-terminal-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd02-terminal-materializer-base-v1
+          fetch-depth: 1
+      - name: Reconstruct and verify exact authored carrier
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/rd02-carrier-export"
+          cat .rd02-terminal-v1/carrier/part-*.b64 > "$RUNNER_TEMP/rd02-carrier-export/carrier.zip.b64"
+          test "$(sha256sum "$RUNNER_TEMP/rd02-carrier-export/carrier.zip.b64" | cut -d' ' -f1)" = '0d845bd7783b0286f35e604e7a4a75fbd61f6458c09466f0de4d57d0d320f940'
+          base64 --decode "$RUNNER_TEMP/rd02-carrier-export/carrier.zip.b64" > "$RUNNER_TEMP/rd02-carrier-export/carrier.zip"
+          test "$(sha256sum "$RUNNER_TEMP/rd02-carrier-export/carrier.zip" | cut -d' ' -f1)" = '23ef30188e1fff0b066f5e8b56585b3767c9abe830d929e6b264849e122ffbb9'
+          unzip -t "$RUNNER_TEMP/rd02-carrier-export/carrier.zip"
+          unzip -l "$RUNNER_TEMP/rd02-carrier-export/carrier.zip" > "$RUNNER_TEMP/rd02-carrier-export/listing.txt"
+          sha256sum "$RUNNER_TEMP/rd02-carrier-export/carrier.zip" > "$RUNNER_TEMP/rd02-carrier-export/carrier.zip.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-authored-carrier-v1
+          path: |
+            ${{ runner.temp }}/rd02-carrier-export/carrier.zip
+            ${{ runner.temp }}/rd02-carrier-export/carrier.zip.sha256
+            ${{ runner.temp }}/rd02-carrier-export/listing.txt
+          if-no-files-found: error
+          retention-days: 90
