@@ -1,0 +1,110 @@
+name: TEMP materialize strict RD-02 terminal closure v2
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd02-strict-terminal-v2.yml'
+      - '.rd02-strict-v1/**'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-rd02-strict-terminal-v2-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd02-strict-terminal-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPECTED_MAIN: ea1776f7bba28b56fee9f3defb1940ef640517a2
+      EXPECTED_SOURCE: c78d243ee3d5c5c9b6c09e4b620bd3192b5e25a1
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd02-license-leverage
+      SOURCE_BRANCH: agent/ssc-rd-wave02-rd02-license-leverage
+      CAPTURE_ARTIFACT_ID: '8875282216'
+      CAPTURE_ARTIFACT_SHA256: 63e1fc4bea63b2d00b8fbbe4b8f585edd2e76a3c380445305c2a7997cf166a67
+      CAPTURE_MANIFEST_SHA256: 7ad0486832b496d3fa8242cf4ea927e9a45ff3add7005eb5736ec01aec6f977f
+      MATERIALIZER_B64_SHA256: 6d755d69cda6c7955a634c9af1971ecca77a85c021d16e1d0f67246c69f8d678
+      MATERIALIZER_SHA256: 31a029e682fcc05f827664be780af445ab59bd19bf0b0ad4058ac15d9be8e62b
+      GH_TOKEN: ${{ github.token }}
+      CONTROLLER_BRANCH: agent/ssc-rd02-strict-terminal-base-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Derive exact-source-path controller from v1
+        run: |
+          set -Eeuo pipefail
+          bootstrap="$RUNNER_TEMP/ssc-rd02-strict-v2-bootstrap-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$bootstrap"
+          mkdir -p "$bootstrap"
+          echo "RECEIPT_DIR=$bootstrap" >> "$GITHUB_ENV"
+          printf '%s\n' derive-v2-controller > "$bootstrap/final-step.txt"
+          printf '%s\n' 1 > "$bootstrap/exit-code.txt"
+
+          git fetch --no-tags origin "+refs/heads/${CONTROLLER_BRANCH}:refs/remotes/origin/rd02-controller-v2"
+          git show "origin/rd02-controller-v2:.github/workflows/temporary-ssc-rd02-strict-terminal-v1.yml" > "$RUNNER_TEMP/rd02-strict-v1.yml"
+          python - <<'PY'
+          import hashlib
+          import os
+          import textwrap
+          from pathlib import Path
+
+          runner_temp = Path(os.environ['RUNNER_TEMP'])
+          lines = (runner_temp / 'rd02-strict-v1.yml').read_text().splitlines()
+          start = lines.index('        run: |') + 1
+          end = next(
+              i for i in range(start, len(lines))
+              if lines[i].startswith('      - name: Preserve exact strict qualification and publication receipt')
+          )
+          script = textwrap.dedent('\n'.join(lines[start:end])) + '\n'
+
+          old = """          .github/workflows/status-sovereignty-rd-wave02-rd02-license-leverage-field-matrix.yml
+          data/intake/status-sovereignty-rd-wave02-rd02-license-leverage/field-matrix.json
+          data/project/ssc-residual-wave02/seeds/RD-02-C04.json
+          test/status-sovereignty-rd-wave02-rd02-field-matrix.test.js
+          tools/validate-status-sovereignty-rd-wave02-rd02-field-matrix.mjs"""
+          new = """          data/intake/status-sovereignty-rd-wave02-rd02-license-leverage/field-matrix.json
+          data/project/ssc-residual-wave02/seeds/RD-02-C04.json
+          test/status-sovereignty-rd-wave02-rd02-field-matrix.test.js
+          tools/acquisition/status-sovereignty-rd-wave02-rd02/build-field-matrix.mjs
+          tools/acquisition/status-sovereignty-rd-wave02-rd02/validate-field-matrix.mjs"""
+          count = script.count(old)
+          if count != 1:
+              raise RuntimeError(f'integration path manifest: expected one match, found {count}')
+          script = script.replace(old, new, 1)
+
+          old = "'schema_version':'ssc-rd02-strict-terminal-materialization@1',"
+          new = "'schema_version':'ssc-rd02-strict-terminal-materialization@2',"
+          if script.count(old) != 1:
+              raise RuntimeError('receipt schema anchor changed')
+          script = script.replace(old, new, 1)
+
+          output = Path('/tmp/ssc-rd02-strict-terminal-v2.sh')
+          output.write_text(script)
+          digest = hashlib.sha256(script.encode()).hexdigest()
+          (runner_temp / 'derived-v2-script.sha256').write_text(
+              f'{digest}  ssc-rd02-strict-terminal-v2.sh\n'
+          )
+          PY
+          bash -n /tmp/ssc-rd02-strict-terminal-v2.sh
+          cp "$RUNNER_TEMP/derived-v2-script.sha256" "$bootstrap/"
+          printf '%s\n' 0 > "$bootstrap/exit-code.txt"
+          printf '%s\n' derived-v2-controller > "$bootstrap/final-step.txt"
+      - name: Execute corrected strict RD-02 transaction
+        run: bash /tmp/ssc-rd02-strict-terminal-v2.sh
+      - name: Preserve exact strict qualification and publication receipt v2
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-strict-terminal-materialization-v2
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
