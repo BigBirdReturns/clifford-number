@@ -1,0 +1,106 @@
+name: TEMP prove canonical SSC Wave-03 7/35 ledger
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-ssc-rd01-wave03-promotion-postmerge-proof.yml'
+      - '.ssc-rd01-wave03-promotion-postmerge-proof/TRIGGER'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  pull-requests: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prove canonical promotion and publish final marker
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          TARGET='agent/ssc-rd01-wave03-cumulative-promotion-v1'
+          PR_NUMBER=$(gh pr list --repo "$REPO" --state merged --head "$TARGET" --json number --jq 'sort_by(.number) | last | .number // empty')
+          test -n "$PR_NUMBER"
+          PR=$(gh api "repos/$REPO/pulls/$PR_NUMBER")
+          test "$(jq -r .merged <<<"$PR")" = 'true'
+          MERGE_SHA=$(jq -r .merge_commit_sha <<<"$PR")
+          EXPECTED_HEAD=$(jq -r .head.sha <<<"$PR")
+          MARKER_SHA=$(gh api "repos/$REPO/git/ref/tags/ssc-rd01-wave03-promotion-proved" --jq .object.sha)
+          test "$MARKER_SHA" = "$MERGE_SHA"
+          MAIN_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+          RD01_PR=$(gh api "repos/$REPO/pulls/1022")
+          RD01_MERGE=$(jq -r .merge_commit_sha <<<"$RD01_PR")
+          git fetch --no-tags origin "$MERGE_SHA" "$EXPECTED_HEAD" "$MAIN_SHA" "$RD01_MERGE"
+          git merge-base --is-ancestor "$MERGE_SHA" "$MAIN_SHA"
+          git merge-base --is-ancestor "$RD01_MERGE" "$MERGE_SHA"
+          test "$(git rev-list --parents -n1 "$MERGE_SHA" | wc -w)" -eq 3
+          FIRST_PARENT=$(git rev-parse "$MERGE_SHA^1")
+          SECOND_PARENT=$(git rev-parse "$MERGE_SHA^2")
+          test "$SECOND_PARENT" = "$EXPECTED_HEAD"
+          cat > /tmp/expected-paths.txt <<'PATHS'
+.github/workflows/status-sovereignty-residual-denominator-wave-03-current.yml
+data/project/ssc-residual-wave03/current-release-manifest.json
+data/research/status-sovereignty-residual-denominator-wave-03-current-source.json
+data/research/status-sovereignty-residual-denominator-wave-03-current.json
+docs/milestones/ssc-residual-denominator-wave-03-current.md
+schemas/status-sovereignty-residual-denominator-wave-03-current.schema.json
+test/status-sovereignty-residual-denominator-wave-03-current.test.js
+tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs
+tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+PATHS
+          sort -o /tmp/expected-paths.txt /tmp/expected-paths.txt
+          git diff --name-status "$FIRST_PARENT..$MERGE_SHA" > /tmp/promotion-name-status.txt
+          test "$(wc -l < /tmp/promotion-name-status.txt | tr -d ' ')" -eq 9
+          test "$(awk '$1 != "A" {n++} END {print n+0}' /tmp/promotion-name-status.txt)" -eq 0
+          cut -f2- /tmp/promotion-name-status.txt | sort > /tmp/actual-paths.txt
+          cmp /tmp/expected-paths.txt /tmp/actual-paths.txt
+          if grep -E '(^|/)(transport|tmp)(/|$)|(^|/)\.ssc-|temp-|materializer|trigger' /tmp/actual-paths.txt; then exit 1; fi
+          node tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-03-current.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          git restore --worktree -- .
+          git clean -fd
+          node tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-03-current.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          LEDGER='data/research/status-sovereignty-residual-denominator-wave-03-current.json'
+          test "$(jq -r .current_state.canonical_residual_classes "$LEDGER")" -eq 42
+          test "$(jq -r .current_state.closed_residual_classes "$LEDGER")" -eq 7
+          test "$(jq -r .current_state.open_residual_classes "$LEDGER")" -eq 35
+          test "$(jq -r .wave03_state.terminal_receipts "$LEDGER")" -eq 1
+          test "$(jq -r .wave03_state.open_selected_attempts "$LEDGER")" -eq 5
+          test "$(jq -r '.wave03_state.terminal_class_ids | join(",")' "$LEDGER")" = 'RD-01-C06'
+          test "$(jq -r .current_state.residual_denominator_complete "$LEDGER")" = 'false'
+          FINAL_TAG='ssc-rd01-wave03-cumulative-postmerge-proved'
+          EXISTING=$(gh api "repos/$REPO/git/ref/tags/$FINAL_TAG" --jq .object.sha 2>/dev/null || true)
+          if [[ -z "$EXISTING" ]]; then
+            gh api --method POST "repos/$REPO/git/refs" -f ref="refs/tags/$FINAL_TAG" -f sha="$MERGE_SHA" >/dev/null
+          elif [[ "$EXISTING" != "$MERGE_SHA" ]]; then
+            gh api --method PATCH "repos/$REPO/git/refs/tags/$FINAL_TAG" -f sha="$MERGE_SHA" -F force=true >/dev/null
+          fi
+          test "$(gh api "repos/$REPO/git/ref/tags/$FINAL_TAG" --jq .object.sha)" = "$MERGE_SHA"
+          jq -n --argjson pr "$PR_NUMBER" --arg merge "$MERGE_SHA" --arg head "$EXPECTED_HEAD" --arg main "$MAIN_SHA" --arg rd01 "$RD01_MERGE" --arg tag "$FINAL_TAG" '{status:"canonical_wave03_7_35_reproved",permanent_pr:$pr,permanent_head:$head,merge_sha:$merge,current_main:$main,rd01_class_merge:$rd01,marker_tag:$tag,permanent_paths:9,canonical_classes:42,closed_classes:7,open_classes:35,wave03_terminal_receipts:1,wave03_selected_open:5,promoted_class:"RD-01-C06",terminal_state:"bounded_source_unavailable",outside_human_dependency:false,external_contacts:0,external_reviews:0,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' > /tmp/ssc-rd01-wave03-cumulative-postmerge-proof.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd01-wave03-cumulative-postmerge-proof
+          path: |
+            /tmp/ssc-rd01-wave03-cumulative-postmerge-proof.json
+            /tmp/promotion-name-status.txt
+          if-no-files-found: error
+          retention-days: 90
