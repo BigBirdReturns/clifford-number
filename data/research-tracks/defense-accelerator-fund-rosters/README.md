@@ -59,6 +59,10 @@ Seals into **axm-genesis** as `person-router-shard@1`, feeding the **field-autop
 
 > A track corpus is custody-ready when every admitted candidate's receipts compile into a genesis shard that passes `axm-verify` DETACHED (bytes + out-of-band key only). Until then receipts remain receipt-v2 provenance, honestly labeled.
 
+## Current bounded intake
+
+- [`BVVC defense-capital intake`](../../intake/bvvc-defense-capital/README.md) freezes 27 current leadership labels and 30 current Portfolio Universe labels, admits selected public-role profiles, a partial SEC vehicle plane, and four transaction-specific observations. It remains `candidate_only` with `graph_effect: none`.
+
 ## Next step
 
 Wire the photonic adapters first (they gate everything), enumerate the denominator, then run the spine/scan as bounded `candidate_only` searches. Nothing promotes without a receipt and a human review decision.
