@@ -1,0 +1,63 @@
+name: TEMP repair PC-46 shard 00
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-pc46-shard-repair.yml'
+      - 'transport/pc46/product.b64.part-00a'
+      - 'transport/pc46/product.b64.part-00b'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc46-shard-00-repair
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc46-exact-product-materializer
+          fetch-depth: 0
+      - name: Reconstruct exact shard and retire subshards
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          branch=agent/pc46-exact-product-materializer
+          expected=06c7394010609da7b756e192710e045f97031dba06e1a16ebcc0f2920cef6650
+          expected_b=374447fadb69dba2bcb12e2abeeabc349ab718bd31eb8197432884a335a9eb17
+          expected_full=d8e810b2bb0aec8fabb70970d3bd3b96da73ec1961da8f38efa3dc5de61b162d
+          a=transport/pc46/product.b64.part-00a
+          b=transport/pc46/product.b64.part-00b
+          target=transport/pc46/product.b64.part-00
+
+          if [[ ! -f "$a" && ! -f "$b" ]]; then
+            test "$(sha256sum "$target" | awk '{print $1}')" = "$expected_full"
+            echo 'Shard already repaired.'
+            exit 0
+          fi
+
+          test -f "$a"
+          test -f "$b"
+          test "$(wc -c < "$a" | tr -d ' ')" = 6000
+          test "$(wc -c < "$b" | tr -d ' ')" = 6000
+          test "$(sha256sum "$a" | awk '{print $1}')" = "$expected"
+          test "$(sha256sum "$b" | awk '{print $1}')" = "$expected_b"
+          cat "$a" "$b" > /tmp/product.b64.part-00
+          test "$(wc -c < /tmp/product.b64.part-00 | tr -d ' ')" = 12000
+          test "$(sha256sum /tmp/product.b64.part-00 | awk '{print $1}')" = "$expected_full"
+
+          lease=$(git rev-parse HEAD)
+          cp /tmp/product.b64.part-00 "$target"
+          rm "$a" "$b"
+          git config user.name 'BigBirdReturns'
+          git config user.email '219768509+BigBirdReturns@users.noreply.github.com'
+          git add -A transport/pc46
+          test "$(git diff --cached --name-only | LC_ALL=C sort | tr '\n' ' ')" = "transport/pc46/product.b64.part-00 transport/pc46/product.b64.part-00a transport/pc46/product.b64.part-00b "
+          git diff --cached --check
+          git commit -m 'TEMP: repair exact PC-46 package shard 00'
+          git push origin "HEAD:refs/heads/$branch" --force-with-lease="refs/heads/$branch:$lease"
