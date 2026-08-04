@@ -1,51 +1,57 @@
-name: TEMP execute exact PC-46 v2 package rebuild
+name: TEMP export immutable PC-46 parent tree
 
 on:
   pull_request:
     paths:
       - '.github/workflows/temporary-pc46-shard-diagnostic.yml'
-      - 'transport/pc46/materialize-trigger-v1.txt'
+      - 'transport/pc46/tree-diagnostic-trigger.txt'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: pc46-v2-package-rebuild-registered
+  group: pc46-parent-tree-diagnostic
   cancel-in-progress: true
 
 jobs:
-  rebuild:
+  export:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
+    env:
+      EXPECTED_PARENT: ea1776f7bba28b56fee9f3defb1940ef640517a2
+      EXPECTED_PRODUCT_TREE: a4ebcb55818011668e78ecac338734a32dcabfbd
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/pc46-exact-product-materializer
           fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Extract and execute the hash-guarded rebuild program
+      - name: Export immutable parent-tree receipt
         shell: bash
         run: |
           set -Eeuo pipefail
-          python - <<'PY'
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          current_main=$(git rev-parse origin/main)
+          test "$current_main" = "$EXPECTED_PARENT"
+          parent_tree=$(git rev-parse "$EXPECTED_PARENT^{tree}")
+          python - <<PY
+          import json
           from pathlib import Path
-          source = Path('.github/workflows/temporary-pc46-v2-package-rebuild.yml').read_text().splitlines()
-          start = None
-          for index, line in enumerate(source):
-              if line.strip() == 'run: |' and index >= 2 and 'Rebuild corrected exact package and v2 materializer script' in source[index - 2]:
-                  start = index + 1
-                  break
-          if start is None:
-              raise SystemExit('rebuild program not found')
-          lines = []
-          for line in source[start:]:
-              lines.append(line[10:] if line.startswith('          ') else line)
-          program = '\n'.join(lines).rstrip() + '\n'
-          Path('/tmp/pc46-v2-rebuild.sh').write_text('#!/usr/bin/env bash\n' + program)
+          receipt = {
+            'schema_version': 'pc46-parent-tree-diagnostic@1',
+            'workflow_run_id': '${GITHUB_RUN_ID}',
+            'expected_parent': '${EXPECTED_PARENT}',
+            'canonical_main_observed': '${current_main}',
+            'parent_tree': '${parent_tree}',
+            'qualified_product_tree': '${EXPECTED_PRODUCT_TREE}',
+            'parent_lease_verified': True
+          }
+          Path('/tmp/pc46-parent-tree.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
           PY
-          chmod +x /tmp/pc46-v2-rebuild.sh
-          bash -n /tmp/pc46-v2-rebuild.sh
-          bash /tmp/pc46-v2-rebuild.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc46-parent-tree-${{ github.run_id }}
+          path: /tmp/pc46-parent-tree.json
+          if-no-files-found: error
+          retention-days: 30
