@@ -1,0 +1,301 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-rd-wave03-rd01-methodology-correction.schema.json",
+  "title": "SSC RD-01 Wave 03 methodology-correction class receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "wave_id",
+    "lane_id",
+    "class_id",
+    "issue",
+    "source_pr",
+    "class_label",
+    "terminal_state",
+    "class_closed",
+    "closure_basis",
+    "counts",
+    "source_custody",
+    "unresolved_limit",
+    "authority"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "ssc-rd01-wave03-class-receipt@1"
+    },
+    "wave_id": {
+      "const": "SSC-RD-W03"
+    },
+    "lane_id": {
+      "const": "RD-01"
+    },
+    "class_id": {
+      "const": "RD-01-C06"
+    },
+    "issue": {
+      "const": 1014
+    },
+    "source_pr": {
+      "const": 1022
+    },
+    "class_label": {
+      "const": "methodology correction, appeal, and re-evaluation records"
+    },
+    "terminal_state": {
+      "const": "bounded_source_unavailable"
+    },
+    "class_closed": {
+      "const": true
+    },
+    "closure_basis": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "edition_rows",
+        "required_fields_per_row",
+        "required_fields",
+        "terminal_fields",
+        "observed_fields",
+        "not_publicly_recovered_fields",
+        "source_restricted_fields",
+        "source_unavailable_after_fixed_protocol_fields",
+        "not_applicable_fields",
+        "closed_rows",
+        "fixed_routes",
+        "direct_html_sources",
+        "candidate_census_routes",
+        "candidate_rows",
+        "admitted_candidate_sources",
+        "report_pdf_sources",
+        "prospective_future_re_evaluation_statements",
+        "completed_correction_or_errata_records",
+        "published_formal_appeal_routes",
+        "completed_reranking_or_changed_disposition_records",
+        "external_contacts",
+        "external_reviews"
+      ],
+      "properties": {
+        "edition_rows": {
+          "const": 3
+        },
+        "required_fields_per_row": {
+          "const": 8
+        },
+        "required_fields": {
+          "const": 24
+        },
+        "terminal_fields": {
+          "const": 24
+        },
+        "observed_fields": {
+          "const": 16
+        },
+        "not_publicly_recovered_fields": {
+          "const": 8
+        },
+        "source_restricted_fields": {
+          "const": 0
+        },
+        "source_unavailable_after_fixed_protocol_fields": {
+          "const": 0
+        },
+        "not_applicable_fields": {
+          "const": 0
+        },
+        "closed_rows": {
+          "const": 3
+        },
+        "fixed_routes": {
+          "const": 30
+        },
+        "direct_html_sources": {
+          "const": 3
+        },
+        "candidate_census_routes": {
+          "const": 27
+        },
+        "candidate_rows": {
+          "const": 269
+        },
+        "admitted_candidate_sources": {
+          "const": 0
+        },
+        "report_pdf_sources": {
+          "const": 3
+        },
+        "prospective_future_re_evaluation_statements": {
+          "const": 1
+        },
+        "completed_correction_or_errata_records": {
+          "const": 0
+        },
+        "published_formal_appeal_routes": {
+          "const": 0
+        },
+        "completed_reranking_or_changed_disposition_records": {
+          "const": 0
+        },
+        "external_contacts": {
+          "const": 0
+        },
+        "external_reviews": {
+          "const": 0
+        }
+      }
+    },
+    "source_custody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capture_receipt_path",
+        "capture_receipt_sha256",
+        "fixed_route_capture_run",
+        "fixed_route_capture_artifact_id",
+        "fixed_route_capture_artifact_zip_sha256",
+        "fixed_route_capture_manifest_sha256",
+        "report_pdf_capture_run",
+        "report_pdf_capture_artifact_id",
+        "report_pdf_capture_artifact_zip_sha256",
+        "report_pdf_capture_manifest_sha256"
+      ],
+      "properties": {
+        "capture_receipt_path": {
+          "const": "data/intake/status-sovereignty-rd-wave03-rd01-methodology-correction/capture-execution-receipt.json"
+        },
+        "capture_receipt_sha256": {
+          "const": "8d20a5e257584c3ffe795e9983b8f6cbe4c7d0a7e3115ce53292f2af1b6b231a"
+        },
+        "fixed_route_capture_run": {
+          "const": 30914248336
+        },
+        "fixed_route_capture_artifact_id": {
+          "const": 8894359001
+        },
+        "fixed_route_capture_artifact_zip_sha256": {
+          "const": "c247a5f9a3d8cd2bc6feb5c30dd643af0bbd3878a8712f7e4fadfdf24ad91291"
+        },
+        "fixed_route_capture_manifest_sha256": {
+          "const": "a3c00b6bb04367646153b693ff229adc046f174c043e88b7dd3a949e670ac12c"
+        },
+        "report_pdf_capture_run": {
+          "const": 30916279943
+        },
+        "report_pdf_capture_artifact_id": {
+          "const": 8895179282
+        },
+        "report_pdf_capture_artifact_zip_sha256": {
+          "const": "26c67041bbe69e2983c8733c58c062f808de8d803c8146238f63351db8e9de01"
+        },
+        "report_pdf_capture_manifest_sha256": {
+          "const": "609a9e8e80fe257e2a253aa61dbcd6501e18f63b74d6a42d7d25ff61b1f1ceb9"
+        }
+      }
+    },
+    "unresolved_limit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "not_publicly_recovered_fields",
+        "prospective_future_re_evaluation_statements",
+        "completed_correction_or_errata_records",
+        "published_formal_appeal_routes",
+        "completed_reranking_or_changed_disposition_records",
+        "missing_records_are_not_event_absence",
+        "prospective_re_evaluation_is_not_completed_re_evaluation",
+        "automatic_additional_search_pass_authorized"
+      ],
+      "properties": {
+        "not_publicly_recovered_fields": {
+          "const": 8
+        },
+        "prospective_future_re_evaluation_statements": {
+          "const": 1
+        },
+        "completed_correction_or_errata_records": {
+          "const": 0
+        },
+        "published_formal_appeal_routes": {
+          "const": 0
+        },
+        "completed_reranking_or_changed_disposition_records": {
+          "const": 0
+        },
+        "missing_records_are_not_event_absence": {
+          "const": true
+        },
+        "prospective_re_evaluation_is_not_completed_re_evaluation": {
+          "const": true
+        },
+        "automatic_additional_search_pass_authorized": {
+          "const": false
+        }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outside_human_dependency",
+        "external_contacts",
+        "external_reviews",
+        "denominator_widened",
+        "reviewed_disposition_changed",
+        "selector_accuracy_finding",
+        "technical_superiority_finding",
+        "coordination_finding",
+        "common_purpose_finding",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect"
+      ],
+      "properties": {
+        "outside_human_dependency": {
+          "const": false
+        },
+        "external_contacts": {
+          "const": 0
+        },
+        "external_reviews": {
+          "const": 0
+        },
+        "denominator_widened": {
+          "const": false
+        },
+        "reviewed_disposition_changed": {
+          "const": false
+        },
+        "selector_accuracy_finding": {
+          "const": false
+        },
+        "technical_superiority_finding": {
+          "const": false
+        },
+        "coordination_finding": {
+          "const": false
+        },
+        "common_purpose_finding": {
+          "const": false
+        },
+        "publication_effect": {
+          "const": "none"
+        },
+        "adoption_effect": {
+          "const": "none"
+        },
+        "graph_effect": {
+          "const": "none"
+        }
+      }
+    }
+  }
+}
