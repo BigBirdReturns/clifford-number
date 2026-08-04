@@ -343,7 +343,7 @@ export function validateCurrentAtlasCustody(current) {
     current.counts.classes_closed_this_wave === 5 &&
     current.counts.closed_residual_classes === 5 &&
     current.counts.open_residual_classes === 37 &&
-    current.counts.label_reconciliations === 2 &&
+    current.counts.label_reconciliations === 1 &&
     current.current_result.terminal_state === 'five_of_forty_two_residual_classes_closed_one_selected_attempt_open' &&
     current.current_result.classes_closed === 5 &&
     current.current_result.classes_open === 37 &&
@@ -379,8 +379,8 @@ export function validateCurrentAtlasCustody(current) {
       merge_commit: '580d9c998f747330d190bed5011c7a1a517a1c0d',
       constitutional_exact_label: 'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms',
       receipt_class_label: 'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms',
-      labels_exact_match: false,
-      label_reconciliation: 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact',
+      labels_exact_match: true,
+      label_reconciliation: 'none',
       terminal_state: 'bounded_source_unavailable',
       closure_reference_path: 'data/project/ssc-residual-wave02/closures/RD-03-C04.json',
       class_receipt_path: 'data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms/class-receipt.json',
