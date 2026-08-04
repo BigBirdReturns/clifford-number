@@ -20,10 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
-      - name: Check out exact five-closure product
+      - name: Check out exact canonical five-closure merge
         uses: actions/checkout@v4
         with:
-          ref: agent/ssc-wave02-current-ledger-five-closures
+          ref: ef70f7ad406c518f4b640ca4641c5a0f045a0d8d
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -32,9 +32,8 @@ jobs:
 
       - name: Repair, qualify, and publish exact flattened-label semantics
         env:
-          TARGET_BRANCH: agent/ssc-wave02-current-ledger-five-closures
-          EXPECTED_HEAD: 0132a239e56d01d83ea206e07611524017405b55
-          EXPECTED_MAIN: f1e1851d2fa22a3d9972cbd20498cb73f6c0177d
+          TARGET_BRANCH: agent/ssc-wave02-rd03-label-custody-repair
+          EXPECTED_MAIN: ef70f7ad406c518f4b640ca4641c5a0f045a0d8d
           CONTROL_BRANCH: agent/ssc-rd03-flattened-label-repair-base-v1
           HELPER_COMMIT: 53035b889a1150b48cd873ade3ec074fecb3656b
           HELPER_BLOB: 9c3b6dba26a75960f1ab95e2cbbb49a4fa8fe8a7
@@ -53,10 +52,10 @@ jobs:
             trap - EXIT
             printf '%s\n' "$rc" > "$out/exit-code.txt"
             printf '%s\n' "$step" > "$out/final-step.txt"
-            printf '%s\n' "$EXPECTED_HEAD" > "$out/prior-head.txt"
+            printf '%s\n' "$EXPECTED_MAIN" > "$out/canonical-parent.txt"
             printf '%s\n' "$new_head" > "$out/new-head.txt"
             git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
-            git diff --name-status "$EXPECTED_HEAD" HEAD > "$out/name-status.txt" 2>&1 || true
+            git diff --name-status "$EXPECTED_MAIN" HEAD > "$out/name-status.txt" 2>&1 || true
             git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1 || true
             OUT="$out" RC="$rc" STEP="$step" NEW_HEAD="$new_head" python - <<'PY'
           import hashlib, json, os
@@ -64,11 +63,12 @@ jobs:
 
           out = Path(os.environ['OUT'])
           receipt = {
-            'schema_version': 'ssc-rd03-flattened-label-review-repair@1',
+            'schema_version': 'ssc-rd03-flattened-label-review-repair@2',
             'workflow_run': int(os.environ['GITHUB_RUN_ID']),
             'exit_code': int(os.environ['RC']),
             'final_step': os.environ['STEP'],
-            'prior_head': '0132a239e56d01d83ea206e07611524017405b55',
+            'canonical_parent': 'ef70f7ad406c518f4b640ca4641c5a0f045a0d8d',
+            'target_branch': 'agent/ssc-wave02-rd03-label-custody-repair',
             'new_head': os.environ['NEW_HEAD'],
             'review_comment_id': 3709676117,
             'semantic_result': {
@@ -110,11 +110,11 @@ jobs:
           }
           trap finish EXIT
 
-          step=freeze-exact-target-and-main
-          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
-          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_HEAD"
+          step=freeze-exact-canonical-parent-and-empty-target
+          test "$(git rev-parse HEAD)" = "$EXPECTED_MAIN"
           git fetch --no-tags origin main
           test "$(git rev-parse FETCH_HEAD)" = "$EXPECTED_MAIN"
+          test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"
 
           step=load-checksum-bound-helper
           git fetch --no-tags origin "refs/heads/$CONTROL_BRANCH:refs/remotes/origin/$CONTROL_BRANCH"
@@ -192,11 +192,11 @@ jobs:
           git diff --exit-code
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
 
-          step=publish-under-exact-main-and-target-leases
+          step=publish-under-exact-main-and-empty-target-leases
           git fetch --no-tags origin main
           test "$(git rev-parse FETCH_HEAD)" = "$EXPECTED_MAIN"
-          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_HEAD"
-          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_HEAD" origin "HEAD:refs/heads/$TARGET_BRANCH"
+          test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
           test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$new_head"
 
           step=review-repair-complete
