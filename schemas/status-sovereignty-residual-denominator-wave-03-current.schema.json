@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clifford-number.local/schemas/status-sovereignty-residual-denominator-wave-03-current.schema.json",
+  "title": "SSC residual-denominator Wave 03 current cumulative ledger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "wave_id",
+    "hypothesis_id",
+    "issue",
+    "as_of",
+    "authority",
+    "source_snapshots",
+    "promoted_class_receipts",
+    "selected_classes_open",
+    "counts",
+    "current_result",
+    "boundaries"
+  ],
+  "properties": {
+    "schema_version": { "const": "status-sovereignty-residual-denominator-wave-03-current@1" },
+    "wave_id": { "const": "SSC-RD-W03" },
+    "hypothesis_id": { "const": "SSC-H01" },
+    "issue": { "const": 1013 },
+    "as_of": { "const": "2026-08-04" },
+    "authority": { "const": "one_wave03_terminal_class_receipt_promoted_without_cross_lane_empirical_authority" },
+    "source_snapshots": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "wave_02_current_ledger_path",
+        "wave_02_cumulative_promotion_merge",
+        "wave_03_constitution_path",
+        "rd01_closure_reference_path",
+        "rd01_class_receipt_path",
+        "rd01_merge_commit"
+      ],
+      "properties": {
+        "wave_02_current_ledger_path": { "const": "data/research/status-sovereignty-residual-denominator-wave-02-current.json" },
+        "wave_02_cumulative_promotion_merge": { "const": "2af6bb7819a37e51c7198fb48da894445a29e494" },
+        "wave_03_constitution_path": { "const": "data/research/status-sovereignty-residual-denominator-wave-03-constitution.json" },
+        "rd01_closure_reference_path": { "const": "data/project/ssc-residual-wave03/closures/RD-01-C06.json" },
+        "rd01_class_receipt_path": { "const": "data/research/status-sovereignty-rd-wave03-rd01-methodology-correction/class-receipt.json" },
+        "rd01_merge_commit": { "const": "c27e7d3cde2c94c1cde5d66dcce8eb06b514ff8a" }
+      }
+    },
+    "promoted_class_receipts": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "lane_id",
+          "class_id",
+          "issue",
+          "source_pr",
+          "merge_commit",
+          "constitutional_exact_label",
+          "receipt_class_label",
+          "labels_exact_match",
+          "label_reconciliation",
+          "terminal_state",
+          "closure_reference_path",
+          "class_receipt_path",
+          "manifest_combined_sha256",
+          "class_closed"
+        ],
+        "properties": {
+          "lane_id": { "enum": ["RD-01", "RD-02", "RD-03", "RD-04", "RD-05", "RD-06"] },
+          "class_id": { "enum": ["RD-04-C01", "RD-05-C03", "RD-01-C03", "RD-06-C01", "RD-03-C04", "RD-02-C04", "RD-01-C06"] },
+          "issue": { "enum": [786, 787, 788, 789, 790, 791, 1014] },
+          "source_pr": { "enum": [801, 802, 803, 804, 805, 806, 1022] },
+          "merge_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+          "constitutional_exact_label": { "type": "string", "minLength": 1 },
+          "receipt_class_label": { "type": "string", "minLength": 1 },
+          "labels_exact_match": { "type": "boolean" },
+          "label_reconciliation": { "type": "string", "minLength": 1 },
+          "terminal_state": { "enum": ["bounded_non_link", "bounded_source_restricted", "bounded_source_unavailable"] },
+          "closure_reference_path": { "type": "string", "pattern": "^data/project/ssc-residual-wave0[23]/closures/RD-[0-9]{2}-C[0-9]{2}\\.json$" },
+          "class_receipt_path": { "type": "string", "pattern": "^data/research/status-sovereignty-rd-wave0[23]-[^/]+/class-receipt\\.json$" },
+          "manifest_combined_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "class_closed": { "const": true }
+        }
+      }
+    },
+    "selected_classes_open": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["lane_id", "class_id", "issue", "constitutional_exact_label", "state", "class_closed"],
+        "properties": {
+          "lane_id": { "enum": ["RD-02", "RD-03", "RD-04", "RD-05", "RD-06"] },
+          "class_id": { "enum": ["RD-02-C05", "RD-03-C05", "RD-04-C02", "RD-05-C02", "RD-06-C04"] },
+          "issue": { "enum": [1015, 1016, 1017, 1018, 1019] },
+          "constitutional_exact_label": { "type": "string", "minLength": 1 },
+          "state": { "const": "open" },
+          "class_closed": { "const": false }
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonical_residual_classes",
+        "classes_closed_before_wave",
+        "wave_03_selected_class_attempts",
+        "wave_03_terminal_class_receipts",
+        "classes_closed_this_wave",
+        "closed_residual_classes",
+        "open_residual_classes",
+        "label_reconciliations",
+        "wave_03_label_reconciliations",
+        "outside_human_dependencies",
+        "external_contacts",
+        "external_reviews",
+        "reviewed_disposition_changes",
+        "complete_compact_findings",
+        "racial_order_findings",
+        "prevalence_findings",
+        "coordination_findings",
+        "common_purpose_findings",
+        "graph_effects",
+        "publication_effects",
+        "adoption_effects"
+      ],
+      "properties": {
+        "canonical_residual_classes": { "const": 42 },
+        "classes_closed_before_wave": { "const": 6 },
+        "wave_03_selected_class_attempts": { "const": 6 },
+        "wave_03_terminal_class_receipts": { "const": 1 },
+        "classes_closed_this_wave": { "const": 1 },
+        "closed_residual_classes": { "const": 7 },
+        "open_residual_classes": { "const": 35 },
+        "label_reconciliations": { "const": 1 },
+        "wave_03_label_reconciliations": { "const": 0 },
+        "outside_human_dependencies": { "const": 0 },
+        "external_contacts": { "const": 0 },
+        "external_reviews": { "const": 0 },
+        "reviewed_disposition_changes": { "const": 0 },
+        "complete_compact_findings": { "const": 0 },
+        "racial_order_findings": { "const": 0 },
+        "prevalence_findings": { "const": 0 },
+        "coordination_findings": { "const": 0 },
+        "common_purpose_findings": { "const": 0 },
+        "graph_effects": { "const": 0 },
+        "publication_effects": { "const": 0 },
+        "adoption_effects": { "const": 0 }
+      }
+    },
+    "current_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "terminal_state",
+        "classes_closed",
+        "classes_open",
+        "closed_class_ids",
+        "wave_03_selected_attempts_terminal",
+        "open_selected_class_ids",
+        "all_six_selected_classes_closed",
+        "wave_complete",
+        "residual_denominator_complete",
+        "outside_human_dependency",
+        "project_blocking",
+        "graph_effect",
+        "publication_effect",
+        "adoption_effect"
+      ],
+      "properties": {
+        "terminal_state": { "const": "one_of_six_wave03_selected_classes_terminal_seven_of_forty_two_residual_classes_closed" },
+        "classes_closed": { "const": 7 },
+        "classes_open": { "const": 35 },
+        "closed_class_ids": { "const": ["RD-04-C01", "RD-05-C03", "RD-01-C03", "RD-06-C01", "RD-03-C04", "RD-02-C04", "RD-01-C06"] },
+        "wave_03_selected_attempts_terminal": { "const": 1 },
+        "open_selected_class_ids": { "const": ["RD-02-C05", "RD-03-C05", "RD-04-C02", "RD-05-C02", "RD-06-C04"] },
+        "all_six_selected_classes_closed": { "const": false },
+        "wave_complete": { "const": false },
+        "residual_denominator_complete": { "const": false },
+        "outside_human_dependency": { "const": false },
+        "project_blocking": { "const": false },
+        "graph_effect": { "const": "none" },
+        "publication_effect": { "const": "none" },
+        "adoption_effect": { "const": "none" }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "wave_02_receipts_reopened_or_rewritten",
+        "one_wave03_class_closure_closes_lane",
+        "one_wave03_class_closure_closes_wave",
+        "bounded_source_unavailable_is_event_absence",
+        "not_publicly_recovered_is_nonoccurrence",
+        "prospective_re_evaluation_is_completed_re_evaluation",
+        "class_closure_is_selector_accuracy_or_technical_superiority",
+        "seven_closures_are_complete_compact",
+        "functional_convergence_is_coordination_or_common_purpose",
+        "graph_effect",
+        "publication_effect",
+        "adoption_effect"
+      ],
+      "properties": {
+        "wave_02_receipts_reopened_or_rewritten": { "const": false },
+        "one_wave03_class_closure_closes_lane": { "const": false },
+        "one_wave03_class_closure_closes_wave": { "const": false },
+        "bounded_source_unavailable_is_event_absence": { "const": false },
+        "not_publicly_recovered_is_nonoccurrence": { "const": false },
+        "prospective_re_evaluation_is_completed_re_evaluation": { "const": false },
+        "class_closure_is_selector_accuracy_or_technical_superiority": { "const": false },
+        "seven_closures_are_complete_compact": { "const": false },
+        "functional_convergence_is_coordination_or_common_purpose": { "const": false },
+        "graph_effect": { "const": "none" },
+        "publication_effect": { "const": "none" },
+        "adoption_effect": { "const": "none" }
+      }
+    }
+  }
+}
