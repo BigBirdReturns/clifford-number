@@ -1,0 +1,241 @@
+name: TEMP materialize SSC Wave 02 final reconciliation v2
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-wave02-final-reconciliation-materializer-v2.yml'
+      - '.ssc-wave02-final-reconciliation-v2/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-wave02-final-reconciliation-v2-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-wave02-final-reconciliation-materializer-trigger-v2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      LAUNCH_BASE: a69bffa4c7c6934432b2b93816f5b2b6a466a85b
+      EXPECTED_TARGET: a69bffa4c7c6934432b2b93816f5b2b6a466a85b
+      TARGET_BRANCH: agent/ssc-residual-wave02-final-reconciliation
+      CARRIER_BRANCH: agent/ssc-wave02-final-reconciliation-materializer-base
+      PACKAGE_B64_BYTES: '25776'
+      PACKAGE_B64_SHA256: 9695fd0cd382a3177cf66a069e581508672579c88792b04d1845f13ae413d96a
+      PACKAGE_ZIP_BYTES: '19331'
+      PACKAGE_ZIP_SHA256: 64dea666efc08a01818270cf8c4e1682f59c93c0e218a6d41c62125d72514889
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct, qualify, and publish exact reconciliation product
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/ssc-wave02-final-reconciliation-v2-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          mkdir -p "$out"
+          echo "RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          exec > >(tee "$out/trace.log") 2>&1
+          set -x
+          step=initialize
+
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$out/exit-code.txt"
+            printf '%s\n' "$step" > "$out/final-step.txt"
+            git rev-parse HEAD > "$out/head.txt" 2>&1 || true
+            git rev-parse 'HEAD^{tree}' > "$out/tree.txt" 2>&1 || true
+            git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
+            git ls-remote --heads origin refs/heads/main > "$out/remote-main.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1 || true
+            OUT="$out" RC="$rc" STEP="$step" python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          out = Path(os.environ['OUT'])
+          receipt = {
+              'schema_version': 'ssc-wave02-final-reconciliation-materialization@1',
+              'run': int(os.environ['GITHUB_RUN_ID']),
+              'attempt': int(os.environ['GITHUB_RUN_ATTEMPT']),
+              'exit_code': int(os.environ['RC']),
+              'final_step': os.environ['STEP'],
+              'launch_base': os.environ['LAUNCH_BASE'],
+              'main_lease': os.environ.get('EXPECTED_MAIN'),
+              'target_branch': os.environ['TARGET_BRANCH'],
+              'package_b64_sha256': os.environ['PACKAGE_B64_SHA256'],
+              'package_zip_sha256': os.environ['PACKAGE_ZIP_SHA256'],
+              'permanent_nonworkflow_paths': 6,
+              'canonical_residual_classes': 42,
+              'selected_attempts_terminal': 6,
+              'closed_residual_classes': 6,
+              'open_residual_classes': 36,
+              'adversarial_refusals': 46,
+              'outside_human_dependency': False,
+              'external_contacts': 0,
+              'external_reviews': 0,
+              'reviewed_disposition_changes': 0,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          for path in sorted(out.iterdir()):
+              if path.is_file() and not path.name.endswith('.sha256'):
+                  digest = hashlib.sha256(path.read_bytes()).hexdigest()
+                  (out / f'{path.name}.sha256').write_text(f'{digest}  {path.name}\n')
+          PY
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          cat > "$out/expected-paths.txt" <<'PATHS'
+          data/research/status-sovereignty-residual-denominator-wave-02-reconciliation.json
+          docs/milestones/ssc-residual-denominator-wave-02-reconciliation.md
+          schemas/status-sovereignty-residual-denominator-wave-02-reconciliation.schema.json
+          test/status-sovereignty-residual-denominator-wave-02-reconciliation.test.js
+          tools/build-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs
+          tools/validate-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs
+          PATHS
+          sed -i 's/^          //' "$out/expected-paths.txt"
+
+          step=verify-leases
+          export EXPECTED_MAIN="$(git rev-parse HEAD)"
+          printf '%s\n' "$EXPECTED_MAIN" > "$out/expected-main.txt"
+          git merge-base --is-ancestor "$LAUNCH_BASE" "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+          git diff --name-only "$LAUNCH_BASE" "$EXPECTED_MAIN" | sort > "$out/main-delta-paths.txt"
+          comm -12 "$out/main-delta-paths.txt" "$out/expected-paths.txt" > "$out/main-product-overlap.txt"
+          test ! -s "$out/main-product-overlap.txt"
+
+          step=reconstruct-package
+          git fetch origin \
+            "refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
+          cat > "$out/shards.tsv" <<'SHARDS'
+          part-00.b64	3000	16e20631325ccf7b8fee8d2056a17bafc0c05612895befbaa014ca43aecbf79d
+          part-01.b64	3000	725b9fe89f0fb7b1079d6910b16e74c579ecb5268d573e7273be93ffd4277f5e
+          part-02.b64	3000	523cdcd27a35c872fb792bbf18b07fefab6fc09d26ffe8cb12aaeeec969a553b
+          part-03.b64	3000	5480b000cce8dca5a263997dcd8b7b50d89f103b4a7a1558b79c5440eb6124b1
+          part-04.b64	3000	76355d63565920dd9cc661e0f495ec4ba18ede0118131d0ca9061c7554347c8c
+          part-05.b64	3000	107cada23b6e283773654178d4e97747eb4c7de8be6e31dfb190443ae264dbbc
+          part-06.b64	3000	2abb55ce73771ee9b9808cda082b848094ac470ad7cd5a39cfeacee242e463b1
+          part-07.b64	3000	c7efc60caadf175b61d090750b68d8039dd8286c370aa3bab587875307adbf73
+          part-08.b64	1776	6f7934c7f50f082ced0765ab7b58ebaa8d61e2f78140e928b513aee637c86b6b
+          SHARDS
+          sed -i 's/^          //' "$out/shards.tsv"
+          : > "$out/shards-actual.tsv"
+          : > /tmp/ssc-wave02-final-reconciliation.b64
+          while IFS=$'\t' read -r part expected_bytes expected_sha; do
+            raw="/tmp/${part}.raw"
+            normalized="/tmp/${part}.normalized"
+            git show "origin/$CARRIER_BRANCH:.ssc-wave02-final-reconciliation/package-v2/$part" > "$raw"
+            raw_bytes="$(wc -c < "$raw" | tr -d ' ')"
+            raw_sha="$(sha256sum "$raw" | awk '{print $1}')"
+            tr -d '\r\n\t ' < "$raw" > "$normalized"
+            normalized_bytes="$(wc -c < "$normalized" | tr -d ' ')"
+            normalized_sha="$(sha256sum "$normalized" | awk '{print $1}')"
+            printf '%s\t%s\t%s\t%s\t%s\n' \
+              "$part" "$raw_bytes" "$raw_sha" "$normalized_bytes" "$normalized_sha" \
+              >> "$out/shards-actual.tsv"
+            test "$normalized_bytes" = "$expected_bytes"
+            test "$normalized_sha" = "$expected_sha"
+            cat "$normalized" >> /tmp/ssc-wave02-final-reconciliation.b64
+          done < "$out/shards.tsv"
+          actual_b64_bytes="$(wc -c < /tmp/ssc-wave02-final-reconciliation.b64 | tr -d ' ')"
+          actual_b64_sha="$(sha256sum /tmp/ssc-wave02-final-reconciliation.b64 | awk '{print $1}')"
+          printf '%s\t%s\n' "$actual_b64_bytes" "$actual_b64_sha" > "$out/package-b64-actual.tsv"
+          test "$actual_b64_bytes" = "$PACKAGE_B64_BYTES"
+          test "$actual_b64_sha" = "$PACKAGE_B64_SHA256"
+          base64 --decode /tmp/ssc-wave02-final-reconciliation.b64 \
+            > /tmp/ssc-wave02-final-reconciliation.zip
+          actual_zip_bytes="$(wc -c < /tmp/ssc-wave02-final-reconciliation.zip | tr -d ' ')"
+          actual_zip_sha="$(sha256sum /tmp/ssc-wave02-final-reconciliation.zip | awk '{print $1}')"
+          printf '%s\t%s\n' "$actual_zip_bytes" "$actual_zip_sha" > "$out/package-zip-actual.tsv"
+          test "$actual_zip_bytes" = "$PACKAGE_ZIP_BYTES"
+          test "$actual_zip_sha" = "$PACKAGE_ZIP_SHA256"
+          unzip -Z1 /tmp/ssc-wave02-final-reconciliation.zip | sort > "$out/archive-paths.txt"
+          cmp "$out/expected-paths.txt" "$out/archive-paths.txt"
+          unzip -q /tmp/ssc-wave02-final-reconciliation.zip -d .
+          git status --porcelain=v1 --untracked-files=all | awk '{print $2}' | sort > "$out/worktree-paths.txt"
+          cmp "$out/expected-paths.txt" "$out/worktree-paths.txt"
+          test -z "$(git status --porcelain=v1 --untracked-files=all | awk '$1 != "??" {print}')"
+
+          step=focused-qualification
+          node --check tools/build-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs
+          node --check tools/validate-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs
+          node --check test/status-sovereignty-residual-denominator-wave-02-reconciliation.test.js
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/build-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-reconciliation.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+          git restore --worktree -- .
+          git status --porcelain=v1 --untracked-files=all | awk '{print $2}' | sort > "$out/post-gate-paths.txt"
+          cmp "$out/expected-paths.txt" "$out/post-gate-paths.txt"
+          test -z "$(git status --porcelain=v1 --untracked-files=all | awk '$1 != "??" {print}')"
+
+          step=commit-six-path-product
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$TARGET_BRANCH"
+          git add -- $(cat "$out/expected-paths.txt")
+          git diff --cached --name-only | sort > "$out/staged-paths.txt"
+          cmp "$out/expected-paths.txt" "$out/staged-paths.txt"
+          test -z "$(git diff --cached --name-status | awk '$1 != "A" {print}')"
+          git diff --cached --check
+          git commit -m 'Reconcile SSC residual-denominator Wave 02'
+          product_commit="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse 'HEAD^{tree}')"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          printf '%s\n' "$product_commit" > "$out/product-commit.txt"
+          printf '%s\n' "$product_tree" > "$out/product-tree.txt"
+
+          step=deterministic-clean-replay
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/build-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-reconciliation.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+          git restore --worktree -- .
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$product_tree"
+
+          step=publish-under-exact-leases
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+          git push \
+            --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET" \
+            origin "HEAD:refs/heads/$TARGET_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$product_commit"
+
+          step=materialization-complete
+          finish
+
+      - name: Preserve exact reconciliation materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-final-reconciliation-materialization-v2
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
