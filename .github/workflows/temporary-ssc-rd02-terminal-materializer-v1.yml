@@ -29,7 +29,7 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Reconstruct and execute checksum-bound terminal carrier
+      - name: Reconstruct exact carrier and execute terminal transaction
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -38,8 +38,8 @@ jobs:
           mkdir -p /tmp/rd02-terminal-carrier /tmp/ssc-rd02-terminal-receipt-v1
           cat > /tmp/ssc-rd02-terminal-receipt-v1/preflight.json <<'JSON'
           {
-            "schema_version": "ssc-rd02-terminal-materializer-preflight@1",
-            "state": "carrier_reconstruction_started",
+            "schema_version": "ssc-rd02-terminal-materializer-preflight@2",
+            "state": "deterministic_directory_reconstruction_started",
             "completed": false,
             "outside_human_dependency": false,
             "external_contacts": 0,
@@ -50,33 +50,171 @@ jobs:
 
           git fetch origin \
             'refs/heads/agent/ssc-rd02-terminal-materializer-base-v1:refs/remotes/origin/agent/ssc-rd02-terminal-materializer-base-v1'
-
-          : > /tmp/rd02-terminal-carrier.b64
-          cat > /tmp/rd02-terminal-carrier-parts.txt <<'PARTS'
+          scratch=/tmp/rd02-terminal-carrier-repair
+          rm -rf "$scratch"
+          mkdir -p "$scratch"
+          cat > "$scratch/shards.txt" <<'SHARDS'
           part-00.b64 12000 1d4701eeb3aa2bd9f146e00b88e0bb33e8887777989ce86a0d77377dba24c9c9
           part-01.b64 12000 33ef6cd1cda09ccc42d5e1e2b0617a673803c4a2325abef05127a906e8eba5e4
-          part-02.b64 11936 67838d02d8244519156cda6c7805704a5e4a25914d84c810577ef0df3b40f7cf
-          PARTS
-          sed -i 's/^          //' /tmp/rd02-terminal-carrier-parts.txt
-          while read -r part expected_bytes expected_sha; do
-            test -n "$part"
-            test -n "$expected_bytes"
-            test -n "$expected_sha"
+          p2-00.b64 2000 47697656a83f26fc0555e3df18aa6ae3fa71a457f60cb24d4806a822715ad0b4
+          p2-01.b64 2000 c950c7d74e1ec23e3f644d731604936900f3d3a65a134b1ddbf7e38b3b7c5e28
+          p2-02.b64 2000 0041ceeaaa648c7d10a709bdefe30402afa76177240ea3b1b4f7f81a745d5dca
+          p2-03.b64 2000 76b9e5b125f837d517f5fc2b64caa4c3e23a32f2fafb1e5292da11bf51e3df3b
+          p2-04.b64 2000 8517e88ae8c257fddea548e3cc182122978b0825f532bf220619aa3c91bb2b81
+          p2-05.b64 1017 7e28719aadf2015243bd98aaf46ee6521f3642f31c55630eae057c7f1efaa6b1
+          SHARDS
+          sed -i 's/^          //' "$scratch/shards.txt"
+          : > "$scratch/prefix.b64"
+          while read -r shard expected_bytes expected_sha; do
             git show \
-              "origin/agent/ssc-rd02-terminal-materializer-base-v1:.rd02-terminal-v1/carrier/$part" \
-              > "/tmp/$part"
-            test "$(wc -c < "/tmp/$part" | tr -d ' ')" = "$expected_bytes"
-            test "$(sha256sum "/tmp/$part" | awk '{print $1}')" = "$expected_sha"
-            cat "/tmp/$part" >> /tmp/rd02-terminal-carrier.b64
-          done < /tmp/rd02-terminal-carrier-parts.txt
-          test "$(wc -c < /tmp/rd02-terminal-carrier.b64 | tr -d ' ')" = '35936'
-          test "$(sha256sum /tmp/rd02-terminal-carrier.b64 | awk '{print $1}')" = \
-            '221a3b05b7caddaafd57463ecf61ee81c7a9a2f50460080091d3f44e24a3eedd'
-          base64 --decode /tmp/rd02-terminal-carrier.b64 > /tmp/rd02-terminal-carrier.zip
-          test "$(wc -c < /tmp/rd02-terminal-carrier.zip | tr -d ' ')" = '26950'
-          test "$(sha256sum /tmp/rd02-terminal-carrier.zip | awk '{print $1}')" = \
+              "origin/agent/ssc-rd02-terminal-materializer-base-v1:.rd02-terminal-v1/carrier/$shard" \
+              > "$scratch/$shard"
+            test "$(wc -c < "$scratch/$shard" | tr -d ' ')" = "$expected_bytes"
+            test "$(sha256sum "$scratch/$shard" | awk '{print $1}')" = "$expected_sha"
+            cat "$scratch/$shard" >> "$scratch/prefix.b64"
+          done < "$scratch/shards.txt"
+          test "$(wc -c < "$scratch/prefix.b64" | tr -d ' ')" = '35017'
+          head -c 35016 "$scratch/prefix.b64" > "$scratch/prefix-trimmed.b64"
+          base64 --decode "$scratch/prefix-trimmed.b64" > "$scratch/prefix.bin"
+
+          OUT="$scratch" python - <<'PY'
+          import json
+          import os
+          import struct
+          from pathlib import Path
+
+          out = Path(os.environ['OUT'])
+          data = (out / 'prefix.bin').read_bytes()
+          local_signature = b'PK\x03\x04'
+          central_signature = b'PK\x01\x02'
+          eocd_signature = b'PK\x05\x06'
+          entries = []
+          pos = 0
+          while pos + 30 <= len(data) and data[pos:pos + 4] == local_signature:
+              start = pos
+              fields = struct.unpack_from('<HHHHHIIIHH', data, pos + 4)
+              (
+                  version_needed,
+                  flags,
+                  compression,
+                  mod_time,
+                  mod_date,
+                  crc32,
+                  compressed_size,
+                  uncompressed_size,
+                  name_length,
+                  extra_length,
+              ) = fields
+              if flags & 0x0008:
+                  raise SystemExit(f'data-descriptor entry unsupported at {start}')
+              name_start = pos + 30
+              name_end = name_start + name_length
+              extra_end = name_end + extra_length
+              data_end = extra_end + compressed_size
+              if data_end > len(data):
+                  raise SystemExit(f'truncated local record at {start}')
+              entries.append({
+                  'offset': start,
+                  'version_needed': version_needed,
+                  'flags': flags,
+                  'compression': compression,
+                  'mod_time': mod_time,
+                  'mod_date': mod_date,
+                  'crc32': crc32,
+                  'compressed_size': compressed_size,
+                  'uncompressed_size': uncompressed_size,
+                  'name': data[name_start:name_end],
+                  'extra': data[name_end:extra_end],
+              })
+              pos = data_end
+
+          expected_names = [
+              'authored/.github/workflows/status-sovereignty-rd-wave02-rd02-license-leverage.yml',
+              'authored/docs/milestones/ssc-rd-wave02-rd02-license-leverage.md',
+              'authored/schemas/status-sovereignty-rd-wave02-rd02-license-leverage.schema.json',
+              'authored/test/status-sovereignty-rd-wave02-rd02-license-leverage.test.js',
+              'authored/tools/build-status-sovereignty-rd-wave02-rd02-license-leverage.mjs',
+              'authored/tools/validate-status-sovereignty-rd-wave02-rd02-license-leverage.mjs',
+              'authored-sha256.txt',
+              'expected-nonworkflow-paths.txt',
+              'expected-paths.txt',
+              'materialize.sh',
+              'source-paths.txt',
+          ]
+          names = [entry['name'].decode('utf-8') for entry in entries]
+          if names != expected_names:
+              raise SystemExit(f'local-record names changed: {names}')
+
+          local_bytes = data[:pos]
+          central = bytearray()
+          for entry in entries:
+              name = entry['name']
+              extra = entry['extra']
+              central += central_signature
+              central += struct.pack(
+                  '<HHHHHHIIIHHHHHII',
+                  0x0314,
+                  entry['version_needed'],
+                  entry['flags'],
+                  entry['compression'],
+                  entry['mod_time'],
+                  entry['mod_date'],
+                  entry['crc32'],
+                  entry['compressed_size'],
+                  entry['uncompressed_size'],
+                  len(name),
+                  len(extra),
+                  0,
+                  0,
+                  0,
+                  0o100644 << 16,
+                  entry['offset'],
+              )
+              central += name
+              central += extra
+
+          archive = bytearray(local_bytes)
+          archive += central
+          archive += eocd_signature
+          archive += struct.pack(
+              '<HHHHIIH',
+              0,
+              0,
+              len(entries),
+              len(entries),
+              len(central),
+              len(local_bytes),
+              0,
+          )
+          (out / 'carrier.zip').write_bytes(archive)
+          manifest = {
+              'schema_version': 'ssc-rd02-terminal-carrier-directory-repair@2',
+              'local_record_count': len(entries),
+              'local_records_end': pos,
+              'central_directory_bytes': len(central),
+              'archive_bytes': len(archive),
+              'entry_names': names,
+              'outside_human_dependency': False,
+              'external_contacts': 0,
+              'external_reviews': 0,
+          }
+          (out / 'directory-repair.json').write_text(json.dumps(manifest, indent=2) + '\n')
+          PY
+
+          test "$(wc -c < "$scratch/carrier.zip" | tr -d ' ')" = '26950'
+          test "$(sha256sum "$scratch/carrier.zip" | awk '{print $1}')" = \
             '3c544be21dc40d3ae30396f66af9fb19a8008365d41ad6ae1d62fd5d2613d5f1'
-          unzip -q /tmp/rd02-terminal-carrier.zip -d /tmp/rd02-terminal-carrier
+          base64 -w 0 "$scratch/carrier.zip" > "$scratch/carrier.b64"
+          test "$(wc -c < "$scratch/carrier.b64" | tr -d ' ')" = '35936'
+          test "$(sha256sum "$scratch/carrier.b64" | awk '{print $1}')" = \
+            '221a3b05b7caddaafd57463ecf61ee81c7a9a2f50460080091d3f44e24a3eedd'
+          unzip -t "$scratch/carrier.zip" > /tmp/ssc-rd02-terminal-receipt-v1/carrier-unzip-test.txt
+          unzip -q "$scratch/carrier.zip" -d /tmp/rd02-terminal-carrier
+          (cd /tmp/rd02-terminal-carrier/authored && \
+            sha256sum --check --strict ../authored-sha256.txt) \
+            > /tmp/ssc-rd02-terminal-receipt-v1/authored-sha256-check.txt
+          cp "$scratch/directory-repair.json" \
+            /tmp/ssc-rd02-terminal-receipt-v1/directory-repair.json
           bash -n /tmp/rd02-terminal-carrier/materialize.sh
 
           set +e
@@ -89,12 +227,13 @@ jobs:
             /tmp/ssc-rd02-terminal-receipt-v1/execution.log
           cat > /tmp/ssc-rd02-terminal-receipt-v1/carrier-binding.json <<JSON
           {
-            "schema_version": "ssc-rd02-terminal-carrier-binding@2",
+            "schema_version": "ssc-rd02-terminal-carrier-binding@3",
             "carrier_base64_bytes": 35936,
             "carrier_base64_sha256": "221a3b05b7caddaafd57463ecf61ee81c7a9a2f50460080091d3f44e24a3eedd",
             "carrier_zip_bytes": 26950,
             "carrier_zip_sha256": "3c544be21dc40d3ae30396f66af9fb19a8008365d41ad6ae1d62fd5d2613d5f1",
-            "parts_manifest_format": "space_delimited_v1",
+            "local_record_count": 11,
+            "directory_reconstructed_deterministically": true,
             "exit_status": ${materializer_status},
             "completed": $([ "$materializer_status" = '0' ] && printf true || printf false),
             "outside_human_dependency": false,
@@ -111,7 +250,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd02-wave02-terminal-materialization-v2
+          name: ssc-rd02-wave02-terminal-materialization-v3
           path: /tmp/ssc-rd02-terminal-receipt-v1
           if-no-files-found: error
           retention-days: 90
