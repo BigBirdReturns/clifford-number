@@ -1,0 +1,47 @@
+name: TEMP repair PC-45 shard 00a
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-pc45-fix-shard-00a.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc45-exact-product-materializer
+          fetch-depth: 0
+      - name: Repair exact transport bytes and publish under lease
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          branch=agent/pc45-exact-product-materializer
+          path=data/research/preference-custody/.pc45-product-package.b64.part-00.fix-0
+          lease=$(git rev-parse HEAD)
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          path = Path('data/research/preference-custody/.pc45-product-package.b64.part-00.fix-0')
+          text = path.read_text()
+          assert len(text) == 4501, len(text)
+          assert text[1415:1435] == '+7v7xYPhlaba4AA9u4WJ', text[1415:1435]
+          corrected = text[:1422] + 'e' + text[1425:1426] + 'w' + text[1426:]
+          assert len(corrected) == 4500
+          digest = hashlib.sha256(corrected.encode()).hexdigest()
+          assert digest == 'ce40c3da06232c0cc88ca5bf792778556165a212751fef1335cad614e6f7a419', digest
+          path.write_text(corrected)
+          PY
+          git config user.name 'BigBirdReturns'
+          git config user.email '219768509+BigBirdReturns@users.noreply.github.com'
+          git add "$path"
+          test "$(git diff --cached --name-only)" = "$path"
+          git diff --cached --check
+          git commit -m 'TEMP: repair exact PC-45 package shard 00a'
+          git push origin "HEAD:refs/heads/$branch" --force-with-lease="refs/heads/$branch:$lease"
