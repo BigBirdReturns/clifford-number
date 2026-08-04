@@ -1,0 +1,74 @@
+name: TEMP materialize exact RD-03 terminal closure v4
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-terminal-materializer-v4.yml'
+      - '.rd03-v4/**'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd03-v4-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-terminal-materializer-trigger-v4'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd03-terminal-materializer-base-v4
+          path: control
+          fetch-depth: 0
+
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd03-negotiated-terms
+          path: work
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct and execute exact materializer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          : > /tmp/rd03-v4-helper.gz.b64
+          cat > /tmp/rd03-v4-helper-parts.tsv <<'EOF'
+          part-00.b64	3000	df83abd6f4fac7be4b9ce20d356a7a71546fc43a6766050d0e430041e1757c3f
+          part-01.b64	3000	45af9c81467900522804e9f46b59796b2b38fbcdd2a52c86da26dfb3b5ae1fd6
+          part-02.b64	612	e17b0ec6103d7c462d4eb86db626264e006fb84ee86c425740120d9f601aa1cc
+          EOF
+          sed -i 's/^          //' /tmp/rd03-v4-helper-parts.tsv
+          while IFS=$'\t' read -r part expected_bytes expected_sha; do
+            path="$PWD/control/.rd03-v4/helper/$part"
+            test "$(wc -c < "$path" | tr -d ' ')" = "$expected_bytes"
+            test "$(sha256sum "$path" | awk '{print $1}')" = "$expected_sha"
+            cat "$path" >> /tmp/rd03-v4-helper.gz.b64
+          done < /tmp/rd03-v4-helper-parts.tsv
+          test "$(wc -c < /tmp/rd03-v4-helper.gz.b64 | tr -d ' ')" = '6612'
+          test "$(sha256sum /tmp/rd03-v4-helper.gz.b64 | awk '{print $1}')" = 'e4d9530e03daa5c4dc3f5a57fc7240282f4da2cb2bccfabb35c87e881e0ccb01'
+          base64 --decode /tmp/rd03-v4-helper.gz.b64 > /tmp/rd03-v4-helper.sh.gz
+          test "$(wc -c < /tmp/rd03-v4-helper.sh.gz | tr -d ' ')" = '4959'
+          test "$(sha256sum /tmp/rd03-v4-helper.sh.gz | awk '{print $1}')" = '5cc5b74c235b782f5fae4d733c22a70e0e976f95f2bd3198ec0a257340206518'
+          gzip -dc /tmp/rd03-v4-helper.sh.gz > /tmp/rd03-v4-helper.sh
+          test "$(wc -c < /tmp/rd03-v4-helper.sh | tr -d ' ')" = '15386'
+          test "$(sha256sum /tmp/rd03-v4-helper.sh | awk '{print $1}')" = '9ecc52ede8eaa464c66964c90fd4e930f12e5ddeb07a4172aef72aaae0f363f3'
+          bash -n /tmp/rd03-v4-helper.sh
+          bash /tmp/rd03-v4-helper.sh "$PWD/work" "$PWD/control"
+
+      - name: Preserve terminal materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-wave02-terminal-materialization-v4
+          path: /tmp/rd03-v4-terminal-receipt
+          if-no-files-found: error
+          retention-days: 90
