@@ -1,0 +1,98 @@
+name: SSC RD-02 Wave 03 same-host disclosure adjudication
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd02-same-host-adjudication.yml'
+      - '.ssc-rd02-wave03-same-host-followup-trigger/EXECUTE'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/candidate-followup-execution-receipt.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/same-host-link-adjudication.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/same-host-followup-protocol.json'
+      - 'schemas/status-sovereignty-rd-wave03-rd02-same-host-adjudication.schema.json'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd02-same-host-adjudication.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd02-same-host-adjudication.test.js'
+      - 'tools/acquisition/status-sovereignty-rd-wave03-rd02/run-same-host-followups.py'
+      - 'docs/milestones/ssc-rd-wave03-rd02-same-host-adjudication.md'
+  push:
+    branches: [main]
+    paths:
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/candidate-followup-execution-receipt.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/same-host-link-adjudication.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/same-host-followup-protocol.json'
+      - 'schemas/status-sovereignty-rd-wave03-rd02-same-host-adjudication.schema.json'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd02-same-host-adjudication.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd02-same-host-adjudication.test.js'
+      - 'tools/acquisition/status-sovereignty-rd-wave03-rd02/run-same-host-followups.py'
+      - 'docs/milestones/ssc-rd-wave03-rd02-same-host-adjudication.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd02-wave03-same-host-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Validate eleven-link denominator and five frozen routes
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-status-sovereignty-rd-wave03-rd02-same-host-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd02-same-host-adjudication.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd02/run-same-host-followups.py
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Restore volatile outputs and replay exact validation
+        run: |
+          set -Eeuo pipefail
+          git restore --worktree -- .
+          node tools/validate-status-sovereignty-rd-wave03-rd02-same-host-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd02-same-host-adjudication.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd02/run-same-host-followups.py
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+  capture:
+    if: startsWith(github.head_ref, 'agent/ssc-rd-wave03-rd02-same-host-followup-trigger-')
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Revalidate exact five-route protocol before requests
+        run: |
+          node tools/validate-status-sovereignty-rd-wave03-rd02-same-host-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd02-same-host-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+      - name: Execute five exact disclosure followups
+        run: python tools/acquisition/status-sovereignty-rd-wave03-rd02/run-same-host-followups.py --output /tmp/ssc-rd02-wave03-same-host-followups-v1
+      - name: Preserve exact disclosure bodies, receipts, links, and manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave03-same-host-followups-v1
+          path: /tmp/ssc-rd02-wave03-same-host-followups-v1
+          if-no-files-found: error
+          retention-days: 90
