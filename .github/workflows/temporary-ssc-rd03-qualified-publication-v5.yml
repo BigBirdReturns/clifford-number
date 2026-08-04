@@ -63,7 +63,8 @@ jobs:
             test "$blob" = '40827488d04ea18c9609559592d49e3d93aeac9a'
             git update-index --add --cacheinfo "100644,$blob,$r019"
           fi
-          git ls-files --stage -- "$r019" | grep -Fxq '100644 40827488d04ea18c9609559592d49e3d93aeac9a 0\t'"$r019"
+          expected_stage="$(printf '100644 %s 0\t%s' '40827488d04ea18c9609559592d49e3d93aeac9a' "$r019")"
+          test "$(git ls-files --stage -- "$r019")" = "$expected_stage"
           git diff --cached --name-only | sort > "$RUNNER_TEMP/rd03-product-paths.actual"
           if ! cmp "$qualified/product-paths.txt" "$RUNNER_TEMP/rd03-product-paths.actual"; then
             diff -u "$qualified/product-paths.txt" "$RUNNER_TEMP/rd03-product-paths.actual" || true
