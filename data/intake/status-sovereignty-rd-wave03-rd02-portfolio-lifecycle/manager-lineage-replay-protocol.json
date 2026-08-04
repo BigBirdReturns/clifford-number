@@ -1,0 +1,115 @@
+{
+  "schema_version": "ssc-rd02-wave03-manager-lineage-replay-protocol@1",
+  "wave_id": "SSC-RD-W03",
+  "lane_id": "RD-02",
+  "class_id": "RD-02-C05",
+  "issue": 1015,
+  "as_of": "2026-08-04",
+  "authority": "one_failed_pretransport_route_replay_only_not_source_admission_or_field_closure",
+  "source_custody": {
+    "canonical_disclosure_leaf_protocol_merge": "135bc5acc1bec7f13d817caf697aec9c36c157e0",
+    "execution_receipt_path": "data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/disclosure-leaf-execution-receipt.json",
+    "workflow_run": 30952281385,
+    "artifact_id": 8909616198,
+    "artifact_zip_sha256": "711296d8a951c60191abc9dba2301d37de6d9f40f9b51694374198d229ed23d5",
+    "failed_route_id": "RD02-W03-DL002",
+    "failed_route_candidate_ordinal": 405,
+    "failed_route_candidate_id": "cf856a923b3d12b963214c6977e4bbc871d90d8c69bd6b81a44f556b07247f56",
+    "failed_route_curl_exit": 3,
+    "failed_route_http_status": 0,
+    "failed_route_body_bytes": 0,
+    "failed_route_stderr_sha256": "759145b0630523bcfe14b93d5db456c84650dc750395e3ecbfde81214426a05c",
+    "failure_class": "pretransport_literal_space_url_encoding_failure",
+    "http_request_sent": false
+  },
+  "frozen_unit": {
+    "unit_ordinal": 15,
+    "unit_id": "SBICCT-FIRST-COHORT-15",
+    "legal_vehicle": "Stifel North Atlantic AM-Forward, LP"
+  },
+  "denominator": {
+    "original_fixed_routes": 2,
+    "original_terminal_routes": 2,
+    "original_successful_pdf_routes": 1,
+    "original_pretransport_failures": 1,
+    "successful_routes_replayed": 0,
+    "fixed_replay_routes": 1,
+    "route_ledger_bytes": 266,
+    "route_ledger_sha256": "10e8c93e381c4bba4768e0914e7eb50cd8d7bdf0a1e5b634b6fa2952acfd4e12"
+  },
+  "routes": [
+    {
+      "route_id": "RD02-W03-DLR001",
+      "replays_route_id": "RD02-W03-DL002",
+      "candidate_ordinal": 405,
+      "candidate_id": "cf856a923b3d12b963214c6977e4bbc871d90d8c69bd6b81a44f556b07247f56",
+      "source_route_id": "RD02-W03-SH005",
+      "unit_ordinal": 15,
+      "candidate_url": "https://www.stifel.com/docs/pdf/pressreleases/2021/Stifel North Atlantic NEW FINAL for 02.19.21-1.pdf",
+      "transport_url": "https://www.stifel.com/docs/pdf/pressreleases/2021/Stifel%20North%20Atlantic%20NEW%20FINAL%20for%2002.19.21-1.pdf",
+      "transport_normalization": "literal_ascii_spaces_percent_encoded_as_%20_only",
+      "route_type": "manager_lineage_pdf_replay_get",
+      "allowed_final_host_suffix": "stifel.com",
+      "maximum_replay_attempts": 1,
+      "maximum_response_body_bytes": 10485760,
+      "candidate_is_admitted_source": false,
+      "automatic_observation_admission": false,
+      "result_spawned_requests": 0,
+      "expected_observation_scope": [
+        "North Atlantic manager lineage",
+        "Stifel acquisition or affiliation state",
+        "antecedent commitment to a future North Atlantic SBIC"
+      ],
+      "forbidden_promotions": [
+        "manager lineage to exact frozen legal vehicle identity",
+        "antecedent commitment to actual leverage commitment or draw",
+        "manager acquisition to portfolio investment",
+        "manager acquisition to follow-on, exit, write-off, default, return, or SBA repayment"
+      ]
+    }
+  ],
+  "execution_contract": {
+    "replay_authorized_only_because_original_http_request_was_not_sent": true,
+    "successful_route_replay_forbidden": true,
+    "raw_candidate_identity_preserved": true,
+    "transport_normalization_limited_to_percent_encoding_literal_spaces": true,
+    "maximum_replay_attempts": 1,
+    "connect_timeout_seconds": 15,
+    "total_timeout_seconds": 90,
+    "maximum_parallel_workers": 1,
+    "redirects": "followed_and_recorded",
+    "allowed_final_host_rule": "exact_declared_suffix_or_subdomain",
+    "maximum_response_body_bytes": 10485760,
+    "pdf_magic_required_for_success": true,
+    "pdf_text_extraction_in_capture": false,
+    "result_spawned_requests": 0,
+    "candidate_admission_without_separate_adjudication": false,
+    "automatic_observation_admission": false,
+    "automatic_field_closure": false,
+    "automatic_class_closure": false
+  },
+  "current_counts": {
+    "replay_attempts": 0,
+    "terminal_replay_routes": 0,
+    "captured_pdf_bodies": 0,
+    "admitted_sources": 0,
+    "observations_admitted": 0,
+    "fields_closed": 0,
+    "class_closed": false
+  },
+  "authority_boundaries": {
+    "outside_human_dependency": false,
+    "external_contacts": 0,
+    "external_reviews": 0,
+    "reviewed_disposition_changed": false,
+    "capital_conversion_finding": false,
+    "favoritism_finding": false,
+    "extraction_finding": false,
+    "coordination_finding": false,
+    "common_purpose_finding": false,
+    "complete_compact_finding": false,
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none"
+  }
+}
