@@ -53,8 +53,7 @@ jobs:
           assert all(byte in allowed for byte in suffix)
           expected_complete=25720
           missing=expected_complete-len(prefix)-len(suffix)
-          assert missing > 0
-          assert missing % 4 == 1, missing
+          assert missing == 5723, missing
           assert len(prefix) + len(suffix) + len(marker) == len(raw)
           (p.parent/'prefix.b64').write_bytes(prefix)
           (p.parent/'suffix.b64').write_bytes(suffix)
@@ -66,7 +65,7 @@ jobs:
           (p.parent/'synthetic-carrier.b64').write_bytes(synthetic)
           (p.parent/'synthetic-carrier.zip').write_bytes(decoded)
           report={
-            'schema_version':'ssc-rd03-corrupt-carrier-export@2',
+            'schema_version':'ssc-rd03-corrupt-carrier-export@3',
             'carrier_head':'02ea4361a38b860a56be29bb86733f761bcfca30',
             'raw_bytes':len(raw),
             'raw_sha256':hashlib.sha256(raw).hexdigest(),
