@@ -85,12 +85,41 @@ if (carrierExecution) {
   assert.equal(run('git', ['-C', target, 'rev-parse', 'HEAD']), TARGET_HEAD, 'target design head drift');
 
   const captureSourcePath = path.join(checkout, '.ssc-rd02-wave03-search-census-v1/capture.py');
-  const captureSource = fs.readFileSync(captureSourcePath, 'utf8');
-  const staleSeedBlob = 'SEED_BLOB="33571874afe10cf389de65bbf6426bdb297932b7"';
-  const correctedSeedBlob = 'SEED_BLOB="33571d5278b0defed45d2537b325a67d71ca57e3"';
-  assert.equal(captureSource.split(staleSeedBlob).length - 1, 1, 'expected exactly one stale seed blob binding');
+  let patchedCapture = fs.readFileSync(captureSourcePath, 'utf8');
+  const captureRepairs = [
+    [
+      'SEED_BLOB="33571874afe10cf389de65bbf6426bdb297932b7"',
+      'SEED_BLOB="33571d5278b0defed45d2537b325a67d71ca57e3"',
+      1,
+      'seed blob binding'
+    ],
+    [
+      'check(matrix["class_state"]=="still_open" and matrix["class_closed"] is False,"matrix premature closure")',
+      'check(matrix["status"]=="unit_and_field_contract_frozen_acquisition_not_executed" and matrix["current_counts"]["class_closed"] is False,"matrix premature closure")',
+      1,
+      'matrix state location'
+    ],
+    [
+      'check(len(units)==18 and [u["row"] for u in units]==list(range(1,19)),"unit denominator")',
+      'check(len(units)==18 and [u["unit_ordinal"] for u in units]==list(range(1,19)),"unit denominator")',
+      1,
+      'unit ordinal denominator'
+    ],
+    [
+      'check(len(named)==17 and len(withheld)==1 and withheld[0]["row"]==18,"17+1 identity denominator")',
+      'check(len(named)==17 and len(withheld)==1 and withheld[0]["unit_ordinal"]==18,"17+1 identity denominator")',
+      1,
+      'withheld unit ordinal'
+    ],
+    ['u["row"]', 'u["unit_ordinal"]', 2, 'route unit ordinals']
+  ];
+  for (const [from, to, expected, label] of captureRepairs) {
+    const observed = patchedCapture.split(from).length - 1;
+    assert.equal(observed, expected, `${label}: expected ${expected} stale occurrences, observed ${observed}`);
+    patchedCapture = patchedCapture.split(from).join(to);
+  }
   const patchedCapturePath = path.join(work, 'capture.py');
-  fs.writeFileSync(patchedCapturePath, captureSource.replace(staleSeedBlob, correctedSeedBlob));
+  fs.writeFileSync(patchedCapturePath, patchedCapture);
 
   run('python3', [patchedCapturePath, target, output], { inherit: true });
 
