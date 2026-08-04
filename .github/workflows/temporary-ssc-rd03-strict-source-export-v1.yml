@@ -1,0 +1,87 @@
+name: TEMP export exact RD-03 strict authored sources
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-strict-source-export-v1.yml'
+      - '.rd03-v4-strict-export/**'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  export:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-terminal-materializer-trigger-v4'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd03-terminal-materializer-base-v4
+          fetch-depth: 0
+
+      - name: Reconstruct exact strict source package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/rd03-strict-export /tmp/rd03-recovery.zip /tmp/rd03-recovery /tmp/rd03-v4-patch.*
+          mkdir -p /tmp/rd03-strict-export /tmp/rd03-recovery
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            'https://api.github.com/repos/BigBirdReturns/clifford-number/actions/artifacts/8878932200/zip' \
+            --output /tmp/rd03-recovery.zip
+          test "$(wc -c < /tmp/rd03-recovery.zip | tr -d ' ')" = '92632'
+          test "$(sha256sum /tmp/rd03-recovery.zip | awk '{print $1}')" = '8bb38c7de6f2042bb34efdf0c483d430340194ac85721bbba7e3f5f9cd79e1bc'
+          unzip -q /tmp/rd03-recovery.zip -d /tmp/rd03-recovery
+          test "$(wc -c < /tmp/rd03-recovery/shards/historical_pre_overwrite/authored.zip | tr -d ' ')" = '27344'
+          test "$(sha256sum /tmp/rd03-recovery/shards/historical_pre_overwrite/authored.zip | awk '{print $1}')" = '8169c177f709021bb0565f7debbb6a42fe3dd7a807d1b51db3016eef5325e77b'
+          unzip -q /tmp/rd03-recovery/shards/historical_pre_overwrite/authored.zip -d /tmp/rd03-strict-export
+
+          : > /tmp/rd03-v4-patch.b64
+          cat > /tmp/rd03-v4-patch-parts.tsv <<'EOF'
+          part-00.b64	3000	0f53f8dedf51f2a85752f895f790776454a20362eacbcd816eafc77271fd6f32
+          part-01.b64	3000	5240fe34c92f61d1cb08939270a233be85c639e3604b9245c6153169fc527d3a
+          part-02.b64	2308	f26f5d5715dd27bd8533dc8036d0b00f7a7b7f4b1c60bc8a9e3f0869ba236a73
+          EOF
+          sed -i 's/^          //' /tmp/rd03-v4-patch-parts.tsv
+          while IFS=$'\t' read -r part expected_bytes expected_sha; do
+            path=".rd03-v4/strict-patch/$part"
+            test "$(wc -c < "$path" | tr -d ' ')" = "$expected_bytes"
+            test "$(sha256sum "$path" | awk '{print $1}')" = "$expected_sha"
+            cat "$path" >> /tmp/rd03-v4-patch.b64
+          done < /tmp/rd03-v4-patch-parts.tsv
+          test "$(wc -c < /tmp/rd03-v4-patch.b64 | tr -d ' ')" = '8308'
+          test "$(sha256sum /tmp/rd03-v4-patch.b64 | awk '{print $1}')" = '99e28e1218e6a39098b7ad2d5f72e07f78cbdefc6135acf2d3ca44c49bd8e9c4'
+          base64 --decode /tmp/rd03-v4-patch.b64 > /tmp/rd03-v4-patch.gz
+          test "$(wc -c < /tmp/rd03-v4-patch.gz | tr -d ' ')" = '6229'
+          test "$(sha256sum /tmp/rd03-v4-patch.gz | awk '{print $1}')" = '72d2d0a711d08f43e3f0ea0e547debe67953ac8c00fd4556d70d31d8b84432ba'
+          gzip -dc /tmp/rd03-v4-patch.gz > /tmp/rd03-v4.patch
+          test "$(wc -c < /tmp/rd03-v4.patch | tr -d ' ')" = '28670'
+          test "$(sha256sum /tmp/rd03-v4.patch | awk '{print $1}')" = '5b1f0f43ce28091c6fe9364952d1443805e0adee34d9573ef86c454188aa2d9b'
+          (cd /tmp/rd03-strict-export && git apply --check /tmp/rd03-v4.patch && git apply /tmp/rd03-v4.patch)
+
+          cat > /tmp/rd03-strict-sha256.txt <<'EOF'
+          27fd04bde88341499b2ae8494a0b6a8126358f0f550315213ec0469fccaa7364  ./.github/workflows/status-sovereignty-rd-wave02-rd03-negotiated-terms.yml
+          5f90199a597cc92050ecc91b20076849de9f453cc369675fce97c67ea9c67a57  ./docs/milestones/ssc-rd-wave02-rd03-negotiated-terms.md
+          dfeea84c64828a8719e9fcf35ce6ffd5cd1f5be39a31fcc056b66d414399c4d5  ./schemas/status-sovereignty-rd-wave02-rd03-negotiated-terms.schema.json
+          22c47846a7aab3e86bad0958c41d9f2793480286c57336acda00988949dd4cbc  ./test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          b241f98cdc80208cc800503f70c8983c48de3e8da93a8d214cb5461a07c2f2ed  ./tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          299c63cf44f6b52aab31fb5ccac7353c2ae878eeeb79ff933d24af6ee8cef035  ./tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          EOF
+          sed -i 's/^          //' /tmp/rd03-strict-sha256.txt
+          (cd /tmp/rd03-strict-export && sha256sum --check --strict /tmp/rd03-strict-sha256.txt)
+          cp /tmp/rd03-strict-sha256.txt /tmp/rd03-strict-export/strict-source-sha256.txt
+          printf '%s\n' 'exact strict six-file package recovered; no product publication performed' \
+            > /tmp/rd03-strict-export/EXPORT-RECEIPT.txt
+
+      - name: Preserve exact strict sources
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-strict-authored-sources-v1
+          path: /tmp/rd03-strict-export
+          if-no-files-found: error
+          retention-days: 90
