@@ -5,14 +5,15 @@ import { readBundle, validateProduct, validateProductShape, validateCurrentAtlas
 const clone=(value)=>structuredClone(value);
 validateProduct();
 const bundle=readBundle();
-assert.equal(validateCurrentAtlasCustody(bundle.current,bundle.manifest.combined_sha256),'pre_promotion');
+assert.equal(validateCurrentAtlasCustody(bundle.current,bundle.manifest.combined_sha256),'post_promotion');
 const post=clone(bundle.current);
-post.authority='five_terminal_class_receipts_promoted_without_cross_lane_empirical_authority';
-post.promoted_class_receipts.push({lane_id:'RD-03',class_id:'RD-03-C04',issue:788,source_pr:803,merge_commit:'1'.repeat(40),constitutional_exact_label:CLASS_LABEL,receipt_class_label:CLASS_LABEL,labels_exact_match:false,label_reconciliation:LABEL_RECONCILIATION,terminal_state:TERMINAL_STATE,closure_reference_path:CLOSURE_REFERENCE_PATH,class_receipt_path:`${PRODUCT_ROOT}/class-receipt.json`,manifest_combined_sha256:bundle.manifest.combined_sha256,class_closed:true});
-post.selected_classes_open=post.selected_classes_open.filter((row)=>row.class_id!=='RD-03-C04');
-post.counts.terminal_class_receipts=5;post.counts.classes_closed_this_wave=5;post.counts.closed_residual_classes=5;post.counts.open_residual_classes=37;
-post.current_result.terminal_state='five_of_forty_two_residual_classes_closed_one_selected_attempt_open';post.current_result.classes_closed=5;post.current_result.classes_open=37;post.current_result.closed_class_ids=[...post.current_result.closed_class_ids,'RD-03-C04'];post.current_result.open_selected_class_ids=['RD-02-C04'];
-assert.equal(validateCurrentAtlasCustody(post,bundle.manifest.combined_sha256),'post_promotion');
+const pre=clone(bundle.current);
+pre.authority='four_terminal_class_receipts_promoted_without_cross_lane_empirical_authority';
+pre.promoted_class_receipts=pre.promoted_class_receipts.filter((row)=>row.class_id!=='RD-03-C04');
+pre.selected_classes_open.push({lane_id:'RD-03',class_id:'RD-03-C04',issue:788,constitutional_exact_label:CLASS_LABEL,state:'open',class_closed:false});
+pre.counts.terminal_class_receipts=4;pre.counts.classes_closed_this_wave=4;pre.counts.closed_residual_classes=4;pre.counts.open_residual_classes=38;pre.counts.label_reconciliations=1;
+pre.current_result.terminal_state='four_of_forty_two_residual_classes_closed_two_selected_attempts_open';pre.current_result.classes_closed=4;pre.current_result.classes_open=38;pre.current_result.closed_class_ids=pre.current_result.closed_class_ids.filter((id)=>id!=='RD-03-C04');pre.current_result.open_selected_class_ids=['RD-02-C04','RD-03-C04'];
+assert.equal(validateCurrentAtlasCustody(pre,bundle.manifest.combined_sha256),'pre_promotion');
 const mutations=[
  ['terminal schema',b=>{b.terminal.schema_version='bad';}],['terminal class',b=>{b.terminal.class_id='RD-02-C04';}],['terminal issue',b=>{b.terminal.issue=787;}],['terminal label',b=>{b.terminal.class_label='partial';}],['terminal status',b=>{b.terminal.status='open';}],
  ['source head',b=>{b.terminal.source_product.source_matrix_head='0'.repeat(40);}],['matrix sha',b=>{b.terminal.source_product.historical_field_matrix_sha256='0'.repeat(64);}],['matrix blob',b=>{b.terminal.source_product.historical_field_matrix_blob_sha='0'.repeat(40);}],['parent sha',b=>{b.terminal.source_product.parent_sha256='0'.repeat(64);}],['census digest',b=>{b.terminal.source_product.census_manifest_combined_sha256='0'.repeat(64);}],['artifact digest',b=>{b.terminal.source_product.census_artifact_sha256='0'.repeat(64);}],['seed reconciliation',b=>{b.terminal.source_product.seed_label_reconciliation='none';}],
@@ -28,5 +29,5 @@ const mutations=[
 ];
 for(const[name,mutate]of mutations){const candidate=clone(bundle);mutate(candidate);assert.throws(()=>validateProductShape(candidate),undefined,name);}
 const custodyMutations=[['pre closed count',v=>{v.counts.closed_residual_classes=5;}],['pre open count',v=>{v.counts.open_residual_classes=37;}],['pre RD03 removed',v=>{v.selected_classes_open=v.selected_classes_open.filter((r)=>r.class_id!=='RD-03-C04');}],['pre graph',v=>{v.current_result.graph_effect='edge';}],['post merge',v=>{v.promoted_class_receipts[4].merge_commit='bad';}],['post manifest',v=>{v.promoted_class_receipts[4].manifest_combined_sha256='0'.repeat(64);}],['post reconciliation',v=>{v.promoted_class_receipts[4].label_reconciliation='none';}],['post exact label flag',v=>{v.promoted_class_receipts[4].labels_exact_match=true;}],['post reopened',v=>{v.selected_classes_open.push({lane_id:'RD-03',class_id:'RD-03-C04'});}],['post state',v=>{v.promoted_class_receipts[4].terminal_state='evidence_complete';}],['post order',v=>{v.promoted_class_receipts.reverse();}],['post effect',v=>{v.counts.external_reviews=1;}]];
-for(const[name,mutate]of custodyMutations){const candidate=clone(name.startsWith('post')?post:bundle.current);mutate(candidate);assert.throws(()=>validateCurrentAtlasCustody(candidate,bundle.manifest.combined_sha256),undefined,name);}
+for(const[name,mutate]of custodyMutations){const candidate=clone(name.startsWith('post')?post:pre);mutate(candidate);assert.throws(()=>validateCurrentAtlasCustody(candidate,bundle.manifest.combined_sha256),undefined,name);}
 console.log(`RD-03 terminal adversarial suite: ${mutations.length+custodyMutations.length} mutations refused`);
