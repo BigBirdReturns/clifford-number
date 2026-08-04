@@ -1,0 +1,295 @@
+name: TEMP repair RD-06 successor atlas compatibility v2
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd06-successor-compat-materializer-v2.yml'
+      - '.rd03-ledger5-materializer/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd06-successor-compat-v2-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-ledger5-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPECTED_MAIN: f1e1851d2fa22a3d9972cbd20498cb73f6c0177d
+      TARGET_BRANCH: agent/ssc-wave02-current-ledger-five-closures
+      EXPECTED_TARGET: f0d71a46ba2b098b054d6246d7ff00250af1961e
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-current-ledger-five-closures
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Patch stable anchors, qualify, and publish RD-06 successor compatibility
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/ssc-rd06-successor-compat-v2-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$out"
+          mkdir -p "$out"
+          echo "RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          exec > >(tee "$out/trace.log") 2>&1
+          step=initialize
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$out/exit-code.txt"
+            printf '%s\n' "$step" > "$out/final-step.txt"
+            git rev-parse HEAD > "$out/head.txt" 2>&1 || true
+            git rev-parse 'HEAD^{tree}' > "$out/tree.txt" 2>&1 || true
+            git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
+            git diff --name-status "$EXPECTED_TARGET" HEAD > "$out/name-status.txt" 2>&1 || true
+            git diff --name-only "$EXPECTED_TARGET" HEAD | sort > "$out/paths.txt" 2>&1 || true
+            git ls-remote --heads origin refs/heads/main > "$out/remote-main.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1 || true
+            OUT="$out" RC="$rc" STEP="$step" python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          out=Path(os.environ['OUT'])
+          receipt={
+            'schema_version':'ssc-rd06-successor-atlas-compat-materialization@2',
+            'run':int(os.environ['GITHUB_RUN_ID']),
+            'exit_code':int(os.environ['RC']),
+            'final_step':os.environ['STEP'],
+            'main_parent':os.environ['EXPECTED_MAIN'],
+            'prior_target':os.environ['EXPECTED_TARGET'],
+            'target_branch':os.environ['TARGET_BRANCH'],
+            'permanent_paths':2,
+            'accepted_rd06_atlas_states':['pre_promotion','post_promotion','successor_promotion'],
+            'rd06_evidence_changed':False,
+            'rd06_terminal_product_changed':False,
+            'outside_human_dependency':False,
+            'external_contacts':0,
+            'external_reviews':0,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+          }
+          (out/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          for path in sorted(out.iterdir()):
+            if path.is_file() and not path.name.endswith('.sha256'):
+              digest=hashlib.sha256(path.read_bytes()).hexdigest()
+              (out/(path.name+'.sha256')).write_text(f'{digest}  {path.name}\n')
+          PY
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          step=verify-exact-leases
+          test "$(git rev-parse HEAD)" = "$EXPECTED_TARGET"
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+
+          step=apply-stable-successor-compatibility-patch
+          python - <<'PY'
+          from pathlib import Path
+
+          validator = Path('tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs')
+          value = validator.read_text()
+          old_tail = """  ok(prePromotion || postPromotion, 'current atlas is neither exact pre-promotion nor exact post-promotion RD-06 custody');
+          return prePromotion ? 'pre_promotion' : 'post_promotion';"""
+          new_tail = """  const successorPromotion =
+            current.authority === 'five_terminal_class_receipts_promoted_without_cross_lane_empirical_authority' &&
+            current.counts.terminal_class_receipts === 5 &&
+            current.counts.classes_closed_this_wave === 5 &&
+            current.counts.closed_residual_classes === 5 &&
+            current.counts.open_residual_classes === 37 &&
+            current.current_result.terminal_state === 'five_of_forty_two_residual_classes_closed_one_selected_attempt_open' &&
+            current.current_result.classes_closed === 5 &&
+            current.current_result.classes_open === 37 &&
+            equal(promotedIds, ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04']) &&
+            equal(openIds, ['RD-02-C04']) &&
+            equal(current.current_result.closed_class_ids, ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04']) &&
+            equal(current.current_result.open_selected_class_ids, ['RD-02-C04']) &&
+            rd06Open === undefined &&
+            equal(rd06Promoted, {
+              lane_id: 'RD-06',
+              class_id: 'RD-06-C01',
+              issue: 791,
+              source_pr: 806,
+              merge_commit: 'd7983e19c0783a048afb19adde0fb65ccf94c726',
+              constitutional_exact_label: CLASS_LABEL,
+              receipt_class_label: CLASS_LABEL,
+              labels_exact_match: true,
+              label_reconciliation: 'none',
+              terminal_state: TERMINAL_STATE,
+              closure_reference_path: CLOSURE_REFERENCE_PATH,
+              class_receipt_path: `${PRODUCT_ROOT}/class-receipt.json`,
+              manifest_combined_sha256: '2a17904180dac7b250e2b0ffb82e8124354e89c39be267b0f4c4ebe65c6516c5',
+              class_closed: true
+            });
+
+          ok(
+            prePromotion || postPromotion || successorPromotion,
+            'current atlas is neither exact pre-promotion, exact post-promotion, nor exact successor RD-06 custody'
+          );
+          return prePromotion ? 'pre_promotion' : postPromotion ? 'post_promotion' : 'successor_promotion';"""
+          count = value.count(old_tail)
+          if count != 1:
+            raise RuntimeError(f'RD-06 validator tail: expected one match, found {count}')
+          validator.write_text(value.replace(old_tail, new_tail, 1))
+
+          test = Path('test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js')
+          value = test.read_text()
+
+          old_assert = "assert.equal(validateCurrentAtlasCustody(currentLedger), 'post_promotion');"
+          new_assert = "assert.equal(validateCurrentAtlasCustody(currentLedger), 'successor_promotion');"
+          count = value.count(old_assert)
+          if count != 1:
+            raise RuntimeError(f'RD-06 canonical assertion: expected one match, found {count}')
+          value = value.replace(old_assert, new_assert, 1)
+
+          insertion_anchor = new_assert + "\n\n"
+          post_fixture = """const postPromotionLedger = clone(currentLedger);
+          postPromotionLedger.authority = 'four_terminal_class_receipts_promoted_without_cross_lane_empirical_authority';
+          postPromotionLedger.promoted_class_receipts = postPromotionLedger.promoted_class_receipts.filter((row) => row.class_id !== 'RD-03-C04');
+          postPromotionLedger.selected_classes_open.push({
+            lane_id: 'RD-03',
+            class_id: 'RD-03-C04',
+            issue: 788,
+            constitutional_exact_label: 'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms',
+            state: 'open',
+            class_closed: false
+          });
+          postPromotionLedger.counts.terminal_class_receipts = 4;
+          postPromotionLedger.counts.classes_closed_this_wave = 4;
+          postPromotionLedger.counts.closed_residual_classes = 4;
+          postPromotionLedger.counts.open_residual_classes = 38;
+          postPromotionLedger.counts.label_reconciliations = 1;
+          postPromotionLedger.current_result.terminal_state = 'four_of_forty_two_residual_classes_closed_two_selected_attempts_open';
+          postPromotionLedger.current_result.classes_closed = 4;
+          postPromotionLedger.current_result.classes_open = 38;
+          postPromotionLedger.current_result.closed_class_ids = ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01'];
+          postPromotionLedger.current_result.open_selected_class_ids = ['RD-02-C04','RD-03-C04'];
+          assert.equal(validateCurrentAtlasCustody(postPromotionLedger), 'post_promotion');
+
+          """
+          count = value.count(insertion_anchor)
+          if count != 1:
+            raise RuntimeError(f'RD-06 post fixture anchor: expected one match, found {count}')
+          value = value.replace(insertion_anchor, insertion_anchor + post_fixture, 1)
+
+          old_pre = 'const prePromotionLedger = clone(currentLedger);'
+          new_pre = 'const prePromotionLedger = clone(postPromotionLedger);'
+          count = value.count(old_pre)
+          if count != 1:
+            raise RuntimeError(f'RD-06 pre fixture source: expected one match, found {count}')
+          value = value.replace(old_pre, new_pre, 1)
+
+          old_post_loop = """for (const [name, mutate] of custodyMutations) {
+            const candidate = clone(currentLedger);"""
+          new_post_loop = """for (const [name, mutate] of custodyMutations) {
+            const candidate = clone(postPromotionLedger);"""
+          count = value.count(old_post_loop)
+          if count != 1:
+            raise RuntimeError(f'RD-06 post mutation loop: expected one match, found {count}')
+          value = value.replace(old_post_loop, new_post_loop, 1)
+
+          pre_anchor = 'const preCustodyMutations = ['
+          successor_suite = """const successorCustodyMutations = [
+            ['successor receipt count', (v) => { v.counts.terminal_class_receipts = 4; }],
+            ['successor RD-03 receipt removed', (v) => { v.promoted_class_receipts.pop(); }],
+            ['successor selected class changed', (v) => { v.selected_classes_open.push({ lane_id: 'RD-03', class_id: 'RD-03-C04', issue: 788, constitutional_exact_label: 'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms', state: 'open', class_closed: false }); }],
+            ['successor RD-06 merge', (v) => { v.promoted_class_receipts[3].merge_commit = '0'.repeat(40); }],
+            ['successor closed order', (v) => { v.promoted_class_receipts.reverse(); }],
+            ['successor graph effect', (v) => { v.current_result.graph_effect = 'graph_changed'; }]
+          ];
+
+          for (const [name, mutate] of successorCustodyMutations) {
+            const candidate = clone(currentLedger);
+            mutate(candidate);
+            assert.throws(() => validateCurrentAtlasCustody(candidate), undefined, name);
+          }
+
+          """
+          count = value.count(pre_anchor)
+          if count != 1:
+            raise RuntimeError(f'RD-06 successor suite anchor: expected one match, found {count}')
+          value = value.replace(pre_anchor, successor_suite + pre_anchor, 1)
+
+          old_total = 'mutations.length + schemaMutations.length + custodyMutations.length + preCustodyMutations.length'
+          new_total = 'mutations.length + schemaMutations.length + custodyMutations.length + successorCustodyMutations.length + preCustodyMutations.length'
+          count = value.count(old_total)
+          if count != 1:
+            raise RuntimeError(f'RD-06 mutation total: expected one match, found {count}')
+          test.write_text(value.replace(old_total, new_total, 1))
+          PY
+
+          step=focused-successor-compatibility-qualification
+          node --check tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node --check test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+
+          step=commit-exact-two-path-repair
+          cat > "$out/expected-paths.txt" <<'PATHS'
+          test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          PATHS
+          sed -i 's/^          //' "$out/expected-paths.txt"
+          git diff --name-only | sort > "$out/actual-paths.txt"
+          cmp "$out/expected-paths.txt" "$out/actual-paths.txt"
+          test -z "$(git diff --name-status | awk '$1 != "M" {print}')"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- $(cat "$out/expected-paths.txt")
+          git commit -m 'Preserve RD-06 custody across RD-03 successor promotion'
+          product_commit="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$product_commit" > "$out/product-commit.txt"
+          printf '%s\n' "$product_tree" > "$out/product-tree.txt"
+
+          step=complete-repository-release-gate
+          npm run release:check
+
+          step=deterministic-clean-replay
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          step=final-lease-check
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+
+          step=publish-successor-compatibility-repair
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$product_commit"
+
+          step=successor-compatibility-complete
+          finish
+      - name: Preserve exact successor compatibility receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd06-successor-atlas-compat-v2
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
