@@ -1,0 +1,177 @@
+name: TEMP materialize SSC RD-03 Wave-03 lifecycle intake v3
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-wave03-intake-materializer-v3.yml'
+      - '.ssc-rd03-wave03-intake-materializer-v3/**'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-rd03-wave03-intake-v3-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-wave03-intake-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd03-lifecycle-recovery-v2
+      TARGET_HEAD: 150f1693c70ce3699428c58c2687851a1ced39f7
+      CARRIER_BRANCH: agent/ssc-rd03-wave03-intake-materializer-base-v1
+      PRODUCT_B64_SHA256: 69a7c967651123bed1ba765a5117557e446976437a214ded2cb19d77a625e097
+      PRODUCT_XZ_SHA256: 5c6d49583d6f2849f4dcf0c288f15989c1b686f1f8e0ad617b30b00cd3a41181
+      PATH_LIST_SHA256: 0471232197c988f360f1884ac0b2df4d6f40d7cfca9763842283be3569c506cf
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave03-rd03-lifecycle-recovery-v2
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct, qualify, replay, and publish exact package
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/ssc-rd03-wave03-intake-v3-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          product=/tmp/ssc-rd03-wave03-intake-product-v3
+          rm -rf "$out" "$product" /tmp/rd03-intake-v3-*
+          mkdir -p "$out" "$product"
+          echo "RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          exec > >(tee "$out/trace.log") 2>&1
+          step=initialize
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$out/exit-code.txt"
+            printf '%s\n' "$step" > "$out/final-step.txt"
+            git rev-parse HEAD > "$out/head.txt" 2>&1 || true
+            git rev-parse 'HEAD^{tree}' > "$out/tree.txt" 2>&1 || true
+            git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1 || true
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          step=verify-target-lease
+          test "$(git rev-parse HEAD)" = "$TARGET_HEAD"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$TARGET_HEAD"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git fetch origin "+refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
+
+          step=reconstruct-checksum-bound-package
+          git ls-tree -r --name-only "origin/$CARRIER_BRANCH" -- '.ssc-rd03-wave03-intake-materializer-v1' \
+            | grep '/payload\.b64\.part-' \
+            | sort > "$out/shards.txt"
+          test "$(wc -l < "$out/shards.txt" | tr -d ' ')" = '4'
+          : > /tmp/rd03-intake-v3-product.b64
+          while IFS= read -r shard; do
+            git show "origin/$CARRIER_BRANCH:$shard" | tr -d '\r\n\t ' >> /tmp/rd03-intake-v3-product.b64
+          done < "$out/shards.txt"
+          test "$(sha256sum /tmp/rd03-intake-v3-product.b64 | awk '{print $1}')" = "$PRODUCT_B64_SHA256"
+          base64 -d /tmp/rd03-intake-v3-product.b64 > /tmp/rd03-intake-v3-product.tar.xz
+          test "$(sha256sum /tmp/rd03-intake-v3-product.tar.xz | awk '{print $1}')" = "$PRODUCT_XZ_SHA256"
+          tar -tJf /tmp/rd03-intake-v3-product.tar.xz | sort > "$out/package-paths.txt"
+          test "$(wc -l < "$out/package-paths.txt" | tr -d ' ')" = '9'
+          test "$(sha256sum "$out/package-paths.txt" | awk '{print $1}')" = "$PATH_LIST_SHA256"
+          tar -xJf /tmp/rd03-intake-v3-product.tar.xz -C "$product"
+
+          step=qualify-full-nine-path-product
+          while IFS= read -r rel; do
+            mkdir -p "$(dirname "$rel")"
+            cp "$product/$rel" "$rel"
+          done < "$out/package-paths.txt"
+          git ls-files --others --exclude-standard | sort > "$out/full-untracked-paths.txt"
+          cmp "$out/package-paths.txt" "$out/full-untracked-paths.txt"
+          test -z "$(git diff --name-only)"
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -b temporary-rd03-wave03-intake-full-v3
+          git add --pathspec-from-file="$out/package-paths.txt"
+          git commit -m 'Qualify RD-03 Wave-03 lifecycle intake package'
+          full_commit="$(git rev-parse HEAD)"
+          full_tree="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$full_commit" > "$out/qualified-full-commit.txt"
+          printf '%s\n' "$full_tree" > "$out/qualified-full-tree.txt"
+          cp .github/workflows/status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.yml "$out/qualified-standing-workflow.yml"
+          node tools/build-status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.mjs
+          node test/status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+          git restore --worktree -- build/
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          step=replay-full-nine-path-product
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.mjs --write
+          node tools/validate-status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.mjs
+          node test/status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$full_tree"
+
+          step=qualify-eight-path-runner-product
+          git reset --hard "$TARGET_HEAD"
+          git clean -fdx
+          grep -v '^\.github/workflows/' "$out/package-paths.txt" > "$out/nonworkflow-paths.txt"
+          test "$(wc -l < "$out/nonworkflow-paths.txt" | tr -d ' ')" = '8'
+          while IFS= read -r rel; do
+            mkdir -p "$(dirname "$rel")"
+            cp "$product/$rel" "$rel"
+          done < "$out/nonworkflow-paths.txt"
+          git ls-files --others --exclude-standard | sort > "$out/split-untracked-paths.txt"
+          cmp "$out/nonworkflow-paths.txt" "$out/split-untracked-paths.txt"
+          test -z "$(git diff --name-only)"
+          git checkout -B "$TARGET_BRANCH"
+          git add --pathspec-from-file="$out/nonworkflow-paths.txt"
+          git commit -m 'Freeze RD-03 Wave-03 lifecycle intake protocol'
+          split_commit="$(git rev-parse HEAD)"
+          split_tree="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$split_commit" > "$out/published-nonworkflow-commit.txt"
+          printf '%s\n' "$split_tree" > "$out/published-nonworkflow-tree.txt"
+          git diff --name-only "$TARGET_HEAD" HEAD | sort > "$out/nonworkflow-committed-paths.txt"
+          cmp "$out/nonworkflow-paths.txt" "$out/nonworkflow-committed-paths.txt"
+          test -z "$(git diff --name-only --diff-filter=MDR "$TARGET_HEAD" HEAD)"
+          node tools/build-status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.mjs
+          node test/status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+          git restore --worktree -- build/
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          step=replay-eight-path-runner-product
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.mjs --write
+          node tools/validate-status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.mjs
+          node test/status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$split_tree"
+
+          step=publish-under-exact-lease
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$TARGET_HEAD"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_HEAD" origin "HEAD:refs/heads/$TARGET_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$split_commit"
+          step=materialization-complete
+      - name: Preserve exact intake materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-wave03-intake-materialization-v3
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
