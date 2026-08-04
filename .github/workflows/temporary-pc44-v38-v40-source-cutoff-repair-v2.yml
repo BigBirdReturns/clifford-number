@@ -1,0 +1,67 @@
+name: TEMP execute corrected PC-44 v38-v40 source-bundle cutoff
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc44-v38-v40-source-cutoff-repair-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc44-v38-v40-source-cutoff-repair
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Correct and execute the frozen repair controller
+        env:
+          TARGET_BRANCH: research/preference-linkage-uncertainty-monitoring-assurance-v1
+          EXPECTED_TARGET_HEAD: e87d716cbf7fd1663ed18a64e12df32d9c7e1222
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/temporary-pc44-v38-v40-source-cutoff-repair.yml')
+          text = path.read_text()
+          bad = "paired with stale floor');\""
+          good = "paired with stale floor');\"\"\""
+          if text.count(bad) != 1:
+              raise SystemExit(f'controller quote-repair anchor mismatch: {text.count(bad)}')
+          source = text.replace(bad, good).splitlines()
+          start = source.index('      - name: Patch, qualify, replay, and publish exact v38-v40 cutoff repair')
+          run_line = next(index for index in range(start + 1, len(source)) if source[index] == '        run: |')
+          body = []
+          for line in source[run_line + 1:]:
+              if line.startswith('      - ') and not line.startswith('          '):
+                  break
+              if line.startswith('          '):
+                  body.append(line[10:])
+              elif not line.strip():
+                  body.append('')
+              else:
+                  raise SystemExit(f'unexpected controller indentation: {line!r}')
+          joined = '\n'.join(body)
+          if not body or body[0] != 'set -Eeuo pipefail' or "git push --force-with-lease=" not in joined:
+              raise SystemExit('corrected controller extraction contract failed')
+          Path('/tmp/pc44-v38-v40-source-cutoff-repair.sh').write_text(joined + '\n')
+          PY
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_TARGET_HEAD"
+          git checkout --detach "origin/$TARGET_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_TARGET_HEAD"
+          bash /tmp/pc44-v38-v40-source-cutoff-repair.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc44-v38-v40-source-cutoff-repair-v2-${{ github.run_id }}
+          path: /tmp/pc44-v38-v40-cutoff-repair-receipt.json
+          if-no-files-found: error
+          retention-days: 90
