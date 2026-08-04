@@ -1,0 +1,46 @@
+name: TEMP rebind PC-45 materializer v2 to current main
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-pc45-rebind-materializer-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rebind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc45-exact-product-materializer
+          fetch-depth: 0
+      - name: Rebind exact expected parent and publish under lease
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          branch=agent/pc45-exact-product-materializer
+          path=.github/workflows/temporary-pc45-materializer-v2.yml
+          old=a7940aa81b07caff1a9c2f8548c88ec37d60d676
+          new=580d9c998f747330d190bed5011c7a1a517a1c0d
+          lease=$(git rev-parse HEAD)
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/temporary-pc45-materializer-v2.yml')
+          text = path.read_text()
+          old = 'EXPECTED_PARENT: a7940aa81b07caff1a9c2f8548c88ec37d60d676'
+          new = 'EXPECTED_PARENT: 580d9c998f747330d190bed5011c7a1a517a1c0d'
+          assert text.count(old) == 1, text.count(old)
+          updated = text.replace(old, new)
+          assert updated.count(new) == 1
+          path.write_text(updated)
+          PY
+          git config user.name 'BigBirdReturns'
+          git config user.email '219768509+BigBirdReturns@users.noreply.github.com'
+          git add "$path"
+          test "$(git diff --cached --name-only)" = "$path"
+          git diff --cached --check
+          git commit -m 'TEMP: rebind PC-45 materializer to current main'
+          git push origin "HEAD:refs/heads/$branch" --force-with-lease="refs/heads/$branch:$lease"
