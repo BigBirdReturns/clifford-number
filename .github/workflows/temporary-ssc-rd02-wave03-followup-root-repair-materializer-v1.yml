@@ -1,0 +1,186 @@
+name: TEMP materialize RD-02 Wave 03 followup root repair v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd02-wave03-followup-root-repair-materializer-v1.yml'
+      - '.ssc-rd02-wave03-followup-root-repair-materializer-v1/**'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-rd02-wave03-followup-root-repair-v1-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd02-wave03-followup-root-repair-materializer-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      BASE_HEAD: 1df403a0b7273953b1e352893bf3153d0e7a41ed
+      TARGET_BRANCH: agent/ssc-rd02-wave03-followup-runner-root-repair-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Apply exact two-path repair and qualify
+        run: |
+          set -Eeuo pipefail
+          remote_main="$(git ls-remote origin refs/heads/main | cut -f1)"
+          test "$remote_main" = "$BASE_HEAD"
+          test -z "$(git ls-remote origin "refs/heads/$TARGET_BRANCH")"
+          work="$RUNNER_TEMP/repair"
+          git worktree add --detach "$work" "$BASE_HEAD"
+          git -C "$work" config user.name github-actions[bot]
+          git -C "$work" config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          python - "$work" <<'PY'
+          from pathlib import Path
+          import sys
+
+          root = Path(sys.argv[1])
+          runner = root / 'tools/acquisition/status-sovereignty-rd-wave03-rd02/run-candidate-followups.py'
+          test = root / 'test/status-sovereignty-rd-wave03-rd02-candidate-adjudication.test.js'
+
+          runner_text = runner.read_text(encoding='utf-8')
+          old_root = 'ROOT = Path(__file__).resolve().parents[4]'
+          new_root = 'ROOT = Path(__file__).resolve().parents[3]'
+          if runner_text.count(old_root) != 1 or new_root in runner_text:
+              raise SystemExit('runner root patch precondition failed')
+          runner.write_text(runner_text.replace(old_root, new_root), encoding='utf-8')
+
+          test_text = test.read_text(encoding='utf-8')
+          old_import = "import assert from 'node:assert/strict';\n"
+          new_import = old_import + "import { spawnSync } from 'node:child_process';\n"
+          if test_text.count(old_import) != 1 or "spawnSync } from 'node:child_process'" in test_text:
+              raise SystemExit('test import patch precondition failed')
+          test_text = test_text.replace(old_import, new_import)
+
+          marker = 'assert.equal(validateSchemaContract(schema), true);\n'
+          if test_text.count(marker) != 1 or 'followup runner resolves repository root' in test_text:
+              raise SystemExit('test probe patch precondition failed')
+          probe = r'''
+
+          const followupRunnerPath = path.join(
+            ROOT,
+            'tools/acquisition/status-sovereignty-rd-wave03-rd02/run-candidate-followups.py'
+          );
+          const followupRunnerSource = fs.readFileSync(followupRunnerPath, 'utf8');
+          assert.match(
+            followupRunnerSource,
+            /^ROOT = Path\(__file__\)\.resolve\(\)\.parents\[3\]$/m,
+            'followup runner resolves repository root from its exact nested path'
+          );
+          assert.doesNotMatch(
+            followupRunnerSource,
+            /^ROOT = Path\(__file__\)\.resolve\(\)\.parents\[4\]$/m,
+            'followup runner must not resolve one directory above the repository'
+          );
+          const rootProbeScript = `import runpy\nprint(runpy.run_path(${JSON.stringify(followupRunnerPath)}, run_name='rd02_followup_root_probe')['ROOT'])`;
+          const rootProbe = spawnSync('python3', ['-c', rootProbeScript], { encoding: 'utf8' });
+          assert.equal(rootProbe.status, 0, rootProbe.stderr || rootProbe.stdout);
+          assert.equal(
+            path.resolve(rootProbe.stdout.trim()),
+            path.resolve(ROOT),
+            'followup runner runtime ROOT must equal the repository root'
+          );
+          for (const rel of [
+            'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/candidate-adjudication/index.json',
+            'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/candidate-followup-protocol.json',
+            'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/field-matrix-contract.json'
+          ]) {
+            assert.ok(fs.existsSync(path.join(ROOT, rel)), `followup runner bound input must exist: ${rel}`);
+          }
+          '''
+          test.write_text(test_text.replace(marker, marker + probe), encoding='utf-8')
+          PY
+
+          cd "$work"
+          cat > "$RUNNER_TEMP/expected-paths.txt" <<'PATHS'
+          test/status-sovereignty-rd-wave03-rd02-candidate-adjudication.test.js
+          tools/acquisition/status-sovereignty-rd-wave03-rd02/run-candidate-followups.py
+          PATHS
+          sed -i 's/^          //' "$RUNNER_TEMP/expected-paths.txt"
+          git diff --name-only | sort > "$RUNNER_TEMP/actual-paths.txt"
+          diff -u "$RUNNER_TEMP/expected-paths.txt" "$RUNNER_TEMP/actual-paths.txt"
+          test "$(grep -Fc 'ROOT = Path(__file__).resolve().parents[3]' tools/acquisition/status-sovereignty-rd-wave03-rd02/run-candidate-followups.py)" = '1'
+          test "$(grep -Fc 'ROOT = Path(__file__).resolve().parents[4]' tools/acquisition/status-sovereignty-rd-wave03-rd02/run-candidate-followups.py)" = '0'
+          node tools/validate-status-sovereignty-rd-wave03-rd02-candidate-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd02-candidate-adjudication.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd02/run-candidate-followups.py
+          node tools/validate-no-magic-human-gate.mjs
+          git add --pathspec-from-file="$RUNNER_TEMP/expected-paths.txt"
+          git diff --cached --name-only | sort > "$RUNNER_TEMP/staged-paths.txt"
+          diff -u "$RUNNER_TEMP/expected-paths.txt" "$RUNNER_TEMP/staged-paths.txt"
+          git commit -m 'Repair RD-02 candidate-followup repository root resolution'
+          repair_commit="$(git rev-parse HEAD)"
+          repair_tree="$(git rev-parse HEAD^{tree})"
+          npm run release:check
+          git reset --hard HEAD
+          node tools/validate-status-sovereignty-rd-wave03-rd02-candidate-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd02-candidate-adjudication.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd02/run-candidate-followups.py
+          node tools/validate-no-magic-human-gate.mjs
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$BASE_HEAD"
+          test -z "$(git ls-remote origin "refs/heads/$TARGET_BRANCH")"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          receipt="$RUNNER_TEMP/receipt"
+          mkdir -p "$receipt"
+          cp "$RUNNER_TEMP/expected-paths.txt" "$receipt/changed-paths.txt"
+          git show --format=fuller --stat --oneline HEAD > "$receipt/commit.txt"
+          git diff "$BASE_HEAD" HEAD -- tools/acquisition/status-sovereignty-rd-wave03-rd02/run-candidate-followups.py test/status-sovereignty-rd-wave03-rd02-candidate-adjudication.test.js > "$receipt/repair.patch"
+          python - "$receipt/receipt.json" "$repair_commit" "$repair_tree" <<'PY'
+          import hashlib, json, os, pathlib, sys
+          out, commit, tree = sys.argv[1:]
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'repair'
+          runner = root / 'tools/acquisition/status-sovereignty-rd-wave03-rd02/run-candidate-followups.py'
+          test = root / 'test/status-sovereignty-rd-wave03-rd02-candidate-adjudication.test.js'
+          sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+          value = {
+            'schema_version':'ssc-rd02-wave03-followup-root-repair-materialization@1',
+            'base_head':os.environ['BASE_HEAD'],
+            'target_branch':os.environ['TARGET_BRANCH'],
+            'repair_commit':commit,
+            'repair_tree':tree,
+            'changed_paths':2,
+            'runner_sha256':sha(runner),
+            'test_sha256':sha(test),
+            'root_parent_index_before':4,
+            'root_parent_index_after':3,
+            'runtime_root_probe':True,
+            'bound_input_existence_probes':3,
+            'network_requests':0,
+            'empirical_effect':'none',
+            'class_state':'still_open',
+            'class_closed':False,
+            'outside_human_dependency':False,
+            'external_contacts':0,
+            'external_reviews':0,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none'
+          }
+          pathlib.Path(out).write_text(json.dumps(value,indent=2)+'\n')
+          PY
+          (cd "$receipt" && sha256sum * > SHA256SUMS)
+          echo "RECEIPT_DIR=$receipt" >> "$GITHUB_ENV"
+
+      - name: Preserve exact repair materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave03-followup-root-repair-materialization-v1
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
