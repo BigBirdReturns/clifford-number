@@ -1,0 +1,212 @@
+name: TEMP repair RD-03 flattened label semantics
+
+on:
+  pull_request:
+    paths:
+      - '.rd03-flattened-label-repair/TRIGGER'
+      - '.github/workflows/temporary-ssc-rd03-flattened-label-repair.yml'
+      - '.github/tmp/repair-ssc-rd03-flattened-label-semantics.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd03-flattened-label-repair-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-flattened-label-repair-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Check out exact five-closure product
+        uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-current-ledger-five-closures
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Repair, qualify, and publish exact flattened-label semantics
+        env:
+          TARGET_BRANCH: agent/ssc-wave02-current-ledger-five-closures
+          EXPECTED_HEAD: 0132a239e56d01d83ea206e07611524017405b55
+          EXPECTED_MAIN: f1e1851d2fa22a3d9972cbd20498cb73f6c0177d
+          CONTROL_BRANCH: agent/ssc-rd03-flattened-label-repair-base-v1
+          HELPER_COMMIT: 53035b889a1150b48cd873ade3ec074fecb3656b
+          HELPER_BLOB: 9c3b6dba26a75960f1ab95e2cbbb49a4fa8fe8a7
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/ssc-rd03-flattened-label-repair-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          mkdir -p "$out"
+          echo "RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          exec > >(tee "$out/trace.log") 2>&1
+
+          step=initialize
+          new_head=''
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$out/exit-code.txt"
+            printf '%s\n' "$step" > "$out/final-step.txt"
+            printf '%s\n' "$EXPECTED_HEAD" > "$out/prior-head.txt"
+            printf '%s\n' "$new_head" > "$out/new-head.txt"
+            git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
+            git diff --name-status "$EXPECTED_HEAD" HEAD > "$out/name-status.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1 || true
+            OUT="$out" RC="$rc" STEP="$step" NEW_HEAD="$new_head" python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+
+          out = Path(os.environ['OUT'])
+          receipt = {
+            'schema_version': 'ssc-rd03-flattened-label-review-repair@1',
+            'workflow_run': int(os.environ['GITHUB_RUN_ID']),
+            'exit_code': int(os.environ['RC']),
+            'final_step': os.environ['STEP'],
+            'prior_head': '0132a239e56d01d83ea206e07611524017405b55',
+            'new_head': os.environ['NEW_HEAD'],
+            'review_comment_id': 3709676117,
+            'semantic_result': {
+              'flattened_relationship': 'receipt_label_equals_constitutional_label',
+              'flattened_labels_exact_match': True,
+              'flattened_label_reconciliation': 'none',
+              'seed_relationship': 'seed_closure_target_differs_from_constitutional_label',
+              'seed_reconciliation_preserved': 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact',
+              'cumulative_flattened_label_reconciliations': 1
+            },
+            'permanent_paths': [
+              'data/research/status-sovereignty-residual-denominator-wave-02-current.json',
+              'docs/milestones/ssc-residual-denominator-wave-02-current.md',
+              'schemas/status-sovereignty-residual-denominator-wave-02-current.schema.json',
+              'test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js',
+              'test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js',
+              'test/status-sovereignty-residual-denominator-wave-02-current.test.js',
+              'tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs',
+              'tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs',
+              'tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs',
+              'tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs'
+            ],
+            'rd03_empirical_product_changed': False,
+            'rd06_empirical_product_changed': False,
+            'outside_human_dependency': False,
+            'external_contacts': 0,
+            'external_reviews': 0,
+            'publication_effect': 'none',
+            'adoption_effect': 'none',
+            'graph_effect': 'none'
+          }
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          for path in sorted(out.iterdir()):
+            if path.is_file() and not path.name.endswith('.sha256'):
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              (out / (path.name + '.sha256')).write_text(f'{digest}  {path.name}\n')
+          PY
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          step=freeze-exact-target-and-main
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_HEAD"
+          git fetch --no-tags origin main
+          test "$(git rev-parse FETCH_HEAD)" = "$EXPECTED_MAIN"
+
+          step=load-checksum-bound-helper
+          git fetch --no-tags origin "refs/heads/$CONTROL_BRANCH:refs/remotes/origin/$CONTROL_BRANCH"
+          test "$(git rev-parse "$HELPER_COMMIT:.github/tmp/repair-ssc-rd03-flattened-label-semantics.py")" = "$HELPER_BLOB"
+          git show "$HELPER_COMMIT:.github/tmp/repair-ssc-rd03-flattened-label-semantics.py" > /tmp/repair-ssc-rd03-flattened-label-semantics.py
+          python -m py_compile /tmp/repair-ssc-rd03-flattened-label-semantics.py
+
+          step=apply-semantic-review-repair
+          python /tmp/repair-ssc-rd03-flattened-label-semantics.py
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --write
+
+          cat > "$out/expected-paths.txt" <<'PATHS'
+          data/research/status-sovereignty-residual-denominator-wave-02-current.json
+          docs/milestones/ssc-residual-denominator-wave-02-current.md
+          schemas/status-sovereignty-residual-denominator-wave-02-current.schema.json
+          test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs
+          tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          PATHS
+          sed -i 's/^          //' "$out/expected-paths.txt"
+          sort -o "$out/expected-paths.txt" "$out/expected-paths.txt"
+          git diff --name-only | sort > "$out/observed-paths.txt"
+          cmp "$out/expected-paths.txt" "$out/observed-paths.txt"
+          git diff --check
+
+          step=focused-precommit-qualification
+          node --check tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node --check tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node --check tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node --check tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node --check test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node --check test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node --check test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/validate-no-magic-human-gate.mjs
+
+          step=commit-exact-ten-file-repair
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- $(cat "$out/expected-paths.txt")
+          git diff --cached --name-only | sort > "$out/staged-paths.txt"
+          cmp "$out/expected-paths.txt" "$out/staged-paths.txt"
+          git commit -m 'Separate RD-03 flattened and seed label custody'
+          new_head="$(git rev-parse HEAD)"
+          git rev-parse HEAD^{tree} > "$out/new-tree.txt"
+
+          step=complete-repository-release-gate
+          npm run release:check
+
+          step=deterministic-clean-replay
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          step=publish-under-exact-main-and-target-leases
+          git fetch --no-tags origin main
+          test "$(git rev-parse FETCH_HEAD)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_HEAD"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_HEAD" origin "HEAD:refs/heads/$TARGET_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$new_head"
+
+          step=review-repair-complete
+          finish
+
+      - name: Preserve exact review-repair receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-flattened-label-review-repair
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
