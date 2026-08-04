@@ -1,0 +1,136 @@
+name: TEMP repair SSC RD-02 Wave-03 followup root anchor
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-ssc-rd02-wave03-followup-root-repair.yml'
+      - '.ssc-rd02-wave03-followup-root-repair/TRIGGER'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: temp-ssc-rd02-wave03-followup-root-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      MAIN_LEASE: 1df403a0b7273953b1e352893bf3153d0e7a41ed
+      TARGET_BRANCH: agent/ssc-rd02-wave03-followup-root-repair-v1
+      RUNNER_PATH: tools/acquisition/status-sovereignty-rd-wave03-rd02/run-candidate-followups.py
+      RECEIPT_DIR: /tmp/ssc-rd02-wave03-followup-root-repair-receipt
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Apply exact root-anchor repair and qualify
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$RECEIPT_DIR"
+          mkdir -p "$RECEIPT_DIR"
+          exec > >(tee "$RECEIPT_DIR/execution.log") 2>&1
+
+          git fetch origin main "$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$MAIN_LEASE"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$MAIN_LEASE"
+          git checkout --detach "$MAIN_LEASE"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('tools/acquisition/status-sovereignty-rd-wave03-rd02/run-candidate-followups.py')
+          text = path.read_text(encoding='utf-8')
+          old = "ROOT = Path(__file__).resolve().parents[4]\n"
+          new = (
+              "ROOT = Path(__file__).resolve().parents[3]\n"
+              "if not (ROOT / 'package.json').is_file():\n"
+              "    raise RuntimeError(f'repository root resolution failed: {ROOT}')\n"
+          )
+          if text.count(old) != 1:
+              raise SystemExit(f'expected exactly one stale root anchor, found {text.count(old)}')
+          patched = text.replace(old, new)
+          if old in patched or patched.count("parents[3]") != 1:
+              raise SystemExit('root-anchor rewrite did not bind exactly once')
+          path.write_text(patched, encoding='utf-8')
+          PY
+
+          cp "$RUNNER_PATH" /tmp/run-candidate-followups.repaired.py
+          python -m py_compile "$RUNNER_PATH"
+          python - <<'PY'
+          from pathlib import Path
+          import runpy
+
+          repository = Path.cwd().resolve()
+          namespace = runpy.run_path('tools/acquisition/status-sovereignty-rd-wave03-rd02/run-candidate-followups.py')
+          resolved = namespace['ROOT'].resolve()
+          if resolved != repository:
+              raise SystemExit(f'runner root mismatch: {resolved} != {repository}')
+          for key in ('ADJUDICATION_INDEX_PATH', 'PROTOCOL_PATH', 'MATRIX_PATH'):
+              value = namespace[key]
+              if not value.is_file():
+                  raise SystemExit(f'missing resolved runner input {key}: {value}')
+          print(f'runner root regression proof: {resolved}')
+          PY
+
+          node tools/validate-status-sovereignty-rd-wave03-rd02-candidate-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd02-candidate-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+
+          git restore --worktree -- .
+          cp /tmp/run-candidate-followups.repaired.py "$RUNNER_PATH"
+          python -m py_compile "$RUNNER_PATH"
+          node tools/validate-status-sovereignty-rd-wave03-rd02-candidate-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd02-candidate-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+
+          test "$(git diff --name-only | wc -l)" -eq 1
+          test "$(git diff --name-only)" = "$RUNNER_PATH"
+          git diff --check
+          git diff -- "$RUNNER_PATH" > "$RECEIPT_DIR/repair.patch"
+          sha256sum "$RUNNER_PATH" > "$RECEIPT_DIR/repaired-runner.sha256"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$RUNNER_PATH"
+          git commit -m 'Correct RD-02 followup runner repository root'
+          REPAIR_HEAD="$(git rev-parse HEAD)"
+          REPAIR_TREE="$(git rev-parse HEAD^{tree})"
+          test "$(git diff --name-only "$MAIN_LEASE" HEAD | wc -l)" -eq 1
+          test "$(git diff --name-only "$MAIN_LEASE" HEAD)" = "$RUNNER_PATH"
+
+          git fetch origin main "$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$MAIN_LEASE"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$MAIN_LEASE"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$MAIN_LEASE"
+
+          {
+            echo 'status=complete'
+            echo "main_lease=$MAIN_LEASE"
+            echo "repair_head=$REPAIR_HEAD"
+            echo "repair_tree=$REPAIR_TREE"
+            echo "target_branch=$TARGET_BRANCH"
+            echo "changed_path=$RUNNER_PATH"
+          } > "$RECEIPT_DIR/receipt.txt"
+      - name: Preserve exact repair receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave03-followup-root-repair-v1
+          path: /tmp/ssc-rd02-wave03-followup-root-repair-receipt
+          if-no-files-found: warn
+          retention-days: 90
