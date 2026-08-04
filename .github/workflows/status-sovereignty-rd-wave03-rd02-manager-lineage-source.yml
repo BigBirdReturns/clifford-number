@@ -1,0 +1,88 @@
+name: SSC RD-02 Wave 03 manager-lineage source receipt
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd02-manager-lineage-source.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manager-lineage-replay-execution-receipt.json'
+      - 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/sources/stifel-am-forward-2024-final-approval.json'
+      - 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/sources/stifel-north-atlantic-2021-manager-lineage.json'
+      - 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manager-lineage-replay-summary.json'
+      - 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manager-lineage-replay-manifest.json'
+      - 'schemas/status-sovereignty-rd-wave03-rd02-manager-lineage-source.schema.json'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd02-manager-lineage-source.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd02-manager-lineage-source.test.js'
+      - 'docs/milestones/ssc-rd-wave03-rd02-manager-lineage-source.md'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd02-manager-lineage-source.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manager-lineage-replay-execution-receipt.json'
+      - 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/sources/stifel-am-forward-2024-final-approval.json'
+      - 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/sources/stifel-north-atlantic-2021-manager-lineage.json'
+      - 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manager-lineage-replay-summary.json'
+      - 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manager-lineage-replay-manifest.json'
+      - 'schemas/status-sovereignty-rd-wave03-rd02-manager-lineage-source.schema.json'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd02-manager-lineage-source.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd02-manager-lineage-source.test.js'
+      - 'docs/milestones/ssc-rd-wave03-rd02-manager-lineage-source.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd02-wave03-manager-lineage-source-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate exact replay custody and two-source boundary
+        run: |
+          set -Eeuo pipefail
+          node --check tools/validate-status-sovereignty-rd-wave03-rd02-manager-lineage-source.mjs
+          node --check test/status-sovereignty-rd-wave03-rd02-manager-lineage-source.test.js
+          node tools/validate-status-sovereignty-rd-wave03-rd02-manager-lineage-source.mjs
+          node test/status-sovereignty-rd-wave03-rd02-manager-lineage-source.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Restore volatile outputs and replay exact validation
+        run: |
+          set -Eeuo pipefail
+          git restore --worktree -- .
+          git clean -fdx
+          node tools/validate-status-sovereignty-rd-wave03-rd02-manager-lineage-source.mjs
+          node test/status-sovereignty-rd-wave03-rd02-manager-lineage-source.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Preserve exact source receipts and manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave03-manager-lineage-source-v1
+          path: |
+            data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manager-lineage-replay-execution-receipt.json
+            data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/sources/stifel-north-atlantic-2021-manager-lineage.json
+            data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manager-lineage-replay-summary.json
+            data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manager-lineage-replay-manifest.json
+            docs/milestones/ssc-rd-wave03-rd02-manager-lineage-source.md
+          if-no-files-found: error
+          retention-days: 90
