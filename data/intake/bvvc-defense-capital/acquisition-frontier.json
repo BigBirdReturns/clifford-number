@@ -1,0 +1,93 @@
+{
+  "as_of": "2026-08-04",
+  "graph_effect": "none",
+  "outside_human_dependency": false,
+  "promotes_to": "candidate_only",
+  "schema_version": "bvvc-acquisition-frontier@1",
+  "tasks": [
+    {
+      "forbidden_inference": "No filer is mapped to a portfolio company without a transaction-specific instrument.",
+      "graph_effect": "none",
+      "outside_human_dependency": false,
+      "priority": "high",
+      "promotes_to": "candidate_only",
+      "requested_action": "Enumerate all exact-name BVVC funds, GPs, management companies, SPVs, sidecars, parallel vehicles, amendments, and termination events; preserve exact CIK, accession, filing date, entity type, address, related persons, amounts, investor counts, and explicit zero/no-result rows.",
+      "selection_unit": "every exact BVVC-branded filer and filed related person",
+      "source_family": "SEC EDGAR / Form D",
+      "stopping_rule": "Stop when every exact-name query variant and every result-linked filer has a terminal disposition.",
+      "task_id": "bvvc-frontier-sec-vehicle-denominator"
+    },
+    {
+      "forbidden_inference": "Portfolio listing is not itself a financing or ownership record.",
+      "graph_effect": "none",
+      "outside_human_dependency": false,
+      "priority": "high",
+      "promotes_to": "candidate_only",
+      "requested_action": "Run the same financing, acquisition, board, governance-right, and legal-entity query battery for every current label, retaining explicit nonmatches and ambiguous identities.",
+      "selection_unit": "all 30 current Portfolio Universe labels",
+      "source_family": "company releases, SEC filings, state filings, fund pages",
+      "stopping_rule": "Stop when all 30 labels have a transaction-specific receipt, an explicit no-result-on-searched-surfaces row, or a source-unavailable row.",
+      "task_id": "bvvc-frontier-portfolio-transaction-census"
+    },
+    {
+      "forbidden_inference": "Award ceiling is not obligation, outlay, revenue, technical acceptance, or influence.",
+      "graph_effect": "none",
+      "outside_human_dependency": false,
+      "priority": "high",
+      "promotes_to": "candidate_only",
+      "requested_action": "Acquire awards, solicitations, OTAs, SBIR/STTR records, protests, and public test or acceptance records with recipient identity, PIID or award ID, ceiling, obligation, outlay, dates, and agency.",
+      "selection_unit": "all exact legal entities resolved from the 30-label portfolio",
+      "source_family": "USAspending, SAM.gov, SBIR/STTR, DIU, AFWERX, DoD releases, GAO",
+      "stopping_rule": "Stop only after every resolved legal entity has the same source/query matrix and explicit nulls.",
+      "task_id": "bvvc-frontier-government-surface-census"
+    },
+    {
+      "forbidden_inference": "Broad military or employer overlap does not create a hop.",
+      "graph_effect": "none",
+      "outside_human_dependency": false,
+      "priority": "medium",
+      "promotes_to": "candidate_only",
+      "requested_action": "Freeze dated roster snapshots and retrieve exact public-role start/end evidence without inferring dates from current absence.",
+      "selection_unit": "every current and historical leadership label",
+      "source_family": "official archived pages, public profiles, filings",
+      "stopping_rule": "Stop when each actor has dated role evidence or an explicit unresolved temporal row.",
+      "task_id": "bvvc-frontier-leadership-history"
+    },
+    {
+      "forbidden_inference": "A website's nonprofit description is not registry-grade legal identity.",
+      "graph_effect": "none",
+      "outside_human_dependency": false,
+      "priority": "high",
+      "promotes_to": "candidate_only",
+      "requested_action": "Resolve legal name, EIN, exemption record, formation documents, officers, directors, grants, sponsors, and related-party transactions.",
+      "selection_unit": "the exact School.House legal entity and every named governing officer",
+      "source_family": "IRS TEOS, state charity registries, corporate registries, filed reports",
+      "stopping_rule": "Stop when legal identity is registry-grade or every plausible entity is explicitly rejected.",
+      "task_id": "bvvc-frontier-schoolhouse-legal-governance"
+    },
+    {
+      "forbidden_inference": "Program participation or sponsor presence does not establish investment, customer, procurement, or influence.",
+      "graph_effect": "none",
+      "outside_human_dependency": false,
+      "priority": "medium",
+      "promotes_to": "candidate_only",
+      "requested_action": "Freeze complete annual cohorts, faculty, panelists, sponsors, admissions, investment events, customer events, government events, and explicit nulls under typed predicates.",
+      "selection_unit": "every company in every recoverable School.House cohort",
+      "source_family": "official cohort posts, company announcements, procurement and financing records",
+      "stopping_rule": "Stop when each year is complete or explicitly partial and every company has the same outcome battery.",
+      "task_id": "bvvc-frontier-schoolhouse-cohorts-outcomes"
+    },
+    {
+      "forbidden_inference": "Source disappearance is a custody state, not evidence of motive.",
+      "graph_effect": "none",
+      "outside_human_dependency": false,
+      "priority": "high",
+      "promotes_to": "candidate_only",
+      "requested_action": "Capture source bytes, retrieval timestamps, content hashes, archive locators, and contradiction or disappearance state.",
+      "selection_unit": "every receipt locator in this intake",
+      "source_family": "public web and official archives",
+      "stopping_rule": "Stop when every live locator has preserved bytes or an explicit capture failure.",
+      "task_id": "bvvc-frontier-source-archival"
+    }
+  ]
+}
