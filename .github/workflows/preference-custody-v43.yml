@@ -1,0 +1,61 @@
+name: Preference custody laboratory floor v43
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/**'
+      - 'tools/lib/preference-*.mjs'
+      - 'tools/compile-preference-linkage-interval-construction-assurance.mjs'
+      - 'tools/validate-preference-linkage-interval-construction-assurance.mjs'
+      - 'tools/compile-preference-custody-manifest-v43.mjs'
+      - 'tools/validate-preference-custody-manifest-v43.mjs'
+      - 'test/preference-linkage-interval-construction-assurance.test.js'
+      - 'test/preference-custody-manifest-v43.test.js'
+      - 'docs/preference-custody-linkage-interval-construction-assurance.md'
+      - 'docs/preference-custody-laboratory-floor-v43.md'
+      - '.github/workflows/preference-linkage-interval-construction-assurance.yml'
+      - '.github/workflows/preference-custody-v43.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  floor-v43:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Compile and validate PC-45 and floor v43
+        run: |
+          node tools/compile-preference-linkage-interval-construction-assurance.mjs
+          node tools/validate-preference-linkage-interval-construction-assurance.mjs
+          node test/preference-linkage-interval-construction-assurance.test.js
+          node tools/compile-preference-custody-manifest-v43.mjs
+          node tools/validate-preference-custody-manifest-v43.mjs
+          node test/preference-custody-manifest-v43.test.js
+      - name: Reconstruct every Preference Custody floor
+        run: |
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+      - name: Enforce no-magic-human and repository release gates
+        run: |
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preference-custody-laboratory-floor-v43
+          path: |
+            build/research/preference-linkage-interval-construction-assurance.json
+            build/research/preference-linkage-interval-construction-assurance.md
+            build/research/preference-custody-laboratory-floor-v43.json
+            build/research/preference-custody-laboratory-floor-v43.md
+          if-no-files-found: error

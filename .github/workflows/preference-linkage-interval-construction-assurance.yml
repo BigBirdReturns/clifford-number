@@ -1,0 +1,35 @@
+name: Preference custody linkage-interval construction assurance control
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/linkage-interval-construction-assurance.fixture.json'
+      - 'tools/lib/preference-linkage-interval-construction-assurance.mjs'
+      - 'tools/compile-preference-linkage-interval-construction-assurance.mjs'
+      - 'tools/validate-preference-linkage-interval-construction-assurance.mjs'
+      - 'test/preference-linkage-interval-construction-assurance.test.js'
+      - 'docs/preference-custody-linkage-interval-construction-assurance.md'
+      - '.github/workflows/preference-linkage-interval-construction-assurance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linkage-interval-construction-assurance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node tools/compile-preference-linkage-interval-construction-assurance.mjs
+      - run: node tools/validate-preference-linkage-interval-construction-assurance.mjs
+      - run: node test/preference-linkage-interval-construction-assurance.test.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preference-linkage-interval-construction-assurance-pc45
+          path: |
+            build/research/preference-linkage-interval-construction-assurance.json
+            build/research/preference-linkage-interval-construction-assurance.md
+          if-no-files-found: error
