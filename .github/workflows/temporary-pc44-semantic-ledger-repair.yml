@@ -1,0 +1,215 @@
+name: TEMP bind exact PC-44 semantic ledgers
+
+on:
+  push:
+    branches:
+      - agent/pc44-exact-product-materializer
+    paths:
+      - '.github/workflows/temporary-pc44-semantic-ledger-repair.yml'
+      - '.pc44-semantic-ledger-repair-trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/preference-linkage-uncertainty-monitoring-assurance-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Patch, qualify, replay, and publish exact semantic-ledger repair
+        env:
+          TARGET_BRANCH: research/preference-linkage-uncertainty-monitoring-assurance-v1
+          EXPECTED_TARGET_HEAD: c1ffb26f53c0b83f94a231ccd3235e48aa7f357a
+        run: |
+          set -Eeuo pipefail
+          status=failed
+          product_commit=
+          product_tree=
+          pass_focused=false
+          pass_historical=false
+          pass_no_magic=false
+          pass_release=false
+          pass_replay=false
+          published=false
+
+          emit_receipt() {
+            code=$?
+            trap - EXIT
+            export RECEIPT_STATUS="$status" PRODUCT_COMMIT="$product_commit" PRODUCT_TREE="$product_tree"
+            export PASS_FOCUSED="$pass_focused" PASS_HISTORICAL="$pass_historical" PASS_NO_MAGIC="$pass_no_magic"
+            export PASS_RELEASE="$pass_release" PASS_REPLAY="$pass_replay" PUBLISHED="$published"
+            python - <<'PY_RECEIPT'
+          from pathlib import Path
+          import hashlib, json, os, subprocess
+          paths = ['test/preference-custody-manifest-v42.test.js','tools/lib/preference-custody-manifest-v42.mjs']
+          files = {}
+          for path in paths:
+              p = Path(path)
+              if p.exists():
+                  files[path] = {
+                      'bytes': p.stat().st_size,
+                      'sha256': hashlib.sha256(p.read_bytes()).hexdigest(),
+                      'git_blob_sha1': subprocess.check_output(['git','hash-object',path], text=True).strip()
+                  }
+          receipt = {
+              'schema_version': 'pc44-semantic-ledger-repair-receipt@1',
+              'workflow_run_id': os.environ.get('GITHUB_RUN_ID'),
+              'status': os.environ.get('RECEIPT_STATUS'),
+              'prior_target_head': os.environ['EXPECTED_TARGET_HEAD'],
+              'product_head': os.environ.get('PRODUCT_COMMIT') or None,
+              'product_tree': os.environ.get('PRODUCT_TREE') or None,
+              'changed_paths': paths,
+              'path_list_sha256': hashlib.sha256(('\n'.join(paths) + '\n').encode()).hexdigest(),
+              'files': files,
+              'exact_identification_requirement_binding': True,
+              'exact_real_case_requirement_ledger_binding': True,
+              'exact_prohibited_inference_ledger_binding': True,
+              'exact_interpretation_contract_binding': True,
+              'standalone_fixture_mutations': 51,
+              'standalone_build_tamper_checks': 16,
+              'floor_v42_adversarial_mutations': 72,
+              'focused_pc44_and_floor_v42': 'pass' if os.environ.get('PASS_FOCUSED') == 'true' else 'not_proved',
+              'historical_preference_custody_floors': 'pass' if os.environ.get('PASS_HISTORICAL') == 'true' else 'not_proved',
+              'no_magic_human': 'pass' if os.environ.get('PASS_NO_MAGIC') == 'true' else 'not_proved',
+              'release_check': 'pass' if os.environ.get('PASS_RELEASE') == 'true' else 'not_proved',
+              'deterministic_replay': 'pass' if os.environ.get('PASS_REPLAY') == 'true' else 'not_proved',
+              'target_published': os.environ.get('PUBLISHED') == 'true',
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          Path('/tmp/pc44-semantic-ledger-repair-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY_RECEIPT
+            exit "$code"
+          }
+          trap emit_receipt EXIT
+
+          git fetch --no-tags origin "+refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_TARGET_HEAD"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_TARGET_HEAD"
+
+          python - <<'PY_PATCH'
+          from pathlib import Path
+          import json
+
+          manifest = json.loads(Path('data/research/preference-custody/control-manifest-v42.json').read_text())
+          lib = Path('tools/lib/preference-custody-manifest-v42.mjs')
+          text = lib.read_text()
+          anchor = "const REQUIRED_SUCCESSORS = ['linkage_uncertainty_interval_construction_empirical_coverage_dependence_and_multiplicity_assurance','linkage_calibration_drift_subgroup_monitoring_recalibration_trigger_rollback_and_certificate_withdrawal_governance'];\n"
+          if text.count(anchor) != 1:
+              raise SystemExit('v42 successor anchor mismatch')
+          constants = (
+              "const REQUIRED_IDENTIFICATION_REQUIREMENT = Object.freeze(" + json.dumps(manifest['identification_requirement'], separators=(',', ':')) + ");\n"
+              "const REQUIRED_REAL_CASE_REQUIREMENTS = Object.freeze(" + json.dumps(manifest['real_case_requirements_added'], separators=(',', ':')) + ");\n"
+              "const REQUIRED_PROHIBITED_INFERENCES = Object.freeze(" + json.dumps(manifest['prohibited_inferences'], separators=(',', ':')) + ");\n"
+              "const REQUIRED_INTERPRETATION_CONTRACT = Object.freeze(" + json.dumps(manifest['interpretation_contract'], separators=(',', ':')) + ");\n"
+          )
+          text = text.replace(anchor, anchor + constants)
+          old = """  if (manifest?.identification_requirement?.stage !== 'uncertainty_target_construction_dependence_multiplicity_subgroup_coverage_monitoring_recalibration_rollback_and_lineage') errors.push('v42 identification stage mismatch');
+            if (manifest?.frontier_transition?.resolved_base_frontier !== RESOLVED_FRONTIER) errors.push('v42 resolved frontier mismatch');
+            if (!sameMembers(manifest?.frontier_transition?.successor_frontiers, REQUIRED_SUCCESSORS)) errors.push('v42 successor frontier mismatch');
+            if (unique(manifest?.real_case_requirements_added).length !== 48) errors.push('v42 must add exactly forty-eight unique real-case requirements');
+            for (const item of array(manifest?.real_case_requirements_added)) if (!/^[a-z0-9_]+$/.test(item)) errors.push(`invalid v42 requirement: ${item}`);
+            if (array(manifest?.prohibited_inferences).length < 20) errors.push('v42 prohibited-inference ledger incomplete');
+            if (manifest?.interpretation_contract?.contract_id !== PREFERENCE_CUSTODY_MANIFEST_V42_SCHEMA_VERSION || !text(manifest?.interpretation_contract?.copy_ready_caveat)) errors.push('v42 interpretation contract incomplete');
+          """
+          new = """  if (stable(manifest?.identification_requirement) !== stable(REQUIRED_IDENTIFICATION_REQUIREMENT)) errors.push('v42 identification requirement contract mismatch');
+            if (manifest?.frontier_transition?.resolved_base_frontier !== RESOLVED_FRONTIER) errors.push('v42 resolved frontier mismatch');
+            if (!sameMembers(manifest?.frontier_transition?.successor_frontiers, REQUIRED_SUCCESSORS)) errors.push('v42 successor frontier mismatch');
+            if (!sameMembers(manifest?.real_case_requirements_added, REQUIRED_REAL_CASE_REQUIREMENTS) || array(manifest?.real_case_requirements_added).length !== REQUIRED_REAL_CASE_REQUIREMENTS.length) errors.push('v42 real-case requirement ledger must match the exact PC-44 extension');
+            for (const item of array(manifest?.real_case_requirements_added)) if (!/^[a-z0-9_]+$/.test(item)) errors.push(`invalid v42 requirement: ${item}`);
+            if (stable(manifest?.prohibited_inferences) !== stable(REQUIRED_PROHIBITED_INFERENCES)) errors.push('v42 prohibited-inference ledger mismatch');
+            if (stable(manifest?.interpretation_contract) !== stable(REQUIRED_INTERPRETATION_CONTRACT)) errors.push('v42 interpretation contract mismatch');
+          """
+          if text.count(old) != 1:
+              raise SystemExit('v42 validator replacement mismatch')
+          lib.write_text(text.replace(old, new))
+
+          test = Path('test/preference-custody-manifest-v42.test.js')
+          value = test.read_text()
+          old_direct = "const substitutedRulesManifest=clone(manifest); substitutedRulesManifest.extension_control.required_refusal_rules[0]='arbitrary_unique_refusal_rule'; assert.ok(validatePreferenceCustodyManifestV42(substitutedRulesManifest).length>0,'substituted refusal rule rejected'); assert.throws(()=>compilePreferenceCustodyManifestV42(substitutedRulesManifest,base,uncertaintyBuild,uncertaintyFixture,baseSources),/exact PC-44 ledger/);"
+          new_direct = old_direct + " const substitutedRequirementManifest=clone(manifest); substitutedRequirementManifest.real_case_requirements_added[0]='arbitrary_unique_requirement'; assert.ok(validatePreferenceCustodyManifestV42(substitutedRequirementManifest).length>0,'substituted promotion requirement rejected'); assert.throws(()=>compilePreferenceCustodyManifestV42(substitutedRequirementManifest,base,uncertaintyBuild,uncertaintyFixture,baseSources),/exact PC-44 extension/); const substitutedInferenceManifest=clone(manifest); substitutedInferenceManifest.prohibited_inferences[0]='Anything may be inferred.'; assert.ok(validatePreferenceCustodyManifestV42(substitutedInferenceManifest).length>0,'substituted prohibited inference rejected'); assert.throws(()=>compilePreferenceCustodyManifestV42(substitutedInferenceManifest,base,uncertaintyBuild,uncertaintyFixture,baseSources),/prohibited-inference ledger/);"
+          if value.count(old_direct) != 1:
+              raise SystemExit('v42 direct regression anchor mismatch')
+          value = value.replace(old_direct, new_direct)
+          old_segment = "['requirements',v=>{v.real_case_requirements_added.pop();}],['requirement format',v=>{v.real_case_requirements_added[0]='Invalid Requirement';}],['prohibited inference ledger',v=>{v.prohibited_inferences=[];}],['interpretation contract id',v=>{v.interpretation_contract.contract_id='invalid';}],['interpretation',v=>{v.interpretation_contract.copy_ready_caveat='';}]];"
+          new_segment = "['requirements',v=>{v.real_case_requirements_added.pop();}],['requirement substitution',v=>{v.real_case_requirements_added[0]='arbitrary_unique_requirement';}],['requirement format',v=>{v.real_case_requirements_added[0]='Invalid Requirement';}],['prohibited inference ledger',v=>{v.prohibited_inferences=[];}],['prohibited inference substitution',v=>{v.prohibited_inferences[0]='Anything may be inferred.';}],['identification required state',v=>{v.identification_requirement.required_state='arbitrary_state';}],['identification refused inference',v=>{v.identification_requirement.refused_inference='arbitrary_inference';}],['identification extra field',v=>{v.identification_requirement.unbound='value';}],['interpretation contract id',v=>{v.interpretation_contract.contract_id='invalid';}],['interpretation what this is',v=>{v.interpretation_contract.what_this_is='Anything.';}],['interpretation what this is not',v=>{v.interpretation_contract.what_this_is_not='Nothing.';}],['interpretation',v=>{v.interpretation_contract.copy_ready_caveat='';}],['interpretation caveat substitution',v=>{v.interpretation_contract.copy_ready_caveat='Qualified.';}],['interpretation extra field',v=>{v.interpretation_contract.unbound='value';}]];"
+          if value.count(old_segment) != 1:
+              raise SystemExit('v42 mutation denominator anchor mismatch')
+          value = value.replace(old_segment, new_segment)
+          value = value.replace('assert.equal(manifestMutations.length+buildMutations.length,63);', 'assert.equal(manifestMutations.length+buildMutations.length,72);')
+          value = value.replace('Preference custody floor v42 adversarial tests: PASS (63 mutations plus complete-manifest, frozen-ledger, and source-binding succession checks)', 'Preference custody floor v42 adversarial tests: PASS (72 mutations plus exact semantic-ledger, complete-manifest, frozen-ledger, and source-binding succession checks)')
+          test.write_text(value)
+          PY_PATCH
+
+          printf '%s\n' test/preference-custody-manifest-v42.test.js tools/lib/preference-custody-manifest-v42.mjs | LC_ALL=C sort > /tmp/pc44-repair-paths.expected
+          git diff --name-only | LC_ALL=C sort > /tmp/pc44-repair-paths.observed
+          diff -u /tmp/pc44-repair-paths.expected /tmp/pc44-repair-paths.observed
+
+          git add -- test/preference-custody-manifest-v42.test.js tools/lib/preference-custody-manifest-v42.mjs
+          export GIT_AUTHOR_NAME='github-actions[bot]' GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME" GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          git commit -m 'Preference Custody: bind exact PC-44 semantic ledgers'
+          product_commit="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_TARGET_HEAD"
+
+          node tools/compile-preference-linkage-uncertainty-monitoring-assurance.mjs
+          node tools/validate-preference-linkage-uncertainty-monitoring-assurance.mjs
+          node test/preference-linkage-uncertainty-monitoring-assurance.test.js
+          node tools/compile-preference-custody-manifest-v42.mjs
+          node tools/validate-preference-custody-manifest-v42.mjs
+          node test/preference-custody-manifest-v42.test.js
+          pass_focused=true
+
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do node "$test_file"; done
+          node test/preference-custody-manifest.test.js
+          pass_historical=true
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          pass_no_magic=true
+
+          rm -rf /tmp/pc44-semantic-reference && mkdir -p /tmp/pc44-semantic-reference
+          cp build/research/preference-linkage-uncertainty-monitoring-assurance.{json,md} /tmp/pc44-semantic-reference/
+          cp build/research/preference-custody-laboratory-floor-v42.{json,md} /tmp/pc44-semantic-reference/
+          npm run release:check
+          git diff --exit-code -- test/preference-custody-manifest-v42.test.js tools/lib/preference-custody-manifest-v42.mjs
+          pass_release=true
+
+          git reset --hard "$product_commit"
+          git clean -fdx
+          node tools/compile-preference-linkage-uncertainty-monitoring-assurance.mjs
+          node tools/validate-preference-linkage-uncertainty-monitoring-assurance.mjs
+          node test/preference-linkage-uncertainty-monitoring-assurance.test.js
+          node tools/compile-preference-custody-manifest-v42.mjs
+          node tools/validate-preference-custody-manifest-v42.mjs
+          node test/preference-custody-manifest-v42.test.js
+          cmp /tmp/pc44-semantic-reference/preference-linkage-uncertainty-monitoring-assurance.json build/research/preference-linkage-uncertainty-monitoring-assurance.json
+          cmp /tmp/pc44-semantic-reference/preference-linkage-uncertainty-monitoring-assurance.md build/research/preference-linkage-uncertainty-monitoring-assurance.md
+          cmp /tmp/pc44-semantic-reference/preference-custody-laboratory-floor-v42.json build/research/preference-custody-laboratory-floor-v42.json
+          cmp /tmp/pc44-semantic-reference/preference-custody-laboratory-floor-v42.md build/research/preference-custody-laboratory-floor-v42.md
+          pass_replay=true
+
+          git reset --hard "$product_commit"
+          git clean -fdx
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git fetch --no-tags origin "+refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_TARGET_HEAD"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET_HEAD" origin "$product_commit:refs/heads/$TARGET_BRANCH"
+          published=true
+          status=success
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc44-semantic-ledger-repair-${{ github.run_id }}
+          path: /tmp/pc44-semantic-ledger-repair-receipt.json
+          if-no-files-found: error
+          retention-days: 90
