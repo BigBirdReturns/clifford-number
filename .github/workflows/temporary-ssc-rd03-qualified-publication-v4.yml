@@ -1,0 +1,77 @@
+name: TEMP publish qualified RD-03 terminal closure v4
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-qualified-publication-v4.yml'
+      - '.rd03-qualified-publication-v4/**'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd03-qualified-publication-v4-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-qualified-publication-trigger-v4'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prepare explicit-path publication transaction
+        run: |
+          set -Eeuo pipefail
+          cp .github/tmp/publish-rd03-qualified-v3.sh /tmp/publish-rd03-qualified-v4.sh
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/publish-rd03-qualified-v4.sh')
+          s=p.read_text()
+          old='''tar -xzf "$qualified/permanent-product.tar.gz" -C .
+          git add -A
+          git diff --cached --name-only | sort > "$RUNNER_TEMP/rd03-product-paths.actual"
+          cmp "$qualified/product-paths.txt" "$RUNNER_TEMP/rd03-product-paths.actual"
+          '''
+          new='''tar -xzf "$qualified/permanent-product.tar.gz" -C .
+          census_root='data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/source-custody/public-record-census-v1'
+          execution_receipt='data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/public-record-census-execution-receipt.json'
+          git add -- \\
+            "$census_root" \\
+            "$execution_receipt" \\
+            .github/workflows/status-sovereignty-rd-wave02-rd03-negotiated-terms.yml \\
+            docs/milestones/ssc-rd-wave02-rd03-negotiated-terms.md \\
+            schemas/status-sovereignty-rd-wave02-rd03-negotiated-terms.schema.json \\
+            test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js \\
+            tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs \\
+            tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs \\
+            data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms \\
+            data/project/ssc-residual-wave02/closures/RD-03-C04.json
+          git diff --cached --name-only | sort > "$RUNNER_TEMP/rd03-product-paths.actual"
+          if ! cmp "$qualified/product-paths.txt" "$RUNNER_TEMP/rd03-product-paths.actual"; then
+            diff -u "$qualified/product-paths.txt" "$RUNNER_TEMP/rd03-product-paths.actual" || true
+            git diff --cached --name-status
+            exit 1
+          fi
+          '''
+          if old not in s:
+              raise SystemExit('publication staging block not found')
+          p.write_text(s.replace(old,new,1))
+          PY
+          chmod +x /tmp/publish-rd03-qualified-v4.sh
+      - name: Execute exact qualified publication transaction
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: /tmp/publish-rd03-qualified-v4.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-qualified-publication-v4
+          path: ${{ env.PUBLICATION_RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
