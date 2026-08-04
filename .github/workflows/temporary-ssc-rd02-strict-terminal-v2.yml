@@ -92,10 +92,10 @@ jobs:
                   raise RuntimeError(f'path repair postcondition failed: {old!r} -> {new!r}')
               repair.append({'old': old, 'new': new, 'old_occurrences': old_count})
 
-          expected_manifest = """data/intake/status-sovereignty-rd-wave02-rd02-license-leverage/field-matrix.json
+          expected_manifest = """tools/acquisition/status-sovereignty-rd-wave02-rd02/build-field-matrix.mjs
+          data/intake/status-sovereignty-rd-wave02-rd02-license-leverage/field-matrix.json
           data/project/ssc-residual-wave02/seeds/RD-02-C04.json
           test/status-sovereignty-rd-wave02-rd02-field-matrix.test.js
-          tools/acquisition/status-sovereignty-rd-wave02-rd02/build-field-matrix.mjs
           tools/acquisition/status-sovereignty-rd-wave02-rd02/validate-field-matrix.mjs"""
           if script.count(expected_manifest) != 1:
               raise RuntimeError('corrected five-path manifest is not exact')
