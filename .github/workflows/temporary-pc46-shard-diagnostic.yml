@@ -1,4 +1,4 @@
-name: TEMP export immutable PC-46 parent tree
+name: TEMP export immutable qualified PC-46 parent tree
 
 on:
   pull_request:
@@ -19,8 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      EXPECTED_PARENT: ea1776f7bba28b56fee9f3defb1940ef640517a2
-      EXPECTED_PRODUCT_TREE: a4ebcb55818011668e78ecac338734a32dcabfbd
+      QUALIFIED_PARENT: ea1776f7bba28b56fee9f3defb1940ef640517a2
+      QUALIFIED_PRODUCT_TREE: a4ebcb55818011668e78ecac338734a32dcabfbd
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,19 +32,20 @@ jobs:
           set -Eeuo pipefail
           git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
           current_main=$(git rev-parse origin/main)
-          test "$current_main" = "$EXPECTED_PARENT"
-          parent_tree=$(git rev-parse "$EXPECTED_PARENT^{tree}")
+          git cat-file -e "$QUALIFIED_PARENT^{commit}"
+          parent_tree=$(git rev-parse "$QUALIFIED_PARENT^{tree}")
+          test -n "$parent_tree"
           python - <<PY
           import json
           from pathlib import Path
           receipt = {
-            'schema_version': 'pc46-parent-tree-diagnostic@1',
+            'schema_version': 'pc46-parent-tree-diagnostic@2',
             'workflow_run_id': '${GITHUB_RUN_ID}',
-            'expected_parent': '${EXPECTED_PARENT}',
+            'qualified_parent': '${QUALIFIED_PARENT}',
+            'qualified_parent_tree': '${parent_tree}',
+            'qualified_product_tree': '${QUALIFIED_PRODUCT_TREE}',
             'canonical_main_observed': '${current_main}',
-            'parent_tree': '${parent_tree}',
-            'qualified_product_tree': '${EXPECTED_PRODUCT_TREE}',
-            'parent_lease_verified': True
+            'publication_model': 'immutable-qualified-product-plus-current-main-synthetic-merge'
           }
           Path('/tmp/pc46-parent-tree.json').write_text(json.dumps(receipt, indent=2) + '\n')
           print(json.dumps(receipt, indent=2))
