@@ -23,23 +23,38 @@ jobs:
         with:
           ref: agent/ssc-rd02-terminal-materializer-base-v1
           fetch-depth: 1
-      - name: Reconstruct and verify exact authored carrier
+      - name: Preserve actual carrier bytes and checksum diagnosis
         run: |
-          set -Eeuo pipefail
-          mkdir -p "$RUNNER_TEMP/rd02-carrier-export"
-          cat .rd02-terminal-v1/carrier/part-*.b64 > "$RUNNER_TEMP/rd02-carrier-export/carrier.zip.b64"
-          test "$(sha256sum "$RUNNER_TEMP/rd02-carrier-export/carrier.zip.b64" | cut -d' ' -f1)" = '0d845bd7783b0286f35e604e7a4a75fbd61f6458c09466f0de4d57d0d320f940'
-          base64 --decode "$RUNNER_TEMP/rd02-carrier-export/carrier.zip.b64" > "$RUNNER_TEMP/rd02-carrier-export/carrier.zip"
-          test "$(sha256sum "$RUNNER_TEMP/rd02-carrier-export/carrier.zip" | cut -d' ' -f1)" = '23ef30188e1fff0b066f5e8b56585b3767c9abe830d929e6b264849e122ffbb9'
-          unzip -t "$RUNNER_TEMP/rd02-carrier-export/carrier.zip"
-          unzip -l "$RUNNER_TEMP/rd02-carrier-export/carrier.zip" > "$RUNNER_TEMP/rd02-carrier-export/listing.txt"
-          sha256sum "$RUNNER_TEMP/rd02-carrier-export/carrier.zip" > "$RUNNER_TEMP/rd02-carrier-export/carrier.zip.sha256"
+          set -u
+          out="$RUNNER_TEMP/rd02-carrier-export"
+          rm -rf "$out"
+          mkdir -p "$out"
+          cat .rd02-terminal-v1/carrier/part-*.b64 > "$out/carrier.zip.b64"
+          actual_b64="$(sha256sum "$out/carrier.zip.b64" | cut -d' ' -f1)"
+          printf '%s  carrier.zip.b64\n' "$actual_b64" > "$out/carrier.zip.b64.sha256"
+          printf '%s\n' '0d845bd7783b0286f35e604e7a4a75fbd61f6458c09466f0de4d57d0d320f940' > "$out/expected-base64-sha256.txt"
+          if base64 --decode "$out/carrier.zip.b64" > "$out/carrier.zip" 2> "$out/base64-stderr.txt"; then
+            printf '%s\n' 0 > "$out/base64-exit-code.txt"
+            actual_zip="$(sha256sum "$out/carrier.zip" | cut -d' ' -f1)"
+            printf '%s  carrier.zip\n' "$actual_zip" > "$out/carrier.zip.sha256"
+            printf '%s\n' '23ef30188e1fff0b066f5e8b56585b3767c9abe830d929e6b264849e122ffbb9' > "$out/expected-zip-sha256.txt"
+            unzip -t "$out/carrier.zip" > "$out/unzip-test.txt" 2>&1
+            printf '%s\n' "$?" > "$out/unzip-exit-code.txt"
+            unzip -l "$out/carrier.zip" > "$out/listing.txt" 2>&1 || true
+          else
+            printf '%s\n' "$?" > "$out/base64-exit-code.txt"
+          fi
+          printf '%s\n' "$actual_b64" > "$out/actual-base64-sha256.txt"
+          if test "$actual_b64" = '0d845bd7783b0286f35e604e7a4a75fbd61f6458c09466f0de4d57d0d320f940'; then
+            printf '%s\n' true > "$out/base64-checksum-match.txt"
+          else
+            printf '%s\n' false > "$out/base64-checksum-match.txt"
+          fi
+          find .rd02-terminal-v1/carrier -maxdepth 1 -type f -name 'part-*.b64' -print0 | sort -z | xargs -0 sha256sum > "$out/part-sha256.txt"
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: ssc-rd02-authored-carrier-v1
-          path: |
-            ${{ runner.temp }}/rd02-carrier-export/carrier.zip
-            ${{ runner.temp }}/rd02-carrier-export/carrier.zip.sha256
-            ${{ runner.temp }}/rd02-carrier-export/listing.txt
+          name: ssc-rd02-authored-carrier-diagnostic-v2
+          path: ${{ runner.temp }}/rd02-carrier-export
           if-no-files-found: error
           retention-days: 90
