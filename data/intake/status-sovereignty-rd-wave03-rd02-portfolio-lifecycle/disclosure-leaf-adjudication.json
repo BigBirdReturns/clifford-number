@@ -1,0 +1,150 @@
+{
+  "schema_version": "ssc-rd02-wave03-disclosure-leaf-adjudication@1",
+  "wave_id": "SSC-RD-W03",
+  "lane_id": "RD-02",
+  "class_id": "RD-02-C05",
+  "issue": 1015,
+  "as_of": "2026-08-04",
+  "authority": "terminal_captured_link_adjudication_not_source_admission_or_lifecycle_finding",
+  "source_custody": {
+    "same_host_followup_execution_receipt_path": "data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/same-host-followup-execution-receipt.json",
+    "workflow_run": 30949324081,
+    "artifact_id": 8908442108,
+    "artifact_zip_sha256": "5d4924bf616cf65f93430a570580e5144359bcc6acb0c55b33161d2563e58364",
+    "artifact_manifest_combined_sha256": "2ffcd2bb46e067e1842d6277a7e0c7b43dabda707ce57d6905287262ac499bbf",
+    "captured_candidate_file_sha256": "26dcf0c76250051192626477e4949e6a49b4934587c0d8665110e4bb02209352",
+    "source_disclosure_route_id": "RD02-W03-SH005"
+  },
+  "frozen_unit": {
+    "unit_ordinal": 15,
+    "unit_id": "SBICCT-FIRST-COHORT-15",
+    "legal_vehicle": "Stifel North Atlantic AM-Forward, LP"
+  },
+  "denominator": {
+    "captured_candidate_urls": 457,
+    "terminally_adjudicated_urls": 457,
+    "fixed_leaf_pdf_routes": 2,
+    "terminal_without_request_urls": 455,
+    "selected_source_route_candidates": 2,
+    "silent_urls": 0
+  },
+  "selection_law": {
+    "candidate_surface": "captured_url_and_anchor_text_only",
+    "direct_lexical_signal_required": true,
+    "case_insensitive_terms": [
+      "Stifel North Atlantic AM-Forward",
+      "AM-Forward",
+      "North Atlantic",
+      "SBIC",
+      "SBA",
+      "Small Business Investment Company"
+    ],
+    "selected_urls_may_be_requested_once": true,
+    "unselected_urls_may_not_be_requested_in_this_lane": true,
+    "terminal_without_request_is_content_absence": false,
+    "candidate_is_admitted_source": false
+  },
+  "selected_records": [
+    {
+      "candidate_ordinal": 276,
+      "candidate_id": "75443dff9986665a5aaea8ff4773a1c7b371a4f2a4e279399fbd4fa4a5e0c869",
+      "source_route_id": "RD02-W03-SH005",
+      "unit_ordinal": 15,
+      "url": "https://www.stifel.com/docs/pdf/pressreleases/2024/Stifel-SBA-Approval-for-10.22.24.pdf",
+      "anchor_text": "",
+      "lexical_signals": [
+        "SBA",
+        "Approval"
+      ],
+      "disposition": "exact_vehicle_approval_pdf_followup",
+      "rationale": "The URL identifies an SBA approval disclosure and is the only captured leaf that directly addresses the frozen AM-Forward vehicle's license and leverage-eligibility state.",
+      "expected_observation_scope": [
+        "exact frozen vehicle identity",
+        "SBIC license approval",
+        "SBA leverage eligibility",
+        "private capital commitments"
+      ],
+      "followup_eligible": true,
+      "admitted_source": false,
+      "lifecycle_event_observed": false,
+      "result_spawned_requests": 0
+    },
+    {
+      "candidate_ordinal": 405,
+      "candidate_id": "cf856a923b3d12b963214c6977e4bbc871d90d8c69bd6b81a44f556b07247f56",
+      "source_route_id": "RD02-W03-SH005",
+      "unit_ordinal": 15,
+      "url": "https://www.stifel.com/docs/pdf/pressreleases/2021/Stifel North Atlantic NEW FINAL for 02.19.21-1.pdf",
+      "anchor_text": "",
+      "lexical_signals": [
+        "North Atlantic"
+      ],
+      "disposition": "manager_lineage_pdf_followup",
+      "rationale": "The URL identifies the immediate North Atlantic manager lineage and a bounded antecedent commitment surface; it does not itself identify the later frozen vehicle.",
+      "expected_observation_scope": [
+        "North Atlantic manager lineage",
+        "Stifel acquisition or affiliation",
+        "antecedent commitment to a future North Atlantic SBIC"
+      ],
+      "followup_eligible": true,
+      "admitted_source": false,
+      "lifecycle_event_observed": false,
+      "result_spawned_requests": 0
+    }
+  ],
+  "terminal_without_request": {
+    "candidate_urls": 455,
+    "disposition": "no_direct_frozen_vehicle_or_manager_lineage_signal_in_captured_url_or_anchor",
+    "content_inspected": false,
+    "content_absence_finding": false,
+    "underlying_record_absence_finding": false,
+    "authorized_for_automatic_followup": false
+  },
+  "annual_report_disposition": {
+    "body_sha256": "5ebcb106dc62b4d20884d87c0c5f962a2972cd45e7bc83c9b2ef81fe7ead296c",
+    "pdf_pages": 46,
+    "exact_frozen_vehicle_or_sbic_terms_recovered": 0,
+    "disposition": "parent_annual_report_no_exact_frozen_vehicle_or_sbic_identity_recovered",
+    "admitted_source": false,
+    "lifecycle_event_observed": false
+  },
+  "current_result": {
+    "captured_candidate_adjudication_complete": true,
+    "followup_protocol_frozen": true,
+    "admitted_sources": 0,
+    "lifecycle_events_observed": 0,
+    "field_matrix_terminal": false,
+    "class_state": "still_open",
+    "class_closed": false,
+    "outside_human_dependency": false,
+    "project_blocking": false,
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none"
+  },
+  "refused_inferences": [
+    "a captured URL is not an admitted source",
+    "a direct lexical signal is not evidence until the exact body is captured and adjudicated",
+    "SBA leverage eligibility is not an actual leverage draw",
+    "private capital commitment is not a portfolio investment",
+    "manager lineage is not the exact frozen vehicle",
+    "license approval is not a follow-on, exit, write-off, default, realized return, or SBA repayment",
+    "terminal without request is not proof that underlying page content is irrelevant",
+    "no public record recovered is not zero private fund activity"
+  ],
+  "authority_boundaries": {
+    "outside_human_dependency": false,
+    "external_contacts": 0,
+    "external_reviews": 0,
+    "reviewed_disposition_changed": false,
+    "capital_conversion_finding": false,
+    "favoritism_finding": false,
+    "extraction_finding": false,
+    "coordination_finding": false,
+    "common_purpose_finding": false,
+    "complete_compact_finding": false,
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none"
+  }
+}
