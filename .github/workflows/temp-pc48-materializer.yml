@@ -43,7 +43,6 @@ jobs:
           PINNED_V45_BRIDGE: 4a5a6fa449f45750e836ae9ca8890b958f72e0a9
           TARGET_BRANCH: agent/pc48-materializer
           TARGET_LEASE: 5e46d763dcba74cc442c907f7f96ce8646dfe9db
-          REPAIR_BASE64_SHA256: ba03488394a30be655c375b76d9ed934e11ebcf927eb90f07725602e061f20de
           REPAIR_PACKAGE_SHA256: 650fb3152c29b387fdd70cf17259f795ed6ac2793e145da1f23663ccc82247e7
           REPAIR_PATH_LIST_SHA256: cc4b1773e007ef128fdad65d20be4fdeb7b0107b99605150860d2dd2dbb1cb8a
           REPAIRED_LIB_SHA256: 947d466ca5ddff8d98d5769943da8ca360647ee03510152dc6a81dfcecb20985
@@ -60,7 +59,7 @@ jobs:
           git cat-file -e "$PINNED_V45_BRIDGE^{commit}"
 
           phase=verify_repair_package
-          sha256sum /tmp/pc48-review-p1b.tar.xz.b64 | grep -F "$REPAIR_BASE64_SHA256"
+          carrier_base64_sha256="$(sha256sum /tmp/pc48-review-p1b.tar.xz.b64 | awk '{print $1}')"
           base64 -d /tmp/pc48-review-p1b.tar.xz.b64 > /tmp/pc48-review-p1b.tar.xz
           sha256sum /tmp/pc48-review-p1b.tar.xz | grep -F "$REPAIR_PACKAGE_SHA256"
           cat > /tmp/pc48-p1b-expected-paths.txt <<'EOF'
@@ -123,6 +122,7 @@ jobs:
           repaired_tree=$repaired_tree
           permanent_paths=14
           repaired_paths=2
+          repair_carrier_base64_sha256=$carrier_base64_sha256
           repair_package_sha256=$REPAIR_PACKAGE_SHA256
           repaired_lib_sha256=$REPAIRED_LIB_SHA256
           repaired_test_sha256=$REPAIRED_TEST_SHA256
