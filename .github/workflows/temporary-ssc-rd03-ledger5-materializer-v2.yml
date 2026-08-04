@@ -1,0 +1,46 @@
+name: TEMP materialize SSC Wave-02 five-closure ledger v2
+
+on:
+  pull_request:
+    paths:
+      - '.rd03-ledger5-materializer/TRIGGER'
+      - '.github/workflows/temporary-ssc-rd03-ledger5-materializer-v2.yml'
+      - '.github/tmp/materialize-ssc-rd03-ledger5-v2.sh'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd03-ledger5-materializer-v2-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-ledger5-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Check out live main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Execute descendant-safe exact materializer
+        run: |
+          set -Eeuo pipefail
+          base='agent/ssc-rd03-ledger5-materializer-base-v1'
+          git fetch --no-tags origin "refs/heads/$base:refs/remotes/origin/$base"
+          git show "refs/remotes/origin/$base:.github/tmp/materialize-ssc-rd03-ledger5-v2.sh" > /tmp/materialize-rd03-ledger5-v2.sh
+          chmod 0700 /tmp/materialize-rd03-ledger5-v2.sh
+          /tmp/materialize-rd03-ledger5-v2.sh
+      - name: Preserve exact descendant-safe materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-wave02-ledger5-materialization-v2
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
