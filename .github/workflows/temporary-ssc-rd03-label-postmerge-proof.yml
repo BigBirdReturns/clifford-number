@@ -1,0 +1,243 @@
+name: TEMP prove canonical RD-03 label-semantics repair
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-label-postmerge-proof.yml'
+      - '.rd03-label-postmerge-proof/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-ssc-rd03-label-postmerge-proof-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  prove:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-label-postmerge-proof-trigger-ea177'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      CANONICAL_MERGE: ea1776f7bba28b56fee9f3defb1940ef640517a2
+      FIRST_PARENT: ef70f7ad406c518f4b640ca4641c5a0f045a0d8d
+      PRODUCT_PARENT: 95452a202818bf32dfea07a5ee5396a933e7bf49
+      EXPECTED_TREE: 1b6e1d9e37aaa372f2e917d341a0513bf3b985f7
+    steps:
+      - name: Check out exact canonical repair merge
+        uses: actions/checkout@v4
+        with:
+          ref: ea1776f7bba28b56fee9f3defb1940ef640517a2
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Prove canonical merge, semantics, gates, and replay
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/ssc-rd03-label-postmerge-proof-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          mkdir -p "$out"
+          echo "RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          exec > >(tee "$out/trace.log") 2>&1
+
+          step=initialize
+          current_main=''
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$out/exit-code.txt"
+            printf '%s\n' "$step" > "$out/final-step.txt"
+            printf '%s\n' "$current_main" > "$out/current-main.txt"
+            git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
+            find "$out" -type f ! -name sha256.txt -print0 \
+              | sort -z \
+              | xargs -0 sha256sum \
+              > "$out/sha256.txt" 2>/dev/null || true
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          cat > "$out/expected-paths.txt" <<'PATHS'
+          data/research/status-sovereignty-residual-denominator-wave-02-current.json
+          docs/milestones/ssc-residual-denominator-wave-02-current.md
+          schemas/status-sovereignty-residual-denominator-wave-02-current.schema.json
+          test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs
+          tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          PATHS
+          sed -i 's/^          //' "$out/expected-paths.txt"
+          sort -o "$out/expected-paths.txt" "$out/expected-paths.txt"
+
+          step=prove-exact-merge-shape-and-tree
+          test "$(git rev-parse HEAD)" = "$CANONICAL_MERGE"
+          test "$(git rev-list --parents -n 1 "$CANONICAL_MERGE" | awk '{print NF-1}')" = '2'
+          test "$(git rev-parse "$CANONICAL_MERGE^1")" = "$FIRST_PARENT"
+          test "$(git rev-parse "$CANONICAL_MERGE^2")" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$CANONICAL_MERGE^{tree}")" = "$EXPECTED_TREE"
+          test "$(git rev-parse "$PRODUCT_PARENT^{tree}")" = "$EXPECTED_TREE"
+          git diff --name-only "$FIRST_PARENT" "$CANONICAL_MERGE" | sort > "$out/observed-paths.txt"
+          cmp "$out/expected-paths.txt" "$out/observed-paths.txt"
+          git diff --name-status "$FIRST_PARENT" "$CANONICAL_MERGE" > "$out/name-status.txt"
+          test "$(awk '$1 != "M" { count += 1 } END { print count + 0 }' "$out/name-status.txt")" = '0'
+          test -z "$(git diff --name-only "$PRODUCT_PARENT" "$CANONICAL_MERGE")"
+          sha256sum "$out/expected-paths.txt" > "$out/path-list.sha256"
+
+          step=prove-canonical-ancestry-and-live-disjointness
+          git fetch --no-tags origin main
+          current_main="$(git rev-parse FETCH_HEAD)"
+          git merge-base --is-ancestor "$CANONICAL_MERGE" "$current_main"
+          git diff --name-only "$CANONICAL_MERGE" "$current_main" | sort > "$out/intervening-main-paths.txt"
+          comm -12 "$out/expected-paths.txt" "$out/intervening-main-paths.txt" > "$out/intervening-overlap.txt"
+          test ! -s "$out/intervening-overlap.txt"
+
+          step=prove-corrected-label-semantics
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          ledger = json.loads(Path('data/research/status-sovereignty-residual-denominator-wave-02-current.json').read_text())
+          rd03 = next(row for row in ledger['promoted_class_receipts'] if row['class_id'] == 'RD-03-C04')
+          assert rd03['constitutional_exact_label'] == rd03['receipt_class_label']
+          assert rd03['labels_exact_match'] is True
+          assert rd03['label_reconciliation'] == 'none'
+          assert ledger['counts']['canonical_residual_classes'] == 42
+          assert ledger['counts']['closed_residual_classes'] == 5
+          assert ledger['counts']['open_residual_classes'] == 37
+          assert ledger['counts']['label_reconciliations'] == 1
+          assert [row['class_id'] for row in ledger['selected_classes_open']] == ['RD-02-C04']
+          assert ledger['current_result']['wave_complete'] is False
+
+          expected_custody = {
+            'constitutional_class_label': 'complete negotiated loan, warrant, security, covenant, milestone, pricing, and seniority terms',
+            'seed_closure_target': 'loan, warrant, security, covenant, milestone, pricing, and seniority terms',
+            'labels_exact_match': False,
+            'reconciliation': 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact'
+          }
+          closure = json.loads(Path('data/project/ssc-residual-wave02/closures/RD-03-C04.json').read_text())
+          receipt = json.loads(Path('data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms/class-receipt.json').read_text())
+          assert closure['label_custody'] == expected_custody
+          assert receipt['label_custody'] == expected_custody
+          assert receipt['class_label'] == expected_custody['constitutional_class_label']
+
+          proof = {
+            'flattened_receipt_equals_constitution': True,
+            'flattened_labels_exact_match': True,
+            'flattened_label_reconciliation': 'none',
+            'seed_constitution_mismatch_preserved': True,
+            'row_level_label_reconciliations': 1,
+            'closed_residual_classes': 5,
+            'open_residual_classes': 37,
+            'sole_open_selected_class': 'RD-02-C04',
+            'wave_complete': False
+          }
+          Path('${{ runner.temp }}/rd03-label-proof.json').write_text(json.dumps(proof, indent=2) + '\n')
+          PY
+          cp "${RUNNER_TEMP}/rd03-label-proof.json" "$out/semantic-proof.json"
+
+          step=bind-every-canonical-file
+          : > "$out/file-manifest.tsv"
+          while IFS= read -r path; do
+            bytes="$(wc -c < "$path" | tr -d ' ')"
+            sha="$(sha256sum "$path" | awk '{print $1}')"
+            blob="$(git rev-parse "HEAD:$path")"
+            printf '%s\t%s\t%s\t%s\n' "$path" "$bytes" "$sha" "$blob" >> "$out/file-manifest.tsv"
+          done < "$out/expected-paths.txt"
+          sha256sum "$out/file-manifest.tsv" > "$out/file-manifest.sha256"
+
+          step=focused-cumulative-rd03-rd06-qualification
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/validate-no-magic-human-gate.mjs
+
+          step=complete-repository-release-gate
+          npm run release:check
+
+          step=deterministic-clean-replay
+          git reset --hard "$CANONICAL_MERGE"
+          git clean -fdx
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          step=recheck-live-canonical-custody
+          git fetch --no-tags origin main
+          current_main="$(git rev-parse FETCH_HEAD)"
+          git merge-base --is-ancestor "$CANONICAL_MERGE" "$current_main"
+          git diff --name-only "$CANONICAL_MERGE" "$current_main" | sort > "$out/intervening-main-paths-final.txt"
+          comm -12 "$out/expected-paths.txt" "$out/intervening-main-paths-final.txt" > "$out/intervening-overlap-final.txt"
+          test ! -s "$out/intervening-overlap-final.txt"
+
+          step=write-canonical-proof-receipt
+          OUT="$out" CURRENT_MAIN="$current_main" python - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          out = Path(os.environ['OUT'])
+          receipt = {
+            'schema_version': 'ssc-rd03-label-semantics-postmerge-proof@1',
+            'workflow_run': int(os.environ['GITHUB_RUN_ID']),
+            'canonical_merge': 'ea1776f7bba28b56fee9f3defb1940ef640517a2',
+            'canonical_tree': '1b6e1d9e37aaa372f2e917d341a0513bf3b985f7',
+            'first_parent': 'ef70f7ad406c518f4b640ca4641c5a0f045a0d8d',
+            'product_parent': '95452a202818bf32dfea07a5ee5396a933e7bf49',
+            'current_main_at_proof': os.environ['CURRENT_MAIN'],
+            'permanent_paths': 10,
+            'path_status': 'ten_modifications_only',
+            'product_parent_tree_equal': True,
+            'flattened_labels_exact_match': True,
+            'flattened_label_reconciliation': 'none',
+            'seed_label_mismatch_preserved': True,
+            'row_level_label_reconciliations': 1,
+            'closed_residual_classes': 5,
+            'open_residual_classes': 37,
+            'sole_open_selected_class': 'RD-02-C04',
+            'wave_complete': False,
+            'cumulative_adversarial_refusals': 44,
+            'rd03_adversarial_refusals': 95,
+            'rd06_adversarial_refusals': 110,
+            'release_gate': 'pass',
+            'deterministic_replay': 'pass',
+            'outside_human_dependency': False,
+            'external_contacts': 0,
+            'external_reviews': 0,
+            'publication_effect': 'none',
+            'adoption_effect': 'none',
+            'graph_effect': 'none'
+          }
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          PY
+
+          step=canonical-proof-complete
+          finish
+
+      - name: Preserve canonical post-merge proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-label-semantics-postmerge-proof
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
