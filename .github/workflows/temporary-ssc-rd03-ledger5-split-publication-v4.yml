@@ -1,0 +1,95 @@
+name: TEMP publish SSC Wave-02 five-closure ledger split v4
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-ledger5-split-publication-v4.yml'
+      - '.rd03-ledger5-materializer/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd03-ledger5-split-v4-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish-seven:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-ledger5-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPECTED_MAIN: f1e1851d2fa22a3d9972cbd20498cb73f6c0177d
+      TARGET_BRANCH: agent/ssc-wave02-current-ledger-five-closures
+      MATERIALIZER_BASE: agent/ssc-rd03-ledger5-materializer-base-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Derive indentation-agnostic current-main split publisher
+        run: |
+          set -Eeuo pipefail
+          bootstrap="$RUNNER_TEMP/ssc-rd03-ledger5-v4-bootstrap-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$bootstrap"
+          mkdir -p "$bootstrap"
+          echo "RECEIPT_DIR=$bootstrap" >> "$GITHUB_ENV"
+          printf '%s\n' derive-v4-controller > "$bootstrap/final-step.txt"
+          printf '%s\n' 1 > "$bootstrap/exit-code.txt"
+
+          git show "origin/${MATERIALIZER_BASE}:.github/workflows/temporary-ssc-rd03-ledger5-split-publication-v2.yml" > "$RUNNER_TEMP/split-v2.yml"
+          python - <<'PY'
+          import os
+          import textwrap
+          from pathlib import Path
+
+          runner_temp = Path(os.environ['RUNNER_TEMP'])
+          source = (runner_temp / 'split-v2.yml').read_text().splitlines()
+          start = source.index('        run: |') + 1
+          end = next(
+              i for i in range(start, len(source))
+              if source[i].startswith('      - name: Preserve split-publication receipt')
+          )
+          script = textwrap.dedent('\n'.join(source[start:end])) + '\n'
+
+          replacements = [
+              (
+                  "'expected_qualified_tree':os.environ['EXPECTED_QUALIFIED_TREE'],",
+                  "'qualification_tree_source':'runtime_write_tree_after_full_validation',",
+                  'qualified-tree receipt binding',
+              ),
+              (
+                  'test "$qualified_tree" = "$EXPECTED_QUALIFIED_TREE"',
+                  'test "$(git cat-file -t "$qualified_tree")" = tree',
+                  'qualified-tree runtime assertion',
+              ),
+          ]
+          for old, new, label in replacements:
+              count = script.count(old)
+              if count != 1:
+                  raise RuntimeError(f'{label}: expected one match, found {count}')
+              script = script.replace(old, new, 1)
+
+          output = Path('/tmp/ssc-rd03-ledger5-split-v4.sh')
+          output.write_text(script)
+          (runner_temp / 'v4-derived-script.sha256').write_text(
+              __import__('hashlib').sha256(script.encode()).hexdigest() + '  ssc-rd03-ledger5-split-v4.sh\n'
+          )
+          PY
+          bash -n /tmp/ssc-rd03-ledger5-split-v4.sh
+          cp "$RUNNER_TEMP/v4-derived-script.sha256" "$bootstrap/"
+          printf '%s\n' 0 > "$bootstrap/exit-code.txt"
+          printf '%s\n' derived-v4-controller > "$bootstrap/final-step.txt"
+      - name: Qualify current-main eight-path tree and publish seven ordinary paths
+        run: bash /tmp/ssc-rd03-ledger5-split-v4.sh
+      - name: Preserve split-publication receipt and workflow bytes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-wave02-ledger5-split-publication-v4
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
