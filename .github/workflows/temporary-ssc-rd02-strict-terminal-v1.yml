@@ -1,0 +1,247 @@
+name: TEMP materialize strict RD-02 terminal closure v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd02-strict-terminal-v1.yml'
+      - '.rd02-strict-v1/**'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-rd02-strict-terminal-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd02-strict-terminal-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPECTED_MAIN: ea1776f7bba28b56fee9f3defb1940ef640517a2
+      EXPECTED_SOURCE: c78d243ee3d5c5c9b6c09e4b620bd3192b5e25a1
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd02-license-leverage
+      SOURCE_BRANCH: agent/ssc-rd-wave02-rd02-license-leverage
+      CAPTURE_ARTIFACT_ID: '8875282216'
+      CAPTURE_ARTIFACT_SHA256: 63e1fc4bea63b2d00b8fbbe4b8f585edd2e76a3c380445305c2a7997cf166a67
+      CAPTURE_MANIFEST_SHA256: 7ad0486832b496d3fa8242cf4ea927e9a45ff3add7005eb5736ec01aec6f977f
+      MATERIALIZER_B64_SHA256: 6d755d69cda6c7955a634c9af1971ecca77a85c021d16e1d0f67246c69f8d678
+      MATERIALIZER_SHA256: 31a029e682fcc05f827664be780af445ab59bd19bf0b0ad4058ac15d9be8e62b
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct, qualify, and split-publish exact strict product
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/ssc-rd02-strict-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$out"
+          mkdir -p "$out"
+          echo "RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          exec > >(tee "$out/trace.log") 2>&1
+          step=initialize
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$out/exit-code.txt"
+            printf '%s\n' "$step" > "$out/final-step.txt"
+            git rev-parse HEAD > "$out/head.txt" 2>&1 || true
+            git rev-parse 'HEAD^{tree}' > "$out/head-tree.txt" 2>&1 || true
+            git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
+            git ls-remote --heads origin refs/heads/main > "$out/remote-main.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1 || true
+            OUT="$out" RC="$rc" STEP="$step" python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          out=Path(os.environ['OUT'])
+          def read(name):
+              p=out/name
+              return p.read_text().strip() if p.exists() else None
+          receipt={
+            'schema_version':'ssc-rd02-strict-terminal-materialization@1',
+            'run':int(os.environ['GITHUB_RUN_ID']),
+            'exit_code':int(os.environ['RC']),
+            'final_step':os.environ['STEP'],
+            'main_parent':os.environ['EXPECTED_MAIN'],
+            'source_parent':os.environ['EXPECTED_SOURCE'],
+            'target_branch':os.environ['TARGET_BRANCH'],
+            'integration_commit':read('integration-commit.txt'),
+            'integration_tree':read('integration-tree.txt'),
+            'qualified_commit':read('qualified-commit.txt'),
+            'qualified_tree':read('qualified-tree.txt'),
+            'runner_commit':read('runner-commit.txt'),
+            'runner_tree':read('runner-tree.txt'),
+            'integration_paths':5,
+            'qualified_generated_paths':42,
+            'runner_generated_paths':41,
+            'qualified_main_relative_paths':47,
+            'runner_main_relative_paths':46,
+            'standing_workflow_connector_paths':1,
+            'cohort_rows':18,
+            'required_fields':180,
+            'observed_fields':67,
+            'identity_withheld_fields':2,
+            'source_unavailable_fields':111,
+            'adversarial_mutations':73,
+            'capture_artifact':int(os.environ['CAPTURE_ARTIFACT_ID']),
+            'capture_artifact_sha256':os.environ['CAPTURE_ARTIFACT_SHA256'],
+            'capture_manifest_sha256':os.environ['CAPTURE_MANIFEST_SHA256'],
+            'materializer_sha256':os.environ['MATERIALIZER_SHA256'],
+            'outside_human_dependency':False,
+            'external_contacts':0,
+            'external_reviews':0,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+          }
+          (out/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          for p in sorted(out.iterdir()):
+              if p.is_file() and not p.name.endswith('.sha256'):
+                  (out/(p.name+'.sha256')).write_text(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name+'\n')
+          PY
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          step=verify-exact-leases
+          test "$(git rev-parse HEAD)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_SOURCE"
+          git fetch --no-tags origin "+refs/heads/${SOURCE_BRANCH}:refs/remotes/origin/rd02-source"
+          test "$(git rev-parse origin/rd02-source)" = "$EXPECTED_SOURCE"
+
+          step=reconstruct-strict-materializer
+          git fetch --no-tags origin "+refs/heads/agent/ssc-rd02-strict-terminal-base-v1:refs/remotes/origin/rd02-controller"
+          cat \
+            <(git show origin/rd02-controller:.rd02-strict-v1/materializer/part-00.xz.b64) \
+            <(git show origin/rd02-controller:.rd02-strict-v1/materializer/part-01.xz.b64) \
+            <(git show origin/rd02-controller:.rd02-strict-v1/materializer/part-02.xz.b64) \
+            > "$out/materializer.py.xz.b64"
+          test "$(sha256sum "$out/materializer.py.xz.b64" | cut -d' ' -f1)" = "$MATERIALIZER_B64_SHA256"
+          base64 --decode "$out/materializer.py.xz.b64" > "$out/materializer.py.xz"
+          xz --decompress --stdout "$out/materializer.py.xz" > /tmp/rd02-terminal-materializer.py
+          test "$(sha256sum /tmp/rd02-terminal-materializer.py | cut -d' ' -f1)" = "$MATERIALIZER_SHA256"
+          python /tmp/rd02-terminal-materializer.py --help > "$out/materializer-help.txt"
+
+          step=download-and-verify-fixed-capture
+          curl --fail --location --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${CAPTURE_ARTIFACT_ID}/zip" \
+            > "$out/capture.zip"
+          test "$(sha256sum "$out/capture.zip" | cut -d' ' -f1)" = "$CAPTURE_ARTIFACT_SHA256"
+          mkdir -p /tmp/rd02-capture
+          unzip -q "$out/capture.zip" -d /tmp/rd02-capture
+          test "$(python -c 'import json;print(json.load(open("/tmp/rd02-capture/manifest.json"))["combined_sha256"])')" = "$CAPTURE_MANIFEST_SHA256"
+          test "$(python -c 'import json;print(json.load(open("/tmp/rd02-capture/manifest.json"))["entry_count"])')" = 29
+
+          step=create-exact-two-parent-integration
+          cat > "$out/integration-paths.txt" <<'PATHS'
+          .github/workflows/status-sovereignty-rd-wave02-rd02-license-leverage-field-matrix.yml
+          data/intake/status-sovereignty-rd-wave02-rd02-license-leverage/field-matrix.json
+          data/project/ssc-residual-wave02/seeds/RD-02-C04.json
+          test/status-sovereignty-rd-wave02-rd02-field-matrix.test.js
+          tools/validate-status-sovereignty-rd-wave02-rd02-field-matrix.mjs
+          PATHS
+          sed -i 's/^          //' "$out/integration-paths.txt"
+          git checkout --detach "$EXPECTED_MAIN"
+          while IFS= read -r path; do git checkout "$EXPECTED_SOURCE" -- "$path"; done < "$out/integration-paths.txt"
+          git add -- $(cat "$out/integration-paths.txt")
+          test "$(git diff --cached --name-only | wc -l)" = 5
+          test -z "$(git diff --cached --name-status | awk '$1 != "A" {print}')"
+          integration_tree="$(git write-tree)"
+          integration_commit="$(printf '%s\n' 'Integrate exact RD-02 field matrix over current main' | git commit-tree "$integration_tree" -p "$EXPECTED_MAIN" -p "$EXPECTED_SOURCE")"
+          printf '%s\n' "$integration_tree" > "$out/integration-tree.txt"
+          printf '%s\n' "$integration_commit" > "$out/integration-commit.txt"
+          git checkout --detach "$integration_commit"
+          test "$(git rev-parse HEAD^1)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse HEAD^2)" = "$EXPECTED_SOURCE"
+
+          step=materialize-and-focus-validate-strict-product
+          python /tmp/rd02-terminal-materializer.py --repo . --capture /tmp/rd02-capture --include-workflow | tee "$out/materializer-result.json"
+          node tools/build-status-sovereignty-rd-wave02-rd02-license-leverage.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd02-license-leverage.mjs
+          node test/status-sovereignty-rd-wave02-rd02-license-leverage.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git add -A
+          git diff --cached --name-only | sort > "$out/generated-paths.txt"
+          test "$(wc -l < "$out/generated-paths.txt")" = 42
+          test -z "$(git diff --cached --name-status | awk '$1 != "A" {print}')"
+          grep -Fxq '.github/workflows/status-sovereignty-rd-wave02-rd02-license-leverage.yml' "$out/generated-paths.txt"
+          test -z "$(grep -E '(^|/)(temporary-|\.rd02-strict-v1)' "$out/generated-paths.txt" || true)"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Close RD-02 license and leverage chronology under fixed protocol'
+          qualified_commit="$(git rev-parse HEAD)"
+          qualified_tree="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$qualified_commit" > "$out/qualified-commit.txt"
+          printf '%s\n' "$qualified_tree" > "$out/qualified-tree.txt"
+          git diff --name-only "$EXPECTED_MAIN" "$qualified_commit" | sort > "$out/qualified-main-paths.txt"
+          test "$(wc -l < "$out/qualified-main-paths.txt")" = 47
+          test -z "$(git diff --name-status "$EXPECTED_MAIN" "$qualified_commit" | awk '$1 != "A" {print}')"
+          cp .github/workflows/status-sovereignty-rd-wave02-rd02-license-leverage.yml "$out/desired-standing-workflow.yml"
+          sha256sum "$out/desired-standing-workflow.yml" > "$out/desired-standing-workflow.yml.sha256"
+
+          step=complete-qualified-repository-gate
+          npm run release:check
+
+          step=qualified-deterministic-replay
+          git reset --hard "$qualified_commit"
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave02-rd02-license-leverage.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd02-license-leverage.mjs
+          node test/status-sovereignty-rd-wave02-rd02-license-leverage.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          step=build-runner-publishable-product-without-workflow
+          git checkout --detach "$integration_commit"
+          grep -v '^\.github/workflows/status-sovereignty-rd-wave02-rd02-license-leverage.yml$' "$out/generated-paths.txt" > "$out/runner-generated-paths.txt"
+          test "$(wc -l < "$out/runner-generated-paths.txt")" = 41
+          while IFS= read -r path; do git checkout "$qualified_commit" -- "$path"; done < "$out/runner-generated-paths.txt"
+          git add -- $(cat "$out/runner-generated-paths.txt")
+          test "$(git diff --cached --name-only | wc -l)" = 41
+          git commit -m 'Materialize strict RD-02 terminal product without workflow transport'
+          runner_commit="$(git rev-parse HEAD)"
+          runner_tree="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$runner_commit" > "$out/runner-commit.txt"
+          printf '%s\n' "$runner_tree" > "$out/runner-tree.txt"
+          git diff --name-only "$EXPECTED_MAIN" "$runner_commit" | sort > "$out/runner-main-paths.txt"
+          test "$(wc -l < "$out/runner-main-paths.txt")" = 46
+          test -z "$(git diff --name-status "$EXPECTED_MAIN" "$runner_commit" | awk '$1 != "A" {print}')"
+
+          step=runner-product-focused-replay
+          node tools/build-status-sovereignty-rd-wave02-rd02-license-leverage.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd02-license-leverage.mjs
+          node test/status-sovereignty-rd-wave02-rd02-license-leverage.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          step=final-unchanged-leases
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_SOURCE"
+
+          step=publish-runner-product
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_SOURCE"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$runner_commit"
+
+          step=strict-materialization-complete
+          finish
+      - name: Preserve exact strict qualification and publication receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-strict-terminal-materialization-v1
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
