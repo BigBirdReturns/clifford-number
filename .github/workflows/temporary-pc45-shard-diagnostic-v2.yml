@@ -1,0 +1,26 @@
+name: TEMP export PC-45 shard diagnostic v2
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-pc45-shard-diagnostic-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc45-exact-product-materializer
+      - name: Stage non-hidden diagnostic copy
+        run: cp data/research/preference-custody/.pc45-product-package.b64.part-00.fix-0 /tmp/pc45-remote-shard-00a.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc45-remote-shard-00a-v2
+          path: /tmp/pc45-remote-shard-00a.txt
+          if-no-files-found: error
+          retention-days: 7
