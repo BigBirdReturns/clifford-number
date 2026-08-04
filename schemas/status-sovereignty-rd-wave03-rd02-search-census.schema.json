@@ -1,0 +1,303 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-rd-wave03-rd02-search-census.schema.json",
+  "title": "SSC RD-02 Wave 03 fixed portfolio-lifecycle search census protocol",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "wave_id",
+    "lane_id",
+    "class_id",
+    "issue",
+    "as_of",
+    "title",
+    "authority",
+    "source_custody",
+    "denominator",
+    "query_specs",
+    "route_derivation",
+    "execution_contract",
+    "withheld_boundary",
+    "output_contract",
+    "current_result",
+    "authority_boundaries"
+  ],
+  "properties": {
+    "schema_version": {"const": "ssc-rd-wave03-rd02-search-census-protocol@1"},
+    "wave_id": {"const": "SSC-RD-W03"},
+    "lane_id": {"const": "RD-02"},
+    "class_id": {"const": "RD-02-C05"},
+    "issue": {"const": 1015},
+    "as_of": {"const": "2026-08-04"},
+    "title": {"type": "string", "minLength": 1},
+    "authority": {"const": "fixed_search_census_protocol_not_empirical_receipt"},
+    "source_custody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "constitution_merge",
+        "wave03_current_ledger_merge",
+        "protocol_publication_base",
+        "design_head",
+        "seed_path",
+        "seed_git_blob",
+        "matrix_path",
+        "matrix_git_blob",
+        "parent_terminal_matrix_path",
+        "parent_class_receipt_path",
+        "parent_closure_reference_path"
+      ],
+      "properties": {
+        "constitution_merge": {"const": "dc47681a9ad43e1c64c86e3d823dbb7c203a18c2"},
+        "wave03_current_ledger_merge": {"const": "150f1693c70ce3699428c58c2687851a1ced39f7"},
+        "protocol_publication_base": {"const": "830de50e3f14c5ef9787d2740847d1a80899663b"},
+        "design_head": {"const": "431f94963c369f982d262e96ed378806862539aa"},
+        "seed_path": {"const": "data/project/ssc-residual-wave03/seeds/RD-02-C05.json"},
+        "seed_git_blob": {"const": "33571d5278b0defed45d2537b325a67d71ca57e3"},
+        "matrix_path": {"const": "data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/field-matrix-contract.json"},
+        "matrix_git_blob": {"const": "a042514e71920ab8549d8b5ebfe1f78e59b679dc"},
+        "parent_terminal_matrix_path": {"const": "data/research/status-sovereignty-rd-wave02-rd02-license-leverage/terminal-field-matrix.json"},
+        "parent_class_receipt_path": {"const": "data/research/status-sovereignty-rd-wave02-rd02-license-leverage/class-receipt.json"},
+        "parent_closure_reference_path": {"const": "data/project/ssc-residual-wave02/closures/RD-02-C04.json"}
+      }
+    },
+    "denominator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cohort_rows",
+        "publicly_named_rows",
+        "identity_withheld_rows",
+        "required_fields_per_row",
+        "required_cells",
+        "query_classes",
+        "fixed_routes",
+        "withheld_row_routes"
+      ],
+      "properties": {
+        "cohort_rows": {"const": 18},
+        "publicly_named_rows": {"const": 17},
+        "identity_withheld_rows": {"const": 1},
+        "required_fields_per_row": {"const": 10},
+        "required_cells": {"const": 180},
+        "query_classes": {"const": 3},
+        "fixed_routes": {"const": 51},
+        "withheld_row_routes": {"const": 0}
+      }
+    },
+    "query_specs": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["query_class", "order", "terms"],
+          "properties": {
+            "query_class": {"const": "portfolio"},
+            "order": {"const": 1},
+            "terms": {"const": "(portfolio OR investment OR invested OR backing OR backed OR follow-on OR \"follow on\")"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["query_class", "order", "terms"],
+          "properties": {
+            "query_class": {"const": "disposition"},
+            "order": {"const": 2},
+            "terms": {"const": "(exit OR exited OR acquisition OR acquired OR IPO OR write-off OR writeoff OR default OR cure OR loss)"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["query_class", "order", "terms"],
+          "properties": {
+            "query_class": {"const": "recovery"},
+            "order": {"const": 3},
+            "terms": {"const": "(return OR distribution OR repayment OR repaid OR debenture OR leverage OR SBA OR recovery)"}
+          }
+        }
+      ],
+      "items": false
+    },
+    "route_derivation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unit_order",
+        "query_class_order",
+        "route_id_template",
+        "query_template",
+        "search_base_url",
+        "url_encoding",
+        "route_ledger_columns",
+        "route_ledger_bytes",
+        "route_ledger_sha256",
+        "route_ids_unique",
+        "result_spawned_requests"
+      ],
+      "properties": {
+        "unit_order": {"const": "matrix.units ascending unit_ordinal"},
+        "query_class_order": {"const": ["portfolio", "disposition", "recovery"]},
+        "route_id_template": {"const": "RD02-W03-R{unit_ordinal_2_digit}-{QUERY_CLASS_UPPER}"},
+        "query_template": {"const": "\"{legal_vehicle}\" {terms}"},
+        "search_base_url": {"const": "https://www.bing.com/search?format=rss&q="},
+        "url_encoding": {"const": "RFC3986 percent encoding with no additional safe characters"},
+        "route_ledger_columns": {
+          "const": [
+            "route_id",
+            "unit_ordinal",
+            "query_class",
+            "legal_vehicle",
+            "query",
+            "url",
+            "maximum_attempts",
+            "maximum_body_bytes",
+            "candidate_rows_are_admitted_sources",
+            "result_spawned_requests"
+          ]
+        },
+        "route_ledger_bytes": {"const": 22033},
+        "route_ledger_sha256": {"const": "ea33c69fca431afafc7450b96eeaa4f5a994f57be87eb19f7e14f6f41439e41b"},
+        "route_ids_unique": {"const": true},
+        "result_spawned_requests": {"const": 0}
+      }
+    },
+    "execution_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maximum_attempts_per_route",
+        "maximum_body_bytes",
+        "maximum_parallel_workers",
+        "user_agent",
+        "candidate_rows_are_admitted_sources",
+        "candidate_followup_without_separate_protocol",
+        "result_spawned_requests",
+        "search_silence_is_event_absence",
+        "search_result_is_lifecycle_event",
+        "automatic_class_closure"
+      ],
+      "properties": {
+        "maximum_attempts_per_route": {"const": 1},
+        "maximum_body_bytes": {"const": 2097152},
+        "maximum_parallel_workers": {"const": 6},
+        "user_agent": {"const": "clifford-number-evidence-capture/1.0"},
+        "candidate_rows_are_admitted_sources": {"const": false},
+        "candidate_followup_without_separate_protocol": {"const": false},
+        "result_spawned_requests": {"const": 0},
+        "search_silence_is_event_absence": {"const": false},
+        "search_result_is_lifecycle_event": {"const": false},
+        "automatic_class_closure": {"const": false}
+      }
+    },
+    "withheld_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unit_ordinal",
+        "identity_state",
+        "network_routes",
+        "identity_guessing",
+        "manager_substitution",
+        "lifecycle_inference"
+      ],
+      "properties": {
+        "unit_ordinal": {"const": 18},
+        "identity_state": {"const": "identity_withheld_under_policy"},
+        "network_routes": {"const": 0},
+        "identity_guessing": {"const": false},
+        "manager_substitution": {"const": false},
+        "lifecycle_inference": {"const": false}
+      }
+    },
+    "output_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route_receipts",
+        "exact_request_query_and_url_required",
+        "headers_body_and_transport_metadata_required",
+        "candidate_index_required",
+        "route_result_index_required",
+        "execution_receipt_required",
+        "manifest_required",
+        "candidate_admission_requires_separate_followup_receipt"
+      ],
+      "properties": {
+        "route_receipts": {"const": 51},
+        "exact_request_query_and_url_required": {"const": true},
+        "headers_body_and_transport_metadata_required": {"const": true},
+        "candidate_index_required": {"const": true},
+        "route_result_index_required": {"const": true},
+        "execution_receipt_required": {"const": true},
+        "manifest_required": {"const": true},
+        "candidate_admission_requires_separate_followup_receipt": {"const": true}
+      }
+    },
+    "current_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol_frozen",
+        "requests_executed_by_this_object",
+        "candidate_urls_admitted",
+        "field_matrix_terminal",
+        "class_state",
+        "class_closed",
+        "outside_human_dependency",
+        "project_blocking"
+      ],
+      "properties": {
+        "protocol_frozen": {"const": true},
+        "requests_executed_by_this_object": {"const": false},
+        "candidate_urls_admitted": {"const": 0},
+        "field_matrix_terminal": {"const": false},
+        "class_state": {"const": "still_open"},
+        "class_closed": {"const": false},
+        "outside_human_dependency": {"const": false},
+        "project_blocking": {"const": false}
+      }
+    },
+    "authority_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "external_contacts",
+        "external_reviews",
+        "reviewed_disposition_changed",
+        "capital_conversion_finding",
+        "favoritism_finding",
+        "extraction_finding",
+        "coordination_finding",
+        "common_purpose_finding",
+        "complete_compact_finding",
+        "racial_order_finding",
+        "prevalence_finding",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect"
+      ],
+      "properties": {
+        "external_contacts": {"const": 0},
+        "external_reviews": {"const": 0},
+        "reviewed_disposition_changed": {"const": false},
+        "capital_conversion_finding": {"const": false},
+        "favoritism_finding": {"const": false},
+        "extraction_finding": {"const": false},
+        "coordination_finding": {"const": false},
+        "common_purpose_finding": {"const": false},
+        "complete_compact_finding": {"const": false},
+        "racial_order_finding": {"const": false},
+        "prevalence_finding": {"const": false},
+        "publication_effect": {"const": "none"},
+        "adoption_effect": {"const": "none"},
+        "graph_effect": {"const": "none"}
+      }
+    }
+  }
+}

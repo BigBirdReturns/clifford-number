@@ -1,0 +1,82 @@
+{
+  "schema_version": "ssc-rd-wave03-rd02-portfolio-lifecycle-field-matrix-contract@1",
+  "wave_id": "SSC-RD-W03",
+  "lane_id": "RD-02",
+  "class_id": "RD-02-C05",
+  "issue": 1015,
+  "constitution_head": "dc47681a9ad43e1c64c86e3d823dbb7c203a18c2",
+  "frozen_execution_base": "a69bffa4c7c6934432b2b93816f5b2b6a466a85b",
+  "seed_path": "data/project/ssc-residual-wave03/seeds/RD-02-C05.json",
+  "status": "unit_and_field_contract_frozen_acquisition_not_executed",
+  "units": [
+    {"unit_ordinal": 1, "unit_id": "SBICCT-FIRST-COHORT-01", "legal_vehicle": "Moonshots Capital Fund 3 SBIC, LP", "identity_state": "publicly_named"},
+    {"unit_ordinal": 2, "unit_id": "SBICCT-FIRST-COHORT-02", "legal_vehicle": "Acequia Capital Origin SBIC, LP", "identity_state": "publicly_named"},
+    {"unit_ordinal": 3, "unit_id": "SBICCT-FIRST-COHORT-03", "legal_vehicle": "First Spark Seed II, LP", "identity_state": "publicly_named"},
+    {"unit_ordinal": 4, "unit_id": "SBICCT-FIRST-COHORT-04", "legal_vehicle": "New North Ventures Fund II SBIC, LP", "identity_state": "publicly_named"},
+    {"unit_ordinal": 5, "unit_id": "SBICCT-FIRST-COHORT-05", "legal_vehicle": "BY Capital 3 (US), LP", "identity_state": "publicly_named"},
+    {"unit_ordinal": 6, "unit_id": "SBICCT-FIRST-COHORT-06", "legal_vehicle": "AE Ventures Fund III, LP", "identity_state": "publicly_named"},
+    {"unit_ordinal": 7, "unit_id": "SBICCT-FIRST-COHORT-07", "legal_vehicle": "Michigan Capital Network Venture Fund V, LP", "identity_state": "publicly_named"},
+    {"unit_ordinal": 8, "unit_id": "SBICCT-FIRST-COHORT-08", "legal_vehicle": "Dauntless Ventures SBIC-A, LP", "identity_state": "publicly_named"},
+    {"unit_ordinal": 9, "unit_id": "SBICCT-FIRST-COHORT-09", "legal_vehicle": "Dauntless Ventures SBIC-B, LP", "identity_state": "publicly_named"},
+    {"unit_ordinal": 10, "unit_id": "SBICCT-FIRST-COHORT-10", "legal_vehicle": "Snowpoint Ventures II - S&T, LP", "identity_state": "publicly_named"},
+    {"unit_ordinal": 11, "unit_id": "SBICCT-FIRST-COHORT-11", "legal_vehicle": "Ridgeline Ventures Fund II-S, LP", "identity_state": "publicly_named"},
+    {"unit_ordinal": 12, "unit_id": "SBICCT-FIRST-COHORT-12", "legal_vehicle": "Frontier Fund I Alpha, LP", "identity_state": "publicly_named"},
+    {"unit_ordinal": 13, "unit_id": "SBICCT-FIRST-COHORT-13", "legal_vehicle": "BIP III SBIC, LP", "identity_state": "publicly_named"},
+    {"unit_ordinal": 14, "unit_id": "SBICCT-FIRST-COHORT-14", "legal_vehicle": "One Bow River National Defense Fund, LP", "identity_state": "publicly_named"},
+    {"unit_ordinal": 15, "unit_id": "SBICCT-FIRST-COHORT-15", "legal_vehicle": "Stifel North Atlantic AM-Forward, LP", "identity_state": "publicly_named"},
+    {"unit_ordinal": 16, "unit_id": "SBICCT-FIRST-COHORT-16", "legal_vehicle": "Rochefort Ventures, LP", "identity_state": "publicly_named"},
+    {"unit_ordinal": 17, "unit_id": "SBICCT-FIRST-COHORT-17", "legal_vehicle": "BBK Ventures Fund I, LP", "identity_state": "publicly_named"},
+    {"unit_ordinal": 18, "unit_id": "SBICCT-FIRST-COHORT-18", "legal_vehicle": null, "withheld_state_label": "withheld under SBA policy", "identity_state": "identity_withheld_under_policy"}
+  ],
+  "required_fields": [
+    "canonical_cohort_row_and_legal_vehicle_or_withheld_state_label",
+    "publicly_identified_portfolio_investments",
+    "publicly_identified_follow_on_investments",
+    "publicly_identified_exits",
+    "publicly_identified_write_offs_or_realized_losses",
+    "publicly_identified_defaults_or_cures",
+    "publicly_identified_realized_fund_returns",
+    "sba_guaranteed_leverage_repayment_or_loss_allocation",
+    "source_identities_and_exact_custody",
+    "field_and_row_terminal_state"
+  ],
+  "source_anchors": {
+    "first_pass_path": "data/intake/status-sovereignty-sbicct-denominator-first-pass.json",
+    "parent_terminal_matrix_path": "data/research/status-sovereignty-rd-wave02-rd02-license-leverage/terminal-field-matrix.json",
+    "parent_class_receipt_path": "data/research/status-sovereignty-rd-wave02-rd02-license-leverage/class-receipt.json",
+    "row_membership_reused_without_reopening_parent_class": true
+  },
+  "expansion_contract": {
+    "matrix_shape": "cartesian_product_of_frozen_units_and_required_fields",
+    "unit_count": 18,
+    "publicly_named_units": 17,
+    "identity_withheld_units": 1,
+    "required_fields_per_unit": 10,
+    "required_cells": 180,
+    "initial_cell_state": "unclassified",
+    "all_cells_must_be_materialized": true,
+    "silent_unit_or_field_removal_allowed": false,
+    "withheld_identity_guessing_or_replacement_allowed": false,
+    "padding_rows_allowed": false,
+    "source_count_is_unit_denominator": false,
+    "outcome_based_unit_selection_allowed": false
+  },
+  "current_counts": {
+    "materialized_cells": 0,
+    "terminal_cells": 0,
+    "terminal_units": 0,
+    "class_closed": false
+  },
+  "boundaries": {
+    "program_projection_is_fund_investment": false,
+    "fund_investment_is_follow_on_or_exit": false,
+    "exit_is_positive_realized_return": false,
+    "missing_public_write_off_is_no_loss": false,
+    "private_return_is_sba_repayment_or_public_recovery": false,
+    "withheld_identity_is_nonparticipation": false,
+    "outside_human_dependency": false,
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none"
+  }
+}
