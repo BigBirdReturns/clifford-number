@@ -1,0 +1,32 @@
+name: TEMP export current main for PC-48 construction
+
+on:
+  push:
+    branches:
+      - agent/pc48-source-export
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 44d4544b23dc24db24a4a7c61939396ada0b5fd5
+          fetch-depth: 0
+      - name: Create exact source archive
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | grep -Fx 44d4544b23dc24db24a4a7c61939396ada0b5fd5
+          tar --exclude=.git --exclude=node_modules --exclude=build -czf /tmp/clifford-number-44d4544.tar.gz .
+          sha256sum /tmp/clifford-number-44d4544.tar.gz | tee /tmp/clifford-number-44d4544.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clifford-number-source-44d4544
+          path: |
+            /tmp/clifford-number-44d4544.tar.gz
+            /tmp/clifford-number-44d4544.sha256
+          if-no-files-found: error
