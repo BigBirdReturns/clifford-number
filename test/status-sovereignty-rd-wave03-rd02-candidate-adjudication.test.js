@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import {
   ROOT,
   RECEIPT_PATH,
@@ -25,6 +26,37 @@ assert.equal(validateExecutionReceipt(receipt), true);
 assert.equal(validateCandidateAdjudication(adjudication), true);
 assert.equal(validateFollowupProtocol(followup, adjudication), true);
 assert.equal(validateSchemaContract(schema), true);
+
+const followupRunnerPath = path.join(
+  ROOT,
+  'tools/acquisition/status-sovereignty-rd-wave03-rd02/run-candidate-followups.py'
+);
+const followupRunnerSource = fs.readFileSync(followupRunnerPath, 'utf8');
+assert.match(
+  followupRunnerSource,
+  /^ROOT = Path\(__file__\)\.resolve\(\)\.parents\[3\]$/m,
+  'followup runner resolves repository root from its exact nested path'
+);
+assert.doesNotMatch(
+  followupRunnerSource,
+  /^ROOT = Path\(__file__\)\.resolve\(\)\.parents\[4\]$/m,
+  'followup runner must not resolve one directory above the repository'
+);
+const rootProbeScript = `import runpy\nprint(runpy.run_path(${JSON.stringify(followupRunnerPath)}, run_name='rd02_followup_root_probe')['ROOT'])`;
+const rootProbe = spawnSync('python3', ['-c', rootProbeScript], { encoding: 'utf8' });
+assert.equal(rootProbe.status, 0, rootProbe.stderr || rootProbe.stdout);
+assert.equal(
+  path.resolve(rootProbe.stdout.trim()),
+  path.resolve(ROOT),
+  'followup runner runtime ROOT must equal the repository root'
+);
+for (const rel of [
+  'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/candidate-adjudication/index.json',
+  'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/candidate-followup-protocol.json',
+  'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/field-matrix-contract.json'
+]) {
+  assert.ok(fs.existsSync(path.join(ROOT, rel)), `followup runner bound input must exist: ${rel}`);
+}
 
 const adjudicationMutations = [
   ['schema version', (v) => { v.schema_version += '-drift'; }],
