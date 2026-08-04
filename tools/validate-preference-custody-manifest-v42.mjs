@@ -21,7 +21,13 @@ const baseSources = {
         manifest: JSON.parse(readFileSync('data/research/preference-custody/control-manifest-v38.json', 'utf8')),
         baseBuild: JSON.parse(readFileSync('build/research/preference-custody-laboratory-floor-v37.json', 'utf8')),
         confidenceBuild: JSON.parse(readFileSync('build/research/preference-linkage-confidence-adjudication-assurance.json', 'utf8')),
-        confidenceFixture: JSON.parse(readFileSync('data/research/preference-custody/linkage-confidence-adjudication-assurance.fixture.json', 'utf8'))
+        confidenceFixture: JSON.parse(readFileSync('data/research/preference-custody/linkage-confidence-adjudication-assurance.fixture.json', 'utf8')),
+        v37SourceCutoff: {
+          manifest: JSON.parse(readFileSync('data/research/preference-custody/control-manifest-v37.json', 'utf8')),
+          baseBuild: JSON.parse(readFileSync('build/research/preference-custody-laboratory-floor-v36.json', 'utf8')),
+          linkageBuild: JSON.parse(readFileSync('build/research/preference-record-linkage-temporal-succession-assurance.json', 'utf8')),
+          linkageFixture: JSON.parse(readFileSync('data/research/preference-custody/record-linkage-temporal-succession-assurance.fixture.json', 'utf8'))
+        }
       }
     }
   }
