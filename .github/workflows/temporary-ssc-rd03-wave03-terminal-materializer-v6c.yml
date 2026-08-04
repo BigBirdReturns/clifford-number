@@ -1,0 +1,184 @@
+name: TEMP materialize SSC RD-03 Wave-03 terminal closure v6c
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-wave03-terminal-materializer-v6c.yml'
+      - '.ssc-rd03-terminal-materializer-v6/**'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-rd03-wave03-terminal-v6c-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-terminal-materializer-trigger-v6c'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd03-lifecycle-recovery-terminal-v1
+      TARGET_HEAD: abfae4c5f950a1f2cdd8c954fb6c43128a277c02
+      TARGET_BASE: 1df403a0b7273953b1e352893bf3153d0e7a41ed
+      CARRIER_BRANCH: agent/ssc-rd03-terminal-materializer-base-v6
+      PRODUCT_B64_SHA256: e876f0a14769e866e55fe7c41327252575b2389a5d481c85162857f0ce6dec11
+      PRODUCT_XZ_SHA256: c27d56a3665279746167569bf535d2c51efc399fa1e29f9cd9aa0d2df3038d85
+      PATH_LIST_SHA256: 8434aa393bec47e000d1d17c1c23891883a1150eaf83dbb577a9f1f9f835240a
+      FULL_PATH_COUNT: '12'
+      SPLIT_PATH_COUNT: '11'
+      SHARD_COUNT: '8'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave03-rd03-lifecycle-recovery-terminal-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct, qualify, replay, and publish exact ordinary product
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/ssc-rd03-wave03-terminal-v6c-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          product="$RUNNER_TEMP/ssc-rd03-wave03-terminal-product-v6c"
+          encoded="$RUNNER_TEMP/rd03-terminal-product-v6c.b64"
+          archive="$RUNNER_TEMP/rd03-terminal-product-v6c.tar.xz"
+          rm -rf "$out" "$product" "$encoded" "$archive"
+          mkdir -p "$out" "$product"
+          echo "RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          exec > >(tee "$out/trace.log") 2>&1
+
+          step=initialize
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$out/exit-code.txt"
+            printf '%s\n' "$step" > "$out/final-step.txt"
+            git rev-parse HEAD > "$out/head.txt" 2>&1 || true
+            git rev-parse 'HEAD^{tree}' > "$out/tree.txt" 2>&1 || true
+            git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1 || true
+            git ls-remote --heads origin refs/heads/main > "$out/remote-main.txt" 2>&1 || true
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          install_paths() {
+            local list="$1"
+            while IFS= read -r rel; do
+              mkdir -p "$(dirname "$rel")"
+              cp "$product/$rel" "$rel"
+            done < "$list"
+          }
+
+          qualify_tree() {
+            local expected_tree="$1"
+            node --check tools/build-status-sovereignty-rd-wave03-rd03-lifecycle-recovery.mjs
+            node --check tools/validate-status-sovereignty-rd-wave03-rd03-lifecycle-recovery.mjs
+            node --check test/status-sovereignty-rd-wave03-rd03-lifecycle-recovery.test.js
+            node tools/build-status-sovereignty-rd-wave03-rd03-lifecycle-recovery.mjs --check
+            node tools/validate-status-sovereignty-rd-wave03-rd03-lifecycle-recovery.mjs
+            node test/status-sovereignty-rd-wave03-rd03-lifecycle-recovery.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            git diff --check
+            git diff --exit-code
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+            npm run release:check
+            git restore --worktree -- .
+            git clean -fdx
+            node tools/build-status-sovereignty-rd-wave03-rd03-lifecycle-recovery.mjs --write
+            node tools/validate-status-sovereignty-rd-wave03-rd03-lifecycle-recovery.mjs
+            node test/status-sovereignty-rd-wave03-rd03-lifecycle-recovery.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            git diff --check
+            git diff --exit-code
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+            test "$(git rev-parse 'HEAD^{tree}')" = "$expected_tree"
+          }
+
+          step=verify-exact-leases
+          test "$(git rev-parse HEAD)" = "$TARGET_HEAD"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$TARGET_HEAD"
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$TARGET_BASE"
+          test -f .rd03-terminal-reservation/RESERVE
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git fetch origin "+refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
+
+          step=reconstruct-checksum-bound-package
+          git ls-tree -r --name-only "origin/$CARRIER_BRANCH" -- '.ssc-rd03-terminal-materializer-v6' \
+            | grep '/payload\.b64\.part-' | sort > "$out/shards.txt"
+          test "$(wc -l < "$out/shards.txt" | tr -d ' ')" = "$SHARD_COUNT"
+          : > "$encoded"
+          while IFS= read -r shard; do
+            git show "origin/$CARRIER_BRANCH:$shard" | tr -d '\r\n\t ' >> "$encoded"
+          done < "$out/shards.txt"
+          test "$(sha256sum "$encoded" | awk '{print $1}')" = "$PRODUCT_B64_SHA256"
+          base64 -d "$encoded" > "$archive"
+          test "$(sha256sum "$archive" | awk '{print $1}')" = "$PRODUCT_XZ_SHA256"
+          tar -tJf "$archive" | sort > "$out/package-paths.txt"
+          test "$(wc -l < "$out/package-paths.txt" | tr -d ' ')" = "$FULL_PATH_COUNT"
+          test "$(sha256sum "$out/package-paths.txt" | awk '{print $1}')" = "$PATH_LIST_SHA256"
+          tar -xJf "$archive" -C "$product"
+          find "$product" -type f -printf '%P\n' | sort > "$out/extracted-paths.txt"
+          cmp "$out/package-paths.txt" "$out/extracted-paths.txt"
+          grep -v '^\.github/workflows/' "$out/package-paths.txt" > "$out/nonworkflow-paths.txt"
+          test "$(wc -l < "$out/nonworkflow-paths.txt" | tr -d ' ')" = "$SPLIT_PATH_COUNT"
+
+          step=qualify-full-twelve-path-product
+          git checkout -B temporary-rd03-wave03-terminal-full-v6c "$TARGET_BASE"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          install_paths "$out/package-paths.txt"
+          git ls-files --others --exclude-standard | sort > "$out/full-untracked-paths.txt"
+          cmp "$out/package-paths.txt" "$out/full-untracked-paths.txt"
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --pathspec-from-file="$out/package-paths.txt"
+          git commit -m 'Qualify RD-03 Wave-03 terminal closure package'
+          full_commit="$(git rev-parse HEAD)"
+          full_tree="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$full_commit" > "$out/qualified-full-commit.txt"
+          printf '%s\n' "$full_tree" > "$out/qualified-full-tree.txt"
+          cp .github/workflows/status-sovereignty-rd-wave03-rd03-lifecycle-recovery.yml "$out/qualified-standing-workflow.yml"
+          qualify_tree "$full_tree"
+
+          step=build-eleven-path-ordinary-product
+          git checkout -B "$TARGET_BRANCH" "$TARGET_BASE"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          install_paths "$out/nonworkflow-paths.txt"
+          git ls-files --others --exclude-standard | sort > "$out/split-untracked-paths.txt"
+          cmp "$out/nonworkflow-paths.txt" "$out/split-untracked-paths.txt"
+          git diff --check
+          git add --pathspec-from-file="$out/nonworkflow-paths.txt"
+          git commit -m 'Close RD-03 Wave-03 lifecycle-recovery chronology'
+          split_commit="$(git rev-parse HEAD)"
+          split_tree="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$split_commit" > "$out/published-nonworkflow-commit.txt"
+          printf '%s\n' "$split_tree" > "$out/published-nonworkflow-tree.txt"
+          git diff --name-status "$TARGET_BASE" HEAD | sort > "$out/main-relative-name-status.txt"
+          test "$(wc -l < "$out/main-relative-name-status.txt" | tr -d ' ')" = "$SPLIT_PATH_COUNT"
+          test "$(awk '$1 != "A" { count += 1 } END { print count + 0 }' "$out/main-relative-name-status.txt")" = '0'
+          cut -f2 "$out/main-relative-name-status.txt" | sort > "$out/main-relative-paths.txt"
+          cmp "$out/nonworkflow-paths.txt" "$out/main-relative-paths.txt"
+          test -z "$(git ls-tree -r --name-only HEAD | grep -E '(^|/)(\.ssc-rd03-terminal-materializer-v6|\.rd03-terminal-reservation)(/|$)' || true)"
+          qualify_tree "$split_tree"
+
+          step=publish-under-exact-main-and-target-leases
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$TARGET_BASE"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$TARGET_HEAD"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_HEAD" origin "HEAD:refs/heads/$TARGET_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$split_commit"
+          step=materialization-complete
+
+      - name: Preserve exact terminal materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-wave03-terminal-materialization-v6c
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
