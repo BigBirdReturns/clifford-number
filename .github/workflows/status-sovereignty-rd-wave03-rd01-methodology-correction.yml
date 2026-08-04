@@ -1,0 +1,67 @@
+name: SSC RD-01 Wave 03 methodology-correction terminal closure
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd01-methodology-correction.yml'
+      - 'data/project/ssc-residual-wave03/seeds/RD-01-C06.json'
+      - 'data/project/ssc-residual-wave03/closures/RD-01-C06.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd01-methodology-correction/**'
+      - 'data/research/status-sovereignty-rd-wave03-rd01-methodology-correction/**'
+      - 'schemas/status-sovereignty-rd-wave03-rd01-methodology-correction.schema.json'
+      - 'tools/build-status-sovereignty-rd-wave03-rd01-methodology-correction.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd01-methodology-correction.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd01-methodology-correction.test.js'
+      - 'docs/milestones/ssc-rd-wave03-rd01-methodology-correction.md'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd01-methodology-correction.yml'
+      - 'data/project/ssc-residual-wave03/closures/RD-01-C06.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd01-methodology-correction/capture-execution-receipt.json'
+      - 'data/research/status-sovereignty-rd-wave03-rd01-methodology-correction/**'
+      - 'schemas/status-sovereignty-rd-wave03-rd01-methodology-correction.schema.json'
+      - 'tools/build-status-sovereignty-rd-wave03-rd01-methodology-correction.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd01-methodology-correction.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd01-methodology-correction.test.js'
+      - 'docs/milestones/ssc-rd-wave03-rd01-methodology-correction.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd-wave03-rd01-methodology-correction-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate exact terminal product
+        run: |
+          set -Eeuo pipefail
+          node tools/build-status-sovereignty-rd-wave03-rd01-methodology-correction.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd01-methodology-correction.mjs
+          node test/status-sovereignty-rd-wave03-rd01-methodology-correction.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Preserve deterministic terminal receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd01-wave03-methodology-correction-terminal
+          path: |
+            data/intake/status-sovereignty-rd-wave03-rd01-methodology-correction/capture-execution-receipt.json
+            data/research/status-sovereignty-rd-wave03-rd01-methodology-correction
+            data/project/ssc-residual-wave03/closures/RD-01-C06.json
+          if-no-files-found: error
+          retention-days: 90

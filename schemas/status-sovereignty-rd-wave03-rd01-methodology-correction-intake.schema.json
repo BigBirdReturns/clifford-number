@@ -1,0 +1,638 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-rd-wave03-rd01-methodology-correction-intake.schema.json",
+  "title": "SSC RD-01 Wave-03 methodology-correction fixed-protocol intake",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "wave_id",
+    "lane_id",
+    "class_id",
+    "issue",
+    "as_of",
+    "class_label",
+    "status",
+    "authority",
+    "source_custody",
+    "denominator",
+    "required_fields",
+    "editions",
+    "routes",
+    "transport_contract",
+    "admission_rules",
+    "terminal_rules",
+    "counts",
+    "current_result",
+    "boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "ssc-rd-wave03-rd01-methodology-correction-fixed-protocol@1"
+    },
+    "wave_id": {
+      "const": "SSC-RD-W03"
+    },
+    "lane_id": {
+      "const": "RD-01"
+    },
+    "class_id": {
+      "const": "RD-01-C06"
+    },
+    "issue": {
+      "const": 1014
+    },
+    "as_of": {
+      "const": "2026-08-04"
+    },
+    "class_label": {
+      "const": "methodology correction, appeal, and re-evaluation records"
+    },
+    "status": {
+      "const": "three_edition_twenty_four_cell_denominator_frozen_protocol_not_executed"
+    },
+    "authority": {
+      "const": "fixed_protocol_design_only_not_acquisition_or_class_receipt"
+    },
+    "source_custody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "constitution_path",
+        "constitution_merge",
+        "constitution_blob_sha",
+        "frozen_execution_base",
+        "seed_path",
+        "seed_binding_commit",
+        "seed_blob_sha",
+        "field_matrix_contract_path",
+        "field_matrix_contract_binding_commit",
+        "field_matrix_contract_blob_sha",
+        "parent_path",
+        "parent_blob_sha",
+        "prior_class_receipt_path",
+        "prior_closure_reference_path",
+        "prior_receipt_reopened_or_double_counted"
+      ],
+      "properties": {
+        "constitution_path": {
+          "const": "data/research/status-sovereignty-residual-denominator-wave-03-constitution.json"
+        },
+        "constitution_merge": {
+          "const": "dc47681a9ad43e1c64c86e3d823dbb7c203a18c2"
+        },
+        "constitution_blob_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "frozen_execution_base": {
+          "const": "a69bffa4c7c6934432b2b93816f5b2b6a466a85b"
+        },
+        "seed_path": {
+          "const": "data/project/ssc-residual-wave03/seeds/RD-01-C06.json"
+        },
+        "seed_binding_commit": {
+          "const": "956f2454813fed7a9666597b5953cc57b54e4666"
+        },
+        "seed_blob_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "parent_path": {
+          "const": "data/intake/status-sovereignty-rd01-natsec100-outcome-controls.json"
+        },
+        "parent_blob_sha": {
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "prior_class_receipt_path": {
+          "const": "data/research/status-sovereignty-rd-wave02-rd01-legal-entity/class-receipt.json"
+        },
+        "prior_closure_reference_path": {
+          "const": "data/project/ssc-residual-wave02/closures/RD-01-C03.json"
+        },
+        "prior_receipt_reopened_or_double_counted": {
+          "const": false
+        },
+        "field_matrix_contract_path": {
+          "const": "data/intake/status-sovereignty-rd-wave03-rd01-methodology-correction/field-matrix-contract.json"
+        },
+        "field_matrix_contract_binding_commit": {
+          "const": "43d735f93ff0171501c27890d297940e32a5e14f"
+        },
+        "field_matrix_contract_blob_sha": {
+          "const": "097e17799cb733f71fe49efe45c66e66ef689216"
+        }
+      }
+    },
+    "denominator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unit_type",
+        "edition_count",
+        "ordered_editions",
+        "required_fields_per_edition",
+        "required_field_slots",
+        "immutable_before_source_execution",
+        "source_count_is_unit_denominator",
+        "later_edition_may_rewrite_earlier_edition"
+      ],
+      "properties": {
+        "unit_type": {
+          "const": "NatSec100 edition"
+        },
+        "edition_count": {
+          "const": 3
+        },
+        "ordered_editions": {
+          "const": [
+            2024,
+            2025,
+            2026
+          ]
+        },
+        "required_fields_per_edition": {
+          "const": 8
+        },
+        "required_field_slots": {
+          "const": 24
+        },
+        "immutable_before_source_execution": {
+          "const": true
+        },
+        "source_count_is_unit_denominator": {
+          "const": false
+        },
+        "later_edition_may_rewrite_earlier_edition": {
+          "const": false
+        }
+      }
+    },
+    "required_fields": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "field_id",
+          "question",
+          "permitted_terminal_states"
+        ],
+        "properties": {
+          "field_id": {
+            "enum": [
+              "edition_identity_and_publication_cutoff",
+              "methodology_identity_and_published_input_description",
+              "published_correction_or_errata_record",
+              "published_appeal_or_challenge_route",
+              "published_re_evaluation_reranking_or_reconsideration_record",
+              "version_exception_and_override_custody_where_public",
+              "source_identities_and_exact_locators",
+              "field_and_row_terminal_state"
+            ]
+          },
+          "question": {
+            "type": "string",
+            "minLength": 1
+          },
+          "permitted_terminal_states": {
+            "const": [
+              "observed",
+              "not_applicable_by_edition_state",
+              "source_restricted",
+              "source_unavailable_after_fixed_protocol",
+              "not_publicly_recovered"
+            ]
+          }
+        }
+      }
+    },
+    "editions": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "edition",
+          "source_id",
+          "exact_url",
+          "parent_baseline",
+          "required_field_ids",
+          "protocol_state",
+          "terminal_fields",
+          "required_fields",
+          "row_closed"
+        ],
+        "properties": {
+          "edition": {
+            "enum": [
+              2024,
+              2025,
+              2026
+            ]
+          },
+          "source_id": {
+            "enum": [
+              "SSC-RD01-S001",
+              "SSC-RD01-S002",
+              "SSC-RD01-S003"
+            ]
+          },
+          "exact_url": {
+            "type": "string",
+            "pattern": "^https://www\\.natsec100\\.org/natsec100-20(24|25|26)$"
+          },
+          "parent_baseline": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "direct_contracting_input",
+              "government_contract_eligibility_floor",
+              "direct_operational_impact_measure",
+              "longitudinally_comparable_to_2026_without_adjustment"
+            ],
+            "properties": {
+              "direct_contracting_input": {
+                "type": "boolean"
+              },
+              "government_contract_eligibility_floor": {
+                "type": "boolean"
+              },
+              "direct_operational_impact_measure": {
+                "type": "boolean"
+              },
+              "longitudinally_comparable_to_2026_without_adjustment": {
+                "type": "boolean"
+              }
+            }
+          },
+          "required_field_ids": {
+            "const": [
+              "edition_identity_and_publication_cutoff",
+              "methodology_identity_and_published_input_description",
+              "published_correction_or_errata_record",
+              "published_appeal_or_challenge_route",
+              "published_re_evaluation_reranking_or_reconsideration_record",
+              "version_exception_and_override_custody_where_public",
+              "source_identities_and_exact_locators",
+              "field_and_row_terminal_state"
+            ]
+          },
+          "protocol_state": {
+            "const": "not_executed"
+          },
+          "terminal_fields": {
+            "const": 0
+          },
+          "required_fields": {
+            "const": 8
+          },
+          "row_closed": {
+            "const": false
+          }
+        }
+      }
+    },
+    "routes": {
+      "type": "array",
+      "minItems": 30,
+      "maxItems": 30,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "edition",
+              "route_type",
+              "request_url",
+              "admission_state",
+              "automatic_result_followups"
+            ],
+            "properties": {
+              "route_id": {
+                "pattern": "^RD01-W03-E20(24|25|26)-DIRECT$"
+              },
+              "edition": {
+                "enum": [
+                  2024,
+                  2025,
+                  2026
+                ]
+              },
+              "route_type": {
+                "const": "exact_first_party_get"
+              },
+              "request_url": {
+                "type": "string",
+                "pattern": "^https://www\\.natsec100\\.org/natsec100-20(24|25|26)$"
+              },
+              "admission_state": {
+                "const": "predeclared_first_party_source"
+              },
+              "automatic_result_followups": {
+                "const": 0
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "route_id",
+              "edition",
+              "route_type",
+              "request_url",
+              "search_term",
+              "admission_state",
+              "automatic_result_followups"
+            ],
+            "properties": {
+              "route_id": {
+                "pattern": "^RD01-W03-E20(24|25|26)-Q(0[1-9])$"
+              },
+              "edition": {
+                "enum": [
+                  2024,
+                  2025,
+                  2026
+                ]
+              },
+              "route_type": {
+                "const": "fixed_candidate_query_bing_rss"
+              },
+              "request_url": {
+                "type": "string",
+                "pattern": "^https://www\\.bing\\.com/search\\?format=rss&q="
+              },
+              "search_term": {
+                "enum": [
+                  "correction",
+                  "errata",
+                  "appeal",
+                  "challenge",
+                  "re-evaluation",
+                  "reranking",
+                  "reconsideration",
+                  "override",
+                  "exception"
+                ]
+              },
+              "admission_state": {
+                "const": "candidate_census_only_not_admitted_source"
+              },
+              "automatic_result_followups": {
+                "const": 0
+              }
+            }
+          }
+        ]
+      }
+    },
+    "transport_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_method",
+        "maximum_attempts_per_route",
+        "timeout_ms",
+        "maximum_body_bytes",
+        "concurrency",
+        "connection_header",
+        "result_spawned_requests",
+        "external_contacts",
+        "external_reviews",
+        "automatic_second_pass_authorized"
+      ],
+      "properties": {
+        "request_method": {
+          "const": "GET"
+        },
+        "maximum_attempts_per_route": {
+          "const": 1
+        },
+        "timeout_ms": {
+          "const": 45000
+        },
+        "maximum_body_bytes": {
+          "const": 5242880
+        },
+        "concurrency": {
+          "const": 2
+        },
+        "connection_header": {
+          "const": "close"
+        },
+        "result_spawned_requests": {
+          "const": 0
+        },
+        "external_contacts": {
+          "const": 0
+        },
+        "external_reviews": {
+          "const": 0
+        },
+        "automatic_second_pass_authorized": {
+          "const": false
+        }
+      }
+    },
+    "admission_rules": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "terminal_rules": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "edition_rows",
+        "required_fields_per_edition",
+        "required_field_slots",
+        "exact_first_party_routes",
+        "fixed_candidate_query_routes",
+        "fixed_routes",
+        "acquisition_attempts",
+        "terminal_fields",
+        "closed_edition_rows",
+        "admitted_candidate_sources",
+        "result_spawned_requests",
+        "external_contacts",
+        "external_reviews"
+      ],
+      "properties": {
+        "edition_rows": {
+          "const": 3
+        },
+        "required_fields_per_edition": {
+          "const": 8
+        },
+        "required_field_slots": {
+          "const": 24
+        },
+        "exact_first_party_routes": {
+          "const": 3
+        },
+        "fixed_candidate_query_routes": {
+          "const": 27
+        },
+        "fixed_routes": {
+          "const": 30
+        },
+        "acquisition_attempts": {
+          "const": 0
+        },
+        "terminal_fields": {
+          "const": 0
+        },
+        "closed_edition_rows": {
+          "const": 0
+        },
+        "admitted_candidate_sources": {
+          "const": 0
+        },
+        "result_spawned_requests": {
+          "const": 0
+        },
+        "external_contacts": {
+          "const": 0
+        },
+        "external_reviews": {
+          "const": 0
+        }
+      }
+    },
+    "current_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "terminal_state",
+        "denominator_frozen",
+        "fixed_protocol_designed",
+        "fixed_protocol_executed",
+        "class_closed",
+        "selector_accuracy_finding",
+        "technical_superiority_finding",
+        "reviewed_disposition_changed",
+        "outside_human_dependency",
+        "project_blocking",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect"
+      ],
+      "properties": {
+        "terminal_state": {
+          "const": "fixed_protocol_designed_not_executed"
+        },
+        "denominator_frozen": {
+          "const": true
+        },
+        "fixed_protocol_designed": {
+          "const": true
+        },
+        "fixed_protocol_executed": {
+          "const": false
+        },
+        "class_closed": {
+          "const": false
+        },
+        "selector_accuracy_finding": {
+          "const": false
+        },
+        "technical_superiority_finding": {
+          "const": false
+        },
+        "reviewed_disposition_changed": {
+          "const": false
+        },
+        "outside_human_dependency": {
+          "const": false
+        },
+        "project_blocking": {
+          "const": false
+        },
+        "publication_effect": {
+          "const": "none"
+        },
+        "adoption_effect": {
+          "const": "none"
+        },
+        "graph_effect": {
+          "const": "none"
+        }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "methodology_change_is_correction",
+        "new_edition_is_prior_edition_reevaluation",
+        "no_public_appeal_route_is_no_appeal_or_challenge",
+        "no_public_override_record_is_no_override",
+        "rank_turnover_is_methodology_defect",
+        "published_ranking_is_technical_superiority_or_causal_treatment",
+        "candidate_query_result_is_admitted_source",
+        "intake_protocol_is_class_closure",
+        "one_class_closure_closes_lane",
+        "graph_effect",
+        "publication_effect",
+        "adoption_effect"
+      ],
+      "properties": {
+        "methodology_change_is_correction": {
+          "const": false
+        },
+        "new_edition_is_prior_edition_reevaluation": {
+          "const": false
+        },
+        "no_public_appeal_route_is_no_appeal_or_challenge": {
+          "const": false
+        },
+        "no_public_override_record_is_no_override": {
+          "const": false
+        },
+        "rank_turnover_is_methodology_defect": {
+          "const": false
+        },
+        "published_ranking_is_technical_superiority_or_causal_treatment": {
+          "const": false
+        },
+        "candidate_query_result_is_admitted_source": {
+          "const": false
+        },
+        "intake_protocol_is_class_closure": {
+          "const": false
+        },
+        "one_class_closure_closes_lane": {
+          "const": false
+        },
+        "graph_effect": {
+          "const": "none"
+        },
+        "publication_effect": {
+          "const": "none"
+        },
+        "adoption_effect": {
+          "const": "none"
+        }
+      }
+    }
+  }
+}
