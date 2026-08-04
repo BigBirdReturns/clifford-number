@@ -26,6 +26,7 @@ jobs:
       SOURCE_WORKFLOW_PATH: .github/workflows/temporary-ssc-rd03-terminal-materializer-v1.yml
       EXPECTED_SOURCE_WORKFLOW_HEAD: 7ba5b96cd87e72151c4bbfdc348d06c33f8455e0
       EXPECTED_SOURCE_WORKFLOW_BLOB: 8fabf533a1958de38b5d5125439f8614e5ba2541
+      EXPECTED_AUTHORED_BLOB: 890923aa6883a28ca00b96ffbf697963578ed58e
       EXPECTED_RESEARCH_HEAD: e70aec0f6809c77e198e0c4ee80f6bcadb6bbdc4
       EXPECTED_MAIN_HEAD: 61d8baabee70a40d13fc08c1f446313c3416a6e0
       CENSUS_ARTIFACT_ID: '8875551993'
@@ -59,6 +60,7 @@ jobs:
           printf '.rd03-terminal/TEST\n' | diff -u - /tmp/rd03-source-drift.txt
           git show "origin/${SOURCE_WORKFLOW_BRANCH}:${SOURCE_WORKFLOW_PATH}" > /tmp/rd03-source-workflow.yml
           test "$(git hash-object /tmp/rd03-source-workflow.yml)" = "$EXPECTED_SOURCE_WORKFLOW_BLOB"
+          test "$(git rev-parse "origin/${SOURCE_WORKFLOW_BRANCH}:.rd03-terminal/authored/part-00.b64")" = "$EXPECTED_AUTHORED_BLOB"
 
           python - <<'PY'
           from pathlib import Path
@@ -79,6 +81,7 @@ jobs:
               script_lines.append(line[10:])
 
           script = '\n'.join(script_lines) + '\n'
+
           old_parent = 'test "$(git show -s --format=%P "$INTEGRATION_SHA")" = "$MAIN_START_SHA $RESEARCH_START_SHA"'
           new_parent = '\n'.join([
               'parent_record="$(git rev-list --parents -n1 "$INTEGRATION_SHA")"',
@@ -97,24 +100,68 @@ jobs:
           assert script.count(old_parent) == 1, script.count(old_parent)
           script = script.replace(old_parent, new_parent)
 
+          old_fetch = 'git fetch origin "refs/heads/${CARRIER_BRANCH}:refs/remotes/origin/${CARRIER_BRANCH}"'
+          new_fetch = '\n'.join([
+              'test "$CARRIER_BRANCH" = "$SOURCE_WORKFLOW_BRANCH"',
+              'carrier_head="$(git rev-parse "origin/${CARRIER_BRANCH}")"',
+              'printf \'RD-03 carrier ref reused: %s\\n\' "$carrier_head"',
+              'printf \'RD-03 carrier fetch reuse: PASS\\n\'',
+          ])
+          assert script.count(old_fetch) == 1, script.count(old_fetch)
+          script = script.replace(old_fetch, new_fetch)
+
+          old_b64_checks = '\n'.join([
+              'test "$(wc -c < /tmp/rd03-authored.b64 | tr -d \' \')" = \'25720\'',
+              'test "$(sha256sum /tmp/rd03-authored.b64 | awk \'{print $1}\')" = \'d741e8229ddfe7f544dd29ef4c1d50b60140351a47477c47321b16eb63c509fd\'',
+          ])
+          new_b64_checks = '\n'.join([
+              'authored_b64_bytes="$(wc -c < /tmp/rd03-authored.b64 | tr -d \' \')"',
+              'authored_b64_sha="$(sha256sum /tmp/rd03-authored.b64 | awk \'{print $1}\')"',
+              'printf \'RD-03 authored base64 bytes: observed=%s expected=25720\\n\' "$authored_b64_bytes"',
+              'printf \'RD-03 authored base64 SHA-256: observed=%s expected=d741e8229ddfe7f544dd29ef4c1d50b60140351a47477c47321b16eb63c509fd\\n\' "$authored_b64_sha"',
+              'test "$authored_b64_bytes" = \'25720\'',
+              'test "$authored_b64_sha" = \'d741e8229ddfe7f544dd29ef4c1d50b60140351a47477c47321b16eb63c509fd\'',
+              'printf \'RD-03 authored base64 proof: PASS\\n\'',
+          ])
+          assert script.count(old_b64_checks) == 1, script.count(old_b64_checks)
+          script = script.replace(old_b64_checks, new_b64_checks)
+
+          old_zip_checks = '\n'.join([
+              'test "$(wc -c < /tmp/rd03-authored.zip | tr -d \' \')" = \'19288\'',
+              'test "$(sha256sum /tmp/rd03-authored.zip | awk \'{print $1}\')" = \'279556dcfa7d3332d115282ca835fafe2a3dec16ad3b4a78baa11a0ac646d328\'',
+          ])
+          new_zip_checks = '\n'.join([
+              'authored_zip_bytes="$(wc -c < /tmp/rd03-authored.zip | tr -d \' \')"',
+              'authored_zip_sha="$(sha256sum /tmp/rd03-authored.zip | awk \'{print $1}\')"',
+              'printf \'RD-03 authored ZIP bytes: observed=%s expected=19288\\n\' "$authored_zip_bytes"',
+              'printf \'RD-03 authored ZIP SHA-256: observed=%s expected=279556dcfa7d3332d115282ca835fafe2a3dec16ad3b4a78baa11a0ac646d328\\n\' "$authored_zip_sha"',
+              'test "$authored_zip_bytes" = \'19288\'',
+              'test "$authored_zip_sha" = \'279556dcfa7d3332d115282ca835fafe2a3dec16ad3b4a78baa11a0ac646d328\'',
+              'printf \'RD-03 authored ZIP proof: PASS\\n\'',
+          ])
+          assert script.count(old_zip_checks) == 1, script.count(old_zip_checks)
+          script = script.replace(old_zip_checks, new_zip_checks)
+
           dollar = '$'
           old_repo_expression = dollar + '{{ github.repository }}'
           assert script.count(old_repo_expression) == 1, script.count(old_repo_expression)
           script = script.replace(old_repo_expression, '${GITHUB_REPOSITORY}')
 
           assert (dollar + '{{') not in script
-          assert script.count('parent_record=') == 1
           assert script.count('integration parent proof: PASS') == 1
+          assert script.count('carrier fetch reuse: PASS') == 1
+          assert script.count('authored base64 proof: PASS') == 1
+          assert script.count('authored ZIP proof: PASS') == 1
           assert script.count('${INTEGRATION_SHA}^1') == 1
           assert script.count('${INTEGRATION_SHA}^2') == 1
           Path('/tmp/rd03-materialize.sh').write_text(script)
           PY
 
           bash -n /tmp/rd03-materialize.sh
-          grep -F 'parent_record=' /tmp/rd03-materialize.sh
           grep -F 'integration parent proof: PASS' /tmp/rd03-materialize.sh
-          grep -F '${INTEGRATION_SHA}^1' /tmp/rd03-materialize.sh
-          grep -F '${INTEGRATION_SHA}^2' /tmp/rd03-materialize.sh
+          grep -F 'carrier fetch reuse: PASS' /tmp/rd03-materialize.sh
+          grep -F 'authored base64 proof: PASS' /tmp/rd03-materialize.sh
+          grep -F 'authored ZIP proof: PASS' /tmp/rd03-materialize.sh
           grep -F '${GITHUB_REPOSITORY}' /tmp/rd03-materialize.sh
           bash /tmp/rd03-materialize.sh
 
