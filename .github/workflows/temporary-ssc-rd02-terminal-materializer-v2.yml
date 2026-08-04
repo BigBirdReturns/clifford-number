@@ -1,0 +1,67 @@
+name: TEMP materialize exact RD-02 terminal closure v2
+
+on:
+  pull_request:
+    paths:
+      - '.rd02-terminal-v2/TRIGGER'
+      - '.github/workflows/temporary-ssc-rd02-terminal-materializer-v2.yml'
+      - '.rd02-terminal-v2/authored/**'
+      - '.rd02-terminal-v2/executor/**'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd02-terminal-materializer-v2-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd02-terminal-materializer-trigger-v2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Check out live main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct checksum-bound executor
+        env:
+          CONTROL_BRANCH: agent/ssc-rd02-terminal-materializer-base-v2
+        run: |
+          set -Eeuo pipefail
+          bootstrap="$RUNNER_TEMP/ssc-rd02-terminal-v2-bootstrap-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          mkdir -p "$bootstrap"
+          echo "RECEIPT_DIR=$bootstrap" >> "$GITHUB_ENV"
+          exec > >(tee "$bootstrap/executor-reconstruction.log") 2>&1
+          git fetch --no-tags origin "+refs/heads/$CONTROL_BRANCH:refs/remotes/origin/$CONTROL_BRANCH"
+          git show "refs/remotes/origin/$CONTROL_BRANCH:.rd02-terminal-v2/executor/part-00.b64" > "$bootstrap/executor.sh.gz.b64"
+          test "$(wc -c < "$bootstrap/executor.sh.gz.b64" | tr -d ' ')" = '5736'
+          test "$(sha256sum "$bootstrap/executor.sh.gz.b64" | awk '{print $1}')" = 'eae2f98e5a283e9943774915ace812d39cbbc098bfaf1b7aba771619ecad12ec'
+          base64 --decode "$bootstrap/executor.sh.gz.b64" > "$bootstrap/executor.sh.gz"
+          test "$(wc -c < "$bootstrap/executor.sh.gz" | tr -d ' ')" = '4301'
+          test "$(sha256sum "$bootstrap/executor.sh.gz" | awk '{print $1}')" = '25dc0a64302a7a8b97843ee533a76d28c2fd2102addc4510891a9b2c989425c0'
+          gzip -dc "$bootstrap/executor.sh.gz" > "$bootstrap/executor.sh"
+          test "$(wc -c < "$bootstrap/executor.sh" | tr -d ' ')" = '19472'
+          test "$(sha256sum "$bootstrap/executor.sh" | awk '{print $1}')" = '5ac3219d8802af0d4a81521033eed304025d9e34d9bdd8640be54319ce00e284'
+          bash -n "$bootstrap/executor.sh"
+          chmod 0700 "$bootstrap/executor.sh"
+          echo "EXECUTOR_PATH=$bootstrap/executor.sh" >> "$GITHUB_ENV"
+          sha256sum "$bootstrap"/* > "$bootstrap/bootstrap-sha256.txt"
+      - name: Execute exact RD-02 terminal transaction
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ${{ env.EXECUTOR_PATH }}
+      - name: Preserve exact RD-02 materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave02-terminal-materialization-v2
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
