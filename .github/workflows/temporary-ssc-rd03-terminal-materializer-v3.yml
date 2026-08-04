@@ -25,6 +25,7 @@ jobs:
       SOURCE_WORKFLOW_BRANCH: agent/ssc-rd03-terminal-materializer-base-v1
       SOURCE_WORKFLOW_PATH: .github/workflows/temporary-ssc-rd03-terminal-materializer-v1.yml
       EXPECTED_SOURCE_WORKFLOW_HEAD: 7ba5b96cd87e72151c4bbfdc348d06c33f8455e0
+      EXPECTED_SOURCE_WORKFLOW_BLOB: 8fabf533a1958de38b5d5125439f8614e5ba2541
       EXPECTED_RESEARCH_HEAD: e70aec0f6809c77e198e0c4ee80f6bcadb6bbdc4
       EXPECTED_MAIN_HEAD: 69b153b6c358783ed016621fc2057e8c37605760
       CENSUS_ARTIFACT_ID: '8875551993'
@@ -55,7 +56,7 @@ jobs:
 
           git fetch origin "refs/heads/${SOURCE_WORKFLOW_BRANCH}:refs/remotes/origin/${SOURCE_WORKFLOW_BRANCH}"
           git show "origin/${SOURCE_WORKFLOW_BRANCH}:${SOURCE_WORKFLOW_PATH}" > /tmp/rd03-source-workflow.yml
-          test "$(sha256sum /tmp/rd03-source-workflow.yml | awk '{print $1}')" = '5e8f1d4f70de1357b3757cd1a9fd9bd8550994a967b3225e37865b4858e5bfa3'
+          test "$(git hash-object /tmp/rd03-source-workflow.yml)" = "$EXPECTED_SOURCE_WORKFLOW_BLOB"
 
           python - <<'PY'
           from pathlib import Path
@@ -63,7 +64,7 @@ jobs:
           source = Path('/tmp/rd03-source-workflow.yml').read_text().splitlines()
           marker = '        run: |'
           positions = [index for index, line in enumerate(source) if line == marker]
-          assert positions == [52], positions
+          assert len(positions) == 1, positions
 
           script_lines = []
           for line in source[positions[0] + 1:]:
