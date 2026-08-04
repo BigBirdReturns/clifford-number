@@ -35,34 +35,57 @@ jobs:
           test "$(wc -c < /tmp/rd03-corrupt-carrier/part-00.b64 | tr -d ' ')" = '20020'
           test "$(sha256sum /tmp/rd03-corrupt-carrier/part-00.b64 | awk '{print $1}')" = '887fd5158d01695f231bff21770f7df3c26e0c639ec24c814df74c3bb18e7a24'
           python - <<'PY'
-          import hashlib, json, pathlib
+          import base64, hashlib, json, pathlib
           p=pathlib.Path('/tmp/rd03-corrupt-carrier/part-00.b64')
           raw=p.read_bytes()
-          marker=b'[...ELLIPSIZATION...]'
-          assert raw.count(marker)==1
-          index=raw.index(marker)
-          assert index==9999
-          prefix=raw[:index]
-          suffix=raw[index+len(marker):]
-          assert len(prefix)==9999 and len(suffix)==10000
+          left=raw.find(b'[')
+          right=raw.find(b']', left + 1)
+          assert left == 9999, (left, raw[max(0,left-40):left+80])
+          assert right > left, (left, right)
+          right += 1
+          assert raw.find(b'[', left + 1) == -1
+          assert raw.find(b']', right) == -1
+          marker=raw[left:right]
+          prefix=raw[:left]
+          suffix=raw[right:]
+          allowed=set(b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\r\n')
+          assert all(byte in allowed for byte in prefix)
+          assert all(byte in allowed for byte in suffix)
+          expected_complete=25720
+          missing=expected_complete-len(prefix)-len(suffix)
+          assert missing > 0
+          assert missing % 4 == 1, missing
+          assert len(prefix) + len(suffix) + len(marker) == len(raw)
           (p.parent/'prefix.b64').write_bytes(prefix)
           (p.parent/'suffix.b64').write_bytes(suffix)
+          (p.parent/'replacement-marker.bin').write_bytes(marker)
+          synthetic=prefix + b'A'*missing + suffix
+          assert len(synthetic)==expected_complete
+          decoded=base64.b64decode(synthetic, validate=True)
+          assert len(decoded)==19288
+          (p.parent/'synthetic-carrier.b64').write_bytes(synthetic)
+          (p.parent/'synthetic-carrier.zip').write_bytes(decoded)
           report={
-            'schema_version':'ssc-rd03-corrupt-carrier-export@1',
+            'schema_version':'ssc-rd03-corrupt-carrier-export@2',
             'carrier_head':'02ea4361a38b860a56be29bb86733f761bcfca30',
             'raw_bytes':len(raw),
             'raw_sha256':hashlib.sha256(raw).hexdigest(),
-            'marker_index':index,
+            'marker_index':left,
             'marker_bytes':len(marker),
+            'marker_hex':marker.hex(),
+            'marker_utf8':marker.decode('utf-8', errors='replace'),
             'prefix_bytes':len(prefix),
             'prefix_sha256':hashlib.sha256(prefix).hexdigest(),
             'suffix_bytes':len(suffix),
             'suffix_sha256':hashlib.sha256(suffix).hexdigest(),
-            'expected_complete_base64_bytes':25720,
-            'missing_base64_bytes':5721,
+            'expected_complete_base64_bytes':expected_complete,
+            'missing_base64_bytes':missing,
+            'synthetic_zip_bytes':len(decoded),
+            'synthetic_zip_sha256':hashlib.sha256(decoded).hexdigest(),
             'authority':{'outside_human_dependency':False,'external_contacts':0,'external_reviews':0,'publication_effect':'none','adoption_effect':'none','graph_effect':'none'}
           }
           (p.parent/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps(report, sort_keys=True))
           PY
           sha256sum /tmp/rd03-corrupt-carrier/* > /tmp/rd03-corrupt-carrier/sha256.txt
           node tools/validate-no-magic-human-gate.mjs
