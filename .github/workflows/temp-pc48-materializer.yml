@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - name: Checkout temporary repair carrier
+      - name: Checkout temporary recursive-lineage repair carrier
         uses: actions/checkout@v4
         with:
           ref: agent/pc48-source-export
@@ -26,32 +26,32 @@ jobs:
       - name: Preserve checksum-bound repair package
         run: |
           set -euo pipefail
-          cp .pc48-repair/review-p1.tar.xz.b64 /tmp/pc48-review-p1.tar.xz.b64
-      - name: Checkout exact reviewed product
+          cp .pc48-repair/review-p1b.tar.xz.b64 /tmp/pc48-review-p1b.tar.xz.b64
+      - name: Checkout exact first-repaired product
         uses: actions/checkout@v4
         with:
-          ref: eff23bd698831fdd3ab34c717a518a5e471ade5c
+          ref: 5e46d763dcba74cc442c907f7f96ce8646dfe9db
           fetch-depth: 0
           clean: true
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Apply P1 repair, qualify, amend, and upload candidate commit
+      - name: Apply recursive-lineage P1 repair, qualify, amend, and upload candidate
         env:
           PUBLICATION_PARENT: 15fbe32735c85be44b833040f3b630966287871c
-          REVIEWED_PRODUCT: eff23bd698831fdd3ab34c717a518a5e471ade5c
+          REVIEWED_PRODUCT: 5e46d763dcba74cc442c907f7f96ce8646dfe9db
           PINNED_V45_BRIDGE: 4a5a6fa449f45750e836ae9ca8890b958f72e0a9
           TARGET_BRANCH: agent/pc48-materializer
-          TARGET_LEASE: eff23bd698831fdd3ab34c717a518a5e471ade5c
-          REPAIR_BASE64_SHA256: 817dc140b40b38363148ece4dbf06bbd24b6b002ef898531024c7fa8a2f286cd
-          REPAIR_PACKAGE_SHA256: 549c3146103a2f769570cf607504c2cf2a348b258ad94dc09541a1f65891c7ae
+          TARGET_LEASE: 5e46d763dcba74cc442c907f7f96ce8646dfe9db
+          REPAIR_BASE64_SHA256: d2b5d26f5590d811aac7f879c1ec016b5b8f7656be9839baef056930c9ad1540
+          REPAIR_PACKAGE_SHA256: 3ec8b12279fd751ca45486987cef0fc28da83c4aec72f1ce7dc0ace56a7a6e3a
           REPAIR_PATH_LIST_SHA256: cc4b1773e007ef128fdad65d20be4fdeb7b0107b99605150860d2dd2dbb1cb8a
-          REPAIRED_LIB_SHA256: 5ca4235d7060c71ae26ed4051bd50f2183410014f272728c02794f1184e5b98e
-          REPAIRED_TEST_SHA256: 89c9913aa7eca6e0d508ff1999a08f8ca32bead03ebbe02cb89b561cf31bdeec
+          REPAIRED_LIB_SHA256: fe4af89804b9a93b43b5808bbf70c098948c338e75d9f45ede5b2932ac12e672
+          REPAIRED_TEST_SHA256: 29a0052cdad64d1510bd82c80c1c418d1f272ca5e108d92e7fd3f60d37ccd1a1
         run: |
           set -Eeuo pipefail
           phase=initialize
-          trap 'status=$?; printf "status=%s\nphase=%s\ncommand=%s\n" "$status" "$phase" "$BASH_COMMAND" > /tmp/pc48-p1-diagnostic.txt; exit "$status"' ERR
+          trap 'status=$?; printf "status=%s\nphase=%s\ncommand=%s\n" "$status" "$phase" "$BASH_COMMAND" > /tmp/pc48-p1b-diagnostic.txt; exit "$status"' ERR
           cd "$GITHUB_WORKSPACE"
           test "$(git rev-parse HEAD)" = "$REVIEWED_PRODUCT"
           test "$(git rev-parse HEAD^)" = "$PUBLICATION_PARENT"
@@ -60,22 +60,22 @@ jobs:
           git cat-file -e "$PINNED_V45_BRIDGE^{commit}"
 
           phase=verify_repair_package
-          sha256sum /tmp/pc48-review-p1.tar.xz.b64 | grep -F "$REPAIR_BASE64_SHA256"
-          base64 -d /tmp/pc48-review-p1.tar.xz.b64 > /tmp/pc48-review-p1.tar.xz
-          sha256sum /tmp/pc48-review-p1.tar.xz | grep -F "$REPAIR_PACKAGE_SHA256"
-          cat > /tmp/pc48-p1-expected-paths.txt <<'EOF'
+          sha256sum /tmp/pc48-review-p1b.tar.xz.b64 | grep -F "$REPAIR_BASE64_SHA256"
+          base64 -d /tmp/pc48-review-p1b.tar.xz.b64 > /tmp/pc48-review-p1b.tar.xz
+          sha256sum /tmp/pc48-review-p1b.tar.xz | grep -F "$REPAIR_PACKAGE_SHA256"
+          cat > /tmp/pc48-p1b-expected-paths.txt <<'EOF'
           test/preference-custody-manifest-v46.test.js
           tools/lib/preference-custody-manifest-v46.mjs
           EOF
-          sed -i 's/^          //' /tmp/pc48-p1-expected-paths.txt
-          sha256sum /tmp/pc48-p1-expected-paths.txt | grep -F "$REPAIR_PATH_LIST_SHA256"
-          tar -tJf /tmp/pc48-review-p1.tar.xz | sort > /tmp/pc48-p1-package-paths.txt
-          diff -u /tmp/pc48-p1-expected-paths.txt /tmp/pc48-p1-package-paths.txt
+          sed -i 's/^          //' /tmp/pc48-p1b-expected-paths.txt
+          sha256sum /tmp/pc48-p1b-expected-paths.txt | grep -F "$REPAIR_PATH_LIST_SHA256"
+          tar -tJf /tmp/pc48-review-p1b.tar.xz | sort > /tmp/pc48-p1b-package-paths.txt
+          diff -u /tmp/pc48-p1b-expected-paths.txt /tmp/pc48-p1b-package-paths.txt
 
           phase=apply_repair
-          tar -xJf /tmp/pc48-review-p1.tar.xz
-          git diff --name-only | sort > /tmp/pc48-p1-actual-paths.txt
-          diff -u /tmp/pc48-p1-expected-paths.txt /tmp/pc48-p1-actual-paths.txt
+          tar -xJf /tmp/pc48-review-p1b.tar.xz
+          git diff --name-only | sort > /tmp/pc48-p1b-actual-paths.txt
+          diff -u /tmp/pc48-p1b-expected-paths.txt /tmp/pc48-p1b-actual-paths.txt
           sha256sum tools/lib/preference-custody-manifest-v46.mjs | grep -F "$REPAIRED_LIB_SHA256"
           sha256sum test/preference-custody-manifest-v46.test.js | grep -F "$REPAIRED_TEST_SHA256"
 
@@ -92,13 +92,13 @@ jobs:
           phase=normalize_generated_volatility
           git restore --source="$REVIEWED_PRODUCT" --staged --worktree -- build 2>/dev/null || true
           git clean -fd -- build
-          git diff --name-only | sort > /tmp/pc48-p1-postgate-paths.txt
-          diff -u /tmp/pc48-p1-expected-paths.txt /tmp/pc48-p1-postgate-paths.txt
+          git diff --name-only | sort > /tmp/pc48-p1b-postgate-paths.txt
+          diff -u /tmp/pc48-p1b-expected-paths.txt /tmp/pc48-p1b-postgate-paths.txt
 
           phase=amend_clean_product
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add --pathspec-from-file=/tmp/pc48-p1-expected-paths.txt
+          git add --pathspec-from-file=/tmp/pc48-p1b-expected-paths.txt
           git commit --amend --no-edit
           repaired_commit="$(git rev-parse HEAD)"
           repaired_tree="$(git rev-parse HEAD^{tree})"
@@ -110,13 +110,13 @@ jobs:
 
           phase=upload_candidate_object
           set +e
-          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_LEASE" origin "HEAD:refs/heads/$TARGET_BRANCH" > /tmp/pc48-p1-push.log 2>&1
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_LEASE" origin "HEAD:refs/heads/$TARGET_BRANCH" > /tmp/pc48-p1b-push.log 2>&1
           push_status=$?
           set -e
-          cat /tmp/pc48-p1-push.log
+          cat /tmp/pc48-p1b-push.log
 
           phase=complete
-          cat > /tmp/pc48-p1-repair-receipt.txt <<EOF
+          cat > /tmp/pc48-p1b-repair-receipt.txt <<EOF
           publication_parent=$PUBLICATION_PARENT
           reviewed_product=$REVIEWED_PRODUCT
           repaired_commit=$repaired_commit
@@ -130,20 +130,23 @@ jobs:
           floor_v46=pass
           full_v45_base_validation=pass
           unqualified_v45_base_regression=pass
+          recursive_transitive_source_key_validation=pass
+          deep_extra_key_regression=pass
+          floor_v46_mutations=158
           no_magic_human=pass
           push_status=$push_status
           outside_human_dependency=false
           graph_effect=none
           EOF
-          printf 'status=success\nphase=%s\nrepaired_commit=%s\nrepaired_tree=%s\npush_status=%s\n' "$phase" "$repaired_commit" "$repaired_tree" "$push_status" > /tmp/pc48-p1-diagnostic.txt
-          cat /tmp/pc48-p1-repair-receipt.txt
-      - name: Upload exact P1 repair custody
+          printf 'status=success\nphase=%s\nrepaired_commit=%s\nrepaired_tree=%s\npush_status=%s\n' "$phase" "$repaired_commit" "$repaired_tree" "$push_status" > /tmp/pc48-p1b-diagnostic.txt
+          cat /tmp/pc48-p1b-repair-receipt.txt
+      - name: Upload exact recursive-lineage repair custody
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pc48-p1-repair-custody
+          name: pc48-p1b-repair-custody
           path: |
-            /tmp/pc48-p1-repair-receipt.txt
-            /tmp/pc48-p1-diagnostic.txt
-            /tmp/pc48-p1-push.log
+            /tmp/pc48-p1b-repair-receipt.txt
+            /tmp/pc48-p1b-diagnostic.txt
+            /tmp/pc48-p1b-push.log
           if-no-files-found: error
