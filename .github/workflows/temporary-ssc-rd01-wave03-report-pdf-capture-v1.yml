@@ -1,0 +1,156 @@
+name: TEMP execute SSC RD-01 Wave-03 exact report-PDF capture v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd01-wave03-report-pdf-capture-v1.yml'
+      - '.rd01-wave03-report-pdf-capture/**'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: temp-ssc-rd01-wave03-report-pdf-capture-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd01-wave03-pdf-capture-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EXPECTED_TARGET: c491c99b2deb79b069a6dd7bc92f68e764228151
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd01-methodology-correction
+      CARRIER_BRANCH: agent/ssc-rd01-wave03-pdf-capture-base-v1
+      EXECUTOR_B64_SHA256: d9f6e61dfb764c1ac48e93652adc613f4d5b3225937cdc46d4f4722e1178ce24
+      EXECUTOR_XZ_SHA256: b22ab858484e2cb5fdcf6cf9db2d92d2ef1a8cf69df658f4a180e02e6f8dd243
+      EXECUTOR_SHA256: 8041d86cbb9f62ec134c8eb41ac3fe4876de56ae30e82134321be4f5aa237294
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: c491c99b2deb79b069a6dd7bc92f68e764228151
+          fetch-depth: 0
+
+      - name: Execute exact three-report PDF capture
+        run: |
+          set -Eeuo pipefail
+          root="$RUNNER_TEMP/ssc-rd01-wave03-report-pdf-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          capture="$root/capture"
+          control="$root/control"
+          executor_xz="$RUNNER_TEMP/ssc-rd01-wave03-report-pdf.py.xz"
+          executor="$RUNNER_TEMP/ssc-rd01-wave03-report-pdf.py"
+          rm -rf "$root" "$executor_xz" "$executor" "$executor_xz.b64"
+          mkdir -p "$control"
+          echo "ARTIFACT_ROOT=$root" >> "$GITHUB_ENV"
+          export ARTIFACT_ROOT="$root"
+          exec > >(tee "$control/trace.log") 2>&1
+          step=initialize
+
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$control/exit-code.txt"
+            printf '%s\n' "$step" > "$control/final-step.txt"
+            git rev-parse HEAD > "$control/head.txt" 2>&1 || true
+            git status --porcelain=v1 --untracked-files=all > "$control/status.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$control/remote-target.txt" 2>&1 || true
+            ROOT_DIR="$root" CONTROL_DIR="$control" RC="$rc" STEP="$step" python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          root=Path(os.environ['ROOT_DIR'])
+          control=Path(os.environ['CONTROL_DIR'])
+          capture=root/'capture'
+          def read_json(path):
+              try:
+                  return json.loads(path.read_text())
+              except Exception:
+                  return {}
+          summary=read_json(capture/'summary.json')
+          manifest=read_json(capture/'manifest.json')
+          validation=read_json(capture/'validation.json')
+          receipt={
+            'schema_version':'ssc-rd01-wave03-report-pdf-capture-controller-receipt@1',
+            'run':int(os.environ['GITHUB_RUN_ID']),
+            'run_attempt':int(os.environ['GITHUB_RUN_ATTEMPT']),
+            'exit_code':int(os.environ['RC']),
+            'final_step':os.environ['STEP'],
+            'target_head':os.environ['EXPECTED_TARGET'],
+            'target_branch':os.environ['TARGET_BRANCH'],
+            'initial_capture_run':30914248336,
+            'initial_capture_artifact':8894359001,
+            'initial_capture_zip_sha256':'c247a5f9a3d8cd2bc6feb5c30dd643af0bbd3878a8712f7e4fadfdf24ad91291',
+            'initial_capture_manifest_sha256':'a3c00b6bb04367646153b693ff229adc046f174c043e88b7dd3a949e670ac12c',
+            'executor_b64_sha256':os.environ['EXECUTOR_B64_SHA256'],
+            'executor_xz_sha256':os.environ['EXECUTOR_XZ_SHA256'],
+            'executor_sha256':os.environ['EXECUTOR_SHA256'],
+            'capture_manifest_combined_sha256':manifest.get('combined_sha256'),
+            'capture_manifest_entries':manifest.get('entry_count'),
+            'routes_attempted':summary.get('routes_attempted'),
+            'pdfs_observed':summary.get('pdfs_observed'),
+            'route_state_counts':summary.get('route_state_counts'),
+            'adversarial_mutations_refused':validation.get('adversarial_mutations_refused'),
+            'result_spawned_requests':summary.get('result_spawned_requests',0),
+            'class_closed':False,
+            'outside_human_dependency':False,
+            'external_contacts':0,
+            'external_reviews':0,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+          }
+          (control/'controller-receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          for path in sorted(control.iterdir()):
+              if path.is_file() and not path.name.endswith('.sha256'):
+                  digest=hashlib.sha256(path.read_bytes()).hexdigest()
+                  (control/(path.name+'.sha256')).write_text(f'{digest}  {path.name}\n')
+          PY
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          step=verify-exact-target-lease
+          test "$(git rev-parse HEAD)" = "$EXPECTED_TARGET"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+
+          step=reconstruct-checksum-bound-executor
+          git fetch --no-tags origin "+refs/heads/${CARRIER_BRANCH}:refs/remotes/origin/rd01-wave03-report-pdf-carrier"
+          for part in 00 01 02; do
+            git show "origin/rd01-wave03-report-pdf-carrier:.rd01-wave03-report-pdf-capture/capture.py.xz.b64.part-${part}"
+          done > "$executor_xz.b64"
+          test "$(sha256sum "$executor_xz.b64" | cut -d' ' -f1)" = "$EXECUTOR_B64_SHA256"
+          base64 --decode "$executor_xz.b64" > "$executor_xz"
+          test "$(sha256sum "$executor_xz" | cut -d' ' -f1)" = "$EXECUTOR_XZ_SHA256"
+          xz --decompress --stdout "$executor_xz" > "$executor"
+          test "$(sha256sum "$executor" | cut -d' ' -f1)" = "$EXECUTOR_SHA256"
+          python3 -m py_compile "$executor"
+
+          step=execute-three-exact-report-pdf-routes
+          python3 "$executor" --out "$capture" | tee "$control/capture-result.json"
+
+          step=validate-capture-without-network
+          python3 "$executor" --out "$capture" --validate-only
+          test "$(python3 -c 'import json; print(json.load(open("'"$capture"'/summary.json"))["routes_attempted"])')" = 3
+          test "$(python3 -c 'import json; print(json.load(open("'"$capture"'/summary.json"))["attempts"])')" = 3
+          test "$(python3 -c 'import json; print(json.load(open("'"$capture"'/summary.json"))["result_spawned_requests"])')" = 0
+          test "$(python3 -c 'import json; print(str(json.load(open("'"$capture"'/summary.json"))["class_closed"]).lower())')" = false
+          test "$(python3 -c 'import json; print(json.load(open("'"$capture"'/validation.json"))["adversarial_mutations_refused"])')" = 30
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          step=verify-final-unchanged-target-lease
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+
+          step=rd01-wave03-report-pdf-capture-complete
+          finish
+
+      - name: Preserve exact report-PDF capture
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd01-wave03-report-pdf-capture-v1
+          path: ${{ env.ARTIFACT_ROOT }}
+          if-no-files-found: error
+          retention-days: 90
