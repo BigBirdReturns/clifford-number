@@ -1,0 +1,255 @@
+name: TEMP publish SSC Wave-02 five-closure ledger split v2
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-ledger5-split-publication-v2.yml'
+      - '.github/tmp/materialize-ssc-rd03-ledger5.py'
+      - '.rd03-ledger5-materializer/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd03-ledger5-split-v2-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish-seven:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-ledger5-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPECTED_MAIN: 580d9c998f747330d190bed5011c7a1a517a1c0d
+      TARGET_BRANCH: agent/ssc-wave02-current-ledger-five-closures
+      EXPECTED_QUALIFIED_TREE: 076791079b86037c811782102d29985b491cfd57
+      MATERIALIZER_BASE: agent/ssc-rd03-ledger5-materializer-base-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Qualify eight paths and publish seven non-workflow paths
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/ssc-rd03-ledger5-split-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$out"
+          mkdir -p "$out"
+          echo "RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          exec > >(tee "$out/trace.log") 2>&1
+          step=initialize
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$out/exit-code.txt"
+            printf '%s\n' "$step" > "$out/final-step.txt"
+            git rev-parse HEAD > "$out/head.txt" 2>&1 || true
+            git rev-parse 'HEAD^{tree}' > "$out/head-tree.txt" 2>&1 || true
+            git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
+            git diff --name-status "$EXPECTED_MAIN" HEAD > "$out/name-status.txt" 2>&1 || true
+            git diff --name-only "$EXPECTED_MAIN" HEAD | sort > "$out/paths.txt" 2>&1 || true
+            git ls-remote --heads origin refs/heads/main > "$out/remote-main.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1 || true
+            OUT="$out" RC="$rc" STEP="$step" python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          out=Path(os.environ['OUT'])
+          receipt={
+            'schema_version':'ssc-rd03-wave02-ledger5-split-publication@1',
+            'run':int(os.environ['GITHUB_RUN_ID']),
+            'exit_code':int(os.environ['RC']),
+            'final_step':os.environ['STEP'],
+            'main_parent':os.environ['EXPECTED_MAIN'],
+            'target_branch':os.environ['TARGET_BRANCH'],
+            'qualified_paths':8,
+            'runner_published_paths':7,
+            'connector_workflow_paths':1,
+            'expected_qualified_tree':os.environ['EXPECTED_QUALIFIED_TREE'],
+            'closed_residual_classes':5,
+            'open_residual_classes':37,
+            'open_selected_class_ids':['RD-02-C04'],
+            'rd03_merge':'580d9c998f747330d190bed5011c7a1a517a1c0d',
+            'rd03_manifest':'1323477ae4b4bda480eb9bf1484cde7db9783920c834a69996ca0428c57fb16e',
+            'current_ledger_mutations':42,
+            'rd03_terminal_mutations':94,
+            'outside_human_dependency':False,
+            'external_contacts':0,
+            'external_reviews':0,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+          }
+          (out/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          for path in sorted(out.iterdir()):
+            if path.is_file() and not path.name.endswith('.sha256'):
+              digest=hashlib.sha256(path.read_bytes()).hexdigest()
+              (out/(path.name+'.sha256')).write_text(f'{digest}  {path.name}\n')
+          PY
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          step=verify-exact-main-and-empty-target
+          test "$(git rev-parse HEAD)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+
+          step=reconstruct-qualified-eight-path-worktree
+          git show "origin/${MATERIALIZER_BASE}:.github/tmp/materialize-ssc-rd03-ledger5.py" > /tmp/materialize-ledger5.py
+          python - <<'PY'
+          from pathlib import Path
+          path=Path('/tmp/materialize-ledger5.py')
+          value=path.read_text()
+          replacements=[
+            (
+              '''    ("['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01']", "['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04']", "promoted order"),''',
+              '''    ("  same(current.promoted_class_receipts.map((row) => row.class_id), ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01'], 'promoted class order changed');", "  same(current.promoted_class_receipts.map((row) => row.class_id), ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04'], 'promoted class order changed');", "promoted order"),''',
+              'promoted-order statement binding',
+            ),
+            (
+              '''    ("['RD-02-C04','RD-03-C04']", "['RD-02-C04']", "open order"),''',
+              '''    ("  same(current.selected_classes_open.map((row) => row.class_id), ['RD-02-C04','RD-03-C04'], 'open selected class order changed');", "  same(current.selected_classes_open.map((row) => row.class_id), ['RD-02-C04'], 'open selected class order changed');", "open order"),''',
+              'open-order statement binding',
+            ),
+          ]
+          for old,new,label in replacements:
+            count=value.count(old)
+            if count != 1:
+              raise RuntimeError(f'{label}: expected one source match, found {count}')
+            value=value.replace(old,new,1)
+          path.write_text(value)
+          PY
+          python /tmp/materialize-ledger5.py
+          python - <<'PY'
+          from pathlib import Path
+          path=Path('test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js')
+          value=path.read_text()
+          old="""assert.equal(validateCurrentAtlasCustody(bundle.current,bundle.manifest.combined_sha256),'pre_promotion');
+          const post=clone(bundle.current);
+          post.authority='five_terminal_class_receipts_promoted_without_cross_lane_empirical_authority';
+          post.promoted_class_receipts.push({lane_id:'RD-03',class_id:'RD-03-C04',issue:788,source_pr:803,merge_commit:'1'.repeat(40),constitutional_exact_label:CLASS_LABEL,receipt_class_label:CLASS_LABEL,labels_exact_match:false,label_reconciliation:LABEL_RECONCILIATION,terminal_state:TERMINAL_STATE,closure_reference_path:CLOSURE_REFERENCE_PATH,class_receipt_path:`${PRODUCT_ROOT}/class-receipt.json`,manifest_combined_sha256:bundle.manifest.combined_sha256,class_closed:true});
+          post.selected_classes_open=post.selected_classes_open.filter((row)=>row.class_id!=='RD-03-C04');
+          post.counts.terminal_class_receipts=5;post.counts.classes_closed_this_wave=5;post.counts.closed_residual_classes=5;post.counts.open_residual_classes=37;
+          post.current_result.terminal_state='five_of_forty_two_residual_classes_closed_one_selected_attempt_open';post.current_result.classes_closed=5;post.current_result.classes_open=37;post.current_result.closed_class_ids=[...post.current_result.closed_class_ids,'RD-03-C04'];post.current_result.open_selected_class_ids=['RD-02-C04'];
+          assert.equal(validateCurrentAtlasCustody(post,bundle.manifest.combined_sha256),'post_promotion');"""
+          new="""assert.equal(validateCurrentAtlasCustody(bundle.current,bundle.manifest.combined_sha256),'post_promotion');
+          const post=clone(bundle.current);
+          const pre=clone(bundle.current);
+          pre.authority='four_terminal_class_receipts_promoted_without_cross_lane_empirical_authority';
+          pre.promoted_class_receipts=pre.promoted_class_receipts.filter((row)=>row.class_id!=='RD-03-C04');
+          pre.selected_classes_open.push({lane_id:'RD-03',class_id:'RD-03-C04',issue:788,constitutional_exact_label:CLASS_LABEL,state:'open',class_closed:false});
+          pre.counts.terminal_class_receipts=4;pre.counts.classes_closed_this_wave=4;pre.counts.closed_residual_classes=4;pre.counts.open_residual_classes=38;pre.counts.label_reconciliations=1;
+          pre.current_result.terminal_state='four_of_forty_two_residual_classes_closed_two_selected_attempts_open';pre.current_result.classes_closed=4;pre.current_result.classes_open=38;pre.current_result.closed_class_ids=pre.current_result.closed_class_ids.filter((id)=>id!=='RD-03-C04');pre.current_result.open_selected_class_ids=['RD-02-C04','RD-03-C04'];
+          assert.equal(validateCurrentAtlasCustody(pre,bundle.manifest.combined_sha256),'pre_promotion');"""
+          count=value.count(old)
+          if count != 1:
+            raise RuntimeError(f'RD-03 pre/post fixture: expected one block, found {count}')
+          value=value.replace(old,new,1)
+          old="const candidate=clone(name.startsWith('post')?post:bundle.current);"
+          new="const candidate=clone(name.startsWith('post')?post:pre);"
+          count=value.count(old)
+          if count != 1:
+            raise RuntimeError(f'RD-03 custody mutation source: expected one line, found {count}')
+          path.write_text(value.replace(old,new,1))
+          PY
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --write
+          cp .github/workflows/status-sovereignty-residual-denominator-wave-02-current.yml "$out/desired-workflow.yml"
+          sha256sum "$out/desired-workflow.yml" > "$out/desired-workflow.yml.sha256"
+
+          step=qualify-exact-eight-path-tree
+          node --check tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node --check tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node --check test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node --check test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          cat > "$out/expected-eight-paths.txt" <<'PATHS'
+          .github/workflows/status-sovereignty-residual-denominator-wave-02-current.yml
+          data/research/status-sovereignty-residual-denominator-wave-02-current.json
+          docs/milestones/ssc-residual-denominator-wave-02-current.md
+          schemas/status-sovereignty-residual-denominator-wave-02-current.schema.json
+          test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs
+          tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          PATHS
+          sed -i 's/^          //' "$out/expected-eight-paths.txt"
+          git diff --name-only | sort > "$out/actual-eight-paths.txt"
+          cmp "$out/expected-eight-paths.txt" "$out/actual-eight-paths.txt"
+          test -z "$(git diff --name-status | awk '$1 != "M" {print}')"
+          git diff --check
+          git add -- $(cat "$out/expected-eight-paths.txt")
+          qualified_tree="$(git write-tree)"
+          printf '%s\n' "$qualified_tree" > "$out/qualified-eight-tree.txt"
+          test "$qualified_tree" = "$EXPECTED_QUALIFIED_TREE"
+          git reset
+
+          step=commit-seven-non-workflow-paths
+          git restore --source="$EXPECTED_MAIN" --worktree -- .github/workflows/status-sovereignty-residual-denominator-wave-02-current.yml
+          cat > "$out/runner-paths.txt" <<'PATHS'
+          data/research/status-sovereignty-residual-denominator-wave-02-current.json
+          docs/milestones/ssc-residual-denominator-wave-02-current.md
+          schemas/status-sovereignty-residual-denominator-wave-02-current.schema.json
+          test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs
+          tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          PATHS
+          sed -i 's/^          //' "$out/runner-paths.txt"
+          git diff --name-only | sort > "$out/actual-runner-paths.txt"
+          cmp "$out/runner-paths.txt" "$out/actual-runner-paths.txt"
+          test -z "$(git diff --name-status | awk '$1 != "M" {print}')"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$TARGET_BRANCH"
+          git add -- $(cat "$out/runner-paths.txt")
+          git commit -m 'Prepare RD-03 Wave-02 cumulative ledger promotion'
+          product_commit="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$product_commit" > "$out/runner-product-commit.txt"
+          printf '%s\n' "$product_tree" > "$out/runner-product-tree.txt"
+
+          step=complete-repository-release-gate
+          npm run release:check
+
+          step=deterministic-seven-path-replay
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          step=final-main-and-target-lease
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"
+
+          step=publish-seven-path-product
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$product_commit"
+
+          step=split-publication-complete
+          finish
+      - name: Preserve split-publication receipt and workflow bytes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-wave02-ledger5-split-publication-v2
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
