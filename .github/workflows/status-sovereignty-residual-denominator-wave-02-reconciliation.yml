@@ -1,0 +1,113 @@
+name: SSC residual-denominator Wave 02 reconciliation
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/status-sovereignty-residual-denominator-wave-02-reconciliation.yml'
+      - 'data/research/status-sovereignty-residual-denominator-wave-01.json'
+      - 'data/research/status-sovereignty-residual-denominator-wave-02-constitution.json'
+      - 'data/research/status-sovereignty-residual-denominator-wave-02-current.json'
+      - 'data/research/status-sovereignty-residual-denominator-wave-02-reconciliation.json'
+      - 'data/project/ssc-residual-wave02/closures/RD-01-C03.json'
+      - 'data/project/ssc-residual-wave02/closures/RD-02-C04.json'
+      - 'data/project/ssc-residual-wave02/closures/RD-03-C04.json'
+      - 'data/project/ssc-residual-wave02/closures/RD-04-C01.json'
+      - 'data/project/ssc-residual-wave02/closures/RD-05-C03.json'
+      - 'data/project/ssc-residual-wave02/closures/RD-06-C01.json'
+      - 'data/research/status-sovereignty-rd-wave02-rd01-legal-entity/class-receipt.json'
+      - 'data/research/status-sovereignty-rd-wave02-rd02-license-leverage/class-receipt.json'
+      - 'data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms/class-receipt.json'
+      - 'data/research/status-sovereignty-rd-wave02-rd04-version-history/class-receipt.json'
+      - 'data/research/status-sovereignty-rd-wave02-rd05-recommendation-disposition/class-receipt.json'
+      - 'data/research/status-sovereignty-rd-wave02-rd06-offeror-universe/class-receipt.json'
+      - 'schemas/status-sovereignty-residual-denominator-wave-02-reconciliation.schema.json'
+      - 'tools/build-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs'
+      - 'tools/validate-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs'
+      - 'test/status-sovereignty-residual-denominator-wave-02-reconciliation.test.js'
+      - 'docs/milestones/ssc-residual-denominator-wave-02-reconciliation.md'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-residual-denominator-wave-02-reconciliation.yml'
+      - 'data/research/status-sovereignty-residual-denominator-wave-01.json'
+      - 'data/research/status-sovereignty-residual-denominator-wave-02-constitution.json'
+      - 'data/research/status-sovereignty-residual-denominator-wave-02-current.json'
+      - 'data/research/status-sovereignty-residual-denominator-wave-02-reconciliation.json'
+      - 'data/project/ssc-residual-wave02/closures/RD-01-C03.json'
+      - 'data/project/ssc-residual-wave02/closures/RD-02-C04.json'
+      - 'data/project/ssc-residual-wave02/closures/RD-03-C04.json'
+      - 'data/project/ssc-residual-wave02/closures/RD-04-C01.json'
+      - 'data/project/ssc-residual-wave02/closures/RD-05-C03.json'
+      - 'data/project/ssc-residual-wave02/closures/RD-06-C01.json'
+      - 'data/research/status-sovereignty-rd-wave02-rd01-legal-entity/class-receipt.json'
+      - 'data/research/status-sovereignty-rd-wave02-rd02-license-leverage/class-receipt.json'
+      - 'data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms/class-receipt.json'
+      - 'data/research/status-sovereignty-rd-wave02-rd04-version-history/class-receipt.json'
+      - 'data/research/status-sovereignty-rd-wave02-rd05-recommendation-disposition/class-receipt.json'
+      - 'data/research/status-sovereignty-rd-wave02-rd06-offeror-universe/class-receipt.json'
+      - 'schemas/status-sovereignty-residual-denominator-wave-02-reconciliation.schema.json'
+      - 'tools/build-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs'
+      - 'tools/validate-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs'
+      - 'test/status-sovereignty-residual-denominator-wave-02-reconciliation.test.js'
+      - 'docs/milestones/ssc-residual-denominator-wave-02-reconciliation.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-residual-wave02-reconciliation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Prove six selected closures and the exact 36-class remainder
+        run: |
+          set -Eeuo pipefail
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/build-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-reconciliation.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Restore volatile outputs and replay deterministically
+        run: |
+          set -Eeuo pipefail
+          git restore --worktree -- .
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/build-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-reconciliation.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Preserve Wave 02 reconciliation
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-residual-denominator-wave-02-reconciliation
+          path: |
+            data/research/status-sovereignty-residual-denominator-wave-02-reconciliation.json
+            schemas/status-sovereignty-residual-denominator-wave-02-reconciliation.schema.json
+            docs/milestones/ssc-residual-denominator-wave-02-reconciliation.md
+          if-no-files-found: error
+          retention-days: 90
