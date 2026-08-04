@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Capture fully context-repaired promotion program
+      - name: Execute bound fully context-repaired promotion program
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -113,30 +113,57 @@ jobs:
 
           executable_bytes="$(wc -c < /tmp/ssc-wave02-rd03-promotion-materialize.sh | tr -d ' ')"
           executable_sha="$(sha256sum /tmp/ssc-wave02-rd03-promotion-materialize.sh | awk '{print $1}')"
+          test "$executable_bytes" = '21831'
+          test "$executable_sha" = 'feb9e00747b62c81857b216a40d168a8e7c3006c556f0ffad2ba6c819249e86a'
+          bash -n /tmp/ssc-wave02-rd03-promotion-materialize.sh
           cat > /tmp/ssc-wave02-five-receipt/program-binding.json <<JSON
           {
-            "schema_version": "ssc-wave02-rd03-promotion-program-binding@5",
+            "schema_version": "ssc-wave02-rd03-promotion-program-binding@6",
             "carrier_bytes": ${carrier_bytes},
             "carrier_sha256": "${carrier_sha}",
             "executable_bytes": ${executable_bytes},
             "executable_sha256": "${executable_sha}",
             "context_repairs": 7,
-            "capture_only": true,
+            "capture_only": false,
             "outside_human_dependency": false,
             "external_contacts": 0,
             "external_reviews": 0
           }
           JSON
           sed -i 's/^          //' /tmp/ssc-wave02-five-receipt/program-binding.json
-          cat /tmp/ssc-wave02-five-receipt/program-binding.json
-          bash -n /tmp/ssc-wave02-rd03-promotion-materialize.sh
-          exit 17
+
+          set +e
+          bash -x /tmp/ssc-wave02-rd03-promotion-materialize.sh \
+            2>&1 | tee /tmp/ssc-wave02-rd03-promotion-execution.log
+          materializer_status="${PIPESTATUS[0]}"
+          set -e
+
+          cp /tmp/ssc-wave02-rd03-promotion-execution.log \
+            /tmp/ssc-wave02-five-receipt/execution.log
+          cat > /tmp/ssc-wave02-five-receipt/execution-status.json <<JSON
+          {
+            "schema_version": "ssc-wave02-rd03-promotion-execution-status@6",
+            "carrier_bytes": ${carrier_bytes},
+            "carrier_sha256": "${carrier_sha}",
+            "executable_bytes": ${executable_bytes},
+            "executable_sha256": "${executable_sha}",
+            "exit_status": ${materializer_status},
+            "completed": $([ "$materializer_status" = '0' ] && printf true || printf false),
+            "outside_human_dependency": false,
+            "external_contacts": 0,
+            "external_reviews": 0
+          }
+          JSON
+          sed -i 's/^          //' /tmp/ssc-wave02-five-receipt/execution-status.json
+          sha256sum /tmp/ssc-wave02-five-receipt/execution.log \
+            > /tmp/ssc-wave02-five-receipt/execution.log.sha256
+          exit "$materializer_status"
 
       - name: Preserve exact promotion receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-wave02-rd03-promotion-program-capture-v5
+          name: ssc-wave02-rd03-promotion-materialization-v6
           path: /tmp/ssc-wave02-five-receipt
           if-no-files-found: error
           retention-days: 90
