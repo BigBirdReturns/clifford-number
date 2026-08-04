@@ -1,0 +1,294 @@
+name: TEMP materialize exact PC-44 uncertainty-monitoring product
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc44-exact-product-materializer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc44-exact-product-materializer
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Materialize, qualify, replay, and publish exact PC-44 product
+        env:
+          SOURCE_BRANCH: agent/pc44-exact-product-materializer
+          TARGET_BRANCH: research/preference-linkage-uncertainty-monitoring-assurance-v1
+          SOURCE_BASE: ef74c7dba6278912534bc3eb8c6fa4191b9ff2d8
+          PACKAGE_BLOB_SHA: b099b6c3082c599d478518e0b4b31ed063270e5e
+          PACKAGE_SHA256: c0fd8e689b162afd403b318cb0c25b0c9c37ac3133005fd7b9eb41b8f145a505
+          PACKAGE_BYTES: '19272'
+          GH_TOKEN: ${{ github.token }}
+          PATH_LIST_SHA256: 0595fac06166e0a08e40c3714fbb5188a4f7fe832c27de273c16b06d4aa1a92c
+          FILE_MANIFEST_SHA256: 397db2137f64f7ce51e2bc52bf912729f0cda7db8601a1675ce9e37b8e78317b
+        run: |
+          set -Eeuo pipefail
+          status=failed
+          source_head="$(git rev-parse HEAD)"
+          publication_base=
+          product_commit=
+          product_tree=
+          attempt=0
+          pass_focused=false
+          pass_historical=false
+          pass_no_magic=false
+          pass_release=false
+          pass_replay=false
+          published=false
+
+          paths=(
+            .github/workflows/preference-custody-v42.yml
+            .github/workflows/preference-linkage-uncertainty-monitoring-assurance.yml
+            data/research/preference-custody/control-manifest-v42.json
+            data/research/preference-custody/linkage-uncertainty-monitoring-assurance.fixture.json
+            docs/preference-custody-laboratory-floor-v42.md
+            docs/preference-custody-linkage-uncertainty-monitoring-assurance.md
+            test/preference-custody-manifest-v42.test.js
+            test/preference-linkage-uncertainty-monitoring-assurance.test.js
+            tools/compile-preference-custody-manifest-v42.mjs
+            tools/compile-preference-linkage-uncertainty-monitoring-assurance.mjs
+            tools/lib/preference-custody-manifest-v42.mjs
+            tools/lib/preference-linkage-uncertainty-monitoring-assurance.mjs
+            tools/validate-preference-custody-manifest-v42.mjs
+            tools/validate-preference-linkage-uncertainty-monitoring-assurance.mjs
+          )
+          printf '%s\n' "${paths[@]}" | LC_ALL=C sort > /tmp/pc44-paths.txt
+
+          emit_receipt() {
+            code=$?
+            trap - EXIT
+            export RECEIPT_STATUS="$status" SOURCE_HEAD="$source_head" PUBLICATION_BASE="$publication_base"
+            export PRODUCT_COMMIT="$product_commit" PRODUCT_TREE="$product_tree" ATTEMPT="$attempt"
+            export PASS_FOCUSED="$pass_focused" PASS_HISTORICAL="$pass_historical" PASS_NO_MAGIC="$pass_no_magic"
+            export PASS_RELEASE="$pass_release" PASS_REPLAY="$pass_replay" PUBLISHED="$published"
+            python - <<'PY_RECEIPT'
+          from pathlib import Path
+          import hashlib, json, os
+          paths = Path('/tmp/pc44-paths.txt').read_text().splitlines()
+          files = {}
+          for line in Path('/tmp/pc44-files.tsv').read_text().splitlines():
+              path, size, digest, blob = line.split('\t')
+              files[path] = {'bytes': int(size), 'sha256': digest, 'git_blob_sha1': blob}
+          receipt = {
+            'schema_version': 'pc44-exact-product-materialization-receipt@1',
+            'workflow_run_id': os.environ.get('GITHUB_RUN_ID'),
+            'status': os.environ.get('RECEIPT_STATUS'),
+            'source_controller_head': os.environ.get('SOURCE_HEAD'),
+            'source_export_head': os.environ.get('SOURCE_BASE'),
+            'publication_parent': os.environ.get('PUBLICATION_BASE') or None,
+            'product_head': os.environ.get('PRODUCT_COMMIT') or None,
+            'product_tree': os.environ.get('PRODUCT_TREE') or None,
+            'attempt': int(os.environ.get('ATTEMPT') or 0),
+            'target_branch': os.environ.get('TARGET_BRANCH'),
+            'permanent_path_count': len(paths),
+            'path_list_sha256': hashlib.sha256(('\n'.join(paths) + '\n').encode()).hexdigest(),
+            'package_bytes': int(os.environ['PACKAGE_BYTES']),
+            'package_sha256': os.environ['PACKAGE_SHA256'],
+            'package_blob_sha': os.environ['PACKAGE_BLOB_SHA'],
+            'file_manifest_sha256': os.environ['FILE_MANIFEST_SHA256'],
+            'files': files,
+            'main_advance_paths': Path('/tmp/pc44-main-advance.txt').read_text().splitlines() if Path('/tmp/pc44-main-advance.txt').exists() else None,
+            'overlap_paths': Path('/tmp/pc44-overlap.txt').read_text().splitlines() if Path('/tmp/pc44-overlap.txt').exists() else None,
+            'focused_pc44_and_floor_v42': 'pass' if os.environ.get('PASS_FOCUSED') == 'true' else 'not_proved',
+            'historical_preference_custody_floors': 'pass' if os.environ.get('PASS_HISTORICAL') == 'true' else 'not_proved',
+            'no_magic_human': 'pass' if os.environ.get('PASS_NO_MAGIC') == 'true' else 'not_proved',
+            'release_check': 'pass' if os.environ.get('PASS_RELEASE') == 'true' else 'not_proved',
+            'deterministic_replay': 'pass' if os.environ.get('PASS_REPLAY') == 'true' else 'not_proved',
+            'standalone_fixture_mutations': 51,
+            'standalone_build_tamper_checks': 16,
+            'floor_v42_adversarial_mutations': 63,
+            'complete_manifest_snapshot_binding': True,
+            'private_canonical_refusal_ledger_frozen': True,
+            'exported_refusal_ledger_separate_frozen_copy': True,
+            'target_published': os.environ.get('PUBLISHED') == 'true',
+            'outside_human_dependency': False,
+            'graph_effect': 'none'
+          }
+          Path('/tmp/pc44-exact-product-materialization-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY_RECEIPT
+            exit "$code"
+          }
+          trap emit_receipt EXIT
+
+          cat > /tmp/pc44-files.tsv <<'EOF_FILES'
+          .github/workflows/preference-custody-v42.yml	2627	0a7f816131a8b907c83e9d53fc346729140fd0e727d690585731c57e599b8b11	0ff9c5dcdced4df100e751c5beb5c6f29cd37998
+          .github/workflows/preference-linkage-uncertainty-monitoring-assurance.yml	1538	9b71d73da278d13248b7d0de60a221fc3beceb480f9659800ef2631a3ea1f800	8e235232fc4f363f60c4ba6718edf7d17fda30bf
+          data/research/preference-custody/control-manifest-v42.json	13269	276ba914105ac504e4b40c96baa7bafae36e128d7d43b1091d5ba927956f5f36	4260a67ac5cda26da30fdd2df5c658dac3556515
+          data/research/preference-custody/linkage-uncertainty-monitoring-assurance.fixture.json	38422	0b7114bedbea05ffec79fd242b59b6a6bcbff2a7e1ff54ada089c83facee2921	6b32dc5fafb3c899ef3861375d3b26db467a4c29
+          docs/preference-custody-laboratory-floor-v42.md	1053	445a0ddb05371b4c550076af6a9dfdd21e08b9eb255da61a24e8d356382fcb69	463527b4beb9493f26b2aae68885fbfd375b0d7d
+          docs/preference-custody-linkage-uncertainty-monitoring-assurance.md	1010	8b1ef10ba3afe7eea5e2cf7eb23f6b8e3744d657b4ff43c6e42d1ed32d325789	0ee5728fe7ff0341444018bcd7d62c3818d114c6
+          test/preference-custody-manifest-v42.test.js	13950	cb2f81d9158b7adbe51934a774be84d3471aced8c5f51942ed345d0de08cdc72	a130bf98b8d5e8c600e0e82bf1f0790db75590c5
+          test/preference-linkage-uncertainty-monitoring-assurance.test.js	9730	b6b95b3a4b8328751ff104ceda738e36893978f0264ceeb221d062d1e2bf00f3	d9926848042a9886ac432c004ca18fea32da7248
+          tools/compile-preference-custody-manifest-v42.mjs	3816	d4c92314aa44cd5a579722f3a766fec2894bc18931d5d8dc475e8dc5a47e4f96	793f0230d61868db9c50b8a0666f275eb9a18c34
+          tools/compile-preference-linkage-uncertainty-monitoring-assurance.mjs	1169	8ae17f5d23feb6b376d60f4c483523cd66dc2b592c123c5795f1ee4676d54473	911b983646422989dce6c192eff78dcb2746bc48
+          tools/lib/preference-custody-manifest-v42.mjs	22529	f67bd4fc402bd094587f4e8264dab20c070b78e76022c5122dab9b894bb8495c	6d611ac70373f1e47fb4f73b0f638748a254b01d
+          tools/lib/preference-linkage-uncertainty-monitoring-assurance.mjs	63089	f0e46a295d32573307eea8e79dc86f8dab7768794fa9a0d243b9717c2fa50747	02ca00a47aa550a60f11987e764b4c30adffd5dd
+          tools/validate-preference-custody-manifest-v42.mjs	3290	9a0d426a29a67ca45f5bf19d6e065407a6fe05af9011a6a174a52d22a2479834	35036da31a79b3fc9e3e53268c4063be84775017
+          tools/validate-preference-linkage-uncertainty-monitoring-assurance.mjs	979	29e72785bf3906ab0aed2e8fb76cec10181e7b7aaf227ae8244677595d5743a8	1d38f96c0d86231ae170bf353749244d080faa1a
+          EOF_FILES
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/blobs/$PACKAGE_BLOB_SHA" \
+            | jq -r '.content' | tr -d '\r\n' | base64 --decode > /tmp/pc44-package.tar.xz
+          test "$(stat -c '%s' /tmp/pc44-files.tsv)" = 2403
+          test "$(sha256sum /tmp/pc44-files.tsv | cut -d' ' -f1)" = "$FILE_MANIFEST_SHA256"
+          test "$(stat -c '%s' /tmp/pc44-package.tar.xz)" = "$PACKAGE_BYTES"
+          test "$(sha256sum /tmp/pc44-package.tar.xz | cut -d' ' -f1)" = "$PACKAGE_SHA256"
+          tar -tJf /tmp/pc44-package.tar.xz | LC_ALL=C sort > /tmp/pc44-package-paths.txt
+          diff -u /tmp/pc44-paths.txt /tmp/pc44-package-paths.txt
+          python - <<'PY_PATHS'
+          from pathlib import PurePosixPath
+          from pathlib import Path
+          for raw in Path('/tmp/pc44-package-paths.txt').read_text().splitlines():
+              path = PurePosixPath(raw)
+              if path.is_absolute() or '..' in path.parts or not raw or raw.startswith('./'):
+                  raise SystemExit(f'unsafe package path: {raw!r}')
+          PY_PATHS
+          rm -rf /tmp/pc44-product
+          mkdir -p /tmp/pc44-product
+          tar -xJf /tmp/pc44-package.tar.xz -C /tmp/pc44-product
+          while IFS=$'\t' read -r path bytes digest blob; do
+            test "$(stat -c '%s' "/tmp/pc44-product/$path")" = "$bytes"
+            test "$(sha256sum "/tmp/pc44-product/$path" | cut -d' ' -f1)" = "$digest"
+            test "$(git hash-object "/tmp/pc44-product/$path")" = "$blob"
+          done < /tmp/pc44-files.tsv
+
+          for attempt in 1 2 3; do
+            pass_focused=false
+            pass_historical=false
+            pass_no_magic=false
+            pass_release=false
+            pass_replay=false
+            published=false
+
+            git fetch --no-tags origin \
+              "+refs/heads/main:refs/remotes/origin/main" \
+              "+refs/heads/$SOURCE_BRANCH:refs/remotes/origin/$SOURCE_BRANCH"
+            test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$source_head"
+            publication_base="$(git rev-parse origin/main)"
+            git merge-base --is-ancestor "$SOURCE_BASE" "$publication_base"
+            if git ls-remote --exit-code --heads origin "refs/heads/$TARGET_BRANCH" >/tmp/pc44-target-existing.txt 2>/dev/null; then
+              echo "target branch already exists" >&2
+              exit 1
+            fi
+
+            git diff --name-only "$SOURCE_BASE..$publication_base" | LC_ALL=C sort -u > /tmp/pc44-main-advance.txt
+            comm -12 /tmp/pc44-paths.txt /tmp/pc44-main-advance.txt > /tmp/pc44-overlap.txt
+            test ! -s /tmp/pc44-overlap.txt
+
+            git checkout --detach "$publication_base"
+            git reset --hard "$publication_base"
+            git clean -fdx
+            cp -a /tmp/pc44-product/. .
+            while IFS=$'\t' read -r path bytes digest blob; do
+              test "$(stat -c '%s' "$path")" = "$bytes"
+              test "$(sha256sum "$path" | cut -d' ' -f1)" = "$digest"
+              test "$(git hash-object "$path")" = "$blob"
+            done < /tmp/pc44-files.tsv
+
+            export GIT_INDEX_FILE="/tmp/pc44-index-$attempt"
+            rm -f "$GIT_INDEX_FILE"
+            git read-tree "$publication_base"
+            git add -- "${paths[@]}"
+            product_tree="$(git write-tree)"
+            export GIT_AUTHOR_NAME='github-actions[bot]'
+            export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+            export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+            export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+            product_commit="$(printf '%s\n' 'Preference Custody: add PC-44 uncertainty monitoring and recalibration custody' | git commit-tree "$product_tree" -p "$publication_base")"
+            unset GIT_INDEX_FILE
+
+            git diff-tree --no-commit-id --name-only -r "$product_commit" | LC_ALL=C sort > /tmp/pc44-product-paths.observed
+            diff -u /tmp/pc44-paths.txt /tmp/pc44-product-paths.observed
+            test "$(wc -l < /tmp/pc44-product-paths.observed | tr -d ' ')" = 14
+            test "$(git rev-parse "$product_commit^")" = "$publication_base"
+
+            git reset --hard "$product_commit"
+            node tools/compile-preference-linkage-uncertainty-monitoring-assurance.mjs
+            node tools/validate-preference-linkage-uncertainty-monitoring-assurance.mjs
+            node test/preference-linkage-uncertainty-monitoring-assurance.test.js
+            node tools/compile-preference-custody-manifest-v42.mjs
+            node tools/validate-preference-custody-manifest-v42.mjs
+            node test/preference-custody-manifest-v42.test.js
+            pass_focused=true
+
+            for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+              node "$test_file"
+            done
+            node test/preference-custody-manifest.test.js
+            pass_historical=true
+
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+            pass_no_magic=true
+
+            mkdir -p /tmp/pc44-build-reference
+            cp build/research/preference-linkage-uncertainty-monitoring-assurance.json /tmp/pc44-build-reference/
+            cp build/research/preference-linkage-uncertainty-monitoring-assurance.md /tmp/pc44-build-reference/
+            cp build/research/preference-custody-laboratory-floor-v42.json /tmp/pc44-build-reference/
+            cp build/research/preference-custody-laboratory-floor-v42.md /tmp/pc44-build-reference/
+
+            npm run release:check
+            git diff --exit-code -- "${paths[@]}"
+            pass_release=true
+
+            git reset --hard "$product_commit"
+            git clean -fdx
+            node tools/compile-preference-linkage-uncertainty-monitoring-assurance.mjs
+            node tools/validate-preference-linkage-uncertainty-monitoring-assurance.mjs
+            node test/preference-linkage-uncertainty-monitoring-assurance.test.js
+            node tools/compile-preference-custody-manifest-v42.mjs
+            node tools/validate-preference-custody-manifest-v42.mjs
+            node test/preference-custody-manifest-v42.test.js
+            cmp /tmp/pc44-build-reference/preference-linkage-uncertainty-monitoring-assurance.json build/research/preference-linkage-uncertainty-monitoring-assurance.json
+            cmp /tmp/pc44-build-reference/preference-linkage-uncertainty-monitoring-assurance.md build/research/preference-linkage-uncertainty-monitoring-assurance.md
+            cmp /tmp/pc44-build-reference/preference-custody-laboratory-floor-v42.json build/research/preference-custody-laboratory-floor-v42.json
+            cmp /tmp/pc44-build-reference/preference-custody-laboratory-floor-v42.md build/research/preference-custody-laboratory-floor-v42.md
+            pass_replay=true
+
+            git reset --hard "$product_commit"
+            git clean -fdx
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+            git fetch --no-tags origin \
+              "+refs/heads/main:refs/remotes/origin/main" \
+              "+refs/heads/$SOURCE_BRANCH:refs/remotes/origin/$SOURCE_BRANCH"
+            test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$source_head"
+            if test "$(git rev-parse origin/main)" != "$publication_base"; then
+              echo "main advanced during qualification; rebuilding on the newer parent" >&2
+              continue
+            fi
+            if git ls-remote --exit-code --heads origin "refs/heads/$TARGET_BRANCH" >/tmp/pc44-target-existing.txt 2>/dev/null; then
+              echo "target branch appeared during qualification" >&2
+              exit 1
+            fi
+
+            git push --force-with-lease="refs/heads/$TARGET_BRANCH:" origin "$product_commit:refs/heads/$TARGET_BRANCH"
+            published=true
+            status=success
+            break
+          done
+
+          test "$published" = true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc44-exact-product-materialization-${{ github.run_id }}
+          path: /tmp/pc44-exact-product-materialization-receipt.json
+          if-no-files-found: error
+          retention-days: 90
