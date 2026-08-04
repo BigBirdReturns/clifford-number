@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clifford-number.local/schemas/status-sovereignty-rd-wave03-rd02-same-host-adjudication.schema.json",
+  "title": "SSC RD-02 Wave-03 same-host link adjudication",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "wave_id",
+    "lane_id",
+    "class_id",
+    "issue",
+    "as_of",
+    "authority",
+    "source_custody",
+    "frozen_unit",
+    "denominator",
+    "records",
+    "current_result",
+    "refused_inferences",
+    "authority_boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "ssc-rd02-wave03-same-host-link-adjudication@1"
+    },
+    "wave_id": {
+      "const": "SSC-RD-W03"
+    },
+    "lane_id": {
+      "const": "RD-02"
+    },
+    "class_id": {
+      "const": "RD-02-C05"
+    },
+    "issue": {
+      "const": 1015
+    },
+    "as_of": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "authority": {
+      "type": "string"
+    },
+    "source_custody": {
+      "type": "object"
+    },
+    "frozen_unit": {
+      "type": "object"
+    },
+    "denominator": {
+      "type": "object"
+    },
+    "records": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11
+    },
+    "current_result": {
+      "type": "object"
+    },
+    "refused_inferences": {
+      "type": "array",
+      "minItems": 7
+    },
+    "authority_boundaries": {
+      "type": "object"
+    }
+  }
+}
