@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
-      EXPECTED_MAIN: a69bffa4c7c6934432b2b93816f5b2b6a466a85b
+      LAUNCH_BASE: a69bffa4c7c6934432b2b93816f5b2b6a466a85b
       EXPECTED_TARGET: a69bffa4c7c6934432b2b93816f5b2b6a466a85b
       TARGET_BRANCH: agent/ssc-residual-wave02-final-reconciliation
       CARRIER_BRANCH: agent/ssc-wave02-final-reconciliation-materializer-base
@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: a69bffa4c7c6934432b2b93816f5b2b6a466a85b
+          ref: main
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -69,6 +69,7 @@ jobs:
               'attempt': int(os.environ['GITHUB_RUN_ATTEMPT']),
               'exit_code': int(os.environ['RC']),
               'final_step': os.environ['STEP'],
+              'launch_base': os.environ['LAUNCH_BASE'],
               'main_lease': os.environ['EXPECTED_MAIN'],
               'target_branch': os.environ['TARGET_BRANCH'],
               'permanent_nonworkflow_paths': 6,
@@ -95,10 +96,25 @@ jobs:
           }
           trap finish EXIT
 
+          cat > "$out/expected-paths.txt" <<'PATHS'
+          data/research/status-sovereignty-residual-denominator-wave-02-reconciliation.json
+          docs/milestones/ssc-residual-denominator-wave-02-reconciliation.md
+          schemas/status-sovereignty-residual-denominator-wave-02-reconciliation.schema.json
+          test/status-sovereignty-residual-denominator-wave-02-reconciliation.test.js
+          tools/build-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs
+          tools/validate-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs
+          PATHS
+          sed -i 's/^          //' "$out/expected-paths.txt"
+
           step=verify-leases
-          test "$(git rev-parse HEAD)" = "$EXPECTED_MAIN"
+          export EXPECTED_MAIN="$(git rev-parse HEAD)"
+          printf '%s\n' "$EXPECTED_MAIN" > "$out/expected-main.txt"
+          git merge-base --is-ancestor "$LAUNCH_BASE" "$EXPECTED_MAIN"
           test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
           test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+          git diff --name-only "$LAUNCH_BASE" "$EXPECTED_MAIN" | sort > "$out/main-delta-paths.txt"
+          comm -12 "$out/main-delta-paths.txt" "$out/expected-paths.txt" > "$out/main-product-overlap.txt"
+          test ! -s "$out/main-product-overlap.txt"
 
           step=reconstruct-package
           git fetch origin \
@@ -125,15 +141,6 @@ jobs:
           test "$(wc -c < /tmp/ssc-wave02-final-reconciliation.zip | tr -d ' ')" = "$PACKAGE_ZIP_BYTES"
           test "$(sha256sum /tmp/ssc-wave02-final-reconciliation.zip | awk '{print $1}')" = "$PACKAGE_ZIP_SHA256"
           unzip -Z1 /tmp/ssc-wave02-final-reconciliation.zip | sort > "$out/archive-paths.txt"
-          cat > "$out/expected-paths.txt" <<'PATHS'
-          data/research/status-sovereignty-residual-denominator-wave-02-reconciliation.json
-          docs/milestones/ssc-residual-denominator-wave-02-reconciliation.md
-          schemas/status-sovereignty-residual-denominator-wave-02-reconciliation.schema.json
-          test/status-sovereignty-residual-denominator-wave-02-reconciliation.test.js
-          tools/build-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs
-          tools/validate-status-sovereignty-residual-denominator-wave-02-reconciliation.mjs
-          PATHS
-          sed -i 's/^          //' "$out/expected-paths.txt"
           cmp "$out/expected-paths.txt" "$out/archive-paths.txt"
           unzip -q /tmp/ssc-wave02-final-reconciliation.zip -d .
           git status --porcelain=v1 --untracked-files=all | awk '{print $2}' | sort > "$out/worktree-paths.txt"
