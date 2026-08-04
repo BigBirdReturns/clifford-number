@@ -104,9 +104,30 @@ jobs:
             2>&1 | tee /tmp/rd03-v4-terminal-receipt/execution.log
           helper_status="${PIPESTATUS[0]}"
           set -e
+
+          if [ "$helper_status" != '0' ]; then
+            {
+              printf '%s\n' '=== exact live seed ==='
+              cat "$PWD/work/data/project/ssc-residual-wave02/seeds/RD-03-C04.json"
+              printf '%s\n' '=== exact builder guard context ==='
+              grep -n -B 16 -A 16 'seed closure target changed' \
+                "$PWD/work/tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs" || true
+              printf '%s\n' '=== exact constitutional lane row ==='
+              node - "$PWD/work/data/research/status-sovereignty-residual-denominator-wave-02-constitution.json" <<'NODE'
+          const fs = require('node:fs');
+          const constitution = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const lane = constitution.lane_attempts.find((row) => row.class_id === 'RD-03-C04');
+          if (!lane) throw new Error('RD-03-C04 constitutional row missing');
+          process.stdout.write(`${JSON.stringify(lane, null, 2)}\n`);
+          NODE
+            } > /tmp/rd03-v4-terminal-receipt/failure-context.txt
+            sha256sum /tmp/rd03-v4-terminal-receipt/failure-context.txt \
+              > /tmp/rd03-v4-terminal-receipt/failure-context.txt.sha256
+          fi
+
           cat > /tmp/rd03-v4-terminal-receipt/execution-status.json <<JSON
           {
-            "schema_version": "ssc-rd03-v4-execution-status@2",
+            "schema_version": "ssc-rd03-v4-execution-status@3",
             "original_helper_sha256": "9ecc52ede8eaa464c66964c90fd4e930f12e5ddeb07a4172aef72aaae0f363f3",
             "patched_helper_sha256": "${PATCHED_HELPER_SHA256}",
             "exit_status": ${helper_status},
