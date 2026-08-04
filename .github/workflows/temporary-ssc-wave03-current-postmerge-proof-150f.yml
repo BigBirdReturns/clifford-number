@@ -1,0 +1,131 @@
+name: TEMP prove canonical SSC Wave 03 current ledger 150f
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-wave03-current-postmerge-proof-150f.yml'
+      - '.ssc-wave03-current-postmerge-proof-150f/PROVE'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: temp-ssc-wave03-current-postmerge-proof-150f-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  prove:
+    if: github.event.pull_request.head.ref == 'agent/ssc-wave03-current-postmerge-proof-150f'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CANONICAL_HEAD: 150f1693c70ce3699428c58c2687851a1ced39f7
+      RD01_MERGE: c27e7d3cde2c94c1cde5d66dcce8eb06b514ff8a
+      WAVE02_PROMOTION: 2af6bb7819a37e51c7198fb48da894445a29e494
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 150f1693c70ce3699428c58c2687851a1ced39f7
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Prove exact ancestry, seven-path transition, and immutable Wave-02 custody
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$CANONICAL_HEAD"
+          git merge-base --is-ancestor "$WAVE02_PROMOTION" HEAD
+          git merge-base --is-ancestor "$RD01_MERGE" HEAD
+          git diff --exit-code "$WAVE02_PROMOTION" HEAD -- data/research/status-sovereignty-residual-denominator-wave-02-current.json
+          git diff --name-only "$RD01_MERGE" HEAD | sort > "$RUNNER_TEMP/actual-paths.txt"
+          cat > "$RUNNER_TEMP/expected-paths.txt" <<'PATHS'
+          .github/workflows/status-sovereignty-residual-denominator-wave-03-current.yml
+          data/research/status-sovereignty-residual-denominator-wave-03-current.json
+          docs/milestones/ssc-residual-denominator-wave-03-current.md
+          schemas/status-sovereignty-residual-denominator-wave-03-current.schema.json
+          test/status-sovereignty-residual-denominator-wave-03-current.test.js
+          tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs
+          tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+          PATHS
+          sed -i 's/^          //' "$RUNNER_TEMP/expected-paths.txt"
+          diff -u "$RUNNER_TEMP/expected-paths.txt" "$RUNNER_TEMP/actual-paths.txt"
+
+      - name: Validate canonical cumulative and RD-01 terminal products
+        run: |
+          set -Eeuo pipefail
+          node tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-03-current.test.js | tee "$RUNNER_TEMP/current-ledger-test.log"
+          node tools/build-status-sovereignty-rd-wave03-rd01-methodology-correction.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd01-methodology-correction.mjs
+          node test/status-sovereignty-rd-wave03-rd01-methodology-correction.test.js | tee "$RUNNER_TEMP/rd01-terminal-test.log"
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Restore volatile outputs and replay canonical derivations
+        run: |
+          set -Eeuo pipefail
+          git restore --worktree -- .
+          node tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-03-current.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd01-methodology-correction.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd01-methodology-correction.mjs
+          node test/status-sovereignty-rd-wave03-rd01-methodology-correction.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Preserve exact post-merge proof
+        run: |
+          set -Eeuo pipefail
+          receipt="$RUNNER_TEMP/receipt"
+          mkdir -p "$receipt"
+          cp data/research/status-sovereignty-residual-denominator-wave-03-current.json "$receipt/current-ledger.json"
+          cp schemas/status-sovereignty-residual-denominator-wave-03-current.schema.json "$receipt/current-ledger.schema.json"
+          cp docs/milestones/ssc-residual-denominator-wave-03-current.md "$receipt/milestone.md"
+          cp "$RUNNER_TEMP/expected-paths.txt" "$receipt/exact-transition-paths.txt"
+          cp "$RUNNER_TEMP/current-ledger-test.log" "$receipt/current-ledger-test.log"
+          cp "$RUNNER_TEMP/rd01-terminal-test.log" "$receipt/rd01-terminal-test.log"
+          python - "$receipt/receipt.json" <<'PY'
+          import json, os, subprocess, sys
+          out=sys.argv[1]
+          value={
+            'schema_version':'ssc-wave03-current-postmerge-proof@1',
+            'canonical_head':os.environ['CANONICAL_HEAD'],
+            'rd01_merge':os.environ['RD01_MERGE'],
+            'wave02_promotion':os.environ['WAVE02_PROMOTION'],
+            'transition_paths':7,
+            'canonical_residual_classes':42,
+            'closed_residual_classes':7,
+            'open_residual_classes':35,
+            'wave03_selected_attempts_terminal':1,
+            'wave03_selected_attempts_open':5,
+            'wave_complete':False,
+            'residual_denominator_complete':False,
+            'complete_compact':False,
+            'outside_human_dependency':False,
+            'external_contacts':0,
+            'external_reviews':0,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none'
+          }
+          open(out,'w').write(json.dumps(value,indent=2)+'\n')
+          PY
+          (cd "$receipt" && sha256sum * > SHA256SUMS)
+          echo "RECEIPT_DIR=$receipt" >> "$GITHUB_ENV"
+
+      - name: Upload post-merge proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave03-current-postmerge-proof-150f
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
