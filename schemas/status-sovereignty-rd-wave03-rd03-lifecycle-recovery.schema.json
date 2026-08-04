@@ -1,0 +1,890 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BigBirdReturns/clifford-number/schemas/status-sovereignty-rd-wave03-rd03-lifecycle-recovery.schema.json",
+  "title": "SSC RD-03 Wave-03 terminal lifecycle and public-recovery matrix",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "wave_id",
+    "lane_id",
+    "class_id",
+    "issue",
+    "class_label",
+    "status",
+    "as_of",
+    "source_product",
+    "permitted_field_states",
+    "required_fields",
+    "instruments",
+    "counts",
+    "current_result",
+    "boundaries",
+    "authority"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "ssc-rd03-wave03-lifecycle-recovery-terminal-matrix@1"
+    },
+    "wave_id": {
+      "const": "SSC-RD-W03"
+    },
+    "lane_id": {
+      "const": "RD-03"
+    },
+    "class_id": {
+      "const": "RD-03-C05"
+    },
+    "issue": {
+      "const": 1016
+    },
+    "class_label": {
+      "const": "commitment through repayment and public recovery chronology"
+    },
+    "status": {
+      "const": "five_instrument_fifty_five_cell_matrix_terminal_bounded_source_restricted"
+    },
+    "as_of": {
+      "const": "2026-08-04"
+    },
+    "source_product": {
+      "type": "object",
+      "minProperties": 10
+    },
+    "permitted_field_states": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_fields": {
+      "const": [
+        "canonical_instrument_identity",
+        "commitment_state_and_governing_date",
+        "financial_close_and_executed_agreement_state_and_date",
+        "draw_or_cash_disbursement_state_and_date",
+        "amendment_and_waiver_chronology",
+        "default_cure_acceleration_or_enforcement_chronology",
+        "interest_payment_chronology",
+        "principal_repayment_chronology",
+        "public_recovery_or_unresolved_exposure_state",
+        "source_identities_and_exact_custody",
+        "field_and_instrument_terminal_state"
+      ]
+    },
+    "instruments": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "instrument_id",
+          "borrower",
+          "inherited_parent_state",
+          "fields",
+          "instrument_result"
+        ],
+        "properties": {
+          "instrument_id": {
+            "enum": [
+              "OSC-MP-MATERIALS-150M",
+              "OSC-VULCAN-620M",
+              "OSC-REELEMENT-80M",
+              "OSC-PHOENIX-500M",
+              "OSC-ENERGY-FUELS-725M"
+            ]
+          },
+          "borrower": {
+            "type": "string",
+            "minLength": 3
+          },
+          "inherited_parent_state": {
+            "type": "string",
+            "minLength": 3
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "canonical_instrument_identity",
+              "commitment_state_and_governing_date",
+              "financial_close_and_executed_agreement_state_and_date",
+              "draw_or_cash_disbursement_state_and_date",
+              "amendment_and_waiver_chronology",
+              "default_cure_acceleration_or_enforcement_chronology",
+              "interest_payment_chronology",
+              "principal_repayment_chronology",
+              "public_recovery_or_unresolved_exposure_state",
+              "source_identities_and_exact_custody",
+              "field_and_instrument_terminal_state"
+            ],
+            "properties": {
+              "canonical_instrument_identity": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "capture_route_ids",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "conditional_term_only",
+                      "not_applicable_by_instrument_state",
+                      "source_restricted",
+                      "source_unavailable_after_fixed_protocol",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "capture_route_ids": {
+                    "type": "array",
+                    "minItems": 6,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^RD03-W03-R0[0-4][0-9]$"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "commitment_state_and_governing_date": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "capture_route_ids",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "conditional_term_only",
+                      "not_applicable_by_instrument_state",
+                      "source_restricted",
+                      "source_unavailable_after_fixed_protocol",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "capture_route_ids": {
+                    "type": "array",
+                    "minItems": 6,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^RD03-W03-R0[0-4][0-9]$"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "financial_close_and_executed_agreement_state_and_date": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "capture_route_ids",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "conditional_term_only",
+                      "not_applicable_by_instrument_state",
+                      "source_restricted",
+                      "source_unavailable_after_fixed_protocol",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "capture_route_ids": {
+                    "type": "array",
+                    "minItems": 6,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^RD03-W03-R0[0-4][0-9]$"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "draw_or_cash_disbursement_state_and_date": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "capture_route_ids",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "conditional_term_only",
+                      "not_applicable_by_instrument_state",
+                      "source_restricted",
+                      "source_unavailable_after_fixed_protocol",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "capture_route_ids": {
+                    "type": "array",
+                    "minItems": 6,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^RD03-W03-R0[0-4][0-9]$"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "amendment_and_waiver_chronology": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "capture_route_ids",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "conditional_term_only",
+                      "not_applicable_by_instrument_state",
+                      "source_restricted",
+                      "source_unavailable_after_fixed_protocol",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "capture_route_ids": {
+                    "type": "array",
+                    "minItems": 6,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^RD03-W03-R0[0-4][0-9]$"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "default_cure_acceleration_or_enforcement_chronology": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "capture_route_ids",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "conditional_term_only",
+                      "not_applicable_by_instrument_state",
+                      "source_restricted",
+                      "source_unavailable_after_fixed_protocol",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "capture_route_ids": {
+                    "type": "array",
+                    "minItems": 6,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^RD03-W03-R0[0-4][0-9]$"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "interest_payment_chronology": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "capture_route_ids",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "conditional_term_only",
+                      "not_applicable_by_instrument_state",
+                      "source_restricted",
+                      "source_unavailable_after_fixed_protocol",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "capture_route_ids": {
+                    "type": "array",
+                    "minItems": 6,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^RD03-W03-R0[0-4][0-9]$"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "principal_repayment_chronology": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "capture_route_ids",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "conditional_term_only",
+                      "not_applicable_by_instrument_state",
+                      "source_restricted",
+                      "source_unavailable_after_fixed_protocol",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "capture_route_ids": {
+                    "type": "array",
+                    "minItems": 6,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^RD03-W03-R0[0-4][0-9]$"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "public_recovery_or_unresolved_exposure_state": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "capture_route_ids",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "conditional_term_only",
+                      "not_applicable_by_instrument_state",
+                      "source_restricted",
+                      "source_unavailable_after_fixed_protocol",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "capture_route_ids": {
+                    "type": "array",
+                    "minItems": 6,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^RD03-W03-R0[0-4][0-9]$"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "source_identities_and_exact_custody": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "capture_route_ids",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "conditional_term_only",
+                      "not_applicable_by_instrument_state",
+                      "source_restricted",
+                      "source_unavailable_after_fixed_protocol",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "capture_route_ids": {
+                    "type": "array",
+                    "minItems": 6,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^RD03-W03-R0[0-4][0-9]$"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "field_and_instrument_terminal_state": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "capture_route_ids",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "conditional_term_only",
+                      "not_applicable_by_instrument_state",
+                      "source_restricted",
+                      "source_unavailable_after_fixed_protocol",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "capture_route_ids": {
+                    "type": "array",
+                    "minItems": 6,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^RD03-W03-R0[0-4][0-9]$"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              }
+            }
+          },
+          "instrument_result": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fixed_protocol_executed",
+              "required_fields",
+              "terminal_fields",
+              "observed_fields",
+              "conditional_term_only_fields",
+              "source_restricted_fields",
+              "instrument_closed",
+              "terminal_state"
+            ],
+            "properties": {
+              "fixed_protocol_executed": {
+                "const": true
+              },
+              "required_fields": {
+                "const": 11
+              },
+              "terminal_fields": {
+                "const": 11
+              },
+              "observed_fields": {
+                "enum": [
+                  4,
+                  7
+                ]
+              },
+              "conditional_term_only_fields": {
+                "enum": [
+                  0,
+                  1
+                ]
+              },
+              "source_restricted_fields": {
+                "enum": [
+                  4,
+                  6
+                ]
+              },
+              "instrument_closed": {
+                "const": true
+              },
+              "terminal_state": {
+                "const": "bounded_source_restricted"
+              }
+            }
+          }
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instrument_rows",
+        "required_fields_per_instrument",
+        "required_fields",
+        "terminal_fields",
+        "observed_fields",
+        "conditional_term_only_fields",
+        "source_restricted_fields",
+        "source_unavailable_after_fixed_protocol_fields",
+        "not_publicly_recovered_fields",
+        "not_applicable_by_instrument_state_fields",
+        "closed_instruments",
+        "executed_and_cash_disbursed_instruments",
+        "conditional_pre_close_instruments",
+        "fixed_routes",
+        "route_attempts",
+        "transport_completions",
+        "transport_failures",
+        "http_successes",
+        "exact_source_restrictions",
+        "exact_regulatory_api_successes",
+        "candidate_census_routes",
+        "candidate_rows",
+        "unique_candidate_urls",
+        "admitted_candidate_sources",
+        "result_spawned_requests",
+        "admitted_amendment_or_waiver_records",
+        "admitted_default_cure_acceleration_or_enforcement_records",
+        "admitted_interest_payment_records",
+        "admitted_principal_repayment_records",
+        "admitted_public_recovery_records",
+        "external_contacts",
+        "external_reviews"
+      ],
+      "properties": {
+        "instrument_rows": {
+          "const": 5
+        },
+        "required_fields_per_instrument": {
+          "const": 11
+        },
+        "required_fields": {
+          "const": 55
+        },
+        "terminal_fields": {
+          "const": 55
+        },
+        "observed_fields": {
+          "const": 23
+        },
+        "conditional_term_only_fields": {
+          "const": 4
+        },
+        "source_restricted_fields": {
+          "const": 28
+        },
+        "source_unavailable_after_fixed_protocol_fields": {
+          "const": 0
+        },
+        "not_publicly_recovered_fields": {
+          "const": 0
+        },
+        "not_applicable_by_instrument_state_fields": {
+          "const": 0
+        },
+        "closed_instruments": {
+          "const": 5
+        },
+        "executed_and_cash_disbursed_instruments": {
+          "const": 1
+        },
+        "conditional_pre_close_instruments": {
+          "const": 4
+        },
+        "fixed_routes": {
+          "const": 43
+        },
+        "route_attempts": {
+          "const": 43
+        },
+        "transport_completions": {
+          "const": 43
+        },
+        "transport_failures": {
+          "const": 0
+        },
+        "http_successes": {
+          "const": 31
+        },
+        "exact_source_restrictions": {
+          "const": 12
+        },
+        "exact_regulatory_api_successes": {
+          "const": 6
+        },
+        "candidate_census_routes": {
+          "const": 25
+        },
+        "candidate_rows": {
+          "const": 250
+        },
+        "unique_candidate_urls": {
+          "const": 10
+        },
+        "admitted_candidate_sources": {
+          "const": 0
+        },
+        "result_spawned_requests": {
+          "const": 0
+        },
+        "admitted_amendment_or_waiver_records": {
+          "const": 0
+        },
+        "admitted_default_cure_acceleration_or_enforcement_records": {
+          "const": 0
+        },
+        "admitted_interest_payment_records": {
+          "const": 0
+        },
+        "admitted_principal_repayment_records": {
+          "const": 0
+        },
+        "admitted_public_recovery_records": {
+          "const": 0
+        },
+        "external_contacts": {
+          "const": 0
+        },
+        "external_reviews": {
+          "const": 0
+        }
+      }
+    },
+    "current_result": {
+      "type": "object",
+      "minProperties": 20
+    },
+    "boundaries": {
+      "type": "object",
+      "minProperties": 18
+    },
+    "authority": {
+      "type": "object",
+      "minProperties": 13
+    }
+  }
+}

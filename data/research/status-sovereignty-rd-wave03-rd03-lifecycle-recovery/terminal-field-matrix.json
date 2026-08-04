@@ -1,0 +1,1870 @@
+{
+  "schema_version": "ssc-rd03-wave03-lifecycle-recovery-terminal-matrix@1",
+  "wave_id": "SSC-RD-W03",
+  "lane_id": "RD-03",
+  "class_id": "RD-03-C05",
+  "issue": 1016,
+  "class_label": "commitment through repayment and public recovery chronology",
+  "status": "five_instrument_fifty_five_cell_matrix_terminal_bounded_source_restricted",
+  "as_of": "2026-08-04",
+  "source_product": {
+    "constitution_merge": "dc47681a9ad43e1c64c86e3d823dbb7c203a18c2",
+    "cumulative_parent_merge": "150f1693c70ce3699428c58c2687851a1ced39f7",
+    "canonical_intake_merge": "f9327072a4856d514aa2e9f99479a2038f592bf6",
+    "terminal_branch_base": "44d4544b23dc24db24a4a7c61939396ada0b5fd5",
+    "seed_path": "data/project/ssc-residual-wave03/seeds/RD-03-C05.json",
+    "field_matrix_contract_path": "data/intake/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/field-matrix-contract.json",
+    "fixed_protocol_path": "data/intake/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/fixed-protocol-package.json",
+    "capture_receipt_path": "data/intake/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/capture-execution-receipt.json",
+    "capture_receipt_sha256": "6e21709f627852dc9bd5c380285ae5c447021b4ce2e41d727d7b0f2d621a06a2",
+    "parent_lifecycle_path": "data/intake/status-sovereignty-rd03-osc-instrument-lifecycle.json",
+    "parent_negotiated_terms_path": "data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms/terminal-field-matrix.json",
+    "parent_class_receipt_path": "data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms/class-receipt.json"
+  },
+  "permitted_field_states": [
+    "observed",
+    "conditional_term_only",
+    "not_applicable_by_instrument_state",
+    "source_restricted",
+    "source_unavailable_after_fixed_protocol",
+    "not_publicly_recovered"
+  ],
+  "required_fields": [
+    "canonical_instrument_identity",
+    "commitment_state_and_governing_date",
+    "financial_close_and_executed_agreement_state_and_date",
+    "draw_or_cash_disbursement_state_and_date",
+    "amendment_and_waiver_chronology",
+    "default_cure_acceleration_or_enforcement_chronology",
+    "interest_payment_chronology",
+    "principal_repayment_chronology",
+    "public_recovery_or_unresolved_exposure_state",
+    "source_identities_and_exact_custody",
+    "field_and_instrument_terminal_state"
+  ],
+  "instruments": [
+    {
+      "instrument_id": "OSC-MP-MATERIALS-150M",
+      "borrower": "MP Materials Corp.",
+      "inherited_parent_state": "executed_and_cash_disbursed_terms_recovered_performance_and_recovery_open",
+      "fields": {
+        "canonical_instrument_identity": {
+          "state": "observed",
+          "value": {
+            "instrument_id": "OSC-MP-MATERIALS-150M",
+            "borrower": "MP Materials Corp.",
+            "frozen_unit_ordinal": 1,
+            "frozen_five_instrument_member": true,
+            "complete_osc_cohort_member_claimed": false
+          },
+          "source_ids": [
+            "SSC-RD03-S001",
+            "SSC-RD03-S002",
+            "SSC-RD03-S003",
+            "SSC-RD03-S004"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R001",
+            "RD03-W03-R002",
+            "RD03-W03-R003",
+            "RD03-W03-R004",
+            "RD03-W03-R005",
+            "RD03-W03-R013",
+            "RD03-W03-R016",
+            "RD03-W03-R019",
+            "RD03-W03-R020",
+            "RD03-W03-R021",
+            "RD03-W03-R022",
+            "RD03-W03-R023"
+          ],
+          "note": "The exact parent denominator and source custody preserve MP Materials as the sole executed-and-cash-received instrument in this frozen five-unit class.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "commitment_state_and_governing_date": {
+          "state": "observed",
+          "value": {
+            "commitment_state": "executed_direct_loan",
+            "governing_date": "2025-08",
+            "governing_date_precision": "month_from_inherited_regulatory_filing",
+            "principal_usd": 150000000,
+            "conditional_commitment": false
+          },
+          "source_ids": [
+            "SSC-RD03-S001",
+            "SSC-RD03-S002",
+            "SSC-RD03-S003",
+            "SSC-RD03-S004"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R001",
+            "RD03-W03-R002",
+            "RD03-W03-R003",
+            "RD03-W03-R004",
+            "RD03-W03-R005",
+            "RD03-W03-R013",
+            "RD03-W03-R016",
+            "RD03-W03-R019",
+            "RD03-W03-R020",
+            "RD03-W03-R021",
+            "RD03-W03-R022",
+            "RD03-W03-R023"
+          ],
+          "note": "Inherited official and regulatory custody supports a 150 million dollar executed direct loan issued in August 2025.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "financial_close_and_executed_agreement_state_and_date": {
+          "state": "observed",
+          "value": {
+            "financial_close_observed": true,
+            "executed_agreement_observed": true,
+            "observed_date": "2025-08",
+            "date_precision": "month_from_inherited_regulatory_filing",
+            "complete_executed_agreement_stack_publicly_available": false
+          },
+          "source_ids": [
+            "SSC-RD03-S001",
+            "SSC-RD03-S002",
+            "SSC-RD03-S003",
+            "SSC-RD03-S004"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R001",
+            "RD03-W03-R002",
+            "RD03-W03-R003",
+            "RD03-W03-R004",
+            "RD03-W03-R005",
+            "RD03-W03-R013",
+            "RD03-W03-R016",
+            "RD03-W03-R019",
+            "RD03-W03-R020",
+            "RD03-W03-R021",
+            "RD03-W03-R022",
+            "RD03-W03-R023"
+          ],
+          "note": "The inherited record supports execution and financial close; it does not expose a complete current agreement and amendment stack.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "draw_or_cash_disbursement_state_and_date": {
+          "state": "observed",
+          "value": {
+            "cash_proceeds_received": true,
+            "observed_cash_amount_usd": 150000000,
+            "observed_date": "2025-08",
+            "date_precision": "month_from_inherited_regulatory_filing",
+            "complete_draw_schedule_observed": false,
+            "full_draw_inferred_from_execution_alone": false
+          },
+          "source_ids": [
+            "SSC-RD03-S001",
+            "SSC-RD03-S002",
+            "SSC-RD03-S003",
+            "SSC-RD03-S004"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R001",
+            "RD03-W03-R002",
+            "RD03-W03-R003",
+            "RD03-W03-R004",
+            "RD03-W03-R005",
+            "RD03-W03-R013",
+            "RD03-W03-R016",
+            "RD03-W03-R019",
+            "RD03-W03-R020",
+            "RD03-W03-R021",
+            "RD03-W03-R022",
+            "RD03-W03-R023"
+          ],
+          "note": "The 2025 filing supports receipt of the 150 million dollar loan proceeds. The class does not generalize execution into a complete draw schedule.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "amendment_and_waiver_chronology": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S001",
+            "SSC-RD03-S002",
+            "SSC-RD03-S003",
+            "SSC-RD03-S004"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R001",
+            "RD03-W03-R002",
+            "RD03-W03-R003",
+            "RD03-W03-R004",
+            "RD03-W03-R005",
+            "RD03-W03-R013",
+            "RD03-W03-R016",
+            "RD03-W03-R019",
+            "RD03-W03-R020",
+            "RD03-W03-R021",
+            "RD03-W03-R022",
+            "RD03-W03-R023"
+          ],
+          "note": "The exact official and filing pages were HTTP-restricted during the fixed protocol, and the successful SEC indexes plus zero-admission candidate census did not supply an amendment or waiver chronology.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "default_cure_acceleration_or_enforcement_chronology": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S001",
+            "SSC-RD03-S002",
+            "SSC-RD03-S003",
+            "SSC-RD03-S004"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R001",
+            "RD03-W03-R002",
+            "RD03-W03-R003",
+            "RD03-W03-R004",
+            "RD03-W03-R005",
+            "RD03-W03-R013",
+            "RD03-W03-R016",
+            "RD03-W03-R019",
+            "RD03-W03-R020",
+            "RD03-W03-R021",
+            "RD03-W03-R022",
+            "RD03-W03-R023"
+          ],
+          "note": "The fixed protocol did not recover a complete default, cure, acceleration, or enforcement chronology. Outstanding principal snapshots are not default evidence.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "interest_payment_chronology": {
+          "state": "source_restricted",
+          "value": {
+            "annual_interest_rate_percent": 5.38,
+            "scheduled_payment_frequency": "quarterly_cash",
+            "first_scheduled_cash_interest_date": "2025-10-15",
+            "observed_interest_payment_events": null,
+            "complete_interest_payment_chronology": null
+          },
+          "source_ids": [
+            "SSC-RD03-S001",
+            "SSC-RD03-S002",
+            "SSC-RD03-S003",
+            "SSC-RD03-S004"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R001",
+            "RD03-W03-R002",
+            "RD03-W03-R003",
+            "RD03-W03-R004",
+            "RD03-W03-R005",
+            "RD03-W03-R013",
+            "RD03-W03-R016",
+            "RD03-W03-R019",
+            "RD03-W03-R020",
+            "RD03-W03-R021",
+            "RD03-W03-R022",
+            "RD03-W03-R023"
+          ],
+          "note": "The inherited filing states scheduled quarterly cash interest, but the restricted current filing pages and non-admitted candidate results do not establish actual installment payments.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "principal_repayment_chronology": {
+          "state": "source_restricted",
+          "value": {
+            "outstanding_snapshots": [
+              {
+                "as_of": "2025-12-31",
+                "amount_usd": 150000000
+              },
+              {
+                "as_of": "2026-03-31",
+                "amount_usd": 150000000
+              }
+            ],
+            "maturity_date": "2037-08-01",
+            "observed_principal_repayment_events": null,
+            "complete_principal_repayment_chronology": null
+          },
+          "source_ids": [
+            "SSC-RD03-S001",
+            "SSC-RD03-S002",
+            "SSC-RD03-S003",
+            "SSC-RD03-S004"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R001",
+            "RD03-W03-R002",
+            "RD03-W03-R003",
+            "RD03-W03-R004",
+            "RD03-W03-R005",
+            "RD03-W03-R013",
+            "RD03-W03-R016",
+            "RD03-W03-R019",
+            "RD03-W03-R020",
+            "RD03-W03-R021",
+            "RD03-W03-R022",
+            "RD03-W03-R023"
+          ],
+          "note": "The inherited filings preserve two 150 million dollar outstanding snapshots. Those snapshots do not establish a complete principal-payment history or event absence.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "public_recovery_or_unresolved_exposure_state": {
+          "state": "observed",
+          "value": {
+            "public_state": "unresolved_public_exposure",
+            "outstanding_amount_usd_at_latest_observed_snapshot": 150000000,
+            "latest_observed_snapshot_date": "2026-03-31",
+            "public_recovery_observed": false,
+            "default_inferred_from_outstanding_balance": false,
+            "companion_equity_warrant_price_support_or_offtake_counted_as_loan_recovery": false
+          },
+          "source_ids": [
+            "SSC-RD03-S001",
+            "SSC-RD03-S002",
+            "SSC-RD03-S003",
+            "SSC-RD03-S004"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R001",
+            "RD03-W03-R002",
+            "RD03-W03-R003",
+            "RD03-W03-R004",
+            "RD03-W03-R005",
+            "RD03-W03-R013",
+            "RD03-W03-R016",
+            "RD03-W03-R019",
+            "RD03-W03-R020",
+            "RD03-W03-R021",
+            "RD03-W03-R022",
+            "RD03-W03-R023"
+          ],
+          "note": "The latest inherited filing snapshot retains a 150 million dollar public loan exposure. It does not establish default, repayment failure, or realized public recovery.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_source_ids": [
+              "SSC-RD03-S001",
+              "SSC-RD03-S002",
+              "SSC-RD03-S003",
+              "SSC-RD03-S004"
+            ],
+            "exact_route_ids": [
+              "RD03-W03-R001",
+              "RD03-W03-R002",
+              "RD03-W03-R003",
+              "RD03-W03-R004",
+              "RD03-W03-R005",
+              "RD03-W03-R013",
+              "RD03-W03-R016"
+            ],
+            "successful_exact_route_ids": [
+              "RD03-W03-R013",
+              "RD03-W03-R016"
+            ],
+            "restricted_exact_route_ids": [
+              "RD03-W03-R001",
+              "RD03-W03-R002",
+              "RD03-W03-R003",
+              "RD03-W03-R004",
+              "RD03-W03-R005"
+            ],
+            "candidate_census_route_ids": [
+              "RD03-W03-R019",
+              "RD03-W03-R020",
+              "RD03-W03-R021",
+              "RD03-W03-R022",
+              "RD03-W03-R023"
+            ],
+            "candidate_rows_per_route": 10,
+            "candidate_sources_admitted": 0,
+            "result_spawned_requests": 0,
+            "capture_receipt_path": "data/intake/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/capture-execution-receipt.json",
+            "capture_receipt_sha256": "6e21709f627852dc9bd5c380285ae5c447021b4ce2e41d727d7b0f2d621a06a2",
+            "capture_artifact": {
+              "workflow_run": 30940153705,
+              "artifact_id": 8904843651,
+              "artifact_zip_sha256": "d4720bd97ff9b8abc15c088b824174ab0314904cc16f8d7420bcd117241a36a5",
+              "manifest_entries": 348,
+              "manifest_combined_sha256": "86a8906c7eb9bebd13a6f8ec1a9101e980cedaadff50dbfa28df8f13a3756b21"
+            }
+          },
+          "source_ids": [
+            "SSC-RD03-S001",
+            "SSC-RD03-S002",
+            "SSC-RD03-S003",
+            "SSC-RD03-S004"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R001",
+            "RD03-W03-R002",
+            "RD03-W03-R003",
+            "RD03-W03-R004",
+            "RD03-W03-R005",
+            "RD03-W03-R013",
+            "RD03-W03-R016",
+            "RD03-W03-R019",
+            "RD03-W03-R020",
+            "RD03-W03-R021",
+            "RD03-W03-R022",
+            "RD03-W03-R023"
+          ],
+          "note": "The exact inherited sources, 12 instrument-addressed fixed routes, artifact digests, six successful regulatory APIs, five restricted exact pages, and zero admitted candidate sources are bound without result follow-up.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "field_and_instrument_terminal_state": {
+          "state": "observed",
+          "value": {
+            "instrument_terminal_state": "bounded_source_restricted",
+            "required_fields": 11,
+            "terminal_fields": 11,
+            "observed_fields": 7,
+            "conditional_term_only_fields": 0,
+            "source_restricted_fields": 4,
+            "source_restricted_field_ids": [
+              "amendment_and_waiver_chronology",
+              "default_cure_acceleration_or_enforcement_chronology",
+              "interest_payment_chronology",
+              "principal_repayment_chronology"
+            ],
+            "instrument_closed": true
+          },
+          "source_ids": [
+            "SSC-RD03-S001",
+            "SSC-RD03-S002",
+            "SSC-RD03-S003",
+            "SSC-RD03-S004"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R001",
+            "RD03-W03-R002",
+            "RD03-W03-R003",
+            "RD03-W03-R004",
+            "RD03-W03-R005",
+            "RD03-W03-R013",
+            "RD03-W03-R016",
+            "RD03-W03-R019",
+            "RD03-W03-R020",
+            "RD03-W03-R021",
+            "RD03-W03-R022",
+            "RD03-W03-R023"
+          ],
+          "note": "Every MP Materials field is terminally typed. Source restriction closes only this bounded acquisition obligation and does not establish event absence.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "instrument_result": {
+        "fixed_protocol_executed": true,
+        "required_fields": 11,
+        "terminal_fields": 11,
+        "observed_fields": 7,
+        "conditional_term_only_fields": 0,
+        "source_restricted_fields": 4,
+        "instrument_closed": true,
+        "terminal_state": "bounded_source_restricted"
+      }
+    },
+    {
+      "instrument_id": "OSC-VULCAN-620M",
+      "borrower": "Vulcan Elements",
+      "inherited_parent_state": "conditional_pre_close_no_disbursement_observed",
+      "fields": {
+        "canonical_instrument_identity": {
+          "state": "observed",
+          "value": {
+            "instrument_id": "OSC-VULCAN-620M",
+            "borrower": "Vulcan Elements",
+            "frozen_unit_ordinal": 2,
+            "frozen_five_instrument_member": true,
+            "complete_osc_cohort_member_claimed": false
+          },
+          "source_ids": [
+            "SSC-RD03-S005"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R024",
+            "RD03-W03-R025",
+            "RD03-W03-R026",
+            "RD03-W03-R027",
+            "RD03-W03-R028"
+          ],
+          "note": "The exact parent denominator preserves this instrument as one of four distinct conditional pre-close units; it is not interchangeable with an executed loan.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "commitment_state_and_governing_date": {
+          "state": "conditional_term_only",
+          "value": {
+            "commitment_state": "conditional_pre_close_commitment",
+            "announced_ceiling_usd": 620000000,
+            "governing_date": "2025-11-03",
+            "governing_date_precision": "event_date_from_sec_submissions_index",
+            "financial_close_observed_in_parent": false,
+            "cash_disbursement_observed_in_parent": false
+          },
+          "source_ids": [
+            "SSC-RD03-S005"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R024",
+            "RD03-W03-R025",
+            "RD03-W03-R026",
+            "RD03-W03-R027",
+            "RD03-W03-R028"
+          ],
+          "note": "The published amount remains a conditional commitment ceiling subject to due diligence, final agreements, approvals, closing, and disbursement conditions.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "financial_close_and_executed_agreement_state_and_date": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S005"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R024",
+            "RD03-W03-R025",
+            "RD03-W03-R026",
+            "RD03-W03-R027",
+            "RD03-W03-R028"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. Financial close and execution remain unresolved rather than encoded as false.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "draw_or_cash_disbursement_state_and_date": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S005"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R024",
+            "RD03-W03-R025",
+            "RD03-W03-R026",
+            "RD03-W03-R027",
+            "RD03-W03-R028"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. Cash disbursement remains unresolved rather than encoded as zero.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "amendment_and_waiver_chronology": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S005"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R024",
+            "RD03-W03-R025",
+            "RD03-W03-R026",
+            "RD03-W03-R027",
+            "RD03-W03-R028"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. No complete amendment or waiver chronology is available.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "default_cure_acceleration_or_enforcement_chronology": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S005"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R024",
+            "RD03-W03-R025",
+            "RD03-W03-R026",
+            "RD03-W03-R027",
+            "RD03-W03-R028"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. Downstream default, cure, acceleration, and enforcement states cannot be resolved without silently assuming whether close occurred.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "interest_payment_chronology": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S005"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R024",
+            "RD03-W03-R025",
+            "RD03-W03-R026",
+            "RD03-W03-R027",
+            "RD03-W03-R028"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. A conditional advertised financing term is not an observed interest payment, and no complete payment chronology was recovered.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "principal_repayment_chronology": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S005"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R024",
+            "RD03-W03-R025",
+            "RD03-W03-R026",
+            "RD03-W03-R027",
+            "RD03-W03-R028"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. No funded principal balance or complete repayment chronology was recovered; missing payment records are not zero repayment.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "public_recovery_or_unresolved_exposure_state": {
+          "state": "observed",
+          "value": {
+            "public_state": "conditional_commitment_exposure_unresolved",
+            "last_publicly_observed_instrument_state": "conditional_pre_close_no_disbursement_observed",
+            "funded_public_principal_observed": false,
+            "public_recovery_observed": false,
+            "current_legal_state_claimed": false,
+            "event_absence_claimed": false
+          },
+          "source_ids": [
+            "SSC-RD03-S005"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R024",
+            "RD03-W03-R025",
+            "RD03-W03-R026",
+            "RD03-W03-R027",
+            "RD03-W03-R028"
+          ],
+          "note": "The terminal public state is unresolved conditional exposure, not an assertion that the loan never closed, funded, repaid, defaulted, or recovered.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_source_ids": [
+              "SSC-RD03-S005"
+            ],
+            "exact_route_ids": [
+              "RD03-W03-R006",
+              "RD03-W03-R007",
+              "RD03-W03-R008",
+              "RD03-W03-R014",
+              "RD03-W03-R017"
+            ],
+            "successful_exact_route_ids": [
+              "RD03-W03-R014",
+              "RD03-W03-R017"
+            ],
+            "restricted_exact_route_ids": [
+              "RD03-W03-R006",
+              "RD03-W03-R007",
+              "RD03-W03-R008"
+            ],
+            "candidate_census_route_ids": [
+              "RD03-W03-R024",
+              "RD03-W03-R025",
+              "RD03-W03-R026",
+              "RD03-W03-R027",
+              "RD03-W03-R028"
+            ],
+            "candidate_rows_per_route": 10,
+            "candidate_sources_admitted": 0,
+            "result_spawned_requests": 0,
+            "capture_receipt_path": "data/intake/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/capture-execution-receipt.json",
+            "capture_receipt_sha256": "6e21709f627852dc9bd5c380285ae5c447021b4ce2e41d727d7b0f2d621a06a2",
+            "capture_artifact": {
+              "workflow_run": 30940153705,
+              "artifact_id": 8904843651,
+              "artifact_zip_sha256": "d4720bd97ff9b8abc15c088b824174ab0314904cc16f8d7420bcd117241a36a5",
+              "manifest_entries": 348,
+              "manifest_combined_sha256": "86a8906c7eb9bebd13a6f8ec1a9101e980cedaadff50dbfa28df8f13a3756b21"
+            }
+          },
+          "source_ids": [
+            "SSC-RD03-S005"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R024",
+            "RD03-W03-R025",
+            "RD03-W03-R026",
+            "RD03-W03-R027",
+            "RD03-W03-R028"
+          ],
+          "note": "Exact inherited sources, instrument-addressed fixed routes, restricted primary pages, successful regulatory indexes where available, candidate-census digests, and zero admissions are bound without follow-up.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "field_and_instrument_terminal_state": {
+          "state": "observed",
+          "value": {
+            "instrument_terminal_state": "bounded_source_restricted",
+            "required_fields": 11,
+            "terminal_fields": 11,
+            "observed_fields": 4,
+            "conditional_term_only_fields": 1,
+            "source_restricted_fields": 6,
+            "source_restricted_field_ids": [
+              "financial_close_and_executed_agreement_state_and_date",
+              "draw_or_cash_disbursement_state_and_date",
+              "amendment_and_waiver_chronology",
+              "default_cure_acceleration_or_enforcement_chronology",
+              "interest_payment_chronology",
+              "principal_repayment_chronology"
+            ],
+            "instrument_closed": true
+          },
+          "source_ids": [
+            "SSC-RD03-S005"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R024",
+            "RD03-W03-R025",
+            "RD03-W03-R026",
+            "RD03-W03-R027",
+            "RD03-W03-R028"
+          ],
+          "note": "Every field is terminally typed. The row closes as bounded source restricted while preserving the conditional pre-close boundary and every unresolved downstream event.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "instrument_result": {
+        "fixed_protocol_executed": true,
+        "required_fields": 11,
+        "terminal_fields": 11,
+        "observed_fields": 4,
+        "conditional_term_only_fields": 1,
+        "source_restricted_fields": 6,
+        "instrument_closed": true,
+        "terminal_state": "bounded_source_restricted"
+      }
+    },
+    {
+      "instrument_id": "OSC-REELEMENT-80M",
+      "borrower": "ReElement Technologies Corporation",
+      "inherited_parent_state": "conditional_pre_close_no_disbursement_or_warrant_issuance_observed",
+      "fields": {
+        "canonical_instrument_identity": {
+          "state": "observed",
+          "value": {
+            "instrument_id": "OSC-REELEMENT-80M",
+            "borrower": "ReElement Technologies Corporation",
+            "frozen_unit_ordinal": 3,
+            "frozen_five_instrument_member": true,
+            "complete_osc_cohort_member_claimed": false
+          },
+          "source_ids": [
+            "SSC-RD03-S005",
+            "SSC-RD03-S006"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R029",
+            "RD03-W03-R030",
+            "RD03-W03-R031",
+            "RD03-W03-R032",
+            "RD03-W03-R033"
+          ],
+          "note": "The exact parent denominator preserves this instrument as one of four distinct conditional pre-close units; it is not interchangeable with an executed loan.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "commitment_state_and_governing_date": {
+          "state": "conditional_term_only",
+          "value": {
+            "commitment_state": "conditional_pre_close_commitment",
+            "announced_ceiling_usd": 80000000,
+            "governing_date": "2025-11-03",
+            "governing_date_precision": "event_date_from_sec_submissions_index",
+            "financial_close_observed_in_parent": false,
+            "cash_disbursement_observed_in_parent": false
+          },
+          "source_ids": [
+            "SSC-RD03-S005",
+            "SSC-RD03-S006"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R029",
+            "RD03-W03-R030",
+            "RD03-W03-R031",
+            "RD03-W03-R032",
+            "RD03-W03-R033"
+          ],
+          "note": "The published amount remains a conditional commitment ceiling subject to due diligence, final agreements, approvals, closing, and disbursement conditions.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "financial_close_and_executed_agreement_state_and_date": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S005",
+            "SSC-RD03-S006"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R029",
+            "RD03-W03-R030",
+            "RD03-W03-R031",
+            "RD03-W03-R032",
+            "RD03-W03-R033"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. Financial close and execution remain unresolved rather than encoded as false.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "draw_or_cash_disbursement_state_and_date": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S005",
+            "SSC-RD03-S006"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R029",
+            "RD03-W03-R030",
+            "RD03-W03-R031",
+            "RD03-W03-R032",
+            "RD03-W03-R033"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. Cash disbursement remains unresolved rather than encoded as zero.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "amendment_and_waiver_chronology": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S005",
+            "SSC-RD03-S006"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R029",
+            "RD03-W03-R030",
+            "RD03-W03-R031",
+            "RD03-W03-R032",
+            "RD03-W03-R033"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. No complete amendment or waiver chronology is available.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "default_cure_acceleration_or_enforcement_chronology": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S005",
+            "SSC-RD03-S006"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R029",
+            "RD03-W03-R030",
+            "RD03-W03-R031",
+            "RD03-W03-R032",
+            "RD03-W03-R033"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. Downstream default, cure, acceleration, and enforcement states cannot be resolved without silently assuming whether close occurred.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "interest_payment_chronology": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S005",
+            "SSC-RD03-S006"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R029",
+            "RD03-W03-R030",
+            "RD03-W03-R031",
+            "RD03-W03-R032",
+            "RD03-W03-R033"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. A conditional advertised financing term is not an observed interest payment, and no complete payment chronology was recovered.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "principal_repayment_chronology": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S005",
+            "SSC-RD03-S006"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R029",
+            "RD03-W03-R030",
+            "RD03-W03-R031",
+            "RD03-W03-R032",
+            "RD03-W03-R033"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. No funded principal balance or complete repayment chronology was recovered; missing payment records are not zero repayment.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "public_recovery_or_unresolved_exposure_state": {
+          "state": "observed",
+          "value": {
+            "public_state": "conditional_commitment_exposure_unresolved",
+            "last_publicly_observed_instrument_state": "conditional_pre_close_no_disbursement_or_warrant_issuance_observed",
+            "funded_public_principal_observed": false,
+            "public_recovery_observed": false,
+            "current_legal_state_claimed": false,
+            "event_absence_claimed": false
+          },
+          "source_ids": [
+            "SSC-RD03-S005",
+            "SSC-RD03-S006"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R029",
+            "RD03-W03-R030",
+            "RD03-W03-R031",
+            "RD03-W03-R032",
+            "RD03-W03-R033"
+          ],
+          "note": "The terminal public state is unresolved conditional exposure, not an assertion that the loan never closed, funded, repaid, defaulted, or recovered.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_source_ids": [
+              "SSC-RD03-S005",
+              "SSC-RD03-S006"
+            ],
+            "exact_route_ids": [
+              "RD03-W03-R006",
+              "RD03-W03-R007",
+              "RD03-W03-R008",
+              "RD03-W03-R014",
+              "RD03-W03-R017"
+            ],
+            "successful_exact_route_ids": [
+              "RD03-W03-R014",
+              "RD03-W03-R017"
+            ],
+            "restricted_exact_route_ids": [
+              "RD03-W03-R006",
+              "RD03-W03-R007",
+              "RD03-W03-R008"
+            ],
+            "candidate_census_route_ids": [
+              "RD03-W03-R029",
+              "RD03-W03-R030",
+              "RD03-W03-R031",
+              "RD03-W03-R032",
+              "RD03-W03-R033"
+            ],
+            "candidate_rows_per_route": 10,
+            "candidate_sources_admitted": 0,
+            "result_spawned_requests": 0,
+            "capture_receipt_path": "data/intake/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/capture-execution-receipt.json",
+            "capture_receipt_sha256": "6e21709f627852dc9bd5c380285ae5c447021b4ce2e41d727d7b0f2d621a06a2",
+            "capture_artifact": {
+              "workflow_run": 30940153705,
+              "artifact_id": 8904843651,
+              "artifact_zip_sha256": "d4720bd97ff9b8abc15c088b824174ab0314904cc16f8d7420bcd117241a36a5",
+              "manifest_entries": 348,
+              "manifest_combined_sha256": "86a8906c7eb9bebd13a6f8ec1a9101e980cedaadff50dbfa28df8f13a3756b21"
+            }
+          },
+          "source_ids": [
+            "SSC-RD03-S005",
+            "SSC-RD03-S006"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R029",
+            "RD03-W03-R030",
+            "RD03-W03-R031",
+            "RD03-W03-R032",
+            "RD03-W03-R033"
+          ],
+          "note": "Exact inherited sources, instrument-addressed fixed routes, restricted primary pages, successful regulatory indexes where available, candidate-census digests, and zero admissions are bound without follow-up.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "field_and_instrument_terminal_state": {
+          "state": "observed",
+          "value": {
+            "instrument_terminal_state": "bounded_source_restricted",
+            "required_fields": 11,
+            "terminal_fields": 11,
+            "observed_fields": 4,
+            "conditional_term_only_fields": 1,
+            "source_restricted_fields": 6,
+            "source_restricted_field_ids": [
+              "financial_close_and_executed_agreement_state_and_date",
+              "draw_or_cash_disbursement_state_and_date",
+              "amendment_and_waiver_chronology",
+              "default_cure_acceleration_or_enforcement_chronology",
+              "interest_payment_chronology",
+              "principal_repayment_chronology"
+            ],
+            "instrument_closed": true
+          },
+          "source_ids": [
+            "SSC-RD03-S005",
+            "SSC-RD03-S006"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R006",
+            "RD03-W03-R007",
+            "RD03-W03-R008",
+            "RD03-W03-R014",
+            "RD03-W03-R017",
+            "RD03-W03-R029",
+            "RD03-W03-R030",
+            "RD03-W03-R031",
+            "RD03-W03-R032",
+            "RD03-W03-R033"
+          ],
+          "note": "Every field is terminally typed. The row closes as bounded source restricted while preserving the conditional pre-close boundary and every unresolved downstream event.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "instrument_result": {
+        "fixed_protocol_executed": true,
+        "required_fields": 11,
+        "terminal_fields": 11,
+        "observed_fields": 4,
+        "conditional_term_only_fields": 1,
+        "source_restricted_fields": 6,
+        "instrument_closed": true,
+        "terminal_state": "bounded_source_restricted"
+      }
+    },
+    {
+      "instrument_id": "OSC-PHOENIX-500M",
+      "borrower": "Phoenix Tailings, Inc.",
+      "inherited_parent_state": "conditional_pre_close_no_disbursement_observed",
+      "fields": {
+        "canonical_instrument_identity": {
+          "state": "observed",
+          "value": {
+            "instrument_id": "OSC-PHOENIX-500M",
+            "borrower": "Phoenix Tailings, Inc.",
+            "frozen_unit_ordinal": 4,
+            "frozen_five_instrument_member": true,
+            "complete_osc_cohort_member_claimed": false
+          },
+          "source_ids": [
+            "SSC-RD03-S007"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R009",
+            "RD03-W03-R034",
+            "RD03-W03-R035",
+            "RD03-W03-R036",
+            "RD03-W03-R037",
+            "RD03-W03-R038"
+          ],
+          "note": "The exact parent denominator preserves this instrument as one of four distinct conditional pre-close units; it is not interchangeable with an executed loan.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "commitment_state_and_governing_date": {
+          "state": "conditional_term_only",
+          "value": {
+            "commitment_state": "conditional_pre_close_commitment",
+            "announced_ceiling_usd": 500000000,
+            "governing_date": null,
+            "governing_date_precision": "source_restricted_after_fixed_protocol",
+            "financial_close_observed_in_parent": false,
+            "cash_disbursement_observed_in_parent": false
+          },
+          "source_ids": [
+            "SSC-RD03-S007"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R009",
+            "RD03-W03-R034",
+            "RD03-W03-R035",
+            "RD03-W03-R036",
+            "RD03-W03-R037",
+            "RD03-W03-R038"
+          ],
+          "note": "The published amount remains a conditional commitment ceiling subject to due diligence, final agreements, approvals, closing, and disbursement conditions.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "financial_close_and_executed_agreement_state_and_date": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S007"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R009",
+            "RD03-W03-R034",
+            "RD03-W03-R035",
+            "RD03-W03-R036",
+            "RD03-W03-R037",
+            "RD03-W03-R038"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. Financial close and execution remain unresolved rather than encoded as false.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "draw_or_cash_disbursement_state_and_date": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S007"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R009",
+            "RD03-W03-R034",
+            "RD03-W03-R035",
+            "RD03-W03-R036",
+            "RD03-W03-R037",
+            "RD03-W03-R038"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. Cash disbursement remains unresolved rather than encoded as zero.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "amendment_and_waiver_chronology": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S007"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R009",
+            "RD03-W03-R034",
+            "RD03-W03-R035",
+            "RD03-W03-R036",
+            "RD03-W03-R037",
+            "RD03-W03-R038"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. No complete amendment or waiver chronology is available.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "default_cure_acceleration_or_enforcement_chronology": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S007"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R009",
+            "RD03-W03-R034",
+            "RD03-W03-R035",
+            "RD03-W03-R036",
+            "RD03-W03-R037",
+            "RD03-W03-R038"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. Downstream default, cure, acceleration, and enforcement states cannot be resolved without silently assuming whether close occurred.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "interest_payment_chronology": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S007"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R009",
+            "RD03-W03-R034",
+            "RD03-W03-R035",
+            "RD03-W03-R036",
+            "RD03-W03-R037",
+            "RD03-W03-R038"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. A conditional advertised financing term is not an observed interest payment, and no complete payment chronology was recovered.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "principal_repayment_chronology": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S007"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R009",
+            "RD03-W03-R034",
+            "RD03-W03-R035",
+            "RD03-W03-R036",
+            "RD03-W03-R037",
+            "RD03-W03-R038"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. No funded principal balance or complete repayment chronology was recovered; missing payment records are not zero repayment.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "public_recovery_or_unresolved_exposure_state": {
+          "state": "observed",
+          "value": {
+            "public_state": "conditional_commitment_exposure_unresolved",
+            "last_publicly_observed_instrument_state": "conditional_pre_close_no_disbursement_observed",
+            "funded_public_principal_observed": false,
+            "public_recovery_observed": false,
+            "current_legal_state_claimed": false,
+            "event_absence_claimed": false
+          },
+          "source_ids": [
+            "SSC-RD03-S007"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R009",
+            "RD03-W03-R034",
+            "RD03-W03-R035",
+            "RD03-W03-R036",
+            "RD03-W03-R037",
+            "RD03-W03-R038"
+          ],
+          "note": "The terminal public state is unresolved conditional exposure, not an assertion that the loan never closed, funded, repaid, defaulted, or recovered.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_source_ids": [
+              "SSC-RD03-S007"
+            ],
+            "exact_route_ids": [
+              "RD03-W03-R009"
+            ],
+            "successful_exact_route_ids": [],
+            "restricted_exact_route_ids": [
+              "RD03-W03-R009"
+            ],
+            "candidate_census_route_ids": [
+              "RD03-W03-R034",
+              "RD03-W03-R035",
+              "RD03-W03-R036",
+              "RD03-W03-R037",
+              "RD03-W03-R038"
+            ],
+            "candidate_rows_per_route": 10,
+            "candidate_sources_admitted": 0,
+            "result_spawned_requests": 0,
+            "capture_receipt_path": "data/intake/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/capture-execution-receipt.json",
+            "capture_receipt_sha256": "6e21709f627852dc9bd5c380285ae5c447021b4ce2e41d727d7b0f2d621a06a2",
+            "capture_artifact": {
+              "workflow_run": 30940153705,
+              "artifact_id": 8904843651,
+              "artifact_zip_sha256": "d4720bd97ff9b8abc15c088b824174ab0314904cc16f8d7420bcd117241a36a5",
+              "manifest_entries": 348,
+              "manifest_combined_sha256": "86a8906c7eb9bebd13a6f8ec1a9101e980cedaadff50dbfa28df8f13a3756b21"
+            }
+          },
+          "source_ids": [
+            "SSC-RD03-S007"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R009",
+            "RD03-W03-R034",
+            "RD03-W03-R035",
+            "RD03-W03-R036",
+            "RD03-W03-R037",
+            "RD03-W03-R038"
+          ],
+          "note": "Exact inherited sources, instrument-addressed fixed routes, restricted primary pages, successful regulatory indexes where available, candidate-census digests, and zero admissions are bound without follow-up.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "field_and_instrument_terminal_state": {
+          "state": "observed",
+          "value": {
+            "instrument_terminal_state": "bounded_source_restricted",
+            "required_fields": 11,
+            "terminal_fields": 11,
+            "observed_fields": 4,
+            "conditional_term_only_fields": 1,
+            "source_restricted_fields": 6,
+            "source_restricted_field_ids": [
+              "financial_close_and_executed_agreement_state_and_date",
+              "draw_or_cash_disbursement_state_and_date",
+              "amendment_and_waiver_chronology",
+              "default_cure_acceleration_or_enforcement_chronology",
+              "interest_payment_chronology",
+              "principal_repayment_chronology"
+            ],
+            "instrument_closed": true
+          },
+          "source_ids": [
+            "SSC-RD03-S007"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R009",
+            "RD03-W03-R034",
+            "RD03-W03-R035",
+            "RD03-W03-R036",
+            "RD03-W03-R037",
+            "RD03-W03-R038"
+          ],
+          "note": "Every field is terminally typed. The row closes as bounded source restricted while preserving the conditional pre-close boundary and every unresolved downstream event.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "instrument_result": {
+        "fixed_protocol_executed": true,
+        "required_fields": 11,
+        "terminal_fields": 11,
+        "observed_fields": 4,
+        "conditional_term_only_fields": 1,
+        "source_restricted_fields": 6,
+        "instrument_closed": true,
+        "terminal_state": "bounded_source_restricted"
+      }
+    },
+    {
+      "instrument_id": "OSC-ENERGY-FUELS-725M",
+      "borrower": "Energy Fuels Inc.",
+      "inherited_parent_state": "conditional_pre_close_20_year_proposed_tenor_no_funding_observed",
+      "fields": {
+        "canonical_instrument_identity": {
+          "state": "observed",
+          "value": {
+            "instrument_id": "OSC-ENERGY-FUELS-725M",
+            "borrower": "Energy Fuels Inc.",
+            "frozen_unit_ordinal": 5,
+            "frozen_five_instrument_member": true,
+            "complete_osc_cohort_member_claimed": false
+          },
+          "source_ids": [
+            "SSC-RD03-S008",
+            "SSC-RD03-S009"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R010",
+            "RD03-W03-R011",
+            "RD03-W03-R012",
+            "RD03-W03-R015",
+            "RD03-W03-R018",
+            "RD03-W03-R039",
+            "RD03-W03-R040",
+            "RD03-W03-R041",
+            "RD03-W03-R042",
+            "RD03-W03-R043"
+          ],
+          "note": "The exact parent denominator preserves this instrument as one of four distinct conditional pre-close units; it is not interchangeable with an executed loan.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "commitment_state_and_governing_date": {
+          "state": "conditional_term_only",
+          "value": {
+            "commitment_state": "conditional_pre_close_commitment",
+            "announced_ceiling_usd": 725000000,
+            "governing_date": "2026-06-23",
+            "governing_date_precision": "event_date_from_sec_submissions_index",
+            "financial_close_observed_in_parent": false,
+            "cash_disbursement_observed_in_parent": false
+          },
+          "source_ids": [
+            "SSC-RD03-S008",
+            "SSC-RD03-S009"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R010",
+            "RD03-W03-R011",
+            "RD03-W03-R012",
+            "RD03-W03-R015",
+            "RD03-W03-R018",
+            "RD03-W03-R039",
+            "RD03-W03-R040",
+            "RD03-W03-R041",
+            "RD03-W03-R042",
+            "RD03-W03-R043"
+          ],
+          "note": "The published amount remains a conditional commitment ceiling subject to due diligence, final agreements, approvals, closing, and disbursement conditions.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "financial_close_and_executed_agreement_state_and_date": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S008",
+            "SSC-RD03-S009"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R010",
+            "RD03-W03-R011",
+            "RD03-W03-R012",
+            "RD03-W03-R015",
+            "RD03-W03-R018",
+            "RD03-W03-R039",
+            "RD03-W03-R040",
+            "RD03-W03-R041",
+            "RD03-W03-R042",
+            "RD03-W03-R043"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. Financial close and execution remain unresolved rather than encoded as false.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "draw_or_cash_disbursement_state_and_date": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S008",
+            "SSC-RD03-S009"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R010",
+            "RD03-W03-R011",
+            "RD03-W03-R012",
+            "RD03-W03-R015",
+            "RD03-W03-R018",
+            "RD03-W03-R039",
+            "RD03-W03-R040",
+            "RD03-W03-R041",
+            "RD03-W03-R042",
+            "RD03-W03-R043"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. Cash disbursement remains unresolved rather than encoded as zero.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "amendment_and_waiver_chronology": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S008",
+            "SSC-RD03-S009"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R010",
+            "RD03-W03-R011",
+            "RD03-W03-R012",
+            "RD03-W03-R015",
+            "RD03-W03-R018",
+            "RD03-W03-R039",
+            "RD03-W03-R040",
+            "RD03-W03-R041",
+            "RD03-W03-R042",
+            "RD03-W03-R043"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. No complete amendment or waiver chronology is available.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "default_cure_acceleration_or_enforcement_chronology": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S008",
+            "SSC-RD03-S009"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R010",
+            "RD03-W03-R011",
+            "RD03-W03-R012",
+            "RD03-W03-R015",
+            "RD03-W03-R018",
+            "RD03-W03-R039",
+            "RD03-W03-R040",
+            "RD03-W03-R041",
+            "RD03-W03-R042",
+            "RD03-W03-R043"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. Downstream default, cure, acceleration, and enforcement states cannot be resolved without silently assuming whether close occurred.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "interest_payment_chronology": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S008",
+            "SSC-RD03-S009"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R010",
+            "RD03-W03-R011",
+            "RD03-W03-R012",
+            "RD03-W03-R015",
+            "RD03-W03-R018",
+            "RD03-W03-R039",
+            "RD03-W03-R040",
+            "RD03-W03-R041",
+            "RD03-W03-R042",
+            "RD03-W03-R043"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. A conditional advertised financing term is not an observed interest payment, and no complete payment chronology was recovered.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "principal_repayment_chronology": {
+          "state": "source_restricted",
+          "value": null,
+          "source_ids": [
+            "SSC-RD03-S008",
+            "SSC-RD03-S009"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R010",
+            "RD03-W03-R011",
+            "RD03-W03-R012",
+            "RD03-W03-R015",
+            "RD03-W03-R018",
+            "RD03-W03-R039",
+            "RD03-W03-R040",
+            "RD03-W03-R041",
+            "RD03-W03-R042",
+            "RD03-W03-R043"
+          ],
+          "note": "The inherited public state is conditional pre-close. The exact official or filing pages were HTTP-restricted during the fixed protocol, and the successful indexes plus zero-admission candidate census did not establish a later state. No funded principal balance or complete repayment chronology was recovered; missing payment records are not zero repayment.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "public_recovery_or_unresolved_exposure_state": {
+          "state": "observed",
+          "value": {
+            "public_state": "conditional_commitment_exposure_unresolved",
+            "last_publicly_observed_instrument_state": "conditional_pre_close_20_year_proposed_tenor_no_funding_observed",
+            "funded_public_principal_observed": false,
+            "public_recovery_observed": false,
+            "current_legal_state_claimed": false,
+            "event_absence_claimed": false
+          },
+          "source_ids": [
+            "SSC-RD03-S008",
+            "SSC-RD03-S009"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R010",
+            "RD03-W03-R011",
+            "RD03-W03-R012",
+            "RD03-W03-R015",
+            "RD03-W03-R018",
+            "RD03-W03-R039",
+            "RD03-W03-R040",
+            "RD03-W03-R041",
+            "RD03-W03-R042",
+            "RD03-W03-R043"
+          ],
+          "note": "The terminal public state is unresolved conditional exposure, not an assertion that the loan never closed, funded, repaid, defaulted, or recovered.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "source_identities_and_exact_custody": {
+          "state": "observed",
+          "value": {
+            "parent_source_ids": [
+              "SSC-RD03-S008",
+              "SSC-RD03-S009"
+            ],
+            "exact_route_ids": [
+              "RD03-W03-R010",
+              "RD03-W03-R011",
+              "RD03-W03-R012",
+              "RD03-W03-R015",
+              "RD03-W03-R018"
+            ],
+            "successful_exact_route_ids": [
+              "RD03-W03-R015",
+              "RD03-W03-R018"
+            ],
+            "restricted_exact_route_ids": [
+              "RD03-W03-R010",
+              "RD03-W03-R011",
+              "RD03-W03-R012"
+            ],
+            "candidate_census_route_ids": [
+              "RD03-W03-R039",
+              "RD03-W03-R040",
+              "RD03-W03-R041",
+              "RD03-W03-R042",
+              "RD03-W03-R043"
+            ],
+            "candidate_rows_per_route": 10,
+            "candidate_sources_admitted": 0,
+            "result_spawned_requests": 0,
+            "capture_receipt_path": "data/intake/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/capture-execution-receipt.json",
+            "capture_receipt_sha256": "6e21709f627852dc9bd5c380285ae5c447021b4ce2e41d727d7b0f2d621a06a2",
+            "capture_artifact": {
+              "workflow_run": 30940153705,
+              "artifact_id": 8904843651,
+              "artifact_zip_sha256": "d4720bd97ff9b8abc15c088b824174ab0314904cc16f8d7420bcd117241a36a5",
+              "manifest_entries": 348,
+              "manifest_combined_sha256": "86a8906c7eb9bebd13a6f8ec1a9101e980cedaadff50dbfa28df8f13a3756b21"
+            }
+          },
+          "source_ids": [
+            "SSC-RD03-S008",
+            "SSC-RD03-S009"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R010",
+            "RD03-W03-R011",
+            "RD03-W03-R012",
+            "RD03-W03-R015",
+            "RD03-W03-R018",
+            "RD03-W03-R039",
+            "RD03-W03-R040",
+            "RD03-W03-R041",
+            "RD03-W03-R042",
+            "RD03-W03-R043"
+          ],
+          "note": "Exact inherited sources, instrument-addressed fixed routes, restricted primary pages, successful regulatory indexes where available, candidate-census digests, and zero admissions are bound without follow-up.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        },
+        "field_and_instrument_terminal_state": {
+          "state": "observed",
+          "value": {
+            "instrument_terminal_state": "bounded_source_restricted",
+            "required_fields": 11,
+            "terminal_fields": 11,
+            "observed_fields": 4,
+            "conditional_term_only_fields": 1,
+            "source_restricted_fields": 6,
+            "source_restricted_field_ids": [
+              "financial_close_and_executed_agreement_state_and_date",
+              "draw_or_cash_disbursement_state_and_date",
+              "amendment_and_waiver_chronology",
+              "default_cure_acceleration_or_enforcement_chronology",
+              "interest_payment_chronology",
+              "principal_repayment_chronology"
+            ],
+            "instrument_closed": true
+          },
+          "source_ids": [
+            "SSC-RD03-S008",
+            "SSC-RD03-S009"
+          ],
+          "capture_route_ids": [
+            "RD03-W03-R010",
+            "RD03-W03-R011",
+            "RD03-W03-R012",
+            "RD03-W03-R015",
+            "RD03-W03-R018",
+            "RD03-W03-R039",
+            "RD03-W03-R040",
+            "RD03-W03-R041",
+            "RD03-W03-R042",
+            "RD03-W03-R043"
+          ],
+          "note": "Every field is terminally typed. The row closes as bounded source restricted while preserving the conditional pre-close boundary and every unresolved downstream event.",
+          "fixed_protocol_complete": true,
+          "terminal_for_class_closure": true
+        }
+      },
+      "instrument_result": {
+        "fixed_protocol_executed": true,
+        "required_fields": 11,
+        "terminal_fields": 11,
+        "observed_fields": 4,
+        "conditional_term_only_fields": 1,
+        "source_restricted_fields": 6,
+        "instrument_closed": true,
+        "terminal_state": "bounded_source_restricted"
+      }
+    }
+  ],
+  "counts": {
+    "instrument_rows": 5,
+    "required_fields_per_instrument": 11,
+    "required_fields": 55,
+    "terminal_fields": 55,
+    "observed_fields": 23,
+    "conditional_term_only_fields": 4,
+    "source_restricted_fields": 28,
+    "source_unavailable_after_fixed_protocol_fields": 0,
+    "not_publicly_recovered_fields": 0,
+    "not_applicable_by_instrument_state_fields": 0,
+    "closed_instruments": 5,
+    "executed_and_cash_disbursed_instruments": 1,
+    "conditional_pre_close_instruments": 4,
+    "fixed_routes": 43,
+    "route_attempts": 43,
+    "transport_completions": 43,
+    "transport_failures": 0,
+    "http_successes": 31,
+    "exact_source_restrictions": 12,
+    "exact_regulatory_api_successes": 6,
+    "candidate_census_routes": 25,
+    "candidate_rows": 250,
+    "unique_candidate_urls": 10,
+    "admitted_candidate_sources": 0,
+    "result_spawned_requests": 0,
+    "admitted_amendment_or_waiver_records": 0,
+    "admitted_default_cure_acceleration_or_enforcement_records": 0,
+    "admitted_interest_payment_records": 0,
+    "admitted_principal_repayment_records": 0,
+    "admitted_public_recovery_records": 0,
+    "external_contacts": 0,
+    "external_reviews": 0
+  },
+  "current_result": {
+    "terminal_state": "bounded_source_restricted",
+    "fixed_protocol_complete": true,
+    "class_closed": true,
+    "all_five_instruments_preserved": true,
+    "all_fifty_five_fields_terminal": true,
+    "executed_and_disbursed_instrument_preserved": true,
+    "four_conditional_pre_close_instruments_preserved": true,
+    "exact_source_restriction_preserved": true,
+    "candidate_results_admitted": 0,
+    "public_recovery_finding": false,
+    "favoritism_finding": false,
+    "extraction_finding": false,
+    "coordination_finding": false,
+    "common_purpose_finding": false,
+    "reviewed_disposition_changed": false,
+    "outside_human_dependency": false,
+    "project_blocking": false,
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none"
+  },
+  "boundaries": {
+    "conditional_commitment_is_financial_close": false,
+    "financial_close_is_cash_disbursement": false,
+    "executed_loan_is_full_draw": false,
+    "scheduled_interest_is_observed_payment": false,
+    "outstanding_obligation_is_default": false,
+    "maturity_term_is_repayment": false,
+    "companion_public_right_is_loan_recovery": false,
+    "http_restriction_is_event_absence": false,
+    "candidate_result_is_admitted_source": false,
+    "submissions_index_is_filing_content": false,
+    "company_facts_is_complete_lifecycle_chronology": false,
+    "no_public_event_is_event_absence": false,
+    "five_named_instruments_are_complete_osc_cohort": false,
+    "class_closure_is_lane_or_wave_completion": false,
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none"
+  },
+  "authority": {
+    "outside_human_dependency": false,
+    "external_contacts": 0,
+    "external_reviews": 0,
+    "denominator_widened": false,
+    "reviewed_disposition_changed": false,
+    "favoritism_finding": false,
+    "extraction_finding": false,
+    "public_recovery_finding": false,
+    "coordination_finding": false,
+    "common_purpose_finding": false,
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none"
+  }
+}
