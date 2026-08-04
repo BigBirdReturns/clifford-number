@@ -1,0 +1,171 @@
+name: TEMP materialize SSC Wave-02 five-closure ledger
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-ledger5-materializer-v1.yml'
+      - '.github/tmp/materialize-ssc-rd03-ledger5.py'
+      - '.rd03-ledger5-materializer/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd03-ledger5-materializer-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-ledger5-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPECTED_MAIN: 580d9c998f747330d190bed5011c7a1a517a1c0d
+      TARGET_BRANCH: agent/ssc-wave02-current-ledger-five-closures
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Patch, qualify, and publish exact permanent product
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/ssc-rd03-ledger5-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          mkdir -p "$out"
+          echo "RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          exec > >(tee "$out/trace.log") 2>&1
+          step=initialize
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$out/exit-code.txt"
+            printf '%s\n' "$step" > "$out/final-step.txt"
+            git rev-parse HEAD > "$out/head.txt" 2>&1 || true
+            git rev-parse 'HEAD^{tree}' > "$out/tree.txt" 2>&1 || true
+            git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
+            git diff --name-status "$EXPECTED_MAIN" HEAD > "$out/name-status.txt" 2>&1 || true
+            git diff --name-only "$EXPECTED_MAIN" HEAD | sort > "$out/paths.txt" 2>&1 || true
+            git ls-remote --heads origin refs/heads/main > "$out/remote-main.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1 || true
+            OUT="$out" RC="$rc" STEP="$step" python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          out=Path(os.environ['OUT'])
+          receipt={
+            'schema_version':'ssc-rd03-wave02-ledger5-materialization@1',
+            'run':int(os.environ['GITHUB_RUN_ID']),
+            'exit_code':int(os.environ['RC']),
+            'final_step':os.environ['STEP'],
+            'main_parent':os.environ['EXPECTED_MAIN'],
+            'target_branch':os.environ['TARGET_BRANCH'],
+            'permanent_paths':7,
+            'closed_residual_classes':5,
+            'open_residual_classes':37,
+            'open_selected_class_ids':['RD-02-C04'],
+            'rd03_merge':'580d9c998f747330d190bed5011c7a1a517a1c0d',
+            'rd03_manifest':'1323477ae4b4bda480eb9bf1484cde7db9783920c834a69996ca0428c57fb16e',
+            'current_ledger_mutations':42,
+            'rd03_terminal_mutations':94,
+            'outside_human_dependency':False,
+            'external_contacts':0,
+            'external_reviews':0,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+          }
+          payload=(json.dumps(receipt,indent=2)+'\n').encode()
+          (out/'receipt.json').write_bytes(payload)
+          for path in sorted(out.iterdir()):
+            if path.is_file() and not path.name.endswith('.sha256'):
+              (out/(path.name+'.sha256')).write_text(hashlib.sha256(path.read_bytes()).hexdigest()+'  '+path.name+'\n')
+          PY
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          step=verify-exact-main
+          test "$(git rev-parse HEAD)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+
+          step=apply-exact-patch
+          git show "origin/agent/ssc-rd03-ledger5-materializer-base-v1:.github/tmp/materialize-ssc-rd03-ledger5.py" > /tmp/materialize-ledger5.py
+          python /tmp/materialize-ledger5.py
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --write
+
+          step=focused-five-closure-qualification
+          node --check tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node --check tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node --check test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+
+          step=commit-exact-seven-path-product
+          cat > "$out/expected-paths.txt" <<'PATHS'
+          .github/workflows/status-sovereignty-residual-denominator-wave-02-current.yml
+          data/research/status-sovereignty-residual-denominator-wave-02-current.json
+          docs/milestones/ssc-residual-denominator-wave-02-current.md
+          schemas/status-sovereignty-residual-denominator-wave-02-current.schema.json
+          test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs
+          tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          PATHS
+          sed -i 's/^          //' "$out/expected-paths.txt"
+          git diff --name-only | sort > "$out/worktree-paths.txt"
+          cmp "$out/expected-paths.txt" "$out/worktree-paths.txt"
+          test -z "$(git diff --name-status | awk '$1 != "M" {print}')"
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$TARGET_BRANCH"
+          git add -- $(cat "$out/expected-paths.txt")
+          git commit -m 'Promote RD-03 into Wave-02 cumulative closure ledger'
+          product_commit="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$product_commit" > "$out/product-commit.txt"
+          printf '%s\n' "$product_tree" > "$out/product-tree.txt"
+
+          step=complete-repository-release-gate
+          npm run release:check
+
+          step=deterministic-clean-replay
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          step=final-main-and-target-lease
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"
+
+          step=publish-permanent-product
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$product_commit"
+
+          step=materialization-complete
+          finish
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-wave02-ledger5-materialization-v1
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
