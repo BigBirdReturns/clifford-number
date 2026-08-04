@@ -1,0 +1,102 @@
+name: TEMP materialize exact RD-02 terminal closure v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd02-terminal-materializer-v1.yml'
+      - '.rd02-terminal-v1/**'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd02-terminal-v1-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd02-terminal-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ef70f7ad406c518f4b640ca4641c5a0f045a0d8d
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct and execute checksum-bound terminal carrier
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/rd02-terminal-carrier /tmp/rd02-terminal-carrier.* /tmp/ssc-rd02-terminal-receipt-v1
+          mkdir -p /tmp/rd02-terminal-carrier /tmp/ssc-rd02-terminal-receipt-v1
+          git fetch origin \
+            'refs/heads/agent/ssc-rd02-terminal-materializer-base-v1:refs/remotes/origin/agent/ssc-rd02-terminal-materializer-base-v1'
+
+          : > /tmp/rd02-terminal-carrier.b64
+          cat > /tmp/rd02-terminal-carrier-parts.tsv <<'PARTS'
+          part-00.b64	12000	1d4701eeb3aa2bd9f146e00b88e0bb33e8887777989ce86a0d77377dba24c9c9
+          part-01.b64	12000	33ef6cd1cda09ccc42d5e1e2b0617a673803c4a2325abef05127a906e8eba5e4
+          part-02.b64	11936	67838d02d8244519156cda6c7805704a5e4a25914d84c810577ef0df3b40f7cf
+          PARTS
+          sed -i 's/^          //' /tmp/rd02-terminal-carrier-parts.tsv
+          while IFS=$'\t' read -r part expected_bytes expected_sha; do
+            git show \
+              "origin/agent/ssc-rd02-terminal-materializer-base-v1:.rd02-terminal-v1/carrier/$part" \
+              > "/tmp/$part"
+            test "$(wc -c < "/tmp/$part" | tr -d ' ')" = "$expected_bytes"
+            test "$(sha256sum "/tmp/$part" | awk '{print $1}')" = "$expected_sha"
+            cat "/tmp/$part" >> /tmp/rd02-terminal-carrier.b64
+          done < /tmp/rd02-terminal-carrier-parts.tsv
+          test "$(wc -c < /tmp/rd02-terminal-carrier.b64 | tr -d ' ')" = '35936'
+          test "$(sha256sum /tmp/rd02-terminal-carrier.b64 | awk '{print $1}')" = \
+            '221a3b05b7caddaafd57463ecf61ee81c7a9a2f50460080091d3f44e24a3eedd'
+          base64 --decode /tmp/rd02-terminal-carrier.b64 > /tmp/rd02-terminal-carrier.zip
+          test "$(wc -c < /tmp/rd02-terminal-carrier.zip | tr -d ' ')" = '26950'
+          test "$(sha256sum /tmp/rd02-terminal-carrier.zip | awk '{print $1}')" = \
+            '3c544be21dc40d3ae30396f66af9fb19a8008365d41ad6ae1d62fd5d2613d5f1'
+          unzip -q /tmp/rd02-terminal-carrier.zip -d /tmp/rd02-terminal-carrier
+          bash -n /tmp/rd02-terminal-carrier/materialize.sh
+
+          set +e
+          bash -x /tmp/rd02-terminal-carrier/materialize.sh \
+            2>&1 | tee /tmp/rd02-terminal-materializer-execution.log
+          materializer_status="${PIPESTATUS[0]}"
+          set -e
+
+          mkdir -p /tmp/ssc-rd02-terminal-receipt-v1
+          cp /tmp/rd02-terminal-materializer-execution.log \
+            /tmp/ssc-rd02-terminal-receipt-v1/execution.log
+          cat > /tmp/ssc-rd02-terminal-receipt-v1/carrier-binding.json <<JSON
+          {
+            "schema_version": "ssc-rd02-terminal-carrier-binding@1",
+            "carrier_base64_bytes": 35936,
+            "carrier_base64_sha256": "221a3b05b7caddaafd57463ecf61ee81c7a9a2f50460080091d3f44e24a3eedd",
+            "carrier_zip_bytes": 26950,
+            "carrier_zip_sha256": "3c544be21dc40d3ae30396f66af9fb19a8008365d41ad6ae1d62fd5d2613d5f1",
+            "exit_status": ${materializer_status},
+            "completed": $([ "$materializer_status" = '0' ] && printf true || printf false),
+            "outside_human_dependency": false,
+            "external_contacts": 0,
+            "external_reviews": 0
+          }
+          JSON
+          sed -i 's/^          //' /tmp/ssc-rd02-terminal-receipt-v1/carrier-binding.json
+          sha256sum /tmp/ssc-rd02-terminal-receipt-v1/execution.log \
+            > /tmp/ssc-rd02-terminal-receipt-v1/execution.log.sha256
+          exit "$materializer_status"
+
+      - name: Preserve exact terminal materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave02-terminal-materialization-v1
+          path: /tmp/ssc-rd02-terminal-receipt-v1
+          if-no-files-found: error
+          retention-days: 90
