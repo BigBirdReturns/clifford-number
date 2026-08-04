@@ -46,6 +46,7 @@ jobs:
           rm -rf "$bootstrap"
           mkdir -p "$bootstrap"
           echo "RECEIPT_DIR=$bootstrap" >> "$GITHUB_ENV"
+          export RECEIPT_DIR="$bootstrap"
           printf '%s\n' derive-v2-controller > "$bootstrap/final-step.txt"
           printf '%s\n' 1 > "$bootstrap/exit-code.txt"
 
