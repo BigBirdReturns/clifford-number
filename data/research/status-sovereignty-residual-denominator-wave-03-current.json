@@ -4,14 +4,17 @@
   "hypothesis_id": "SSC-H01",
   "issue": 1013,
   "as_of": "2026-08-04",
-  "authority": "one_wave03_terminal_class_receipt_promoted_without_cross_lane_empirical_authority",
+  "authority": "two_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority",
   "source_snapshots": {
     "wave_02_current_ledger_path": "data/research/status-sovereignty-residual-denominator-wave-02-current.json",
     "wave_02_cumulative_promotion_merge": "2af6bb7819a37e51c7198fb48da894445a29e494",
     "wave_03_constitution_path": "data/research/status-sovereignty-residual-denominator-wave-03-constitution.json",
     "rd01_closure_reference_path": "data/project/ssc-residual-wave03/closures/RD-01-C06.json",
     "rd01_class_receipt_path": "data/research/status-sovereignty-rd-wave03-rd01-methodology-correction/class-receipt.json",
-    "rd01_merge_commit": "c27e7d3cde2c94c1cde5d66dcce8eb06b514ff8a"
+    "rd01_merge_commit": "c27e7d3cde2c94c1cde5d66dcce8eb06b514ff8a",
+    "rd03_closure_reference_path": "data/project/ssc-residual-wave03/closures/RD-03-C05.json",
+    "rd03_class_receipt_path": "data/research/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/class-receipt.json",
+    "rd03_merge_commit": "eadf234983ae61eb25286c9472435c052a241854"
   },
   "promoted_class_receipts": [
     {
@@ -125,6 +128,22 @@
       "class_receipt_path": "data/research/status-sovereignty-rd-wave03-rd01-methodology-correction/class-receipt.json",
       "manifest_combined_sha256": "9b59871cf7ce40e68d0a2a89b41148a6c92b7201702d91a7724d1310ddbcc461",
       "class_closed": true
+    },
+    {
+      "lane_id": "RD-03",
+      "class_id": "RD-03-C05",
+      "issue": 1016,
+      "source_pr": 1057,
+      "merge_commit": "eadf234983ae61eb25286c9472435c052a241854",
+      "constitutional_exact_label": "commitment, closing, draw, disbursement, amendment, waiver, default, cure, repayment, and recovery chronology",
+      "receipt_class_label": "commitment through repayment and public recovery chronology",
+      "labels_exact_match": false,
+      "label_reconciliation": "receipt_label_summarizes_the_constitutional_scope_as_commitment_through_repayment_and_public_recovery_chronology; class identity remains bound by RD-03-C05, issue 1016, and the exact closure label",
+      "terminal_state": "bounded_source_restricted",
+      "closure_reference_path": "data/project/ssc-residual-wave03/closures/RD-03-C05.json",
+      "class_receipt_path": "data/research/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/class-receipt.json",
+      "manifest_combined_sha256": "595b2d1fd0a2315657935d44c87d984dd33043eff1f33b6b0e209c689299a35a",
+      "class_closed": true
     }
   ],
   "selected_classes_open": [
@@ -133,14 +152,6 @@
       "class_id": "RD-02-C05",
       "issue": 1015,
       "constitutional_exact_label": "complete portfolio investment, follow-on, exit, write-off, default, return, and repayment ledger",
-      "state": "open",
-      "class_closed": false
-    },
-    {
-      "lane_id": "RD-03",
-      "class_id": "RD-03-C05",
-      "issue": 1016,
-      "constitutional_exact_label": "commitment, closing, draw, disbursement, amendment, waiver, default, cure, repayment, and recovery chronology",
       "state": "open",
       "class_closed": false
     },
@@ -173,12 +184,12 @@
     "canonical_residual_classes": 42,
     "classes_closed_before_wave": 6,
     "wave_03_selected_class_attempts": 6,
-    "wave_03_terminal_class_receipts": 1,
-    "classes_closed_this_wave": 1,
-    "closed_residual_classes": 7,
-    "open_residual_classes": 35,
-    "label_reconciliations": 1,
-    "wave_03_label_reconciliations": 0,
+    "wave_03_terminal_class_receipts": 2,
+    "classes_closed_this_wave": 2,
+    "closed_residual_classes": 8,
+    "open_residual_classes": 34,
+    "label_reconciliations": 2,
+    "wave_03_label_reconciliations": 1,
     "outside_human_dependencies": 0,
     "external_contacts": 0,
     "external_reviews": 0,
@@ -193,9 +204,9 @@
     "adoption_effects": 0
   },
   "current_result": {
-    "terminal_state": "one_of_six_wave03_selected_classes_terminal_seven_of_forty_two_residual_classes_closed",
-    "classes_closed": 7,
-    "classes_open": 35,
+    "terminal_state": "two_of_six_wave03_selected_classes_terminal_eight_of_forty_two_residual_classes_closed",
+    "classes_closed": 8,
+    "classes_open": 34,
     "closed_class_ids": [
       "RD-04-C01",
       "RD-05-C03",
@@ -203,12 +214,12 @@
       "RD-06-C01",
       "RD-03-C04",
       "RD-02-C04",
-      "RD-01-C06"
+      "RD-01-C06",
+      "RD-03-C05"
     ],
-    "wave_03_selected_attempts_terminal": 1,
+    "wave_03_selected_attempts_terminal": 2,
     "open_selected_class_ids": [
       "RD-02-C05",
-      "RD-03-C05",
       "RD-04-C02",
       "RD-05-C02",
       "RD-06-C04"
@@ -227,10 +238,13 @@
     "one_wave03_class_closure_closes_lane": false,
     "one_wave03_class_closure_closes_wave": false,
     "bounded_source_unavailable_is_event_absence": false,
+    "bounded_source_restricted_is_event_absence": false,
     "not_publicly_recovered_is_nonoccurrence": false,
     "prospective_re_evaluation_is_completed_re_evaluation": false,
+    "outstanding_balance_is_default": false,
+    "scheduled_payment_is_observed_payment": false,
     "class_closure_is_selector_accuracy_or_technical_superiority": false,
-    "seven_closures_are_complete_compact": false,
+    "eight_closures_are_complete_compact": false,
     "functional_convergence_is_coordination_or_common_purpose": false,
     "graph_effect": "none",
     "publication_effect": "none",
