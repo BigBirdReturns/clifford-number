@@ -92,6 +92,61 @@ jobs:
           (cd /tmp/rd03-authored && sha256sum --check --strict /tmp/rd03-authored-sha256.txt)
           test "$(find /tmp/rd03-authored -type f | wc -l | tr -d ' ')" = '6'
 
+          # Repair the exact raw-byte custody seam without changing any semantic product rule.
+          python - <<'PY'
+          from pathlib import Path
+          root = Path('/tmp/rd03-authored')
+
+          builder = root / 'tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs'
+          text = builder.read_text()
+          old = """function readInputs(root) {\n  return {\n    matrix: readJson(root, MATRIX_PATH),\n    parent: readJson(root, PARENT_PATH),\n"""
+          new = """function readInputs(root) {\n  return {\n    matrix: readJson(root, MATRIX_PATH),\n    matrixSha256: sha256(readBytes(root, MATRIX_PATH)),\n    parent: readJson(root, PARENT_PATH),\n    parentSha256: sha256(readBytes(root, PARENT_PATH)),\n"""
+          assert text.count(old) == 1, text.count(old)
+          text = text.replace(old, new)
+          old = """    matrix, parent, seed, execution, censusSummary, censusManifest, routeResults,\n    candidateIndex, candidateUrls, evidenceIndex, protocolLedger\n"""
+          new = """    matrix, matrixSha256, parent, parentSha256, seed, execution, censusSummary, censusManifest, routeResults,\n    candidateIndex, candidateUrls, evidenceIndex, protocolLedger\n"""
+          assert text.count(old) == 1, text.count(old)
+          text = text.replace(old, new)
+          old = "ok(sha256(Buffer.from(`${JSON.stringify(matrix, null, 2)}\\n`, 'utf8')) === MATRIX_SHA256, 'field matrix exact bytes changed');"
+          new = "ok(matrixSha256 === MATRIX_SHA256, 'field matrix exact bytes changed');"
+          assert text.count(old) == 1, text.count(old)
+          text = text.replace(old, new)
+          old = "ok(sha256(Buffer.from(`${JSON.stringify(parent, null, 2)}\\n`, 'utf8')) === PARENT_SHA256, 'parent lifecycle exact bytes changed');"
+          new = "ok(parentSha256 === PARENT_SHA256, 'parent lifecycle exact bytes changed');"
+          assert text.count(old) == 1, text.count(old)
+          builder.write_text(text.replace(old, new))
+
+          validator = root / 'tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs'
+          text = validator.read_text()
+          old = """    parentMatrix: readJson(root, MATRIX_PATH),\n    parent: readJson(root, PARENT_PATH),\n    seed: readJson(root, SEED_PATH)\n"""
+          new = """    parentMatrix: readJson(root, MATRIX_PATH),\n    parentMatrixSha256: sha256(readBytes(root, MATRIX_PATH)),\n    parent: readJson(root, PARENT_PATH),\n    parentSha256: sha256(readBytes(root, PARENT_PATH)),\n    seed: readJson(root, SEED_PATH)\n"""
+          assert text.count(old) == 1, text.count(old)
+          text = text.replace(old, new)
+          old = """    candidateIndex, candidateUrls, evidenceIndex, protocolLedger, parentMatrix, parent, seed\n"""
+          new = """    candidateIndex, candidateUrls, evidenceIndex, protocolLedger, parentMatrix, parentMatrixSha256, parent, parentSha256, seed\n"""
+          assert text.count(old) == 1, text.count(old)
+          text = text.replace(old, new)
+          old = "ok(sha256(Buffer.from(`${JSON.stringify(parentMatrix, null, 2)}\\n`, 'utf8')) === MATRIX_SHA256, 'parent matrix exact bytes changed');"
+          new = "ok(parentMatrixSha256 === MATRIX_SHA256, 'parent matrix exact bytes changed');"
+          assert text.count(old) == 1, text.count(old)
+          text = text.replace(old, new)
+          old = "ok(sha256(Buffer.from(`${JSON.stringify(parent, null, 2)}\\n`, 'utf8')) === PARENT_SHA256, 'parent lifecycle exact bytes changed');"
+          new = "ok(parentSha256 === PARENT_SHA256, 'parent lifecycle exact bytes changed');"
+          assert text.count(old) == 1, text.count(old)
+          validator.write_text(text.replace(old, new))
+          PY
+
+          cat > /tmp/rd03-authored-sha256.txt <<'HASHES'
+          9be66bc9028ec74a982a830e639556d33eef3ad1227d4cb21eb7087e60c9e55a  ./.github/workflows/status-sovereignty-rd-wave02-rd03-negotiated-terms.yml
+          bd1c883a6af8c18b87e2637d9da335451b36b38174d3da62f62458395d70bc12  ./docs/milestones/ssc-rd-wave02-rd03-negotiated-terms.md
+          c49b0701301760486fb77e22bda601ba05b71fc7b5896d5e31ad7a51e30d5765  ./schemas/status-sovereignty-rd-wave02-rd03-negotiated-terms.schema.json
+          17f7c3658ccb75e4ce40806b6219b3254ecf2157d86d9e70f1608c09174623de  ./test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          26246aa274e555dc31906427d33b7a8e9c5fe1330d6d5c90717016b491ad9c72  ./tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          3e0915f24a5ff6cd421ea9e0ba3eaa2f27f39869d0c6b204ba6331b4108a5aea  ./tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          HASHES
+          sed -i 's/^          //' /tmp/rd03-authored-sha256.txt
+          (cd /tmp/rd03-authored && sha256sum --check --strict /tmp/rd03-authored-sha256.txt)
+
           rm -rf /tmp/rd03-census /tmp/rd03-census.zip
           mkdir -p /tmp/rd03-census
           curl --fail --silent --show-error --location \
