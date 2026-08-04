@@ -1,0 +1,164 @@
+name: TEMP materialize SSC Wave 03 current cumulative ledger v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-wave03-current-ledger-materializer-v1.yml'
+      - '.ssc-wave03-current-ledger-materializer-v1/**'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-wave03-current-ledger-materializer-v1-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-wave03-current-ledger-materializer-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TARGET_BRANCH: agent/ssc-residual-denominator-wave03-current-v1
+      EXPECTED_TARGET_HEAD: c27e7d3cde2c94c1cde5d66dcce8eb06b514ff8a
+      B64_BYTES: '17168'
+      B64_SHA256: bd3354f2d58eea7475b6354560d74664dff46490d019d390b9871137227abd17
+      XZ_BYTES: '12876'
+      XZ_SHA256: 91ec012fd52fcc1cee8e48ce67c4528a90121116620a768016288cf110ed1755
+      PATH_LIST_SHA256: ac484f56a9a6810de817694185c53813258f0ab4a85a062564afd9fdb929725c
+      FILE_MANIFEST_SHA256: e7420a4b4b150c312f4be1bf0b46cd71c881f2f7a87c0e0d0c9126bfc77f4931
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct and verify exact seven-path package
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          carrier='.ssc-wave03-current-ledger-materializer-v1'
+          cat "$carrier"/payload-*.b64 > "$RUNNER_TEMP/package.b64"
+          test "$(wc -c < "$RUNNER_TEMP/package.b64")" = "$B64_BYTES"
+          test "$(sha256sum "$RUNNER_TEMP/package.b64" | cut -d' ' -f1)" = "$B64_SHA256"
+          base64 -d "$RUNNER_TEMP/package.b64" > "$RUNNER_TEMP/package.tar.xz"
+          test "$(wc -c < "$RUNNER_TEMP/package.tar.xz")" = "$XZ_BYTES"
+          test "$(sha256sum "$RUNNER_TEMP/package.tar.xz" | cut -d' ' -f1)" = "$XZ_SHA256"
+          test "$(sha256sum "$carrier/paths.txt" | cut -d' ' -f1)" = "$PATH_LIST_SHA256"
+          test "$(sha256sum "$carrier/files.txt" | cut -d' ' -f1)" = "$FILE_MANIFEST_SHA256"
+          mkdir -p "$RUNNER_TEMP/package"
+          tar -xJf "$RUNNER_TEMP/package.tar.xz" -C "$RUNNER_TEMP/package"
+          (cd "$RUNNER_TEMP/package" && find . -type f -printf '%P\n' | sort) > "$RUNNER_TEMP/actual-paths.txt"
+          diff -u "$carrier/paths.txt" "$RUNNER_TEMP/actual-paths.txt"
+          while read -r expected_sha expected_bytes rel; do
+            test -f "$RUNNER_TEMP/package/$rel"
+            test "$(wc -c < "$RUNNER_TEMP/package/$rel")" = "$expected_bytes"
+            test "$(sha256sum "$RUNNER_TEMP/package/$rel" | cut -d' ' -f1)" = "$expected_sha"
+          done < "$carrier/files.txt"
+
+      - name: Qualify complete seven-path product and publish six ordinary paths
+        run: |
+          set -Eeuo pipefail
+          remote_head="$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | cut -f1)"
+          test "$remote_head" = "$EXPECTED_TARGET_HEAD"
+
+          full="$RUNNER_TEMP/full"
+          git worktree add --detach "$full" "$EXPECTED_TARGET_HEAD"
+          git -C "$full" config user.name github-actions[bot]
+          git -C "$full" config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          while read -r rel; do
+            mkdir -p "$full/$(dirname "$rel")"
+            cp "$RUNNER_TEMP/package/$rel" "$full/$rel"
+          done < .ssc-wave03-current-ledger-materializer-v1/paths.txt
+
+          cd "$full"
+          node tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-03-current.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git add --pathspec-from-file="$GITHUB_WORKSPACE/.ssc-wave03-current-ledger-materializer-v1/paths.txt"
+          git diff --cached --name-only | sort > "$RUNNER_TEMP/full-paths.txt"
+          diff -u "$GITHUB_WORKSPACE/.ssc-wave03-current-ledger-materializer-v1/paths.txt" "$RUNNER_TEMP/full-paths.txt"
+          git commit -m 'Qualify Wave-03 cumulative ledger at seven closed and thirty-five open'
+          full_commit="$(git rev-parse HEAD)"
+          full_tree="$(git rev-parse HEAD^{tree})"
+          npm run release:check
+          git reset --hard HEAD
+          node tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-03-current.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          pub="$RUNNER_TEMP/pub"
+          git worktree add --detach "$pub" "$EXPECTED_TARGET_HEAD"
+          git -C "$pub" config user.name github-actions[bot]
+          git -C "$pub" config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          grep -v '^\.github/workflows/status-sovereignty-residual-denominator-wave-03-current.yml$' "$GITHUB_WORKSPACE/.ssc-wave03-current-ledger-materializer-v1/paths.txt" > "$RUNNER_TEMP/nonworkflow-paths.txt"
+          while read -r rel; do
+            mkdir -p "$pub/$(dirname "$rel")"
+            cp "$RUNNER_TEMP/package/$rel" "$pub/$rel"
+          done < "$RUNNER_TEMP/nonworkflow-paths.txt"
+          cd "$pub"
+          node tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-03-current.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git add --pathspec-from-file="$RUNNER_TEMP/nonworkflow-paths.txt"
+          git diff --cached --name-only | sort > "$RUNNER_TEMP/pub-paths.txt"
+          diff -u "$RUNNER_TEMP/nonworkflow-paths.txt" "$RUNNER_TEMP/pub-paths.txt"
+          git commit -m 'Materialize Wave-03 cumulative ledger without standing workflow'
+          pub_commit="$(git rev-parse HEAD)"
+          pub_tree="$(git rev-parse HEAD^{tree})"
+          test "$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET_HEAD"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET_HEAD" origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          mkdir -p "$RUNNER_TEMP/receipt"
+          cp "$RUNNER_TEMP/package/.github/workflows/status-sovereignty-residual-denominator-wave-03-current.yml" "$RUNNER_TEMP/receipt/desired-standing-workflow.yml"
+          cp "$GITHUB_WORKSPACE/.ssc-wave03-current-ledger-materializer-v1/paths.txt" "$RUNNER_TEMP/receipt/full-paths.txt"
+          cp "$RUNNER_TEMP/nonworkflow-paths.txt" "$RUNNER_TEMP/receipt/nonworkflow-paths.txt"
+          python - "$RUNNER_TEMP/receipt/receipt.json" "$full_commit" "$full_tree" "$pub_commit" "$pub_tree" <<'PY'
+          import json, os, sys
+          out, full_commit, full_tree, pub_commit, pub_tree = sys.argv[1:]
+          value = {
+            'schema_version':'ssc-wave03-current-ledger-materialization-receipt@1',
+            'target_branch':os.environ['TARGET_BRANCH'],
+            'expected_target_head':os.environ['EXPECTED_TARGET_HEAD'],
+            'qualified_full_commit':full_commit,
+            'qualified_full_tree':full_tree,
+            'published_nonworkflow_commit':pub_commit,
+            'published_nonworkflow_tree':pub_tree,
+            'full_paths':7,
+            'published_nonworkflow_paths':6,
+            'standing_workflow_paths':1,
+            'package_xz_sha256':os.environ['XZ_SHA256'],
+            'package_base64_sha256':os.environ['B64_SHA256'],
+            'path_list_sha256':os.environ['PATH_LIST_SHA256'],
+            'file_manifest_sha256':os.environ['FILE_MANIFEST_SHA256'],
+            'canonical_residual_classes':42,
+            'closed_residual_classes':7,
+            'open_residual_classes':35,
+            'wave03_terminal_class_receipts':1,
+            'wave03_selected_classes_open':5,
+            'complete_compact':False,
+            'outside_human_dependency':False,
+            'external_contacts':0,
+            'external_reviews':0,
+            'publication_effect':'none','adoption_effect':'none','graph_effect':'none'
+          }
+          open(out,'w').write(json.dumps(value,indent=2)+'\n')
+          PY
+          sha256sum "$RUNNER_TEMP/receipt"/* > "$RUNNER_TEMP/receipt/SHA256SUMS"
+          echo "RECEIPT_DIR=$RUNNER_TEMP/receipt" >> "$GITHUB_ENV"
+
+      - name: Preserve exact cumulative-ledger materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave03-current-ledger-materialization-v1
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
