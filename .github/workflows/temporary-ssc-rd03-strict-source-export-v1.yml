@@ -21,7 +21,7 @@ jobs:
           ref: agent/ssc-rd03-terminal-materializer-base-v4
           fetch-depth: 0
 
-      - name: Reconstruct exact strict source package
+      - name: Reconstruct and preserve strict source package
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -64,7 +64,7 @@ jobs:
           test "$(sha256sum /tmp/rd03-v4.patch | awk '{print $1}')" = '5b1f0f43ce28091c6fe9364952d1443805e0adee34d9573ef86c454188aa2d9b'
           (cd /tmp/rd03-strict-export && git apply --check /tmp/rd03-v4.patch && git apply /tmp/rd03-v4.patch)
 
-          cat > /tmp/rd03-strict-sha256.txt <<'EOF'
+          cat > /tmp/rd03-strict-expected-sha256.txt <<'EOF'
           27fd04bde88341499b2ae8494a0b6a8126358f0f550315213ec0469fccaa7364  ./.github/workflows/status-sovereignty-rd-wave02-rd03-negotiated-terms.yml
           5f90199a597cc92050ecc91b20076849de9f453cc369675fce97c67ea9c67a57  ./docs/milestones/ssc-rd-wave02-rd03-negotiated-terms.md
           dfeea84c64828a8719e9fcf35ce6ffd5cd1f5be39a31fcc056b66d414399c4d5  ./schemas/status-sovereignty-rd-wave02-rd03-negotiated-terms.schema.json
@@ -72,16 +72,45 @@ jobs:
           b241f98cdc80208cc800503f70c8983c48de3e8da93a8d214cb5461a07c2f2ed  ./tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
           299c63cf44f6b52aab31fb5ccac7353c2ae878eeeb79ff933d24af6ee8cef035  ./tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
           EOF
-          sed -i 's/^          //' /tmp/rd03-strict-sha256.txt
-          (cd /tmp/rd03-strict-export && sha256sum --check --strict /tmp/rd03-strict-sha256.txt)
-          cp /tmp/rd03-strict-sha256.txt /tmp/rd03-strict-export/strict-source-sha256.txt
-          printf '%s\n' 'exact strict six-file package recovered; no product publication performed' \
-            > /tmp/rd03-strict-export/EXPORT-RECEIPT.txt
+          sed -i 's/^          //' /tmp/rd03-strict-expected-sha256.txt
+          cp /tmp/rd03-strict-expected-sha256.txt /tmp/rd03-strict-export/strict-source-expected-sha256.txt
+          cp /tmp/rd03-v4.patch /tmp/rd03-strict-export/reconstruction.patch
+          (
+            cd /tmp/rd03-strict-export
+            sha256sum \
+              ./.github/workflows/status-sovereignty-rd-wave02-rd03-negotiated-terms.yml \
+              ./docs/milestones/ssc-rd-wave02-rd03-negotiated-terms.md \
+              ./schemas/status-sovereignty-rd-wave02-rd03-negotiated-terms.schema.json \
+              ./test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js \
+              ./tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs \
+              ./tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs \
+              > strict-source-actual-sha256.txt
+            set +e
+            sha256sum --check --strict strict-source-expected-sha256.txt \
+              > strict-source-verification.txt 2>&1
+            verification_status="$?"
+            set -e
+            printf '%s\n' "$verification_status" > strict-source-verification-status.txt
+          )
+          cat > /tmp/rd03-strict-export/EXPORT-RECEIPT.json <<'JSON'
+          {
+            "schema_version": "ssc-rd03-strict-source-export@2",
+            "historical_archive_sha256": "8169c177f709021bb0565f7debbb6a42fe3dd7a807d1b51db3016eef5325e77b",
+            "strict_patch_sha256": "5b1f0f43ce28091c6fe9364952d1443805e0adee34d9573ef86c454188aa2d9b",
+            "purpose": "preserve actual reconstructed bytes and diagnose expected-digest disagreement",
+            "product_publication_performed": false,
+            "outside_human_dependency": false,
+            "external_contacts": 0,
+            "external_reviews": 0
+          }
+          JSON
+          sed -i 's/^          //' /tmp/rd03-strict-export/EXPORT-RECEIPT.json
 
-      - name: Preserve exact strict sources
+      - name: Preserve reconstructed strict sources
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd03-strict-authored-sources-v1
+          name: ssc-rd03-strict-authored-sources-v2
           path: /tmp/rd03-strict-export
           if-no-files-found: error
           retention-days: 90
