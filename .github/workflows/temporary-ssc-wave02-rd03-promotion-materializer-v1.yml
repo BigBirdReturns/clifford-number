@@ -47,8 +47,8 @@ jobs:
             "schema_version": "ssc-wave02-rd03-promotion-program-binding@1",
             "program_bytes": ${actual_bytes},
             "program_sha256": "${actual_sha}",
-            "advertised_bytes": 22323,
-            "advertised_sha256": "4ba25816472ee552be7f3465619d5bb4f5520834cdca645227a543cba40f738f",
+            "advertised_bytes": 21765,
+            "advertised_sha256": "9933ef0a9aac6792a696a03fe5acd6be377f629516f9e8422dc670061a9f089b",
             "outside_human_dependency": false,
             "external_contacts": 0,
             "external_reviews": 0
@@ -56,8 +56,8 @@ jobs:
           JSON
           sed -i 's/^          //' /tmp/ssc-wave02-five-receipt/program-binding.json
           cat /tmp/ssc-wave02-five-receipt/program-binding.json
-          test "$actual_bytes" = '22323'
-          test "$actual_sha" = '4ba25816472ee552be7f3465619d5bb4f5520834cdca645227a543cba40f738f'
+          test "$actual_bytes" = '21765'
+          test "$actual_sha" = '9933ef0a9aac6792a696a03fe5acd6be377f629516f9e8422dc670061a9f089b'
           bash -n /tmp/ssc-wave02-rd03-promotion-materialize.sh
 
           set +e
