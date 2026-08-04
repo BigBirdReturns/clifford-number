@@ -1,0 +1,165 @@
+name: TEMP restore qualified RD-03 product v8
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-product-restore-v8.yml'
+      - '.rd03-product-restore-v8/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd03-product-restore-v8-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-product-restore-trigger-v8'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd03-negotiated-terms
+      ANCHOR_BRANCH: agent/ssc-rd03-qualified-product-anchor-v1
+      EXPECTED_MAIN: a7940aa81b07caff1a9c2f8548c88ec37d60d676
+      EXPECTED_STALE_TARGET: a5875d96af5c0ca90990712f1f1fdbc852bb2e18
+      EXPECTED_SOURCE: e70aec0f6809c77e198e0c4ee80f6bcadb6bbdc4
+      EXPECTED_INTEGRATION: 4a98c62fb6fbec1984100cf97022f662bf724a2b
+      EXPECTED_PRODUCT: a94054a2f9dd6aaf2172e72c4afd18c8a6a4408d
+      EXPECTED_TREE: aef4ca876130c49084a62ef51232c9d28b6ed267
+      QUALIFICATION_RUN: '30875262352'
+      QUALIFICATION_ARTIFACT: '8879304041'
+      QUALIFICATION_ARTIFACT_SHA256: dd2d89caa7af2e8f6680d50491106b75cc8987ce498f0e255abe1d3791d733cf
+      PUBLICATION_RUN: '30876912879'
+      PUBLICATION_ARTIFACT: '8879859601'
+      PUBLICATION_ARTIFACT_SHA256: c6e43d437a4d4fc6f10f099236cd9ce02dd869045d9c54decd1edc4f709a02b0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Restore and requalify exact product under leases
+        run: |
+          set -Euo pipefail
+          out="$RUNNER_TEMP/rd03-product-restore-v8-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$out"
+          mkdir -p "$out"
+          echo "RESTORE_RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          exec > >(tee "$out/trace.log") 2>&1
+          step=initialize
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$out/exit-code.txt"
+            printf '%s\n' "$step" > "$out/final-step.txt"
+            git rev-parse HEAD > "$out/head.txt" 2>&1 || true
+            git rev-parse 'HEAD^{tree}' > "$out/head-tree.txt" 2>&1 || true
+            git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
+            git ls-remote --heads origin refs/heads/main > "$out/remote-main.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1 || true
+            OUT="$out" RC="$rc" STEP="$step" python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          out=Path(os.environ['OUT'])
+          receipt={
+            'schema_version':'ssc-rd03-qualified-product-restore@1',
+            'run':int(os.environ['GITHUB_RUN_ID']),
+            'exit_code':int(os.environ['RC']),
+            'final_step':os.environ['STEP'],
+            'main_parent':os.environ['EXPECTED_MAIN'],
+            'source_parent':os.environ['EXPECTED_SOURCE'],
+            'integration_commit':os.environ['EXPECTED_INTEGRATION'],
+            'product_commit':os.environ['EXPECTED_PRODUCT'],
+            'product_tree':os.environ['EXPECTED_TREE'],
+            'product_paths':276,
+            'qualification_run':int(os.environ['QUALIFICATION_RUN']),
+            'qualification_artifact':int(os.environ['QUALIFICATION_ARTIFACT']),
+            'qualification_artifact_sha256':os.environ['QUALIFICATION_ARTIFACT_SHA256'],
+            'publication_run':int(os.environ['PUBLICATION_RUN']),
+            'publication_artifact':int(os.environ['PUBLICATION_ARTIFACT']),
+            'publication_artifact_sha256':os.environ['PUBLICATION_ARTIFACT_SHA256'],
+            'outside_human_dependency':False,
+            'external_contacts':0,
+            'external_reviews':0,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+          }
+          payload=(json.dumps(receipt,indent=2)+'\n').encode()
+          (out/'restore-receipt.json').write_bytes(payload)
+          for path in sorted(out.iterdir()):
+            if path.is_file() and not path.name.endswith('.sha256'):
+              (out/(path.name+'.sha256')).write_text(hashlib.sha256(path.read_bytes()).hexdigest()+'  '+path.name+'\n')
+          PY
+            exit "$rc"
+          }
+          trap finish EXIT
+          set -Eeuo pipefail
+
+          step=fetch-and-verify-refs
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/${TARGET_BRANCH}:refs/remotes/origin/${TARGET_BRANCH}" \
+            "+refs/heads/${ANCHOR_BRANCH}:refs/remotes/origin/${ANCHOR_BRANCH}"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_STALE_TARGET"
+          test "$(git rev-parse "origin/$ANCHOR_BRANCH")" = "$EXPECTED_PRODUCT"
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_STALE_TARGET"
+
+          step=verify-product-ancestry-tree-and-denominator
+          test "$(git rev-parse "$EXPECTED_PRODUCT^{tree}")" = "$EXPECTED_TREE"
+          test "$(git rev-parse "$EXPECTED_PRODUCT^1")" = "$EXPECTED_INTEGRATION"
+          test "$(git rev-parse "$EXPECTED_INTEGRATION^1")" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "$EXPECTED_INTEGRATION^2")" = "$EXPECTED_SOURCE"
+          git diff --name-only "$EXPECTED_INTEGRATION" "$EXPECTED_PRODUCT" | sort > "$out/product-paths.txt"
+          git diff --name-status "$EXPECTED_INTEGRATION" "$EXPECTED_PRODUCT" > "$out/product-name-status.txt"
+          test "$(wc -l < "$out/product-paths.txt")" = 276
+          test -z "$(awk '$1 != "A" {print}' "$out/product-name-status.txt")"
+          test -z "$(grep -E '(^|/)(temporary-|\.rd03-|\.github/tmp)' "$out/product-paths.txt" || true)"
+
+          step=exact-product-focused-validation
+          git checkout --detach "$EXPECTED_PRODUCT"
+          node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+
+          step=exact-product-complete-release-gate
+          npm run release:check
+
+          step=exact-product-deterministic-replay
+          git reset --hard "$EXPECTED_PRODUCT"
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_PRODUCT"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$EXPECTED_TREE"
+
+          step=final-lease-check
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_STALE_TARGET"
+
+          step=restore-qualified-product-ref
+          git push origin \
+            "$EXPECTED_PRODUCT:refs/heads/${TARGET_BRANCH}" \
+            --force-with-lease="refs/heads/${TARGET_BRANCH}:${EXPECTED_STALE_TARGET}"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_PRODUCT"
+
+          step=restore-complete
+          finish
+      - name: Preserve success or exact failure receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-qualified-product-restore-v8
+          path: ${{ env.RESTORE_RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
