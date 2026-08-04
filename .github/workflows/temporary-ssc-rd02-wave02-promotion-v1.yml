@@ -1,0 +1,232 @@
+name: TEMP materialize RD-02 Wave-02 cumulative promotion v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd02-wave02-promotion-v1.yml'
+      - '.rd02-promotion-v1/**'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-rd02-wave02-promotion-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd02-wave02-promotion-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPECTED_MAIN: 72abc35c408d172d9be33b619b630a96ac317193
+      TARGET_BRANCH: agent/ssc-rd02-wave02-cumulative-promotion-v1
+      CONTROLLER_BRANCH: agent/ssc-rd02-wave02-promotion-controller-v1
+      MATERIALIZER_B64_SHA256: 116a78b1b19a95360af1c47ed2414f673f45026b2c96b54317911ddf651cc85a
+      MATERIALIZER_XZ_SHA256: a3851940682472807040ab1585d0e283f4285d47216a5263b16c803568157468
+      MATERIALIZER_SHA256: a0f9b11e48d1491748254e97668f0b2ad4055fdd9b8bb395ed62ccea3c5f15f2
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 72abc35c408d172d9be33b619b630a96ac317193
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct, qualify, replay, and split-publish cumulative promotion
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/ssc-rd02-wave02-promotion-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$out" /tmp/ssc-rd02-wave02-promotion-materializer.py /tmp/ssc-rd02-wave02-promotion-materializer.py.xz
+          mkdir -p "$out"
+          echo "RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          export RECEIPT_DIR="$out"
+          exec > >(tee "$out/trace.log") 2>&1
+          step=initialize
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$out/exit-code.txt"
+            printf '%s\n' "$step" > "$out/final-step.txt"
+            git rev-parse HEAD > "$out/head.txt" 2>&1 || true
+            git rev-parse 'HEAD^{tree}' > "$out/head-tree.txt" 2>&1 || true
+            git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
+            git ls-remote --heads origin refs/heads/main > "$out/remote-main.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1 || true
+            OUT="$out" RC="$rc" STEP="$step" python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          out=Path(os.environ['OUT'])
+          def read(name):
+              p=out/name
+              return p.read_text().strip() if p.exists() else None
+          receipt={
+            'schema_version':'ssc-rd02-wave02-cumulative-promotion-materialization@1',
+            'run':int(os.environ['GITHUB_RUN_ID']),
+            'exit_code':int(os.environ['RC']),
+            'final_step':os.environ['STEP'],
+            'main_parent':os.environ['EXPECTED_MAIN'],
+            'target_branch':os.environ['TARGET_BRANCH'],
+            'qualified_commit':read('qualified-commit.txt'),
+            'qualified_tree':read('qualified-tree.txt'),
+            'replay_tree':read('replay-tree.txt'),
+            'runner_commit':read('runner-commit.txt'),
+            'runner_tree':read('runner-tree.txt'),
+            'qualified_paths':11,
+            'runner_paths':10,
+            'closed_residual_classes':6,
+            'open_residual_classes':36,
+            'selected_attempts_terminal':6,
+            'wave_complete':False,
+            'outside_human_dependency':False,
+            'external_contacts':0,
+            'external_reviews':0,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+          }
+          (out/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          for p in sorted(out.iterdir()):
+              if p.is_file() and not p.name.endswith('.sha256'):
+                  (out/(p.name+'.sha256')).write_text(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name+'\n')
+          PY
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          step=verify-exact-leases
+          test "$(git rev-parse HEAD)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_MAIN"
+
+          step=reconstruct-checksum-bound-materializer
+          git fetch --no-tags origin "+refs/heads/${CONTROLLER_BRANCH}:refs/remotes/origin/rd02-promotion-controller"
+          git show "origin/rd02-promotion-controller:.rd02-promotion-v1/materializer.py.xz.b64" > "$out/materializer.py.xz.b64"
+          test "$(sha256sum "$out/materializer.py.xz.b64" | cut -d' ' -f1)" = "$MATERIALIZER_B64_SHA256"
+          base64 --decode "$out/materializer.py.xz.b64" > /tmp/ssc-rd02-wave02-promotion-materializer.py.xz
+          test "$(sha256sum /tmp/ssc-rd02-wave02-promotion-materializer.py.xz | cut -d' ' -f1)" = "$MATERIALIZER_XZ_SHA256"
+          xz --decompress --stdout /tmp/ssc-rd02-wave02-promotion-materializer.py.xz > /tmp/ssc-rd02-wave02-promotion-materializer.py
+          test "$(sha256sum /tmp/ssc-rd02-wave02-promotion-materializer.py | cut -d' ' -f1)" = "$MATERIALIZER_SHA256"
+          python -m py_compile /tmp/ssc-rd02-wave02-promotion-materializer.py
+
+          cat > "$out/expected-paths.txt" <<'PATHS'
+          .github/workflows/status-sovereignty-residual-denominator-wave-02-current.yml
+          data/research/status-sovereignty-residual-denominator-wave-02-current.json
+          docs/milestones/ssc-residual-denominator-wave-02-current.md
+          schemas/status-sovereignty-residual-denominator-wave-02-current.schema.json
+          test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs
+          tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          PATHS
+          sed -i 's/^          //' "$out/expected-paths.txt"
+          sort -o "$out/expected-paths.txt" "$out/expected-paths.txt"
+          grep -v '^\.github/workflows/status-sovereignty-residual-denominator-wave-02-current.yml$' "$out/expected-paths.txt" > "$out/runner-paths.txt"
+          test "$(wc -l < "$out/expected-paths.txt")" = 11
+          test "$(wc -l < "$out/runner-paths.txt")" = 10
+
+          focused_checks() {
+            node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+            node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+            node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+            node tools/build-status-sovereignty-rd-wave02-rd01-legal-entity.mjs
+            node tools/validate-status-sovereignty-rd-wave02-rd01-legal-entity.mjs
+            node test/status-sovereignty-rd-wave02-rd01-legal-entity.test.js
+            node tools/build-status-sovereignty-rd-wave02-rd02-license-leverage.mjs --check
+            node tools/validate-status-sovereignty-rd-wave02-rd02-license-leverage.mjs
+            node test/status-sovereignty-rd-wave02-rd02-license-leverage.test.js
+            node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --check
+            node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+            node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+            node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+            node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+            node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+            node tools/validate-no-magic-human-gate.mjs
+          }
+
+          step=materialize-exact-six-closure-product
+          python /tmp/ssc-rd02-wave02-promotion-materializer.py --repo . | tee "$out/materializer-result.json"
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --write
+          focused_checks
+          git diff --name-only | sort > "$out/materialized-paths.txt"
+          diff -u "$out/expected-paths.txt" "$out/materialized-paths.txt"
+          test -z "$(git diff --name-status | awk '$1 != "M" {print}')"
+          test -z "$(grep -E '(^|/)(temporary-|\.rd02-promotion-v1)' "$out/materialized-paths.txt" || true)"
+
+          step=commit-qualified-eleven-path-product
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- $(cat "$out/expected-paths.txt")
+          test "$(git diff --cached --name-only | wc -l)" = 11
+          git commit -m 'Promote RD-02 into Wave 02 cumulative closure ledger'
+          qualified_commit="$(git rev-parse HEAD)"
+          qualified_tree="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$qualified_commit" > "$out/qualified-commit.txt"
+          printf '%s\n' "$qualified_tree" > "$out/qualified-tree.txt"
+          git diff --name-only "$EXPECTED_MAIN" "$qualified_commit" | sort > "$out/qualified-main-paths.txt"
+          diff -u "$out/expected-paths.txt" "$out/qualified-main-paths.txt"
+          test -z "$(git diff --name-status "$EXPECTED_MAIN" "$qualified_commit" | awk '$1 != "M" {print}')"
+          git show "$qualified_commit:.github/workflows/status-sovereignty-residual-denominator-wave-02-current.yml" > "$out/desired-standing-workflow.yml"
+          sha256sum "$out/desired-standing-workflow.yml" > "$out/desired-standing-workflow.yml.sha256"
+
+          step=complete-qualified-repository-gate
+          npm run release:check
+
+          step=deterministic-clean-replay
+          git checkout --detach "$EXPECTED_MAIN"
+          git reset --hard "$EXPECTED_MAIN"
+          git clean -fdx
+          python /tmp/ssc-rd02-wave02-promotion-materializer.py --repo . > "$out/replay-materializer-result.json"
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --write
+          git add -- $(cat "$out/expected-paths.txt")
+          replay_tree="$(git write-tree)"
+          printf '%s\n' "$replay_tree" > "$out/replay-tree.txt"
+          test "$replay_tree" = "$qualified_tree"
+          focused_checks
+          test -z "$(git diff --name-status --cached | awk '$1 != "M" {print}')"
+
+          step=build-runner-publishable-ten-path-product
+          git reset --hard "$EXPECTED_MAIN"
+          git clean -fdx
+          while IFS= read -r path; do git checkout "$qualified_commit" -- "$path"; done < "$out/runner-paths.txt"
+          git add -- $(cat "$out/runner-paths.txt")
+          test "$(git diff --cached --name-only | wc -l)" = 10
+          test -z "$(git diff --cached --name-status | awk '$1 != "M" {print}')"
+          git commit -m 'Materialize RD-02 cumulative promotion without workflow transport'
+          runner_commit="$(git rev-parse HEAD)"
+          runner_tree="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$runner_commit" > "$out/runner-commit.txt"
+          printf '%s\n' "$runner_tree" > "$out/runner-tree.txt"
+          git diff --name-only "$EXPECTED_MAIN" "$runner_commit" | sort > "$out/runner-main-paths.txt"
+          diff -u "$out/runner-paths.txt" "$out/runner-main-paths.txt"
+          test -z "$(git diff --name-status "$EXPECTED_MAIN" "$runner_commit" | awk '$1 != "M" {print}')"
+
+          step=runner-product-focused-replay
+          focused_checks
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          step=final-unchanged-leases
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_MAIN"
+
+          step=publish-runner-product
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$runner_commit"
+
+          step=cumulative-promotion-materialization-complete
+          finish
+      - name: Preserve exact cumulative-promotion qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave02-cumulative-promotion-v1
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
