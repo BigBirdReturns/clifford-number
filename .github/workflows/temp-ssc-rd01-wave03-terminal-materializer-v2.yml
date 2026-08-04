@@ -1,0 +1,53 @@
+name: TEMP materialize SSC RD-01 Wave-03 terminal closure v2
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-ssc-rd01-wave03-terminal-materializer-v2.yml'
+      - '.ssc-rd01-wave03-terminal-materializer-v2/TRIGGER'
+      - 'data/project/transport/ssc-rd01-wave03-terminal-v1/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: temp-ssc-rd01-wave03-terminal-materializer-v2
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct and execute checksum-bound terminal materializer
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          ROOT='data/project/transport/ssc-rd01-wave03-terminal-v1'
+          cat "$ROOT"/executor/*.b64 | tr -d '\r\n\t ' > /tmp/rd01-executor.b64
+          test "$(sha256sum /tmp/rd01-executor.b64 | awk '{print $1}')" = '4aed770ab8575e120f31ec285fdd97b89c8e8b793792841b8751f299f180e9ab'
+          base64 -d /tmp/rd01-executor.b64 > /tmp/rd01-executor.sh.xz
+          test "$(sha256sum /tmp/rd01-executor.sh.xz | awk '{print $1}')" = 'a31b4e0fe306be1f058b7b66ed860417f7333d78122b663a7de697ef1fc8e58f'
+          xz -dc /tmp/rd01-executor.sh.xz > /tmp/publish-rd01-wave03-terminal.sh
+          test "$(sha256sum /tmp/publish-rd01-wave03-terminal.sh | awk '{print $1}')" = 'a1c1d1a636c093bb57eb9f1d88b6066f1bf48b1bebb92ac4b9aff3f87a439079'
+          chmod 0700 /tmp/publish-rd01-wave03-terminal.sh
+          gh --version
+          /tmp/publish-rd01-wave03-terminal.sh
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd01-wave03-terminal-materializer-v2
+          path: /tmp/ssc-rd01-wave03-terminal-receipt
+          if-no-files-found: warn
+          retention-days: 90
