@@ -1,0 +1,109 @@
+name: SSC RD-02 Wave 03 candidate adjudication and followups
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd02-candidate-adjudication.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/search-census-execution-receipt.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/candidate-adjudication/**'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/candidate-followup-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/field-matrix-contract.json'
+      - 'schemas/status-sovereignty-rd-wave03-rd02-candidate-adjudication.schema.json'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd02-candidate-adjudication.mjs'
+      - 'tools/acquisition/status-sovereignty-rd-wave03-rd02/run-candidate-followups.py'
+      - 'test/status-sovereignty-rd-wave03-rd02-candidate-adjudication.test.js'
+      - 'docs/milestones/ssc-rd-wave03-rd02-candidate-adjudication.md'
+      - '.ssc-rd02-wave03-candidate-followup-trigger/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd02-candidate-adjudication.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/search-census-execution-receipt.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/candidate-adjudication/**'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/candidate-followup-protocol.json'
+      - 'schemas/status-sovereignty-rd-wave03-rd02-candidate-adjudication.schema.json'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd02-candidate-adjudication.mjs'
+      - 'tools/acquisition/status-sovereignty-rd-wave03-rd02/run-candidate-followups.py'
+      - 'test/status-sovereignty-rd-wave03-rd02-candidate-adjudication.test.js'
+      - 'docs/milestones/ssc-rd-wave03-rd02-candidate-adjudication.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd02-wave03-candidate-adjudication-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Validate complete candidate denominator and frozen followups
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-status-sovereignty-rd-wave03-rd02-candidate-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd02-candidate-adjudication.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd02/run-candidate-followups.py
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Restore volatile outputs and replay exact validation
+        run: |
+          set -Eeuo pipefail
+          git restore --worktree -- .
+          node tools/validate-status-sovereignty-rd-wave03-rd02-candidate-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd02-candidate-adjudication.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd02/run-candidate-followups.py
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+  capture:
+    if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.head.ref, 'agent/ssc-rd-wave03-rd02-candidate-followup-trigger-')
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Revalidate exact followup protocol before requests
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-status-sovereignty-rd-wave03-rd02-candidate-adjudication.mjs
+          node tools/validate-no-magic-human-gate.mjs
+      - name: Execute ten exact candidate followups
+        env:
+          OUTPUT_DIR: ${{ runner.temp }}/ssc-rd02-wave03-candidate-followups-v1
+        run: |
+          set -Eeuo pipefail
+          python tools/acquisition/status-sovereignty-rd-wave03-rd02/run-candidate-followups.py --output "$OUTPUT_DIR"
+          test -f "$OUTPUT_DIR/summary.json"
+          test -f "$OUTPUT_DIR/same-host-link-candidates.json"
+          test -f "$OUTPUT_DIR/manifest.json"
+          test "$(find "$OUTPUT_DIR/routes" -name receipt.json -type f | wc -l)" = '10'
+      - name: Preserve exact followup bodies, receipts, links, and manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave03-candidate-followups-v1
+          path: ${{ runner.temp }}/ssc-rd02-wave03-candidate-followups-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
