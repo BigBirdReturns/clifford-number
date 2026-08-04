@@ -1,0 +1,105 @@
+name: TEMP execute SSC RD-03 Wave-03 fixed capture v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-wave03-fixed-capture-v1.yml'
+      - '.ssc-rd03-wave03-fixed-capture-v1/**'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: temp-ssc-rd03-wave03-fixed-capture-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-wave03-capture-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd03-lifecycle-recovery-v2
+      TARGET_HEAD: 31ae26b5b493e6072aa2501fc2327c3003729225
+      CAPTURE_ROOT: /tmp/ssc-rd03-wave03-fixed-capture-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify exact intake head and execute frozen forty-three-route protocol
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$CAPTURE_ROOT" /tmp/ssc-rd03-wave03-target
+          git fetch origin "+refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$TARGET_HEAD"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$TARGET_HEAD"
+          git worktree add --detach /tmp/ssc-rd03-wave03-target "origin/$TARGET_BRANCH"
+
+          cd /tmp/ssc-rd03-wave03-target
+          node --check tools/build-status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.mjs
+          node --check test/status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.mjs
+          node test/status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          cd "$GITHUB_WORKSPACE"
+          python -m py_compile .ssc-rd03-wave03-fixed-capture-v1/capture.py
+          python .ssc-rd03-wave03-fixed-capture-v1/capture.py \
+            --repo /tmp/ssc-rd03-wave03-target \
+            --out "$CAPTURE_ROOT" \
+            --target-head "$TARGET_HEAD"
+
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          root = Path('/tmp/ssc-rd03-wave03-fixed-capture-v1')
+          receipt = json.loads((root / 'execution-receipt.json').read_text())
+          index = json.loads((root / 'capture-index.json').read_text())
+          manifest = json.loads((root / 'manifest.json').read_text())
+          assert receipt['protocol_complete'] is True
+          assert receipt['class_closed'] is False
+          assert receipt['counts']['fixed_routes'] == 43
+          assert receipt['counts']['request_attempts'] == 43
+          assert receipt['counts']['exact_predeclared_routes'] == 18
+          assert receipt['counts']['candidate_census_routes'] == 25
+          assert receipt['counts']['admitted_candidate_sources'] == 0
+          assert receipt['counts']['result_spawned_requests'] == 0
+          assert len(index['routes']) == 43
+          assert len({row['route_id'] for row in index['routes']}) == 43
+          assert all(row['source_receipt_path'] for row in index['routes'])
+          assert manifest['entry_count'] > 300
+          for entry in manifest['entries']:
+              path = root / entry['path']
+              assert path.stat().st_size == entry['bytes']
+              assert hashlib.sha256(path.read_bytes()).hexdigest() == entry['sha256']
+          assert receipt['authority']['outside_human_dependency'] is False
+          assert receipt['authority']['external_contacts'] == 0
+          assert receipt['authority']['external_reviews'] == 0
+          assert receipt['authority']['publication_effect'] == 'none'
+          assert receipt['authority']['adoption_effect'] == 'none'
+          assert receipt['authority']['graph_effect'] == 'none'
+          print(json.dumps(receipt['counts'], indent=2, sort_keys=True))
+          print('independent capture verification: PASS')
+          PY
+
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$TARGET_HEAD"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$TARGET_HEAD"
+          test -z "$(git -C /tmp/ssc-rd03-wave03-target status --porcelain=v1 --untracked-files=all)"
+
+      - name: Preserve raw fixed-route capture
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-wave03-fixed-capture-v1
+          path: ${{ env.CAPTURE_ROOT }}
+          if-no-files-found: error
+          retention-days: 90
