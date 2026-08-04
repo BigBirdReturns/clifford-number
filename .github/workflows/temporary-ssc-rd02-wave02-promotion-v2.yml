@@ -38,6 +38,14 @@ jobs:
       - name: Derive the audited transaction body under corrected checksum bindings
         run: |
           set -Eeuo pipefail
+          bootstrap="$RUNNER_TEMP/ssc-rd02-wave02-promotion-v2-bootstrap-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$bootstrap"
+          mkdir -p "$bootstrap"
+          echo "RECEIPT_DIR=$bootstrap" >> "$GITHUB_ENV"
+          export RECEIPT_DIR="$bootstrap"
+          printf '%s\n' 1 > "$bootstrap/exit-code.txt"
+          printf '%s\n' derive-audited-transaction > "$bootstrap/final-step.txt"
+
           git fetch --no-tags origin "+refs/heads/${CONTROLLER_BRANCH}:refs/remotes/origin/rd02-promotion-controller-v2"
           git show "origin/rd02-promotion-controller-v2:.github/workflows/temporary-ssc-rd02-wave02-promotion-v1.yml" > "$RUNNER_TEMP/rd02-promotion-v1.yml"
           python - <<'PY'
@@ -58,17 +66,22 @@ jobs:
               if lines[i].startswith('      - name: Preserve exact cumulative-promotion qualification receipt')
           )
           script = textwrap.dedent('\n'.join(lines[start:end])) + '\n'
-          required = [
-              'step=verify-exact-leases',
-              'step=reconstruct-checksum-bound-materializer',
-              'step=complete-qualified-repository-gate',
-              'step=deterministic-clean-replay',
-              'step=publish-runner-product',
-              'finish',
-          ]
-          for anchor in required:
-              if script.count(anchor) != 1:
-                  raise RuntimeError(f'audited transaction anchor changed: {anchor}')
+          required = {
+              'finish() {': 1,
+              'trap finish EXIT': 1,
+              'step=verify-exact-leases': 1,
+              'step=reconstruct-checksum-bound-materializer': 1,
+              'step=complete-qualified-repository-gate': 1,
+              'step=deterministic-clean-replay': 1,
+              'step=publish-runner-product': 1,
+              'step=cumulative-promotion-materialization-complete': 1,
+          }
+          for anchor, expected in required.items():
+              actual = script.count(anchor)
+              if actual != expected:
+                  raise RuntimeError(
+                      f'audited transaction anchor changed: {anchor!r} expected={expected} actual={actual}'
+                  )
           output = Path('/tmp/ssc-rd02-wave02-cumulative-promotion-v2.sh')
           output.write_text(script)
           digest = hashlib.sha256(script.encode()).hexdigest()
@@ -77,6 +90,9 @@ jobs:
           )
           PY
           bash -n /tmp/ssc-rd02-wave02-cumulative-promotion-v2.sh
+          cp "$RUNNER_TEMP/derived-transaction.sha256" "$bootstrap/"
+          printf '%s\n' 0 > "$bootstrap/exit-code.txt"
+          printf '%s\n' audited-transaction-derived > "$bootstrap/final-step.txt"
       - name: Execute corrected exact cumulative-promotion transaction
         run: bash /tmp/ssc-rd02-wave02-cumulative-promotion-v2.sh
       - name: Preserve exact cumulative-promotion qualification receipt v2
