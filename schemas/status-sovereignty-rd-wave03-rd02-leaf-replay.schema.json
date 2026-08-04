@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clifford-number.local/schemas/status-sovereignty-rd-wave03-rd02-leaf-replay.schema.json",
+  "title": "SSC RD-02 Wave-03 admitted Stifel approval source",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "wave_id",
+    "lane_id",
+    "class_id",
+    "issue",
+    "as_of",
+    "source_id",
+    "source_type",
+    "source_title",
+    "publication_date",
+    "publisher",
+    "requested_url",
+    "unit_binding",
+    "exact_custody",
+    "admitted_observations",
+    "class_field_effect",
+    "unresolved_limits",
+    "source_disposition",
+    "authority_boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "ssc-rd02-wave03-admitted-source-receipt@1"
+    },
+    "wave_id": {
+      "const": "SSC-RD-W03"
+    },
+    "lane_id": {
+      "const": "RD-02"
+    },
+    "class_id": {
+      "const": "RD-02-C05"
+    },
+    "issue": {
+      "const": 1015
+    },
+    "as_of": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "source_id": {
+      "const": "STIFEL-AM-FORWARD-2024-FINAL-APPROVAL"
+    },
+    "source_type": {
+      "const": "issuer_press_release_pdf"
+    },
+    "source_title": {
+      "type": "string"
+    },
+    "publication_date": {
+      "const": "2024-10-22"
+    },
+    "publisher": {
+      "const": "Stifel Financial Corp."
+    },
+    "requested_url": {
+      "const": "https://www.stifel.com/docs/pdf/pressreleases/2024/Stifel-SBA-Approval-for-10.22.24.pdf"
+    },
+    "unit_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unit_ordinal",
+        "unit_id",
+        "frozen_legal_vehicle",
+        "public_fund_name_in_source",
+        "exact_frozen_legal_vehicle_string_present",
+        "identity_relation"
+      ],
+      "properties": {
+        "unit_ordinal": {
+          "const": 15
+        },
+        "unit_id": {
+          "const": "SBICCT-FIRST-COHORT-15"
+        },
+        "frozen_legal_vehicle": {
+          "const": "Stifel North Atlantic AM-Forward, LP"
+        },
+        "public_fund_name_in_source": {
+          "const": "Stifel North Atlantic AM-Forward Fund"
+        },
+        "exact_frozen_legal_vehicle_string_present": {
+          "const": false
+        },
+        "identity_relation": {
+          "type": "string"
+        }
+      }
+    },
+    "exact_custody": {
+      "type": "object"
+    },
+    "admitted_observations": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7
+    },
+    "class_field_effect": {
+      "type": "object"
+    },
+    "unresolved_limits": {
+      "type": "object"
+    },
+    "source_disposition": {
+      "type": "object",
+      "required": [
+        "admitted_source",
+        "admitted_observations",
+        "lifecycle_events_for_rd02_c05_observed",
+        "fields_terminally_closed",
+        "row_terminally_closed",
+        "class_closed"
+      ],
+      "properties": {
+        "admitted_source": {
+          "const": true
+        },
+        "admitted_observations": {
+          "const": 7
+        },
+        "lifecycle_events_for_rd02_c05_observed": {
+          "const": 0
+        },
+        "fields_terminally_closed": {
+          "const": 0
+        },
+        "row_terminally_closed": {
+          "const": false
+        },
+        "class_closed": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "authority_boundaries": {
+      "type": "object"
+    }
+  }
+}
