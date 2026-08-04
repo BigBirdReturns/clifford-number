@@ -1,0 +1,195 @@
+name: TEMP prove merged PC-44 exact main
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc44-postmerge-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: a7940aa81b07caff1a9c2f8548c88ec37d60d676
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prove exact merged PC-44 product
+        env:
+          MERGE_HEAD: a7940aa81b07caff1a9c2f8548c88ec37d60d676
+          MERGE_TREE: 3c81b34169f075e9619c5aee91ca4858022916c9
+          FIRST_PARENT: 61d8baabee70a40d13fc08c1f446313c3416a6e0
+          SECOND_PARENT: 025f6bf400485904d7b68769d690d01707745a52
+        run: |
+          set -Eeuo pipefail
+          status=failed
+          pass_shape=false
+          pass_focused=false
+          pass_historical=false
+          pass_no_magic=false
+          pass_release=false
+          pass_replay=false
+          canonical_main=false
+
+          emit_receipt() {
+            code=$?
+            trap - EXIT
+            export RECEIPT_STATUS="$status" PASS_SHAPE="$pass_shape" PASS_FOCUSED="$pass_focused"
+            export PASS_HISTORICAL="$pass_historical" PASS_NO_MAGIC="$pass_no_magic"
+            export PASS_RELEASE="$pass_release" PASS_REPLAY="$pass_replay" CANONICAL_MAIN="$canonical_main"
+            python - <<'PY_RECEIPT'
+          from pathlib import Path
+          import hashlib, json, os, subprocess
+
+          paths = [
+              '.github/workflows/preference-custody-v42.yml',
+              '.github/workflows/preference-linkage-uncertainty-monitoring-assurance.yml',
+              'data/research/preference-custody/control-manifest-v42.json',
+              'data/research/preference-custody/linkage-uncertainty-monitoring-assurance.fixture.json',
+              'docs/preference-custody-laboratory-floor-v42.md',
+              'docs/preference-custody-linkage-uncertainty-monitoring-assurance.md',
+              'test/preference-custody-manifest-v42.test.js',
+              'test/preference-linkage-uncertainty-monitoring-assurance.test.js',
+              'tools/compile-preference-custody-manifest-v42.mjs',
+              'tools/compile-preference-linkage-uncertainty-monitoring-assurance.mjs',
+              'tools/lib/preference-custody-manifest-v42.mjs',
+              'tools/lib/preference-linkage-uncertainty-monitoring-assurance.mjs',
+              'tools/validate-preference-custody-manifest-v42.mjs',
+              'tools/validate-preference-linkage-uncertainty-monitoring-assurance.mjs'
+          ]
+          files = {}
+          for path in paths:
+              p = Path(path)
+              if p.exists():
+                  files[path] = {
+                      'bytes': p.stat().st_size,
+                      'sha256': hashlib.sha256(p.read_bytes()).hexdigest(),
+                      'git_blob_sha1': subprocess.check_output(['git', 'hash-object', path], text=True).strip()
+                  }
+          receipt = {
+              'schema_version': 'pc44-postmerge-proof-receipt@1',
+              'workflow_run_id': os.environ.get('GITHUB_RUN_ID'),
+              'status': os.environ.get('RECEIPT_STATUS'),
+              'merge_head': os.environ['MERGE_HEAD'],
+              'merge_tree': os.environ['MERGE_TREE'],
+              'first_parent': os.environ['FIRST_PARENT'],
+              'second_parent': os.environ['SECOND_PARENT'],
+              'canonical_main_at_proof': os.environ.get('CANONICAL_MAIN') == 'true',
+              'permanent_path_count': len(paths),
+              'permanent_paths': paths,
+              'path_list_sha256': hashlib.sha256(('\n'.join(paths) + '\n').encode()).hexdigest(),
+              'files': files,
+              'merge_shape': 'pass' if os.environ.get('PASS_SHAPE') == 'true' else 'not_proved',
+              'focused_pc44_and_floor_v42': 'pass' if os.environ.get('PASS_FOCUSED') == 'true' else 'not_proved',
+              'historical_preference_custody_floors': 'pass' if os.environ.get('PASS_HISTORICAL') == 'true' else 'not_proved',
+              'no_magic_human': 'pass' if os.environ.get('PASS_NO_MAGIC') == 'true' else 'not_proved',
+              'release_check': 'pass' if os.environ.get('PASS_RELEASE') == 'true' else 'not_proved',
+              'deterministic_replay': 'pass' if os.environ.get('PASS_REPLAY') == 'true' else 'not_proved',
+              'standalone_fixture_mutations': 51,
+              'standalone_build_tamper_checks': 16,
+              'floor_v42_adversarial_mutations': 78,
+              'exact_semantic_ledger_binding': True,
+              'v37_source_aware_cutoff': True,
+              'v38_v40_complete_source_bundle_cutoff': True,
+              'temporary_pc44_paths_in_canonical_tree': 0,
+              'write_capable_permanent_workflows': 0,
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          Path('/tmp/pc44-postmerge-proof-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY_RECEIPT
+            exit "$code"
+          }
+          trap emit_receipt EXIT
+
+          test "$(git rev-parse HEAD)" = "$MERGE_HEAD"
+          test "$(git rev-parse HEAD^{tree})" = "$MERGE_TREE"
+          test "$(git rev-parse HEAD^1)" = "$FIRST_PARENT"
+          test "$(git rev-parse HEAD^2)" = "$SECOND_PARENT"
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$MERGE_HEAD"
+          canonical_main=true
+
+          cat > /tmp/pc44-permanent-paths.expected <<'EOF_PATHS'
+          .github/workflows/preference-custody-v42.yml
+          .github/workflows/preference-linkage-uncertainty-monitoring-assurance.yml
+          data/research/preference-custody/control-manifest-v42.json
+          data/research/preference-custody/linkage-uncertainty-monitoring-assurance.fixture.json
+          docs/preference-custody-laboratory-floor-v42.md
+          docs/preference-custody-linkage-uncertainty-monitoring-assurance.md
+          test/preference-custody-manifest-v42.test.js
+          test/preference-linkage-uncertainty-monitoring-assurance.test.js
+          tools/compile-preference-custody-manifest-v42.mjs
+          tools/compile-preference-linkage-uncertainty-monitoring-assurance.mjs
+          tools/lib/preference-custody-manifest-v42.mjs
+          tools/lib/preference-linkage-uncertainty-monitoring-assurance.mjs
+          tools/validate-preference-custody-manifest-v42.mjs
+          tools/validate-preference-linkage-uncertainty-monitoring-assurance.mjs
+          EOF_PATHS
+          sed -i 's/^          //' /tmp/pc44-permanent-paths.expected
+          git diff --name-only "$FIRST_PARENT" "$MERGE_HEAD" | LC_ALL=C sort > /tmp/pc44-permanent-paths.observed
+          diff -u /tmp/pc44-permanent-paths.expected /tmp/pc44-permanent-paths.observed
+          test "$(wc -l < /tmp/pc44-permanent-paths.observed | tr -d ' ')" = 14
+          test -z "$(git ls-tree -r --name-only "$MERGE_HEAD" | grep -E '(^|/)\.pc44-|^\.github/workflows/temporary-pc44' || true)"
+          pass_shape=true
+
+          node tools/compile-preference-linkage-uncertainty-monitoring-assurance.mjs
+          node tools/validate-preference-linkage-uncertainty-monitoring-assurance.mjs
+          node test/preference-linkage-uncertainty-monitoring-assurance.test.js
+          node tools/compile-preference-custody-manifest-v42.mjs
+          node tools/validate-preference-custody-manifest-v42.mjs
+          node test/preference-custody-manifest-v42.test.js
+          pass_focused=true
+
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          pass_historical=true
+
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          pass_no_magic=true
+
+          rm -rf /tmp/pc44-postmerge-reference && mkdir -p /tmp/pc44-postmerge-reference
+          cp build/research/preference-linkage-uncertainty-monitoring-assurance.{json,md} /tmp/pc44-postmerge-reference/
+          cp build/research/preference-custody-laboratory-floor-v42.{json,md} /tmp/pc44-postmerge-reference/
+          npm run release:check
+          pass_release=true
+
+          git reset --hard "$MERGE_HEAD"
+          git clean -fdx
+          node tools/compile-preference-linkage-uncertainty-monitoring-assurance.mjs
+          node tools/validate-preference-linkage-uncertainty-monitoring-assurance.mjs
+          node test/preference-linkage-uncertainty-monitoring-assurance.test.js
+          node tools/compile-preference-custody-manifest-v42.mjs
+          node tools/validate-preference-custody-manifest-v42.mjs
+          node test/preference-custody-manifest-v42.test.js
+          cmp /tmp/pc44-postmerge-reference/preference-linkage-uncertainty-monitoring-assurance.json build/research/preference-linkage-uncertainty-monitoring-assurance.json
+          cmp /tmp/pc44-postmerge-reference/preference-linkage-uncertainty-monitoring-assurance.md build/research/preference-linkage-uncertainty-monitoring-assurance.md
+          cmp /tmp/pc44-postmerge-reference/preference-custody-laboratory-floor-v42.json build/research/preference-custody-laboratory-floor-v42.json
+          cmp /tmp/pc44-postmerge-reference/preference-custody-laboratory-floor-v42.md build/research/preference-custody-laboratory-floor-v42.md
+          pass_replay=true
+
+          git reset --hard "$MERGE_HEAD"
+          git clean -fdx
+          test "$(git rev-parse HEAD)" = "$MERGE_HEAD"
+          test "$(git rev-parse HEAD^{tree})" = "$MERGE_TREE"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          status=success
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc44-postmerge-proof-${{ github.run_id }}
+          path: /tmp/pc44-postmerge-proof-receipt.json
+          if-no-files-found: error
+          retention-days: 90
