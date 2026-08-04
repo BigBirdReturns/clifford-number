@@ -1,4 +1,4 @@
-name: TEMP export PC-46 repair shards
+name: TEMP execute exact PC-46 v2 package rebuild
 
 on:
   pull_request:
@@ -7,25 +7,46 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: pc46-v2-package-rebuild-registered
+  cancel-in-progress: true
 
 jobs:
-  export:
+  rebuild:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/pc46-exact-product-materializer
-      - name: Print remote shard diagnostics
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Extract and execute the hash-guarded rebuild program
+        shell: bash
         run: |
           set -Eeuo pipefail
-          wc -c transport/pc46/product.b64.part-00a transport/pc46/product.b64.part-00b
-          sha256sum transport/pc46/product.b64.part-00a transport/pc46/product.b64.part-00b
-      - uses: actions/upload-artifact@v4
-        with:
-          name: pc46-repair-shards-${{ github.run_id }}
-          path: |
-            transport/pc46/product.b64.part-00a
-            transport/pc46/product.b64.part-00b
-          if-no-files-found: error
-          retention-days: 7
+          python - <<'PY'
+          from pathlib import Path
+          source = Path('.github/workflows/temporary-pc46-v2-package-rebuild.yml').read_text().splitlines()
+          start = None
+          for index, line in enumerate(source):
+              if line.strip() == 'run: |' and index >= 2 and 'Rebuild corrected exact package and v2 materializer script' in source[index - 2]:
+                  start = index + 1
+                  break
+          if start is None:
+              raise SystemExit('rebuild program not found')
+          lines = []
+          for line in source[start:]:
+              if line.strip() and not line.startswith('          '):
+                  break
+              lines.append(line[10:] if line.startswith('          ') else '')
+          program = '\n'.join(lines).rstrip() + '\n'
+          Path('/tmp/pc46-v2-rebuild.sh').write_text('#!/usr/bin/env bash\n' + program)
+          PY
+          chmod +x /tmp/pc46-v2-rebuild.sh
+          bash -n /tmp/pc46-v2-rebuild.sh
+          bash /tmp/pc46-v2-rebuild.sh
