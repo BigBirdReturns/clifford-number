@@ -1,4 +1,4 @@
-name: TEMP export SSC Wave 03 exact source worktree v1
+name: TEMP export SSC Wave 03 exact lane deltas v2
 
 on:
   pull_request:
@@ -11,7 +11,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: temp-ssc-wave03-source-export-v1-${{ github.event.pull_request.number }}
+  group: temp-ssc-wave03-source-export-v2-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
@@ -20,11 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      MAIN_HEAD: dc47681a9ad43e1c64c86e3d823dbb7c203a18c2
-      RD01_HEAD: 956f2454813fed7a9666597b5953cc57b54e4666
-      RD02_HEAD: a457581d624fc416a470e0d99a23025dfcdf4c04
-      RD03_HEAD: fc85c94daaf747cc368be8e08609deb03da58f16
-      RD04_HEAD: 8b392e004c0cb9e85c864f8c910aa7102cabedb4
+      BASE_HEAD: dc47681a9ad43e1c64c86e3d823dbb7c203a18c2
+      RD01_HEAD: c491c99b2deb79b069a6dd7bc92f68e764228151
+      RD02_HEAD: 431f94963c369f982d262e96ed378806862539aa
+      RD03_HEAD: 06345049d48b0e5b0a2703751d820bb380b9ff88
+      RD04_HEAD: 2e007a337897b4e67f618c20cd698b86a2c240c0
       RD05_HEAD: aa72bd3706f2a5c2ee0e36a3ee0c1cd544c24017
       RD06_HEAD: 38082e5e9843aa6d09a42581593f77622f81b821
     steps:
@@ -32,16 +32,14 @@ jobs:
         with:
           ref: dc47681a9ad43e1c64c86e3d823dbb7c203a18c2
           fetch-depth: 0
-      - name: Export exact canonical tree and six lane seeds
+      - name: Export exact lane deltas
         run: |
           set -Eeuo pipefail
-          test "$(git rev-parse HEAD)" = "$MAIN_HEAD"
+          test "$(git rev-parse HEAD)" = "$BASE_HEAD"
 
-          export_dir="$RUNNER_TEMP/ssc-wave03-source-export-v1"
+          export_dir="$RUNNER_TEMP/ssc-wave03-lane-deltas-v2"
           rm -rf "$export_dir"
-          mkdir -p "$export_dir/seeds"
-
-          git archive --format=tar HEAD | gzip -n > "$export_dir/main.tar.gz"
+          mkdir -p "$export_dir/patches" "$export_dir/paths" "$export_dir/logs"
 
           git fetch --no-tags origin \
             "+refs/heads/agent/ssc-rd-wave03-rd01-methodology-correction:refs/remotes/export/rd01" \
@@ -58,15 +56,26 @@ jobs:
           test "$(git rev-parse refs/remotes/export/rd05)" = "$RD05_HEAD"
           test "$(git rev-parse refs/remotes/export/rd06)" = "$RD06_HEAD"
 
-          git show refs/remotes/export/rd01:data/project/ssc-residual-wave03/seeds/RD-01-C06.json > "$export_dir/seeds/RD-01-C06.json"
-          git show refs/remotes/export/rd02:data/project/ssc-residual-wave03/seeds/RD-02-C05.json > "$export_dir/seeds/RD-02-C05.json"
-          git show refs/remotes/export/rd03:data/project/ssc-residual-wave03/seeds/RD-03-C05.json > "$export_dir/seeds/RD-03-C05.json"
-          git show refs/remotes/export/rd04:data/project/ssc-residual-wave03/seeds/RD-04-C02.json > "$export_dir/seeds/RD-04-C02.json"
-          git show refs/remotes/export/rd05:data/project/ssc-residual-wave03/seeds/RD-05-C02.json > "$export_dir/seeds/RD-05-C02.json"
-          git show refs/remotes/export/rd06:data/project/ssc-residual-wave03/seeds/RD-06-C04.json > "$export_dir/seeds/RD-06-C04.json"
+          emit_lane() {
+            lane="$1"
+            head="$2"
+            git merge-base --is-ancestor "$BASE_HEAD" "$head"
+            git diff --binary --full-index "$BASE_HEAD" "$head" > "$export_dir/patches/${lane}.patch"
+            git diff --name-only "$BASE_HEAD" "$head" | LC_ALL=C sort > "$export_dir/paths/${lane}.txt"
+            git log --reverse --format='%H %s' "$BASE_HEAD..$head" > "$export_dir/logs/${lane}.txt"
+            test -s "$export_dir/patches/${lane}.patch"
+            test -s "$export_dir/paths/${lane}.txt"
+          }
+
+          emit_lane rd01 "$RD01_HEAD"
+          emit_lane rd02 "$RD02_HEAD"
+          emit_lane rd03 "$RD03_HEAD"
+          emit_lane rd04 "$RD04_HEAD"
+          emit_lane rd05 "$RD05_HEAD"
+          emit_lane rd06 "$RD06_HEAD"
 
           cat > "$export_dir/heads.txt" <<HEADS
-          main $MAIN_HEAD
+          base $BASE_HEAD
           rd01 $RD01_HEAD
           rd02 $RD02_HEAD
           rd03 $RD03_HEAD
@@ -76,12 +85,12 @@ jobs:
           HEADS
           sed -i 's/^          //' "$export_dir/heads.txt"
 
-          (cd "$export_dir" && sha256sum main.tar.gz seeds/*.json heads.txt > SHA256SUMS)
+          (cd "$export_dir" && sha256sum heads.txt patches/*.patch paths/*.txt logs/*.txt > SHA256SUMS)
           echo "EXPORT_DIR=$export_dir" >> "$GITHUB_ENV"
-      - name: Preserve exact source export
+      - name: Preserve exact lane deltas
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-wave03-exact-source-worktree-v1
+          name: ssc-wave03-exact-lane-deltas-v2
           path: ${{ env.EXPORT_DIR }}
           if-no-files-found: error
           retention-days: 30
