@@ -1,0 +1,117 @@
+name: SSC RD-02 Wave 03 disclosure-leaf followups
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd02-disclosure-leaf.yml'
+      - '.ssc-rd02-wave03-disclosure-leaf-trigger/EXECUTE'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/same-host-followup-execution-receipt.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/disclosure-leaf-adjudication.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/disclosure-leaf-followup-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/field-matrix-contract.json'
+      - 'schemas/status-sovereignty-rd-wave03-rd02-disclosure-leaf.schema.json'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd02-disclosure-leaf.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd02-disclosure-leaf.test.js'
+      - 'tools/acquisition/status-sovereignty-rd-wave03-rd02/run-disclosure-leaf-followups.py'
+      - 'docs/milestones/ssc-rd-wave03-rd02-disclosure-leaf.md'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd02-disclosure-leaf.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/same-host-followup-execution-receipt.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/disclosure-leaf-adjudication.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/disclosure-leaf-followup-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/field-matrix-contract.json'
+      - 'schemas/status-sovereignty-rd-wave03-rd02-disclosure-leaf.schema.json'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd02-disclosure-leaf.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd02-disclosure-leaf.test.js'
+      - 'tools/acquisition/status-sovereignty-rd-wave03-rd02/run-disclosure-leaf-followups.py'
+      - 'docs/milestones/ssc-rd-wave03-rd02-disclosure-leaf.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd02-wave03-disclosure-leaf-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Validate 457-link denominator and two frozen PDF routes
+        run: |
+          set -Eeuo pipefail
+          node --check tools/validate-status-sovereignty-rd-wave03-rd02-disclosure-leaf.mjs
+          node --check test/status-sovereignty-rd-wave03-rd02-disclosure-leaf.test.js
+          node tools/validate-status-sovereignty-rd-wave03-rd02-disclosure-leaf.mjs
+          node test/status-sovereignty-rd-wave03-rd02-disclosure-leaf.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd02/run-disclosure-leaf-followups.py
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Restore volatile outputs and replay exact validation
+        run: |
+          set -Eeuo pipefail
+          git restore --worktree -- .
+          git clean -fdx
+          node tools/validate-status-sovereignty-rd-wave03-rd02-disclosure-leaf.mjs
+          node test/status-sovereignty-rd-wave03-rd02-disclosure-leaf.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd02/run-disclosure-leaf-followups.py
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+  capture:
+    if: startsWith(github.head_ref, 'agent/ssc-rd-wave03-rd02-disclosure-leaf-trigger-')
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Revalidate exact two-route protocol before requests
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-status-sovereignty-rd-wave03-rd02-disclosure-leaf.mjs
+          node test/status-sovereignty-rd-wave03-rd02-disclosure-leaf.test.js
+          node tools/validate-no-magic-human-gate.mjs
+
+      - name: Execute two exact disclosure-leaf PDF followups
+        run: |
+          python tools/acquisition/status-sovereignty-rd-wave03-rd02/run-disclosure-leaf-followups.py \
+            --output /tmp/ssc-rd02-wave03-disclosure-leaf-followups-v1
+
+      - name: Preserve exact PDF bodies, route receipts, summaries, and manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave03-disclosure-leaf-followups-v1
+          path: /tmp/ssc-rd02-wave03-disclosure-leaf-followups-v1
+          if-no-files-found: error
+          retention-days: 90
