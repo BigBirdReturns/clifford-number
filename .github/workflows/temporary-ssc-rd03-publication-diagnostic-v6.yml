@@ -1,0 +1,43 @@
+name: TEMP diagnose exact RD-03 publication state v6
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-publication-diagnostic-v6.yml'
+      - '.github/tmp/diagnose-rd03-publication-v6.sh'
+      - '.rd03-publication-diagnostic-v6/**'
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: temp-ssc-rd03-publication-diagnostic-v6-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-publication-diagnostic-trigger-v6'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Preserve diagnostic program outside checkout transitions
+        run: |
+          set -Eeuo pipefail
+          cp .github/tmp/diagnose-rd03-publication-v6.sh /tmp/diagnose-rd03-publication-v6.sh
+          chmod +x /tmp/diagnose-rd03-publication-v6.sh
+      - name: Reconstruct exact index and qualified tree without publishing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: /tmp/diagnose-rd03-publication-v6.sh
+      - name: Preserve exact failure or success state
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-publication-diagnostic-v6
+          path: ${{ env.DIAGNOSTIC_DIR }}
+          if-no-files-found: error
+          retention-days: 90
