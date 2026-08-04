@@ -97,6 +97,31 @@ jobs:
 
           step=apply-exact-patch
           git show "origin/agent/ssc-rd03-ledger5-materializer-base-v1:.github/tmp/materialize-ssc-rd03-ledger5.py" > /tmp/materialize-ledger5.py
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('/tmp/materialize-ledger5.py')
+          value = path.read_text()
+          replacements = [
+            (
+              '''    ("['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01']", "['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04']", "promoted order"),''',
+              '''    ("  same(current.promoted_class_receipts.map((row) => row.class_id), ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01'], 'promoted class order changed');", "  same(current.promoted_class_receipts.map((row) => row.class_id), ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04'], 'promoted class order changed');", "promoted order"),''',
+              'promoted-order statement binding',
+            ),
+            (
+              '''    ("['RD-02-C04','RD-03-C04']", "['RD-02-C04']", "open order"),''',
+              '''    ("  same(current.selected_classes_open.map((row) => row.class_id), ['RD-02-C04','RD-03-C04'], 'open selected class order changed');", "  same(current.selected_classes_open.map((row) => row.class_id), ['RD-02-C04'], 'open selected class order changed');", "open order"),''',
+              'open-order statement binding',
+            ),
+          ]
+          for old, new, label in replacements:
+            count = value.count(old)
+            if count != 1:
+              raise RuntimeError(f'{label}: expected one materializer-source match, found {count}')
+            value = value.replace(old, new, 1)
+          path.write_text(value)
+          print('rebound duplicate validator arrays to unique full statements')
+          PY
           python /tmp/materialize-ledger5.py
           node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --write
 
