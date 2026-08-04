@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Verify and execute exact promotion program
+      - name: Capture exact repaired promotion program
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -39,16 +39,49 @@ jobs:
             'refs/heads/agent/ssc-wave02-rd03-promotion-materializer-base-v1:refs/remotes/origin/agent/ssc-wave02-rd03-promotion-materializer-base-v1'
           git show \
             'origin/agent/ssc-wave02-rd03-promotion-materializer-base-v1:.ssc-wave02-rd03-promotion/materialize.sh' \
-            > /tmp/ssc-wave02-rd03-promotion-materialize.sh
-          actual_bytes="$(wc -c < /tmp/ssc-wave02-rd03-promotion-materialize.sh | tr -d ' ')"
-          actual_sha="$(sha256sum /tmp/ssc-wave02-rd03-promotion-materialize.sh | awk '{print $1}')"
+            > /tmp/ssc-wave02-rd03-promotion-carrier.sh
+          carrier_bytes="$(wc -c < /tmp/ssc-wave02-rd03-promotion-carrier.sh | tr -d ' ')"
+          carrier_sha="$(sha256sum /tmp/ssc-wave02-rd03-promotion-carrier.sh | awk '{print $1}')"
+          test "$carrier_bytes" = '21765'
+          test "$carrier_sha" = '9933ef0a9aac6792a696a03fe5acd6be377f629516f9e8422dc670061a9f089b'
+
+          cp /tmp/ssc-wave02-rd03-promotion-carrier.sh \
+            /tmp/ssc-wave02-rd03-promotion-materialize.sh
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('/tmp/ssc-wave02-rd03-promotion-materialize.sh')
+          text = path.read_text()
+          replacements = [
+              (
+                  "    (\"['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01']\", \"['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04']\", 'validator promoted order first'),",
+                  "    (\"same(current.promoted_class_receipts.map((row) => row.class_id), ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01'], 'promoted class order changed');\", \"same(current.promoted_class_receipts.map((row) => row.class_id), ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04'], 'promoted class order changed');\", 'validator promoted order first'),",
+                  'validator promoted-order anchor',
+              ),
+              (
+                  "    (\"['RD-02-C04','RD-03-C04']\", \"['RD-02-C04']\", 'validator open order first'),",
+                  "    (\"same(current.selected_classes_open.map((row) => row.class_id), ['RD-02-C04','RD-03-C04'], 'open selected class order changed');\", \"same(current.selected_classes_open.map((row) => row.class_id), ['RD-02-C04'], 'open selected class order changed');\", 'validator open order first'),",
+                  'validator open-order anchor',
+              ),
+          ]
+          for old, new, label in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one carrier match, found {count}')
+              text = text.replace(old, new, 1)
+          path.write_text(text)
+          PY
+
+          executable_bytes="$(wc -c < /tmp/ssc-wave02-rd03-promotion-materialize.sh | tr -d ' ')"
+          executable_sha="$(sha256sum /tmp/ssc-wave02-rd03-promotion-materialize.sh | awk '{print $1}')"
           cat > /tmp/ssc-wave02-five-receipt/program-binding.json <<JSON
           {
-            "schema_version": "ssc-wave02-rd03-promotion-program-binding@1",
-            "program_bytes": ${actual_bytes},
-            "program_sha256": "${actual_sha}",
-            "advertised_bytes": 21765,
-            "advertised_sha256": "9933ef0a9aac6792a696a03fe5acd6be377f629516f9e8422dc670061a9f089b",
+            "schema_version": "ssc-wave02-rd03-promotion-program-binding@2",
+            "carrier_bytes": ${carrier_bytes},
+            "carrier_sha256": "${carrier_sha}",
+            "executable_bytes": ${executable_bytes},
+            "executable_sha256": "${executable_sha}",
+            "capture_only": true,
             "outside_human_dependency": false,
             "external_contacts": 0,
             "external_reviews": 0
@@ -56,41 +89,14 @@ jobs:
           JSON
           sed -i 's/^          //' /tmp/ssc-wave02-five-receipt/program-binding.json
           cat /tmp/ssc-wave02-five-receipt/program-binding.json
-          test "$actual_bytes" = '21765'
-          test "$actual_sha" = '9933ef0a9aac6792a696a03fe5acd6be377f629516f9e8422dc670061a9f089b'
           bash -n /tmp/ssc-wave02-rd03-promotion-materialize.sh
-
-          set +e
-          bash -x /tmp/ssc-wave02-rd03-promotion-materialize.sh \
-            2>&1 | tee /tmp/ssc-wave02-rd03-promotion-execution.log
-          materializer_status="${PIPESTATUS[0]}"
-          set -e
-
-          mkdir -p /tmp/ssc-wave02-five-receipt
-          cp /tmp/ssc-wave02-rd03-promotion-execution.log \
-            /tmp/ssc-wave02-five-receipt/execution.log
-          cat > /tmp/ssc-wave02-five-receipt/execution-status.json <<JSON
-          {
-            "schema_version": "ssc-wave02-rd03-promotion-execution-status@2",
-            "materializer_bytes": ${actual_bytes},
-            "materializer_sha256": "${actual_sha}",
-            "exit_status": ${materializer_status},
-            "completed": $([ "$materializer_status" = '0' ] && printf true || printf false),
-            "outside_human_dependency": false,
-            "external_contacts": 0,
-            "external_reviews": 0
-          }
-          JSON
-          sed -i 's/^          //' /tmp/ssc-wave02-five-receipt/execution-status.json
-          sha256sum /tmp/ssc-wave02-five-receipt/execution.log \
-            > /tmp/ssc-wave02-five-receipt/execution.log.sha256
-          exit "$materializer_status"
+          exit 17
 
       - name: Preserve exact promotion receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-wave02-rd03-promotion-materialization-v1
+          name: ssc-wave02-rd03-promotion-program-capture-v2
           path: /tmp/ssc-wave02-five-receipt
           if-no-files-found: error
           retention-days: 90
