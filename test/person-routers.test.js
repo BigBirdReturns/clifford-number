@@ -1,12 +1,18 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { validatePersonRouters } from '../tools/validate-person-routers.mjs';
+import { validateBVVCDefenseCapital } from '../tools/validate-bvvc-defense-capital.mjs';
 
 const dir = 'data/intake/person-centered-defense-routers';
 const jl = f => fs.readFileSync(`${dir}/${f}`, 'utf8').split(/\r?\n/).filter(Boolean).map(l => JSON.parse(l));
 const manifest = JSON.parse(fs.readFileSync(`${dir}/manifest.json`, 'utf8'));
 
 assert.deepEqual(validatePersonRouters(dir), [], 'router intake must satisfy the completion contract');
+assert.deepEqual(
+  validateBVVCDefenseCapital(),
+  [],
+  'BVVC public-source lake must preserve denominators, receipt closure, inference refusals, and graph-inert custody'
+);
 
 // canonical completion contract must exist and be consumed
 const contract = JSON.parse(fs.readFileSync('data/canonical/person-router-completion-contract.json', 'utf8'));
