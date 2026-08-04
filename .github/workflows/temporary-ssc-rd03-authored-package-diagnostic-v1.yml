@@ -26,7 +26,7 @@ jobs:
           ref: agent/ssc-rd03-terminal-materializer-base-v1
           fetch-depth: 0
 
-      - name: Inventory progressive shard prefixes
+      - name: Locate invalid bytes and test bounded normalizations
         run: |
           set -Eeuo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_CARRIER_HEAD"
@@ -42,6 +42,7 @@ jobs:
 
           python - <<'PY'
           import base64
+          import collections
           import hashlib
           import io
           import json
@@ -49,10 +50,9 @@ jobs:
           import struct
           import zipfile
 
-          repo = pathlib.Path('.')
+          root = pathlib.Path('.rd03-terminal/authored')
           out = pathlib.Path('/tmp/rd03-authored-diagnostic')
-          shard_dir = repo / '.rd03-terminal' / 'authored'
-          shards = sorted(shard_dir.glob('part-*.b64'))
+          shards = sorted(root.glob('part-*.b64'))
           assert [path.name for path in shards] == [f'part-{index:02d}.b64' for index in range(9)]
 
           expected_files = sorted([
@@ -63,23 +63,51 @@ jobs:
               'tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs',
               'tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs',
           ])
+          alphabet = set(b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=')
 
-          records = []
-          exact_candidates = []
-          cumulative = b''
-          for count, shard in enumerate(shards, start=1):
-              cumulative += shard.read_bytes()
-              compact = b''.join(cumulative.split())
+          shard_records = []
+          for shard in shards:
+              raw = shard.read_bytes()
+              compact = b''.join(raw.split())
+              invalid = [(index, value) for index, value in enumerate(compact) if value not in alphabet]
+              frequencies = collections.Counter(value for _, value in invalid)
+              examples = []
+              for index, value in invalid[:12]:
+                  start = max(0, index - 12)
+                  end = min(len(compact), index + 13)
+                  examples.append({
+                      'index': index,
+                      'byte': value,
+                      'hex': f'{value:02x}',
+                      'repr': repr(bytes([value])),
+                      'context_hex': compact[start:end].hex(),
+                      'context_repr': repr(compact[start:end]),
+                  })
               record = {
-                  'prefix_shards': count,
-                  'last_shard': shard.name,
-                  'base64_bytes_raw': len(cumulative),
-                  'base64_bytes_compact': len(compact),
-                  'base64_sha256_raw': hashlib.sha256(cumulative).hexdigest(),
-                  'base64_sha256_compact': hashlib.sha256(compact).hexdigest(),
-                  'base64_decode_ok': False,
-                  'decoded_bytes': None,
-                  'decoded_sha256': None,
+                  'shard': shard.name,
+                  'raw_bytes': len(raw),
+                  'compact_bytes': len(compact),
+                  'raw_sha256': hashlib.sha256(raw).hexdigest(),
+                  'compact_sha256': hashlib.sha256(compact).hexdigest(),
+                  'invalid_count': len(invalid),
+                  'invalid_frequencies': {f'{key:02x}': value for key, value in sorted(frequencies.items())},
+                  'invalid_examples': examples,
+                  'head_hex': compact[:32].hex(),
+                  'tail_hex': compact[-32:].hex(),
+                  'head_repr': repr(compact[:80]),
+                  'tail_repr': repr(compact[-80:]),
+              }
+              shard_records.append(record)
+              print(
+                  f"shard={shard.name} raw={len(raw)} compact={len(compact)} "
+                  f"sha={record['raw_sha256']} invalid={len(invalid)} "
+                  f"frequencies={record['invalid_frequencies']} examples={examples}"
+              )
+
+          def inspect_zip(payload):
+              result = {
+                  'decoded_bytes': len(payload),
+                  'decoded_sha256': hashlib.sha256(payload).hexdigest(),
                   'zip_eocd_present': False,
                   'zip_exact_eof': False,
                   'zip_open_ok': False,
@@ -90,51 +118,79 @@ jobs:
                   'error': None,
               }
               try:
-                  decoded = base64.b64decode(compact, validate=True)
-                  record['base64_decode_ok'] = True
-                  record['decoded_bytes'] = len(decoded)
-                  record['decoded_sha256'] = hashlib.sha256(decoded).hexdigest()
-
-                  eocd = decoded.rfind(b'PK\x05\x06')
-                  if eocd >= 0 and eocd + 22 <= len(decoded):
-                      record['zip_eocd_present'] = True
-                      comment_length = struct.unpack_from('<H', decoded, eocd + 20)[0]
-                      record['zip_exact_eof'] = eocd + 22 + comment_length == len(decoded)
-
-                  with zipfile.ZipFile(io.BytesIO(decoded), 'r') as archive:
-                      record['zip_open_ok'] = True
-                      record['zip_test_ok'] = archive.testzip() is None
-                      file_names = sorted(name for name in archive.namelist() if not name.endswith('/'))
-                      record['file_names'] = file_names
-                      record['expected_file_set'] = file_names == expected_files
-                      record['file_sha256'] = {
+                  eocd = payload.rfind(b'PK\x05\x06')
+                  if eocd >= 0 and eocd + 22 <= len(payload):
+                      result['zip_eocd_present'] = True
+                      comment_length = struct.unpack_from('<H', payload, eocd + 20)[0]
+                      result['zip_exact_eof'] = eocd + 22 + comment_length == len(payload)
+                  with zipfile.ZipFile(io.BytesIO(payload), 'r') as archive:
+                      result['zip_open_ok'] = True
+                      result['zip_test_ok'] = archive.testzip() is None
+                      names = sorted(name for name in archive.namelist() if not name.endswith('/'))
+                      result['file_names'] = names
+                      result['expected_file_set'] = names == expected_files
+                      result['file_sha256'] = {
                           name: hashlib.sha256(archive.read(name)).hexdigest()
-                          for name in file_names
+                          for name in names
                       }
-
-                  if record['zip_exact_eof'] and record['zip_test_ok'] and record['expected_file_set']:
-                      exact_candidates.append(count)
-                      candidate_path = out / 'decoded' / f'prefix-{count:02d}.zip'
-                      candidate_path.write_bytes(decoded)
               except Exception as error:
-                  record['error'] = f'{type(error).__name__}: {error}'
+                  result['error'] = f'{type(error).__name__}: {error}'
+              return result
 
-              records.append(record)
-              print(
-                  'prefix={prefix_shards} raw_b64={base64_bytes_raw} '
-                  'b64_sha={base64_sha256_raw} decode={base64_decode_ok} '
-                  'decoded={decoded_bytes} zip_open={zip_open_ok} '
-                  'zip_test={zip_test_ok} exact_eof={zip_exact_eof} '
-                  'expected_files={expected_file_set} error={error}'.format(**record)
-              )
+          prefix_records = []
+          exact_candidates = []
+          cumulative = b''
+          for count, shard in enumerate(shards, start=1):
+              cumulative += shard.read_bytes()
+              compact = b''.join(cumulative.split())
+              variants = {
+                  'compact': compact,
+                  'strip_utf8_bom': compact.replace(b'\xef\xbb\xbf', b''),
+                  'strip_literal_crlf': compact.replace(b'\\r', b'').replace(b'\\n', b''),
+                  'standard_alphabet_only': bytes(value for value in compact if value in alphabet),
+                  'urlsafe_translated': compact.translate(bytes.maketrans(b'-_', b'+/')),
+              }
+              seen = set()
+              for variant_name, encoded in variants.items():
+                  identity = hashlib.sha256(encoded).hexdigest()
+                  if identity in seen:
+                      continue
+                  seen.add(identity)
+                  record = {
+                      'prefix_shards': count,
+                      'last_shard': shard.name,
+                      'variant': variant_name,
+                      'encoded_bytes': len(encoded),
+                      'encoded_sha256': identity,
+                      'base64_decode_ok': False,
+                      'decode_error': None,
+                      'zip': None,
+                  }
+                  try:
+                      decoded = base64.b64decode(encoded, validate=True)
+                      record['base64_decode_ok'] = True
+                      record['zip'] = inspect_zip(decoded)
+                      zip_state = record['zip']
+                      if zip_state['zip_exact_eof'] and zip_state['zip_test_ok'] and zip_state['expected_file_set']:
+                          exact_candidates.append({'prefix_shards': count, 'variant': variant_name})
+                          (out / 'decoded' / f'prefix-{count:02d}-{variant_name}.zip').write_bytes(decoded)
+                  except Exception as error:
+                      record['decode_error'] = f'{type(error).__name__}: {error}'
+                  prefix_records.append(record)
+                  print(
+                      f"prefix={count} variant={variant_name} encoded={len(encoded)} "
+                      f"sha={identity} decode={record['base64_decode_ok']} "
+                      f"zip={record['zip']} error={record['decode_error']}"
+                  )
 
           report = {
-              'schema_version': 'ssc-rd03-authored-package-diagnostic@1',
+              'schema_version': 'ssc-rd03-authored-package-diagnostic@2',
               'carrier_head': '02ea4361a38b860a56be29bb86733f761bcfca30',
               'shard_count': len(shards),
               'expected_files': expected_files,
-              'exact_candidate_prefixes': exact_candidates,
-              'records': records,
+              'shards': shard_records,
+              'prefix_variants': prefix_records,
+              'exact_candidates': exact_candidates,
               'authority': {
                   'outside_human_dependency': False,
                   'external_contacts': 0,
@@ -145,7 +201,7 @@ jobs:
               },
           }
           (out / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
-          print(f'exact_candidate_prefixes={exact_candidates}')
+          print(f'exact_candidates={exact_candidates}')
           PY
 
           sha256sum /tmp/rd03-authored-diagnostic/report.json \
@@ -156,7 +212,7 @@ jobs:
       - name: Preserve diagnostic
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd03-authored-package-diagnostic-v1
+          name: ssc-rd03-authored-package-diagnostic-v2
           path: /tmp/rd03-authored-diagnostic
           if-no-files-found: error
           retention-days: 90
