@@ -1,0 +1,73 @@
+name: TEMP materialize exact RD-03 terminal closure v5
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-terminal-materializer-v5.yml'
+      - '.rd03-terminal-v5/**'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd03-terminal-materializer-v5-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-terminal-materializer-trigger-v5'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd03-negotiated-terms
+      CARRIER_BRANCH: agent/ssc-rd03-terminal-materializer-base-v5
+      EXPECTED_RESEARCH_HEAD: e70aec0f6809c77e198e0c4ee80f6bcadb6bbdc4
+      EXPECTED_MAIN_HEAD: a7940aa81b07caff1a9c2f8548c88ec37d60d676
+      CENSUS_ARTIFACT_ID: '8875551993'
+      CENSUS_ARTIFACT_SHA256: 5b5414816cb626a7d9bbe16d914f67d5d02d1233c6ca0d84e21930909eba5f08
+      CENSUS_DEST: data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/source-custody/public-record-census-v1
+      EXECUTION_RECEIPT_PATH: data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/public-record-census-execution-receipt.json
+      PRODUCT_ROOT: data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms
+      CLOSURE_REFERENCE_PATH: data/project/ssc-residual-wave02/closures/RD-03-C04.json
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd03-negotiated-terms
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify retained program and execute exact transaction
+        run: |
+          set -Eeuo pipefail
+          git fetch origin "refs/heads/${CARRIER_BRANCH}:refs/remotes/origin/${CARRIER_BRANCH}"
+          for index in 00 01 02; do
+            git show "origin/${CARRIER_BRANCH}:.rd03-terminal-v5/materialize-${index}.sh" > "/tmp/rd03-materialize-${index}.sh"
+          done
+          cat > /tmp/rd03-materializer-sha256.txt <<'HASHES'
+          7997e52c3fc931a0307ead60ffad79972067e1f42cd29c1ce15ddb4beb36b419  /tmp/rd03-materialize-00.sh
+          638990a62f4c9a072ccb0fab357602cadd5a9af2aeff746bcfba22819546e003  /tmp/rd03-materialize-01.sh
+          8a8387a374ccb64f9b1dab7a16efa056bb35d974d49c368436a05b5a60fa78e9  /tmp/rd03-materialize-02.sh
+          HASHES
+          sed -i 's/^          //' /tmp/rd03-materializer-sha256.txt
+          sha256sum --check --strict /tmp/rd03-materializer-sha256.txt
+          bash -n /tmp/rd03-materialize-00.sh
+          bash -n /tmp/rd03-materialize-01.sh
+          bash -n /tmp/rd03-materialize-02.sh
+          source /tmp/rd03-materialize-00.sh
+          source /tmp/rd03-materialize-01.sh
+          source /tmp/rd03-materialize-02.sh
+          cp /tmp/rd03-materializer-sha256.txt /tmp/rd03-terminal-receipt/materializer-sha256.txt
+
+      - name: Preserve terminal materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-wave02-terminal-materialization-v5
+          path: /tmp/rd03-terminal-receipt
+          if-no-files-found: error
+          retention-days: 90
