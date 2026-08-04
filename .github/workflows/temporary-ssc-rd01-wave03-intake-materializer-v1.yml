@@ -1,0 +1,212 @@
+name: TEMP materialize SSC RD-01 Wave-03 intake v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd01-wave03-intake-materializer-v1.yml'
+      - '.rd01-wave03-intake/**'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-rd01-wave03-intake-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd01-wave03-intake-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPECTED_TARGET: 43d735f93ff0171501c27890d297940e32a5e14f
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd01-methodology-correction
+      CARRIER_BRANCH: agent/ssc-rd01-wave03-intake-materializer-base-v1
+      PAYLOAD_B64_SHA256: eab01bc85ecbbefcdbcbb5ad68b39cb86144acb5a96aa90f70e5f8b83414dc97
+      PAYLOAD_XZ_SHA256: 710594adcc372de1f9e4dca97e0583101fcf44990e4aa622ef928ae58e530d68
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 43d735f93ff0171501c27890d297940e32a5e14f
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct, qualify, replay, and split-publish fixed protocol
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/ssc-rd01-wave03-intake-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          archive="$RUNNER_TEMP/ssc-rd01-wave03-intake.tar.xz"
+          rm -rf "$out" "$archive" "$archive.b64"
+          mkdir -p "$out"
+          echo "RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          export RECEIPT_DIR="$out"
+          exec > >(tee "$out/trace.log") 2>&1
+          step=initialize
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$out/exit-code.txt"
+            printf '%s\n' "$step" > "$out/final-step.txt"
+            git rev-parse HEAD > "$out/head.txt" 2>&1 || true
+            git rev-parse 'HEAD^{tree}' > "$out/head-tree.txt" 2>&1 || true
+            git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1 || true
+            OUT="$out" RC="$rc" STEP="$step" python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          out=Path(os.environ['OUT'])
+          def read(name):
+              p=out/name
+              return p.read_text().strip() if p.exists() else None
+          receipt={
+            'schema_version':'ssc-rd01-wave03-intake-materialization@1',
+            'run':int(os.environ['GITHUB_RUN_ID']),
+            'exit_code':int(os.environ['RC']),
+            'final_step':os.environ['STEP'],
+            'target_parent':os.environ['EXPECTED_TARGET'],
+            'target_branch':os.environ['TARGET_BRANCH'],
+            'payload_b64_sha256':os.environ['PAYLOAD_B64_SHA256'],
+            'payload_xz_sha256':os.environ['PAYLOAD_XZ_SHA256'],
+            'qualified_commit':read('qualified-commit.txt'),
+            'qualified_tree':read('qualified-tree.txt'),
+            'replay_tree':read('replay-tree.txt'),
+            'runner_commit':read('runner-commit.txt'),
+            'runner_tree':read('runner-tree.txt'),
+            'qualified_paths':7,
+            'runner_paths':6,
+            'edition_rows':3,
+            'required_field_slots':24,
+            'fixed_routes':30,
+            'acquisition_attempts':0,
+            'class_closed':False,
+            'outside_human_dependency':False,
+            'external_contacts':0,
+            'external_reviews':0,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+          }
+          (out/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          for p in sorted(out.iterdir()):
+              if p.is_file() and not p.name.endswith('.sha256'):
+                  (out/(p.name+'.sha256')).write_text(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name+'\n')
+          PY
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          step=verify-exact-target-lease
+          test "$(git rev-parse HEAD)" = "$EXPECTED_TARGET"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+
+          step=reconstruct-checksum-bound-payload
+          git fetch --no-tags origin "+refs/heads/${CARRIER_BRANCH}:refs/remotes/origin/rd01-wave03-intake-carrier"
+          for part in 00 01 02 03; do
+            git show "origin/rd01-wave03-intake-carrier:.rd01-wave03-intake/package.tar.xz.b64.part-${part}"
+          done > "$archive.b64"
+          test "$(sha256sum "$archive.b64" | cut -d' ' -f1)" = "$PAYLOAD_B64_SHA256"
+          base64 --decode "$archive.b64" > "$archive"
+          test "$(sha256sum "$archive" | cut -d' ' -f1)" = "$PAYLOAD_XZ_SHA256"
+
+          cat > "$out/expected-paths.txt" <<'PATHS'
+          .github/workflows/status-sovereignty-rd-wave03-rd01-methodology-correction-intake.yml
+          data/intake/status-sovereignty-rd-wave03-rd01-methodology-correction/fixed-protocol-package.json
+          docs/milestones/ssc-rd-wave03-rd01-methodology-correction-intake.md
+          schemas/status-sovereignty-rd-wave03-rd01-methodology-correction-intake.schema.json
+          test/status-sovereignty-rd-wave03-rd01-methodology-correction-intake.test.js
+          tools/build-status-sovereignty-rd-wave03-rd01-methodology-correction-intake.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd01-methodology-correction-intake.mjs
+          PATHS
+          sed -i 's/^          //' "$out/expected-paths.txt"
+          sort -o "$out/expected-paths.txt" "$out/expected-paths.txt"
+          grep -v '^\.github/workflows/status-sovereignty-rd-wave03-rd01-methodology-correction-intake.yml$' "$out/expected-paths.txt" > "$out/runner-paths.txt"
+          tar -tJf "$archive" | sort > "$out/archive-paths.txt"
+          diff -u "$out/expected-paths.txt" "$out/archive-paths.txt"
+          test "$(wc -l < "$out/expected-paths.txt")" = 7
+          test "$(wc -l < "$out/runner-paths.txt")" = 6
+
+          focused_checks() {
+            node tools/build-status-sovereignty-rd-wave03-rd01-methodology-correction-intake.mjs --check
+            node tools/validate-status-sovereignty-rd-wave03-rd01-methodology-correction-intake.mjs
+            node test/status-sovereignty-rd-wave03-rd01-methodology-correction-intake.test.js
+            node tools/validate-no-magic-human-gate.mjs
+          }
+
+          step=materialize-exact-seven-path-package
+          tar -xJf "$archive"
+          focused_checks
+          git add -N -- $(cat "$out/expected-paths.txt")
+          git diff --name-only | sort > "$out/materialized-paths.txt"
+          diff -u "$out/expected-paths.txt" "$out/materialized-paths.txt"
+          test -z "$(git diff --name-status | awk '$1 != "A" {print}')"
+          test -z "$(grep -E '(^|/)(temporary-|\.rd01-wave03-intake)' "$out/materialized-paths.txt" || true)"
+
+          step=commit-qualified-seven-path-package
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- $(cat "$out/expected-paths.txt")
+          test "$(git diff --cached --name-only | wc -l)" = 7
+          git commit -m 'Freeze RD-01 Wave-03 methodology-correction fixed protocol'
+          qualified_commit="$(git rev-parse HEAD)"
+          qualified_tree="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$qualified_commit" > "$out/qualified-commit.txt"
+          printf '%s\n' "$qualified_tree" > "$out/qualified-tree.txt"
+          git show "$qualified_commit:.github/workflows/status-sovereignty-rd-wave03-rd01-methodology-correction-intake.yml" > "$out/desired-standing-workflow.yml"
+          sha256sum "$out/desired-standing-workflow.yml" > "$out/desired-standing-workflow.yml.sha256"
+
+          step=complete-qualified-repository-gate
+          npm run release:check
+
+          step=deterministic-clean-replay
+          git checkout --detach "$EXPECTED_TARGET"
+          git reset --hard "$EXPECTED_TARGET"
+          git clean -fdx
+          tar -xJf "$archive"
+          node tools/build-status-sovereignty-rd-wave03-rd01-methodology-correction-intake.mjs --write
+          git add -- $(cat "$out/expected-paths.txt")
+          replay_tree="$(git write-tree)"
+          printf '%s\n' "$replay_tree" > "$out/replay-tree.txt"
+          test "$replay_tree" = "$qualified_tree"
+          focused_checks
+          test -z "$(git diff --name-status --cached | awk '$1 != "A" {print}')"
+
+          step=build-runner-publishable-six-path-package
+          git reset --hard "$EXPECTED_TARGET"
+          git clean -fdx
+          tar -xJf "$archive"
+          rm .github/workflows/status-sovereignty-rd-wave03-rd01-methodology-correction-intake.yml
+          git add -- $(cat "$out/runner-paths.txt")
+          test "$(git diff --cached --name-only | wc -l)" = 6
+          test -z "$(git diff --cached --name-status | awk '$1 != "A" {print}')"
+          git commit -m 'Materialize RD-01 Wave-03 fixed protocol without workflow transport'
+          runner_commit="$(git rev-parse HEAD)"
+          runner_tree="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$runner_commit" > "$out/runner-commit.txt"
+          printf '%s\n' "$runner_tree" > "$out/runner-tree.txt"
+          focused_checks
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          step=final-unchanged-target-lease
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+
+          step=publish-runner-package
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$runner_commit"
+
+          step=rd01-wave03-intake-materialization-complete
+          finish
+
+      - name: Preserve exact RD-01 Wave-03 intake qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd01-wave03-intake-materialization-v1
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
