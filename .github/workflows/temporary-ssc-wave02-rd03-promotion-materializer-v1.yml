@@ -33,14 +33,31 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
+          rm -rf /tmp/ssc-wave02-five-receipt
+          mkdir -p /tmp/ssc-wave02-five-receipt
           git fetch origin \
             'refs/heads/agent/ssc-wave02-rd03-promotion-materializer-base-v1:refs/remotes/origin/agent/ssc-wave02-rd03-promotion-materializer-base-v1'
           git show \
             'origin/agent/ssc-wave02-rd03-promotion-materializer-base-v1:.ssc-wave02-rd03-promotion/materialize.sh' \
             > /tmp/ssc-wave02-rd03-promotion-materialize.sh
-          test "$(wc -c < /tmp/ssc-wave02-rd03-promotion-materialize.sh | tr -d ' ')" = '22323'
-          test "$(sha256sum /tmp/ssc-wave02-rd03-promotion-materialize.sh | awk '{print $1}')" = \
-            '4ba25816472ee552be7f3465619d5bb4f5520834cdca645227a543cba40f738f'
+          actual_bytes="$(wc -c < /tmp/ssc-wave02-rd03-promotion-materialize.sh | tr -d ' ')"
+          actual_sha="$(sha256sum /tmp/ssc-wave02-rd03-promotion-materialize.sh | awk '{print $1}')"
+          cat > /tmp/ssc-wave02-five-receipt/program-binding.json <<JSON
+          {
+            "schema_version": "ssc-wave02-rd03-promotion-program-binding@1",
+            "program_bytes": ${actual_bytes},
+            "program_sha256": "${actual_sha}",
+            "advertised_bytes": 22323,
+            "advertised_sha256": "4ba25816472ee552be7f3465619d5bb4f5520834cdca645227a543cba40f738f",
+            "outside_human_dependency": false,
+            "external_contacts": 0,
+            "external_reviews": 0
+          }
+          JSON
+          sed -i 's/^          //' /tmp/ssc-wave02-five-receipt/program-binding.json
+          cat /tmp/ssc-wave02-five-receipt/program-binding.json
+          test "$actual_bytes" = '22323'
+          test "$actual_sha" = '4ba25816472ee552be7f3465619d5bb4f5520834cdca645227a543cba40f738f'
           bash -n /tmp/ssc-wave02-rd03-promotion-materialize.sh
 
           set +e
@@ -54,8 +71,9 @@ jobs:
             /tmp/ssc-wave02-five-receipt/execution.log
           cat > /tmp/ssc-wave02-five-receipt/execution-status.json <<JSON
           {
-            "schema_version": "ssc-wave02-rd03-promotion-execution-status@1",
-            "materializer_sha256": "4ba25816472ee552be7f3465619d5bb4f5520834cdca645227a543cba40f738f",
+            "schema_version": "ssc-wave02-rd03-promotion-execution-status@2",
+            "materializer_bytes": ${actual_bytes},
+            "materializer_sha256": "${actual_sha}",
             "exit_status": ${materializer_status},
             "completed": $([ "$materializer_status" = '0' ] && printf true || printf false),
             "outside_human_dependency": false,
