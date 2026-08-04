@@ -84,10 +84,25 @@ const CLOSED = Object.freeze([
     closure_reference_path: 'data/project/ssc-residual-wave02/closures/RD-03-C04.json',
     class_receipt_path: 'data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms/class-receipt.json',
     manifest_combined_sha256: '1323477ae4b4bda480eb9bf1484cde7db9783920c834a69996ca0428c57fb16e'
+  },
+  {
+    lane_id: 'RD-02',
+    class_id: 'RD-02-C04',
+    issue: 787,
+    source_pr: 802,
+    merge_commit: '72abc35c408d172d9be33b619b630a96ac317193',
+    constitutional_exact_label: 'fund-level Green Light, license, leverage commitment, draw, fee, covenant, and amendment chronology',
+    receipt_class_label: 'fund-level Green Light, license, leverage commitment, draw, fee, covenant, and amendment chronology',
+    labels_exact_match: true,
+    label_reconciliation: 'none',
+    terminal_state: 'bounded_source_unavailable',
+    closure_reference_path: 'data/project/ssc-residual-wave02/closures/RD-02-C04.json',
+    class_receipt_path: 'data/research/status-sovereignty-rd-wave02-rd02-license-leverage/class-receipt.json',
+    manifest_combined_sha256: '0ca72d32840bf079975448fa9e9de3f75cdad68555c085f7f0749d007c1dc427'
   }
 ]);
 
-const OPEN_IDS = Object.freeze(['RD-02-C04']);
+const OPEN_IDS = Object.freeze([]);
 const abs = (root, rel) => path.join(root, rel);
 const read = (root, rel) => JSON.parse(fs.readFileSync(abs(root, rel), 'utf8'));
 const write = (root, rel, value) => {
@@ -133,6 +148,13 @@ function validateClosure(root, expected, constitutionalAttempt) {
     ok(closure?.label_custody?.reconciliation === 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact', 'RD-03 seed-label reconciliation changed');
   }
 
+  if (expected.class_id === 'RD-02-C04') {
+    ok(closure?.label_custody?.constitutional_class_label === expected.constitutional_exact_label, 'RD-02 closure constitutional label changed');
+    ok(closure?.label_custody?.seed_closure_target === 'Green Light, license, leverage commitment, draw, fee, covenant, and amendment chronology', 'RD-02 closure seed label changed');
+    ok(closure?.label_custody?.labels_exact_match === false, 'RD-02 constitution-versus-seed mismatch erased');
+    ok(closure?.label_custody?.reconciliation === 'constitution_adds_fund-level_qualifier_while_seed_label_is_retained_exact', 'RD-02 seed-label reconciliation changed');
+  }
+
   if (expected.class_id === 'RD-04-C01') {
     same(closure?.residual_atlas_effect, {
       canonical_classes_before: 42,
@@ -165,7 +187,7 @@ function validateClosure(root, expected, constitutionalAttempt) {
       open_after: 38,
       closed_after: 4
     }, 'RD-06 atlas effect changed');
-  } else {
+  } else if (expected.class_id === 'RD-03-C04') {
     same(closure?.residual_atlas_effect_if_promoted_after_rd04_rd05_rd01_and_rd06, {
       canonical_classes: 42,
       open_before: 38,
@@ -173,6 +195,14 @@ function validateClosure(root, expected, constitutionalAttempt) {
       open_after: 37,
       closed_after: 5
     }, 'RD-03 atlas effect changed');
+  } else {
+    same(closure?.residual_atlas_effect_if_promoted_after_rd04_rd05_rd01_rd06_and_rd03, {
+      canonical_classes: 42,
+      open_before: 37,
+      closed_before: 5,
+      open_after: 36,
+      closed_after: 6
+    }, 'RD-02 atlas effect changed');
   }
 
   validateAuthorityZeros(closure.authority, `${expected.class_id}.closure.authority`);
@@ -221,7 +251,7 @@ export function deriveCurrent(root = ROOT) {
     hypothesis_id: 'SSC-H01',
     issue: 785,
     as_of: '2026-08-03',
-    authority: 'five_terminal_class_receipts_promoted_without_cross_lane_empirical_authority',
+    authority: 'six_terminal_class_receipts_promoted_without_cross_lane_empirical_authority',
     source_snapshots: {
       constitution_path: CONSTITUTION_PATH,
       wave_01_registry_path: WAVE01_PATH,
@@ -233,10 +263,10 @@ export function deriveCurrent(root = ROOT) {
     counts: {
       canonical_residual_classes: 42,
       selected_class_attempts: 6,
-      terminal_class_receipts: 5,
-      classes_closed_this_wave: 5,
-      closed_residual_classes: 5,
-      open_residual_classes: 37,
+      terminal_class_receipts: 6,
+      classes_closed_this_wave: 6,
+      closed_residual_classes: 6,
+      open_residual_classes: 36,
       label_reconciliations: 1,
       outside_human_dependencies: 0,
       external_contacts: 0,
@@ -252,12 +282,12 @@ export function deriveCurrent(root = ROOT) {
       adoption_effects: 0
     },
     current_result: {
-      terminal_state: 'five_of_forty_two_residual_classes_closed_one_selected_attempt_open',
-      classes_closed: 5,
-      classes_open: 37,
+      terminal_state: 'six_of_forty_two_residual_classes_closed_all_selected_attempts_terminal',
+      classes_closed: 6,
+      classes_open: 36,
       closed_class_ids: CLOSED.map((row) => row.class_id),
       open_selected_class_ids: [...OPEN_IDS],
-      all_six_selected_classes_closed: false,
+      all_six_selected_classes_closed: true,
       wave_complete: false,
       outside_human_dependency: false,
       project_blocking: false,
@@ -295,7 +325,7 @@ if (mode === '--write') {
   console.log(`wrote ${CURRENT_PATH}`);
 } else if (mode === '--check') {
   checkCurrent(ROOT);
-  console.log('Wave-02 current ledger: 37 open / 5 closed; receipts RD-04, RD-05, RD-01, RD-06, and RD-03');
+  console.log('Wave-02 current ledger: 36 open / 6 closed; all six selected class attempts terminal');
 } else {
   throw new Error(`unknown mode: ${mode}`);
 }

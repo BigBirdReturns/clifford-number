@@ -6,12 +6,12 @@ The first-promotion object remains immutable historical evidence. The cumulative
 data/research/status-sovereignty-residual-denominator-wave-02-current.json
 ```
 
-## Current atlas
+## Current denominator
 
 ```text
 canonical residual classes: 42
-closed residual classes:     5
-open residual classes:      37
+closed residual classes:      6
+open residual classes:       36
 
 closed in promotion order:
 RD-04-C01  bounded_source_unavailable
@@ -19,35 +19,35 @@ RD-05-C03  bounded_non_link
 RD-01-C03  bounded_source_unavailable
 RD-06-C01  bounded_source_restricted
 RD-03-C04  bounded_source_unavailable
+RD-02-C04  bounded_source_unavailable
 
-selected attempt still open:
-RD-02-C04
+selected attempts still open: 0
+all six selected attempts terminal: true
+Wave 02 complete: false
 ```
 
-RD‑03 is bound to merged PR #803, merge `580d9c998f747330d190bed5011c7a1a517a1c0d`, and terminal manifest `1323477ae4b4bda480eb9bf1484cde7db9783920c834a69996ca0428c57fb16e`. Its five-instrument fixed protocol retains 8 observed fields, 15 conditional-term-only fields, 47 source-unavailable fields, 30 fixed routes, 15 HTTP successes, 15 typed terminal non-successes, 150 candidate rows, and zero admitted sources.
+RD-02 is bound to merged PR #802, merge `72abc35c408d172d9be33b619b630a96ac317193`, and terminal manifest `0ca72d32840bf079975448fa9e9de3f75cdad68555c085f7f0749d007c1dc427`. Its frozen eighteen-row matrix contains 180 terminal fields: 67 observed, 2 identity-withheld, and 111 source-unavailable after the fixed protocol. The public acquisition executed five fixed routes with four transport successes and one typed terminal HTTP non-success.
 
 ## Label custody
 
-RD‑05 retains the cumulative ledger’s sole row-level mismatch: its receipt label omits the constitutional qualifier `complete`. RD‑03’s exposed `constitutional_exact_label` and `receipt_class_label` are identical, so its cumulative row records `labels_exact_match: true` and `label_reconciliation: none`. The separate constitution-versus-seed mismatch remains bound inside RD‑03’s closure receipt as `constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact`; neither historical object is rewritten. The cumulative ledger therefore reports one row-level label reconciliation.
+RD-05 remains the sole flattened cumulative-label reconciliation. RD-03 and RD-02 each expose a receipt label identical to the constitutional label while separately preserving the shorter seed target in their class-specific closure custody. The cumulative ledger therefore records one label reconciliation and does not erase either seed-level mismatch.
 
-## Pre/post-promotion custody
+## Successor compatibility
 
-The permanent RD‑03 validator accepts exactly the four-closure pre-promotion atlas or this five-closure post-promotion atlas. In the latter, RD‑03 must be the fifth promoted receipt with exact PR, merge, manifest, label, terminal-state, closure, receipt, authority-zero, and effect-ceiling custody. RD‑02 remains the sole open selected class; Wave 02 is not complete.
-
-The standing RD‑06 validator separately preserves three exact custody worlds: the three-closure pre-RD‑06 atlas, the four-closure immediate post-RD‑06 atlas, and this five-closure successor after RD‑03 promotion. Its adversarial suite replays post-promotion mutations against both the four- and five-closure states. This compatibility extension changes no RD‑06 evidence, terminal product, closure receipt, or empirical manifest byte.
+The permanent RD-01 workflow is cumulative-state invariant. The RD-02 validator accepts the exact five-closure pre-promotion atlas and this six-closure successor. RD-03 and RD-06 validators retain their historical pre/post states and additionally accept this final selected-attempt promotion without changing any class evidence byte.
 
 ## Authority ceiling
 
 ```text
-outside-human dependencies:  0
-external contacts/reviews:    0 / 0
-reviewed disposition changes: 0
-complete-compact findings:     0
-racial-order findings:         0
-prevalence findings:           0
-coordination findings:         0
-common-purpose findings:       0
-graph/publication/adoption:     none / none / none
+outside-human dependencies:   0
+external contacts / reviews:  0 / 0
+reviewed-disposition changes: 0
+complete-compact findings:    0
+racial-order findings:        0
+prevalence findings:          0
+coordination findings:        0
+common-purpose findings:      0
+graph/publication/adoption:   none / none / none
 ```
 
-A typed source-unavailable field is not evidence that a term, instrument, obligation, payment, waiver, or record does not exist. Five class closures do not close a broader lane, the complete compact, or Wave 02.
+All six selected class attempts being terminal does not close the forty-two-class Wave 02 denominator. Thirty-six residual classes remain open. A typed source-unavailable field is not evidence that an event, instrument, obligation, payment, waiver, amendment, or record does not exist.
