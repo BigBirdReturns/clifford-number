@@ -11,7 +11,7 @@ import sys
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlparse
 
-ROOT = Path(__file__).resolve().parents[4]
+ROOT = Path(__file__).resolve().parents[3]
 ADJUDICATION_INDEX_PATH = ROOT / 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/candidate-adjudication/index.json'
 PROTOCOL_PATH = ROOT / 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/candidate-followup-protocol.json'
 MATRIX_PATH = ROOT / 'data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/field-matrix-contract.json'
