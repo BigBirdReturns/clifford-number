@@ -1,0 +1,265 @@
+name: TEMP materialize exact RD-03 terminal closure
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-terminal-materializer-v1.yml'
+      - '.rd03-terminal/**'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd03-terminal-materializer-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-terminal-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave02-rd03-negotiated-terms
+      CARRIER_BRANCH: agent/ssc-rd03-terminal-materializer-base-v1
+      EXPECTED_RESEARCH_HEAD: e70aec0f6809c77e198e0c4ee80f6bcadb6bbdc4
+      CENSUS_ARTIFACT_ID: '8875551993'
+      CENSUS_ARTIFACT_SHA256: 5b5414816cb626a7d9bbe16d914f67d5d02d1233c6ca0d84e21930909eba5f08
+      CENSUS_MANIFEST_SHA256: 0bcee2db7be4904f775c55a2533a2a5f1c199edff47e273993925b742f24ac06
+      CENSUS_DEST: data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/source-custody/public-record-census-v1
+      EXECUTION_RECEIPT_PATH: data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/public-record-census-execution-receipt.json
+      PRODUCT_ROOT: data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms
+      CLOSURE_REFERENCE_PATH: data/project/ssc-residual-wave02/closures/RD-03-C04.json
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave02-rd03-negotiated-terms
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct, prove, and publish exact permanent product
+        run: |
+          set -Eeuo pipefail
+          export EXPECTED_START_SHA="$(git rev-parse HEAD)"
+          test "$EXPECTED_START_SHA" = "$EXPECTED_RESEARCH_HEAD"
+          observed="$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | cut -f1)"
+          test "$observed" = "$EXPECTED_START_SHA"
+          node tools/validate-no-magic-human-gate.mjs
+
+          git fetch origin "refs/heads/${CARRIER_BRANCH}:refs/remotes/origin/${CARRIER_BRANCH}"
+          rm -rf /tmp/rd03-authored /tmp/rd03-authored.b64 /tmp/rd03-authored.zip
+          mkdir -p /tmp/rd03-authored
+          : > /tmp/rd03-authored.b64
+          expected_bytes=(30000 6460)
+          expected_sha=(
+            7102fffe56ffe06f05b34c20d6b8925638dec1be54e9b88df37c67efb6f567d6
+            7236b7f35d4657ed9c48959d9dbc1a2165238d56384cdd92c613cadb2e8e2733
+          )
+          for index in 0 1; do
+            part="$(printf '%02d' "$index")"
+            git show "origin/${CARRIER_BRANCH}:.rd03-terminal/authored/part-${part}.b64" > "/tmp/rd03-authored-part-${part}.b64"
+            test "$(wc -c < "/tmp/rd03-authored-part-${part}.b64" | tr -d ' ')" = "${expected_bytes[$index]}"
+            test "$(sha256sum "/tmp/rd03-authored-part-${part}.b64" | awk '{print $1}')" = "${expected_sha[$index]}"
+            cat "/tmp/rd03-authored-part-${part}.b64" >> /tmp/rd03-authored.b64
+          done
+          test "$(wc -c < /tmp/rd03-authored.b64 | tr -d ' ')" = '36460'
+          test "$(sha256sum /tmp/rd03-authored.b64 | awk '{print $1}')" = 'ddf31bf46217127e22ab7181366b3cb84842a76c19dcfec7aeaaa57a6e4f0138'
+          base64 --decode /tmp/rd03-authored.b64 > /tmp/rd03-authored.zip
+          test "$(wc -c < /tmp/rd03-authored.zip | tr -d ' ')" = '27344'
+          test "$(sha256sum /tmp/rd03-authored.zip | awk '{print $1}')" = '8169c177f709021bb0565f7debbb6a42fe3dd7a807d1b51db3016eef5325e77b'
+          unzip -q /tmp/rd03-authored.zip -d /tmp/rd03-authored
+
+          cat > /tmp/rd03-authored-sha256.txt <<'HASHES'
+          9be66bc9028ec74a982a830e639556d33eef3ad1227d4cb21eb7087e60c9e55a  ./.github/workflows/status-sovereignty-rd-wave02-rd03-negotiated-terms.yml
+          bd1c883a6af8c18b87e2637d9da335451b36b38174d3da62f62458395d70bc12  ./docs/milestones/ssc-rd-wave02-rd03-negotiated-terms.md
+          c49b0701301760486fb77e22bda601ba05b71fc7b5896d5e31ad7a51e30d5765  ./schemas/status-sovereignty-rd-wave02-rd03-negotiated-terms.schema.json
+          17f7c3658ccb75e4ce40806b6219b3254ecf2157d86d9e70f1608c09174623de  ./test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          59d922475e163ff105593075f0009b5814a60621f8effc7eca79b2e32eb986ab  ./tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          f662453fe44a59cc1f098a8e433ca91016388e102b8204057533f5b65b63c98c  ./tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          HASHES
+          sed -i 's/^          //' /tmp/rd03-authored-sha256.txt
+          (cd /tmp/rd03-authored && sha256sum --check --strict /tmp/rd03-authored-sha256.txt)
+          test "$(find /tmp/rd03-authored -type f | wc -l | tr -d ' ')" = '6'
+
+          rm -rf /tmp/rd03-census /tmp/rd03-census.zip
+          mkdir -p /tmp/rd03-census
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${CENSUS_ARTIFACT_ID}/zip" \
+            --output /tmp/rd03-census.zip
+          test "$(sha256sum /tmp/rd03-census.zip | awk '{print $1}')" = "$CENSUS_ARTIFACT_SHA256"
+          unzip -q /tmp/rd03-census.zip -d /tmp/rd03-census
+
+          python - <<'PY'
+          import hashlib
+          import json
+          import pathlib
+          root = pathlib.Path('/tmp/rd03-census')
+          manifest = json.loads((root / 'manifest.json').read_text())
+          assert manifest['schema_version'] == 'ssc-rd03-wave02-public-record-census-manifest@1'
+          assert manifest['entry_count'] == 263
+          assert len(manifest['entries']) == 263
+          assert len({row['path'] for row in manifest['entries']}) == 263
+          for row in manifest['entries']:
+              rel = pathlib.PurePosixPath(row['path'])
+              assert not rel.is_absolute() and '..' not in rel.parts
+              path = root / rel
+              data = path.read_bytes()
+              assert len(data) == row['bytes']
+              assert hashlib.sha256(data).hexdigest() == row['sha256']
+          combined = hashlib.sha256('\n'.join(f"{row['sha256']}  {row['path']}" for row in manifest['entries']).encode()).hexdigest()
+          assert combined == manifest['combined_sha256']
+          assert combined == '0bcee2db7be4904f775c55a2533a2a5f1c199edff47e273993925b742f24ac06'
+          summary = json.loads((root / 'summary.json').read_text())
+          assert summary['fixed_routes'] == 30
+          assert summary['route_attempts'] == 30
+          assert summary['terminal_transport_states'] == {'http_terminal_non_success': 15, 'http_success': 15}
+          assert summary['candidate_rows'] == 150
+          assert summary['unique_candidate_urls'] == 60
+          assert summary['official_candidate_urls'] == 5
+          assert summary['first_party_candidate_urls'] == 1
+          assert summary['result_spawned_requests'] == 0
+          assert summary['transport_census_complete'] is True
+          assert summary['substantive_adjudication_complete'] is False
+          assert summary['class_closed'] is False
+          assert sum(1 for path in root.rglob('*') if path.is_file()) == 264
+          print(f"RD-03 census artifact verified: {manifest['entry_count']} entries plus manifest; {combined}")
+          PY
+
+          test ! -e "$CENSUS_DEST"
+          mkdir -p "$CENSUS_DEST"
+          cp -a /tmp/rd03-census/. "$CENSUS_DEST/"
+          while read -r digest authored_path; do
+            source_path="${authored_path#./}"
+            install -D -m 0644 "/tmp/rd03-authored/${source_path}" "${source_path}"
+          done < /tmp/rd03-authored-sha256.txt
+
+          mkdir -p "$(dirname "$EXECUTION_RECEIPT_PATH")"
+          cat > "$EXECUTION_RECEIPT_PATH" <<'JSON'
+          {
+            "schema_version": "ssc-rd03-wave02-public-record-census-execution-receipt@1",
+            "wave_id": "SSC-RD-W02",
+            "class_id": "RD-03-C04",
+            "issue": 788,
+            "research_head": "e70aec0f6809c77e198e0c4ee80f6bcadb6bbdc4",
+            "workflow_run": 30864413469,
+            "job_id": 91853036710,
+            "artifact_id": 8875551993,
+            "artifact_name": "ssc-rd03-wave02-public-record-census-v1",
+            "artifact_zip_sha256": "5b5414816cb626a7d9bbe16d914f67d5d02d1233c6ca0d84e21930909eba5f08",
+            "manifest_entry_count": 263,
+            "manifest_combined_sha256": "0bcee2db7be4904f775c55a2533a2a5f1c199edff47e273993925b742f24ac06",
+            "counts": {
+              "fixed_routes": 30,
+              "route_attempts": 30,
+              "http_success": 15,
+              "terminal_non_success": 15,
+              "candidate_result_rows": 150,
+              "unique_candidate_urls": 60,
+              "official_candidate_urls": 5,
+              "first_party_candidate_urls": 1,
+              "admitted_candidate_urls": 0,
+              "result_spawned_requests": 0
+            },
+            "authority": {
+              "outside_human_dependency": false,
+              "external_contacts": 0,
+              "external_reviews": 0,
+              "substantive_adjudication_performed_by_census": false,
+              "class_closed_by_census": false,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none"
+            }
+          }
+          JSON
+          sed -i 's/^          //' "$EXECUTION_RECEIPT_PATH"
+
+          node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --write
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            "$CENSUS_DEST" \
+            "$EXECUTION_RECEIPT_PATH" \
+            "$PRODUCT_ROOT" \
+            "$CLOSURE_REFERENCE_PATH" \
+            .github/workflows/status-sovereignty-rd-wave02-rd03-negotiated-terms.yml \
+            docs/milestones/ssc-rd-wave02-rd03-negotiated-terms.md \
+            schemas/status-sovereignty-rd-wave02-rd03-negotiated-terms.schema.json \
+            test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js \
+            tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs \
+            tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+
+          git diff --cached --name-only "$EXPECTED_START_SHA" | sort > /tmp/rd03-product-paths.txt
+          test "$(wc -l < /tmp/rd03-product-paths.txt | tr -d ' ')" = '276'
+          test -z "$(git diff --cached --name-status "$EXPECTED_START_SHA" | awk '$1 != "A" {print}')"
+          test -z "$(grep -E '(^|/)\.rd03-|temporary-ssc-rd03' /tmp/rd03-product-paths.txt || true)"
+          test "$(grep -c '^data/intake/status-sovereignty-rd-wave02-rd03-negotiated-terms/source-custody/public-record-census-v1/' /tmp/rd03-product-paths.txt)" = '264'
+          git diff --cached --check
+
+          git commit -m 'Close RD-03 negotiated terms as source unavailable'
+          export PRODUCT_SHA="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_START_SHA"
+
+          npm run release:check
+          git restore --worktree -- .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code HEAD
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          observed="$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | cut -f1)"
+          test "$observed" = "$EXPECTED_START_SHA"
+          git push origin "HEAD:refs/heads/${TARGET_BRANCH}" \
+            --force-with-lease="refs/heads/${TARGET_BRANCH}:${EXPECTED_START_SHA}"
+          test "$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | cut -f1)" = "$PRODUCT_SHA"
+
+          rm -rf /tmp/rd03-terminal-receipt
+          mkdir -p /tmp/rd03-terminal-receipt
+          cp /tmp/rd03-product-paths.txt /tmp/rd03-terminal-receipt/permanent-paths.txt
+          cp "$EXECUTION_RECEIPT_PATH" /tmp/rd03-terminal-receipt/
+          cp "$PRODUCT_ROOT/class-receipt.json" /tmp/rd03-terminal-receipt/
+          cp "$PRODUCT_ROOT/manifest.json" /tmp/rd03-terminal-receipt/
+          cp "$PRODUCT_ROOT/summary.json" /tmp/rd03-terminal-receipt/
+          cp "$CLOSURE_REFERENCE_PATH" /tmp/rd03-terminal-receipt/closure-reference.json
+          cat > /tmp/rd03-terminal-receipt/materialization.json <<JSON
+          {
+            "schema_version": "ssc-rd03-wave02-terminal-materialization-receipt@1",
+            "research_start_head": "$EXPECTED_START_SHA",
+            "product_head": "$PRODUCT_SHA",
+            "parent_count": 1,
+            "permanent_paths": 276,
+            "temporary_paths": 0,
+            "terminal_state": "bounded_source_unavailable",
+            "instruments": 5,
+            "terminal_fields": 70,
+            "outside_human_dependency": false,
+            "external_contacts": 0,
+            "external_reviews": 0,
+            "publication_effect": "none",
+            "adoption_effect": "none",
+            "graph_effect": "none"
+          }
+          JSON
+          sed -i 's/^          //' /tmp/rd03-terminal-receipt/materialization.json
+
+      - name: Preserve terminal materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-wave02-terminal-materialization
+          path: /tmp/rd03-terminal-receipt
+          if-no-files-found: error
+          retention-days: 90
