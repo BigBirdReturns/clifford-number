@@ -1,0 +1,67 @@
+{
+  "schema_version": "ssc-rd-wave03-rd03-lifecycle-recovery-field-matrix-contract@1",
+  "wave_id": "SSC-RD-W03",
+  "lane_id": "RD-03",
+  "class_id": "RD-03-C05",
+  "issue": 1016,
+  "constitution_head": "dc47681a9ad43e1c64c86e3d823dbb7c203a18c2",
+  "frozen_execution_base": "a69bffa4c7c6934432b2b93816f5b2b6a466a85b",
+  "seed_path": "data/project/ssc-residual-wave03/seeds/RD-03-C05.json",
+  "status": "unit_and_field_contract_frozen_acquisition_not_executed",
+  "units": [
+    {"unit_ordinal":1,"unit_id":"OSC-MP-MATERIALS-150M","borrower":"MP Materials Corp.","inherited_parent_state":"executed_and_cash_disbursed_terms_recovered_performance_and_recovery_open"},
+    {"unit_ordinal":2,"unit_id":"OSC-VULCAN-620M","borrower":"Vulcan Elements","inherited_parent_state":"conditional_pre_close"},
+    {"unit_ordinal":3,"unit_id":"OSC-REELEMENT-80M","borrower":"ReElement Technologies","inherited_parent_state":"conditional_pre_close"},
+    {"unit_ordinal":4,"unit_id":"OSC-PHOENIX-500M","borrower":"Phoenix Tailings","inherited_parent_state":"conditional_pre_close"},
+    {"unit_ordinal":5,"unit_id":"OSC-ENERGY-FUELS-725M","borrower":"Energy Fuels","inherited_parent_state":"conditional_pre_close"}
+  ],
+  "required_fields": [
+    "canonical_instrument_identity",
+    "commitment_state_and_governing_date",
+    "financial_close_and_executed_agreement_state_and_date",
+    "draw_or_cash_disbursement_state_and_date",
+    "amendment_and_waiver_chronology",
+    "default_cure_acceleration_or_enforcement_chronology",
+    "interest_payment_chronology",
+    "principal_repayment_chronology",
+    "public_recovery_or_unresolved_exposure_state",
+    "source_identities_and_exact_custody",
+    "field_and_instrument_terminal_state"
+  ],
+  "source_anchors": {
+    "first_pass_path": "data/intake/status-sovereignty-osc-denominator-first-pass.json",
+    "parent_terminal_matrix_path": "data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms/terminal-field-matrix.json",
+    "parent_class_receipt_path": "data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms/class-receipt.json",
+    "instrument_membership_reused_without_reopening_parent_class": true
+  },
+  "expansion_contract": {
+    "matrix_shape": "cartesian_product_of_frozen_units_and_required_fields",
+    "unit_count": 5,
+    "executed_and_cash_disbursed_parent_units": 1,
+    "conditional_pre_close_parent_units": 4,
+    "required_fields_per_unit": 11,
+    "required_cells": 55,
+    "initial_cell_state": "unclassified",
+    "all_cells_must_be_materialized": true,
+    "silent_unit_or_field_removal_allowed": false,
+    "later_announcement_substitution_allowed": false,
+    "padding_rows_allowed": false,
+    "source_count_is_unit_denominator": false,
+    "outcome_based_unit_selection_allowed": false
+  },
+  "current_counts": {"materialized_cells":0,"terminal_cells":0,"terminal_units":0,"class_closed":false},
+  "boundaries": {
+    "conditional_commitment_is_financial_close": false,
+    "financial_close_is_cash_disbursement": false,
+    "executed_loan_is_full_draw": false,
+    "scheduled_interest_is_observed_payment": false,
+    "outstanding_obligation_is_default": false,
+    "maturity_term_is_repayment": false,
+    "companion_public_right_is_loan_recovery": false,
+    "five_named_instruments_are_complete_osc_cohort": false,
+    "outside_human_dependency": false,
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none"
+  }
+}
