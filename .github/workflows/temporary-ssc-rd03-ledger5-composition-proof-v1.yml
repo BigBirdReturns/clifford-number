@@ -1,0 +1,152 @@
+name: TEMP prove composed SSC Wave-02 five-closure ledger
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-ledger5-composition-proof-v1.yml'
+      - '.rd03-ledger5-materializer/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-ssc-rd03-ledger5-composition-proof-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  prove:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-ledger5-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPECTED_MAIN: f1e1851d2fa22a3d9972cbd20498cb73f6c0177d
+      TARGET_BRANCH: agent/ssc-wave02-current-ledger-five-closures
+      EXPECTED_TARGET: f0d71a46ba2b098b054d6246d7ff00250af1961e
+      EXPECTED_TREE: 27e27a33b524b68a5845624f78093a78994750bd
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave02-current-ledger-five-closures
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prove exact composed tree and complete qualification
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/ssc-rd03-ledger5-composition-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$out"
+          mkdir -p "$out"
+          echo "RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          exec > >(tee "$out/trace.log") 2>&1
+          step=initialize
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$out/exit-code.txt"
+            printf '%s\n' "$step" > "$out/final-step.txt"
+            git rev-parse HEAD > "$out/head.txt" 2>&1 || true
+            git rev-parse 'HEAD^{tree}' > "$out/tree.txt" 2>&1 || true
+            git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
+            git diff --name-status "$EXPECTED_MAIN" HEAD > "$out/name-status.txt" 2>&1 || true
+            git diff --name-only "$EXPECTED_MAIN" HEAD | sort > "$out/paths.txt" 2>&1 || true
+            git ls-remote --heads origin refs/heads/main > "$out/remote-main.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1 || true
+            OUT="$out" RC="$rc" STEP="$step" python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          out=Path(os.environ['OUT'])
+          receipt={
+            'schema_version':'ssc-rd03-wave02-ledger5-composition-proof@1',
+            'run':int(os.environ['GITHUB_RUN_ID']),
+            'exit_code':int(os.environ['RC']),
+            'final_step':os.environ['STEP'],
+            'main_parent':os.environ['EXPECTED_MAIN'],
+            'target_branch':os.environ['TARGET_BRANCH'],
+            'target_head':os.environ['EXPECTED_TARGET'],
+            'target_tree':os.environ['EXPECTED_TREE'],
+            'permanent_paths':8,
+            'closed_residual_classes':5,
+            'open_residual_classes':37,
+            'open_selected_class_ids':['RD-02-C04'],
+            'current_ledger_mutations':42,
+            'rd03_terminal_mutations':94,
+            'outside_human_dependency':False,
+            'external_contacts':0,
+            'external_reviews':0,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+          }
+          (out/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          for path in sorted(out.iterdir()):
+            if path.is_file() and not path.name.endswith('.sha256'):
+              digest=hashlib.sha256(path.read_bytes()).hexdigest()
+              (out/(path.name+'.sha256')).write_text(f'{digest}  {path.name}\n')
+          PY
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          step=prove-exact-ref-tree-and-paths
+          test "$(git rev-parse HEAD)" = "$EXPECTED_TARGET"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$EXPECTED_TREE"
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+          git merge-base --is-ancestor "$EXPECTED_MAIN" HEAD
+          cat > "$out/expected-paths.txt" <<'PATHS'
+          .github/workflows/status-sovereignty-residual-denominator-wave-02-current.yml
+          data/research/status-sovereignty-residual-denominator-wave-02-current.json
+          docs/milestones/ssc-residual-denominator-wave-02-current.md
+          schemas/status-sovereignty-residual-denominator-wave-02-current.schema.json
+          test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs
+          tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          PATHS
+          sed -i 's/^          //' "$out/expected-paths.txt"
+          git diff --name-only "$EXPECTED_MAIN" HEAD | sort > "$out/actual-paths.txt"
+          cmp "$out/expected-paths.txt" "$out/actual-paths.txt"
+          test -z "$(git diff --name-status "$EXPECTED_MAIN" HEAD | awk '$1 != "M" {print}')"
+
+          step=focused-composed-qualification
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+
+          step=complete-repository-release-gate
+          npm run release:check
+
+          step=deterministic-clean-replay
+          git reset --hard "$EXPECTED_TARGET"
+          git clean -fdx
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_TARGET"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$EXPECTED_TREE"
+
+          step=final-unchanged-leases
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+
+          step=composition-proof-complete
+          finish
+      - name: Preserve exact composition proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-wave02-ledger5-composition-proof-v1
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
