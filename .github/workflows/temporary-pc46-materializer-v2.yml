@@ -1,0 +1,46 @@
+name: TEMP materialize exact PC-46 product v2
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-pc46-materializer-v2.yml'
+      - 'transport/pc46-v2/**'
+      - 'transport/pc46/materialize-trigger-v1.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc46-exact-product-materializer-v2
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPECTED_PARENT: ea1776f7bba28b56fee9f3defb1940ef640517a2
+      TARGET_BRANCH: research/preference-linkage-target-construction-exchangeability-assurance-v1
+      PACKAGE_SHA256: f5f85ef205efebe1bc20407b49b650213dcb204a1c04d3d1ea673beacb0c9ed1
+      PATH_LIST_SHA256: 2b9b64b305a2fd601e86f3b3b3d3cef8bd4b58bf25179cf01ec2812b9453eda8
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc46-exact-product-materializer
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Qualify and create exact corrected server-side product commit
+        shell: bash
+        run: bash transport/pc46-v2/materialize-v2.sh
+      - name: Upload checksum-bound corrected materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc46-exact-product-materializer-v2-${{ github.run_id }}
+          path: /tmp/pc46-materializer-receipt.json
+          if-no-files-found: error
+          retention-days: 90
