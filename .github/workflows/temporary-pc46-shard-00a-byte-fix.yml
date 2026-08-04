@@ -1,0 +1,53 @@
+name: TEMP fix one missing PC-46 shard byte
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-pc46-shard-00a-byte-fix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc46-exact-product-materializer
+          fetch-depth: 0
+      - name: Insert the exactly diagnosed missing byte
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          branch=agent/pc46-exact-product-materializer
+          path=transport/pc46/product.b64.part-00a
+          wrong=9a973d041cee2ca5b06df48cc3eb99d90ef8a061ebef2525bf91d7472629c506
+          right=06c7394010609da7b756e192710e045f97031dba06e1a16ebcc0f2920cef6650
+
+          current=$(sha256sum "$path" | awk '{print $1}')
+          if [[ "$current" = "$right" ]]; then
+            echo 'Byte already restored.'
+            exit 0
+          fi
+          test "$current" = "$wrong"
+          test "$(wc -c < "$path" | tr -d ' ')" = 5999
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('transport/pc46/product.b64.part-00a')
+          data = path.read_text()
+          assert len(data) == 5999
+          path.write_text(data[:2608] + 'p' + data[2608:])
+          PY
+          test "$(wc -c < "$path" | tr -d ' ')" = 6000
+          test "$(sha256sum "$path" | awk '{print $1}')" = "$right"
+
+          lease=$(git rev-parse HEAD)
+          git config user.name 'BigBirdReturns'
+          git config user.email '219768509+BigBirdReturns@users.noreply.github.com'
+          git add "$path"
+          test "$(git diff --cached --name-only)" = "$path"
+          git diff --cached --check
+          git commit -m 'TEMP: restore exact missing PC-46 shard byte'
+          git push origin "HEAD:refs/heads/$branch" --force-with-lease="refs/heads/$branch:$lease"
