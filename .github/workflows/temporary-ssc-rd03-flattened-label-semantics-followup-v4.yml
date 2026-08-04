@@ -1,0 +1,154 @@
+name: TEMP publish RD-03 cumulative label semantics follow-up v4
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-flattened-label-semantics-followup-v4.yml'
+      - '.rd03-ledger5-materializer/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd03-label-followup-v4-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-ledger5-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPECTED_MAIN: ef70f7ad406c518f4b640ca4641c5a0f045a0d8d
+      EXPECTED_TARGET: ef70f7ad406c518f4b640ca4641c5a0f045a0d8d
+      TARGET_BRANCH: agent/ssc-rd03-label-semantics-correction
+      MATERIALIZER_BASE: agent/ssc-rd03-ledger5-materializer-base-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Derive canonical-main follow-up with field-level RD-06 anchors
+        run: |
+          set -Eeuo pipefail
+          bootstrap="$RUNNER_TEMP/ssc-rd03-label-followup-v4-bootstrap-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$bootstrap"
+          mkdir -p "$bootstrap"
+          echo "RECEIPT_DIR=$bootstrap" >> "$GITHUB_ENV"
+          printf '%s\n' derive-followup-v4-controller > "$bootstrap/final-step.txt"
+          printf '%s\n' 1 > "$bootstrap/exit-code.txt"
+
+          git show "origin/${MATERIALIZER_BASE}:.github/workflows/temporary-ssc-rd03-flattened-label-semantics-v1.yml" > "$RUNNER_TEMP/label-v1.yml"
+          python - <<'PY'
+          import hashlib
+          import os
+          import textwrap
+          from pathlib import Path
+
+          runner_temp = Path(os.environ['RUNNER_TEMP'])
+          lines = (runner_temp / 'label-v1.yml').read_text().splitlines()
+          start = lines.index('        run: |') + 1
+          end = next(
+              i for i in range(start, len(lines))
+              if lines[i].startswith('      - name: Preserve exact label-semantics repair receipt')
+          )
+          script = textwrap.dedent('\n'.join(lines[start:end])) + '\n'
+
+          replacements = [
+              ("'schema_version':'ssc-rd03-cumulative-flattened-label-semantics@1',", "'schema_version':'ssc-rd03-cumulative-flattened-label-semantics@4',", 1, 'receipt schema'),
+              ("'prior_target':os.environ['EXPECTED_TARGET'],", "'source_main':os.environ['EXPECTED_MAIN'],", 1, 'receipt source binding'),
+              ("'permanent_pr_paths_after_patch':11,", "'permanent_pr_paths_after_patch':10,", 1, 'follow-up path count'),
+              ("'rd06_terminal_mutations':107,", "'rd06_terminal_mutations':110,", 1, 'RD-06 refusal count'),
+              ('test "$(git rev-parse HEAD)" = "$EXPECTED_TARGET"', 'test "$(git rev-parse HEAD)" = "$EXPECTED_MAIN"', 1, 'checkout lease'),
+              ('test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"', 'test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"', 2, 'absent target leases'),
+              ('git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET"', 'git push origin "HEAD:refs/heads/$TARGET_BRANCH"', 1, 'new branch publication'),
+          ]
+          for old, new, expected_count, label in replacements:
+              count = script.count(old)
+              if count != expected_count:
+                  raise RuntimeError(f'{label}: expected {expected_count} matches, found {count}')
+              script = script.replace(old, new)
+
+          rd06_start = script.index(
+              "rd06_validator = Path('tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs')"
+          )
+          rd06_end_marker = 'rd06_test.write_text(value)'
+          rd06_end = script.index(rd06_end_marker, rd06_start) + len(rd06_end_marker)
+          canonical_rd06 = textwrap.dedent(r'''
+          rd06_validator = Path('tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs')
+          value = rd06_validator.read_text()
+          value = replace_once(
+              value,
+              'current.counts.label_reconciliations === 2',
+              'current.counts.label_reconciliations === 1',
+              'RD-06 post-RD-03 row-level label count'
+          )
+          value = replace_once(
+              value,
+              '      labels_exact_match: false,',
+              '      labels_exact_match: true,',
+              'RD-06 post-RD-03 exact-match field'
+          )
+          value = replace_once(
+              value,
+              "      label_reconciliation: 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact',",
+              "      label_reconciliation: 'none',",
+              'RD-06 post-RD-03 reconciliation field'
+          )
+          rd06_validator.write_text(value)
+
+          rd06_test = Path('test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js')
+          value = rd06_test.read_text()
+          post_rd03_suite = """const postRd03LabelMutations = [
+            ['post-RD-03 reconciliation count', (v) => { v.counts.label_reconciliations = 2; }],
+            ['post-RD-03 RD-03 label flag', (v) => { v.promoted_class_receipts[4].labels_exact_match = false; }],
+            ['post-RD-03 RD-03 reconciliation', (v) => { v.promoted_class_receipts[4].label_reconciliation = 'constitution_adds_complete_and_negotiated_qualifiers_while_seed_label_is_retained_exact'; }]
+          ];
+
+          for (const [name, mutate] of postRd03LabelMutations) {
+            const candidate = clone(currentLedger);
+            mutate(candidate);
+            assert.throws(() => validateCurrentAtlasCustody(candidate), undefined, name);
+          }
+
+          """
+          value = replace_once(
+              value,
+              'const preCustodyMutations = [',
+              post_rd03_suite + 'const preCustodyMutations = [',
+              'RD-06 post-RD-03 label mutation suite'
+          )
+          value = replace_once(
+              value,
+              'mutations.length + schemaMutations.length + (custodyMutations.length * 2) + preCustodyMutations.length',
+              'mutations.length + schemaMutations.length + (custodyMutations.length * 2) + postRd03LabelMutations.length + preCustodyMutations.length',
+              'RD-06 refusal total'
+          )
+          rd06_test.write_text(value)
+          ''').strip()
+          script = script[:rd06_start] + canonical_rd06 + script[rd06_end:]
+
+          output = Path('/tmp/ssc-rd03-label-followup-v4.sh')
+          output.write_text(script)
+          digest = hashlib.sha256(script.encode()).hexdigest()
+          (runner_temp / 'derived-followup-v4-script.sha256').write_text(
+              f'{digest}  ssc-rd03-label-followup-v4.sh\n'
+          )
+          PY
+          bash -n /tmp/ssc-rd03-label-followup-v4.sh
+          cp "$RUNNER_TEMP/derived-followup-v4-script.sha256" "$bootstrap/"
+          printf '%s\n' 0 > "$bootstrap/exit-code.txt"
+          printf '%s\n' derived-followup-v4-controller > "$bootstrap/final-step.txt"
+      - name: Patch, qualify, and publish canonical follow-up v4
+        run: bash /tmp/ssc-rd03-label-followup-v4.sh
+      - name: Preserve exact follow-up receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-cumulative-label-semantics-followup-v4
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
