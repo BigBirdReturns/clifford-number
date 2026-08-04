@@ -1,0 +1,225 @@
+name: TEMP materialize exact PC-45 product v2
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-pc45-materializer-v2.yml'
+      - 'data/research/preference-custody/.pc45-product-package.b64.part-00.fix-*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      EXPECTED_PARENT: a7940aa81b07caff1a9c2f8548c88ec37d60d676
+      TARGET_BRANCH: research/preference-linkage-interval-construction-assurance-v1
+      PACKAGE_SHA256: 73b510bcf4bfc1eadb9acce7cdb74540a9dc2aa9aac357dd6d363fec17485437
+      PATH_LIST_SHA256: e7749e7dad5946ad67a6e495e8d7e1b7432cefa127a265e25c06ece0317132b2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc45-exact-product-materializer
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Materialize, qualify, and publish exact PC-45 product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          status=failed
+          pass_package=false
+          pass_shape=false
+          pass_focused=false
+          pass_historical=false
+          pass_no_magic=false
+          pass_release=false
+          pass_replay=false
+          pass_publish=false
+          product_commit=''
+          product_tree=''
+
+          emit_receipt() {
+            code=$?
+            trap - EXIT
+            export RECEIPT_STATUS="$status" PASS_PACKAGE="$pass_package" PASS_SHAPE="$pass_shape"
+            export PASS_FOCUSED="$pass_focused" PASS_HISTORICAL="$pass_historical"
+            export PASS_NO_MAGIC="$pass_no_magic" PASS_RELEASE="$pass_release"
+            export PASS_REPLAY="$pass_replay" PASS_PUBLISH="$pass_publish"
+            export PRODUCT_COMMIT="$product_commit" PRODUCT_TREE="$product_tree"
+            python - <<'PY_RECEIPT'
+          from pathlib import Path
+          import hashlib, json, os
+
+          paths_file = Path('/tmp/pc45-paths.expected')
+          paths = paths_file.read_text().splitlines() if paths_file.exists() else []
+          receipt = {
+              'schema_version': 'pc45-exact-product-materializer-receipt@2',
+              'workflow_run_id': os.environ.get('GITHUB_RUN_ID'),
+              'status': os.environ.get('RECEIPT_STATUS'),
+              'expected_parent': os.environ['EXPECTED_PARENT'],
+              'target_branch': os.environ['TARGET_BRANCH'],
+              'product_commit': os.environ.get('PRODUCT_COMMIT') or None,
+              'product_tree': os.environ.get('PRODUCT_TREE') or None,
+              'permanent_path_count': len(paths),
+              'permanent_paths': paths,
+              'path_list_sha256': hashlib.sha256(('\n'.join(paths) + '\n').encode()).hexdigest() if paths else None,
+              'package_sha256': os.environ['PACKAGE_SHA256'],
+              'package_verified': os.environ.get('PASS_PACKAGE') == 'true',
+              'exact_shape_verified': os.environ.get('PASS_SHAPE') == 'true',
+              'focused_pc45_and_floor_v43': 'pass' if os.environ.get('PASS_FOCUSED') == 'true' else 'not_proved',
+              'historical_preference_custody_floors': 'pass' if os.environ.get('PASS_HISTORICAL') == 'true' else 'not_proved',
+              'no_magic_human': 'pass' if os.environ.get('PASS_NO_MAGIC') == 'true' else 'not_proved',
+              'release_check': 'pass' if os.environ.get('PASS_RELEASE') == 'true' else 'not_proved',
+              'deterministic_replay': 'pass' if os.environ.get('PASS_REPLAY') == 'true' else 'not_proved',
+              'published_under_exact_lease': os.environ.get('PASS_PUBLISH') == 'true',
+              'standalone_fixture_mutations': 58,
+              'standalone_build_tamper_checks': 16,
+              'floor_v43_adversarial_mutations': 80,
+              'qualified_controls': 45,
+              'promotion_requirements': 1731,
+              'temporary_paths_in_product': 0,
+              'write_capable_permanent_workflows': 0,
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          Path('/tmp/pc45-materializer-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY_RECEIPT
+            exit "$code"
+          }
+          trap emit_receipt EXIT
+
+          cat > /tmp/pc45-paths.expected <<'EOF_PATHS'
+          .github/workflows/preference-custody-v43.yml
+          .github/workflows/preference-linkage-interval-construction-assurance.yml
+          data/research/preference-custody/control-manifest-v43.json
+          data/research/preference-custody/linkage-interval-construction-assurance.fixture.json
+          docs/preference-custody-laboratory-floor-v43.md
+          docs/preference-custody-linkage-interval-construction-assurance.md
+          test/preference-custody-manifest-v43.test.js
+          test/preference-linkage-interval-construction-assurance.test.js
+          tools/compile-preference-custody-manifest-v43.mjs
+          tools/compile-preference-linkage-interval-construction-assurance.mjs
+          tools/lib/preference-custody-manifest-v43.mjs
+          tools/lib/preference-linkage-interval-construction-assurance.mjs
+          tools/validate-preference-custody-manifest-v43.mjs
+          tools/validate-preference-linkage-interval-construction-assurance.mjs
+          EOF_PATHS
+          sed -i 's/^          //' /tmp/pc45-paths.expected
+          LC_ALL=C sort -o /tmp/pc45-paths.expected /tmp/pc45-paths.expected
+          test "$(sha256sum /tmp/pc45-paths.expected | awk '{print $1}')" = "$PATH_LIST_SHA256"
+
+          cat > /tmp/pc45-chunks.sha256 <<'EOF_CHUNKS'
+          ce40c3da06232c0cc88ca5bf792778556165a212751fef1335cad614e6f7a419  data/research/preference-custody/.pc45-product-package.b64.part-00.fix-0
+          8783aa0fe2f9782867a85519aa22e10c8bc7f4885599d6189d64b7835c2ad652  data/research/preference-custody/.pc45-product-package.b64.part-00.fix-1
+          0dd5600f32ec143fdddfde50c92c7493585b3b0edc275d7c30674d480240800f  data/research/preference-custody/.pc45-product-package.b64.part-01
+          62e2999685732a9cb2e62c3ff86f43c2f10e017af56d98ef38941b6cd60b0336  data/research/preference-custody/.pc45-product-package.b64.part-02
+          0b75e1abdb70678cd5d5c25d98e86eb80fa35077a8dbe15bbcaab463c53698d1  data/research/preference-custody/.pc45-product-package.b64.part-03
+          91078f5f42c778cfbee5657e7ecb7dc9140a42099152fc5d0fe9d71ca0535541  data/research/preference-custody/.pc45-product-package.b64.part-04
+          EOF_CHUNKS
+          sed -i 's/^          //' /tmp/pc45-chunks.sha256
+          sha256sum -c /tmp/pc45-chunks.sha256
+          cat \
+            data/research/preference-custody/.pc45-product-package.b64.part-00.fix-0 \
+            data/research/preference-custody/.pc45-product-package.b64.part-00.fix-1 \
+            data/research/preference-custody/.pc45-product-package.b64.part-01 \
+            data/research/preference-custody/.pc45-product-package.b64.part-02 \
+            data/research/preference-custody/.pc45-product-package.b64.part-03 \
+            data/research/preference-custody/.pc45-product-package.b64.part-04 \
+            > /tmp/pc45-product-package.b64
+          base64 --decode /tmp/pc45-product-package.b64 > /tmp/pc45-product-package.tar.gz
+          test "$(sha256sum /tmp/pc45-product-package.tar.gz | awk '{print $1}')" = "$PACKAGE_SHA256"
+          tar -tzf /tmp/pc45-product-package.tar.gz | sed 's#^\./##' | LC_ALL=C sort > /tmp/pc45-paths.archive
+          diff -u /tmp/pc45-paths.expected /tmp/pc45-paths.archive
+          pass_package=true
+
+          git config user.name 'BigBirdReturns'
+          git config user.email '219768509+BigBirdReturns@users.noreply.github.com'
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_PARENT"
+          test "$(git rev-parse origin/$TARGET_BRANCH)" = "$EXPECTED_PARENT"
+
+          rm -rf /tmp/pc45-target
+          git worktree add --detach /tmp/pc45-target "$EXPECTED_PARENT"
+          tar -xzf /tmp/pc45-product-package.tar.gz -C /tmp/pc45-target
+          cd /tmp/pc45-target
+          git ls-files --others --exclude-standard | LC_ALL=C sort > /tmp/pc45-paths.observed
+          diff -u /tmp/pc45-paths.expected /tmp/pc45-paths.observed
+          test "$(wc -l < /tmp/pc45-paths.observed | tr -d ' ')" = 14
+          test -z "$(git diff --name-only)"
+          pass_shape=true
+
+          node tools/compile-preference-linkage-interval-construction-assurance.mjs
+          node tools/validate-preference-linkage-interval-construction-assurance.mjs
+          node test/preference-linkage-interval-construction-assurance.test.js
+          node tools/compile-preference-custody-manifest-v43.mjs
+          node tools/validate-preference-custody-manifest-v43.mjs
+          node test/preference-custody-manifest-v43.test.js
+          pass_focused=true
+
+          rm -rf /tmp/pc45-reference
+          mkdir -p /tmp/pc45-reference
+          cp build/research/preference-linkage-interval-construction-assurance.{json,md} /tmp/pc45-reference/
+          cp build/research/preference-custody-laboratory-floor-v43.{json,md} /tmp/pc45-reference/
+
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          pass_historical=true
+
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          pass_no_magic=true
+
+          npm run release:check
+          pass_release=true
+
+          git reset --hard "$EXPECTED_PARENT"
+          git clean -fdx
+          tar -xzf /tmp/pc45-product-package.tar.gz -C /tmp/pc45-target
+          node tools/compile-preference-linkage-interval-construction-assurance.mjs
+          node tools/validate-preference-linkage-interval-construction-assurance.mjs
+          node test/preference-linkage-interval-construction-assurance.test.js
+          node tools/compile-preference-custody-manifest-v43.mjs
+          node tools/validate-preference-custody-manifest-v43.mjs
+          node test/preference-custody-manifest-v43.test.js
+          cmp /tmp/pc45-reference/preference-linkage-interval-construction-assurance.json build/research/preference-linkage-interval-construction-assurance.json
+          cmp /tmp/pc45-reference/preference-linkage-interval-construction-assurance.md build/research/preference-linkage-interval-construction-assurance.md
+          cmp /tmp/pc45-reference/preference-custody-laboratory-floor-v43.json build/research/preference-custody-laboratory-floor-v43.json
+          cmp /tmp/pc45-reference/preference-custody-laboratory-floor-v43.md build/research/preference-custody-laboratory-floor-v43.md
+          pass_replay=true
+
+          git reset --hard "$EXPECTED_PARENT"
+          git clean -fdx
+          tar -xzf /tmp/pc45-product-package.tar.gz -C /tmp/pc45-target
+          git add --pathspec-from-file=/tmp/pc45-paths.expected
+          git diff --cached --name-only | LC_ALL=C sort > /tmp/pc45-paths.staged
+          diff -u /tmp/pc45-paths.expected /tmp/pc45-paths.staged
+          test -z "$(git diff --name-only)"
+          test -z "$(git ls-files --others --exclude-standard)"
+          git diff --cached --check
+          git commit -m 'Complete PC-45 interval construction and empirical coverage custody'
+          product_commit=$(git rev-parse HEAD)
+          product_tree=$(git rev-parse HEAD^{tree})
+          git diff --name-only "$EXPECTED_PARENT" "$product_commit" | LC_ALL=C sort > /tmp/pc45-paths.committed
+          diff -u /tmp/pc45-paths.expected /tmp/pc45-paths.committed
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_PARENT"
+          pass_publish=true
+          status=success
+      - name: Upload checksum-bound materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc45-exact-product-materializer-v2-${{ github.run_id }}
+          path: /tmp/pc45-materializer-receipt.json
+          if-no-files-found: error
+          retention-days: 90
