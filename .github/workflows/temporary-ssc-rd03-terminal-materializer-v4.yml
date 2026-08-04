@@ -63,9 +63,31 @@ jobs:
           test "$(wc -c < /tmp/rd03-v4-helper.sh | tr -d ' ')" = '15386'
           test "$(sha256sum /tmp/rd03-v4-helper.sh | awk '{print $1}')" = '9ecc52ede8eaa464c66964c90fd4e930f12e5ddeb07a4172aef72aaae0f363f3'
           bash -n /tmp/rd03-v4-helper.sh
-          bash /tmp/rd03-v4-helper.sh "$PWD/work" "$PWD/control"
+
+          mkdir -p /tmp/rd03-v4-terminal-receipt
+          set +e
+          bash -x /tmp/rd03-v4-helper.sh "$PWD/work" "$PWD/control" \
+            2>&1 | tee /tmp/rd03-v4-terminal-receipt/execution.log
+          helper_status="${PIPESTATUS[0]}"
+          set -e
+          cat > /tmp/rd03-v4-terminal-receipt/execution-status.json <<JSON
+          {
+            "schema_version": "ssc-rd03-v4-execution-status@1",
+            "helper_sha256": "9ecc52ede8eaa464c66964c90fd4e930f12e5ddeb07a4172aef72aaae0f363f3",
+            "exit_status": ${helper_status},
+            "completed": $([ "$helper_status" = '0' ] && printf true || printf false),
+            "outside_human_dependency": false,
+            "external_contacts": 0,
+            "external_reviews": 0
+          }
+          JSON
+          sed -i 's/^          //' /tmp/rd03-v4-terminal-receipt/execution-status.json
+          sha256sum /tmp/rd03-v4-terminal-receipt/execution.log \
+            > /tmp/rd03-v4-terminal-receipt/execution.log.sha256
+          exit "$helper_status"
 
       - name: Preserve terminal materialization receipt
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ssc-rd03-wave02-terminal-materialization-v4
