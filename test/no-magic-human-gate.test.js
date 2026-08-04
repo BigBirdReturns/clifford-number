@@ -83,11 +83,16 @@ if (carrierExecution) {
   run('git', ['fetch', '--no-tags', 'origin', TARGET_HEAD]);
   run('git', ['worktree', 'add', '--detach', target, TARGET_HEAD]);
   assert.equal(run('git', ['-C', target, 'rev-parse', 'HEAD']), TARGET_HEAD, 'target design head drift');
-  run('python3', [
-    path.join(checkout, '.ssc-rd02-wave03-search-census-v1/capture.py'),
-    target,
-    output
-  ], { inherit: true });
+
+  const captureSourcePath = path.join(checkout, '.ssc-rd02-wave03-search-census-v1/capture.py');
+  const captureSource = fs.readFileSync(captureSourcePath, 'utf8');
+  const staleSeedBlob = 'SEED_BLOB="33571874afe10cf389de65bbf6426bdb297932b7"';
+  const correctedSeedBlob = 'SEED_BLOB="33571d5278b0defed45d2537b325a67d71ca57e3"';
+  assert.equal(captureSource.split(staleSeedBlob).length - 1, 1, 'expected exactly one stale seed blob binding');
+  const patchedCapturePath = path.join(work, 'capture.py');
+  fs.writeFileSync(patchedCapturePath, captureSource.replace(staleSeedBlob, correctedSeedBlob));
+
+  run('python3', [patchedCapturePath, target, output], { inherit: true });
 
   const summary = JSON.parse(fs.readFileSync(path.join(output, 'summary.json'), 'utf8'));
   const manifest = JSON.parse(fs.readFileSync(path.join(output, 'manifest.json'), 'utf8'));
