@@ -54,12 +54,19 @@ jobs:
           rm -rf /tmp/rd03-authored /tmp/rd03-authored.b64 /tmp/rd03-authored.zip
           mkdir -p /tmp/rd03-authored
           : > /tmp/rd03-authored.b64
-          expected_bytes=(30000 6460)
+          expected_bytes=(4096 4096 4096 4096 4096 4096 4096 4096 3692)
           expected_sha=(
-            7102fffe56ffe06f05b34c20d6b8925638dec1be54e9b88df37c67efb6f567d6
-            7236b7f35d4657ed9c48959d9dbc1a2165238d56384cdd92c613cadb2e8e2733
+            5f1a974574c85ad6d94c488d8342513bb396a98702b51336e69ce564cd4dbe5b
+            81c7b20a4998adb6a484dcfdabb5f5bee95e471922c6ee96a03a95c6ecaf8376
+            3e10e7b1c2a253d52cc6c33be877c58bdcbc091c5fe8da2247c921b3990d88d2
+            50c84a87a9e01f0393efe3582b85df0d8fc5ce35ebae06cc5c39caf294f6a94d
+            e6a993b239ff2288c6861e7599e6331e72e7269d6abfba8026f0341dbed5af61
+            3fc6233bc29d418fce3f1da5e67beb3ceb3ff9c317e43f6f78fb82e316749011
+            f9e2a1782edb9d9e57cfbad2ee2c00154adb1994b85adb94ee859ee715ad5b54
+            521b239e4abb4450150ec50a39af578155f4680567ed292ae857f32febb0a2f0
+            639a302c44bc80fc4922aa383771b318fb2ab8215a01986bab64ac317e127dcf
           )
-          for index in 0 1; do
+          for index in 0 1 2 3 4 5 6 7 8; do
             part="$(printf '%02d' "$index")"
             git show "origin/${CARRIER_BRANCH}:.rd03-terminal/authored/part-${part}.b64" > "/tmp/rd03-authored-part-${part}.b64"
             test "$(wc -c < "/tmp/rd03-authored-part-${part}.b64" | tr -d ' ')" = "${expected_bytes[$index]}"
