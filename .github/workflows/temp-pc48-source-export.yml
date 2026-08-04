@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - agent/pc48-source-export
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 permissions:
   contents: read
