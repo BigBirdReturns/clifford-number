@@ -1,0 +1,113 @@
+name: TEMP repair RD-03 terminal materializer
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-materializer-repair-v1.yml'
+      - '.rd03-repair/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd03-materializer-repair-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-materializer-repair-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TARGET_BRANCH: agent/ssc-rd03-terminal-materializer-base-v1
+      EXPECTED_TARGET_HEAD: 7ba5b96cd87e72151c4bbfdc348d06c33f8455e0
+      EXPECTED_MAIN_HEAD: 69b153b6c358783ed016621fc2057e8c37605760
+      TARGET_WORKFLOW: .github/workflows/temporary-ssc-rd03-terminal-materializer-v1.yml
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd03-terminal-materializer-base-v1
+          fetch-depth: 0
+
+      - name: Patch exact lease and parent proof
+        run: |
+          set -Eeuo pipefail
+          export START_SHA="$(git rev-parse HEAD)"
+          test "$START_SHA" = "$EXPECTED_TARGET_HEAD"
+          test "$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | cut -f1)" = "$EXPECTED_TARGET_HEAD"
+          node tools/validate-no-magic-human-gate.mjs
+
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          path = Path(os.environ['TARGET_WORKFLOW'])
+          text = path.read_text()
+
+          old_main = '      EXPECTED_MAIN_HEAD: 61d8baabee70a40d13fc08c1f446313c3416a6e0'
+          new_main = f"      EXPECTED_MAIN_HEAD: {os.environ['EXPECTED_MAIN_HEAD']}"
+          assert text.count(old_main) == 1, text.count(old_main)
+          text = text.replace(old_main, new_main)
+
+          old_parent = '''          test "$(git show -s --format=%P "$INTEGRATION_SHA")" = "$MAIN_START_SHA $RESEARCH_START_SHA"'''
+          new_parent = '''          test "$(git rev-list --parents -n1 "$INTEGRATION_SHA" | awk '{print NF-1}')" = '2'
+          test "$(git rev-parse "${INTEGRATION_SHA}^1")" = "$MAIN_START_SHA"
+          test "$(git rev-parse "${INTEGRATION_SHA}^2")" = "$RESEARCH_START_SHA"'''
+          assert text.count(old_parent) == 1, text.count(old_parent)
+          text = text.replace(old_parent, new_parent)
+
+          assert '61d8baabee70a40d13fc08c1f446313c3416a6e0' not in text
+          assert text.count(new_main) == 1
+          assert text.count('git rev-list --parents -n1') == 1
+          assert text.count('${INTEGRATION_SHA}^1') == 1
+          assert text.count('${INTEGRATION_SHA}^2') == 1
+          path.write_text(text)
+          PY
+
+          git diff --check
+          test "$(git diff --name-only)" = "$TARGET_WORKFLOW"
+          grep -F "EXPECTED_MAIN_HEAD: $EXPECTED_MAIN_HEAD" "$TARGET_WORKFLOW"
+          grep -F 'git rev-list --parents -n1' "$TARGET_WORKFLOW"
+          grep -F '${INTEGRATION_SHA}^1' "$TARGET_WORKFLOW"
+          grep -F '${INTEGRATION_SHA}^2' "$TARGET_WORKFLOW"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$TARGET_WORKFLOW"
+          git commit -m 'Repair RD-03 materializer lease and parent proof'
+          export PATCH_SHA="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$START_SHA"
+          node tools/validate-no-magic-human-gate.mjs
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          test "$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | cut -f1)" = "$EXPECTED_TARGET_HEAD"
+          git push origin "HEAD:refs/heads/${TARGET_BRANCH}" \
+            --force-with-lease="refs/heads/${TARGET_BRANCH}:${EXPECTED_TARGET_HEAD}"
+          test "$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | cut -f1)" = "$PATCH_SHA"
+
+          mkdir -p /tmp/rd03-materializer-repair
+          cat > /tmp/rd03-materializer-repair/receipt.json <<JSON
+          {
+            "schema_version": "ssc-rd03-terminal-materializer-repair@1",
+            "target_branch": "$TARGET_BRANCH",
+            "prior_head": "$START_SHA",
+            "patched_head": "$PATCH_SHA",
+            "expected_main_head": "$EXPECTED_MAIN_HEAD",
+            "parent_count_proof": "rev-list-field-count",
+            "first_parent_proof": "rev-parse-caret-1",
+            "second_parent_proof": "rev-parse-caret-2",
+            "outside_human_dependency": false,
+            "external_contacts": 0,
+            "external_reviews": 0
+          }
+          JSON
+          sed -i 's/^          //' /tmp/rd03-materializer-repair/receipt.json
+          sha256sum "$TARGET_WORKFLOW" > /tmp/rd03-materializer-repair/workflow.sha256
+
+      - name: Preserve repair receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-terminal-materializer-repair-v1
+          path: /tmp/rd03-materializer-repair
+          if-no-files-found: error
+          retention-days: 90
