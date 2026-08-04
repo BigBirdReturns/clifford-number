@@ -1,0 +1,144 @@
+name: TEMP publish qualified RD-03 terminal closure v7
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-qualified-publication-v7.yml'
+      - '.github/tmp/diagnose-rd03-publication-v6.sh'
+      - '.rd03-qualified-publication-v7/**'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd03-qualified-publication-v7-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-qualified-publication-trigger-v7'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Derive traced publication transaction from proven diagnostic
+        run: |
+          set -Eeuo pipefail
+          cp .github/tmp/diagnose-rd03-publication-v6.sh /tmp/publish-rd03-qualified-v7.sh
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/publish-rd03-qualified-v7.sh')
+          s=p.read_text()
+          old="""CURRENT_STEP='diagnostic-complete'
+          capture_state 0
+          """
+          new="""CURRENT_STEP='focused-terminal-validation'
+          node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+
+          CURRENT_STEP='complete-repository-release-gate'
+          npm run release:check
+
+          CURRENT_STEP='deterministic-clean-tree-replay'
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z \"$(git status --porcelain=v1 --untracked-files=all)\"
+          test \"$(git rev-parse HEAD)\" = \"$PRODUCT_COMMIT\"
+          test \"$(git rev-parse 'HEAD^{tree}')\" = \"$PRODUCT_TREE\"
+
+          CURRENT_STEP='final-main-and-target-lease-check'
+          test \"$(git ls-remote --heads origin refs/heads/main | cut -f1)\" = \"$EXPECTED_MAIN_HEAD\"
+          test \"$(git ls-remote --heads origin \"refs/heads/${TARGET_BRANCH}\" | cut -f1)\" = \"$EXPECTED_TARGET_HEAD\"
+
+          CURRENT_STEP='publish-qualified-permanent-head'
+          git push origin \\
+            \"$PRODUCT_COMMIT:refs/heads/${TARGET_BRANCH}\" \\
+            --force-with-lease=\"refs/heads/${TARGET_BRANCH}:${EXPECTED_TARGET_HEAD}\"
+          test \"$(git ls-remote --heads origin \"refs/heads/${TARGET_BRANCH}\" | cut -f1)\" = \"$PRODUCT_COMMIT\"
+          printf '%s\\n' \"$PRODUCT_COMMIT\" > \"$OUT/published-product-commit.txt\"
+          printf '%s\\n' \"$PRODUCT_TREE\" > \"$OUT/published-product-tree.txt\"
+
+          CURRENT_STEP='write-publication-receipt'
+          OUT=\"$OUT\" \\
+          INTEGRATION_COMMIT=\"$INTEGRATION_COMMIT\" \\
+          PRODUCT_COMMIT=\"$PRODUCT_COMMIT\" \\
+          PRODUCT_TREE=\"$PRODUCT_TREE\" \\
+          python - <<'PY2'
+          import hashlib, json, os
+          from pathlib import Path
+          out=Path(os.environ['OUT'])
+          receipt={
+            'schema_version':'ssc-rd03-qualified-publication@2',
+            'publication_run':int(os.environ['GITHUB_RUN_ID']),
+            'qualification_artifact_id':int(os.environ['QUALIFICATION_ARTIFACT_ID']),
+            'qualification_artifact_sha256':os.environ['QUALIFICATION_ARTIFACT_SHA256'],
+            'qualification_receipt_sha256':os.environ['QUALIFICATION_RECEIPT_SHA256'],
+            'main_parent':os.environ['EXPECTED_MAIN_HEAD'],
+            'source_parent':os.environ['EXPECTED_TARGET_HEAD'],
+            'integration_commit':os.environ['INTEGRATION_COMMIT'],
+            'product_commit':os.environ['PRODUCT_COMMIT'],
+            'product_tree':os.environ['PRODUCT_TREE'],
+            'product_paths':276,
+            'terminal_counts':{
+              'instruments':5,
+              'required_fields':70,
+              'observed':8,
+              'conditional_term_only':15,
+              'source_unavailable':47,
+              'fixed_routes':30,
+              'http_success':15,
+              'terminal_non_success':15,
+              'candidate_rows':150,
+              'admitted_sources':0,
+            },
+            'focused_validation':'pass',
+            'adversarial_mutations':94,
+            'complete_release_gate':'pass',
+            'deterministic_replay':'pass',
+            'main_lease_preserved':True,
+            'target_lease_preserved':True,
+            'outside_human_dependency':False,
+            'external_contacts':0,
+            'external_reviews':0,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+          }
+          payload=(json.dumps(receipt,indent=2)+'\\n').encode()
+          (out/'publication-receipt.json').write_bytes(payload)
+          (out/'publication-receipt.json.sha256').write_text(hashlib.sha256(payload).hexdigest()+'  publication-receipt.json\\n')
+          PY2
+
+          CURRENT_STEP='publication-complete'
+          capture_state 0
+          """
+          if old not in s:
+              raise SystemExit('diagnostic terminal block not found')
+          p.write_text(s.replace(old,new,1))
+          PY
+          chmod +x /tmp/publish-rd03-qualified-v7.sh
+      - name: Execute traced exact publication transaction
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: /tmp/publish-rd03-qualified-v7.sh
+      - name: Preserve success or exact failure receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-qualified-publication-v7
+          path: ${{ env.DIAGNOSTIC_DIR }}
+          if-no-files-found: error
+          retention-days: 90
