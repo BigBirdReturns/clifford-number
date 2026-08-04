@@ -29,7 +29,7 @@ jobs:
       EXPECTED_AUTHORED_PART_00_BLOB: 890923aa6883a28ca00b96ffbf697963578ed58e
       EXPECTED_AUTHORED_PART_01_BLOB: 6842f6cf162803a26ceb8eff378b4266501c4efb
       EXPECTED_RESEARCH_HEAD: e70aec0f6809c77e198e0c4ee80f6bcadb6bbdc4
-      EXPECTED_MAIN_HEAD: 61d8baabee70a40d13fc08c1f446313c3416a6e0
+      MINIMUM_MAIN_HEAD: a7940aa81b07caff1a9c2f8548c88ec37d60d676
       CENSUS_ARTIFACT_ID: '8875551993'
       CENSUS_ARTIFACT_SHA256: 5b5414816cb626a7d9bbe16d914f67d5d02d1233c6ca0d84e21930909eba5f08
       CENSUS_MANIFEST_SHA256: 0bcee2db7be4904f775c55a2533a2a5f1c199edff47e273993925b742f24ac06
@@ -120,6 +120,14 @@ jobs:
 
           script = '\n'.join(script_lines) + '\n'
 
+          old_main_lease = 'test "$MAIN_START_SHA" = "$EXPECTED_MAIN_HEAD"'
+          new_main_lease = '\n'.join([
+              'git merge-base --is-ancestor "$MINIMUM_MAIN_HEAD" "$MAIN_START_SHA"',
+              'printf \'RD-03 runtime main lease captured: %s (ancestry floor=%s)\\n\' "$MAIN_START_SHA" "$MINIMUM_MAIN_HEAD"',
+          ])
+          assert script.count(old_main_lease) == 1, script.count(old_main_lease)
+          script = script.replace(old_main_lease, new_main_lease)
+
           old_parent = 'test "$(git show -s --format=%P "$INTEGRATION_SHA")" = "$MAIN_START_SHA $RESEARCH_START_SHA"'
           new_parent = '\n'.join([
               'parent_record="$(git rev-list --parents -n1 "$INTEGRATION_SHA")"',
@@ -197,6 +205,7 @@ jobs:
           script = script.replace(old_repo_expression, '${GITHUB_REPOSITORY}')
 
           assert (dollar + '{{') not in script
+          assert script.count('runtime main lease captured') == 1
           assert script.count('integration parent proof: PASS') == 1
           assert script.count('carrier fetch reuse: PASS') == 1
           assert script.count('active authored shard reconstruction: 2 / 2') == 1
@@ -208,6 +217,7 @@ jobs:
           PY
 
           bash -n /tmp/rd03-materialize.sh
+          grep -F 'runtime main lease captured' /tmp/rd03-materialize.sh
           grep -F 'integration parent proof: PASS' /tmp/rd03-materialize.sh
           grep -F 'carrier fetch reuse: PASS' /tmp/rd03-materialize.sh
           grep -F 'active authored shard reconstruction: 2 / 2' /tmp/rd03-materialize.sh
