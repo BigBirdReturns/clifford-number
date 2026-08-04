@@ -1,0 +1,78 @@
+name: TEMP promote exact RD-03 closure into Wave 02 current ledger
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-wave02-rd03-promotion-materializer-v1.yml'
+      - '.ssc-wave02-rd03-promotion/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-wave02-rd03-promotion-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-wave02-rd03-promotion-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 580d9c998f747330d190bed5011c7a1a517a1c0d
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify and execute exact promotion program
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          git fetch origin \
+            'refs/heads/agent/ssc-wave02-rd03-promotion-materializer-base-v1:refs/remotes/origin/agent/ssc-wave02-rd03-promotion-materializer-base-v1'
+          git show \
+            'origin/agent/ssc-wave02-rd03-promotion-materializer-base-v1:.ssc-wave02-rd03-promotion/materialize.sh' \
+            > /tmp/ssc-wave02-rd03-promotion-materialize.sh
+          test "$(wc -c < /tmp/ssc-wave02-rd03-promotion-materialize.sh | tr -d ' ')" = '22323'
+          test "$(sha256sum /tmp/ssc-wave02-rd03-promotion-materialize.sh | awk '{print $1}')" = \
+            '4ba25816472ee552be7f3465619d5bb4f5520834cdca645227a543cba40f738f'
+          bash -n /tmp/ssc-wave02-rd03-promotion-materialize.sh
+
+          set +e
+          bash -x /tmp/ssc-wave02-rd03-promotion-materialize.sh \
+            2>&1 | tee /tmp/ssc-wave02-rd03-promotion-execution.log
+          materializer_status="${PIPESTATUS[0]}"
+          set -e
+
+          mkdir -p /tmp/ssc-wave02-five-receipt
+          cp /tmp/ssc-wave02-rd03-promotion-execution.log \
+            /tmp/ssc-wave02-five-receipt/execution.log
+          cat > /tmp/ssc-wave02-five-receipt/execution-status.json <<JSON
+          {
+            "schema_version": "ssc-wave02-rd03-promotion-execution-status@1",
+            "materializer_sha256": "4ba25816472ee552be7f3465619d5bb4f5520834cdca645227a543cba40f738f",
+            "exit_status": ${materializer_status},
+            "completed": $([ "$materializer_status" = '0' ] && printf true || printf false),
+            "outside_human_dependency": false,
+            "external_contacts": 0,
+            "external_reviews": 0
+          }
+          JSON
+          sed -i 's/^          //' /tmp/ssc-wave02-five-receipt/execution-status.json
+          sha256sum /tmp/ssc-wave02-five-receipt/execution.log \
+            > /tmp/ssc-wave02-five-receipt/execution.log.sha256
+          exit "$materializer_status"
+
+      - name: Preserve exact promotion receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-rd03-promotion-materialization-v1
+          path: /tmp/ssc-wave02-five-receipt
+          if-no-files-found: error
+          retention-days: 90
