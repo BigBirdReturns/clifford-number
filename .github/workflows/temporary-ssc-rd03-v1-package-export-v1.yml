@@ -1,0 +1,66 @@
+name: TEMP export exact RD-03 v1 authored package
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-v1-package-export-v1.yml'
+      - '.rd03-v1-package-export/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-ssc-rd03-v1-package-export-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  export:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-v1-package-export-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 248f4bcabf1961a0477e3a6bd71dcb2fedd192a0
+          fetch-depth: 0
+
+      - name: Reconstruct and verify exact package
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = '248f4bcabf1961a0477e3a6bd71dcb2fedd192a0'
+          node tools/validate-no-magic-human-gate.mjs
+          rm -rf /tmp/rd03-v1-export
+          mkdir -p /tmp/rd03-v1-export/extracted
+          mapfile -t shards < <(find .rd03-terminal/authored -maxdepth 1 -type f -name 'part-*.b64' | sort)
+          test "${#shards[@]}" = '9'
+          printf '%s\n' "${shards[@]}" > /tmp/rd03-v1-export/shard-paths.txt
+          cat "${shards[@]}" > /tmp/rd03-v1-export/authored.b64
+          test "$(wc -c < /tmp/rd03-v1-export/authored.b64 | tr -d ' ')" = '36460'
+          test "$(sha256sum /tmp/rd03-v1-export/authored.b64 | awk '{print $1}')" = 'ddf31bf46217127e22ab7181366b3cb84842a76c19dcfec7aeaaa57a6e4f0138'
+          base64 --decode /tmp/rd03-v1-export/authored.b64 > /tmp/rd03-v1-export/authored.zip
+          test "$(wc -c < /tmp/rd03-v1-export/authored.zip | tr -d ' ')" = '27344'
+          test "$(sha256sum /tmp/rd03-v1-export/authored.zip | awk '{print $1}')" = '8169c177f709021bb0565f7debbb6a42fe3dd7a807d1b51db3016eef5325e77b'
+          unzip -t /tmp/rd03-v1-export/authored.zip
+          unzip -q /tmp/rd03-v1-export/authored.zip -d /tmp/rd03-v1-export/extracted
+          find /tmp/rd03-v1-export/extracted -type f -printf '%P\n' | sort > /tmp/rd03-v1-export/file-paths.txt
+          cat > /tmp/rd03-v1-export/expected-paths.txt <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave02-rd03-negotiated-terms.yml
+          docs/milestones/ssc-rd-wave02-rd03-negotiated-terms.md
+          schemas/status-sovereignty-rd-wave02-rd03-negotiated-terms.schema.json
+          test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          EOF
+          sed -i 's/^          //' /tmp/rd03-v1-export/expected-paths.txt
+          diff -u /tmp/rd03-v1-export/expected-paths.txt /tmp/rd03-v1-export/file-paths.txt
+          (cd /tmp/rd03-v1-export/extracted && sha256sum $(find . -type f | sort)) > /tmp/rd03-v1-export/file-sha256.txt
+          node tools/validate-no-magic-human-gate.mjs
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Preserve exact package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-v1-authored-package-exact
+          path: /tmp/rd03-v1-export
+          if-no-files-found: error
+          retention-days: 90
