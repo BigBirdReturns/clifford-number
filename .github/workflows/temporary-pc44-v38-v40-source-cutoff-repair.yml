@@ -1,0 +1,240 @@
+name: TEMP bind PC-44 v38-v40 source-bundle cutoff
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc44-v38-v40-source-cutoff-repair.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/preference-linkage-uncertainty-monitoring-assurance-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Patch, qualify, replay, and publish exact v38-v40 cutoff repair
+        env:
+          TARGET_BRANCH: research/preference-linkage-uncertainty-monitoring-assurance-v1
+          EXPECTED_TARGET_HEAD: e87d716cbf7fd1663ed18a64e12df32d9c7e1222
+        run: |
+          set -Eeuo pipefail
+          status=failed
+          product_commit=
+          product_tree=
+          pass_focused=false
+          pass_historical=false
+          pass_no_magic=false
+          pass_release=false
+          pass_replay=false
+          published=false
+
+          emit_receipt() {
+            code=$?
+            trap - EXIT
+            export RECEIPT_STATUS="$status" PRODUCT_COMMIT="$product_commit" PRODUCT_TREE="$product_tree"
+            export PASS_FOCUSED="$pass_focused" PASS_HISTORICAL="$pass_historical" PASS_NO_MAGIC="$pass_no_magic"
+            export PASS_RELEASE="$pass_release" PASS_REPLAY="$pass_replay" PUBLISHED="$published"
+            python - <<'PY_RECEIPT'
+          from pathlib import Path
+          import hashlib, json, os, subprocess
+          paths = ['test/preference-custody-manifest-v42.test.js','tools/lib/preference-custody-manifest-v42.mjs']
+          files = {}
+          for path in paths:
+              p = Path(path)
+              if p.exists():
+                  files[path] = {
+                      'bytes': p.stat().st_size,
+                      'sha256': hashlib.sha256(p.read_bytes()).hexdigest(),
+                      'git_blob_sha1': subprocess.check_output(['git','hash-object',path], text=True).strip()
+                  }
+          receipt = {
+              'schema_version': 'pc44-v38-v40-source-bundle-cutoff-repair-receipt@1',
+              'workflow_run_id': os.environ.get('GITHUB_RUN_ID'),
+              'status': os.environ.get('RECEIPT_STATUS'),
+              'prior_target_head': os.environ['EXPECTED_TARGET_HEAD'],
+              'product_head': os.environ.get('PRODUCT_COMMIT') or None,
+              'product_tree': os.environ.get('PRODUCT_TREE') or None,
+              'changed_paths': paths,
+              'path_list_sha256': hashlib.sha256(('\n'.join(paths) + '\n').encode()).hexdigest(),
+              'files': files,
+              'v37_source_cutoff_preserved': True,
+              'v38_manifest_source_bound': True,
+              'v39_manifest_source_bound': True,
+              'v40_manifest_source_bound': True,
+              'complete_v38_v40_source_bundles_hashed': True,
+              'standalone_fixture_mutations': 51,
+              'standalone_build_tamper_checks': 16,
+              'floor_v42_adversarial_mutations': 78,
+              'focused_pc44_and_floor_v42': 'pass' if os.environ.get('PASS_FOCUSED') == 'true' else 'not_proved',
+              'historical_preference_custody_floors': 'pass' if os.environ.get('PASS_HISTORICAL') == 'true' else 'not_proved',
+              'no_magic_human': 'pass' if os.environ.get('PASS_NO_MAGIC') == 'true' else 'not_proved',
+              'release_check': 'pass' if os.environ.get('PASS_RELEASE') == 'true' else 'not_proved',
+              'deterministic_replay': 'pass' if os.environ.get('PASS_REPLAY') == 'true' else 'not_proved',
+              'target_published': os.environ.get('PUBLISHED') == 'true',
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          Path('/tmp/pc44-v38-v40-cutoff-repair-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY_RECEIPT
+            exit "$code"
+          }
+          trap emit_receipt EXIT
+
+          git fetch --no-tags origin "+refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_TARGET_HEAD"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_TARGET_HEAD"
+
+          python - <<'PY_PATCH'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              if text.count(old) != 1:
+                  raise SystemExit(f'{label} anchor mismatch: {text.count(old)}')
+              return text.replace(old, new)
+
+          lib_path = Path('tools/lib/preference-custody-manifest-v42.mjs')
+          text = lib_path.read_text()
+          constant_anchor = "const V37_SOURCE_CUTOFF_SCHEMA_VERSION = 'preference-custody-v37-source-aware-cutoff@1';\n"
+          text = replace_once(text, constant_anchor, constant_anchor + "const V38_V40_SOURCE_BUNDLE_CUTOFF_SCHEMA_VERSION = 'preference-custody-v38-v40-source-bundle-cutoff@1';\n", 'cutoff schema constant')
+
+          function_anchor = "function v37SourceCutoffSha256(baseSources) { return sha256(v37SourceCutoffPayload(baseSources)); }\n"
+          source_bundle_functions = """function v38V40SourceBundleCutoffPayload(baseSources) {
+            const v40 = object(baseSources?.baseSources);
+            const v39 = object(v40?.baseSources);
+            const v38 = object(v39?.baseSources);
+            return {
+              schema_version: V38_V40_SOURCE_BUNDLE_CUTOFF_SCHEMA_VERSION,
+              v40: { manifest: v40.manifest, base_build: v40.baseBuild, score_build: v40.scoreBuild, score_fixture: v40.scoreFixture },
+              v39: { manifest: v39.manifest, base_build: v39.baseBuild, candidate_build: v39.candidateBuild, candidate_fixture: v39.candidateFixture },
+              v38: { manifest: v38.manifest, base_build: v38.baseBuild, confidence_build: v38.confidenceBuild, confidence_fixture: v38.confidenceFixture }
+            };
+          }
+          function v38V40SourceBundleCutoffSha256(baseSources) { return sha256(v38V40SourceBundleCutoffPayload(baseSources)); }
+          function validateV38V40SourceBundleCutoff(baseSources) {
+            const errors = [];
+            const v40 = object(baseSources?.baseSources);
+            const v39 = object(v40?.baseSources);
+            const v38 = object(v39?.baseSources);
+            for (const [value, label] of [
+              [v40.manifest, 'v40 manifest'], [v40.baseBuild, 'v40 base build'], [v40.scoreBuild, 'v40 score build'], [v40.scoreFixture, 'v40 score fixture'],
+              [v39.manifest, 'v39 manifest'], [v39.baseBuild, 'v39 base build'], [v39.candidateBuild, 'v39 candidate build'], [v39.candidateFixture, 'v39 candidate fixture'],
+              [v38.manifest, 'v38 manifest'], [v38.baseBuild, 'v38 base build'], [v38.confidenceBuild, 'v38 confidence build'], [v38.confidenceFixture, 'v38 confidence fixture']
+            ]) if (!value) errors.push(`v42 v38-v40 source-bundle cutoff ${label} is required`);
+            return errors;
+          }
+          """
+          text = replace_once(text, function_anchor, function_anchor + source_bundle_functions, 'source-bundle functions')
+
+          old_base_validation = """    ...validatePreferenceCustodyManifestV41Build(baseBuild, baseSources.manifest, baseSources.baseBuild, baseSources.probabilityBuild, baseSources.probabilityFixture, baseSources.baseSources),
+              ...validateV37SourceCutoff(baseSources)
+          """
+          new_base_validation = """    ...validatePreferenceCustodyManifestV41Build(baseBuild, baseSources.manifest, baseSources.baseBuild, baseSources.probabilityBuild, baseSources.probabilityFixture, baseSources.baseSources),
+              ...validateV37SourceCutoff(baseSources),
+              ...validateV38V40SourceBundleCutoff(baseSources)
+          """
+          text = replace_once(text, old_base_validation, new_base_validation, 'base validation bundle')
+
+          old_composition = "extension_snapshot_sha256:sha256(uncertaintyBuild),v37_source_cutoff_schema_version:V37_SOURCE_CUTOFF_SCHEMA_VERSION,v37_source_cutoff_sha256:v37SourceCutoffSha256(baseSources),base_controls_sha256"
+          new_composition = "extension_snapshot_sha256:sha256(uncertaintyBuild),v37_source_cutoff_schema_version:V37_SOURCE_CUTOFF_SCHEMA_VERSION,v37_source_cutoff_sha256:v37SourceCutoffSha256(baseSources),v38_v40_source_bundle_cutoff_schema_version:V38_V40_SOURCE_BUNDLE_CUTOFF_SCHEMA_VERSION,v38_v40_source_bundle_cutoff_sha256:v38V40SourceBundleCutoffSha256(baseSources),base_controls_sha256"
+          text = replace_once(text, old_composition, new_composition, 'composition cutoff binding')
+
+          text = replace_once(text, "v37_source_aware_cutoff_bound:true,all_graph_effect_none", "v37_source_aware_cutoff_bound:true,v38_v40_source_bundle_cutoff_bound:true,all_graph_effect_none", 'integrity cutoff binding')
+          text = replace_once(text, "||composition.v37_source_cutoff_schema_version!==V37_SOURCE_CUTOFF_SCHEMA_VERSION) errors.push('compiled v42 composition identity mismatch');", "||composition.v37_source_cutoff_schema_version!==V37_SOURCE_CUTOFF_SCHEMA_VERSION||composition.v38_v40_source_bundle_cutoff_schema_version!==V38_V40_SOURCE_BUNDLE_CUTOFF_SCHEMA_VERSION) errors.push('compiled v42 composition identity mismatch');", 'composition schema validation')
+          text = replace_once(text, "'extension_snapshot_sha256','v37_source_cutoff_sha256','base_controls_sha256'", "'extension_snapshot_sha256','v37_source_cutoff_sha256','v38_v40_source_bundle_cutoff_sha256','base_controls_sha256'", 'hash field validation')
+          text = replace_once(text, "if(composition.v37_source_cutoff_sha256!==v37SourceCutoffSha256(baseSources)) errors.push('compiled v42 v37 source cutoff hash mismatch'); if(stable(compiled)!==stable(expected))", "if(composition.v37_source_cutoff_sha256!==v37SourceCutoffSha256(baseSources)) errors.push('compiled v42 v37 source cutoff hash mismatch'); if(composition.v38_v40_source_bundle_cutoff_sha256!==v38V40SourceBundleCutoffSha256(baseSources)) errors.push('compiled v42 v38-v40 source-bundle cutoff hash mismatch'); if(stable(compiled)!==stable(expected))", 'reconstruction cutoff validation')
+          text = replace_once(text, "if(compiled?.control_integrity?.v37_source_aware_cutoff_bound!==true) errors.push('compiled v42 v37 source cutoff integrity missing'); for(const key", "if(compiled?.control_integrity?.v37_source_aware_cutoff_bound!==true) errors.push('compiled v42 v37 source cutoff integrity missing'); if(compiled?.control_integrity?.v38_v40_source_bundle_cutoff_bound!==true) errors.push('compiled v42 v38-v40 source-bundle cutoff integrity missing'); for(const key", 'integrity validation')
+          lib_path.write_text(text)
+
+          test_path = Path('test/preference-custody-manifest-v42.test.js')
+          value = test_path.read_text()
+          old_assert = "assert.equal(build.composition.v37_source_cutoff_schema_version,'preference-custody-v37-source-aware-cutoff@1'); assert.equal(build.composition.v37_source_cutoff_sha256.length,64); assert.equal(build.control_integrity.v37_source_aware_cutoff_bound,true);"
+          new_assert = old_assert + " assert.equal(build.composition.v38_v40_source_bundle_cutoff_schema_version,'preference-custody-v38-v40-source-bundle-cutoff@1'); assert.equal(build.composition.v38_v40_source_bundle_cutoff_sha256.length,64); assert.equal(build.control_integrity.v38_v40_source_bundle_cutoff_bound,true);"
+          value = replace_once(value, old_assert, new_assert, 'test cutoff assertions')
+
+          succession_anchor = "const staleV37Compiled=clone(baseSources); staleV37Compiled.baseSources.baseSources.baseSources.v37SourceCutoff.manifest.captured_at='2026-08-04'; assert.throws(()=>compilePreferenceCustodyManifestV42(manifest,base,uncertaintyBuild,uncertaintyFixture,staleV37Compiled),/v37 cutoff compiled floor does not reconstruct/);"
+          succession_tests = """ const revisedV38Sources=clone(baseSources); revisedV38Sources.baseSources.baseSources.baseSources.manifest.source_revision_receipt='V38-SOURCE-REVISION-RECEIPT-V2'; const revisedV38Build=compilePreferenceCustodyManifestV42(manifest,base,uncertaintyBuild,uncertaintyFixture,revisedV38Sources); assert.deepEqual(validatePreferenceCustodyManifestV42Build(revisedV38Build,manifest,base,uncertaintyBuild,uncertaintyFixture,revisedV38Sources),[]); assert.notEqual(revisedV38Build.composition.v38_v40_source_bundle_cutoff_sha256,build.composition.v38_v40_source_bundle_cutoff_sha256); assert.ok(validatePreferenceCustodyManifestV42Build(build,manifest,base,uncertaintyBuild,uncertaintyFixture,revisedV38Sources).length>0,'validator-permitted revised v38 manifest paired with stale floor'); const revisedV39Sources=clone(baseSources); revisedV39Sources.baseSources.baseSources.manifest.source_revision_receipt='V39-SOURCE-REVISION-RECEIPT-V2'; const revisedV39Build=compilePreferenceCustodyManifestV42(manifest,base,uncertaintyBuild,uncertaintyFixture,revisedV39Sources); assert.deepEqual(validatePreferenceCustodyManifestV42Build(revisedV39Build,manifest,base,uncertaintyBuild,uncertaintyFixture,revisedV39Sources),[]); assert.notEqual(revisedV39Build.composition.v38_v40_source_bundle_cutoff_sha256,build.composition.v38_v40_source_bundle_cutoff_sha256); assert.ok(validatePreferenceCustodyManifestV42Build(build,manifest,base,uncertaintyBuild,uncertaintyFixture,revisedV39Sources).length>0,'validator-permitted revised v39 manifest paired with stale floor'); const revisedV40Sources=clone(baseSources); revisedV40Sources.baseSources.manifest.source_revision_receipt='V40-SOURCE-REVISION-RECEIPT-V2'; const revisedV40Build=compilePreferenceCustodyManifestV42(manifest,base,uncertaintyBuild,uncertaintyFixture,revisedV40Sources); assert.deepEqual(validatePreferenceCustodyManifestV42Build(revisedV40Build,manifest,base,uncertaintyBuild,uncertaintyFixture,revisedV40Sources),[]); assert.notEqual(revisedV40Build.composition.v38_v40_source_bundle_cutoff_sha256,build.composition.v38_v40_source_bundle_cutoff_sha256); assert.ok(validatePreferenceCustodyManifestV42Build(build,manifest,base,uncertaintyBuild,uncertaintyFixture,revisedV40Sources).length>0,'validator-permitted revised v40 manifest paired with stale floor');"
+          value = replace_once(value, succession_anchor, succession_anchor + succession_tests, 'v38-v40 succession tests')
+
+          value = replace_once(value, "['v37 cutoff hash',v=>{v.composition.v37_source_cutoff_sha256='e'.repeat(64);}],['base controls hash'", "['v37 cutoff hash',v=>{v.composition.v37_source_cutoff_sha256='e'.repeat(64);}],['v38-v40 cutoff schema',v=>{v.composition.v38_v40_source_bundle_cutoff_schema_version='invalid';}],['v38-v40 cutoff hash',v=>{v.composition.v38_v40_source_bundle_cutoff_sha256='d'.repeat(64);}],['base controls hash'", 'cutoff build mutations')
+          value = replace_once(value, "['v37 cutoff integrity',v=>{v.control_integrity.v37_source_aware_cutoff_bound=false;}],['PC44 metric'", "['v37 cutoff integrity',v=>{v.control_integrity.v37_source_aware_cutoff_bound=false;}],['v38-v40 cutoff integrity',v=>{v.control_integrity.v38_v40_source_bundle_cutoff_bound=false;}],['PC44 metric'", 'cutoff integrity mutation')
+          value = replace_once(value, "assert.equal(manifestMutations.length+buildMutations.length,75);", "assert.equal(manifestMutations.length+buildMutations.length,78);", 'mutation denominator')
+          value = replace_once(value, "Preference custody floor v42 adversarial tests: PASS (75 mutations plus v37 source-aware cutoff, exact semantic-ledger, complete-manifest, frozen-ledger, and source-binding succession checks)", "Preference custody floor v42 adversarial tests: PASS (78 mutations plus v37 and v38-v40 source-bundle cutoffs, exact semantic-ledger, complete-manifest, frozen-ledger, and source-binding succession checks)", 'test summary')
+          test_path.write_text(value)
+          PY_PATCH
+
+          printf '%s\n' test/preference-custody-manifest-v42.test.js tools/lib/preference-custody-manifest-v42.mjs | LC_ALL=C sort > /tmp/pc44-repair-paths.expected
+          git diff --name-only | LC_ALL=C sort > /tmp/pc44-repair-paths.observed
+          diff -u /tmp/pc44-repair-paths.expected /tmp/pc44-repair-paths.observed
+
+          git add -- test/preference-custody-manifest-v42.test.js tools/lib/preference-custody-manifest-v42.mjs
+          export GIT_AUTHOR_NAME='github-actions[bot]' GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME" GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          git commit -m 'Preference Custody: bind v38-v40 source bundles into floor v42'
+          product_commit="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_TARGET_HEAD"
+          git diff --name-only "$EXPECTED_TARGET_HEAD" "$product_commit" | LC_ALL=C sort > /tmp/pc44-repair-paths.observed
+          diff -u /tmp/pc44-repair-paths.expected /tmp/pc44-repair-paths.observed
+
+          node tools/compile-preference-linkage-uncertainty-monitoring-assurance.mjs
+          node tools/validate-preference-linkage-uncertainty-monitoring-assurance.mjs
+          node test/preference-linkage-uncertainty-monitoring-assurance.test.js
+          node tools/compile-preference-custody-manifest-v42.mjs
+          node tools/validate-preference-custody-manifest-v42.mjs
+          node test/preference-custody-manifest-v42.test.js
+          pass_focused=true
+
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do node "$test_file"; done
+          node test/preference-custody-manifest.test.js
+          pass_historical=true
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          pass_no_magic=true
+
+          rm -rf /tmp/pc44-v38-v40-reference && mkdir -p /tmp/pc44-v38-v40-reference
+          cp build/research/preference-linkage-uncertainty-monitoring-assurance.{json,md} /tmp/pc44-v38-v40-reference/
+          cp build/research/preference-custody-laboratory-floor-v42.{json,md} /tmp/pc44-v38-v40-reference/
+          npm run release:check
+          git diff --exit-code -- test/preference-custody-manifest-v42.test.js tools/lib/preference-custody-manifest-v42.mjs
+          pass_release=true
+
+          git reset --hard "$product_commit"
+          git clean -fdx
+          node tools/compile-preference-linkage-uncertainty-monitoring-assurance.mjs
+          node tools/validate-preference-linkage-uncertainty-monitoring-assurance.mjs
+          node test/preference-linkage-uncertainty-monitoring-assurance.test.js
+          node tools/compile-preference-custody-manifest-v42.mjs
+          node tools/validate-preference-custody-manifest-v42.mjs
+          node test/preference-custody-manifest-v42.test.js
+          cmp /tmp/pc44-v38-v40-reference/preference-linkage-uncertainty-monitoring-assurance.json build/research/preference-linkage-uncertainty-monitoring-assurance.json
+          cmp /tmp/pc44-v38-v40-reference/preference-linkage-uncertainty-monitoring-assurance.md build/research/preference-linkage-uncertainty-monitoring-assurance.md
+          cmp /tmp/pc44-v38-v40-reference/preference-custody-laboratory-floor-v42.json build/research/preference-custody-laboratory-floor-v42.json
+          cmp /tmp/pc44-v38-v40-reference/preference-custody-laboratory-floor-v42.md build/research/preference-custody-laboratory-floor-v42.md
+          pass_replay=true
+
+          git reset --hard "$product_commit"
+          git clean -fdx
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git fetch --no-tags origin "+refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_TARGET_HEAD"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET_HEAD" origin "$product_commit:refs/heads/$TARGET_BRANCH"
+          published=true
+          status=success
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc44-v38-v40-source-cutoff-repair-${{ github.run_id }}
+          path: /tmp/pc44-v38-v40-cutoff-repair-receipt.json
+          if-no-files-found: error
+          retention-days: 90
