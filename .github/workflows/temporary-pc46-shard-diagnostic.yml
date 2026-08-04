@@ -1,0 +1,31 @@
+name: TEMP export PC-46 repair shards
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-pc46-shard-diagnostic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc46-exact-product-materializer
+      - name: Print remote shard diagnostics
+        run: |
+          set -Eeuo pipefail
+          wc -c transport/pc46/product.b64.part-00a transport/pc46/product.b64.part-00b
+          sha256sum transport/pc46/product.b64.part-00a transport/pc46/product.b64.part-00b
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc46-repair-shards-${{ github.run_id }}
+          path: |
+            transport/pc46/product.b64.part-00a
+            transport/pc46/product.b64.part-00b
+          if-no-files-found: error
+          retention-days: 7
