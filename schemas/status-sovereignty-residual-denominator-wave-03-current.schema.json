@@ -1,0 +1,522 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/clifford-number/schemas/status-sovereignty-residual-denominator-wave-03-current.schema.json",
+  "title": "SSC residual-denominator Wave 03 current cumulative ledger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "wave_id",
+    "hypothesis_id",
+    "issue",
+    "as_of",
+    "authority",
+    "parent_custody",
+    "inherited_closed_class_receipts",
+    "promoted_wave_03_class_receipts",
+    "selected_wave_03_classes_open",
+    "counts",
+    "current_result",
+    "boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "status-sovereignty-residual-denominator-wave-03-current@1"
+    },
+    "wave_id": {
+      "const": "SSC-RD-W03"
+    },
+    "hypothesis_id": {
+      "const": "SSC-H01"
+    },
+    "issue": {
+      "const": 1013
+    },
+    "as_of": {
+      "const": "2026-08-04"
+    },
+    "authority": {
+      "const": "seven_terminal_class_receipts_promoted_without_cross_lane_empirical_authority"
+    },
+    "parent_custody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "wave_02_issue",
+        "wave_02_cumulative_promotion_pr",
+        "wave_02_promotion_merge",
+        "wave_02_current_ledger_path",
+        "wave_02_current_ledger_sha256",
+        "wave_02_current_is_historical_parent",
+        "wave_03_constitution_pr",
+        "wave_03_constitution_merge",
+        "wave_03_constitution_path",
+        "wave_03_constitution_sha256",
+        "rd01_source_pr",
+        "rd01_merge_commit",
+        "canonical_residual_classes",
+        "closed_before_wave_03",
+        "open_before_wave_03"
+      ],
+      "properties": {
+        "wave_02_issue": {
+          "const": 785
+        },
+        "wave_02_cumulative_promotion_pr": {
+          "const": 1012
+        },
+        "wave_02_promotion_merge": {
+          "const": "2af6bb7819a37e51c7198fb48da894445a29e494"
+        },
+        "wave_02_current_ledger_path": {
+          "const": "data/research/status-sovereignty-residual-denominator-wave-02-current.json"
+        },
+        "wave_02_current_ledger_sha256": {
+          "const": "2715f7e3a358b8b0b750d8814a8bdd918d69f1a41b75a481f5c979709518eeae"
+        },
+        "wave_02_current_is_historical_parent": {
+          "const": true
+        },
+        "wave_03_constitution_pr": {
+          "const": 1020
+        },
+        "wave_03_constitution_merge": {
+          "const": "dc47681a9ad43e1c64c86e3d823dbb7c203a18c2"
+        },
+        "wave_03_constitution_path": {
+          "const": "data/research/status-sovereignty-residual-denominator-wave-03-constitution.json"
+        },
+        "wave_03_constitution_sha256": {
+          "const": "25cc75ce1026e5b397d00f2da310d2bcdaf12507858c573b936345ebd51c8c5b"
+        },
+        "rd01_source_pr": {
+          "const": 1022
+        },
+        "rd01_merge_commit": {
+          "const": "c27e7d3cde2c94c1cde5d66dcce8eb06b514ff8a"
+        },
+        "canonical_residual_classes": {
+          "const": 42
+        },
+        "closed_before_wave_03": {
+          "const": 6
+        },
+        "open_before_wave_03": {
+          "const": 36
+        }
+      }
+    },
+    "inherited_closed_class_receipts": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "$ref": "#/$defs/classReceipt"
+      }
+    },
+    "promoted_wave_03_class_receipts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {
+        "$ref": "#/$defs/classReceipt"
+      }
+    },
+    "selected_wave_03_classes_open": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "lane_id",
+          "class_id",
+          "issue",
+          "constitutional_exact_label",
+          "state",
+          "class_closed"
+        ],
+        "properties": {
+          "lane_id": {
+            "enum": [
+              "RD-02",
+              "RD-03",
+              "RD-04",
+              "RD-05",
+              "RD-06"
+            ]
+          },
+          "class_id": {
+            "enum": [
+              "RD-02-C05",
+              "RD-03-C05",
+              "RD-04-C02",
+              "RD-05-C02",
+              "RD-06-C04"
+            ]
+          },
+          "issue": {
+            "enum": [
+              1015,
+              1016,
+              1017,
+              1018,
+              1019
+            ]
+          },
+          "constitutional_exact_label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state": {
+            "const": "open"
+          },
+          "class_closed": {
+            "const": false
+          }
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonical_residual_classes",
+        "inherited_terminal_class_receipts",
+        "wave_03_selected_class_attempts",
+        "wave_03_terminal_class_receipts",
+        "terminal_class_receipts_total",
+        "classes_closed_before_wave_03",
+        "classes_closed_this_wave",
+        "closed_residual_classes",
+        "open_residual_classes",
+        "open_wave_03_selected_classes",
+        "label_reconciliations_total",
+        "outside_human_dependencies",
+        "external_contacts",
+        "external_reviews",
+        "reviewed_disposition_changes",
+        "selector_accuracy_findings",
+        "technical_superiority_findings",
+        "favoritism_findings",
+        "extraction_findings",
+        "complete_compact_findings",
+        "racial_order_findings",
+        "prevalence_findings",
+        "coordination_findings",
+        "common_purpose_findings",
+        "graph_effects",
+        "publication_effects",
+        "adoption_effects"
+      ],
+      "properties": {
+        "canonical_residual_classes": {
+          "const": 42
+        },
+        "inherited_terminal_class_receipts": {
+          "const": 6
+        },
+        "wave_03_selected_class_attempts": {
+          "const": 6
+        },
+        "wave_03_terminal_class_receipts": {
+          "const": 1
+        },
+        "terminal_class_receipts_total": {
+          "const": 7
+        },
+        "classes_closed_before_wave_03": {
+          "const": 6
+        },
+        "classes_closed_this_wave": {
+          "const": 1
+        },
+        "closed_residual_classes": {
+          "const": 7
+        },
+        "open_residual_classes": {
+          "const": 35
+        },
+        "open_wave_03_selected_classes": {
+          "const": 5
+        },
+        "label_reconciliations_total": {
+          "const": 1
+        },
+        "outside_human_dependencies": {
+          "const": 0
+        },
+        "external_contacts": {
+          "const": 0
+        },
+        "external_reviews": {
+          "const": 0
+        },
+        "reviewed_disposition_changes": {
+          "const": 0
+        },
+        "selector_accuracy_findings": {
+          "const": 0
+        },
+        "technical_superiority_findings": {
+          "const": 0
+        },
+        "favoritism_findings": {
+          "const": 0
+        },
+        "extraction_findings": {
+          "const": 0
+        },
+        "complete_compact_findings": {
+          "const": 0
+        },
+        "racial_order_findings": {
+          "const": 0
+        },
+        "prevalence_findings": {
+          "const": 0
+        },
+        "coordination_findings": {
+          "const": 0
+        },
+        "common_purpose_findings": {
+          "const": 0
+        },
+        "graph_effects": {
+          "const": 0
+        },
+        "publication_effects": {
+          "const": 0
+        },
+        "adoption_effects": {
+          "const": 0
+        }
+      }
+    },
+    "current_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "terminal_state",
+        "classes_closed",
+        "classes_open",
+        "closed_class_ids",
+        "open_wave_03_selected_class_ids",
+        "wave_03_selected_attempts_terminal",
+        "all_six_wave_03_selected_classes_closed",
+        "wave_03_complete",
+        "complete_compact",
+        "outside_human_dependency",
+        "project_blocking",
+        "graph_effect",
+        "publication_effect",
+        "adoption_effect"
+      ],
+      "properties": {
+        "terminal_state": {
+          "const": "seven_of_forty_two_residual_classes_closed_one_wave03_selected_attempt_terminal"
+        },
+        "classes_closed": {
+          "const": 7
+        },
+        "classes_open": {
+          "const": 35
+        },
+        "closed_class_ids": {
+          "const": [
+            "RD-04-C01",
+            "RD-05-C03",
+            "RD-01-C03",
+            "RD-06-C01",
+            "RD-03-C04",
+            "RD-02-C04",
+            "RD-01-C06"
+          ]
+        },
+        "open_wave_03_selected_class_ids": {
+          "const": [
+            "RD-02-C05",
+            "RD-03-C05",
+            "RD-04-C02",
+            "RD-05-C02",
+            "RD-06-C04"
+          ]
+        },
+        "wave_03_selected_attempts_terminal": {
+          "const": 1
+        },
+        "all_six_wave_03_selected_classes_closed": {
+          "const": false
+        },
+        "wave_03_complete": {
+          "const": false
+        },
+        "complete_compact": {
+          "const": false
+        },
+        "outside_human_dependency": {
+          "const": false
+        },
+        "project_blocking": {
+          "const": false
+        },
+        "graph_effect": {
+          "const": "none"
+        },
+        "publication_effect": {
+          "const": "none"
+        },
+        "adoption_effect": {
+          "const": "none"
+        }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "wave_02_current_ledger_is_rewritten",
+        "inherited_class_receipt_is_reopened",
+        "one_wave_03_class_closure_closes_lane",
+        "one_wave_03_class_closure_closes_wave",
+        "seven_total_class_closures_complete_compact",
+        "not_publicly_recovered_is_event_absence",
+        "prospective_re_evaluation_is_completed_re_evaluation",
+        "methodology_change_is_correction",
+        "later_edition_is_prior_row_reconsideration",
+        "missing_public_appeal_route_is_no_appeal_or_challenge",
+        "rank_is_technical_superiority_or_causal_treatment",
+        "functional_convergence_is_coordination_or_common_purpose",
+        "graph_effect",
+        "publication_effect",
+        "adoption_effect"
+      ],
+      "properties": {
+        "wave_02_current_ledger_is_rewritten": {
+          "const": false
+        },
+        "inherited_class_receipt_is_reopened": {
+          "const": false
+        },
+        "one_wave_03_class_closure_closes_lane": {
+          "const": false
+        },
+        "one_wave_03_class_closure_closes_wave": {
+          "const": false
+        },
+        "seven_total_class_closures_complete_compact": {
+          "const": false
+        },
+        "not_publicly_recovered_is_event_absence": {
+          "const": false
+        },
+        "prospective_re_evaluation_is_completed_re_evaluation": {
+          "const": false
+        },
+        "methodology_change_is_correction": {
+          "const": false
+        },
+        "later_edition_is_prior_row_reconsideration": {
+          "const": false
+        },
+        "missing_public_appeal_route_is_no_appeal_or_challenge": {
+          "const": false
+        },
+        "rank_is_technical_superiority_or_causal_treatment": {
+          "const": false
+        },
+        "functional_convergence_is_coordination_or_common_purpose": {
+          "const": false
+        },
+        "graph_effect": {
+          "const": "none"
+        },
+        "publication_effect": {
+          "const": "none"
+        },
+        "adoption_effect": {
+          "const": "none"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "classReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lane_id",
+        "class_id",
+        "issue",
+        "source_pr",
+        "merge_commit",
+        "constitutional_exact_label",
+        "receipt_class_label",
+        "labels_exact_match",
+        "label_reconciliation",
+        "terminal_state",
+        "closure_reference_path",
+        "class_receipt_path",
+        "manifest_combined_sha256",
+        "class_closed"
+      ],
+      "properties": {
+        "lane_id": {
+          "pattern": "^RD-0[1-6]$"
+        },
+        "class_id": {
+          "pattern": "^RD-0[1-6]-C0[1-8]$"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "source_pr": {
+          "type": "integer"
+        },
+        "merge_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "constitutional_exact_label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "receipt_class_label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "labels_exact_match": {
+          "type": "boolean"
+        },
+        "label_reconciliation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "terminal_state": {
+          "enum": [
+            "evidence_complete",
+            "bounded_non_link",
+            "bounded_source_restricted",
+            "bounded_source_unavailable"
+          ]
+        },
+        "closure_reference_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "class_receipt_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "manifest_combined_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "class_closed": {
+          "const": true
+        }
+      }
+    }
+  }
+}
