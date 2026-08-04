@@ -52,73 +52,75 @@ jobs:
 
           path = Path('/tmp/ssc-wave02-rd03-promotion-materialize.sh')
           text = path.read_text()
-          replacements = [
-              (
-                  "    (\"['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01']\", \"['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04']\", 'validator promoted order first'),",
-                  "    (\"same(current.promoted_class_receipts.map((row) => row.class_id), ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01'], 'promoted class order changed');\", \"same(current.promoted_class_receipts.map((row) => row.class_id), ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04'], 'promoted class order changed');\", 'validator promoted order first'),",
-                  'validator promoted-order anchor',
-              ),
-              (
-                  "    (\"['RD-02-C04','RD-03-C04']\", \"['RD-02-C04']\", 'validator open order first'),",
-                  "    (\"same(current.selected_classes_open.map((row) => row.class_id), ['RD-02-C04','RD-03-C04'], 'open selected class order changed');\", \"same(current.selected_classes_open.map((row) => row.class_id), ['RD-02-C04'], 'open selected class order changed');\", 'validator open order first'),",
-                  'validator open-order anchor',
-              ),
-              (
-                  """def replace_once(path, old, new, label):
-    p = ROOT / path
-    text = p.read_text()
-    count = text.count(old)
-    if count != 1:
-        raise SystemExit(f'{label}: expected exactly one match, found {count}')
-    p.write_text(text.replace(old, new, 1))""",
-                  """def replace_once(path, old, new, label):
-    p = ROOT / path
-    text = p.read_text()
-    count = text.count(old)
-    if count != 1:
-        raise SystemExit(f'{label}: expected exactly one match, found {count}')
-    p.write_text(text.replace(old, new, 1))
 
-def replace_twice(path, old, new, label):
-    p = ROOT / path
-    text = p.read_text()
-    count = text.count(old)
-    if count != 2:
-        raise SystemExit(f'{label}: expected exactly two matches, found {count}')
-    p.write_text(text.replace(old, new, 2))""",
-                  'two-occurrence helper',
-              ),
-              (
-                  """replace_once(workflow, \"      - 'data/project/ssc-residual-wave02/closures/RD-01-C03.json'\", \"      - 'data/project/ssc-residual-wave02/closures/RD-01-C03.json'\\n      - 'data/project/ssc-residual-wave02/closures/RD-03-C04.json'\", 'workflow PR closure watch')
-replace_once(workflow, \"      - 'data/project/ssc-residual-wave02/closures/RD-01-C03.json'\", \"      - 'data/project/ssc-residual-wave02/closures/RD-01-C03.json'\\n      - 'data/project/ssc-residual-wave02/closures/RD-03-C04.json'\", 'workflow push closure watch')""",
-                  """replace_twice(workflow, \"      - 'data/project/ssc-residual-wave02/closures/RD-01-C03.json'\", \"      - 'data/project/ssc-residual-wave02/closures/RD-01-C03.json'\\n      - 'data/project/ssc-residual-wave02/closures/RD-03-C04.json'\", 'workflow closure watches')""",
-                  'workflow closure watch pair',
-              ),
-              (
-                  """replace_once(workflow, \"      - 'data/research/status-sovereignty-rd-wave02-rd01-legal-entity/class-receipt.json'\", \"      - 'data/research/status-sovereignty-rd-wave02-rd01-legal-entity/class-receipt.json'\\n      - 'data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms/class-receipt.json'\", 'workflow PR receipt watch')
-replace_once(workflow, \"      - 'data/research/status-sovereignty-rd-wave02-rd01-legal-entity/class-receipt.json'\", \"      - 'data/research/status-sovereignty-rd-wave02-rd01-legal-entity/class-receipt.json'\\n      - 'data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms/class-receipt.json'\", 'workflow push receipt watch')""",
-                  """replace_twice(workflow, \"      - 'data/research/status-sovereignty-rd-wave02-rd01-legal-entity/class-receipt.json'\", \"      - 'data/research/status-sovereignty-rd-wave02-rd01-legal-entity/class-receipt.json'\\n      - 'data/research/status-sovereignty-rd-wave02-rd03-negotiated-terms/class-receipt.json'\", 'workflow receipt watches')""",
-                  'workflow receipt watch pair',
-              ),
+          old = "    (\"['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01']\", \"['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04']\", 'validator promoted order first'),"
+          new = "    (\"same(current.promoted_class_receipts.map((row) => row.class_id), ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01'], 'promoted class order changed');\", \"same(current.promoted_class_receipts.map((row) => row.class_id), ['RD-04-C01','RD-05-C03','RD-01-C03','RD-06-C01','RD-03-C04'], 'promoted class order changed');\", 'validator promoted order first'),"
+          if text.count(old) != 1:
+              raise SystemExit(f'validator promoted-order anchor: expected one carrier match, found {text.count(old)}')
+          text = text.replace(old, new, 1)
+
+          old = "    (\"['RD-02-C04','RD-03-C04']\", \"['RD-02-C04']\", 'validator open order first'),"
+          new = "    (\"same(current.selected_classes_open.map((row) => row.class_id), ['RD-02-C04','RD-03-C04'], 'open selected class order changed');\", \"same(current.selected_classes_open.map((row) => row.class_id), ['RD-02-C04'], 'open selected class order changed');\", 'validator open order first'),"
+          if text.count(old) != 1:
+              raise SystemExit(f'validator open-order anchor: expected one carrier match, found {text.count(old)}')
+          text = text.replace(old, new, 1)
+
+          lines = text.splitlines(keepends=True)
+          helper_anchor = "    p.write_text(text.replace(old, new, 1))\n"
+          if sum(line == helper_anchor for line in lines) != 1:
+              raise SystemExit('replace helper anchor is not unique')
+          helper = [
+              "\n",
+              "def replace_twice(path, old, new, label):\n",
+              "    p = ROOT / path\n",
+              "    text = p.read_text()\n",
+              "    count = text.count(old)\n",
+              "    if count != 2:\n",
+              "        raise SystemExit(f'{label}: expected exactly two matches, found {count}')\n",
+              "    p.write_text(text.replace(old, new, 2))\n",
           ]
-          for old, new, label in replacements:
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'{label}: expected one carrier match, found {count}')
-              text = text.replace(old, new, 1)
-          path.write_text(text)
+          repaired = []
+          counts = {
+              'pr_closure': 0,
+              'push_closure': 0,
+              'pr_receipt': 0,
+              'push_receipt': 0,
+          }
+          for line in lines:
+              repaired.append(line)
+              if line == helper_anchor:
+                  repaired.extend(helper)
+          lines = repaired
+          repaired = []
+          for line in lines:
+              if "'workflow PR closure watch')" in line:
+                  counts['pr_closure'] += 1
+                  line = line.replace('replace_once(', 'replace_twice(', 1).replace('workflow PR closure watch', 'workflow closure watches')
+              elif "'workflow push closure watch')" in line:
+                  counts['push_closure'] += 1
+                  continue
+              elif "'workflow PR receipt watch')" in line:
+                  counts['pr_receipt'] += 1
+                  line = line.replace('replace_once(', 'replace_twice(', 1).replace('workflow PR receipt watch', 'workflow receipt watches')
+              elif "'workflow push receipt watch')" in line:
+                  counts['push_receipt'] += 1
+                  continue
+              repaired.append(line)
+          if counts != {'pr_closure': 1, 'push_closure': 1, 'pr_receipt': 1, 'push_receipt': 1}:
+              raise SystemExit(f'workflow watch-line custody changed: {counts}')
+          path.write_text(''.join(repaired))
           PY
 
           executable_bytes="$(wc -c < /tmp/ssc-wave02-rd03-promotion-materialize.sh | tr -d ' ')"
           executable_sha="$(sha256sum /tmp/ssc-wave02-rd03-promotion-materialize.sh | awk '{print $1}')"
           cat > /tmp/ssc-wave02-five-receipt/program-binding.json <<JSON
           {
-            "schema_version": "ssc-wave02-rd03-promotion-program-binding@4",
+            "schema_version": "ssc-wave02-rd03-promotion-program-binding@5",
             "carrier_bytes": ${carrier_bytes},
             "carrier_sha256": "${carrier_sha}",
             "executable_bytes": ${executable_bytes},
             "executable_sha256": "${executable_sha}",
-            "context_repairs": 5,
+            "context_repairs": 7,
             "capture_only": true,
             "outside_human_dependency": false,
             "external_contacts": 0,
@@ -134,7 +136,7 @@ replace_once(workflow, \"      - 'data/research/status-sovereignty-rd-wave02-rd0
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-wave02-rd03-promotion-program-capture-v4
+          name: ssc-wave02-rd03-promotion-program-capture-v5
           path: /tmp/ssc-wave02-five-receipt
           if-no-files-found: error
           retention-days: 90
