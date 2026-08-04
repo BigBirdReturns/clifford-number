@@ -1,0 +1,151 @@
+name: TEMP execute SSC RD-01 Wave-03 fixed capture v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd01-wave03-capture-v1.yml'
+      - '.rd01-wave03-capture/**'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: temp-ssc-rd01-wave03-capture-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd01-wave03-capture-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      EXPECTED_TARGET: c491c99b2deb79b069a6dd7bc92f68e764228151
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd01-methodology-correction
+      CARRIER_BRANCH: agent/ssc-rd01-wave03-capture-base-v1
+      EXECUTOR_B64_SHA256: 61aaaa85acea4ea9fdc683607b0d9b9f983dfe8517d40242d25aa725aca34657
+      EXECUTOR_XZ_SHA256: 7acf8caf4bd256299af9f55ef46b2bf07db2bb58072d222958a86b67e4198916
+      EXECUTOR_SHA256: b523002254cd434c8532f33e481da3bfca2403097c7ec7d946dac1e528b11bf6
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: c491c99b2deb79b069a6dd7bc92f68e764228151
+          fetch-depth: 0
+
+      - name: Execute exact fixed-route capture
+        run: |
+          set -Eeuo pipefail
+          root="$RUNNER_TEMP/ssc-rd01-wave03-capture-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          capture="$root/capture"
+          control="$root/control"
+          executor_xz="$RUNNER_TEMP/ssc-rd01-wave03-capture.py.xz"
+          executor="$RUNNER_TEMP/ssc-rd01-wave03-capture.py"
+          rm -rf "$root" "$executor_xz" "$executor" "$executor_xz.b64"
+          mkdir -p "$control"
+          echo "ARTIFACT_ROOT=$root" >> "$GITHUB_ENV"
+          export ARTIFACT_ROOT="$root"
+          exec > >(tee "$control/trace.log") 2>&1
+          step=initialize
+
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$control/exit-code.txt"
+            printf '%s\n' "$step" > "$control/final-step.txt"
+            git rev-parse HEAD > "$control/head.txt" 2>&1 || true
+            git status --porcelain=v1 --untracked-files=all > "$control/status.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$control/remote-target.txt" 2>&1 || true
+            ROOT_DIR="$root" CONTROL_DIR="$control" RC="$rc" STEP="$step" python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          root=Path(os.environ['ROOT_DIR'])
+          control=Path(os.environ['CONTROL_DIR'])
+          capture=root/'capture'
+          def read_text(path):
+              return path.read_text().strip() if path.exists() else None
+          def read_json(path):
+              try:
+                  return json.loads(path.read_text())
+              except Exception:
+                  return None
+          summary=read_json(capture/'summary.json') or {}
+          manifest=read_json(capture/'manifest.json') or {}
+          receipt={
+            'schema_version':'ssc-rd01-wave03-capture-controller-receipt@1',
+            'run':int(os.environ['GITHUB_RUN_ID']),
+            'run_attempt':int(os.environ['GITHUB_RUN_ATTEMPT']),
+            'exit_code':int(os.environ['RC']),
+            'final_step':os.environ['STEP'],
+            'target_head':os.environ['EXPECTED_TARGET'],
+            'target_branch':os.environ['TARGET_BRANCH'],
+            'executor_b64_sha256':os.environ['EXECUTOR_B64_SHA256'],
+            'executor_xz_sha256':os.environ['EXECUTOR_XZ_SHA256'],
+            'executor_sha256':os.environ['EXECUTOR_SHA256'],
+            'capture_manifest_combined_sha256':manifest.get('combined_sha256'),
+            'capture_manifest_entries':manifest.get('entry_count'),
+            'routes_attempted':summary.get('routes_attempted'),
+            'route_state_counts':summary.get('route_state_counts'),
+            'candidate_rows':summary.get('candidate_rows'),
+            'result_spawned_requests':summary.get('result_spawned_requests',0),
+            'class_closed':False,
+            'outside_human_dependency':False,
+            'external_contacts':0,
+            'external_reviews':0,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+          }
+          (control/'controller-receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          for path in sorted(control.iterdir()):
+              if path.is_file() and not path.name.endswith('.sha256'):
+                  digest=hashlib.sha256(path.read_bytes()).hexdigest()
+                  (control/(path.name+'.sha256')).write_text(f'{digest}  {path.name}\n')
+          PY
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          step=verify-exact-target-lease
+          test "$(git rev-parse HEAD)" = "$EXPECTED_TARGET"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+
+          step=reconstruct-checksum-bound-executor
+          git fetch --no-tags origin "+refs/heads/${CARRIER_BRANCH}:refs/remotes/origin/rd01-wave03-capture-carrier"
+          for part in 00 01; do
+            git show "origin/rd01-wave03-capture-carrier:.rd01-wave03-capture/capture.py.xz.b64.part-${part}"
+          done > "$executor_xz.b64"
+          test "$(sha256sum "$executor_xz.b64" | cut -d' ' -f1)" = "$EXECUTOR_B64_SHA256"
+          base64 --decode "$executor_xz.b64" > "$executor_xz"
+          test "$(sha256sum "$executor_xz" | cut -d' ' -f1)" = "$EXECUTOR_XZ_SHA256"
+          xz --decompress --stdout "$executor_xz" > "$executor"
+          test "$(sha256sum "$executor" | cut -d' ' -f1)" = "$EXECUTOR_SHA256"
+          python3 -m py_compile "$executor"
+
+          step=execute-thirty-frozen-routes
+          python3 "$executor" --repo . --out "$capture" | tee "$control/capture-result.json"
+
+          step=validate-capture-without-network
+          python3 "$executor" --repo . --out "$capture" --validate-only
+          test "$(python3 -c 'import json; print(json.load(open("'"$capture"'/summary.json"))["routes_attempted"])')" = 30
+          test "$(python3 -c 'import json; print(json.load(open("'"$capture"'/summary.json"))["result_spawned_requests"])')" = 0
+          test "$(python3 -c 'import json; print(str(json.load(open("'"$capture"'/summary.json"))["class_closed"]).lower())')" = false
+          test "$(python3 -c 'import json; print(json.load(open("'"$capture"'/validation.json"))["adversarial_mutations_refused"])')" = 30
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          step=verify-final-unchanged-target-lease
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET"
+
+          step=rd01-wave03-fixed-capture-complete
+          finish
+
+      - name: Preserve raw fixed-route capture
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd01-wave03-fixed-capture-v1
+          path: ${{ env.ARTIFACT_ROOT }}
+          if-no-files-found: error
+          retention-days: 90
