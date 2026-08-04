@@ -64,7 +64,41 @@ jobs:
           test "$(sha256sum /tmp/rd03-v4-helper.sh | awk '{print $1}')" = '9ecc52ede8eaa464c66964c90fd4e930f12e5ddeb07a4172aef72aaae0f363f3'
           bash -n /tmp/rd03-v4-helper.sh
 
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('/tmp/rd03-v4-helper.sh')
+          text = path.read_text()
+          assert text.count('3309003') == 1, text.count('3309003')
+          assert text.count('207959') == 0, text.count('207959')
+          text = text.replace('3309003', '207959')
+          assert text.count('3309003') == 0
+          assert text.count('207959') == 1
+          path.write_text(text)
+          PY
+          export PATCHED_HELPER_SHA256="$(sha256sum /tmp/rd03-v4-helper.sh | awk '{print $1}')"
+          test "$PATCHED_HELPER_SHA256" != '9ecc52ede8eaa464c66964c90fd4e930f12e5ddeb07a4172aef72aaae0f363f3'
+          bash -n /tmp/rd03-v4-helper.sh
+
           mkdir -p /tmp/rd03-v4-terminal-receipt
+          cat > /tmp/rd03-v4-terminal-receipt/helper-repair.json <<JSON
+          {
+            "schema_version": "ssc-rd03-v4-helper-repair@1",
+            "original_helper_sha256": "9ecc52ede8eaa464c66964c90fd4e930f12e5ddeb07a4172aef72aaae0f363f3",
+            "patched_helper_sha256": "${PATCHED_HELPER_SHA256}",
+            "repair": {
+              "field": "census_artifact_outer_zip_bytes",
+              "old_value": 3309003,
+              "new_value": 207959,
+              "artifact_sha256": "5b5414816cb626a7d9bbe16d914f67d5d02d1233c6ca0d84e21930909eba5f08",
+              "basis": "measured outer ZIP bytes with unchanged exact artifact SHA-256"
+            },
+            "outside_human_dependency": false,
+            "external_contacts": 0,
+            "external_reviews": 0
+          }
+          JSON
+          sed -i 's/^          //' /tmp/rd03-v4-terminal-receipt/helper-repair.json
+
           set +e
           bash -x /tmp/rd03-v4-helper.sh "$PWD/work" "$PWD/control" \
             2>&1 | tee /tmp/rd03-v4-terminal-receipt/execution.log
@@ -72,8 +106,9 @@ jobs:
           set -e
           cat > /tmp/rd03-v4-terminal-receipt/execution-status.json <<JSON
           {
-            "schema_version": "ssc-rd03-v4-execution-status@1",
-            "helper_sha256": "9ecc52ede8eaa464c66964c90fd4e930f12e5ddeb07a4172aef72aaae0f363f3",
+            "schema_version": "ssc-rd03-v4-execution-status@2",
+            "original_helper_sha256": "9ecc52ede8eaa464c66964c90fd4e930f12e5ddeb07a4172aef72aaae0f363f3",
+            "patched_helper_sha256": "${PATCHED_HELPER_SHA256}",
             "exit_status": ${helper_status},
             "completed": $([ "$helper_status" = '0' ] && printf true || printf false),
             "outside_human_dependency": false,
@@ -84,6 +119,8 @@ jobs:
           sed -i 's/^          //' /tmp/rd03-v4-terminal-receipt/execution-status.json
           sha256sum /tmp/rd03-v4-terminal-receipt/execution.log \
             > /tmp/rd03-v4-terminal-receipt/execution.log.sha256
+          sha256sum /tmp/rd03-v4-terminal-receipt/helper-repair.json \
+            > /tmp/rd03-v4-terminal-receipt/helper-repair.json.sha256
           exit "$helper_status"
 
       - name: Preserve terminal materialization receipt
