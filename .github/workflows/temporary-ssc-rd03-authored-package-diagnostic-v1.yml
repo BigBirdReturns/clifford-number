@@ -1,218 +1,48 @@
-name: TEMP diagnose RD-03 authored package shards
+name: TEMP recover RD-03 authored package from history
 
 on:
   pull_request:
     paths:
       - '.github/workflows/temporary-ssc-rd03-authored-package-diagnostic-v1.yml'
+      - '.github/tmp/recover-rd03-authored-package.py'
       - '.rd03-authored-diagnostic/**'
 
 permissions:
   contents: read
 
 concurrency:
-  group: temp-ssc-rd03-authored-diagnostic-${{ github.event.pull_request.number }}
+  group: temp-ssc-rd03-authored-recovery-${{ github.event.pull_request.number }}
   cancel-in-progress: false
 
 jobs:
-  diagnose:
+  recover:
     if: github.event.pull_request.head.ref == 'agent/ssc-rd03-authored-package-diagnostic-trigger-v1'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     env:
       EXPECTED_CARRIER_HEAD: 02ea4361a38b860a56be29bb86733f761bcfca30
+      OVERWRITE_COMMIT: f4ff1c089a9f55c588e77d320a729d1dc8240070
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/ssc-rd03-terminal-materializer-base-v1
           fetch-depth: 0
 
-      - name: Locate invalid bytes and test bounded normalizations
+      - name: Recover complete files and retained package history
         run: |
           set -Eeuo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_CARRIER_HEAD"
           node tools/validate-no-magic-human-gate.mjs
-
-          rm -rf /tmp/rd03-authored-diagnostic
-          mkdir -p /tmp/rd03-authored-diagnostic/decoded
-          git ls-tree --name-only HEAD:.rd03-terminal/authored | sort \
-            > /tmp/rd03-authored-diagnostic/shard-paths.txt
-          git log --format='%H %P %ct %s' --name-status -- \
-            .rd03-terminal/authored \
-            > /tmp/rd03-authored-diagnostic/shard-history.txt
-
-          python - <<'PY'
-          import base64
-          import collections
-          import hashlib
-          import io
-          import json
-          import pathlib
-          import struct
-          import zipfile
-
-          root = pathlib.Path('.rd03-terminal/authored')
-          out = pathlib.Path('/tmp/rd03-authored-diagnostic')
-          shards = sorted(root.glob('part-*.b64'))
-          assert [path.name for path in shards] == [f'part-{index:02d}.b64' for index in range(9)]
-
-          expected_files = sorted([
-              '.github/workflows/status-sovereignty-rd-wave02-rd03-negotiated-terms.yml',
-              'docs/milestones/ssc-rd-wave02-rd03-negotiated-terms.md',
-              'schemas/status-sovereignty-rd-wave02-rd03-negotiated-terms.schema.json',
-              'test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js',
-              'tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs',
-              'tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs',
-          ])
-          alphabet = set(b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=')
-
-          shard_records = []
-          for shard in shards:
-              raw = shard.read_bytes()
-              compact = b''.join(raw.split())
-              invalid = [(index, value) for index, value in enumerate(compact) if value not in alphabet]
-              frequencies = collections.Counter(value for _, value in invalid)
-              examples = []
-              for index, value in invalid[:12]:
-                  start = max(0, index - 12)
-                  end = min(len(compact), index + 13)
-                  examples.append({
-                      'index': index,
-                      'byte': value,
-                      'hex': f'{value:02x}',
-                      'repr': repr(bytes([value])),
-                      'context_hex': compact[start:end].hex(),
-                      'context_repr': repr(compact[start:end]),
-                  })
-              record = {
-                  'shard': shard.name,
-                  'raw_bytes': len(raw),
-                  'compact_bytes': len(compact),
-                  'raw_sha256': hashlib.sha256(raw).hexdigest(),
-                  'compact_sha256': hashlib.sha256(compact).hexdigest(),
-                  'invalid_count': len(invalid),
-                  'invalid_frequencies': {f'{key:02x}': value for key, value in sorted(frequencies.items())},
-                  'invalid_examples': examples,
-                  'head_hex': compact[:32].hex(),
-                  'tail_hex': compact[-32:].hex(),
-                  'head_repr': repr(compact[:80]),
-                  'tail_repr': repr(compact[-80:]),
-              }
-              shard_records.append(record)
-              print(
-                  f"shard={shard.name} raw={len(raw)} compact={len(compact)} "
-                  f"sha={record['raw_sha256']} invalid={len(invalid)} "
-                  f"frequencies={record['invalid_frequencies']} examples={examples}"
-              )
-
-          def inspect_zip(payload):
-              result = {
-                  'decoded_bytes': len(payload),
-                  'decoded_sha256': hashlib.sha256(payload).hexdigest(),
-                  'zip_eocd_present': False,
-                  'zip_exact_eof': False,
-                  'zip_open_ok': False,
-                  'zip_test_ok': False,
-                  'file_names': [],
-                  'expected_file_set': False,
-                  'file_sha256': {},
-                  'error': None,
-              }
-              try:
-                  eocd = payload.rfind(b'PK\x05\x06')
-                  if eocd >= 0 and eocd + 22 <= len(payload):
-                      result['zip_eocd_present'] = True
-                      comment_length = struct.unpack_from('<H', payload, eocd + 20)[0]
-                      result['zip_exact_eof'] = eocd + 22 + comment_length == len(payload)
-                  with zipfile.ZipFile(io.BytesIO(payload), 'r') as archive:
-                      result['zip_open_ok'] = True
-                      result['zip_test_ok'] = archive.testzip() is None
-                      names = sorted(name for name in archive.namelist() if not name.endswith('/'))
-                      result['file_names'] = names
-                      result['expected_file_set'] = names == expected_files
-                      result['file_sha256'] = {
-                          name: hashlib.sha256(archive.read(name)).hexdigest()
-                          for name in names
-                      }
-              except Exception as error:
-                  result['error'] = f'{type(error).__name__}: {error}'
-              return result
-
-          prefix_records = []
-          exact_candidates = []
-          cumulative = b''
-          for count, shard in enumerate(shards, start=1):
-              cumulative += shard.read_bytes()
-              compact = b''.join(cumulative.split())
-              variants = {
-                  'compact': compact,
-                  'strip_utf8_bom': compact.replace(b'\xef\xbb\xbf', b''),
-                  'strip_literal_crlf': compact.replace(b'\\r', b'').replace(b'\\n', b''),
-                  'standard_alphabet_only': bytes(value for value in compact if value in alphabet),
-                  'urlsafe_translated': compact.translate(bytes.maketrans(b'-_', b'+/')),
-              }
-              seen = set()
-              for variant_name, encoded in variants.items():
-                  identity = hashlib.sha256(encoded).hexdigest()
-                  if identity in seen:
-                      continue
-                  seen.add(identity)
-                  record = {
-                      'prefix_shards': count,
-                      'last_shard': shard.name,
-                      'variant': variant_name,
-                      'encoded_bytes': len(encoded),
-                      'encoded_sha256': identity,
-                      'base64_decode_ok': False,
-                      'decode_error': None,
-                      'zip': None,
-                  }
-                  try:
-                      decoded = base64.b64decode(encoded, validate=True)
-                      record['base64_decode_ok'] = True
-                      record['zip'] = inspect_zip(decoded)
-                      zip_state = record['zip']
-                      if zip_state['zip_exact_eof'] and zip_state['zip_test_ok'] and zip_state['expected_file_set']:
-                          exact_candidates.append({'prefix_shards': count, 'variant': variant_name})
-                          (out / 'decoded' / f'prefix-{count:02d}-{variant_name}.zip').write_bytes(decoded)
-                  except Exception as error:
-                      record['decode_error'] = f'{type(error).__name__}: {error}'
-                  prefix_records.append(record)
-                  print(
-                      f"prefix={count} variant={variant_name} encoded={len(encoded)} "
-                      f"sha={identity} decode={record['base64_decode_ok']} "
-                      f"zip={record['zip']} error={record['decode_error']}"
-                  )
-
-          report = {
-              'schema_version': 'ssc-rd03-authored-package-diagnostic@2',
-              'carrier_head': '02ea4361a38b860a56be29bb86733f761bcfca30',
-              'shard_count': len(shards),
-              'expected_files': expected_files,
-              'shards': shard_records,
-              'prefix_variants': prefix_records,
-              'exact_candidates': exact_candidates,
-              'authority': {
-                  'outside_human_dependency': False,
-                  'external_contacts': 0,
-                  'external_reviews': 0,
-                  'publication_effect': 'none',
-                  'adoption_effect': 'none',
-                  'graph_effect': 'none',
-              },
-          }
-          (out / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
-          print(f'exact_candidates={exact_candidates}')
-          PY
-
-          sha256sum /tmp/rd03-authored-diagnostic/report.json \
-            > /tmp/rd03-authored-diagnostic/report.sha256
+          git show "origin/agent/ssc-rd03-authored-package-diagnostic-base-v1:.github/tmp/recover-rd03-authored-package.py" \
+            > /tmp/recover-rd03-authored-package.py
+          python /tmp/recover-rd03-authored-package.py
           node tools/validate-no-magic-human-gate.mjs
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
 
-      - name: Preserve diagnostic
+      - name: Preserve recovery evidence
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd03-authored-package-diagnostic-v2
-          path: /tmp/rd03-authored-diagnostic
+          name: ssc-rd03-authored-package-recovery-v3
+          path: /tmp/rd03-authored-recovery
           if-no-files-found: error
           retention-days: 90
