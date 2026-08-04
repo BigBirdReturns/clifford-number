@@ -1,0 +1,162 @@
+name: TEMP diagnose RD-03 authored package shards
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-authored-package-diagnostic-v1.yml'
+      - '.rd03-authored-diagnostic/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-ssc-rd03-authored-diagnostic-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-authored-package-diagnostic-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EXPECTED_CARRIER_HEAD: 02ea4361a38b860a56be29bb86733f761bcfca30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd03-terminal-materializer-base-v1
+          fetch-depth: 0
+
+      - name: Inventory progressive shard prefixes
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_CARRIER_HEAD"
+          node tools/validate-no-magic-human-gate.mjs
+
+          rm -rf /tmp/rd03-authored-diagnostic
+          mkdir -p /tmp/rd03-authored-diagnostic/decoded
+          git ls-tree --name-only HEAD:.rd03-terminal/authored | sort \
+            > /tmp/rd03-authored-diagnostic/shard-paths.txt
+          git log --format='%H %P %ct %s' --name-status -- \
+            .rd03-terminal/authored \
+            > /tmp/rd03-authored-diagnostic/shard-history.txt
+
+          python - <<'PY'
+          import base64
+          import hashlib
+          import io
+          import json
+          import pathlib
+          import struct
+          import zipfile
+
+          repo = pathlib.Path('.')
+          out = pathlib.Path('/tmp/rd03-authored-diagnostic')
+          shard_dir = repo / '.rd03-terminal' / 'authored'
+          shards = sorted(shard_dir.glob('part-*.b64'))
+          assert [path.name for path in shards] == [f'part-{index:02d}.b64' for index in range(9)]
+
+          expected_files = sorted([
+              '.github/workflows/status-sovereignty-rd-wave02-rd03-negotiated-terms.yml',
+              'docs/milestones/ssc-rd-wave02-rd03-negotiated-terms.md',
+              'schemas/status-sovereignty-rd-wave02-rd03-negotiated-terms.schema.json',
+              'test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js',
+              'tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs',
+              'tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs',
+          ])
+
+          records = []
+          exact_candidates = []
+          cumulative = b''
+          for count, shard in enumerate(shards, start=1):
+              cumulative += shard.read_bytes()
+              compact = b''.join(cumulative.split())
+              record = {
+                  'prefix_shards': count,
+                  'last_shard': shard.name,
+                  'base64_bytes_raw': len(cumulative),
+                  'base64_bytes_compact': len(compact),
+                  'base64_sha256_raw': hashlib.sha256(cumulative).hexdigest(),
+                  'base64_sha256_compact': hashlib.sha256(compact).hexdigest(),
+                  'base64_decode_ok': False,
+                  'decoded_bytes': None,
+                  'decoded_sha256': None,
+                  'zip_eocd_present': False,
+                  'zip_exact_eof': False,
+                  'zip_open_ok': False,
+                  'zip_test_ok': False,
+                  'file_names': [],
+                  'expected_file_set': False,
+                  'file_sha256': {},
+                  'error': None,
+              }
+              try:
+                  decoded = base64.b64decode(compact, validate=True)
+                  record['base64_decode_ok'] = True
+                  record['decoded_bytes'] = len(decoded)
+                  record['decoded_sha256'] = hashlib.sha256(decoded).hexdigest()
+
+                  eocd = decoded.rfind(b'PK\x05\x06')
+                  if eocd >= 0 and eocd + 22 <= len(decoded):
+                      record['zip_eocd_present'] = True
+                      comment_length = struct.unpack_from('<H', decoded, eocd + 20)[0]
+                      record['zip_exact_eof'] = eocd + 22 + comment_length == len(decoded)
+
+                  with zipfile.ZipFile(io.BytesIO(decoded), 'r') as archive:
+                      record['zip_open_ok'] = True
+                      record['zip_test_ok'] = archive.testzip() is None
+                      file_names = sorted(name for name in archive.namelist() if not name.endswith('/'))
+                      record['file_names'] = file_names
+                      record['expected_file_set'] = file_names == expected_files
+                      record['file_sha256'] = {
+                          name: hashlib.sha256(archive.read(name)).hexdigest()
+                          for name in file_names
+                      }
+
+                  if record['zip_exact_eof'] and record['zip_test_ok'] and record['expected_file_set']:
+                      exact_candidates.append(count)
+                      candidate_path = out / 'decoded' / f'prefix-{count:02d}.zip'
+                      candidate_path.write_bytes(decoded)
+              except Exception as error:
+                  record['error'] = f'{type(error).__name__}: {error}'
+
+              records.append(record)
+              print(
+                  'prefix={prefix_shards} raw_b64={base64_bytes_raw} '
+                  'b64_sha={base64_sha256_raw} decode={base64_decode_ok} '
+                  'decoded={decoded_bytes} zip_open={zip_open_ok} '
+                  'zip_test={zip_test_ok} exact_eof={zip_exact_eof} '
+                  'expected_files={expected_file_set} error={error}'.format(**record)
+              )
+
+          report = {
+              'schema_version': 'ssc-rd03-authored-package-diagnostic@1',
+              'carrier_head': '02ea4361a38b860a56be29bb86733f761bcfca30',
+              'shard_count': len(shards),
+              'expected_files': expected_files,
+              'exact_candidate_prefixes': exact_candidates,
+              'records': records,
+              'authority': {
+                  'outside_human_dependency': False,
+                  'external_contacts': 0,
+                  'external_reviews': 0,
+                  'publication_effect': 'none',
+                  'adoption_effect': 'none',
+                  'graph_effect': 'none',
+              },
+          }
+          (out / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
+          print(f'exact_candidate_prefixes={exact_candidates}')
+          PY
+
+          sha256sum /tmp/rd03-authored-diagnostic/report.json \
+            > /tmp/rd03-authored-diagnostic/report.sha256
+          node tools/validate-no-magic-human-gate.mjs
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Preserve diagnostic
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-authored-package-diagnostic-v1
+          path: /tmp/rd03-authored-diagnostic
+          if-no-files-found: error
+          retention-days: 90
