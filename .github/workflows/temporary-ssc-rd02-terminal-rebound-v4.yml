@@ -1,0 +1,156 @@
+name: TEMP rebound exact RD-02 terminal closure v4
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd02-terminal-rebound-v4.yml'
+      - '.rd02-terminal-v1/**'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd02-terminal-rebound-v4-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd02-terminal-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ea1776f7bba28b56fee9f3defb1940ef640517a2
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Recover exact carrier, bind rebound executable, and materialize
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          receipt=/tmp/ssc-rd02-terminal-rebound-v4
+          repair=/tmp/ssc-rd02-carrier-repair-artifact
+          carrier=/tmp/ssc-rd02-terminal-carrier-v4
+          rm -rf "$receipt" "$repair" "$carrier" /tmp/ssc-rd02-carrier-repair-artifact.zip
+          mkdir -p "$receipt" "$repair" "$carrier"
+
+          cat > "$receipt/preflight.json" <<'JSON'
+          {
+            "schema_version": "ssc-rd02-terminal-rebound-preflight@1",
+            "expected_main": "ea1776f7bba28b56fee9f3defb1940ef640517a2",
+            "source_head": "c78d243ee3d5c5c9b6c09e4b620bd3192b5e25a1",
+            "carrier_repair_artifact": 8882325326,
+            "state": "rebound_carrier_recovery_started",
+            "completed": false,
+            "outside_human_dependency": false,
+            "external_contacts": 0,
+            "external_reviews": 0
+          }
+          JSON
+          sed -i 's/^          //' "$receipt/preflight.json"
+
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            'https://api.github.com/repos/BigBirdReturns/clifford-number/actions/artifacts/8882325326/zip' \
+            --output /tmp/ssc-rd02-carrier-repair-artifact.zip
+          test "$(wc -c < /tmp/ssc-rd02-carrier-repair-artifact.zip | tr -d ' ')" = '158956'
+          test "$(sha256sum /tmp/ssc-rd02-carrier-repair-artifact.zip | awk '{print $1}')" = \
+            '7574a059caeb804bcb8aa02669175e6e4961121f3b1e324a9a8141da926e1fd6'
+          unzip -q /tmp/ssc-rd02-carrier-repair-artifact.zip -d "$repair"
+          test "$(wc -c < "$repair/repaired-carrier.zip" | tr -d ' ')" = '26950'
+          test "$(sha256sum "$repair/repaired-carrier.zip" | awk '{print $1}')" = \
+            '3c544be21dc40d3ae30396f66af9fb19a8008365d41ad6ae1d62fd5d2613d5f1'
+          test "$(wc -c < "$repair/repaired-carrier.zip.b64" | tr -d ' ')" = '35936'
+          test "$(sha256sum "$repair/repaired-carrier.zip.b64" | awk '{print $1}')" = \
+            '221a3b05b7caddaafd57463ecf61ee81c7a9a2f50460080091d3f44e24a3eedd'
+          unzip -t "$repair/repaired-carrier.zip" > "$receipt/carrier-unzip-test.txt"
+          unzip -q "$repair/repaired-carrier.zip" -d "$carrier"
+          (cd "$carrier/authored" && sha256sum --check --strict ../authored-sha256.txt) \
+            > "$receipt/authored-sha256-check.txt"
+
+          original_script="$carrier/materialize.sh"
+          rebound_script="$carrier/materialize-rebound.sh"
+          test "$(wc -c < "$original_script" | tr -d ' ')" = '13736'
+          test "$(sha256sum "$original_script" | awk '{print $1}')" = \
+            '06505572ab94b88c78240e79bd91853acd4eb8a98d7d5309502785d73d717768'
+          ORIGINAL="$original_script" REBOUND="$rebound_script" python - <<'PY'
+          import os
+          from pathlib import Path
+          original = Path(os.environ['ORIGINAL'])
+          rebound = Path(os.environ['REBOUND'])
+          text = original.read_text()
+          old = "EXPECTED_MAIN='ef70f7ad406c518f4b640ca4641c5a0f045a0d8d'"
+          new = "EXPECTED_MAIN='ea1776f7bba28b56fee9f3defb1940ef640517a2'"
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'expected one main-lease binding, found {count}')
+          rebound.write_text(text.replace(old, new, 1))
+          PY
+          test "$(wc -c < "$rebound_script" | tr -d ' ')" = '13736'
+          test "$(sha256sum "$rebound_script" | awk '{print $1}')" = \
+            '5783760e7c91796074c91e3854b01adede0bc1d723f4d1c5c5499ecdce8aa4cd'
+          bash -n "$rebound_script"
+
+          cat > "$receipt/rebound-binding.json" <<'JSON'
+          {
+            "schema_version": "ssc-rd02-terminal-rebound-binding@1",
+            "carrier_repair_artifact_id": 8882325326,
+            "carrier_repair_artifact_bytes": 158956,
+            "carrier_repair_artifact_sha256": "7574a059caeb804bcb8aa02669175e6e4961121f3b1e324a9a8141da926e1fd6",
+            "carrier_zip_bytes": 26950,
+            "carrier_zip_sha256": "3c544be21dc40d3ae30396f66af9fb19a8008365d41ad6ae1d62fd5d2613d5f1",
+            "carrier_base64_bytes": 35936,
+            "carrier_base64_sha256": "221a3b05b7caddaafd57463ecf61ee81c7a9a2f50460080091d3f44e24a3eedd",
+            "original_materializer_bytes": 13736,
+            "original_materializer_sha256": "06505572ab94b88c78240e79bd91853acd4eb8a98d7d5309502785d73d717768",
+            "original_expected_main": "ef70f7ad406c518f4b640ca4641c5a0f045a0d8d",
+            "rebound_materializer_bytes": 13736,
+            "rebound_materializer_sha256": "5783760e7c91796074c91e3854b01adede0bc1d723f4d1c5c5499ecdce8aa4cd",
+            "rebound_expected_main": "ea1776f7bba28b56fee9f3defb1940ef640517a2",
+            "semantic_mutations": 0,
+            "lease_mutations": 1,
+            "outside_human_dependency": false,
+            "external_contacts": 0,
+            "external_reviews": 0
+          }
+          JSON
+          sed -i 's/^          //' "$receipt/rebound-binding.json"
+
+          set +e
+          bash -x "$rebound_script" 2>&1 | tee /tmp/ssc-rd02-terminal-rebound-execution.log
+          materializer_status="${PIPESTATUS[0]}"
+          set -e
+
+          mkdir -p "$receipt"
+          cp /tmp/ssc-rd02-terminal-rebound-execution.log "$receipt/execution.log"
+          cat > "$receipt/execution-status.json" <<JSON
+          {
+            "schema_version": "ssc-rd02-terminal-rebound-execution@1",
+            "rebound_materializer_sha256": "5783760e7c91796074c91e3854b01adede0bc1d723f4d1c5c5499ecdce8aa4cd",
+            "exit_status": ${materializer_status},
+            "completed": $([ "$materializer_status" = '0' ] && printf true || printf false),
+            "outside_human_dependency": false,
+            "external_contacts": 0,
+            "external_reviews": 0
+          }
+          JSON
+          sed -i 's/^          //' "$receipt/execution-status.json"
+          sha256sum "$receipt/execution.log" > "$receipt/execution.log.sha256"
+          exit "$materializer_status"
+
+      - name: Preserve exact rebound materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave02-terminal-rebound-v4
+          path: /tmp/ssc-rd02-terminal-rebound-v4
+          if-no-files-found: error
+          retention-days: 90
