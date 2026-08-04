@@ -23,19 +23,27 @@ jobs:
       - name: Checkout temporary carrier
         uses: actions/checkout@v4
         with:
-          path: carrier
+          ref: agent/pc48-source-export
+          fetch-depth: 0
+      - name: Preserve carrier shards outside the checkout
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pc48-shards
+          cp .pc48-materializer/package.b64.* /tmp/pc48-shards/
+          test "$(find /tmp/pc48-shards -maxdepth 1 -type f -name 'package.b64.*' | wc -l)" -eq 4
       - name: Checkout exact publication parent
         uses: actions/checkout@v4
         with:
           ref: 15fbe32735c85be44b833040f3b630966287871c
           fetch-depth: 0
-          path: product
+          clean: true
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
       - name: Verify, qualify, and publish one clean PC-48 commit
         env:
           PUBLICATION_PARENT: 15fbe32735c85be44b833040f3b630966287871c
+          PINNED_V45_BRIDGE: 4a5a6fa449f45750e836ae9ca8890b958f72e0a9
           TARGET_BRANCH: agent/pc48-materializer
           TARGET_LEASE: 4c7388b3dbd5e3c19b42f027f1b32cd578e93c1b
           SHARD_00_SHA256: bde643f922007bbb9915209a20985869769d5bd7e1df7ac224085778b7840e2b
@@ -47,14 +55,18 @@ jobs:
           PATH_LIST_SHA256: de59828e2e0e62106760702939c8c37cb0741d339a6eb89e1b8309e17ec91e1b
         run: |
           set -euo pipefail
-          root="$GITHUB_WORKSPACE"
-          cd "$root"
+          cd "$GITHUB_WORKSPACE"
+          test "$(git rev-parse HEAD)" = "$PUBLICATION_PARENT"
+          test -z "$(git status --porcelain)"
 
-          sha256sum carrier/.pc48-materializer/package.b64.00 | grep -F "$SHARD_00_SHA256"
-          sha256sum carrier/.pc48-materializer/package.b64.01 | grep -F "$SHARD_01_SHA256"
-          sha256sum carrier/.pc48-materializer/package.b64.02 | grep -F "$SHARD_02_SHA256"
-          sha256sum carrier/.pc48-materializer/package.b64.03 | grep -F "$SHARD_03_SHA256"
-          cat carrier/.pc48-materializer/package.b64.* > /tmp/pc48-product.tar.xz.b64
+          git fetch --no-tags origin "$PINNED_V45_BRIDGE"
+          git cat-file -e "$PINNED_V45_BRIDGE^{commit}"
+
+          sha256sum /tmp/pc48-shards/package.b64.00 | grep -F "$SHARD_00_SHA256"
+          sha256sum /tmp/pc48-shards/package.b64.01 | grep -F "$SHARD_01_SHA256"
+          sha256sum /tmp/pc48-shards/package.b64.02 | grep -F "$SHARD_02_SHA256"
+          sha256sum /tmp/pc48-shards/package.b64.03 | grep -F "$SHARD_03_SHA256"
+          cat /tmp/pc48-shards/package.b64.* > /tmp/pc48-product.tar.xz.b64
           sha256sum /tmp/pc48-product.tar.xz.b64 | grep -F "$BASE64_SHA256"
           base64 -d /tmp/pc48-product.tar.xz.b64 > /tmp/pc48-product.tar.xz
           sha256sum /tmp/pc48-product.tar.xz | grep -F "$PACKAGE_SHA256"
@@ -81,9 +93,6 @@ jobs:
           tar -tJf /tmp/pc48-product.tar.xz | sed 's#^\./##' | sort > /tmp/pc48-package-paths.txt
           diff -u /tmp/pc48-expected-paths.txt /tmp/pc48-package-paths.txt
 
-          cd "$root/product"
-          test "$(git rev-parse HEAD)" = "$PUBLICATION_PARENT"
-          test -z "$(git status --porcelain)"
           while IFS= read -r path; do test ! -e "$path"; done < /tmp/pc48-expected-paths.txt
           tar -xJf /tmp/pc48-product.tar.xz
           git status --porcelain | awk '{print $2}' | sort > /tmp/pc48-materialized-paths.txt
