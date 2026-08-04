@@ -1,0 +1,48 @@
+name: TEMP export RD-01 Wave-03 promotion source v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-export-rd01-wave03-promotion-source-v1.yml'
+      - '.ssc-rd01-wave03-promotion-source-export-v1/TRIGGER'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-export-rd01-wave03-promotion-source-v1
+  cancel-in-progress: false
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Export exact canonical source
+        run: |
+          set -Eeuo pipefail
+          EXPECTED='c27e7d3cde2c94c1cde5d66dcce8eb06b514ff8a'
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED"
+          git checkout --detach "$EXPECTED"
+          mkdir -p /tmp/ssc-rd01-wave03-promotion-source-v1
+          git archive --format=tar "$EXPECTED" | xz -T0 -9e > /tmp/ssc-rd01-wave03-promotion-source-v1/source.tar.xz
+          printf '%s\n' "$EXPECTED" > /tmp/ssc-rd01-wave03-promotion-source-v1/source-head.txt
+          git rev-parse "$EXPECTED^{tree}" > /tmp/ssc-rd01-wave03-promotion-source-v1/source-tree.txt
+          git ls-tree -r --name-only "$EXPECTED" | LC_ALL=C sort > /tmp/ssc-rd01-wave03-promotion-source-v1/source-paths.txt
+          wc -l < /tmp/ssc-rd01-wave03-promotion-source-v1/source-paths.txt | tr -d ' ' > /tmp/ssc-rd01-wave03-promotion-source-v1/source-path-count.txt
+          sha256sum /tmp/ssc-rd01-wave03-promotion-source-v1/source.tar.xz /tmp/ssc-rd01-wave03-promotion-source-v1/source-paths.txt > /tmp/ssc-rd01-wave03-promotion-source-v1/SHA256SUMS
+          cat /tmp/ssc-rd01-wave03-promotion-source-v1/source-head.txt
+          cat /tmp/ssc-rd01-wave03-promotion-source-v1/source-tree.txt
+          cat /tmp/ssc-rd01-wave03-promotion-source-v1/source-path-count.txt
+          cat /tmp/ssc-rd01-wave03-promotion-source-v1/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd01-wave03-promotion-source-v1
+          path: /tmp/ssc-rd01-wave03-promotion-source-v1
+          if-no-files-found: error
+          retention-days: 30
