@@ -1,0 +1,35 @@
+name: Preference linkage event, estimand, scope, and interpretation assurance
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/linkage-event-estimand-scope-interpretation-assurance.fixture.json'
+      - 'tools/lib/preference-linkage-event-estimand-scope-interpretation-assurance.mjs'
+      - 'tools/compile-preference-linkage-event-estimand-scope-interpretation-assurance.mjs'
+      - 'tools/validate-preference-linkage-event-estimand-scope-interpretation-assurance.mjs'
+      - 'test/preference-linkage-event-estimand-scope-interpretation-assurance.test.js'
+      - 'docs/preference-custody-linkage-event-estimand-scope-interpretation-assurance.md'
+      - '.github/workflows/preference-linkage-event-estimand-scope-interpretation-assurance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  event-estimand-scope-interpretation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node tools/compile-preference-linkage-event-estimand-scope-interpretation-assurance.mjs
+      - run: node tools/validate-preference-linkage-event-estimand-scope-interpretation-assurance.mjs
+      - run: node test/preference-linkage-event-estimand-scope-interpretation-assurance.test.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preference-linkage-event-estimand-scope-interpretation-pc47
+          path: |
+            build/research/preference-linkage-event-estimand-scope-interpretation-assurance.json
+            build/research/preference-linkage-event-estimand-scope-interpretation-assurance.md
+          if-no-files-found: error
