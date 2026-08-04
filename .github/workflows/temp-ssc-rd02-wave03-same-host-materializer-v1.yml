@@ -1,0 +1,86 @@
+name: TEMP materialize SSC RD-02 Wave-03 same-host adjudication v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-ssc-rd02-wave03-same-host-materializer-v1.yml'
+      - '.ssc-rd02-wave03-same-host-materializer/TRIGGER'
+      - 'data/project/transport/ssc-rd02-wave03-same-host-v1/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: temp-ssc-rd02-wave03-same-host-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      MAIN_LEASE: 4c7388b3dbd5e3c19b42f027f1b32cd578e93c1b
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd02-same-host-adjudication-v1
+      RECEIPT_DIR: /tmp/ssc-rd02-wave03-same-host-materialization-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Reconstruct and execute checksum-bound materializer
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          ROOT='data/project/transport/ssc-rd02-wave03-same-host-v1/executor'
+          rm -rf "$RECEIPT_DIR"
+          mkdir -p "$RECEIPT_DIR"
+          exec > >(tee "$RECEIPT_DIR/wrapper.log") 2>&1
+
+          python - <<'PY'
+          from hashlib import sha256
+          from pathlib import Path
+
+          root = Path('data/project/transport/ssc-rd02-wave03-same-host-v1/executor')
+          expected = {
+              '001.b64': (3000, '0d02b1ef4b3b4d284e797e9d154fda5cd2c92914a800ce0470a51a8b154bee81'),
+              '002.b64': (148, '2a72ac17862ff35d1ab413f9570444e95e3f821fc25a801c7ce8e583394b3273'),
+          }
+          actual = sorted(p.name for p in root.glob('*.b64'))
+          if actual != sorted(expected):
+              raise SystemExit(f'executor shard denominator mismatch: {actual}')
+          chunks = []
+          for name in sorted(expected):
+              expected_size, expected_hash = expected[name]
+              data = b''.join((root / name).read_bytes().split())
+              digest = sha256(data).hexdigest()
+              print(f'{name}: normalized_bytes={len(data)} sha256={digest}')
+              if len(data) != expected_size or digest != expected_hash:
+                  raise SystemExit(f'executor shard mismatch: {name}')
+              chunks.append(data)
+          Path('/tmp/rd02-samehost-executor.b64').write_bytes(b''.join(chunks))
+          PY
+
+          test "$(sha256sum /tmp/rd02-samehost-executor.b64 | awk '{print $1}')" = '53e90b526c1975a8496b6342865e34e514f572ea6f1faab68babed32f2eac74d'
+          base64 -d /tmp/rd02-samehost-executor.b64 > /tmp/rd02-samehost-executor.sh.xz
+          test "$(sha256sum /tmp/rd02-samehost-executor.sh.xz | awk '{print $1}')" = '36890f0f9bc5a47f7eef974374e039decc3fb2a770b42fef359cafcb3c7c0cc2'
+          xz -dc /tmp/rd02-samehost-executor.sh.xz > /tmp/rd02-samehost-materializer.sh
+          test "$(sha256sum /tmp/rd02-samehost-materializer.sh | awk '{print $1}')" = 'b81f2b1da3ce3dd8897cd63e8777b6ffc28b7ce621f55f4a389156ab52d373b2'
+          chmod 0700 /tmp/rd02-samehost-materializer.sh
+          /tmp/rd02-samehost-materializer.sh
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave03-same-host-materialization-v1
+          path: /tmp/ssc-rd02-wave03-same-host-materialization-v1
+          if-no-files-found: warn
+          retention-days: 90
