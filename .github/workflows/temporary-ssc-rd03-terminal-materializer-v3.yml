@@ -81,9 +81,18 @@ jobs:
           script = '\n'.join(script_lines) + '\n'
           old_parent = 'test "$(git show -s --format=%P "$INTEGRATION_SHA")" = "$MAIN_START_SHA $RESEARCH_START_SHA"'
           new_parent = '\n'.join([
-              'test "$(git rev-list --parents -n1 "$INTEGRATION_SHA" | awk \'{print NF-1}\')" = \'2\'',
-              'test "$(git rev-parse "${INTEGRATION_SHA}^1")" = "$MAIN_START_SHA"',
-              'test "$(git rev-parse "${INTEGRATION_SHA}^2")" = "$RESEARCH_START_SHA"',
+              'parent_record="$(git rev-list --parents -n1 "$INTEGRATION_SHA")"',
+              'parent_count="$(awk \'{print NF-1}\' <<<"$parent_record")"',
+              'first_parent="$(git rev-parse "${INTEGRATION_SHA}^1")"',
+              'second_parent="$(git rev-parse "${INTEGRATION_SHA}^2")"',
+              'printf \'RD-03 integration parent record: %s\\n\' "$parent_record"',
+              'printf \'RD-03 integration parent count: %s\\n\' "$parent_count"',
+              'printf \'RD-03 integration first parent: observed=%s expected=%s\\n\' "$first_parent" "$MAIN_START_SHA"',
+              'printf \'RD-03 integration second parent: observed=%s expected=%s\\n\' "$second_parent" "$RESEARCH_START_SHA"',
+              'test "$parent_count" = \'2\'',
+              'test "$first_parent" = "$MAIN_START_SHA"',
+              'test "$second_parent" = "$RESEARCH_START_SHA"',
+              'printf \'RD-03 integration parent proof: PASS\\n\'',
           ])
           assert script.count(old_parent) == 1, script.count(old_parent)
           script = script.replace(old_parent, new_parent)
@@ -94,14 +103,16 @@ jobs:
           script = script.replace(old_repo_expression, '${GITHUB_REPOSITORY}')
 
           assert (dollar + '{{') not in script
-          assert script.count('git rev-list --parents -n1') == 1
+          assert script.count('parent_record=') == 1
+          assert script.count('integration parent proof: PASS') == 1
           assert script.count('${INTEGRATION_SHA}^1') == 1
           assert script.count('${INTEGRATION_SHA}^2') == 1
           Path('/tmp/rd03-materialize.sh').write_text(script)
           PY
 
           bash -n /tmp/rd03-materialize.sh
-          grep -F 'git rev-list --parents -n1' /tmp/rd03-materialize.sh
+          grep -F 'parent_record=' /tmp/rd03-materialize.sh
+          grep -F 'integration parent proof: PASS' /tmp/rd03-materialize.sh
           grep -F '${INTEGRATION_SHA}^1' /tmp/rd03-materialize.sh
           grep -F '${INTEGRATION_SHA}^2' /tmp/rd03-materialize.sh
           grep -F '${GITHUB_REPOSITORY}' /tmp/rd03-materialize.sh
