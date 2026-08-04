@@ -15,6 +15,7 @@ on:
 permissions:
   contents: read
   actions: read
+  issues: write
 
 concurrency:
   group: temp-ssc-rd02-wave03-search-census-v1-${{ github.event.pull_request.number || github.ref }}
@@ -64,3 +65,73 @@ jobs:
           if-no-files-found: error
           retention-days: 90
           compression-level: 0
+
+      - name: Report execution receipt to carrier PR
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY' > "$RUNNER_TEMP/comment.json"
+          import json, os
+          from pathlib import Path
+
+          out = Path(os.environ['OUTPUT_DIR'])
+          lines = [
+            'RD-02 Wave-03 fixed search-census execution receipt',
+            '',
+            '```text',
+            f"run:                            {os.environ['RUN_ID']}",
+            f"attempt:                        {os.environ['RUN_ATTEMPT']}",
+            f"job status:                     {os.environ['JOB_STATUS']}",
+            'target design head:             431f94963c369f982d262e96ed378806862539aa',
+          ]
+          summary_path = out / 'summary.json'
+          manifest_path = out / 'manifest.json'
+          if summary_path.exists():
+            summary = json.loads(summary_path.read_text())
+            counts = summary.get('counts', {})
+            result = summary.get('current_result', {})
+            states = counts.get('route_state_counts', {})
+            lines.extend([
+              f"fixed / attempted routes:       {counts.get('fixed_routes')} / {counts.get('route_attempts')}",
+              f"terminal routes:                {counts.get('terminal_routes')}",
+              f"route state counts:             {json.dumps(states, sort_keys=True)}",
+              f"candidate rows:                 {counts.get('candidate_rows')}",
+              f"unique candidate URLs:          {counts.get('unique_candidate_urls')}",
+              f"official-domain candidates:     {counts.get('official_domain_candidate_rows')}",
+              f"candidate URLs admitted:        {counts.get('candidate_urls_admitted')}",
+              f"result-spawned requests:         {counts.get('result_spawned_requests')}",
+              f"class state / closed:           {result.get('class_state')} / {result.get('class_closed')}",
+            ])
+          else:
+            lines.append('summary:                         not produced')
+          if manifest_path.exists():
+            manifest = json.loads(manifest_path.read_text())
+            lines.extend([
+              f"manifest entries:                {manifest.get('entry_count')}",
+              f"manifest combined SHA-256:       {manifest.get('combined_sha256')}",
+            ])
+          else:
+            lines.append('manifest:                        not produced')
+          lines.extend([
+            'withheld-row network routes:     0',
+            'external contacts / reviews:     0 / 0',
+            'class closure authorized:        false',
+            'publication / adoption / graph:  none / none / none',
+            '```',
+            '',
+            'Search candidates remain unadmitted source leads. A missing or silent result is not event absence.',
+          ])
+          print(json.dumps({'body': '\n'.join(lines)}))
+          PY
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            --data @"$RUNNER_TEMP/comment.json" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/issues/1045/comments"
