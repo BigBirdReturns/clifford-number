@@ -1,0 +1,77 @@
+name: TEMP export exact RD-03 corrupted carrier
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd03-corrupt-carrier-export-v1.yml'
+      - '.rd03-corrupt-carrier-export/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-ssc-rd03-corrupt-carrier-export-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  export:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd03-corrupt-carrier-export-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 02ea4361a38b860a56be29bb86733f761bcfca30
+          fetch-depth: 0
+
+      - name: Verify and preserve exact corrupted carrier
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = '02ea4361a38b860a56be29bb86733f761bcfca30'
+          node tools/validate-no-magic-human-gate.mjs
+          rm -rf /tmp/rd03-corrupt-carrier
+          mkdir -p /tmp/rd03-corrupt-carrier
+          cp .rd03-terminal/authored/part-00.b64 /tmp/rd03-corrupt-carrier/part-00.b64
+          test "$(wc -c < /tmp/rd03-corrupt-carrier/part-00.b64 | tr -d ' ')" = '20020'
+          test "$(sha256sum /tmp/rd03-corrupt-carrier/part-00.b64 | awk '{print $1}')" = '887fd5158d01695f231bff21770f7df3c26e0c639ec24c814df74c3bb18e7a24'
+          python - <<'PY'
+          import hashlib, json, pathlib
+          p=pathlib.Path('/tmp/rd03-corrupt-carrier/part-00.b64')
+          raw=p.read_bytes()
+          marker=b'[... ELLIPSIZATION ...]'
+          assert raw.count(marker)==1
+          index=raw.index(marker)
+          assert index==9999
+          prefix=raw[:index]
+          suffix=raw[index+len(marker):]
+          assert len(prefix)==9999 and len(suffix)==9999
+          (p.parent/'prefix.b64').write_bytes(prefix)
+          (p.parent/'suffix.b64').write_bytes(suffix)
+          report={
+            'schema_version':'ssc-rd03-corrupt-carrier-export@1',
+            'carrier_head':'02ea4361a38b860a56be29bb86733f761bcfca30',
+            'raw_bytes':len(raw),
+            'raw_sha256':hashlib.sha256(raw).hexdigest(),
+            'marker_index':index,
+            'marker_bytes':len(marker),
+            'prefix_bytes':len(prefix),
+            'prefix_sha256':hashlib.sha256(prefix).hexdigest(),
+            'suffix_bytes':len(suffix),
+            'suffix_sha256':hashlib.sha256(suffix).hexdigest(),
+            'expected_complete_base64_bytes':25720,
+            'missing_base64_bytes':5722,
+            'authority':{'outside_human_dependency':False,'external_contacts':0,'external_reviews':0,'publication_effect':'none','adoption_effect':'none','graph_effect':'none'}
+          }
+          (p.parent/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+          PY
+          sha256sum /tmp/rd03-corrupt-carrier/* > /tmp/rd03-corrupt-carrier/sha256.txt
+          node tools/validate-no-magic-human-gate.mjs
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Preserve exact carrier
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd03-corrupt-carrier-exact
+          path: /tmp/rd03-corrupt-carrier
+          if-no-files-found: error
+          retention-days: 90
