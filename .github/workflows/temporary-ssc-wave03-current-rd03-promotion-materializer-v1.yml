@@ -1,0 +1,192 @@
+name: TEMP materialize SSC Wave-03 RD-03 cumulative promotion v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-wave03-current-rd03-promotion-materializer-v1.yml'
+      - '.ssc-wave03-current-rd03-promotion-materializer-v1/**'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-wave03-current-rd03-promotion-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-wave03-current-rd03-promotion-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TARGET_BRANCH: agent/ssc-wave03-current-promote-rd03-c05-v1
+      TARGET_HEAD: 087d9c1fe15c78be0a3b6e5fa292d63ccb9c1f77
+      TARGET_BASE: 17a05f2b263424306ce1233056c091925908d3ea
+      CARRIER_BRANCH: agent/ssc-wave03-current-rd03-promotion-materializer-base-v1
+      PRODUCT_B64_SHA256: 32cc4bd56ba6e486523705e4dd5f274b528fa7ea66fbd4f279be5baad109fafe
+      PRODUCT_XZ_SHA256: e3d600d855ae53be462b98df421f6006c110b019d5747748e33715d5f10601a1
+      PATH_LIST_SHA256: a9c501ab9cec478b8c0361a512aeaeb1a1c703c6721527e66aaff54ffcf5f3af
+      PACKAGE_PATH_COUNT: '6'
+      FULL_DIFF_PATH_COUNT: '7'
+      RUNNER_DIFF_PATH_COUNT: '6'
+      SHARD_COUNT: '3'
+      LEDGER_PATH: data/research/status-sovereignty-residual-denominator-wave-03-current.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-wave03-current-promote-rd03-c05-v1
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct, qualify, replay, and publish exact cumulative promotion
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/ssc-wave03-current-rd03-promotion-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          product="$RUNNER_TEMP/ssc-wave03-current-rd03-promotion-product"
+          encoded="$RUNNER_TEMP/ssc-wave03-current-rd03-promotion.b64"
+          archive="$RUNNER_TEMP/ssc-wave03-current-rd03-promotion.tar.xz"
+          rm -rf "$out" "$product" "$encoded" "$archive"
+          mkdir -p "$out" "$product"
+          echo "RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          exec > >(tee "$out/trace.log") 2>&1
+
+          step=initialize
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$out/exit-code.txt"
+            printf '%s\n' "$step" > "$out/final-step.txt"
+            git rev-parse HEAD > "$out/head.txt" 2>&1 || true
+            git rev-parse 'HEAD^{tree}' > "$out/tree.txt" 2>&1 || true
+            git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1 || true
+            git ls-remote --heads origin refs/heads/main > "$out/remote-main.txt" 2>&1 || true
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          install_paths() {
+            local list="$1"
+            while IFS= read -r rel; do
+              mkdir -p "$(dirname "$rel")"
+              cp "$product/$rel" "$rel"
+            done < "$list"
+          }
+
+          qualify_current_ledger() {
+            local expected_tree="$1"
+            node --check tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs
+            node --check tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+            node --check test/status-sovereignty-residual-denominator-wave-03-current.test.js
+            node tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs --check
+            node tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+            node test/status-sovereignty-residual-denominator-wave-03-current.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            git diff --check
+            git diff --exit-code
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+            npm run release:check
+            git restore --worktree -- .
+            git clean -fdx
+            node tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs --write
+            node tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+            node test/status-sovereignty-residual-denominator-wave-03-current.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            git diff --check
+            git diff --exit-code
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+            test "$(git rev-parse 'HEAD^{tree}')" = "$expected_tree"
+          }
+
+          step=verify-exact-leases
+          test "$(git rev-parse HEAD)" = "$TARGET_HEAD"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$TARGET_HEAD"
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$TARGET_BASE"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git fetch origin "+refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
+
+          step=reconstruct-checksum-bound-package
+          git ls-tree -r --name-only "origin/$CARRIER_BRANCH" -- '.ssc-wave03-current-rd03-promotion-materializer-v1' \
+            | grep '/payload\.b64\.part-' | sort > "$out/shards.txt"
+          test "$(wc -l < "$out/shards.txt" | tr -d ' ')" = "$SHARD_COUNT"
+          : > "$encoded"
+          while IFS= read -r shard; do
+            git show "origin/$CARRIER_BRANCH:$shard" | tr -d '\r\n\t ' >> "$encoded"
+          done < "$out/shards.txt"
+          test "$(sha256sum "$encoded" | awk '{print $1}')" = "$PRODUCT_B64_SHA256"
+          base64 -d "$encoded" > "$archive"
+          test "$(sha256sum "$archive" | awk '{print $1}')" = "$PRODUCT_XZ_SHA256"
+          tar -tJf "$archive" | sort > "$out/package-paths.txt"
+          test "$(wc -l < "$out/package-paths.txt" | tr -d ' ')" = "$PACKAGE_PATH_COUNT"
+          test "$(sha256sum "$out/package-paths.txt" | awk '{print $1}')" = "$PATH_LIST_SHA256"
+          tar -xJf "$archive" -C "$product"
+          find "$product" -type f -printf '%P\n' | sort > "$out/extracted-paths.txt"
+          cmp "$out/package-paths.txt" "$out/extracted-paths.txt"
+          grep -v '^\.github/workflows/' "$out/package-paths.txt" > "$out/nonworkflow-paths.txt"
+          test "$(wc -l < "$out/nonworkflow-paths.txt" | tr -d ' ')" = '5'
+          { printf '%s\n' "$LEDGER_PATH"; cat "$out/package-paths.txt"; } | sort > "$out/full-diff-paths.txt"
+          { printf '%s\n' "$LEDGER_PATH"; cat "$out/nonworkflow-paths.txt"; } | sort > "$out/runner-diff-paths.txt"
+          test "$(wc -l < "$out/full-diff-paths.txt" | tr -d ' ')" = "$FULL_DIFF_PATH_COUNT"
+          test "$(wc -l < "$out/runner-diff-paths.txt" | tr -d ' ')" = "$RUNNER_DIFF_PATH_COUNT"
+
+          step=qualify-full-seven-path-product
+          git checkout -B temporary-ssc-wave03-current-rd03-promotion-full "$TARGET_HEAD"
+          install_paths "$out/package-paths.txt"
+          git diff --name-only | sort > "$out/full-working-diff.txt"
+          cmp "$out/package-paths.txt" "$out/full-working-diff.txt"
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --pathspec-from-file="$out/package-paths.txt"
+          git commit -m 'Qualify RD-03 Wave-03 cumulative promotion package'
+          full_commit="$(git rev-parse HEAD)"
+          full_tree="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$full_commit" > "$out/qualified-full-commit.txt"
+          printf '%s\n' "$full_tree" > "$out/qualified-full-tree.txt"
+          cp .github/workflows/status-sovereignty-residual-denominator-wave-03-current.yml "$out/qualified-standing-workflow.yml"
+          git diff --name-status "$TARGET_BASE" HEAD | sort > "$out/full-main-relative-name-status.txt"
+          test "$(wc -l < "$out/full-main-relative-name-status.txt" | tr -d ' ')" = "$FULL_DIFF_PATH_COUNT"
+          test "$(awk '$1 != "M" { count += 1 } END { print count + 0 }' "$out/full-main-relative-name-status.txt")" = '0'
+          cut -f2 "$out/full-main-relative-name-status.txt" | sort > "$out/full-main-relative-paths.txt"
+          cmp "$out/full-diff-paths.txt" "$out/full-main-relative-paths.txt"
+          qualify_current_ledger "$full_tree"
+
+          step=build-and-qualify-six-path-runner-product
+          git checkout -B "$TARGET_BRANCH" "$TARGET_HEAD"
+          install_paths "$out/nonworkflow-paths.txt"
+          git diff --name-only | sort > "$out/runner-working-diff.txt"
+          cmp "$out/nonworkflow-paths.txt" "$out/runner-working-diff.txt"
+          git diff --check
+          git add --pathspec-from-file="$out/nonworkflow-paths.txt"
+          git commit -m 'Promote RD-03-C05 into the Wave-03 current ledger'
+          runner_commit="$(git rev-parse HEAD)"
+          runner_tree="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$runner_commit" > "$out/published-runner-commit.txt"
+          printf '%s\n' "$runner_tree" > "$out/published-runner-tree.txt"
+          git diff --name-status "$TARGET_BASE" HEAD | sort > "$out/runner-main-relative-name-status.txt"
+          test "$(wc -l < "$out/runner-main-relative-name-status.txt" | tr -d ' ')" = "$RUNNER_DIFF_PATH_COUNT"
+          test "$(awk '$1 != "M" { count += 1 } END { print count + 0 }' "$out/runner-main-relative-name-status.txt")" = '0'
+          cut -f2 "$out/runner-main-relative-name-status.txt" | sort > "$out/runner-main-relative-paths.txt"
+          cmp "$out/runner-diff-paths.txt" "$out/runner-main-relative-paths.txt"
+          qualify_current_ledger "$runner_tree"
+
+          step=publish-under-exact-main-and-target-leases
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$TARGET_BASE"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$TARGET_HEAD"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_HEAD" origin "HEAD:refs/heads/$TARGET_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$runner_commit"
+          step=materialization-complete
+
+      - name: Preserve exact cumulative-promotion receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave03-current-rd03-promotion-materialization-v1
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
