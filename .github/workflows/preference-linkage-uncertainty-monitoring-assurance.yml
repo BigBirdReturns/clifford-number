@@ -1,0 +1,35 @@
+name: Preference custody linkage-uncertainty monitoring assurance control
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/linkage-uncertainty-monitoring-assurance.fixture.json'
+      - 'tools/lib/preference-linkage-uncertainty-monitoring-assurance.mjs'
+      - 'tools/compile-preference-linkage-uncertainty-monitoring-assurance.mjs'
+      - 'tools/validate-preference-linkage-uncertainty-monitoring-assurance.mjs'
+      - 'test/preference-linkage-uncertainty-monitoring-assurance.test.js'
+      - 'docs/preference-custody-linkage-uncertainty-monitoring-assurance.md'
+      - '.github/workflows/preference-linkage-uncertainty-monitoring-assurance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linkage-uncertainty-monitoring-assurance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node tools/compile-preference-linkage-uncertainty-monitoring-assurance.mjs
+      - run: node tools/validate-preference-linkage-uncertainty-monitoring-assurance.mjs
+      - run: node test/preference-linkage-uncertainty-monitoring-assurance.test.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preference-linkage-uncertainty-monitoring-assurance-pc44
+          path: |
+            build/research/preference-linkage-uncertainty-monitoring-assurance.json
+            build/research/preference-linkage-uncertainty-monitoring-assurance.md
+          if-no-files-found: error

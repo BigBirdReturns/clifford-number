@@ -1,0 +1,187 @@
+import { createHash } from 'node:crypto';
+import { validatePreferenceCustodyManifestV41Build } from './preference-custody-manifest-v41.mjs';
+import { compilePreferenceCustodyManifestV37, validatePreferenceCustodyManifestV37Build } from './preference-custody-manifest-v37.mjs';
+import { EXPECTED_LINKAGE_UNCERTAINTY_METRICS, REQUIRED_LINKAGE_UNCERTAINTY_REFUSAL_RULES, validatePreferenceLinkageUncertaintyMonitoringAssuranceBuild } from './preference-linkage-uncertainty-monitoring-assurance.mjs';
+export const PREFERENCE_CUSTODY_MANIFEST_V42_SCHEMA_VERSION = 'preference-custody-control-manifest-v42@1';
+export const PREFERENCE_CUSTODY_MANIFEST_V42_BUILD_SCHEMA_VERSION = 'preference-custody-control-manifest-v42-build@1';
+const REQUIRED_CONTROL_IDS = Array.from({ length: 44 }, (_, index) => `PC-${String(index + 1).padStart(2, '0')}`);
+const RESOLVED_FRONTIER = 'linkage_uncertainty_interval_coverage_subgroup_drift_monitoring_and_recalibration_governance';
+const REQUIRED_SUCCESSORS = ['linkage_uncertainty_interval_construction_empirical_coverage_dependence_and_multiplicity_assurance','linkage_calibration_drift_subgroup_monitoring_recalibration_trigger_rollback_and_certificate_withdrawal_governance'];
+const V37_SOURCE_CUTOFF_SCHEMA_VERSION = 'preference-custody-v37-source-aware-cutoff@1';
+const V38_V40_SOURCE_BUNDLE_CUTOFF_SCHEMA_VERSION = 'preference-custody-v38-v40-source-bundle-cutoff@1';
+const REQUIRED_IDENTIFICATION_REQUIREMENT = Object.freeze({"stage":"uncertainty_target_construction_dependence_multiplicity_subgroup_coverage_monitoring_recalibration_rollback_and_lineage","required_state":"target_event_estimand_interval_construction_data_split_dependence_multiplicity_empirical_coverage_subgroup_monitor_alert_recalibration_rollback_certificate_correction_durability_and_authority_custody","refused_inference":"published_interval_coverage_width_misses_drift_alerts_recalibration_status_or_public_linkage_uncertainty_verified_status_does_not_identify_complete_current_out_of_sample_dependence_aware_multiplicity_adjusted_subgroup_covered_drift_monitored_recalibrated_rollback_capable_correctable_or_authorized_evidence"});
+const REQUIRED_REAL_CASE_REQUIREMENTS = Object.freeze(["linkage_uncertainty_v42_target_event_estimand_and_coverage_meaning","linkage_uncertainty_v42_interval_type_bounds_tail_allocation_and_interpretation","linkage_uncertainty_v42_score_probability_basis_and_transform_lineage","linkage_uncertainty_v42_interval_construction_method_identity_version_and_owner","linkage_uncertainty_v42_residual_source_and_out_of_sample_construction_design","linkage_uncertainty_v42_bootstrap_design_resampling_unit_and_seed","linkage_uncertainty_v42_conformal_design_exchangeability_and_shift_assumptions","linkage_uncertainty_v42_posterior_predictive_basis_prior_and_model_identity","linkage_uncertainty_v42_cross_fitting_split_identity_and_repository","linkage_uncertainty_v42_training_data_identity_scope_lineage_and_hash","linkage_uncertainty_v42_tuning_data_identity_scope_lineage_and_hash","linkage_uncertainty_v42_construction_data_identity_scope_lineage_and_hash","linkage_uncertainty_v42_calibration_data_identity_scope_lineage_and_hash","linkage_uncertainty_v42_validation_data_identity_scope_lineage_and_hash","linkage_uncertainty_v42_holdout_data_identity_scope_lineage_and_hash","linkage_uncertainty_v42_deployment_data_identity_scope_lineage_and_hash","linkage_uncertainty_v42_monitoring_data_identity_scope_lineage_and_hash","linkage_uncertainty_v42_data_overlap_leakage_independence_and_sampling_audit","linkage_uncertainty_v42_pair_dependence_block_assignment_and_covariance","linkage_uncertainty_v42_entity_household_cluster_and_repeated_observation_dependence","linkage_uncertainty_v42_source_geography_time_graph_and_trajectory_dependence","linkage_uncertainty_v42_effective_sample_size_and_dependence_correction","linkage_uncertainty_v42_resampling_unit_validity_and_sensitivity","linkage_uncertainty_v42_multiplicity_family_hypotheses_and_denominator","linkage_uncertainty_v42_subgroup_model_threshold_and_monitoring_window_family","linkage_uncertainty_v42_repeated_looks_optional_stopping_and_alpha_spending","linkage_uncertainty_v42_adaptive_selection_winners_curse_and_correction","linkage_uncertainty_v42_simultaneous_coverage_adjustment_and_receipt","linkage_uncertainty_v42_empirical_coverage_design_and_independent_labels","linkage_uncertainty_v42_known_match_known_nonmatch_and_hard_negative_inventory","linkage_uncertainty_v42_sampling_frame_weighting_power_and_confidence_bounds","linkage_uncertainty_v42_width_distribution_interval_misses_and_root_causes","linkage_uncertainty_v42_subgroup_coverage_denominator_error_and_uncertainty","linkage_uncertainty_v42_source_geography_language_and_time_specific_coverage","linkage_uncertainty_v42_identifier_quality_missingness_and_weak_source_coverage","linkage_uncertainty_v42_monitor_identity_owner_code_version_and_repository","linkage_uncertainty_v42_source_feature_prevalence_and_calibration_drift_monitoring","linkage_uncertainty_v42_population_workflow_policy_and_release_drift_monitoring","linkage_uncertainty_v42_monitor_window_denominator_threshold_and_alert_state","linkage_uncertainty_v42_alert_suppression_escalation_and_appeal_custody","linkage_uncertainty_v42_recalibration_trigger_approval_and_execution_receipt","linkage_uncertainty_v42_recalibration_method_data_validation_and_deployment","linkage_uncertainty_v42_safe_decline_rollback_and_recovery_receipts","linkage_uncertainty_v42_certificate_withdrawal_corrected_republication_and_appeal","linkage_uncertainty_v42_negative_controls_falsification_and_alternate_interval_methods","linkage_uncertainty_v42_feature_model_label_interval_monitor_and_trigger_lineage","linkage_uncertainty_v42_population_workflow_policy_release_use_and_certificate_lineage","linkage_uncertainty_v42_public_claim_basis_limitations_authority_and_hash_linked_chain"]);
+const REQUIRED_PROHIBITED_INFERENCES = Object.freeze(["Do not treat floor v42 or PC-44 as evidence that any named person organization institution platform network or source system has a valid uncertainty interval.","Do not treat numeric lower and upper bounds as a valid interval without a defined target and coverage meaning.","Do not infer precision from narrow intervals when empirical coverage is unknown.","Do not infer complete empirical coverage from one-hundred-percent published coverage when excluded or unlabeled pairs are omitted.","Do not infer zero true misses from zero published misses without complete independent labels and denominators.","Do not treat in-sample residuals or heuristic margins as out-of-sample uncertainty assurance.","Do not treat random pair splitting as independence across entities households sources clusters or time.","Do not infer dependence-aware coverage from nominal pairwise coverage.","Do not treat one bootstrap as valid when the resampling unit ignores dependence.","Do not treat one conformal guarantee as deployment coverage after exchangeability or distribution shift fails.","Do not infer subgroup source geography language identifier-quality missingness or time coverage from aggregate coverage.","Do not infer simultaneous coverage across adaptively selected models thresholds subgroups or windows from one nominal level.","Do not treat uncorrected repeated monitoring as a predeclared drift test.","Do not infer absence of drift from zero published alerts when denominators are incomplete thresholds are stale or alerts are suppressed.","Do not treat one current calibration certificate as current uncertainty assurance after source feature model population or workflow drift.","Do not treat a discretionary or unexecuted recalibration trigger as governance.","Do not treat recalibration as correction without independent validation safe deployment rollback and corrected republication.","Do not infer rollback availability from the absence of rollback use.","Do not infer current uncertainty assurance from historical evidence after feature model label interval monitor source population workflow policy or release succession.","Do not infer linkage-probability validation sampling assurance from uncertainty monitoring alone.","Do not infer threshold abstention ambiguity adjudication or error-monitoring assurance from interval coverage alone.","Do not infer coercion manipulation discrimination breach misconduct coordination common purpose or intent from uncertainty-assurance failure.","Do not infer public authorization from intervals coverage monitoring recalibration rollback correction lineage or estimate precision.","Do not treat synthetic counts as real-world prevalence error burden drift trajectory welfare or effect estimates.","Do not treat the forty-four-control floor as exhaustive of every legal economic constitutional security social network market or performative failure mode."]);
+const REQUIRED_INTERPRETATION_CONTRACT = Object.freeze({"contract_id":"preference-custody-control-manifest-v42@1","what_this_is":"A compositional successor floor preserving the qualified forty-three-control v41 base and adding PC-44 interval-target construction dependence multiplicity empirical subgroup coverage monitoring recalibration rollback correction lineage and authority equifinality.","what_this_is_not":"A real identity map uncertainty interval empirical coverage rate subgroup burden drift event recalibration success longitudinal history exposure trajectory causal conclusion named-actor allegation graph fact or public-authority verdict.","copy_ready_caveat":"Preference Custody floor v42 composes the qualified v41 controls with PC-44. It separates one complete-looking linkage-uncertainty publication from interval-target, out-of-sample construction, dependence, multiplicity, empirical and subgroup coverage, drift monitoring, recalibration, rollback, certificate withdrawal, correction, durability, and authority custody while requiring real cases to preserve the complete uncertainty-assurance chain."});
+const FALSE_CLASSIFICATIONS = [
+  "numeric_bounds_identify_valid_uncertainty_interval",
+  "narrow_intervals_identify_precision",
+  "full_published_coverage_identifies_complete_empirical_coverage",
+  "zero_interval_misses_identify_zero_true_misses",
+  "in_sample_residual_intervals_identify_out_of_sample_assurance",
+  "heuristic_margins_identify_probability_or_predictive_intervals",
+  "random_pair_split_identifies_dependence_independence",
+  "nominal_coverage_identifies_dependence_aware_empirical_coverage",
+  "pairwise_coverage_identifies_cluster_or_trajectory_coverage",
+  "bootstrap_identifies_valid_dependence_resampling",
+  "conformal_guarantee_identifies_shift_robust_deployment_coverage",
+  "aggregate_coverage_identifies_subgroup_source_geography_language_identifier_quality_missingness_and_time_coverage",
+  "one_coverage_level_identifies_simultaneous_adaptive_coverage",
+  "uncorrected_repeated_monitoring_identifies_predeclared_drift_test",
+  "zero_drift_alerts_identify_absence_of_drift",
+  "current_calibration_certificate_identifies_current_uncertainty_assurance",
+  "recalibration_trigger_identifies_executed_governance",
+  "recalibration_identifies_independently_validated_correction",
+  "absence_of_rollback_use_identifies_rollback_availability",
+  "historical_uncertainty_assurance_identifies_current_assurance_after_succession",
+  "public_linkage_uncertainty_verified_status_identifies_complete_current_correctable_authorized_evidence",
+  "uncertainty_assurance_failure_identifies_coercion_manipulation_discrimination_breach_misconduct_coordination_common_purpose_or_intent",
+  "binding_public_authority_supported",
+  "manipulative_intent_inferable",
+  "real_world_effect_claimed",
+  "graph_effect_present",
+  "preference_change_present"
+];
+const TRUE_CLASSIFICATION = "complete_linkage_uncertainty_assurance_supported_in_at_least_one_world";
+const object = value => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+const array = value => Array.isArray(value) ? value : [];
+const text = value => String(value ?? '').trim();
+const unique = values => [...new Set(array(values).map(text).filter(Boolean))];
+const sorted = values => [...values].sort((left, right) => String(left).localeCompare(String(right)));
+const canonical = value => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value;
+const stable = value => JSON.stringify(canonical(value));
+const sha256 = value => createHash('sha256').update(stable(value)).digest('hex');
+const sameMembers = (left, right) => stable(sorted(unique(left))) === stable(sorted(unique(right)));
+const requireFalse = (value, label, errors) => { if (value !== false) errors.push(`${label} must remain false`); };
+function seal(event, previous) { const unsigned = { ...canonical(event), previous_event_sha256: previous }; return { ...unsigned, event_sha256: sha256(unsigned) }; }
+function chain(manifest, base, control, openFrontiers, requirements) {
+  const events = []; let previous = null; const push = event => { const sealed = seal(event, previous); events.push(sealed); previous = sealed.event_sha256; };
+  push({ event_id: `${manifest.manifest_id}:base`, event_type: 'qualified_v41_floor_snapshot', evidence_class: 'compiled_synthetic_control_floor', authority: 'preference_custody_v41_compiler', source_event_ids: [], payload: { manifest_id: base.manifest_id, schema_version: base.schema_version, control_count: base.control_count, snapshot_sha256: sha256(base) } });
+  push({ event_id: `${manifest.manifest_id}:pc44`, event_type: 'pc44_linkage_uncertainty_monitoring_and_recalibration_control_admitted', evidence_class: 'compiled_synthetic_control', authority: 'linkage_uncertainty_monitoring_compiler', source_event_ids: [`${manifest.manifest_id}:base`], payload: { control, snapshot_sha256: sha256(control) } });
+  push({ event_id: `${manifest.manifest_id}:frontier`, event_type: 'linkage_uncertainty_monitoring_frontier_transition_sealed', evidence_class: 'laboratory_frontier_contract', authority: 'preference_custody_v42_compiler', source_event_ids: [`${manifest.manifest_id}:pc44`], payload: { transition: manifest.frontier_transition, open_frontiers: openFrontiers } });
+  push({ event_id: `${manifest.manifest_id}:promotion`, event_type: 'linkage_uncertainty_real_case_promotion_boundary_sealed', evidence_class: 'laboratory_promotion_contract', authority: 'preference_custody_v42_compiler', source_event_ids: [`${manifest.manifest_id}:frontier`], payload: { identification_requirement: manifest.identification_requirement, real_case_requires: requirements } });
+  push({ event_id: `${manifest.manifest_id}:interpretation`, event_type: 'interpretation_sealed', evidence_class: 'candidate_inference', authority: 'preference_custody_v42_analyst', source_event_ids: [`${manifest.manifest_id}:promotion`], payload: { allowed_interpretation: 'qualified forty-four-control synthetic Preference Custody floor', graph_effect: 'none', real_world_evidence_state: 'none' } });
+  return events;
+}
+export function validatePreferenceCustodyManifestV42(manifest) {
+  const errors = [];
+  if (manifest?.schema_version !== PREFERENCE_CUSTODY_MANIFEST_V42_SCHEMA_VERSION) errors.push('v42 schema mismatch');
+  if (manifest?.manifest_id !== 'preference-custody-laboratory-floor-v42') errors.push('v42 manifest identity mismatch');
+  if (manifest?.issue !== 594 || manifest?.control_issue !== 954) errors.push('v42 issue custody mismatch');
+  if (manifest?.status !== 'synthetic_control_floor_extension' || manifest?.graph_effect !== 'none') errors.push('v42 status or graph effect mismatch');
+  requireFalse(manifest?.counts_toward_thesis_evidence, 'v42 thesis evidence', errors);
+  const base = object(manifest?.base_floor);
+  if (base.manifest_id !== 'preference-custody-laboratory-floor-v41' || base.source_manifest_path !== 'data/research/preference-custody/control-manifest-v41.json' || base.expected_build_schema !== 'preference-custody-control-manifest-v41-build@1' || base.expected_control_count !== 43) errors.push('v42 base floor contract mismatch');
+  const extension = object(manifest?.extension_control);
+  if (extension.control_id !== 'PC-44' || extension.fixture_id !== 'same-linkage-uncertainty-verified-status-different-operational-states-v1' || extension.failure_class !== 'linkage_uncertainty_interval_construction_empirical_coverage_dependence_multiplicity_subgroup_drift_monitoring_recalibration_rollback_and_lineage_equifinality' || extension.source_fixture_path !== 'data/research/preference-custody/linkage-uncertainty-monitoring-assurance.fixture.json' || extension.build_artifact_path !== 'build/research/preference-linkage-uncertainty-monitoring-assurance.json' || extension.expected_build_schema !== 'preference-linkage-uncertainty-monitoring-assurance-build@1') errors.push('v42 extension contract mismatch');
+  if (!sameMembers(extension.required_refusal_rules, REQUIRED_LINKAGE_UNCERTAINTY_REFUSAL_RULES) || array(extension.required_refusal_rules).length !== REQUIRED_LINKAGE_UNCERTAINTY_REFUSAL_RULES.length) errors.push('v42 refusal-rule contract must match the exact PC-44 ledger');
+  if (stable(manifest?.identification_requirement) !== stable(REQUIRED_IDENTIFICATION_REQUIREMENT)) errors.push('v42 identification requirement contract mismatch');
+  if (manifest?.frontier_transition?.resolved_base_frontier !== RESOLVED_FRONTIER) errors.push('v42 resolved frontier mismatch');
+  if (!sameMembers(manifest?.frontier_transition?.successor_frontiers, REQUIRED_SUCCESSORS)) errors.push('v42 successor frontier mismatch');
+  if (!sameMembers(manifest?.real_case_requirements_added, REQUIRED_REAL_CASE_REQUIREMENTS) || array(manifest?.real_case_requirements_added).length !== REQUIRED_REAL_CASE_REQUIREMENTS.length) errors.push('v42 real-case requirement ledger must match the exact PC-44 extension');
+  for (const item of array(manifest?.real_case_requirements_added)) if (!/^[a-z0-9_]+$/.test(item)) errors.push(`invalid v42 requirement: ${item}`);
+  if (stable(manifest?.prohibited_inferences) !== stable(REQUIRED_PROHIBITED_INFERENCES)) errors.push('v42 prohibited-inference ledger mismatch');
+  if (stable(manifest?.interpretation_contract) !== stable(REQUIRED_INTERPRETATION_CONTRACT)) errors.push('v42 interpretation contract mismatch');
+  return errors;
+}
+function v37SourceCutoffContainer(baseSources) { return object(baseSources?.baseSources?.baseSources?.baseSources); }
+function v37SourceCutoff(baseSources) { return object(v37SourceCutoffContainer(baseSources)?.v37SourceCutoff); }
+function v37SourceCutoffPayload(baseSources) {
+  const cutoff = v37SourceCutoff(baseSources);
+  return { schema_version: V37_SOURCE_CUTOFF_SCHEMA_VERSION, manifest: cutoff.manifest, base_build: cutoff.baseBuild, linkage_build: cutoff.linkageBuild, linkage_fixture: cutoff.linkageFixture };
+}
+function v37SourceCutoffSha256(baseSources) { return sha256(v37SourceCutoffPayload(baseSources)); }
+function v38V40SourceBundleCutoffPayload(baseSources) {
+  const v40 = object(baseSources?.baseSources);
+  const v39 = object(v40?.baseSources);
+  const v38 = object(v39?.baseSources);
+  return {
+    schema_version: V38_V40_SOURCE_BUNDLE_CUTOFF_SCHEMA_VERSION,
+    v40: { manifest: v40.manifest, base_build: v40.baseBuild, score_build: v40.scoreBuild, score_fixture: v40.scoreFixture },
+    v39: { manifest: v39.manifest, base_build: v39.baseBuild, candidate_build: v39.candidateBuild, candidate_fixture: v39.candidateFixture },
+    v38: { manifest: v38.manifest, base_build: v38.baseBuild, confidence_build: v38.confidenceBuild, confidence_fixture: v38.confidenceFixture }
+  };
+}
+function v38V40SourceBundleCutoffSha256(baseSources) { return sha256(v38V40SourceBundleCutoffPayload(baseSources)); }
+function validateV38V40SourceBundleCutoff(baseSources) {
+  const errors = [];
+  const v40 = object(baseSources?.baseSources);
+  const v39 = object(v40?.baseSources);
+  const v38 = object(v39?.baseSources);
+  for (const [value, label] of [
+    [v40.manifest, 'v40 manifest'], [v40.baseBuild, 'v40 base build'], [v40.scoreBuild, 'v40 score build'], [v40.scoreFixture, 'v40 score fixture'],
+    [v39.manifest, 'v39 manifest'], [v39.baseBuild, 'v39 base build'], [v39.candidateBuild, 'v39 candidate build'], [v39.candidateFixture, 'v39 candidate fixture'],
+    [v38.manifest, 'v38 manifest'], [v38.baseBuild, 'v38 base build'], [v38.confidenceBuild, 'v38 confidence build'], [v38.confidenceFixture, 'v38 confidence fixture']
+  ]) if (!value) errors.push(`v42 v38-v40 source-bundle cutoff ${label} is required`);
+  return errors;
+}
+function validateV37SourceCutoff(baseSources) {
+  const errors = [];
+  const container = v37SourceCutoffContainer(baseSources);
+  const cutoff = v37SourceCutoff(baseSources);
+  if (!container?.baseBuild) errors.push('v42 v37 cutoff compiled floor is required');
+  if (!cutoff.manifest) errors.push('v42 v37 cutoff manifest is required');
+  if (!cutoff.baseBuild) errors.push('v42 v37 cutoff v36 base is required');
+  if (!cutoff.linkageBuild) errors.push('v42 v37 cutoff PC-39 build is required');
+  if (!cutoff.linkageFixture) errors.push('v42 v37 cutoff PC-39 fixture is required');
+  if (errors.length) return errors;
+  const compiledErrors = validatePreferenceCustodyManifestV37Build(container.baseBuild);
+  if (compiledErrors.length) errors.push(...compiledErrors.map(error => `v42 v37 cutoff compiled floor invalid: ${error}`));
+  try {
+    const expectedV37 = compilePreferenceCustodyManifestV37(cutoff.manifest, cutoff.baseBuild, cutoff.linkageBuild, cutoff.linkageFixture);
+    if (stable(container.baseBuild) !== stable(expectedV37)) errors.push('v42 v37 cutoff compiled floor does not reconstruct from supplied cutoff sources');
+  } catch (error) {
+    errors.push(`v42 v37 source-aware cutoff reconstruction failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  return errors;
+}
+function validateBaseSources(baseBuild, baseSources) {
+  if (!baseSources) return ['v42 base source bundle is required'];
+  return [
+    ...validatePreferenceCustodyManifestV41Build(baseBuild, baseSources.manifest, baseSources.baseBuild, baseSources.probabilityBuild, baseSources.probabilityFixture, baseSources.baseSources),
+    ...validateV37SourceCutoff(baseSources),
+    ...validateV38V40SourceBundleCutoff(baseSources)
+  ];
+}
+export function compilePreferenceCustodyManifestV42(manifest, baseBuild, uncertaintyBuild, uncertaintyFixture, baseSources) {
+  const errors = validatePreferenceCustodyManifestV42(manifest); if (errors.length) throw new Error(`invalid v42 manifest:\n- ${errors.join('\n- ')}`);
+  const baseErrors = validateBaseSources(baseBuild, baseSources); if (baseErrors.length) throw new Error(`invalid v41 base:\n- ${baseErrors.join('\n- ')}`);
+  const uncertaintyErrors = validatePreferenceLinkageUncertaintyMonitoringAssuranceBuild(uncertaintyBuild, uncertaintyFixture); if (uncertaintyErrors.length) throw new Error(`invalid PC-44 build:\n- ${uncertaintyErrors.join('\n- ')}`);
+  if (baseBuild.control_count !== 43 || baseBuild.manifest_id !== 'preference-custody-laboratory-floor-v41') throw new Error('v42 base identity mismatch');
+  const baseOpen = unique(baseBuild.open_frontiers); if (!baseOpen.includes(RESOLVED_FRONTIER)) throw new Error('v42 base does not contain the resolved uncertainty-monitoring frontier');
+  const requiredRules = manifest.extension_control.required_refusal_rules;
+  const control = { control_id:'PC-44', fixture_id:uncertaintyBuild.fixture_id, failure_class:manifest.extension_control.failure_class, source_fixture_path:manifest.extension_control.source_fixture_path, build_artifact_path:manifest.extension_control.build_artifact_path, graph_effect:'none', counts_toward_thesis_evidence:false, conclusion_generated:false, real_world_effect_claimed:false, preference_change_present:false, manipulative_intent_inferable:false, required_refusal_rules:[...requiredRules], observed_refusal_rules:[...uncertaintyBuild.required_refusal_rules], proof_summary:{...uncertaintyBuild.metrics, ...uncertaintyBuild.classification} };
+  const openFrontiers = unique([...baseOpen.filter(frontier => frontier !== RESOLVED_FRONTIER), ...manifest.frontier_transition.successor_frontiers]);
+  const baseRequirements = unique(baseBuild.promotion_boundary.real_case_requires); const requirements = unique([...baseRequirements, ...manifest.real_case_requirements_added]);
+  if (requirements.length - baseRequirements.length !== 48) throw new Error('v42 requirement extension is not exactly forty-eight');
+  const controls = [...baseBuild.controls, control]; const custody = chain(manifest, baseBuild, control, openFrontiers, requirements);
+  return { schema_version:PREFERENCE_CUSTODY_MANIFEST_V42_BUILD_SCHEMA_VERSION, manifest_id:manifest.manifest_id, issue:manifest.issue, control_issue:manifest.control_issue, captured_at:manifest.captured_at, status:'laboratory_floor_v42_qualified', graph_effect:'none', counts_toward_thesis_evidence:false, conclusion_generated:false, real_world_evidence_state:'none', control_count:controls.length, controls,
+    composition:{base_manifest_id:baseBuild.manifest_id,base_schema_version:baseBuild.schema_version,base_control_count:baseBuild.control_count,extension_control_id:'PC-44',manifest_snapshot_sha256:sha256(manifest),base_floor_snapshot_sha256:sha256(baseBuild),extension_snapshot_sha256:sha256(uncertaintyBuild),v37_source_cutoff_schema_version:V37_SOURCE_CUTOFF_SCHEMA_VERSION,v37_source_cutoff_sha256:v37SourceCutoffSha256(baseSources),v38_v40_source_bundle_cutoff_schema_version:V38_V40_SOURCE_BUNDLE_CUTOFF_SCHEMA_VERSION,v38_v40_source_bundle_cutoff_sha256:v38V40SourceBundleCutoffSha256(baseSources),base_controls_sha256:sha256(baseBuild.controls),base_promotion_requirements_sha256:sha256(baseRequirements),base_promotion_requirement_count:baseRequirements.length,added_promotion_requirement_count:requirements.length-baseRequirements.length,final_promotion_requirement_count:requirements.length,base_open_frontiers:[...baseOpen]},
+    control_integrity:{base_floor_qualified:true,base_integrity_preserved:Object.values(baseBuild.control_integrity).every(Boolean),v37_source_aware_cutoff_bound:true,v38_v40_source_bundle_cutoff_bound:true,all_graph_effect_none:controls.every(item=>item.graph_effect==='none'),no_thesis_evidence_consumption:controls.every(item=>item.counts_toward_thesis_evidence===false),no_real_world_conclusion:true,no_preference_change_claim:true,no_intent_inference:true,all_required_pc44_refusal_rules_present:requiredRules.every(rule=>uncertaintyBuild.required_refusal_rules.includes(rule)),complete_linkage_uncertainty_assurance_path_preserved:uncertaintyBuild.metrics.complete_linkage_uncertainty_assurance_worlds===1},
+    identification_requirements:[...baseBuild.identification_requirements,manifest.identification_requirement],refusal_rule_union:unique([...baseBuild.refusal_rule_union,...uncertaintyBuild.required_refusal_rules]),open_frontiers:openFrontiers,frontier_transition:manifest.frontier_transition,promotion_boundary:{...baseBuild.promotion_boundary,promotion_requirement_count:requirements.length,real_case_requires:requirements,laboratory_controls_are_real_world_evidence:false},custody_chain:custody,custody_chain_head_sha256:custody.at(-1).event_sha256,prohibited_inferences:[...baseBuild.prohibited_inferences,...manifest.prohibited_inferences],interpretation_contract:manifest.interpretation_contract };
+}
+function validateChain(compiled, errors) { const events=array(compiled?.custody_chain); if(events.length!==5) errors.push('compiled v42 custody chain must contain five events'); let previous=null; const seen=new Set(); for(const event of events){ if(event?.previous_event_sha256!==previous) errors.push('compiled v42 custody previous hash mismatch'); for(const sourceId of array(event?.source_event_ids)) if(!seen.has(sourceId)) errors.push('compiled v42 custody source missing'); const unsigned={...event}; delete unsigned.event_sha256; if(event?.event_sha256!==sha256(unsigned)) errors.push('compiled v42 custody event hash mismatch'); if(text(event?.event_id)) seen.add(event.event_id); previous=event?.event_sha256; } if(previous!==compiled?.custody_chain_head_sha256) errors.push('compiled v42 custody head mismatch'); }
+export function validatePreferenceCustodyManifestV42Build(compiled, manifest, baseBuild, uncertaintyBuild, uncertaintyFixture, baseSources) {
+  const errors=[];
+  if(compiled?.schema_version!==PREFERENCE_CUSTODY_MANIFEST_V42_BUILD_SCHEMA_VERSION) errors.push('compiled v42 schema mismatch');
+  if(compiled?.manifest_id!=='preference-custody-laboratory-floor-v42'||compiled?.control_issue!==954) errors.push('compiled v42 identity mismatch');
+  if(compiled?.status!=='laboratory_floor_v42_qualified'||compiled?.graph_effect!=='none'||compiled?.real_world_evidence_state!=='none') errors.push('compiled v42 status boundary mismatch');
+  requireFalse(compiled?.counts_toward_thesis_evidence,'compiled v42 thesis evidence',errors); requireFalse(compiled?.conclusion_generated,'compiled v42 conclusion',errors);
+  if(compiled?.control_count!==44||array(compiled?.controls).length!==44||!sameMembers(array(compiled?.controls).map(control=>control?.control_id),REQUIRED_CONTROL_IDS)) errors.push('compiled v42 must preserve forty-four exact controls');
+  const composition=object(compiled?.composition);
+  if(composition.base_manifest_id!=='preference-custody-laboratory-floor-v41'||composition.base_schema_version!=='preference-custody-control-manifest-v41-build@1'||composition.base_control_count!==43||composition.extension_control_id!=='PC-44'||composition.v37_source_cutoff_schema_version!==V37_SOURCE_CUTOFF_SCHEMA_VERSION||composition.v38_v40_source_bundle_cutoff_schema_version!==V38_V40_SOURCE_BUNDLE_CUTOFF_SCHEMA_VERSION) errors.push('compiled v42 composition identity mismatch');
+  if(composition.base_promotion_requirement_count!==1629||composition.added_promotion_requirement_count!==48||composition.final_promotion_requirement_count!==1677) errors.push('compiled v42 promotion counts mismatch');
+  for(const key of ['manifest_snapshot_sha256','base_floor_snapshot_sha256','extension_snapshot_sha256','v37_source_cutoff_sha256','v38_v40_source_bundle_cutoff_sha256','base_controls_sha256','base_promotion_requirements_sha256']) if(!/^[0-9a-f]{64}$/.test(text(composition[key]))) errors.push(`compiled v42 invalid hash: ${key}`);
+  if(!manifest) errors.push('compiled v42 manifest source is required'); if(!baseBuild) errors.push('compiled v42 base source is required'); if(!uncertaintyBuild) errors.push('compiled v42 PC-44 source is required'); if(!uncertaintyFixture) errors.push('compiled v42 PC-44 fixture source is required'); if(!baseSources) errors.push('compiled v42 transitive base source bundle is required');
+  if(manifest&&baseBuild&&uncertaintyBuild&&uncertaintyFixture&&baseSources){ const manifestErrors=validatePreferenceCustodyManifestV42(manifest); const baseErrors=validateBaseSources(baseBuild,baseSources); const uncertaintyErrors=validatePreferenceLinkageUncertaintyMonitoringAssuranceBuild(uncertaintyBuild,uncertaintyFixture); if(manifestErrors.length) errors.push(...manifestErrors.map(error=>`compiled v42 manifest source invalid: ${error}`)); if(baseErrors.length) errors.push(...baseErrors.map(error=>`compiled v42 base source invalid: ${error}`)); if(uncertaintyErrors.length) errors.push(...uncertaintyErrors.map(error=>`compiled v42 PC-44 source invalid: ${error}`)); if(!manifestErrors.length&&!baseErrors.length&&!uncertaintyErrors.length){ try{ const expected=compilePreferenceCustodyManifestV42(manifest,baseBuild,uncertaintyBuild,uncertaintyFixture,baseSources); if(composition.manifest_snapshot_sha256!==sha256(manifest)) errors.push('compiled v42 manifest snapshot hash mismatch'); if(composition.base_floor_snapshot_sha256!==sha256(baseBuild)) errors.push('compiled v42 base floor snapshot hash mismatch'); if(composition.extension_snapshot_sha256!==sha256(uncertaintyBuild)) errors.push('compiled v42 extension snapshot hash mismatch'); if(composition.v37_source_cutoff_sha256!==v37SourceCutoffSha256(baseSources)) errors.push('compiled v42 v37 source cutoff hash mismatch'); if(composition.v38_v40_source_bundle_cutoff_sha256!==v38V40SourceBundleCutoffSha256(baseSources)) errors.push('compiled v42 v38-v40 source-bundle cutoff hash mismatch'); if(stable(compiled)!==stable(expected)) errors.push('compiled v42 build does not deterministically reconstruct from supplied sources'); }catch(error){errors.push(`compiled v42 source reconstruction failed: ${error instanceof Error?error.message:String(error)}`);} } }
+  const controls=array(compiled?.controls); if(baseBuild&&stable(controls.slice(0,43))!==stable(baseBuild.controls)) errors.push('compiled v42 preserved base controls mismatch'); const pc44=controls.at(-1); if(pc44?.control_id!=='PC-44'||pc44?.fixture_id!=='same-linkage-uncertainty-verified-status-different-operational-states-v1') errors.push('compiled v42 PC-44 identity mismatch');
+  if(uncertaintyBuild&&stable(pc44?.proof_summary)!==stable({...uncertaintyBuild.metrics,...uncertaintyBuild.classification})) errors.push('compiled v42 PC-44 proof summary mismatch');
+  if(!sameMembers(compiled?.frontier_transition?.successor_frontiers,REQUIRED_SUCCESSORS)||compiled?.frontier_transition?.resolved_base_frontier!==RESOLVED_FRONTIER) errors.push('compiled v42 frontier transition mismatch');
+  if(array(compiled?.open_frontiers).includes(RESOLVED_FRONTIER)) errors.push('compiled v42 resolved frontier remains open'); for(const successor of REQUIRED_SUCCESSORS) if(!array(compiled?.open_frontiers).includes(successor)) errors.push(`compiled v42 missing successor: ${successor}`);
+  if(baseBuild) for(const frontier of array(baseBuild.open_frontiers).filter(item=>item!==RESOLVED_FRONTIER)) if(!array(compiled?.open_frontiers).includes(frontier)) errors.push(`compiled v42 lost base frontier: ${frontier}`);
+  if(compiled?.promotion_boundary?.promotion_requirement_count!==1677||unique(compiled?.promotion_boundary?.real_case_requires).length!==1677) errors.push('compiled v42 promotion boundary mismatch'); requireFalse(compiled?.promotion_boundary?.laboratory_controls_are_real_world_evidence,'compiled v42 laboratory evidence',errors);
+  if(compiled?.control_integrity?.v37_source_aware_cutoff_bound!==true) errors.push('compiled v42 v37 source cutoff integrity missing'); if(compiled?.control_integrity?.v38_v40_source_bundle_cutoff_bound!==true) errors.push('compiled v42 v38-v40 source-bundle cutoff integrity missing'); for(const key of Object.keys(object(compiled?.control_integrity))) if(compiled.control_integrity[key]!==true) errors.push(`compiled v42 integrity flag false: ${key}`);
+  if(pc44){ for(const key of Object.keys(EXPECTED_LINKAGE_UNCERTAINTY_METRICS)) if(pc44?.proof_summary?.[key]!==EXPECTED_LINKAGE_UNCERTAINTY_METRICS[key]) errors.push(`compiled v42 PC-44 metric mismatch: ${key}`); for(const key of FALSE_CLASSIFICATIONS) requireFalse(pc44?.proof_summary?.[key],`compiled v42 PC-44 classification.${key}`,errors); if(pc44?.proof_summary?.[TRUE_CLASSIFICATION]!==true) errors.push('compiled v42 complete uncertainty path missing'); }
+  validateChain(compiled,errors); return errors;
+}
+export function renderPreferenceCustodyManifestV42Markdown(compiled) { const lines=['# Preference Custody laboratory floor v42','',`**Status:** ${compiled.status}`,'',`**Controls:** ${compiled.control_count}`,'',`**Promotion requirements:** ${compiled.promotion_boundary.promotion_requirement_count}`,'','> Floor v42 preserves the qualified forty-three-control base and adds PC-44 linkage-uncertainty interval construction, dependence, multiplicity, empirical and subgroup coverage, drift monitoring, recalibration, rollback, certificate withdrawal, correction, and lineage custody.','','## PC-44 proof summary','']; const control=compiled.controls.at(-1); for(const [key,value] of Object.entries(control.proof_summary)) lines.push(`- ${key}: ${value}`); lines.push('','## Claim boundary','','This is a synthetic compositional control floor, not a real identity map, uncertainty interval, empirical coverage estimate, subgroup burden, drift event, recalibration success, causal conclusion, graph fact, or public-authority verdict.'); return `${lines.join('\n')}\n`; }
