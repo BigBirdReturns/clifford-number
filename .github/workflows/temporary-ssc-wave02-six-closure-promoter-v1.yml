@@ -1,0 +1,202 @@
+name: TEMP promote SSC Wave 02 six-closure ledger v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-wave02-six-closure-promoter-v1.yml'
+      - '.ssc-wave02-six-closure-source-export-v1/PROMOTE-V1'
+
+permissions:
+  actions: read
+  checks: read
+  contents: write
+  issues: write
+  pull-requests: write
+  statuses: read
+
+concurrency:
+  group: temp-ssc-wave02-six-closure-promoter-v1
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    if: github.event.pull_request.head.ref == 'agent/ssc-wave02-six-closure-source-export-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TARGET_BRANCH: agent/ssc-wave02-current-ledger-six-closures-v5
+      SOURCE_PR: '1009'
+      ISSUE_NUMBER: '785'
+      PACKAGE_PATHS_SHA256: c82b72dd49f26a34f43e62aa09d1aa940feb05bcdd5bb8c8792b1e3d15ec9943
+      STANDING_WORKFLOW_SHA256: 02f907c466ce6445a12fb5c21ae1a7d89d77fe27438e288c1dabf3755a2dc3aa
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Qualify, merge, and prove exact permanent transaction
+        run: |
+          set -Eeuo pipefail
+          receipt="$RUNNER_TEMP/ssc-wave02-six-closure-promotion-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          rm -rf "$receipt"
+          mkdir -p "$receipt"
+          echo "RECEIPT_DIR=$receipt" >> "$GITHUB_ENV"
+          exec > >(tee "$receipt/execution.log") 2>&1
+          printf '%s\n' locate-permanent-pr > "$receipt/final-step.txt"
+          printf '%s\n' 1 > "$receipt/exit-code.txt"
+          trap 'status=$?; printf "%s\n" "$status" > "$receipt/exit-code.txt"; printf "%s\n" "$BASH_COMMAND" > "$receipt/failing-command.txt"; exit "$status"' ERR
+
+          cat > "$receipt/expected-paths.txt" <<'PATHS'
+          .github/workflows/status-sovereignty-residual-denominator-wave-02-current.yml
+          data/research/status-sovereignty-residual-denominator-wave-02-current.json
+          docs/milestones/ssc-residual-denominator-wave-02-current.md
+          schemas/status-sovereignty-residual-denominator-wave-02-current.schema.json
+          test/status-sovereignty-rd-wave02-rd02-license-leverage.test.js
+          test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs
+          tools/validate-status-sovereignty-rd-wave02-rd02-license-leverage.mjs
+          tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          PATHS
+          sed -i 's/^          //' "$receipt/expected-paths.txt"
+          printf '%s  %s\n' "$PACKAGE_PATHS_SHA256" "$receipt/expected-paths.txt" | sha256sum -c -
+
+          pr_json='[]'
+          for attempt in $(seq 1 90); do
+            pr_json="$(gh pr list --state open --head "$TARGET_BRANCH" --base main --limit 2 --json number,isDraft,headRefOid,baseRefOid,url)"
+            if test "$(jq 'length' <<<"$pr_json")" = 1; then
+              break
+            fi
+            sleep 5
+          done
+          test "$(jq 'length' <<<"$pr_json")" = 1
+          printf '%s\n' "$pr_json" > "$receipt/permanent-pr.json"
+          pr_number="$(jq -r '.[0].number' <<<"$pr_json")"
+          candidate_head="$(jq -r '.[0].headRefOid' <<<"$pr_json")"
+          test -n "$pr_number"
+          test -n "$candidate_head"
+          printf '%s\n' "$pr_number" > "$receipt/permanent-pr-number.txt"
+          printf '%s\n' "$candidate_head" > "$receipt/candidate-head.txt"
+
+          printf '%s\n' qualify-candidate > "$receipt/final-step.txt"
+          git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/current-main" "+refs/heads/${TARGET_BRANCH}:refs/remotes/origin/six-closure-candidate"
+          current_main="$(git rev-parse refs/remotes/origin/current-main)"
+          actual_candidate="$(git rev-parse refs/remotes/origin/six-closure-candidate)"
+          test "$actual_candidate" = "$candidate_head"
+          printf '%s\n' "$current_main" > "$receipt/premerge-main.txt"
+          candidate_parent="$(git rev-parse "${candidate_head}^")"
+          printf '%s\n' "$candidate_parent" > "$receipt/candidate-parent.txt"
+          test "$(git rev-list --count "${candidate_parent}..${candidate_head}")" = 1
+          git merge-base --is-ancestor "$candidate_parent" "$current_main"
+
+          mapfile -t product_paths < "$receipt/expected-paths.txt"
+          git diff --name-only "$candidate_parent" "$current_main" -- "${product_paths[@]}" | LC_ALL=C sort > "$receipt/current-main-product-overlap.txt"
+          test ! -s "$receipt/current-main-product-overlap.txt"
+          git diff-tree --no-commit-id --name-only -r "$candidate_head" | LC_ALL=C sort > "$receipt/candidate-committed-paths.txt"
+          cmp "$receipt/expected-paths.txt" "$receipt/candidate-committed-paths.txt"
+          test "$(wc -l < "$receipt/candidate-committed-paths.txt")" = 13
+          git diff --check "$candidate_parent" "$candidate_head"
+
+          git checkout --detach "$candidate_head"
+          test "$(sha256sum .github/workflows/status-sovereignty-residual-denominator-wave-02-current.yml | awk '{print $1}')" = "$STANDING_WORKFLOW_SHA256"
+          while IFS= read -r path; do
+            case "$path" in
+              *.js|*.mjs) node --check "$path" ;;
+            esac
+          done < "$receipt/expected-paths.txt"
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd02-license-leverage.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd02-license-leverage.mjs
+          node test/status-sovereignty-rd-wave02-rd02-license-leverage.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node test/status-sovereignty-rd-wave02-rd03-negotiated-terms.test.js
+          node tools/build-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs --check
+          node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node test/status-sovereignty-rd-wave02-rd06-offeror-universe.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+
+          printf '%s\n' \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/migration-review.md \
+            build/migration-summary.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/scout-report.md \
+            build/surface-graph.json \
+            > "$receipt/expected-release-output-paths.txt"
+          git diff --name-only -- . | LC_ALL=C sort > "$receipt/actual-release-output-paths.txt"
+          cmp "$receipt/expected-release-output-paths.txt" "$receipt/actual-release-output-paths.txt"
+          while IFS= read -r path; do git restore --worktree -- "$path"; done < "$receipt/expected-release-output-paths.txt"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          printf '%s\n' wait-for-checks > "$receipt/final-step.txt"
+          if test "$(jq -r '.[0].isDraft' <<<"$pr_json")" = true; then
+            gh pr ready "$pr_number"
+          fi
+          checks_json='[]'
+          for attempt in $(seq 1 90); do
+            checks_json="$(gh pr view "$pr_number" --json statusCheckRollup --jq '.statusCheckRollup')"
+            if test "$(jq 'length' <<<"$checks_json")" -gt 0; then
+              break
+            fi
+            sleep 5
+          done
+          test "$(jq 'length' <<<"$checks_json")" -gt 0
+          printf '%s\n' "$checks_json" > "$receipt/initial-checks.json"
+          gh pr checks "$pr_number" --watch --interval 10 --fail-fast
+          gh pr checks "$pr_number" --json name,state,bucket,workflow > "$receipt/final-checks.json"
+          test "$(jq '[.[] | select(.bucket == "fail" or .bucket == "cancel")] | length' "$receipt/final-checks.json")" = 0
+
+          printf '%s\n' merge > "$receipt/final-step.txt"
+          gh pr merge "$pr_number" --merge --match-head-commit "$candidate_head" --delete-branch=false
+          gh pr view "$pr_number" --json number,state,mergedAt,mergeCommit,url > "$receipt/merged-pr.json"
+          test "$(jq -r '.state' "$receipt/merged-pr.json")" = MERGED
+          merge_commit="$(jq -r '.mergeCommit.oid' "$receipt/merged-pr.json")"
+          test -n "$merge_commit"
+          printf '%s\n' "$merge_commit" > "$receipt/merge-commit.txt"
+
+          printf '%s\n' postmerge-proof > "$receipt/final-step.txt"
+          git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/postmerge-main"
+          postmerge_main="$(git rev-parse refs/remotes/origin/postmerge-main)"
+          printf '%s\n' "$postmerge_main" > "$receipt/postmerge-main.txt"
+          test "$postmerge_main" = "$merge_commit"
+          git merge-base --is-ancestor "$candidate_head" "$postmerge_main"
+          git checkout --detach "$postmerge_main"
+          node tools/build-status-sovereignty-residual-denominator-wave-02-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-02-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-02-current.test.js
+          node tools/validate-status-sovereignty-rd-wave02-rd02-license-leverage.mjs
+          node tools/validate-status-sovereignty-rd-wave02-rd03-negotiated-terms.mjs
+          node tools/validate-status-sovereignty-rd-wave02-rd06-offeror-universe.mjs
+          node tools/validate-no-magic-human-gate.mjs
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          gh issue comment "$ISSUE_NUMBER" --body "Wave-02 cumulative residual-denominator promotion merged through PR #${pr_number} at ${merge_commit}. The permanent ledger now records 36 open / 6 closed classes; all six selected attempts are terminal; complete compact remains false. Post-merge focused validation and no-magic-human validation passed."
+          gh issue close "$ISSUE_NUMBER" --reason completed
+          gh pr close "$SOURCE_PR" --comment "Permanent six-closure transaction merged through PR #${pr_number} at ${merge_commit}. This source-export carrier is retired without merge."
+
+          printf '%s\n' 0 > "$receipt/exit-code.txt"
+          printf '%s\n' merged-and-proved > "$receipt/final-step.txt"
+          sha256sum "$receipt"/* > "$receipt/receipt-files.sha256"
+      - name: Preserve exact promotion receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave02-six-closure-promotion-v1
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
