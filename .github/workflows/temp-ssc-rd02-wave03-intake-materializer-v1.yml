@@ -48,25 +48,25 @@ jobs:
           test "$(sha256sum "$CACHE/product.tar.xz" | awk '{print $1}')" = '7b39c0a084df494cad1b8297761133295cce6cddc22a6d40bb47b5d6f1c893f6'
           tar -xJf "$CACHE/product.tar.xz" -C "$CACHE/product"
           cat > "$CACHE/paths.txt" <<'PATHS'
-.github/workflows/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.yml
-data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/fixed-protocol-package.json
-docs/milestones/ssc-rd-wave03-rd02-portfolio-lifecycle-intake.md
-schemas/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.schema.json
-test/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.test.js
-tools/build-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.mjs
-tools/validate-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.mjs
-PATHS
+          .github/workflows/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.yml
+          data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/fixed-protocol-package.json
+          docs/milestones/ssc-rd-wave03-rd02-portfolio-lifecycle-intake.md
+          schemas/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.schema.json
+          test/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.test.js
+          tools/build-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.mjs
+          PATHS
           find "$CACHE/product" -type f -printf '%P\n' | LC_ALL=C sort > "$CACHE/observed-paths.txt"
           diff -u "$CACHE/paths.txt" "$CACHE/observed-paths.txt"
           cat > "$CACHE/expected.sha256" <<'SUMS'
-c4bea8d222e2c18aa5b2b70f8b261426eb5d8a62cff432f94dce2d3d12e8267e  .github/workflows/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.yml
-f270c9dcebc1bedcdeee504f1cf3c1ac4803a2dbbbf00d7d3f0efe32afe28473  data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/fixed-protocol-package.json
-107bff44abf78aca5286a7c7d040a59262a75394b1fe8cdfc34e601bc707ea47  docs/milestones/ssc-rd-wave03-rd02-portfolio-lifecycle-intake.md
-142b41a0018a4f33e96f863414a3363eafb6313dc3cfdc9125c0ed6361a2bd64  schemas/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.schema.json
-8d0d1849dededddfd1fcfb87df9d6c6a5e69acc1666a702870835c1a5c513f63  test/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.test.js
-a82e50abbdf386c7417f9a34139590238975249beb26376cd33d0c1480126a68  tools/build-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.mjs
-451df4b9f2dcb449a32d9fa2f01e12a8946b4fa3e4dfa2438582a2ce065f0f13  tools/validate-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.mjs
-SUMS
+          c4bea8d222e2c18aa5b2b70f8b261426eb5d8a62cff432f94dce2d3d12e8267e  .github/workflows/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.yml
+          f270c9dcebc1bedcdeee504f1cf3c1ac4803a2dbbbf00d7d3f0efe32afe28473  data/intake/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/fixed-protocol-package.json
+          107bff44abf78aca5286a7c7d040a59262a75394b1fe8cdfc34e601bc707ea47  docs/milestones/ssc-rd-wave03-rd02-portfolio-lifecycle-intake.md
+          142b41a0018a4f33e96f863414a3363eafb6313dc3cfdc9125c0ed6361a2bd64  schemas/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.schema.json
+          8d0d1849dededddfd1fcfb87df9d6c6a5e69acc1666a702870835c1a5c513f63  test/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.test.js
+          a82e50abbdf386c7417f9a34139590238975249beb26376cd33d0c1480126a68  tools/build-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.mjs
+          451df4b9f2dcb449a32d9fa2f01e12a8946b4fa3e4dfa2438582a2ce065f0f13  tools/validate-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.mjs
+          SUMS
           (cd "$CACHE/product" && sha256sum -c "$CACHE/expected.sha256")
 
           git fetch --no-tags origin "$TARGET_BRANCH" main
@@ -93,6 +93,8 @@ SUMS
           test "$(git diff --name-only -- . | wc -l)" -eq 0
           test "$(git status --porcelain=v1 --untracked-files=all | wc -l)" -eq 7
 
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -f --pathspec-from-file="$CACHE/paths.txt"
           FULL_TREE="$(git write-tree)"
           git reset
