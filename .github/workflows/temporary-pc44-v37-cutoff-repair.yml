@@ -1,0 +1,288 @@
+name: TEMP bind PC-44 v37 source-aware cutoff
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temporary-pc44-v37-cutoff-repair.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pc44-v37-cutoff-repair
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Patch, qualify, replay, and publish exact cutoff repair
+        env:
+          TARGET_BRANCH: research/preference-linkage-uncertainty-monitoring-assurance-v1
+          EXPECTED_TARGET_HEAD: 7796e0bb6c8b021d13912c0db44879f056366364
+        run: |
+          set -Eeuo pipefail
+          status=failed
+          product_commit=
+          product_tree=
+          pass_focused=false
+          pass_historical=false
+          pass_no_magic=false
+          pass_release=false
+          pass_replay=false
+          published=false
+
+          emit_receipt() {
+            code=$?
+            trap - EXIT
+            export RECEIPT_STATUS="$status" PRODUCT_COMMIT="$product_commit" PRODUCT_TREE="$product_tree"
+            export PASS_FOCUSED="$pass_focused" PASS_HISTORICAL="$pass_historical" PASS_NO_MAGIC="$pass_no_magic"
+            export PASS_RELEASE="$pass_release" PASS_REPLAY="$pass_replay" PUBLISHED="$published"
+            python - <<'PY_RECEIPT'
+          from pathlib import Path
+          import hashlib, json, os, subprocess
+          paths = [
+            'test/preference-custody-manifest-v42.test.js',
+            'tools/compile-preference-custody-manifest-v42.mjs',
+            'tools/lib/preference-custody-manifest-v42.mjs',
+            'tools/validate-preference-custody-manifest-v42.mjs'
+          ]
+          files = {}
+          for path in paths:
+              p = Path(path)
+              if p.exists():
+                  files[path] = {
+                      'bytes': p.stat().st_size,
+                      'sha256': hashlib.sha256(p.read_bytes()).hexdigest(),
+                      'git_blob_sha1': subprocess.check_output(['git','hash-object',path], text=True).strip()
+                  }
+          receipt = {
+              'schema_version': 'pc44-v37-source-aware-cutoff-repair-receipt@1',
+              'workflow_run_id': os.environ.get('GITHUB_RUN_ID'),
+              'status': os.environ.get('RECEIPT_STATUS'),
+              'prior_target_head': os.environ['EXPECTED_TARGET_HEAD'],
+              'product_head': os.environ.get('PRODUCT_COMMIT') or None,
+              'product_tree': os.environ.get('PRODUCT_TREE') or None,
+              'changed_paths': paths,
+              'removed_paths': ['data/research/preference-custody/.pc44-semantic-qualification-pulse'],
+              'path_list_sha256': hashlib.sha256(('\n'.join(paths + ['data/research/preference-custody/.pc44-semantic-qualification-pulse']) + '\n').encode()).hexdigest(),
+              'files': files,
+              'v37_source_cutoff_schema_version': 'preference-custody-v37-source-aware-cutoff@1',
+              'complete_v37_manifest_binding': True,
+              'v37_compiled_floor_reconstruction': True,
+              'v37_base_and_pc39_source_binding': True,
+              'standalone_fixture_mutations': 51,
+              'standalone_build_tamper_checks': 16,
+              'floor_v42_adversarial_mutations': 75,
+              'focused_pc44_and_floor_v42': 'pass' if os.environ.get('PASS_FOCUSED') == 'true' else 'not_proved',
+              'historical_preference_custody_floors': 'pass' if os.environ.get('PASS_HISTORICAL') == 'true' else 'not_proved',
+              'no_magic_human': 'pass' if os.environ.get('PASS_NO_MAGIC') == 'true' else 'not_proved',
+              'release_check': 'pass' if os.environ.get('PASS_RELEASE') == 'true' else 'not_proved',
+              'deterministic_replay': 'pass' if os.environ.get('PASS_REPLAY') == 'true' else 'not_proved',
+              'qualification_pulse_removed': True,
+              'target_published': os.environ.get('PUBLISHED') == 'true',
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          Path('/tmp/pc44-v37-cutoff-repair-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY_RECEIPT
+            exit "$code"
+          }
+          trap emit_receipt EXIT
+
+          git fetch --no-tags origin "+refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_TARGET_HEAD"
+          git checkout --detach "$EXPECTED_TARGET_HEAD"
+
+          python - <<'PY_PATCH'
+          from pathlib import Path
+
+          lib = Path('tools/lib/preference-custody-manifest-v42.mjs')
+          text = lib.read_text()
+          old = "import { validatePreferenceCustodyManifestV41Build } from './preference-custody-manifest-v41.mjs';\n"
+          new = old + "import { compilePreferenceCustodyManifestV37, validatePreferenceCustodyManifestV37Build } from './preference-custody-manifest-v37.mjs';\n"
+          if text.count(old) != 1: raise SystemExit('v42 v37 import anchor mismatch')
+          text = text.replace(old, new)
+          anchor = "const REQUIRED_SUCCESSORS = ['linkage_uncertainty_interval_construction_empirical_coverage_dependence_and_multiplicity_assurance','linkage_calibration_drift_subgroup_monitoring_recalibration_trigger_rollback_and_certificate_withdrawal_governance'];\n"
+          if text.count(anchor) != 1: raise SystemExit('v42 cutoff schema anchor mismatch')
+          text = text.replace(anchor, anchor + "const V37_SOURCE_CUTOFF_SCHEMA_VERSION = 'preference-custody-v37-source-aware-cutoff@1';\n")
+          old = """function validateBaseSources(baseBuild, baseSources) {
+            if (!baseSources) return ['v42 base source bundle is required'];
+            return validatePreferenceCustodyManifestV41Build(baseBuild, baseSources.manifest, baseSources.baseBuild, baseSources.probabilityBuild, baseSources.probabilityFixture, baseSources.baseSources);
+          }
+          """
+          new = """function v37SourceCutoffContainer(baseSources) { return object(baseSources?.baseSources?.baseSources?.baseSources); }
+          function v37SourceCutoff(baseSources) { return object(v37SourceCutoffContainer(baseSources)?.v37SourceCutoff); }
+          function v37SourceCutoffPayload(baseSources) {
+            const cutoff = v37SourceCutoff(baseSources);
+            return { schema_version: V37_SOURCE_CUTOFF_SCHEMA_VERSION, manifest: cutoff.manifest, base_build: cutoff.baseBuild, linkage_build: cutoff.linkageBuild, linkage_fixture: cutoff.linkageFixture };
+          }
+          function v37SourceCutoffSha256(baseSources) { return sha256(v37SourceCutoffPayload(baseSources)); }
+          function validateV37SourceCutoff(baseSources) {
+            const errors = [];
+            const container = v37SourceCutoffContainer(baseSources);
+            const cutoff = v37SourceCutoff(baseSources);
+            if (!container?.baseBuild) errors.push('v42 v37 cutoff compiled floor is required');
+            if (!cutoff.manifest) errors.push('v42 v37 cutoff manifest is required');
+            if (!cutoff.baseBuild) errors.push('v42 v37 cutoff v36 base is required');
+            if (!cutoff.linkageBuild) errors.push('v42 v37 cutoff PC-39 build is required');
+            if (!cutoff.linkageFixture) errors.push('v42 v37 cutoff PC-39 fixture is required');
+            if (errors.length) return errors;
+            const compiledErrors = validatePreferenceCustodyManifestV37Build(container.baseBuild);
+            if (compiledErrors.length) errors.push(...compiledErrors.map(error => `v42 v37 cutoff compiled floor invalid: ${error}`));
+            try {
+              const expectedV37 = compilePreferenceCustodyManifestV37(cutoff.manifest, cutoff.baseBuild, cutoff.linkageBuild, cutoff.linkageFixture);
+              if (stable(container.baseBuild) !== stable(expectedV37)) errors.push('v42 v37 cutoff compiled floor does not reconstruct from supplied cutoff sources');
+            } catch (error) {
+              errors.push(`v42 v37 source-aware cutoff reconstruction failed: ${error instanceof Error ? error.message : String(error)}`);
+            }
+            return errors;
+          }
+          function validateBaseSources(baseBuild, baseSources) {
+            if (!baseSources) return ['v42 base source bundle is required'];
+            return [
+              ...validatePreferenceCustodyManifestV41Build(baseBuild, baseSources.manifest, baseSources.baseBuild, baseSources.probabilityBuild, baseSources.probabilityFixture, baseSources.baseSources),
+              ...validateV37SourceCutoff(baseSources)
+            ];
+          }
+          """
+          if text.count(old) != 1: raise SystemExit('v42 base source validator anchor mismatch')
+          text = text.replace(old, new)
+          replacements = [
+            ("composition:{base_manifest_id:baseBuild.manifest_id,base_schema_version:baseBuild.schema_version,base_control_count:baseBuild.control_count,extension_control_id:'PC-44',manifest_snapshot_sha256:sha256(manifest),base_floor_snapshot_sha256:sha256(baseBuild),extension_snapshot_sha256:sha256(uncertaintyBuild),base_controls_sha256:sha256(baseBuild.controls),base_promotion_requirements_sha256:sha256(baseRequirements),base_promotion_requirement_count:baseRequirements.length,added_promotion_requirement_count:requirements.length-baseRequirements.length,final_promotion_requirement_count:requirements.length,base_open_frontiers:[...baseOpen]},", "composition:{base_manifest_id:baseBuild.manifest_id,base_schema_version:baseBuild.schema_version,base_control_count:baseBuild.control_count,extension_control_id:'PC-44',manifest_snapshot_sha256:sha256(manifest),base_floor_snapshot_sha256:sha256(baseBuild),extension_snapshot_sha256:sha256(uncertaintyBuild),v37_source_cutoff_schema_version:V37_SOURCE_CUTOFF_SCHEMA_VERSION,v37_source_cutoff_sha256:v37SourceCutoffSha256(baseSources),base_controls_sha256:sha256(baseBuild.controls),base_promotion_requirements_sha256:sha256(baseRequirements),base_promotion_requirement_count:baseRequirements.length,added_promotion_requirement_count:requirements.length-baseRequirements.length,final_promotion_requirement_count:requirements.length,base_open_frontiers:[...baseOpen]},"),
+            ("control_integrity:{base_floor_qualified:true,base_integrity_preserved:Object.values(baseBuild.control_integrity).every(Boolean),all_graph_effect_none:controls.every(item=>item.graph_effect==='none'),", "control_integrity:{base_floor_qualified:true,base_integrity_preserved:Object.values(baseBuild.control_integrity).every(Boolean),v37_source_aware_cutoff_bound:true,all_graph_effect_none:controls.every(item=>item.graph_effect==='none'),"),
+            ("if(composition.base_manifest_id!=='preference-custody-laboratory-floor-v41'||composition.base_schema_version!=='preference-custody-control-manifest-v41-build@1'||composition.base_control_count!==43||composition.extension_control_id!=='PC-44') errors.push('compiled v42 composition identity mismatch');", "if(composition.base_manifest_id!=='preference-custody-laboratory-floor-v41'||composition.base_schema_version!=='preference-custody-control-manifest-v41-build@1'||composition.base_control_count!==43||composition.extension_control_id!=='PC-44'||composition.v37_source_cutoff_schema_version!==V37_SOURCE_CUTOFF_SCHEMA_VERSION) errors.push('compiled v42 composition identity mismatch');"),
+            ("for(const key of ['manifest_snapshot_sha256','base_floor_snapshot_sha256','extension_snapshot_sha256','base_controls_sha256','base_promotion_requirements_sha256'])", "for(const key of ['manifest_snapshot_sha256','base_floor_snapshot_sha256','extension_snapshot_sha256','v37_source_cutoff_sha256','base_controls_sha256','base_promotion_requirements_sha256'])"),
+            ("if(composition.extension_snapshot_sha256!==sha256(uncertaintyBuild)) errors.push('compiled v42 extension snapshot hash mismatch'); if(stable(compiled)!==stable(expected))", "if(composition.extension_snapshot_sha256!==sha256(uncertaintyBuild)) errors.push('compiled v42 extension snapshot hash mismatch'); if(composition.v37_source_cutoff_sha256!==v37SourceCutoffSha256(baseSources)) errors.push('compiled v42 v37 source cutoff hash mismatch'); if(stable(compiled)!==stable(expected))"),
+            ("for(const key of Object.keys(object(compiled?.control_integrity))) if(compiled.control_integrity[key]!==true) errors.push(`compiled v42 integrity flag false: ${key}`);", "if(compiled?.control_integrity?.v37_source_aware_cutoff_bound!==true) errors.push('compiled v42 v37 source cutoff integrity missing'); for(const key of Object.keys(object(compiled?.control_integrity))) if(compiled.control_integrity[key]!==true) errors.push(`compiled v42 integrity flag false: ${key}`);")
+          ]
+          for old, new in replacements:
+            if text.count(old) != 1: raise SystemExit(f'v42 replacement mismatch: {old[:60]}')
+            text = text.replace(old, new)
+          lib.write_text(text)
+
+          snippet_old = """        confidenceBuild: JSON.parse(readFileSync('build/research/preference-linkage-confidence-adjudication-assurance.json', 'utf8')),
+                  confidenceFixture: JSON.parse(readFileSync('data/research/preference-custody/linkage-confidence-adjudication-assurance.fixture.json', 'utf8'))
+          """
+          snippet_new = """        confidenceBuild: JSON.parse(readFileSync('build/research/preference-linkage-confidence-adjudication-assurance.json', 'utf8')),
+                  confidenceFixture: JSON.parse(readFileSync('data/research/preference-custody/linkage-confidence-adjudication-assurance.fixture.json', 'utf8')),
+                  v37SourceCutoff: {
+                    manifest: JSON.parse(readFileSync('data/research/preference-custody/control-manifest-v37.json', 'utf8')),
+                    baseBuild: JSON.parse(readFileSync('build/research/preference-custody-laboratory-floor-v36.json', 'utf8')),
+                    linkageBuild: JSON.parse(readFileSync('build/research/preference-record-linkage-temporal-succession-assurance.json', 'utf8')),
+                    linkageFixture: JSON.parse(readFileSync('data/research/preference-custody/record-linkage-temporal-succession-assurance.fixture.json', 'utf8'))
+                  }
+          """
+          for name in ['tools/compile-preference-custody-manifest-v42.mjs','tools/validate-preference-custody-manifest-v42.mjs','test/preference-custody-manifest-v42.test.js']:
+            path = Path(name); value = path.read_text()
+            if value.count(snippet_old) != 1: raise SystemExit(f'v42 cutoff bundle anchor mismatch: {name}')
+            path.write_text(value.replace(snippet_old, snippet_new))
+
+          test = Path('test/preference-custody-manifest-v42.test.js')
+          value = test.read_text()
+          old = "assert.equal(build.control_count,44); assert.equal(build.composition.base_control_count,43); assert.equal(build.composition.extension_control_id,'PC-44'); assert.equal(build.composition.base_promotion_requirement_count,1629);"
+          new = "assert.equal(build.control_count,44); assert.equal(build.composition.base_control_count,43); assert.equal(build.composition.extension_control_id,'PC-44'); assert.equal(build.composition.v37_source_cutoff_schema_version,'preference-custody-v37-source-aware-cutoff@1'); assert.equal(build.composition.v37_source_cutoff_sha256.length,64); assert.equal(build.control_integrity.v37_source_aware_cutoff_bound,true); assert.equal(build.composition.base_promotion_requirement_count,1629);"
+          if value.count(old) != 1: raise SystemExit('v42 cutoff assertion anchor mismatch')
+          value = value.replace(old, new)
+          anchor = 'const clone=value=>structuredClone(value);'
+          insert = "const clone=value=>structuredClone(value); const revisedV37Sources=clone(baseSources); revisedV37Sources.baseSources.baseSources.baseSources.v37SourceCutoff.manifest.source_revision_receipt='V37-SOURCE-REVISION-RECEIPT-V2'; const revisedV37CutoffBuild=compilePreferenceCustodyManifestV42(manifest,base,uncertaintyBuild,uncertaintyFixture,revisedV37Sources); assert.deepEqual(validatePreferenceCustodyManifestV42Build(revisedV37CutoffBuild,manifest,base,uncertaintyBuild,uncertaintyFixture,revisedV37Sources),[]); assert.notEqual(revisedV37CutoffBuild.composition.v37_source_cutoff_sha256,build.composition.v37_source_cutoff_sha256); assert.ok(validatePreferenceCustodyManifestV42Build(build,manifest,base,uncertaintyBuild,uncertaintyFixture,revisedV37Sources).length>0,'validator-permitted revised v37 source paired with stale floor'); const missingV37Cutoff=clone(baseSources); delete missingV37Cutoff.baseSources.baseSources.baseSources.v37SourceCutoff; assert.throws(()=>compilePreferenceCustodyManifestV42(manifest,base,uncertaintyBuild,uncertaintyFixture,missingV37Cutoff),/v37 cutoff/); const staleV37Compiled=clone(baseSources); staleV37Compiled.baseSources.baseSources.baseSources.v37SourceCutoff.manifest.captured_at='2026-08-04'; assert.throws(()=>compilePreferenceCustodyManifestV42(manifest,base,uncertaintyBuild,uncertaintyFixture,staleV37Compiled),/v37 cutoff compiled floor does not reconstruct/);"
+          if value.count(anchor) != 1: raise SystemExit('v42 cutoff succession anchor mismatch')
+          value = value.replace(anchor, insert, 1)
+          pairs = [
+            ("['extension snapshot hash',v=>{v.composition.extension_snapshot_sha256='f'.repeat(64);}],['base controls hash'", "['extension snapshot hash',v=>{v.composition.extension_snapshot_sha256='f'.repeat(64);}],['v37 cutoff schema',v=>{v.composition.v37_source_cutoff_schema_version='invalid';}],['v37 cutoff hash',v=>{v.composition.v37_source_cutoff_sha256='e'.repeat(64);}],['base controls hash'"),
+            ("['integrity flag',v=>{v.control_integrity.base_floor_qualified=false;}],['PC44 metric'", "['integrity flag',v=>{v.control_integrity.base_floor_qualified=false;}],['v37 cutoff integrity',v=>{v.control_integrity.v37_source_aware_cutoff_bound=false;}],['PC44 metric'"),
+            ('assert.equal(manifestMutations.length+buildMutations.length,72);','assert.equal(manifestMutations.length+buildMutations.length,75);'),
+            ('Preference custody floor v42 adversarial tests: PASS (72 mutations plus exact semantic-ledger, complete-manifest, frozen-ledger, and source-binding succession checks)','Preference custody floor v42 adversarial tests: PASS (75 mutations plus v37 source-aware cutoff, exact semantic-ledger, complete-manifest, frozen-ledger, and source-binding succession checks)')
+          ]
+          for old, new in pairs:
+            if value.count(old) != 1: raise SystemExit(f'v42 cutoff test replacement mismatch: {old[:60]}')
+            value = value.replace(old, new)
+          test.write_text(value)
+          PY_PATCH
+
+          rm data/research/preference-custody/.pc44-semantic-qualification-pulse
+          printf '%s\n' \
+            data/research/preference-custody/.pc44-semantic-qualification-pulse \
+            test/preference-custody-manifest-v42.test.js \
+            tools/compile-preference-custody-manifest-v42.mjs \
+            tools/lib/preference-custody-manifest-v42.mjs \
+            tools/validate-preference-custody-manifest-v42.mjs \
+            | LC_ALL=C sort > /tmp/pc44-cutoff-paths.expected
+          git diff --name-only | LC_ALL=C sort > /tmp/pc44-cutoff-paths.observed
+          diff -u /tmp/pc44-cutoff-paths.expected /tmp/pc44-cutoff-paths.observed
+
+          git add --all -- \
+            data/research/preference-custody/.pc44-semantic-qualification-pulse \
+            test/preference-custody-manifest-v42.test.js \
+            tools/compile-preference-custody-manifest-v42.mjs \
+            tools/lib/preference-custody-manifest-v42.mjs \
+            tools/validate-preference-custody-manifest-v42.mjs
+          export GIT_AUTHOR_NAME='github-actions[bot]' GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME" GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          git commit -m 'Preference Custody: bind v37 source-aware cutoff into floor v42'
+          product_commit="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_TARGET_HEAD"
+
+          node tools/compile-preference-linkage-uncertainty-monitoring-assurance.mjs
+          node tools/validate-preference-linkage-uncertainty-monitoring-assurance.mjs
+          node test/preference-linkage-uncertainty-monitoring-assurance.test.js
+          node tools/compile-preference-custody-manifest-v42.mjs
+          node tools/validate-preference-custody-manifest-v42.mjs
+          node test/preference-custody-manifest-v42.test.js
+          pass_focused=true
+
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do node "$test_file"; done
+          node test/preference-custody-manifest.test.js
+          pass_historical=true
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          pass_no_magic=true
+
+          rm -rf /tmp/pc44-cutoff-reference && mkdir -p /tmp/pc44-cutoff-reference
+          cp build/research/preference-linkage-uncertainty-monitoring-assurance.{json,md} /tmp/pc44-cutoff-reference/
+          cp build/research/preference-custody-laboratory-floor-v42.{json,md} /tmp/pc44-cutoff-reference/
+          npm run release:check
+          git diff --exit-code -- \
+            test/preference-custody-manifest-v42.test.js \
+            tools/compile-preference-custody-manifest-v42.mjs \
+            tools/lib/preference-custody-manifest-v42.mjs \
+            tools/validate-preference-custody-manifest-v42.mjs
+          pass_release=true
+
+          git reset --hard "$product_commit"
+          git clean -fdx
+          node tools/compile-preference-linkage-uncertainty-monitoring-assurance.mjs
+          node tools/validate-preference-linkage-uncertainty-monitoring-assurance.mjs
+          node test/preference-linkage-uncertainty-monitoring-assurance.test.js
+          node tools/compile-preference-custody-manifest-v42.mjs
+          node tools/validate-preference-custody-manifest-v42.mjs
+          node test/preference-custody-manifest-v42.test.js
+          cmp /tmp/pc44-cutoff-reference/preference-linkage-uncertainty-monitoring-assurance.json build/research/preference-linkage-uncertainty-monitoring-assurance.json
+          cmp /tmp/pc44-cutoff-reference/preference-linkage-uncertainty-monitoring-assurance.md build/research/preference-linkage-uncertainty-monitoring-assurance.md
+          cmp /tmp/pc44-cutoff-reference/preference-custody-laboratory-floor-v42.json build/research/preference-custody-laboratory-floor-v42.json
+          cmp /tmp/pc44-cutoff-reference/preference-custody-laboratory-floor-v42.md build/research/preference-custody-laboratory-floor-v42.md
+          pass_replay=true
+
+          git reset --hard "$product_commit"
+          git clean -fdx
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git fetch --no-tags origin "+refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$EXPECTED_TARGET_HEAD"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET_HEAD" origin "$product_commit:refs/heads/$TARGET_BRANCH"
+          published=true
+          status=success
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc44-v37-cutoff-repair-${{ github.run_id }}
+          path: /tmp/pc44-v37-cutoff-repair-receipt.json
+          if-no-files-found: error
+          retention-days: 90
