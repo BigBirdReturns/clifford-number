@@ -1,4 +1,4 @@
-name: TEMP export current main for PC-48 construction
+name: TEMP bind current-main tree for PC-48 publication
 
 on:
   push:
@@ -16,24 +16,23 @@ permissions:
   contents: read
 
 jobs:
-  export:
+  bind-tree:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 4c7388b3dbd5e3c19b42f027f1b32cd578e93c1b
+          ref: 15fbe32735c85be44b833040f3b630966287871c
           fetch-depth: 0
-      - name: Create exact source archive
+      - name: Emit exact current-main commit and tree
         run: |
           set -euo pipefail
-          git rev-parse HEAD | grep -Fx 4c7388b3dbd5e3c19b42f027f1b32cd578e93c1b
-          tar --exclude=.git --exclude=node_modules --exclude=build -czf /tmp/clifford-number-4c7388b.tar.gz .
-          sha256sum /tmp/clifford-number-4c7388b.tar.gz | tee /tmp/clifford-number-4c7388b.sha256
+          commit="$(git rev-parse HEAD)"
+          tree="$(git rev-parse HEAD^{tree})"
+          test "$commit" = "15fbe32735c85be44b833040f3b630966287871c"
+          printf 'commit=%s\ntree=%s\n' "$commit" "$tree" | tee /tmp/pc48-current-main-tree.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: clifford-number-source-4c7388b
-          path: |
-            /tmp/clifford-number-4c7388b.tar.gz
-            /tmp/clifford-number-4c7388b.sha256
+          name: pc48-current-main-tree-15fbe32
+          path: /tmp/pc48-current-main-tree.txt
           if-no-files-found: error
