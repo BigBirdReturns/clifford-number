@@ -1,0 +1,106 @@
+name: TEMP discover School.House charity and NC second-level routes
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-charity-nc-second-level-discovery.yml'
+      - '.schoolhouse-charity-nc-second-level-discovery/EXECUTE'
+      - 'tools/acquisition/schoolhouse-charity-nc-second-level-discovery/discover.py.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-charity-nc-second-level-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Reconstruct and compile exact runner
+        run: |
+          set -Eeuo pipefail
+          BUNDLE='tools/acquisition/schoolhouse-charity-nc-second-level-discovery/discover.py.gz.b64'
+          RUNNER=/tmp/schoolhouse-charity-nc-second-level-discover.py
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '142af0f0d3f80c3211a14500c626d0191a230cc13e81e8b9bc28871812e2ff8c'
+          base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'fd01a56c847ba68ce9dd8248f7120b2ba33e682bc3ce13ec3933f94a843d7eeb'
+          python -m py_compile "$RUNNER"
+
+      - name: Execute bounded no-submission second-level pass
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/schoolhouse-charity-nc-second-level
+          mkdir -p /tmp/schoolhouse-charity-nc-second-level
+          python /tmp/schoolhouse-charity-nc-second-level-discover.py \
+            --out /tmp/schoolhouse-charity-nc-second-level
+
+      - name: Require complete bounded route custody
+        run: |
+          set -Eeuo pipefail
+          SUMMARY=/tmp/schoolhouse-charity-nc-second-level/summary.json
+          POLICY=/tmp/schoolhouse-charity-nc-second-level/route-policy.json
+          MANIFEST=/tmp/schoolhouse-charity-nc-second-level/artifact-manifest.json
+          test -f "$SUMMARY"
+          test -f "$POLICY"
+          test -f "$MANIFEST"
+          test -f /tmp/schoolhouse-charity-nc-second-level/root-route-receipts.jsonl
+          test -f /tmp/schoolhouse-charity-nc-second-level/followed-route-receipts.jsonl
+          test -f /tmp/schoolhouse-charity-nc-second-level/discovered-links.jsonl
+          test -f /tmp/schoolhouse-charity-nc-second-level/html-surfaces.jsonl
+          test -f /tmp/schoolhouse-charity-nc-second-level/surface-forms.jsonl
+          test -f /tmp/schoolhouse-charity-nc-second-level/SHA256SUMS
+          jq -e '
+            .declared_root_routes == 8 and
+            .root_route_receipts == 8 and
+            .followed_routes >= 0 and
+            .followed_routes <= 80 and
+            .terminal_route_rows == (.root_route_receipts + .followed_routes) and
+            .all_route_receipts_terminal == true and
+            .search_submissions == 0 and
+            .organization_name_submissions == 0 and
+            .license_number_submissions == 0 and
+            .source_rows_acquired == 0 and
+            .raw_source_retained == false and
+            .hidden_form_values_retained == false and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identity_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$SUMMARY"
+          jq -e '
+            .north_carolina.automated_or_scripted_interactive_searches_not_permitted == true and
+            .north_carolina.interactive_search_submissions == 0 and
+            .florida.check_a_charity_query_submissions == 0 and
+            .florida.automation_permission_inferred == false and
+            .search_submissions == 0 and
+            .source_rows_acquired == 0 and
+            .raw_source_retained == false and
+            .hidden_form_values_retained == false and
+            .identity_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .graph_effect == "none"
+          ' "$POLICY"
+          (cd /tmp/schoolhouse-charity-nc-second-level && sha256sum -c SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-charity-nc-second-level-route-discovery
+          path: /tmp/schoolhouse-charity-nc-second-level
+          if-no-files-found: error
+          retention-days: 90
