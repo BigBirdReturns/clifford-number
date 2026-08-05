@@ -1,4 +1,4 @@
-name: TEMP RD-04 field-promotion replay diagnostic
+name: TEMP RD-04 field-promotion exact-step diagnostic
 
 on:
   pull_request:
@@ -19,10 +19,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Run replay commands independently and preserve every exit code
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Run the permanent workflow validation step command by command
         run: |
           set -u
-          REPORT=/tmp/ssc-rd04-field-promotion-replay-diagnostic
+          REPORT=/tmp/ssc-rd04-field-promotion-exact-step-diagnostic
           mkdir -p "$REPORT"
           exec > >(tee "$REPORT/diagnostic.log") 2>&1
           run_cmd() {
@@ -39,24 +42,60 @@ jobs:
           }
           printf 'head=%s\n' "$(git rev-parse HEAD)"
           printf 'head_tree=%s\n' "$(git rev-parse 'HEAD^{tree}')"
-          printf '\nExact stale-path references in tracked source:\n'
-          git grep -n 'data/research/status-sovereignty-residual-denominator-wave-03-current.json' || true
-          printf '\nAll nearby residual-denominator current paths:\n'
-          git ls-files '*residual-denominator*current*' | sort || true
-          run_cmd restore_all git restore --staged --worktree -- .
-          run_cmd clean_untracked git clean -fdx
-          run_cmd builder_write node tools/build-status-sovereignty-rd-wave03-rd04-field-promotion.mjs --write
+          printf 'parents=%s\n' "$(git show -s --format=%P HEAD)"
+          run_cmd node_version node --version
+          run_cmd python_version python --version
+          run_cmd jsonschema_version python -c 'import jsonschema; print(jsonschema.__version__)'
+          run_cmd builder_syntax node --check tools/build-status-sovereignty-rd-wave03-rd04-field-promotion.mjs
+          run_cmd validator_syntax node --check tools/validate-status-sovereignty-rd-wave03-rd04-field-promotion.mjs
+          run_cmd test_syntax node --check test/status-sovereignty-rd-wave03-rd04-field-promotion.test.js
           run_cmd builder_check node tools/build-status-sovereignty-rd-wave03-rd04-field-promotion.mjs --check
           run_cmd product_validator node tools/validate-status-sovereignty-rd-wave03-rd04-field-promotion.mjs
+          cat > /tmp/schema_probe.py <<'PY'
+          import json
+          from pathlib import Path
+          import jsonschema
+
+          schema_path = Path('schemas/status-sovereignty-rd-wave03-rd04-field-promotion.schema.json')
+          schema = json.loads(schema_path.read_text())
+          allowed = [branch['const'] for branch in schema['oneOf']]
+          data_dir = Path('data/intake/status-sovereignty-rd-wave03-rd04-field-promotion')
+          names = [
+              'promotion-input-custody.json',
+              'promotion-decisions.json',
+              'cell-promotion-ledger.json',
+              'promoted-partial-field-matrix.json',
+              'remaining-open-field-census.json',
+              'promotion-summary.json',
+              'index.json',
+              'product-manifest.json',
+          ]
+          print(f'allowed={len(allowed)} names={len(names)}')
+          failures = 0
+          for name in names:
+              product = json.loads((data_dir / name).read_text())
+              membership = product in allowed
+              try:
+                  jsonschema.Draft202012Validator(schema).validate(product)
+                  schema_ok = True
+              except Exception as exc:
+                  schema_ok = False
+                  failures += 1
+                  print(f'{name}: schema_error={type(exc).__name__}: {exc}')
+              print(f'{name}: membership={membership} schema_ok={schema_ok}')
+          if failures:
+              raise SystemExit(1)
+          print('closed_schema_validation=pass')
+          PY
+          run_cmd closed_schema python /tmp/schema_probe.py
           run_cmd adversarial_test node test/status-sovereignty-rd-wave03-rd04-field-promotion.test.js
           run_cmd no_magic_human node tools/validate-no-magic-human-gate.mjs
           run_cmd diff_check git diff --check
-          run_cmd diff_exit git diff --exit-code
           run_cmd status git status --porcelain=v1 --untracked-files=all
-          printf '\nDiagnostic completed without promoting any result.\n'
+          printf '\nExact-step diagnostic completed without promoting any result.\n'
       - uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd04-field-promotion-replay-diagnostic
-          path: /tmp/ssc-rd04-field-promotion-replay-diagnostic
+          name: ssc-rd04-field-promotion-exact-step-diagnostic
+          path: /tmp/ssc-rd04-field-promotion-exact-step-diagnostic
           if-no-files-found: error
           retention-days: 30
