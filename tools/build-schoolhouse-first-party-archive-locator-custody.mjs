@@ -69,6 +69,23 @@ const locatorId = row => `schoolhouse-archive-locator-${sha256Text([
   row.archive_digest,
 ].join('\u0000')).slice(0, 24)}`;
 
+
+const archiveQueryUrl = sourceUrl => {
+  const url = new URL('https://web.archive.org/cdx/search/cdx');
+  for (const [key, value] of [
+    ['url', sourceUrl],
+    ['matchType', 'exact'],
+    ['from', '2019'],
+    ['to', '2026'],
+    ['output', 'json'],
+    ['fl', 'timestamp,original,statuscode,mimetype,digest,length'],
+    ['filter', 'statuscode:200'],
+    ['collapse', 'digest'],
+    ['limit', '1000'],
+  ]) url.searchParams.append(key, value);
+  return url.toString();
+};
+
 function verifyChecksums(dir) {
   const checksumFile = path.join(dir, 'SHA256SUMS');
   assert(fs.existsSync(checksumFile), `${dir}: missing SHA256SUMS`);
@@ -163,10 +180,17 @@ function normalizeAttempt(row, phase, workflowRunId, artifactId, artifactDigest)
 }
 
 function sourceInventoryRow(attempt) {
+  const locatorUrl = archiveQueryUrl(attempt.source_url);
+  assert.equal(
+    sha256Text(locatorUrl),
+    attempt.archive_query_url_sha256,
+    `${attempt.attempt_receipt_id}: Archive query URL drift`,
+  );
   return {
     receipt_id: attempt.attempt_receipt_id,
     source_id: `schoolhouse-first-party-archive-locator-${attempt.acquisition_phase}-${attempt.source_route_id}`,
-    locator_url: attempt.source_url,
+    locator_url: locatorUrl,
+    queried_url: attempt.source_url,
     source_type: 'public_archive_cdx_metadata_query',
     evidence_class: 'primary_public_archive_metadata_query_custody',
     source_state: attempt.state_class,
@@ -756,6 +780,24 @@ function build(baselineDir, replayDir) {
     const archiveRoutes = readJsonl(path.join(dir, 'schoolhouse-first-party-archive-locator-route-results.jsonl'));
     const archiveLocators = readJsonl(path.join(dir, 'schoolhouse-first-party-archive-locators.jsonl'));
     const archiveReceiptIds = new Set(sourceInventory.map(row => row.receipt_id));
+    const archiveAttemptsByReceipt = new Map(archiveAttempts.map(row => [row.attempt_receipt_id, row]));
+    const archiveSourceInventoryRows = sourceInventory.filter(row => row.evidence_class === 'primary_public_archive_metadata_query_custody');
+    const archiveQueryLocator = sourceUrl => {
+      const url = new URL('https://web.archive.org/cdx/search/cdx');
+      for (const [key, value] of [
+        ['url', sourceUrl],
+        ['matchType', 'exact'],
+        ['from', '2019'],
+        ['to', '2026'],
+        ['output', 'json'],
+        ['fl', 'timestamp,original,statuscode,mimetype,digest,length'],
+        ['filter', 'statuscode:200'],
+        ['collapse', 'digest'],
+        ['limit', '1000'],
+      ]) url.searchParams.append(key, value);
+      return url.toString();
+    };
+    const archiveLocatorSha256 = value => crypto.createHash('sha256').update(value, 'utf8').digest('hex');
     const archiveBaselineAttempts = archiveAttempts.filter(row => row.acquisition_phase === 'baseline_archive_locator_census');
     const archiveReplayAttempts = archiveAttempts.filter(row => row.acquisition_phase === 'bounded_transport_replay');
     const archiveRoutesWithLocators = archiveRoutes.filter(row => row.snapshot_locator_rows > 0);
@@ -777,6 +819,24 @@ function build(baselineDir, replayDir) {
     check(manifest.counts.schoolhouse_first_party_archive_locator_unique_digests === new Set(archiveLocators.map(row => row.archive_digest)).size && manifest.counts.schoolhouse_first_party_archive_locator_unique_digests === ${uniqueArchiveDigests}, 'archive unique-digest denominator drift');
     check(manifest.counts.schoolhouse_first_party_archive_locator_result_caps_exhausted === archiveAttempts.filter(row => row.result_cap_exhausted).length && manifest.counts.schoolhouse_first_party_archive_locator_result_caps_exhausted === ${resultCapsExhausted}, 'archive result-cap denominator drift');
     check(manifest.counts.schoolhouse_first_party_archive_locator_archived_bodies_fetched === 0 && manifest.counts.schoolhouse_first_party_archive_locator_replay_dereferences === 0 && manifest.counts.schoolhouse_first_party_archive_locator_search_submissions === 0 && manifest.counts.schoolhouse_first_party_archive_locator_source_rows_acquired === 0 && manifest.counts.schoolhouse_first_party_archive_locator_admitted_identity_rows === 0, 'archive authority count drift');
+
+    check(archiveSourceInventoryRows.length === archiveAttempts.length && archiveSourceInventoryRows.length === ${TOTAL_ATTEMPT_ROWS}, 'archive source-addressed inventory denominator drift');
+    check(archiveSourceInventoryRows.every(row => {
+      const attempt = archiveAttemptsByReceipt.get(row.receipt_id);
+      if (!attempt) return false;
+      const expectedLocator = archiveQueryLocator(attempt.source_url);
+      let parsed;
+      try { parsed = new URL(row.locator_url); } catch { return false; }
+      return row.source_type === 'public_archive_cdx_metadata_query'
+        && row.locator_url === expectedLocator
+        && row.queried_url === attempt.source_url
+        && row.locator_url !== row.queried_url
+        && parsed.hostname === 'web.archive.org'
+        && parsed.pathname === '/cdx/search/cdx'
+        && archiveLocatorSha256(row.locator_url) === attempt.archive_query_url_sha256
+        && row.archive_query_url_sha256 === attempt.archive_query_url_sha256
+        && row.content_sha256 === attempt.response_sha256;
+    }), 'archive source-inventory locator/hash linkage drift');
 
     check(unique(archiveAttempts.map(row => row.attempt_id)) && unique(archiveAttempts.map(row => row.attempt_receipt_id)), 'archive attempt IDs and receipts must be unique');
     check(unique(archiveRoutes.map(row => row.source_route_id)) && unique(archiveRoutes.map(row => row.route_custody_id)), 'archive effective-route IDs must be unique');
