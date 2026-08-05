@@ -553,8 +553,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const secondLevelForms = readJsonl(path.join(dir, 'schoolhouse-charity-nc-second-level-surface-forms.jsonl'));
     const secondLevelRoutes = [...secondLevelRoots, ...secondLevelFollowed];
 
-    check(manifest.counts.source_inventory_rows === 425, 'second-level source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 26, 'second-level coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 431, 'second-level source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 27, 'second-level coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'second-level explicit-gap count drift');
     check(manifest.counts.schoolhouse_charity_nc_second_level_root_route_rows === secondLevelRoots.length && secondLevelRoots.length === 8, 'second-level root-route denominator drift');
     check(manifest.counts.schoolhouse_charity_nc_second_level_followed_route_rows === secondLevelFollowed.length && secondLevelFollowed.length === 80, 'second-level followed-route denominator drift');
@@ -623,8 +623,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const finalResidualForms = readJsonl(path.join(dir, 'schoolhouse-charity-nc-final-static-residual-surface-forms.jsonl'));
     const finalResidualFiles = readJsonl(path.join(dir, 'schoolhouse-charity-nc-final-static-residual-file-samples.jsonl'));
 
-    check(manifest.counts.source_inventory_rows === 425, 'final residual source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 26, 'final residual coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 431, 'final residual source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 27, 'final residual coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'final residual explicit-gap count drift');
     check(manifest.counts.schoolhouse_charity_nc_final_static_residual_input_rows === finalResidualInputs.length && finalResidualInputs.length === 51, 'final residual input denominator drift');
     check(manifest.counts.schoolhouse_charity_nc_final_static_residual_terminal_route_rows === finalResidualRoutes.length && finalResidualRoutes.length === 51, 'final residual route denominator drift');
@@ -683,8 +683,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const completePdfPolicy = readJson(path.join(dir, 'schoolhouse-charity-nc-complete-pdf-route-policy.json'));
     const completePdfSummary = readJson(path.join(dir, 'schoolhouse-charity-nc-complete-pdf-field-summary.json'));
 
-    check(manifest.counts.source_inventory_rows === 425, 'complete-PDF source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 26, 'complete-PDF coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 431, 'complete-PDF source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 27, 'complete-PDF coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'complete-PDF explicit-gap count drift');
     check(manifest.counts.schoolhouse_charity_nc_complete_pdf_input_rows === completePdfInputs.length && completePdfInputs.length === 15, 'complete-PDF input denominator drift');
     check(manifest.counts.schoolhouse_charity_nc_complete_pdf_terminal_route_rows === completePdfFull.length && completePdfFull.length === 15, 'complete-PDF terminal denominator drift');
@@ -738,8 +738,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const firstPartyHtml = firstPartyEvidence.filter(row => row.surface_evidence_type === 'html_surface');
     const firstPartyForms = firstPartyEvidence.filter(row => row.surface_evidence_type === 'form_metadata');
 
-    check(manifest.counts.source_inventory_rows === 425, 'first-party source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 26, 'first-party coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 431, 'first-party source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 27, 'first-party coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'first-party explicit-gap count drift');
     check(manifest.counts.schoolhouse_first_party_legal_surface_root_route_rows === firstPartyRoutes.filter(row => row.route_class === 'fixed_root').length && manifest.counts.schoolhouse_first_party_legal_surface_root_route_rows === 5, 'first-party root-route denominator drift');
     check(manifest.counts.schoolhouse_first_party_legal_surface_followed_route_rows === firstPartyRoutes.filter(row => row.route_class === 'query_free_same_host_follow').length && manifest.counts.schoolhouse_first_party_legal_surface_followed_route_rows === 41, 'first-party followed-route denominator drift');
@@ -828,8 +828,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const archiveBoundedZeroRoutes = archiveRoutes.filter(row => row.effective_state_class === 'bounded_zero_archive_locator_metadata');
     const archiveResidualProviderErrors = archiveRoutes.filter(row => row.effective_state_class === 'archive_locator_provider_error');
 
-    check(manifest.counts.source_inventory_rows === 425, 'archive source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 26, 'archive coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 431, 'archive source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 27, 'archive coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'archive explicit-gap count drift');
     check(manifest.counts.schoolhouse_first_party_archive_locator_source_route_rows === archiveRoutes.length && archiveRoutes.length === 46, 'archive source-route denominator drift');
     check(manifest.counts.schoolhouse_first_party_archive_locator_baseline_attempt_rows === archiveBaselineAttempts.length && archiveBaselineAttempts.length === 46, 'archive baseline-attempt denominator drift');
@@ -910,8 +910,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const residualErrors = launchRoutes.filter(row => row.effective_state_class === 'archive_content_provider_error_not_absence');
     const taxSelfClaims = launchCandidates.filter(row => row.adjudication_state === 'early_first_party_tax_status_self_description_not_registry_identity');
 
-    check(manifest.counts.source_inventory_rows === 425, 'launch-era source denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 26, 'launch-era coverage denominator drift');
+    check(manifest.counts.source_inventory_rows === 431, 'launch-era source denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 27, 'launch-era coverage denominator drift');
     check(manifest.counts.explicit_gap_rows === 16, 'launch-era gap denominator drift');
     check(launchAttempts.length === 10 && baselineAttempts.length === 7 && replayAttempts.length === 3, 'launch-era attempt denominator drift');
     check(launchRoutes.length === 7 && successfulRoutes.length === 6 && residualErrors.length === 1, 'launch-era route denominator drift');
@@ -966,8 +966,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const novelRoutes = reconciliationRoutes.filter(row => row.novel_unique_snapshot);
     const uniqueUnion = new Set([...priorLaunchRoutes, ...reconciliationRoutes].map(row => row.timestamp + '\u0000' + row.original_url));
 
-    check(manifest.counts.source_inventory_rows === 425, 'archive reconciliation source denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 26, 'archive reconciliation coverage denominator drift');
+    check(manifest.counts.source_inventory_rows === 431, 'archive reconciliation source denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 27, 'archive reconciliation coverage denominator drift');
     check(manifest.counts.explicit_gap_rows === 16, 'archive reconciliation gap denominator drift');
     check(reconciliationAttempts.length === 7 && baselineAttempts.length === 5 && replayAttempts.length === 2, 'archive reconciliation attempt denominator drift');
     check(reconciliationRoutes.length === 5 && reconciliationRoutes.every(row => row.status === 200 && row.effective_state_class === 'captured_archived_html_surface_privacy_minimized'), 'archive reconciliation route denominator drift');
@@ -1003,6 +1003,61 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const frontierProjection = frontier.tasks.find(task => task.task_id === 'bvvc-frontier-schoolhouse-legal-governance')?.prior_archive_minimum_legal_surface_reconciliation;
     check(frontierProjection?.selected_locator_rows === 5 && frontierProjection?.overlap_locator_rows === 4 && frontierProjection?.novel_locator_rows === 1 && frontierProjection?.cumulative_unique_archive_snapshots === 8 && frontierProjection?.admitted_identities === 0, 'archive reconciliation frontier projection drift');
     check(coverage.denominators.some(row => row.surface === 'School.House archived legal-surface minimum-lane reconciliation custody' && row.enumerated_total === 5 && row.overlap_locator_rows === 4 && row.novel_locator_rows === 1 && row.successful_archived_html_routes === 5 && row.residual_provider_error_routes === 0 && row.cumulative_unique_archive_snapshots === 8 && row.admitted_identities === 0), 'archive reconciliation coverage denominator missing');
+  }
+
+
+  if (fs.existsSync(path.join(dir, 'schoolhouse-fl-charity-exact-query-custody.json'))) {
+    const flCharityCustody = readJson(path.join(dir, 'schoolhouse-fl-charity-exact-query-custody.json'));
+    const flCharityExecutions = readJsonl(path.join(dir, 'schoolhouse-fl-charity-exact-query-executions.jsonl'));
+    const flCharityAttempts = readJsonl(path.join(dir, 'schoolhouse-fl-charity-exact-query-attempt-results.jsonl'));
+    const flCharitySourceRows = readJsonl(path.join(dir, 'source-inventory-17.jsonl'));
+    const receiptIds = new Set(sourceInventory.map(row => row.receipt_id));
+    const artifactBackedExecutions = flCharityExecutions.filter(row => row.artifact_backed);
+    const diagnosticExecutions = flCharityExecutions.filter(row => !row.artifact_backed);
+    const guidanceAttempts = flCharityAttempts.filter(row => row.state_class === 'captured_official_charity_guidance_surface');
+    const transportErrors = flCharityAttempts.filter(row => row.state_class === 'registry_query_transport_error_not_absence');
+
+    check(manifest.counts.source_inventory_rows === 431, 'Florida charity source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 27, 'Florida charity coverage-denominator drift');
+    check(manifest.storage_contract.source_inventory_parts.at(-1) === 'source-inventory-17.jsonl', 'Florida charity source-inventory tail drift');
+    check(manifest.source_inventory.evidence_class_counts.primary_public_state_charity_registry_route_custody === 6, 'Florida charity evidence-class count drift');
+    check(manifest.source_inventory.source_state_counts.captured_official_charity_guidance_surface === 2 && manifest.source_inventory.source_state_counts.registry_query_transport_error_not_absence === 4, 'Florida charity source-state count drift');
+
+    check(flCharityExecutions.length === 3 && artifactBackedExecutions.length === 2 && diagnosticExecutions.length === 1, 'Florida charity execution denominator drift');
+    check(unique(flCharityExecutions.map(row => row.execution_id)), 'Florida charity execution IDs must be unique');
+    check(flCharityExecutions.reduce((sum, row) => sum + row.route_attempt_rows, 0) === 9, 'Florida charity total route-attempt denominator drift');
+    check(flCharityExecutions.reduce((sum, row) => sum + row.guidance_success_rows, 0) === 3, 'Florida charity guidance denominator drift');
+    check(flCharityExecutions.reduce((sum, row) => sum + row.robots_transport_error_rows, 0) === 3 && flCharityExecutions.reduce((sum, row) => sum + row.search_page_transport_error_rows, 0) === 3, 'Florida charity timeout denominator drift');
+    check(flCharityExecutions.every(row => row.query_submissions === 0 && row.terminal_query_results === 0 && row.candidate_rows === 0 && row.candidate_links === 0 && row.source_rows_acquired === 0), 'Florida charity execution result drift');
+    check(flCharityExecutions.every(row => row.identity_admitted_rows === 0 && row.negative_existence_claims_created === 0 && row.raw_source_retained === false && row.hidden_form_values_retained === false && row.outside_human_dependency === false && row.graph_effect === 'none'), 'Florida charity execution authority drift');
+    check(diagnosticExecutions[0]?.workflow_run_id === 31046395385 && diagnosticExecutions[0]?.artifact_id === null && diagnosticExecutions[0]?.post_source_state === 'post_source_validator_schema_key_error_artifact_not_uploaded', 'Florida charity diagnostic execution drift');
+
+    check(flCharityAttempts.length === 6 && guidanceAttempts.length === 2 && transportErrors.length === 4, 'Florida charity artifact-backed attempt denominator drift');
+    check(unique(flCharityAttempts.map(row => row.attempt_id)) && unique(flCharityAttempts.map(row => row.attempt_receipt_id)), 'Florida charity attempt IDs must be unique');
+    check(flCharityAttempts.every(row => receiptIds.has(row.attempt_receipt_id) && row.request_attempts === 1 && row.request_method === 'GET' && row.query_submitted === false), 'Florida charity attempt receipt/request drift');
+    check(guidanceAttempts.every(row => row.http_status === 200 && row.response_sha256 === '24a9156ce429fd7de66784f7d52b50ebd9ca0fa2964bc67e9ae4597a92bffaf7'), 'Florida charity guidance content drift');
+    check(transportErrors.every(row => row.response_bytes === 0 && row.response_sha256 === null && row.error_class !== null), 'Florida charity transport-error drift');
+    check(flCharityAttempts.every(row => row.source_rows_acquired === 0 && row.raw_source_retained === false && row.full_visible_text_retained === false && row.hidden_form_values_retained === false && row.street_address_rows_retained === 0 && row.contact_detail_rows_retained === 0 && row.private_support_rows === 0), 'Florida charity attempt privacy drift');
+    check(flCharityAttempts.every(row => row.identity_admitted === false && row.negative_existence_claim_created === false && row.outside_human_dependency === false && row.publication_effect === 'none' && row.adoption_effect === 'none' && row.graph_effect === 'none' && row.promotes_to === 'candidate_only'), 'Florida charity attempt authority drift');
+
+    check(flCharitySourceRows.length === 6 && flCharitySourceRows.every(row => receiptIds.has(row.receipt_id)), 'Florida charity source inventory linkage drift');
+    check(flCharitySourceRows.every(row => row.evidence_class === 'primary_public_state_charity_registry_route_custody' && row.query_submitted === false && row.source_rows_acquired === 0 && row.identity_admitted === false && row.negative_existence_claim_created === false && row.graph_effect === 'none'), 'Florida charity source inventory authority drift');
+
+    check(flCharityCustody.canonical_parent.commit === '1f04c0abbf89f1529dfd428389392b3425499bc3' && flCharityCustody.canonical_parent.tree === '33e540e995455dfd28ebe1cd6a7f09c29844d461', 'Florida charity parent custody drift');
+    check(flCharityCustody.acquisitions.urllib_artifact.workflow_run_id === 31044899071 && flCharityCustody.acquisitions.urllib_artifact.artifact_id === 8946106351 && flCharityCustody.acquisitions.urllib_artifact.artifact_digest === 'sha256:1d3167516a2db6e39fc08d9cac4726b38d2abb04a87c8fb46aa749105caa5718' && flCharityCustody.acquisitions.urllib_artifact.route_results_sha256 === 'c73c98dfca0f96415cca5c60680bce41e5f4bbb9cee942ee46797888d047183c', 'Florida charity urllib acquisition drift');
+    check(flCharityCustody.acquisitions.ipv4_http1_diagnostic_execution.workflow_run_id === 31046395385 && flCharityCustody.acquisitions.ipv4_http1_diagnostic_execution.artifact_id === null && flCharityCustody.acquisitions.ipv4_http1_diagnostic_execution.query_submissions === 0, 'Florida charity diagnostic custody drift');
+    check(flCharityCustody.acquisitions.ipv4_http1_packaging_artifact.workflow_run_id === 31046743488 && flCharityCustody.acquisitions.ipv4_http1_packaging_artifact.artifact_id === 8946758352 && flCharityCustody.acquisitions.ipv4_http1_packaging_artifact.artifact_digest === 'sha256:9e0797d62a9be0646b81f0e0ae741a6165799d58f943484a68d760d17f26296a' && flCharityCustody.acquisitions.ipv4_http1_packaging_artifact.route_results_sha256 === '94473306b71509b9beb8b533a58956dae43d270169166957a82a1061faaf9f86', 'Florida charity IPv4 acquisition drift');
+    check(flCharityCustody.counts.transport_profiles === 2 && flCharityCustody.counts.execution_rows === 3 && flCharityCustody.counts.total_route_attempt_rows === 9 && flCharityCustody.counts.query_submissions === 0 && flCharityCustody.counts.candidate_rows === 0 && flCharityCustody.counts.identity_admitted_rows === 0, 'Florida charity custody denominator drift');
+    check(flCharityCustody.terminal_frontier.declared_two_transport_profiles_terminal === true && flCharityCustody.terminal_frontier.provider_condition_change_required_before_retry === true && flCharityCustody.terminal_frontier.no_search_was_submitted === true, 'Florida charity terminal frontier drift');
+    check(flCharityCustody.interpretation.application_host_timeout_is_not_record_absence === true && flCharityCustody.interpretation.zero_query_submissions_is_not_zero_search_results === true && flCharityCustody.interpretation.diagnostic_execution_is_execution_custody_not_source_inventory_inflation === true, 'Florida charity interpretation drift');
+    check(flCharityCustody.privacy.raw_source_retained === false && flCharityCustody.privacy.hidden_form_values_retained === false && flCharityCustody.privacy.street_address_rows_retained === 0 && flCharityCustody.privacy.contact_detail_rows_retained === 0 && flCharityCustody.privacy.private_support_rows === 0, 'Florida charity privacy drift');
+    check(flCharityCustody.public_schoolhouse_identity_admitted === false && flCharityCustody.admitted_legal_name === null && flCharityCustody.admitted_registration_number === null && flCharityCustody.admitted_ein === null && flCharityCustody.negative_existence_claim_created === false && flCharityCustody.outside_human_dependency === false && flCharityCustody.graph_effect === 'none', 'Florida charity identity authority drift');
+
+    const projection = schoolhouse.state_registry_identity_census?.fl_charity_exact_query_custody;
+    check(projection?.transport_profiles === 2 && projection?.execution_rows === 3 && projection?.total_route_attempt_rows === 9 && projection?.query_submissions === 0 && projection?.candidate_rows === 0 && projection?.public_schoolhouse_identity_admitted === false, 'Florida charity School.House projection drift');
+    const frontierProjection = frontier.tasks.find(task => task.task_id === 'bvvc-frontier-schoolhouse-legal-governance')?.prior_fl_charity_exact_query_custody;
+    check(frontierProjection?.transport_profiles === 2 && frontierProjection?.execution_rows === 3 && frontierProjection?.total_route_attempt_rows === 9 && frontierProjection?.query_submissions === 0 && frontierProjection?.admitted_identities === 0, 'Florida charity frontier projection drift');
+    check(coverage.denominators.some(row => row.surface === 'School.House Florida Check-A-Charity exact-query transport custody' && row.enumerated_total === 3 && row.transport_profiles === 2 && row.total_route_attempt_rows === 9 && row.query_submissions === 0 && row.candidate_rows === 0 && row.admitted_identities === 0), 'Florida charity coverage denominator missing');
   }
 
   return errors;

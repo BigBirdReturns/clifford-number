@@ -7,7 +7,7 @@ It sits inside the existing `us-defense-natsec100` selection lane. Primary custo
 ## Current frozen surfaces
 
 ```text
-public-source receipts                        425
+public-source receipts                        431
 current BVVC leadership labels                 27 / 27
 historical-only leadership labels               4
 current Portfolio Universe labels              30 / 30
@@ -134,6 +134,18 @@ archive cumulative unique/successful snapshots           8 / 8
 archive cumulative residual provider-error routes            0
 archive reconciliation exact legal-name/EIN candidates     0 / 0
 archive reconciliation public identities admitted             0
+Florida charity exact-query variants                 3 / 3
+Florida charity transport profiles                       2
+Florida charity source executions                        3
+Florida charity artifact/diagnostic route attempts    6 / 3
+Florida charity total route attempts                      9
+Florida charity guidance successes                       3
+Florida charity robots/search transport errors         3 / 3
+Florida charity registry query submissions                 0
+Florida charity terminal query results                     0
+Florida charity candidate rows/links                    0 / 0
+Florida charity source rows acquired                       0
+Florida charity public identities admitted                 0
 institutional self-claim rows                  10
 explicit rejected joins                        16
 bounded continuation tasks                      7
@@ -169,6 +181,7 @@ The current leadership and Portfolio Universe pages are complete as rendered on 
 - `schoolhouse-first-party-archive-locator-custody.json`, the attempt, effective-route, and locator ledgers, and `source-inventory-14.jsonl` preserve 72 exact-URL Archive metadata attempts across the complete forty-six-route first-party denominator. The bounded protocol leaves 21 routes with public replay locators, 3 bounded zero-row routes, and 22 residual provider-error routes; it dereferences zero locators, acquires zero archived page bodies, and admits zero identities.
 - `schoolhouse-launch-era-archive-content-custody.json`, the ten-attempt, seven-route, privacy-minimized surface, candidate, and link ledgers, and `source-inventory-15.jsonl` preserve six successful archived HTML surfaces and one repeated provider error. The four prelaunch successes are one parked-domain and three domain-marketplace surfaces; two 2024 successes are early first-party School.House surfaces. Two tax-status phrases remain historical self-description rather than registry identity, and zero legal names, EINs, exemption records, or fiscal sponsors are admitted.
 - `schoolhouse-archive-minimum-legal-surface-reconciliation-custody.json`, the seven-attempt, five-route overlap ledger, the three marketplace-signal rows, the two unfetched legal-link rows, and `source-inventory-16.jsonl` reconcile the later minimum-surface acquisition without inflating the unique snapshot denominator. Three overlaps reproduce exact content hashes, the prior April 18 provider error is recovered, and the July 25 home snapshot is novel. The cumulative plane contains eight unique successful snapshots and still admits no legal name, EIN, exemption record, fiscal sponsor, or public identity.
+- `schoolhouse-fl-charity-exact-query-custody.json`, `schoolhouse-fl-charity-exact-query-executions.jsonl`, `schoolhouse-fl-charity-exact-query-attempt-results.jsonl`, and `source-inventory-17.jsonl` preserve three bounded Florida FDACS Check-A-Charity source executions across urllib and IPv4/HTTP1.1. The package records three guidance captures, six application-host transport errors across nine route attempts, zero registry query submissions, zero result or candidate rows, and the provider-condition-change stopping rule without retaining raw pages, hidden form values, addresses, or contact details.
 - `schoolhouse-fl-fictitious-source-receipt.json`, `schoolhouse-fl-fictitious-member-inventory.jsonl`, `schoolhouse-fl-fictitious-candidates.jsonl`, and `schoolhouse-fl-fictitious-adjudication.json` preserve the exact 761,040-record Florida fictitious-name census, forty repaired embedded-linebreak records, twenty-nine sanitized phrase candidates, and the zero-admission decision.
 - `schoolhouse-fl-corporate-owner-resolution-source-receipt.json`, `schoolhouse-fl-corporate-owner-resolution-remote-zip-index.json`, `schoolhouse-fl-corporate-owner-resolution-member-receipts.jsonl`, `schoolhouse-fl-corporate-owner-resolution-records.jsonl`, `schoolhouse-fl-corporate-owner-resolution-matrix.jsonl`, and `schoolhouse-fl-corporate-owner-resolution-adjudication.json` preserve the bounded seven-partition corporate scan, all fifteen exact owner-entity resolutions, and the continued zero-admission decision.
 - The seven `schoolhouse-fl-magnolia-corporate-resolution-*` files preserve the complete two-partition cross-registry pass for IRS candidate EIN 39-2669585, both exact Florida corporate records, the shared-EIN conflict, and the refusal to identify either 2025 Vero Beach entity as the public School.House platform.
@@ -202,6 +215,8 @@ The Archive-locator successor then issued one exact-URL public CDX metadata quer
 The launch-era archived-content successor then selected seven exact change-point snapshots from the terminal Archive locator plane and replayed only the three initial transport failures once. The effective result preserves six privacy-minimized archived HTML surfaces and one repeated provider error across ten attempts. November 2022 was a parked-domain surface; June, September, and December 2023 were Dan.com marketplace pages. The recovered March 5, 2024 connect surface contains nonprofit and public-charity self-description, while the March 24 home surface supplies no identity candidate. No archived surface supplies a registry-grade legal name, EIN, exemption record, fiscal sponsor, formation, officer, board, governance, funding, control, or related-party record.
 
 The late minimum-surface reconciliation then compared five separately acquired Archive locators against that sealed seven-snapshot product. Four locators overlap: three reproduce exact archived content hashes and the April 18, 2024 connect route converts from repeated provider-error custody to privacy-minimized HTML. The July 25, 2024 home snapshot is the sole novel locator. April 18 repeats 501(c)(3), nonprofit, and public-charity terminology without a registry-grade identity candidate; July 25 contains zero fixed legal-identity term hits across 23,430 screened visible-text characters. The cumulative union is eight unique snapshots, all eight successfully screened, with zero residual provider errors and zero identity admissions.
+
+The Florida Check-A-Charity exact-query successor then froze three public-name variants and executed them under two materially different transport profiles. The official guidance page was captured in each of three source executions, while both the application-host robots route and search application timed out in every execution. The middle IPv4 diagnostic completed its source step but lost its artifact only after a local validator schema error; the final packaging replay preserves the same zero-submission terminal state. Across nine route attempts, no registry query was submitted, no search result or candidate row was obtained, and no identity or absence claim was created. The exact matrix is terminal until the provider condition observably changes.
 
 The checked-in frontier now directs the next bounded pass toward the complete BVVC vehicle denominator, transaction-specific evidence for all thirty current portfolio labels, exact legal entities, government award and acceptance surfaces, dated leadership history, School.House legal and governance records, complete annual cohorts and outcomes, and receipt-byte archival. Every task preserves nulls, failed routes, unresolved identities, and forbidden inferences.
 
