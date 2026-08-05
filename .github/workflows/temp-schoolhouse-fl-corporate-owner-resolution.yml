@@ -6,6 +6,7 @@ on:
       - '.github/workflows/temp-schoolhouse-fl-corporate-owner-resolution.yml'
       - '.schoolhouse-fl-corporate-owner-resolution/EXECUTE'
       - 'tools/acquisition/schoolhouse-fl-corporate-owner-resolution/acquire.py'
+      - 'tools/acquisition/schoolhouse-fl-corporate-owner-resolution/repair_predecessor_access.py'
   workflow_dispatch:
 
 permissions:
@@ -21,6 +22,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
+      - name: Repair predecessor dictionary access
+        run: |
+          python -m py_compile tools/acquisition/schoolhouse-fl-corporate-owner-resolution/repair_predecessor_access.py
+          python tools/acquisition/schoolhouse-fl-corporate-owner-resolution/repair_predecessor_access.py \
+            tools/acquisition/schoolhouse-fl-corporate-owner-resolution/acquire.py
 
       - name: Compile bounded corporate-resolution runner
         run: python -m py_compile tools/acquisition/schoolhouse-fl-corporate-owner-resolution/acquire.py
