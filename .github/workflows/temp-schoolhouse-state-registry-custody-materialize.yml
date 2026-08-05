@@ -1,0 +1,120 @@
+name: TEMP materialize School.House state-registry custody
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-state-registry-custody-materialize.yml'
+      - '.schoolhouse-state-registry-custody/EXECUTE'
+      - 'tools/build-schoolhouse-state-registry-custody.mjs'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download terminal route and fictitious-name artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          rm -rf /tmp/schoolhouse-state-registry-route-artifact /tmp/schoolhouse-fl-fictitious-artifact
+          mkdir -p /tmp/schoolhouse-state-registry-route-artifact /tmp/schoolhouse-fl-fictitious-artifact
+          gh run download 30973871220 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-state-registry-route-probe \
+            --dir /tmp/schoolhouse-state-registry-route-artifact
+          gh run download 30975014198 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-fl-fictitious-name-denominator \
+            --dir /tmp/schoolhouse-fl-fictitious-artifact
+          test -f /tmp/schoolhouse-state-registry-route-artifact/summary.json
+          test -f /tmp/schoolhouse-state-registry-route-artifact/route-policy.json
+          test -f /tmp/schoolhouse-state-registry-route-artifact/route-receipts.jsonl
+          test -f /tmp/schoolhouse-fl-fictitious-artifact/summary.json
+          test -f /tmp/schoolhouse-fl-fictitious-artifact/source-receipt.json
+          test -f /tmp/schoolhouse-fl-fictitious-artifact/member-inventory.jsonl
+          test -f /tmp/schoolhouse-fl-fictitious-artifact/fictitious-name-candidates.jsonl
+          test -f /tmp/schoolhouse-fl-fictitious-artifact/exact-tests.json
+
+      - name: Build, qualify, and publish clean current-main product
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          TARGET='agent/schoolhouse-state-registry-custody-product-v1'
+          MAIN_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+          SOURCE_BUILDER="$GITHUB_WORKSPACE/tools/build-schoolhouse-state-registry-custody.mjs"
+          test -f "$SOURCE_BUILDER"
+
+          rm -rf /tmp/schoolhouse-state-registry-custody-product
+          git fetch --no-tags origin "$MAIN_SHA"
+          git worktree add --detach /tmp/schoolhouse-state-registry-custody-product "$MAIN_SHA"
+          cd /tmp/schoolhouse-state-registry-custody-product
+          mkdir -p tools
+          cp "$SOURCE_BUILDER" tools/build-schoolhouse-state-registry-custody.mjs
+
+          node tools/build-schoolhouse-state-registry-custody.mjs \
+            /tmp/schoolhouse-state-registry-route-artifact \
+            /tmp/schoolhouse-fl-fictitious-artifact
+          node tools/validate-bvvc-defense-capital.mjs
+          node test/person-routers.test.js
+          npm run release:check
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            data/intake/bvvc-defense-capital/README.md \
+            data/intake/bvvc-defense-capital/acquisition-frontier.json \
+            data/intake/bvvc-defense-capital/coverage-matrix.json \
+            data/intake/bvvc-defense-capital/manifest.json \
+            data/intake/bvvc-defense-capital/schoolhouse.json \
+            data/intake/bvvc-defense-capital/source-inventory-08.jsonl \
+            data/intake/bvvc-defense-capital/state-registry-route-results.jsonl \
+            data/intake/bvvc-defense-capital/state-registry-route-custody.json \
+            data/intake/bvvc-defense-capital/schoolhouse-fl-fictitious-source-receipt.json \
+            data/intake/bvvc-defense-capital/schoolhouse-fl-fictitious-member-inventory.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-fl-fictitious-candidates.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-fl-fictitious-adjudication.json \
+            tools/build-schoolhouse-state-registry-custody.mjs \
+            tools/validate-bvvc-defense-capital.mjs
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = '14'
+          git commit -m 'Add School.House state-registry and fictitious-name custody'
+          PRODUCT_SHA=$(git rev-parse HEAD)
+
+          START=$(git ls-remote origin "refs/heads/$TARGET" | awk '{print $1}')
+          if [[ -n "$START" ]]; then
+            git push origin "HEAD:refs/heads/$TARGET" --force-with-lease="refs/heads/$TARGET:$START"
+          else
+            git push origin "HEAD:refs/heads/$TARGET"
+          fi
+
+          mkdir -p /tmp/schoolhouse-state-registry-custody-receipt
+          jq -n \
+            --arg base_main "$MAIN_SHA" \
+            --arg product_sha "$PRODUCT_SHA" \
+            --arg target "$TARGET" \
+            '{schema_version:"schoolhouse-state-registry-custody-materialization-receipt@1",base_main:$base_main,product_sha:$product_sha,target_branch:$target,changed_paths:14,source_inventory_rows:104,route_result_rows:16,search_submissions:0,fl_fictitious_source_rows:761040,fl_fictitious_candidate_rows:29,exact_public_name_rows:0,tampa_bay_candidate_rows:2,post_2023_candidate_rows:16,owner_charter_numbers:15,admitted_identities:0,private_support_rows:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+            > /tmp/schoolhouse-state-registry-custody-receipt/status.json
+          sha256sum /tmp/schoolhouse-state-registry-custody-receipt/status.json \
+            > /tmp/schoolhouse-state-registry-custody-receipt/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-state-registry-custody-materialization-receipt
+          path: /tmp/schoolhouse-state-registry-custody-receipt
+          if-no-files-found: error
+          retention-days: 90
