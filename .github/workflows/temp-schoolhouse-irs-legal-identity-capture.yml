@@ -1,0 +1,78 @@
+name: TEMP capture School.House IRS legal identity candidates
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-irs-legal-identity-capture.yml'
+      - '.schoolhouse-irs-legal-identity-capture/EXECUTE'
+      - 'tools/acquisition/schoolhouse-irs-legal-identity/run.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile acquisition runner
+        run: python -m py_compile tools/acquisition/schoolhouse-irs-legal-identity/run.py
+
+      - name: Execute bounded IRS legal-identity scan
+        id: acquisition
+        continue-on-error: true
+        env:
+          IRS_USER_AGENT: CliffordNumber-SchoolHouse-IRS/1.0 219768509+BigBirdReturns@users.noreply.github.com
+        run: |
+          set +e
+          OUT=/tmp/schoolhouse-irs-legal-identity-candidates
+          rm -rf "$OUT"
+          python tools/acquisition/schoolhouse-irs-legal-identity/run.py \
+            --output "$OUT" \
+            --retries 4 \
+            --sleep-seconds 0.25
+          status=$?
+          mkdir -p "$OUT"
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          exit "$status"
+
+      - name: Upload exact acquisition artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-legal-identity-candidates
+          path: /tmp/schoolhouse-irs-legal-identity-candidates
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require complete bounded route scan
+        if: always()
+        run: |
+          test -f /tmp/schoolhouse-irs-legal-identity-candidates/RUNNER_EXIT_CODE
+          test "$(cat /tmp/schoolhouse-irs-legal-identity-candidates/RUNNER_EXIT_CODE)" = '0'
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('/tmp/schoolhouse-irs-legal-identity-candidates')
+          summary = json.loads((root / 'summary.json').read_text())
+          receipt = json.loads((root / 'acquisition-receipt.json').read_text())
+          assert summary['route_count'] == 6
+          assert summary['all_routes_terminal'] is True
+          assert summary['registry_identity_admitted'] is False
+          assert summary['street_address_rows_retained'] == 0
+          assert summary['contact_detail_rows_retained'] == 0
+          assert summary['private_support_rows'] == 0
+          assert summary['outside_human_dependency'] is False
+          assert summary['graph_effect'] == 'none'
+          assert receipt['all_routes_terminal'] is True
+          assert receipt['registry_identity_admitted'] is False
+          print(json.dumps(summary, sort_keys=True))
+          PY
