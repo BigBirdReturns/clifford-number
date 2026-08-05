@@ -1,0 +1,88 @@
+{
+  "schema_version": "schoolhouse-state-registry-route-custody@1",
+  "as_of": "2026-08-05",
+  "route_probe": {
+    "workflow_run_id": 30973871220,
+    "artifact_id": 8917541589,
+    "artifact_digest": "sha256:02f718c9250be32fac6a6259919bbd3490c1d649f7fb545073756d93436c77ee",
+    "head_sha": "f4cacb912a8313775b50bceb79d46aecb4428b91"
+  },
+  "counts": {
+    "declared_routes": 16,
+    "terminal_route_rows": 16,
+    "florida_routes": 13,
+    "north_carolina_routes": 3,
+    "north_carolina_search_submissions": 0,
+    "florida_charity_search_submissions": 0,
+    "source_rows_acquired": 0,
+    "admitted_identities": 0,
+    "state_counts": {
+      "accessible": 6,
+      "auth_required": 1,
+      "not_found": 2,
+      "provider_blocked": 2,
+      "transport_error": 5
+    }
+  },
+  "florida": {
+    "official_bulk_reference_receipt_id": "r-fl-sunbiz-quarterly-data-reference-2026-08-05",
+    "corporate_schema_receipt_id": "r-fl-sunbiz-corporate-definition-2026-08-05",
+    "fictitious_schema_receipt_id": "r-fl-sunbiz-fictitious-definition-2026-08-05",
+    "accessible_bulk_routes": [
+      {
+        "route_id": "fl-cor-https-public-path",
+        "receipt_id": "r-fl-sunbiz-quarterly-corporate-bulk-2026-08-05",
+        "url": "https://sftp.floridados.gov/Public/doc/quarterly/cor/cordata.zip",
+        "content_length": 1819049954,
+        "acquisition_state": "accessible_not_acquired"
+      },
+      {
+        "route_id": "fl-fic-https-public-path",
+        "receipt_id": "r-fl-sunbiz-quarterly-fictitious-bulk-2026-08-05",
+        "url": "https://sftp.floridados.gov/Public/doc/quarterly/fic/ficdata.zip",
+        "content_length": 74947584,
+        "acquisition_state": "captured_and_scanned_in_successor_census"
+      }
+    ],
+    "rejected_path_variants": [
+      "fl-cor-https-home-path",
+      "fl-fic-https-home-path"
+    ],
+    "public_portal_root_state": "auth_required_http_401",
+    "sftp_state": "strict_host_key_validation_refused_unrecognized_key",
+    "weakened_host_key_policy_used": false,
+    "charity_search_submissions": 0,
+    "charity_surface_state": "transport_error"
+  },
+  "north_carolina": {
+    "interactive_search_automation_permitted": false,
+    "business_search_state": "provider_blocked",
+    "charity_search_state": "provider_blocked",
+    "reports_and_listings_state": "accessible",
+    "business_search_submissions": 0,
+    "charity_search_submissions": 0,
+    "allowed_next_surfaces": [
+      "free_reports_and_listings",
+      "data_subscription_services",
+      "distinct_official_downloads"
+    ],
+    "policy_basis": "official pages state that automated or scripted searches are not permitted and direct bulk users to Data Subscription Services"
+  },
+  "interpretation": {
+    "route_access_is_not_identity_evidence": true,
+    "provider_failure_is_not_absence": true,
+    "publisher_automation_policy_must_not_be_bypassed": true,
+    "accessible_bulk_file_is_not_an_admitted_legal_entity": true,
+    "forbidden_inference": "A route result, public credential, transport error, or accessible bulk file does not establish the School.House legal entity."
+  },
+  "privacy": {
+    "raw_source_retained": false,
+    "street_address_rows_retained": 0,
+    "contact_detail_rows_retained": 0,
+    "private_support_rows": 0
+  },
+  "route_file": "state-registry-route-results.jsonl",
+  "outside_human_dependency": false,
+  "graph_effect": "none",
+  "promotes_to": "candidate_only"
+}

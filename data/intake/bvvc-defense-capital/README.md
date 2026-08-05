@@ -7,7 +7,7 @@ It sits inside the existing `us-defense-natsec100` selection lane. Primary custo
 ## Current frozen surfaces
 
 ```text
-public-source receipts                         95
+public-source receipts                        104
 current BVVC leadership labels                 27 / 27
 historical-only leadership labels               4
 current Portfolio Universe labels              30 / 30
@@ -26,6 +26,14 @@ IRS legal-identity source routes                    6 / 6
 IRS legal-name candidate rows                     641
 IRS unique candidate EINs                         438
 IRS identities admitted                             0
+state-registry route dispositions                 16 / 16
+state-registry scripted searches                      0
+Florida fictitious-name rows scanned             761,040
+Florida fictitious-name phrase candidates             29
+Florida exact public-name candidates                   0
+Florida Tampa Bay phrase candidates                    2
+Florida post-2023 phrase candidates                   16
+state-registry identities admitted                     0
 institutional self-claim rows                  10
 explicit rejected joins                        16
 bounded continuation tasks                      7
@@ -52,6 +60,8 @@ The current leadership and Portfolio Universe pages are complete as rendered on 
 - `sec-form-d-route-results.jsonl` preserves all ninety-five official-route dispositions across three bounded acquisition attempts.
 - `sec-form-d-route-custody.json` binds those route results to their workflow runs and retained artifacts without converting provider failure into an absence claim.
 - `schoolhouse-irs-source-routes.jsonl`, the four `schoolhouse-irs-candidates-*.jsonl` shards, and `schoolhouse-irs-identity-adjudication.json` preserve the complete sanitized six-route IRS name-candidate census and the no-admission decision.
+- `state-registry-route-results.jsonl` and `state-registry-route-custody.json` preserve sixteen lawful Florida and North Carolina route dispositions, zero scripted search submissions, exact accessible bulk paths, publisher policy, and strict transport boundaries.
+- `schoolhouse-fl-fictitious-source-receipt.json`, `schoolhouse-fl-fictitious-member-inventory.jsonl`, `schoolhouse-fl-fictitious-candidates.jsonl`, and `schoolhouse-fl-fictitious-adjudication.json` preserve the exact 761,040-record Florida fictitious-name census, forty repaired embedded-linebreak records, twenty-nine sanitized phrase candidates, and the zero-admission decision.
 - `acquisition-frontier.json` defines seven machine-actionable continuation tasks with no outside-human dependency.
 - `lake.json` remains the first bounded seed snapshot. The modular files above are the expanded v2 public-source plane.
 
@@ -73,7 +83,7 @@ No direct message, screenshot, owner-supplied LinkedIn export, contact detail, o
 
 The off-roster delta now proves that the frozen current Portfolio Universe page is not a complete ledger of all public firm and counterparty backing claims. It preserves the discrepancy as an acquisition state rather than silently expanding current membership.
 
-The IRS legal-identity pass scanned 4,428,541 public rows across six complete routes, retained 641 sanitized phrase candidates representing 438 EINs, and admitted no School.House identity. No candidate aligned with the public brand, claimed 2023 founding, and Tampa Bay or Fayetteville location claims strongly enough for an identifier-grade join; the next lawful boundary is the bounded Florida and North Carolina corporate and charity registries.
+The IRS legal-identity pass scanned 4,428,541 public rows across six complete routes, retained 641 sanitized phrase candidates representing 438 EINs, and admitted no School.House identity. The next pass then completed sixteen lawful state-registry route dispositions with zero scripted searches and scanned all 761,040 records in Florida's quarterly fictitious-name file. It retained twenty-nine privacy-minimized phrase candidates, found zero exact public-name candidates, found two distinctly named Tampa phrase candidates, and admitted no state-registry identity. The next lawful boundary is exact corporate resolution of fifteen owner charter numbers, followed by charity and North Carolina bulk or report surfaces that respect publisher automation policy.
 
 The checked-in frontier now directs the next bounded pass toward the complete BVVC vehicle denominator, transaction-specific evidence for all thirty current portfolio labels, exact legal entities, government award and acceptance surfaces, dated leadership history, School.House legal and governance records, complete annual cohorts and outcomes, and receipt-byte archival. Every task preserves nulls, failed routes, unresolved identities, and forbidden inferences.
 
