@@ -29,9 +29,9 @@ jobs:
           set -Eeuo pipefail
           BUNDLE='tools/acquisition/schoolhouse-charity-nc-static-residual-discovery/discover.py.gz.b64'
           RUNNER=/tmp/schoolhouse-charity-nc-static-residual-discover.py
-          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'e46f148eddb98a92ec7d865b0ec4cc973af1cc905cbe1586a6ed5aed5326be22'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '6d1d962478c7b8dd0e3f98d3b7c29c3fca7cc1a5e6a536edcb47b5b707c5d567'
           base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
-          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'e20bc8f8814165d4d350d9483e118fd5936550ac63dc9de3dd06f07bda645032'
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '2a0444ffde5c328f7ab4985e2ddc5403bfca351d6bba7a625ba5ce8e218aab95'
           python -m py_compile "$RUNNER"
       - name: Execute frozen no-submission residual pass
         run: |
