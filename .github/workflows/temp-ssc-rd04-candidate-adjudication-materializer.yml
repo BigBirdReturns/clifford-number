@@ -1,0 +1,52 @@
+name: TEMP materialize RD-04 candidate adjudication
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-ssc-rd04-candidate-adjudication-materializer.yml'
+      - '.ssc-rd04-candidate-adjudication-materializer/**'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd04-candidate-adjudication-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Rebuild, qualify, and lease-publish the fifteen-file product
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          CONTROLLER=/tmp/ssc-rd04-candidate-adjudication-materializer.sh
+          cat .ssc-rd04-candidate-adjudication-materializer/controller/part-* > "$CONTROLLER"
+          test "$(wc -c < "$CONTROLLER" | tr -d ' ')" = 9019
+          test "$(sha256sum "$CONTROLLER" | awk '{print $1}')" = 9b41991b4b0f5f4e41de0b5530aed589835bfd5f3320e9f103d2957c2e00b888
+          bash -n "$CONTROLLER"
+          bash "$CONTROLLER"
+
+      - name: Preserve exact materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-candidate-adjudication-materializer-v1
+          path: /tmp/ssc-rd04-candidate-adjudication-materializer-receipt
+          if-no-files-found: error
+          retention-days: 90
