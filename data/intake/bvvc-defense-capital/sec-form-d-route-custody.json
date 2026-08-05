@@ -1,0 +1,76 @@
+{
+  "schema_version": "bvvc-sec-form-d-route-custody@1",
+  "as_of": "2026-08-05",
+  "declared_coverage_window": "2019Q1/2026Q2",
+  "official_route_attempts": [
+    {
+      "attempt_id": "bvvc-sec-form-d-attempt-01",
+      "started_at": "2026-08-05T01:38:32Z",
+      "completed_at": "2026-08-05T02:17:11Z",
+      "workflow_run_id": 30966935809,
+      "head_sha": "4e386a4c0f172a68d70756af12841080347b8965",
+      "artifact_id": 8915769528,
+      "artifact_digest": "sha256:86b1183ae6c2519a4e21951b1102b5325b337a10d3e1768c0263d31c7052a6c1",
+      "route_result_rows": 30,
+      "source_rows_acquired": 0,
+      "terminal_state": "all_declared_routes_http_403"
+    },
+    {
+      "attempt_id": "bvvc-sec-form-d-attempt-02",
+      "started_at": "2026-08-05T02:23:11Z",
+      "completed_at": "2026-08-05T02:28:29Z",
+      "workflow_run_id": 30969190170,
+      "head_sha": "e6a464d1d46bba96b23596d1cdcf41997185f3b9",
+      "artifact_id": 8915954440,
+      "artifact_digest": "sha256:c001a04cd07e4d234497a6e34fddfa6ca7545704dd8e2570a923d875dbabf7a2",
+      "route_result_rows": 30,
+      "source_rows_acquired": 0,
+      "terminal_state": "all_declared_routes_http_403"
+    },
+    {
+      "attempt_id": "bvvc-sec-form-d-attempt-03",
+      "started_at": "2026-08-05T02:38:33Z",
+      "completed_at": "2026-08-05T02:44:44Z",
+      "workflow_run_id": 30969929707,
+      "head_sha": "6c7a91391624c7de314a1ddba2aff8d15850d501",
+      "artifact_id": 8916218355,
+      "artifact_digest": "sha256:236e0d49a57fc01633a18f805fe57d4c8cca409372676a8f8731dbcb124f8bfa",
+      "route_result_rows": 35,
+      "source_rows_acquired": 0,
+      "terminal_state": "all_declared_routes_http_403"
+    }
+  ],
+  "counts": {
+    "attempts": 3,
+    "route_result_rows": 95,
+    "route_result_state_counts": {
+      "source_unavailable_after_search": 95
+    },
+    "provider_http_403_rows": 95,
+    "source_rows_acquired": 0,
+    "empirical_no_match_rows": 0,
+    "anchor_ciks_expected": 4,
+    "anchor_ciks_acquired": 0,
+    "portfolio_transaction_joins_created": 0,
+    "ownership_findings": 0,
+    "governance_right_findings": 0,
+    "private_support_rows": 0
+  },
+  "route_families": [
+    "official_form_d_quarterly_flat_file",
+    "official_edgar_full_text_search",
+    "official_data_sec_submissions",
+    "official_edgar_quarterly_company_index"
+  ],
+  "interpretation": {
+    "what_this_is": "Custody of three bounded official SEC acquisition attempts and every declared route disposition.",
+    "what_this_is_not": "Evidence that no additional BVVC filer, vehicle, amendment, or related person exists.",
+    "next_transition": "Do not repeat an identical blocked route. Retry only after a material provider-route or transport condition changes, or acquire exact filing instruments through a distinct lawful official surface.",
+    "source_failure_is_not_absence": true
+  },
+  "outside_human_dependency": false,
+  "publication_effect": "none",
+  "adoption_effect": "none",
+  "graph_effect": "none",
+  "promotes_to": "candidate_only"
+}

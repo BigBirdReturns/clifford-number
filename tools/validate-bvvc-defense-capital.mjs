@@ -57,6 +57,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   const coverage = readJson(path.join(dir, 'coverage-matrix.json'));
   const frontier = readJson(path.join(dir, 'acquisition-frontier.json'));
   const portfolioDelta = readJsonl(path.join(dir, 'portfolio-delta-candidates.jsonl'));
+  const secRouteResults = readJsonl(path.join(dir, 'sec-form-d-route-results.jsonl'));
+  const secRouteCustody = readJson(path.join(dir, 'sec-form-d-route-custody.json'));
 
   check(manifest.schema_version === 'bvvc-defense-capital-manifest@2', 'manifest schema must be v2');
   check(manifest.graph_effect === 'none' && manifest.promotes_to === 'candidate_only', 'manifest must remain graph-inert candidate custody');
@@ -81,7 +83,9 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     coverage_denominator_rows: coverage.denominators.length,
     explicit_gap_rows: coverage.explicit_nulls_and_gaps.length,
     acquisition_frontier_tasks: frontier.tasks.length,
-    portfolio_delta_candidate_rows: portfolioDelta.length
+    portfolio_delta_candidate_rows: portfolioDelta.length,
+    sec_form_d_acquisition_attempts: secRouteCustody.official_route_attempts.length,
+    sec_form_d_route_result_rows: secRouteResults.length
   };
   for (const [key, actual] of Object.entries(countChecks)) {
     check(manifest.counts[key] === actual, `manifest count drift for ${key}: expected ${manifest.counts[key]}, got ${actual}`);
@@ -98,6 +102,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   check(rejected.length === 16, 'rejected-join ledger must contain 16 rows');
   check(frontier.tasks.length === 7, 'acquisition frontier must contain 7 tasks');
   check(portfolioDelta.length === 9, 'portfolio delta must contain 9 public-claim candidates');
+  check(secRouteCustody.official_route_attempts.length === 3, 'SEC route custody must contain 3 bounded attempts');
+  check(secRouteResults.length === 95, 'SEC route-result denominator must contain 95 rows');
 
   check(unique(leadership.map(row => row.actor_id)), 'leadership actor IDs must be unique');
   check(unique(portfolio.map(row => row.organization_id)), 'portfolio organization IDs must be unique');
@@ -105,6 +111,7 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   check(unique(transactions.map(row => row.transaction_id)), 'transaction IDs must be unique');
   check(unique(rejected.map(row => row.rejection_id)), 'rejection IDs must be unique');
   check(unique(portfolioDelta.map(row => row.candidate_id)), 'portfolio-delta candidate IDs must be unique');
+  check(unique(secRouteResults.map(row => row.route_id)), 'SEC route-result IDs must be unique');
 
   for (const row of leadership) {
     check(row.surface_population === 27, `${row.actor_id} must carry the 27-row denominator`);
@@ -131,6 +138,17 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   const appliedAtomicsDelta = portfolioDelta.find(row => row.candidate_id === 'delta-applied-atomics-space-mobility');
   check(appliedAtomicsDelta?.identity_state === 'predicate_specific_identity_unresolved', 'Applied Atomics space-mobility identity must remain unresolved');
   check(/must_not_merge/i.test(Object.keys(appliedAtomicsDelta || {}).join(' ')), 'Applied Atomics row must carry a non-merge boundary');
+  check(secRouteCustody.counts.route_result_rows === 95, 'SEC custody route count must be 95');
+  check(secRouteCustody.counts.source_rows_acquired === 0, 'SEC route attempts must not invent source rows');
+  check(secRouteCustody.interpretation.source_failure_is_not_absence === true, 'SEC route custody must preserve source-failure boundary');
+  check(secRouteCustody.graph_effect === 'none' && secRouteCustody.promotes_to === 'candidate_only', 'SEC route custody must remain graph-inert');
+  for (const row of secRouteResults) {
+    check(row.state === 'source_unavailable_after_search', `${row.route_id} must preserve the source-unavailable state`);
+    check(row.http_status === 403, `${row.route_id} must preserve HTTP 403`);
+    check(row.result_rows === 0, `${row.route_id} must preserve zero acquired rows`);
+    check(row.absence_claim_permitted === false, `${row.route_id} must refuse absence inference`);
+    check(row.graph_effect === 'none' && row.promotes_to === 'candidate_only', `${row.route_id} must remain graph-inert`);
+  }
 
   for (const row of vehicles) {
     check(row.portfolio_transaction_join_state === 'not_established', `${row.row_id} must not infer a portfolio transaction join`);
