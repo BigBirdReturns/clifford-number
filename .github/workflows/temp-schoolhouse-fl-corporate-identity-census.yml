@@ -21,15 +21,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Reconstruct and execute complete ten-partition corporate census
+      - name: Reconstruct authenticated ten-partition corporate census
         env:
           OUTPUT_DIR: /tmp/schoolhouse-fl-corporate-identity-census
+          FL_SFTP_USERNAME: Public
+          FL_SFTP_PASSWORD: PubAccess1845!
         run: |
           set -Eeuo pipefail
           EXECUTE='.schoolhouse-fl-corporate-identity-census/EXECUTE'
@@ -38,12 +40,17 @@ jobs:
           SCRIPT='/tmp/acquire-schoolhouse-fl-corporate-identity.py'
           PARENT='efcf6bc094facb72dec6b966a7e8e3b2acdf4d06'
 
-          test -s "$EXECUTE"
-          test -s "$BUNDLE"
+          test -s "$EXECUTE" && test -s "$BUNDLE"
           grep -Fx 'acquire=schoolhouse-fl-corporate-identity-census-v1' "$EXECUTE"
           grep -Fx "canonical_parent=$PARENT" "$EXECUTE"
           grep -Fx 'canonical_parent_source_receipt_blob=948b3fc47c07a4a96ace00eabf9cd26e26ae1de1' "$EXECUTE"
           grep -Fx 'canonical_parent_schoolhouse_blob=aa1fd795a4e01000b9bb5880043430e60b7a1de5' "$EXECUTE"
+          grep -Fx 'prior_unauthenticated_workflow_run_id=31055609795' "$EXECUTE"
+          grep -Fx 'prior_unauthenticated_state=provider_http_403_before_source_scan' "$EXECUTE"
+          grep -Fx 'changed_condition=public_basic_auth_transport' "$EXECUTE"
+          grep -Fx 'transport_profile=public_basic_auth_https_head_plus_ipv4_http1_1_ranges' "$EXECUTE"
+          grep -Fx 'public_credentials_used=true' "$EXECUTE"
+          grep -Fx 'public_credential_password_retained=false' "$EXECUTE"
           grep -Fx 'source_bytes=1819049954' "$EXECUTE"
           grep -Fx 'central_directory_sha256=5524144b32429b336a2799a164f4fa5278e7825023fff638d65e8f8bdc577330' "$EXECUTE"
           grep -Fx 'remote_zip_members=10' "$EXECUTE"
@@ -59,25 +66,58 @@ jobs:
           grep -Fx 'outside_human_dependency=false' "$EXECUTE"
           grep -Fx 'identity_admitted=false' "$EXECUTE"
 
+          git fetch --no-tags --depth=1 origin "$PARENT"
           git cat-file -e "$PARENT^{commit}"
           test "$(git rev-parse "$PARENT:data/intake/bvvc-defense-capital/schoolhouse-fl-corporate-owner-resolution-source-receipt.json")" = '948b3fc47c07a4a96ace00eabf9cd26e26ae1de1'
           test "$(git rev-parse "$PARENT:data/intake/bvvc-defense-capital/schoolhouse.json")" = 'aa1fd795a4e01000b9bb5880043430e60b7a1de5'
-          git show "$PARENT:data/intake/bvvc-defense-capital/schoolhouse.json" | grep -Fq '"Joe Musselman"'
-          git show "$PARENT:data/intake/bvvc-defense-capital/schoolhouse.json" | grep -Fq '"Alex Martin"'
-          git show "$PARENT:data/intake/bvvc-defense-capital/schoolhouse.json" | grep -Fq '"Leyla Gladish"'
-          git show "$PARENT:data/intake/bvvc-defense-capital/schoolhouse.json" | grep -Fq '"Nicole Nsam"'
+          for label in 'Joe Musselman' 'Alex Martin' 'Leyla Gladish' 'Nicole Nsam'; do
+            git show "$PARENT:data/intake/bvvc-defense-capital/schoolhouse.json" | grep -Fq "\"$label\""
+          done
 
-          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '22f4f48193d8b32c6f86383cae42936646090a42b67b22c989e69260830ab3f7'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '6aed9e56b63e26bb1f428094d441405c8632168fca8c364adfbbfbe255f781a1'
           base64 -d "$BUNDLE" > "$GZIP"
-          test "$(sha256sum "$GZIP" | awk '{print $1}')" = 'a297b422c3c44334e6273b0854206ab9cf9d0af9132a51ef08cc86104d1d09eb'
+          test "$(sha256sum "$GZIP" | awk '{print $1}')" = '0661741ec4c0a1d7131e710af74d99c75a8c4e854e5a0aba85d2ccdff988b2a5'
           gzip -dc "$GZIP" > "$SCRIPT"
-          test "$(sha256sum "$SCRIPT" | awk '{print $1}')" = 'b890127a7afa086e5528998cce01bc344185fb928f8003567653bc729aa3b9e8'
+          test "$(sha256sum "$SCRIPT" | awk '{print $1}')" = '395da08cb994412e88ed4f8e56297098b44ff2eb671822edd79d3b2c23cd278a'
           python -m py_compile "$SCRIPT"
           curl --version
 
+      - name: Execute complete corporate census
+        id: acquisition
+        continue-on-error: true
+        env:
+          OUTPUT_DIR: /tmp/schoolhouse-fl-corporate-identity-census
+          FL_SFTP_USERNAME: Public
+          FL_SFTP_PASSWORD: PubAccess1845!
+        run: |
+          set +e
           rm -rf "$OUTPUT_DIR"
-          python "$SCRIPT" | tee /tmp/schoolhouse-fl-corporate-identity-census-output.json
+          python /tmp/acquire-schoolhouse-fl-corporate-identity.py \
+            2>&1 | tee /tmp/schoolhouse-fl-corporate-identity-census-output.log
+          status=${PIPESTATUS[0]}
+          mkdir -p "$OUTPUT_DIR"
+          printf '%s\n' "$status" > "$OUTPUT_DIR/RUNNER_EXIT_CODE"
+          cp /tmp/schoolhouse-fl-corporate-identity-census-output.log "$OUTPUT_DIR/RUNNER-OUTPUT.log"
+          test ! -e /tmp/schoolhouse-fl-corporate-identity-public.netrc
+          exit "$status"
 
+      - name: Upload exact acquisition artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-fl-corporate-identity-census
+          path: /tmp/schoolhouse-fl-corporate-identity-census
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require complete privacy-minimized terminal census
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          ROOT=/tmp/schoolhouse-fl-corporate-identity-census
+          test -f "$ROOT/RUNNER_EXIT_CODE"
+          test "$(cat "$ROOT/RUNNER_EXIT_CODE")" = '0'
           for path in \
             adjudication.json \
             artifact-manifest.json \
@@ -89,17 +129,17 @@ jobs:
             summary.json \
             target-matrix.json \
             SHA256SUMS; do
-            test -f "$OUTPUT_DIR/$path"
+            test -f "$ROOT/$path"
           done
-          test -s "$OUTPUT_DIR/summary.json"
-          test -s "$OUTPUT_DIR/source-receipt.json"
-          test -s "$OUTPUT_DIR/member-receipts.jsonl"
-          test -s "$OUTPUT_DIR/range-request-receipts.jsonl"
-          test -s "$OUTPUT_DIR/artifact-manifest.json"
-          test -s "$OUTPUT_DIR/SHA256SUMS"
-          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
+          test -s "$ROOT/summary.json"
+          test -s "$ROOT/source-receipt.json"
+          test -s "$ROOT/member-receipts.jsonl"
+          test -s "$ROOT/range-request-receipts.jsonl"
+          test -s "$ROOT/artifact-manifest.json"
+          test -s "$ROOT/SHA256SUMS"
+          (cd "$ROOT" && sha256sum -c SHA256SUMS)
 
-          python - "$OUTPUT_DIR" <<'PYVERIFY'
+          python - "$ROOT" <<'PYVERIFY'
           from pathlib import Path
           import json
           import sys
@@ -143,7 +183,12 @@ jobs:
           assert source['central_directory_sha256'] == '5524144b32429b336a2799a164f4fa5278e7825023fff638d65e8f8bdc577330'
           assert source['head_receipt']['status'] == 200
           assert source['head_receipt']['content_length'] == 1819049954
+          assert source['public_credentials_used'] is True
+          assert source['public_credential_password_retained'] is False
+          assert source['public_credentials_embedded_or_retained'] is False
+          assert source['transport_profile'] == 'public_basic_auth_https_head_plus_ipv4_http1_1_ranges'
           assert source['identity_admitted'] is False
+
           assert index['all_partitions_selected'] is True
           assert len(index['members']) == 10
           assert [row['partition_digit'] for row in members] == list('0123456789')
@@ -177,6 +222,8 @@ jobs:
               for officer in row['officers']:
                   assert officer['street_address_retained'] is False
                   assert officer['contact_detail_retained'] is False
+
+          assert not any(path.suffix.lower() in {'.zip', '.txt', '.deflate', '.compressed'} for path in root.rglob('*') if path.is_file())
           print(json.dumps({
               'source_rows_scanned': summary['source_rows_scanned'],
               'candidate_rows': summary['candidate_rows'],
@@ -185,10 +232,3 @@ jobs:
               'name_and_person_overlap_rows': summary['name_and_person_overlap_rows'],
           }, sort_keys=True))
           PYVERIFY
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: schoolhouse-fl-corporate-identity-census
-          path: /tmp/schoolhouse-fl-corporate-identity-census
-          if-no-files-found: error
-          retention-days: 90
