@@ -6,6 +6,7 @@ on:
       - '.github/workflows/temp-bvvc-sec-form-d-denominator-capture.yml'
       - '.bvvc-sec-form-d-denominator-capture/EXECUTE'
       - 'tools/acquisition/bvvc-sec-form-d/run.py'
+      - 'tools/acquisition/bvvc-sec-form-d/run-routed.py'
   workflow_dispatch:
 
 permissions:
@@ -22,24 +23,27 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Compile acquisition runner
-        run: python -m py_compile tools/acquisition/bvvc-sec-form-d/run.py
+      - name: Compile acquisition runners
+        run: |
+          python -m py_compile \
+            tools/acquisition/bvvc-sec-form-d/run.py \
+            tools/acquisition/bvvc-sec-form-d/run-routed.py
 
       - name: Execute complete 2019Q1 through 2026Q2 denominator scan
         id: acquisition
         continue-on-error: true
         env:
-          SEC_USER_AGENT: CliffordNumber-BVVC-FormD/1.0 (public-interest research; contact https://github.com/BigBirdReturns/clifford-number)
+          SEC_USER_AGENT: CliffordNumber-BVVC-FormD/1.1 219768509+BigBirdReturns@users.noreply.github.com
         run: |
           set +e
           OUT=/tmp/bvvc-sec-form-d-denominator-2019q1-2026q2
           rm -rf "$OUT"
-          python tools/acquisition/bvvc-sec-form-d/run.py \
+          python tools/acquisition/bvvc-sec-form-d/run-routed.py \
             --output "$OUT" \
             --start 2019Q1 \
             --end 2026Q2 \
             --sleep-seconds 0.35 \
-            --retries 6
+            --retries 3
           status=$?
           mkdir -p "$OUT"
           printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
@@ -49,7 +53,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bvvc-sec-form-d-denominator-2019q1-2026q2
+          name: bvvc-sec-form-d-denominator-2019q1-2026q2-attempt02
           path: /tmp/bvvc-sec-form-d-denominator-2019q1-2026q2
           if-no-files-found: error
           retention-days: 90
