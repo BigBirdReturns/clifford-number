@@ -49,7 +49,7 @@ jobs:
           test "$(git merge-base HEAD origin/main)" = "$BASE_MAIN"
           test "$(git hash-object "$INPUT")" = '0e004bc38eb4d4c895af3d862f0e7569112a8b1a'
           test "$(grep -cve '^$' "$INPUT")" = '46'
-          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '8008cf2a34fd3902283a01dac25c20ea73d3c765660cf4d16232ef4659f4d38c'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '28fac22cd0a36f519488030e9d18cea22d7604b9b88004e1afdc49e2e0e1cc05'
           test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = '626c7d6623b19f1993ee4debd2e70dbf520d95fbd8f1e0dcc2c3bac0dbf8af50'
           base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
           echo "runner_sha256=$(sha256sum "$RUNNER" | awk '{print $1}')"
